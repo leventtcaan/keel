@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info:
+  title: keel API
+  version: 0.1.0
+  description: |
+    Contract-first API (anayasa K3, ADR-006). The mobile client types are generated from this file; never hand-written.
+    v0.1 is the skeleton: health and the shared error model. The full v1 contract is task K-201.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness check
+      responses:
+        "200":
+          description: The service is up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        default:
+          $ref: "#/components/responses/Error"
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [UP]
+    Error:
+      type: object
+      description: Shared error body. Messages never contain health data (anayasa V3).
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable code, e.g. VALIDATION_FAILED.
+        message:
+          type: string
+          description: English, safe to show to the user.
+  responses:
+    Error:
+      description: Any error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

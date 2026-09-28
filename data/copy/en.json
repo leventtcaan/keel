@@ -1,0 +1,29 @@
+{
+  "app": {
+    "name": "keel"
+  },
+  "tabs": {
+    "today": "Today",
+    "train": "Train",
+    "food": "Food",
+    "progress": "Progress"
+  },
+  "screens": {
+    "today": {
+      "title": "Today",
+      "note": "Your consistency, this week's call and today's list arrive in M4."
+    },
+    "train": {
+      "title": "Train",
+      "note": "Sessions and sets arrive in M4."
+    },
+    "food": {
+      "title": "Food",
+      "note": "Meal logging arrives in M4."
+    },
+    "progress": {
+      "title": "Progress",
+      "note": "Photos, strength and projection arrive in M6."
+    }
+  }
+}
