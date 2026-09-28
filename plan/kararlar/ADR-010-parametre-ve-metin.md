@@ -8,7 +8,7 @@ Arayüz yalnız İngilizce ama dil eklemek kolay kalmalı (U11).
 
 ## Karar
 - **`data/parameters/<alan>.yaml`** — her parametre:
-  `key` · `value` ya da `by_sex: {male, female}` · `unit` · `tag` (`tecrube|literatur`) · `source`
+  `key` · `value` ya da `by_sex: {male, female}` · `unit` · `tag` (`tecrube|literatur|urun`) · `source`
   (`arastirma/...#K-n`) · isteğe bağlı `note` (çelişki, türetme).
   Alanlar: `nutrition`, `training`, `measurement`, `windows`, `safety`, `quota`.
 - Backend açılışta dosyaları yükler ve **şemaya karşı doğrular**; eksik alan, bilinmeyen anahtar, kaynaksız parametre →

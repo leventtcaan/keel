@@ -17,7 +17,7 @@ Motor kuralı **kanıt + parametre + test** üçlüsüdür. Biri eksikse kural e
    - key: weekly_loss_cap_kg
      value: 1.0
      unit: kg/week
-     tag: tecrube            # tecrube | literatur
+     tag: tecrube            # tecrube | literatur | urun (ürün kararı: kota vb.)
      source: "arastirma/ham/guray/G2-kilo-verme.md#K-3"
      note: "Mutlak tavan. Literatür %0,5-1,0 VA/hafta diyor; min(1 kg, VA×%1) ile ikisi birden sağlanır."
    ```

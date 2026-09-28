@@ -1,0 +1,47 @@
+parameters:
+  - key: weekly_loss_cap_kg
+    value: 1.0
+    unit: kg_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-17"
+    note: "Mutlak tavan. Yüzde tavanıyla birlikte uygulanır: min(1 kg, VA × weekly_loss_cap_pct_bodyweight)."
+  - key: weekly_loss_cap_pct_bodyweight
+    value: 0.01
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B3"
+    note: "Hafif kişide 1 kg tavan literatürün %43 üstüne çıkıyor (H3 Ç1); yüzde kolu kadında da bağlayıcı (J1 A7). Güray tavanını bozmaz, altında kalır."
+  - key: bmr_floor_enabled
+    value: true
+    unit: boolean
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-11"
+    note: "Kalori hedefi BMR'nin altına inmez."
+  - key: rapid_loss_hard_stop_pct
+    value: 0.08
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#C6"
+    note: "8 hafta penceresinde vücut ağırlığının %8'inden fazla kayıp → kalori düşürme yok."
+  - key: rapid_loss_window_weeks
+    value: 8
+    unit: weeks
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#C6"
+  - key: lea_threshold_kcal_per_kg_ffm
+    value: 30
+    unit: kcal_per_kg_ffm_per_day
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#C6"
+    note: "IOC 2023. Enerji mevcudiyeti = (alım − egzersiz) / yağsız kütle. Cinsiyetten bağımsız yazılır."
+  - key: ea_adequate_kcal_per_kg_ffm
+    value: 45
+    unit: kcal_per_kg_ffm_per_day
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#C6"
+  - key: bulk_ceiling_fat_proxy_pct
+    by_sex: {male: 20, female: 30}
+    unit: percent_internal_only
+    tag: tecrube
+    source: "arastirma/ham/guray/G6-eski-arsiv.md#K-7"
+    note: "YALNIZ İÇ DEĞİŞKEN — kullanıcıya asla sayı olarak gösterilmez (U4). Göbek testi proxy'si (G6 K-9). Kadın +10 puan ofseti J1 B3."

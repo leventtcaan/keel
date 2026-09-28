@@ -1,0 +1,79 @@
+parameters:
+  - key: target_rir_max
+    value: 1
+    unit: reps_in_reserve
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-5"
+    note: "Çalışma setleri RIR 0-1. Eski arşivde RIR 1-2 (G6 K-40) — 2026 görüşü geçerli."
+  - key: weekly_sets_per_muscle
+    value: 10
+    unit: sets_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-11"
+    note: "Bant 4-12/15 (G1 K-12). 5 yılda değişen tek şey: ~20'den ~10'a."
+  - key: sets_per_session_per_muscle_min
+    value: 2
+    unit: sets
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-10"
+  - key: sets_per_session_per_muscle_max
+    value: 5
+    unit: sets
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-10"
+  - key: frequency_per_muscle_per_week
+    value: 2
+    unit: sessions_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-22"
+  - key: default_training_days_per_week
+    value: 4
+    unit: days_per_week
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B8"
+    note: "4 gün upper/lower × 2 = seans başına 5 set. Güray 4-5 gün ideal diyor (G7 K-79) — uyumlu."
+  - key: load_increment_upper_kg
+    value: 2.5
+    unit: kg
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B4"
+    note: "Uygulayıcı konsensüsü, meta-analiz yok. İleri seviyede mikro plaka 0,5-1,25 kg."
+  - key: load_increment_lower_kg
+    value: 5.0
+    unit: kg
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B4"
+  - key: load_progression_compound_only
+    value: true
+    unit: boolean
+    tag: tecrube
+    source: "arastirma/ham/guray/G6-eski-arsiv.md#K-33"
+    note: "İzolasyon hareketlerinde yük takibi yapılmaz."
+  - key: technique_gate_required
+    value: true
+    unit: boolean
+    tag: tecrube
+    source: "arastirma/ham/guray/G6-eski-arsiv.md#K-31"
+    note: "O hafta form kusursuz değilse ertesi hafta yük eklenmez."
+  - key: stagnation_deload_months
+    value: 3
+    unit: months
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-69"
+  - key: deload_volume_factor
+    value: 0.5
+    unit: ratio
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-68"
+    note: "Merdiven: önce artışı bırak → hacmi yarıya → tam çöküşte 1 hafta tam mola (K-70). Takvimsel deload yok (K-66)."
+  - key: deload_load_reduction_min
+    value: 0.30
+    unit: ratio
+    tag: tecrube
+    source: "arastirma/03-guray-karar-omurgasi.md#7.1"
+    note: "Alternatif deload: yükü %30-40 düşürüp kasa odaklan (G6)."
+  - key: deload_load_reduction_max
+    value: 0.40
+    unit: ratio
+    tag: tecrube
+    source: "arastirma/03-guray-karar-omurgasi.md#7.1"

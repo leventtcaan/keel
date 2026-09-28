@@ -1,0 +1,24 @@
+parameters:
+  - key: trend_display_days
+    value: 7
+    unit: days
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md"
+  - key: decision_window_days
+    by_sex: {male: 21, female: 28}
+    unit: days
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#D1"
+    note: "Kadında 28 gün döngü sinyalini matematiksel olarak sıfırlar (7 günde %90'ı geçiyor). Erkekte 2-3 hafta; 1 hafta yetersiz (H3 Ç5)."
+  - key: no_interpretation_days
+    value: 14
+    unit: days
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md"
+    note: "Ölç sık, yorumla seyrek — Güray da haftalık değişimi yorumlamayı reddediyor (03 §8)."
+  - key: evaluation_window_days
+    value: 90
+    unit: days
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-25"
+    note: "Gelişim 3 ayda değerlendirilir; literatür destekliyor (H3 Ç7)."

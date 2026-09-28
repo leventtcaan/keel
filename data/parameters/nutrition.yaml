@@ -1,0 +1,77 @@
+parameters:
+  - key: protein_g_per_kg
+    value: 2.0
+    unit: g_per_kg_bodyweight
+    tag: tecrube
+    source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-18"
+    note: "Toplam vücut ağırlığı üzerinden, yağsız kütle değil (G3 K-19). Kadında aynı (J1 A5)."
+  - key: protein_g_per_kg_max
+    value: 2.5
+    unit: g_per_kg_bodyweight
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-21"
+  - key: protein_g_per_kg_female_45_plus
+    value: 2.2
+    unit: g_per_kg_bodyweight
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#A5"
+    note: "Güray'da kadına özel protein kuralı yok; boşluk literatürle dolduruldu."
+  - key: fat_g_per_kg_min
+    by_sex: {male: 0.5, female: 0.75}
+    unit: g_per_kg_bodyweight
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-22"
+    note: "Erkek 0,5 Güray. Kadın alt sınırı 0,7-0,8 J1 A6'dan (Güray'da kadın verisi yok); 0,75 bandın ortası."
+  - key: fat_g_per_kg_max
+    value: 1.0
+    unit: g_per_kg_bodyweight
+    tag: tecrube
+    source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-21"
+  - key: carbs_min_g_per_day
+    value: 50
+    unit: g_per_day
+    tag: tecrube
+    source: "arastirma/03-guray-karar-omurgasi.md#2.3"
+    note: "Güray tabanı 50-100 g. Literatür bu kalori/set aralığında karbonhidratın performansa etkisini göstermiyor (H3 B-EK); alt uç seçildi, sıkışma Reason olarak raporlanır."
+  - key: fiber_g_per_day
+    by_sex: {male: 38, female: 25}
+    unit: g_per_day
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B11"
+    note: "Mutlak hedef; açıkta kaloriye oranlanmaz. Güray lifi gram değil sebze hacmiyle kuruyor (G7) — gram hedefi literatürden."
+  - key: cut_step_min_kcal
+    value: 500
+    unit: kcal_per_day
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-97"
+    note: "Literatür %5-10 (100-250 kcal) diyor (H3 B3). Güray: 300-400 ölçüm gürültüsü. Çelişkide Güray kazanır. BMR tabanı ve kayıp tavanı bu adımı sınırlar."
+  - key: bulk_step_kcal
+    value: 250
+    unit: kcal_per_day
+    tag: tecrube
+    source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-10"
+    note: "Tamamı karbonhidrattan (G6 K-16)."
+  - key: calorie_change_min_wait_weeks
+    value: 2
+    unit: weeks
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B3"
+    note: "Güray: 2 hafta durağanlıktan sonra artış (G3 K-10) — literatürle uyumlu."
+  - key: gain_rate_ideal_kg_per_month
+    by_sex: {male: 1.0, female: 0.5}
+    unit: kg_per_month
+    tag: tecrube
+    source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-11"
+    note: "Kadın değeri ×0,5 J1 A8'den — kanıt ZAYIF (uzman modeli, RCT değil)."
+  - key: gain_rate_max_kg_per_month
+    by_sex: {male: 2.0, female: 1.0}
+    unit: kg_per_month
+    tag: tecrube
+    source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-11"
+    note: "Haftada ~0,5 kg tavanla uyumlu (G6 K-12). Kadın ×0,5 (J1 A8, zayıf kanıt)."
+  - key: maintenance_observation_days
+    value: 21
+    unit: days
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B3"
+    note: "Güray 1-2 hafta diyor (G2 K-8); literatür en az 2, tercihen 3 hafta. Güray aralığının üst ucunun da üstü — su/glikojen gürültüsü (H3 çelişki Ç5). Levent'e soruldu."

@@ -1,0 +1,22 @@
+# Single source of truth for every backend version (ADR-001).
+# spring-boot / spring-modulith / java verified against Maven Central on 2026-09-28 (NutriScan AB#140).
+# Library versions below come from the BOMs; nothing declares its own.
+
+[versions]
+java = "25"
+spring-boot = "4.1.1"
+spring-modulith = "2.1.1"
+
+[libraries]
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
+
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
+spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+snakeyaml = { module = "org.yaml:snakeyaml" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

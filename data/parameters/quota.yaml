@@ -1,0 +1,23 @@
+parameters:
+  - key: coach_messages_per_day
+    value: 25
+    unit: count_per_day
+    tag: urun
+    source: "arastirma/ham/K5-fiyat-kota-maliyet.md"
+    note: "Ağır kullanıcının 3-5 katı; her gün dolduran bile %72 brüt marj."
+  - key: photo_analyses_per_day
+    value: 10
+    unit: count_per_day
+    tag: urun
+    source: "arastirma/ham/K5-fiyat-kota-maliyet.md"
+  - key: question_budget_per_week
+    value: 2
+    unit: count_per_week
+    tag: urun
+    source: "arastirma/ham/I2-etkilesim-modeli.md"
+    note: "CAT: kazanç susmaktan gelir; her kayda soru sormak doğruluğu düşürdü (SnappyMeal)."
+  - key: question_budget_per_week_anomaly
+    value: 5
+    unit: count_per_week
+    tag: urun
+    source: "arastirma/ham/I2-etkilesim-modeli.md"
