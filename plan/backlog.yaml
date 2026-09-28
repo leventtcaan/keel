@@ -1,0 +1,1726 @@
+# keel backlog — TEK KAYNAK (ADR-002).
+# GitHub Issues + Project bu dosyadan üretilir: python3 tools/sync_backlog.py --dry-run | --apply
+# GitHub'da başlık/kapsam elle değiştirilmez; önce bu dosya değişir.
+# Alanlar: id · title · milestone · module · type (feature|spike|chore|test|docs|human) · size (S|M|L)
+#          status (todo|doing|done) · depends_on · why · acceptance · tests · refs · learn
+# Kural: acceptance boş olan görev başlatılamaz (skill gorev-baslat). L boyutlu görev başlamadan bölünür.
+
+schema: 1
+
+milestones:
+  - {id: M0, title: "Temel", goal: "Agent'ın saçmalamadığı, unutmadığı bir depo; iskelet ve CI yeşil"}
+  - {id: M1, title: "Karar motoru çekirdeği", goal: "Güray omurgası + literatür, saf Java, tablo testleriyle kanıtlı"}
+  - {id: M2, title: "Backend temel servisler", goal: "Motoru gerçek veriyle besleyen API"}
+  - {id: M3, title: "Mobil kabuk", goal: "C dilinde, offline-first, sözleşmeden tipli iskelet"}
+  - {id: M4, title: "Günlük akış", goal: "Kullanıcının günü ~40 saniye"}
+  - {id: M5, title: "Karar anları + koç", goal: "Karar kartı, gerekçe, itiraza dayanan koç"}
+  - {id: M6, title: "İlerleme", goal: "Gelişimi kanıtla göstermek"}
+  - {id: M7, title: "Abonelik", goal: "Satın alma, yetki, kota"}
+  - {id: M8, title: "Uyum ve yasal", goal: "Yasal metinler, silme, App Store uyumu"}
+  - {id: M9, title: "Beta", goal: "Dağıtım, TestFlight, başvurulu kohort, öncü göstergeler"}
+  - {id: M10, title: "Lansman", goal: "İsim, ASO, mağaza, lansman günü"}
+
+tasks:
+
+# ───────────────────────────── M0 · Temel ─────────────────────────────
+  - id: K-001
+    title: "Depo temeli: anayasa, skill'ler, hafıza dosyaları"
+    milestone: M0
+    module: repo
+    type: chore
+    size: M
+    status: done
+    depends_on: []
+    why: "Agent'ın unutma, uydurma ve kapsam kayması hatalarına karşı mekanik önlem"
+    acceptance:
+      - "CLAUDE.md kısa ve işaretçili; tam kurallar docs/anayasa.md'de numaralı ve kaynaklı"
+      - "7 skill: oturum-baslat, oturum-kapat, gorev-baslat, gorev-kapat, karar-yaz, kural-ekle, aktarim"
+      - "DURUM.md ve oturumlar/levent.md var; araştırma arastirma/ altında"
+    tests:
+      - "Levent incelemesi"
+    refs: ["plan/kararlar/ADR-002-depo-ve-surec.md"]
+    learn: ["Monorepo", "Agent hafızası ve bağlam yönetimi"]
+
+  - id: K-002
+    title: "Mimari ADR'ler ve docs/mimari.md"
+    milestone: M0
+    module: docs
+    type: docs
+    size: M
+    status: done
+    depends_on: [K-001]
+    why: "Her teknik kararın ne/neden/alternatif kaydı; savunulabilirlik"
+    acceptance:
+      - "15 ADR ve dizin; KABUL olmayanlar ÖNERİ durumunda"
+      - "docs/mimari.md katmanları ve tek koşan örneği gösteriyor"
+    tests:
+      - "Levent ADR'leri okur ve her birini KABUL ya da değişiklik ile işaretler"
+    refs: ["plan/kararlar.md"]
+    learn: ["ADR", "Modüler monolit", "Katmanlı mimari"]
+
+  - id: K-003
+    title: "Yol haritası ve backlog (bu dosya)"
+    milestone: M0
+    module: docs
+    type: docs
+    size: M
+    status: done
+    depends_on: [K-002]
+    why: "Projenin baştan sona görünür planı; her görev kabul kriterli"
+    acceptance:
+      - "plan/yol-haritasi.md kilometre taşları ve çıkış kriterleriyle"
+      - "Her görevde why, acceptance, tests, refs, learn dolu"
+    tests:
+      - "tools/sync_backlog.py --dry-run şema hatası vermiyor"
+    refs: ["plan/yol-haritasi.md"]
+    learn: ["İş parçalama", "Kabul kriteri yazma"]
+
+  - id: K-004
+    title: "Backlog → GitHub Issues + Project senkron aracı"
+    milestone: M0
+    module: repo
+    type: chore
+    size: M
+    status: done
+    depends_on: [K-003]
+    why: "Tek kaynak yaml, görsel görünüm GitHub Project; ikisi kopmasın"
+    acceptance:
+      - "--dry-run değişiklik listesini gösterir, --apply issue ve Project kartlarını oluşturur/günceller"
+      - "Project alanları: Status, Milestone, Module, Size, Type"
+      - "Kimlikler koda gömülü değil: tools/github.yaml"
+    tests:
+      - "Art arda iki --apply ikincisinde değişiklik üretmez (idempotent)"
+    refs: ["plan/kararlar/ADR-002-depo-ve-surec.md"]
+    learn: ["GitHub Projects v2", "gh CLI", "Idempotent betik"]
+
+  - id: K-005
+    title: "Ekran prototipi: tüm akışlar, görsel dil C"
+    milestone: M0
+    module: design
+    type: docs
+    size: L
+    status: done
+    depends_on: []
+    why: "Kodlamadan önce ekranlarda anlaşmak"
+    acceptance:
+      - "Onboarding + paywall, günlük akış, karar anları, ilerleme — C dilinde"
+      - "Her ekranın altında dayandığı karar/araştırma"
+    tests:
+      - "Levent incelemesi"
+    refs: ["prototip/", "plan/kararlar/ADR-014-gorsel-dil.md"]
+    learn: ["Ekran akışı tasarımı", "Tasarım token'ı"]
+
+  - id: K-006
+    title: "Backend iskeleti: Spring Boot + Modulith, 12 modül, mimari testler"
+    milestone: M0
+    module: backend
+    type: chore
+    size: M
+    status: done
+    depends_on: [K-002]
+    why: "Modül sınırlarını ilk günden testle korumak"
+    acceptance:
+      - "./gradlew build yeşil"
+      - "ModularityTests: 12 modül (ADR-015) ve verify()"
+      - "VersionCatalogTests: build.gradle.kts'te satır içi sürüm yok"
+      - "pendingTest görevi pending etiketli testleri ayrı çalıştırıyor (ADR-009)"
+    tests:
+      - "ModularityTests, VersionCatalogTests"
+    refs: ["plan/kararlar/ADR-001-yigin.md", "plan/kararlar/ADR-015-modul-haritasi.md", "plan/kararlar/ADR-009-test-stratejisi.md"]
+    learn: ["Gradle Kotlin DSL", "Version catalog", "Spring Modulith modül ve allowedDependencies"]
+
+  - id: K-007
+    title: "Mobil iskelet: Expo SDK 57 + expo-router + C token'ları"
+    milestone: M0
+    module: mobile
+    type: chore
+    size: M
+    status: done
+    depends_on: [K-002]
+    why: "Mobil tarafın temeli; check komutu ve CI"
+    acceptance:
+      - "npm run check (tsc + lint + jest) yeşil"
+      - "Today · Train · Food · Progress sekmeleri boş ekranlarla"
+      - "Renk/font/radius tek token dosyasında; metinler data/copy/en.json'dan"
+    tests:
+      - "Metin anahtarı testi; token testi"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md", "plan/kararlar/ADR-014-gorsel-dil.md"]
+    learn: ["Expo proje yapısı", "expo-router", "TypeScript temelleri"]
+
+  - id: K-008
+    title: "Sözleşme iskeleti: contracts/openapi.yaml"
+    milestone: M0
+    module: contracts
+    type: chore
+    size: S
+    status: done
+    depends_on: [K-002]
+    why: "Sözleşme önce (K3)"
+    acceptance:
+      - "OpenAPI 3.1 geçerli dosya; health endpoint ve ortak hata modeli"
+    tests:
+      - "Mobil tip üretimi bu dosyadan hatasız çalışıyor"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md"]
+    learn: ["OpenAPI", "Contract-first"]
+
+  - id: K-009
+    title: "Motor parametre dosyaları: araştırmadan kaynaklı başlangıç değerleri"
+    milestone: M0
+    module: data
+    type: chore
+    size: M
+    status: done
+    depends_on: [K-002]
+    why: "Hardcode yasağı ve kaynak zorunluluğu (K2, U14)"
+    acceptance:
+      - "data/parameters/{nutrition,training,measurement,windows,safety,quota}.yaml"
+      - "Her parametrede key, unit, tag, source; cinsiyete göre değişenler by_sex"
+      - "Güray ile literatürün çeliştiği yerlerde note alanı"
+    tests:
+      - "ParameterProvenanceTests: her parametre kaynaklı ve kaynak dosyası mevcut"
+    refs: ["arastirma/03-guray-karar-omurgasi.md", "arastirma/ham/J1-cinsiyet.md", "arastirma/ham/H3-bosluk-literatur.md"]
+    learn: ["YAML", "Provenance", "Konfigürasyon ile kodu ayırmak"]
+
+  - id: K-010
+    title: "CI: GitHub Actions (backend + mobil)"
+    milestone: M0
+    module: repo
+    type: chore
+    size: S
+    status: done
+    depends_on: [K-006, K-007]
+    why: "Kırmızı kod main'e girmesin"
+    acceptance:
+      - "Her push/PR'da ./gradlew build ve npm run check çalışıyor ve yeşil"
+    tests:
+      - "Actions sekmesinde yeşil koşu"
+    refs: ["plan/kararlar/ADR-009-test-stratejisi.md"]
+    learn: ["CI", "GitHub Actions workflow"]
+
+  - id: K-011
+    title: "Levent incelemesi: ADR'leri KABUL et, prototipi onayla"
+    milestone: M0
+    module: docs
+    type: human
+    size: S
+    status: todo
+    depends_on: [K-002, K-005]
+    why: "ÖNERİ'yi KABUL'e yalnız Levent çevirir"
+    acceptance:
+      - "Her ADR KABUL ya da değişiklik notuyla işaretli"
+      - "Prototip onaylı ya da değişiklik listesi yazılı"
+    tests:
+      - "plan/kararlar.md'de ÖNERİ kalmadı ya da kalanlar bilinçli"
+    refs: ["plan/kararlar.md", "prototip/"]
+    learn: ["Mimari karar savunma: neden bu, alternatifi, neden o değil"]
+
+# ───────────────────────────── M1 · Karar motoru ─────────────────────────────
+  - id: K-101
+    title: "Motor alan tipleri: Snapshot, Decision, Action, Reason, Confidence"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-006, K-011]
+    why: "Motorun girdisi ve çıktısı; U3'ün (dört parçalı karar) koddaki karşılığı"
+    acceptance:
+      - "Decision = action + reasons + confidence + nextReview + copyKey; değişmez (record)"
+      - "NO_DECISION_YET birinci sınıf eylem"
+      - "NO_DECISION_YET dışındaki her karar en az bir Reason içerir; Reason kural kimliği ve kaynak taşır"
+      - "engine modülü Spring'e bağımlı değil"
+    tests:
+      - "DecisionTests (geçersiz karar kurulamaz)"
+      - "ModularityTests (engine bağımlılıksız)"
+    refs: ["plan/kararlar/ADR-003-karar-motoru.md", "docs/anayasa.md#U3"]
+    learn: ["Java record", "enum ve sealed interface", "Değişmezlik (immutability)", "Saf fonksiyon"]
+
+  - id: K-102
+    title: "Parametre yükleme ve doğrulama"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-101, K-009]
+    why: "Motor eşiklerini koddan değil kaynaklı dosyadan almak (K2, ADR-010)"
+    acceptance:
+      - "data/parameters/*.yaml yüklenir; by_sex kullanıcının cinsiyetine göre çözülür"
+      - "Eksik alan, bilinmeyen anahtar, kaynaksız parametre → açık hata mesajıyla yükleme başarısız"
+      - "Parametre setinin sürüm özeti (hash) kararlara yazılabilir"
+    tests:
+      - "ParametersLoaderTests (geçerli, eksik, kaynaksız, bilinmeyen anahtar)"
+    refs: ["plan/kararlar/ADR-010-parametre-ve-metin.md"]
+    learn: ["YAML ayrıştırma", "Doğrulama ve hata tasarımı", "Hash ile sürümleme"]
+
+  - id: K-103
+    title: "Trend ve veri yeterliliği"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-102]
+    why: "Ölç sık, yorumla seyrek (U8): günlük gürültüyü süzmek ve yetersiz veride susmak"
+    acceptance:
+      - "7 günlük hareketli ortalama trend kilo; eksik günleri atlayarak"
+      - "Karar penceresi erkek 2-3 hafta, kadın 28 gün (parametre)"
+      - "İlk 14 gün ve penceredeki tartı sayısı eşiğin altındaysa: NO_DECISION_YET (neden: veri yetersiz)"
+    tests:
+      - "TrendTests (eksik gün, tek gün, sabit seri, gürültülü seri)"
+      - "DataSufficiencyTests (eşiğin altı/tam/üstü)"
+    refs: ["arastirma/ham/H1-olcum.md", "arastirma/ham/J1-cinsiyet.md", "arastirma/03-guray-karar-omurgasi.md#8"]
+    learn: ["Hareketli ortalama", "Sinyal/gürültü", "Neden 28 gün döngüyü sıfırlar (sin formülü)"]
+
+  - id: K-104
+    title: "Güvenlik ağı: kayıp hızı tavanı, BMR tabanı, RED-S/LEA"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-103]
+    why: "Hiçbir kalori kararı güvenlik kontrolünden önce verilemez (U13)"
+    acceptance:
+      - "Haftalık kayıp tavanı min(1 kg, vücut ağırlığı × %1) aşılırsa: kaloriyi artırma kararı"
+      - "Kalori hedefi BMR tabanının altına inemez"
+      - "8 haftada vücut ağırlığının %8'inden fazla kayıp → hard stop, kalori düşürme yok"
+      - "Enerji mevcudiyeti hesaplanabiliyorsa ≤30 kcal/kg FFM/gün → hard stop"
+    tests:
+      - "SafetyNetTests (her tetikleyici için altı/tam/üstü)"
+    refs: ["arastirma/ham/guray/G2-kilo-verme.md", "arastirma/ham/H3-bosluk-literatur.md", "arastirma/ham/J1-cinsiyet.md"]
+    learn: ["BMR", "Enerji mevcudiyeti", "Guard clause / önce güvenlik kalıbı"]
+
+  - id: K-105
+    title: "Faz kapısı: cut / bulk kararı"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-103]
+    why: "Maintenance'ta kalmak seçenek değil; yön seçilir (Güray)"
+    acceptance:
+      - "Görsel yağ proxy bandları parametreden: tavan, çalışma bandı; kadında +10 puan ofset"
+      - "Tavan üstü → bulk yasak, cut"
+      - "Başlangıçta yüksek yağ oranı → önce yağ ver kuralı"
+      - "Yağ yüzdesi hiçbir çıktıda sayı olarak dönmez (U4)"
+    tests:
+      - "PhaseGateTests (erkek/kadın, bant sınırları)"
+      - "Decision çıktısında yüzde alanı olmadığını gösteren test"
+    refs: ["arastirma/ham/guray/G6-eski-arsiv.md", "arastirma/ham/guray/G7-whisper-arsiv.md", "arastirma/ham/J1-cinsiyet.md"]
+    learn: ["Karar tablosu", "İç değişken vs kullanıcıya görünen değer"]
+
+  - id: K-106
+    title: "Haftalık check-in omurgası (Güray algoritması)"
+    milestone: M1
+    module: engine
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-104, K-105]
+    why: "Ürünün kalbi: yön → görüntü → antrenman → toparlanma → genetik limit"
+    acceptance:
+      - "Kilo hedef yönde değil → kalori ayarı kararı (K-107'ye delege)"
+      - "Yön doğru ve görüntü iyi → CONTINUE"
+      - "Antrenman kötü → önce antrenmanı düzelt, kalori kararı yok"
+      - "Kilo ve bel sabit ama uyum yüksek → NO_DECISION_YET, bir hafta daha bekle"
+      - "Uyum %50'nin altında → kaloriye dokunma, uyumu çöz"
+      - "Bir seferde tek değişken"
+    tests:
+      - "WeeklyCheckinSpineTests — Güray ağacının her dalı bir satır (pending spesifikasyon testleri K-010'da hazır)"
+    refs: ["arastirma/03-guray-karar-omurgasi.md#2.4", "arastirma/ham/guray/G3-kilo-alma-beslenme.md", "arastirma/ham/guray/G2-kilo-verme.md"]
+    learn: ["Karar ağacını koda dökmek", "Chain of responsibility kalıbı", "Tablo testleri"]
+
+  - id: K-107
+    title: "Kalori merdiveni (cut ve bulk)"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-106]
+    why: "Durağanlıkta ne kadar, ne sıklıkla değiştirilir"
+    acceptance:
+      - "Cut: durağanlıkta minimum adım parametreden (Güray K-97: 500 kcal; literatür %5-10 — Güray kazanır, note)"
+      - "Merdiven ölçütü tartı değil antrenman performansı (K-98)"
+      - "Açığın ilk hamlesi yağı 1 g/kg'a çekmek; sonra karbonhidrat ayar kolu"
+      - "Bulk: 2 hafta durağanlıkta +250 kcal, tamamı karbonhidrattan"
+      - "Ayarlar arası minimum bekleme parametreden"
+    tests:
+      - "CalorieLadderTests"
+    refs: ["arastirma/ham/guray/G7-whisper-arsiv.md", "arastirma/ham/guray/G3-kilo-alma-beslenme.md", "arastirma/ham/H3-bosluk-literatur.md"]
+    learn: ["Çelişen kaynakları parametreyle yönetmek", "Birim ve yuvarlama"]
+
+  - id: K-108
+    title: "Makro hedefleri"
+    milestone: M1
+    module: engine
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-102]
+    why: "Protein, yağ, karbonhidrat, lif hedefleri"
+    acceptance:
+      - "Protein 2 g/kg toplam vücut ağırlığı (yağsız kütle değil); kadın 45+ yaş 2,2"
+      - "Yağ taban/tavan erkek 0,5-1,0 g/kg, kadın taban 0,7-0,8"
+      - "Karbonhidrat kalan; alt sınır parametreden"
+      - "Lif hedefi mutlak (kaloriye oranlanmaz)"
+      - "Düşük kaloride karbonhidrat sıkışması tespit edilir ve Reason olarak döner"
+    tests:
+      - "MacroTargetsTests (erkek/kadın, düşük kalori sınırı)"
+    refs: ["arastirma/ham/guray/G3-kilo-alma-beslenme.md", "arastirma/ham/H3-bosluk-literatur.md#B11", "arastirma/ham/J1-cinsiyet.md"]
+    learn: ["Makro besinler", "Birim dönüşümü (g → kcal)"]
+
+  - id: K-109
+    title: "Antrenman progresyonu: bileşik hareketlerde double progression"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-102]
+    why: "Ne zaman ağırlık, ne zaman tekrar eklenir"
+    acceptance:
+      - "Yalnız bileşik hareketlerde yük progresyonu; izolasyonda yük takibi yok (Güray K-33)"
+      - "Teknik kapısı: o hafta teknik mükemmel değilse artış yok (K-31)"
+      - "Artış adımı üst vücut / alt vücut parametreden"
+      - "Hedef RIR 0-1 (Güray 2026)"
+    tests:
+      - "ProgressionTests"
+    refs: ["arastirma/ham/guray/G1-antrenman.md", "arastirma/ham/guray/G6-eski-arsiv.md", "arastirma/ham/H3-bosluk-literatur.md#B4"]
+    learn: ["RIR", "e1RM (Epley)", "Bileşik vs izolasyon"]
+
+  - id: K-110
+    title: "Deload merdiveni (sinyal tabanlı)"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-109]
+    why: "Deload takvime değil vücuda bakar (Güray)"
+    acceptance:
+      - "Merdiven: önce artışı bırak → sonra deload (hacmi yarıya ya da yükü %30-40 düşür) → tam çöküşte 1 hafta tam mola"
+      - "Operasyonel overtraining: plana uyamıyorsan"
+      - "3 ay durağanlık tek başına deload sinyali"
+      - "Takvimsel deload haftası üretilmez"
+    tests:
+      - "DeloadLadderTests"
+    refs: ["arastirma/ham/guray/G7-whisper-arsiv.md#K-66", "arastirma/ham/H3-bosluk-literatur.md#B5"]
+    learn: ["Yorgunluk yönetimi", "Durum makinesi (state machine)"]
+
+  - id: K-111
+    title: "Tutarlılık sayısı"
+    milestone: M1
+    module: engine
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-101]
+    why: "Günlük sayı (Levent kararı 29 Eyl); sonuç gelmezken kullanıcıyı tutan şey (U15)"
+    acceptance:
+      - "Haftalık planlı eylemler (antrenman, protein günü, adım, tartı) içinde yapılanların oranı"
+      - "Haftalık kümülatif 'on track' sayacı, 1 hafta aflı, sıfırlanmaz (U7)"
+    tests:
+      - "ConsistencyTests (af haftası, ardışık iki kayıp hafta)"
+    refs: ["arastirma/04-faz3-urun.md#7.3", "arastirma/ham/I1-onboarding-aliskanlik.md"]
+    learn: ["Metrik tasarımı", "Öncü gösterge"]
+
+  - id: K-112
+    title: "Karar montajı: sıralı boru hattı, güven düzeyi, sonraki değerlendirme"
+    milestone: M1
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-104, K-106, K-107, K-110]
+    why: "Adımları sabit sırayla çalıştırıp tek karar üretmek"
+    acceptance:
+      - "Sıra: güvenlik ağı → veri yeterliliği → faz → haftalık omurga → kalori/antrenman"
+      - "İlk karar veren adım zinciri durdurur"
+      - "Güven düzeyi veri yoğunluğu ve pencere doluluğundan"
+      - "nextReview pencereye göre hesaplanır"
+      - "Kullanıcı itirazı Snapshot'ta yeni veri değilse karar değişmez (U2)"
+    tests:
+      - "DecisionPipelineTests"
+      - "PushbackDoesNotChangeDecisionTests"
+    refs: ["plan/kararlar/ADR-003-karar-motoru.md"]
+    learn: ["Boru hattı kalıbı", "Determinizm testi"]
+
+  - id: K-113
+    title: "Altın senaryolar: ~20 gerçekçi kullanıcı yolculuğu"
+    milestone: M1
+    module: engine
+    type: test
+    size: M
+    status: todo
+    depends_on: [K-112]
+    why: "Motorun bütün olarak doğru davrandığının regresyon kanıtı"
+    acceptance:
+      - "En az 20 senaryo (erkek/kadın, cut/bulk, uyumlu/uyumsuz, durağan, hızlı kayıp, yeni başlayan, program hopper)"
+      - "Her senaryo haftalık kararların beklenen dizisini içerir"
+    tests:
+      - "GoldenScenarioTests"
+    refs: ["arastirma/ham/E-kullanici-sikayet.md", "arastirma/03-guray-karar-omurgasi.md"]
+    learn: ["Regresyon testi", "Senaryo tabanlı test"]
+
+# ───────────────────────────── M2 · Backend ─────────────────────────────
+  - id: K-201
+    title: "Sözleşme v1: tüm uç noktalar"
+    milestone: M2
+    module: contracts
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-008, K-112]
+    why: "Backend ve mobil aynı sözleşmeden türesin (K3)"
+    acceptance:
+      - "Uç noktalar: auth, profile, consent, measurements, meals, workouts, check-in, decisions, coach"
+      - "Decision şeması motorun Decision tipiyle birebir (action, reasons, confidence, nextReview, copyKey)"
+      - "Kalori alanları aralık (low/high)"
+      - "Yağ yüzdesi alanı yok (U4)"
+    tests:
+      - "Şema doğrulama"
+      - "Mobil tip üretimi"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md", "plan/kararlar/ADR-003-karar-motoru.md"]
+    learn: ["REST kaynak tasarımı", "OpenAPI şemaları", "Sürümleme"]
+
+  - id: K-202
+    title: "PostgreSQL + Flyway + yerel geliştirme ortamı"
+    milestone: M2
+    module: backend
+    type: chore
+    size: M
+    status: todo
+    depends_on: [K-006]
+    why: "Kalıcılık temeli (ADR-005)"
+    acceptance:
+      - "docker compose ile yerel PostgreSQL"
+      - "Flyway ilk migration; uygulama açılışta migration çalıştırır"
+      - "Entegrasyon testleri gerçek PostgreSQL ile (Testcontainers önerisi Levent onayıyla, K5)"
+      - "Sürümler doğrulanmış ve version catalog'da"
+    tests:
+      - "MigrationTests"
+    refs: ["plan/kararlar/ADR-005-veri-modeli.md"]
+    learn: ["İlişkisel veritabanı", "Migration", "Docker Compose", "Testcontainers"]
+
+  - id: K-203
+    title: "identity: Sign in with Apple doğrulama + oturum"
+    milestone: M2
+    module: identity
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-202, K-201]
+    why: "Parolasız, tek dokunuş giriş (ADR-011)"
+    acceptance:
+      - "Apple kimlik token'ı Apple açık anahtarlarıyla doğrulanır (imza, aud, iss, süre)"
+      - "Geçerli token → hesap oluştur/bul → oturum JWT"
+      - "Sır ve anahtarlar ortam değişkeninden (V5)"
+    tests:
+      - "AppleTokenVerifierTests (geçerli, imzasız, süresi geçmiş, yanlış audience)"
+    refs: ["plan/kararlar/ADR-011-kimlik-dogrulama.md"]
+    learn: ["JWT", "Açık anahtar kriptografisi (JWKS)", "Spring Security temelleri"]
+
+  - id: K-204
+    title: "consent: üç ayrı rıza ve geri alma"
+    milestone: M2
+    module: consent
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-203]
+    why: "GDPR Md. 9 ve Apple 5.1.2(i) (ADR-007)"
+    acceptance:
+      - "Sağlık verisi, Apple Health, üçüncü taraf AI (sağlayıcı adı + veri türü) ayrı kayıtlar"
+      - "Rıza sürümlü; geri alınabilir; geri alınınca ilgili özellik kapanır"
+    tests:
+      - "ConsentTests"
+    refs: ["plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
+    learn: ["GDPR özel kategori", "Rıza kaydı tasarımı"]
+
+  - id: K-205
+    title: "profile: hedef, cinsiyet, takvim, program tercihi, gıda tercihleri"
+    milestone: M2
+    module: profile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-203]
+    why: "Motorun kullanıcıya özgü girdileri"
+    acceptance:
+      - "Hedef (lose fat / build muscle / decide for me), cinsiyet, boy, doğum yılı"
+      - "Haftalık antrenman günleri ve saati"
+      - "Program tercihi: uygulama yazsın / kendi programım (Levent kararı 29 Eyl)"
+      - "Sevmediği/yiyemediği gıdalar, bütçe notu"
+    tests:
+      - "ProfileApiTests"
+    refs: ["arastirma/04-faz3-urun.md#3"]
+    learn: ["REST controller", "Doğrulama (validation)", "DTO vs entity"]
+
+  - id: K-206
+    title: "measurement: kilo, bel, türetilmiş fotoğraf değerleri"
+    milestone: M2
+    module: measurement
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-205]
+    why: "Karar motorunun ana zaman serisi"
+    acceptance:
+      - "Kilo girdileri (kaynak: elle / HealthKit), bel ölçümleri, fotoğraftan türetilmiş sayılar (fotoğraf değil, V1)"
+      - "İstemci kimliğiyle idempotent kayıt (offline senkron)"
+      - "Trend sorgusu motorun trend fonksiyonunu kullanır"
+    tests:
+      - "MeasurementApiTests"
+      - "IdempotencyTests"
+    refs: ["plan/kararlar/ADR-005-veri-modeli.md", "arastirma/ham/H1-olcum.md"]
+    learn: ["Zaman serisi modelleme", "Idempotency"]
+
+  - id: K-207
+    title: "Spike: besin veritabanı ve lisanslar (USDA FDC + Open Food Facts)"
+    milestone: M2
+    module: nutrition
+    type: spike
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-008'deki doğrulanmamış lisans yükümlülükleri"
+    acceptance:
+      - "FDC ve OFF lisansları resmî sayfalardan doğrulanıp ADR-008'e işlendi"
+      - "Veri alma yolu seçildi (toplu indirme / API), boyut ve güncelleme sıklığı yazıldı"
+    tests:
+      - "ADR-008 güncel"
+    refs: ["plan/kararlar/ADR-008-besin-verisi.md"]
+    learn: ["Açık veri lisansları (CC0, ODbL)"]
+
+  - id: K-208
+    title: "nutrition: besin eşleme ve aralıklı kalori"
+    milestone: M2
+    module: nutrition
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-207, K-205]
+    why: "Tahmin veritabanından, LLM'den değil (U1)"
+    acceptance:
+      - "{yemek, miktar, belirsizlik} → kcal ve makro ARALIĞI"
+      - "Barkod → OFF kaydı"
+      - "Belirsizlik yüksek ve öğün günü domine ediyorsa gram sorusu işareti döner"
+    tests:
+      - "FoodMappingTests"
+      - "RangeTests"
+    refs: ["plan/kararlar/ADR-008-besin-verisi.md", "arastirma/ham/F-surtunme-ve-his.md"]
+    learn: ["Belirsizlik yayılımı", "Arama/eşleme"]
+
+  - id: K-209
+    title: "nutrition: öğün kaydı ve günlük kalan bütçe"
+    milestone: M2
+    module: nutrition
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-208]
+    why: "Gün içi yönlendirmenin veri temeli"
+    acceptance:
+      - "Öğün kaydı aralıkla saklanır; 'dünkü gibi' tekrar"
+      - "Günün kalan bütçesi aralık olarak (hedef − alınan aralık)"
+    tests:
+      - "MealLogTests"
+      - "RemainingBudgetTests"
+    refs: ["arastirma/04-faz3-urun.md#Ö-17"]
+    learn: ["Aralık aritmetiği"]
+
+  - id: K-210
+    title: "training: egzersiz kataloğu, seans ve set kaydı"
+    milestone: M2
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-205]
+    why: "Antrenman verisinin temeli"
+    acceptance:
+      - "Egzersiz kataloğu veri dosyasından (bileşik/izolasyon, kas grubu, alternatifler)"
+      - "Seans ve set kaydı: ağırlık, tekrar, RIR"
+      - "Kullanıcının hareket değiştirmesi (lat pulldown yerine barfiks) desteklenir"
+    tests:
+      - "WorkoutLogTests"
+    refs: ["arastirma/ham/guray/G1-antrenman.md"]
+    learn: ["Katalog verisi", "İlişki modelleme"]
+
+  - id: K-211
+    title: "training: program üretimi (programı olmayan) ve program içe alma"
+    milestone: M2
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-210]
+    why: "Onboarding'de ikisi de seçilebilir (Levent kararı 29 Eyl)"
+    acceptance:
+      - "Programı olmayan: gün sayısına göre split (4 gün upper/lower varsayılan), kas başına haftalık set ve RIR parametreden"
+      - "Kendi programı olan: hareket listesi girilir, motor onun üzerinden koçluk eder"
+    tests:
+      - "ProgramGeneratorTests"
+    refs: ["arastirma/ham/H3-bosluk-literatur.md#B8", "arastirma/ham/guray/G1-antrenman.md"]
+    learn: ["Program yapısı (split, frekans, hacim)"]
+
+  - id: K-212
+    title: "decision: Snapshot kurma, motoru çağırma, karar kaydı"
+    milestone: M2
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-206, K-209, K-211, K-112]
+    why: "Motoru gerçek veriyle çalıştırmak ve her kararı yeniden üretilebilir saklamak (ADR-003)"
+    acceptance:
+      - "Snapshot modüllerin API'lerinden kurulur (tablo erişimi yok)"
+      - "Karar, Snapshot ve parametre hash'iyle saklanır; aynı Snapshot aynı kararı üretir"
+      - "Haftalık check-in günü profilden"
+    tests:
+      - "DecisionServiceTests"
+      - "ReproducibilityTests"
+    refs: ["plan/kararlar/ADR-003-karar-motoru.md", "plan/kararlar/ADR-005-veri-modeli.md"]
+    learn: ["Orkestrasyon servisi", "Denetim kaydı (audit log)"]
+
+  - id: K-213
+    title: "decision: check-in soruları ve soru bütçesi"
+    milestone: M2
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-212]
+    why: "Haftalık soru bütçesi ≤2 normal, ≤5 anomali (U9)"
+    acceptance:
+      - "Sorulacak sorular motorun belirsizliğinden seçilir; bütçe parametreden"
+      - "Her sorunun yanında neden sorulduğu anahtarı"
+    tests:
+      - "QuestionBudgetTests"
+    refs: ["arastirma/04-faz3-urun.md#8.5"]
+    learn: ["Bilgi kazancı sezgisi (CAT)"]
+
+  - id: K-214
+    title: "privacy: tek egress kapısı, hesap silme olayı, veri dışa aktarma"
+    milestone: M2
+    module: privacy
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-204]
+    why: "Dışarı giden her veri tek kapıdan; silme uçtan uca (V2, V6)"
+    acceptance:
+      - "Rıza yoksa egress reddedilir"
+      - "AccountDeletionRequested olayı; her modül kendi verisini siler"
+      - "Kullanıcı verisini JSON olarak dışa aktarma"
+    tests:
+      - "EgressGateTests"
+      - "AccountDeletionTests (tüm modüllerde veri kalmıyor)"
+    refs: ["plan/kararlar/ADR-007-gizlilik-ve-riza.md", "plan/kararlar/ADR-015-modul-haritasi.md"]
+    learn: ["Uygulama olayları (Spring Modulith events)", "Gizlilik mühendisliği"]
+
+  - id: K-215
+    title: "Ortak altyapı: hata modeli, log beyaz listesi, health endpoint"
+    milestone: M2
+    module: backend
+    type: chore
+    size: S
+    status: todo
+    depends_on: [K-202]
+    why: "Sağlık verisi logda yok (V3)"
+    acceptance:
+      - "Ortak hata cevabı sözleşmeyle aynı"
+      - "Log alanları beyaz listeli; sağlık alanı loglanırsa test kırmızı"
+    tests:
+      - "LogWhitelistTests"
+    refs: ["docs/anayasa.md#V3"]
+    learn: ["Yapılandırılmış log", "Hata tasarımı"]
+
+# ───────────────────────────── M3 · Mobil kabuk ─────────────────────────────
+  - id: K-301
+    title: "Tasarım sistemi: token'lar, fontlar, temel bileşenler (C)"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-007]
+    why: "Tüm ekranlar aynı dili konuşsun (ADR-014)"
+    acceptance:
+      - "Barlow + Barlow Condensed yüklü"
+      - "Card, DecisionBlock, Button, Chip, RangeText, ProgressBar bileşenleri"
+      - "Bileşenlerde renk/font sabiti yok; hepsi token'dan"
+    tests:
+      - "Bileşen render testleri"
+      - "Sabit renk taraması"
+    refs: ["plan/kararlar/ADR-014-gorsel-dil.md", "prototip/"]
+    learn: ["React bileşeni ve props", "StyleSheet", "Tasarım sistemi"]
+
+  - id: K-302
+    title: "Metin sistemi ve yasaklı ifade taraması"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-007]
+    why: "Metin koda gömülmez (K2); tıbbi dil ve yağ yüzdesi yasak (U4, U6)"
+    acceptance:
+      - "t('key', vars) yardımcısı; eksik anahtar testte yakalanır"
+      - "en.json'da yasaklı ifadeler (body fat %, insulin resistance, cure, treat, prevent, diagnose...) testte yakalanır"
+    tests:
+      - "CopyKeysTests"
+      - "ForbiddenPhrasesTests"
+    refs: ["docs/anayasa.md#U4", "docs/anayasa.md#U6"]
+    learn: ["i18n temeli", "Statik içerik testi"]
+
+  - id: K-303
+    title: "Üretilen API istemcisi"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-201]
+    why: "Sözleşme ile mobil sessizce kopmasın (K3)"
+    acceptance:
+      - "openapi-typescript ile src/api/schema.ts üretilir; CI'da yeniden üretim diff'siz"
+      - "Kimlik doğrulamalı fetch sarmalayıcısı"
+    tests:
+      - "Tip kontrolü"
+      - "CI diff adımı"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md"]
+    learn: ["Kod üretimi", "Tip güvenliği"]
+
+  - id: K-304
+    title: "Yerel depo ve senkron kuyruğu (offline-first)"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-303]
+    why: "Salonda sinyal kopar; kayıt kaybolmamalı"
+    acceptance:
+      - "Kayıtlar önce expo-sqlite'a, istemci kimliğiyle"
+      - "Bağlantı gelince kuyruk sırayla gönderilir; tekrar denemede çift kayıt yok"
+      - "Çakışmada sunucu kazanır"
+    tests:
+      - "SyncQueueTests (çevrimdışı, yeniden deneme, çift gönderim)"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md", "plan/kararlar/ADR-005-veri-modeli.md"]
+    learn: ["SQLite", "Kuyruk ve yeniden deneme", "Eventual consistency"]
+
+  - id: K-305
+    title: "Giriş: Sign in with Apple"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-203, K-303]
+    why: "Tek dokunuş giriş (ADR-011)"
+    acceptance:
+      - "expo-apple-authentication ile giriş; token backend'e; oturum güvenli depoda"
+    tests:
+      - "Giriş akışı birim testleri (mock)"
+    refs: ["plan/kararlar/ADR-011-kimlik-dogrulama.md"]
+    learn: ["Mobil kimlik doğrulama", "Güvenli depolama (Keychain)"]
+
+  - id: K-306
+    title: "Onboarding akışı"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-301, K-302, K-305, K-205, K-204]
+    why: "İlk 5 dakikada kişiselleştirilmiş plan; beklenti kalibrasyonu (U15)"
+    acceptance:
+      - "Ekranlar prototipteki sırayla: welcome, goal, program, schedule, baseline, photos, expectations, health, AI consent"
+      - "Schedule ekranı gerçekçi gün çıkarımı gösterir"
+      - "Rıza ekranları ayrı; AI rızası sağlayıcıyı adıyla anar"
+      - "≤12 ekran, ~5 dakika"
+    tests:
+      - "Akış testleri"
+      - "Rıza kaydı testi"
+    refs: ["prototip/", "arastirma/ham/I1-onboarding-aliskanlik.md", "plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
+    learn: ["Çok adımlı form akışı", "Durum yönetimi"]
+
+  - id: K-307
+    title: "Gezinme: sekmeler ve koç girişi"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-301]
+    why: "Ana ekran Bugün (Levent kararı 29 Eyl)"
+    acceptance:
+      - "Today · Train · Food · Progress; uygulama Today ile açılır"
+      - "Koç girişi her ekrandan bir dokunuş"
+    tests:
+      - "Gezinme testleri"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md"]
+    learn: ["expo-router sekmeleri", "Derin bağlantı"]
+
+# ───────────────────────────── M4 · Günlük akış ─────────────────────────────
+  - id: K-401
+    title: "Bugün ekranı"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-307, K-212, K-111]
+    why: "En çok kullanılan ekran; günlük sayı + haftanın kararı + bugün yapılacaklar"
+    acceptance:
+      - "Tutarlılık sayısı ve dört bileşeni (antrenman, protein, adım, tartı)"
+      - "Haftanın kararı kalıcı kart; 'Why this call' gerekçe listesini açar"
+      - "Bugün listesi: tartı, antrenman, kalan yemek aralığı, adım"
+      - "Koç çipleri o günün verisinden türetilir (chat asla boş değil)"
+    tests:
+      - "Ekran render testleri (veri var / yok / NO_DECISION_YET)"
+    refs: ["prototip/today-directions.html", "arastirma/04-faz3-urun.md#8.4"]
+    learn: ["Veri çekme ve yükleme durumları", "Liste bileşenleri"]
+
+  - id: K-402
+    title: "Tartı girişi ve HealthKit kilo okuma"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-304, K-403]
+    why: "Günün tek zorunlu 10 saniyesi"
+    acceptance:
+      - "Elle giriş ya da HealthKit'ten (akıllı tartı) otomatik"
+      - "Ham nokta soluk, 7 günlük trend belirgin; ilk 14 gün yorum yok (U8)"
+    tests:
+      - "WeighInTests"
+    refs: ["arastirma/ham/H1-olcum.md"]
+    learn: ["Native izinler", "Grafik temelleri"]
+
+  - id: K-403
+    title: "Spike: HealthKit kütüphanesi seçimi"
+    milestone: M4
+    module: mobile
+    type: spike
+    size: S
+    status: todo
+    depends_on: [K-007]
+    why: "Bağımlılık seçimi gerekçeli olmalı (K5)"
+    acceptance:
+      - "@kingstinct/react-native-healthkit ve alternatifleri: Expo SDK 57 uyumu, bakım, izin modeli karşılaştırıldı"
+      - "Seçim ADR olarak yazıldı"
+    tests:
+      - "Denemede adım ve kilo okundu (simülatör/cihaz)"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md"]
+    learn: ["Bağımlılık değerlendirme", "Expo config plugin"]
+
+  - id: K-404
+    title: "HealthKit adım ve uyku"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-403, K-204]
+    why: "Sıfır yüklü veri; adım düşüşü en yüksek öncelikli uyarı (Güray T-13)"
+    acceptance:
+      - "Yalnız Health rızası varsa okunur; rıza geri alınınca durur"
+      - "Günlük adım ve uyku süresi senkronlanır"
+    tests:
+      - "HealthSyncTests (rıza var/yok)"
+    refs: ["arastirma/ham/guray/G5-surec-supplement.md", "plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
+    learn: ["Arka plan veri okuma", "Rıza kapısı"]
+
+  - id: K-405
+    title: "Antrenman seansı ekranı"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-210, K-304, K-301]
+    why: "Set başına bir dokunuş; RIR hızlı seçim"
+    acceptance:
+      - "Önceki değer soluk gösterilir; değişiklik yoksa tek dokunuşla tamamla"
+      - "RIR seçici (0, 1, 2, 3+)"
+      - "Dinlenme sayacı"
+      - "Çevrimdışı çalışır"
+    tests:
+      - "WorkoutSessionTests"
+    refs: ["arastirma/ham/B-antrenman.md#6.5", "prototip/"]
+    learn: ["Etkileşimli form", "Zamanlayıcı", "Performans"]
+
+  - id: K-406
+    title: "Antrenman özeti: efor bazlı sonuçlar"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-405, K-109]
+    why: "Total volume ana metrik değil; efor artıranı ödüllendirmek"
+    acceptance:
+      - "Aynı yükte aynı eforda (RIR) fazla tekrar · aynı yük ve tekrarda artan RIR · e1RM artışı gösterilir"
+      - "İzolasyon hareketlerinde yük kıyası yok (Güray K-33)"
+    tests:
+      - "SummaryTests"
+    refs: ["arastirma/ham/B-antrenman.md#6.4", "arastirma/ham/guray/G6-eski-arsiv.md"]
+    learn: ["Metrik tasarımı"]
+
+  - id: K-407
+    title: "Öğün hızlı kayıt: metin, barkod, 'dünkü gibi'"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-209, K-304]
+    why: "Sürtünmesiz kayıt"
+    acceptance:
+      - "Metin girişi → eşleme kartı (aralıkla)"
+      - "Barkod okuma cihazda"
+      - "Dünkü öğünü tek dokunuşla tekrar"
+      - "Kayıt düzeltmesi birinci sınıf (düzeltme güven kaynağı)"
+    tests:
+      - "QuickLogTests"
+    refs: ["arastirma/ham/I2-etkilesim-modeli.md", "plan/kararlar/ADR-008-besin-verisi.md"]
+    learn: ["Kamera ve barkod", "Arama arayüzü"]
+
+  - id: K-408
+    title: "Öğün fotoğrafı: aralık kartı ve gram sorusu"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-407, K-504]
+    why: "Fotoğraf tanımayı çözer, gramı çözmez; gram sorusu hatayı %56,6 → %20,2 düşürür"
+    acceptance:
+      - "Fotoğraf istemcide ≤1024 px, EXIF silinmiş; yalnız AI rızası varsa gönderilir (V1, V2)"
+      - "Sonuç aralıkla; belirsizlik yüksekse tek gram sorusu ve nedeni"
+    tests:
+      - "PhotoLogTests (rıza yok → gönderim yok)"
+      - "ResizeTests"
+    refs: ["arastirma/ham/F-surtunme-ve-his.md", "plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
+    learn: ["Görüntü işleme", "Gizlilik akışı"]
+
+  - id: K-409
+    title: "Kalan bütçe kartı"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-209, K-401]
+    why: "Gün içi yönlendirmenin görünen yüzü"
+    acceptance:
+      - "Kalan kalori ve protein aralıkla"
+      - "Sayı değil yön: öneriler M5'te (K-507)"
+    tests:
+      - "RemainingCardTests"
+    refs: ["arastirma/04-faz3-urun.md#Ö-17"]
+    learn: ["Türetilmiş durum"]
+
+# ───────────────────────────── M5 · Karar anları + koç ─────────────────────────────
+  - id: K-501
+    title: "Pazartesi check-in ekranı"
+    milestone: M5
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-213, K-401]
+    why: "Haftada ≤2 soru (U9)"
+    acceptance:
+      - "Sorular backend'den; her birinin nedeni görünür"
+      - "Cevaplar senkronlanınca karar tetiklenir"
+    tests:
+      - "CheckinTests"
+    refs: ["arastirma/04-faz3-urun.md#8.5"]
+    learn: ["Sunucu güdümlü arayüz"]
+
+  - id: K-502
+    title: "Karar kartı varyantları ve gerekçe sayfası"
+    milestone: M5
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-501, K-212]
+    why: "Tezin ekrandaki hali"
+    acceptance:
+      - "CONTINUE / değişiklik / NO_DECISION_YET varyantları"
+      - "Gerekçe: veri satırları, kural, kaynak etiketi (tecrübe/literatür), güven, sonraki değerlendirme"
+    tests:
+      - "DecisionCardTests (her varyant)"
+    refs: ["prototip/", "arastirma/04-faz3-urun.md#Ö-25"]
+    learn: ["Varyantlı bileşen", "Açıklanabilirlik"]
+
+  - id: K-503
+    title: "coach: LLM portu ve sağlayıcı adaptörü"
+    milestone: M5
+    module: coach
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-214]
+    why: "Sağlayıcıdan bağımsız dil katmanı (ADR-004)"
+    acceptance:
+      - "LanguageModel arayüzü; sağlayıcı yapılandırmadan seçilir"
+      - "Model adı, token limiti, fiyat koda gömülü değil"
+      - "Her çağrı privacy egress kapısından"
+      - "Sağlayıcıda harcama limiti kurulu (manuel adım, DURUM'da not)"
+    tests:
+      - "Sahte sağlayıcıyla port testleri"
+      - "Rızasız çağrı reddi"
+    refs: ["plan/kararlar/ADR-004-hesaplama-katmanlari-llm.md"]
+    learn: ["Port/adaptör (hexagonal) mimari", "LLM API temelleri"]
+
+  - id: K-504
+    title: "coach: yapılandırılmış çıktı — serbest metin → kayıt"
+    milestone: M5
+    module: coach
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-503, K-208, K-210]
+    why: "'pulldown 60 kg x 8' → set; '2 yumurta ve tost' → öğün"
+    acceptance:
+      - "LLM JSON şemaya göre cevap verir; şemaya uymayan atılır"
+      - "Kalori veritabanından, LLM'den değil (U1)"
+      - "Sonuç güvenle döner; düşük güvende tek dokunuş alternatifler (U5)"
+    tests:
+      - "ParseSchemaTests"
+      - "LLM kalori alanı üretemez testi"
+    refs: ["arastirma/ham/I2-etkilesim-modeli.md", "plan/kararlar/ADR-004-hesaplama-katmanlari-llm.md"]
+    learn: ["JSON Schema", "Structured output", "Doğrulama katmanı"]
+
+  - id: K-505
+    title: "coach: karar anlatımı ve itiraz cevabı"
+    milestone: M5
+    module: coach
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-503, K-212]
+    why: "LLM kararı anlatır, değiştiremez (U1, U2)"
+    acceptance:
+      - "Girdi: Decision + gerekçeler; çıktı: kısa anlatım (sayılar kararla aynı)"
+      - "İtirazda karar tekrarlanır ve neyin değiştireceği söylenir"
+      - "Anlatımda yasaklı ifade yok (U4, U6)"
+    tests:
+      - "ExplanationFaithfulnessTests (sayılar birebir)"
+      - "PushbackEvalTests"
+    refs: ["arastirma/ham/C-ai-koc.md", "arastirma/ham/F-surtunme-ve-his.md"]
+    learn: ["Prompt tasarımı", "Sadakat (faithfulness) testi"]
+
+  - id: K-506
+    title: "coach: 'hayır diyen koç' değerlendirme seti CI'da"
+    milestone: M5
+    module: coach
+    type: test
+    size: M
+    status: todo
+    depends_on: [K-505]
+    why: "Sycophancy regresyonunu yakalamak (MedPRESS, ELEPHANT)"
+    acceptance:
+      - "En az 30 itiraz senaryosu; her birinde karar korunmalı"
+      - "CI'da çalışır (maliyet sınırlı; sahte sağlayıcı + haftalık gerçek koşu)"
+    tests:
+      - "SycophancyEvalSuite"
+    refs: ["arastirma/ham/C-ai-koc.md", "docs/anayasa.md#U2"]
+    learn: ["LLM değerlendirme (eval)", "Regresyon"]
+
+  - id: K-507
+    title: "coach: gün içi yemek önerileri"
+    milestone: M5
+    module: coach
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-504, K-409]
+    why: "Kalan bütçe → ne yiyebilirsin (tercih, bütçe, erişim)"
+    acceptance:
+      - "Öneriler kullanıcının sevdiği/yiyebildiği gıdalardan"
+      - "Her önerinin kalorisi veritabanından, aralıkla"
+      - "Telafi dili yok (U7)"
+    tests:
+      - "SuggestionTests"
+    refs: ["arastirma/04-faz3-urun.md#Ö-17"]
+    learn: ["Kısıtlı öneri üretimi"]
+
+  - id: K-508
+    title: "Kota: sunucu sayacı ve deterministik geri düşüş"
+    milestone: M5
+    module: subscription
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-503]
+    why: "Maliyet kuyruğunu sabitlemek (ADR-012)"
+    acceptance:
+      - "Günlük mesaj ve fotoğraf sayacı; limitler quota.yaml'dan"
+      - "Kota dolunca uygulama deterministik modda çalışır; 'kredi' kelimesi yok"
+    tests:
+      - "QuotaTests (sınır, gün dönümü, saat dilimi)"
+    refs: ["plan/kararlar/ADR-012-abonelik-ve-kota.md", "arastirma/ham/K5-fiyat-kota-maliyet.md"]
+    learn: ["Hız sınırlama", "Saat dilimi tuzakları"]
+
+  - id: K-509
+    title: "Koç sohbet ekranı"
+    milestone: M5
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-504, K-505, K-508]
+    why: "Bağlam anlatma ve soru sorma kanalı"
+    acceptance:
+      - "Açılışta o günün verisinden 3 çip"
+      - "Yapılandırılmış kartlar (kayıt önizleme, karar)"
+      - "Plan değişikliği sohbetten tetiklenir, yapılandırılmış onay ekranında onaylanır"
+    tests:
+      - "ChatScreenTests"
+    refs: ["arastirma/04-faz3-urun.md#8.4"]
+    learn: ["Sohbet arayüzü", "İyimser güncelleme"]
+
+  - id: K-510
+    title: "Spike: Apple Foundation Models cihaz üstü katman"
+    milestone: M5
+    module: mobile
+    type: spike
+    size: M
+    status: todo
+    depends_on: [K-007]
+    why: "Katman 1'in kapsamı (ADR-004)"
+    acceptance:
+      - "Kendi ince Expo Module'ü vs topluluk paketi karşılaştırıldı; seçim ADR"
+      - "Barkod/OCR (Vision) cihazda çalıştı"
+      - "Desteklenmeyen cihazda zarif geri düşüş"
+    tests:
+      - "Cihazda deneme kaydı"
+    refs: ["plan/kararlar/ADR-004-hesaplama-katmanlari-llm.md", "arastirma/ham/K5-fiyat-kota-maliyet.md"]
+    learn: ["Swift köprüsü", "Expo Modules API"]
+
+# ───────────────────────────── M6 · İlerleme ─────────────────────────────
+  - id: K-601
+    title: "Rehberli ilerleme fotoğrafı (cihazda)"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-301]
+    why: "Poz normalizasyonu hatayı ~%50 azaltır (Wong 2021)"
+    acceptance:
+      - "Önceki fotoğrafın soluk silueti, eğim göstergesi, çerçeve kılavuzu"
+      - "Fotoğraf yalnız cihazda saklanır (V1)"
+      - "4 haftada bir hatırlatma, sabit gün değil pencere"
+    tests:
+      - "CaptureFlowTests"
+      - "Fotoğrafın ağa gitmediğini gösteren test"
+    refs: ["arastirma/ham/H1-olcum.md", "arastirma/ham/I2-etkilesim-modeli.md#8.8"]
+    learn: ["Kamera API", "Sensör (eğim)", "Yerel dosya depolama"]
+
+  - id: K-602
+    title: "Karşılaştırma çıpası"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-601]
+    why: "İnsan dünü hatırlar, başlangıcı hatırlamaz (Levent, 10 Eyl)"
+    acceptance:
+      - "Day 1 / N hafta önce / bugün seçici"
+      - "Yan yana ve kaydırmalı karşılaştırma"
+    tests:
+      - "CompareTests"
+    refs: ["arastirma/01-urun-ilkeleri.md#15"]
+    learn: ["Görsel karşılaştırma bileşeni"]
+
+  - id: K-603
+    title: "Kompozisyon mesajı: 'kilo sabit, bel düştü'"
+    milestone: M6
+    module: engine
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-103]
+    why: "Terazi durunca kullanıcı bırakıyor; bırakmayı engelleyen kanıtlı sinyal (Ross 2000)"
+    acceptance:
+      - "Kilo trendi eşik içinde sabit ve bel düşüşü ölçüm hatasının üstündeyse Reason üretilir"
+      - "Eşikler parametreden"
+    tests:
+      - "CompositionSignalTests"
+    refs: ["arastirma/ham/H1-olcum.md"]
+    learn: ["Ölçüm hatası ve anlamlı değişim"]
+
+  - id: K-604
+    title: "Efor grafikleri ve iki pencere"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-406]
+    why: "Değerlendirme 3 ay, karar 1-2 hafta; haftalık gürültü gelişim sanılmasın"
+    acceptance:
+      - "Bileşik hareketlerde e1RM trendi; aynı yük ve tekrarda artan RIR işaretleri"
+      - "İki pencere görsel olarak ayrı etiketli"
+    tests:
+      - "ChartScaleTests (etiketler gerçek değer)"
+    refs: ["arastirma/03-guray-karar-omurgasi.md#2.7"]
+    learn: ["Grafik ölçeği", "SVG çizimi"]
+
+  - id: K-605
+    title: "Spike: projeksiyon modeli (NIH Body Weight Planner / Hall)"
+    milestone: M6
+    module: engine
+    type: spike
+    size: M
+    status: todo
+    depends_on: [K-103]
+    why: "Projeksiyon sayıları valide bir modelden gelmeli (ADR-003, U12)"
+    acceptance:
+      - "Modelin yayımlanmış denklemleri bulundu ve kaynaklandı"
+      - "Uygulanabilirlik ve hata payı (±1,7-2,5 kg) belgelendi; karar ADR"
+    tests:
+      - "Yayımlanmış örnek değerlerle karşılaştırma"
+    refs: ["arastirma/ham/H2-projeksiyon.md"]
+    learn: ["Fizyolojik modelleme", "Diferansiyel denklem sezgisi"]
+
+  - id: K-606
+    title: "Şekil projeksiyonu: üç senaryo + aralık + dışlama"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-605, K-607]
+    why: "Motivasyon için dürüst hedef görseli (U12)"
+    acceptance:
+      - "Yüzsüz parametrik siluet; %60/%80/%95 senaryoları aralıkla"
+      - "Yalnız ileri yönde; varsayılan kapalı; 4 hafta/2 ölçümden önce yok"
+      - "18 yaş altı, BMI<20 zayıflama yönü, SCOFF ≥2 → özellik açılmaz"
+      - "Güncellemede suçlama yok; neden ve seçenek sunulur"
+    tests:
+      - "ProjectionGateTests"
+      - "ForwardOnlyTests"
+    refs: ["arastirma/ham/H2-projeksiyon.md", "docs/anayasa.md#U12"]
+    learn: ["Güvenli tasarım", "Parametrik çizim"]
+
+  - id: K-607
+    title: "SCOFF tarama akışı"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-306]
+    why: "Projeksiyonun güvenlik kapısı"
+    acceptance:
+      - "5 soru; cevap yalnız kapı kararı için kullanılır, gerekçesiz saklanmaz"
+      - "Pozitifse özellik açılmaz ve destek kaynağına yönlendirilir (tıbbi dil yok)"
+    tests:
+      - "ScoffGateTests"
+    refs: ["arastirma/ham/H2-projeksiyon.md"]
+    learn: ["Tarama anketi", "Hassas veri minimizasyonu"]
+
+  - id: K-608
+    title: "Tutarlılık geçmişi"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-111, K-401]
+    why: "Sıfırlanmayan, aflı haftalık sayaç (U7)"
+    acceptance:
+      - "'12 haftanın 11'i · 1 af haftası kullanıldı' biçimi"
+    tests:
+      - "HistoryTests"
+    refs: ["arastirma/ham/I1-onboarding-aliskanlik.md"]
+    learn: ["Zaman serisi görselleştirme"]
+
+# ───────────────────────────── M7 · Abonelik ─────────────────────────────
+  - id: K-701
+    title: "subscription: RevenueCat webhook ve yetki"
+    milestone: M7
+    module: subscription
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-203]
+    why: "Yetki sunucuda (ADR-012)"
+    acceptance:
+      - "Webhook imzası doğrulanır; abonelik durumu güncellenir"
+      - "Yetki sorgusu diğer modüllere API ile açılır"
+    tests:
+      - "WebhookSignatureTests"
+      - "EntitlementTests"
+    refs: ["plan/kararlar/ADR-012-abonelik-ve-kota.md"]
+    learn: ["Webhook", "Abonelik durumu makinesi"]
+
+  - id: K-702
+    title: "Paywall, satın alma, geri yükleme, duraklat/iptal"
+    milestone: M7
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-701, K-306]
+    why: "$59,99/yıl · $12,99/ay · 7 gün deneme; iptal görünür"
+    acceptance:
+      - "Fiyatlar mağazadan okunur, kodda yok"
+      - "Satın alma geri yükleme"
+      - "Duraklat ve iptal iki dokunuşta bulunur"
+    tests:
+      - "PaywallTests (mock StoreKit)"
+    refs: ["arastirma/05-faz4-pazarlama.md#7", "plan/kararlar/ADR-012-abonelik-ve-kota.md"]
+    learn: ["StoreKit kavramları", "Sandbox testi"]
+
+  - id: K-703
+    title: "Premium uç noktalarında yetki koruması"
+    milestone: M7
+    module: subscription
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-701, K-508]
+    why: "Deneme bitmiş kullanıcı premium özelliği çağıramaz"
+    acceptance:
+      - "Koç ve fotoğraf analizi yetki ister; kayıt ve temel görünüm çalışmaya devam eder"
+    tests:
+      - "EntitlementGuardTests"
+    refs: ["plan/kararlar/ADR-012-abonelik-ve-kota.md"]
+    learn: ["Yetkilendirme (authorization)"]
+
+# ───────────────────────────── M8 · Uyum ve yasal ─────────────────────────────
+  - id: K-801
+    title: "Gizlilik politikası, kullanım şartları, sağlık feragatnamesi"
+    milestone: M8
+    module: legal
+    type: docs
+    size: M
+    status: todo
+    depends_on: [K-214]
+    why: "Yayın ve TestFlight dış test öncesi zorunlu"
+    acceptance:
+      - "İngilizce, sade dil; toplanan her veri ve amacı listeli"
+      - "Feragatname: 'not a medical device…' açıklamanın ilk paragrafında"
+      - "Üçüncü taraf AI sağlayıcısı ve veri türü adıyla"
+    tests:
+      - "Levent + gerekirse hukuk danışmanı incelemesi"
+    refs: ["arastirma/ham/D-pazar-regulasyon.md"]
+    learn: ["GDPR şeffaflık", "Sağlık iddiası sınırları"]
+
+  - id: K-802
+    title: "Hesap silme ve veri dışa aktarma uçtan uca"
+    milestone: M8
+    module: privacy
+    type: test
+    size: S
+    status: todo
+    depends_on: [K-214]
+    why: "V6 ve App Store hesap silme şartı"
+    acceptance:
+      - "Uygulama içinden hesap silme; tüm modüllerde veri kalmaz"
+      - "Veri dışa aktarma dosyası kullanıcıya verilir"
+    tests:
+      - "EndToEndDeletionTests"
+    refs: ["docs/anayasa.md#V6"]
+    learn: ["Uçtan uca test"]
+
+  - id: K-803
+    title: "App Store gizlilik etiketleri ve yaş derecelendirmesi"
+    milestone: M8
+    module: legal
+    type: docs
+    size: S
+    status: todo
+    depends_on: [K-801]
+    why: "Klinik terim kullanmamak yaş derecelendirmesini de korur"
+    acceptance:
+      - "Toplanan veri envanteri → privacy nutrition label"
+      - "Yaş derecelendirmesi anketi gerekçeli cevaplandı"
+    tests:
+      - "Envanter ile kod karşılaştırması"
+    refs: ["arastirma/ham/D-pazar-regulasyon.md"]
+    learn: ["App Store Connect uyum adımları"]
+
+  - id: K-804
+    title: "Anayasa denetimi: otomatik yasaklı ifade ve hardcode taraması"
+    milestone: M8
+    module: repo
+    type: test
+    size: S
+    status: todo
+    depends_on: [K-302]
+    why: "Yayından önce U4, U6, K2'nin mekanik kontrolü"
+    acceptance:
+      - "CI'da metin, kod ve mağaza metinleri taranır"
+    tests:
+      - "ConstitutionAuditTests"
+    refs: ["docs/anayasa.md"]
+    learn: ["Statik analiz"]
+
+  - id: K-805
+    title: "Vergi ve hesap: W-8BEN, GVK 20/B, ödeme akışı"
+    milestone: M8
+    module: legal
+    type: human
+    size: S
+    status: todo
+    depends_on: []
+    why: "Apple ödemesi ve Türkiye vergisi (araştırmada doğrulanamayan kısımlar)"
+    acceptance:
+      - "Mali müşavir görüşü: W-8BEN stopaj oranı ve GVK 20/B istisnasının uygulanabilirliği"
+      - "App Store Connect vergi ve banka bilgileri tamam"
+    tests:
+      - "Levent onayı"
+    refs: ["arastirma/ham/D-pazar-regulasyon.md", "arastirma/ham/K5-fiyat-kota-maliyet.md"]
+    learn: ["Uluslararası dijital satış vergisi"]
+
+  - id: K-806
+    title: "Üçüncü taraf AI sağlayıcısıyla veri işleme şartları"
+    milestone: M8
+    module: legal
+    type: docs
+    size: S
+    status: todo
+    depends_on: [K-503]
+    why: "Sağlık verisi dışarı gidiyorsa işleyici şartları ve veri saklama politikası belli olmalı"
+    acceptance:
+      - "Sağlayıcının veri saklama/eğitim politikası doğrulandı ve gizlilik politikasına işlendi"
+    tests:
+      - "Levent incelemesi"
+    refs: ["plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
+    learn: ["Veri işleyici (processor) kavramı"]
+
+# ───────────────────────────── M9 · Beta ─────────────────────────────
+  - id: K-901
+    title: "VPS dağıtımı: Docker Compose, HTTPS, yedek"
+    milestone: M9
+    module: infra
+    type: chore
+    size: M
+    status: todo
+    depends_on: [K-202]
+    why: "Sıfır ek maliyetle barındırma (ADR-013)"
+    acceptance:
+      - "Backend + PostgreSQL + ters vekil Compose ile ayakta, HTTPS"
+      - "Günlük pg_dump VPS dışına; geri yükleme provası yapıldı"
+      - "Sırlar ortam değişkeninde"
+    tests:
+      - "Geri yükleme provası kaydı"
+    refs: ["plan/kararlar/ADR-013-barindirma.md"]
+    learn: ["Docker", "Ters vekil ve TLS", "Yedekleme"]
+
+  - id: K-902
+    title: "CI'dan dağıtım"
+    milestone: M9
+    module: infra
+    type: chore
+    size: S
+    status: todo
+    depends_on: [K-901, K-010]
+    why: "Elle dağıtım hatasını kaldırmak"
+    acceptance:
+      - "main'e birleşme → test → imaj → VPS'e dağıtım"
+    tests:
+      - "Başarılı dağıtım koşusu"
+    refs: ["plan/kararlar/ADR-013-barindirma.md"]
+    learn: ["Sürekli dağıtım"]
+
+  - id: K-903
+    title: "EAS Build ve TestFlight"
+    milestone: M9
+    module: mobile
+    type: chore
+    size: M
+    status: todo
+    depends_on: [K-702, K-801]
+    why: "Beta dağıtımı"
+    acceptance:
+      - "EAS ile iOS derlemesi; TestFlight'a yükleme"
+      - "Bundle kimliği ve imzalama bilgileri yapılandırmada, kodda değil"
+    tests:
+      - "TestFlight'ta kurulum"
+    refs: ["arastirma/ham/K2-appstore-soguk-baslangic.md"]
+    learn: ["Mobil derleme ve imzalama", "TestFlight"]
+
+  - id: K-904
+    title: "Beta kohortu: başvuru formu ve 8 hafta taahhüdü"
+    milestone: M9
+    module: product
+    type: human
+    size: S
+    status: todo
+    depends_on: [K-903]
+    why: "Beta'yı yeni başlayan için tasarla, zaten kayıt tutan ileri kullanıcıyla test et"
+    acceptance:
+      - "Başvuru formu; 8 haftalık taahhüt açıkça soruluyor"
+      - "Kohort seçildi; boyutlandırma (~%15 8. hafta kalır) hesaba katıldı"
+    tests:
+      - "Kohort listesi"
+    refs: ["arastirma/05-faz4-pazarlama.md#3.6"]
+    learn: ["Beta tasarımı", "Kohort seçimi"]
+
+  - id: K-905
+    title: "Öncü göstergeler (sağlık verisiz analitik)"
+    milestone: M9
+    module: product
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-903]
+    why: "8 hafta beklemeden öğrenmek"
+    acceptance:
+      - "İlk değere kadar süre, 2. hafta retention, 'plan değişti' anını gören kullanıcı %'si"
+      - "Analitikte sağlık verisi yok (V3)"
+    tests:
+      - "Analitik olaylarında sağlık alanı olmadığını gösteren test"
+    refs: ["arastirma/05-faz4-pazarlama.md#2"]
+    learn: ["Ürün metrikleri", "Gizlilik dostu analitik"]
+
+  - id: K-906
+    title: "Beta geri bildirim döngüsü"
+    milestone: M9
+    module: product
+    type: human
+    size: S
+    status: todo
+    depends_on: [K-904]
+    why: "Kullanıcıdan gelen özellikler backlog'a kaynaklı girsin"
+    acceptance:
+      - "Haftalık geri bildirim toplama; her istek backlog'a görev olarak (kaynak: beta)"
+    tests:
+      - "Backlog'da beta kaynaklı görevler"
+    refs: []
+    learn: ["Geri bildirimi önceliklendirme"]
+
+# ───────────────────────────── M10 · Lansman ─────────────────────────────
+  - id: K-1001
+    title: "Ürün adı ve marka kontrolü"
+    milestone: M10
+    module: aso
+    type: human
+    size: M
+    status: todo
+    depends_on: []
+    why: "İsim en yüksek ASO ağırlığı; uydurma/çağrışımsal, içinde AI/Fit/Coach yok"
+    acceptance:
+      - "Aday listesi; App Store → USPTO → TMview/WIPO → alan adı kontrolü"
+      - "Seçim ADR; kod adı keel gerekiyorsa değişir"
+    tests:
+      - "Kontrol kaydı"
+    refs: ["arastirma/ham/K6-konumlandirma-mesaj.md", "arastirma/05-faz4-pazarlama.md#6.6"]
+    learn: ["Marka tescili temelleri"]
+
+  - id: K-1002
+    title: "ASO metadata: başlık, alt başlık, keyword, 3 yerelleştirme"
+    milestone: M10
+    module: aso
+    type: docs
+    size: S
+    status: todo
+    depends_on: [K-1001]
+    why: "Sıfır bütçeyle en yüksek getirili kanal"
+    acceptance:
+      - "Başlık/alt başlık/100 karakter keyword kurallara uygun; AI yalnız gizli keyword alanında"
+      - "EN-US + EN-UK + ES-MX metadata"
+      - "IAP ürün adları da keyword taşıyor"
+    tests:
+      - "Apple Search Ads hacim verisiyle kontrol"
+    refs: ["arastirma/ham/K2-appstore-soguk-baslangic.md", "arastirma/ham/K6-konumlandirma-mesaj.md"]
+    learn: ["ASO"]
+
+  - id: K-1003
+    title: "Ekran görüntüleri ve LLM'in çıkarabileceği açıklama (GEO)"
+    milestone: M10
+    module: aso
+    type: docs
+    size: M
+    status: todo
+    depends_on: [K-1002]
+    why: "İlk 2 görsel arama sonucunda; ChatGPT atıflarının %47,5'i mağaza listelemesinden"
+    acceptance:
+      - "5-6 dikey, caption'lı; ilk 2 tüm mesajı taşıyor"
+      - "Açıklama: kitle ilk cümlede, 3-5 senaryo, işlev dili, soru-cevap, sonuç iddiası yok"
+    tests:
+      - "Anayasa taraması (K-804)"
+    refs: ["arastirma/05-faz4-pazarlama.md#5"]
+    learn: ["Dönüşüm tasarımı", "GEO"]
+
+  - id: K-1004
+    title: "Custom Product Pages"
+    milestone: M10
+    module: aso
+    type: docs
+    size: S
+    status: todo
+    depends_on: [K-1003]
+    why: "Bedava, ayrı keyword; kanal trafiğine özel sayfa"
+    acceptance:
+      - "En az 3 CPP (anahtar kelime kümesine göre)"
+    tests:
+      - "App Store Connect'te yayında"
+    refs: ["arastirma/ham/K2-appstore-soguk-baslangic.md"]
+    learn: ["Segment bazlı dönüşüm"]
+
+  - id: K-1005
+    title: "Featuring başvurusu"
+    milestone: M10
+    module: aso
+    type: human
+    size: S
+    status: todo
+    depends_on: [K-903]
+    why: "Bedava, ≥3 hafta ön süre"
+    acceptance:
+      - "App Store Connect → Featuring → Nominations; 5 destekleyici URL"
+    tests:
+      - "Başvuru kaydı"
+    refs: ["arastirma/05-faz4-pazarlama.md#3.2"]
+    learn: ["Apple editoryal süreç"]
+
+  - id: K-1006
+    title: "Puan ve yorum rutini"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-502]
+    why: "4,0 uçurumu; her yoruma cevap"
+    acceptance:
+      - "requestReview değer anına bağlı (plan değişti ve kullanıcı kabul etti), açılışta değil"
+      - "Yorum cevap rutini DURUM'da"
+    tests:
+      - "ReviewPromptTests"
+    refs: ["arastirma/ham/K2-appstore-soguk-baslangic.md"]
+    learn: ["Mağaza puan mekaniği"]
+
+  - id: K-1007
+    title: "Lansman günü: Product Hunt + Show HN aynı 48 saat"
+    milestone: M10
+    module: product
+    type: human
+    size: S
+    status: todo
+    depends_on: [K-1003, K-1005]
+    why: "İndirme hızı sıralama sinyali; Ocak'ta lansman yok"
+    acceptance:
+      - "Lansman ayı Ocak değil"
+      - "PH + HN (motorun mühendisliği/bilimi anlatılır) + mevcut kitle aynı 48 saatte"
+    tests:
+      - "Lansman kaydı"
+    refs: ["arastirma/05-faz4-pazarlama.md#1", "arastirma/ham/K2-appstore-soguk-baslangic.md"]
+    learn: ["Lansman sıralaması"]

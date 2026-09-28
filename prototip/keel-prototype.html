@@ -1,0 +1,1531 @@
+<title>Keel Prototype</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap");
+
+/* ---------- page shell (theme-aware) ---------- */
+:root{
+  --page:#ECEEF0; --ink:#1A1F24; --muted:#5A6570; --rule:#D3D8DD; --chip:#E1E5E9;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --page:#14181C; --ink:#E4E8EB; --muted:#98A3AD; --rule:#2A3138; --chip:#232A31; color-scheme: dark; }
+}
+:root[data-theme="dark"]{ --page:#14181C; --ink:#E4E8EB; --muted:#98A3AD; --rule:#2A3138; --chip:#232A31; color-scheme: dark; }
+
+*,*::before,*::after{ box-sizing:border-box; }
+body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif; overflow-x:hidden; }
+.wrap{ max-width:1240px; margin:0 auto; padding-inline:20px; padding-block:36px 72px; }
+.intro{ max-width:66ch; display:grid; gap:10px; margin-bottom:40px; }
+.intro h1{ font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:clamp(28px,4vw,40px); font-weight:800; text-transform:uppercase; margin:0; line-height:1; letter-spacing:.01em; }
+.intro p{ margin:0; color:var(--muted); line-height:1.55; font-size:15.5px; }
+.sec{ margin-top:56px; }
+.sec-h{ display:grid; gap:6px; max-width:66ch; margin-bottom:24px; padding-top:18px; border-top:2px solid var(--ink); }
+.sec-h .k{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+.sec-h h2{ font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:30px; font-weight:800; text-transform:uppercase; margin:0; line-height:1; }
+.sec-h p{ margin:0; color:var(--muted); font-size:14.5px; line-height:1.5; }
+.row{ display:flex; flex-wrap:wrap; gap:44px 28px; align-items:flex-start; }
+.col{ flex:0 1 360px; max-width:100%; min-width:0; margin:0; display:grid; gap:14px; }
+.notes{ display:grid; gap:6px; font-size:13.5px; line-height:1.5; color:var(--muted); border-top:1px solid var(--rule); padding-top:12px; }
+.notes b{ color:var(--ink); font-weight:600; }
+@media (max-width:480px){ .wrap{ padding-inline:16px; } }
+
+/* ---------- phone shell (from reference) ---------- */
+.phone{ width:360px; max-width:100%; border-radius:46px; padding:10px; background:#0B0D0F; box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 24px 60px -24px rgba(0,0,0,.45); }
+.screen{ border-radius:37px; overflow:hidden; background:var(--bg); color:var(--tx); font-family:var(--body); display:flex; flex-direction:column; min-height:740px; min-width:0; }
+.status{ display:flex; justify-content:space-between; align-items:center; padding:14px 26px 6px; font-size:13px; font-weight:600; font-family:var(--body); }
+.status .isl{ width:92px; height:26px; border-radius:20px; background:#000; }
+.content{ padding:8px 18px 18px; display:grid; gap:14px; flex:1; align-content:start; min-width:0; }
+.content > *{ min-width:0; }
+.hdr{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding-top:4px; }
+.hdr .day{ font-family:var(--disp); }
+.hdr .ph{ font-size:12px; color:var(--mu); text-align:right; }
+.card{ background:var(--sf); border:1px solid var(--ln); border-radius:var(--r); padding:16px; display:grid; gap:10px; }
+.eyebrow{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--mu); font-weight:600; }
+.num{ font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.bars{ display:grid; gap:7px; }
+.bar{ display:grid; grid-template-columns:78px 1fr 34px; align-items:center; gap:10px; font-size:12.5px; }
+.bar .trk{ height:6px; border-radius:6px; background:var(--trk); overflow:hidden; }
+.bar .trk i{ display:block; height:100%; background:var(--ac); border-radius:6px; }
+.bar .v{ text-align:right; color:var(--mu); font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.dec-title{ font-family:var(--disp); }
+.dec-body{ font-size:13.5px; line-height:1.5; color:var(--tx2); margin:0; }
+.why{ appearance:none; border:0; background:none; padding:0; font:inherit; font-size:13px; font-weight:600; color:var(--ac); cursor:pointer; justify-self:start; display:flex; align-items:center; gap:6px; }
+.whylist{ margin:0; padding:10px 0 0; border-top:1px dashed var(--ln); list-style:none; display:grid; gap:6px; font-size:12.5px; color:var(--tx2); }
+.whylist[hidden]{ display:none; }
+.whylist li{ display:grid; grid-template-columns:96px 1fr; gap:8px; }
+.whylist .l{ color:var(--mu); }
+.pill{ font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; background:var(--pillbg); color:var(--pilltx); justify-self:start; }
+.rowhead{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.list{ display:grid; }
+.item{ display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:center; padding:11px 0; border-top:1px solid var(--ln); }
+.item:first-child{ border-top:0; padding-top:2px; }
+.ico{ width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:var(--icbg); color:var(--ictx); font-size:13px; font-weight:700; font-family:var(--numf); }
+.ico.done{ background:var(--ac); color:var(--onac); }
+.it-t{ font-size:14px; font-weight:600; }
+.it-s{ font-size:12px; color:var(--mu); margin-top:2px; line-height:1.4; }
+.go{ appearance:none; border:0; font:inherit; font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:var(--btnr); background:var(--ac); color:var(--onac); cursor:pointer; }
+.meta{ font-size:12px; color:var(--mu); font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.fit{ font-size:12px; color:var(--tx2); margin-top:4px; }
+.chips{ display:flex; flex-wrap:wrap; gap:7px; }
+.chip{ appearance:none; font:inherit; font-size:12px; padding:7px 11px; border-radius:20px; border:1px solid var(--ln); background:var(--sf); color:var(--tx); cursor:pointer; }
+.ask{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-radius:var(--btnr); background:var(--askbg); border:1px solid var(--ln); font-size:13px; color:var(--mu); }
+.ask .snd{ width:26px; height:26px; border-radius:50%; background:var(--ac); color:var(--onac); display:grid; place-items:center; font-size:13px; flex:none; }
+.tabs{ display:grid; grid-template-columns:repeat(4,1fr); padding:10px 8px 22px; border-top:1px solid var(--ln); background:var(--tabbg); }
+.tab{ display:grid; justify-items:center; gap:4px; font-size:10.5px; color:var(--mu); font-weight:500; }
+.tab .d{ width:20px; height:20px; border-radius:6px; border:1.6px solid currentColor; }
+.tab.on{ color:var(--ac); }
+.tab.on .d{ background:currentColor; }
+
+/* ---------- C · bold / energetic (from reference) ---------- */
+.v-c{ --bg:#FFFFFF; --sf:#F2F2F0; --ln:#E4E4E1; --tx:#0E0E0E; --tx2:#2B2B2B; --mu:#6B6B68;
+  --ac:#FF4F12; --onac:#FFFFFF; --trk:#E2E2DE; --warn:#FF4F12;
+  --icbg:#0E0E0E; --ictx:#FFFFFF; --pillbg:#0E0E0E; --pilltx:#FFFFFF; --askbg:#F2F2F0; --tabbg:#FFFFFF;
+  --r:6px; --btnr:4px;
+  --body:"Barlow",system-ui,sans-serif; --disp:"Barlow Condensed","Arial Narrow",sans-serif; --numf:"Barlow Condensed","Arial Narrow",sans-serif; }
+.v-c .hdr .day{ font-size:34px; font-weight:800; text-transform:uppercase; letter-spacing:.01em; line-height:1; }
+.v-c .card{ border:0; }
+.v-c .big{ font-family:var(--numf); font-size:96px; font-weight:800; line-height:.85; letter-spacing:-.02em; }
+.v-c .big small{ font-size:40px; color:var(--ac); }
+.v-c .eyebrow{ color:var(--tx); letter-spacing:.14em; }
+.v-c .dec{ background:#0E0E0E; color:#FFFFFF; --tx2:#D6D6D2; --mu:#9A9A95; --ln:#2C2C2A; }
+.v-c .dec .eyebrow{ color:var(--ac); }
+.v-c .dec .pill{ box-shadow:inset 0 0 0 1px #2C2C2A; }
+.v-c .dec-title{ font-size:30px; font-weight:800; text-transform:uppercase; line-height:.98; letter-spacing:.01em; }
+.v-c .it-t{ font-family:var(--disp); font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; }
+.v-c .go{ text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+.v-c .left{ color:var(--ac); font-family:var(--disp); font-size:22px; font-weight:800; }
+.v-c .tab.on .d{ border-radius:2px; }
+
+/* ---------- C · prototype components ---------- */
+.screen button{ font-family:var(--body); }
+.screen button:focus-visible{ outline:2px solid var(--ac); outline-offset:2px; }
+.ob{ display:flex; flex-direction:column; gap:14px; }
+.foot{ margin-top:auto; display:grid; gap:8px; padding-top:8px; }
+.topbar{ display:flex; align-items:center; gap:12px; padding-top:4px; }
+.topbar .bk{ font-family:var(--disp); font-size:24px; font-weight:700; line-height:1; width:18px; }
+.topbar .meta{ min-width:28px; text-align:right; }
+.steps{ flex:1; display:flex; gap:4px; }
+.steps i{ flex:1; height:4px; border-radius:2px; background:var(--trk); }
+.steps i.on{ background:var(--ac); }
+.brand{ font-family:var(--disp); font-size:22px; font-weight:800; letter-spacing:.24em; padding-top:6px; }
+.h1{ font-family:var(--disp); font-weight:800; text-transform:uppercase; font-size:38px; line-height:.95; letter-spacing:.005em; margin:0; text-wrap:balance; }
+.h1.xl{ font-size:44px; }
+.h1 em{ font-style:normal; color:var(--ac); }
+.h2{ font-family:var(--disp); font-weight:800; text-transform:uppercase; font-size:24px; line-height:1; margin:0; letter-spacing:.01em; }
+.h3{ font-family:var(--disp); font-weight:700; text-transform:uppercase; font-size:18px; line-height:1.05; margin:0; letter-spacing:.01em; }
+.lede{ font-size:15px; line-height:1.45; color:var(--tx2); margin:0; }
+.small{ font-size:12.5px; line-height:1.45; color:var(--mu); margin:0; }
+.txt{ font-size:13.5px; line-height:1.5; color:var(--tx2); margin:0; }
+.btn{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:15px 16px; border-radius:var(--btnr); background:var(--ac); color:var(--onac); width:100%; cursor:pointer; }
+.btn.ghost{ background:transparent; color:var(--tx); box-shadow:inset 0 0 0 1.5px var(--tx); }
+.btn.sm{ width:auto; font-size:14px; padding:10px 14px; }
+.dec .btn.ghost{ color:#FFFFFF; box-shadow:inset 0 0 0 1.5px #FFFFFF; }
+.lnk{ appearance:none; border:0; background:none; font:inherit; font-size:13.5px; font-weight:600; color:var(--tx); text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:6px; justify-self:center; }
+.btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+.btnrow .btn{ flex:1 1 120px; }
+
+.opts{ display:grid; gap:8px; }
+.opt{ appearance:none; font:inherit; text-align:left; width:100%; display:grid; grid-template-columns:1fr 22px; gap:4px 12px; align-items:center; padding:14px 16px; border-radius:var(--r); background:var(--sf); color:var(--tx); border:0; cursor:pointer; }
+.opt .ot{ font-family:var(--disp); font-size:20px; font-weight:700; text-transform:uppercase; line-height:1; }
+.opt .os{ grid-column:1; font-size:13px; color:var(--mu); line-height:1.35; }
+.opt .rd{ grid-row:1 / span 2; grid-column:2; width:20px; height:20px; border-radius:50%; box-shadow:inset 0 0 0 1.5px var(--mu); }
+.opt[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
+.opt[aria-pressed="true"] .os{ color:#D6D6D2; }
+.opt[aria-pressed="true"] .rd{ background:#FFFFFF; box-shadow:inset 0 0 0 6px var(--ac); }
+
+.lbl{ font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--tx); }
+.days{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.dy{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:17px; font-weight:700; aspect-ratio:1; border-radius:var(--btnr); background:var(--sf); color:var(--tx); cursor:pointer; padding:0; }
+.dy[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
+.seg{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; background:var(--sf); border-radius:var(--btnr); padding:3px; gap:3px; }
+.seg button{ appearance:none; border:0; font:inherit; font-size:13px; font-weight:600; padding:9px 4px; border-radius:3px; background:transparent; color:var(--tx); cursor:pointer; }
+.seg button[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
+.dec .seg{ background:#2C2C2A; }
+.dec .seg button{ color:#FFFFFF; }
+.dec .seg button[aria-pressed="true"]{ background:var(--ac); }
+.chip[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; border-color:#0E0E0E; }
+
+.field{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:4px 10px; padding:12px 14px; background:var(--sf); border-radius:var(--r); }
+.field .fl{ font-size:13px; color:var(--mu); }
+.field .fv{ font-family:var(--numf); font-size:24px; font-weight:700; line-height:1; }
+.field .fv small{ font-size:14px; color:var(--mu); margin-left:3px; font-weight:600; }
+.field .fs{ grid-column:1 / -1; font-size:12px; color:var(--mu); line-height:1.4; }
+.field .opt-tag{ font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ac); }
+
+.tgl{ width:44px; height:26px; border-radius:13px; background:var(--trk); position:relative; flex:none; }
+.tgl::after{ content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#FFFFFF; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.tgl.on{ background:var(--ac); }
+.tgl.on::after{ left:21px; }
+.trow{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.hrow{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--ln); font-size:14px; }
+.hrow:first-of-type{ border-top:0; }
+.hrow .hs{ font-size:12px; color:var(--mu); margin-top:1px; }
+
+.pts{ list-style:none; margin:0; padding:0; display:grid; gap:12px; }
+.pts li{ display:grid; grid-template-columns:26px 1fr; gap:12px; font-size:14px; line-height:1.4; align-items:start; }
+.pts .b{ width:26px; height:26px; border-radius:4px; background:#0E0E0E; color:#FFFFFF; display:grid; place-items:center; font-family:var(--disp); font-weight:700; font-size:14px; }
+.pts li span:last-child{ padding-top:3px; }
+.pts .s{ display:block; font-size:12.5px; color:var(--mu); margin-top:2px; }
+
+.kv{ display:grid; }
+.kv > div{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:9px 0; border-top:1px solid var(--ln); font-size:13.5px; }
+.kv > div:first-child{ border-top:0; padding-top:0; }
+.kv .k{ color:var(--mu); }
+.kv .v{ font-family:var(--numf); font-size:17px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums; }
+
+.slot{ font-family:var(--disp); font-weight:700; letter-spacing:.06em; text-transform:uppercase; background:var(--ac); color:#FFFFFF; padding:0 5px; border-radius:2px; }
+.plan{ appearance:none; font:inherit; text-align:left; border:0; width:100%; display:grid; grid-template-columns:20px 1fr auto; gap:2px 12px; align-items:center; padding:14px 16px; border-radius:var(--r); background:var(--sf); color:var(--tx); cursor:pointer; }
+.plan .rd{ grid-row:1 / span 2; width:20px; height:20px; border-radius:50%; box-shadow:inset 0 0 0 1.5px var(--mu); }
+.plan .pn{ font-family:var(--disp); font-size:20px; font-weight:800; text-transform:uppercase; line-height:1; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.plan .pp{ font-family:var(--numf); font-size:24px; font-weight:800; text-align:right; line-height:1; }
+.plan .ps{ grid-column:2 / 4; font-size:12.5px; color:var(--mu); }
+.plan[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
+.plan[aria-pressed="true"] .ps{ color:#D6D6D2; }
+.plan[aria-pressed="true"] .rd{ background:#FFFFFF; box-shadow:inset 0 0 0 6px var(--ac); }
+.badge{ font-family:var(--body); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--ac); color:#FFFFFF; padding:3px 6px; border-radius:2px; }
+.tl{ list-style:none; margin:0; padding:0; display:grid; gap:0; }
+.tl li{ display:grid; grid-template-columns:62px 1fr; gap:10px; padding:8px 0; border-top:1px solid var(--ln); font-size:13px; }
+.tl li:first-child{ border-top:0; padding-top:0; }
+.tl .d{ font-family:var(--numf); font-weight:700; font-size:15px; text-transform:uppercase; }
+
+.prev{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.tile{ background:var(--sf); border-radius:var(--r); padding:12px; display:grid; gap:4px; align-content:start; }
+.tile .tv{ font-family:var(--numf); font-size:30px; font-weight:800; line-height:1; }
+.tile .tv small{ font-size:16px; color:var(--ac); margin-left:2px; }
+.tile .ts{ font-size:12px; color:var(--mu); line-height:1.35; }
+.tile.dark{ background:#0E0E0E; color:#FFFFFF; }
+.tile.dark .ts{ color:#D6D6D2; }
+
+/* food */
+.shot{ display:grid; grid-template-columns:76px 1fr; gap:14px; align-items:center; }
+.photo{ width:76px; height:76px; border-radius:4px; background:#2B2B2B; display:grid; place-items:center; overflow:hidden; }
+.est{ display:flex; gap:18px; align-items:baseline; flex-wrap:wrap; }
+.est .ev{ font-family:var(--numf); font-size:34px; font-weight:800; line-height:1; }
+.est .eu{ font-size:13px; color:var(--mu); margin-left:3px; }
+.rng{ display:grid; gap:8px; }
+.rng .r{ display:grid; grid-template-columns:1fr 84px; gap:4px 10px; align-items:center; font-size:13px; }
+.rng .r .rv{ text-align:right; font-family:var(--numf); font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+.rng .r .sp{ grid-column:1 / -1; height:6px; border-radius:3px; background:var(--trk); overflow:hidden; }
+.rng .r .sp i{ display:block; height:100%; background:#0E0E0E; }
+.rng .r.hi .sp i{ background:var(--ac); }
+.inp{ display:flex; align-items:center; gap:2px; padding:13px 14px; background:var(--sf); border-radius:var(--btnr); font-size:15px; box-shadow:inset 0 0 0 1.5px var(--tx); }
+.caret{ width:2px; height:18px; background:var(--ac); display:inline-block; }
+.tool{ appearance:none; border:0; font:inherit; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:var(--btnr); background:var(--sf); color:var(--tx); cursor:pointer; flex:1 1 120px; }
+
+/* workout */
+.exl{ display:grid; gap:2px; }
+.ex{ display:grid; grid-template-columns:22px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border-radius:4px; font-size:13.5px; }
+.ex .n{ font-family:var(--numf); font-weight:700; font-size:15px; color:var(--mu); }
+.ex .t{ font-weight:600; }
+.ex.done{ color:var(--mu); }
+.ex.done .n{ color:var(--ac); }
+.ex.on{ background:#0E0E0E; color:#FFFFFF; }
+.ex.on .n{ color:var(--ac); }
+.ex .m{ font-family:var(--numf); font-size:14px; font-weight:600; }
+.sets{ display:grid; gap:6px; }
+.sethd{ display:grid; grid-template-columns:18px 1fr 70px 36px; gap:10px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mu); font-weight:600; padding:0 10px; }
+.set{ display:grid; grid-template-columns:18px 1fr 70px 36px; gap:10px; align-items:center; padding:7px 10px; background:#FFFFFF; border-radius:4px; }
+.set .sn{ font-family:var(--numf); font-weight:700; color:var(--mu); }
+.set .val{ font-family:var(--numf); font-size:21px; font-weight:700; line-height:1; }
+.set .val.ghost{ color:#9A9A95; font-weight:600; }
+.set .last{ font-family:var(--numf); font-size:13px; color:var(--mu); }
+.ck{ appearance:none; border:0; width:36px; height:32px; border-radius:4px; background:var(--trk); color:var(--tx); display:grid; place-items:center; cursor:pointer; padding:0; font-size:15px; font-weight:700; }
+.ck.done{ background:var(--ac); color:#FFFFFF; }
+.set.cur{ box-shadow:inset 0 0 0 1.5px #0E0E0E; }
+.rir{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.rir button{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:18px; font-weight:700; padding:8px 0; border-radius:4px; background:#FFFFFF; color:var(--tx); cursor:pointer; }
+.rir button[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
+.rest{ display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; background:#0E0E0E; color:#FFFFFF; border-radius:var(--r); padding:12px 14px; }
+.rest .t{ font-family:var(--numf); font-size:34px; font-weight:800; line-height:1; }
+.rest .rl{ font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ac); font-weight:600; }
+.rest > span{ display:block; min-width:0; }
+.rest .rl{ display:block; }
+.rest .trk{ display:block; height:6px; border-radius:3px; background:#2C2C2A; overflow:hidden; margin-top:6px; }
+.rest .trk i{ display:block; height:100%; width:30%; background:var(--ac); }
+.rest .plus{ appearance:none; border:0; font:inherit; font-size:12.5px; font-weight:700; padding:8px 10px; border-radius:4px; background:#2C2C2A; color:#FFFFFF; cursor:pointer; }
+.bub{ justify-self:end; max-width:82%; background:#0E0E0E; color:#FFFFFF; padding:10px 13px; border-radius:6px 6px 2px 6px; font-size:14px; line-height:1.4; }
+.meter{ display:grid; grid-template-columns:1fr auto; gap:6px 10px; align-items:center; }
+.meter .trk{ height:6px; border-radius:3px; background:var(--trk); overflow:hidden; }
+.meter .trk i{ display:block; height:100%; background:var(--ac); }
+.meter .mv{ font-family:var(--numf); font-size:15px; font-weight:700; }
+.res{ display:grid; gap:3px; padding:11px 0; border-top:1px solid var(--ln); }
+.res:first-of-type{ border-top:0; padding-top:0; }
+.res .rt{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.res .rh{ font-family:var(--disp); font-size:17px; font-weight:700; text-transform:uppercase; }
+.res .rs{ font-size:13px; color:var(--tx2); line-height:1.4; }
+.res .up{ color:var(--ac); font-weight:600; }
+
+/* decisions */
+.scale{ display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
+.scale button{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:16px; font-weight:700; padding:9px 0; border-radius:3px; background:#FFFFFF; color:var(--tx); cursor:pointer; min-width:0; }
+.scale button[aria-pressed="true"]{ background:var(--ac); color:#FFFFFF; }
+.ends{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--mu); }
+.src{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 7px; border-radius:2px; white-space:nowrap; }
+.src.exp{ background:#0E0E0E; color:#FFFFFF; }
+.src.res{ box-shadow:inset 0 0 0 1.5px #0E0E0E; color:#0E0E0E; }
+.rule{ display:grid; gap:6px; padding:10px 0; border-top:1px solid var(--ln); font-size:13.5px; line-height:1.4; }
+.rule:first-of-type{ border-top:0; padding-top:0; }
+.conf{ display:flex; gap:4px; }
+.conf i{ width:28px; height:6px; background:var(--trk); border-radius:2px; }
+.conf i.on{ background:var(--ac); }
+.callout{ border-left:3px solid var(--ac); padding:2px 0 2px 12px; display:grid; gap:4px; }
+
+/* progress */
+.cam{ position:relative; background:#0E0E0E; border-radius:var(--r); height:430px; overflow:hidden; }
+.cam svg{ position:absolute; inset:0; width:100%; height:100%; }
+.lvl{ position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:8px; background:#2C2C2A; color:#FFFFFF; font-size:12px; font-weight:600; padding:6px 10px; border-radius:4px; white-space:nowrap; }
+.lvl b{ font-family:var(--numf); font-size:15px; color:var(--ac); }
+.shutter{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.shut{ appearance:none; border:0; width:66px; height:66px; border-radius:50%; background:#FFFFFF; box-shadow:inset 0 0 0 4px var(--ac), inset 0 0 0 7px #FFFFFF, inset 0 0 0 40px var(--ac); cursor:pointer; flex:none; }
+.pair{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.fig{ background:var(--sf); border-radius:var(--r); padding:10px 8px 8px; display:grid; gap:6px; justify-items:center; }
+.fig svg{ width:100%; max-width:120px; height:auto; display:block; }
+.fig .legend svg{ width:auto; max-width:none; }
+.fig .fc{ font-size:12px; color:var(--mu); text-align:center; }
+.fig .fc b{ display:block; color:var(--tx); font-family:var(--disp); font-size:15px; text-transform:uppercase; }
+.chart{ width:100%; height:auto; display:block; }
+.legend{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--mu); }
+.legend span{ display:flex; align-items:center; gap:6px; }
+.legend svg{ flex:none; }
+.win{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.scn{ display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; padding:11px 12px; border-radius:4px; }
+.scn .sa{ font-size:13.5px; font-weight:600; }
+.scn .sr{ font-family:var(--numf); font-size:22px; font-weight:800; line-height:1; text-align:right; }
+.scn .ss{ font-size:12px; color:var(--mu); }
+.scn.me{ background:#0E0E0E; color:#FFFFFF; }
+.scn.me .ss{ color:#D6D6D2; }
+.scn.me .sr{ color:var(--ac); }
+.weeks{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+.wk{ aspect-ratio:1; border-radius:4px; background:#0E0E0E; color:#FFFFFF; display:grid; place-items:center; font-family:var(--numf); font-weight:700; font-size:16px; }
+.wk.g{ background:#FFFFFF; color:var(--ac); box-shadow:inset 0 0 0 2px var(--ac); }
+.wk.now{ box-shadow:inset 0 -4px 0 var(--ac); }
+.sw{ width:12px; height:12px; border-radius:2px; display:inline-block; background:#0E0E0E; }
+.sw.g{ background:#FFFFFF; box-shadow:inset 0 0 0 2px var(--ac); }
+
+@media (prefers-reduced-motion: no-preference){
+  .whylist{ animation:fade .18s ease-out; }
+  @keyframes fade{ from{ opacity:.4; transform:translateY(-2px);} to{ opacity:1; transform:none;} }
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation:none !important; transition:none !important; }
+}
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <h1>Keel · ekran prototipi</h1>
+    <p>Uygulamanın dört akışı, 28 ekran, hepsi Yön C dilinde. Soldan sağa oku; her telefonun altında ekranın adı ve dayandığı karar ya da araştırma yazıyor.</p>
+    <p>Tüm ekranlar aynı kullanıcıyı gösteriyor: 12. hafta, cut fazının 3. haftası, 81.4 kg, 2,300 kcal hedef, bench 80 kg. Karar ekranları aynı pazartesinin olası sonuçları; gerçekte biri görünür.</p>
+  </header>
+
+  <!-- =========================================================
+       BÖLÜM 1 · ONBOARDING + PAYWALL
+       ========================================================= -->
+  <section class="sec" aria-labelledby="s1">
+    <header class="sec-h">
+      <span class="k">Bölüm 1 · 10 ekran</span>
+      <h2 id="s1">Onboarding ve paywall</h2>
+      <p>Az soru, her sorunun nedeni ekranda. Kullanıcı ilk dakikada ürünün karar verdiğini ve nedenini gösterdiğini görüyor.</p>
+    </header>
+    <div class="row">
+
+      <!-- 1.1 Welcome -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="brand">KEEL</div>
+            <h3 class="h1 xl" style="margin-top:28px">Everything else shows you the data. <em>This one makes the call.</em></h3>
+            <p class="lede">And it always shows you why.</p>
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">This week's call</span><span class="pill">High confidence</span></div>
+              <div class="dec-title" style="font-size:24px">No change. Hold 2,300&nbsp;kcal.</div>
+              <span class="why">Why this call <span aria-hidden="true">›</span></span>
+            </div>
+            <div class="foot">
+              <button class="btn" type="button">Get started</button>
+              <button class="lnk" type="button">I already have an account</button>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Welcome</div>
+          <div><b>Dayanak:</b> Faz 4 konumlandırma. Rakiplerin boş bıraktığı kelime alanı: karar ve neden. Örnek karar kartı vaadi somutlaştırıyor.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.2 Goal -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">1/8</span></div>
+            <h3 class="h1" style="margin-top:14px">What do you want?</h3>
+            <div class="opts">
+              <button class="opt" type="button" aria-pressed="true"><span class="ot">Lose fat</span><span class="rd"></span><span class="os">Bring your weight down and keep your strength.</span></button>
+              <button class="opt" type="button" aria-pressed="false"><span class="ot">Build muscle</span><span class="rd"></span><span class="os">Add size and strength at a steady pace.</span></button>
+              <button class="opt" type="button" aria-pressed="false"><span class="ot">Not sure, decide for me</span><span class="rd"></span><span class="os">We read your numbers and pick the phase.</span></button>
+            </div>
+            <p class="small">You can change this later. When your data says it's time to switch phase, we'll tell you and show why.</p>
+            <div class="foot"><button class="btn" type="button">Continue</button></div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Goal</div>
+          <div><b>Dayanak:</b> Faz kapısı kararını motor verir. "Decide for me" seçeneği bu yüzden eşit ağırlıkta.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.3 Program -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">2/8</span></div>
+            <h3 class="h1" style="margin-top:14px">Do you already follow a program?</h3>
+            <div class="opts">
+              <button class="opt" type="button" aria-pressed="false"><span class="ot">Yes, I'll bring mine</span><span class="rd"></span><span class="os">Enter your split once. Food and weekly calls adjust around it.</span></button>
+              <button class="opt" type="button" aria-pressed="true"><span class="ot">No, build one for me</span><span class="rd"></span><span class="os">A plan sized to the days you really have.</span></button>
+            </div>
+            <p class="small">Either way, calls use the same rules. You can switch at any time.</p>
+            <div class="foot"><button class="btn" type="button">Continue</button></div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Program</div>
+          <div><b>Dayanak:</b> Levent kararı, 29 Eylül: ikisi de desteklenir, seçim onboarding'de yapılır.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.4 Schedule -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">3/8</span></div>
+            <h3 class="h1" style="margin-top:6px">When can you train?</h3>
+            <div class="lbl">Days that could work</div>
+            <div class="days">
+              <button class="dy" type="button" aria-pressed="true" aria-label="Monday">M</button>
+              <button class="dy" type="button" aria-pressed="true" aria-label="Tuesday">T</button>
+              <button class="dy" type="button" aria-pressed="true" aria-label="Wednesday">W</button>
+              <button class="dy" type="button" aria-pressed="true" aria-label="Thursday">T</button>
+              <button class="dy" type="button" aria-pressed="true" aria-label="Friday">F</button>
+              <button class="dy" type="button" aria-pressed="true" aria-label="Saturday">S</button>
+              <button class="dy" type="button" aria-pressed="false" aria-label="Sunday">S</button>
+            </div>
+            <div class="lbl">Sessions last month</div>
+            <div class="seg">
+              <button type="button" aria-pressed="false">0–1</button>
+              <button type="button" aria-pressed="true">2–3</button>
+              <button type="button" aria-pressed="false">4</button>
+              <button type="button" aria-pressed="false">5+</button>
+            </div>
+            <div class="field"><span class="fl">Usual training time</span><span class="fv">18:30</span><span class="fs">Reminders arrive before your own session, not at a fixed hour.</span></div>
+            <div class="card dec">
+              <span class="eyebrow">What we'll plan</span>
+              <div class="dec-title" style="font-size:24px">4 days fit your week. We'll plan for 4, not 6.</div>
+              <p class="dec-body">Starting near what you already do keeps the plan going. Add a day once 4 feels easy.</p>
+            </div>
+            <div class="foot"><button class="btn" type="button">Continue</button></div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Schedule</div>
+          <div><b>Dayanak:</b> I1, gerçekçi sıklık çıkarımı. Bildirim saati kullanıcının kendi antrenman saatine bağlı (saat ipucu r=0,11).</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.5 Baseline -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div><span class="meta">4/8</span></div>
+            <h3 class="h1" style="margin-top:14px">Where you start</h3>
+            <div class="field"><span class="fl">Height</span><span class="fv">180<small>cm</small></span></div>
+            <div class="field"><span class="fl">Weight</span><span class="fv">82.0<small>kg</small></span><span class="fs">Syncs from Apple Health if you use a smart scale.</span></div>
+            <div class="lbl">Sex</div>
+            <div class="seg">
+              <button type="button" aria-pressed="true">Male</button>
+              <button type="button" aria-pressed="false">Female</button>
+            </div>
+            <div class="field"><span class="fl">Waist <span class="opt-tag">Optional</span></span><span class="fv" style="color:#9A9A95">&ndash;<small>cm</small></span><span class="fs">We'll ask only when we need it: when your weight and training point in different directions.</span></div>
+            <p class="small">Units shown in metric. Change them in Settings.</p>
+            <div class="foot"><button class="btn" type="button">Continue</button></div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Baseline</div>
+          <div><b>Dayanak:</b> Veri talebi modeli (CAT). Bel ölçüsü sadece sinyaller çeliştiğinde istenir; ilk gün zorunlu değil.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.6 Photos -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><span class="meta">5/8</span></div>
+            <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true" style="margin-top:10px">
+              <rect x="0" y="0" width="56" height="56" rx="6" fill="#0E0E0E"/>
+              <rect x="17" y="10" width="22" height="36" rx="3" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+              <rect x="22" y="26" width="12" height="10" rx="1.5" fill="#FF4F12"/>
+              <path d="M24.5 26 V23 a3.5 3.5 0 0 1 7 0 V26" fill="none" stroke="#FF4F12" stroke-width="2.2"/>
+            </svg>
+            <h3 class="h1">Your photos stay on your phone</h3>
+            <ul class="pts">
+              <li><span class="b">1</span><span>Processed on this device.<span class="s">Progress photos are never uploaded. Not to us, not to anyone.</span></span></li>
+              <li><span class="b">4</span><span>One photo every 4 weeks.<span class="s">Weekly changes are too small to see. Four weeks is the shortest gap that shows something.</span></span></li>
+              <li><span class="b">↺</span><span>Used for one thing.<span class="s">Comparing you with you. Delete them here and they're gone.</span></span></li>
+            </ul>
+            <div class="foot">
+              <button class="btn" type="button">Allow camera later</button>
+              <p class="small" style="text-align:center">We'll ask in week 4, when the first photo is due.</p>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Your photos stay on your phone</div>
+          <div><b>Dayanak:</b> H1 + gizlilik (Amazon Halo dersi). Vücut fotoğrafı GDPR Md.9 özel kategori veri; cihaz dışına çıkmaz.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.7 What to expect -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="meta">6/8</span></div>
+            <h3 class="h1" style="margin-top:10px;font-size:32px">For the first 4 weeks I won't show you the scale trend.</h3>
+            <p class="lede">I'll show you this instead.</p>
+            <div class="prev">
+              <div class="tile dark"><span class="eyebrow" style="color:#FF4F12">Consistency</span><span class="tv">84<small>%</small></span><span class="ts">16 of 19 planned actions this week</span></div>
+              <div class="tile"><span class="eyebrow">Performance</span><span class="tv">+1<small>rep</small></span><span class="ts">Bench 80 kg × 7 → × 8, same effort</span></div>
+            </div>
+            <div class="card">
+              <span class="eyebrow">Week 5</span>
+              <p class="txt">Your first weight trend. Four weeks of weigh-ins is enough to see past daily water swings.</p>
+            </div>
+            <div class="foot"><button class="btn" type="button">Sounds good</button></div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> What to expect</div>
+          <div><b>Dayanak:</b> I1. İlk 4 hafta güvenilir fiziksel sinyal yok; beklenti önceden düşürülür ve boşluk tutarlılık ile performansla doldurulur.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.8 Apple Health -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="meta">7/8</span></div>
+            <h3 class="h1" style="margin-top:14px">Connect Apple Health</h3>
+            <p class="lede">Less typing. These arrive on their own.</p>
+            <div class="card" style="gap:0">
+              <span class="eyebrow" style="margin-bottom:6px">We read</span>
+              <div class="hrow"><div><div>Steps</div><div class="hs">Daily total</div></div><span class="tgl on" aria-hidden="true"></span></div>
+              <div class="hrow"><div><div>Sleep</div><div class="hs">Hours per night</div></div><span class="tgl on" aria-hidden="true"></span></div>
+              <div class="hrow"><div><div>Weight</div><div class="hs">From your scale, if it syncs</div></div><span class="tgl on" aria-hidden="true"></span></div>
+            </div>
+            <div class="callout">
+              <span class="lbl">We don't read</span>
+              <p class="small">Heart data, cycle data, medications, health records, location. Nothing is written back.</p>
+            </div>
+            <div class="foot">
+              <button class="btn" type="button">Connect</button>
+              <button class="lnk" type="button">Not now, I'll type it</button>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Apple Health</div>
+          <div><b>Dayanak:</b> Pasif veri, sıfır ek yük. Okunmayanlar da açıkça listeleniyor.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.9 AI consent -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="meta">8/8</span></div>
+            <h3 class="h1" style="margin-top:14px">Before you analyze a meal</h3>
+            <p class="lede">Meal photos you choose to analyze are sent to <span class="slot">Provider</span> to estimate portions. Nothing else.</p>
+            <div class="card">
+              <div class="kv">
+                <div><span class="k">Sent</span><span style="text-align:right">The meal photo, and any text you add</span></div>
+                <div><span class="k">Never sent</span><span style="text-align:right">Progress photos, weight, Health data, name, email</span></div>
+                <div><span class="k">Kept by them</span><span style="text-align:right">Not stored after the estimate</span></div>
+              </div>
+            </div>
+            <div class="callout">
+              <span class="lbl">The AI explains. It doesn't decide.</span>
+              <p class="small">Weekly calls come from fixed rules you can read in every "Why this call".</p>
+            </div>
+            <div class="foot">
+              <button class="btn" type="button">Allow meal analysis</button>
+              <button class="lnk" type="button">Skip, I'll log by text</button>
+              <p class="small" style="text-align:center">Change this anytime in Settings.</p>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> AI data consent</div>
+          <div><b>Dayanak:</b> Apple 5.1.2(i) (13 Kas 2025): üçüncü taraf AI'a veri öncesi adı geçen açık onay. EU AI Act Md.50 şeffaflık. Sağlayıcı adı henüz seçilmedi, turuncu yer tutucu.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.10 Paywall -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="brand" style="font-size:16px">KEEL</div>
+            <h3 class="h1" style="margin-top:2px">Try it for 7 days</h3>
+            <div class="opts">
+              <button class="plan" type="button" aria-pressed="true"><span class="rd"></span><span class="pn">Yearly <span class="badge">Best value</span></span><span class="pp">$59.99</span><span class="ps">$5.00 a month, billed once a year</span></button>
+              <button class="plan" type="button" aria-pressed="false"><span class="rd"></span><span class="pn">Monthly</span><span class="pp">$12.99</span><span class="ps">Billed every month</span></button>
+            </div>
+            <div class="card">
+              <ul class="tl">
+                <li><span class="d">Today</span><span>Full access, nothing charged</span></li>
+                <li><span class="d">Day 5</span><span>We remind you the trial is ending</span></li>
+                <li><span class="d">Day 7</span><span>$59.99 for the year starts</span></li>
+              </ul>
+            </div>
+            <div class="callout"><span class="lbl">Cancel in two taps. Pause anytime.</span><p class="small">Settings, then Cancel. Or pause up to 3 months and keep your history.</p></div>
+            <div class="foot">
+              <button class="btn" type="button">Start free trial</button>
+              <p class="small" style="text-align:center">Restore purchase · Terms · Privacy</p>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Paywall</div>
+          <div><b>Dayanak:</b> K5 fiyat kararı, ücretsiz katman yok. Noom'un $62M davası iptal akışı yüzündendi; iptal iki dokunuş ve deneme bitmeden hatırlatma. Pause seçeneği %60-80 geri dönüş.</div>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- =========================================================
+       BÖLÜM 2 · GÜNLÜK AKIŞ
+       ========================================================= -->
+  <section class="sec" aria-labelledby="s2">
+    <header class="sec-h">
+      <span class="k">Bölüm 2 · 6 ekran</span>
+      <h2 id="s2">Günlük akış</h2>
+      <p>Salı günü: Today, yemek kaydı, antrenman. Kalori tahmini hep aralık, set kaydı tek dokunuş.</p>
+    </header>
+    <div class="row">
+
+      <!-- 2.1 Today (reference C, verbatim) -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Tuesday</span><span class="ph">Week 3 · Cut phase</span></div>
+
+            <div class="card">
+              <div class="eyebrow">Consistency · this week</div>
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+                <div class="big">84<small>%</small></div>
+                <div class="meta" style="text-align:right">16 of 19<br>planned actions</div>
+              </div>
+              <div class="bars">
+                <div class="bar"><span>Training</span><span class="trk"><i style="width:67%"></i></span><span class="v">2/3</span></div>
+                <div class="bar"><span>Protein</span><span class="trk"><i style="width:75%"></i></span><span class="v">3/4</span></div>
+                <div class="bar"><span>Steps</span><span class="trk"><i style="width:100%"></i></span><span class="v">5/5</span></div>
+                <div class="bar"><span>Weigh-ins</span><span class="trk"><i style="width:86%"></i></span><span class="v">6/7</span></div>
+              </div>
+            </div>
+
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">This week's call</span><span class="pill">High confidence</span></div>
+              <div class="dec-title">No change. Hold 2,300&nbsp;kcal.</div>
+              <p class="dec-body">Your trend weight is down 0.4&nbsp;kg and your lifts held. The plan is working, so we wait another week.</p>
+              <button class="why" type="button" aria-expanded="true">Why this call <span aria-hidden="true">⌄</span></button>
+              <ul class="whylist">
+                <li><span class="l">Trend weight</span><span class="num">82.3 → 81.9 kg (7-day)</span></li>
+                <li><span class="l">Performance</span><span class="num">Bench 80 kg × 7 → × 8</span></li>
+                <li><span class="l">Rule</span><span>Moving toward goal and training stable, so change nothing</span></li>
+                <li><span class="l">Next review</span><span class="num">Mon, Oct 5</span></li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <div class="eyebrow">Today</div>
+              <div class="list">
+                <div class="item"><span class="ico done">✓</span><div><div class="it-t">Weigh-in</div><div class="it-s">Logged at 07:12</div></div><span class="meta">81.4 kg</span></div>
+                <div class="item"><span class="ico">A</span><div><div class="it-t">Upper A</div><div class="it-s">5 exercises · about 50 min</div></div><button class="go" type="button">Start</button></div>
+                <div class="item"><span class="ico">kc</span><div><div class="it-t">Food left today</div><div class="it-s"><span class="left num">780–950 kcal</span> · 64 g protein</div><div class="fit">Fits tonight: chicken rice bowl, or eggs with Greek yogurt</div></div><span></span></div>
+                <div class="item"><span class="ico">st</span><div><div class="it-t">Steps</div><div class="it-s">From Apple Health</div></div><span class="meta">6,240 / 8,000</span></div>
+              </div>
+            </div>
+
+            <div class="chips">
+              <button class="chip" type="button">What fits in 850 kcal?</button>
+              <button class="chip" type="button">Swap lat pulldown</button>
+              <button class="chip" type="button">Bench trend</button>
+            </div>
+            <div class="ask"><span>Ask, or log "pulldown 60 kg × 8"</span><span class="snd" aria-hidden="true">↑</span></div>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Today</div>
+          <div><b>Dayanak:</b> Yön C kararı; referans ekran birebir. "Why this call" açık geliyor, dokununca kapanıyor (tam hali Bölüm 3'te).</div>
+        </figcaption>
+      </figure>
+
+      <!-- 2.2 Food photo result -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Lunch</span><span class="ph">12:48 · From photo</span></div>
+            <div class="card">
+              <div class="shot">
+                <div class="photo">
+                  <svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+                    <rect x="0" y="0" width="76" height="76" fill="#2B2B2B"/>
+                    <ellipse cx="38" cy="40" rx="30" ry="24" fill="#D6D6D2"/>
+                    <ellipse cx="38" cy="38" rx="25" ry="19" fill="#F2F2F0"/>
+                    <ellipse cx="30" cy="36" rx="13" ry="10" fill="#FFFFFF"/>
+                    <rect x="40" y="28" width="12" height="8" rx="2" fill="#9A9A95"/>
+                    <rect x="44" y="38" width="11" height="8" rx="2" fill="#9A9A95"/>
+                    <circle cx="34" cy="48" r="4" fill="#6B6B68"/>
+                    <circle cx="42" cy="50" r="3.5" fill="#6B6B68"/>
+                  </svg>
+                </div>
+                <div style="display:grid;gap:4px">
+                  <span class="eyebrow">Best match</span>
+                  <span class="h2">Chicken rice bowl</span>
+                  <span class="meta">3 items found</span>
+                </div>
+              </div>
+              <div class="est">
+                <span><span class="ev">540–680</span><span class="eu">kcal</span></span>
+                <span><span class="ev" style="font-size:26px">38–46 g</span><span class="eu">protein</span></span>
+              </div>
+              <div class="rng">
+                <div class="r hi"><span>White rice, about 1 cup</span><span class="rv">210–300</span><span class="sp"><i style="width:64%"></i></span></div>
+                <div class="r"><span>Chicken thigh, 130 g</span><span class="rv">210–250</span><span class="sp"><i style="width:29%"></i></span></div>
+                <div class="r"><span>Vegetables and sauce</span><span class="rv">120–130</span><span class="sp"><i style="width:7%"></i></span></div>
+              </div>
+              <p class="small">Bars show how much of the range each item causes.</p>
+            </div>
+            <div class="card" style="background:#FFFFFF;box-shadow:inset 0 0 0 1.5px #0E0E0E">
+              <span class="eyebrow" style="color:#FF4F12">One question</span>
+              <div class="h2">Is the rice about one cup?</div>
+              <div class="seg">
+                <button type="button" aria-pressed="false">Less</button>
+                <button type="button" aria-pressed="true">About right</button>
+                <button type="button" aria-pressed="false">More</button>
+              </div>
+              <p class="small">Why we ask: rice is most of this meal's range.</p>
+            </div>
+            <button class="btn" type="button">Log lunch</button>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab on"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Food · photo result</div>
+          <div><b>Dayanak:</b> F. Gram sorusu karb hatasını %56,6'dan %20,2'ye düşürüyor. Soru yalnız belirsizlik yüksek ve tek kalem öğünü domine ediyorsa gelir; çubuklar bunu görünür kılar.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 2.3 Food quick log -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Breakfast</span><span class="ph">08:05</span></div>
+            <button class="card" type="button" style="appearance:none;font:inherit;color:inherit;text-align:left;cursor:pointer;background:#0E0E0E;color:#FFFFFF">
+              <span class="eyebrow" style="color:#FF4F12">One tap</span>
+              <span class="h3">Same as yesterday's breakfast</span>
+              <span class="small" style="color:#D6D6D2">Greek yogurt, oats, banana · 420–480 kcal · 30–34 g protein</span>
+            </button>
+            <div class="inp">2 eggs and toast<span class="caret"></span></div>
+            <div class="card">
+              <div class="rowhead"><span class="eyebrow">Found 2 items</span><span class="meta">Matched to food database</span></div>
+              <div class="kv">
+                <div><span>Eggs, whole · 2 large</span><span class="v">140–160</span></div>
+                <div><span>Toast, whole wheat · 1 slice</span><span class="v">80–100</span></div>
+                <div><span style="font-weight:600">Total · kcal</span><span class="v" style="color:#FF4F12">220–260</span></div>
+              </div>
+              <p class="small">15–17 g protein</p>
+              <div class="btnrow">
+                <button class="btn sm" type="button">Log it</button>
+                <button class="btn sm ghost" type="button">Edit</button>
+              </div>
+            </div>
+            <div class="btnrow">
+              <button class="tool" type="button">
+                <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><rect x="0" y="0" width="2" height="16" fill="#0E0E0E"/><rect x="4" y="0" width="1" height="16" fill="#0E0E0E"/><rect x="7" y="0" width="3" height="16" fill="#0E0E0E"/><rect x="12" y="0" width="1" height="16" fill="#0E0E0E"/><rect x="15" y="0" width="2" height="16" fill="#0E0E0E"/><rect x="19" y="0" width="1" height="16" fill="#0E0E0E"/></svg>
+                Scan barcode
+              </button>
+              <button class="tool" type="button">
+                <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><rect x="1" y="3" width="18" height="12" rx="2" fill="none" stroke="#0E0E0E" stroke-width="1.8"/><rect x="6" y="1" width="8" height="3" rx="1" fill="#0E0E0E"/><circle cx="10" cy="9" r="3.2" fill="none" stroke="#0E0E0E" stroke-width="1.8"/></svg>
+                Meal photo
+              </button>
+            </div>
+            <div class="chips">
+              <button class="chip" type="button">Chicken rice bowl</button>
+              <button class="chip" type="button">Protein shake</button>
+              <button class="chip" type="button">Greek yogurt</button>
+            </div>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab on"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Food · quick log</div>
+          <div><b>Dayanak:</b> I2. Tahmin veritabanından gelir (ham LLM MAE 652 kcal, veritabanı eşlemesi 171-191). Tekrar hafızası en üstte, tek dokunuş.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 2.4 Workout in session -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Upper A</span><span class="ph num" style="font-size:14px">18:40 · 2 of 5</span></div>
+            <div class="exl">
+              <div class="ex done"><span class="n">✓</span><span class="t">Bench press</span><span class="m">80 kg × 8</span></div>
+              <div class="ex on"><span class="n">2</span><span class="t">Lat pulldown</span><span class="m">Set 2 of 3</span></div>
+              <div class="ex"><span class="n">3</span><span class="t">Seated row</span><span class="m">3 sets</span></div>
+              <div class="ex"><span class="n">4</span><span class="t">Lateral raise</span><span class="m">3 sets</span></div>
+              <div class="ex"><span class="n">5</span><span class="t">Triceps pushdown</span><span class="m">2 sets</span></div>
+            </div>
+            <div class="card">
+              <div class="rowhead"><span class="eyebrow">Lat pulldown</span><span class="meta">Target RIR 0–1</span></div>
+              <div class="sethd"><span>#</span><span>Today</span><span>Last time</span><span></span></div>
+              <div class="sets">
+                <div class="set"><span class="sn">1</span><span class="val">60 kg × 8</span><span class="last">57.5 × 8</span><button class="ck done" type="button" aria-label="Set 1 done">✓</button></div>
+                <div class="set cur"><span class="sn">2</span><span class="val ghost">60 kg × 8</span><span class="last">57.5 × 8</span><button class="ck" type="button" aria-label="Complete set 2">✓</button></div>
+                <div class="set"><span class="sn">3</span><span class="val ghost">60 kg × 7</span><span class="last">57.5 × 7</span><button class="ck" type="button" aria-label="Complete set 3">✓</button></div>
+              </div>
+              <span class="lbl" style="margin-top:4px">Set 1 · reps left in the tank</span>
+              <div class="rir">
+                <button type="button" aria-pressed="false">0</button>
+                <button type="button" aria-pressed="true">1</button>
+                <button type="button" aria-pressed="false">2</button>
+                <button type="button" aria-pressed="false">3+</button>
+              </div>
+            </div>
+            <div class="rest">
+              <span class="t">1:24</span>
+              <span><span class="rl">Rest · of 2:00</span><span class="trk"><i></i></span></span>
+              <button class="plus" type="button">+30 s</button>
+            </div>
+            <div class="ask"><span>Log, e.g. "pulldown 60 kg x 8"</span><span class="snd" aria-hidden="true">↑</span></div>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab on"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Workout · in session</div>
+          <div><b>Dayanak:</b> B / 6.5: set başına 1 dokunuş; soluk değer önerilen set, tik atınca kaydolur. RIR 0-1 hedefi (Güray).</div>
+        </figcaption>
+      </figure>
+
+      <!-- 2.5 Workout NL parse -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Upper A</span><span class="ph num" style="font-size:14px">18:44 · 2 of 5</span></div>
+            <div class="exl">
+              <div class="ex done"><span class="n">✓</span><span class="t">Bench press</span><span class="m">80 kg × 8</span></div>
+              <div class="ex on"><span class="n">2</span><span class="t">Lat pulldown</span><span class="m">Set 2 of 3</span></div>
+            </div>
+            <div class="bub">pulldown 60 kg x 8</div>
+            <div class="card">
+              <div class="rowhead"><span class="eyebrow">Logged as set 2</span><button class="lnk" type="button" style="padding:0;font-size:12.5px">Undo</button></div>
+              <div class="h2">Lat pulldown · 60 kg × 8</div>
+              <div class="meter"><span class="trk"><i style="width:85%"></i></span><span class="mv">85%</span></div>
+              <p class="small">Match confidence. "Pulldown" fits two exercises in your plan; this one is next.</p>
+              <span class="lbl">Not this?</span>
+              <div class="chips">
+                <button class="chip" type="button">Seated row</button>
+                <button class="chip" type="button">Pullover</button>
+              </div>
+            </div>
+            <div class="card">
+              <span class="lbl">Reps left in the tank</span>
+              <div class="rir">
+                <button type="button" aria-pressed="false">0</button>
+                <button type="button" aria-pressed="false">1</button>
+                <button type="button" aria-pressed="false">2</button>
+                <button type="button" aria-pressed="false">3+</button>
+              </div>
+            </div>
+            <div class="ask"><span>Log the next set</span><span class="snd" aria-hidden="true">↑</span></div>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab on"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Workout · natural language parse</div>
+          <div><b>Dayanak:</b> I2. Belirsizliği itiraf etmek yerine çözülebilir kıl: karar ver, güveni sayıyla göster, tek dokunuşla çıkış bırak.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 2.6 Workout summary -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Done</span><span class="ph">Upper A · 52 min</span></div>
+            <div class="card dec">
+              <span class="eyebrow">Effort</span>
+              <div style="display:flex;align-items:flex-end;gap:12px">
+                <div class="big" style="font-size:80px">4<small>/5</small></div>
+                <p class="dec-body" style="padding-bottom:6px">exercises reached your target effort, RIR 0–1</p>
+              </div>
+            </div>
+            <div class="card" style="gap:0">
+              <div class="res">
+                <div class="rt"><span class="rh">Bench press</span><span class="meta">80 kg × 8</span></div>
+                <span class="rs">Bench: same weight, one more rep (RIR 1)</span>
+                <span class="rs up">Estimated 1RM up 2 kg · 102 → 104 kg</span>
+              </div>
+              <div class="res">
+                <div class="rt"><span class="rh">Lat pulldown</span><span class="meta">60 kg × 8, 8, 7</span></div>
+                <span class="rs">Up 2.5 kg from last week at RIR 1</span>
+              </div>
+              <div class="res">
+                <div class="rt"><span class="rh">Seated row</span><span class="meta">65 kg × 10</span></div>
+                <span class="rs">RIR 2. Next time, aim for 1.</span>
+              </div>
+              <div class="res">
+                <div class="rt"><span class="rh">Lateral raise</span><span class="meta">RIR 0</span></div>
+                <span class="rs">No load tracking. Hit the effort, that's the win.</span>
+              </div>
+              <div class="res">
+                <div class="rt"><span class="rh">Triceps pushdown</span><span class="meta">RIR 1</span></div>
+                <span class="rs">No load tracking. Effort hit.</span>
+              </div>
+            </div>
+            <p class="small">Total volume 9,180 kg, shown for reference. Calls use effort and estimated 1RM.</p>
+            <button class="btn" type="button">Finish</button>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab on"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Workout · summary</div>
+          <div><b>Dayanak:</b> B. İncelenen 24 uygulamanın ana metriği total volume ve efor artıranı cezalandırıyor; burada ana metrik efor. Güray K-33: izolasyonda yük takibi yok.</div>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- =========================================================
+       BÖLÜM 3 · KARAR ANLARI
+       ========================================================= -->
+  <section class="sec" aria-labelledby="s3">
+    <header class="sec-h">
+      <span class="k">Bölüm 3 · 6 ekran</span>
+      <h2 id="s3">Karar anları</h2>
+      <p>Pazartesi check-in ve haftanın kararı. Üç karar ekranı aynı pazartesinin üç olası sonucu. Siyah blok sadece karar için kullanılıyor.</p>
+    </header>
+    <div class="row">
+
+      <!-- 3.1 Monday check-in -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Monday</span><span class="ph">Week 3 · Check-in</span></div>
+            <h3 class="h1">2 questions this week.</h3>
+            <div class="card">
+              <span class="h3">Sleep quality this week?</span>
+              <div class="scale">
+                <button type="button" aria-pressed="false">1</button><button type="button" aria-pressed="false">2</button><button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="false">4</button><button type="button" aria-pressed="false">5</button><button type="button" aria-pressed="false">6</button><button type="button" aria-pressed="true">7</button><button type="button" aria-pressed="false">8</button><button type="button" aria-pressed="false">9</button><button type="button" aria-pressed="false">10</button>
+              </div>
+              <div class="ends"><span>Poor</span><span>Great</span></div>
+            </div>
+            <div class="card">
+              <span class="h3">Energy?</span>
+              <div class="scale">
+                <button type="button" aria-pressed="false">1</button><button type="button" aria-pressed="false">2</button><button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="false">4</button><button type="button" aria-pressed="false">5</button><button type="button" aria-pressed="true">6</button><button type="button" aria-pressed="false">7</button><button type="button" aria-pressed="false">8</button><button type="button" aria-pressed="false">9</button><button type="button" aria-pressed="false">10</button>
+              </div>
+              <div class="ends"><span>Drained</span><span>Sharp</span></div>
+            </div>
+            <div class="callout">
+              <span class="lbl">Already have the rest</span>
+              <p class="small">Weight from your scale, steps and sleep hours from Apple Health, training from your logs.</p>
+            </div>
+            <button class="btn" type="button">See this week's call</button>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Monday check-in</div>
+          <div><b>Dayanak:</b> I2, CAT. Haftalık soru bütçesi en fazla 2; kazanç susmaktan geliyor. Pasif gelen veri tekrar sorulmaz.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 3.2 Decision continue -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Monday</span><span class="ph">Week 3 · Cut phase</span></div>
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">This week's call</span><span class="pill">High confidence</span></div>
+              <div class="dec-title" style="font-size:40px">No change. Hold 2,300&nbsp;kcal.</div>
+              <p class="dec-body">Trend weight is down 0.4 kg this week and your lifts held. The plan is working, so we wait.</p>
+              <span class="why">Why this call <span aria-hidden="true">›</span></span>
+            </div>
+            <div class="card">
+              <span class="eyebrow">Your targets this week</span>
+              <div class="kv">
+                <div><span class="k">Calories</span><span class="v">2,300 kcal</span></div>
+                <div><span class="k">Protein</span><span class="v">160 g</span></div>
+                <div><span class="k">Training</span><span class="v">4 sessions</span></div>
+                <div><span class="k">Steps</span><span class="v">8,000 a day</span></div>
+              </div>
+            </div>
+            <p class="small">Nothing to do differently. Next review Mon, Oct 5.</p>
+            <button class="btn" type="button">Got it</button>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Decision · continue</div>
+          <div><b>Dayanak:</b> Güray haftalık check-in kuralı: hedefe doğru ilerleme + stabil antrenman = değişiklik yok. "Değişiklik yok" da açık bir karar olarak sunulur.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 3.3 Decision change one thing -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Monday</span><span class="ph">Week 3 · Cut phase</span></div>
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">This week's call</span><span class="pill">High confidence</span></div>
+              <div class="dec-title" style="font-size:34px">Change one thing: steps up to 10,000 a day.</div>
+              <p class="dec-body">Your trend has been flat for 3 weeks. Training is going well and you completed 91% of planned actions, so the plan is being followed. Calories are already close to the floor we won't go below, so movement is what changes next.</p>
+              <ul class="whylist">
+                <li><span class="l">Steps</span><span class="num">8,000 → 10,000 a day</span></li>
+                <li><span class="l">About</span><span class="num">+100 kcal a day burned</span></li>
+                <li><span class="l">Food, training</span><span>Unchanged</span></li>
+              </ul>
+            </div>
+            <div class="card">
+              <span class="h3">Only one change at a time, so we know what worked.</span>
+              <p class="small">Calories, protein and training stay exactly as they are.</p>
+            </div>
+            <div class="btnrow">
+              <button class="btn" type="button">Apply from today</button>
+            </div>
+            <button class="lnk" type="button">Why this call</button>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Decision · change one thing</div>
+          <div><b>Dayanak:</b> Güray: aynı anda tek değişken; adım en kolay kaldıraç (1.000 adım ≈ 50 kcal, hedef 10.000). Kalori BMR tabanına yakın olduğu için motor kaloriyi değil hareketi değiştiriyor (U13). Kalori adımı gerektiğinde minimum 500 kcal (K-97).</div>
+        </figcaption>
+      </figure>
+
+      <!-- 3.4 Decision not yet -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Monday</span><span class="ph">Week 3 · Cut phase</span></div>
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">This week's call</span><span class="pill">Wait</span></div>
+              <div class="dec-title" style="font-size:36px">Not yet. Two more weeks of data first.</div>
+              <p class="dec-body">Your weight and waist held for a week but you logged every day. That usually means a drop is coming. Changing now would hide it.</p>
+              <ul class="whylist">
+                <li><span class="l">Trend weight</span><span class="num">81.9 → 81.9 kg</span></li>
+                <li><span class="l">Waist</span><span class="num">88 → 88 cm</span></li>
+                <li><span class="l">Logged</span><span class="num">7 of 7 days</span></li>
+              </ul>
+            </div>
+            <div class="card">
+              <span class="eyebrow">Until then</span>
+              <div class="kv">
+                <div><span class="k">Calories</span><span class="v">2,300 kcal</span></div>
+                <div><span class="k">Protein</span><span class="v">160 g</span></div>
+                <div><span class="k">Next review</span><span class="v">Mon, Oct 12</span></div>
+              </div>
+            </div>
+            <p class="small">Keep logging the same way. That's what makes the next call clear.</p>
+            <button class="btn" type="button">Got it</button>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Decision · not yet</div>
+          <div><b>Dayanak:</b> Güray haftalık check-in kuralı: sabit ölçüm + yüksek uyum = bekle. Beklemek de karar olarak aynı siyah blokta.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 3.5 Why this call expanded -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><span class="h3" style="flex:1">Why this call</span></div>
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">Mon, Sep 28</span><span class="pill">High confidence</span></div>
+              <div class="dec-title" style="font-size:26px">No change. Hold 2,300&nbsp;kcal.</div>
+            </div>
+            <div class="card">
+              <span class="eyebrow">The data</span>
+              <div class="kv">
+                <div><span class="k">Trend weight</span><span class="v">82.3 → 81.9 kg</span></div>
+                <div><span class="k">Rate</span><span class="v">−0.5% a week</span></div>
+                <div><span class="k">Performance</span><span class="v">Bench 80 × 7 → × 8</span></div>
+                <div><span class="k">Adherence</span><span class="v">16 of 19 actions</span></div>
+                <div><span class="k">Check-in</span><span class="v">Sleep 7 · Energy 6</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <span class="eyebrow">Rules applied</span>
+              <div class="rule"><span>Moving toward goal and training stable, so change nothing.</span><span class="src exp" style="justify-self:start">Experience-based</span></div>
+              <div class="rule"><span>Target loss rate is 0.5–1% of body weight a week.</span><span class="src res" style="justify-self:start">Research-based</span></div>
+            </div>
+            <div class="card">
+              <div class="rowhead"><span class="eyebrow">Confidence · high</span><span class="conf" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+              <p class="small">Weight, performance and adherence point the same way.</p>
+              <div class="kv">
+                <div><span class="k">Next review</span><span class="v">Mon, Oct 5</span></div>
+              </div>
+              <p class="small"><b style="color:#0E0E0E">What would change it:</b> two flat weeks in a row with adherence above 80%.</p>
+            </div>
+            <p class="small">The AI explains. It doesn't decide. The call comes from the rules above.</p>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Why this call (açılmış)</div>
+          <div><b>Dayanak:</b> Ö-25 şeffaflık: veri, kural, güven, sonraki tarih. Ö-26 kaynak etiketi (Experience-based / Research-based). AI sınır cümlesi burada.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 3.6 Pushback -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Monday</span><span class="ph">Week 3 · Cut phase</span></div>
+            <div class="card dec">
+              <span class="eyebrow">This week's call</span>
+              <div class="dec-title" style="font-size:26px">Deload this week. Half the sets, same weights.</div>
+            </div>
+            <div class="bub">I don't want to deload this week.</div>
+            <div class="card">
+              <p class="txt">The call stays for now. Your last two sessions each dropped a rep at the same weights, and energy was 4 of 10. That pattern points to fatigue.</p>
+              <div class="callout">
+                <span class="lbl">What would change it</span>
+                <p class="txt">If Thursday's session feels normal, we skip it. Log how it felt.</p>
+              </div>
+              <div class="btnrow">
+                <button class="btn sm" type="button">Log how I feel</button>
+                <button class="btn sm ghost" type="button">Keep the call</button>
+              </div>
+            </div>
+            <p class="small">Calls change when the data does.</p>
+            <div class="ask"><span>Ask about this call</span><span class="snd" aria-hidden="true">↑</span></div>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Pushback</div>
+          <div><b>Dayanak:</b> Sycophancy: MedPRESS'te baskı altında doğruluk %84,3'ten %19,9'a düşüyor. Karar kodda; ısrarla değil yeni veriyle değişir ve hangi verinin değiştireceği söylenir.</div>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- =========================================================
+       BÖLÜM 4 · İLERLEME
+       ========================================================= -->
+  <section class="sec" aria-labelledby="s4">
+    <header class="sec-h">
+      <span class="k">Bölüm 4 · 6 ekran</span>
+      <h2 id="s4">İlerleme</h2>
+      <p>Terazi dışındaki kanıtlar: fotoğraf, bel, güç, tutarlılık. Siluetler yüzsüz gri yer tutucu; gerçek ürün fotoğrafı cihazda tutar.</p>
+    </header>
+    <div class="row">
+
+      <!-- 4.1 Guided capture -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Photo</span><span class="ph">Week 12 · due today</span></div>
+            <div class="cam">
+              <svg viewBox="0 0 324 430" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <rect x="0" y="0" width="324" height="430" fill="#0E0E0E"/>
+                <!-- frame guide corners -->
+                <path d="M40 60 V40 H60" fill="none" stroke="#FF4F12" stroke-width="3"/>
+                <path d="M264 40 H284 V60" fill="none" stroke="#FF4F12" stroke-width="3"/>
+                <path d="M40 370 V390 H60" fill="none" stroke="#FF4F12" stroke-width="3"/>
+                <path d="M264 390 H284 V370" fill="none" stroke="#FF4F12" stroke-width="3"/>
+                <!-- ghost silhouette from last photo -->
+                <g transform="translate(102 58) scale(1)" fill="none" stroke="#9A9A95" stroke-width="1.6" stroke-dasharray="5 4" opacity="0.9">
+                  <circle cx="60" cy="26" r="15"/>
+                  <path d="M60 46 C52 46 30 48 24 56 C21 72 25 98 29 118 C30 128 27 136 27 146 L31 300 L52 300 L57 170 L63 170 L68 300 L89 300 L93 146 C93 136 90 128 91 118 C95 98 99 72 96 56 C90 48 68 46 60 46 Z"/>
+                  <path d="M24 58 C16 62 12 90 10 150 L18 152 C20 110 24 84 28 70"/>
+                  <path d="M96 58 C104 62 108 90 110 150 L102 152 C100 110 96 84 92 70"/>
+                </g>
+                <!-- level line -->
+                <line x1="70" y1="215" x2="146" y2="215" stroke="#FFFFFF" stroke-width="1.5"/>
+                <line x1="178" y1="215" x2="254" y2="215" stroke="#FFFFFF" stroke-width="1.5"/>
+                <circle cx="162" cy="215" r="7" fill="none" stroke="#FF4F12" stroke-width="2"/>
+                <circle cx="163" cy="215" r="3" fill="#FF4F12"/>
+              </svg>
+              <div class="lvl">Level <b>0.5°</b> hold steady</div>
+            </div>
+            <div class="h2">Same spot, same light, morning.</div>
+            <p class="small">The dashed outline is your last photo. Line up with it.</p>
+            <div class="shutter">
+              <button class="chip" type="button">10 s timer</button>
+              <button class="shut" type="button" aria-label="Take photo"></button>
+              <button class="chip" type="button">Front · 1 of 2</button>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Photo check · guided capture</div>
+          <div><b>Dayanak:</b> Poz normalizasyonu ölçüm hatasını yaklaşık %50 azaltıyor (Wong 2021). Eğim göstergesi sektörde eksik; önceki fotoğrafın hayaleti aynı pozu verdiriyor.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 4.2 Compare -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Compare</span><span class="ph">Front · on this phone</span></div>
+            <div class="lbl">Pick two</div>
+            <div class="seg">
+              <button type="button" aria-pressed="true">Day 1</button>
+              <button type="button" aria-pressed="false">4 weeks ago</button>
+              <button type="button" aria-pressed="true">Today</button>
+            </div>
+            <div class="pair">
+              <div class="fig">
+                <svg viewBox="0 0 120 240" aria-hidden="true">
+                  <circle cx="60" cy="26" r="15" fill="#9A9A95"/>
+                  <rect x="54" y="38" width="12" height="10" fill="#9A9A95"/>
+                  <path d="M60 46 C52 46 30 48 24 56 C21 72 25 98 29 118 C30 128 27 136 27 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L93 146 C93 136 90 128 91 118 C95 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="#9A9A95"/>
+                  <path d="M24 58 C16 62 12 90 10 140 L18 142 C20 100 24 80 28 70 Z" fill="#9A9A95"/>
+                  <path d="M96 58 C104 62 108 90 110 140 L102 142 C100 100 96 80 92 70 Z" fill="#9A9A95"/>
+                </svg>
+                <span class="fc"><b>Day 1</b>Jul 7</span>
+              </div>
+              <div class="fig">
+                <svg viewBox="0 0 120 240" aria-hidden="true">
+                  <circle cx="60" cy="26" r="15" fill="#6B6B68"/>
+                  <rect x="54" y="38" width="12" height="10" fill="#6B6B68"/>
+                  <path d="M60 46 C52 46 30 48 24 56 C21 72 27 98 31 118 C32 128 27 136 27 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L93 146 C93 136 88 128 89 118 C93 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="#6B6B68"/>
+                  <path d="M24 58 C16 62 12 90 10 140 L18 142 C20 100 24 80 28 70 Z" fill="#6B6B68"/>
+                  <path d="M96 58 C104 62 108 90 110 140 L102 142 C100 100 96 80 92 70 Z" fill="#6B6B68"/>
+                </svg>
+                <span class="fc"><b>Today</b>Sep 29</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="kv">
+                <div><span class="k">Waist</span><span class="v">90 → 88 cm</span></div>
+                <div><span class="k">Trend weight</span><span class="v">82.0 → 81.9 kg</span></div>
+                <div><span class="k">Time between</span><span class="v">12 weeks</span></div>
+              </div>
+            </div>
+            <p class="small">Both photos are aligned by pose before you see them.</p>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab on"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Compare · Day 1 vs today</div>
+          <div><b>Dayanak:</b> Karşılaştırma çıpası: insan dünü hatırlar, başlangıcı hatırlamaz; varsayılan çift Day 1 ve Today. Siluetler yüzsüz yer tutucu.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 4.3 Composition message -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Progress</span><span class="ph">Day 1 → today · 12 weeks</span></div>
+            <h3 class="h1" style="font-size:46px;margin-top:10px">Weight flat. <em>Waist down 2&nbsp;cm.</em></h3>
+            <p class="lede">That's body composition changing. The scale can't see it.</p>
+            <div class="prev">
+              <div class="tile"><span class="eyebrow">Trend weight</span><span class="tv">81.9<small style="color:#6B6B68">kg</small></span><span class="ts">82.0 kg on Day 1</span></div>
+              <div class="tile dark"><span class="eyebrow" style="color:#FF4F12">Waist</span><span class="tv">88<small>cm</small></span><span class="ts">90 cm on Day 1</span></div>
+            </div>
+            <div class="card">
+              <span class="eyebrow">Also moving</span>
+              <div class="kv">
+                <div><span class="k">Bench, estimated 1RM</span><span class="v">96 → 104 kg</span></div>
+                <div><span class="k">Weeks on track</span><span class="v">11 of 12</span></div>
+              </div>
+            </div>
+            <p class="small">Waist and strength count in your weekly call, next to the scale.</p>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab on"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Composition message</div>
+          <div><b>Dayanak:</b> Ross 2000: kilo sabitken bel inebiliyor. Terazi durunca kullanıcı bırakıyor; bu ekran o anı yakalıyor.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 4.4 Strength effort -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Strength</span><span class="ph">Estimated 1RM</span></div>
+            <div class="chips">
+              <button class="chip" type="button" aria-pressed="true">Bench</button>
+              <button class="chip" type="button" aria-pressed="false">Squat</button>
+              <button class="chip" type="button" aria-pressed="false">Row</button>
+            </div>
+            <div class="card">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+                <div class="big" style="font-size:64px">104<small style="font-size:24px">kg</small></div>
+                <div class="meta" style="text-align:right">+8 kg<br>in 12 weeks</div>
+              </div>
+              <svg class="chart" viewBox="0 0 300 170" role="img" aria-label="Bench estimated 1RM by week, from 96 kg in week 1 to 104 kg in week 12">
+                <rect x="255" y="10" width="39" height="130" fill="#FFFFFF"/>
+                <text x="274.5" y="22" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="9" font-weight="700" fill="#FF4F12">CALL</text>
+                <line x1="34" y1="119" x2="294" y2="119" stroke="#E2E2DE" stroke-width="1"/>
+                <line x1="34" y1="77" x2="294" y2="77" stroke="#E2E2DE" stroke-width="1"/>
+                <line x1="34" y1="35" x2="294" y2="35" stroke="#E2E2DE" stroke-width="1"/>
+                <line x1="34" y1="140" x2="294" y2="140" stroke="#6B6B68" stroke-width="1"/>
+                <text x="26" y="123" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">96</text>
+                <text x="26" y="81" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">100</text>
+                <text x="26" y="39" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">104</text>
+                <text x="34" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W1</text>
+                <text x="103.8" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W4</text>
+                <text x="196.9" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W8</text>
+                <text x="290" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W12</text>
+                <polyline points="34,119 57.3,108.5 80.5,108.5 103.8,98 127.1,87.5 150.4,87.5 173.6,77 196.9,77 220.2,66.5 243.5,66.5 266.7,56 290,35" fill="none" stroke="#0E0E0E" stroke-width="2.2" stroke-linejoin="round"/>
+                <circle cx="34" cy="119" r="3" fill="#0E0E0E"/>
+                <circle cx="57.3" cy="108.5" r="3" fill="#0E0E0E"/>
+                <circle cx="103.8" cy="98" r="3" fill="#0E0E0E"/>
+                <circle cx="127.1" cy="87.5" r="3" fill="#0E0E0E"/>
+                <circle cx="173.6" cy="77" r="3" fill="#0E0E0E"/>
+                <circle cx="220.2" cy="66.5" r="3" fill="#0E0E0E"/>
+                <circle cx="266.7" cy="56" r="3" fill="#0E0E0E"/>
+                <circle cx="80.5" cy="108.5" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
+                <circle cx="150.4" cy="87.5" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
+                <circle cx="196.9" cy="77" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
+                <circle cx="243.5" cy="66.5" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
+                <circle cx="290" cy="35" r="5" fill="#FF4F12"/>
+              </svg>
+              <div class="legend">
+                <span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3" fill="#0E0E0E"/></svg>Estimated 1RM, kg</span>
+                <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2"/></svg>Same load, more reps in reserve</span>
+              </div>
+            </div>
+            <div class="win">
+              <div class="tile"><span class="eyebrow">Decisions</span><span class="h3">Every 1–2 weeks</span><span class="ts">The white band. Short windows adjust food and training.</span></div>
+              <div class="tile dark"><span class="eyebrow" style="color:#FF4F12">Progress</span><span class="h3">Judged over 3 months</span><span class="ts">The whole line. Flat weeks inside it are normal.</span></div>
+            </div>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab on"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Strength · effort</div>
+          <div><b>Dayanak:</b> Güray: gelişim 3 ayda değerlendirilir, karar 1-2 haftada; iki pencere ayrı gösteriliyor. Halka işaretler: yük aynı, efor arttı (düz haftalar kayıp sayılmıyor).</div>
+        </figcaption>
+      </figure>
+
+      <!-- 4.5 Shape projection -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Projection</span><span class="ph">Waist 88 → 84 cm</span></div>
+            <div class="card">
+              <div class="trow"><div><div class="h3">Shape projection</div><div class="small">Off unless you turn it on.</div></div><span class="tgl on" aria-hidden="true"></span></div>
+            </div>
+            <div class="fig" style="grid-template-columns:1fr;padding:12px">
+              <svg viewBox="0 0 120 240" aria-hidden="true" style="max-width:130px">
+                <circle cx="60" cy="26" r="15" fill="#D6D6D2"/>
+                <rect x="54" y="38" width="12" height="10" fill="#D6D6D2"/>
+                <path d="M60 46 C52 46 30 48 24 56 C21 72 27 98 31 118 C32 128 27 136 27 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L93 146 C93 136 88 128 89 118 C93 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="#D6D6D2"/>
+                <path d="M24 58 C16 62 12 90 10 140 L18 142 C20 100 24 80 28 70 Z" fill="#D6D6D2"/>
+                <path d="M96 58 C104 62 108 90 110 140 L102 142 C100 100 96 80 92 70 Z" fill="#D6D6D2"/>
+                <path d="M60 46 C52 46 30 48 24 56 C21 72 30 98 35 118 C36 128 28 136 28 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L92 146 C92 136 84 128 85 118 C90 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="none" stroke="#FF4F12" stroke-width="2" stroke-dasharray="4 3"/>
+              </svg>
+              <div class="legend" style="justify-content:center">
+                <span><span class="sw" style="background:#D6D6D2"></span>Now</span>
+                <span><svg width="16" height="4" viewBox="0 0 16 4" aria-hidden="true"><line x1="0" y1="2" x2="16" y2="2" stroke="#FF4F12" stroke-width="2" stroke-dasharray="4 3"/></svg>At 84 cm waist</span>
+              </div>
+            </div>
+            <div style="display:grid;gap:4px">
+              <div class="scn"><span class="sa">95% of planned actions</span><span class="sr">3–5 mo</span></div>
+              <div class="scn me"><span class="sa">80% of planned actions</span><span class="sr">4–7 mo</span><span class="ss">Closest to your last 12 weeks (84%)</span></div>
+              <div class="scn"><span class="sa">60% of planned actions</span><span class="sr">6–9 mo</span></div>
+            </div>
+            <p class="small"><b style="color:#0E0E0E">A range, not a promise. Built from your own measurements.</b> Updates every 4 weeks with your new photo and waist.</p>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab on"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Shape projection</div>
+          <div><b>Dayanak:</b> H2: fotogerçekçi yüz+vücut iptal (EU AI Act Md.50, Apple 1.4.1). Parametrik siluet, sadece ileri yön, varsayılan kapalı, ilk oturumda gösterilmez (en erken 4. hafta).</div>
+        </figcaption>
+      </figure>
+
+      <!-- 4.6 Consistency history -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Consistency</span><span class="ph">Since Jul 7</span></div>
+            <div class="card">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+                <div class="big">11<small>/12</small></div>
+                <div class="meta" style="text-align:right">weeks on track<br>1 grace week used</div>
+              </div>
+              <div class="weeks" aria-label="Weeks 1 to 12">
+                <span class="wk">1</span><span class="wk">2</span><span class="wk">3</span><span class="wk">4</span><span class="wk">5</span><span class="wk">6</span>
+                <span class="wk g">G</span><span class="wk">8</span><span class="wk">9</span><span class="wk">10</span><span class="wk">11</span><span class="wk now">12</span>
+              </div>
+              <div class="legend">
+                <span><span class="sw"></span>On track</span>
+                <span><span class="sw g"></span>Grace week</span>
+                <span><span class="sw" style="box-shadow:inset 0 -3px 0 #FF4F12"></span>This week</span>
+              </div>
+            </div>
+            <div class="card">
+              <span class="eyebrow">How it counts</span>
+              <ul class="pts">
+                <li><span class="b">%</span><span>A week is on track at 75% of planned actions.</span></li>
+                <li><span class="b">G</span><span>A grace week covers travel, a cold, a hard week. The count carries on.</span></li>
+                <li><span class="b">+</span><span>Nothing resets. Weeks only add up.</span></li>
+              </ul>
+            </div>
+            <div class="card">
+              <div class="kv">
+                <div><span class="k">Week 12 · so far</span><span class="v">84%</span></div>
+                <div><span class="k">Week 11</span><span class="v">91%</span></div>
+                <div><span class="k">Week 10</span><span class="v">88%</span></div>
+              </div>
+            </div>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><span class="d"></span>Today</span>
+            <span class="tab"><span class="d"></span>Train</span>
+            <span class="tab"><span class="d"></span>Food</span>
+            <span class="tab on"><span class="d"></span>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> Consistency history</div>
+          <div><b>Dayanak:</b> I1: Duolingo streak freeze churn'ü %21 azalttı; salon verisi 1 haftalık toleransı destekliyor. Haftalık, kümülatif, sıfırlanmayan sayaç.</div>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+</div>
+
+<script>
+  document.querySelectorAll('.why[aria-expanded]').forEach(function (btn) {
+    var list = btn.parentElement.querySelector('.whylist');
+    if (!list) return;
+    btn.addEventListener('click', function () {
+      var open = list.hidden;
+      list.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      btn.querySelector('span').textContent = open ? '⌄' : '›';
+    });
+  });
+</script>

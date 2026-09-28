@@ -37,7 +37,7 @@ Test: **B**ilimsel fark · **Y**azılımsal fark · **P**azarlanabilir fark. (il
 | 2 | **Sycophancy'ye mimari bağışıklık** — "hayır" diyebilen koç | ✅ | ✅ | ✅ | MedPRESS %84,3→%19,9 · ELEPHANT +50p |
 | 3 | **Belirsizliği gösterme** — "512 ± 170 kcal", sahte kesinlik yerine | ✅ | ✅ | ✅ | NIH 2026: 250-345 kcal eksik; kimse aralık göstermiyor |
 | 4 | **Fotoğraf ⊕ adaptif TDEE çelişkisinin çözümü** | ✅ | ✅ | ➖ | F — literatürde ve üründe hiç konuşulmamış |
-| 5 | **Efor bazlı görselleştirme** — RIR düşüşü, e1RM tırmanışı; total volume değil | ✅ | ✅ | ✅ | B/6.4 — 24 uygulamanın ana metriği total volume |
+| 5 | **Efor bazlı görselleştirme** — aynı yükte fazla tekrar ya da artan RIR, e1RM tırmanışı; total volume değil (29 Eyl düzeltmesi: ilk sürümde "RIR düşüşü" yazıyordu, yanlıştı) | ✅ | ✅ | ✅ | B/6.4 — 24 uygulamanın ana metriği total volume |
 | 6 | **Antrenman + beslenme + uyku tek karar** | ✅ | ✅ | ✅ | B/6.2 — en yakını iki ayrı uygulama (MacroFactor) |
 | 7 | **Gram sorma** — hatayı %56,6→%20,2 düşürüyor | ✅ | ➖ | ➖ | F — en yüksek etki, en düşük teknoloji, kimsede yok |
 | 8 | **Kültürel mutfak** — Türk mutfağı hiç ölçülmemiş | ✅ | ✅ | ✅ | Asya −1520 kJ; Cal AI'da Türkçe yok |

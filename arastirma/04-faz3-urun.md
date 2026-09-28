@@ -254,7 +254,7 @@ bugün vs başlangıç, bugün vs 1 ay önce, bugün vs hedefin yarısı.
 
 #### Ö-22 · Efor bazlı görselleştirme
 24 uygulamanın ana metriği **total volume** — hacim artıranı ödüllendirir, **efor artıranı cezalandırır.**
-Bizim metriklerimiz: *aynı ağırlıkta RIR düştü · e1RM tırmandı, hacim sabit · set başına verim arttı.*
+Bizim metriklerimiz: *aynı yükte aynı eforda fazla tekrar (ya da aynı tekrarda artan RIR) · e1RM tırmandı, hacim sabit · set başına verim arttı.* (29 Eyl düzeltmesi: ilk sürümde "aynı ağırlıkta RIR düştü" yazıyordu; aynı yük ve tekrarda RIR düşmesi setin zorlaştığını, yani gerilemeyi gösterir.)
 - **Boşluk:** #5 · **B ✅ Y ✅ P ✅** — minimalist metodolojinin görsel dili hiç yok
 
 #### Ö-23 · İki pencere ayrımı

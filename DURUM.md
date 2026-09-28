@@ -13,11 +13,11 @@ Yok — gece kurulumu (aşağıdaki liste) sürüyor.
 
 ## Gece planı (29 Eyl gecesi, Levent uyurken)
 - [x] Depo + anayasa: `CLAUDE.md`, `docs/anayasa.md`, `docs/aktarim-protokolu.md`, `docs/sozluk.md`, 7 skill
-- [ ] Mimari ADR'ler (`plan/kararlar/`) — hepsi ÖNERİ, Levent sabah KABUL'e çevirir
-- [ ] `docs/mimari.md` — bütün resim
-- [ ] Yol haritası (`plan/yol-haritasi.md`) + backlog (`plan/backlog.yaml`, görev başına kabul kriteri)
+- [x] Mimari ADR'ler — 15 adet (`plan/kararlar.md`): 2 KABUL (yığın, görsel dil), 13 ÖNERİ
+- [x] `docs/mimari.md` — bütün resim + tek koşan örnek (pazartesi check-in)
+- [x] Yol haritası (11 kilometre taşı) + backlog (95 görev, her birinde kabul kriteri, test, kaynak, öğrenme hedefi)
 - [ ] GitHub: private repo + Project + issue'lar (`tools/sync_backlog.py`)
-- [ ] Prototip: onboarding+paywall · günlük akış · karar anları · ilerleme — görsel dil C
+- [x] Prototip: 28 ekran, görsel dil C — https://claude.ai/artifact/JMDAKqn45CgH7oYTPfqWu3 (kaynak `prototip/keel-prototype.html`)
 - [ ] İskelet: backend (Spring Boot + Modulith) · mobil (Expo) · contracts · data · CI yeşil · motor spesifikasyon
       testleri `pending`
 
