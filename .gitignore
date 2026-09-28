@@ -1,0 +1,21 @@
+# kişisel katman
+CLAUDE.local.md
+.claude/settings.local.json
+# sırlar
+.env
+.env.*
+# backend
+backend/.gradle/
+backend/build/
+backend/.kotlin/
+# mobile
+apps/mobile/node_modules/
+apps/mobile/.expo/
+apps/mobile/dist/
+apps/mobile/ios/
+apps/mobile/android/
+# os/editör
+.DS_Store
+.idea/
+.vscode/
+*.log
