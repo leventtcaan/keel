@@ -10,60 +10,60 @@ import java.util.Locale;
  * <p>quota.yaml is not listed: quotas are product limits for the coach, not engine rules (U14).
  */
 public enum ParameterKey {
-    WHTR_THRESHOLD(ParameterDomain.MEASUREMENT, "ratio"),
-    WAIST_CM_ELEVATED(ParameterDomain.MEASUREMENT, "cm"),
-    WAIST_MEASUREMENT_ERROR_CM(ParameterDomain.MEASUREMENT, "cm"),
-    WEIGHT_DAILY_NOISE_SD_KG(ParameterDomain.MEASUREMENT, "kg"),
-    PHOTO_MIN_DETECTABLE_FAT_MASS_KG(ParameterDomain.MEASUREMENT, "kg"),
-    PHOTO_INTERVAL_WEEKS(ParameterDomain.MEASUREMENT, "weeks"),
+    WHTR_THRESHOLD(ParameterDomain.MEASUREMENT, Unit.RATIO),
+    WAIST_CM_ELEVATED(ParameterDomain.MEASUREMENT, Unit.CM),
+    WAIST_MEASUREMENT_ERROR_CM(ParameterDomain.MEASUREMENT, Unit.CM),
+    WEIGHT_DAILY_NOISE_SD_KG(ParameterDomain.MEASUREMENT, Unit.KG),
+    PHOTO_MIN_DETECTABLE_FAT_MASS_KG(ParameterDomain.MEASUREMENT, Unit.KG),
+    PHOTO_INTERVAL_WEEKS(ParameterDomain.MEASUREMENT, Unit.WEEKS),
 
-    PROTEIN_G_PER_KG(ParameterDomain.NUTRITION, "g_per_kg_bodyweight"),
-    PROTEIN_G_PER_KG_MAX(ParameterDomain.NUTRITION, "g_per_kg_bodyweight"),
-    PROTEIN_G_PER_KG_FEMALE_45_PLUS(ParameterDomain.NUTRITION, "g_per_kg_bodyweight"),
-    FAT_G_PER_KG_MIN(ParameterDomain.NUTRITION, "g_per_kg_bodyweight"),
-    FAT_G_PER_KG_MAX(ParameterDomain.NUTRITION, "g_per_kg_bodyweight"),
-    CARBS_MIN_G_PER_DAY(ParameterDomain.NUTRITION, "g_per_day"),
-    FIBER_G_PER_DAY(ParameterDomain.NUTRITION, "g_per_day"),
-    CUT_STEP_MIN_KCAL(ParameterDomain.NUTRITION, "kcal_per_day"),
-    BULK_STEP_KCAL(ParameterDomain.NUTRITION, "kcal_per_day"),
-    CALORIE_CHANGE_MIN_WAIT_WEEKS(ParameterDomain.NUTRITION, "weeks"),
-    GAIN_RATE_IDEAL_KG_PER_MONTH(ParameterDomain.NUTRITION, "kg_per_month"),
-    GAIN_RATE_MAX_KG_PER_MONTH(ParameterDomain.NUTRITION, "kg_per_month"),
-    MAINTENANCE_OBSERVATION_DAYS(ParameterDomain.NUTRITION, "days"),
+    PROTEIN_G_PER_KG(ParameterDomain.NUTRITION, Unit.G_PER_KG_BODYWEIGHT),
+    PROTEIN_G_PER_KG_MAX(ParameterDomain.NUTRITION, Unit.G_PER_KG_BODYWEIGHT),
+    PROTEIN_G_PER_KG_FEMALE_45_PLUS(ParameterDomain.NUTRITION, Unit.G_PER_KG_BODYWEIGHT),
+    FAT_G_PER_KG_MIN(ParameterDomain.NUTRITION, Unit.G_PER_KG_BODYWEIGHT),
+    FAT_G_PER_KG_MAX(ParameterDomain.NUTRITION, Unit.G_PER_KG_BODYWEIGHT),
+    CARBS_MIN_G_PER_DAY(ParameterDomain.NUTRITION, Unit.G_PER_DAY),
+    FIBER_G_PER_DAY(ParameterDomain.NUTRITION, Unit.G_PER_DAY),
+    CUT_STEP_MIN_KCAL(ParameterDomain.NUTRITION, Unit.KCAL_PER_DAY),
+    BULK_STEP_KCAL(ParameterDomain.NUTRITION, Unit.KCAL_PER_DAY),
+    CALORIE_CHANGE_MIN_WAIT_WEEKS(ParameterDomain.NUTRITION, Unit.WEEKS),
+    GAIN_RATE_IDEAL_KG_PER_MONTH(ParameterDomain.NUTRITION, Unit.KG_PER_MONTH),
+    GAIN_RATE_MAX_KG_PER_MONTH(ParameterDomain.NUTRITION, Unit.KG_PER_MONTH),
+    MAINTENANCE_OBSERVATION_DAYS(ParameterDomain.NUTRITION, Unit.DAYS),
 
-    WEEKLY_LOSS_CAP_KG(ParameterDomain.SAFETY, "kg_per_week"),
-    WEEKLY_LOSS_CAP_PCT_BODYWEIGHT(ParameterDomain.SAFETY, "ratio"),
-    BMR_FLOOR_ENABLED(ParameterDomain.SAFETY, "boolean"),
-    RAPID_LOSS_HARD_STOP_PCT(ParameterDomain.SAFETY, "ratio"),
-    RAPID_LOSS_WINDOW_WEEKS(ParameterDomain.SAFETY, "weeks"),
-    LEA_THRESHOLD_KCAL_PER_KG_FFM(ParameterDomain.SAFETY, "kcal_per_kg_ffm_per_day"),
-    EA_ADEQUATE_KCAL_PER_KG_FFM(ParameterDomain.SAFETY, "kcal_per_kg_ffm_per_day"),
-    BULK_CEILING_FAT_PROXY_PCT(ParameterDomain.SAFETY, "percent_internal_only"),
+    WEEKLY_LOSS_CAP_KG(ParameterDomain.SAFETY, Unit.KG_PER_WEEK),
+    WEEKLY_LOSS_CAP_PCT_BODYWEIGHT(ParameterDomain.SAFETY, Unit.RATIO),
+    BMR_FLOOR_ENABLED(ParameterDomain.SAFETY, Unit.BOOLEAN),
+    RAPID_LOSS_HARD_STOP_PCT(ParameterDomain.SAFETY, Unit.RATIO),
+    RAPID_LOSS_WINDOW_WEEKS(ParameterDomain.SAFETY, Unit.WEEKS),
+    LEA_THRESHOLD_KCAL_PER_KG_FFM(ParameterDomain.SAFETY, Unit.KCAL_PER_KG_FFM_PER_DAY),
+    EA_ADEQUATE_KCAL_PER_KG_FFM(ParameterDomain.SAFETY, Unit.KCAL_PER_KG_FFM_PER_DAY),
+    BULK_CEILING_FAT_PROXY_PCT(ParameterDomain.SAFETY, Unit.PERCENT_INTERNAL_ONLY),
 
-    TARGET_RIR_MAX(ParameterDomain.TRAINING, "reps_in_reserve"),
-    WEEKLY_SETS_PER_MUSCLE(ParameterDomain.TRAINING, "sets_per_week"),
-    SETS_PER_SESSION_PER_MUSCLE_MIN(ParameterDomain.TRAINING, "sets"),
-    SETS_PER_SESSION_PER_MUSCLE_MAX(ParameterDomain.TRAINING, "sets"),
-    FREQUENCY_PER_MUSCLE_PER_WEEK(ParameterDomain.TRAINING, "sessions_per_week"),
-    DEFAULT_TRAINING_DAYS_PER_WEEK(ParameterDomain.TRAINING, "days_per_week"),
-    LOAD_INCREMENT_UPPER_KG(ParameterDomain.TRAINING, "kg"),
-    LOAD_INCREMENT_LOWER_KG(ParameterDomain.TRAINING, "kg"),
-    LOAD_PROGRESSION_COMPOUND_ONLY(ParameterDomain.TRAINING, "boolean"),
-    TECHNIQUE_GATE_REQUIRED(ParameterDomain.TRAINING, "boolean"),
-    STAGNATION_DELOAD_MONTHS(ParameterDomain.TRAINING, "months"),
-    DELOAD_VOLUME_FACTOR(ParameterDomain.TRAINING, "ratio"),
-    DELOAD_LOAD_REDUCTION_MIN(ParameterDomain.TRAINING, "ratio"),
-    DELOAD_LOAD_REDUCTION_MAX(ParameterDomain.TRAINING, "ratio"),
+    TARGET_RIR_MAX(ParameterDomain.TRAINING, Unit.REPS_IN_RESERVE),
+    WEEKLY_SETS_PER_MUSCLE(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
+    SETS_PER_SESSION_PER_MUSCLE_MIN(ParameterDomain.TRAINING, Unit.SETS),
+    SETS_PER_SESSION_PER_MUSCLE_MAX(ParameterDomain.TRAINING, Unit.SETS),
+    FREQUENCY_PER_MUSCLE_PER_WEEK(ParameterDomain.TRAINING, Unit.SESSIONS_PER_WEEK),
+    DEFAULT_TRAINING_DAYS_PER_WEEK(ParameterDomain.TRAINING, Unit.DAYS_PER_WEEK),
+    LOAD_INCREMENT_UPPER_KG(ParameterDomain.TRAINING, Unit.KG),
+    LOAD_INCREMENT_LOWER_KG(ParameterDomain.TRAINING, Unit.KG),
+    LOAD_PROGRESSION_COMPOUND_ONLY(ParameterDomain.TRAINING, Unit.BOOLEAN),
+    TECHNIQUE_GATE_REQUIRED(ParameterDomain.TRAINING, Unit.BOOLEAN),
+    STAGNATION_DELOAD_MONTHS(ParameterDomain.TRAINING, Unit.MONTHS),
+    DELOAD_VOLUME_FACTOR(ParameterDomain.TRAINING, Unit.RATIO),
+    DELOAD_LOAD_REDUCTION_MIN(ParameterDomain.TRAINING, Unit.RATIO),
+    DELOAD_LOAD_REDUCTION_MAX(ParameterDomain.TRAINING, Unit.RATIO),
 
-    TREND_DISPLAY_DAYS(ParameterDomain.WINDOWS, "days"),
-    DECISION_WINDOW_DAYS(ParameterDomain.WINDOWS, "days"),
-    NO_INTERPRETATION_DAYS(ParameterDomain.WINDOWS, "days"),
-    EVALUATION_WINDOW_DAYS(ParameterDomain.WINDOWS, "days");
+    TREND_DISPLAY_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
+    DECISION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
+    NO_INTERPRETATION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
+    EVALUATION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS);
 
     private final ParameterDomain domain;
-    private final String unit;
+    private final Unit unit;
 
-    ParameterKey(ParameterDomain domain, String unit) {
+    ParameterKey(ParameterDomain domain, Unit unit) {
         this.domain = domain;
         this.unit = unit;
     }
@@ -77,7 +77,7 @@ public enum ParameterKey {
         return domain;
     }
 
-    public String unit() {
+    public Unit unit() {
         return unit;
     }
 }

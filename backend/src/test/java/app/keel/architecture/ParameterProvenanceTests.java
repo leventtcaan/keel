@@ -44,7 +44,8 @@ class ParameterProvenanceTests {
                 if (!(parameter.get("unit") instanceof String)) {
                     problems.add(where + ": missing unit");
                 }
-                if (!TAGS.contains(parameter.get("tag"))) {
+                // instanceof first: Set.of(...).contains(null) throws instead of reporting a missing tag.
+                if (!(parameter.get("tag") instanceof String tag) || !TAGS.contains(tag)) {
                     problems.add(where + ": tag must be one of " + TAGS);
                 }
 

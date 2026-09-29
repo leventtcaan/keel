@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -220,7 +221,7 @@ class ParametersLoaderTests {
 
         assertThatThrownBy(() -> ParameterSet.fromDocuments(documents))
                 .isInstanceOf(InvalidParametersException.class).hasMessageContaining("windows.yaml")
-                .hasMessageContaining("parameters");
+                .hasMessageContaining("top-level 'parameters' list");
     }
 
     @Test
@@ -233,6 +234,231 @@ class ParametersLoaderTests {
         assertThatThrownBy(() -> ParameterSet.fromDocuments(documents))
                 .isInstanceOfSatisfying(InvalidParametersException.class,
                         e -> assertThat(e.problems()).hasSize(2));
+    }
+
+    // ── invalid: values that have the right type but the wrong meaning ──────────────────────────────────────
+
+    @Test
+    void failsOnAFractionWhereTheUnitCountsWholeThings() {
+        Map<String, Object> documents = repositoryDocuments();
+        bySex(documents, "windows.yaml", "decision_window_days").put("female", 28.5);
+
+        assertProblem(documents, "windows.yaml", "decision_window_days", "whole number");
+    }
+
+    @Test
+    void failsOnARatioWrittenAsAPercentage() {
+        // 0.08 means 8 %. Writing 8 would mean 800 % and the rapid-loss stop could never fire.
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "safety.yaml", "rapid_loss_hard_stop_pct").put("value", 8);
+
+        assertProblem(documents, "safety.yaml", "rapid_loss_hard_stop_pct", "between 0 and 1");
+    }
+
+    @Test
+    void failsOnZeroOrNegativeAmounts() {
+        Map<String, Object> negative = repositoryDocuments();
+        entry(negative, "nutrition.yaml", "cut_step_min_kcal").put("value", -500);
+        Map<String, Object> zero = repositoryDocuments();
+        entry(zero, "safety.yaml", "weekly_loss_cap_kg").put("value", 0);
+
+        assertProblem(negative, "nutrition.yaml", "cut_step_min_kcal", "greater than 0");
+        assertProblem(zero, "safety.yaml", "weekly_loss_cap_kg", "greater than 0");
+    }
+
+    @Test
+    void acceptsZeroRepsInReserve() {
+        // RIR 0 is a real target (a set taken to failure), unlike a zero-day window.
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "training.yaml", "target_rir_max").put("value", 0);
+
+        assertThat(ParameterSet.fromDocuments(documents).forSex(Sex.MALE).wholeNumber(ParameterKey.TARGET_RIR_MAX)).isZero();
+    }
+
+    @Test
+    void failsOnAPercentAbove100() {
+        Map<String, Object> documents = repositoryDocuments();
+        bySex(documents, "safety.yaml", "bulk_ceiling_fat_proxy_pct").put("female", 130);
+
+        assertProblem(documents, "safety.yaml", "bulk_ceiling_fat_proxy_pct", "between 0 and 100");
+    }
+
+    @Test
+    void failsWhenALowerBoundIsAboveItsUpperBound() {
+        Map<String, Object> protein = repositoryDocuments();
+        entry(protein, "nutrition.yaml", "protein_g_per_kg").put("value", 3.0); // max is 2.5
+        Map<String, Object> femaleFat = repositoryDocuments();
+        bySex(femaleFat, "nutrition.yaml", "fat_g_per_kg_min").put("female", 1.2); // max is 1.0
+
+        assertProblem(protein, "nutrition.yaml", "protein_g_per_kg", "protein_g_per_kg_max");
+        assertProblem(femaleFat, "nutrition.yaml", "fat_g_per_kg_min", "female");
+    }
+
+    @Test
+    void failsWhenTheLowEnergyThresholdIsNotBelowTheAdequateLevel() {
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "safety.yaml", "lea_threshold_kcal_per_kg_ffm").put("value", 45); // adequate is 45
+
+        assertProblem(documents, "safety.yaml", "lea_threshold_kcal_per_kg_ffm", "ea_adequate_kcal_per_kg_ffm");
+    }
+
+    @Test
+    void failsOnNotANumber() {
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "measurement.yaml", "whtr_threshold").put("value", Double.NaN);
+
+        assertProblem(documents, "measurement.yaml", "whtr_threshold", "finite");
+    }
+
+    @Test
+    void failsOnAWholeNumberTooLargeToUse() {
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "windows.yaml", "evaluation_window_days").put("value", new java.math.BigInteger("99999999999"));
+
+        assertProblem(documents, "windows.yaml", "evaluation_window_days", "too large");
+    }
+
+    // ── invalid: malformed entries ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void failsOnAnEntryWithoutAKeyOrWithANonTextKey() {
+        Map<String, Object> missing = repositoryDocuments();
+        entry(missing, "windows.yaml", "trend_display_days").remove("key");
+        Map<String, Object> number = repositoryDocuments();
+        entry(number, "windows.yaml", "trend_display_days").put("key", 7);
+
+        assertProblem(missing, "windows.yaml", "<no key>", "missing key");
+        assertProblem(number, "windows.yaml", "7", "must be text");
+    }
+
+    @Test
+    void failsOnANullFieldNameWithoutCrashing() {
+        // YAML "~: 3" gives a null map key.
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "windows.yaml", "trend_display_days").put(null, 3);
+
+        assertProblem(documents, "windows.yaml", "trend_display_days", "unknown field 'null'");
+    }
+
+    @Test
+    void failsOnAnItemThatIsNotAMapping() {
+        Map<String, Object> documents = repositoryDocuments();
+        parametersRaw(documents, "windows.yaml").add("trend_display_days: 7");
+
+        assertThatThrownBy(() -> ParameterSet.fromDocuments(documents))
+                .isInstanceOf(InvalidParametersException.class).hasMessageContaining("windows.yaml")
+                .hasMessageContaining("must be a mapping");
+    }
+
+    @Test
+    void failsOnAnEmptyFile() {
+        Map<String, Object> documents = repositoryDocuments();
+        documents.put("windows.yaml", null);
+
+        assertThatThrownBy(() -> ParameterSet.fromDocuments(documents))
+                .isInstanceOf(InvalidParametersException.class).hasMessageContaining("windows.yaml")
+                .hasMessageContaining("top-level 'parameters' list");
+    }
+
+    @Test
+    void failsWhenBySexIsNotAMappingOrNamesAThirdSex() {
+        Map<String, Object> scalar = repositoryDocuments();
+        entry(scalar, "windows.yaml", "decision_window_days").put("by_sex", 21);
+        Map<String, Object> third = repositoryDocuments();
+        bySex(third, "windows.yaml", "decision_window_days").put("other", 25);
+
+        assertProblem(scalar, "windows.yaml", "decision_window_days", "must be a mapping");
+        assertProblem(third, "windows.yaml", "decision_window_days", "by_sex");
+    }
+
+    @Test
+    void reportsEveryProblemInsideOneEntry() {
+        Map<String, Object> documents = repositoryDocuments();
+        Map<String, Object> window = entry(documents, "windows.yaml", "trend_display_days");
+        window.remove("unit");
+        window.remove("source");
+
+        assertThatThrownBy(() -> ParameterSet.fromDocuments(documents))
+                .isInstanceOfSatisfying(InvalidParametersException.class, e -> assertThat(e.problems())
+                        .anySatisfy(problem -> assertThat(problem).contains("trend_display_days").contains("unit"))
+                        .anySatisfy(problem -> assertThat(problem).contains("trend_display_days").contains("source")));
+    }
+
+    @Test
+    void reportsAMissingFileOnce() {
+        Map<String, Object> documents = repositoryDocuments();
+        documents.remove("training.yaml");
+
+        assertThatThrownBy(() -> ParameterSet.fromDocuments(documents))
+                .isInstanceOfSatisfying(InvalidParametersException.class,
+                        e -> assertThat(e.problems()).containsExactly("training.yaml: file missing"));
+    }
+
+    @Test
+    void mapsEveryTagToItsSourceTag() {
+        Map<ParameterKey, Parameter> loaded = ParameterSet.fromDocuments(repositoryDocuments()).parameters();
+
+        assertThat(loaded.get(ParameterKey.CUT_STEP_MIN_KCAL).source().tag()).isEqualTo(SourceTag.EXPERIENCE);
+        assertThat(loaded.get(ParameterKey.DECISION_WINDOW_DAYS).source().tag()).isEqualTo(SourceTag.LITERATURE);
+    }
+
+    @Test
+    void anExceptionAlwaysNamesAtLeastOneProblem() {
+        assertThatThrownBy(() -> new InvalidParametersException(List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void theCallerMustRejectDuplicateYamlKeys() {
+        // SnakeYAML's default keeps the last duplicate and only logs a warning; the engine would never see the
+        // first value. Callers parse with duplicates disallowed, as this test's reader does.
+        String twoValues = "parameters:\n  - key: trend_display_days\n    value: 7\n    value: 14\n";
+
+        assertThatThrownBy(() -> strictYaml().load(twoValues))
+                .isInstanceOf(org.yaml.snakeyaml.constructor.DuplicateKeyException.class);
+    }
+
+    // ── version hash: every part that can change a decision ─────────────────────────────────────────────────
+
+    @Test
+    void theVersionHashChangesWhenOnlyOneSexsValueChanges() {
+        String before = ParameterSet.fromDocuments(repositoryDocuments()).versionHash();
+        Map<String, Object> female = repositoryDocuments();
+        bySex(female, "windows.yaml", "decision_window_days").put("female", 35);
+        Map<String, Object> male = repositoryDocuments();
+        bySex(male, "windows.yaml", "decision_window_days").put("male", 14);
+
+        assertThat(ParameterSet.fromDocuments(female).versionHash()).isNotEqualTo(before);
+        assertThat(ParameterSet.fromDocuments(male).versionHash()).isNotEqualTo(before);
+    }
+
+    @Test
+    void theVersionHashChangesWhenAFlagFlips() {
+        String before = ParameterSet.fromDocuments(repositoryDocuments()).versionHash();
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "safety.yaml", "bmr_floor_enabled").put("value", false);
+
+        assertThat(ParameterSet.fromDocuments(documents).versionHash()).isNotEqualTo(before);
+    }
+
+    @Test
+    void theVersionHashFormatIsPinned() {
+        // Stored hashes must stay comparable across releases (ADR-003 §6). The expected value was computed outside
+        // Java: printf 'bmr_floor_enabled|boolean|true|true\ndecision_window_days|days|21|28' | shasum -a 256
+        Map<ParameterKey, Parameter> two = new java.util.EnumMap<>(ParameterKey.class);
+        Source source = new Source("arastirma/ham/J1-cinsiyet.md#D1", SourceTag.LITERATURE);
+        two.put(ParameterKey.DECISION_WINDOW_DAYS, new Parameter(ParameterKey.DECISION_WINDOW_DAYS,
+                decimal(21), decimal(28), source));
+        two.put(ParameterKey.BMR_FLOOR_ENABLED, new Parameter(ParameterKey.BMR_FLOOR_ENABLED,
+                new ParameterValue.Flag(true), new ParameterValue.Flag(true), source));
+
+        assertThat(ParameterSet.hashOf(two)).isEqualTo(PINNED_HASH);
+    }
+
+    private static final String PINNED_HASH = "e2809c59ee5ffed9a089677fdfd6b421dd291a5563f2c48d6b10e0857d5929e4";
+
+    private static ParameterValue decimal(long value) {
+        return new ParameterValue.Decimal(java.math.BigDecimal.valueOf(value));
     }
 
     // ── version hash ────────────────────────────────────────────────────────────────────────────────────────
@@ -249,7 +475,8 @@ class ParametersLoaderTests {
     void theVersionHashChangesWhenAValueChanges() {
         String before = ParameterSet.fromDocuments(repositoryDocuments()).versionHash();
         Map<String, Object> documents = repositoryDocuments();
-        entry(documents, "nutrition.yaml", "cut_step_min_kcal").put("value", 400);
+        Map<String, Object> step = entry(documents, "nutrition.yaml", "cut_step_min_kcal");
+        step.put("value", ((Number) step.get("value")).intValue() + 1);
 
         assertThat(ParameterSet.fromDocuments(documents).versionHash()).isNotEqualTo(before);
     }
@@ -285,12 +512,29 @@ class ParametersLoaderTests {
         Map<String, Object> documents = new LinkedHashMap<>();
         for (ParameterDomain domain : ParameterDomain.values()) {
             try (Reader reader = Files.newBufferedReader(PARAMETERS_DIR.resolve(domain.fileName()))) {
-                documents.put(domain.fileName(), new Yaml().load(reader));
+                documents.put(domain.fileName(), strictYaml().load(reader));
             } catch (IOException e) {
                 throw new IllegalStateException("Cannot read " + domain.fileName(), e);
             }
         }
         return documents;
+    }
+
+    /** How callers must parse parameter files: a repeated key is an error, not "last one wins". */
+    static Yaml strictYaml() {
+        LoaderOptions options = new LoaderOptions();
+        options.setAllowDuplicateKeys(false);
+        return new Yaml(options);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> parametersRaw(Map<String, Object> documents, String file) {
+        return (List<Object>) ((Map<String, Object>) documents.get(file)).get("parameters");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> bySex(Map<String, Object> documents, String file, String key) {
+        return (Map<String, Object>) entry(documents, file, key).get("by_sex");
     }
 
     @SuppressWarnings("unchecked")
