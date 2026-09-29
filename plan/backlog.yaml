@@ -513,7 +513,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-103, K-104]
     why: "Kalori merdiveni mevcut hedefi değiştirir; ilk hedefi üreten görev yoktu (L3 P1)"
     acceptance:

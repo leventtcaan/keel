@@ -331,6 +331,18 @@ class ParametersLoaderTests {
     }
 
     @Test
+    void failsWhenAnActivityFactorIsUnderOneOrOutOfOrder() {
+        // Total expenditure is never under resting (PAL ≥ 1), and the levels run from least to most active.
+        Map<String, Object> underOne = repositoryDocuments();
+        entry(underOne, "nutrition.yaml", "activity_factor_inactive").put("value", 0.9);
+        Map<String, Object> outOfOrder = repositoryDocuments();
+        entry(outOfOrder, "nutrition.yaml", "activity_factor_active").put("value", 1.5); // low active is 1.6
+
+        assertProblem(underOne, "nutrition.yaml", "activity_factor_inactive", "1 or more");
+        assertProblem(outOfOrder, "nutrition.yaml", "activity_factor_low_active", "activity_factor_active");
+    }
+
+    @Test
     void failsOnNotANumber() {
         Map<String, Object> documents = repositoryDocuments();
         entry(documents, "measurement.yaml", "whtr_threshold").put("value", Double.NaN);

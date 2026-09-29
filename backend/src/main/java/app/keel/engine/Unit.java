@@ -25,6 +25,13 @@ public enum Unit {
 
     // Calorie targets and steps are whole kcal (Güray: 500, 250).
     KCAL_PER_DAY("kcal_per_day", Kind.WHOLE, Bound.POSITIVE),
+    // Resting-energy formula terms (Mifflin-St Jeor, H6 A1). The constant can be negative (women: -161).
+    KCAL_PER_KG_PER_DAY("kcal_per_kg_per_day", Kind.FRACTION, Bound.POSITIVE),
+    KCAL_PER_CM_PER_DAY("kcal_per_cm_per_day", Kind.FRACTION, Bound.POSITIVE),
+    KCAL_PER_YEAR_PER_DAY("kcal_per_year_per_day", Kind.FRACTION, Bound.POSITIVE),
+    KCAL_OFFSET_PER_DAY("kcal_offset_per_day", Kind.WHOLE, Bound.NONE),
+    // Total over resting expenditure (PAL); a person always spends at least their resting energy, so never under 1.
+    ACTIVITY_FACTOR("activity_factor", Kind.FRACTION, Bound.AT_LEAST_ONE),
     DAYS("days", Kind.WHOLE, Bound.POSITIVE),
     WEEKS("weeks", Kind.WHOLE, Bound.POSITIVE),
     MONTHS("months", Kind.WHOLE, Bound.POSITIVE),
@@ -50,7 +57,8 @@ public enum Unit {
         POSITIVE,
         ZERO_OR_MORE,
         UP_TO_ONE,
-        UP_TO_HUNDRED
+        UP_TO_HUNDRED,
+        AT_LEAST_ONE
     }
 
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
@@ -85,6 +93,7 @@ public enum Unit {
             case ZERO_OR_MORE -> value.signum() >= 0;
             case UP_TO_ONE -> value.signum() > 0 && value.compareTo(BigDecimal.ONE) <= 0;
             case UP_TO_HUNDRED -> value.signum() > 0 && value.compareTo(HUNDRED) <= 0;
+            case AT_LEAST_ONE -> value.compareTo(BigDecimal.ONE) >= 0;
         };
         if (ok) {
             return Optional.empty();
@@ -94,6 +103,7 @@ public enum Unit {
             case ZERO_OR_MORE -> "must be 0 or more";
             case UP_TO_ONE -> "must be between 0 and 1 (a ratio: 0.08 means 8 %)";
             case UP_TO_HUNDRED -> "must be between 0 and 100 (a percent)";
+            case AT_LEAST_ONE -> "must be 1 or more (total over resting expenditure)";
             case NONE -> throw new IllegalStateException("unreachable");
         });
     }

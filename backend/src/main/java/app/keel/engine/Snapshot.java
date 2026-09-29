@@ -21,10 +21,11 @@ import java.util.Objects;
  *     module, K-212) must leave this field out. toString hides it for logs
  * @param checkIn this week's answers besides the scale, for the weekly spine (K-106)
  * @param profile age and height, when known (macros K-108, resting energy K-114)
+ * @param observingMaintenance the current target is the starting estimate, held while maintenance is observed (K-114)
  */
 public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
         Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn,
-        Optional<Profile> profile) {
+        Optional<Profile> profile, boolean observingMaintenance) {
 
     public Snapshot {
         Objects.requireNonNull(today, "today");
@@ -63,22 +64,26 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
     /** A Snapshot with the basics and, possibly, a body-fat estimate; the other inputs are added with the withers. */
     public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
             Optional<BigDecimal> fatProxyPct) {
-        this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE, Optional.empty());
+        this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE, Optional.empty(), false);
     }
 
     public Snapshot withEnergy(EnergyBudget budget) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance);
     }
 
     public Snapshot withMenstrualLossReported(boolean reported) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance);
     }
 
     public Snapshot withCheckIn(CheckIn answers) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance);
     }
 
     public Snapshot withProfile(Profile facts) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts));
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance);
+    }
+
+    public Snapshot withObservingMaintenance(boolean observing) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing);
     }
 }

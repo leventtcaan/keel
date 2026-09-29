@@ -41,6 +41,10 @@ final class ParameterDocuments {
             new Order(ParameterKey.PROTEIN_G_PER_KG_FEMALE_45_PLUS, ParameterKey.PROTEIN_G_PER_KG_MAX, false),
             new Order(ParameterKey.FAT_G_PER_KG_MIN, ParameterKey.FAT_G_PER_KG_MAX, false),
             new Order(ParameterKey.GAIN_RATE_IDEAL_KG_PER_MONTH, ParameterKey.GAIN_RATE_MAX_KG_PER_MONTH, false),
+            // Activity levels, least to most active (NASEM 2023 via H6 A3).
+            new Order(ParameterKey.ACTIVITY_FACTOR_INACTIVE, ParameterKey.ACTIVITY_FACTOR_LOW_ACTIVE, true),
+            new Order(ParameterKey.ACTIVITY_FACTOR_LOW_ACTIVE, ParameterKey.ACTIVITY_FACTOR_ACTIVE, true),
+            new Order(ParameterKey.ACTIVITY_FACTOR_ACTIVE, ParameterKey.ACTIVITY_FACTOR_VERY_ACTIVE, true),
             new Order(ParameterKey.SETS_PER_SESSION_PER_MUSCLE_MIN, ParameterKey.SETS_PER_SESSION_PER_MUSCLE_MAX, false),
             new Order(ParameterKey.DELOAD_LOAD_REDUCTION_MIN, ParameterKey.DELOAD_LOAD_REDUCTION_MAX, false),
             // Under the fix line adherence is the problem; between it and on-track the plan is not followed well

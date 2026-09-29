@@ -76,11 +76,67 @@ parameters:
     source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-11"
     note: "Haftada ~0,5 kg tavanla uyumlu (G6 K-12). Kadın ×0,5 (J1 A8, zayıf kanıt)."
   - key: maintenance_observation_days
-    value: 14
+    by_sex: {male: 14, female: 28}
     unit: days
     tag: tecrube
     source: "arastirma/ham/guray/G2-kilo-verme.md#K-8"
-    note: "Güray 1-2 hafta; literatür en az 2, tercihen 3 hafta (H3 B3, çelişki Ç5). 14 gün ikisini birden sağlar: Güray aralığının üst ucu = literatürün alt sınırı. Çelişkide Güray kazanır (U14)."
+    note: "Kadın değeri 28: J1 D1 (döngü sinyali 28 günde sıfırlanır) ve H3 Ç5, ADR-020 L-7 ile Güray'ın 1-2 haftasının yerine; erkek değeri Güray. Başlangıç hedefi (formül tahmini) bu kadar gün değişmez; kilo sabitse o kalori kişinin bakımıdır (K-8 'gözlem formülü yener'). Erkek 14: Güray 1-2 hafta, literatür en az 2 (H3 B3); tam iki haftalık döngü (H6 A4). Kadın 28: döngü sinyali (J1 D1, H3 Ç5) — ADR-020 L-7."
+  - key: resting_kcal_per_kg
+    value: 10
+    unit: kcal_per_kg_per_day
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A1"
+    note: "Mifflin-St Jeor 1990 sadeleştirilmiş form: 10·kg + 6,25·cm − 5·yaş + sabit. Gerçek (şu anki) kilo. Yalnız başlangıç tahmini ve BMR tabanı için; gözlem kazanır (G2 K-8, ADR-020 L-7)."
+  - key: resting_kcal_per_cm
+    value: 6.25
+    unit: kcal_per_cm_per_day
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A1"
+  - key: resting_kcal_per_year
+    value: 5
+    unit: kcal_per_year_per_day
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A1"
+    note: "Yaşla çıkarılır."
+  - key: resting_kcal_offset
+    by_sex: {male: 5, female: -161}
+    unit: kcal_offset_per_day
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A5"
+    note: "Mifflin'de kadın için tek fark sabit terim (A5). Menopoz terimi yok; gözlem yakalar."
+  - key: activity_factor_inactive
+    value: 1.4
+    unit: activity_factor
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A3"
+    note: "NASEM 2023 tipik değerleri (DLW ölçümlü). Popüler 1,2-1,9 setinin birincil kaynağı yok ve 1,2 ölçülmüş serbest yaşam PAL'inin altında (H6 A3-d)."
+  - key: activity_factor_low_active
+    value: 1.6
+    unit: activity_factor
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A3"
+  - key: activity_factor_active
+    value: 1.75
+    unit: activity_factor
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A3"
+  - key: activity_factor_very_active
+    value: 2.05
+    unit: activity_factor
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A3"
+  - key: activity_factor_unknown
+    value: 1.6
+    unit: activity_factor
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A3"
+    note: "Aktivite bilinmiyorsa: sedanter Batılı yetişkinde ölçülmüş modal PAL 1,60 (Black 1996, FAO); kitle direnç antrenmanı yapıyor, 1,4 büyük olasılıkla düşük kalır. Aktivite sorusunun nasıl sorulacağı ürün kararı (DURUM)."
+  - key: maintenance_estimate_error
+    value: 0.15
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A4"
+    note: "TÜRETİLMİŞ. Formül tahmini aralık olarak gösterilir (U5): ±%15. RMR ±%10 ve PAL ±%8-10 birlikte ≈ ±%13 (H6 A4, türetilmiş); sporcuda Mifflin daha kötü (A2)."
   - key: bulk_stall_weeks
     value: 2
     unit: weeks

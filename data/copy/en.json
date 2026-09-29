@@ -56,6 +56,10 @@
       "calorie_change_too_soon": {
         "title": "Give the new target time to work.",
         "body": "Your calories changed recently. A new target needs a couple of weeks before the scale can say anything about it."
+      },
+      "observing": {
+        "title": "First, finding your real maintenance.",
+        "body": "Your starting calories are an estimate, and estimates miss by a few hundred either way. For the first weeks the plan stays put while your weigh-ins show what your body actually needs."
       }
     },
     "increase_calories": {
