@@ -574,7 +574,7 @@ tasks:
     module: backend
     type: chore
     size: M
-    status: todo
+    status: done
     depends_on: [K-006]
     why: "Kalıcılık temeli (ADR-005)"
     acceptance:
