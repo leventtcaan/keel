@@ -70,8 +70,8 @@ parameters:
     source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-11"
     note: "Haftada ~0,5 kg tavanla uyumlu (G6 K-12). Kadın ×0,5 (J1 A8, zayıf kanıt)."
   - key: maintenance_observation_days
-    value: 21
+    value: 14
     unit: days
-    tag: literatur
-    source: "arastirma/ham/H3-bosluk-literatur.md#B3"
-    note: "Güray 1-2 hafta diyor (G2 K-8); literatür en az 2, tercihen 3 hafta. Güray aralığının üst ucunun da üstü — su/glikojen gürültüsü (H3 çelişki Ç5). Levent'e soruldu."
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-8"
+    note: "Güray 1-2 hafta; literatür en az 2, tercihen 3 hafta (H3 B3, çelişki Ç5). 14 gün ikisini birden sağlar: Güray aralığının üst ucu = literatürün alt sınırı. Çelişkide Güray kazanır (U14)."

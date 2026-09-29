@@ -1,0 +1,7 @@
+# GitHub targets for tools/sync_backlog.py (ADR-002). Identifiers live here, not in code (K2).
+owner: leventtcaan
+repo: keel
+project_title: keel
+# The tool writes created issue numbers and project ids here; do not edit by hand.
+state_file: plan/github-ids.yaml
+status_map: {todo: Todo, doing: In Progress, done: Done}
