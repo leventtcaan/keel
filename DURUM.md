@@ -44,13 +44,15 @@ Sonra K-101 skill `gorev-baslat` ile, ön aktarımla başlar.
   `@types/jest`, `@types/node` (hepsi `npx expo install` ile SDK uyumlu)
 
 ## Açık sorular (Levent'e)
-1. **AI sağlayıcısı** hangisi olsun? Rıza ekranı sağlayıcıyı adıyla anmak zorunda (Apple 5.1.2(i)); prototipte
-   turuncu yer tutucu var. Karar M5'te ama erken bilmek rıza metnini ve maliyet hesabını netleştirir.
-2. **Expo'nun resmî Claude eklentisi** (`expo@claude-plugins-official`) — şablon etkinleştirmek istedi, depoya almadım
-   (kalıcı yapılandırma). Expo dokümanını sürüme göre okumaya yardım eder. Açalım mı?
-3. **VPS:** sağlayıcı, işletim sistemi, RAM/disk? (ADR-013)
-4. **Alan adı:** sahip olduğun bir alan adı var mı? iOS bundle kimliği ters alan adı ister (ör. `com.alanadin.keel`);
-   yoksa geçici `dev.leventtcaan.keel` kullanılır (K-903).
+1. **Dil modeli sağlayıcısı** (29 Eyl'de açıklandı): M5'te üç sağlayıcı kendi değerlendirme setimizle ölçülüp seçilecek
+   (görev K-511). Rıza ekranı seçilen şirketin adını yazacak.
+
+## Levent cevapları (29 Eyl sabah)
+- ADR'leri okudu; eksik buldu: **hareket gösterimi** → araştırılıyor (L1)
+- Renklerin başka bir uygulamadan çalıntı olmaması ve güncel/psikolojik olarak doğru tasarım → araştırılıyor (L2)
+- Eksik zorunlu özellikler + yaratıcı öneriler → araştırılıyor (L3)
+- **Expo resmî eklentisi: onaylandı** (+ Anthropic Design eklentisi önerildi); Levent "ne yaptığını söyleyerek inisiyatif al" dedi
+- VPS: Contabo giriş segmenti, boş · Alan adı: yok, sonra alınır (K-903 geçici `dev.leventtcaan.keel`)
 
 ## Gece yakalanıp düzeltilenler (bilgi için)
 - **RIR mantık hatası:** "aynı yükte düşen RIR" ilerleme diye yazılmıştı — yanlış; aynı yük ve tekrarda RIR'ın düşmesi

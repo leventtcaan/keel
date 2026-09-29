@@ -10,7 +10,7 @@ Levent'in bir VPS'i var; cepten para yakılamaz. Sabit maliyet hedefi ~$15/ay (`
 - Günlük `pg_dump` yedeği VPS dışına (nesne depolama).
 - Dağıtım başlangıçta elle (tek komut), sonra CI'dan.
 - Sırlar ortam değişkeninde (V5).
-- VPS sağlayıcısı, kaynakları ve işletim sistemi `[Levent'e soruldu]`.
+- VPS: **Contabo, giriş segmenti, boş** (Levent, 29 Eyl). Kaynakları ve işletim sistemi K-901'de sunucuya bağlanınca doğrulanır.
 
 ## Neden
 Sıfır ek maliyet; Docker becerisi portfolyoya girer; taşınabilir.
