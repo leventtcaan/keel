@@ -11,6 +11,13 @@ guncelleme: 2026-09-29
 (dal koruması: iki CI kontrolü zorunlu). Levent'i bekleyen: ürün kapsamı, para, sağlık/regülasyon, kullanıcı
 verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 
+## Akşam oturumu — Levent dönünce (önerilen sıra, ~2 saat)
+1. **Kararlar (15 dk):** aşağıdaki "Akşam sorulacaklar" L-1…L-11 — en acili L-1 (K-104 hard stop) ve K-106 tasarımı.
+   Cevaplar gelince K-104'ün kalan iki kuralı ve K-106 → K-107 → K-112 zinciri açılır.
+2. **Aktarım (merdiven, 2-3 basamak/mesaj):** `docs/aktarim/M1/` sırasıyla K-101 → K-102 → K-103 → K-104 → K-105 →
+   K-108 → K-109. Her dosyada basamaklar, satır satır yerler, canlı kanıt ve soru bankası hazır.
+3. Levent kendi cümleleriyle anlatır → Apple Notes (Keel klasörü, `ders-notu`) — en son.
+
 ## M1 koşusu — toplu mod (29 Eyl öğleden itibaren; bağlam sıkışırsa buradan devam)
 Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/aktarim-protokolu.md` › Toplu mod).
 **Her görev döngüsü:** `gorev-baslat` → test önce (RED çıktısı) → kod → `./gradlew build` → pr-review-toolkit
@@ -29,7 +36,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-106 check-in omurgası | **tasarım önerisi, akşam konuşulacak** | `plan/m1-k106-tasarim-onerisi.md` | |
 | K-107 kalori merdiveni | — | | |
 | K-108 makrolar | PR açık, auto-merge | PR #139 | `docs/aktarim/M1/K-108.md` |
-| K-109 progresyon | inceleme | `engine/20-progression` (worktree `../keel-k109`) | — |
+| K-109 progresyon | PR açık, auto-merge | PR #140 | `docs/aktarim/M1/K-109.md` |
 | K-110 deload | — | | |
 | K-111 tutarlılık sayısı | — | | |
 | K-112 karar montajı | — | | |
@@ -72,7 +79,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-K-108 PR #139 CI'da · K-109 öz-denetimde (worktree `../keel-k109`) · K-106 akşam kararına bağlı
+K-108 PR #139, K-109 PR #140 CI'da · sıradaki K-110 deload, K-111 tutarlılık · K-106 akşam kararına bağlı
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.

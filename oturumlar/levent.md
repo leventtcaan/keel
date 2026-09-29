@@ -36,3 +36,10 @@
 - takıldım: hook testi ilk RED'de boşuna geçiyordu (eksik Python dosyası da 2 döner) → test yalnız hook'un işaretini sayıyor
 - sıradaki: K-101 motor alan tipleri, ön aktarımla
 - AI: tamamı agent; Levent "yapabildiğin yere kadar yap" dedi
+
+## 2026-09-29 · M1 toplu koşu (öğleden akşama, Levent paralel işte)
+- yaptım: K-101, K-102, K-103, K-104 (kısmi), K-105 birleşti; K-108, K-109 PR'da. Her görev: test önce → kod → 1-3 inceleme ajanı → düzeltme → aktarım dosyası → PR auto-merge. jqwik eklendi. M1 kural haritası + K-106 tasarım önerisi
+- karar: toplu mod (Levent); eksik eşik araştırmadan kaynakla + onay listesi; teknik kararlar DURUM'da; sağlık yorumu gerektirenler (L-1…L-11) bekletildi
+- takıldım: K-104 kartı kaynakla çelişiyor (hard stop vs daralt); K-106 "sabit kilo" tanımı ve uyum bandı kaynakta yok; K-114 BMR formülü kaynakta yok
+- sıradaki: akşam kararlar + aktarım (DURUM › Akşam oturumu); o arada K-110, K-111
+- AI: tamamı agent; öz-denetim ajanları 25+ gerçek hata buldu (ör. sessiz kalori aşımı, kırılan nextReview sözü, %800 oran riski, U4 değer sızıntısı)
