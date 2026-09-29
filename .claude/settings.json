@@ -1,5 +1,4 @@
 {
-  "outputStyle": "Explanatory",
   "attribution": {
     "commit": "",
     "pr": "",
@@ -10,5 +9,12 @@
       "Read(./.env)",
       "Read(./.env.*)"
     ]
-  }
+  },
+  "enabledPlugins": {
+    "expo@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "jdtls-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
+  "outputStyle": "Explanatory"
 }

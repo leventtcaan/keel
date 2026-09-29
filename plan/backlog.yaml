@@ -204,7 +204,7 @@ tasks:
     module: docs
     type: human
     size: S
-    status: todo
+    status: done
     depends_on: [K-002, K-005]
     why: "ÖNERİ'yi KABUL'e yalnız Levent çevirir"
     acceptance:

@@ -6,18 +6,30 @@ guncelleme: 2026-09-29
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M0 · Temel neredeyse bitti.** Prototip v2 yayında (K-012 kapandı). Kod iskeleti derleniyor, CI yeşil, karar motorunun
-spesifikasyonu hazır ama motor yazılmadı (bilerek: ön aktarımla birlikte yazılacak).
+**M0 · Temel KAPANDI (29 Eyl).** 19 ADR KABUL, prototip v2 onaylandı, RUBİN kesin. **Sırada M1 · Karar motoru.**
+Çalışma modu değişti → **ADR-019:** teknik işte agent karar verir, uygular, PR'ı `--auto --squash` ile birleştirir
+(dal koruması: iki CI kontrolü zorunlu). Levent'i bekleyen: ürün kapsamı, para, sağlık/regülasyon, kullanıcı
+verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 
 ## Aktif görev
-Yok. Sıradaki: **K-011 · Levent incelemesi**, sonra **K-101 · Motor alan tipleri** (M1'in ilk görevi, ön aktarımla).
+Yok. Sıradaki: **K-101 · Motor alan tipleri** (skill `gorev-baslat`, ön aktarımla).
 
-## Sıradaki tek adım (Levent)
-1. **PR #130'u merge et** (RUBİN token'ları + kontrast testi, CI yeşil): https://github.com/leventtcaan/keel/pull/130
-2. **Eklentileri kur:** Expo + Design (kart gösterildi; kurulunca prototip `design-critique`'ten geçecek)
-3. **Prototip v2'ye bak:** https://claude.ai/artifact/JMDAKqn45CgH7oYTPfqWu3 (37 ekran, üstte Light/Dark) → onay ya da değişiklik listesi
-4. `plan/kararlar.md` → 13 ÖNERİ ADR'yi KABUL ya da değişiklik (K-011; kritik: ADR-003, ADR-004, ADR-015)
-5. İsteğe bağlı: RUBİN 5 saniye testi (8 kişiden 2'den fazlası "kadın uygulaması" derse Saha `#0B7F05`'e geç)
+## Sıradaki tek adım
+K-101'i başlat: dal `engine/<issue>-domain-types`, ön aktarım (Snapshot → Decision neden saf fonksiyon), sonra test önce.
+
+## Levent'i bekleyen (acil değil)
+- **Design eklentisi** (claude.ai kataloğu, `design-critique`): CLI'dan kurulamıyor, karttan bir tık. Kurulmazsa
+  `frontend-design` + kendi eleştiri turum yeterli.
+- **Expo MCP girişi:** `expo` eklentisinin MCP sunucusu (`mcp.expo.dev`) Expo hesabıyla giriş ister; EAS derlemesi
+  (K-308) gelince gerekecek.
+- İsteğe bağlı: RUBİN 5 saniye testi (8 kişiden 2'den fazlası "kadın uygulaması" derse Saha `#0B7F05`).
+
+## Otomasyon (29 Eyl, ADR-019)
+- GitHub: yalnız squash, auto-merge açık, birleşen dal silinir · `main` koruması: `Backend (Gradle build)` +
+  `Mobile (typecheck, lint, test)` zorunlu, doğrusal geçmiş, force push kapalı
+- Dependabot: güvenlik uyarıları + güvenlik düzeltme PR'ları; Actions sürümleri haftalık (`.github/dependabot.yml`)
+- Claude Code eklentileri (proje kapsamı): `expo`, `security-guidance`, `jdtls-lsp`, `typescript-lsp`
+  (yerel: `brew install jdtls`, `npm i -g typescript-language-server typescript`)
 
 ## Gece kurulumu — ne yapıldı (29 Eyl)
 - [x] Anayasa ve hafıza: `CLAUDE.md`, `docs/anayasa.md` (U1-U15, V1-V6, K1-K10, G1-G4), `docs/aktarim-protokolu.md`,
@@ -52,7 +64,7 @@ Yok. Sıradaki: **K-011 · Levent incelemesi**, sonra **K-101 · Motor alan tipl
   **ADR-017** (hareket gösterimi: Levent çeker, ilk/son tekrar) · **ADR-018** (Health'e yazma, içe aktarma) — üçü KABUL
 - Backlog 95 → **129 görev**; L3'ün 16 plan hatası onarıldı; M11 eklendi; senkron aracına sıralama doğrulaması eklendi
 - Prototip v2 yayınlandı (K-012 ✓): 37 ekran, RUBİN açık/koyu, hareket gösterimi, ayarlar, durum modu, kilit ekranı, "ne değiştirir" simülatörü, karar defteri, paylaşım kartı
-- **Hâlâ açık:** 13 ÖNERİ ADR'nin KABUL'ü (K-011) · Expo + Design eklentilerinin kurulması (kart gösterildi)
+- K-011 kapandı: 13 ADR KABUL, prototip ve renk onaylandı (Levent: "her şey kabulüm")
 
 ## Levent cevapları (29 Eyl sabah)
 - **Bildirim bütçesi: 3 tür** (antrenman öncesi · Pazartesi check-in · 7 gün sessizlik), haftalık adet sınırı yok. Tetikleyiciler (K-512) push değil uygulama içi soru (Levent onayladı).

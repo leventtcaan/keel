@@ -6,7 +6,7 @@
 ## Temel
 - **Seviye: her alanda sıfır** (Java/Spring, React Native/Expo, veri, LLM, DevOps). Seviye yalnız Levent'in beyanıyla ya
   da önünde ürettiği çıktıyla yükselir.
-- **Kodu agent yazar ve bitirir.** Levent'in aksiyonu: kapsam/ürün kararı, "sorulmadan yapılmaz" onayları, PR düğmesi.
+- **Kodu agent yazar ve bitirir.** Levent'in aksiyonu: kapsam/ürün, para, sağlık, veri paylaşımı kararları (ADR-019). PR'ı agent birleştirir; aktarım yine yapılır.
 - **Terminoloji İngilizce kalır** (contract, endpoint, schema, test…); anlatım Türkçe; terim ilk geçtiğinde yanına kısa
   Türkçe açıklama.
 

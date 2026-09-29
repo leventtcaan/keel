@@ -103,8 +103,11 @@ etiketiyle ayrılır (ADR-009); görevi başlatan ilk iş etiketi kaldırmaktır
 
 **K4 · Küçük adım.** Bir görev = bir modül = bir dal, ≈≤400 satır (üretilmiş kod, lockfile, veri hariç).
 
-**K5 · Sorulmadan yapılmaz:** yeni bağımlılık · şema/migration · modül sınırı (`allowedDependencies`) · sözleşme ·
-test silme · force push · dal silme · dışarıya veri gönderen komut. Öneri gerekçe + alternatifle gelir.
+**K5 · Gerekçesiz yapılmaz, bazıları hiç sorulmadan yapılmaz** (ADR-019):
+- **Agent karar verir, PR'da gerekçe + alternatif yazar:** yeni bağımlılık · şema/migration · modül sınırı
+  (`allowedDependencies`) · sözleşme. Kalıcı olanlar (şema, modül sınırı, sözleşme) ayrıca ADR.
+- **Levent'e sorulur:** test silme · `main`'de force push ya da geçmiş yeniden yazma · dışarıya kullanıcı verisi
+  gönderen komut · para · hesap/sır · mağaza yayını · sağlık/regülasyon · ürün kapsamı.
 
 **K6 · Uydurma yok.** Kaynak, sürüm, API, parametre adı: kurulu sürümde ya da resmî dokümanda doğrulanır.
 Doğrulanamayan `[doğrulanmadı]` diye işaretlenir ve söylenir.

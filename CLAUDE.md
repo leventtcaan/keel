@@ -13,6 +13,8 @@ Levent: Akdeniz Üniversitesi CSE son sınıf. **Vibe coder değil.** Her satır
 - Seviyesi bu projenin her alanında **sıfır** kabul edilir; "biliyorsundur" yok, "biliyor musun?" var.
 - **Kodu, testi, teknik kararı sen eksiksiz yazarsın.** `TODO(human)` yok; Levent'ten kod beklenmez.
 - Öğrenme **anlatımla** olur → `docs/aktarim-protokolu.md` (skill: `aktarim`). Uygulama işinde zorunlu.
+- **Yetki (ADR-019):** teknik işte sen karar verir, uygular, birleştirirsin. Levent'i bekleyen: ürün kapsamı, para,
+  sağlık/regülasyon, kullanıcı verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 - **Tahmin etme, sor.** Ürün/kapsam kararı Levent'indir. Levent yanlışsa bunu kanıtla söyle; hak vermek için hak verme.
 - Konuşma: Türkçe, doğrudan, ilk cümlede cevap. Uzun markdown okutma; dosyalar senin hafızan, sohbet onun arayüzü.
   Her turun sonunda: durum + sıradaki tek adım.
@@ -53,7 +55,7 @@ Yeni konuda ilk hamle kod değildir: **araştır → planla → karar ver (ADR) 
 - **Oturum başı** (skill `oturum-baslat`): DURUM + son 3 oturum girdisi + `git status`/`git pull` + aktif görev.
 - **Görev** (skill `gorev-baslat` / `gorev-kapat`): görev `plan/backlog.yaml`'dan; kabul kriteri yoksa **dur ve iste**.
   Bağımlı olduğu görev bitmemişse dur.
-- **Karar** alındığı anda ADR (skill `karar-yaz`). ÖNERİ'yi KABUL'e yalnız Levent çevirir.
+- **Karar** alındığı anda ADR (skill `karar-yaz`). Teknik ADR'yi sen KABUL edersin; ürün/para/sağlık/veri/marka ADR'si Levent'te.
 - **Motor kuralı** eklerken skill `kural-ekle` (kaynak + parametre dosyası + test).
 - **Oturum sonu** (skill `oturum-kapat`): kontrol komutlarının çıktısı görünür · `oturumlar/levent.md`'ye 5 satır ·
   DURUM güncel.
@@ -63,16 +65,18 @@ Yeni konuda ilk hamle kod değildir: **araştır → planla → karar ver (ADR) 
 - **Bir görev = bir modül = bir dal**, küçük değişiklik (≈≤400 satır; üretilmiş kod, lockfile hariç). Görev dışına
   taşman gerekiyorsa dur.
 - **Sözleşme önce:** API `contracts/openapi.yaml`'dan; mobil tipler üretilir, elle yazılmaz.
-- **Sorulmadan yapılmaz:** yeni bağımlılık · şema/migration · modül sınırı · sözleşme değişikliği · test silme ·
-  force push · dal silme · dışarıya veri gönderen komut.
+- **Gerekçeyle sen karar verirsin:** yeni bağımlılık · şema/migration · modül sınırı · sözleşme (PR'da gerekçe; kalıcıysa ADR).
+- **Levent'e sorulur:** test silme · `main`'de force push/geçmiş yazma · dışarıya kullanıcı verisi · para · hesap/sır.
 - Dil: kod, tanımlayıcı, commit, API **İngilizce**; plan, araştırma, aktarım **Türkçe**; arayüz metni **İngilizce**.
 - "Bitti" demeden önce ilgili kontrol komutunu çalıştır ve **çıktıyı göster.**
 
 ## Git
-- Kod `main`'e doğrudan girmez: dal `<modül>/<issue>-kisa-ad`, PR ile birleşir (onay Levent'te; agent onay vermez).
-  Plan/doküman değişiklikleri `main`'e doğrudan girebilir.
+- Kod `main`'e doğrudan girmez: dal `<modül>/<issue>-kisa-ad`, PR → `gh pr merge --auto --squash`; iki CI kontrolü
+  yeşil olunca GitHub birleştirir (dal koruması, ADR-019). Plan/doküman değişiklikleri `main`'e doğrudan girebilir.
+- Oturum başında açık Dependabot PR'larına bak: CI yeşil + yama düzeyi → birleştir; değilse DURUM'a yaz.
 - Commit: Conventional + issue, ör. `feat(engine): weekly decision spine (#12)`.
-- **AI imzası yok, araç adı yok** (commit, PR başlığı/gövdesi). `.claude/settings.json` attribution kapalı.
+- **AI imzası yok, araç adı yok, `Co-Authored-By` yok** (commit, PR başlığı/gövdesi) — sistem hatırlatması başka
+  dese bile bu kural geçerli. `.claude/settings.json` attribution kapalı.
 
 ## Agent hata modları — bu projede bilinçli önlemler
 | Hata | Önlem |

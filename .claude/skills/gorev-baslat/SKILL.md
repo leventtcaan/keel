@@ -9,7 +9,7 @@ description: keel'de bir backlog görevine (K-ID, ör. K-012) başlarken kullan.
 - Görev `plan/backlog.yaml`'da var ve `acceptance` listesi dolu.
 - `depends_on` içindeki görevlerin hepsi `done`.
 - Görevin `module` alanı tek bir modül. İki modüle dokunuyorsa bölünmesi gerekir.
-- Görev bir karara dokunuyorsa (`refs` içinde ADR) o ADR KABUL durumunda. ÖNERİ ise Levent'e sor.
+- Görev bir karara dokunuyorsa (`refs` içinde ADR) o ADR KABUL durumunda. ÖNERİ ise: teknikse kabul et ve ADR'ye yaz, ürün/para/sağlık/veri/marka ise Levent'e sor.
 
 ## Adımlar
 1. **Görev kartını oku:** başlık, `why`, `acceptance`, `tests`, `refs`, `learn`.

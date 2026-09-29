@@ -1,5 +1,5 @@
 # ADR-007 · Fotoğraf, gizlilik ve rıza
-- **Durum:** ÖNERİ · kısmen değişti → ADR-018 (Apple Health'e yazma, active energy okuma)
+- **Durum:** KABUL (Levent, 2026-09-29) · kısmen değişti → ADR-018 (Apple Health'e yazma, active energy okuma)
 - **Tarih:** 2026-09-29 · **Karar veren:** Levent (öneren: agent)
 
 ## Bağlam

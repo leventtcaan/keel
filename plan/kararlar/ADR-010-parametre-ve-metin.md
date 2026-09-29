@@ -1,5 +1,5 @@
 # ADR-010 · Parametreler ve metinler koddan ayrı
-- **Durum:** ÖNERİ
+- **Durum:** KABUL (Levent, 2026-09-29)
 - **Tarih:** 2026-09-29 · **Karar veren:** Levent (öneren: agent)
 
 ## Bağlam

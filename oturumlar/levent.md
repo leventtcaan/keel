@@ -22,3 +22,10 @@
 - takıldım: bildirim bütçesi araştırmada kendi içinde çelişiyor (açık soru 2); eklentiler henüz kurulmadı
 - sıradaki: Levent PR #130 merge + eklentiler + K-011 → K-101 ön aktarımla
 - AI: prototip v2'yi subagent yazdı, ben baştan sona okuyup 8 tutarsızlık düzelttim (e1RM grafikle ledger uyuşmuyordu, gözlem 4 hafta yazılmıştı → 2, "X, not Y" kalıpları)
+
+## 2026-09-29 · M0 kapanışı ve yetki devri
+- yaptım: PR #130 merge; 13 ADR KABUL; ADR-019 (yetki devri); dal koruması, auto-merge, Dependabot; expo, security-guidance, jdtls-lsp, typescript-lsp eklentileri; CLAUDE.md, anayasa K5, 3 skill güncel; M0 kapandı
+- karar: Levent: "her şey kabulüm", teknik izin + teknik ADR agent'ta, ürün/para/sağlık/veri Levent'te; bildirim 3 tür, tetikleyiciler uygulama içi
+- takıldım: kendi hatam: 3 commit'e Co-Authored-By koydum (Studio'dan çalışırken keel kuralı yüklenmemişti) → soft reset + force-with-lease ile düzelttim, Levent'e söylendi
+- sıradaki: K-101 motor alan tipleri, ön aktarımla
+- AI: tüm ayar ve dokümanları agent yaptı; Levent kararları soru kartıyla verdi

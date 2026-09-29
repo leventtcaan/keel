@@ -1,5 +1,5 @@
 # ADR-009 · Test stratejisi ve CI
-- **Durum:** ÖNERİ
+- **Durum:** KABUL (Levent, 2026-09-29)
 - **Tarih:** 2026-09-29 · **Karar veren:** Levent (öneren: agent)
 
 ## Bağlam

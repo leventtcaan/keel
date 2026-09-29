@@ -37,7 +37,8 @@ Bu kararın doğru uygulandığını hangi test ya da kontrol gösterir.
 ```
 
 ## Kurallar
-- Agent ÖNERİ yazar; **KABUL'e yalnız Levent çevirir.**
+- Teknik ADR'yi (mimari, altyapı, test, araç) agent yazıp KABUL eder. Ürün kapsamı, para, sağlık/regülasyon,
+  veri paylaşımı ve görsel/marka ADR'si ÖNERİ olarak yazılır, **KABUL'e Levent çevirir** (ADR-019).
 - Mevcut bir ADR'yi değiştiren karar: eskisi "YERİNİ ALDI → ADR-0MM" olur, silinmez.
 - `plan/kararlar.md` dizinine tek satır eklenir.
 - Sürüm, kütüphane, API iddiası varsa doğrulandığı kaynak ve tarih yazılır (K6).

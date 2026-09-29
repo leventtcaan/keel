@@ -1,5 +1,6 @@
 # ADR-002 · Depo yapısı ve çalışma süreci
-- **Durum:** ÖNERİ (içindeki Levent kararları: yalnız Claude Code, AI imzası yok, GitHub Projects, Azure yok)
+- **Durum:** KABUL (Levent, 2026-09-29) (içindeki Levent kararları: yalnız Claude Code, AI imzası yok, GitHub Projects, Azure yok)
+- **Değişti:** madde 4 birleştirme kısmı → ADR-019
 - **Tarih:** 2026-09-29 · **Karar veren:** Levent (öneren: agent)
 
 ## Bağlam
