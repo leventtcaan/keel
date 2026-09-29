@@ -28,9 +28,10 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-106 omurga (+ ADR-021 "sabit" ölçümü) | ✅ birleşti | #147 | `M1/K-106.md` |
 | K-107 kalori merdiveni | ✅ birleşti | #148 | `M1/K-107.md` |
 | K-114 başlangıç hedefi (+ `arastirma/ham/H6` Mifflin) | ✅ birleşti | #149 | `M1/K-114.md` |
-| K-112 montaj (+ ADR-022 sıra; spesifikasyon 24/24 gerçek; mini cut WC-20) | PR açık, auto-merge, iki inceleme uygulandı | #150 | `M1/K-112.md` |
-| K-113 altın senaryolar (23 yolculuk) | dal itildi, **PR yok**; inceleme ajanı yarıda kaldı → yeniden çalıştır | `engine/24-golden-scenarios` | `M1/K-113.md` |
-| K-115 sapma kalibrasyonu | dal itildi, **PR yok**; inceleme ajanı yarıda kaldı → yeniden çalıştır | `engine/99-intake-calibration` | `M1/K-115.md` |
+| K-112 montaj (+ ADR-022 sıra; spesifikasyon 24/24 gerçek; mini cut WC-20) | ✅ birleşti | #150 | `M1/K-112.md` |
+| K-113 altın senaryolar (37 yolculuk + DataSufficiency söz hatası düzeltildi) | PR, auto-merge; inceleme 37'yi elle türetti | #152 | `M1/K-113.md` |
+| K-115 sapma kalibrasyonu (aralık: formül + tartı payı; son iki pencere anlaşmalı) | PR, auto-merge; iki inceleme turu | #153 | `M1/K-115.md` |
+| tooling: git guard worktree dalını görür | ✅ birleşti | #151 | (küçük) |
 | M2: K-201…K-219 | başlamadı | | |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
@@ -39,58 +40,22 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (29 Eyl gece, bağlam temizlenmeden önce yazıldı)
-Önceki oturum burada durdu; yeni oturum **buradan** devam eder (prompt: `plan/oturum-promptlari/M2-devam.md`).
-1. **#150 (K-112)** birleşti mi bak (`gh pr view 150`). Kırmızıysa düzelt.
-2. **K-113** (`../keel-k113`, dal `engine/24-golden-scenarios`): taban eski K-112 commit'leri. #150 birleşince
-   `git fetch && git rebase --onto origin/main 9cd0e46` (9cd0e46 = K-113 dalındaki eski K-112 ucu; K-113 commit'leri cafc639 + 4652ba8 taşınır — `git log` ile doğrula) →
-   `./gradlew build` → pr-test-analyzer **bitti**: 23 beklentinin hepsi kurallarla doğru; ama 32 motor mutasyonundan
-   20'si altın senaryolarda yeşil kalıyor (hepsi birim/spec testlerinde yakalanıyor). Uygulanacaklar (her beklentiyi
-   **elle yeniden türet**; ajanın sıraları öneri, kopya değil — önerilen YAML'lar ajan çıktısında vardı, burada özet):
-   (A) K-64 "bir hafta daha bekle" hiçbir yolculukta yok; haftada 0,5 kg veren erkek tek sabit haftada −500 alıyor
-   (79,5→79,0→79,0: 0,5 < 0,58 pay → "iki sabit hafta"); tek haftalık su sıçraması −500 sonra +500 (tavan 0,8 > 0,788)
-   → GS-24/25 ile sabitle + **Levent'e soru** (L-10 payı yavaş kaybedeni erken kesiyor).
-   (B) **MOTOR HATASI** (K-103 DataSufficiency): bir haftası seyrek tartılı kullanıcıda veri kontrolü günden güne
-   aç-kapa yapıyor (haftalar "bugünden geriye" sayıldığı için); her hafta "3 gün sonra bak" sözü verip Pazar check-in'inde
-   yine data_insufficient → nextReview hesabını düzelt (TDD), düzenek `nextReview`/`confidence`'ı da kontrol etsin
-   (hafta başına isteğe bağlı `next`, `confidence`), hafta başına `mornings` → GS-26.
-   (C) 8 haftalık hızlı kayıp kuralı hiçbir yolculukta yok; haftada 2 tartan biri haftalık tavana görünmez → GS-27.
-   (D) Kadın bulk yok (ideal 0,5 kg/ay 28 günde de "sabit" → her 28 günde +250), kadın bulk tavanı 30 ve faz
-   değişiminden sonrası yok → GS-28/29.
-   (E) "Program hopper" temsil edilmiyor (GS-22 yalnız cevapsız antrenman) → GS-22'yi yeniden adlandır, GS-30 (plato
-   sayacı her program değişiminde sıfırlanır, tırmanmaz); **Levent'e bilgi:** program değiştirmenin kendisi M1'de algılanmıyor (G? K-35).
-   (F) Düzenek: `adherence: null`, `waist`, `months_stalled`, hafta başına `mornings`; gözlem bayrağını yalnız yeni plan
-   kapatsın (plato haftası kapatmasın); her eylemde gerekçeyi de karşılaştır; `mornings>7` sonsuz döngü, `mornings: 6`
-   bugünü atlıyor; HardStop/MiniCut/FullRestWeek planı değiştirmez — yorum yaz; faz değişiminde hedefin korunması K-212 varsayımı.
-   (G) Hızlı kaybeden kadın (gözlem sırasında güvenlik), 60 yaş 155 cm 75 kg kadın (makro tabanı, carb_squeeze).
-   → düzelt → backlog K-113 done → PR `--auto --squash`.
-3. **K-115** (`../keel-k115`, dal `engine/99-intake-calibration`, taban `main`): code-reviewer **bitti** (matematik,
-   gün aralığı `window−7`, EWMA sırası, işaret doğru). Uygulanacak 5 bulgu, TDD ile:
-   (a) KRİTİK: "sapma" formül hatasını da içeriyor (referans − kayıt birimi harcama = formül hatası + kayıt hatası); eşik
-   yalnız büyüklüğe bakıp hepsini sapma diye döndürüyor → yalnız bandın ötesini bildir (`işaret·(|fark|−formülHatası)`)
-   ya da aralık döndür (U5); gerçek harcaması REFERENCE'tan farklı sahte kullanıcı testi ekle; javadoc "referans
-   Mifflin×aktivite" desin.
-   (b) KRİTİK: `logging_bias_smoothing` 0,5 H1 §3.4'ten türemiyor (günlük α 0,1 → 21 günde ≈0,89) ve notdaki "iki
-   pencerede yarıya" yanlış (her pencerede yarıya) → dürüst türetme ya da "kaynaksız seçim" etiketi.
-   (c) `min_logged_days_per_week` kaynağı (H1 §3.4) yemek kaydı hakkında değil; `logging_bias_min_windows` Thomas/Sanghvi
-   dinamik modelinden türemiyor → notları dürüstleştir, gerekirse onay listesine yaz.
-   (d) Metin `calibration.logs_run_low`: fazla kayıt (negatif sapma) yönü yok, "a little" ve "true for everyone"
-   kaynaksız, "already account for it" henüz yok → iki yönlü, iddiasız metin.
-   (e) `decisionsNeverReadLoggedFood`: `IntakeBias` tipini ve iç içe record'ları da taramalı.
-   Test boşlukları: gürültülü tartı, iyi pencereler arasında tek kötü pencere. → düzelt → backlog K-115 done →
-   `origin/main` üstüne rebase → `npm run check` **ana dizinde** (worktree'de node_modules yok) → PR.
-4. M1 kapanışı: `docs/aktarim/M1/README.md` durum tablosuna K-106/107/112/113/114/115 ekle; DURUM "Şu an" = M1 kapandı.
-   Worktree'leri temizle (`git worktree remove`).
-5. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
+## ▶ DEVAM NOKTASI (29 Eyl gece, ikinci oturum)
+Bu oturum (prompt `plan/oturum-promptlari/M2-devam.md`) M1 kalanını bitirdi; sırada M2.
+1. ✅ #150 birleşti. ✅ K-113 → #152, ✅ K-115 → #153 (ikisi de auto-merge; birleşmedilerse `gh pr checks` → kırmızıysa düzelt).
+   Worktree'ler `../keel-k113`, `../keel-k115`: PR birleşince `git worktree remove`.
+2. M1 kapanışı: `docs/aktarim/M1/README.md` durum tablosuna K-106/107/112/113/114/115; DURUM "Şu an" = M1 kapandı.
+3. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
    K-206, K-210, K-208, K-214 → K-209, K-211, K-218, K-219 → K-212 → K-213, K-216, K-217. Skill'ler: Postgres/Flyway →
    K-202, sözleşme (spectral + oasdiff) → K-201 (`arastirma/ham/L4-skill-kaynaklari.md` §6-8).
-   - **Docker daemon kapalı** (`docker info` bağlanamadı): K-202 Testcontainers için Docker Desktop açılmalı
-     (`open -a Docker`; açılmazsa Levent'e sor).
+   - Docker Desktop açık (29.2.1). Kapalıysa `open -a Docker`.
    - **ADR-008 güncellenecek:** ADR-020 "yalnız USDA FDC, OFF yok" dedi; ADR-008 ve K-208'in "barkod → OFF" kriteri
      buna göre değişir (FDC Branded Foods'ta GTIN var mı, K-207 spike doğrular). Türk ürün kapsamı zayıflığı → Riskler.
-   - M2 notu (K-212): "süren mini cut" Snapshot'ta temsil edilmiyor; `menstrualLossReported` saklanmaz (mimari m.4).
-6. Bitiş: sorular (aşağıdaki liste) AskUserQuestion ile toplu → ADR → kalan iş → `plan/oturum-promptlari/M3.md` →
-   özet. Session kapanmaz; M1 kalanı + M2 aktarımı bu işi yapan oturumda (ya da devam oturumunda) yapılır.
+   - M2 notu (K-212): "süren mini cut" Snapshot'ta temsil edilmiyor; `menstrualLossReported` saklanmaz (mimari m.4);
+     faz değişiminde hedefin korunması altın senaryoların varsayımı (GS-13/29) — K-212 farklı karar verirse senaryolar değişir.
+   - Mutasyon betiği: scratchpad'de; yeniden yazmak gerekirse: dosyayı `.bak`'a kopyala, değiştir, testi koş, `.bak`'tan geri taşı.
+4. Bitiş: sorular (aşağıdaki liste) AskUserQuestion ile toplu → ADR → kalan iş → `plan/oturum-promptlari/M3.md` → özet.
+   Session kapanmaz; M1 kalanı + M2 aktarımı bu işi yapan oturumda yapılır.
 
 **Bilgi (Levent'e, soru değil):** K-113 GS-10 — erkekte ideal bulk hızı (ayda 1 kg) 21 günlük pencerede "sabit" okunur,
 motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "çok hızlı" kuralı M1 kapsamında değil).
@@ -110,6 +75,11 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
    uygulandı (karb, karb tabanında yağ 0,5 g/kg'a iner).
 6. **Aktivite sorusu** (ürün, K-114): kaç seçenek, nasıl sorulur? Gün boyu, antrenman dahil olmalı.
 7. Apple Team ID / Bundle ID / Services ID.
+8. **(K-115, ürün)** Kayıt sapması yalnız büyükse görünür (erkek 2800 kcal'de günde ~640+): formül hatası ve tartı
+   gürültüsünden ayrılamıyor. Bu mesaj uygulamada gösterilsin mi (iki okumayı birden söyleyen metinle), yoksa yalnız
+   içeride mi kalsın?
+9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
+   `tag: urun`). Onay mı?
 
 ## Teknik kararlar (bu koşu, aktarımda anlatılacak)
 - U14 çapa kuralı: çapa dosyada başlık (`### K-17 ·`, `## 3.4`, `### 🚨 L2.1 ·`) ya da kalın etiket (`**U2 ·`) olmalı;
