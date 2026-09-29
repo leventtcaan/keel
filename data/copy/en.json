@@ -209,11 +209,11 @@
   "calibration": {
     "logs_run_low": {
       "title": "Your logs and your weight, side by side.",
-      "body": "Over the last few weeks your weight points to more food than your logs add up to. Portions are hard to size from a photo or a quick entry. Your weight is what the calls are made from, so nothing here needs fixing."
+      "body": "Over the last few weeks your weight points to more food than your logs add up to — or to you burning more than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
     },
     "logs_run_high": {
       "title": "Your logs and your weight, side by side.",
-      "body": "Over the last few weeks your weight points to less food than your logs add up to. Portions are hard to size from a photo or a quick entry. Your weight is what the calls are made from, so nothing here needs fixing."
+      "body": "Over the last few weeks your weight points to less food than your logs add up to — or to you burning less than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
     }
   }
 }

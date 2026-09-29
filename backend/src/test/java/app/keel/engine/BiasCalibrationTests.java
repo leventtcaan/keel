@@ -40,28 +40,44 @@ class BiasCalibrationTests {
     private static final int REFERENCE = 2800; // the maintenance estimate (Mifflin × activity) the caller passes
     private static final int WINDOW = MALE.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS);
     private static final int KCAL_PER_KG = MALE.wholeNumber(ParameterKey.ENERGY_PER_KG_WEIGHT_CHANGE);
+    private static final int SEEDS = 2000;
+
+    // Hand-worked numbers below (redo them if a parameter changes on purpose):
+    // - formula error: 15 % of 2800 = 420 kcal a day.
+    // - one window's scale margin, daily weigh-ins: flat_margin_kg 0.58 × √((1/7 + 1/7) / (2/4)) = 0.4384 kg between
+    //   the first and last weekly means, 14 days apart → × 7700 / 14 = 241.14 kcal a day.
+    // - the newest window's weight, 21 days after the one before: 1 − 0.9^21 = 0.8906; three windows in a row weigh
+    //   0.0120, 0.0974, 0.8906 → the scale margin of the smoothed gap √Σ(w·241.14)² = 216.06.
+    // - so a steady gap g gives g ± (420 + 216.06) = g ± 636.06, and each window alone g ± 661.14.
+
+    @Test
+    void theLiteralNumbersBelowAssumeTodaysParameters() {
+        assertThat(List.of(MALE.number(ParameterKey.MAINTENANCE_ESTIMATE_ERROR), MALE.number(ParameterKey.FLAT_MARGIN_KG),
+                MALE.number(ParameterKey.LOGGING_BIAS_DAILY_SMOOTHING))).containsExactly(0.15, 0.58, 0.1);
+        assertThat(List.of(WINDOW, KCAL_PER_KG, MALE.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK),
+                MALE.wholeNumber(ParameterKey.LOGGING_BIAS_MIN_WINDOWS))).containsExactly(21, 7700, 4, 2);
+    }
 
     // ── a constant bias ─────────────────────────────────────────────────────────────────────────────────────
 
     @Test
     void aSteadyUnderCountIsLearnedFromAFlatWeightAsARange() {
-        // Eats 2800 (weight flat), logs 2200: the logs imply 2200 of expenditure, the formula says 2800. The 600 gap is
-        // the logs' bias plus the formula's own error, ±15 % of 2800 = 420 (H6 A4) — which cannot be told apart, so the
-        // bias is 600 ± 420 (U5).
-        User user = new User().windows(3, 2800, 600, 7);
+        // Eats 2800 (weight flat), logs 1900: the logs imply 1900 of expenditure, the formula says 2800. The 900 gap is
+        // the logs' bias plus the formula's own error plus the scale's noise, which cannot be told apart: 900 ± 636 (U5).
+        User user = new User().windows(3, 2800, 900, 7);
 
-        assertThat(estimate(user)).contains(new IntakeBias(180, 1020, 3));
+        assertThat(estimate(user)).contains(new IntakeBias(264, 1536, 3));
     }
 
     @Test
     void theWeightTrendWinsOverTheLogs() {
-        // Eats 2300 (a real 500 deficit: −0.065 kg a day), logs 1700. The logs alone say a 1100 deficit; the weight
-        // says 500. The bias is the difference: 600 — measured by the scale, not taken from the logs.
-        User user = new User().windows(3, 2300, 600, 7);
+        // Eats 2300 (a real 500 deficit: −0.065 kg a day), logs 1400. The logs alone say a 1400 deficit; the weight
+        // says 500. The gap is 900 — measured by the scale, not taken from the logs.
+        User user = new User().windows(3, 2300, 900, 7);
 
         assertThat(estimate(user)).hasValueSatisfying(bias -> {
-            assertThat(bias.lowKcalPerDay()).isBetween(179, 181);
-            assertThat(bias.highKcalPerDay()).isBetween(1019, 1021);
+            assertThat(bias.lowKcalPerDay()).isBetween(263, 265);
+            assertThat(bias.highKcalPerDay()).isBetween(1535, 1537);
         });
     }
 
@@ -77,93 +93,132 @@ class BiasCalibrationTests {
 
     @Test
     void aFormulaThatMissesMovesTheRangeNotTheTruth() {
-        // Really spends 3080, logs 800 under: the gap to the formula is 520. Claiming 520 would be wrong by 280; the
-        // range 100-940 holds the true 800.
-        User user = new User().windows(3, 3080, 3080, 800, 7);
+        // Really spends 3080, logs 1100 under: the gap to the formula is 820. Claiming 820 would be wrong by 280; the
+        // range 820 ± 636 = 184-1456 holds the true 1100.
+        User user = new User().windows(3, 3080, 3080, 1100, 7);
 
-        assertThat(estimate(user)).contains(new IntakeBias(100, 940, 3));
+        assertThat(estimate(user)).contains(new IntakeBias(184, 1456, 3));
     }
 
     @Property
-    boolean theTrueBiasIsInsideTheRangeWhereverTheFormulaErrs(
-            @ForAll @IntRange(min = 2380, max = 3220) int expends, @ForAll @IntRange(min = -1200, max = 1200) int under) {
-        // Anywhere inside the formula's ±15 %: a claimed range holds the true bias, and a bias over twice the error is
-        // always claimed (the gap is then over one error whatever the formula missed).
-        Optional<IntakeBias> bias = estimate(new User().windows(3, expends, expends, under, 7));
-        int error = 420;
+    boolean theTrueBiasIsInsideTheRangeWhereverTheFormulaErrs(@ForAll @IntRange(min = 2380, max = 3220) int expends,
+            @ForAll @IntRange(min = -600, max = 600) int deficit, @ForAll @IntRange(min = -1500, max = 1500) int under) {
+        // Noise-free and on any slope: anywhere inside the formula's typical ±15 %, a claimed range holds the true bias,
+        // and a bias over the formula's error plus one window's range (420 + 661.14) is always claimed.
+        Optional<IntakeBias> bias = estimate(new User().windows(3, expends, expends - deficit, under, 7));
         boolean holds = bias.map(range -> range.lowKcalPerDay() - 1 <= under && under <= range.highKcalPerDay() + 1).orElse(true);
-        boolean claimedWhenLarge = Math.abs(under) <= 2 * error + 1 || bias.isPresent();
+        boolean claimedWhenLarge = Math.abs(under) <= 1083 || bias.isPresent();
         return holds && claimedWhenLarge;
+    }
+
+    // ── a noisy scale ───────────────────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void onANoisyScaleAnHonestLoggerIsRarelyCalledBiasedEvenWhereTheFormulaMissesMost() {
+        // Each morning ± a normal 0.42 kg of water (H1 §3.4). Formula 15 % under the truth (3220), logs exact: the gap
+        // sits at −420, on the edge; only the scale's noise past its 95 % margin can make a claim — rare, one-sided.
+        int claims = 0;
+        for (long seed = 0; seed < SEEDS; seed++) {
+            if (estimate(new User().noisy(new Random(seed)).windows(3, 3220, 3220, 0, 7)).isPresent()) {
+                claims++;
+            }
+        }
+        assertThat(claims).isLessThan(SEEDS / 20);
+    }
+
+    @Test
+    void onANoisyScaleALargeBiasIsFoundAndTheRangeHoldsIt() {
+        int found = 0;
+        int held = 0;
+        for (long seed = 0; seed < SEEDS; seed++) {
+            Optional<IntakeBias> bias = estimate(new User().noisy(new Random(seed)).windows(3, 2800, 1100, 7));
+            if (bias.isPresent()) {
+                found++;
+                held += bias.get().lowKcalPerDay() <= 1100 && 1100 <= bias.get().highKcalPerDay() ? 1 : 0;
+            }
+        }
+        assertThat(found).isGreaterThan(SEEDS * 19 / 20);
+        assertThat(held).isEqualTo(found);
     }
 
     // ── a changing bias ─────────────────────────────────────────────────────────────────────────────────────
 
     @Test
     void aChangingBiasIsFollowedNotFrozen() {
-        // Two windows 800 under, then two 500 under (the user got better at logging). The daily smoothing of H1 §3.4
-        // (α 0.1) over a 21-day window weighs the newest window 1 − 0.9^21 ≈ 0.891: 800, 800, 532.8, 503.6 → ± 420.
-        User user = new User().windows(2, 2800, 800, 7).windows(2, 2800, 500, 7);
+        // Two windows 1200 under, then two 900 under (the user got better at logging): 1200, 1200, 932.8, 903.6.
+        // Four windows weigh 0.0013, 0.0107, 0.0974, 0.8906 → scale margin 216.05 → 903.6 ± 636.05.
+        User user = new User().windows(2, 2800, 1200, 7).windows(2, 2800, 900, 7);
 
-        assertThat(estimate(user)).contains(new IntakeBias(84, 924, 4));
+        assertThat(estimate(user)).contains(new IntakeBias(268, 1540, 4));
     }
 
-    // ── missing days and noise ──────────────────────────────────────────────────────────────────────────────
+    @Test
+    void theLastTwoWindowsMustAgree() {
+        // "Two windows" means the bias repeated: the newest two must each show it, on the same side.
+        assertThat(estimate(new User().windows(1, 2800, -900, 7).windows(1, 2800, 900, 7))).isEmpty();
+        assertThat(estimate(new User().windows(1, 2800, 0, 7).windows(1, 2800, 900, 7))).isEmpty();
+        // The newest at 640 is past the formula's 420 but not past 420 + one window's scale margin 241.14 = 661.14,
+        // although smoothed with 1200 before it (701.3 ± 636.4) the range would exclude zero.
+        assertThat(estimate(new User().windows(1, 2800, 1200, 7).windows(1, 2800, 640, 7))).isEmpty();
+    }
+
+    // ── missing days ────────────────────────────────────────────────────────────────────────────────────────
 
     @Test
     void aDayWithoutALogIsAbsentNotZero() {
-        // Four logged days a week at 2200: the mean is 2200, not 4 × 2200 / 7.
-        User user = new User().windows(3, 2800, 600, 4);
+        // Four logged days a week at 1900: the mean is 1900, not 4 × 1900 / 7.
+        User user = new User().windows(3, 2800, 900, 4);
 
-        assertThat(estimate(user)).contains(new IntakeBias(180, 1020, 3));
+        assertThat(estimate(user)).contains(new IntakeBias(264, 1536, 3));
     }
 
     @Test
     void aWindowWithTooFewLoggedDaysIsNotUsed() {
         // Three logged days a week is under min_logged_days_per_week: no window is usable, no bias is claimed.
-        User user = new User().windows(3, 2800, 600, 3);
+        User user = new User().windows(3, 2800, 900, 3);
 
         assertThat(estimate(user)).isEmpty();
     }
 
     @Test
-    void oneThinWindowBetweenGoodOnesIsSkippedNotCounted() {
-        User user = new User().windows(1, 2800, 600, 7).windows(1, 2800, 600, 3).windows(2, 2800, 600, 7);
+    void anOldThinWindowIsSkippedAndTheGapItLeavesIsTimed() {
+        // Windows 4 back (1500) and 2, 1 back (900) are good, 3 back is thin. The oldest is 42 days before the next, so
+        // the next weighs 1 − 0.9^42 = 0.9880: 1500 → 907.18 → 900.79; weights 0.0013, 0.1081, 0.8906 → margin 216.33
+        // → 900.79 ± 636.33. Timed as if adjacent (0.8906) it would be 907.18 ± 636.06 = 271-1543.
+        User user = new User().windows(1, 2800, 1500, 7).windows(1, 2800, 900, 3).windows(2, 2800, 900, 7);
 
-        assertThat(estimate(user)).contains(new IntakeBias(180, 1020, 3));
+        assertThat(estimate(user)).contains(new IntakeBias(264, 1537, 3));
     }
 
     @Test
-    void aNoisyScaleStillPutsTheTrueBiasInsideTheRange() {
-        // Each morning ± a normal 0.42 kg of water (H1 §3.4). Two weekly means 14 days apart then differ by ~0.22 kg of
-        // noise, ~120 kcal a day — well inside the 420 of the formula's error.
-        User user = new User().noisy(new Random(42)).windows(3, 2800, 600, 7);
+    void aThinNewestWindowMeansNoClaimToday() {
+        // The bias is about how the user logs now; with the newest window unusable, nothing is claimed.
+        User user = new User().windows(2, 2800, 900, 7).windows(1, 2800, 900, 3);
 
-        assertThat(estimate(user)).hasValueSatisfying(bias ->
-                assertThat(600).isBetween(bias.lowKcalPerDay(), bias.highKcalPerDay()));
+        assertThat(estimate(user)).isEmpty();
     }
 
     // ── when not to claim a bias ────────────────────────────────────────────────────────────────────────────
 
     @Test
     void oneWindowIsNotEnough() {
-        User user = new User().windows(1, 2800, 600, 7);
+        User user = new User().windows(1, 2800, 900, 7);
 
         assertThat(estimate(user)).isEmpty();
     }
 
     @Test
-    void aGapInsideTheFormulasOwnErrorIsNotCalledABias() {
-        // ±15 % of 2800 = 420: a 300 gap could be the formula missing, not the logs (H6 A4).
-        User user = new User().windows(3, 2800, 300, 7);
-
-        assertThat(estimate(user)).isEmpty();
+    void aGapTheFormulaOrTheScaleCouldExplainIsNotCalledABias() {
+        // 300 is inside the formula's 420; 600 is outside it but inside 420 + the scale's 216.
+        assertThat(estimate(new User().windows(3, 2800, 300, 7))).isEmpty();
+        assertThat(estimate(new User().windows(3, 2800, 600, 7))).isEmpty();
     }
 
     @Test
     void overLoggingIsABiasTooWithTheOtherSign() {
-        User user = new User().windows(3, 2800, -600, 7);
+        User user = new User().windows(3, 2800, -900, 7);
 
-        assertThat(estimate(user)).contains(new IntakeBias(-1020, -180, 3));
+        assertThat(estimate(user)).contains(new IntakeBias(-1536, -264, 3));
     }
 
     @Test
@@ -186,11 +241,13 @@ class BiasCalibrationTests {
     @ValueSource(strings = {"calibration.logs_run_low", "calibration.logs_run_high"})
     void theWordsAboutItNeverBlameNorClaimMoreThanWeKnow(String key) {
         // U7: a gap between logs and weight is how logging works, not a failing of the user. And no claim the research
-        // does not carry: not "everyone", not "a little", not that numbers are already corrected.
+        // does not carry: not "everyone", not "a little", not that numbers are already corrected — and the other reading
+        // (our estimate of what they burn is off) is said too, since the two cannot be told apart.
         Map<String, Object> copy = EngineFixtures.copyGroup(new CopyKey(key));
         String text = (copy.get("title") + " " + copy.get("body")).toLowerCase();
 
         assertThat(copy).containsKeys("title", "body");
+        assertThat(text).contains("our estimate");
         assertThat(Set.of("wrong", "lie", "cheat", "forgot", "fault", "should have", "didn't", "mistake", "careless", "honest",
                 "everyone", "a little", "already")).noneMatch(text::contains);
     }
