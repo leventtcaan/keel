@@ -647,7 +647,7 @@ tasks:
     module: measurement
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-205]
     why: "Karar motorunun ana zaman serisi"
     acceptance:

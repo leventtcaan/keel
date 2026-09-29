@@ -101,7 +101,7 @@ class MeasurementStore {
     }
 
     /** The day's values replace what was stored for it (Apple Health resends a day as it fills up). */
-    ActivityDay put(AccountId account, ActivityDay day) {
+    void put(AccountId account, ActivityDay day) {
         jdbc.sql("""
                 insert into measurement.activity_day (account_id, day, steps, sleep_minutes, active_energy_kcal)
                 values (:account, :day, :steps, :sleep, :energy)
@@ -109,7 +109,6 @@ class MeasurementStore {
                     active_energy_kcal = excluded.active_energy_kcal""")
                 .param("account", account.value()).param("day", day.day()).param("steps", day.steps())
                 .param("sleep", day.sleepMinutes()).param("energy", day.activeEnergyKcal()).update();
-        return day;
     }
 
     Optional<ActivityDay> activityDay(AccountId account, LocalDate day) {

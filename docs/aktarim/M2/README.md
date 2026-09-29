@@ -17,7 +17,8 @@ profil → ölçüm/beslenme/antrenman → karar.
 5. K-203 kimlik — kim olduğunu kanıtlamak
 6. K-204 rıza — izni kanıtlamak ve geri almak
 7. K-205 profil — modülün dışa açtığı yüz
-8. (sıradakiler görev bitince eklenir)
+8. K-206 ölçüm — zaman serisi, idempotency, yerel gün
+9. (sıradakiler görev bitince eklenir)
 
 ## Durum
 | Görev | Aktarım dosyası | Kod | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
@@ -29,3 +30,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-203 kimlik (+ ADR-025) | `K-203.md` | ✅ | — | — | — |
 | K-204 rıza | `K-204.md` | ✅ | — | — | — |
 | K-205 profil | `K-205.md` | ✅ | — | — | — |
+| K-206 ölçüm (+ ADR-026) | `K-206.md` | ✅ | — | — | — |

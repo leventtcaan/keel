@@ -124,7 +124,9 @@ class MeasurementController {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(day.day() != null && notNegative(day.steps()) && notNegative(day.sleepMinutes()) && notNegative(day.activeEnergyKcal()));
         store.put(account, new MeasurementStore.ActivityDay(day.day(), day.steps(), day.sleepMinutes(), day.activeEnergyKcal()));
-        return day;
+        // What was stored, so the answer is what a later read returns.
+        MeasurementStore.ActivityDay stored = store.activityDay(account, day.day()).orElseThrow();
+        return new ActivityDay(stored.day(), stored.steps(), stored.sleepMinutes(), stored.activeEnergyKcal());
     }
 
     /** The engine's trend (WeightTrend, trend_display_days) on the daily weights, for each day that has one. */
