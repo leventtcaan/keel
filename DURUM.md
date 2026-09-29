@@ -21,7 +21,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 
 | Görev | Durum | Dal / PR | Aktarım |
 |---|---|---|---|
-| K-101 alan tipleri | sürüyor | `engine/12-domain-types` | — |
+| K-101 alan tipleri | PR açık, auto-merge | PR #134 | `docs/aktarim/M1/K-101.md` |
 | K-102 parametre yükleme | — | | |
 | K-103 trend, veri yeterliliği | — | | |
 | K-104 güvenlik ağı | — | | |
@@ -38,11 +38,20 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-115 sapma kalibrasyonu | — | | |
 
 **Onay bekleyen eşikler (akşam Levent'e):** —
-**Akşam sorulacaklar:** —
-**Alınan teknik kararlar (aktarımda anlatılacak):** —
+**Akşam sorulacaklar:**
+1. (K-101) NO_DECISION_YET de en az bir gerekçe taşımalı mı? Kabul kriteri izin veriyor; spesifikasyonda hepsi gerekçeli;
+   inceleme ajanı "evet" öneriyor (U2: neyin kararı değiştireceği söylenebilsin). Öneri: evet → kriter + test değişir (K1).
+2. (K-101) U14 "dosya + kural no": kaynaklarda `#K-n` çapası zorunlu olsun mu? Bugün parametrelerin bir kısmı dosya düzeyinde.
+3. (K-101 inceleme) INCREASE_CALORIES (güvenlik) ile ADJUST_CALORIES(yukarı, bulk adımı) ayrı mı kalsın? Faz değişimi
+   (K-105 "tavan üstü → cut") için ayrı eylem gerekir mi? — K-105/K-107'de teknik öneriyle gelecek.
+**Alınan teknik kararlar (aktarımda anlatılacak):**
+- K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
+  Source yalnız arastirma/*.md · PRODUCT etiketli kaynak kural gerekçesi olamaz (U14) · EnginePurityTests: yalnız JDK,
+  I/O/saat/rastgelelik/ortam yok · ArchUnit test bağımlılığı (Modulith BOM sürümü)
+- K-102 (plan): motor dosya okumaz; ham YAML yapısını doğrulayıp tipli `Parameters`'a çevirir; okuma test/`decision`'da
 
 ## Aktif görev
-K-101 · Motor alan tipleri · dal `engine/12-domain-types` (issue #12)
+K-101 PR #134 CI'da (auto-merge) → sıradaki K-102 · Parametre yükleme
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
