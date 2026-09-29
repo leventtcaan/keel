@@ -35,9 +35,17 @@ import org.springframework.web.bind.annotation.RestController;
 @EnableConfigurationProperties(WorkoutController.TrainingLimits.class)
 class WorkoutController {
 
-    /** What a set can be (K-210, keel.training); 2 decimals, the column's. */
+    /** What a set can be (K-210, K-218, keel.training); load to 2 decimals, the column's. */
     @ConfigurationProperties("keel.training")
-    record TrainingLimits(BigDecimal maxLoadKg) {
+    record TrainingLimits(BigDecimal maxLoadKg, int maxReps, int maxRir) {
+
+        boolean reps(Integer reps) {
+            return reps != null && reps >= 0 && reps <= maxReps;
+        }
+
+        boolean rir(Integer rir) {
+            return rir == null || rir >= 0 && rir <= maxRir;
+        }
 
         static final int LOAD_DECIMALS = 2;
 
@@ -57,8 +65,8 @@ class WorkoutController {
     record Finish(Instant endedAt) {
     }
 
-    record NewSet(UUID clientId, String exerciseId, WorkoutStore.SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
-            WorkoutStore.Side side) {
+    record NewSet(UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
+            Side side) {
     }
 
     /** Contract Workout. */
@@ -68,8 +76,8 @@ class WorkoutController {
 
     /** Contract LoggedSet. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record LoggedSet(UUID id, UUID clientId, String exerciseId, WorkoutStore.SetType setType, BigDecimal loadKg, int reps,
-            Integer rir, WorkoutStore.Side side) {
+    record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps,
+            Integer rir, Side side) {
 
         static LoggedSet of(WorkoutStore.LoggedSet set) {
             return new LoggedSet(set.id(), set.clientId(), set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side());
@@ -128,8 +136,8 @@ class WorkoutController {
     ResponseEntity<LoggedSet> log(AccountId account, @PathVariable UUID id, @RequestBody NewSet set) {
         owned(account, id);
         require(set.clientId() != null && catalog.find(set.exerciseId()).isPresent() && set.setType() != null
-                && limits.load(set.loadKg()) && set.reps() != null && set.reps() >= 0
-                && (set.rir() == null || set.rir() >= 0));
+                && limits.load(set.loadKg()) && limits.reps(set.reps()) && limits.rir(set.rir()));
+        require(SetRules.accepts(catalog.find(set.exerciseId()).orElseThrow(), set.setType(), set.loadKg(), set.rir(), set.side()));
         WorkoutStore.Stored<WorkoutStore.LoggedSet> stored = store.log(account, id, new WorkoutStore.LoggedSet(null, set.clientId(),
                 set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), id));
         if (!stored.record().workoutId().equals(id)) {

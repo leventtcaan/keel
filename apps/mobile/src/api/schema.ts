@@ -1091,15 +1091,20 @@ export interface components {
             sets: components["schemas"]["LoggedSet"][];
         };
         /**
-         * @description Only WORKING sets count toward effort and estimated 1RM (K-218).
+         * @description Only WORKING sets count toward effort and estimated 1RM (K-218). FAILURE is a set taken to failure: its rir is 0
+         *     or absent.
          * @enum {string}
          */
         SetType: "WARM_UP" | "WORKING" | "DROP" | "FAILURE";
-        /** @enum {string} */
+        /**
+         * @description A unilateral exercise is logged per side (LEFT or RIGHT, required); any other exercise BOTH or absent.
+         * @enum {string}
+         */
         Side: "BOTH" | "LEFT" | "RIGHT";
         /**
-         * @description One set. exerciseId may differ from the plan (a swap, e.g. pull-ups for lat pulldown). A bodyweight exercise
-         *     logs the added load in loadKg (0 without); the engine adds the bodyweight.
+         * @description One set. exerciseId may differ from the plan (a swap, e.g. pull-ups for lat pulldown). A
+         *     BODYWEIGHT_PLUS_EXTERNAL exercise logs the added load in loadKg (0 without); a BODYWEIGHT exercise always 0. The
+         *     engine adds the bodyweight. A set its exercise cannot have (see SetType, Side) is 400.
          */
         NewSet: {
             clientId: components["schemas"]["ClientId"];
