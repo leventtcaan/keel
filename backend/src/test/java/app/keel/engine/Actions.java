@@ -20,7 +20,7 @@ final class Actions {
                 new Action.FixAdherence(),
                 new Action.HardStop(),
                 new Action.StopLoadIncrease(),
-                new Action.Deload(),
+                new Action.Deload(new java.math.BigDecimal("0.5")),
                 new Action.FullRestWeek(),
                 new Action.MiniCut(),
                 new Action.ChangePhase(Phase.CUT));

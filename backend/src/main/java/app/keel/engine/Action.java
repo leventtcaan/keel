@@ -70,8 +70,12 @@ public sealed interface Action {
     record StopLoadIncrease() implements Action {
     }
 
-    /** Second rung: cut volume or load for a week (K-110). */
-    record Deload() implements Action {
+    /** Second rung: a lighter week. {@code setsFactor} scales the weekly sets (deload_volume_factor; G7 K-68, K-110). */
+    record Deload(java.math.BigDecimal setsFactor) implements Action {
+
+        public Deload {
+            java.util.Objects.requireNonNull(setsFactor, "setsFactor");
+        }
     }
 
     /** Last rung: a full week off (K-110). */

@@ -30,6 +30,7 @@ public enum Unit {
     MONTHS("months", Kind.WHOLE, Bound.POSITIVE),
     YEARS("years", Kind.WHOLE, Bound.POSITIVE),
     SETS("sets", Kind.WHOLE, Bound.POSITIVE),
+    SESSIONS("sessions", Kind.WHOLE, Bound.POSITIVE),
     WEIGHINS_PER_WEEK("weighins_per_week", Kind.WHOLE, Bound.POSITIVE),
     SETS_PER_WEEK("sets_per_week", Kind.WHOLE, Bound.POSITIVE),
     SESSIONS_PER_WEEK("sessions_per_week", Kind.WHOLE, Bound.POSITIVE),
