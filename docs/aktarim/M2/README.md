@@ -12,9 +12,13 @@ profil → ölçüm/beslenme/antrenman → karar.
 ## Aktarım sırası (bağımlılığa göre)
 1. K-202 PostgreSQL + Flyway — verinin durduğu yer
 2. K-201 sözleşme — telefonla sunucunun ortak dili
-3. (sıradakiler görev bitince eklenir)
+3. K-207 besin verisi spike'ı — veri nereden, hangi lisansla
+4. K-215 ortak altyapı — hata ve log (V3 yapısal)
+5. (sıradakiler görev bitince eklenir)
 
 ## Durum
 | Görev | Aktarım dosyası | Kod | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
 |---|---|---|---|---|---|
 | K-202 PostgreSQL + Flyway (+ ADR-023) | `K-202.md` | ✅ | — | — | — |
+| K-201 sözleşme v1 (+ ADR-024) | `K-201.md` | ✅ | — | — | — |
+| K-207 besin spike (ADR-008) | `K-207.md` | ✅ | — | — | — |
