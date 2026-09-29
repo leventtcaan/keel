@@ -36,8 +36,10 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | ✅ birleşti | #154 | `M2/K-202.md` |
 | K-201 sözleşme v1 (+ ADR-024) | ✅ birleşti | #155 | `M2/K-201.md` |
 | K-215 ortak altyapı (hata, SafeLog, health) | ✅ birleşti (gerçek Tomcat'te V3 sızıntısı bulundu, düzeltildi) | #156 | `M2/K-215.md` |
-| K-203 kimlik (+ ADR-025) | dal itildi, güvenlik incelemesi sürüyor | `identity/27-sign-in-with-apple` | `M2/K-203.md` |
-| K-204 rıza | dal itildi (K-203 üstünde), inceleme bekliyor | `consent/28-three-consents` | `M2/K-204.md` |
+| K-203 kimlik (+ ADR-025) | PR auto-merge; güvenlik incelemesi 3 bulgu düzeltildi | #157 | `M2/K-203.md` |
+| K-204 rıza | dal itildi (K-203 üstünde), inceleme sürüyor | `consent/28-three-consents` | `M2/K-204.md` |
+| K-205 profil | dal itildi (K-204 üstünde), inceleme sürüyor | `profile/29-profile` | `M2/K-205.md` |
+| K-207 besin spike | ✅ main (ADR-008) | — | `M2/K-207.md` |
 | K-207 besin spike (ADR-008 güncellendi) | ✅ main | — | `M2/K-207.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
@@ -49,11 +51,13 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (29 Eyl gece, ikinci oturum)
 Bu oturum (prompt `plan/oturum-promptlari/M2-devam.md`) M1 kalanını bitirdi; sırada M2.
 1. ✅ M1 kapandı: #150, #152, #153 birleşti; worktree'ler kaldırıldı; `docs/aktarim/M1/README.md` güncel.
-2. **Açık işler:** K-203 (`../keel-k203`, dal `identity/27-sign-in-with-apple`, commit 909e259): güvenlik incelemesi →
-   bulgular TDD → PR. K-204 (`../keel-k204`, dal `consent/28-three-consents`, K-203'ün üstünde, commit 5efa7cf): K-203
-   birleşince `git rebase --onto origin/main origin/identity/27-sign-in-with-apple` → inceleme → PR.
-   Mutasyon betiği: scratchpad `mutate.py` (`MUT_DIR=<modül>`, test filtresi joker olabilir; Gradle çıktısından okur).
-   Sıradaki: **K-205 profil** (K-203 üstünde), sonra K-206/K-210/K-208/K-214.
+2. **Açık işler (dal zinciri — göç numaraları ardışık olsun diye):** K-203 #157 (auto-merge) → K-204
+   `consent/28-three-consents` (V3, `../keel-k204`) → K-205 `profile/29-profile` (V4, `../keel-k205`). K-203 birleşince:
+   `cd ../keel-k204 && git fetch && git rebase --onto origin/main 1ffd6ff` (1ffd6ff = K-203'ün son commit'i) → PR;
+   K-204 birleşince K-205'i aynı şekilde (`--onto origin/main 152352b`) → PR. K-204+K-205 incelemesi sürüyor.
+   Sonraki göç numarası **V5**. Mutasyon betiği: scratchpad `mutate.py` (`MUT_DIR=<modül>`).
+   Sıradaki: **K-206 ölçüm** (K-205 üstünde; HEALTH_DATA rıza kapısı → ADR-015 bağımlılık genişletmesi `consent`),
+   K-210 antrenman, K-214 gizlilik, K-208 besin.
 3. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
    K-206, K-210, K-208, K-214 → K-209, K-211, K-218, K-219 → K-212 → K-213, K-216, K-217. Skill'ler: Postgres/Flyway →
    K-202, sözleşme (spectral + oasdiff) → K-201 (`arastirma/ham/L4-skill-kaynaklari.md` §6-8).
