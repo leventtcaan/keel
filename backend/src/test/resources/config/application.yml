@@ -1,0 +1,7 @@
+# Test-only values (loaded next to the main application.yml, tests only). Not secrets: a made-up bundle ID and a
+# session key that signs nothing outside these tests.
+keel:
+  apple:
+    client-id: app.keel.test
+  session:
+    secret: dGVzdC1vbmx5IHNlc3Npb24ga2V5LCBzaWducyBub3RoaW5nIHJlYWwh

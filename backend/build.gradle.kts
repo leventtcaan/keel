@@ -26,6 +26,9 @@ dependencies {
     // event publication registry on the same database (its table comes from a migration, not auto-created).
     // The HTTP API (ADR-024) and its shared error model and request log (K-215).
     implementation(libs.spring.boot.starter.webmvc)
+    // Sign in with Apple and our own session tokens (K-203, ADR-011).
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.oauth2.resource.server)
     implementation(libs.spring.boot.starter.data.jdbc)
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.modulith.starter.jdbc)
@@ -41,6 +44,7 @@ dependencies {
     testImplementation(libs.jqwik)
     // Integration tests run against a real PostgreSQL in a container, the same image as docker compose (ADR-020).
     testImplementation(libs.spring.boot.starter.webmvc.test)
+    testImplementation(libs.spring.boot.starter.security.test)
     testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.junit.jupiter)

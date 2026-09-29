@@ -29,3 +29,4 @@
 | [ADR-022](kararlar/ADR-022-karar-sirasi-ayrintisi.md) | Karar sırasının ayrıntısı: antrenman kötüyse yemekten önce, sakin haftada plato (ADR-003 §4'ü genişletir) | KABUL |
 | [ADR-023](kararlar/ADR-023-kalicilik-teknolojisi.md) | Kalıcılık: Spring Data JDBC, modül başına şema, olay kaydı göçle (K-202) | KABUL |
 | [ADR-024](kararlar/ADR-024-api-sozlesmesi-v1.md) | API sözleşmesi v1: /v1, clientId idempotency, Decision birebir, aralıklar, araç zinciri (K-201) | KABUL |
+| [ADR-025](kararlar/ADR-025-oturum-tasarimi.md) | Oturum: 15 dk JWT + dönen refresh (hash'li), Apple'dan yalnız `sub` (K-203) | KABUL |

@@ -593,7 +593,7 @@ tasks:
     module: identity
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-202, K-201]
     why: "Parolasız, tek dokunuş giriş (ADR-011)"
     acceptance:

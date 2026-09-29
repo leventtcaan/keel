@@ -16,6 +16,17 @@ spring:
       jdbc:
         schema-initialization:
           enabled: false
+# Identity (K-203, ADR-011). The app's bundle ID and the session key come from the environment (V5); Apple's issuer
+# and key set are Apple's published values. Access tokens live minutes, refresh tokens weeks.
+keel:
+  apple:
+    client-id: ${KEEL_APPLE_CLIENT_ID}
+    issuer: https://appleid.apple.com
+    jwks-uri: https://appleid.apple.com/auth/keys
+  session:
+    secret: ${KEEL_SESSION_SECRET}
+    access-ttl: 15m
+    refresh-ttl: 60d
 # V3 (K-215): failures are logged by SafeLog, by type and code location only. The container's and Spring MVC's own
 # loggers would print an exception's message, which may hold what the request carried; and the fallback error body
 # never repeats the path.
