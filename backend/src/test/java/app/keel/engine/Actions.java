@@ -22,6 +22,7 @@ final class Actions {
                 new Action.StopLoadIncrease(),
                 new Action.Deload(),
                 new Action.FullRestWeek(),
-                new Action.MiniCut());
+                new Action.MiniCut(),
+                new Action.ChangePhase(Phase.CUT));
     }
 }
