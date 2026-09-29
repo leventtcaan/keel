@@ -84,6 +84,17 @@ class ProfileApiTests {
     }
 
     @Test
+    void theAnswerToAPutIsWhatAGetWillReturn() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> profile = onboarding();
+        profile.put("food", Map.of());
+
+        Map<String, Object> answered = read(put(account, profile));
+
+        assertThat(answered).isEqualTo(read(get(account))).doesNotContainKey("food");
+    }
+
+    @Test
     void otherModulesReadWhatTheEngineNeeds() {
         AccountId account = TestSessions.newAccount();
         put(account, onboarding());
@@ -106,6 +117,24 @@ class ProfileApiTests {
             profile.put(bad.getKey(), bad.getValue());
             assertThat(put(account, profile)).as(bad.toString()).hasStatus(400).bodyJson().extractingPath("$.code").isEqualTo("VALIDATION_FAILED");
         }
+    }
+
+    @Test
+    void numbersAreNotReadAsEnumsNorAsDifferentNumbers() {
+        // K-205 review: by default the JSON reader turns "sex": 1 into FEMALE, "heightCm": 180.7 into 180 and "180" into
+        // 180 — a client's index bug would silently store the wrong sex or check-in day. The contract says strings and
+        // integers; anything else is a validation error.
+        AccountId account = TestSessions.newAccount();
+        List<Map.Entry<String, Object>> loose = List.of(Map.entry("sex", 1), Map.entry("goal", 0), Map.entry("heightCm", 180.7),
+                Map.entry("heightCm", "180"));
+        for (Map.Entry<String, Object> value : loose) {
+            Map<String, Object> profile = onboarding();
+            profile.put(value.getKey(), value.getValue());
+            assertThat(put(account, profile)).as(value.toString()).hasStatus(400);
+        }
+        Map<String, Object> dayAsNumber = onboarding();
+        dayAsNumber.put("schedule", Map.of("trainingDays", List.of(0), "checkInDay", "MONDAY", "timeZone", "UTC"));
+        assertThat(put(account, dayAsNumber)).hasStatus(400);
     }
 
     @Test

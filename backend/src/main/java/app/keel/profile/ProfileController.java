@@ -70,7 +70,8 @@ class ProfileController {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
         store.save(account, profile);
-        return profile;
+        return store.find(account).orElseThrow(); // what was stored, so the answer is what a GET returns
+
     }
 
     // The contract's limits (openapi.yaml › Profile, Schedule); enum values are checked by the JSON reader already.

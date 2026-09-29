@@ -1,6 +1,16 @@
 spring:
   application:
     name: keel
+  # The contract's types, strictly (K-205 review): a number is not an enum ("sex": 1 is not FEMALE), a fraction is not
+  # an integer (180.7 is not 180), a string is not a number ("180"). Jackson 3.1.5 names (checked in the jar).
+  jackson:
+    datatype:
+      enum:
+        fail-on-numbers-for-enums: true
+    deserialization:
+      accept-float-as-int: false
+    mapper:
+      allow-coercion-of-scalars: false
   # The database comes from the environment (V5: no credentials in the repository). For local development the
   # `local` profile (application-local.yml) points at compose.yaml's container; tests use Testcontainers.
   datasource:
