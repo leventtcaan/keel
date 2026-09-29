@@ -282,6 +282,26 @@ class SafetyNetTests {
     }
 
     @Test
+    void aHardTrainingPlanFarUnderTheLineRisesToTheFloorIncludingItsExercise() {
+        // 25 × 60 + 1 + 400 = 1901; from 1000 the increase is 901.
+        assertThat(SafetyNet.check(fueled(Sex.MALE, "80.0", "25", 1000, 400), MALE)).hasValueSatisfying(
+                d -> assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(901)));
+    }
+
+    @Property
+    boolean aSafetyIncreaseAlwaysLiftsTheLowEnergyPlanOutOfTheLowBand(@ForAll Sex sex,
+            @ForAll @IntRange(min = 600, max = 2400) int target, @ForAll @IntRange(min = 0, max = 800) int exercise) {
+        Parameters p = parameters(sex);
+        Snapshot low = fueled(sex, "80.0", "25", target, exercise);
+        if (SafetyNet.energyAvailability(low, p).filter(band -> band == EnergyAvailability.LOW).isEmpty()) {
+            return true;
+        }
+        int up = ((Action.IncreaseCalories) SafetyNet.check(low, p).orElseThrow().action()).kcalPerDay();
+        return SafetyNet.energyAvailability(low.withEnergy(new EnergyBudget(target + up, exercise)), p)
+                .filter(band -> band != EnergyAvailability.LOW).isPresent();
+    }
+
+    @Test
     void aPlanExactlyOnTheLowEnergyLineIsAlreadyLow() {
         // ADR-020 L-1 and J1 C6 say "≤ threshold": (1900 − 400) / 60 = 25.0 narrows; one kcal more does not.
         assertThat(SafetyNet.check(fueled(Sex.MALE, "80.0", "25", 1900, 400), MALE)).isPresent();

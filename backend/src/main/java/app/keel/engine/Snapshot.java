@@ -10,7 +10,8 @@ import java.util.Objects;
  * Snapshot always gives the same Decision. Later tasks add the time series (weigh-ins K-103, training K-109, …).
  *
  * @param phase the phase the user is currently in; the phase gate (K-105) may decide to change it
- * @param planStart the day the current calorie target took effect; a plan is judged only after its decision window
+ * @param planStart the day the current calorie target took effect — any change, a safety increase included; a plan is
+ *     judged only after its decision window
  * @param weights every weigh-in up to today, imported history included (ADR-018)
  * @param fatProxyPct the internal body-fat estimate from the visual/waist proxy, if there is one. U4: an input only;
  *     no Decision carries it, and it is never shown as a number

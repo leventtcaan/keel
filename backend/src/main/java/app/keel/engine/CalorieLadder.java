@@ -16,10 +16,14 @@ import java.util.Optional;
  *       bulk_step_kcal (G3 K-10), also when the genetic limit pulls it back.</li>
  *   <li><b>Where it lands.</b> Only the calorie target moves; macros follow from it (K-108), which holds protein and
  *       fat and moves carbs — so a bulk step is all carbs (G3 K-10) and a cut takes fat down only once carbs reach their
- *       floor (the task card: fat to 1 g/kg first, then carbs as the lever; 03 §2.3).</li>
- *   <li><b>Floors on the way down</b>, in order: BMR — move more instead (G2 K-11); the low-energy floor — a shorter
- *       step, or none (J1 L2.1); the macro floors — move more instead (ADR-020 L-11).</li>
- *   <li><b>Spacing.</b> At least calorie_change_min_wait_weeks since the plan started (H3 B3).</li>
+ *       floor. That is the task card (fat to 1 g/kg first, then carbs as the lever), 03 §2.3 and G3 K-22. G7 K-117
+ *       ("take the deficit from fat, not carbs") says otherwise; the card wins as the approved acceptance, and the
+ *       conflict is with the product owner (DURUM).</li>
+ *   <li><b>Floors on the way down</b>, in order: the low-energy floor — no step, and no extra movement either, since
+ *       both lower energy availability (J1 L2.1); a step is never shortened, under the minimum it is noise (K-97);
+ *       BMR — move more instead (G2 K-11); the macro floors — move more instead (ADR-020 L-11).</li>
+ *   <li><b>Spacing.</b> At least calorie_change_min_wait_weeks since the target last changed (H3 B3). planStart is that
+ *       date, safety increases included; in the assembled engine the decision window (21/28 days) already covers it.</li>
  * </ul>
  *
  * <p>Whether calories may move at all is decided before this (the spine, K-106): adherence, and on a cut, training
@@ -29,7 +33,6 @@ public final class CalorieLadder {
 
     static final RuleId CUT_STEP = new RuleId("cut_step");
     static final RuleId BULK_STEP = new RuleId("bulk_step");
-    static final RuleId LEA_FLOOR = new RuleId("lea_floor");
     static final RuleId ENERGY_FLOOR = new RuleId("energy_floor");
     static final RuleId CALORIE_CHANGE_TOO_SOON = new RuleId("calorie_change_too_soon");
 
@@ -69,19 +72,16 @@ public final class CalorieLadder {
         }
 
         int proposed = target - size;
+        // The low-energy floor first: under it neither less food nor more exercise is an answer (both lower energy
+        // availability). A shorter step is not one either — under the minimum step is noise (K-97) — so calories stay.
+        Optional<Integer> leaFloor = SafetyNet.leaFloorKcal(snapshot, parameters);
+        if (leaFloor.isPresent() && proposed < leaFloor.get()) {
+            return decision(snapshot, new Action.Continue(), List.of(new Reason(ENERGY_FLOOR, ENERGY_GATE)),
+                    snapshot.today().plusDays(DAYS_PER_WEEK));
+        }
         Optional<Decision> underBmr = SafetyNet.bmrFloor(proposed, bmrKcal, snapshot, parameters);
         if (underBmr.isPresent()) {
             return underBmr.get();
-        }
-        Optional<Integer> leaFloor = SafetyNet.leaFloorKcal(snapshot, parameters);
-        if (leaFloor.isPresent() && proposed < leaFloor.get()) {
-            if (leaFloor.get() >= target) {
-                // No room above the floor: no cut, and no extra exercise either — it would lower availability further.
-                return decision(snapshot, new Action.Continue(), List.of(new Reason(ENERGY_FLOOR, ENERGY_GATE)),
-                        snapshot.today().plusDays(DAYS_PER_WEEK));
-            }
-            proposed = leaFloor.get();
-            reasons.add(new Reason(LEA_FLOOR, ENERGY_GATE));
         }
         BigDecimal bodyweight = WeightTrend.at(snapshot.weights(), snapshot.today(), parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS))
                 .orElseThrow(() -> new IllegalArgumentException("A calorie step needs a weight trend"));

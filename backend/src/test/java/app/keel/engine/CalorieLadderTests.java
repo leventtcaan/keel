@@ -113,23 +113,42 @@ class CalorieLadderTests {
     }
 
     @Test
-    void theLowEnergyFloorShortensTheStep() {
-        // 80 kg at 25 % → 60 kg fat-free, 300 kcal exercise: the floor is 1801. From 2100 a full step would reach 1600,
-        // so the step stops at the floor: -299 (J1 L2.1, safety before K-97's minimum step).
+    void aFullStepIntoTheLowEnergyBandIsNotTakenAndNotShortened() {
+        // 80 kg at 25 % → 60 kg fat-free, 300 kcal exercise: the floor is 1801. From 2100 a full step would reach 1600.
+        // A shorter step (-299) would be under K-97's minimum — measurement noise — so calories stay (J1 L2.1).
         Decision decision = CalorieLadder.step(down(NOT_TOWARD), fueled(2100), LOW_BMR, MALE);
 
-        assertThat(decision.action()).isEqualTo(new Action.AdjustCalories(-299));
-        assertThat(decision.reasons()).extracting(Reason::rule).containsExactly(
-                new RuleId("not_toward_goal"), new RuleId("cut_step"), new RuleId("lea_floor"));
+        assertThat(decision.action()).isEqualTo(new Action.Continue());
+        assertThat(decision.reasons().getFirst().rule()).isEqualTo(new RuleId("energy_floor"));
     }
 
     @Test
-    void aStepEndingOneKcalUnderTheFloorIsShortenedToTheFloor() {
-        // 2300 - 500 = 1800, one under the 1801 floor: the step becomes -499, not a landing in the low band.
-        assertThat(CalorieLadder.step(down(NOT_TOWARD), fueled(2300), LOW_BMR, MALE).action())
-                .isEqualTo(new Action.AdjustCalories(-499));
+    void aFullStepThatStaysAboveTheFloorIsTaken() {
+        // 2301 - 500 = 1801: exactly on the floor, which is out of the low band. 2300 would land one under it: hold.
         assertThat(CalorieLadder.step(down(NOT_TOWARD), fueled(2301), LOW_BMR, MALE).action())
                 .isEqualTo(new Action.AdjustCalories(-CUT_STEP));
+        assertThat(CalorieLadder.step(down(NOT_TOWARD), fueled(2300), LOW_BMR, MALE).action())
+                .isEqualTo(new Action.Continue());
+    }
+
+    @Test
+    void atTheEnergyFloorMovementIsNeverTheAnswerEvenUnderBmr() {
+        // Review finding: with BMR 1400 the raw step 1801 - 500 = 1301 is under BMR, but "move more" would lower energy
+        // availability further. The low-energy floor is looked at first.
+        assertThat(CalorieLadder.step(down(NOT_TOWARD), fueled(1801), 1400, MALE).action()).isEqualTo(new Action.Continue());
+        assertThat(CalorieLadder.step(down(NOT_TOWARD), fueled(2200), 1800, MALE).action()).isEqualTo(new Action.Continue());
+    }
+
+    @Test
+    void aCutStepComesOutOfCarbsWhileFatStaysAtItsCeiling() {
+        // The card: fat to 1 g/kg first, then carbs are the lever (03 §2.3, G3 K-22). 2400 → 1900: protein and fat held,
+        // carbs down 125 g (500 / 4). G7 K-117 ("take it from fat") conflicts; see the class note.
+        Macros before = split(2400);
+        Macros after = split(2400 - CUT_STEP);
+
+        assertThat(after.proteinG()).isEqualTo(before.proteinG());
+        assertThat(after.fatG()).isEqualTo(before.fatG());
+        assertThat(before.carbsG() - after.carbsG()).isEqualTo(CUT_STEP / 4);
     }
 
     @Test
@@ -151,6 +170,35 @@ class CalorieLadderTests {
         assertThat(decision.action()).isEqualTo(new Action.ChangeMovement());
         assertThat(decision.reasons().getFirst().rule()).isEqualTo(new RuleId("carb_squeeze"));
         assertThat(decision.copyKey()).isEqualTo(new CopyKey("decision.change_movement.carb_squeeze"));
+    }
+
+    @Test
+    void aWomanFrom45HasTheHigherProteinFloorUnderHerStep() {
+        // 70 kg, 2.2 g/kg from 45 → 154 g + 53 g fat (0.75 g/kg) + 50 g carbs = 1293 kcal; at 44 → 1237. 1750 - 500 = 1250.
+        Parameters female = parameters(Sex.FEMALE);
+        assertThat(CalorieLadder.step(down(NOT_TOWARD), woman(1750, 44), LOW_BMR, female).action())
+                .isEqualTo(new Action.AdjustCalories(-CUT_STEP));
+        Decision at45 = CalorieLadder.step(down(NOT_TOWARD), woman(1750, 45), LOW_BMR, female);
+        assertThat(at45.action()).isEqualTo(new Action.ChangeMovement());
+        assertThat(at45.reasons().getFirst().rule()).isEqualTo(new RuleId("carb_squeeze"));
+    }
+
+    @Test
+    void aWomansHigherFatFloorAlsoLimitsTheStep() {
+        // 70 kg, 30 y: 140 g protein + 53 g fat (0.75 g/kg) + 50 g carbs = 1237. 1720 - 500 = 1220.
+        assertThat(CalorieLadder.step(down(NOT_TOWARD), woman(1720, 30), LOW_BMR, parameters(Sex.FEMALE)).action())
+                .isEqualTo(new Action.ChangeMovement());
+    }
+
+    @Test
+    void aBulkPulledBackByTheGeneticLimitStillRespectsTheEnergyFloor() {
+        // 60 kg fat-free, 300 kcal exercise: floor 1801. 2000 - 250 = 1750 is in the low band; 2051 - 250 = 1801 is not.
+        Snapshot bulk = new Snapshot(TODAY, Sex.MALE, Phase.BULK, TODAY.minusDays(21), series(EngineFixtures.daily(TODAY.minusDays(30), TODAY, "80.0")),
+                Optional.of(new BigDecimal("25"))).withEnergy(new EnergyBudget(2000, 300)).withProfile(new Profile(30, 180));
+
+        assertThat(CalorieLadder.step(down(GENETIC_LIMIT), bulk, LOW_BMR, MALE).action()).isEqualTo(new Action.Continue());
+        assertThat(CalorieLadder.step(down(GENETIC_LIMIT), bulk.withEnergy(new EnergyBudget(2051, 300)), LOW_BMR, MALE).action())
+                .isEqualTo(new Action.AdjustCalories(-BULK_STEP));
     }
 
     @Test
@@ -199,6 +247,14 @@ class CalorieLadderTests {
     }
 
     @Property
+    boolean aStepDownIsAlwaysAFullStep(@ForAll @IntRange(min = 1100, max = 4000) int target,
+            @ForAll @IntRange(min = 900, max = 2200) int bmr) {
+        // K-97: under the minimum step is noise; floors stop a step, they never shorten it.
+        Decision decision = CalorieLadder.step(down(NOT_TOWARD), fueled(target), bmr, MALE);
+        return !(decision.action() instanceof Action.AdjustCalories(int kcal)) || kcal == -CUT_STEP;
+    }
+
+    @Property
     boolean aStepDownNeverLandsInTheLowEnergyBand(@ForAll @IntRange(min = 1500, max = 3500) int target) {
         Snapshot snapshot = fueled(target);
         Decision decision = CalorieLadder.step(down(NOT_TOWARD), snapshot, LOW_BMR, MALE);
@@ -233,6 +289,11 @@ class CalorieLadderTests {
     private static Snapshot fueled(int targetKcal) {
         return new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21), series(EngineFixtures.daily(TODAY.minusDays(30), TODAY, "80.0")),
                 Optional.of(new BigDecimal("25"))).withEnergy(new EnergyBudget(targetKcal, 300)).withProfile(new Profile(30, 180));
+    }
+
+    private static Snapshot woman(int targetKcal, int age) {
+        return new Snapshot(TODAY, Sex.FEMALE, Phase.CUT, TODAY.minusDays(21), series(EngineFixtures.daily(TODAY.minusDays(30), TODAY, "70.0")))
+                .withEnergy(new EnergyBudget(targetKcal, 300)).withProfile(new Profile(age, 165));
     }
 
     private static Macros split(int kcal) {
