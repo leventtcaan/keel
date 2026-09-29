@@ -38,4 +38,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-210 antrenman kaydı | `K-210.md` | ✅ | — | — | — |
 | K-214 gizlilik | `K-214.md` | ✅ | — | — | — |
 | K-218 set tipi, yük modeli, e1RM | `K-218.md` | ✅ | — | — | — |
-| K-219 hareket kataloğu (38 hareket) | `K-219.md` | ✅ | — | — | — |
+| K-219 hareket kataloğu (40 hareket) | `K-219.md` | ✅ | — | — | — |

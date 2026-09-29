@@ -6,7 +6,7 @@ muscles: [upper_back, lats, biceps, erectors]
 alternatives: [barbell_row, chest_supported_row]
 load: external
 unilateral: false
-setup: [chest_pad, grip]
+setup: [grip]
 clips:
   first_rep: clips/t_bar_row/first-rep.mp4
   last_rep: clips/t_bar_row/last-rep.mp4

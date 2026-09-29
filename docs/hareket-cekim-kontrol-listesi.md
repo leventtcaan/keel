@@ -23,4 +23,5 @@
 - [ ] Başka biri oynuyorsa yazılı model izni.
 
 ## Kayıt
-`review: {date: YYYY-AA-GG, by: levent, checklist: pass, notes: "..."}`
+`review: {date: "YYYY-AA-GG", by: levent, checklist: pass, notes: "..."}` — tarih **tırnak içinde** (tırnaksız YAML tarihi
+gevşek okunur: 2026-02-30 → 2 Mart; uygulama tırnaksızı reddeder). Çekilmemiş hareket: `review: pending`.

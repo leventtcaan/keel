@@ -3,7 +3,7 @@
 id: hip_thrust
 kind: compound
 muscles: [glutes, hamstrings]
-alternatives: [romanian_deadlift]
+alternatives: []
 load: external
 unilateral: false
 setup: [foot_position]

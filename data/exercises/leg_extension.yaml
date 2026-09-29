@@ -3,7 +3,7 @@
 id: leg_extension
 kind: isolation
 muscles: [quads]
-alternatives: [leg_press]
+alternatives: []
 load: external
 unilateral: false
 setup: [back_pad, ankle_pad]

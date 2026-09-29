@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.close_grip_lat_pulldown. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: close_grip_lat_pulldown
+kind: compound
+muscles: [lats, biceps]
+alternatives: [lat_pulldown, pull_up]
+load: external
+unilateral: false
+setup: [thigh_pad, handle]
+clips:
+  first_rep: clips/close_grip_lat_pulldown/first-rep.mp4
+  last_rep: clips/close_grip_lat_pulldown/last-rep.mp4
+review: pending

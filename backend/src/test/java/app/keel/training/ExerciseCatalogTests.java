@@ -71,6 +71,43 @@ class ExerciseCatalogTests {
     }
 
     @Test
+    void aSwapKeepsThePattern() throws IOException {
+        // G1 K-36: a swap is a move of the same pattern — same kind, same primary (first) muscle. A pulldown swapped for
+        // a row moves a lat slot to the upper back (K-54); a leg curl swapped for a Romanian deadlift adds a hinge.
+        ExerciseCatalog catalog = ExerciseCatalog.of(repository(), vocabulary());
+
+        assertThat(catalog.all()).allSatisfy(move -> assertThat(move.alternatives()).allSatisfy(id -> {
+            ExerciseCatalog.Exercise swap = catalog.find(id).orElseThrow();
+            assertThat(swap.kind()).as(move.id() + " → " + id).isEqualTo(move.kind());
+            assertThat(swap.muscles().getFirst()).as(move.id() + " → " + id).isEqualTo(move.muscles().getFirst());
+        }));
+        // G1 K-59: the face pull is programmed only when the user asks for it, so it is nobody's automatic swap.
+        assertThat(catalog.all()).noneSatisfy(move -> assertThat(move.alternatives()).contains("face_pull"));
+    }
+
+    @Test
+    void theSetupListIsThereAndHoldsEachFieldOnce() {
+        Map<String, Object> squat = move("squat", "compound", List.of("quads"), List.of());
+
+        assertThatIllegalArgumentException().as("no setup").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml", with(squat, "setup", null)), MUSCLES));
+        assertThatIllegalArgumentException().as("a scalar").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml", with(squat, "setup", "foot_position")), MUSCLES));
+        assertThatIllegalArgumentException().as("twice").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(squat, "setup", List.of("foot_position", "foot_position"))), MUSCLES));
+    }
+
+    @Test
+    void aReviewDateIsQuotedTextSoAnImpossibleDateCannotSlipThrough() {
+        // SnakeYAML reads an unquoted 2026-02-30 as 2 March; quoted text is parsed strictly (K-219 review).
+        Map<String, Object> squat = move("squat", "compound", List.of("quads"), List.of());
+        Object yamlDate = new Yaml().<Map<String, Object>>load("date: 2026-10-01").get("date");
+
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(squat, "review", Map.of("date", yamlDate, "by", "levent", "checklist", "pass"))), MUSCLES));
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(squat, "review", Map.of("date", "2026-02-30", "by", "levent", "checklist", "pass"))), MUSCLES));
+    }
+
+    @Test
     void aSetupFieldOutsideTheVocabularyIsRefused() {
         // The phone keeps the user's setting per field; "seat" next to "seat_height" would lose it.
         assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
@@ -86,6 +123,9 @@ class ExerciseCatalogTests {
                 with(squat, "clips", Map.of("first_rep", "clips/bench_press/first-rep.mp4", "last_rep", "clips/squat/last-rep.mp4"))), MUSCLES));
         assertThatIllegalArgumentException().as("one clip").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
                 with(squat, "clips", Map.of("first_rep", "clips/squat/first-rep.mp4"))), MUSCLES));
+        assertThatIllegalArgumentException().as("a third clip").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(squat, "clips", Map.of("first_rep", "clips/squat/first-rep.mp4", "last_rep", "clips/squat/last-rep.mp4",
+                        "middle_rep", "clips/squat/middle-rep.mp4"))), MUSCLES));
         assertThatIllegalArgumentException().as("the same clip twice").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
                 with(squat, "clips", Map.of("first_rep", "clips/squat/first-rep.mp4", "last_rep", "clips/squat/first-rep.mp4"))), MUSCLES));
     }
@@ -103,6 +143,8 @@ class ExerciseCatalogTests {
         assertThatIllegalArgumentException().as("no review").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml", with(squat, "review", null)), MUSCLES));
         assertThatIllegalArgumentException().as("failed checklist").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
                 with(squat, "review", Map.of("date", "2026-10-01", "by", "levent", "checklist", "fail"))), MUSCLES));
+        assertThatIllegalArgumentException().as("a field the checklist has not").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(squat, "review", Map.of("date", "2026-10-01", "by", "levent", "checklist", "pass", "approved", true))), MUSCLES));
         assertThatIllegalArgumentException().as("no date").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
                 with(squat, "review", Map.of("by", "levent", "checklist", "pass"))), MUSCLES));
         assertThatIllegalArgumentException().as("not a date").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",

@@ -86,7 +86,10 @@ public final class ExerciseCatalog {
                 require(regions.containsKey(muscle), file + ": " + muscle + " is not a muscle in data/muscles.yaml");
             }
             List<String> alternatives = move.get("alternatives") == null ? List.of() : (List<String>) move.get("alternatives");
-            List<String> setup = move.get("setup") == null ? List.of() : (List<String>) move.get("setup");
+            // Required, possibly empty: a missing list and a misspelt key would otherwise both read as "no setup".
+            require(move.get("setup") instanceof List, file + ": setup is a list (empty when there is nothing to set)");
+            List<String> setup = (List<String>) move.get("setup");
+            require(Set.copyOf(setup).size() == setup.size(), file + ": a setup field is named once");
             for (String field : setup) {
                 require(setupFields.contains(field), file + ": " + field + " is not a setup field in data/exercise-setup.yaml");
             }
@@ -142,9 +145,8 @@ public final class ExerciseCatalog {
         require(REVIEW_FIELDS.containsAll(review.keySet()), file + ": review fields are " + REVIEW_FIELDS);
         require("pass".equals(review.get("checklist")), file + ": a review records a passed checklist");
         require(review.get("by") instanceof String by && !by.isBlank(), file + ": a review says who checked");
-        // SnakeYAML reads an unquoted 2026-10-01 as a date; a quoted one as text.
-        Object date = review.get("date");
-        require(date instanceof java.util.Date || date instanceof String text && isDate(text), file + ": a review has its date (YYYY-MM-DD)");
+        // Quoted text, parsed strictly: SnakeYAML reads an unquoted date leniently (2026-02-30 becomes 2 March).
+        require(review.get("date") instanceof String text && isDate(text), file + ": a review has its date, quoted (\"YYYY-MM-DD\")");
         return true;
     }
 

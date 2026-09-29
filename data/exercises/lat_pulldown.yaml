@@ -3,7 +3,7 @@
 id: lat_pulldown
 kind: compound
 muscles: [lats, biceps]
-alternatives: [pull_up, seated_row]
+alternatives: [pull_up, close_grip_lat_pulldown]
 load: external
 unilateral: false
 setup: [thigh_pad, grip_width, handle]

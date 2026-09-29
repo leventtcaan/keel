@@ -2,7 +2,7 @@
 # checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
 id: one_arm_dumbbell_row
 kind: compound
-muscles: [lats, upper_back, biceps]
+muscles: [upper_back, lats, biceps]
 alternatives: [seated_row, chest_supported_row]
 load: external
 unilateral: true

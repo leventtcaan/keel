@@ -3,7 +3,7 @@
 id: lying_leg_curl
 kind: isolation
 muscles: [hamstrings]
-alternatives: [romanian_deadlift]
+alternatives: [seated_leg_curl]
 load: external
 unilateral: false
 setup: [ankle_pad]

@@ -238,10 +238,6 @@
       "name": "Bench press",
       "aliases": "Barbell bench press, Flat bench"
     },
-    "incline_bench_press": {
-      "name": "Incline bench press",
-      "aliases": "Incline barbell press"
-    },
     "dumbbell_bench_press": {
       "name": "Dumbbell bench press",
       "aliases": "DB bench press, Flat dumbbell press"
@@ -316,7 +312,7 @@
     },
     "chest_supported_row": {
       "name": "Chest-supported row",
-      "aliases": "Machine row, Seal row"
+      "aliases": "Machine row, Chest-supported machine row"
     },
     "one_arm_dumbbell_row": {
       "name": "One-arm dumbbell row",
@@ -376,7 +372,7 @@
     },
     "hip_thrust": {
       "name": "Hip thrust",
-      "aliases": "Barbell hip thrust, Glute bridge"
+      "aliases": "Barbell hip thrust"
     },
     "standing_calf_raise": {
       "name": "Standing calf raise",
@@ -385,6 +381,18 @@
     "seated_calf_raise": {
       "name": "Seated calf raise",
       "aliases": "Seated calf machine"
+    },
+    "close_grip_lat_pulldown": {
+      "name": "Close-grip lat pulldown",
+      "aliases": "Narrow-grip pulldown, V-bar pulldown"
+    },
+    "reverse_pec_deck": {
+      "name": "Reverse pec deck",
+      "aliases": "Rear delt machine, Reverse machine fly"
+    },
+    "seated_leg_curl": {
+      "name": "Seated leg curl",
+      "aliases": "Seated hamstring curl"
     }
   },
   "exerciseSetup": {

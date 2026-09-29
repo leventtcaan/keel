@@ -3,7 +3,7 @@
 id: romanian_deadlift
 kind: compound
 muscles: [hamstrings, glutes, erectors]
-alternatives: [hip_thrust]
+alternatives: []
 load: external
 unilateral: false
 setup: [grip_width, stance_width]

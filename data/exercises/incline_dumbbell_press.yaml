@@ -3,7 +3,7 @@
 id: incline_dumbbell_press
 kind: compound
 muscles: [chest, front_delts, triceps]
-alternatives: [incline_bench_press, machine_chest_press]
+alternatives: [machine_chest_press, dumbbell_bench_press]
 load: external
 unilateral: false
 setup: [bench_angle]
