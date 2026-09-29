@@ -1,0 +1,13 @@
+# Security updates for npm and Gradle come from repository settings (ADR-019).
+# Version updates only for GitHub Actions: Expo pins npm versions per SDK, Gradle uses the version catalog.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
