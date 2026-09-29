@@ -42,7 +42,9 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-207 besin spike (ADR-008 güncellendi) | ✅ main | — | `M2/K-207.md` |
 | K-206 ölçüm (+ ADR-026) | ✅ birleşti; inceleme 5 bulgu düzeltildi | #160 | `M2/K-206.md` |
 | K-210 antrenman kaydı | ✅ birleşti; inceleme 6 bulgu düzeltildi | #161 | `M2/K-210.md` |
-| K-214 gizlilik (silme, dışa aktarma, egress; V7) | PR auto-merge; inceleme: silme tekrar denenmiyordu, silinen hesabın token'ı yazıyordu → düzeltildi | #162 | `M2/K-214.md` |
+| K-214 gizlilik (silme, dışa aktarma, egress; V7) | ✅ birleşti; inceleme: silme tekrar denenmiyordu, silinen hesabın token'ı yazıyordu → düzeltildi | #162 | `M2/K-214.md` |
+| K-218 set tipi, yük modeli, e1RM (+ H3 B15) | ✅ birleşti; inceleme: int taşması, tekrar/RIR tavanı | #163 | `M2/K-218.md` |
+| K-219 hareket kataloğu (38 hareket) | dal `data/103-exercise-catalog` (`../keel-k219`), inceleme sürüyor | — | `M2/K-219.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -52,13 +54,12 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (30 Eyl, üçüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-2.md`)
 Bu oturum M1'i kapattı (#150-#153) ve M2'de K-201, K-202, K-203, K-204, K-205, K-207, K-215'i birleştirdi.
-1. **Açık zincir (30 Eyl, compact sonrası):** K-206 #160 ✅, K-210 #161 ✅ birleşti. **K-214 PR #162** auto-merge
-   (V7 `privacy.deletion`; `../keel-k214`). **K-218** `training/102-set-types` (`../keel-k218`, taban K-210 ucu 41df098 —
-   #161 squash'la birleşti, açılınca `git rebase --onto origin/main 41df098`); göç yok. Araştırma eklendi:
-   `arastirma/ham/H3-bosluk-literatur.md › B15` (e1RM: Epley, ≤10 tekrar, RIR). Plan: motor `E1rm` (parametre
-   `e1rm_epley_divisor`, `e1rm_max_reps_to_failure`, yeni birim `reps`), training'de set kuralları (tek taraflı → LEFT/RIGHT,
-   BODYWEIGHT → loadKg 0, FAILURE → rir 0) + yalnız WORKING set sorgusu; vücut ağırlığı birleştirme decision'da (K-212).
-   - Birleşen dal worktree'lerini kaldır (`git worktree remove`); yerel dal etiketleri zararsız.
+1. **Açık iş (30 Eyl):** K-206 #160, K-210 #161, K-214 #162, K-218 #163 ✅ birleşti. **K-219** `data/103-exercise-catalog`
+   (`../keel-k219`, main üstünde, commit a774c0e): inceleme ajanı çalıştı/çalışıyor → bulgular TDD → PR `--auto --squash`.
+   **⚠ DİSK DOLU (30 Eyl):** Mac'te ~1 GB boş (228 GB'ın 201'i); Docker Desktop açılmıyor → veritabanlı testler yerelde
+   koşmuyor. Yalnız kendi ürettiğim `node_modules`/`build` silindi; Levent'in dosyalarına dokunulmadı. Levent yer açana dek:
+   Docker'sız testler (`app.keel.engine.*`, `ExerciseCatalogTests`, `app.keel.architecture.*`) yerelde, tam doğrulama CI'da.
+   Worktree'lerde `npm ci` yapma (640 MB); gerekirse ana checkout'un `node_modules`'ı.
 2. **Sonraki göç numarası V8** (V7 = K-214). Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
    ek yük, tek taraflı) → **K-219** hareket kataloğu 30-40 (+ aliases, setup_fields, clips, review; `data/muscles.yaml`
    sözlüğü var, bilinmeyen alan reddi var → alan listesini genişlet) → **K-211** program üretimi/içe alma → **K-208** besin
