@@ -43,7 +43,7 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 Önceki oturum burada durdu; yeni oturum **buradan** devam eder (prompt: `plan/oturum-promptlari/M2-devam.md`).
 1. **#150 (K-112)** birleşti mi bak (`gh pr view 150`). Kırmızıysa düzelt.
 2. **K-113** (`../keel-k113`, dal `engine/24-golden-scenarios`): taban eski K-112 commit'leri. #150 birleşince
-   `git fetch && git rebase --onto origin/main 1de8df4` (1de8df4 = eski K-112 ucu; `git log` ile doğrula) →
+   `git fetch && git rebase --onto origin/main 9cd0e46` (9cd0e46 = K-113 dalındaki eski K-112 ucu; yalnız cafc639 taşınır — `git log` ile doğrula) →
    `./gradlew build` → inceleme (pr-test-analyzer: yolculuk beklentileri kurallardan türetildi mi, düzenek bir karar
    kısaltmasıyla yanlış sebeple geçiyor mu, kadın bulk / 45+ kapsamı) → düzelt → backlog K-113 done → PR `--auto --squash`.
 3. **K-115** (`../keel-k115`, dal `engine/99-intake-calibration`, taban `main`): inceleme (code-reviewer: enerji dengesi
