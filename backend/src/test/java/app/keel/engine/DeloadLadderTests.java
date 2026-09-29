@@ -9,8 +9,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import net.jqwik.api.Arbitraries;
+import net.jqwik.api.Arbitrary;
+import net.jqwik.api.Combinators;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
+import net.jqwik.api.Provide;
 import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +28,6 @@ class DeloadLadderTests {
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 26);
     private static final Parameters P = parameters(Sex.MALE);
     private static final int PLATEAU = P.wholeNumber(ParameterKey.PLATEAU_SESSIONS);
-    private static final int WEEK_OF_SESSIONS = P.wholeNumber(ParameterKey.FREQUENCY_PER_MUSCLE_PER_WEEK);
     private static final int STAGNATION_MONTHS = P.wholeNumber(ParameterKey.STAGNATION_DELOAD_MONTHS);
 
     // ── rung 1: stop adding load ────────────────────────────────────────────────────────────────────────────
@@ -32,7 +35,7 @@ class DeloadLadderTests {
     @Test
     void aPlateauStopsLoadIncreasesFirst() {
         // Spec WC-16: 3 stalled sessions on a compound → hold the load, nothing else yet.
-        Optional<Decision> decision = DeloadLadder.check(new TrainingStatus(PLATEAU, false, 0), bulk(), P);
+        Optional<Decision> decision = DeloadLadder.check(stalled(PLATEAU, 0, 0), bulk(), P);
 
         assertThat(decision).hasValueSatisfying(d -> {
             assertThat(d.action()).isEqualTo(new Action.StopLoadIncrease());
@@ -43,59 +46,67 @@ class DeloadLadderTests {
 
     @Test
     void oneSessionShortOfAPlateauIsJustTraining() {
-        assertThat(DeloadLadder.check(new TrainingStatus(PLATEAU - 1, false, 0), bulk(), P)).isNotPresent();
+        assertThat(DeloadLadder.check(stalled(PLATEAU - 1, 0, 0), bulk(), P)).isNotPresent();
+    }
+
+    @Test
+    void whileTheFirstWeekOfHoldingRunsTheAnswerStaysHold() {
+        // "That week" (K-68) is one weekly review, however often the lift is trained.
+        assertThat(DeloadLadder.check(stalled(PLATEAU + 1, 0, 0), bulk(), P)).hasValueSatisfying(
+                d -> assertThat(d.action()).isEqualTo(new Action.StopLoadIncrease()));
     }
 
     // ── rung 2: deload ──────────────────────────────────────────────────────────────────────────────────────
 
     @Test
-    void stillStalledAfterHoldingForAWeekMeansALighterWeek() {
-        // Spec WC-17: plateau (3) + one week of holding at 2 sessions a week = 5 stalled sessions → deload, half the sets.
-        int stalled = PLATEAU + WEEK_OF_SESSIONS;
-        BigDecimal half = BigDecimal.valueOf(P.number(ParameterKey.DELOAD_VOLUME_FACTOR));
+    void stillStalledAfterAWeekOfHoldingMeansALighterWeek() {
+        // Spec WC-17: held for a week, still stalled → deload, sets scaled by deload_volume_factor.
+        BigDecimal factor = BigDecimal.valueOf(P.number(ParameterKey.DELOAD_VOLUME_FACTOR));
 
-        Optional<Decision> decision = DeloadLadder.check(new TrainingStatus(stalled, true, 0), bulk(), P);
+        Optional<Decision> decision = DeloadLadder.check(stalled(PLATEAU + 2, 1, 0), bulk(), P);
 
         assertThat(decision).hasValueSatisfying(d -> {
-            assertThat(d.action()).isEqualTo(new Action.Deload(half));
+            assertThat(d.action()).isEqualTo(new Action.Deload(factor));
             assertThat(d.reasons().getFirst().rule()).isEqualTo(new RuleId("load_held_still_stalled"));
         });
     }
 
     @Test
-    void holdingTheLoadGetsItsFullWeekBeforeADeload() {
-        // Held, but the holding week is not over: keep holding, no new decision.
-        int stalled = PLATEAU + WEEK_OF_SESSIONS - 1;
-
-        assertThat(DeloadLadder.check(new TrainingStatus(stalled, true, 0), bulk(), P)).isNotPresent();
+    void theWeekAfterADeloadIsNeverAnotherDeload() {
+        // G7 K-72: after the break, return slowly. The deload week cannot add load, so the counters still look
+        // stalled; without this the engine would order a deload every week.
+        assertThat(DeloadLadder.check(new TrainingStatus(PLATEAU + 4, 2, STAGNATION_MONTHS + 1, true), bulk(), P))
+                .isNotPresent();
     }
 
     // ── three months without progress ───────────────────────────────────────────────────────────────────────
 
     @Test
-    void threeMonthsWithoutProgressOffADietIsADeloadSignal() {
-        // Spec WC-19, Güray G7 K-69.
-        Optional<Decision> decision = DeloadLadder.check(new TrainingStatus(0, false, STAGNATION_MONTHS), bulk(), P);
+    void threeMonthsStuckOffADietIsADeloadOnItsOwn() {
+        // Spec WC-19, Güray G7 K-69: a signal "on its own", so it goes straight to a lighter week, skipping rung 1.
+        Optional<Decision> decision = DeloadLadder.check(stalled(PLATEAU, 0, STAGNATION_MONTHS), bulk(), P);
 
         assertThat(decision).hasValueSatisfying(d -> {
             assertThat(d.action()).isInstanceOf(Action.Deload.class);
             assertThat(d.reasons().getFirst()).isEqualTo(new Reason(new RuleId("long_stagnation"),
                     new Source("arastirma/ham/guray/G7-whisper-arsiv.md#K-69", SourceTag.EXPERIENCE)));
         });
-        assertThat(DeloadLadder.check(new TrainingStatus(0, false, STAGNATION_MONTHS - 1), bulk(), P)).isNotPresent();
+        assertThat(DeloadLadder.check(stalled(PLATEAU, 0, STAGNATION_MONTHS - 1), bulk(), P)).hasValueSatisfying(
+                d -> assertThat(d.action()).isEqualTo(new Action.StopLoadIncrease()));
     }
 
     @Test
-    void onADietAStallIsNotALongStagnation() {
-        // G7 K-69: the rule is for someone not dieting; on a cut, strength standing still is expected (G6 K-30).
-        assertThat(DeloadLadder.check(new TrainingStatus(0, false, STAGNATION_MONTHS + 2), cut(), P)).isNotPresent();
+    void onADietLongStagnationIsNotTheReason() {
+        // G7 K-69 is for someone not dieting; on a cut, strength standing still is expected (G6 K-30).
+        assertThat(DeloadLadder.check(stalled(PLATEAU, 0, STAGNATION_MONTHS + 2), cut(), P)).hasValueSatisfying(
+                d -> assertThat(d.reasons().getFirst().rule()).isNotEqualTo(new RuleId("long_stagnation")));
     }
 
-    // ── shape of the decision ───────────────────────────────────────────────────────────────────────────────
+    // ── shape of the decision and the input ─────────────────────────────────────────────────────────────────
 
     @Test
     void ladderDecisionsAreMediumConfidenceAndLookAgainNextWeek() {
-        Optional<Decision> decision = DeloadLadder.check(new TrainingStatus(PLATEAU, false, 0), bulk(), P);
+        Optional<Decision> decision = DeloadLadder.check(stalled(PLATEAU, 0, 0), bulk(), P);
 
         assertThat(decision).hasValueSatisfying(d -> {
             assertThat(d.confidence()).isEqualTo(Confidence.MEDIUM);
@@ -115,27 +126,55 @@ class DeloadLadderTests {
     }
 
     @Test
-    void refusesNegativeCounts() {
-        assertThatThrownBy(() -> new TrainingStatus(-1, false, 0)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new TrainingStatus(0, false, -1)).isInstanceOf(IllegalArgumentException.class);
+    void refusesContradictoryOrNegativeCounts() {
+        assertThatThrownBy(() -> new TrainingStatus(-1, 0, 0, false)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new TrainingStatus(0, -1, 0, false)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new TrainingStatus(0, 0, -1, false)).isInstanceOf(IllegalArgumentException.class);
+        // Months stalled are months of the same stalled lift: not possible with no stalled session.
+        assertThatThrownBy(() -> new TrainingStatus(0, 0, 3, false)).isInstanceOf(IllegalArgumentException.class);
     }
 
     // ── properties ──────────────────────────────────────────────────────────────────────────────────────────
 
     @Property
-    boolean noDeloadComesFromTheCalendar(@ForAll @IntRange(min = 0, max = 400) int daysSinceAnything) {
-        // G7 K-66: the calendar is never a reason. Without a stall or long stagnation, any date gives nothing.
-        Snapshot anyDay = new Snapshot(TODAY.plusDays(daysSinceAnything), Sex.MALE, Phase.BULK,
-                TODAY.minusDays(30), series(List.of()));
-        return DeloadLadder.check(new TrainingStatus(0, false, 0), anyDay, P).isEmpty();
+    boolean theCalendarNeverChangesTheAnswer(@ForAll("statuses") TrainingStatus status,
+            @ForAll @IntRange(min = 0, max = 400) int daysLater) {
+        // G7 K-66: moving "today" and the plan start by any number of days changes nothing but the review date.
+        Snapshot now = bulk();
+        Snapshot later = new Snapshot(TODAY.plusDays(daysLater), Sex.MALE, Phase.BULK, TODAY.minusDays(30).plusDays(daysLater),
+                series(List.of()));
+        return DeloadLadder.check(status, now, P).map(Decision::action)
+                .equals(DeloadLadder.check(status, later, P).map(Decision::action));
     }
 
     @Property
-    boolean theLadderIsClimbedInOrder(@ForAll @IntRange(min = 0, max = 20) int stalled, @ForAll boolean held) {
-        // Deload only after the load was held; a plateau without a hold only ever stops load increases.
-        Optional<Decision> decision = DeloadLadder.check(new TrainingStatus(stalled, held, 0), bulk(), P);
-        return decision.map(d -> held ? d.action() instanceof Action.Deload : d.action() instanceof Action.StopLoadIncrease)
-                .orElse(true);
+    boolean aDeloadIsNeverFollowedByAnother(@ForAll("statuses") TrainingStatus status) {
+        TrainingStatus afterDeload = new TrainingStatus(status.stalledSessions(), status.weeksLoadHeld(),
+                status.monthsStalled(), true);
+        return DeloadLadder.check(afterDeload, bulk(), P).isEmpty();
+    }
+
+    @Property
+    boolean theLadderIsClimbedInOrder(@ForAll("statuses") TrainingStatus status) {
+        // Without long stagnation: a deload only after a completed week of holding, a hold only on a plateau.
+        Optional<Decision> decision = DeloadLadder.check(
+                new TrainingStatus(status.stalledSessions(), status.weeksLoadHeld(), 0, false), bulk(), P);
+        return decision.map(d -> status.weeksLoadHeld() >= 1
+                ? d.action() instanceof Action.Deload
+                : d.action() instanceof Action.StopLoadIncrease).orElse(true);
+    }
+
+    @Provide
+    Arbitrary<TrainingStatus> statuses() {
+        return Arbitraries.integers().between(0, 20).flatMap(stalled -> Combinators.combine(
+                Arbitraries.integers().between(0, 4),
+                stalled == 0 ? Arbitraries.just(0) : Arbitraries.integers().between(0, 8),
+                Arbitraries.of(true, false))
+                .as((held, months, deloaded) -> new TrainingStatus(stalled, held, months, deloaded)));
+    }
+
+    private static TrainingStatus stalled(int sessions, int weeksHeld, int months) {
+        return new TrainingStatus(sessions, weeksHeld, months, false);
     }
 
     private static Snapshot bulk() {

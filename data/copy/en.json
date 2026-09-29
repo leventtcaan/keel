@@ -71,18 +71,18 @@
       "label": "Hold the weight",
       "plateau": {
         "title": "Keep the same weight this week.",
-        "body": "The lifts that stalled stay where they are for a week. Clean reps at this load come before more load."
+        "body": "The lifts that stalled keep the same weight for a week before anything else changes."
       }
     },
     "deload": {
       "label": "Lighter week",
       "load_held_still_stalled": {
         "title": "A lighter week.",
-        "body": "Holding the weight didn't move things, so this week has half the sets. Tiredness has been hiding your strength; a lighter week lets it show."
+        "body": "Holding the weight didn't move things, so this week has fewer sets. A lighter week often gives your body room to recover."
       },
       "long_stagnation": {
         "title": "A lighter week.",
-        "body": "Months at the same weights usually means tiredness has built up. This week has half the sets, then you pick up where you left off, gradually."
+        "body": "Months at the same weights often mean tiredness has built up. This week has fewer sets; after it, build back up gradually."
       }
     }
   }
