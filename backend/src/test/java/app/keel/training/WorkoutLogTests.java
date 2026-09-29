@@ -47,6 +47,15 @@ class WorkoutLogTests {
     }
 
     @Test
+    void aMovesSetupIsServedAndItsClipsOnlyOnceReviewed() throws Exception {
+        // ADR-017: a clip reaches the phone only after it passed the filming checklist; until then the phone shows none.
+        List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
+
+        assertThat(exercises).anySatisfy(move -> assertThat(move).containsEntry("id", "leg_press")
+                .containsEntry("setupFields", List.of("back_pad", "foot_position")).doesNotContainKey("clips"));
+    }
+
+    @Test
     void aWorkoutIsStartedItsSetsLoggedAndItIsFinished() throws Exception {
         AccountId account = TestSessions.newAccount();
         String workout = start(account, "2026-09-30T15:40:00Z");

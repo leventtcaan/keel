@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.push_up. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: push_up
+kind: compound
+muscles: [chest, triceps, front_delts]
+alternatives: [bench_press, dip]
+load: bodyweight
+unilateral: false
+setup: []
+clips:
+  first_rep: clips/push_up/first-rep.mp4
+  last_rep: clips/push_up/last-rep.mp4
+review: pending

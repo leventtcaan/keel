@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.dumbbell_shoulder_press. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: dumbbell_shoulder_press
+kind: compound
+muscles: [front_delts, side_delts, triceps]
+alternatives: [overhead_press]
+load: external
+unilateral: false
+setup: [bench_angle]
+clips:
+  first_rep: clips/dumbbell_shoulder_press/first-rep.mp4
+  last_rep: clips/dumbbell_shoulder_press/last-rep.mp4
+review: pending

@@ -1,7 +1,13 @@
-# Exercise catalog (K-210; K-219 adds aliases, setup fields and the two clips, ADR-017).
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.seated_row. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
 id: seated_row
 kind: compound
-muscles: [upper_back, lats]
-alternatives: [lat_pulldown]
+muscles: [upper_back, lats, biceps]
+alternatives: [chest_supported_row, barbell_row, one_arm_dumbbell_row]
 load: external
 unilateral: false
+setup: [foot_position, handle]
+clips:
+  first_rep: clips/seated_row/first-rep.mp4
+  last_rep: clips/seated_row/last-rep.mp4
+review: pending

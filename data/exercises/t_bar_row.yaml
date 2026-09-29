@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.t_bar_row. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: t_bar_row
+kind: compound
+muscles: [upper_back, lats, biceps, erectors]
+alternatives: [barbell_row, chest_supported_row]
+load: external
+unilateral: false
+setup: [chest_pad, grip]
+clips:
+  first_rep: clips/t_bar_row/first-rep.mp4
+  last_rep: clips/t_bar_row/last-rep.mp4
+review: pending

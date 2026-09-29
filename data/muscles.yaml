@@ -10,7 +10,11 @@ muscles:
   upper_back: upper
   biceps: upper
   triceps: upper
+  # Hammer and reverse curls train the brachialis and forearm, not the biceps (Güray G1 K-67).
+  forearms: upper
   quads: lower
   glutes: lower
   hamstrings: lower
   calves: lower
+  # Lower back: the limit in free rows and Romanian deadlifts (Güray G1 K-58, Ç-9).
+  erectors: lower

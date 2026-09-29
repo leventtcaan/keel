@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.incline_dumbbell_press. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: incline_dumbbell_press
+kind: compound
+muscles: [chest, front_delts, triceps]
+alternatives: [incline_bench_press, machine_chest_press]
+load: external
+unilateral: false
+setup: [bench_angle]
+clips:
+  first_rep: clips/incline_dumbbell_press/first-rep.mp4
+  last_rep: clips/incline_dumbbell_press/last-rep.mp4
+review: pending

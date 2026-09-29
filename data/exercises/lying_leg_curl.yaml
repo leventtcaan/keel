@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.lying_leg_curl. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: lying_leg_curl
+kind: isolation
+muscles: [hamstrings]
+alternatives: [romanian_deadlift]
+load: external
+unilateral: false
+setup: [ankle_pad]
+clips:
+  first_rep: clips/lying_leg_curl/first-rep.mp4
+  last_rep: clips/lying_leg_curl/last-rep.mp4
+review: pending

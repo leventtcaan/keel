@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.leg_press. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: leg_press
+kind: compound
+muscles: [quads, glutes]
+alternatives: [hack_squat, squat]
+load: external
+unilateral: false
+setup: [back_pad, foot_position]
+clips:
+  first_rep: clips/leg_press/first-rep.mp4
+  last_rep: clips/leg_press/last-rep.mp4
+review: pending

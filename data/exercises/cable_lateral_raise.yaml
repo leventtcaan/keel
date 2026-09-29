@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.cable_lateral_raise. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: cable_lateral_raise
+kind: isolation
+muscles: [side_delts]
+alternatives: [lateral_raise]
+load: external
+unilateral: true
+setup: [cable_height, handle]
+clips:
+  first_rep: clips/cable_lateral_raise/first-rep.mp4
+  last_rep: clips/cable_lateral_raise/last-rep.mp4
+review: pending

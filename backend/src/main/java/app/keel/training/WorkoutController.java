@@ -54,9 +54,14 @@ class WorkoutController {
         }
     }
 
-    /** Contract Exercise (K-219 adds aliases, setup fields and clips). */
+    /** Contract Exercise; the clips only once they passed the filming checklist (ADR-017, K-219). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     record Exercise(String id, String nameKey, ExerciseCatalog.Kind kind, List<String> muscles, List<String> alternatives,
-            ExerciseCatalog.Load load, boolean unilateral) {
+            ExerciseCatalog.Load load, boolean unilateral, List<String> setupFields, Clips clips) {
+    }
+
+    /** Contract ExerciseClips: paths in the app's assets. */
+    record Clips(String firstRep, String lastRep) {
     }
 
     record NewWorkout(UUID clientId, Instant startedAt, UUID programDayId) {
@@ -101,7 +106,8 @@ class WorkoutController {
     @GetMapping("/v1/exercises")
     List<Exercise> exercises() {
         return catalog.all().stream().map(move -> new Exercise(move.id(), move.nameKey(), move.kind(), move.muscles(),
-                move.alternatives(), move.load(), move.unilateral())).toList();
+                move.alternatives(), move.load(), move.unilateral(), move.setup(),
+                move.reviewed() ? new Clips(move.clips().firstRep(), move.clips().lastRep()) : null)).toList();
     }
 
     @PostMapping("/v1/workouts")

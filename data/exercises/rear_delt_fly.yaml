@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.rear_delt_fly. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: rear_delt_fly
+kind: isolation
+muscles: [rear_delts]
+alternatives: [face_pull]
+load: external
+unilateral: false
+setup: [bench_angle]
+clips:
+  first_rep: clips/rear_delt_fly/first-rep.mp4
+  last_rep: clips/rear_delt_fly/last-rep.mp4
+review: pending

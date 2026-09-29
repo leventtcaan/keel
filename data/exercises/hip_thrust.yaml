@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.hip_thrust. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: hip_thrust
+kind: compound
+muscles: [glutes, hamstrings]
+alternatives: [romanian_deadlift]
+load: external
+unilateral: false
+setup: [foot_position]
+clips:
+  first_rep: clips/hip_thrust/first-rep.mp4
+  last_rep: clips/hip_thrust/last-rep.mp4
+review: pending

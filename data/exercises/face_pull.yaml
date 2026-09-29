@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.face_pull. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: face_pull
+kind: isolation
+muscles: [rear_delts, upper_back]
+alternatives: [rear_delt_fly]
+load: external
+unilateral: false
+setup: [cable_height, handle]
+clips:
+  first_rep: clips/face_pull/first-rep.mp4
+  last_rep: clips/face_pull/last-rep.mp4
+review: pending

@@ -235,28 +235,194 @@
   },
   "exercises": {
     "bench_press": {
-      "name": "Bench press"
+      "name": "Bench press",
+      "aliases": "Barbell bench press, Flat bench"
     },
-    "lat_pulldown": {
-      "name": "Lat pulldown"
-    },
-    "pull_up": {
-      "name": "Pull-up"
-    },
-    "seated_row": {
-      "name": "Seated row"
+    "incline_bench_press": {
+      "name": "Incline bench press",
+      "aliases": "Incline barbell press"
     },
     "dumbbell_bench_press": {
-      "name": "Dumbbell bench press"
+      "name": "Dumbbell bench press",
+      "aliases": "DB bench press, Flat dumbbell press"
+    },
+    "incline_dumbbell_press": {
+      "name": "Incline dumbbell press",
+      "aliases": "Incline DB press"
+    },
+    "machine_chest_press": {
+      "name": "Machine chest press",
+      "aliases": "Chest press, Seated chest press"
+    },
+    "cable_fly": {
+      "name": "Cable fly",
+      "aliases": "Cable crossover, Cable chest fly"
+    },
+    "pec_deck": {
+      "name": "Pec deck",
+      "aliases": "Machine fly, Butterfly"
+    },
+    "dip": {
+      "name": "Dip",
+      "aliases": "Chest dip, Parallel bar dip"
+    },
+    "push_up": {
+      "name": "Push-up",
+      "aliases": "Press-up"
+    },
+    "overhead_press": {
+      "name": "Overhead press",
+      "aliases": "Military press, Standing barbell press, OHP"
+    },
+    "dumbbell_shoulder_press": {
+      "name": "Dumbbell shoulder press",
+      "aliases": "Seated DB press"
     },
     "lateral_raise": {
-      "name": "Lateral raise"
+      "name": "Lateral raise",
+      "aliases": "Dumbbell lateral raise, Side raise"
+    },
+    "cable_lateral_raise": {
+      "name": "Cable lateral raise",
+      "aliases": "Single-arm cable raise"
+    },
+    "rear_delt_fly": {
+      "name": "Rear delt fly",
+      "aliases": "Reverse fly, Bent-over reverse fly"
+    },
+    "face_pull": {
+      "name": "Face pull",
+      "aliases": "Cable face pull, Rope face pull"
+    },
+    "lat_pulldown": {
+      "name": "Lat pulldown",
+      "aliases": "Pulldown, Cable pulldown"
+    },
+    "pull_up": {
+      "name": "Pull-up",
+      "aliases": "Chin-up bar pull-up, Weighted pull-up"
+    },
+    "seated_row": {
+      "name": "Seated row",
+      "aliases": "Seated cable row, Cable row"
+    },
+    "barbell_row": {
+      "name": "Barbell row",
+      "aliases": "Bent-over row, BB row"
+    },
+    "t_bar_row": {
+      "name": "T-bar row",
+      "aliases": "Landmine row"
+    },
+    "chest_supported_row": {
+      "name": "Chest-supported row",
+      "aliases": "Machine row, Seal row"
+    },
+    "one_arm_dumbbell_row": {
+      "name": "One-arm dumbbell row",
+      "aliases": "Single-arm DB row, Dumbbell row"
+    },
+    "barbell_curl": {
+      "name": "Barbell curl",
+      "aliases": "BB curl, Straight bar curl"
+    },
+    "dumbbell_curl": {
+      "name": "Dumbbell curl",
+      "aliases": "DB curl, Alternating curl"
+    },
+    "hammer_curl": {
+      "name": "Hammer curl",
+      "aliases": "Neutral-grip curl"
+    },
+    "reverse_curl": {
+      "name": "Reverse curl",
+      "aliases": "Reverse barbell curl, Overhand curl"
     },
     "triceps_pushdown": {
-      "name": "Triceps pushdown"
+      "name": "Triceps pushdown",
+      "aliases": "Cable pushdown, Rope pushdown"
+    },
+    "overhead_triceps_extension": {
+      "name": "Overhead triceps extension",
+      "aliases": "Cable overhead extension, French press"
     },
     "squat": {
-      "name": "Squat"
+      "name": "Squat",
+      "aliases": "Back squat, Barbell squat"
+    },
+    "hack_squat": {
+      "name": "Hack squat",
+      "aliases": "Machine hack squat"
+    },
+    "leg_press": {
+      "name": "Leg press",
+      "aliases": "45-degree leg press, Sled press"
+    },
+    "bulgarian_split_squat": {
+      "name": "Bulgarian split squat",
+      "aliases": "Rear-foot elevated split squat, BSS"
+    },
+    "romanian_deadlift": {
+      "name": "Romanian deadlift",
+      "aliases": "RDL, Stiff-leg deadlift"
+    },
+    "lying_leg_curl": {
+      "name": "Lying leg curl",
+      "aliases": "Leg curl, Prone leg curl"
+    },
+    "leg_extension": {
+      "name": "Leg extension",
+      "aliases": "Quad extension"
+    },
+    "hip_thrust": {
+      "name": "Hip thrust",
+      "aliases": "Barbell hip thrust, Glute bridge"
+    },
+    "standing_calf_raise": {
+      "name": "Standing calf raise",
+      "aliases": "Calf raise, Machine calf raise"
+    },
+    "seated_calf_raise": {
+      "name": "Seated calf raise",
+      "aliases": "Seated calf machine"
+    }
+  },
+  "exerciseSetup": {
+    "seat_height": {
+      "label": "Seat height"
+    },
+    "back_pad": {
+      "label": "Back pad"
+    },
+    "chest_pad": {
+      "label": "Chest pad"
+    },
+    "thigh_pad": {
+      "label": "Thigh pad"
+    },
+    "ankle_pad": {
+      "label": "Ankle pad"
+    },
+    "bench_angle": {
+      "label": "Bench angle"
+    },
+    "grip": {
+      "label": "Grip"
+    },
+    "grip_width": {
+      "label": "Grip width"
+    },
+    "stance_width": {
+      "label": "Stance width"
+    },
+    "foot_position": {
+      "label": "Foot position"
+    },
+    "cable_height": {
+      "label": "Cable height"
+    },
+    "handle": {
+      "label": "Handle"
     }
   }
 }

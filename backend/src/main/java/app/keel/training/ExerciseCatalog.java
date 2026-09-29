@@ -24,7 +24,17 @@ public final class ExerciseCatalog {
 
     public enum Region { UPPER, LOWER }
 
-    public record Exercise(String id, Kind kind, List<String> muscles, List<String> alternatives, Load load, boolean unilateral) {
+    /** The two demonstration clips, paths inside the app's assets (ADR-017). */
+    public record Clips(String firstRep, String lastRep) {
+    }
+
+    /**
+     * A move. {@code setup}: what the user sets on the machine, kept on the phone (ADR-017 setup card). {@code clips}:
+     * its two demonstrations; {@code reviewed}: they passed docs/hareket-cekim-kontrol-listesi.md — until then the app
+     * is not given them.
+     */
+    public record Exercise(String id, Kind kind, List<String> muscles, List<String> alternatives, Load load, boolean unilateral,
+            List<String> setup, Clips clips, boolean reviewed) {
 
         /** The name's key in data/copy/en.json. */
         public String nameKey() {
@@ -42,7 +52,7 @@ public final class ExerciseCatalog {
 
     /** The catalog from its files (file name → parsed YAML); IllegalArgumentException naming the first problem. */
     // Every field a move file may have; anything else is a typo that would silently drop data (K-210 review).
-    private static final Set<String> FIELDS = Set.of("id", "kind", "muscles", "alternatives", "load", "unilateral");
+    private static final Set<String> FIELDS = Set.of("id", "kind", "muscles", "alternatives", "load", "unilateral", "setup", "clips", "review");
 
     /** The region a muscle belongs to (data/muscles.yaml); the load step depends on it (K-217). */
     public Region region(String muscle) {
@@ -60,6 +70,7 @@ public final class ExerciseCatalog {
     @SuppressWarnings("unchecked")
     static ExerciseCatalog of(Map<String, Object> filesByName, Map<String, Object> vocabulary) {
         Map<String, Region> regions = new java.util.HashMap<>();
+        Set<Object> setupFields = Set.copyOf((List<Object>) vocabulary.getOrDefault("setup_fields", List.of()));
         ((Map<String, Object>) vocabulary.get("muscles")).forEach((muscle, region) -> regions.put(muscle, value(Region.class, region, "muscles.yaml")));
         List<Exercise> moves = new ArrayList<>();
         filesByName.forEach((file, document) -> {
@@ -75,11 +86,17 @@ public final class ExerciseCatalog {
                 require(regions.containsKey(muscle), file + ": " + muscle + " is not a muscle in data/muscles.yaml");
             }
             List<String> alternatives = move.get("alternatives") == null ? List.of() : (List<String>) move.get("alternatives");
+            List<String> setup = move.get("setup") == null ? List.of() : (List<String>) move.get("setup");
+            for (String field : setup) {
+                require(setupFields.contains(field), file + ": " + field + " is not a setup field in data/exercise-setup.yaml");
+            }
+            Clips clips = clips(file, id, move.get("clips"));
+            boolean reviewed = reviewed(file, move.get("review"));
             require(!alternatives.contains(id), file + ": a move is not its own alternative");
             require(move.get("unilateral") instanceof Boolean, file + ": unilateral is true or false");
             moves.add(new Exercise(id, value(Kind.class, move.get("kind"), file), muscles.stream().map(String.class::cast).toList(),
                     List.copyOf(alternatives),
-                    value(Load.class, move.get("load"), file), (Boolean) move.get("unilateral")));
+                    value(Load.class, move.get("load"), file), (Boolean) move.get("unilateral"), List.copyOf(setup), clips, reviewed));
         });
         Map<String, Exercise> byId = moves.stream().sorted(Comparator.comparing(Exercise::id))
                 .collect(Collectors.toMap(Exercise::id, Function.identity(), (a, b) -> a, java.util.LinkedHashMap::new));
@@ -97,6 +114,47 @@ public final class ExerciseCatalog {
 
     public Optional<Exercise> find(String id) {
         return Optional.ofNullable(id).map(byId::get);
+    }
+
+    // The app's asset paths (ADR-017): a move's own folder, one file per clip.
+    private static final String FIRST_REP = "clips/%s/first-rep.mp4";
+    private static final String LAST_REP = "clips/%s/last-rep.mp4";
+    private static final Set<String> REVIEW_FIELDS = Set.of("date", "by", "checklist", "notes");
+
+    @SuppressWarnings("unchecked")
+    private static Clips clips(String file, String id, Object raw) {
+        require(raw instanceof Map, file + ": clips (first_rep, last_rep) are missing");
+        Map<String, Object> clips = (Map<String, Object>) raw;
+        require(clips.keySet().equals(Set.of("first_rep", "last_rep")), file + ": clips are first_rep and last_rep");
+        require(String.format(FIRST_REP, id).equals(clips.get("first_rep")), file + ": first_rep is " + String.format(FIRST_REP, id));
+        require(String.format(LAST_REP, id).equals(clips.get("last_rep")), file + ": last_rep is " + String.format(LAST_REP, id));
+        return new Clips((String) clips.get("first_rep"), (String) clips.get("last_rep"));
+    }
+
+    /** "pending" until filmed and checked; then the checklist's record, which must say pass. */
+    @SuppressWarnings("unchecked")
+    private static boolean reviewed(String file, Object raw) {
+        if ("pending".equals(raw)) {
+            return false;
+        }
+        require(raw instanceof Map, file + ": review is pending or {date, by, checklist: pass, notes}");
+        Map<String, Object> review = (Map<String, Object>) raw;
+        require(REVIEW_FIELDS.containsAll(review.keySet()), file + ": review fields are " + REVIEW_FIELDS);
+        require("pass".equals(review.get("checklist")), file + ": a review records a passed checklist");
+        require(review.get("by") instanceof String by && !by.isBlank(), file + ": a review says who checked");
+        // SnakeYAML reads an unquoted 2026-10-01 as a date; a quoted one as text.
+        Object date = review.get("date");
+        require(date instanceof java.util.Date || date instanceof String text && isDate(text), file + ": a review has its date (YYYY-MM-DD)");
+        return true;
+    }
+
+    private static boolean isDate(String text) {
+        try {
+            java.time.LocalDate.parse(text);
+            return true;
+        } catch (java.time.format.DateTimeParseException notADate) {
+            return false;
+        }
     }
 
     private static <E extends Enum<E>> E value(Class<E> type, Object raw, String file) {

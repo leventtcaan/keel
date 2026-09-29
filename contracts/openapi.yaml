@@ -1493,17 +1493,15 @@ components:
     # ── training ─────────────────────────────────────────────────────────────────────────────────────────────
     Exercise:
       type: object
-      required: [id, nameKey, kind, muscles, alternatives]
+      required: [id, nameKey, kind, muscles, alternatives, load, unilateral, setupFields]
       properties:
         id:
           type: string
         nameKey:
           type: string
-          description: Copy key of the name (en.json); aliases are for search.
-        aliases:
-          type: array
-          items:
-            type: string
+          description: |
+            Copy key of the name (en.json, exercises.<id>.name). The search aliases are the app's text too:
+            exercises.<id>.aliases, comma-separated.
         kind:
           type: string
           enum: [COMPOUND, ISOLATION]
@@ -1523,14 +1521,19 @@ components:
           type: boolean
         setupFields:
           type: array
-          description: What the user sets on the machine and keeps on the phone (seat, pad, grip; ADR-017).
+          description: |
+            What the user sets on the machine and keeps on the phone (seat, pad, grip; ADR-017). Labels:
+            exerciseSetup.<field>.label.
           items:
             type: string
         clips:
           $ref: "#/components/schemas/ExerciseClips"
+          description: Absent until the clips passed the filming checklist; the app then shows no demonstration.
     ExerciseClips:
       type: object
-      description: The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR.
+      description: |
+        The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR. Paths in the app's
+        assets (clips/<id>/first-rep.mp4, clips/<id>/last-rep.mp4).
       required: [firstRep, lastRep]
       properties:
         firstRep:
