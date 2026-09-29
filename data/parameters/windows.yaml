@@ -22,3 +22,9 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G1-antrenman.md#K-25"
     note: "Gelişim 3 ayda değerlendirilir; literatür destekliyor (H3 Ç7)."
+  - key: min_weighins_per_week
+    value: 4
+    unit: weighins_per_week
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "Türetilmiş (Levent onayı bekliyor). Günlük gürültü SD 0,42 kg (H1 §3.4). Haftalık ortalamanın hatası 0,42/√n; iki haftalık ortalamanın farkı için 0,42·√(2/n). n=4 → %95'le ~0,58 kg (iki haftada) ≈ 0,3 kg/hafta ayırt edilir: Güray'ın hedef kayıp hızlarının altında. n=2 → ~0,82 kg, yavaş kaybı sabitten ayıramaz. Kaçırılan günler sorun değil (H1: filtre tolere eder)."
