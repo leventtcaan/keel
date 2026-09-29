@@ -35,9 +35,9 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-105 faz kapısı | ✅ birleşti | PR #138 | `docs/aktarim/M1/K-105.md` |
 | K-106 check-in omurgası | **tasarım önerisi, akşam konuşulacak** | `plan/m1-k106-tasarim-onerisi.md` | |
 | K-107 kalori merdiveni | — | | |
-| K-108 makrolar | PR açık, auto-merge | PR #139 | `docs/aktarim/M1/K-108.md` |
-| K-109 progresyon | PR açık, auto-merge | PR #140 | `docs/aktarim/M1/K-109.md` |
-| K-110 deload | — | | |
+| K-108 makrolar | ✅ birleşti | PR #139 | `docs/aktarim/M1/K-108.md` |
+| K-109 progresyon | ✅ birleşti | PR #140 | `docs/aktarim/M1/K-109.md` |
+| K-110 deload | kısmi, inceleme (basamak 3 L-12'yi bekliyor) | `engine/21-deload` (worktree `../keel-k109`) | — |
 | K-111 tutarlılık sayısı | — | | |
 | K-112 karar montajı | — | | |
 | K-113 altın senaryolar | — | | |
@@ -48,6 +48,9 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 - `min_weighins_per_week: 4` (windows.yaml, K-103) — araştırmada sayı yok; H1'in 0,42 kg gürültü SD'sinden türetildi:
   n=4 → iki haftalık ortalama farkında ~0,3 kg/hafta ayırt edilir; n=2 → yavaş kaybı sabitten ayıramaz. Sonuç: ilk karar
   pratikte pencere kadar (erkek 21, kadın 28 gün) düzenli tartıdan sonra gelir.
+- `plateau_sessions: 3` (training.yaml, K-110) — H3 B5 "3 ardışık seans" (uzman görüşü, RCT yok).
+- `protein_female_higher_from_age: 45` (nutrition.yaml, K-108) — J1 C5 perimenopoz ~45 (kaynakta açık; bilgi için).
+- Faz kapısı çizgileri `fat_first` {25,35}, `surplus_below` {12,22} (safety.yaml, K-105) — Güray + J1 +10 ofset (bilgi için).
 **Akşam sorulacaklar:**
 1. (K-101) NO_DECISION_YET de en az bir gerekçe taşımalı mı? Kabul kriteri izin veriyor; spesifikasyonda hepsi gerekçeli;
    inceleme ajanı "evet" öneriyor (U2: neyin kararı değiştireceği söylenebilsin). Öneri: evet → kriter + test değişir (K1).
@@ -62,7 +65,10 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 7. **L-11** (K-108): kalori hedefi makro tabanlarının (protein + yağ tabanı + karb tabanı) altında kalırsa motor bölünme
    uydurmuyor, `TargetTooLow(en düşük kcal)` diyor. Omurga o zaman ne yapsın: kaloriyi yükselt mi, hareketi mi artır?
    Öneri: BMR tabanı gibi CHANGE_MOVEMENT (G2:869).
-8. K1 açıklaması: K-103'te iki testin beklenen tarihi (kırılan `nextReview` sözü), K-108'de iki testin beklentisi
+8. **L-12** (K-110): Güray kendi içinde çelişiyor — G7 K-68 basamak 3 "geçen haftanın kilosunu kaldıramıyorsan yorgunluk
+   değil, beslenme/uykuya tek tek bak" · K-70/K-73 "plana uyamıyorsan overtraining, 1 hafta TAM mola". Aynı belirtiye iki
+   tedavi. Deload merdiveninin 3. basamağı (FULL_REST_WEEK) ve WC-18'in 0,4 eşiği (kaynaksız) bu karara bağlı.
+9. K1 açıklaması: K-103'te iki testin beklenen tarihi (kırılan `nextReview` sözü), K-108'de iki testin beklentisi
    (sessiz kalori aşımı → `TargetTooLow`) inceleme bulgusu üzerine değişti. Testler birleşmeden önce, aynı dalda.
 **Alınan teknik kararlar (aktarımda anlatılacak):**
 - K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
@@ -79,7 +85,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-K-108 PR #139, K-109 PR #140 CI'da · sıradaki K-110 deload, K-111 tutarlılık · K-106 akşam kararına bağlı
+K-110 (kısmi) öz-denetimde · sıradaki K-111 tutarlılık · K-106 akşam kararına bağlı
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
