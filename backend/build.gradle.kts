@@ -51,6 +51,14 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
+// The engine's parameters ship with the application (ADR-026): data/parameters/*.yaml on the classpath under
+// data/parameters/, loaded once by EngineParametersConfiguration. The repository files stay the only source.
+tasks.processResources {
+    from("../data/parameters") {
+        into("data/parameters")
+    }
+}
+
 // Integration tests start the same PostgreSQL image as compose.yaml, named once in the version catalog (K-202).
 tasks.withType<Test>().configureEach {
     systemProperty("keel.postgres.image", "postgres:${libs.versions.postgres.image.get()}")
