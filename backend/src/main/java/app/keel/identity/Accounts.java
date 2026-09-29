@@ -22,6 +22,12 @@ class Accounts {
         this.clock = clock;
     }
 
+    /** Whether the account still exists: a deleted account's access token is refused while it is still valid (K-214). */
+    boolean exists(AccountId account) {
+        return jdbc.sql("select exists (select 1 from identity.account where id = :id)").param("id", account.value())
+                .query(Boolean.class).single();
+    }
+
     /** The account of this Apple user, created on the first sign-in; two first sign-ins at once make one account. */
     SignedIn findOrCreate(AppleIdentity apple) {
         int created = jdbc.sql("""

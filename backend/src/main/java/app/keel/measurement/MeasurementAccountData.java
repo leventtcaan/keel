@@ -3,8 +3,6 @@ package app.keel.measurement;
 import app.keel.shared.AccountDataExport;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -40,8 +38,8 @@ class MeasurementAccountData implements AccountDataExport {
     @Override
     public Object export(AccountId account) {
         return Map.of(
-                "weighIns", store.weighIns(account, Instant.EPOCH, Instant.parse("9999-12-31T00:00:00Z")),
-                "waistMeasurements", store.waists(account, LocalDate.of(1, 1, 1), LocalDate.of(9999, 12, 31)),
+                "weighIns", store.weighIns(account),
+                "waistMeasurements", store.waists(account),
                 "photoChecks", store.photoChecks(account),
                 "activityDays", store.activityDays(account));
     }

@@ -6,6 +6,9 @@ keel:
   session:
     secret: dGVzdC1vbmx5IHNlc3Npb24ga2V5LCBzaWducyBub3RoaW5nIHJlYWwh
   # The third-party AI the server would send to (the real one is chosen in K-511); consent binds to it.
+  # A failed deletion is resent at once when a test asks (DeletionRetryTests).
+  privacy:
+    retry-after: 0s
   consent:
     third-party-ai:
       provider: Example AI

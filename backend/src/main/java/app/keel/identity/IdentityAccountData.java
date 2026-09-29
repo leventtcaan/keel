@@ -6,7 +6,7 @@ import app.keel.shared.AccountId;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,7 +22,12 @@ class IdentityAccountData implements AccountDataExport {
         this.jdbc = jdbc;
     }
 
-    @ApplicationModuleListener
+    /**
+     * In the deletion's own transaction, not after it like the other modules: once DELETE answers, the account is gone
+     * and its still-valid access tokens are refused (AccountIdResolver), so a queued write cannot land under an id
+     * nothing will delete again (K-214 review). If this fails, the DELETE fails with it and nothing is half done.
+     */
+    @EventListener
     void on(AccountDeletionRequested deletion) {
         jdbc.sql("delete from identity.refresh_token where account_id = :account").param("account", deletion.account().value()).update();
         jdbc.sql("delete from identity.account where id = :account").param("account", deletion.account().value()).update();

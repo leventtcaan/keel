@@ -120,7 +120,9 @@ paths:
       summary: Delete the account and every record of it, in every module
       responses:
         "202":
-          description: Deletion started; every module removes its own data (AccountDeletionRequested)
+          description: |
+            Deletion started; every module removes its own data (AccountDeletionRequested). The account is gone at once:
+            from this answer on, its tokens get 401 — the phone signs out and drops its offline queue.
         default:
           $ref: "#/components/responses/Error"
   /v1/account/export:

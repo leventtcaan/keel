@@ -18,9 +18,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The contract's /v1/account (K-214, V6): delete everything, or take everything out. Deletion is an event every
- * module handles for its own data after this transaction commits; the event registry keeps it until each has, so a
- * restart in between does not leave data behind (ADR-023).
+ * The contract's /v1/account (K-214, V6): delete everything, or take everything out. Deletion is an event: identity
+ * removes the account in this transaction (its tokens are refused from then on), every other module deletes its data
+ * after it commits. A module that fails is tried again (DeletionRetry), and every module deletes once more some minutes
+ * later (DeletionSweep) for a write that was already in flight.
  */
 @RestController
 class AccountController {
@@ -31,11 +32,13 @@ class AccountController {
 
     private final ApplicationEventPublisher events;
     private final List<AccountDataExport> exports;
+    private final DeletionSweep sweep;
     private final Clock clock;
 
-    AccountController(ApplicationEventPublisher events, List<AccountDataExport> exports, Clock clock) {
+    AccountController(ApplicationEventPublisher events, List<AccountDataExport> exports, DeletionSweep sweep, Clock clock) {
         this.events = events;
         this.exports = exports;
+        this.sweep = sweep;
         this.clock = clock;
     }
 
@@ -43,6 +46,7 @@ class AccountController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Transactional
     void delete(AccountId account) {
+        sweep.record(account);
         events.publishEvent(new AccountDeletionRequested(account));
     }
 

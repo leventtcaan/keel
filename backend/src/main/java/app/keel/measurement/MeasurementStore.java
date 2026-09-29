@@ -67,6 +67,12 @@ class MeasurementStore {
                 .query((row, n) -> weighIn(row)).list();
     }
 
+    /** Every weigh-in of the account, oldest first (the export: whatever date it was stored with, K-214). */
+    List<WeighIn> weighIns(AccountId account) {
+        return jdbc.sql("select * from measurement.weigh_in where account_id = :account order by measured_at, id")
+                .param("account", account.value()).query((row, n) -> weighIn(row)).list();
+    }
+
     boolean deleteWeighIn(AccountId account, UUID id) {
         return jdbc.sql("delete from measurement.weigh_in where id = :id and account_id = :account")
                 .param("id", id).param("account", account.value()).update() == 1;
@@ -87,6 +93,12 @@ class MeasurementStore {
                 select * from measurement.waist where account_id = :account and measured_on between :from and :to
                 order by measured_on, id""")
                 .param("account", account.value()).param("from", from).param("to", to).query((row, n) -> waist(row)).list();
+    }
+
+    /** Every waist measurement of the account (the export). */
+    List<Waist> waists(AccountId account) {
+        return jdbc.sql("select * from measurement.waist where account_id = :account order by measured_on, id")
+                .param("account", account.value()).query((row, n) -> waist(row)).list();
     }
 
     Stored<PhotoCheck> add(AccountId account, UUID clientId, LocalDate takenOn, Look look) {

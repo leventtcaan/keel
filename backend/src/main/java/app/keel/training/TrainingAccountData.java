@@ -3,7 +3,6 @@ package app.keel.training;
 import app.keel.shared.AccountDataExport;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
-import java.time.Instant;
 import java.util.Map;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -35,7 +34,7 @@ class TrainingAccountData implements AccountDataExport {
 
     @Override
     public Object export(AccountId account) {
-        return Map.of("workouts", store.between(account, Instant.EPOCH, Instant.parse("9999-12-31T00:00:00Z")).stream()
+        return Map.of("workouts", store.all(account).stream()
                 .map(workout -> Map.of("workout", workout, "sets", store.sets(workout.id()))).toList());
     }
 }

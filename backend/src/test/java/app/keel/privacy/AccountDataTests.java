@@ -83,6 +83,73 @@ class AccountDataTests {
         assertThat(result.getResponse().getContentAsString()).doesNotContain(someone.value().toString());
     }
 
+    @Test
+    void aDeletedAccountsTokenIsRefusedAtOnce() throws Exception {
+        // The access token lives minutes (ADR-025); a queued offline write sent with it after the deletion would land
+        // under an id nothing would ever delete again (K-214 review).
+        AccountId account = accountWithDataEverywhere();
+        String token = bearer(account);
+
+        assertThat(mvc.delete().uri("/v1/account").header("Authorization", token).exchange()).hasStatus(202);
+
+        assertThat(mvc.post().uri("/v1/workouts").header("Authorization", token).contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-09-30T16:00:00Z")))
+                .exchange()).hasStatus(401);
+        awaitNoRowsOf(account);
+    }
+
+    @Test
+    void aWriteThatWasInFlightDuringTheDeletionGoesInTheSecondPass() throws Exception {
+        AccountId account = accountWithDataEverywhere();
+        assertThat(mvc.delete().uri("/v1/account").header("Authorization", bearer(account)).exchange()).hasStatus(202);
+        awaitNoRowsOf(account);
+        // A request that was past the token check when the deletion committed, and wrote after the modules had deleted.
+        jdbc.sql("insert into training.workout (id, account_id, client_id, started_at) values (gen_random_uuid(), :account, gen_random_uuid(), now())")
+                .param("account", account.value()).update();
+
+        context.getBean(DeletionSweep.class).sweep(Instant.now().plus(Duration.ofDays(1)));
+
+        awaitNoRowsOf(account);
+        assertThat(jdbc.sql("select count(*) from privacy.deletion where deleted_account_id = :account").param("account", account.value())
+                .query(Integer.class).single()).as("the second pass is the last").isZero();
+    }
+
+    @Test
+    void theExportHoldsEverythingHeldAndNothingOfAnyoneElse() throws Exception {
+        AccountId account = accountWithDataEverywhere();
+        // Any stored date is exported, not only the ones after 1970 (K-214 review): ApiLimits accepts years from 1900.
+        send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", "1926-09-30T05:00:00Z", "kg", 82.4,
+                "source", "MANUAL"));
+        send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "1926-09-30T15:00:00Z"));
+        send(account, "PUT", "/v1/consents/THIRD_PARTY_AI", Map.of("textVersion", "1-draft", "provider", "Example AI",
+                "dataTypes", List.of("meal photo", "meal note")));
+        AccountId bystander = accountWithDataEverywhere();
+        // What only the bystander has: none of it may appear in the user's export.
+        send(bystander, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", "2026-09-29T05:00:00Z", "kg", 93.7,
+                "source", "MANUAL"));
+        send(bystander, "POST", "/v1/waist-measurements", Map.of("clientId", UUID.randomUUID(), "measuredOn", "2026-09-29", "cm", 111.3));
+        send(bystander, "PUT", "/v1/activity-days", Map.of("day", "2026-09-29", "steps", 12345));
+        String bystanderSubject = jdbc.sql("select apple_subject from identity.account where id = :id").param("id", bystander.value())
+                .query(String.class).single();
+
+        MvcTestResult result = mvc.get().uri("/v1/account/export").header("Authorization", bearer(account)).exchange();
+
+        assertThat(result).hasStatusOk();
+        String body = result.getResponse().getContentAsString();
+        Map<String, Object> sections = (Map<String, Object>) JSON.readValue(body, Map.class).get("sections");
+        Map<String, Object> measurement = (Map<String, Object>) sections.get("measurement");
+        assertThat((List<?>) measurement.get("weighIns")).hasSize(2);
+        assertThat((List<?>) measurement.get("waistMeasurements")).hasSize(1);
+        assertThat((List<?>) measurement.get("photoChecks")).hasSize(1);
+        assertThat((List<?>) measurement.get("activityDays")).hasSize(1);
+        assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("workouts")).hasSize(2);
+        // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.
+        assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("consent")).get("events"))
+                .anySatisfy(event -> assertThat(event).containsEntry("provider", "Example AI")
+                        .containsEntry("dataTypes", List.of("meal photo", "meal note")));
+        assertThat(body).doesNotContain("93.7", "111.3", "12345", bystanderSubject, bystander.value().toString());
+    }
+
     /** Rows per schema.table with an account_id column, for this account. */
     private Map<String, Integer> rowsOf(AccountId account) {
         List<String> tables = jdbc.sql("""
