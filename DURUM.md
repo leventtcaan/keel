@@ -34,8 +34,10 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-115 sapma kalibrasyonu (aralık: formül + tartı payı; son iki pencere anlaşmalı) | ✅ birleşti | #153 | `M1/K-115.md` |
 | tooling: git guard worktree dalını görür | ✅ birleşti | #151 | (küçük) |
 | **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | ✅ birleşti | #154 | `M2/K-202.md` |
-| K-201 sözleşme v1 (+ ADR-024) | PR, auto-merge; inceleme 10/11 düzeltildi | #155 | `M2/K-201.md` |
-| K-215 ortak altyapı (hata, SafeLog, health) | dal itildi, silent-failure incelemesi sürüyor | `backend/39-common-infra` | `M2/K-215.md` |
+| K-201 sözleşme v1 (+ ADR-024) | ✅ birleşti | #155 | `M2/K-201.md` |
+| K-215 ortak altyapı (hata, SafeLog, health) | ✅ birleşti (gerçek Tomcat'te V3 sızıntısı bulundu, düzeltildi) | #156 | `M2/K-215.md` |
+| K-203 kimlik (+ ADR-025) | dal itildi, güvenlik incelemesi sürüyor | `identity/27-sign-in-with-apple` | `M2/K-203.md` |
+| K-204 rıza | dal itildi (K-203 üstünde), inceleme bekliyor | `consent/28-three-consents` | `M2/K-204.md` |
 | K-207 besin spike (ADR-008 güncellendi) | ✅ main | — | `M2/K-207.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
@@ -47,11 +49,11 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (29 Eyl gece, ikinci oturum)
 Bu oturum (prompt `plan/oturum-promptlari/M2-devam.md`) M1 kalanını bitirdi; sırada M2.
 1. ✅ M1 kapandı: #150, #152, #153 birleşti; worktree'ler kaldırıldı; `docs/aktarim/M1/README.md` güncel.
-2. **Açık işler:** K-201 #155 (auto-merge) · K-215 dal `backend/39-common-infra` (`../keel-k215`, commit 8401535):
-   silent-failure-hunter incelemesi bitti mi → bulgular TDD → PR. Worktree `../keel-k201` PR birleşince kaldır.
-   Mutasyon betiği: scratchpad `mutate.py` (`MUT_DIR=shared` ile başka paket). Yerel DB: `cd backend && docker compose up -d`
-   (port 55432, parolasız). Sıradaki: **K-203 kimlik** (Apple kimlikleri yapılandırmadan; `authorizationCode` ile iptal
-   kuralını Apple dokümanından doğrula).
+2. **Açık işler:** K-203 (`../keel-k203`, dal `identity/27-sign-in-with-apple`, commit 909e259): güvenlik incelemesi →
+   bulgular TDD → PR. K-204 (`../keel-k204`, dal `consent/28-three-consents`, K-203'ün üstünde, commit 5efa7cf): K-203
+   birleşince `git rebase --onto origin/main origin/identity/27-sign-in-with-apple` → inceleme → PR.
+   Mutasyon betiği: scratchpad `mutate.py` (`MUT_DIR=<modül>`, test filtresi joker olabilir; Gradle çıktısından okur).
+   Sıradaki: **K-205 profil** (K-203 üstünde), sonra K-206/K-210/K-208/K-214.
 3. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
    K-206, K-210, K-208, K-214 → K-209, K-211, K-218, K-219 → K-212 → K-213, K-216, K-217. Skill'ler: Postgres/Flyway →
    K-202, sözleşme (spectral + oasdiff) → K-201 (`arastirma/ham/L4-skill-kaynaklari.md` §6-8).
@@ -93,6 +95,8 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
    ama nasıl toplanacağı yok. Seçenekler: (a) kullanıcı referans görsellerden kendine en yakını seçer (Güray'ın göbek
    testi), (b) bel/boy'dan kaba bant (yalnız kapı için, izleme için değil), (c) ikisi, (d) hiçbiri → iki kural kapalı.
    U4 gereği sayı hiçbir yerde gösterilmez.
+12. **(K-204, onay/hukuk)** Üç rıza metni taslak (`data/copy/en.json › consent.*`, sürüm `1-draft`): onay; mağaza öncesi
+    hukuk gözden geçirmesi (M8). İçindeki taahhütler ("asla satmayız", "reklam yok") ürün sözü.
 9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
    `tag: urun`). Onay mı?
 
