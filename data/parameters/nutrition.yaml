@@ -50,7 +50,7 @@ parameters:
     unit: kcal_per_day
     tag: tecrube
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-97"
-    note: "Literatür %5-10 (100-250 kcal) diyor (H3 B3). Güray: 300-400 ölçüm gürültüsü. Çelişkide Güray kazanır. BMR tabanı ve kayıp tavanı bu adımı sınırlar."
+    note: "Literatür %5-10 (100-250 kcal) diyor (H3 B3). Güray: 300-400 ölçüm gürültüsü. Çelişkide Güray kazanır. Adım hiç kısaltılmaz: enerji tabanı (LEA) adımı keserse kalori sabit kalır, BMR ya da makro tabanı keserse hareket artar (K-107). Açık karbdan çıkar (kart, 03 §2.3); G7 K-117 'yağdan ver' çelişkisi DURUM'da."
   - key: bulk_step_kcal
     value: 250
     unit: kcal_per_day

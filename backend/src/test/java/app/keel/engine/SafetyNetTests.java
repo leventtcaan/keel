@@ -42,7 +42,7 @@ class SafetyNetTests {
         Optional<Decision> decision = SafetyNet.check(losing("70.9", "70.0"), MALE);
 
         assertThat(decision).hasValueSatisfying(d -> {
-            assertThat(d.action()).isEqualTo(new Action.IncreaseCalories());
+            assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(500));
             assertThat(d.reasons()).extracting(Reason::rule).first().isEqualTo(new RuleId("loss_rate_cap"));
             assertThat(d.copyKey()).isEqualTo(new CopyKey("decision.increase_calories.loss_rate_cap"));
         });
@@ -216,7 +216,7 @@ class SafetyNetTests {
         Optional<Decision> decision = SafetyNet.check(rapidLoss("90.0", "82.7"), MALE);
 
         assertThat(decision).hasValueSatisfying(d -> {
-            assertThat(d.action()).isEqualTo(new Action.IncreaseCalories());
+            assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(500));
             assertThat(d.reasons()).containsExactly(new Reason(new RuleId("rapid_loss"),
                     new Source("arastirma/ham/J1-cinsiyet.md#C6", SourceTag.LITERATURE)));
             assertThat(d.copyKey()).isEqualTo(new CopyKey("decision.increase_calories.rapid_loss"));
@@ -258,12 +258,47 @@ class SafetyNetTests {
         Optional<Decision> decision = SafetyNet.check(fueled(Sex.MALE, "80.0", "25", 1899, 400), MALE);
 
         assertThat(decision).hasValueSatisfying(d -> {
-            assertThat(d.action()).isEqualTo(new Action.IncreaseCalories());
+            assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(500));
             assertThat(d.reasons()).containsExactly(new Reason(new RuleId("low_energy_availability"),
                     new Source("arastirma/ham/J1-cinsiyet.md#L2.1", SourceTag.LITERATURE)));
             assertThat(d.copyKey()).isEqualTo(new CopyKey("decision.increase_calories.low_energy_availability"));
             assertThat(d.confidence()).isEqualTo(Confidence.HIGH);
         });
+    }
+
+    @Test
+    void aSafetyIncreaseIsAtLeastOneFullStep() {
+        // G7 K-97: "at least 500 down or at least 500 up" — smaller changes drown in measurement error.
+        assertThat(SafetyNet.check(losing("70.9", "70.0"), MALE)).hasValueSatisfying(
+                d -> assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(500)));
+    }
+
+    @Test
+    void aPlanFarUnderTheLowEnergyLineRisesAllTheWayToTheFloor() {
+        // 60 kg fat-free, no exercise: the floor is 1501 kcal (25 × 60 = 1500 is on the line). From 900 kcal a single
+        // step of 500 would still leave it low, so the increase is the whole gap: 601 (J1 L2.1 "widen until EA ≥ line").
+        assertThat(SafetyNet.check(fueled(Sex.MALE, "80.0", "25", 900, 0), MALE)).hasValueSatisfying(
+                d -> assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(601)));
+    }
+
+    @Test
+    void aHardTrainingPlanFarUnderTheLineRisesToTheFloorIncludingItsExercise() {
+        // 25 × 60 + 1 + 400 = 1901; from 1000 the increase is 901.
+        assertThat(SafetyNet.check(fueled(Sex.MALE, "80.0", "25", 1000, 400), MALE)).hasValueSatisfying(
+                d -> assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(901)));
+    }
+
+    @Property
+    boolean aSafetyIncreaseAlwaysLiftsTheLowEnergyPlanOutOfTheLowBand(@ForAll Sex sex,
+            @ForAll @IntRange(min = 600, max = 2400) int target, @ForAll @IntRange(min = 0, max = 800) int exercise) {
+        Parameters p = parameters(sex);
+        Snapshot low = fueled(sex, "80.0", "25", target, exercise);
+        if (SafetyNet.energyAvailability(low, p).filter(band -> band == EnergyAvailability.LOW).isEmpty()) {
+            return true;
+        }
+        int up = ((Action.IncreaseCalories) SafetyNet.check(low, p).orElseThrow().action()).kcalPerDay();
+        return SafetyNet.energyAvailability(low.withEnergy(new EnergyBudget(target + up, exercise)), p)
+                .filter(band -> band != EnergyAvailability.LOW).isPresent();
     }
 
     @Test
@@ -289,7 +324,7 @@ class SafetyNetTests {
                 .withEnergy(new EnergyBudget(1500, 300));
 
         assertThat(SafetyNet.check(bulk, MALE)).hasValueSatisfying(
-                d -> assertThat(d.action()).isEqualTo(new Action.IncreaseCalories()));
+                d -> assertThat(d.action()).isEqualTo(new Action.IncreaseCalories(500)));
     }
 
     @Test

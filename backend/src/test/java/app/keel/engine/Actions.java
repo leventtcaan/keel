@@ -12,8 +12,8 @@ final class Actions {
         return List.of(
                 new Action.NoDecisionYet(),
                 new Action.Continue(),
-                new Action.AdjustCalories(),
-                new Action.IncreaseCalories(),
+                new Action.AdjustCalories(-500),
+                new Action.IncreaseCalories(500),
                 new Action.ChangeMovement(),
                 new Action.FixTraining(),
                 new Action.FixRecovery(),

@@ -379,7 +379,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-106]
     why: "Durağanlıkta ne kadar, ne sıklıkla değiştirilir"
     acceptance:

@@ -74,7 +74,20 @@ public final class SafetyNet {
                 narrow.add(new Reason(LOSS_RATE_CAP_BODYWEIGHT, LITERATURE_LOSS_CAP));
             }
         }
-        return narrow.isEmpty() ? Optional.empty() : Optional.of(safetyDecision(snapshot, new Action.IncreaseCalories(), narrow));
+        return narrow.isEmpty() ? Optional.empty()
+                : Optional.of(safetyDecision(snapshot, new Action.IncreaseCalories(increaseKcal(snapshot, parameters)), narrow));
+    }
+
+    /**
+     * At least one full step up (G7 K-97: "at least 500 up"); when the plan is under the low-energy floor by more than
+     * that, all the way to the floor (J1 L2.1: widen until energy availability is above the line).
+     */
+    private static int increaseKcal(Snapshot snapshot, Parameters parameters) {
+        int step = parameters.wholeNumber(ParameterKey.CUT_STEP_MIN_KCAL);
+        int toFloor = leaFloorKcal(snapshot, parameters)
+                .flatMap(floor -> snapshot.energy().map(budget -> floor - budget.targetKcal()))
+                .orElse(0);
+        return Math.max(step, toFloor);
     }
 
     private static boolean overTheWeeklyCap(Snapshot snapshot, Parameters parameters) {

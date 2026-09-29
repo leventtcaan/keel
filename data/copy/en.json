@@ -52,6 +52,10 @@
       "check_in_needed_adherence": {
         "title": "How much of the plan happened?",
         "body": "Your weight isn't moving yet. Whether that calls for a new plan depends on how much of this one happened. Log the week and the call follows."
+      },
+      "calorie_change_too_soon": {
+        "title": "Give the new target time to work.",
+        "body": "Your calories changed recently. A new target needs a couple of weeks before the scale can say anything about it."
       }
     },
     "increase_calories": {
@@ -74,6 +78,10 @@
       "bmr_floor": {
         "title": "Food stays where it is. Movement goes up.",
         "body": "Another calorie cut would take you under what your body needs at rest. More daily steps get the same result without eating less."
+      },
+      "carb_squeeze": {
+        "title": "Food stays where it is. Movement goes up.",
+        "body": "A lower target would leave too little room for protein and the carbs your training runs on. More daily steps get the same result without eating less."
       }
     },
     "hard_stop": {
@@ -139,6 +147,10 @@
       "toward_goal": {
         "title": "Keep going exactly as you are.",
         "body": "Your weight is moving the right way and nothing says it needs help. Changing a plan that works only adds noise."
+      },
+      "energy_floor": {
+        "title": "Calories stay where they are.",
+        "body": "Going lower would leave too little fuel after your training. Progress may be slower from here, and that's the safe side to be on."
       }
     },
     "fix_adherence": {
@@ -161,6 +173,17 @@
       "training_first": {
         "title": "Training first, food decisions later.",
         "body": "Your training is going backwards. Before anything about food changes, look at how you train: rest between sessions, sleep, and not doing too much."
+      }
+    },
+    "adjust_calories": {
+      "label": "New calorie target",
+      "not_toward_goal": {
+        "title": "Time for a new calorie target.",
+        "body": "You followed the plan and your weight hasn't moved the way it should over the last few weeks. One clear step now, then a few weeks to see it work."
+      },
+      "genetic_limit": {
+        "title": "Ease the pace a little.",
+        "body": "Your weight is moving, training and recovery are fine, but the mirror isn't keeping up. That's the pace your body can use right now, so calories move one step back toward maintenance."
       }
     }
   }

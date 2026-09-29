@@ -25,9 +25,9 @@ class DecisionTests {
     @Test
     void holdsAllFourPartsOfADecision() {
         Decision decision = new Decision(
-                new Action.AdjustCalories(), List.of(FLAT_ON_PLAN), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
+                new Action.AdjustCalories(-500), List.of(FLAT_ON_PLAN), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
 
-        assertThat(decision.action()).isEqualTo(new Action.AdjustCalories());
+        assertThat(decision.action()).isEqualTo(new Action.AdjustCalories(-500));
         assertThat(decision.reasons()).containsExactly(FLAT_ON_PLAN);
         assertThat(decision.confidence()).isEqualTo(Confidence.HIGH);
         assertThat(decision.nextReview()).isEqualTo(NEXT_REVIEW);
@@ -58,7 +58,7 @@ class DecisionTests {
     @Test
     void rejectsMissingParts() {
         List<Reason> reasons = List.of(FLAT_ON_PLAN);
-        Action action = new Action.AdjustCalories();
+        Action action = new Action.AdjustCalories(-500);
 
         assertThatThrownBy(() -> new Decision(null, reasons, Confidence.HIGH, NEXT_REVIEW, COPY_KEY))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("action");
@@ -79,7 +79,7 @@ class DecisionTests {
         withNull.add(null);
 
         assertThatThrownBy(() -> new Decision(
-                new Action.AdjustCalories(), withNull, Confidence.HIGH, NEXT_REVIEW, COPY_KEY))
+                new Action.AdjustCalories(-500), withNull, Confidence.HIGH, NEXT_REVIEW, COPY_KEY))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -87,7 +87,7 @@ class DecisionTests {
     void isNotChangedByLaterEditsToTheCallersList() {
         List<Reason> callersList = new ArrayList<>(List.of(FLAT_ON_PLAN));
         Decision decision = new Decision(
-                new Action.AdjustCalories(), callersList, Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
+                new Action.AdjustCalories(-500), callersList, Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
 
         callersList.clear();
 
@@ -97,7 +97,7 @@ class DecisionTests {
     @Test
     void exposesReasonsThatCannotBeEditedEvenWhenBuiltFromAMutableList() {
         Decision decision = new Decision(
-                new Action.AdjustCalories(), new ArrayList<>(List.of(FLAT_ON_PLAN)), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
+                new Action.AdjustCalories(-500), new ArrayList<>(List.of(FLAT_ON_PLAN)), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
 
         assertThatThrownBy(() -> decision.reasons().add(FLAT_ON_PLAN))
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -106,7 +106,7 @@ class DecisionTests {
     @Test
     void exposesReasonsThatCannotBeEdited() {
         Decision decision = new Decision(
-                new Action.AdjustCalories(), List.of(FLAT_ON_PLAN), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
+                new Action.AdjustCalories(-500), List.of(FLAT_ON_PLAN), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
 
         assertThatThrownBy(() -> decision.reasons().add(FLAT_ON_PLAN))
                 .isInstanceOf(UnsupportedOperationException.class);
