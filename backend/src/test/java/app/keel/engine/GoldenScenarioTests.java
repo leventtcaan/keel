@@ -2,16 +2,20 @@ package app.keel.engine;
 
 import static app.keel.engine.EngineFixtures.parameters;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import app.keel.engine.CheckIn.Appetite;
 import app.keel.engine.CheckIn.Look;
 import app.keel.engine.CheckIn.Recovery;
 import app.keel.engine.CheckIn.Training;
+import app.keel.engine.CheckIn.Waist;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,7 +48,14 @@ class GoldenScenarioTests {
         List<Map<String, Object>> scenarios = scenarios();
         return Stream.of(DynamicTest.dynamicTest("at least 20 journeys (K-113)", () -> assertThat(scenarios).hasSizeGreaterThanOrEqualTo(20)),
                 DynamicTest.dynamicTest("every journey expects one decision per week", () -> scenarios.forEach(scenario ->
-                        assertThat(list(scenario, "expect")).as((String) scenario.get("id")).hasSameSizeAs(list(scenario, "weeks")))));
+                        assertThat(list(scenario, "expect")).as((String) scenario.get("id")).hasSameSizeAs(list(scenario, "weeks")))),
+                DynamicTest.dynamicTest("weigh-ins spread over the week, always on the check-in morning", () -> {
+                    assertThat(weighInDays(7)).containsExactly(0, 1, 2, 3, 4, 5, 6);
+                    assertThat(weighInDays(6)).containsExactly(1, 2, 3, 4, 5, 6);
+                    assertThat(weighInDays(2)).containsExactly(3, 6);
+                    assertThat(weighInDays(0)).isEmpty();
+                    assertThatIllegalArgumentException().isThrownBy(() -> weighInDays(8));
+                }));
     }
 
     /** The plan as the decision module would keep it between check-ins. */
@@ -53,7 +64,7 @@ class GoldenScenarioTests {
         LocalDate phaseStart;
         LocalDate planStart = DAY_ZERO;
         int targetKcal;
-        boolean observing = true;
+        boolean observing = true; // the starting estimate is being observed until a new plan replaces it
     }
 
     @SuppressWarnings("unchecked")
@@ -77,25 +88,69 @@ class GoldenScenarioTests {
 
         List<WeighIn> weighIns = new ArrayList<>();
         List<String> actual = new ArrayList<>();
+        List<String> wanted = new ArrayList<>();
         for (int week = 1; week <= weeks.size(); week++) {
             LocalDate first = DAY_ZERO.plusDays((long) DAYS_PER_WEEK * (week - 1));
-            for (int day = 0; day < DAYS_PER_WEEK; day += DAYS_PER_WEEK / mornings) {
-                if (weighIns.stream().filter(w -> !w.date().isBefore(first)).count() < mornings) {
-                    weighIns.add(new WeighIn(first.plusDays(day), decimal(weeks.get(week - 1))));
-                }
+            Map<String, Object> answers = new HashMap<>(defaults);
+            answers.putAll((Map<String, Object>) overrides.getOrDefault(week, Map.of()));
+            for (int day : weighInDays(number(answers, "mornings", mornings))) {
+                weighIns.add(new WeighIn(first.plusDays(day), decimal(weeks.get(week - 1))));
             }
             LocalDate today = first.plusDays(DAYS_PER_WEEK - 1L);
-            Map<String, Object> answers = new java.util.HashMap<>(defaults);
-            answers.putAll((Map<String, Object>) overrides.getOrDefault(week, Map.of()));
 
             Snapshot snapshot = snapshot(today, sex, plan, weighIns, user, profile, answers);
             Decision decision = DecisionPipeline.decide(snapshot, parameters);
-            actual.add(shorthand(decision, expected.get(week - 1).toString()));
+            Expectation expectation = Expectation.of(expected.get(week - 1));
+            wanted.add(expectation.toString());
+            actual.add(expectation.describe(decision, today));
             apply(decision, plan, today);
         }
 
-        assertThat(actual).as("%s, week by week", scenario.get("id"))
-                .containsExactlyElementsOf(expected.stream().map(Object::toString).toList());
+        assertThat(actual).as("%s, week by week", scenario.get("id")).containsExactlyElementsOf(wanted);
+    }
+
+    /**
+     * The days of a week (0 = Monday … 6 = the check-in day) a user who weighs in {@code mornings} times weighs in:
+     * spread over the week, always on the check-in morning. 0 is a week without a weigh-in.
+     */
+    static List<Integer> weighInDays(int mornings) {
+        if (mornings < 0 || mornings > DAYS_PER_WEEK) {
+            throw new IllegalArgumentException("A week has 0 to 7 weigh-ins, the scenario says " + mornings);
+        }
+        List<Integer> days = new ArrayList<>();
+        for (int i = mornings - 1; i >= 0; i--) {
+            days.add(DAYS_PER_WEEK - 1 - i * DAYS_PER_WEEK / mornings);
+        }
+        return days;
+    }
+
+    /**
+     * One week's expected decision: the shorthand, and optionally the review day it promises ({@code next}, days after
+     * the check-in) and its confidence. Only what the scenario states is compared.
+     */
+    private record Expectation(String decision, Optional<Integer> next, Optional<Confidence> confidence) {
+
+        @SuppressWarnings("unchecked")
+        static Expectation of(Object entry) {
+            if (!(entry instanceof Map<?, ?> map)) {
+                return new Expectation(entry.toString(), Optional.empty(), Optional.empty());
+            }
+            Map<String, Object> fields = (Map<String, Object>) map;
+            return new Expectation(fields.get("is").toString(),
+                    Optional.ofNullable((Integer) fields.get("next")),
+                    Optional.ofNullable((String) fields.get("confidence")).map(level -> Confidence.valueOf(level.toUpperCase(Locale.ROOT))));
+        }
+
+        String describe(Decision decision, LocalDate today) {
+            return new Expectation(shorthand(decision),
+                    next.map(_ -> (int) ChronoUnit.DAYS.between(today, decision.nextReview())),
+                    confidence.map(_ -> decision.confidence())).toString();
+        }
+
+        @Override
+        public String toString() {
+            return decision + next.map(days -> " next " + days).orElse("") + confidence.map(level -> " " + level).orElse("");
+        }
     }
 
     private static Snapshot snapshot(LocalDate today, Sex sex, Plan plan, List<WeighIn> weighIns, Map<String, Object> user,
@@ -112,8 +167,14 @@ class GoldenScenarioTests {
     }
 
     private static CheckIn checkIn(Map<String, Object> answers) {
-        CheckIn checkIn = CheckIn.NONE.withAdherence(decimal(answers.getOrDefault("adherence", "0.9")))
-                .withTraining(Training.valueOf(answers.getOrDefault("training", "stable").toString().toUpperCase(Locale.ROOT)));
+        CheckIn checkIn = CheckIn.NONE.withTraining(Training.valueOf(answers.getOrDefault("training", "stable").toString().toUpperCase(Locale.ROOT)));
+        // `adherence: ~` is a check-in without the adherence answer.
+        if (!answers.containsKey("adherence") || answers.get("adherence") != null) {
+            checkIn = checkIn.withAdherence(decimal(answers.getOrDefault("adherence", "0.9")));
+        }
+        if (answers.get("waist") instanceof String waist) {
+            checkIn = checkIn.withWaist(Waist.valueOf(waist.toUpperCase(Locale.ROOT)));
+        }
         if (answers.get("look") instanceof String look) {
             checkIn = checkIn.withLook(Look.valueOf(look.toUpperCase(Locale.ROOT)));
         }
@@ -127,17 +188,26 @@ class GoldenScenarioTests {
     }
 
     private static Optional<TrainingStatus> training(Map<String, Object> answers) {
-        List<String> keys = List.of("stalled_sessions", "weeks_load_held", "rested_last_week", "loads_below_last_week", "plan_missed_weeks");
+        List<String> keys = List.of("stalled_sessions", "weeks_load_held", "months_stalled", "rested_last_week", "loads_below_last_week",
+                "plan_missed_weeks");
         if (keys.stream().noneMatch(answers::containsKey)) {
             return Optional.empty();
         }
-        return Optional.of(new TrainingStatus(number(answers, "stalled_sessions", 0), number(answers, "weeks_load_held", 0), 0,
+        return Optional.of(new TrainingStatus(number(answers, "stalled_sessions", 0), number(answers, "weeks_load_held", 0),
+                number(answers, "months_stalled", 0),
                 Boolean.TRUE.equals(answers.get("rested_last_week")))
                 .withLoadsBelowLastWeek(Boolean.TRUE.equals(answers.get("loads_below_last_week")))
                 .withWeeksPlanMissed(number(answers, "plan_missed_weeks", 0)));
     }
 
-    /** What the decision module does with a decision: a new target starts a new plan tomorrow; a new phase, too. */
+    /**
+     * What the decision module does with a decision (K-212): a new target starts a new plan tomorrow; a new phase, too,
+     * keeping the target — K-212 may set the new phase's first target differently, and then these journeys change.
+     * Everything else leaves the plan as it is: continue and "not yet" by definition; the training calls (hold the
+     * load, deload, a week off, fix recovery or training, fix adherence) change the week, not the food plan; more
+     * movement is asked instead of fewer calories. The hard stop and the mini cut do start a new food plan, whose
+     * target K-212 sets (maintenance at least; a 4-6 week deficit) — no journey here plays past one.
+     */
     private static void apply(Decision decision, Plan plan, LocalDate today) {
         switch (decision.action()) {
             case Action.AdjustCalories(int kcal) -> newPlan(plan, today, plan.targetKcal + kcal);
@@ -148,9 +218,6 @@ class GoldenScenarioTests {
                 newPlan(plan, today, plan.targetKcal);
             }
             default -> {
-                if (!decision.reasons().getFirst().rule().value().equals("observing")) {
-                    plan.observing = false; // the starting estimate's observation is over
-                }
             }
         }
     }
@@ -161,17 +228,15 @@ class GoldenScenarioTests {
         plan.observing = false;
     }
 
-    /** The decision in the scenario's shorthand, as detailed as the expectation asks for. */
-    private static String shorthand(Decision decision, String expected) {
-        String action = decision.action().type().name().toLowerCase(Locale.ROOT);
+    /** The decision in the scenario's shorthand: a "not yet" by its reason, anything else as action[:kcal]/reason. */
+    private static String shorthand(Decision decision) {
         String reason = decision.reasons().getFirst().rule().value();
-        String base = switch (decision.action()) {
+        return switch (decision.action()) {
             case Action.NoDecisionYet _ -> reason;
-            case Action.AdjustCalories(int kcal) -> action + ":" + kcal;
-            case Action.IncreaseCalories(int kcal) -> action + ":" + kcal;
-            default -> action;
+            case Action.AdjustCalories(int kcal) -> "adjust_calories:" + kcal + "/" + reason;
+            case Action.IncreaseCalories(int kcal) -> "increase_calories:" + kcal + "/" + reason;
+            default -> decision.action().type().name().toLowerCase(Locale.ROOT) + "/" + reason;
         };
-        return expected.contains("/") && !(decision.action() instanceof Action.NoDecisionYet) ? base + "/" + reason : base;
     }
 
     @SuppressWarnings("unchecked")
