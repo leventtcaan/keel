@@ -69,6 +69,26 @@ class ProgramApiTests {
     }
 
     @Test
+    void twoProgramsSentAtOnceLeaveOneAndNeitherFails() throws Exception {
+        // A double tap on "Generate": the replace is delete-then-insert on a unique account (K-211 review) — both answer 200.
+        AccountId account = TestSessions.newAccount();
+        String bearer = TestSessions.bearer(context, account);
+        for (int round = 0; round < 5; round++) {
+            var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+            var first = pool.submit(() -> generate(bearer, FOUR_DAYS));
+            var second = pool.submit(() -> generate(bearer, List.of("MONDAY", "WEDNESDAY", "FRIDAY")));
+            assertThat(List.of(first.get(), second.get())).as("round " + round).containsOnly(200);
+            pool.shutdown();
+        }
+        assertThat((List<?>) map(send(account, "GET", "/v1/program", null)).get("days")).hasSizeBetween(3, 4);
+    }
+
+    private int generate(String bearer, List<String> days) {
+        return mvc.post().uri("/v1/program/generate").header("Authorization", bearer).contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(Map.of("trainingDays", days))).exchange().getResponse().getStatus();
+    }
+
+    @Test
     void noDaysSevenDaysOrADayTwiceIsNotAProgram() {
         AccountId account = TestSessions.newAccount();
 

@@ -39,6 +39,12 @@ parameters:
     unit: reps
     tag: tecrube
     source: "arastirma/ham/guray/G1-antrenman.md#K-21"
+  - key: arm_weekly_sets_min
+    value: 6
+    unit: sets_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-61"
+    note: "Biceps ve triceps haftada 6-8 work set, iki seansa bölünmüş (K-61). Hammer/reverse curl ön kol sayılır (K-67). Tek günlük şablonda tutmaz (seans başı ≤5, K-10)."
   - key: weekly_sets_per_muscle
     value: 10
     unit: sets_per_week

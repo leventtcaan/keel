@@ -53,6 +53,12 @@ class ProgramTemplateTests {
             });
         }
         assertThat(week).allSatisfy((muscle, sets) -> assertThat(sets).as(muscle).isLessThanOrEqualTo(weekly));
+        if (days >= 2) {
+            // G1 K-61: biceps and triceps 6-8 work sets a week, split over two sessions (hammer/reverse curls are forearm, K-67).
+            int arms = P.wholeNumber(ParameterKey.ARM_WEEKLY_SETS_MIN);
+            assertThat(week.getOrDefault("biceps", 0)).as("biceps").isGreaterThanOrEqualTo(arms);
+            assertThat(week.getOrDefault("triceps", 0)).as("triceps").isGreaterThanOrEqualTo(arms);
+        }
         if (days >= 4) {
             int frequency = P.wholeNumber(ParameterKey.FREQUENCY_PER_MUSCLE_PER_WEEK);
             int split = P.wholeNumber(ParameterKey.SETS_PER_SESSION_PER_MUSCLE_MIN) * frequency;
@@ -92,6 +98,14 @@ class ProgramTemplateTests {
                 Map.of("1-days.yaml", template(Map.of("exercise", "squat", "sets", 2, "reps", 8))), catalog));
         assertThat(ProgramTemplates.of(Map.of("1-days.yaml", template(Map.of("exercise", "squat", "sets", 2))), catalog).forDays(1))
                 .as("the same template, valid").isPresent();
+        // A shape the parser does not expect is named as a template problem, not a ClassCastException (K-211 review).
+        assertThatIllegalArgumentException().as("days not a list").isThrownBy(() -> ProgramTemplates.of(
+                Map.of("1-days.yaml", Map.of("days", "full_body")), catalog));
+        assertThatIllegalArgumentException().as("exercise not text").isThrownBy(() -> ProgramTemplates.of(
+                Map.of("1-days.yaml", template(Map.of("exercise", 7, "sets", 2))), catalog));
+        Map<String, Object> day = Map.of("day", "full_body", "exercises", List.of(Map.of("exercise", "squat", "sets", 2)));
+        assertThatIllegalArgumentException().as("a day key twice").isThrownBy(() -> ProgramTemplates.of(
+                Map.of("2-days.yaml", Map.of("days", List.of(day, day))), catalog));
     }
 
     private static Map<String, Object> template(Map<String, Object> slot) {

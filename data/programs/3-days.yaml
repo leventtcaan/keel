@@ -1,6 +1,7 @@
 # Program template, 3 training days (K-211). Üç gün: üst / alt / tüm vücut — her kas haftada 2; 3 kez tüm vücut önerilmez (G1 K-22).
 # Sets are counted for each move's first muscle (its primary); ProgramTemplateTests holds every template to
-# sets_per_session_per_muscle_max and weekly_sets_per_muscle, and 4+ day templates to frequency_per_muscle_per_week.
+# sets_per_session_per_muscle_max and weekly_sets_per_muscle, 2+ day templates to arm_weekly_sets_min (G1 K-61),
+# and 4+ day templates to frequency_per_muscle_per_week.
 # DRAFT until the product owner approves it (DURUM question list): coaching content, not a technical choice.
 days:
   - day: upper
@@ -10,8 +11,8 @@ days:
       - {exercise: seated_row, sets: 2}
       - {exercise: dumbbell_shoulder_press, sets: 2}
       - {exercise: lateral_raise, sets: 2}
-      - {exercise: barbell_curl, sets: 2}
-      - {exercise: triceps_pushdown, sets: 2}
+      - {exercise: barbell_curl, sets: 3}
+      - {exercise: triceps_pushdown, sets: 3}
   - day: lower
     exercises:
       - {exercise: squat, sets: 3}
@@ -25,6 +26,6 @@ days:
       - {exercise: pull_up, sets: 3}
       - {exercise: lying_leg_curl, sets: 2}
       - {exercise: cable_lateral_raise, sets: 2}
-      - {exercise: dumbbell_curl, sets: 2}
-      - {exercise: overhead_triceps_extension, sets: 2}
+      - {exercise: dumbbell_curl, sets: 3}
+      - {exercise: overhead_triceps_extension, sets: 3}
       - {exercise: seated_calf_raise, sets: 2}

@@ -4,9 +4,12 @@ import app.keel.shared.AccountId;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,14 +38,20 @@ class ProgramStore {
         this.clock = clock;
     }
 
-    /** Replaces the account's program with this one, whole, in one transaction; returns it as stored. */
+    /**
+     * Replaces the account's program with this one, whole, in one transaction; returns it as stored. The program row is
+     * upserted first: its lock makes a second replace sent at the same moment wait and then replace in turn, where
+     * delete-then-insert on the unique account would fail one of them (K-211 review).
+     */
     @Transactional
     Program replace(AccountId account, Source source, List<Day> days) {
-        jdbc.sql("delete from training.program where account_id = :account").param("account", account.value()).update();
-        UUID program = UUID.randomUUID();
-        jdbc.sql("insert into training.program (id, account_id, source, created_at) values (:id, :account, :source, :now)")
-                .param("id", program).param("account", account.value()).param("source", source.name())
-                .param("now", clock.instant().atOffset(ZoneOffset.UTC)).update();
+        UUID program = jdbc.sql("""
+                insert into training.program (id, account_id, source, created_at) values (:id, :account, :source, :now)
+                on conflict (account_id) do update set source = excluded.source, created_at = excluded.created_at
+                returning id""")
+                .param("id", UUID.randomUUID()).param("account", account.value()).param("source", source.name())
+                .param("now", clock.instant().atOffset(ZoneOffset.UTC)).query(UUID.class).single();
+        jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
         for (int d = 0; d < days.size(); d++) {
             Day day = days.get(d);
             UUID dayId = UUID.randomUUID();
@@ -65,24 +74,36 @@ class ProgramStore {
         return current(account).orElseThrow();
     }
 
+    /**
+     * The account's program in three flat reads (program, its days, their moves), each finished before the next: a read
+     * nested inside another's row mapper would hold one connection per level (K-211 review).
+     */
     Optional<Program> current(AccountId account) {
-        return jdbc.sql("select id, source from training.program where account_id = :account").param("account", account.value())
-                .query((row, n) -> new Program(row.getObject("id", UUID.class), Source.valueOf(row.getString("source")), days(row.getObject("id", UUID.class))))
+        Optional<Program> head = jdbc.sql("select id, source from training.program where account_id = :account")
+                .param("account", account.value())
+                .query((row, n) -> new Program(row.getObject("id", UUID.class), Source.valueOf(row.getString("source")), List.of()))
                 .optional();
-    }
-
-    private List<Day> days(UUID program) {
-        return jdbc.sql("select * from training.program_day where program_id = :program order by seq").param("program", program)
+        if (head.isEmpty()) {
+            return head;
+        }
+        UUID program = head.get().id();
+        record Row(UUID day, PlannedExercise exercise) {
+        }
+        Map<UUID, List<PlannedExercise>> exercises = jdbc.sql("""
+                select e.day_id, e.exercise_id, e.sets, e.rep_min, e.rep_max, e.target_rir from training.planned_exercise e
+                join training.program_day d on d.id = e.day_id where d.program_id = :program order by e.day_id, e.seq""")
+                .param("program", program)
+                .query((row, n) -> new Row(row.getObject("day_id", UUID.class), new PlannedExercise(row.getString("exercise_id"),
+                        row.getInt("sets"), row.getInt("rep_min"), row.getInt("rep_max"), row.getInt("target_rir"))))
+                .list().stream()
+                .collect(Collectors.groupingBy(Row::day, LinkedHashMap::new, Collectors.mapping(Row::exercise, Collectors.toList())));
+        List<Day> days = jdbc.sql("select id, name_key, name, weekday from training.program_day where program_id = :program order by seq")
+                .param("program", program)
                 .query((row, n) -> new Day(row.getObject("id", UUID.class), row.getString("name_key"), row.getString("name"),
-                        row.getString("weekday") == null ? null : DayOfWeek.valueOf(row.getString("weekday")),
-                        exercises(row.getObject("id", UUID.class))))
-                .list();
-    }
-
-    private List<PlannedExercise> exercises(UUID day) {
-        return jdbc.sql("select * from training.planned_exercise where day_id = :day order by seq").param("day", day)
-                .query((row, n) -> new PlannedExercise(row.getString("exercise_id"), row.getInt("sets"), row.getInt("rep_min"),
-                        row.getInt("rep_max"), row.getInt("target_rir")))
-                .list();
+                        row.getString("weekday") == null ? null : DayOfWeek.valueOf(row.getString("weekday")), List.of()))
+                .list().stream()
+                .map(day -> new Day(day.id(), day.nameKey(), day.name(), day.weekday(), List.copyOf(exercises.getOrDefault(day.id(), List.of()))))
+                .toList();
+        return Optional.of(new Program(program, head.get().source(), days));
     }
 }

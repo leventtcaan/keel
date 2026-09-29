@@ -1059,10 +1059,15 @@ export interface components {
             /** @description The reps to aim for next session (double progression, K-217); absent until known. */
             nextReps?: number;
         };
+        /** @description min < max (a range to climb in, double progression); max at most 100. */
         RepRange: {
             min: number;
             max: number;
         };
+        /**
+         * @description The user's own program (K-211). Limits are keel.training's: a day's weekday is used once; exercises come from
+         *     /v1/exercises; reps.max is above reps.min and at most 100.
+         */
         OwnProgram: {
             days: {
                 name: string;
