@@ -299,7 +299,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-102]
     why: "Ölç sık, yorumla seyrek (U8): günlük gürültüyü süzmek ve yetersiz veride susmak"
     acceptance:
@@ -318,7 +318,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-103]
     why: "Hiçbir kalori kararı güvenlik kontrolünden önce verilemez (U13)"
     acceptance:

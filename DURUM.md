@@ -23,8 +23,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 |---|---|---|---|
 | K-101 alan tipleri | ✅ birleşti | PR #134 | `docs/aktarim/M1/K-101.md` |
 | K-102 parametre yükleme | ✅ birleşti | PR #135 | `docs/aktarim/M1/K-102.md` |
-| K-103 trend, veri yeterliliği | PR açık, auto-merge | PR #136 | `docs/aktarim/M1/K-103.md` |
-| K-104 güvenlik ağı | — | | |
+| K-103 trend, veri yeterliliği | ✅ birleşti | PR #136 | `docs/aktarim/M1/K-103.md` |
+| K-104 güvenlik ağı | kısmi: tavan + BMR (8%/EA L-1'i bekliyor) | `engine/15-safety-net` | — |
 | K-105 faz kapısı | — | | |
 | K-106 check-in omurgası | — | | |
 | K-107 kalori merdiveni | — | | |
@@ -62,7 +62,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   14 gün kuralı ilk tartıdan sayılır (ADR-018 içe aktarma) · kontrol sırası: 14 gün → pencere → haftalık tartı
 
 ## Aktif görev
-K-103 PR #136 CI'da → sıradaki K-104 (L-1'e bağlı iki kural hariç), sonra K-105
+K-104 (kısmi) öz-denetimde · dal `engine/15-safety-net` (issue #15) → sonra K-105
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
