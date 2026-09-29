@@ -116,10 +116,11 @@ rows:
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-68"
 
   - id: WC-18
-    title: "Cannot follow the plan any more: one full week off"
-    given: {sessions_completed_ratio_2w: 0.4, performance: collapsing}
-    expect: {action: FULL_REST_WEEK}
-    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-70"
+    title: "Planned sessions not done as planned two weeks running: one full week off"
+    given: {plan_missed_weeks: 2}
+    expect: {action: FULL_REST_WEEK, reason: plan_missed}
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-73"
+    note: "ADR-020 L-12: K-73's two-way test (plan kept / not kept), two weeks in a row; the old 0.4 ratio had no source. Treatment K-70."
 
   - id: WC-19
     title: "Three months without progress: deload signal on its own"
@@ -146,3 +147,10 @@ rows:
     expect: {action: HARD_STOP, reason: menstrual_loss_reported}
     source: "arastirma/ham/J1-cinsiyet.md#C6"
     note: "Cut stops, maintenance, see a doctor (ADR-020 L-1). The answer is used for this decision only (GDPR Art. 9)."
+
+  - id: WC-23
+    title: "Can't lift last week's loads any more (off a cut): food and sleep, not a deload"
+    given: {phase: bulk, lift: bench, loads_below_last_week: true}
+    expect: {action: FIX_RECOVERY, reason: loads_regressed}
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-68"
+    note: "ADR-020 L-12: rung 3 of K-68 ('not fatigue; check food and sleep one by one')."

@@ -83,3 +83,9 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H3-bosluk-literatur.md#B5"
     note: "Antrenman platosu: aynı egzersizde 3 ardışık seans ne tekrar ne yük artışı (H3 B5). Kanıt: uzman görüşü, RCT'li eşik yok — ADR-020 ile onaylandı. Güray K-68 merdivenin ilk basamağını tetikler."
+  - key: overtraining_missed_plan_weeks
+    value: 2
+    unit: weeks
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-73"
+    note: "Overtraining = planlanan antrenmanı planlandığı gibi yapamamak (K-73, ikili test). Tedavisi 1 hafta TAM mola (K-70). Güray sayı vermiyor; tek kaçan hafta tesadüf olabilir, iki hafta üst üste = sinyal (ADR-020 L-12)."

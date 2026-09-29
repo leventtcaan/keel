@@ -438,11 +438,11 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-109]
     why: "Deload takvime değil vücuda bakar (Güray)"
     acceptance:
-      - "Merdiven: önce artışı bırak → sonra deload (hacmi yarıya ya da yükü %30-40 düşür) → tam çöküşte 1 hafta tam mola"
+      - "Merdiven: önce artışı bırak → sonra deload (hacmi yarıya ya da yükü %30-40 düşür); basamak 3 iki sinyal (ADR-020 L-12): geçen haftanın kilosu kalkmıyor → beslenme/uyku (cut'ta değil), plan iki hafta üst üste uygulanamadı → 1 hafta tam mola"
       - "Operasyonel overtraining: plana uyamıyorsan"
       - "3 ay durağanlık tek başına deload sinyali"
       - "Takvimsel deload haftası üretilmez"
