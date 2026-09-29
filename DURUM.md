@@ -40,9 +40,9 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-204 rıza | ✅ birleşti; inceleme: AI rızası sağlayıcıya bağlandı, `seq` sırası | #158 | `M2/K-204.md` |
 | K-205 profil | ✅ birleşti; inceleme: katı JSON tipleri | #159 | `M2/K-205.md` |
 | K-207 besin spike (ADR-008 güncellendi) | ✅ main | — | `M2/K-207.md` |
-| K-206 ölçüm (+ ADR-026) | PR auto-merge; inceleme 5 bulgu düzeltildi | #160 | `M2/K-206.md` |
-| K-210 antrenman kaydı | dal itildi (K-206 üstünde), inceleme bulguları düzeltildi, PR yok | `training/34-workout-log` | `M2/K-210.md` |
-| K-214 gizlilik (silme, dışa aktarma, egress) | dal itildi (K-210 üstünde), **inceleme yapılmadı**, PR yok | `privacy/38-deletion-export-egress` | `M2/K-214.md` |
+| K-206 ölçüm (+ ADR-026) | ✅ birleşti; inceleme 5 bulgu düzeltildi | #160 | `M2/K-206.md` |
+| K-210 antrenman kaydı | ✅ birleşti; inceleme 6 bulgu düzeltildi | #161 | `M2/K-210.md` |
+| K-214 gizlilik (silme, dışa aktarma, egress; V7) | PR auto-merge; inceleme: silme tekrar denenmiyordu, silinen hesabın token'ı yazıyordu → düzeltildi | #162 | `M2/K-214.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -52,17 +52,14 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (30 Eyl, üçüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-2.md`)
 Bu oturum M1'i kapattı (#150-#153) ve M2'de K-201, K-202, K-203, K-204, K-205, K-207, K-215'i birleştirdi.
-1. **Açık dal zinciri** (göç numaraları ardışık olsun diye sıralı; her biri öncekinin üstünde):
-   - **K-206** `measurement/30-series` (`../keel-k206`, main üstünde, V5) → **PR #160** auto-merge. Kırmızıysa düzelt.
-   - **K-210** `training/34-workout-log` (`../keel-k210`, V6): commit'ler 43fbed1, 0b30cee, 9aa255c; taban = eski K-206 ucu
-     **6754823**. #160 birleşince: `cd ../keel-k210 && git fetch && git rebase --onto origin/main 6754823` → `./gradlew build`
-     → push (`--force-with-lease`) → PR `--auto --squash`. İnceleme yapıldı, bulgular düzeltildi (aktarım dosyasında).
-   - **K-214** `privacy/38-deletion-export-egress` (`../keel-k214`, göç yok): commit **c93c53c**; taban = K-210 ucu **9aa255c**.
-     **İnceleme ajanı henüz çalışmadı** → code-reviewer + silent-failure-hunter çalıştır (deletion listener hataları, olay
-     kaydı tekrar denemesi, dışa aktarmada sızıntı, egress kuralı) → bulgular TDD → K-210 birleşince
-     `git rebase --onto origin/main 9aa255c` → PR.
-   - Birleşen dal worktree'lerini kaldır (`git worktree remove`); yerel dal etiketleri zararsız (squash yüzünden `-d` reddeder, `-D` koruma engeller — bırak).
-2. **Sonraki göç numarası V7.** Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
+1. **Açık zincir (30 Eyl, compact sonrası):** K-206 #160 ✅, K-210 #161 ✅ birleşti. **K-214 PR #162** auto-merge
+   (V7 `privacy.deletion`; `../keel-k214`). **K-218** `training/102-set-types` (`../keel-k218`, taban K-210 ucu 41df098 —
+   #161 squash'la birleşti, açılınca `git rebase --onto origin/main 41df098`); göç yok. Araştırma eklendi:
+   `arastirma/ham/H3-bosluk-literatur.md › B15` (e1RM: Epley, ≤10 tekrar, RIR). Plan: motor `E1rm` (parametre
+   `e1rm_epley_divisor`, `e1rm_max_reps_to_failure`, yeni birim `reps`), training'de set kuralları (tek taraflı → LEFT/RIGHT,
+   BODYWEIGHT → loadKg 0, FAILURE → rir 0) + yalnız WORKING set sorgusu; vücut ağırlığı birleştirme decision'da (K-212).
+   - Birleşen dal worktree'lerini kaldır (`git worktree remove`); yerel dal etiketleri zararsız.
+2. **Sonraki göç numarası V8** (V7 = K-214). Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
    ek yük, tek taraflı) → **K-219** hareket kataloğu 30-40 (+ aliases, setup_fields, clips, review; `data/muscles.yaml`
    sözlüğü var, bilinmeyen alan reddi var → alan listesini genişlet) → **K-211** program üretimi/içe alma → **K-208** besin
    eşleme + aralık (FDC toplu içe aktarma, ADR-008 güncellemesi; aralık modeli parametreleri araştırmadan kaynakla) →
