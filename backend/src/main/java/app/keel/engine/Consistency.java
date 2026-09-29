@@ -22,12 +22,12 @@ public final class Consistency {
     private Consistency() {
     }
 
-    /** Done over planned, capped at 1: extra work is welcome but does not make up for another week. */
+    /** Done over planned, each kind of action counted up to its own plan (so never above 1). */
     public static BigDecimal weekRatio(WeekTally week) {
         if (week.planned() == 0) {
             throw new IllegalArgumentException("A week with nothing planned has no ratio");
         }
-        return BigDecimal.valueOf(Math.min(week.done(), week.planned()))
+        return BigDecimal.valueOf(week.done())
                 .divide(BigDecimal.valueOf(week.planned()), MathContext.DECIMAL64);
     }
 
@@ -38,8 +38,11 @@ public final class Consistency {
     public static ConsistencyRecord record(List<WeekTally> weeks, Parameters parameters) {
         Objects.requireNonNull(weeks, "weeks");
         for (int i = 1; i < weeks.size(); i++) {
-            if (!weeks.get(i).weekStart().isAfter(weeks.get(i - 1).weekStart())) {
-                throw new IllegalArgumentException("Weeks must be oldest first, one tally per week: " + weeks.get(i).weekStart());
+            // Consecutive weeks: a week left out would silently count as "nothing planned" and flatter a user who
+            // stopped for weeks. The caller passes an empty week explicitly.
+            if (!weeks.get(i).weekStart().equals(weeks.get(i - 1).weekStart().plusWeeks(1))) {
+                throw new IllegalArgumentException("Weeks must be consecutive, oldest first: " + weeks.get(i - 1).weekStart()
+                        + " then " + weeks.get(i).weekStart());
             }
         }
         BigDecimal onTrackLine = BigDecimal.valueOf(parameters.number(ParameterKey.ON_TRACK_MIN_RATIO));

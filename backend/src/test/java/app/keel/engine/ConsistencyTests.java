@@ -33,13 +33,18 @@ class ConsistencyTests {
 
     @Test
     void aWeeksRatioIsDoneOverPlanned() {
-        // 4 sessions + 7 protein days + 7 step days + 7 weigh-ins = 25 planned; 20 done → 0.8.
-        assertThat(Consistency.weekRatio(new WeekTally(MONDAY, 25, 20))).isEqualByComparingTo("0.8");
+        // 4 sessions + 7 protein days + 7 step days + 7 weigh-ins = 25 planned; 4 + 5 + 5 + 6 = 20 done → 0.8.
+        WeekTally week = new WeekTally(MONDAY, new ActionTally(4, 4), new ActionTally(7, 5), new ActionTally(7, 5), new ActionTally(7, 6));
+
+        assertThat(Consistency.weekRatio(week)).isEqualByComparingTo("0.8");
     }
 
     @Test
-    void doingMoreThanPlannedCountsAsAFullWeekNotMore() {
-        assertThat(Consistency.weekRatio(new WeekTally(MONDAY, 4, 6))).isEqualByComparingTo("1");
+    void extraWorkOfOneKindNeverMakesUpForAnother() {
+        // U7, no make-up mechanics: 8 sessions for 4 planned count as 4. 4 + 3 + 3 + 4 = 14 of 25 = 0.56, not on track.
+        WeekTally week = new WeekTally(MONDAY, new ActionTally(4, 8), new ActionTally(7, 3), new ActionTally(7, 3), new ActionTally(7, 4));
+
+        assertThat(Consistency.weekRatio(week)).isEqualByComparingTo("0.56");
     }
 
     @Test
@@ -55,13 +60,14 @@ class ConsistencyTests {
     void theCounterIsCumulativeNineOfTwelve() {
         List<WeekTally> twelve = new ArrayList<>();
         for (int i = 0; i < 12; i++) {
-            twelve.add(new WeekTally(MONDAY.plusWeeks(i), 10, i % 4 == 3 ? 3 : 9)); // weeks 4, 8, 12 off
+            twelve.add(training(MONDAY.plusWeeks(i), 10, i % 4 == 3 ? 3 : 9)); // weeks 4, 8, 12 off
         }
 
         ConsistencyRecord record = Consistency.record(twelve, P);
 
         assertThat(record.onTrackWeeks()).isEqualTo(9);
         assertThat(record.countedWeeks()).isEqualTo(12);
+        assertThat(record.currentRun()).as("lone misses are each forgiven").isEqualTo(9);
     }
 
     @Test
@@ -95,11 +101,14 @@ class ConsistencyTests {
 
     @Test
     void refusesMalformedWeeks() {
-        assertThatThrownBy(() -> new WeekTally(MONDAY, -1, 0)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new WeekTally(MONDAY, 5, -1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new WeekTally(MONDAY.plusDays(1), 5, 1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ActionTally(-1, 0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ActionTally(5, -1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> training(MONDAY.plusDays(1), 5, 1)).isInstanceOf(IllegalArgumentException.class);
+        // A skipped week must be passed as a week with nothing planned, not left out: absence is not neutral.
+        assertThatThrownBy(() -> Consistency.record(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(3), 10, 9)), P))
+                .isInstanceOf(IllegalArgumentException.class);
         // Weeks come oldest first, one per week; two tallies for the same week are a caller bug.
-        assertThatThrownBy(() -> Consistency.record(List.of(week(10, 9), week(10, 9)), P))
+        assertThatThrownBy(() -> Consistency.record(List.of(training(MONDAY, 10, 9), training(MONDAY, 10, 9)), P))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -130,7 +139,7 @@ class ConsistencyTests {
         int previous = 0;
         List<WeekTally> weeks = new ArrayList<>();
         for (int i = 0; i < history.size(); i++) {
-            weeks.add(new WeekTally(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
+            weeks.add(training(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
             int now = Consistency.record(weeks, P).onTrackWeeks();
             if (now < previous) {
                 return false;
@@ -144,10 +153,48 @@ class ConsistencyTests {
     boolean theRunNeverExceedsTheOnTrackWeeks(@ForAll("tallies") List<int[]> history) {
         List<WeekTally> weeks = new ArrayList<>();
         for (int i = 0; i < history.size(); i++) {
-            weeks.add(new WeekTally(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
+            weeks.add(training(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
         }
         ConsistencyRecord record = Consistency.record(weeks, P);
         return record.currentRun() <= record.onTrackWeeks() && record.onTrackWeeks() <= record.countedWeeks();
+    }
+
+    @Property
+    boolean withoutTwoMissesInARowTheRunIsEveryOnTrackWeek(@ForAll("tallies") List<int[]> history) {
+        List<WeekTally> weeks = dated(history);
+        boolean twoInARow = false;
+        Boolean previousMissed = null;
+        for (WeekTally week : weeks) {
+            if (week.planned() == 0) {
+                continue;
+            }
+            boolean missed = Consistency.weekRatio(week).compareTo(BigDecimal.valueOf(P.number(ParameterKey.ON_TRACK_MIN_RATIO))) < 0;
+            twoInARow |= missed && Boolean.TRUE.equals(previousMissed);
+            previousMissed = missed;
+        }
+        ConsistencyRecord record = Consistency.record(weeks, P);
+        return twoInARow || record.currentRun() == record.onTrackWeeks();
+    }
+
+    @Property
+    boolean theRunCountsOnlyTheWeeksAfterTheLastTwoMissesInARow(@ForAll("tallies") List<int[]> history) {
+        List<WeekTally> weeks = dated(history);
+        BigDecimal line = BigDecimal.valueOf(P.number(ParameterKey.ON_TRACK_MIN_RATIO));
+        int expected = 0;
+        boolean lastMissed = false;
+        for (WeekTally week : weeks) {
+            if (week.planned() == 0) {
+                continue;
+            }
+            boolean missed = Consistency.weekRatio(week).compareTo(line) < 0;
+            if (missed && lastMissed) {
+                expected = 0;
+            } else if (!missed) {
+                expected++;
+            }
+            lastMissed = missed;
+        }
+        return Consistency.record(weeks, P).currentRun() == expected;
     }
 
     @Provide
@@ -170,15 +217,25 @@ class ConsistencyTests {
 
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
 
-    private static WeekTally week(int planned, int done) {
-        return new WeekTally(MONDAY, planned, done); // dates are filled in order by record(...)
+    /** A week where only training was planned: enough to exercise the counter. */
+    private static WeekTally training(LocalDate weekStart, int planned, int done) {
+        ActionTally none = new ActionTally(0, 0);
+        return new WeekTally(weekStart, new ActionTally(planned, done), none, none, none);
     }
 
-    private static ConsistencyRecord record(WeekTally... weeks) {
-        List<WeekTally> dated = new ArrayList<>();
-        for (int i = 0; i < weeks.length; i++) {
-            dated.add(new WeekTally(MONDAY.plusWeeks(i), weeks[i].planned(), weeks[i].done()));
+    private static int[] week(int planned, int done) {
+        return new int[] {planned, done};
+    }
+
+    private static List<WeekTally> dated(List<int[]> history) {
+        List<WeekTally> weeks = new ArrayList<>();
+        for (int i = 0; i < history.size(); i++) {
+            weeks.add(training(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
         }
-        return Consistency.record(dated, P);
+        return weeks;
+    }
+
+    private static ConsistencyRecord record(int[]... weeks) {
+        return Consistency.record(dated(List.of(weeks)), P);
     }
 }
