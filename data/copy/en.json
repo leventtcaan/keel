@@ -432,5 +432,61 @@
     "handle": {
       "label": "Handle"
     }
+  },
+  "programDays": {
+    "full_body": {
+      "name": "Full body"
+    },
+    "full_body_a": {
+      "name": "Full body A"
+    },
+    "full_body_b": {
+      "name": "Full body B"
+    },
+    "upper": {
+      "name": "Upper"
+    },
+    "lower": {
+      "name": "Lower"
+    },
+    "upper_a": {
+      "name": "Upper A"
+    },
+    "upper_b": {
+      "name": "Upper B"
+    },
+    "lower_a": {
+      "name": "Lower A"
+    },
+    "lower_b": {
+      "name": "Lower B"
+    },
+    "push": {
+      "name": "Push"
+    },
+    "pull": {
+      "name": "Pull"
+    },
+    "legs": {
+      "name": "Legs"
+    },
+    "push_a": {
+      "name": "Push A"
+    },
+    "pull_a": {
+      "name": "Pull A"
+    },
+    "legs_a": {
+      "name": "Legs A"
+    },
+    "push_b": {
+      "name": "Push B"
+    },
+    "pull_b": {
+      "name": "Pull B"
+    },
+    "legs_b": {
+      "name": "Legs B"
+    }
   }
 }

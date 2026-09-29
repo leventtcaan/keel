@@ -1,0 +1,25 @@
+# Program template, 2 training days (K-211). İki gün: tüm vücut A/B — her kas haftada 2 (G1 K-22).
+# Sets are counted for each move's first muscle (its primary); ProgramTemplateTests holds every template to
+# sets_per_session_per_muscle_max and weekly_sets_per_muscle, and 4+ day templates to frequency_per_muscle_per_week.
+# DRAFT until the product owner approves it (DURUM question list): coaching content, not a technical choice.
+days:
+  - day: full_body_a
+    exercises:
+      - {exercise: squat, sets: 3}
+      - {exercise: bench_press, sets: 3}
+      - {exercise: lat_pulldown, sets: 3}
+      - {exercise: romanian_deadlift, sets: 2}
+      - {exercise: lateral_raise, sets: 2}
+      - {exercise: barbell_curl, sets: 2}
+      - {exercise: triceps_pushdown, sets: 2}
+      - {exercise: standing_calf_raise, sets: 2}
+  - day: full_body_b
+    exercises:
+      - {exercise: leg_press, sets: 3}
+      - {exercise: incline_dumbbell_press, sets: 3}
+      - {exercise: seated_row, sets: 3}
+      - {exercise: lying_leg_curl, sets: 2}
+      - {exercise: dumbbell_shoulder_press, sets: 2}
+      - {exercise: dumbbell_curl, sets: 2}
+      - {exercise: overhead_triceps_extension, sets: 2}
+      - {exercise: rear_delt_fly, sets: 2}

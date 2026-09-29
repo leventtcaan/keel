@@ -8,16 +8,18 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-/** Training's part of the user's data (K-214): every workout with its sets. */
+/** Training's part of the user's data (K-214): every workout with its sets, and the program (K-211). */
 @Component
 class TrainingAccountData implements AccountDataExport {
 
     private final JdbcClient jdbc;
     private final WorkoutStore store;
+    private final ProgramStore programs;
 
-    TrainingAccountData(JdbcClient jdbc, WorkoutStore store) {
+    TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs) {
         this.jdbc = jdbc;
         this.store = store;
+        this.programs = programs;
     }
 
     @ApplicationModuleListener
@@ -25,6 +27,10 @@ class TrainingAccountData implements AccountDataExport {
         // Sets go with their workout (on delete cascade); deleting by account catches any set whose workout went first.
         jdbc.sql("delete from training.workout_set where account_id = :account").param("account", deletion.account().value()).update();
         jdbc.sql("delete from training.workout where account_id = :account").param("account", deletion.account().value()).update();
+        // The program's days and moves go with it (on delete cascade); by account too, as for sets.
+        for (String table : new String[] {"planned_exercise", "program_day", "program"}) {
+            jdbc.sql("delete from training." + table + " where account_id = :account").param("account", deletion.account().value()).update();
+        }
     }
 
     @Override
@@ -34,7 +40,10 @@ class TrainingAccountData implements AccountDataExport {
 
     @Override
     public Object export(AccountId account) {
-        return Map.of("workouts", store.all(account).stream()
+        Map<String, Object> training = new java.util.LinkedHashMap<>();
+        training.put("workouts", store.all(account).stream()
                 .map(workout -> Map.of("workout", workout, "sets", store.sets(workout.id()))).toList());
+        programs.current(account).ifPresent(program -> training.put("program", program));
+        return training;
     }
 }

@@ -1,0 +1,16 @@
+# Program template, 1 training day (K-211). Tek gün: tüm vücut. Haftada 1 frekans mantıksız ama atrofi yaratmaz (G1 K-22); öneri en az 2 gün.
+# Sets are counted for each move's first muscle (its primary); ProgramTemplateTests holds every template to
+# sets_per_session_per_muscle_max and weekly_sets_per_muscle, and 4+ day templates to frequency_per_muscle_per_week.
+# DRAFT until the product owner approves it (DURUM question list): coaching content, not a technical choice.
+days:
+  - day: full_body
+    exercises:
+      - {exercise: squat, sets: 3}
+      - {exercise: bench_press, sets: 3}
+      - {exercise: lat_pulldown, sets: 3}
+      - {exercise: romanian_deadlift, sets: 2}
+      - {exercise: overhead_press, sets: 2}
+      - {exercise: seated_row, sets: 2}
+      - {exercise: lateral_raise, sets: 2}
+      - {exercise: barbell_curl, sets: 2}
+      - {exercise: triceps_pushdown, sets: 2}

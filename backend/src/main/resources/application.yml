@@ -60,6 +60,10 @@ keel:
     max-load-kg: 1000
     max-reps: 100
     max-rir: 10
+    # A program the user brings (K-211): what a real one never exceeds (the templates plan 2-4 sets, 4-8 moves a day).
+    max-planned-sets: 20
+    max-day-exercises: 20
+    max-day-name: 60
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:

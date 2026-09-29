@@ -410,7 +410,7 @@ export interface paths {
         };
         /** The current program with this week's targets */
         get: operations["getProgram"];
-        /** Bring your own program; the engine coaches on top of it */
+        /** Bring your own program; the engine coaches on top of it. Replaces the current one */
         put: operations["putOwnProgram"];
         post?: never;
         delete?: never;
@@ -428,7 +428,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Build a program for the days the user has (4-day upper/lower by default) */
+        /** Build a program for the days the user has (4-day upper/lower by default); replaces the current one */
         post: operations["generateProgram"];
         delete?: never;
         options?: never;
@@ -1037,11 +1037,12 @@ export interface components {
             /** Format: date */
             until: string;
         };
+        /** @description A generated day names itself by nameKey (programDays.<day>.name, "Upper A"); a day of the user's own program by name. */
         ProgramDay: {
             /** Format: uuid */
             id: string;
-            /** @description e.g. "Upper A". */
-            name: string;
+            nameKey?: string;
+            name?: string;
             weekday?: components["schemas"]["Weekday"];
             exercises: components["schemas"]["PlannedExercise"][];
         };
@@ -1074,6 +1075,7 @@ export interface components {
             }[];
         };
         ProgramRequest: {
+            /** @description 1 to 6 days; seven leave no rest day (G1 K-70). */
             trainingDays: components["schemas"]["Weekday"][];
         };
         NewWorkout: {

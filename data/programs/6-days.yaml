@@ -1,0 +1,44 @@
+# Program template, 6 training days (K-211). Altı gün: itiş/çekiş/bacak ×2 (Güray'ın tercihi, G1 K-32).
+# Sets are counted for each move's first muscle (its primary); ProgramTemplateTests holds every template to
+# sets_per_session_per_muscle_max and weekly_sets_per_muscle, and 4+ day templates to frequency_per_muscle_per_week.
+# DRAFT until the product owner approves it (DURUM question list): coaching content, not a technical choice.
+days:
+  - day: push_a
+    exercises:
+      - {exercise: bench_press, sets: 3}
+      - {exercise: incline_dumbbell_press, sets: 2}
+      - {exercise: dumbbell_shoulder_press, sets: 2}
+      - {exercise: lateral_raise, sets: 2}
+      - {exercise: triceps_pushdown, sets: 2}
+  - day: pull_a
+    exercises:
+      - {exercise: lat_pulldown, sets: 3}
+      - {exercise: seated_row, sets: 2}
+      - {exercise: reverse_pec_deck, sets: 2}
+      - {exercise: barbell_curl, sets: 2}
+  - day: legs_a
+    exercises:
+      - {exercise: squat, sets: 3}
+      - {exercise: romanian_deadlift, sets: 3}
+      - {exercise: leg_extension, sets: 2}
+      - {exercise: standing_calf_raise, sets: 3}
+  - day: push_b
+    exercises:
+      - {exercise: machine_chest_press, sets: 3}
+      - {exercise: cable_fly, sets: 2}
+      - {exercise: overhead_press, sets: 2}
+      - {exercise: cable_lateral_raise, sets: 2}
+      - {exercise: overhead_triceps_extension, sets: 2}
+  - day: pull_b
+    exercises:
+      - {exercise: pull_up, sets: 3}
+      - {exercise: chest_supported_row, sets: 2}
+      - {exercise: rear_delt_fly, sets: 2}
+      - {exercise: dumbbell_curl, sets: 2}
+      - {exercise: hammer_curl, sets: 2}
+  - day: legs_b
+    exercises:
+      - {exercise: leg_press, sets: 3}
+      - {exercise: hip_thrust, sets: 3}
+      - {exercise: lying_leg_curl, sets: 3}
+      - {exercise: seated_calf_raise, sets: 3}

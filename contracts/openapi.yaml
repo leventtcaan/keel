@@ -537,7 +537,7 @@ paths:
     put:
       tags: [training]
       operationId: putOwnProgram
-      summary: Bring your own program; the engine coaches on top of it
+      summary: Bring your own program; the engine coaches on top of it. Replaces the current one
       requestBody:
         required: true
         content:
@@ -557,7 +557,7 @@ paths:
     post:
       tags: [training]
       operationId: generateProgram
-      summary: Build a program for the days the user has (4-day upper/lower by default)
+      summary: Build a program for the days the user has (4-day upper/lower by default); replaces the current one
       requestBody:
         required: true
         content:
@@ -1570,14 +1570,16 @@ components:
           format: date
     ProgramDay:
       type: object
-      required: [id, name, exercises]
+      description: A generated day names itself by nameKey (programDays.<day>.name, "Upper A"); a day of the user's own program by name.
+      required: [id, exercises]
       properties:
         id:
           type: string
           format: uuid
+        nameKey:
+          type: string
         name:
           type: string
-          description: e.g. "Upper A".
         weekday:
           $ref: "#/components/schemas/Weekday"
         exercises:
@@ -1656,7 +1658,9 @@ components:
       properties:
         trainingDays:
           type: array
+          description: 1 to 6 days; seven leave no rest day (G1 K-70).
           minItems: 1
+          maxItems: 6
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Weekday"

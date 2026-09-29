@@ -35,9 +35,9 @@ import org.springframework.web.bind.annotation.RestController;
 @EnableConfigurationProperties(WorkoutController.TrainingLimits.class)
 class WorkoutController {
 
-    /** What a set can be (K-210, K-218, keel.training); load to 2 decimals, the column's. */
+    /** What a set and a program can be (K-210, K-211, K-218, keel.training); load to 2 decimals, the column's. */
     @ConfigurationProperties("keel.training")
-    record TrainingLimits(BigDecimal maxLoadKg, int maxReps, int maxRir) {
+    record TrainingLimits(BigDecimal maxLoadKg, int maxReps, int maxRir, int maxPlannedSets, int maxDayExercises, int maxDayName) {
 
         boolean reps(Integer reps) {
             return reps != null && reps >= 0 && reps <= maxReps;

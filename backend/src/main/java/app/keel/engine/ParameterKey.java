@@ -64,6 +64,10 @@ public enum ParameterKey {
 
     TARGET_RIR_MAX(ParameterDomain.TRAINING, Unit.REPS_IN_RESERVE),
     E1RM_EPLEY_DIVISOR(ParameterDomain.TRAINING, Unit.REPS),
+    REP_RANGE_COMPOUND_MIN(ParameterDomain.TRAINING, Unit.REPS),
+    REP_RANGE_COMPOUND_MAX(ParameterDomain.TRAINING, Unit.REPS),
+    REP_RANGE_ISOLATION_MIN(ParameterDomain.TRAINING, Unit.REPS),
+    REP_RANGE_ISOLATION_MAX(ParameterDomain.TRAINING, Unit.REPS),
     E1RM_MAX_REPS_TO_FAILURE(ParameterDomain.TRAINING, Unit.REPS),
     WEEKLY_SETS_PER_MUSCLE(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
     SETS_PER_SESSION_PER_MUSCLE_MIN(ParameterDomain.TRAINING, Unit.SETS),
