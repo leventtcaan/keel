@@ -44,8 +44,26 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 1. **#150 (K-112)** birleşti mi bak (`gh pr view 150`). Kırmızıysa düzelt.
 2. **K-113** (`../keel-k113`, dal `engine/24-golden-scenarios`): taban eski K-112 commit'leri. #150 birleşince
    `git fetch && git rebase --onto origin/main 9cd0e46` (9cd0e46 = K-113 dalındaki eski K-112 ucu; yalnız cafc639 taşınır — `git log` ile doğrula) →
-   `./gradlew build` → inceleme (pr-test-analyzer: yolculuk beklentileri kurallardan türetildi mi, düzenek bir karar
-   kısaltmasıyla yanlış sebeple geçiyor mu, kadın bulk / 45+ kapsamı) → düzelt → backlog K-113 done → PR `--auto --squash`.
+   `./gradlew build` → pr-test-analyzer **bitti**: 23 beklentinin hepsi kurallarla doğru; ama 32 motor mutasyonundan
+   20'si altın senaryolarda yeşil kalıyor (hepsi birim/spec testlerinde yakalanıyor). Uygulanacaklar (her beklentiyi
+   **elle yeniden türet**; ajanın sıraları öneri, kopya değil — önerilen YAML'lar ajan çıktısında vardı, burada özet):
+   (A) K-64 "bir hafta daha bekle" hiçbir yolculukta yok; haftada 0,5 kg veren erkek tek sabit haftada −500 alıyor
+   (79,5→79,0→79,0: 0,5 < 0,58 pay → "iki sabit hafta"); tek haftalık su sıçraması −500 sonra +500 (tavan 0,8 > 0,788)
+   → GS-24/25 ile sabitle + **Levent'e soru** (L-10 payı yavaş kaybedeni erken kesiyor).
+   (B) **MOTOR HATASI** (K-103 DataSufficiency): bir haftası seyrek tartılı kullanıcıda veri kontrolü günden güne
+   aç-kapa yapıyor (haftalar "bugünden geriye" sayıldığı için); her hafta "3 gün sonra bak" sözü verip Pazar check-in'inde
+   yine data_insufficient → nextReview hesabını düzelt (TDD), düzenek `nextReview`/`confidence`'ı da kontrol etsin
+   (hafta başına isteğe bağlı `next`, `confidence`), hafta başına `mornings` → GS-26.
+   (C) 8 haftalık hızlı kayıp kuralı hiçbir yolculukta yok; haftada 2 tartan biri haftalık tavana görünmez → GS-27.
+   (D) Kadın bulk yok (ideal 0,5 kg/ay 28 günde de "sabit" → her 28 günde +250), kadın bulk tavanı 30 ve faz
+   değişiminden sonrası yok → GS-28/29.
+   (E) "Program hopper" temsil edilmiyor (GS-22 yalnız cevapsız antrenman) → GS-22'yi yeniden adlandır, GS-30 (plato
+   sayacı her program değişiminde sıfırlanır, tırmanmaz); **Levent'e bilgi:** program değiştirmenin kendisi M1'de algılanmıyor (G? K-35).
+   (F) Düzenek: `adherence: null`, `waist`, `months_stalled`, hafta başına `mornings`; gözlem bayrağını yalnız yeni plan
+   kapatsın (plato haftası kapatmasın); her eylemde gerekçeyi de karşılaştır; `mornings>7` sonsuz döngü, `mornings: 6`
+   bugünü atlıyor; HardStop/MiniCut/FullRestWeek planı değiştirmez — yorum yaz; faz değişiminde hedefin korunması K-212 varsayımı.
+   (G) Hızlı kaybeden kadın (gözlem sırasında güvenlik), 60 yaş 155 cm 75 kg kadın (makro tabanı, carb_squeeze).
+   → düzelt → backlog K-113 done → PR `--auto --squash`.
 3. **K-115** (`../keel-k115`, dal `engine/99-intake-calibration`, taban `main`): code-reviewer **bitti** (matematik,
    gün aralığı `window−7`, EWMA sırası, işaret doğru). Uygulanacak 5 bulgu, TDD ile:
    (a) KRİTİK: "sapma" formül hatasını da içeriyor (referans − kayıt birimi harcama = formül hatası + kayıt hatası); eşik
@@ -78,6 +96,9 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "çok hızlı" kuralı M1 kapsamında değil).
 
 ## Session sonunda Levent'e sorulacaklar (toplu, AskUserQuestion)
+0. **(K-113 A, sağlık)** Haftada ~0,5 kg veren erkek tek sabit haftada kalori kesintisi alıyor (L-10 payı 0,58 kg iki
+   haftalık farkı "sabit" sayıyor); tek haftalık su sıçraması −500/+500 salınımı yapıyor. Kabul mü, yoksa K-64 beklemesi
+   yavaş kaybedende de mi işlesin? (ADR-021 değişir.)
 1. **L-4** (sağlık): iç yağ tahmini <%18 (kadın) / <%8 (erkek) → açığı durdur (J1 L2.1)? ADR-020'de yok; yazılmadı.
 2. **Hard stop gerekçesinin saklanması** (veri, GDPR Art. 9): Snapshot'taki cevap saklanmıyor (`docs/mimari.md` madde 4);
    `menstrual_loss_reported` gerekçeli karar kaydı saklanabilir mi, yoksa gerekçe genel bir etiketle mi saklansın?
