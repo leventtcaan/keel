@@ -27,6 +27,12 @@ keel:
     secret: ${KEEL_SESSION_SECRET}
     access-ttl: 15m
     refresh-ttl: 60d
+  # The consent texts the app shows now (data/copy/en.json › consent.*, K-204); "-draft" until the product owner approves.
+  consent:
+    versions:
+      HEALTH_DATA: 1-draft
+      APPLE_HEALTH: 1-draft
+      THIRD_PARTY_AI: 1-draft
 # V3 (K-215): failures are logged by SafeLog, by type and code location only. The container's and Spring MVC's own
 # loggers would print an exception's message, which may hold what the request carried; and the fallback error body
 # never repeats the path.

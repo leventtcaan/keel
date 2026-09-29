@@ -611,7 +611,7 @@ tasks:
     module: consent
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-203]
     why: "GDPR Md. 9 ve Apple 5.1.2(i) (ADR-007)"
     acceptance:

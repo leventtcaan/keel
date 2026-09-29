@@ -215,5 +215,22 @@
       "title": "Your logs and your weight, side by side.",
       "body": "Over the last few weeks your weight points to less food than your logs add up to — or to you burning less than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
     }
+  },
+  "consent": {
+    "health_data": {
+      "version": "1-draft",
+      "title": "Your health data, for your coaching",
+      "body": "Your weight, waist, sleep, check-in answers and food and training logs are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time, and withdraw this consent in Settings; the calls stop until you allow it again."
+    },
+    "apple_health": {
+      "version": "1-draft",
+      "title": "Connect Apple Health",
+      "body": "We read steps, sleep hours, weight from your scale and active energy, so you type less and a calorie cut never goes too far. We add the workouts you log, so they count toward your rings. We don't read heart data, cycle data, medications, health records or location. You can withdraw this in Settings at any time."
+    },
+    "third_party_ai": {
+      "version": "1-draft",
+      "title": "Before you analyze a meal",
+      "body": "Meal photos you choose to analyze, and any text you add, are sent to {provider} to estimate portions. Nothing else is sent: never your progress photos, weight, Health data, name or email. The AI explains; it doesn't decide. Weekly calls come from fixed rules you can read in every \"Why this call\". You can withdraw this in Settings at any time."
+    }
   }
 }
