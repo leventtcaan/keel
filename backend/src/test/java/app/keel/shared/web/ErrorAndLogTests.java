@@ -106,7 +106,8 @@ class ErrorAndLogTests {
 
     @Test
     void anUnknownPathIsNotFoundInTheSameShape() throws IOException {
-        MvcTestResult result = mvc.get().uri("/v1/nothing-here").exchange();
+        // Outside /v1: under /v1 the session check answers first (401, K-203); with a session it is this same 404 (SignInTests).
+        MvcTestResult result = mvc.get().uri("/nothing-here").exchange();
 
         assertThat(result).hasStatus(404).hasContentTypeCompatibleWith(MediaType.APPLICATION_JSON);
         assertThat(result).bodyJson().extractingPath("$").asMap().containsOnlyKeys(contractFields("Error"))

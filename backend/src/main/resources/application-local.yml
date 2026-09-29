@@ -4,3 +4,8 @@ spring:
   datasource:
     url: jdbc:postgresql://127.0.0.1:55432/keel
     username: keel
+# Local sign-in: a placeholder bundle ID until the real one is set; the session key is still from the environment:
+# export KEEL_SESSION_SECRET=$(openssl rand -base64 32)
+keel:
+  apple:
+    client-id: app.keel.local

@@ -28,6 +28,8 @@ public final class SafeLog {
     // Enough of the root cause's stack to find the failing line; frames are code locations, never data.
     private static final int FRAMES = 5;
     private static final String UNREADABLE_ROUTE = "unreadable-route";
+    /** What the request log writes when no route matched (a 404, or a request a filter answered). */
+    public static final String UNMATCHED = "unmatched";
 
     private SafeLog() {
     }
@@ -37,7 +39,8 @@ public final class SafeLog {
         Map<LogField, Object> fields = new EnumMap<>(LogField.class);
         fields.put(LogField.REQUEST_ID, requestId);
         fields.put(LogField.METHOD, method.matches("[A-Z]+") ? method : "OTHER");
-        fields.put(LogField.ROUTE, ROUTE_TEMPLATE.matcher(routeTemplate).matches() ? routeTemplate : UNREADABLE_ROUTE);
+        fields.put(LogField.ROUTE, UNMATCHED.equals(routeTemplate) || ROUTE_TEMPLATE.matcher(routeTemplate).matches()
+                ? routeTemplate : UNREADABLE_ROUTE);
         fields.put(LogField.STATUS, status);
         fields.put(LogField.DURATION_MS, durationMs);
         write(LOG.atInfo(), "request", fields);
