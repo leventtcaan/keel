@@ -24,6 +24,16 @@ class ActionTests {
     }
 
     @Test
+    void eachActionMapsToTheTypeWithItsOwnName() {
+        // Catches two actions swapping types (still a valid one-to-one mapping, but the wrong copy and history).
+        for (Action action : Actions.all()) {
+            String upperSnake = action.getClass().getSimpleName().replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase();
+
+            assertThat(action.type().name()).as(action.getClass().getSimpleName()).isEqualTo(upperSnake);
+        }
+    }
+
+    @Test
     void noDecisionYetIsAnAction() {
         assertThat(Arrays.asList(ActionType.values())).contains(ActionType.NO_DECISION_YET);
         assertThat(new Action.NoDecisionYet().type()).isEqualTo(ActionType.NO_DECISION_YET);

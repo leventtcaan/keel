@@ -56,11 +56,24 @@ class ReasonTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"", " ", "arastirma/", "docs/anayasa.md", "https://example.com/paper",
-            "arastirma/ham/H1 olcum.md", "../arastirma/ham/H1-olcum.md"})
+            "arastirma/ham/H1 olcum.md", "../arastirma/ham/H1-olcum.md",
+            "arastirma/..", "arastirma/ham/..", "arastirma/../docs/anayasa.md", "arastirma/ham/../../docs/x.md",
+            "arastirma/ham/", "arastirma//H1-olcum.md", "arastirma/ham/./H1-olcum.md", "arastirma\\ham\\H1-olcum.md",
+            "arastirma/ham/H1-olcum", "arastirma/ham/H1-olcum.md#", "arastirma/ham/H1-olcum.md#K 1"})
     void rejectsSourcesOutsideTheResearchFolder(String reference) {
         assertThatThrownBy(() -> new Source(reference, SourceTag.LITERATURE))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Source");
+    }
+
+    @Test
+    void rejectsAReasonBackedOnlyByAProductDecision() {
+        // U14: an engine rule rests on Güray's experience or the literature. A product call is not evidence.
+        Source productCall = new Source("arastirma/04-faz3-urun.md#7.3", SourceTag.PRODUCT);
+
+        assertThatThrownBy(() -> new Reason(new RuleId("consistency_week"), productCall))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("U14");
     }
 
     @Test

@@ -11,13 +11,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 /** U3 in code: a Decision is action + reasons + confidence + next review + copy key, and an invalid one cannot exist. */
 class DecisionTests {
 
     private static final LocalDate NEXT_REVIEW = LocalDate.of(2026, 10, 13);
-    private static final String COPY_KEY = "decision.adjust_calories";
+    private static final CopyKey COPY_KEY = new CopyKey("decision.adjust_calories");
 
     // The running example (spec row WC-04): cut, weight flat for three weeks, plan followed → lower calories.
     private static final Reason FLAT_ON_PLAN = new Reason(
@@ -47,7 +46,7 @@ class DecisionTests {
     @Test
     void acceptsNoDecisionYetWithoutAReason() {
         assertThatNoException().isThrownBy(() -> new Decision(
-                new Action.NoDecisionYet(), List.of(), Confidence.LOW, NEXT_REVIEW, "decision.no_decision_yet"));
+                new Action.NoDecisionYet(), List.of(), Confidence.LOW, NEXT_REVIEW, new CopyKey("decision.no_decision_yet")));
     }
 
     @Test
@@ -57,7 +56,7 @@ class DecisionTests {
 
         Decision decision = new Decision(
                 new Action.NoDecisionYet(), List.of(dataInsufficient), Confidence.LOW, NEXT_REVIEW,
-                "decision.no_decision_yet");
+                new CopyKey("decision.no_decision_yet"));
 
         assertThat(decision.reasons()).containsExactly(dataInsufficient);
     }
@@ -102,21 +101,21 @@ class DecisionTests {
     }
 
     @Test
+    void exposesReasonsThatCannotBeEditedEvenWhenBuiltFromAMutableList() {
+        Decision decision = new Decision(
+                new Action.AdjustCalories(), new ArrayList<>(List.of(FLAT_ON_PLAN)), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
+
+        assertThatThrownBy(() -> decision.reasons().add(FLAT_ON_PLAN))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
     void exposesReasonsThatCannotBeEdited() {
         Decision decision = new Decision(
                 new Action.AdjustCalories(), List.of(FLAT_ON_PLAN), Confidence.HIGH, NEXT_REVIEW, COPY_KEY);
 
         assertThatThrownBy(() -> decision.reasons().add(FLAT_ON_PLAN))
                 .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"", " ", "decision", "Decision.Adjust", "decision.adjust calories", "decision..x", ".decision"})
-    void rejectsACopyKeyThatIsNotADottedLowercaseKey(String copyKey) {
-        assertThatThrownBy(() -> new Decision(
-                new Action.AdjustCalories(), List.of(FLAT_ON_PLAN), Confidence.HIGH, NEXT_REVIEW, copyKey))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("copyKey");
     }
 
     static Stream<Action> actionsThatChangeSomething() {
