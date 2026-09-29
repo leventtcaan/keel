@@ -41,6 +41,7 @@ final class ParameterDocuments {
             new Order(ParameterKey.PROTEIN_G_PER_KG_FEMALE_45_PLUS, ParameterKey.PROTEIN_G_PER_KG_MAX, false),
             new Order(ParameterKey.FAT_G_PER_KG_MIN, ParameterKey.FAT_G_PER_KG_MAX, false),
             new Order(ParameterKey.GAIN_RATE_IDEAL_KG_PER_MONTH, ParameterKey.GAIN_RATE_MAX_KG_PER_MONTH, false),
+            new Order(ParameterKey.MINI_CUT_WEEKS_MIN, ParameterKey.MINI_CUT_WEEKS_MAX, false),
             // Activity levels, least to most active (NASEM 2023 via H6 A3).
             new Order(ParameterKey.ACTIVITY_FACTOR_INACTIVE, ParameterKey.ACTIVITY_FACTOR_LOW_ACTIVE, true),
             new Order(ParameterKey.ACTIVITY_FACTOR_LOW_ACTIVE, ParameterKey.ACTIVITY_FACTOR_ACTIVE, true),

@@ -11,12 +11,14 @@ import java.util.Optional;
  * log K-210, sleep and check-in questions K-404/K-213).
  *
  * @param adherence share of the plan done over the decision window (K-111's ratio, ADR-020 L-6), 0 to 1
+ * @param appetite whether eating the plan still works or has become forcing food (mini cut, G7 K-102)
  */
-public record CheckIn(Look look, Training training, Recovery recovery, Waist waist, Optional<BigDecimal> adherence) {
+public record CheckIn(Look look, Training training, Recovery recovery, Waist waist, Optional<BigDecimal> adherence,
+        Appetite appetite) {
 
     /** Nothing answered yet. */
     public static final CheckIn NONE =
-            new CheckIn(Look.UNKNOWN, Training.UNKNOWN, Recovery.UNKNOWN, Waist.UNKNOWN, Optional.empty());
+            new CheckIn(Look.UNKNOWN, Training.UNKNOWN, Recovery.UNKNOWN, Waist.UNKNOWN, Optional.empty(), Appetite.UNKNOWN);
 
     public CheckIn {
         Objects.requireNonNull(look, "look");
@@ -24,6 +26,7 @@ public record CheckIn(Look look, Training training, Recovery recovery, Waist wai
         Objects.requireNonNull(recovery, "recovery");
         Objects.requireNonNull(waist, "waist");
         Objects.requireNonNull(adherence, "adherence");
+        Objects.requireNonNull(appetite, "appetite");
         adherence.filter(ratio -> ratio.signum() < 0 || ratio.compareTo(BigDecimal.ONE) > 0).ifPresent(ratio -> {
             throw new IllegalArgumentException("adherence is a share of the plan, 0 to 1, was " + ratio);
         });
@@ -41,23 +44,35 @@ public record CheckIn(Look look, Training training, Recovery recovery, Waist wai
     /** Waist over the window, beyond its measurement error. */
     public enum Waist { DOWN, FLAT, UP, UNKNOWN }
 
+    /** GONE = the user has to force the food down (G7 K-102: "you can't even eat what you used to"). */
+    public enum Appetite { NORMAL, GONE, UNKNOWN }
+
+    /** A check-in without the appetite answer. */
+    public CheckIn(Look look, Training training, Recovery recovery, Waist waist, Optional<BigDecimal> adherence) {
+        this(look, training, recovery, waist, adherence, Appetite.UNKNOWN);
+    }
+
     public CheckIn withLook(Look value) {
-        return new CheckIn(value, training, recovery, waist, adherence);
+        return new CheckIn(value, training, recovery, waist, adherence, appetite);
     }
 
     public CheckIn withTraining(Training value) {
-        return new CheckIn(look, value, recovery, waist, adherence);
+        return new CheckIn(look, value, recovery, waist, adherence, appetite);
     }
 
     public CheckIn withRecovery(Recovery value) {
-        return new CheckIn(look, training, value, waist, adherence);
+        return new CheckIn(look, training, value, waist, adherence, appetite);
     }
 
     public CheckIn withWaist(Waist value) {
-        return new CheckIn(look, training, recovery, value, adherence);
+        return new CheckIn(look, training, recovery, value, adherence, appetite);
     }
 
     public CheckIn withAdherence(BigDecimal ratio) {
-        return new CheckIn(look, training, recovery, waist, Optional.of(ratio));
+        return new CheckIn(look, training, recovery, waist, Optional.of(ratio), appetite);
+    }
+
+    public CheckIn withAppetite(Appetite value) {
+        return new CheckIn(look, training, recovery, waist, adherence, value);
     }
 }

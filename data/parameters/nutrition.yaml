@@ -143,3 +143,20 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-10"
     note: "Bulk: kilo bu kadar hafta artmadıysa (son haftaya gürültü payı içinde kalan önceki hafta sayısı, ADR-021) kalori artar (+bulk_step_kcal, karbonhidrattan); daha kısasında beklenir."
+  - key: mini_cut_after_bulk_months
+    value: 5
+    unit: months
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"
+    note: "Mini cut tetikleyicisi: 5-6 ay bulk + iştah durdu (eskiden yediğini bile yiyemiyor, zorla yiyor). Alt ucu alındı."
+  - key: mini_cut_weeks_min
+    value: 4
+    unit: weeks
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"
+    note: "4-6 haftalık defisit: ilk 1-2 hafta açlık yok, 3-4. haftada iştah geri gelir (iştah reseti)."
+  - key: mini_cut_weeks_max
+    value: 6
+    unit: weeks
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"

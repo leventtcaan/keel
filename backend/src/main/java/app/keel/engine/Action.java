@@ -104,8 +104,17 @@ public sealed interface Action {
     record FullRestWeek() implements Action {
     }
 
-    /** A short cut inside a bulk. */
-    record MiniCut() implements Action {
+    /**
+     * A short cut inside a long bulk whose appetite has gone (G7 K-102): minWeeks to maxWeeks of deficit, then the bulk
+     * resumes with appetite back.
+     */
+    record MiniCut(int minWeeks, int maxWeeks) implements Action {
+
+        public MiniCut {
+            if (minWeeks <= 0 || maxWeeks < minWeeks) {
+                throw new IllegalArgumentException("A mini cut lasts a positive range of weeks, got " + minWeeks + "-" + maxWeeks);
+            }
+        }
     }
 
     /**

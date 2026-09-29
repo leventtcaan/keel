@@ -22,7 +22,7 @@ final class Actions {
                 new Action.StopLoadIncrease(),
                 new Action.Deload(new java.math.BigDecimal("0.5")),
                 new Action.FullRestWeek(),
-                new Action.MiniCut(),
+                new Action.MiniCut(4, 6),
                 new Action.ChangePhase(Phase.CUT));
     }
 }

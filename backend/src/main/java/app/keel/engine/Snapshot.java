@@ -22,10 +22,13 @@ import java.util.Objects;
  * @param checkIn this week's answers besides the scale, for the weekly spine (K-106)
  * @param profile age and height, when known (macros K-108, resting energy K-114)
  * @param observingMaintenance the current target is the starting estimate, held while maintenance is observed (K-114)
+ * @param phaseStart the day the current phase (cut or bulk) began; a plan lies inside its phase (mini cut, G7 K-102)
+ * @param training where the most-stalled lift stands, from the set log, if known (deload ladder, K-110)
  */
 public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
         Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn,
-        Optional<Profile> profile, boolean observingMaintenance) {
+        Optional<Profile> profile, boolean observingMaintenance,
+        LocalDate phaseStart, Optional<TrainingStatus> training) {
 
     public Snapshot {
         Objects.requireNonNull(today, "today");
@@ -37,6 +40,11 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         Objects.requireNonNull(energy, "energy");
         Objects.requireNonNull(checkIn, "checkIn");
         Objects.requireNonNull(profile, "profile");
+        Objects.requireNonNull(phaseStart, "phaseStart");
+        Objects.requireNonNull(training, "training");
+        if (phaseStart.isAfter(planStart)) {
+            throw new IllegalArgumentException("phaseStart " + phaseStart + " is after planStart " + planStart + ": a plan lies inside its phase");
+        }
         if (planStart.isAfter(today)) {
             throw new IllegalArgumentException("planStart " + planStart + " is after today " + today);
         }
@@ -64,26 +72,36 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
     /** A Snapshot with the basics and, possibly, a body-fat estimate; the other inputs are added with the withers. */
     public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
             Optional<BigDecimal> fatProxyPct) {
-        this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE, Optional.empty(), false);
+        this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE, Optional.empty(), false, planStart, Optional.empty());
     }
 
     public Snapshot withEnergy(EnergyBudget budget) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training);
     }
 
     public Snapshot withMenstrualLossReported(boolean reported) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance, phaseStart, training);
     }
 
     public Snapshot withCheckIn(CheckIn answers) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance, phaseStart, training);
     }
 
     public Snapshot withProfile(Profile facts) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance, phaseStart, training);
     }
 
     public Snapshot withObservingMaintenance(boolean observing) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing, phaseStart, training);
+    }
+
+    public Snapshot withPhaseStart(LocalDate day) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
+                observingMaintenance, day, training);
+    }
+
+    public Snapshot withTraining(TrainingStatus status) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
+                observingMaintenance, phaseStart, Optional.of(status));
     }
 }
