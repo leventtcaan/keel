@@ -24,11 +24,15 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-101 değişikliği (NO_DECISION_YET gerekçeli, U14 çapa zorunlu) | ✅ birleşti | #143 | `M1/K-101.md` › ADR-020 kısmı |
 | build: `tasks.register<Test>` + deprecation = kırmızı build | ✅ birleşti | #144 | (küçük; M1 README'de) |
 | K-104 kalanı (LEA, hızlı kayıp → daralt; tek hard stop) | ✅ birleşti | #145 | `M1/K-104.md` › ADR-020 kısmı |
-| K-110 basamak 3 (L-12 iki sinyal) | PR'da, auto-merge | #146 | `M1/K-110.md` › ADR-020 kısmı |
-| K-106 omurga | sıradaki | | |
-| K-107 kalori merdiveni → K-112 montaj → K-113 altın senaryolar | — | | |
-| K-114 başlangıç hedefi (Mifflin önce `arastirma/`'ya) → K-115 sapma | — | | |
+| K-110 basamak 3 (L-12 iki sinyal) | ✅ birleşti | #146 | `M1/K-110.md` › ADR-020 kısmı |
+| K-106 omurga (+ ADR-021 "sabit" ölçümü) | ✅ birleşti | #147 | `M1/K-106.md` |
+| K-107 kalori merdiveni | ✅ birleşti | #148 | `M1/K-107.md` |
+| K-114 başlangıç hedefi (+ `arastirma/ham/H6` Mifflin kaynağı) | PR'da, auto-merge | #149 | `M1/K-114.md` |
+| K-112 montaj (spesifikasyon 24/24 gerçek motordan; mini cut WC-20) | inceleme ajanlarında · worktree `../keel-k112` | | (yazılacak) |
+| K-113 altın senaryolar → K-115 sapma kalibrasyonu | — | | |
 | M2: K-201…K-219 | — | | |
+
+Sıra değişikliği (teknik): K-114, K-112'den önce yapıldı — montaj BMR tabanı için Mifflin'e ihtiyaç duyuyor.
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -39,10 +43,15 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## Session sonunda Levent'e sorulacaklar (toplu, AskUserQuestion)
 1. **L-4** (sağlık): iç yağ tahmini <%18 (kadın) / <%8 (erkek) → açığı durdur (J1 L2.1)? ADR-020'de yok; yazılmadı.
 2. **Hard stop gerekçesinin saklanması** (veri, GDPR Art. 9): Snapshot'taki cevap saklanmıyor (`docs/mimari.md` madde 4);
-   ama `menstrual_loss_reported` gerekçeli karar kaydı saklanabilir mi, yoksa gerekçe genel bir etiketle mi saklansın?
+   `menstrual_loss_reported` gerekçeli karar kaydı saklanabilir mi, yoksa gerekçe genel bir etiketle mi saklansın?
 3. **Deload basamak 1-2 cut'ta** da çalışsın mı? (ADR-020 cevaplamadı; şimdilik çalışıyor. Basamak 3 "gerileme" cut'ta
    susturuldu: G6 K-30.)
-4. Apple Team ID / Bundle ID / Services ID.
+4. **ADR-021 madde 4** (sağlık/ürün): görünüş "aynı" ya da "bu hafta fotoğraf yok" → devam (şimdiki, kalori değişmez) mi,
+   ağaçtaki gibi "daha iyi değil" → antrenman/toparlanma/genetik limit mi?
+5. **Açık yağdan mı karbdan mı** (bilgi/sağlık): G7 K-117 "yağdan ver" · 03 §2.3 ve G3 K-22 "karb ayar kolu". Kart
+   uygulandı (karb, karb tabanında yağ 0,5 g/kg'a iner).
+6. **Aktivite sorusu** (ürün, K-114): kaç seçenek, nasıl sorulur? Gün boyu, antrenman dahil olmalı.
+7. Apple Team ID / Bundle ID / Services ID.
 
 ## Teknik kararlar (bu koşu, aktarımda anlatılacak)
 - U14 çapa kuralı: çapa dosyada başlık (`### K-17 ·`, `## 3.4`, `### 🚨 L2.1 ·`) ya da kalın etiket (`**U2 ·`) olmalı;
