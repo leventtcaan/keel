@@ -26,6 +26,8 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.snakeyaml)
+    // Engine purity rules (ADR-003). Version from the Spring Modulith BOM, which already uses ArchUnit.
+    testImplementation(libs.archunit)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
