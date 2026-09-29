@@ -30,6 +30,9 @@ public enum Unit {
     KCAL_PER_CM_PER_DAY("kcal_per_cm_per_day", Kind.FRACTION, Bound.POSITIVE),
     KCAL_PER_YEAR_PER_DAY("kcal_per_year_per_day", Kind.FRACTION, Bound.POSITIVE),
     KCAL_OFFSET_PER_DAY("kcal_offset_per_day", Kind.WHOLE, Bound.NONE),
+    // Energy in a kilogram of body-weight change (Hall 2008 via H6 A4).
+    KCAL_PER_KG_WEIGHT_CHANGE("kcal_per_kg_weight_change", Kind.WHOLE, Bound.POSITIVE),
+    WINDOWS("windows", Kind.WHOLE, Bound.POSITIVE),
     // Total over resting expenditure (PAL); a person always spends at least their resting energy, so never under 1.
     ACTIVITY_FACTOR("activity_factor", Kind.FRACTION, Bound.AT_LEAST_ONE),
     DAYS("days", Kind.WHOLE, Bound.POSITIVE),

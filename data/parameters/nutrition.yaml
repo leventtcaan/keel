@@ -160,3 +160,27 @@ parameters:
     unit: weeks
     tag: tecrube
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"
+  - key: energy_per_kg_weight_change
+    value: 7700
+    unit: kcal_per_kg_weight_change
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A4"
+    note: "Kilo değişiminden enerji dengesi: 7700 kcal/kg (3500 kcal/lb). Hall 2008: yalnız ~30 kg üstü yağ kütlesinde tutar, zayıf kişide gereken açığı fazla tahmin eder — yalnız kayıt sapmasını öğrenmekte kullanılır (K-115), kalori kararlarında değil (kararlar tartıdan, adımlarla)."
+  - key: logging_bias_smoothing
+    value: 0.5
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "TÜRETİLMİŞ. Pencere başına üstel ortalama katsayısı (H1 §3.4'teki EWMA'nın pencere düzeyi hâli): en yeni pencere yarı ağırlık alır, eski bir sapma iki pencerede yarıya iner."
+  - key: logging_bias_min_windows
+    value: 2
+    unit: windows
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A4"
+    note: "TÜRETİLMİŞ. Tek pencerede kilodan alım çıkarmak ±118-272 kcal gürültülü (Thomas 2010, Sanghvi 2015); iki pencereden önce sapma iddia edilmez."
+  - key: min_logged_days_per_week
+    value: 4
+    unit: days_per_week
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "TÜRETİLMİŞ, min_weighins_per_week ile aynı mantık: haftada en az 4 kayıtlı gün yoksa o pencerenin ortalaması güvenilmez. Kaydı olmayan gün 0 kcal sayılmaz, ortalamaya girmez."
