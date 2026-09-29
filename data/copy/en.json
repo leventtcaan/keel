@@ -25,5 +25,18 @@
       "title": "Progress",
       "note": "Photos, strength and projection arrive in M6."
     }
+  },
+  "decision": {
+    "no_decision_yet": {
+      "label": "Wait",
+      "data_insufficient": {
+        "title": "Not yet. More weigh-ins first.",
+        "body": "One morning is mostly water. A few regular mornings show the trend, and the trend is what the call is made on."
+      },
+      "window_not_full": {
+        "title": "Not yet. Your plan needs its full window.",
+        "body": "Keep going as planned. Judging it early would read water and daily swings as progress or as a stall."
+      }
+    }
   }
 }

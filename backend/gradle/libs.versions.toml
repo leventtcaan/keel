@@ -6,6 +6,8 @@
 java = "25"
 spring-boot = "4.1.1"
 spring-modulith = "2.1.1"
+# Verified on Maven Central 2026-09-29 (maven-metadata.xml <release>); not in the Boot BOM.
+jqwik = "1.10.1"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -18,6 +20,7 @@ spring-modulith-starter-test = { module = "org.springframework.modulith:spring-m
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 snakeyaml = { module = "org.yaml:snakeyaml" }
 archunit = { module = "com.tngtech.archunit:archunit" }
+jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

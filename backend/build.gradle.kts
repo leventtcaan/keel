@@ -28,6 +28,8 @@ dependencies {
     testImplementation(libs.snakeyaml)
     // Engine purity rules (ADR-003). Version from the Spring Modulith BOM, which already uses ArchUnit.
     testImplementation(libs.archunit)
+    // Property-based tests for pure engine functions (skill property-based-testing, K-103).
+    testImplementation(libs.jqwik)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 

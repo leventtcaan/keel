@@ -8,6 +8,7 @@ CLAUDE.local.md
 backend/.gradle/
 backend/build/
 backend/.kotlin/
+backend/.jqwik-database
 # mobile
 apps/mobile/node_modules/
 apps/mobile/.expo/
