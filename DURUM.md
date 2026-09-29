@@ -23,7 +23,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 |---|---|---|---|
 | K-101 alan tipleri | ✅ birleşti | PR #134 | `docs/aktarim/M1/K-101.md` |
 | K-102 parametre yükleme | ✅ birleşti | PR #135 | `docs/aktarim/M1/K-102.md` |
-| K-103 trend, veri yeterliliği | inceleme | `engine/14-trend-sufficiency` | — |
+| K-103 trend, veri yeterliliği | PR açık, auto-merge | PR #136 | `docs/aktarim/M1/K-103.md` |
 | K-104 güvenlik ağı | — | | |
 | K-105 faz kapısı | — | | |
 | K-106 check-in omurgası | — | | |
@@ -47,6 +47,10 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 2. (K-101) U14 "dosya + kural no": kaynaklarda `#K-n` çapası zorunlu olsun mu? Bugün parametrelerin bir kısmı dosya düzeyinde.
 3. (K-101 inceleme) INCREASE_CALORIES (güvenlik) ile ADJUST_CALORIES(yukarı, bulk adımı) ayrı mı kalsın? Faz değişimi
    (K-105 "tavan üstü → cut") için ayrı eylem gerekir mi? — K-105/K-107'de teknik öneriyle gelecek.
+4. **Sağlık/ürün kararları L-1…L-8** → `plan/m1-kural-haritasi.md` (kaynak satırlarıyla). En acili **L-1**: K-104 kartı
+   "8 haftada >%8" ve "EA ≤30" için hard stop diyor, kaynak (J1 C6/L2.1) "açığı daralt + uyar" diyor; tek hard stop adet
+   kaybı bildirimi. Bu iki kural L-1 cevaplanana kadar yazılmıyor; K-104'ün geri kalanı yazılıyor.
+5. K1 açıklaması (K-103): iki testin beklenen tarihi inceleme bulgusu (kırılan `nextReview` sözü) üzerine değişti.
 **Alınan teknik kararlar (aktarımda anlatılacak):**
 - K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
   Source yalnız arastirma/*.md · PRODUCT etiketli kaynak kural gerekçesi olamaz (U14) · EnginePurityTests: yalnız JDK,
@@ -58,7 +62,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   14 gün kuralı ilk tartıdan sayılır (ADR-018 içe aktarma) · kontrol sırası: 14 gün → pencere → haftalık tartı
 
 ## Aktif görev
-K-103 · Trend ve veri yeterliliği · dal `engine/14-trend-sufficiency` (issue #14) — öz-denetimde
+K-103 PR #136 CI'da → sıradaki K-104 (L-1'e bağlı iki kural hariç), sonra K-105
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
