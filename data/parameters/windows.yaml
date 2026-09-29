@@ -52,3 +52,9 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G2-kilo-verme.md#K-64"
     note: "Cut: pencere hedef yönde değil ama son haftaya gürültü payı içinde kalan önceki hafta sayısı bunu aşmıyorsa (kilo yalnız bir haftadır aynı), bel yukarı gitmiyorsa ve uyum yüksekse bir hafta daha beklenir — 'iki haftalık düşüş birden gelir'. Ölçüm ADR-021."
+  - key: dense_weighins_per_week
+    value: 6
+    unit: weighins_per_week
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "TÜRETİLMİŞ (K-112): her haftası en az bu kadar tartılı bir pencerede kilo kararı HIGH güvenle verilir, min_weighins_per_week ile bu arası MEDIUM. Aynı hesap: n=6 → iki haftalık ortalama farkının payı 1,96·0,42·√(2/6) ≈ 0,48 kg (n=4'te 0,58)."

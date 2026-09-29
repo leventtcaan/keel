@@ -189,6 +189,13 @@
         "title": "Ease the pace a little.",
         "body": "Your weight is moving, training and recovery are fine, but the mirror isn't keeping up. That's the pace your body can use right now, so calories move one step back toward maintenance."
       }
+    },
+    "mini_cut": {
+      "label": "Short cut",
+      "appetite_gone": {
+        "title": "A short cut to bring your appetite back.",
+        "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating a bit under your needs resets your appetite and clears the fat the bulk added; then the bulk picks up again."
+      }
     }
   }
 }
