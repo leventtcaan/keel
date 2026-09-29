@@ -56,6 +56,9 @@ class ConsentTests {
     @Autowired
     ApplicationEvents events;
 
+    @Autowired
+    ConsentProperties properties;
+
     @Test
     void aNewAccountHasBeenAskedNothing() throws Exception {
         AccountId account = TestSessions.newAccount();
@@ -97,6 +100,42 @@ class ConsentTests {
 
         assertThat(read(result)).containsEntry("status", "GRANTED").containsEntry("provider", "Example AI")
                 .containsEntry("dataTypes", List.of("meal photo", "meal note"));
+    }
+
+    @Test
+    void theAiConsentIsToTheProviderAndDataTheServerWouldActuallyUse() {
+        // Apple 5.1.2(i), V2: consent is to a named provider and named data. Another name, or other data, is not it.
+        AccountId account = TestSessions.newAccount();
+
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", CURRENT, "provider", "Other AI",
+                "dataTypes", List.of("meal photo", "meal note")))).hasStatus(400);
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", CURRENT, "provider", "Example AI",
+                "dataTypes", List.of("meal photo", "meal note", "weight")))).hasStatus(400);
+    }
+
+    @Test
+    void aConsentToAnOldTextOrAnotherProviderNoLongerCounts() {
+        // When the text is revised or the provider changes, the gate closes until the user agrees to what is now true.
+        AccountId oldText = TestSessions.newAccount();
+        AccountId oldProvider = TestSessions.newAccount();
+        insert(oldText, "HEALTH_DATA", "0-old", null, null);
+        insert(oldProvider, "THIRD_PARTY_AI", CURRENT, "Former AI", new String[] {"meal photo", "meal note"});
+
+        assertThat(gate.granted(oldText, ConsentKind.HEALTH_DATA)).isFalse();
+        assertThat(gate.granted(oldProvider, ConsentKind.THIRD_PARTY_AI)).isFalse();
+    }
+
+    @Test
+    void theLatestIsTheLastWrittenEvenIfTheClockWentBack() {
+        // Order by write sequence, not by wall-clock time: a withdrawal written after a grant is the latest, always.
+        AccountId account = TestSessions.newAccount();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :account, 'HEALTH_DATA', 'GRANTED', :version, now()),
+                       (gen_random_uuid(), :account, 'HEALTH_DATA', 'WITHDRAWN', :version, now() - interval '1 hour')""")
+                .param("account", account.value()).param("version", CURRENT).update();
+
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isFalse();
     }
 
     @Test
@@ -154,13 +193,23 @@ class ConsentTests {
     }
 
     @Test
-    void eachConsentHasADraftTextOfTheVersionTheServerAccepts() throws IOException {
+    @SuppressWarnings("unchecked")
+    void eachConsentHasATextOfTheVersionTheServerAccepts() throws IOException {
         // ADR-020: the agent drafts, the product owner approves; until then the version says "draft".
-        String copy = Files.readString(Path.of("../data/copy/en.json"));
-        for (String kind : List.of("health_data", "apple_health", "third_party_ai")) {
-            assertThat(copy).contains("\"" + kind + "\"");
+        Map<String, Object> copy = JSON.readValue(Files.readString(Path.of("../data/copy/en.json")), Map.class);
+        Map<String, Map<String, String>> texts = (Map<String, Map<String, String>>) copy.get("consent");
+        for (ConsentKind kind : ConsentKind.values()) {
+            Map<String, String> text = texts.get(kind.name().toLowerCase(java.util.Locale.ROOT));
+            assertThat(text).as(kind.name()).containsKeys("title", "body").containsEntry("version", properties.versions().get(kind));
         }
-        assertThat(copy).contains("\"version\": \"" + CURRENT + "\"");
+    }
+
+    private void insert(AccountId account, String kind, String version, String provider, String[] dataTypes) {
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, provider, data_types, occurred_at)
+                values (gen_random_uuid(), :account, :kind, 'GRANTED', :version, :provider, :types, now())""")
+                .param("account", account.value()).param("kind", kind).param("version", version).param("provider", provider)
+                .param("types", dataTypes).update();
     }
 
     private List<Map<String, Object>> list(AccountId account) throws Exception {

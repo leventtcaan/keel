@@ -61,12 +61,9 @@ class ConsentController {
     @Transactional
     Consent grant(AccountId account, @PathVariable String kind, @RequestBody Grant grant) {
         ConsentKind consent = kind(kind);
-        boolean ai = consent == ConsentKind.THIRD_PARTY_AI;
-        boolean namesWhatAndToWhom = grant.provider() != null && !grant.provider().isBlank()
-                && grant.dataTypes() != null && !grant.dataTypes().isEmpty();
-        boolean currentText = grant.textVersion() != null && grant.textVersion().equals(properties.versions().get(consent));
-        // Apple 5.1.2(i): the AI consent names the provider and the data; the other two name neither.
-        if (!currentText || (ai ? !namesWhatAndToWhom : grant.provider() != null || grant.dataTypes() != null)) {
+        // To the current text; the AI consent names exactly the provider and data the server uses (Apple 5.1.2(i), V2),
+        // the other two name neither.
+        if (!properties.current(consent, grant.textVersion(), grant.provider(), grant.dataTypes())) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
         return Consent.of(consent, Optional.of(events.append(account, consent, ConsentEvents.Action.GRANTED,

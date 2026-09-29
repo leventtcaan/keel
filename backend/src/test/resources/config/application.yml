@@ -5,3 +5,8 @@ keel:
     client-id: app.keel.test
   session:
     secret: dGVzdC1vbmx5IHNlc3Npb24ga2V5LCBzaWducyBub3RoaW5nIHJlYWwh
+  # The third-party AI the server would send to (the real one is chosen in K-511); consent binds to it.
+  consent:
+    third-party-ai:
+      provider: Example AI
+      data-types: [meal photo, meal note]

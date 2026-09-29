@@ -225,7 +225,7 @@
     "apple_health": {
       "version": "1-draft",
       "title": "Connect Apple Health",
-      "body": "We read steps, sleep hours, weight from your scale and active energy, so you type less and a calorie cut never goes too far. We add the workouts you log, so they count toward your rings. We don't read heart data, cycle data, medications, health records or location. You can withdraw this in Settings at any time."
+      "body": "We read steps, sleep hours, weight from your scale, active energy and the workouts you do in other apps, so you type less and a calorie cut never goes too far. We don't read heart data, cycle data, medications, health records or location. Adding your logged workouts to Apple Health is a separate choice in Settings. You can withdraw this at any time."
     },
     "third_party_ai": {
       "version": "1-draft",

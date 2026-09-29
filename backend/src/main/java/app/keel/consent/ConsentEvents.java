@@ -7,6 +7,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +35,7 @@ class ConsentEvents {
     Optional<Event> latest(AccountId account, ConsentKind kind) {
         return jdbc.sql("""
                 select kind, action, text_version, provider, data_types, occurred_at from consent.consent_event
-                where account_id = :account and kind = :kind order by occurred_at desc, id desc limit 1""")
+                where account_id = :account and kind = :kind order by seq desc limit 1""")
                 .param("account", account.value()).param("kind", kind.name())
                 .query((row, n) -> new Event(ConsentKind.valueOf(row.getString("kind")), Action.valueOf(row.getString("action")),
                         row.getString("text_version"), row.getString("provider"), strings(row.getArray("data_types")),
@@ -43,7 +44,7 @@ class ConsentEvents {
     }
 
     Event append(AccountId account, ConsentKind kind, Action action, String textVersion, String provider, List<String> dataTypes) {
-        Instant now = clock.instant();
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS); // what PostgreSQL keeps: the answer matches a later read
         jdbc.sql("""
                 insert into consent.consent_event (id, account_id, kind, action, text_version, provider, data_types, occurred_at)
                 values (:id, :account, :kind, :action, :version, :provider, :types, :at)""")

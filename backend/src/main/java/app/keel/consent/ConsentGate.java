@@ -13,13 +13,20 @@ import org.springframework.stereotype.Service;
 public class ConsentGate {
 
     private final ConsentEvents events;
+    private final ConsentProperties properties;
 
-    ConsentGate(ConsentEvents events) {
+    ConsentGate(ConsentEvents events, ConsentProperties properties) {
         this.events = events;
+        this.properties = properties;
     }
 
+    /**
+     * Given, and to what is true now: the current text, and for the AI the current provider and data. A revised text or a
+     * new provider closes the gate until the user agrees again.
+     */
     public boolean granted(AccountId account, ConsentKind kind) {
-        return events.latest(account, kind).filter(event -> event.action() == ConsentEvents.Action.GRANTED).isPresent();
+        return events.latest(account, kind).filter(event -> event.action() == ConsentEvents.Action.GRANTED
+                && properties.current(kind, event.textVersion(), event.provider(), event.dataTypes())).isPresent();
     }
 
     /** CONSENT_REQUIRED unless the consent is given now. */
