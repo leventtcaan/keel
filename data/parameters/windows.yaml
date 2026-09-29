@@ -27,4 +27,4 @@ parameters:
     unit: weighins_per_week
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
-    note: "Türetilmiş (Levent onayı bekliyor). Günlük gürültü SD 0,42 kg (H1 §3.4). Haftalık ortalamanın hatası 0,42/√n; iki haftalık ortalamanın farkı için 0,42·√(2/n). n=4 → %95'le ~0,58 kg (iki haftada) ≈ 0,3 kg/hafta ayırt edilir: Güray'ın hedef kayıp hızlarının altında. n=2 → ~0,82 kg, yavaş kaybı sabitten ayıramaz. Kaçırılan günler sorun değil (H1: filtre tolere eder)."
+    note: "TÜRETİLMİŞ, Levent onayı bekliyor — araştırmada doğrudan sayı yok. Girdi: H1 §3.4, ardışık iki günün farkının SD'si %0,53 (80 kg'da 0,42 kg). Temkinli varsayım: tek tartı gürültüsü ≤0,42 kg (bağımsız okumada ≈0,30 olurdu; günler korelasyonlu olduğu için √n kazancı iyimser). Karşılaştırma: pencerenin ilk ve son haftasının ortalaması (erkekte 14 gün arayla). n=4 → farkın %95 hata payı 1,96·0,42·√(2/4) ≈ 0,58 kg ≈ 0,3 kg/hafta; n=2 → 0,82 kg, yavaş kaybı sabitten ayıramaz. Gürültü kiloyla ölçeklenir (120 kg: ≈0,44 kg/hafta). Kod her haftada ister (türetmeden katı): orta haftasız trend yönü kırılgan."

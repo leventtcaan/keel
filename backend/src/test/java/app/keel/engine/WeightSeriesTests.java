@@ -51,6 +51,7 @@ class WeightSeriesTests {
 
         assertThat(series.firstDay()).contains(MON);
         assertThat(series.countBetween(MON.plusDays(1), MON.plusDays(9))).isEqualTo(2);
+        assertThat(series.countBetween(MON, MON.plusDays(3))).as("both ends included").isEqualTo(2);
         assertThat(new WeightSeries(List.of()).firstDay()).isEmpty();
     }
 }

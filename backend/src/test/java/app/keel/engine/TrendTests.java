@@ -115,6 +115,31 @@ class TrendTests {
         return WeightTrend.at(series(weighIns), day, WINDOW).map(trend -> trend.compareTo(kg) == 0).orElse(false);
     }
 
+    @Property
+    boolean weighInsOutsideTheWindowNeverMoveTheTrend(
+            @ForAll("weightsInKg") List<BigDecimal> weights, @ForAll @IntRange(min = 1, max = 30) int window,
+            @ForAll("weightInKg") BigDecimal outsider, @ForAll @IntRange(min = 1, max = 40) int beyond) {
+        // Kills window off-by-ones: a weigh-in one day too old, or after the day, must not count.
+        WeightSeries series = consecutive(weights);
+        LocalDate day = DAY_1.plusDays(weights.size() - 1);
+        List<WeighIn> tooOld = new ArrayList<>(series.weighIns());
+        tooOld.removeIf(w -> w.date().equals(day.minusDays(window - 1L + beyond)));
+        tooOld.add(new WeighIn(day.minusDays(window - 1L + beyond), outsider));
+        List<WeighIn> future = new ArrayList<>(series.weighIns());
+        future.add(new WeighIn(day.plusDays(beyond), outsider));
+
+        java.util.Optional<BigDecimal> trend = WeightTrend.at(series, day, window);
+        return trend.equals(WeightTrend.at(series(tooOld), day, window))
+                && trend.equals(WeightTrend.at(series(future), day, window));
+    }
+
+    @Test
+    void refusesAWindowShorterThanOneDay() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> WeightTrend.at(series(List.of(weighIn(DAY_1, "80.0"))), DAY_1, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     @Provide
     Arbitrary<BigDecimal> weightInKg() {
         return Arbitraries.bigDecimals().between(new BigDecimal("30.0"), new BigDecimal("250.0")).ofScale(1);

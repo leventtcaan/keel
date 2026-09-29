@@ -16,6 +16,13 @@ import net.jqwik.api.Arbitrary;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
+import net.jqwik.api.Tuple;
+import net.jqwik.api.statistics.Statistics;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,6 +42,13 @@ class DataSufficiencyTests {
 
     private static final LocalDate LONG_AGO = TODAY.minusDays(120);
 
+    @Test
+    void theLiteralReviewDatesBelowAssumeTodaysParameters() {
+        // Some expected review dates are worked out by hand from these values; if a parameter changes on purpose,
+        // redo those dates instead of deriving them from the code under test.
+        assertThat(List.of(NO_INTERPRETATION_DAYS, MALE_WINDOW, FEMALE_WINDOW, MIN_PER_WEEK)).containsExactly(14, 21, 28, 4);
+    }
+
     // ── the first days: no interpretation ───────────────────────────────────────────────────────────────────
 
     @Test
@@ -42,6 +56,9 @@ class DataSufficiencyTests {
         Optional<Decision> decision = DataSufficiency.check(snapshot(Sex.MALE, LONG_AGO, List.of()), MALE);
 
         assertNoDecisionYet(decision, "data_insufficient");
+        // Daily from tomorrow (TODAY+1): the 14-day rule passes on TODAY+14, and the window's oldest week
+        // (D-20..D-14) first holds 4 weigh-ins when D-14 - (TODAY+1) + 1 = 4 → D = TODAY+18.
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(18));
     }
 
     @Test
@@ -61,7 +78,10 @@ class DataSufficiencyTests {
                 snapshot(Sex.MALE, LONG_AGO, daily(first, TODAY, "80.0")), MALE);
 
         assertNoDecisionYet(decision, "data_insufficient");
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(1));
+        // 13 days of data. Weighing daily from tomorrow, the first day all three checks pass is when the window's
+        // oldest week (D-20..D-14) holds 4 weigh-ins: D-14 - (TODAY-12) + 1 = 4 → D = TODAY+5.
+        // (It used to promise TODAY+1, when only the 14-day rule is met; the week rule then blocked again.)
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(5));
     }
 
     @Test
@@ -73,7 +93,8 @@ class DataSufficiencyTests {
                 snapshot(Sex.MALE, LONG_AGO, daily(first, TODAY, "80.0")), MALE);
 
         assertNoDecisionYet(decision, "data_insufficient");
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(7));
+        // 14 days of data: oldest window week needs 4 → D-14 - (TODAY-13) + 1 = 4 → D = TODAY+4.
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(4));
     }
 
     @Test
@@ -122,6 +143,28 @@ class DataSufficiencyTests {
         assertThat(FEMALE_WINDOW).isGreaterThan(MALE_WINDOW);
     }
 
+    @Test
+    void aWomansPlanIsJudgedAtDay28NotBefore() {
+        List<WeighIn> weighIns = daily(LONG_AGO, TODAY, "65.0");
+
+        assertNoDecisionYet(DataSufficiency.check(
+                snapshot(Sex.FEMALE, TODAY.minusDays(FEMALE_WINDOW - 2), weighIns), FEMALE), "window_not_full");
+        assertThat(DataSufficiency.check(snapshot(Sex.FEMALE, TODAY.minusDays(FEMALE_WINDOW - 1), weighIns), FEMALE))
+                .isNotPresent();
+    }
+
+    @Test
+    void windowNotFullNamesTheCycleResearchAndIsLowConfidence() {
+        Optional<Decision> decision = DataSufficiency.check(
+                snapshot(Sex.FEMALE, TODAY.minusDays(3), daily(LONG_AGO, TODAY, "65.0")), FEMALE);
+
+        assertThat(decision).hasValueSatisfying(d -> {
+            assertThat(d.confidence()).isEqualTo(Confidence.LOW);
+            assertThat(d.reasons()).containsExactly(new Reason(
+                    new RuleId("window_not_full"), new Source("arastirma/ham/J1-cinsiyet.md#D1", SourceTag.LITERATURE)));
+        });
+    }
+
     // ── weigh-ins per week inside the window ────────────────────────────────────────────────────────────────
 
     @Test
@@ -130,7 +173,39 @@ class DataSufficiencyTests {
                 snapshot(Sex.MALE, LONG_AGO, withOneWeekHaving(MIN_PER_WEEK - 1)), MALE);
 
         assertNoDecisionYet(decision, "data_insufficient");
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(7));
+        // Oldest week has 3 (TODAY-20..-18), then 4 empty days, then daily from TODAY-13. The oldest block
+        // (D-20..D-14) first holds 4 on D = TODAY+4. (It used to promise TODAY+7 whatever the gap's position.)
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(4));
+    }
+
+    @ParameterizedTest(name = "{0}, week {1} back")
+    @MethodSource("everyWeekOfEveryWindow")
+    void aThinWeekAnywhereInTheWindowBlocks(Sex sex, int weeksBack) {
+        // weeksBack 0 is the current week: a user who stopped weighing this week is not judged on stale data.
+        LocalDate thinEnd = TODAY.minusDays(7L * weeksBack);
+        LocalDate thinStart = thinEnd.minusDays(6);
+        List<WeighIn> weighIns = new ArrayList<>(daily(LONG_AGO, thinStart.minusDays(1), "70.0"));
+        weighIns.addAll(daily(thinStart, thinStart.plusDays(MIN_PER_WEEK - 2), "70.0"));
+        if (weeksBack > 0) {
+            weighIns.addAll(daily(thinEnd.plusDays(1), TODAY, "70.0"));
+        }
+
+        assertNoDecisionYet(DataSufficiency.check(snapshot(sex, LONG_AGO, weighIns), parameters(sex)), "data_insufficient");
+    }
+
+    static Stream<Arguments> everyWeekOfEveryWindow() {
+        return Stream.of(Sex.values()).flatMap(sex -> IntStream.range(0, parameters(sex)
+                .wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) / 7).mapToObj(week -> Arguments.of(sex, week)));
+    }
+
+    @Test
+    void aPlanStillInItsWindowIsReportedAsSuchEvenWithThinWeeks() {
+        // Order: the window check comes before the week count, so the user hears "the plan needs time",
+        // not "weigh in more", while both are true.
+        LocalDate planStart = TODAY.minusDays(9);
+
+        assertNoDecisionYet(DataSufficiency.check(
+                snapshot(Sex.MALE, planStart, withOneWeekHaving(MIN_PER_WEEK - 1)), MALE), "window_not_full");
     }
 
     @Test
@@ -166,7 +241,7 @@ class DataSufficiencyTests {
         Map<String, Object> noDecisionYet =
                 (Map<String, Object>) ((Map<String, Object>) copy.get("decision")).get("no_decision_yet");
 
-        for (RuleId rule : List.of(DataSufficiency.DATA_INSUFFICIENT, DataSufficiency.WINDOW_NOT_FULL)) {
+        for (RuleId rule : DataSufficiency.RULES) {
             assertThat(noDecisionYet.get(rule.value())).as(rule.value())
                     .isInstanceOfSatisfying(Map.class, texts -> assertThat((Map<String, Object>) texts)
                             .hasEntrySatisfying("title", title -> assertThat(title).isInstanceOf(String.class))
@@ -186,6 +261,24 @@ class DataSufficiencyTests {
     }
 
     @Property
+    boolean thePromisedReviewDayIsKeptByDailyWeighIns(
+            @ForAll("weighInDays") List<Integer> daysAgo, @ForAll("planAges") int planAge, @ForAll Sex sex) {
+        // The strongest reading of "no decision yet, look again on D": weigh in every morning until D, and on D the
+        // data is enough. A broken promise would erode trust in every later call.
+        LocalDate planStart = TODAY.minusDays(planAge);
+        Optional<Decision> decision = DataSufficiency.check(snapshot(sex, planStart, weighInsOn(daysAgo)), parameters(sex));
+        if (decision.isEmpty()) {
+            return true;
+        }
+        LocalDate promised = decision.get().nextReview();
+        List<WeighIn> kept = new ArrayList<>(weighInsOn(daysAgo));
+        kept.addAll(daily(TODAY.plusDays(1), promised, "80.0"));
+        Snapshot onPromisedDay = new Snapshot(promised, sex, Phase.CUT, planStart, series(kept));
+
+        return DataSufficiency.check(onPromisedDay, parameters(sex)).isEmpty();
+    }
+
+    @Property
     boolean oneMoreWeighInNeverTurnsEnoughDataIntoTooLittle(
             @ForAll("weighInDays") List<Integer> daysAgo, @ForAll("planAges") int planAge,
             @ForAll("extraDay") int extra, @ForAll Sex sex) {
@@ -197,17 +290,25 @@ class DataSufficiencyTests {
         }
         boolean enoughAfter = DataSufficiency.check(snapshot(sex, planStart, weighInsOn(withExtra)), parameters(sex)).isEmpty();
 
+        // The implication is only tested when "enough before" happens; make sure it does often enough.
+        Statistics.label("enough before").collect(enoughBefore);
+        Statistics.label("enough before").coverage(coverage -> coverage.check(true).percentage(p -> p > 20));
         return !enoughBefore || enoughAfter;
     }
 
     @Provide
     Arbitrary<List<Integer>> weighInDays() {
-        return Arbitraries.integers().between(0, 60).set().ofMaxSize(61).map(set -> List.copyOf(set));
+        // Mostly-dense histories with random gaps: sparse ones would rarely have enough data to test anything.
+        Arbitrary<List<Integer>> dense = Arbitraries.integers().between(0, 60).set().ofMinSize(45).ofMaxSize(61)
+                .map(List::copyOf);
+        Arbitrary<List<Integer>> any = Arbitraries.integers().between(0, 60).set().ofMaxSize(61).map(List::copyOf);
+        return Arbitraries.frequencyOf(Tuple.of(3, dense), Tuple.of(1, any));
     }
 
     @Provide
     Arbitrary<Integer> planAges() {
-        return Arbitraries.integers().between(0, 60);
+        return Arbitraries.frequencyOf(
+                Tuple.of(3, Arbitraries.integers().between(28, 60)), Tuple.of(1, Arbitraries.integers().between(0, 27)));
     }
 
     @Provide
