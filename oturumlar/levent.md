@@ -43,3 +43,10 @@
 - takıldım: K-104 kartı kaynakla çelişiyor (hard stop vs daralt); K-106 "sabit kilo" tanımı ve uyum bandı kaynakta yok; K-114 BMR formülü kaynakta yok
 - sıradaki: akşam kararlar + aktarım (DURUM › Akşam oturumu); o arada K-110, K-111
 - AI: tamamı agent; öz-denetim ajanları 25+ gerçek hata buldu (ör. sessiz kalori aşımı, kırılan nextReview sözü, %800 oran riski, U4 değer sızıntısı)
+
+## 2026-09-30 · M1 kapanışı + M2 ilk yarı (gece, toplu mod; compact öncesi durduruldu)
+- yaptım: M1 kapandı (K-113 37 senaryo + DataSufficiency söz hatası, K-115 aralık); M2'de K-201 sözleşme, K-202 Postgres, K-203 kimlik, K-204 rıza, K-205 profil, K-207 spike, K-215 ortak altyapı birleşti; K-206 PR #160; K-210, K-214 dallarda
+- karar: ADR-023 (JDBC, modül başına şema), ADR-024 (sözleşme v1), ADR-025 (oturum), ADR-026 (modül haritası: rıza + motor); git guard worktree düzeltmesi (#151)
+- takıldım: yok; inceleme ajanları her görevde gerçek hata buldu (Tomcat'te V3 sızıntısı, AI rızası sağlayıcıya bağlı değildi, 500 dönen sınır değerleri, başka seansa düşen set)
+- sıradaki: DURUM › DEVAM NOKTASI (30 Eyl) — zincir K-206 → K-210 → K-214, sonra K-218…K-217; prompt `plan/oturum-promptlari/M2-devam-2.md`
+- AI: tamamı agent; Levent'e 15 soru birikti (DURUM), aktarım M1 akşam + M2 bu sohbette yapılacak
