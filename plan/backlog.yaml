@@ -475,7 +475,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-104, K-106, K-107, K-110]
     why: "Adımları sabit sırayla çalıştırıp tek karar üretmek"
     acceptance:

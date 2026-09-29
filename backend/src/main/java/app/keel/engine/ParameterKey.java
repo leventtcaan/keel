@@ -42,6 +42,9 @@ public enum ParameterKey {
     ACTIVITY_FACTOR_UNKNOWN(ParameterDomain.NUTRITION, Unit.ACTIVITY_FACTOR),
     MAINTENANCE_ESTIMATE_ERROR(ParameterDomain.NUTRITION, Unit.RATIO),
     BULK_STALL_WEEKS(ParameterDomain.NUTRITION, Unit.WEEKS),
+    MINI_CUT_AFTER_BULK_MONTHS(ParameterDomain.NUTRITION, Unit.MONTHS),
+    MINI_CUT_WEEKS_MIN(ParameterDomain.NUTRITION, Unit.WEEKS),
+    MINI_CUT_WEEKS_MAX(ParameterDomain.NUTRITION, Unit.WEEKS),
 
     WEEKLY_LOSS_CAP_KG(ParameterDomain.SAFETY, Unit.KG_PER_WEEK),
     WEEKLY_LOSS_CAP_PCT_BODYWEIGHT(ParameterDomain.SAFETY, Unit.RATIO),
@@ -80,7 +83,8 @@ public enum ParameterKey {
     ON_TRACK_MIN_RATIO(ParameterDomain.WINDOWS, Unit.RATIO),
     ADHERENCE_FIX_BELOW(ParameterDomain.WINDOWS, Unit.RATIO),
     FLAT_MARGIN_KG(ParameterDomain.WINDOWS, Unit.KG),
-    FLAT_WAIT_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS);
+    FLAT_WAIT_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS),
+    DENSE_WEIGHINS_PER_WEEK(ParameterDomain.WINDOWS, Unit.WEIGHINS_PER_WEEK);
 
     private final ParameterDomain domain;
     private final Unit unit;
