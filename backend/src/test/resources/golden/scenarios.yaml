@@ -1,0 +1,161 @@
+# Golden scenarios (K-113): realistic user journeys, week by week, through the assembled engine.
+# Each week: the user weighs in every morning at that week's weight (unless `mornings` says fewer); the check-in is at
+# the end of the week. The harness applies each decision to the plan (a calorie change starts a new plan the next day,
+# a phase change starts a new phase) — so the expected sequence tests the engine's timing as well as its rules.
+# Expectations are derived from the rules by hand, never copied from the engine's output.
+# Shorthand: `observing`, `window_not_full`, `data_insufficient`, `wait_one_more_week`, `check_in_needed_*` are the
+# reason of a NO_DECISION_YET; otherwise the action in lower case, `:kcal` for calorie steps, `/reason` to pin a reason.
+# Defaults: 30 years, 180 cm (men) / 165 cm (women), low active, 300 kcal exercise a day, adherence 0.9, training stable.
+
+scenarios:
+  - id: GS-01
+    title: "Man cutting 0.6 kg a week on plan: two weeks of observing, then keep going"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.2, 77.6, 77.0]
+    expect: [observing, window_not_full, continue, continue, continue, continue]
+
+  - id: GS-02
+    title: "Man cutting, two flat weeks: one step down, a new three-week window, then moving again"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.2, 78.2, 78.2, 77.8, 77.2, 76.6]
+    expect: [observing, window_not_full, continue, continue, continue, "adjust_calories:-500",
+             window_not_full, window_not_full, continue]
+
+  - id: GS-03
+    title: "Flat weight but under half of the plan done: fix adherence, calories stay"
+    user: {sex: male, phase: cut}
+    checkin: {adherence: 0.45}
+    weeks: [80.0, 80.0, 80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, fix_adherence/adherence_low, fix_adherence/adherence_low, fix_adherence/adherence_low]
+
+  - id: GS-04
+    title: "Flat weight, 60 % of the plan: softer adherence nudge, calories stay (L-9)"
+    user: {sex: male, phase: cut}
+    checkin: {adherence: 0.6}
+    weeks: [80.0, 80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, fix_adherence/adherence_partial, fix_adherence/adherence_partial]
+
+  - id: GS-05
+    title: "Flat on a cut while lifts slip: red flag, no calorie cut (G7 K-98)"
+    user: {sex: male, phase: cut}
+    checkin: {training: declining}
+    weeks: [80.0, 80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, fix_training/performance_red_flag, fix_training/performance_red_flag]
+
+  - id: GS-06
+    title: "Light man losing 1.2 kg a week: the weekly cap raises calories as soon as it can measure"
+    user: {sex: male, phase: cut}
+    weeks: [70.0, 68.8, 67.6, 67.2, 66.8]
+    expect: [observing, "increase_calories:500", "increase_calories:500", window_not_full, window_not_full]
+
+  - id: GS-07
+    title: "Woman cutting 0.4 kg a week: four weeks of observing (28-day window), then keep going"
+    user: {sex: female, phase: cut}
+    weeks: [65.0, 64.6, 64.2, 63.8, 63.4, 63.0]
+    expect: [observing, observing, observing, continue, continue, continue]
+
+  - id: GS-08
+    title: "Woman training hard on too little food: raise at once, and later a cut step stops at the energy floor"
+    user: {sex: female, phase: cut, fat_proxy_pct: 30, exercise_kcal: 1000}
+    weeks: [60.0, 60.0, 60.0, 60.0, 60.0]
+    expect: ["increase_calories:500", window_not_full, window_not_full, window_not_full, continue/energy_floor]
+
+  - id: GS-09
+    title: "Woman on a cut reports her cycle stopped: the one hard stop"
+    user: {sex: female, phase: cut}
+    weeks: [65.0, 64.6, 64.2, 63.8, 63.4, 63.0]
+    overrides: {6: {menstrual_loss_reported: true}}
+    expect: [observing, observing, observing, continue, continue, hard_stop]
+
+  - id: GS-10
+    title: "Man bulking at the ideal 1 kg a month: a 21-day window cannot confirm it, so +250 (detection limit, L-10)"
+    user: {sex: male, phase: bulk}
+    weeks: [70.0, 70.25, 70.5, 70.75, 71.0, 71.25]
+    expect: [observing, window_not_full, "adjust_calories:250", window_not_full, window_not_full, "adjust_calories:250"]
+
+  - id: GS-11
+    title: "Man bulking 0.5 kg a week: keep going"
+    user: {sex: male, phase: bulk}
+    weeks: [70.0, 70.5, 71.0, 71.5, 72.0, 72.5]
+    expect: [observing, window_not_full, continue, continue, continue, continue]
+
+  - id: GS-12
+    title: "Bulk stalls for two weeks: +250 from carbs (G3 K-10)"
+    user: {sex: male, phase: bulk}
+    weeks: [70.0, 70.7, 71.4, 71.4, 71.4]
+    expect: [observing, window_not_full, continue, continue, "adjust_calories:250"]
+
+  - id: GS-13
+    title: "Bulk above the fat ceiling: switch to a cut once the data can carry a call (K-105)"
+    user: {sex: male, phase: bulk, fat_proxy_pct: 22}
+    weeks: [70.0, 70.5, 71.0]
+    expect: [observing, window_not_full, change_phase/bulk_ceiling]
+
+  - id: GS-14
+    title: "Six months into a bulk, appetite gone: a mini cut (G7 K-102)"
+    user: {sex: male, phase: bulk, bulk_months_before: 6}
+    weeks: [70.0, 70.5, 71.0, 71.5]
+    overrides: {4: {appetite: gone}}
+    expect: [observing, window_not_full, continue, mini_cut]
+
+  - id: GS-15
+    title: "Bench stalls: hold the load, then a lighter week (K-110 rungs 1-2)"
+    user: {sex: male, phase: bulk}
+    weeks: [70.0, 70.5, 71.0, 71.5, 72.0, 72.5]
+    overrides: {4: {stalled_sessions: 3}, 5: {stalled_sessions: 5, weeks_load_held: 1}, 6: {rested_last_week: true, stalled_sessions: 6, weeks_load_held: 2}}
+    expect: [observing, window_not_full, continue, stop_load_increase, deload, continue]
+
+  - id: GS-16
+    title: "Plan missed two weeks running: a full week off, even before a food call (G7 K-70/K-73)"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.8, 78.8]
+    overrides: {4: {plan_missed_weeks: 1}, 5: {plan_missed_weeks: 2}}
+    expect: [observing, window_not_full, continue, continue, full_rest_week]
+
+  - id: GS-17
+    title: "Bulk, last week's loads lost: food and sleep first (G7 K-68 rung 3)"
+    user: {sex: male, phase: bulk}
+    weeks: [70.0, 70.5, 71.0, 71.5]
+    overrides: {4: {loads_below_last_week: true}}
+    expect: [observing, window_not_full, continue, fix_recovery/loads_regressed]
+
+  - id: GS-18
+    title: "Cut moving but looking worse, training fine, recovery poor: protein and sleep"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.2]
+    overrides: {4: {look: worse, recovery: poor}}
+    expect: [observing, window_not_full, continue, fix_recovery/recovery_poor]
+
+  - id: GS-19
+    title: "Cut moving but looking worse with everything fine: genetic limit, ease the deficit (L-5)"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.2]
+    overrides: {4: {look: worse, recovery: good}}
+    expect: [observing, window_not_full, continue, "adjust_calories:500"]
+
+  - id: GS-20
+    title: "Beginner who weighs in twice a week: the engine keeps asking for data instead of guessing (U3)"
+    user: {sex: male, phase: cut}
+    mornings: 2
+    weeks: [80.0, 79.5, 79.0, 78.5]
+    expect: [observing, window_not_full, data_insufficient, data_insufficient]
+
+  - id: GS-21
+    title: "Small older man flat on a cut: one step, then BMR is the floor and movement goes up (G2 K-11, E #10)"
+    user: {sex: male, phase: cut, age: 50, height: 160, activity: inactive}
+    weeks: [55.0, 55.0, 55.0, 55.0, 55.0, 55.0, 55.0]
+    expect: [observing, window_not_full, "adjust_calories:-500", window_not_full, window_not_full,
+             change_movement/bmr_floor, change_movement/bmr_floor]
+
+  - id: GS-22
+    title: "Program hopper with no training log on a flat cut: the engine asks about training (U3)"
+    user: {sex: male, phase: cut}
+    checkin: {training: unknown}
+    weeks: [80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, check_in_needed_training]
+
+  - id: GS-23
+    title: "Man losing 0.29 kg a week: exactly the noise margin over the window reads as flat, so one step down (L-10)"
+    user: {sex: male, phase: cut}
+    weeks: [80.00, 79.71, 79.42]
+    expect: [observing, window_not_full, "adjust_calories:-500"]
