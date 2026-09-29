@@ -11,88 +11,46 @@ guncelleme: 2026-09-29
 (dal koruması: iki CI kontrolü zorunlu). Levent'i bekleyen: ürün kapsamı, para, sağlık/regülasyon, kullanıcı
 verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 
-## Akşam kararları alındı (29 Eyl) → ADR-020
-Levent L-1…L-13'ü, eşikleri ve M2/M3 ön kararlarını verdi: `plan/kararlar/ADR-020-m1-kural-kararlari.md`.
-**Çalışma planı (Levent kararı):** her kilometre taşı ayrı session'da otonom uygulanır ve "aktarıma hazır" noktada durur;
-session sonunda bir sonraki kilometre taşı için hazır prompt verilir. **Session'lar kapanmaz: her session kendi yaptığını
-aktarır** (M1 aktarımı → M1'i uygulayan sohbet; M2 → M2 sohbeti…). Levent boş olduğunda ilgili sohbete döner; aktarım
-`docs/aktarim/M*/` dosyalarından, temelden, basamak basamak — kod önden gider, aktarım yazılı koda dayanır.
-**Sıradaki:** yeni session → M1'in kalanı (ADR-020 uygulaması) + M2.
+## Şu anki koşu — M1 kalanı + M2 (29 Eyl akşam, toplu mod; bağlam sıkışırsa buradan devam)
+Prompt: `plan/oturum-promptlari/M2.md`. Levent paralelde başka işte; bu session M1 kalanını (ADR-020) ve M2'yi uygular,
+aktarıma **başlamaz**; bitince M3 prompt'unu yazar (`plan/oturum-promptlari/M3.md`). **Session kapanmaz:** Levent dönünce
+M1 (bu session'ın yaptığı kısım) ve M2 aktarımı bu sohbette yapılır.
+**Her görev döngüsü:** `gorev-baslat` → test önce (geçerli RED) → kod → `./gradlew build` → pr-review-toolkit ajanları →
+bulgular TDD ile + mutasyonla kanıt (betik: yedekten geri yükle, `git checkout` DEĞİL) → `docs/aktarim/<M>/<K-ID>.md` →
+PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`).
 
-## M1 koşusu — toplu mod (29 Eyl öğleden itibaren; bağlam sıkışırsa buradan devam)
-Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/aktarim-protokolu.md` › Toplu mod).
-**Her görev döngüsü:** `gorev-baslat` → test önce (RED çıktısı) → kod → `./gradlew build` → pr-review-toolkit
-(code-reviewer + pr-test-analyzer, gerekirse silent-failure-hunter/type-design-analyzer) → düzelt → aktarım dosyası
-`docs/aktarim/M1/K-1NN.md` → PR `--auto --squash` → CI yeşil + birleşti → aşağıdaki satırı işaretle → sıradaki.
-**Eksik eşik politikası (Levent, 29 Eyl):** araştırmadan kaynakla koy (dosya + kural no + tag; çelişkide Güray),
-"Onay bekleyen eşikler" listesine yaz.
-
-| Görev | Durum | Dal / PR | Aktarım |
+| Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-101 alan tipleri | ✅ birleşti | PR #134 | `docs/aktarim/M1/K-101.md` |
-| K-102 parametre yükleme | ✅ birleşti | PR #135 | `docs/aktarim/M1/K-102.md` |
-| K-103 trend, veri yeterliliği | ✅ birleşti | PR #136 | `docs/aktarim/M1/K-103.md` |
-| K-104 güvenlik ağı | kısmi ✅ birleşti (tavan + BMR); 8%/EA L-1'i bekliyor | PR #137 | `docs/aktarim/M1/K-104.md` |
-| K-105 faz kapısı | ✅ birleşti | PR #138 | `docs/aktarim/M1/K-105.md` |
-| K-106 check-in omurgası | **tasarım önerisi, akşam konuşulacak** | `plan/m1-k106-tasarim-onerisi.md` | |
-| K-107 kalori merdiveni | — | | |
-| K-108 makrolar | ✅ birleşti | PR #139 | `docs/aktarim/M1/K-108.md` |
-| K-109 progresyon | ✅ birleşti | PR #140 | `docs/aktarim/M1/K-109.md` |
-| K-110 deload | kısmi ✅ birleşti; basamak 3 L-12'yi bekliyor | PR #141 | `docs/aktarim/M1/K-110.md` |
-| K-111 tutarlılık sayısı | ✅ birleşti | PR #142 | `docs/aktarim/M1/K-111.md` |
-| K-112 karar montajı | — | | |
-| K-113 altın senaryolar | — | | |
-| K-114 başlangıç hedefi | — | | |
-| K-115 sapma kalibrasyonu | — | | |
+| K-101 değişikliği (NO_DECISION_YET gerekçeli, U14 çapa zorunlu) | ✅ birleşti | #143 | `M1/K-101.md` › ADR-020 kısmı |
+| build: `tasks.register<Test>` + deprecation = kırmızı build | ✅ birleşti | #144 | (küçük; M1 README'de) |
+| K-104 kalanı (LEA, hızlı kayıp → daralt; tek hard stop) | ✅ birleşti | #145 | `M1/K-104.md` › ADR-020 kısmı |
+| K-110 basamak 3 (L-12 iki sinyal) | PR'da, auto-merge | #146 | `M1/K-110.md` › ADR-020 kısmı |
+| K-106 omurga | sıradaki | | |
+| K-107 kalori merdiveni → K-112 montaj → K-113 altın senaryolar | — | | |
+| K-114 başlangıç hedefi (Mifflin önce `arastirma/`'ya) → K-115 sapma | — | | |
+| M2: K-201…K-219 | — | | |
 
-**Eşikler (ADR-020 ile ONAYLANDI):**
-- `min_weighins_per_week: 4` (windows.yaml, K-103) — araştırmada sayı yok; H1'in 0,42 kg gürültü SD'sinden türetildi:
-  n=4 → iki haftalık ortalama farkında ~0,3 kg/hafta ayırt edilir; n=2 → yavaş kaybı sabitten ayıramaz. Sonuç: ilk karar
-  pratikte pencere kadar (erkek 21, kadın 28 gün) düzenli tartıdan sonra gelir.
-- `plateau_sessions: 3` (training.yaml, K-110) — H3 B5 "3 ardışık seans" (uzman görüşü, RCT yok).
-- `protein_female_higher_from_age: 45` (nutrition.yaml, K-108) — J1 C5 perimenopoz ~45 (kaynakta açık; bilgi için).
-- Faz kapısı çizgileri `fat_first` {25,35}, `surplus_below` {12,22} (safety.yaml, K-105) — Güray + J1 +10 ofset (bilgi için).
-- `on_track_min_ratio: 0.7` (windows.yaml, K-111) — Güray G2 K-60; K-106 uyum eşiğiyle aynı mı olacağı L-6.
-**Akşam sorulanlar (ADR-020 ile CEVAPLANDI):**
-1. (K-101) NO_DECISION_YET de en az bir gerekçe taşımalı mı? Kabul kriteri izin veriyor; spesifikasyonda hepsi gerekçeli;
-   inceleme ajanı "evet" öneriyor (U2: neyin kararı değiştireceği söylenebilsin). Öneri: evet → kriter + test değişir (K1).
-2. (K-101) U14 "dosya + kural no": kaynaklarda `#K-n` çapası zorunlu olsun mu? Bugün parametrelerin bir kısmı dosya düzeyinde.
-3. (K-101 inceleme) INCREASE_CALORIES (güvenlik) ile ADJUST_CALORIES(yukarı, bulk adımı) ayrı mı kalsın? Faz değişimi
-   (K-105 "tavan üstü → cut") için ayrı eylem gerekir mi? — K-105/K-107'de teknik öneriyle gelecek.
-4. **Sağlık/ürün kararları L-1…L-8** → `plan/m1-kural-haritasi.md` (kaynak satırlarıyla). En acili **L-1**: K-104 kartı
-   "8 haftada >%8" ve "EA ≤30" için hard stop diyor, kaynak (J1 C6/L2.1) "açığı daralt + uyar" diyor; tek hard stop adet
-   kaybı bildirimi. Bu iki kural L-1 cevaplanana kadar yazılmıyor; K-104'ün geri kalanı yazılıyor.
-5. **K-106 tasarımı** → `plan/m1-k106-tasarim-onerisi.md` (L-5, L-6, L-9, L-10 orada)
-6. Bilgi (K-105): zorunlu bulk geçişi kaynağa göre <%12 (kadın <%22); %12-25 kullanıcının hedefine bırakıldı → hedef girdisi ürün kapsamı
-7. **L-11** (K-108): kalori hedefi makro tabanlarının (protein + yağ tabanı + karb tabanı) altında kalırsa motor bölünme
-   uydurmuyor, `TargetTooLow(en düşük kcal)` diyor. Omurga o zaman ne yapsın: kaloriyi yükselt mi, hareketi mi artır?
-   Öneri: BMR tabanı gibi CHANGE_MOVEMENT (G2:869).
-8. **L-12** (K-110): Güray kendi içinde çelişiyor — G7 K-68 basamak 3 "geçen haftanın kilosunu kaldıramıyorsan yorgunluk
-   değil, beslenme/uykuya tek tek bak" · K-70/K-73 "plana uyamıyorsan overtraining, 1 hafta TAM mola". Aynı belirtiye iki
-   tedavi. Deload merdiveninin 3. basamağı (FULL_REST_WEEK) ve WC-18'in 0,4 eşiği (kaynaksız) bu karara bağlı.
-9. **L-13** (K-111): ekranda yalnız kümülatif "12'de 9" mu, "seri" de mi? Kabul kriteri tek sayı ("1 hafta aflı,
-   sıfırlanmaz") diyor; motor ikisini veriyor: kümülatif (hiç düşmez) + seri (tek kaçan hafta affedilir, art arda iki biter).
-10. K1 açıklaması: K-103'te iki testin beklenen tarihi (kırılan `nextReview` sözü), K-108'de iki testin beklentisi
-   (sessiz kalori aşımı → `TargetTooLow`) inceleme bulgusu üzerine değişti. Testler birleşmeden önce, aynı dalda.
-**Alınan teknik kararlar (aktarımda anlatılacak):**
-- K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
-  Source yalnız arastirma/*.md · PRODUCT etiketli kaynak kural gerekçesi olamaz (U14) · EnginePurityTests: yalnız JDK,
-  I/O/saat/rastgelelik/ortam yok · ArchUnit test bağımlılığı (Modulith BOM sürümü)
-- K-102: motor dosya okumaz; ham YAML → `ParameterSet` (tüm hatalar birden) · `Unit` enum (tür + aralık: oran ≤1, gün tam
-  sayı) · min≤max çiftleri · hash = key|unit|male|female (not/kaynak hariç), format testle sabit · quota motor dışı ·
-  çağıran katı YAML kullanır (yinelenen anahtar hata) — üretim okuyucusu M2 `decision` modülünde
-- K-103: jqwik 1.10.1 (JUnit Platform 6 üzerinde denendi, shrink çalışıyor) · Snapshot'a planStart + WeightSeries ·
-  14 gün kuralı ilk tartıdan sayılır (ADR-018 içe aktarma) · kontrol sırası: 14 gün → pencere → haftalık tartı ·
-  nextReview = üç kapının birlikte açıldığı en erken gün (simülasyon)
-- K-104: kayıp tavanı yalnız cut'ta ve iki yoğun ardışık haftada (tek tartıda gürültü tavanı aşar) · güvenlik kararı HIGH
-- K-105: yeni eylem CHANGE_PHASE(faz) — veri taşıyan ilk eylem · Snapshot'ta isteğe bağlı iç yağ tahmini (U4: yansımalı
-  test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
+**M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
+K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
 
-## Aktif görev
-Yok (uygulanabilir M1 işi bitti; 7 görev birleşti, 2 kısmi). **Uygulanabilir her şey yapıldı.** Kalan M1 görevleri (K-106/107/112/113 omurga zinciri, K-114/115 başlangıç hedefi) Levent kararlarına bağlı → akşam oturumu
+**Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
+dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## Sıradaki tek adım
-Yeni session: ADR-020'yi uygula (M1 kalanı) → M2. Aktarım yarından itibaren.
+## Session sonunda Levent'e sorulacaklar (toplu, AskUserQuestion)
+1. **L-4** (sağlık): iç yağ tahmini <%18 (kadın) / <%8 (erkek) → açığı durdur (J1 L2.1)? ADR-020'de yok; yazılmadı.
+2. **Hard stop gerekçesinin saklanması** (veri, GDPR Art. 9): Snapshot'taki cevap saklanmıyor (`docs/mimari.md` madde 4);
+   ama `menstrual_loss_reported` gerekçeli karar kaydı saklanabilir mi, yoksa gerekçe genel bir etiketle mi saklansın?
+3. **Deload basamak 1-2 cut'ta** da çalışsın mı? (ADR-020 cevaplamadı; şimdilik çalışıyor. Basamak 3 "gerileme" cut'ta
+   susturuldu: G6 K-30.)
+4. Apple Team ID / Bundle ID / Services ID.
+
+## Teknik kararlar (bu koşu, aktarımda anlatılacak)
+- U14 çapa kuralı: çapa dosyada başlık (`### K-17 ·`, `## 3.4`, `### 🚨 L2.1 ·`) ya da kalın etiket (`**U2 ·`) olmalı;
+  `SourceAnchorTests` parametreleri, spesifikasyonu ve koddaki dizgileri tarar.
+- Snapshot record + wither kalıbı (`withEnergy`, `withMenstrualLossReported`); TrainingStatus aynı kalıp.
+- EA bandı motordan enum olarak çıkar, sayı çıkmaz (U4); LEA sınırı "≤" (ADR metni); `leaFloorKcal` K-107'nin tabanı.
+- Güvenlik fonksiyonları Snapshot/Parameters cinsiyet uyuşmazlığında hata fırlatır.
+- `org.gradle.warning.mode=fail`: her Gradle deprecation CI'da kırmızı.
 
 ## Levent'i bekleyen (acil değil)
 - **Design eklentisi** (claude.ai kataloğu, `design-critique`): CLI'dan kurulamıyor, karttan bir tık. Kurulmazsa
