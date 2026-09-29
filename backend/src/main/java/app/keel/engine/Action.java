@@ -26,6 +26,7 @@ public sealed interface Action {
             case Deload _ -> ActionType.DELOAD;
             case FullRestWeek _ -> ActionType.FULL_REST_WEEK;
             case MiniCut _ -> ActionType.MINI_CUT;
+            case ChangePhase _ -> ActionType.CHANGE_PHASE;
         };
     }
 
@@ -79,5 +80,17 @@ public sealed interface Action {
 
     /** A short cut inside a bulk. */
     record MiniCut() implements Action {
+    }
+
+    /**
+     * The phase gate turns the direction: a bulk above the fat ceiling becomes a cut, a cut below the working band
+     * becomes a bulk (K-105). Staying at maintenance is not a direction (Güray, 03 §2.1). The first action that
+     * carries data: the phase to switch to.
+     */
+    record ChangePhase(Phase to) implements Action {
+
+        public ChangePhase {
+            java.util.Objects.requireNonNull(to, "to");
+        }
     }
 }

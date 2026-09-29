@@ -17,5 +17,6 @@ public enum ActionType {
     STOP_LOAD_INCREASE,
     DELOAD,
     FULL_REST_WEEK,
-    MINI_CUT
+    MINI_CUT,
+    CHANGE_PHASE
 }

@@ -51,6 +51,21 @@
         "title": "Food stays where it is. Movement goes up.",
         "body": "Another calorie cut would take you under what your body needs at rest. More daily steps get the same result without eating less."
       }
+    },
+    "change_phase": {
+      "label": "Change direction",
+      "bulk_ceiling": {
+        "title": "Time to switch to a cut.",
+        "body": "Past this point, more food mostly adds fat rather than muscle. A cut now makes the next bulk count."
+      },
+      "fat_first": {
+        "title": "Lose fat first.",
+        "body": "Muscle you build now would stay hidden. Most people start here, and a cut first makes every later gain visible."
+      },
+      "surplus_zone": {
+        "title": "Time to switch to a bulk.",
+        "body": "You're lean enough that cutting further costs more than it gives. Building from here is the next step."
+      }
     }
   }
 }
