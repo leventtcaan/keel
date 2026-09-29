@@ -232,5 +232,31 @@
       "title": "Before you analyze a meal",
       "body": "Meal photos you choose to analyze, and any text you add, are sent to {provider} to estimate portions. Nothing else is sent: never your progress photos, weight, Health data, name or email. The AI explains; it doesn't decide. Weekly calls come from fixed rules you can read in every \"Why this call\". You can withdraw this in Settings at any time."
     }
+  },
+  "exercises": {
+    "bench_press": {
+      "name": "Bench press"
+    },
+    "lat_pulldown": {
+      "name": "Lat pulldown"
+    },
+    "pull_up": {
+      "name": "Pull-up"
+    },
+    "seated_row": {
+      "name": "Seated row"
+    },
+    "dumbbell_bench_press": {
+      "name": "Dumbbell bench press"
+    },
+    "lateral_raise": {
+      "name": "Lateral raise"
+    },
+    "triceps_pushdown": {
+      "name": "Triceps pushdown"
+    },
+    "squat": {
+      "name": "Squat"
+    }
   }
 }

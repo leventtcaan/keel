@@ -57,6 +57,10 @@ tasks.processResources {
     from("../data/parameters") {
         into("data/parameters")
     }
+    // The exercise catalog (K-210): one move per file, loaded and checked by the training module.
+    from("../data/exercises") {
+        into("data/exercises")
+    }
 }
 
 // Integration tests start the same PostgreSQL image as compose.yaml, named once in the version catalog (K-202).
