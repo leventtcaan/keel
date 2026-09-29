@@ -1,6 +1,6 @@
 # K-106 · Haftalık omurga — tasarım önerisi (Levent'le akşam)
 
-> Durum: **öneri**, kod yok. Kaynaklar `plan/m1-kural-haritasi.md` › K-106. Güray'ın ağacı (03 §2.4) net; açık olan
+> Durum: **KABUL (ADR-020: L-5 iki yön, L-6 uyum = tutarlılık, L-9 kalori sabit + FIX_ADHERENCE, L-10 türetilmiş pay)**, kod yok. Kaynaklar `plan/m1-kural-haritasi.md` › K-106. Güray'ın ağacı (03 §2.4) net; açık olan
 > girdilerin tanımı ve iki eşik. Aşağıdaki "Öneri"ler benim teknik tercihim; **L-** işaretliler senin kararın.
 
 ## Ağaç (Güray 2024-08-19, 03 §2.4) → kod

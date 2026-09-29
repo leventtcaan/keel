@@ -1,6 +1,6 @@
 # M1 kural haritası — kaynak, boşluk, karar sahibi
 
-> 29 Eyl 2026, K-103 sırasında çıkarıldı (araştırma taraması + kaynak satırı doğrulaması). Kodlamadan önce bu tabloya bak.
+> **L-1…L-13 cevaplandı: ADR-020.** 29 Eyl 2026, K-103 sırasında çıkarıldı (araştırma taraması + kaynak satırı doğrulaması). Kodlamadan önce bu tabloya bak.
 > Yollar `arastirma/` altına göredir. [T] = tecrübe (Güray), [L] = literatür. **L-n** = Levent kararı bekleyen madde (DURUM › Akşam).
 
 ## K-104 · Güvenlik ağı

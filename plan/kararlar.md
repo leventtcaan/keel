@@ -24,3 +24,4 @@
 | [ADR-017](kararlar/ADR-017-hareket-gosterimi.md) | Hareket gösterimi: kendi çekimler, ilk tekrar / son tekrar | KABUL |
 | [ADR-018](kararlar/ADR-018-health-yazma-ve-ice-aktarma.md) | Apple Health'e antrenman yazma, geçmiş içe aktarma | KABUL |
 | [ADR-019](kararlar/ADR-019-yetki-devri-ve-otomasyon.md) | Yetki devri: agent birleştirir (CI kapısı), teknik izin ve teknik ADR agent'ta | KABUL |
+| [ADR-020](kararlar/ADR-020-m1-kural-kararlari.md) | M1 kural kararları (L-1…L-13, eşik onayları) + M2/M3 ön kararları | KABUL |

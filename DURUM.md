@@ -11,12 +11,12 @@ guncelleme: 2026-09-29
 (dal koruması: iki CI kontrolü zorunlu). Levent'i bekleyen: ürün kapsamı, para, sağlık/regülasyon, kullanıcı
 verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 
-## Akşam oturumu — Levent dönünce (önerilen sıra, ~2 saat)
-1. **Kararlar (15 dk):** aşağıdaki "Akşam sorulacaklar" L-1…L-11 — en acili L-1 (K-104 hard stop) ve K-106 tasarımı.
-   Cevaplar gelince K-104'ün kalan iki kuralı ve K-106 → K-107 → K-112 zinciri açılır.
-2. **Aktarım (merdiven, 2-3 basamak/mesaj):** `docs/aktarim/M1/` sırasıyla K-101 → K-102 → K-103 → K-104 → K-105 →
-   K-108 → K-109. Her dosyada basamaklar, satır satır yerler, canlı kanıt ve soru bankası hazır.
-3. Levent kendi cümleleriyle anlatır → Apple Notes (Keel klasörü, `ders-notu`) — en son.
+## Akşam kararları alındı (29 Eyl) → ADR-020
+Levent L-1…L-13'ü, eşikleri ve M2/M3 ön kararlarını verdi: `plan/kararlar/ADR-020-m1-kural-kararlari.md`.
+**Çalışma planı (Levent kararı):** her kilometre taşı ayrı session'da otonom uygulanır ve "aktarıma hazır" noktada durur;
+session sonunda bir sonraki kilometre taşı için hazır prompt verilir. Aktarım (merdiven, satır satır) yarından itibaren
+`docs/aktarim/M*/` dosyalarından yapılır — kod önden gider, aktarım yazılı koda dayanır.
+**Sıradaki:** yeni session → M1'in kalanı (ADR-020 uygulaması) + M2.
 
 ## M1 koşusu — toplu mod (29 Eyl öğleden itibaren; bağlam sıkışırsa buradan devam)
 Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/aktarim-protokolu.md` › Toplu mod).
@@ -44,7 +44,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-114 başlangıç hedefi | — | | |
 | K-115 sapma kalibrasyonu | — | | |
 
-**Onay bekleyen eşikler (akşam Levent'e):**
+**Eşikler (ADR-020 ile ONAYLANDI):**
 - `min_weighins_per_week: 4` (windows.yaml, K-103) — araştırmada sayı yok; H1'in 0,42 kg gürültü SD'sinden türetildi:
   n=4 → iki haftalık ortalama farkında ~0,3 kg/hafta ayırt edilir; n=2 → yavaş kaybı sabitten ayıramaz. Sonuç: ilk karar
   pratikte pencere kadar (erkek 21, kadın 28 gün) düzenli tartıdan sonra gelir.
@@ -52,7 +52,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 - `protein_female_higher_from_age: 45` (nutrition.yaml, K-108) — J1 C5 perimenopoz ~45 (kaynakta açık; bilgi için).
 - Faz kapısı çizgileri `fat_first` {25,35}, `surplus_below` {12,22} (safety.yaml, K-105) — Güray + J1 +10 ofset (bilgi için).
 - `on_track_min_ratio: 0.7` (windows.yaml, K-111) — Güray G2 K-60; K-106 uyum eşiğiyle aynı mı olacağı L-6.
-**Akşam sorulacaklar:**
+**Akşam sorulanlar (ADR-020 ile CEVAPLANDI):**
 1. (K-101) NO_DECISION_YET de en az bir gerekçe taşımalı mı? Kabul kriteri izin veriyor; spesifikasyonda hepsi gerekçeli;
    inceleme ajanı "evet" öneriyor (U2: neyin kararı değiştireceği söylenebilsin). Öneri: evet → kriter + test değişir (K1).
 2. (K-101) U14 "dosya + kural no": kaynaklarda `#K-n` çapası zorunlu olsun mu? Bugün parametrelerin bir kısmı dosya düzeyinde.
@@ -91,7 +91,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 Yok (uygulanabilir M1 işi bitti; 7 görev birleşti, 2 kısmi). **Uygulanabilir her şey yapıldı.** Kalan M1 görevleri (K-106/107/112/113 omurga zinciri, K-114/115 başlangıç hedefi) Levent kararlarına bağlı → akşam oturumu
 
 ## Sıradaki tek adım
-Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
+Yeni session: ADR-020'yi uygula (M1 kalanı) → M2. Aktarım yarından itibaren.
 
 ## Levent'i bekleyen (acil değil)
 - **Design eklentisi** (claude.ai kataloğu, `design-critique`): CLI'dan kurulamıyor, karttan bir tık. Kurulmazsa
