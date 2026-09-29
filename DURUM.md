@@ -6,7 +6,8 @@ guncelleme: 2026-09-29
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M0 · Temel KAPANDI (29 Eyl).** 19 ADR KABUL, prototip v2 onaylandı, RUBİN kesin. **Sırada M1 · Karar motoru.**
+**M1 · Karar motoru KAPANDI (29 Eyl gece)** — kod birleşti, aktarım bekliyor (`docs/aktarim/M1/`). **M2 · Backend
+temel servisler sürüyor.** M0 kapandı (19 ADR, prototip v2, RUBİN).
 Çalışma modu değişti → **ADR-019:** teknik işte agent karar verir, uygular, PR'ı `--auto --squash` ile birleştirir
 (dal koruması: iki CI kontrolü zorunlu). Levent'i bekleyen: ürün kapsamı, para, sağlık/regülasyon, kullanıcı
 verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
@@ -29,10 +30,10 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-107 kalori merdiveni | ✅ birleşti | #148 | `M1/K-107.md` |
 | K-114 başlangıç hedefi (+ `arastirma/ham/H6` Mifflin) | ✅ birleşti | #149 | `M1/K-114.md` |
 | K-112 montaj (+ ADR-022 sıra; spesifikasyon 24/24 gerçek; mini cut WC-20) | ✅ birleşti | #150 | `M1/K-112.md` |
-| K-113 altın senaryolar (37 yolculuk + DataSufficiency söz hatası düzeltildi) | PR, auto-merge; inceleme 37'yi elle türetti | #152 | `M1/K-113.md` |
-| K-115 sapma kalibrasyonu (aralık: formül + tartı payı; son iki pencere anlaşmalı) | PR, auto-merge; iki inceleme turu | #153 | `M1/K-115.md` |
+| K-113 altın senaryolar (37 yolculuk + DataSufficiency söz hatası düzeltildi) | ✅ birleşti | #152 | `M1/K-113.md` |
+| K-115 sapma kalibrasyonu (aralık: formül + tartı payı; son iki pencere anlaşmalı) | ✅ birleşti | #153 | `M1/K-115.md` |
 | tooling: git guard worktree dalını görür | ✅ birleşti | #151 | (küçük) |
-| M2: K-201…K-219 | başlamadı | | |
+| **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | inceleme | `backend/26-postgres-flyway` | `M2/K-202.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -42,9 +43,10 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (29 Eyl gece, ikinci oturum)
 Bu oturum (prompt `plan/oturum-promptlari/M2-devam.md`) M1 kalanını bitirdi; sırada M2.
-1. ✅ #150 birleşti. ✅ K-113 → #152, ✅ K-115 → #153 (ikisi de auto-merge; birleşmedilerse `gh pr checks` → kırmızıysa düzelt).
-   Worktree'ler `../keel-k113`, `../keel-k115`: PR birleşince `git worktree remove`.
-2. M1 kapanışı: `docs/aktarim/M1/README.md` durum tablosuna K-106/107/112/113/114/115; DURUM "Şu an" = M1 kapandı.
+1. ✅ M1 kapandı: #150, #152, #153 birleşti; worktree'ler kaldırıldı; `docs/aktarim/M1/README.md` güncel.
+2. **K-202** (`../keel-k202`, dal `backend/26-postgres-flyway`): commit 6c4caba, inceleme ajanı çalışıyor → bulgular →
+   `docs/aktarim/M2/K-202.md` → PR. Yerel DB: `cd backend && docker compose up -d` (port **55432**; Levent'in makinesinde
+   PostgreSQL 16/17 5432'de kurulu — dokunma).
 3. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
    K-206, K-210, K-208, K-214 → K-209, K-211, K-218, K-219 → K-212 → K-213, K-216, K-217. Skill'ler: Postgres/Flyway →
    K-202, sözleşme (spectral + oasdiff) → K-201 (`arastirma/ham/L4-skill-kaynaklari.md` §6-8).
