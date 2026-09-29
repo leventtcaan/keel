@@ -318,14 +318,15 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-103]
     why: "Hiçbir kalori kararı güvenlik kontrolünden önce verilemez (U13)"
     acceptance:
       - "Haftalık kayıp tavanı min(1 kg, vücut ağırlığı × %1) aşılırsa: kaloriyi artırma kararı"
       - "Kalori hedefi BMR tabanının altına inemez"
-      - "8 haftada vücut ağırlığının %8'inden fazla kayıp → hard stop, kalori düşürme yok"
-      - "Enerji mevcudiyeti hesaplanabiliyorsa ≤30 kcal/kg FFM/gün → hard stop"
+      - "8 haftada vücut ağırlığının %8'inden fazla kayıp (kayıp sürerken) → açık daraltılır + uyarı; hard stop değil (ADR-020 L-1)"
+      - "Enerji mevcudiyeti hesaplanabiliyorsa ≤ eşik (erkek 25, kadın 30 kcal/kg FFM/gün) → açık daraltılır + uyarı; uyarı bandı (30/35) kararı değiştirmez (ADR-020 L-1, L-2)"
+      - "Tek hard stop: kullanıcı adet kaybı bildirirse açık biter (en az bakım), doktora yönlendirme; cevap saklanmaz (ADR-020 L-1)"
     tests:
       - "SafetyNetTests (her tetikleyici için altı/tam/üstü)"
     refs: ["arastirma/ham/guray/G2-kilo-verme.md", "arastirma/ham/H3-bosluk-literatur.md", "arastirma/ham/J1-cinsiyet.md"]

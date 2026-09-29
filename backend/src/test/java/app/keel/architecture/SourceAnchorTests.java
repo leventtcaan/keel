@@ -53,7 +53,9 @@ class SourceAnchorTests {
             "## D21b · Kâr eşiği hesabı | D21 | false",
             "### K-170 · Başka kural | K-17 | false",
             "Metinde geçen K-17 bir başlık değil | K-17 | false",
-            "- K-17 liste maddesi | K-17 | false"})
+            "- K-17 liste maddesi | K-17 | false",
+            "### 🚨 L2.1 · RED-S güvenlik kapısı | L2.1 | true",
+            "### 🚨 L2.10 · Başka | L2.1 | false"})
     void anchorsResolveOnlyToAHeadingOrRuleLabelThatStartsWithThem(String line, String anchor, boolean resolves) {
         assertThat(isAnchorLine(line, anchor)).isEqualTo(resolves);
     }
@@ -79,9 +81,11 @@ class SourceAnchorTests {
         }
     }
 
-    // Heading marks or bold, then the anchor, then a separator: "K-17" must not match "K-170" or "D21b".
+    // Heading marks (and at most one leading symbol such as 🚨) or bold, then the anchor, then a separator:
+    // "K-17" must not match "K-170" or "D21b".
     static boolean isAnchorLine(String line, String anchor) {
-        return Pattern.compile("^(#{1,6}\\s+|\\*\\*)" + Pattern.quote(anchor) + "(\\s|·|:|\\*|$)").matcher(line).find();
+        return Pattern.compile("^(#{1,6}\\s+([^\\p{L}\\p{N}\\s*]+\\s+)?|\\*\\*)" + Pattern.quote(anchor) + "(\\s|·|:|\\*|$)")
+                .matcher(line).find();
     }
 
     private static List<Reference> allReferences() throws IOException {

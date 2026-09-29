@@ -44,7 +44,8 @@ flowchart TB
 3. `engine` Snapshot'ı sabit sırayla değerlendirir: güvenlik ağı → veri yeterli mi → yön → görüntü → antrenman →
    toparlanma → kalori (ADR-003). İlk karar veren adım durur. Çıktı: `Decision{action, reasons, confidence, nextReview,
    copyKey}`.
-4. `decision` kararı Snapshot ve motor sürümüyle kaydeder.
+4. `decision` kararı Snapshot ve motor sürümüyle kaydeder. **İstisna:** `Snapshot.menstrualLossReported` (adet kaybı
+   cevabı, GDPR Art. 9) kaydedilen Snapshot'a girmez — ADR-020 L-1 "cevap saklanmaz" (K-212).
 5. Mobil kararı çeker, metni `data/copy/en.json`'dan anahtarla çözer, siyah karar kartında gösterir.
 6. Kullanıcı "neden?" derse gerekçe listesi (veri + kural + kaynak etiketi) açılır. Kullanıcı itiraz ederse `coach`
    anlatır ama kararı **değiştiremez**; kararı yalnız yeni veri değiştirir (U2).
