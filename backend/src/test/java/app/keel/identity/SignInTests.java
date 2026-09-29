@@ -122,6 +122,24 @@ class SignInTests {
     }
 
     @Test
+    void aStaleSessionHeaderDoesNotBlockTheOpenRoutes() throws Exception {
+        // The phone's client adds its (expired) access token to every call; refresh, sign-in, sign-out and health must
+        // still work, or an expired session could never be renewed (contract: security: [] on these).
+        Map<String, Object> session = signIn(newSubject());
+        String stale = "Bearer not-a-valid-token";
+
+        MvcTestResult refreshed = mvc.post().uri("/v1/auth/refresh").header("Authorization", stale).contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(Map.of("refreshToken", session.get("refreshToken")))).exchange();
+        assertThat(refreshed).hasStatusOk();
+        assertThat(mvc.post().uri("/v1/auth/apple").header("Authorization", stale).contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(Map.of("identityToken", APPLE.signed(newSubject(), Instant.now(), claims -> claims),
+                        "nonce", AppleTestTokens.RAW_NONCE))).exchange()).hasStatusOk();
+        assertThat(mvc.post().uri("/v1/auth/sign-out").header("Authorization", stale).contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(Map.of("refreshToken", read(refreshed).get("refreshToken")))).exchange()).hasStatus(204);
+        assertThat(mvc.get().uri("/health").header("Authorization", stale).exchange()).hasStatusOk();
+    }
+
+    @Test
     void signingOutEndsTheRefreshToken() throws Exception {
         Map<String, Object> session = signIn(newSubject());
 

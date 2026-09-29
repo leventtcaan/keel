@@ -17,6 +17,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
@@ -74,13 +75,29 @@ class IdentityConfiguration {
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     static class Web implements WebMvcConfigurer {
 
+        /**
+         * The open routes get a chain of their own with no token processing at all: the phone's client sends its
+         * (possibly expired) access token on every call, and a bearer filter would reject it before the route rules —
+         * so an expired session could never be refreshed (K-203 review).
+         */
         @Bean
+        @Order(1)
+        SecurityFilterChain open(HttpSecurity http) throws Exception {
+            return http
+                    .securityMatcher("/v1/auth/**", "/health", "/error")
+                    .csrf(csrf -> csrf.disable())
+                    .sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .authorizeHttpRequests(requests -> requests.anyRequest().permitAll())
+                    .build();
+        }
+
+        @Bean
+        @Order(2)
         SecurityFilterChain api(HttpSecurity http, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver errors) throws Exception {
             return http
                     .csrf(csrf -> csrf.disable())
                     .sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(requests -> requests
-                            .requestMatchers("/v1/auth/**").permitAll()
                             .requestMatchers("/v1/**").authenticated()
                             .anyRequest().permitAll())
                     .oauth2ResourceServer(resource -> resource

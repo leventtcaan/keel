@@ -8,6 +8,7 @@ import app.keel.shared.ErrorCode;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import com.nimbusds.jose.KeySourceException;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -22,7 +23,8 @@ class AppleTokenVerifierTests {
 
     private final AppleTestTokens apple = new AppleTestTokens();
     private final AppleIdentityVerifier verifier = new AppleIdentityVerifier(apple.keys(),
-            new AppleProperties(AppleTestTokens.CLIENT_ID, AppleTestTokens.ISSUER, null), Clock.fixed(NOW, ZoneOffset.UTC));
+            new AppleProperties(AppleTestTokens.CLIENT_ID, AppleTestTokens.ISSUER, java.net.URI.create("https://appleid.apple.com/auth/keys")),
+            Clock.fixed(NOW, ZoneOffset.UTC));
 
     @Test
     void aTokenAppleSignedForOurAppWithTheRightNonceNamesTheUser() {
@@ -80,6 +82,27 @@ class AppleTokenVerifierTests {
     @Test
     void aTokenWithoutASubjectIsRefused() {
         assertRefused(apple.signed(SUBJECT, NOW, claims -> claims.subject(null)), AppleTestTokens.RAW_NONCE);
+    }
+
+    @Test
+    void whenApplesKeysCannotBeFetchedTheAnswerIsUnavailableNotSignInAgain() {
+        // A key service outage is not the user's fault: 503, try again — not 401, which sends them round in circles.
+        AppleIdentityVerifier cut = new AppleIdentityVerifier((selector, context) -> {
+            throw new KeySourceException("appleid.apple.com unreachable");
+        }, new AppleProperties(AppleTestTokens.CLIENT_ID, AppleTestTokens.ISSUER, java.net.URI.create("https://appleid.apple.com/auth/keys")),
+                Clock.fixed(NOW, ZoneOffset.UTC));
+
+        assertThatThrownBy(() -> cut.verify(apple.signed(SUBJECT, NOW, claims -> claims), AppleTestTokens.RAW_NONCE))
+                .isInstanceOfSatisfying(ApiException.class, unavailable -> {
+                    assertThat(unavailable.code()).isEqualTo(ErrorCode.SERVICE_UNAVAILABLE);
+                    assertThat(unavailable.getCause()).as("the cause is kept for the log (type and location only)").isNotNull();
+                });
+    }
+
+    @Test
+    void aTokenSignedWithApplesPublicKeyAsAnHmacSecretIsRefused() throws Exception {
+        // Algorithm confusion: HS256 with the RSA public key as the shared secret must not pass as RS256.
+        assertRefused(apple.hmacWithPublicKey(SUBJECT, NOW), AppleTestTokens.RAW_NONCE);
     }
 
     @Test

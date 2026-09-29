@@ -3,6 +3,7 @@ package app.keel.identity;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -57,6 +58,17 @@ final class AppleTestTokens {
 
     String signedWithAnotherKey(String subject, Instant now) {
         return sign(otherKey, claims(subject, now).build());
+    }
+
+    /** HS256 with the RSA public key's encoded bytes as the HMAC secret: the classic algorithm-confusion forgery. */
+    String hmacWithPublicKey(String subject, Instant now) {
+        try {
+            SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.HS256).keyID(key.getKeyID()).build(), claims(subject, now).build());
+            jwt.sign(new MACSigner(key.toRSAPublicKey().getEncoded()));
+            return jwt.serialize();
+        } catch (JOSEException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     static String unsigned(String subject, Instant now) {

@@ -44,6 +44,10 @@ hesap silme sayfası: Sign in with Apple kullanan uygulamalar silmede token'lar�
 Olumlu: çalınan token'ın zararı sınırlı; kişisel veri yok denecek kadar az. Olumsuz: Apple token iptali (App Store
 şartı) Levent'in `.p8` anahtarını bekliyor; o gelene dek hesap silme Apple tarafını iptal edemez.
 
+Bilinçli bedel: aynı refresh token iki kez gelirse (iki paralel yenileme, ya da cevabı kaybolan bir isteğin tekrarı)
+bütün aile düşer ve kullanıcı yeniden giriş yapar. Mobil istemci yenilemeyi **tek uçuşta** yapmalı (aynı anda tek
+yenileme isteği; cevap gelmeden tekrar yok) — M3'te oturum saklama işinin kabul kriteri.
+
 ## Geri dönmenin maliyeti
 Düşük: token biçimi ve süreler yapılandırma; şema küçük.
 

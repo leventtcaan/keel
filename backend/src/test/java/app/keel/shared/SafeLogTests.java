@@ -34,7 +34,8 @@ class SafeLogTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/v1/weigh-ins/{id}", "/v1/days/{day}/budget", "/health", "/**", "/v1/check-ins/current/answers"})
+    @ValueSource(strings = {"/v1/weigh-ins/{id}", "/v1/days/{day}/budget", "/health", "/**", "/v1/check-ins/current/answers",
+            SafeLog.UNMATCHED})
     void aRouteTemplateIsWrittenAsItIs(String template, CapturedOutput log) {
         SafeLog.request(REQUEST, "GET", template, 200, 1);
 

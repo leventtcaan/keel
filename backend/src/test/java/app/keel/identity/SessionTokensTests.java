@@ -5,6 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.keel.shared.AccountId;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,6 +58,31 @@ class SessionTokensTests {
                 Clock.fixed(NOW.minus(ACCESS).minusSeconds(120), ZoneOffset.UTC)).issue(ACCOUNT).token();
 
         assertThatThrownBy(() -> tokens.decoder().decode(old)).isInstanceOf(JwtException.class);
+    }
+
+    @Test
+    void aTokenFromAnotherIssuerOrWithoutExpiryIsRefused() throws Exception {
+        assertThatThrownBy(() -> tokens.decoder().decode(hs256(claims -> claims.issuer("someone-else")))).isInstanceOf(JwtException.class);
+        assertThatThrownBy(() -> tokens.decoder().decode(hs256(claims -> claims.expirationTime(null)))).isInstanceOf(JwtException.class);
+        assertThat(tokens.decoder().decode(hs256(claims -> claims)).getSubject()).isEqualTo(ACCOUNT.value().toString());
+    }
+
+    @Test
+    void anAppleTokenIsNotASessionToken() {
+        // RS256 from Apple, even for a UUID subject, is refused by the HS256-only session decoder.
+        AppleTestTokens apple = new AppleTestTokens();
+        String appleToken = apple.signed(ACCOUNT.value().toString(), NOW, claims -> claims.issuer(SessionTokens.ISSUER));
+
+        assertThatThrownBy(() -> tokens.decoder().decode(appleToken)).isInstanceOf(JwtException.class);
+    }
+
+    /** A token signed with the session key, the claims as SessionTokens would set them unless changed. */
+    private static String hs256(java.util.function.UnaryOperator<JWTClaimsSet.Builder> change) throws Exception {
+        JWTClaimsSet claims = change.apply(new JWTClaimsSet.Builder().issuer(SessionTokens.ISSUER).subject(ACCOUNT.value().toString())
+                .issueTime(java.util.Date.from(NOW)).expirationTime(java.util.Date.from(NOW.plus(ACCESS)))).build();
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(Base64.getDecoder().decode(SECRET)));
+        return jwt.serialize();
     }
 
     @Test

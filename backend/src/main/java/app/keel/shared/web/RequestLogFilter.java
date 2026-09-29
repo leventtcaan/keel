@@ -26,7 +26,6 @@ class RequestLogFilter extends OncePerRequestFilter {
     static final String REQUEST_ID_HEADER = "X-Request-Id";
 
     private static final String REQUEST_ID = RequestLogFilter.class.getName() + ".requestId";
-    private static final String UNMATCHED = "unmatched";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -43,7 +42,7 @@ class RequestLogFilter extends OncePerRequestFilter {
         } finally {
             Object route = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
             // An exception escaping the chain has no status yet; the container will answer 500 (via /error).
-            SafeLog.request(id, request.getMethod(), route instanceof String template ? template : UNMATCHED,
+            SafeLog.request(id, request.getMethod(), route instanceof String template ? template : SafeLog.UNMATCHED,
                     failed ? 500 : response.getStatus(), (System.nanoTime() - start) / 1_000_000);
         }
     }

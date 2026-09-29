@@ -13,6 +13,7 @@ import java.util.HexFormat;
 import java.util.List;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
@@ -25,8 +26,9 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
  * Checks Apple's identity token the way Apple's "Verifying a user" lists it (K-203, ADR-011): the signature against
  * Apple's published keys (RS256, appleid.apple.com/auth/keys), the issuer {@code https://appleid.apple.com}, the
  * audience — our app's client ID — the expiry, and the nonce. The phone sends Apple SHA-256(raw nonce) and sends us the
- * raw nonce, so a token captured from someone else's sign-in cannot be replayed here. Every failure is the same
- * UNAUTHENTICATED: which check failed stays out of the answer and the log.
+ * raw nonce, so a token captured from someone else's sign-in cannot be replayed here. Every failure of the token is the
+ * same UNAUTHENTICATED: which check failed stays out of the answer and the log. If Apple's keys cannot be fetched, the
+ * answer is SERVICE_UNAVAILABLE, with the cause for the log.
  */
 class AppleIdentityVerifier {
 
@@ -49,8 +51,11 @@ class AppleIdentityVerifier {
         Jwt token;
         try {
             token = decoder.decode(identityToken);
-        } catch (JwtException refused) {
+        } catch (BadJwtException refused) {
             throw new ApiException(ErrorCode.UNAUTHENTICATED);
+        } catch (JwtException unreachable) {
+            // Not the token: Apple's keys could not be fetched. Try again later, rather than "sign in again" in a loop.
+            throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE, unreachable);
         }
         String nonce = token.getClaimAsString(NONCE);
         boolean nonceMatches = nonce != null && rawNonce != null

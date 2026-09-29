@@ -9,4 +9,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties("keel.apple")
 record AppleProperties(String clientId, String issuer, URI jwksUri) {
+
+    AppleProperties {
+        // An unset environment variable binds as the literal "${…}": stop at startup instead of failing every sign-in.
+        if (clientId == null || clientId.isBlank() || clientId.contains("${")) {
+            throw new IllegalArgumentException("keel.apple.client-id (KEEL_APPLE_CLIENT_ID, the app's bundle ID) is not set");
+        }
+        if (issuer == null || issuer.isBlank() || jwksUri == null) {
+            throw new IllegalArgumentException("keel.apple.issuer and keel.apple.jwks-uri must be set");
+        }
+    }
 }
