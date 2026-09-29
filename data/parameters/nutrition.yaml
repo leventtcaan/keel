@@ -166,21 +166,21 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H6-baslangic-kalori.md#A4"
     note: "Kilo değişiminden enerji dengesi: 7700 kcal/kg (3500 kcal/lb). Hall 2008: yalnız ~30 kg üstü yağ kütlesinde tutar, zayıf kişide gereken açığı fazla tahmin eder — yalnız kayıt sapmasını öğrenmekte kullanılır (K-115), kalori kararlarında değil (kararlar tartıdan, adımlarla)."
-  - key: logging_bias_smoothing
-    value: 0.5
+  - key: logging_bias_daily_smoothing
+    value: 0.1
     unit: ratio
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
-    note: "TÜRETİLMİŞ. Pencere başına üstel ortalama katsayısı (H1 §3.4'teki EWMA'nın pencere düzeyi hâli): en yeni pencere yarı ağırlık alır, eski bir sapma iki pencerede yarıya iner."
+    note: "Hacker's Diet EWMA katsayısı (α = 0,1, ≈20 günlük etkin pencere), kilo trendi için. Kayıt sapmasına aynı hafıza süresi uygulanır (bu aktarım bizim seçimimiz; H1 sapmadan söz etmiyor): pencere düzeyinde en yeni pencerenin ağırlığı 1 − 0,9^gün — erkekte 21 günde ≈0,89, kadında 28 günde ≈0,95. Yani tahmin büyük ölçüde son pencereyi izler; eski pencerenin etkisi her pencerede ~1/10'a iner. MacroFactor'ın ~30 günde olgunlaşan harcama tahmini (H1 §3.4) bu hafıza süresiyle uyumlu."
   - key: logging_bias_min_windows
     value: 2
     unit: windows
-    tag: literatur
+    tag: urun
     source: "arastirma/ham/H6-baslangic-kalori.md#A4"
-    note: "TÜRETİLMİŞ. Tek pencerede kilodan alım çıkarmak ±118-272 kcal gürültülü (Thomas 2010, Sanghvi 2015); iki pencereden önce sapma iddia edilmez."
+    note: "SEÇİM, TÜRETİLMEDİ (Levent onayı bekliyor). Tek pencerede kilodan alım çıkarmanın bireysel hatası ±118-272 kcal (Thomas 2010, Sanghvi 2015; H6 A4); kaç pencerenin yeteceğine dair sayı kaynakta yok. İki, bir sapmanın tekrarlandığını gösteren en küçük sayı."
   - key: min_logged_days_per_week
     value: 4
     unit: days_per_week
-    tag: literatur
+    tag: urun
     source: "arastirma/ham/H1-olcum.md#3.4"
-    note: "TÜRETİLMİŞ, min_weighins_per_week ile aynı mantık: haftada en az 4 kayıtlı gün yoksa o pencerenin ortalaması güvenilmez. Kaydı olmayan gün 0 kcal sayılmaz, ortalamaya girmez."
+    note: "SEÇİM, TÜRETİLMEDİ (Levent onayı bekliyor). H1 §3.4 tartı gürültüsü hakkında, yemek kaydı hakkında değil; araştırmada yemek kaydı için doğrudan sayı yok. min_weighins_per_week ile aynı sayı (haftanın yarısından fazlası) aktarıldı. Kaydı olmayan gün 0 kcal sayılmaz, ortalamaya girmez."

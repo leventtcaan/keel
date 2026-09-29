@@ -208,8 +208,12 @@
   },
   "calibration": {
     "logs_run_low": {
-      "title": "Your logs and your weight, lined up.",
-      "body": "Photos and quick entries tend to come in a little under what's on the plate — that's true for everyone. Your weight shows by how much, so the numbers you see already account for it."
+      "title": "Your logs and your weight, side by side.",
+      "body": "Over the last few weeks your weight points to more food than your logs add up to. Portions are hard to size from a photo or a quick entry. Your weight is what the calls are made from, so nothing here needs fixing."
+    },
+    "logs_run_high": {
+      "title": "Your logs and your weight, side by side.",
+      "body": "Over the last few weeks your weight points to less food than your logs add up to. Portions are hard to size from a photo or a quick entry. Your weight is what the calls are made from, so nothing here needs fixing."
     }
   }
 }
