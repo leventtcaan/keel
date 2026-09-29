@@ -21,7 +21,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * A food's energy and macros as ranges (K-208, U5, arastirma/ham/H7-besin-araligi.md): the database value's error (an
- * analysis mean ±10 %; a label one-sided by law: energy and fat up to +20 %, protein and carbs down to −20 %) times the
+ * analysis mean ±10 %; a label: energy and fat up to +20 % over it, protein and carbs down to −20 % under it by law, the
+ * side the law leaves open at the analysed error, 21 CFR 101.9(g)(4)-(6)) times the
  * amount's error (weighed ±5 %, a serving ±25 %, eyeballed ±50 %). Low rounds down, high rounds up.
  */
 class RangeTests {
@@ -38,10 +39,11 @@ class RangeTests {
     }
 
     @Test
-    void aLabelIsOneSidedAsTheLawAllows() {
-        // 21 CFR 101.9(g)(5): energy and fat at most 20 % over the label; (g)(4): protein and carbs at least 80 % of it.
+    void aLabelIsBoundedWhereTheLawBoundsItAndAtTheAnalysedErrorElsewhere() {
+        // 21 CFR 101.9(g)(5): energy and fat at most 20 % over the label; (g)(4): protein and carbs at least 80 % of it;
+        // (g)(6): the other side is "reasonable" deviation, no number — the analysed error (K-208 review).
         assertThat(FoodRanges.per100g(CEREAL, Source.BRANDED, P))
-                .isEqualTo(new Nutrients(new Range(400, 480), new Range(8, 10), new Range(56, 70), new Range(8, 10)));
+                .isEqualTo(new Nutrients(new Range(360, 480), new Range(8, 11), new Range(56, 77), new Range(7, 10)));
     }
 
     @Test
@@ -53,9 +55,9 @@ class RangeTests {
 
     @Test
     void eyeballedCereal() {
-        // 400 × 0.5 × 0.5 = 100; 480 × 0.5 × 1.5 = 360
+        // 400 × 0.9 × 0.5 × 0.5 = 90; 400 × 1.2 × 0.5 × 1.5 = 360
         assertThat(FoodRanges.item(CEREAL, Source.BRANDED, new BigDecimal("50"), Certainty.ESTIMATED, P))
-                .isEqualTo(new Nutrients(new Range(100, 360), new Range(2, 8), new Range(14, 53), new Range(2, 8)));
+                .isEqualTo(new Nutrients(new Range(90, 360), new Range(2, 9), new Range(14, 58), new Range(1, 8)));
     }
 
     @Test
@@ -71,7 +73,7 @@ class RangeTests {
         Nutrients cereal = FoodRanges.item(CEREAL, Source.BRANDED, new BigDecimal("50"), Certainty.ESTIMATED, P);
 
         assertThat(FoodRanges.total(List.of(chicken, cereal)))
-                .isEqualTo(new Nutrients(new Range(382, 742), new Range(55, 80), new Range(14, 53), new Range(8, 17)));
+                .isEqualTo(new Nutrients(new Range(372, 742), new Range(55, 81), new Range(14, 58), new Range(7, 17)));
     }
 
     @Test

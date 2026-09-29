@@ -75,3 +75,6 @@ Eşleme testleri; aralık çıktısı testleri; sapma kalibrasyonu simülasyon t
 - **Barkod:** GTIN-14'e normalize, GS1 kontrol hanesi doğrulanır; FDC'de yoksa NOT_FOUND.
 - **Toplu içe aktarma bekliyor:** FDC dosyalarını indirmek dışarıdan dosya indirme → Levent izni (DURUM soru 16); Branded
   paketi büyük ve disk şu an dolu. O zamana dek `nutrition.food` boş, arama sonuç vermez (dürüst boşluk).
+- **İçe aktarmada dikkat (K-208 incelemesi):** Branded'da aynı `gtin_upc` birden çok kayıtta olabilir `[doğrulanmadı]`
+  → içe aktarıcı en yeni kaydı tutar (V9'da `gtin` benzersiz); `%kelime%` araması indekssiz tüm tabloyu tarar → Branded
+  yüklenince `pg_trgm` GIN indeksi (ayrı göç).

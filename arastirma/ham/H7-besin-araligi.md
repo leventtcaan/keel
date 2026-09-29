@@ -39,9 +39,11 @@ pişmiş) daha büyük sapma getirir `[doğrulanmadı: çiğ/pişmiş dönüşü
 ABD mevzuatı, 21 CFR 101.9(g)(5) (https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101/subpart-A/section-101.9):
 kalori, toplam yağ, şeker, doymuş yağ… için ürün, gerçek içerik etiketteki değeri **%20'den fazla aşarsa** yanlış etiketli
 sayılır. (g)(4): protein, toplam karbonhidrat gibi "Class II" besinler etiketin **en az %80'i** olmalı.
-→ Sınır tek yönlü ve besine göre farklı: **enerji ve yağda** gerçek değer etiketin en fazla %20 üstünde (alt sınır yok:
-fazla beyan tüketiciyi yanıltmaz) → aralık `[etiket, etiket × 1,20]`; **protein ve karbonhidratta** gerçek değer etiketin
-en az %80'i (üst sınır yok) → aralık `[etiket × 0,80, etiket]`. Tek parametre: `label_value_tolerance_ratio` = 0,20.
+→ Sınır tek yönlü ve besine göre farklı: **enerji ve yağda** gerçek değer etiketin en fazla %20 üstünde; **protein ve
+karbonhidratta** en az %80'i. Öteki yön için (g)(6): protein/karbonhidratta makul fazlalık, enerji/yağda makul eksiklik
+"iyi üretim uygulaması içinde kabul edilir" — **sayı yok**. Etiketi o yönde sınır saymak kaynağın vermediği kesinlik olurdu
+(K-208 incelemesi) → o yöne analiz hatası (§6) uygulanır: enerji/yağ `[etiket × 0,90, etiket × 1,20]`, protein/karbonhidrat
+`[etiket × 0,80, etiket × 1,10]`. Parametre: `label_value_tolerance_ratio` = 0,20 (+ §6'nın oranı).
 
 ## 6 · Analiz ortalaması (FDC Foundation, SR Legacy)
 Laboratuvar analizi ortalaması; aynı yiyeceğin örnekleri arasında doğal değişkenlik var (çeşit, mevsim, yağ oranı)

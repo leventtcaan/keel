@@ -97,9 +97,11 @@ class FoodController {
 
     @PostMapping("/v1/foods/barcode-lookup")
     Food barcode(AccountId account, @RequestBody BarcodeLookup lookup) {
-        String gtin = Gtin.normalize(lookup.gtin()).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
+        List<String> gtins = Gtin.candidates(lookup.gtin());
+        require(!gtins.isEmpty());
         // FDC has mostly US products (ADR-008): a plain NOT_FOUND, the app offers search instead (DURUM question 10).
-        return foods.byGtin(gtin).map(food -> view(food, parametersFor(account))).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return gtins.stream().map(foods::byGtin).flatMap(Optional::stream).findFirst().map(food -> view(food, parametersFor(account)))
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
     @PostMapping("/v1/food-estimates")

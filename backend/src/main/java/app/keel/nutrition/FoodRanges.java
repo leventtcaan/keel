@@ -13,8 +13,8 @@ import java.util.Optional;
  * database's per-100 g value times the amount, and both are uncertain:
  * <ul>
  *   <li><b>The value</b> (§5-6): an analysis mean (FDC Foundation, SR Legacy) ± analysed_value_error_ratio; a label (FDC
- *       Branded) one-sided as US law allows — energy and fat up to label_value_tolerance_ratio over the label, protein
- *       and carbs down to it under.</li>
+ *       Branded) as US law bounds it — energy and fat up to label_value_tolerance_ratio over the label, protein and carbs
+ *       down to it under — and the side the law leaves open at the analysed error.</li>
  *   <li><b>The amount</b> (§2-4): weighed, a serving (spoon, cup, "1 large"), or eyeballed — each with its error ratio.</li>
  * </ul>
  * The two multiply, worst case on both sides; low rounds down and high rounds up, so a range never claims more certainty
@@ -83,14 +83,15 @@ final class FoodRanges {
         BigDecimal analysed = ratio(parameters, ParameterKey.ANALYSED_VALUE_ERROR_RATIO);
         BigDecimal label = ratio(parameters, ParameterKey.LABEL_VALUE_TOLERANCE_RATIO);
         boolean branded = source == Source.BRANDED;
-        // Label law: energy and fat may be under-declared (real up to +tolerance), protein and carbs over-declared (−tolerance).
-        BigDecimal up = branded ? label : analysed;
-        BigDecimal down = branded ? label : analysed;
+        // A label (21 CFR 101.9): energy and fat at most `label` over it ((g)(5)), protein and carbs at most `label` under
+        // it ((g)(4)); the other side is "reasonable" deviation with no number ((g)(6)) — the analysed error there.
+        BigDecimal over = branded ? label : analysed;
+        BigDecimal under = branded ? label : analysed;
         return new Nutrients(
-                range(value.kcal(), branded ? BigDecimal.ZERO : down, up, portion, amountError),
-                range(value.proteinG(), down, branded ? BigDecimal.ZERO : up, portion, amountError),
-                range(value.carbsG(), down, branded ? BigDecimal.ZERO : up, portion, amountError),
-                range(value.fatG(), branded ? BigDecimal.ZERO : down, up, portion, amountError));
+                range(value.kcal(), analysed, over, portion, amountError),
+                range(value.proteinG(), under, analysed, portion, amountError),
+                range(value.carbsG(), under, analysed, portion, amountError),
+                range(value.fatG(), analysed, over, portion, amountError));
     }
 
     private static Range range(BigDecimal per100g, BigDecimal valueDown, BigDecimal valueUp, BigDecimal portion, BigDecimal amountError) {

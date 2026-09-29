@@ -932,6 +932,7 @@ export interface components {
             limit: number;
         };
         BarcodeLookup: {
+            /** @description As scanned — EAN-8, UPC-E (expanded by the server), UPC-A, EAN-13 or GTIN-14. A wrong check digit is 400. */
             gtin: string;
         };
         /**

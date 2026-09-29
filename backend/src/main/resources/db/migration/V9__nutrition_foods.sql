@@ -1,5 +1,5 @@
 -- The food database (K-208, ADR-008): USDA FoodData Central foods — Foundation and SR Legacy (laboratory analysis means)
--- and Branded (a product's label, with its barcode) — per 100 g, with the servings FDC gives (e.g. "1 cup" = 158 g).
+-- and Branded (a product's label, with its barcode) — per 100 g, with the servings FDC gives (e.g. 1 cup = 158 g).
 -- Filled by the FDC bulk import (DURUM question 16: the download needs approval); until then it is empty and a search
 -- finds nothing. Not user data: no account_id.
 create schema if not exists nutrition;

@@ -89,6 +89,14 @@ class FoodMappingTests {
     }
 
     @Test
+    void aUpcEBarcodeIsExpandedToItsUpcA() throws Exception {
+        // UPC-E 04963406 (a small US package) is UPC-A 049000006346; padded as it is, its check digit would not hold.
+        food("fdc:999002", "Cola", "Small Can", "BRANDED", "42", "0", "10.6", "0", "00049000006346", null);
+
+        assertThat(map(post("/v1/foods/barcode-lookup", Map.of("gtin", "04963406")))).containsEntry("id", "fdc:999002");
+    }
+
+    @Test
     void aBarcodeFdcDoesNotHaveIsNotFoundAndAMisreadOneIsRefused() throws Exception {
         assertThat(post("/v1/foods/barcode-lookup", Map.of("gtin", "8690504055501"))).as("a valid Turkish EAN, not in FDC").hasStatus(404);
         assertThat(post("/v1/foods/barcode-lookup", Map.of("gtin", "016000275288"))).as("check digit wrong").hasStatus(400);
@@ -103,9 +111,9 @@ class FoodMappingTests {
 
         assertThat(result).hasStatusOk();
         Map<String, Object> estimate = map(result);
-        assertThat(estimate).containsEntry("kcal", Map.of("low", 382, "high", 742)).containsEntry("proteinG", Map.of("low", 55, "high", 80));
+        assertThat(estimate).containsEntry("kcal", Map.of("low", 372, "high", 742)).containsEntry("proteinG", Map.of("low", 55, "high", 81));
         assertThat((List<Map<String, Object>>) estimate.get("items")).extracting(item -> item.get("kcal"))
-                .containsExactly(Map.of("low", 282, "high", 382), Map.of("low", 100, "high", 360));
+                .containsExactly(Map.of("low", 282, "high", 382), Map.of("low", 90, "high", 360));
         assertThat(estimate).containsEntry("question", Map.of("foodId", "fdc:1897574", "copyKey", "foodEstimate.question.grams"));
     }
 
