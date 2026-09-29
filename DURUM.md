@@ -25,10 +25,10 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-102 parametre yükleme | ✅ birleşti | PR #135 | `docs/aktarim/M1/K-102.md` |
 | K-103 trend, veri yeterliliği | ✅ birleşti | PR #136 | `docs/aktarim/M1/K-103.md` |
 | K-104 güvenlik ağı | kısmi ✅ birleşti (tavan + BMR); 8%/EA L-1'i bekliyor | PR #137 | `docs/aktarim/M1/K-104.md` |
-| K-105 faz kapısı | PR açık, auto-merge | PR #138 | `docs/aktarim/M1/K-105.md` |
+| K-105 faz kapısı | ✅ birleşti | PR #138 | `docs/aktarim/M1/K-105.md` |
 | K-106 check-in omurgası | **tasarım önerisi, akşam konuşulacak** | `plan/m1-k106-tasarim-onerisi.md` | |
 | K-107 kalori merdiveni | — | | |
-| K-108 makrolar | — | | |
+| K-108 makrolar | inceleme | `engine/19-macro-targets` | — |
 | K-109 progresyon | — | | |
 | K-110 deload | — | | |
 | K-111 tutarlılık sayısı | — | | |
@@ -68,7 +68,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-K-105 PR #138 CI'da · K-106 akşam kararına bağlı → bu arada bağımsız görevler: K-108 makrolar, K-109 progresyon
+K-108 · Makrolar · dal `engine/19-macro-targets` (issue #19) — öz-denetimde · K-106 akşam kararına bağlı → sonra K-109
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.

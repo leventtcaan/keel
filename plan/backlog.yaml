@@ -337,7 +337,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-103]
     why: "Maintenance'ta kalmak seçenek değil; yön seçilir (Güray)"
     acceptance:
@@ -398,7 +398,7 @@ tasks:
     module: engine
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-102]
     why: "Protein, yağ, karbonhidrat, lif hedefleri"
     acceptance:
