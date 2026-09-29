@@ -136,7 +136,7 @@ parameters:
     unit: ratio
     tag: literatur
     source: "arastirma/ham/H6-baslangic-kalori.md#A4"
-    note: "TÜRETİLMİŞ. Formül tahmini aralık olarak gösterilir (U5): ±%15. RMR ±%10 ve PAL ±%8-10 birlikte ≈ ±%13 (H6 A4, türetilmiş); sporcuda Mifflin daha kötü (A2)."
+    note: "TÜRETİLMİŞ. Formül tahmini aralık olarak gösterilir (U5): ±%15. RMR ±%10 ve PAL ±%8-10 birlikte ≈ ±%13 (H6 A4, türetilmiş); sporcuda Mifflin daha kötü (A2). TİPİK YAYILIM, KESİN SINIR DEĞİL: ~5 kişiden 1'i RMR'de ±%10 dışında, obezde %21'e kadar eksik tahmin (A4). K-115 kayıt sapması aralığında da kullanılır; bu kişilerde o aralık yanılabilir, bu yüzden metin iki okumayı birden söyler (kayıt ya da tahminimiz)."
   - key: bulk_stall_weeks
     value: 2
     unit: weeks
@@ -160,3 +160,27 @@ parameters:
     unit: weeks
     tag: tecrube
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"
+  - key: energy_per_kg_weight_change
+    value: 7700
+    unit: kcal_per_kg_weight_change
+    tag: literatur
+    source: "arastirma/ham/H6-baslangic-kalori.md#A4"
+    note: "Kilo değişiminden enerji dengesi: 7700 kcal/kg (3500 kcal/lb). Hall 2008: yalnız ~30 kg üstü yağ kütlesinde tutar, zayıf kişide gereken açığı fazla tahmin eder — yalnız kayıt sapmasını öğrenmekte kullanılır (K-115), kalori kararlarında değil (kararlar tartıdan, adımlarla)."
+  - key: logging_bias_daily_smoothing
+    value: 0.1
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "Hacker's Diet EWMA katsayısı (α = 0,1, ≈20 günlük etkin pencere), kilo trendi için. Kayıt sapmasına aynı hafıza süresi uygulanır (bu aktarım bizim seçimimiz; H1 sapmadan söz etmiyor): bir pencere, öncekinden bu yana geçen gün kadar ağırlık alır, 1 − 0,9^gün — erkekte 21 günde ≈0,89 (eski tahminden ~1/9 kalır), kadında 28 günde ≈0,95 (~1/19). Atlanan pencere daha çok zaman demektir. MacroFactor'ın ~30 günde olgunlaşan harcama tahmini (H1 §3.4) bu hafıza süresiyle uyumlu."
+  - key: logging_bias_min_windows
+    value: 2
+    unit: windows
+    tag: urun
+    source: "arastirma/ham/H6-baslangic-kalori.md#A4"
+    note: "SEÇİM, TÜRETİLMEDİ (Levent onayı bekliyor). Tek pencerede kilodan alım çıkarmanın bireysel hatası ±118-272 kcal (Thomas 2010, Sanghvi 2015; H6 A4); kaç pencerenin yeteceğine dair sayı kaynakta yok. İki, bir sapmanın tekrarlandığını gösteren en küçük sayı: en yeni iki pencerenin her biri tek başına, formül hatası ve tartı payının ötesinde, aynı yönde göstermeli."
+  - key: min_logged_days_per_week
+    value: 4
+    unit: days_per_week
+    tag: urun
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "SEÇİM, TÜRETİLMEDİ (Levent onayı bekliyor). H1 §3.4 tartı gürültüsü hakkında, yemek kaydı hakkında değil; araştırmada yemek kaydı için doğrudan sayı yok. min_weighins_per_week ile aynı sayı (haftanın yarısından fazlası) aktarıldı. Kaydı olmayan gün 0 kcal sayılmaz, ortalamaya girmez."

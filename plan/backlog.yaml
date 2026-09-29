@@ -533,7 +533,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-103, K-114]
     why: "Fotoğraf/beyan alımı sistematik eksik sayılır; adaptif hedefi yanlış yere kurmasın (Ö-14, L3 P14)"
     acceptance:

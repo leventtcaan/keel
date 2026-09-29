@@ -205,5 +205,15 @@
         "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating a bit under your needs resets your appetite and clears the fat the bulk added; then the bulk picks up again."
       }
     }
+  },
+  "calibration": {
+    "logs_run_low": {
+      "title": "Your logs and your weight, side by side.",
+      "body": "Over the last few weeks your weight points to more food than your logs add up to — or to you burning more than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
+    },
+    "logs_run_high": {
+      "title": "Your logs and your weight, side by side.",
+      "body": "Over the last few weeks your weight points to less food than your logs add up to — or to you burning less than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
+    }
   }
 }
