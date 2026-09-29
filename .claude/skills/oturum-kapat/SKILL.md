@@ -1,6 +1,6 @@
 ---
 name: oturum-kapat
-description: keel deposunda oturumu kapatır ve hafızayı günceller. "Oturumu kapat", "bugünlük bu kadar", "yatıyorum", "kaydet" dendiğinde, bir görev bittiğinde ya da uzun bir çalışmanın sonunda mutlaka kullan. Kontrol komutlarını çalıştırır, oturum günlüğüne yazar, DURUM'u günceller.
+description: keel deposunda oturumu kapatır ve hafızayı günceller. "Oturumu kapat", "bugünlük bu kadar", "yatıyorum", "kaydet" dendiğinde, bir görev bittiğinde ya da uzun bir çalışmanın sonunda mutlaka kullan.
 ---
 
 # Oturum kapat
@@ -10,7 +10,8 @@ description: keel deposunda oturumu kapatır ve hafızayı günceller. "Oturumu 
    - backend: `cd backend && ./gradlew build`
    - mobil: `cd apps/mobile && npm run check`
    - backlog değiştiyse: `python3 tools/sync_backlog.py --dry-run`
-   Kırmızı varsa "bitti" deme; durumu olduğu gibi yaz.
+   Komut **bu mesajda, taze** çalışır; çıkış kodu ve hata sayısı okunur. Kırmızı varsa "bitti" deme; durumu olduğu
+   gibi yaz (skill `verification-before-completion`).
 2. **Oturum günlüğü** — `oturumlar/levent.md` sonuna tam 5 satır:
    ```
    ## YYYY-AA-GG · <kısa başlık>
@@ -20,7 +21,7 @@ description: keel deposunda oturumu kapatır ve hafızayı günceller. "Oturumu 
    - sıradaki: …
    - AI: agent ne yazdı, Levent neyi onayladı
    ```
-3. **DURUM.md:** "Şu an", "Aktif görev", "Sıradaki tek adım" güncel. Kapanan kilometre taşı varsa "Kapananlar"a tek satır.
+3. **DURUM.md:** "Şu an", "Aktif görev", "Sıradaki tek adım" güncel; sıradaki adımın **hangi skill'le** başlayacağı yazılı. Kapanan kilometre taşı varsa "Kapananlar"a tek satır.
 4. **Karar alındıysa** ve ADR yazılmadıysa şimdi yaz (skill `karar-yaz`).
 5. **Commit:** plan/doküman değişiklikleri `docs(durum): …` ile main'e. Kod değişikliği varsa dalda kalır.
 6. **Ana beyin:** kilometre taşı kapandıysa `~/Documents/LeventOS/daily/<tarih>.md` içine tek satır (`CLAUDE.local.md`).

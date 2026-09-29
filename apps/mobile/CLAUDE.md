@@ -14,7 +14,7 @@ dokunmadan önce:
 ## Komutlar
 - Hepsi birden: `npm run check` (typecheck + lint + test) — "bitti" demeden önce çalıştır ve çıktıyı göster
 - Paket ekleme: **her zaman** `npx expo install <paket>` (SDK uyumlu sürümü çözer); geliştirme aracıysa
-  `package.json`'da `devDependencies`'e taşındığını kontrol et. Paket eklemek sorulur (K5).
+  `package.json`'da `devDependencies`'e taşındığını kontrol et. Paket eklemek PR'da gerekçe + alternatif ister (K5, ADR-019).
 - Paket sorunları: `npx expo-doctor` · `npx expo install --fix`
 - Paketleme denemesi: `npx expo export --platform ios --output-dir /tmp/keel-export`
 

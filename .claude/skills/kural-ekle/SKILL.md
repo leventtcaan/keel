@@ -23,7 +23,10 @@ Motor kuralı **kanıt + parametre + test** üçlüsüdür. Biri eksikse kural e
    ```
    Cinsiyete göre değişiyorsa `by_sex: { male: …, female: … }` (`arastirma/ham/J1-cinsiyet.md`).
 4. **Test önce:** kuralın davranışını tablo halinde test et (girdi → beklenen karar). Sınır değerleri dahil
-   (eşiğin tam altı, tam kendisi, tam üstü). Test kodunda sayı yok; parametre dosyasından okunur.
+   (eşiğin tam altı, tam kendisi, tam üstü). Eşik test kodunda sayı olarak yazılmaz, parametre dosyasından okunur;
+   **beklenen karar ise literal yazılır** (eylem, copyKey). Kodun hesabı testte tekrarlanmaz (tautoloji yasağı,
+   `test-driven-development/writing-good-tests.md`). Ek olarak özellik testi (skill `property-based-testing`, jqwik):
+   determinizm, güvenlik ağı önceliği (U13), tavan asla aşılmaz.
 5. **Kod:** kural motorun `engine` modülünde saf fonksiyon; Spring'e, veritabanına, saate bağımlı değil
    (zaman girdi olarak gelir).
 6. **Gerekçe metni:** kararın kullanıcıya görünen nedeni `data/copy/en.json`'da; kod yalnız anahtarı döner.

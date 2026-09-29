@@ -9,8 +9,8 @@ Spring Boot 4.1 + Spring Modulith 2.1 modüler monolit, Java 25, Gradle 9 (Kotli
 - Bekleyen spesifikasyonlar: `./gradlew pendingTest` (kasıtlı kırmızı — ADR-009)
 
 ## Kurallar
-- `app.keel` altındaki her doğrudan alt paket bir modül; liste `ModularityTests` ile sabit (ADR-015). Değişikliği sor.
-- Her modülün `package-info.java`'sı `allowedDependencies`'i açıkça yazar. Listeyi genişletmek sorulur (K5).
+- `app.keel` altındaki her doğrudan alt paket bir modül; liste `ModularityTests` ile sabit (ADR-015). Değişiklik ADR ile (K5, ADR-019).
+- Her modülün `package-info.java`'sı `allowedDependencies`'i açıkça yazar. Listeyi genişletmek gerekçe + ADR ister (K5, ADR-019).
 - `shared` paylaşılan modül: herkes kullanır, hiçbir şeye bağlı değil.
 - **`engine` saf:** Spring, veritabanı, saat, ağ yok. Zaman girdi olarak gelir (ADR-003).
 - **`coach` karar üretmez;** `engine`'e değil `decision`'a bağlı (U1).
