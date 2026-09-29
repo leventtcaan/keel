@@ -1,5 +1,6 @@
 package app.keel.shared;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -55,6 +56,23 @@ public final class SafeLog {
         Map<LogField, Object> fields = new EnumMap<>(LogField.class);
         fields.put(LogField.REQUEST_ID, requestId);
         fields.put(LogField.ERROR_CODE, code);
+        describe(failure, fields);
+        write(code == ErrorCode.INTERNAL ? LOG.atError() : LOG.atWarn(), "failure", fields);
+    }
+
+    /**
+     * A background task that failed — a module listener, which no request waits for (K-214 review): which one, and the
+     * failure as {@link #failure} writes it. Never its arguments (the event) or the exception's message (V3).
+     */
+    public static void backgroundFailure(Method task, Throwable failure) {
+        Map<LogField, Object> fields = new EnumMap<>(LogField.class);
+        fields.put(LogField.TASK, task.getDeclaringClass().getName() + "#" + task.getName());
+        fields.put(LogField.ERROR_CODE, ErrorCode.INTERNAL);
+        describe(failure, fields);
+        write(LOG.atError(), "failure", fields);
+    }
+
+    private static void describe(Throwable failure, Map<LogField, Object> fields) {
         List<String> chain = new ArrayList<>();
         Throwable root = failure;
         for (Throwable cause = failure; cause != null && chain.size() < FRAMES; cause = cause.getCause()) {
@@ -65,7 +83,6 @@ public final class SafeLog {
         fields.put(LogField.AT, Arrays.stream(root.getStackTrace()).limit(FRAMES)
                 .map(frame -> frame.getClassName() + "#" + frame.getMethodName() + ":" + frame.getLineNumber())
                 .collect(Collectors.joining(",")));
-        write(code == ErrorCode.INTERNAL ? LOG.atError() : LOG.atWarn(), "failure", fields);
     }
 
     private static void write(LoggingEventBuilder line, String event, Map<LogField, Object> fields) {

@@ -1519,7 +1519,10 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Deletion started; every module removes its own data (AccountDeletionRequested) */
+            /**
+             * @description Deletion started; every module removes its own data (AccountDeletionRequested). The account is gone at once:
+             *     from this answer on, its tokens get 401 — the phone signs out and drops its offline queue.
+             */
             202: {
                 headers: {
                     [name: string]: unknown;

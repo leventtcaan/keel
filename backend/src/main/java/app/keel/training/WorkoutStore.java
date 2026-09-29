@@ -61,6 +61,12 @@ class WorkoutStore {
                 .query((row, n) -> workout(row)).list();
     }
 
+    /** Every workout of the account (the export: whatever date it was stored with, K-214). */
+    List<Workout> all(AccountId account) {
+        return jdbc.sql("select * from training.workout where account_id = :account order by started_at, id")
+                .param("account", account.value()).query((row, n) -> workout(row)).list();
+    }
+
     void finish(AccountId account, UUID id, Instant endedAt) {
         jdbc.sql("update training.workout set ended_at = :at where id = :id and account_id = :account")
                 .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("id", id).param("account", account.value()).update();

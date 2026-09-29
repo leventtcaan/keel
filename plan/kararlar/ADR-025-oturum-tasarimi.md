@@ -53,3 +53,8 @@ Düşük: token biçimi ve süreler yapılandırma; şema küçük.
 
 ## Etkilenen
 `identity` (K-203), `privacy` (K-214 iptal), mobil (K-3xx oturum saklama: Keychain), sözleşme `Session`.
+
+## Ek (30 Eyl 2026, K-214 incelemesi)
+Erişim token'ı geçerli olsa da **hesabı silinmişse reddedilir** (401): her istekte `identity.account`'ta tek birincil
+anahtar sorgusu. Neden: stateless token geri alınamaz; silinen hesabın 15 dakikalık token'ıyla gelen çevrimdışı kuyruk,
+hiçbir silme olayının kapsamayacağı satırlar yazardı (V6). Bedeli istek başına bir indeks okuması; kabul.

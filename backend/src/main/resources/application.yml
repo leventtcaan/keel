@@ -26,6 +26,13 @@ spring:
       jdbc:
         schema-initialization:
           enabled: false
+      # A publication a listener never finished (a restart mid-way, a listener that never started) is failed after
+      # this long and resent by DeletionRetry (K-214 review); on a restart every unfinished one is resent at once.
+      # Module listeners are deletes and upserts: running one twice changes nothing.
+      republish-outstanding-events-on-restart: true
+      staleness:
+        published: 10m
+        processing: 10m
 # Identity (K-203, ADR-011). The app's bundle ID and the session key come from the environment (V5); Apple's issuer
 # and key set are Apple's published values. Access tokens live minutes, refresh tokens weeks.
 keel:
@@ -50,6 +57,13 @@ keel:
   # What a set can be (K-210): the heaviest loads people move (a leg press) stay well under this.
   training:
     max-load-kg: 1000
+  # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
+  # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
+  privacy:
+    second-pass-after: 10m
+    sweep-every: 1m
+    retry-after: 1m
+    retry-every: 5m
   # The consent texts the app shows now (data/copy/en.json › consent.*, K-204); "-draft" until the product owner approves.
   consent:
     versions:
@@ -70,3 +84,5 @@ logging:
     "[org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]]": off
     org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver: off
     org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: off
+    # Logs a failed module listener with the exception's message at INFO; SafeLog writes it instead (BackgroundFailures).
+    org.springframework.modulith.events.support.CompletionRegisteringAdvisor: warn

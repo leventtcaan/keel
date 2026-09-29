@@ -55,3 +55,10 @@ Orta: erişim katmanı modül içinde kalır; JPA'ya geçiş modül modül yapı
 ## Etkilenen
 `backend/build.gradle.kts`, `gradle/libs.versions.toml`, `compose.yaml`, `application*.yml`, `db/migration/`,
 `app.keel.persistence` testleri; ADR-005'i ayrıntılandırır; K-203…K-219'daki her tablo.
+
+## Ek (30 Eyl 2026, K-214 incelemesi)
+Olay kaydı bir yayını **saklar ama kendiliğinden yeniden göndermez** (Modulith 2.1.1: `republish-outstanding-events-on-restart`
+varsayılanı false, `resubmit` çağıran yok). Hesap silme için: yeniden başlatmada bekleyen yayınlar yeniden gönderilir,
+10 dk'dan uzun takılan yayın `staleness` ile FAILED olur, `DeletionRetry` FAILED silme yayınlarını 5 dk'da bir yeniden
+gönderir (yalnız `AccountDeletionRequested`: her modülün silmesi idempotent). Silmenin ikinci geçişi için
+`privacy.deletion` (V7) mezar taşı tablosu.

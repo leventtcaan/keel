@@ -75,6 +75,12 @@ class IdentityConfiguration {
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     static class Web implements WebMvcConfigurer {
 
+        private final Accounts accounts;
+
+        Web(Accounts accounts) {
+            this.accounts = accounts;
+        }
+
         /**
          * The open routes get a chain of their own with no token processing at all: the phone's client sends its
          * (possibly expired) access token on every call, and a bearer filter would reject it before the route rules —
@@ -114,12 +120,21 @@ class IdentityConfiguration {
 
         @Override
         public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-            resolvers.add(new AccountIdResolver());
+            resolvers.add(new AccountIdResolver(accounts));
         }
     }
 
-    /** A controller parameter of type AccountId is the signed-in account: the session token's subject. */
+    /**
+     * A controller parameter of type AccountId is the signed-in account: the session token's subject, if that account
+     * still exists — a deleted account's token is refused for the minutes it would still be valid (K-214 review).
+     */
     static final class AccountIdResolver implements HandlerMethodArgumentResolver {
+
+        private final Accounts accounts;
+
+        AccountIdResolver(Accounts accounts) {
+            this.accounts = accounts;
+        }
 
         @Override
         public boolean supportsParameter(MethodParameter parameter) {
@@ -131,7 +146,10 @@ class IdentityConfiguration {
                 WebDataBinderFactory binders) {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.getPrincipal() instanceof Jwt token) {
-                return new AccountId(UUID.fromString(token.getSubject()));
+                AccountId account = new AccountId(UUID.fromString(token.getSubject()));
+                if (accounts.exists(account)) {
+                    return account;
+                }
             }
             throw new ApiException(ErrorCode.UNAUTHENTICATED);
         }

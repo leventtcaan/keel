@@ -43,6 +43,18 @@ class ConsentEvents {
                 .optional();
     }
 
+    /** Every grant and withdrawal of this account, in the order they happened (the export, K-214). */
+    List<Event> history(AccountId account) {
+        return jdbc.sql("""
+                select kind, action, text_version, provider, data_types, occurred_at from consent.consent_event
+                where account_id = :account order by seq""")
+                .param("account", account.value())
+                .query((row, n) -> new Event(ConsentKind.valueOf(row.getString("kind")), Action.valueOf(row.getString("action")),
+                        row.getString("text_version"), row.getString("provider"), strings(row.getArray("data_types")),
+                        row.getObject("occurred_at", OffsetDateTime.class).toInstant()))
+                .list();
+    }
+
     Event append(AccountId account, ConsentKind kind, Action action, String textVersion, String provider, List<String> dataTypes) {
         Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS); // what PostgreSQL keeps: the answer matches a later read
         jdbc.sql("""

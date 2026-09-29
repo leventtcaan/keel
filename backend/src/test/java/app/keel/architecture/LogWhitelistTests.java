@@ -13,6 +13,7 @@ import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -31,10 +32,11 @@ class LogWhitelistTests {
 
     // The whitelist, pinned: adding a field is a reviewed change to this line (V3), not a quiet addition to the enum.
     private static final List<String> APPROVED_FIELDS =
-            List.of("REQUEST_ID", "METHOD", "ROUTE", "STATUS", "DURATION_MS", "ERROR_CODE", "EXCEPTION", "AT");
-    // What SafeLog's public methods may take: ids, a method and route template (checked inside), counts, a code, a failure.
+            List.of("REQUEST_ID", "METHOD", "ROUTE", "STATUS", "DURATION_MS", "ERROR_CODE", "EXCEPTION", "AT", "TASK");
+    // What SafeLog's public methods may take: ids, a method and route template (checked inside), counts, a code, a failure,
+    // and a background task's method (a code location).
     private static final Set<Class<?>> APPROVED_PARAMETERS =
-            Set.of(UUID.class, String.class, int.class, long.class, ErrorCode.class, Throwable.class);
+            Set.of(UUID.class, String.class, int.class, long.class, ErrorCode.class, Throwable.class, Method.class);
 
     static final ArchRule ONLY_SAFE_LOG_LOGS = noClasses().that().resideInAPackage("app.keel..")
             .and().doNotHaveFullyQualifiedName(SafeLog.class.getName())

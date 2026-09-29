@@ -791,7 +791,7 @@ tasks:
     module: privacy
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-204]
     why: "Dışarı giden her veri tek kapıdan; silme uçtan uca (V2, V6)"
     acceptance:
