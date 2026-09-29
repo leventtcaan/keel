@@ -702,7 +702,7 @@ tasks:
     module: nutrition
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-208]
     why: "Gün içi yönlendirmenin veri temeli"
     acceptance:

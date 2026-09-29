@@ -144,6 +144,7 @@ class AccountDataTests {
         assertThat((List<?>) measurement.get("activityDays")).hasSize(1);
         assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("workouts")).hasSize(2);
         assertThat((Map<String, Object>) ((Map<String, Object>) sections.get("training")).get("program")).containsEntry("source", "GENERATED");
+        assertThat((List<?>) ((Map<String, Object>) sections.get("nutrition")).get("meals")).hasSize(1);
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("consent")).get("events"))
                 .anySatisfy(event -> assertThat(event).containsEntry("provider", "Example AI")
@@ -197,6 +198,9 @@ class AccountDataTests {
         send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "look", "SAME"));
         send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 8000));
         send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY")));
+        jdbc.sql("insert into nutrition.food (id, name, source, kcal, protein_g, carbs_g, fat_g) values ('fdc:171477', 'Chicken breast, roasted', 'FOUNDATION', 165, 31, 0, 3.6) on conflict (id) do nothing").update();
+        send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T12:30:00Z", "slot", "LUNCH",
+                "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 200, "unit", "g")))));
         MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-09-30T15:00:00Z"));
         String id = (String) JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id");
         send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",

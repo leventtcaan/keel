@@ -339,7 +339,11 @@ export interface paths {
         };
         get: operations["listMeals"];
         put?: never;
-        /** Log a meal from items, or repeat an earlier meal ("same as yesterday") */
+        /**
+         * Log a meal from items, or repeat an earlier meal ("same as yesterday")
+         * @description Stored with the ranges as estimated now, on the user's local day at eatenAt (the profile's time zone). repeatOf
+         *     is one of the user's own meals (else NOT_FOUND); its items are logged again as they were.
+         */
         post: operations["logMeal"];
         delete?: never;
         options?: never;
@@ -374,7 +378,11 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** What is left of the day's target, as a range (target minus the logged range) */
+        /**
+         * What is left of the day's target, as a range (target minus the logged range)
+         * @description NOT_FOUND until the user has a target (set by calls, K-216). Health data: CONSENT_REQUIRED without the
+         *     HEALTH_DATA consent, as for every /v1/meals route.
+         */
         get: operations["getDayBudget"];
         put?: never;
         post?: never;

@@ -46,3 +46,8 @@ gerekçe. Motorun karar fonksiyonlarını training çağırmaz; kararı `decisio
 `arastirma/ham/H7-besin-araligi.md`) motorun parametre dosyasında (`nutrition.yaml`), gram sorusu eşiği motorun en küçük
 kalori adımı (`bulk_step_kcal`). Besin araması ve tahmin **rıza istemez**: hiçbir şey saklanmaz, dışarı gitmez; öğün kaydı
 (K-209) sağlık verisidir ve HEALTH_DATA ister.
+
+## Ek (30 Eyl 2026, K-209)
+Günlük bütçe günün hedefini ister; hedefler kararlardan gelir (`decision`, K-216) ve `decision` → `nutrition` bağımlı.
+Geri bağımlılık döngü olurdu → **bağımlılık tersine çevrildi:** `nutrition` bir arayüz tanımlar (`DailyTargets`), `decision`
+onu uygulayan bean'i verir (K-216). O gelene dek, ya da kullanıcının hedefi yokken, bütçe NOT_FOUND döner.
