@@ -1,6 +1,7 @@
 package app.keel.training;
 
 import app.keel.shared.AccountId;
+import app.keel.shared.Decimals;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -98,7 +99,7 @@ class WorkoutStore {
     private static LoggedSet loggedSet(ResultSet row) throws SQLException {
         String side = row.getString("side");
         return new LoggedSet(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class), row.getString("exercise_id"),
-                SetType.valueOf(row.getString("set_type")), row.getBigDecimal("load_kg").stripTrailingZeros(), row.getInt("reps"),
+                SetType.valueOf(row.getString("set_type")), Decimals.plain(row.getBigDecimal("load_kg")), row.getInt("reps"),
                 row.getObject("rir", Integer.class), side == null ? null : Side.valueOf(side));
     }
 }

@@ -89,6 +89,16 @@ class WorkoutLogTests {
     }
 
     @Test
+    void wholeLoadsAreWrittenAsPlainNumbers() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account, "2026-09-30T15:40:00Z");
+
+        MvcTestResult logged = post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 100, 5, 1));
+
+        assertThat(logged.getResponse().getContentAsString()).contains("\"loadKg\":100").doesNotContain("E+");
+    }
+
+    @Test
     void anotherAccountsWorkoutIsNotFound() throws Exception {
         String workout = start(TestSessions.newAccount(), "2026-09-30T15:40:00Z");
         AccountId stranger = TestSessions.newAccount();
