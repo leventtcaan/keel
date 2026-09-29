@@ -17,7 +17,8 @@ Kararlar denetlenebilir, açıklanabilir ve test edilebilir olmalı; LLM karar v
    `tecrube|literatur`) vardır; eşikler `data/parameters/*.yaml`'dan gelir (ADR-010).
 4. **Karar sırası sabittir** (haftalık check-in omurgası, Güray 2024-08-19):
    güvenlik ağı (RED-S/LEA, U13) → veri yeterli mi → yön doğru mu → görüntü → antrenman → toparlanma → kalori.
-   Her adım tek değişken değiştirir; ilk karar veren adım zinciri durdurur.
+   Her adım tek değişken değiştirir; ilk karar veren adım zinciri durdurur. Ayrıntı (antrenman sinyalleri, gözlem,
+   mini cut, plato basamakları): ADR-022.
 5. **Pencereler:** trend 7 gün (gösterim), karar penceresi erkek 2-3 hafta / kadın 28 gün, değerlendirme 3 ay (U8).
 6. **Kararlar saklanır:** `decision` modülü her kararı girdisi (Snapshot) ve motor sürümüyle birlikte kaydeder →
    her geçmiş karar yeniden üretilebilir.

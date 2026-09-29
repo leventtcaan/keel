@@ -32,7 +32,8 @@ import java.util.Set;
  * Turns a specification row's {@code given} (plain domain words) into a real Snapshot. Anything a row does not mention
  * is an ordinary user who follows the plan: a man, on a bulk unless the row says otherwise, weighed every morning, weight
  * moving toward the goal, 90 % of the plan done, training stable, 30 years old and 180 cm, with a plan target and 300 kcal
- * of exercise a day. So each row changes only what it is about.
+ * of exercise a day, a phase that began with the plan. So each row changes only what it is about. A word the runner
+ * accepts must change the Snapshot or be checked; an unknown word or value fails the row.
  */
 final class SpecScenario {
 
@@ -42,7 +43,7 @@ final class SpecScenario {
             "days_in_window", "trend", "flat_weeks", "look", "training", "recovery", "waist", "bodyweight_kg", "weekly_loss_kg",
             "bodyweight_8w_ago_kg", "calories_after_step_below_bmr", "fat_proxy_pct", "target_kcal", "exercise_kcal",
             "menstrual_loss_reported", "user_pushback", "new_data", "lift", "stalled_sessions", "load_increase_stopped",
-            "plan_missed_weeks", "months_without_progress", "loads_below_last_week", "appetite", "forcing_food");
+            "plan_missed_weeks", "months_without_progress", "loads_below_last_week", "appetite", "forcing_food", "bulk_months");
     private static final Profile PROFILE = new Profile(30, 180);
     private static final int EXERCISE_KCAL = 300;
 
@@ -65,6 +66,11 @@ final class SpecScenario {
 
         List<WeighIn> weighIns;
         LocalDate planStart;
+        requireOneOf(given, "trend", Set.of("toward_goal", "flat"));
+        requireOneOf(given, "appetite", Set.of("gone", "normal"));
+        if (given.containsKey("weighins_last_7") && number(given, "weighins_last_7") != 7) {
+            throw new IllegalArgumentException("weighins_last_7 other than 7 needs teaching SpecScenario a sparser week");
+        }
         if (given.containsKey("days_since_start")) {
             int days = number(given, "days_since_start");
             planStart = TODAY.minusDays(days - 1L);
@@ -101,7 +107,7 @@ final class SpecScenario {
                 .withProfile(PROFILE)
                 .withCheckIn(checkIn(given))
                 .withMenstrualLossReported(Boolean.TRUE.equals(given.get("menstrual_loss_reported")))
-                .withPhaseStart(planStart.minusMonths(6));
+                .withPhaseStart(planStart.minusMonths(given.containsKey("bulk_months") ? number(given, "bulk_months") : 0));
         return new Built(training(given, parameters).map(snapshot::withTraining).orElse(snapshot), parameters);
     }
 
@@ -181,6 +187,12 @@ final class SpecScenario {
             weighIns.add(new WeighIn(day, kg));
         }
         return weighIns;
+    }
+
+    private static void requireOneOf(Map<String, Object> given, String key, Set<String> allowed) {
+        if (given.containsKey(key) && !allowed.contains(String.valueOf(given.get(key)))) {
+            throw new IllegalArgumentException(key + " must be one of " + allowed + ", was " + given.get(key));
+        }
     }
 
     private static String text(Map<String, Object> given, String key, String fallback) {

@@ -41,8 +41,8 @@ flowchart TB
 1. Kullanıcı pazartesi uygulamayı açar; mobil, haftalık soru bütçesinden 2 soru sorar (U9) ve cevapları yerel depoya yazar.
 2. Yerel depo sunucuya senkronlar. `decision` modülü o kullanıcının son 3 haftalık kilo, öğün, antrenman ve cevaplarından
    bir **Snapshot** kurar.
-3. `engine` Snapshot'ı sabit sırayla değerlendirir: güvenlik ağı → veri yeterli mi → yön → görüntü → antrenman →
-   toparlanma → kalori (ADR-003). İlk karar veren adım durur. Çıktı: `Decision{action, reasons, confidence, nextReview,
+3. `engine` Snapshot'ı sabit sırayla değerlendirir: güvenlik ağı → antrenman kötü mü → gözlem / veri yeterli mi →
+   faz / mini cut → yön → görüntü → antrenman → toparlanma → kalori; sakin haftada plato basamakları (ADR-003, ADR-022). İlk karar veren adım durur. Çıktı: `Decision{action, reasons, confidence, nextReview,
    copyKey}`.
 4. `decision` kararı Snapshot ve motor sürümüyle kaydeder. **İstisna:** `Snapshot.menstrualLossReported` (adet kaybı
    cevabı, GDPR Art. 9) kaydedilen Snapshot'a girmez — ADR-020 L-1 "cevap saklanmaz" (K-212).

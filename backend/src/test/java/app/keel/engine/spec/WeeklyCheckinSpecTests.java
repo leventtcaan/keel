@@ -40,6 +40,10 @@ class WeeklyCheckinSpecTests {
         String where = row.get("id") + " → " + decision;
 
         assertThat(decision.action().type().name()).as(where).isEqualTo(expect.get("action"));
+        if (Boolean.TRUE.equals(given.get("user_pushback")) && Boolean.FALSE.equals(given.get("new_data"))) {
+            // U2: the user argues, nothing new arrives; asking again must give the very same decision.
+            assertThat(DecisionPipeline.decide(built.snapshot(), built.parameters())).as(where).isEqualTo(decision);
+        }
         if (expect.get("reason") instanceof String reason) {
             assertThat(decision.reasons().getFirst().rule()).as(where).isEqualTo(new RuleId(reason));
         }

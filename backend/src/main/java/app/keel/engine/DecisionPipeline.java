@@ -2,10 +2,11 @@ package app.keel.engine;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /**
- * The assembled engine (K-112, ADR-003 §4): one Snapshot in, one Decision out, the steps in a fixed order and the first
+ * The assembled engine (K-112, ADR-003 §4 as detailed by ADR-022): one Snapshot in, one Decision out, the steps in a fixed order and the first
  * one that decides stops the chain.
  *
  * <ol>
@@ -25,6 +26,11 @@ import java.util.Optional;
  * week of the window has dense_weighins_per_week, MEDIUM otherwise; "not yet" is always LOW.
  */
 public final class DecisionPipeline {
+
+    static final RuleId PLAN_TARGET_NEEDED = new RuleId("plan_target_needed");
+    static final RuleId PROFILE_NEEDED = new RuleId("profile_needed");
+    private static final Source PLAN_TARGET = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-8", SourceTag.EXPERIENCE);
+    private static final Source RESTING_FORMULA = new Source("arastirma/ham/H6-baslangic-kalori.md#A1", SourceTag.LITERATURE);
 
     private static final int DAYS_PER_WEEK = 7;
 
@@ -51,7 +57,7 @@ public final class DecisionPipeline {
         }
         Decision weekly = switch (WeeklySpine.evaluate(snapshot, parameters)) {
             case SpineResult.Decided(Decision decided) -> decided;
-            case SpineResult.CaloriesNeeded need -> CalorieLadder.step(need, snapshot, restingKcal(snapshot, parameters), parameters);
+            case SpineResult.CaloriesNeeded need -> calorieStep(need, snapshot, parameters);
         };
         boolean quiet = weekly.action() instanceof Action.Continue || weekly.action() instanceof Action.NoDecisionYet;
         if (quiet && ladder.isPresent()) {
@@ -64,13 +70,31 @@ public final class DecisionPipeline {
         return ladder.action() instanceof Action.FullRestWeek || ladder.action() instanceof Action.FixRecovery;
     }
 
-    // Mifflin-St Jeor on today's trend weight is the BMR the ladder may not go under (K-114, G2 K-11).
-    private static int restingKcal(Snapshot snapshot, Parameters parameters) {
-        Profile profile = snapshot.profile()
-                .orElseThrow(() -> new IllegalArgumentException("A calorie decision needs the profile (age, height) for BMR"));
+    /**
+     * The ladder needs the plan's current target, and on the way down the profile (BMR and the macro floors). A Snapshot
+     * without them is valid; the answer is to ask for exactly what is missing (U3), not to fail.
+     */
+    private static Decision calorieStep(SpineResult.CaloriesNeeded need, Snapshot snapshot, Parameters parameters) {
+        if (snapshot.energy().isEmpty()) {
+            return missing(snapshot, PLAN_TARGET_NEEDED, PLAN_TARGET);
+        }
+        if (need.direction() == CalorieDirection.UP) {
+            return CalorieLadder.step(need, snapshot, 0, parameters); // no floor on the way up
+        }
+        if (snapshot.profile().isEmpty()) {
+            return missing(snapshot, PROFILE_NEEDED, RESTING_FORMULA);
+        }
+        // Mifflin-St Jeor on today's trend weight is the BMR the step may not go under (K-114, G2 K-11). The spine ran
+        // after DataSufficiency, so the window's weeks all have weigh-ins and today's trend exists.
         BigDecimal weight = WeightTrend.at(snapshot.weights(), snapshot.today(), parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS))
-                .orElseThrow(() -> new IllegalArgumentException("A calorie decision needs a weight trend"));
-        return InitialTarget.restingKcal(snapshot.sex(), weight, profile, parameters);
+                .orElseThrow();
+        return CalorieLadder.step(need, snapshot, InitialTarget.restingKcal(snapshot.sex(), weight, snapshot.profile().get(), parameters),
+                parameters);
+    }
+
+    private static Decision missing(Snapshot snapshot, RuleId rule, Source source) {
+        return new Decision(new Action.NoDecisionYet(), List.of(new Reason(rule, source)), Confidence.LOW,
+                snapshot.today().plusDays(DAYS_PER_WEEK), new CopyKey("decision.no_decision_yet." + rule.value()));
     }
 
     /** "Not yet" is always LOW; a weight-based call is HIGH on dense data, else MEDIUM. Other steps keep their own. */

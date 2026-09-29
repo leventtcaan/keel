@@ -14,7 +14,6 @@ public final class MiniCutGate {
 
     static final RuleId APPETITE_GONE = new RuleId("appetite_gone");
     private static final Source MINI_CUT = new Source("arastirma/ham/guray/G7-whisper-arsiv.md#K-102", SourceTag.EXPERIENCE);
-    private static final int DAYS_PER_WEEK = 7;
 
     private MiniCutGate() {
     }
@@ -28,8 +27,9 @@ public final class MiniCutGate {
         Action action = new Action.MiniCut(parameters.wholeNumber(ParameterKey.MINI_CUT_WEEKS_MIN),
                 parameters.wholeNumber(ParameterKey.MINI_CUT_WEEKS_MAX));
         // The user's own report plus a long bulk: an experience rule without a measured threshold, so MEDIUM.
+        // Looked at again when the shortest mini cut is over (K-102: the first weeks bring no hunger).
         return Optional.of(new Decision(action, List.of(new Reason(APPETITE_GONE, MINI_CUT)), Confidence.MEDIUM,
-                snapshot.today().plusDays(DAYS_PER_WEEK),
+                snapshot.today().plusWeeks(parameters.wholeNumber(ParameterKey.MINI_CUT_WEEKS_MIN)),
                 new CopyKey("decision." + action.type().name().toLowerCase(Locale.ROOT) + "." + APPETITE_GONE.value())));
     }
 }

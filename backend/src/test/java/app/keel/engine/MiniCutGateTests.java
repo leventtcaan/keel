@@ -30,7 +30,8 @@ class MiniCutGateTests {
             assertThat(d.reasons()).containsExactly(new Reason(new RuleId("appetite_gone"),
                     new Source("arastirma/ham/guray/G7-whisper-arsiv.md#K-102", SourceTag.EXPERIENCE)));
             assertThat(d.copyKey()).isEqualTo(new CopyKey("decision.mini_cut.appetite_gone"));
-            assertThat(d.nextReview()).isEqualTo(TODAY.plusDays(7));
+            // Looked at again when the shortest mini cut is over, not after a week of it.
+            assertThat(d.nextReview()).isEqualTo(TODAY.plusWeeks(MALE.wholeNumber(ParameterKey.MINI_CUT_WEEKS_MIN)));
         });
     }
 

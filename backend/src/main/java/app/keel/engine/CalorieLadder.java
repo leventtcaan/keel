@@ -47,15 +47,12 @@ public final class CalorieLadder {
     }
 
     /**
-     * The decision for a calorie change the spine asked for. The snapshot must carry the plan's current target and the
-     * profile (for the macro floors); {@code bmrKcal} is the resting energy the target may not go under.
+     * The decision for a calorie change the spine asked for. The snapshot must carry the plan's current target, and for a
+     * step down the profile (the macro floors); {@code bmrKcal} is the resting energy a step down may not go under.
      */
     public static Decision step(SpineResult.CaloriesNeeded need, Snapshot snapshot, int bmrKcal, Parameters parameters) {
         int target = snapshot.energy().map(EnergyBudget::targetKcal)
                 .orElseThrow(() -> new IllegalArgumentException("A calorie step needs the plan's current target"));
-        Profile profile = snapshot.profile()
-                .orElseThrow(() -> new IllegalArgumentException("A calorie step needs the profile (age) for the macro floors"));
-
         LocalDate earliest = snapshot.planStart().plusWeeks(parameters.wholeNumber(ParameterKey.CALORIE_CHANGE_MIN_WAIT_WEEKS));
         if (snapshot.today().isBefore(earliest)) {
             return decision(snapshot, new Action.NoDecisionYet(), List.of(new Reason(CALORIE_CHANGE_TOO_SOON, SPACING)), earliest);
@@ -71,6 +68,8 @@ public final class CalorieLadder {
             return decision(snapshot, new Action.AdjustCalories(size), reasons, snapshot.today().plusDays(window));
         }
 
+        Profile profile = snapshot.profile()
+                .orElseThrow(() -> new IllegalArgumentException("A calorie step down needs the profile (age) for the macro floors"));
         int proposed = target - size;
         // The low-energy floor first: under it neither less food nor more exercise is an answer (both lower energy
         // availability). A shorter step is not one either — under the minimum step is noise (K-97) — so calories stay.

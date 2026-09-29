@@ -113,6 +113,31 @@ class DecisionPipelineTests {
         assertThat(decision.reasons().getFirst().rule()).isEqualTo(new RuleId("bmr_floor"));
     }
 
+    @Test
+    void aCalorieCallWithoutAPlanTargetAsksForItInsteadOfCrashing() {
+        // U3: name what is missing. A valid Snapshot may lack the plan target or the profile.
+        Snapshot noPlan = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(20), weekly("80.0", "80.0", "80.0"))
+                .withCheckIn(ON_PLAN).withProfile(new Profile(30, 180));
+
+        Decision decision = DecisionPipeline.decide(noPlan, MALE);
+
+        assertThat(decision.action()).isEqualTo(new Action.NoDecisionYet());
+        assertThat(decision.reasons().getFirst().rule()).isEqualTo(new RuleId("plan_target_needed"));
+        assertThat(decision.nextReview()).isEqualTo(TODAY.plusDays(7));
+    }
+
+    @Test
+    void aStepDownWithoutAProfileAsksForItButAStepUpDoesNotNeedIt() {
+        // BMR and the macro floors need age and height only on the way down.
+        Snapshot cut = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(20), weekly("80.0", "80.0", "80.0"))
+                .withCheckIn(ON_PLAN).withEnergy(new EnergyBudget(2600, 300));
+        Snapshot bulk = new Snapshot(TODAY, Sex.MALE, Phase.BULK, TODAY.minusDays(20), weekly("70.0", "70.0", "70.0"))
+                .withCheckIn(ON_PLAN).withEnergy(new EnergyBudget(3000, 300));
+
+        assertThat(DecisionPipeline.decide(cut, MALE).reasons().getFirst().rule()).isEqualTo(new RuleId("profile_needed"));
+        assertThat(DecisionPipeline.decide(bulk, MALE).action()).isEqualTo(new Action.AdjustCalories(250));
+    }
+
     // ── confidence and next review ──────────────────────────────────────────────────────────────────────────
 
     @Test
@@ -165,11 +190,13 @@ class DecisionPipelineTests {
                 Arbitraries.of(Appetite.values()))
                 .as(CheckIn::new);
         return Combinators.combine(Arbitraries.of(Sex.values()), Arbitraries.of(Phase.values()), weeks, checkIns,
-                Arbitraries.integers().between(3, 60), Arbitraries.of(true, false))
-                .as((sex, phase, kgs, checkIn, planDaysAgo, withPlateau) -> {
+                Arbitraries.integers().between(3, 60), Arbitraries.of(true, false), Arbitraries.of(true, false),
+                Arbitraries.of(true, false))
+                .as((sex, phase, kgs, checkIn, planDaysAgo, withPlateau, withPlan, withProfile) -> {
                     Snapshot snapshot = new Snapshot(TODAY, sex, phase, TODAY.minusDays(planDaysAgo),
-                            weekly(kgs.toArray(String[]::new))).withCheckIn(checkIn)
-                            .withEnergy(new EnergyBudget(2400, 300)).withProfile(new Profile(30, 175));
+                            weekly(kgs.toArray(String[]::new))).withCheckIn(checkIn);
+                    snapshot = withPlan ? snapshot.withEnergy(new EnergyBudget(2400, 300)) : snapshot;
+                    snapshot = withProfile ? snapshot.withProfile(new Profile(30, 175)) : snapshot;
                     return withPlateau ? snapshot.withTraining(PLATEAU) : snapshot;
                 });
     }

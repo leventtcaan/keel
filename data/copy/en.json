@@ -60,6 +60,14 @@
       "observing": {
         "title": "First, finding your real maintenance.",
         "body": "Your starting calories are an estimate, and estimates miss by a few hundred either way. For the first weeks the plan stays put while your weigh-ins show what your body actually needs."
+      },
+      "plan_target_needed": {
+        "title": "Your plan needs a calorie target first.",
+        "body": "The coach can see a change is due, but it needs your current daily target to say how much. Set your plan and the call follows."
+      },
+      "profile_needed": {
+        "title": "Your age and height, please.",
+        "body": "Before lowering calories, the coach checks you won't go under what your body needs at rest. That needs your age and height."
       }
     },
     "increase_calories": {

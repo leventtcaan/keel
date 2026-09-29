@@ -1,7 +1,7 @@
 # Weekly check-in specification (K-106, K-104, K-103, K-112).
 # Each row is one branch of Güray's weekly decision tree or a safety/data rule, with its source.
 # `given` is written in plain domain terms; K-101 turns it into a real Snapshot.
-# Row order is not execution order; the engine's fixed order is in ADR-003 §4.
+# Row order is not execution order; the engine's fixed order is in ADR-003 §4, detailed in ADR-022.
 # Actions are the proposed vocabulary (K-101 finalizes it; renaming here is part of that task).
 
 actions: [NO_DECISION_YET, CONTINUE, ADJUST_CALORIES, INCREASE_CALORIES, CHANGE_MOVEMENT,
@@ -133,7 +133,7 @@ rows:
 
   - id: WC-20
     title: "Appetite gone on a bulk: mini cut"
-    given: {phase: bulk, appetite: gone, forcing_food: true}
+    given: {phase: bulk, bulk_months: 6, appetite: gone, forcing_food: true}
     expect: {action: MINI_CUT}
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"
 
