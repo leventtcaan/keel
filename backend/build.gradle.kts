@@ -41,7 +41,7 @@ tasks.test {
     }
 }
 
-val pendingTest by tasks.registering(Test::class) {
+tasks.register<Test>("pendingTest") {
     description = "Runs specification tests whose implementation task has not started yet (ADR-009)."
     group = "verification"
     testClassesDirs = sourceSets.test.get().output.classesDirs
