@@ -7,6 +7,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,6 +57,8 @@ class MeasurementApiTests {
         assertThat(support.send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30",
                 "look", "SAME"))).hasStatus(403);
         assertThat(support.send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 8000))).hasStatus(403);
+        assertThat(support.get(account, "/v1/waist-measurements?from=2026-09-01&to=2026-09-30")).hasStatus(403);
+        assertThat(support.delete(account, "/v1/weigh-ins/" + UUID.randomUUID())).hasStatus(403);
     }
 
     @Test
@@ -82,17 +86,17 @@ class MeasurementApiTests {
     @Test
     void theTrendIsTheEnginesSevenDayAverageOnTheFirstWeighInOfEachDay() throws Exception {
         AccountId account = support.consentingAccount();
-        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-09-24T05:00:00Z", 83.0));
-        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-09-24T18:00:00Z", 84.5)); // evening: not the morning weight
-        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-09-26T05:00:00Z", 82.0));
-        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-09-30T05:00:00Z", 81.0));
+        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-08-24T05:00:00Z", 83.0));
+        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-08-24T18:00:00Z", 84.5)); // evening: not the morning weight
+        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-08-26T05:00:00Z", 82.0));
+        support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-08-30T05:00:00Z", 81.0));
 
-        List<Map<String, Object>> trend = list(support.get(account, "/v1/weight-trend?from=2026-09-23&to=2026-10-02"));
+        List<Map<String, Object>> trend = list(support.get(account, "/v1/weight-trend?from=2026-08-23&to=2026-09-01"));
 
-        // 24th: 83.0 · 25th: 83.0 · 26th: (83 + 82) / 2 · … · 30th: (83 + 82 + 81) / 3 = 82 · 1st: (82 + 81) / 2 (24th left
-        // the 7 days) · 2nd: the same. The 23rd has no weigh-in in its 7 days, so no point.
-        assertThat(trend).extracting(point -> point.get("day")).containsExactly("2026-09-24", "2026-09-25", "2026-09-26",
-                "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02");
+        // 24th: 83.0 · 25th: 83.0 · 26th: (83 + 82) / 2 · … · 30th: (83 + 82 + 81) / 3 = 82 · 31st: (82 + 81) / 2 (the
+        // 24th left the 7 days) · 1 September: the same. The 23rd has no weigh-in in its 7 days, so no point.
+        assertThat(trend).extracting(point -> point.get("day")).containsExactly("2026-08-24", "2026-08-25", "2026-08-26",
+                "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "2026-08-31", "2026-09-01");
         assertThat(trend).extracting(point -> ((Number) point.get("kg")).doubleValue())
                 .containsExactly(83.0, 83.0, 82.5, 82.5, 82.5, 82.5, 82.0, 81.5, 81.5);
     }
@@ -125,9 +129,60 @@ class MeasurementApiTests {
 
         MvcTestResult replaced = support.send(account, "PUT", "/v1/activity-days",
                 Map.of("day", "2026-09-30", "steps", 8200, "sleepMinutes", 430, "activeEnergyKcal", 520));
-
         assertThat(replaced).hasStatusOk();
         assertThat(map(replaced)).isEqualTo(Map.of("day", "2026-09-30", "steps", 8200, "sleepMinutes", 430, "activeEnergyKcal", 520));
+
+        // Replace, not merge: a value the new PUT leaves out is gone.
+        assertThat(map(support.send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 9000))))
+                .isEqualTo(Map.of("day", "2026-09-30", "steps", 9000));
+    }
+
+    @Test
+    void valuesTheStoreCannotHoldAreValidationErrorsNotServerErrors() {
+        // A 500 makes the offline phone retry the record forever (ADR-006); a value out of range is the client's to fix.
+        AccountId account = support.consentingAccount();
+
+        assertThat(support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-09-30T05:00:00Z", 10_000))).hasStatus(400);
+        assertThat(support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-09-30T05:00:00Z", 82.004))).hasStatus(400);
+        assertThat(support.send(account, "POST", "/v1/waist-measurements", waist("2026-09-30", 10_000))).hasStatus(400);
+        assertThat(support.send(account, "POST", "/v1/waist-measurements", waist("2026-09-30", 88.04))).hasStatus(400);
+    }
+
+    @Test
+    void aMalformedDateOrIdIsAValidationError() {
+        AccountId account = support.consentingAccount();
+
+        assertThat(support.get(account, "/v1/weigh-ins?from=abc&to=2026-09-30")).hasStatus(400);
+        assertThat(support.delete(account, "/v1/weigh-ins/not-an-id")).hasStatus(400);
+    }
+
+    @Test
+    void aRangeLongerThanTheLimitIsAValidationError() {
+        AccountId account = support.consentingAccount();
+
+        assertThat(support.get(account, "/v1/weight-trend?from=1000-01-01&to=9999-12-31")).hasStatus(400);
+        assertThat(support.get(account, "/v1/weigh-ins?from=1000-01-01&to=9999-12-31")).hasStatus(400);
+        assertThat(support.get(account, "/v1/waist-measurements?from=1000-01-01&to=9999-12-31")).hasStatus(400);
+    }
+
+    @Test
+    void theTrendStopsAtTodayInTheUsersTimeZone() throws Exception {
+        AccountId account = support.consentingAccount();
+        LocalDate today = LocalDate.now(ZoneId.of("Europe/Istanbul"));
+        support.send(account, "POST", "/v1/weigh-ins", weighIn(today.atTime(6, 0).atZone(ZoneId.of("Europe/Istanbul")).toInstant().toString(), 81));
+
+        List<Map<String, Object>> trend = list(support.get(account, "/v1/weight-trend?from=" + today + "&to=" + today.plusDays(5)));
+
+        assertThat(trend).extracting(point -> point.get("day")).containsExactly(today.toString());
+    }
+
+    @Test
+    void wholeKilogramsAreWrittenAsPlainNumbers() throws Exception {
+        AccountId account = support.consentingAccount();
+
+        MvcTestResult created = support.send(account, "POST", "/v1/weigh-ins", weighIn("2026-09-30T05:00:00Z", 80.0));
+
+        assertThat(created.getResponse().getContentAsString()).contains("\"kg\":80").doesNotContain("E+");
     }
 
     @Test

@@ -4,6 +4,7 @@ import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.shared.SafeLog;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,12 @@ class ApiErrorHandler {
     /** A body that is not valid JSON, or not the expected shape: its content is not repeated anywhere. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> unreadable(HttpMessageNotReadableException e, HttpServletRequest request) {
+        return answer(ErrorCode.VALIDATION_FAILED, e, request);
+    }
+
+    /** A path or query value that is not of its type (a malformed date or id): the client's to fix. */
+    @ExceptionHandler(TypeMismatchException.class)
+    ResponseEntity<ApiError> mistyped(TypeMismatchException e, HttpServletRequest request) {
         return answer(ErrorCode.VALIDATION_FAILED, e, request);
     }
 

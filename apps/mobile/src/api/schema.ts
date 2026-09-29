@@ -205,7 +205,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The trend weight per day (7-day average, the engine's WeightTrend), days without weigh-ins left out */
+        /**
+         * The trend weight per day (7-day average, the engine's WeightTrend)
+         * @description One point per day, up to today in the user's time zone, whose 7 days hold at least one weigh-in (the day's first
+         *     counts). Needs the profile (NOT_FOUND without one). At most 400 days per request.
+         */
         get: operations["getWeightTrend"];
         put?: never;
         post?: never;
@@ -840,6 +844,7 @@ export interface components {
             clientId: components["schemas"]["ClientId"];
             /** Format: date-time */
             measuredAt: string;
+            /** @description At most 2 decimals (the store keeps 2; a finer value is a validation error, not a silent rounding). */
             kg: number;
             source: components["schemas"]["MeasurementSource"];
         };
@@ -856,6 +861,7 @@ export interface components {
             clientId: components["schemas"]["ClientId"];
             /** Format: date */
             measuredOn: string;
+            /** @description At most 1 decimal. */
             cm: number;
         };
         WaistMeasurement: components["schemas"]["NewWaistMeasurement"] & {
@@ -1393,7 +1399,7 @@ export interface components {
     parameters: {
         Id: string;
         ConsentKind: components["schemas"]["ConsentKind"];
-        /** @description First day, inclusive */
+        /** @description First day, inclusive (local day). A range is at most 400 days. */
         From: string;
         /** @description Last day, inclusive */
         To: string;
@@ -1662,7 +1668,7 @@ export interface operations {
     listWeighIns: {
         parameters: {
             query: {
-                /** @description First day, inclusive */
+                /** @description First day, inclusive (local day). A range is at most 400 days. */
                 from: components["parameters"]["From"];
                 /** @description Last day, inclusive */
                 to: components["parameters"]["To"];
@@ -1727,7 +1733,7 @@ export interface operations {
     getWeightTrend: {
         parameters: {
             query: {
-                /** @description First day, inclusive */
+                /** @description First day, inclusive (local day). A range is at most 400 days. */
                 from: components["parameters"]["From"];
                 /** @description Last day, inclusive */
                 to: components["parameters"]["To"];
@@ -1753,7 +1759,7 @@ export interface operations {
     listWaistMeasurements: {
         parameters: {
             query: {
-                /** @description First day, inclusive */
+                /** @description First day, inclusive (local day). A range is at most 400 days. */
                 from: components["parameters"]["From"];
                 /** @description Last day, inclusive */
                 to: components["parameters"]["To"];
@@ -2092,7 +2098,7 @@ export interface operations {
     listWorkouts: {
         parameters: {
             query: {
-                /** @description First day, inclusive */
+                /** @description First day, inclusive (local day). A range is at most 400 days. */
                 from: components["parameters"]["From"];
                 /** @description Last day, inclusive */
                 to: components["parameters"]["To"];

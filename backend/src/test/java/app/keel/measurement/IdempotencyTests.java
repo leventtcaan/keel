@@ -65,6 +65,7 @@ class IdempotencyTests {
         MvcTestResult again = support.send(account, "POST", "/v1/weigh-ins", Map.of("clientId", clientId,
                 "measuredAt", "2026-09-30T05:00:00Z", "kg", 90.0, "source", "MANUAL"));
 
+        assertThat(again).hasStatus(200);
         assertThat(map(again)).containsEntry("kg", 82.4);
     }
 

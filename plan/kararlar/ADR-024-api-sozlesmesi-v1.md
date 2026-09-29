@@ -41,6 +41,10 @@ birebir, kalori alanları aralık (U5), yağ yüzdesi yok (U4). Alan adları bac
    `npm run check` CI'da (Mobile işi): belge çözülemezse ya da tipler eskiyse kırmızı. Proje kuralları
    `backend/…/architecture/ContractTests` ile (motorla birebirlik, aralık, U4, oturum, operationId, kaynaklar).
 
+13. **Sınırlar sözleşmede ve yapılandırmada birlikte** (K-206 incelemesi): saklanamayan bir değer (ör. `kg: 10000`,
+    `kg: 82.004`) 500 değil 400 — çevrimdışı telefon 5xx'i geçici sayıp kaydı sonsuza dek yeniden yollar. Tarih aralığı
+    en çok 400 gün. Yanlış tipte yol/sorgu değeri (bozuk tarih, UUID) 400.
+
 ## Neden
 - Kurallar testte: motor bir `Action` eklerse ya da alan adını değiştirirse sözleşme testi kırmızı olur (U3 birebirlik).
 - `clientId` idempotency, zayıf bağlantıda tekrar gönderimi güvenli kılar; sunucu tarafında `(account_id, client_id)`

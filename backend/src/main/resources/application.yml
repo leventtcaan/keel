@@ -37,6 +37,12 @@ keel:
     secret: ${KEEL_SESSION_SECRET}
     access-ttl: 15m
     refresh-ttl: 60d
+  # What a measurement can be (K-206, contract): a real body, and what one request may ask for — a longer range is a
+  # client bug or an abuse, not a need (the engine reads 90 days at most, evaluation_window_days).
+  measurement:
+    max-weight-kg: 500
+    max-waist-cm: 300
+    max-range-days: 400
   # The consent texts the app shows now (data/copy/en.json › consent.*, K-204); "-draft" until the product owner approves.
   consent:
     versions:

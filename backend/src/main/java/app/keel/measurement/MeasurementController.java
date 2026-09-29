@@ -10,17 +10,20 @@ import app.keel.engine.WeightTrend;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
+import app.keel.shared.Decimals;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,9 +39,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * The contract's measurement routes (K-206): weigh-ins, waist, photo checks, activity days and the weight trend. Every
  * one is health data (V3): the health-data consent is checked on each request, so a withdrawal stops them at once
- * (ADR-026). A record sent twice with its clientId answers 201, then 200 with the stored record.
+ * (ADR-026). A record sent twice with its clientId answers 201, then 200 with the stored record. Values and ranges are
+ * checked against keel.measurement: a value the store cannot hold is a 400, never a 500 the offline phone would retry.
  */
 @RestController
+@EnableConfigurationProperties(MeasurementLimits.class)
 class MeasurementController {
 
     record NewWeighIn(UUID clientId, Instant measuredAt, BigDecimal kg, MeasurementStore.Source source) {
@@ -64,27 +69,31 @@ class MeasurementController {
     private final Profiles profiles;
     private final ConsentGate consent;
     private final ParameterSet parameters;
+    private final MeasurementLimits limits;
+    private final Clock clock;
 
     MeasurementController(MeasurementStore store, Measurements measurements, Profiles profiles, ConsentGate consent,
-            ParameterSet parameters) {
+            ParameterSet parameters, MeasurementLimits limits, Clock clock) {
         this.store = store;
         this.measurements = measurements;
         this.profiles = profiles;
         this.consent = consent;
         this.parameters = parameters;
+        this.limits = limits;
+        this.clock = clock;
     }
 
     @PostMapping("/v1/weigh-ins")
     ResponseEntity<MeasurementStore.WeighIn> addWeighIn(AccountId account, @RequestBody NewWeighIn weighIn) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(weighIn.clientId() != null && weighIn.measuredAt() != null && weighIn.source() != null && positive(weighIn.kg()));
+        require(weighIn.clientId() != null && weighIn.measuredAt() != null && weighIn.source() != null && limits.weight(weighIn.kg()));
         return created(store.add(account, weighIn.clientId(), weighIn.measuredAt(), weighIn.kg(), weighIn.source()));
     }
 
     @GetMapping("/v1/weigh-ins")
     List<MeasurementStore.WeighIn> weighIns(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(!to.isBefore(from));
+        require(limits.range(from, to));
         ZoneId zone = measurements.zoneOf(account);
         return store.weighIns(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant());
     }
@@ -101,14 +110,14 @@ class MeasurementController {
     @PostMapping("/v1/waist-measurements")
     ResponseEntity<MeasurementStore.Waist> addWaist(AccountId account, @RequestBody NewWaist waist) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(waist.clientId() != null && waist.measuredOn() != null && positive(waist.cm()));
+        require(waist.clientId() != null && waist.measuredOn() != null && limits.waist(waist.cm()));
         return created(store.add(account, waist.clientId(), waist.measuredOn(), waist.cm()));
     }
 
     @GetMapping("/v1/waist-measurements")
     List<MeasurementStore.Waist> waists(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(!to.isBefore(from));
+        require(limits.range(from, to));
         return store.waists(account, from, to);
     }
 
@@ -133,15 +142,17 @@ class MeasurementController {
     @GetMapping("/v1/weight-trend")
     List<TrendPoint> trend(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(!to.isBefore(from));
+        require(limits.range(from, to));
         ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         int days = parameters.forSex(Sex.valueOf(profile.sex().name())).wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
         WeightSeries series = new WeightSeries(measurements.dailyWeights(account, from.minusDays(days - 1L), to));
         List<TrendPoint> points = new ArrayList<>();
-        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+        // No point for a day that has not happened yet in the user's time zone.
+        LocalDate last = to.isAfter(today(profile.timeZone())) ? today(profile.timeZone()) : to;
+        for (LocalDate day = from; !day.isAfter(last); day = day.plusDays(1)) {
             LocalDate on = day;
             WeightTrend.at(series, on, days)
-                    .ifPresent(kg -> points.add(new TrendPoint(on, kg.setScale(TREND_DECIMALS, RoundingMode.HALF_UP).stripTrailingZeros())));
+                    .ifPresent(kg -> points.add(new TrendPoint(on, Decimals.plain(kg.setScale(TREND_DECIMALS, RoundingMode.HALF_UP)))));
         }
         return points;
     }
@@ -150,8 +161,8 @@ class MeasurementController {
         return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(stored.record());
     }
 
-    private static boolean positive(BigDecimal value) {
-        return value != null && value.signum() > 0;
+    private LocalDate today(ZoneId zone) {
+        return LocalDate.now(clock.withZone(zone));
     }
 
     private static boolean notNegative(Integer value) {

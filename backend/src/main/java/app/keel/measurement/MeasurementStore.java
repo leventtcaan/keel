@@ -1,6 +1,7 @@
 package app.keel.measurement;
 
 import app.keel.shared.AccountId;
+import app.keel.shared.Decimals;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -121,12 +122,12 @@ class MeasurementStore {
 
     private static WeighIn weighIn(ResultSet row) throws SQLException {
         return new WeighIn(uuid(row, "id"), uuid(row, "client_id"), row.getObject("measured_at", OffsetDateTime.class).toInstant(),
-                row.getBigDecimal("kg").stripTrailingZeros(), Source.valueOf(row.getString("source")));
+                Decimals.plain(row.getBigDecimal("kg")), Source.valueOf(row.getString("source")));
     }
 
     private static Waist waist(ResultSet row) throws SQLException {
         return new Waist(uuid(row, "id"), uuid(row, "client_id"), row.getObject("measured_on", LocalDate.class),
-                row.getBigDecimal("cm").stripTrailingZeros());
+                Decimals.plain(row.getBigDecimal("cm")));
     }
 
     private static UUID uuid(ResultSet row, String column) throws SQLException {
