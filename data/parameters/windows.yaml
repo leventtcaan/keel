@@ -28,3 +28,9 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
     note: "TÜRETİLMİŞ, Levent onayı bekliyor — araştırmada doğrudan sayı yok. Girdi: H1 §3.4, ardışık iki günün farkının SD'si %0,53 (80 kg'da 0,42 kg). Temkinli varsayım: tek tartı gürültüsü ≤0,42 kg (bağımsız okumada ≈0,30 olurdu; günler korelasyonlu olduğu için √n kazancı iyimser). Karşılaştırma: pencerenin ilk ve son haftasının ortalaması (erkekte 14 gün arayla). n=4 → farkın %95 hata payı 1,96·0,42·√(2/4) ≈ 0,58 kg ≈ 0,3 kg/hafta; n=2 → 0,82 kg, yavaş kaybı sabitten ayıramaz. Gürültü kiloyla ölçeklenir (120 kg: ≈0,44 kg/hafta). Kod her haftada ister (türetmeden katı): orta haftasız trend yönü kırılgan."
+  - key: on_track_min_ratio
+    value: 0.7
+    unit: ratio
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-60"
+    note: "Planın %70'ini yapan başarılı sayılır (Güray K-60). Tutarlılık sayısında haftanın 'on track' eşiği. Uyum tanımıyla (K-106, L-6) aynı mı olacağı Levent kararı bekliyor."

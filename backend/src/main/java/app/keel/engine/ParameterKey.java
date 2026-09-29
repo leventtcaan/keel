@@ -63,7 +63,8 @@ public enum ParameterKey {
     DECISION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     NO_INTERPRETATION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     EVALUATION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
-    MIN_WEIGHINS_PER_WEEK(ParameterDomain.WINDOWS, Unit.WEIGHINS_PER_WEEK);
+    MIN_WEIGHINS_PER_WEEK(ParameterDomain.WINDOWS, Unit.WEIGHINS_PER_WEEK),
+    ON_TRACK_MIN_RATIO(ParameterDomain.WINDOWS, Unit.RATIO);
 
     private final ParameterDomain domain;
     private final Unit unit;
