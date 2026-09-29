@@ -1,6 +1,6 @@
 <title>Keel Prototype</title>
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap");
 
 /* ---------- page shell (theme-aware) ---------- */
 :root{
@@ -13,157 +13,183 @@
 :root[data-theme="dark"]{ --page:#14181C; --ink:#E4E8EB; --muted:#98A3AD; --rule:#2A3138; --chip:#232A31; color-scheme: dark; }
 
 *,*::before,*::after{ box-sizing:border-box; }
-body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif; overflow-x:hidden; }
-.wrap{ max-width:1240px; margin:0 auto; padding-inline:20px; padding-block:36px 72px; }
-.intro{ max-width:66ch; display:grid; gap:10px; margin-bottom:40px; }
-.intro h1{ font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:clamp(28px,4vw,40px); font-weight:800; text-transform:uppercase; margin:0; line-height:1; letter-spacing:.01em; }
+body{ margin:0; background:var(--page); color:var(--ink); font-family:-apple-system,system-ui,"SF Pro Text","Segoe UI",sans-serif; overflow-x:hidden; }
+.wrap{ max-width:1240px; margin:0 auto; padding-inline:20px; padding-block:20px 72px; }
+.themebar{ position:sticky; top:12px; z-index:30; display:flex; justify-content:flex-end; pointer-events:none; }
+.theme{ pointer-events:auto; display:inline-flex; align-items:center; gap:2px; padding:3px; border-radius:6px; background:var(--chip); border:1px solid var(--rule); }
+.theme span{ font-size:12px; color:var(--muted); padding:0 8px 0 6px; }
+.theme button{ appearance:none; border:0; font:inherit; font-size:13px; font-weight:600; padding:7px 14px; border-radius:4px; background:transparent; color:var(--ink); cursor:pointer; }
+.theme button[aria-pressed="true"]{ background:var(--ink); color:var(--page); }
+.theme button:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.intro{ max-width:66ch; display:grid; gap:10px; margin:8px 0 40px; }
+.intro h1{ font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:clamp(30px,4.4vw,44px); font-weight:800; margin:0; line-height:1; }
 .intro p{ margin:0; color:var(--muted); line-height:1.55; font-size:15.5px; }
 .sec{ margin-top:56px; }
 .sec-h{ display:grid; gap:6px; max-width:66ch; margin-bottom:24px; padding-top:18px; border-top:2px solid var(--ink); }
-.sec-h .k{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
-.sec-h h2{ font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:30px; font-weight:800; text-transform:uppercase; margin:0; line-height:1; }
+.sec-h .k{ font-size:13px; color:var(--muted); font-weight:600; }
+.sec-h h2{ font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:32px; font-weight:800; margin:0; line-height:1; }
 .sec-h p{ margin:0; color:var(--muted); font-size:14.5px; line-height:1.5; }
 .row{ display:flex; flex-wrap:wrap; gap:44px 28px; align-items:flex-start; }
-.col{ flex:0 1 360px; max-width:100%; min-width:0; margin:0; display:grid; gap:14px; }
+.col{ flex:0 1 360px; max-width:100%; min-width:0; margin:0; display:grid; gap:14px; scroll-margin-top:64px; }
 .notes{ display:grid; gap:6px; font-size:13.5px; line-height:1.5; color:var(--muted); border-top:1px solid var(--rule); padding-top:12px; }
 .notes b{ color:var(--ink); font-weight:600; }
 @media (max-width:480px){ .wrap{ padding-inline:16px; } }
 
-/* ---------- phone shell (from reference) ---------- */
-.phone{ width:360px; max-width:100%; border-radius:46px; padding:10px; background:#0B0D0F; box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 24px 60px -24px rgba(0,0,0,.45); }
-.screen{ border-radius:37px; overflow:hidden; background:var(--bg); color:var(--tx); font-family:var(--body); display:flex; flex-direction:column; min-height:740px; min-width:0; }
-.status{ display:flex; justify-content:space-between; align-items:center; padding:14px 26px 6px; font-size:13px; font-weight:600; font-family:var(--body); }
+/* ---------- phone tokens · RUBİN ---------- */
+.v-c{
+  --bg:#FFFFFF; --sf:#F2F2F0; --ln:#E4E4E1; --tx:#0E0E0E; --tx2:#2B2B2B; --mu:#6B6B68; --trk:#E2E2DE;
+  --ac:#B0129A; --onac:#FFFFFF; --acink:#F07BE0; --onacink:#0E0E0E;
+  --warn:#D12F1F; --onwarn:#FFFFFF;
+  --dec:#0E0E0E; --dectx:#FFFFFF; --dectx2:#D6D6D2; --decmu:#9A9A95; --decln:#2C2C2A;
+  --raise:#FFFFFF; --ghost:#9A9A95; --bodyf:#CFCFCB;
+  --glass:rgba(250,250,248,.74); --glassln:rgba(14,14,14,.08);
+  --r:6px; --btnr:4px;
+  --body:-apple-system,system-ui,"SF Pro Text","Segoe UI",sans-serif;
+  --disp:"Barlow Condensed","Arial Narrow",sans-serif;
+  --numf:"Barlow Condensed","Arial Narrow",sans-serif;
+}
+.t-dark .v-c{
+  --bg:#0E0E0E; --sf:#1A1A19; --ln:#2A2A28; --tx:#F4F4F2; --tx2:#D6D6D2; --mu:#9A9A95; --trk:#2C2C2A;
+  --ac:#F07BE0; --onac:#0E0E0E; --acink:#B0129A; --onacink:#FFFFFF;
+  --warn:#FF6B5A; --onwarn:#0E0E0E;
+  --dec:#F4F4F2; --dectx:#0E0E0E; --dectx2:#2B2B2B; --decmu:#6B6B68; --decln:#D6D6D2;
+  --raise:#262624; --ghost:#6E6E6A; --bodyf:#3A3A38;
+  --glass:rgba(30,30,29,.74); --glassln:rgba(255,255,255,.1);
+}
+
+/* ---------- phone shell ---------- */
+.phone{ width:360px; max-width:100%; border-radius:46px; padding:10px; background:#0B0D0F; box-shadow:0 24px 60px -24px rgba(0,0,0,.45); }
+.screen{ position:relative; border-radius:37px; overflow:hidden; background:var(--bg); color:var(--tx); font-family:var(--body); display:flex; flex-direction:column; min-height:740px; min-width:0; }
+.status{ display:flex; justify-content:space-between; align-items:center; padding:14px 26px 6px; font-size:13px; font-weight:600; }
 .status .isl{ width:92px; height:26px; border-radius:20px; background:#000; }
 .content{ padding:8px 18px 18px; display:grid; gap:14px; flex:1; align-content:start; min-width:0; }
 .content > *{ min-width:0; }
+.screen:has(> .tabs) .content{ padding-bottom:104px; }
+.screen button{ font-family:var(--body); }
+.screen button:focus-visible, .screen a:focus-visible{ outline:2px solid var(--ac); outline-offset:2px; }
+
+/* glass tab bar: system layer, neutral; brand color only on the selected icon */
+.tabs{ position:absolute; left:14px; right:14px; bottom:14px; display:grid; grid-template-columns:repeat(4,1fr); padding:8px 6px 7px; border-radius:30px; background:var(--glass); -webkit-backdrop-filter:blur(18px) saturate(1.4); backdrop-filter:blur(18px) saturate(1.4); box-shadow:inset 0 0 0 1px var(--glassln), 0 8px 24px -14px rgba(0,0,0,.35); }
+.tab{ display:grid; justify-items:center; gap:2px; font-size:11px; color:var(--mu); font-weight:500; }
+.tab .ti{ width:24px; height:24px; display:block; color:var(--mu); }
+.tab.on{ color:var(--tx); font-weight:600; }
+.tab.on .ti{ color:var(--ac); }
+
+/* ---------- type ---------- */
 .hdr{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding-top:4px; }
-.hdr .day{ font-family:var(--disp); }
+.hdr .day{ font-family:var(--disp); font-size:34px; font-weight:800; text-transform:uppercase; letter-spacing:.01em; line-height:1; }
 .hdr .ph{ font-size:12px; color:var(--mu); text-align:right; }
-.card{ background:var(--sf); border:1px solid var(--ln); border-radius:var(--r); padding:16px; display:grid; gap:10px; }
-.eyebrow{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--mu); font-weight:600; }
+.brand{ font-family:var(--disp); font-size:26px; font-weight:800; letter-spacing:.02em; padding-top:6px; }
+.h1{ font-family:var(--disp); font-weight:800; font-size:38px; line-height:.98; margin:0; text-wrap:balance; }
+.h1.xl{ font-size:44px; }
+.h1 em{ font-style:normal; color:var(--ac); }
+.h2{ font-family:var(--disp); font-weight:800; font-size:24px; line-height:1.02; margin:0; }
+.h3{ font-family:var(--disp); font-weight:700; font-size:19px; line-height:1.08; margin:0; }
+.lede{ font-size:15px; line-height:1.45; color:var(--tx2); margin:0; }
+.small{ font-size:12.5px; line-height:1.45; color:var(--mu); margin:0; }
+.small b{ color:var(--tx); font-weight:600; }
+.txt{ font-size:13.5px; line-height:1.5; color:var(--tx2); margin:0; }
+.eyebrow{ font-size:12.5px; font-weight:700; color:var(--tx); letter-spacing:0; }
+.eyebrow.ac{ color:var(--ac); }
+.lbl{ font-size:12.5px; font-weight:700; color:var(--tx); }
 .num{ font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.meta{ font-size:12px; color:var(--mu); font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.mu{ color:var(--mu) !important; }
+.acx{ color:var(--ac) !important; }
+.big{ font-family:var(--numf); font-size:96px; font-weight:800; line-height:.85; letter-spacing:-.02em; }
+.big small{ font-size:40px; color:var(--ac); }
+.left{ color:var(--ac); font-family:var(--disp); font-size:22px; font-weight:800; }
+
+/* ---------- components ---------- */
+.card{ background:var(--sf); border:0; border-radius:var(--r); padding:16px; display:grid; gap:10px; }
+.card.outline{ background:var(--bg); box-shadow:inset 0 0 0 1.5px var(--tx); }
+button.card{ appearance:none; font:inherit; text-align:left; cursor:pointer; border:0; }
 .bars{ display:grid; gap:7px; }
 .bar{ display:grid; grid-template-columns:78px 1fr 34px; align-items:center; gap:10px; font-size:12.5px; }
 .bar .trk{ height:6px; border-radius:6px; background:var(--trk); overflow:hidden; }
 .bar .trk i{ display:block; height:100%; background:var(--ac); border-radius:6px; }
 .bar .v{ text-align:right; color:var(--mu); font-family:var(--numf); font-variant-numeric:tabular-nums; }
-.dec-title{ font-family:var(--disp); }
+.dec-title{ font-family:var(--disp); font-size:30px; font-weight:800; text-transform:uppercase; line-height:.98; letter-spacing:.01em; }
 .dec-body{ font-size:13.5px; line-height:1.5; color:var(--tx2); margin:0; }
 .why{ appearance:none; border:0; background:none; padding:0; font:inherit; font-size:13px; font-weight:600; color:var(--ac); cursor:pointer; justify-self:start; display:flex; align-items:center; gap:6px; }
 .whylist{ margin:0; padding:10px 0 0; border-top:1px dashed var(--ln); list-style:none; display:grid; gap:6px; font-size:12.5px; color:var(--tx2); }
 .whylist[hidden]{ display:none; }
 .whylist li{ display:grid; grid-template-columns:96px 1fr; gap:8px; }
 .whylist .l{ color:var(--mu); }
-.pill{ font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; background:var(--pillbg); color:var(--pilltx); justify-self:start; }
+.pill{ font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:4px; background:var(--dec); color:var(--dectx); justify-self:start; white-space:nowrap; }
 .rowhead{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
 .list{ display:grid; }
 .item{ display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:center; padding:11px 0; border-top:1px solid var(--ln); }
 .item:first-child{ border-top:0; padding-top:2px; }
-.ico{ width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:var(--icbg); color:var(--ictx); font-size:13px; font-weight:700; font-family:var(--numf); }
+.ico{ width:28px; height:28px; border-radius:4px; display:grid; place-items:center; background:var(--dec); color:var(--dectx); font-size:13px; font-weight:700; font-family:var(--numf); }
 .ico.done{ background:var(--ac); color:var(--onac); }
-.it-t{ font-size:14px; font-weight:600; }
+.it-t{ font-family:var(--disp); font-size:19px; font-weight:700; line-height:1.05; }
 .it-s{ font-size:12px; color:var(--mu); margin-top:2px; line-height:1.4; }
-.go{ appearance:none; border:0; font:inherit; font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:var(--btnr); background:var(--ac); color:var(--onac); cursor:pointer; }
-.meta{ font-size:12px; color:var(--mu); font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.go{ appearance:none; border:0; font:inherit; font-size:13px; font-weight:600; padding:7px 13px; border-radius:var(--btnr); background:var(--ac); color:var(--onac); cursor:pointer; }
 .fit{ font-size:12px; color:var(--tx2); margin-top:4px; }
 .chips{ display:flex; flex-wrap:wrap; gap:7px; }
-.chip{ appearance:none; font:inherit; font-size:12px; padding:7px 11px; border-radius:20px; border:1px solid var(--ln); background:var(--sf); color:var(--tx); cursor:pointer; }
-.ask{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-radius:var(--btnr); background:var(--askbg); border:1px solid var(--ln); font-size:13px; color:var(--mu); }
+.chip{ appearance:none; font:inherit; font-size:12.5px; padding:7px 11px; border-radius:4px; border:1px solid var(--ln); background:var(--sf); color:var(--tx); cursor:pointer; }
+.chip[aria-pressed="true"]{ background:var(--dec); color:var(--dectx); border-color:var(--dec); }
+.ask{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-radius:var(--btnr); background:var(--sf); border:1px solid var(--ln); font-size:13px; color:var(--mu); }
 .ask .snd{ width:26px; height:26px; border-radius:50%; background:var(--ac); color:var(--onac); display:grid; place-items:center; font-size:13px; flex:none; }
-.tabs{ display:grid; grid-template-columns:repeat(4,1fr); padding:10px 8px 22px; border-top:1px solid var(--ln); background:var(--tabbg); }
-.tab{ display:grid; justify-items:center; gap:4px; font-size:10.5px; color:var(--mu); font-weight:500; }
-.tab .d{ width:20px; height:20px; border-radius:6px; border:1.6px solid currentColor; }
-.tab.on{ color:var(--ac); }
-.tab.on .d{ background:currentColor; }
 
-/* ---------- C · bold / energetic (from reference) ---------- */
-.v-c{ --bg:#FFFFFF; --sf:#F2F2F0; --ln:#E4E4E1; --tx:#0E0E0E; --tx2:#2B2B2B; --mu:#6B6B68;
-  --ac:#FF4F12; --onac:#FFFFFF; --trk:#E2E2DE; --warn:#FF4F12;
-  --icbg:#0E0E0E; --ictx:#FFFFFF; --pillbg:#0E0E0E; --pilltx:#FFFFFF; --askbg:#F2F2F0; --tabbg:#FFFFFF;
-  --r:6px; --btnr:4px;
-  --body:"Barlow",system-ui,sans-serif; --disp:"Barlow Condensed","Arial Narrow",sans-serif; --numf:"Barlow Condensed","Arial Narrow",sans-serif; }
-.v-c .hdr .day{ font-size:34px; font-weight:800; text-transform:uppercase; letter-spacing:.01em; line-height:1; }
-.v-c .card{ border:0; }
-.v-c .big{ font-family:var(--numf); font-size:96px; font-weight:800; line-height:.85; letter-spacing:-.02em; }
-.v-c .big small{ font-size:40px; color:var(--ac); }
-.v-c .eyebrow{ color:var(--tx); letter-spacing:.14em; }
-.v-c .dec{ background:#0E0E0E; color:#FFFFFF; --tx2:#D6D6D2; --mu:#9A9A95; --ln:#2C2C2A; }
-.v-c .dec .eyebrow{ color:var(--ac); }
-.v-c .dec .pill{ box-shadow:inset 0 0 0 1px #2C2C2A; }
-.v-c .dec-title{ font-size:30px; font-weight:800; text-transform:uppercase; line-height:.98; letter-spacing:.01em; }
-.v-c .it-t{ font-family:var(--disp); font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; }
-.v-c .go{ text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
-.v-c .left{ color:var(--ac); font-family:var(--disp); font-size:22px; font-weight:800; }
-.v-c .tab.on .d{ border-radius:2px; }
-
-/* ---------- C · prototype components ---------- */
-.screen button{ font-family:var(--body); }
-.screen button:focus-visible{ outline:2px solid var(--ac); outline-offset:2px; }
 .ob{ display:flex; flex-direction:column; gap:14px; }
 .foot{ margin-top:auto; display:grid; gap:8px; padding-top:8px; }
 .topbar{ display:flex; align-items:center; gap:12px; padding-top:4px; }
-.topbar .bk{ font-family:var(--disp); font-size:24px; font-weight:700; line-height:1; width:18px; }
+.topbar .bk{ font-family:var(--disp); font-size:26px; font-weight:700; line-height:1; width:18px; }
 .topbar .meta{ min-width:28px; text-align:right; }
 .steps{ flex:1; display:flex; gap:4px; }
 .steps i{ flex:1; height:4px; border-radius:2px; background:var(--trk); }
 .steps i.on{ background:var(--ac); }
-.brand{ font-family:var(--disp); font-size:22px; font-weight:800; letter-spacing:.24em; padding-top:6px; }
-.h1{ font-family:var(--disp); font-weight:800; text-transform:uppercase; font-size:38px; line-height:.95; letter-spacing:.005em; margin:0; text-wrap:balance; }
-.h1.xl{ font-size:44px; }
-.h1 em{ font-style:normal; color:var(--ac); }
-.h2{ font-family:var(--disp); font-weight:800; text-transform:uppercase; font-size:24px; line-height:1; margin:0; letter-spacing:.01em; }
-.h3{ font-family:var(--disp); font-weight:700; text-transform:uppercase; font-size:18px; line-height:1.05; margin:0; letter-spacing:.01em; }
-.lede{ font-size:15px; line-height:1.45; color:var(--tx2); margin:0; }
-.small{ font-size:12.5px; line-height:1.45; color:var(--mu); margin:0; }
-.txt{ font-size:13.5px; line-height:1.5; color:var(--tx2); margin:0; }
-.btn{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:15px 16px; border-radius:var(--btnr); background:var(--ac); color:var(--onac); width:100%; cursor:pointer; }
+.btn{ appearance:none; border:0; font:inherit; font-size:16px; font-weight:600; padding:15px 16px; border-radius:var(--btnr); background:var(--ac); color:var(--onac); width:100%; cursor:pointer; }
 .btn.ghost{ background:transparent; color:var(--tx); box-shadow:inset 0 0 0 1.5px var(--tx); }
 .btn.sm{ width:auto; font-size:14px; padding:10px 14px; }
-.dec .btn.ghost{ color:#FFFFFF; box-shadow:inset 0 0 0 1.5px #FFFFFF; }
+.btn.warn{ background:var(--warn); color:var(--onwarn); }
 .lnk{ appearance:none; border:0; background:none; font:inherit; font-size:13.5px; font-weight:600; color:var(--tx); text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:6px; justify-self:center; }
+.howto{ font-size:13px; font-weight:600; color:var(--tx); text-decoration:none; display:inline-flex; align-items:baseline; gap:8px; }
+.howto .ht{ color:var(--ac); font-size:12.5px; }
 .btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
 .btnrow .btn{ flex:1 1 120px; }
+.callout{ border-top:1px solid var(--ln); padding-top:10px; display:grid; gap:4px; }
 
 .opts{ display:grid; gap:8px; }
 .opt{ appearance:none; font:inherit; text-align:left; width:100%; display:grid; grid-template-columns:1fr 22px; gap:4px 12px; align-items:center; padding:14px 16px; border-radius:var(--r); background:var(--sf); color:var(--tx); border:0; cursor:pointer; }
-.opt .ot{ font-family:var(--disp); font-size:20px; font-weight:700; text-transform:uppercase; line-height:1; }
+.opt .ot{ font-family:var(--disp); font-size:21px; font-weight:700; line-height:1; }
 .opt .os{ grid-column:1; font-size:13px; color:var(--mu); line-height:1.35; }
 .opt .rd{ grid-row:1 / span 2; grid-column:2; width:20px; height:20px; border-radius:50%; box-shadow:inset 0 0 0 1.5px var(--mu); }
-.opt[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
-.opt[aria-pressed="true"] .os{ color:#D6D6D2; }
-.opt[aria-pressed="true"] .rd{ background:#FFFFFF; box-shadow:inset 0 0 0 6px var(--ac); }
+.opts.compact{ gap:6px; }
+.opts.compact .opt{ padding:11px 14px; }
+.opts.compact .ot{ font-size:19px; }
 
-.lbl{ font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--tx); }
 .days{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
 .dy{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:17px; font-weight:700; aspect-ratio:1; border-radius:var(--btnr); background:var(--sf); color:var(--tx); cursor:pointer; padding:0; }
-.dy[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
+.dy[aria-pressed="true"]{ background:var(--dec); color:var(--dectx); }
 .seg{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; background:var(--sf); border-radius:var(--btnr); padding:3px; gap:3px; }
 .seg button{ appearance:none; border:0; font:inherit; font-size:13px; font-weight:600; padding:9px 4px; border-radius:3px; background:transparent; color:var(--tx); cursor:pointer; }
-.seg button[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
-.dec .seg{ background:#2C2C2A; }
-.dec .seg button{ color:#FFFFFF; }
-.dec .seg button[aria-pressed="true"]{ background:var(--ac); }
-.chip[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; border-color:#0E0E0E; }
+.seg button[aria-pressed="true"]{ background:var(--dec); color:var(--dectx); }
+.card .seg{ background:var(--bg); }
+.card.outline .seg{ background:var(--sf); }
 
 .field{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:4px 10px; padding:12px 14px; background:var(--sf); border-radius:var(--r); }
 .field .fl{ font-size:13px; color:var(--mu); }
 .field .fv{ font-family:var(--numf); font-size:24px; font-weight:700; line-height:1; }
 .field .fv small{ font-size:14px; color:var(--mu); margin-left:3px; font-weight:600; }
+.field .fv.ghost{ color:var(--ghost); }
 .field .fs{ grid-column:1 / -1; font-size:12px; color:var(--mu); line-height:1.4; }
-.field .opt-tag{ font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ac); }
+.field .opt-tag{ font-size:11px; font-weight:700; color:var(--ac); margin-left:4px; }
 
-.tgl{ width:44px; height:26px; border-radius:13px; background:var(--trk); position:relative; flex:none; }
+.tgl{ appearance:none; border:0; padding:0; cursor:pointer; width:44px; height:26px; border-radius:13px; background:var(--trk); position:relative; flex:none; }
 .tgl::after{ content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#FFFFFF; box-shadow:0 1px 2px rgba(0,0,0,.2); }
 .tgl.on{ background:var(--ac); }
 .tgl.on::after{ left:21px; }
 .trow{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
 .hrow{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--ln); font-size:14px; }
 .hrow:first-of-type{ border-top:0; }
-.hrow .hs{ font-size:12px; color:var(--mu); margin-top:1px; }
+.hrow .hs{ font-size:12px; color:var(--mu); margin-top:1px; line-height:1.35; }
 
 .pts{ list-style:none; margin:0; padding:0; display:grid; gap:12px; }
 .pts li{ display:grid; grid-template-columns:26px 1fr; gap:12px; font-size:14px; line-height:1.4; align-items:start; }
-.pts .b{ width:26px; height:26px; border-radius:4px; background:#0E0E0E; color:#FFFFFF; display:grid; place-items:center; font-family:var(--disp); font-weight:700; font-size:14px; }
+.pts .b{ width:26px; height:26px; border-radius:4px; background:var(--dec); color:var(--dectx); display:grid; place-items:center; font-family:var(--disp); font-weight:700; font-size:14px; }
 .pts li span:last-child{ padding-top:3px; }
 .pts .s{ display:block; font-size:12.5px; color:var(--mu); margin-top:2px; }
 
@@ -173,28 +199,23 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
 .kv .k{ color:var(--mu); }
 .kv .v{ font-family:var(--numf); font-size:17px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums; }
 
-.slot{ font-family:var(--disp); font-weight:700; letter-spacing:.06em; text-transform:uppercase; background:var(--ac); color:#FFFFFF; padding:0 5px; border-radius:2px; }
+.slot{ font-weight:600; background:var(--ac); color:var(--onac); padding:0 5px; border-radius:2px; }
 .plan{ appearance:none; font:inherit; text-align:left; border:0; width:100%; display:grid; grid-template-columns:20px 1fr auto; gap:2px 12px; align-items:center; padding:14px 16px; border-radius:var(--r); background:var(--sf); color:var(--tx); cursor:pointer; }
 .plan .rd{ grid-row:1 / span 2; width:20px; height:20px; border-radius:50%; box-shadow:inset 0 0 0 1.5px var(--mu); }
-.plan .pn{ font-family:var(--disp); font-size:20px; font-weight:800; text-transform:uppercase; line-height:1; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.plan .pn{ font-family:var(--disp); font-size:21px; font-weight:800; line-height:1; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .plan .pp{ font-family:var(--numf); font-size:24px; font-weight:800; text-align:right; line-height:1; }
 .plan .ps{ grid-column:2 / 4; font-size:12.5px; color:var(--mu); }
-.plan[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
-.plan[aria-pressed="true"] .ps{ color:#D6D6D2; }
-.plan[aria-pressed="true"] .rd{ background:#FFFFFF; box-shadow:inset 0 0 0 6px var(--ac); }
-.badge{ font-family:var(--body); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--ac); color:#FFFFFF; padding:3px 6px; border-radius:2px; }
-.tl{ list-style:none; margin:0; padding:0; display:grid; gap:0; }
+.badge{ font-family:var(--body); font-size:11px; font-weight:700; background:var(--ac); color:var(--onac); padding:3px 6px; border-radius:2px; }
+.tl{ list-style:none; margin:0; padding:0; display:grid; }
 .tl li{ display:grid; grid-template-columns:62px 1fr; gap:10px; padding:8px 0; border-top:1px solid var(--ln); font-size:13px; }
 .tl li:first-child{ border-top:0; padding-top:0; }
-.tl .d{ font-family:var(--numf); font-weight:700; font-size:15px; text-transform:uppercase; }
+.tl .d{ font-family:var(--numf); font-weight:700; font-size:15px; }
 
 .prev{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .tile{ background:var(--sf); border-radius:var(--r); padding:12px; display:grid; gap:4px; align-content:start; }
 .tile .tv{ font-family:var(--numf); font-size:30px; font-weight:800; line-height:1; }
 .tile .tv small{ font-size:16px; color:var(--ac); margin-left:2px; }
 .tile .ts{ font-size:12px; color:var(--mu); line-height:1.35; }
-.tile.dark{ background:#0E0E0E; color:#FFFFFF; }
-.tile.dark .ts{ color:#D6D6D2; }
 
 /* food */
 .shot{ display:grid; grid-template-columns:76px 1fr; gap:14px; align-items:center; }
@@ -206,7 +227,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
 .rng .r{ display:grid; grid-template-columns:1fr 84px; gap:4px 10px; align-items:center; font-size:13px; }
 .rng .r .rv{ text-align:right; font-family:var(--numf); font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
 .rng .r .sp{ grid-column:1 / -1; height:6px; border-radius:3px; background:var(--trk); overflow:hidden; }
-.rng .r .sp i{ display:block; height:100%; background:#0E0E0E; }
+.rng .r .sp i{ display:block; height:100%; background:var(--tx); }
 .rng .r.hi .sp i{ background:var(--ac); }
 .inp{ display:flex; align-items:center; gap:2px; padding:13px 14px; background:var(--sf); border-radius:var(--btnr); font-size:15px; box-shadow:inset 0 0 0 1.5px var(--tx); }
 .caret{ width:2px; height:18px; background:var(--ac); display:inline-block; }
@@ -218,32 +239,32 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
 .ex .n{ font-family:var(--numf); font-weight:700; font-size:15px; color:var(--mu); }
 .ex .t{ font-weight:600; }
 .ex.done{ color:var(--mu); }
-.ex.done .n{ color:var(--ac); }
-.ex.on{ background:#0E0E0E; color:#FFFFFF; }
-.ex.on .n{ color:var(--ac); }
+.ex.done .n, .ex.on .n{ color:var(--ac); }
 .ex .m{ font-family:var(--numf); font-size:14px; font-weight:600; }
 .sets{ display:grid; gap:6px; }
-.sethd{ display:grid; grid-template-columns:18px 1fr 70px 36px; gap:10px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mu); font-weight:600; padding:0 10px; }
-.set{ display:grid; grid-template-columns:18px 1fr 70px 36px; gap:10px; align-items:center; padding:7px 10px; background:#FFFFFF; border-radius:4px; }
+.sethd{ display:grid; grid-template-columns:18px 1fr 70px 36px; gap:10px; font-size:11px; color:var(--mu); font-weight:600; padding:0 10px; }
+.set{ display:grid; grid-template-columns:18px 1fr 70px 36px; gap:10px; align-items:center; padding:7px 10px; background:var(--raise); border-radius:4px; }
 .set .sn{ font-family:var(--numf); font-weight:700; color:var(--mu); }
 .set .val{ font-family:var(--numf); font-size:21px; font-weight:700; line-height:1; }
-.set .val.ghost{ color:#9A9A95; font-weight:600; }
+.set .val.ghost{ color:var(--ghost); font-weight:600; }
 .set .last{ font-family:var(--numf); font-size:13px; color:var(--mu); }
+.set.wu{ background:transparent; box-shadow:inset 0 0 0 1px var(--ln); padding-block:5px; }
+.set.wu .val{ font-size:17px; font-weight:600; color:var(--mu); }
+.set.wu .ck.done{ background:var(--trk); color:var(--mu); }
 .ck{ appearance:none; border:0; width:36px; height:32px; border-radius:4px; background:var(--trk); color:var(--tx); display:grid; place-items:center; cursor:pointer; padding:0; font-size:15px; font-weight:700; }
-.ck.done{ background:var(--ac); color:#FFFFFF; }
-.set.cur{ box-shadow:inset 0 0 0 1.5px #0E0E0E; }
+.ck.done{ background:var(--ac); color:var(--onac); }
+.set.cur{ box-shadow:inset 0 0 0 1.5px var(--tx); }
 .rir{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
-.rir button{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:18px; font-weight:700; padding:8px 0; border-radius:4px; background:#FFFFFF; color:var(--tx); cursor:pointer; }
-.rir button[aria-pressed="true"]{ background:#0E0E0E; color:#FFFFFF; }
-.rest{ display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; background:#0E0E0E; color:#FFFFFF; border-radius:var(--r); padding:12px 14px; }
+.rir button{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:18px; font-weight:700; padding:8px 0; border-radius:4px; background:var(--raise); color:var(--tx); cursor:pointer; }
+.rir button[aria-pressed="true"]{ background:var(--dec); color:var(--dectx); }
+.rest{ display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; border-radius:var(--r); padding:12px 14px; }
 .rest .t{ font-family:var(--numf); font-size:34px; font-weight:800; line-height:1; }
-.rest .rl{ font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ac); font-weight:600; }
 .rest > span{ display:block; min-width:0; }
-.rest .rl{ display:block; }
-.rest .trk{ display:block; height:6px; border-radius:3px; background:#2C2C2A; overflow:hidden; margin-top:6px; }
+.rest .rl{ display:block; font-size:12px; color:var(--ac); font-weight:600; }
+.rest .trk{ display:block; height:6px; border-radius:3px; background:var(--trk); overflow:hidden; margin-top:6px; }
 .rest .trk i{ display:block; height:100%; width:30%; background:var(--ac); }
-.rest .plus{ appearance:none; border:0; font:inherit; font-size:12.5px; font-weight:700; padding:8px 10px; border-radius:4px; background:#2C2C2A; color:#FFFFFF; cursor:pointer; }
-.bub{ justify-self:end; max-width:82%; background:#0E0E0E; color:#FFFFFF; padding:10px 13px; border-radius:6px 6px 2px 6px; font-size:14px; line-height:1.4; }
+.rest .plus{ appearance:none; border:0; font:inherit; font-size:12.5px; font-weight:700; padding:8px 10px; border-radius:4px; background:var(--decln); color:var(--dectx); cursor:pointer; }
+.bub{ justify-self:end; max-width:82%; padding:10px 13px; border-radius:6px 6px 2px 6px; font-size:14px; line-height:1.4; }
 .meter{ display:grid; grid-template-columns:1fr auto; gap:6px 10px; align-items:center; }
 .meter .trk{ height:6px; border-radius:3px; background:var(--trk); overflow:hidden; }
 .meter .trk i{ display:block; height:100%; background:var(--ac); }
@@ -251,38 +272,38 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
 .res{ display:grid; gap:3px; padding:11px 0; border-top:1px solid var(--ln); }
 .res:first-of-type{ border-top:0; padding-top:0; }
 .res .rt{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
-.res .rh{ font-family:var(--disp); font-size:17px; font-weight:700; text-transform:uppercase; }
+.res .rh{ font-family:var(--disp); font-size:18px; font-weight:700; }
 .res .rs{ font-size:13px; color:var(--tx2); line-height:1.4; }
 .res .up{ color:var(--ac); font-weight:600; }
+.prt{ font-size:11px; font-weight:700; padding:1px 5px; border-radius:2px; background:var(--ac); color:var(--onac); margin-right:6px; }
 
 /* decisions */
 .scale{ display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
-.scale button{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:16px; font-weight:700; padding:9px 0; border-radius:3px; background:#FFFFFF; color:var(--tx); cursor:pointer; min-width:0; }
-.scale button[aria-pressed="true"]{ background:var(--ac); color:#FFFFFF; }
+.scale button{ appearance:none; border:0; font:inherit; font-family:var(--disp) !important; font-size:16px; font-weight:700; padding:9px 0; border-radius:3px; background:var(--raise); color:var(--tx); cursor:pointer; min-width:0; }
+.scale button[aria-pressed="true"]{ background:var(--ac); color:var(--onac); }
 .ends{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--mu); }
-.src{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 7px; border-radius:2px; white-space:nowrap; }
-.src.exp{ background:#0E0E0E; color:#FFFFFF; }
-.src.res{ box-shadow:inset 0 0 0 1.5px #0E0E0E; color:#0E0E0E; }
+.src{ font-size:11px; font-weight:700; padding:3px 7px; border-radius:2px; white-space:nowrap; }
+.src.exp{ background:var(--dec); color:var(--dectx); }
+.src.res{ box-shadow:inset 0 0 0 1.5px var(--tx); color:var(--tx); }
 .rule{ display:grid; gap:6px; padding:10px 0; border-top:1px solid var(--ln); font-size:13.5px; line-height:1.4; }
 .rule:first-of-type{ border-top:0; padding-top:0; }
 .conf{ display:flex; gap:4px; }
 .conf i{ width:28px; height:6px; background:var(--trk); border-radius:2px; }
 .conf i.on{ background:var(--ac); }
-.callout{ border-left:3px solid var(--ac); padding:2px 0 2px 12px; display:grid; gap:4px; }
 
 /* progress */
 .cam{ position:relative; background:#0E0E0E; border-radius:var(--r); height:430px; overflow:hidden; }
 .cam svg{ position:absolute; inset:0; width:100%; height:100%; }
 .lvl{ position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:8px; background:#2C2C2A; color:#FFFFFF; font-size:12px; font-weight:600; padding:6px 10px; border-radius:4px; white-space:nowrap; }
-.lvl b{ font-family:var(--numf); font-size:15px; color:var(--ac); }
+.lvl b{ font-family:var(--numf); font-size:15px; color:#F07BE0; }
 .shutter{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.shut{ appearance:none; border:0; width:66px; height:66px; border-radius:50%; background:#FFFFFF; box-shadow:inset 0 0 0 4px var(--ac), inset 0 0 0 7px #FFFFFF, inset 0 0 0 40px var(--ac); cursor:pointer; flex:none; }
+.shut{ appearance:none; border:0; width:66px; height:66px; border-radius:50%; background:var(--bg); box-shadow:inset 0 0 0 4px var(--ac), inset 0 0 0 7px var(--bg), inset 0 0 0 40px var(--ac); cursor:pointer; flex:none; }
 .pair{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .fig{ background:var(--sf); border-radius:var(--r); padding:10px 8px 8px; display:grid; gap:6px; justify-items:center; }
 .fig svg{ width:100%; max-width:120px; height:auto; display:block; }
 .fig .legend svg{ width:auto; max-width:none; }
 .fig .fc{ font-size:12px; color:var(--mu); text-align:center; }
-.fig .fc b{ display:block; color:var(--tx); font-family:var(--disp); font-size:15px; text-transform:uppercase; }
+.fig .fc b{ display:block; color:var(--tx); font-family:var(--disp); font-size:16px; }
 .chart{ width:100%; height:auto; display:block; }
 .legend{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--mu); }
 .legend span{ display:flex; align-items:center; gap:6px; }
@@ -292,38 +313,159 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
 .scn .sa{ font-size:13.5px; font-weight:600; }
 .scn .sr{ font-family:var(--numf); font-size:22px; font-weight:800; line-height:1; text-align:right; }
 .scn .ss{ font-size:12px; color:var(--mu); }
-.scn.me{ background:#0E0E0E; color:#FFFFFF; }
-.scn.me .ss{ color:#D6D6D2; }
+.scn.me .ss{ color:var(--tx2); }
 .scn.me .sr{ color:var(--ac); }
 .weeks{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
-.wk{ aspect-ratio:1; border-radius:4px; background:#0E0E0E; color:#FFFFFF; display:grid; place-items:center; font-family:var(--numf); font-weight:700; font-size:16px; }
-.wk.g{ background:#FFFFFF; color:var(--ac); box-shadow:inset 0 0 0 2px var(--ac); }
-.wk.now{ box-shadow:inset 0 -4px 0 var(--ac); }
-.sw{ width:12px; height:12px; border-radius:2px; display:inline-block; background:#0E0E0E; }
-.sw.g{ background:#FFFFFF; box-shadow:inset 0 0 0 2px var(--ac); }
+.wk{ aspect-ratio:1; border-radius:4px; background:var(--dec); color:var(--dectx); display:grid; place-items:center; font-family:var(--numf); font-weight:700; font-size:16px; }
+.wk.g{ background:var(--bg); color:var(--ac); box-shadow:inset 0 0 0 2px var(--ac); }
+.wk.now{ box-shadow:inset 0 -4px 0 var(--acink); }
+.sw{ width:12px; height:12px; border-radius:2px; display:inline-block; background:var(--dec); }
+.sw.g{ background:var(--bg); box-shadow:inset 0 0 0 2px var(--ac); }
+.sw.now{ box-shadow:inset 0 -3px 0 var(--acink); }
+.sw.sil{ background:#D6D6D2; }
 
-@media (prefers-reduced-motion: no-preference){
-  .whylist{ animation:fade .18s ease-out; }
-  @keyframes fade{ from{ opacity:.4; transform:translateY(-2px);} to{ opacity:1; transform:none;} }
+/* SVG helpers: every shape keeps an explicit fill attribute; these classes theme it */
+.f-tx{ fill:var(--tx); } .f-mu{ fill:var(--mu); } .f-ac{ fill:var(--ac); } .f-bg{ fill:var(--bg); } .f-body{ fill:var(--bodyf); }
+.s-tx{ stroke:var(--tx); } .s-mu{ stroke:var(--mu); } .s-ac{ stroke:var(--ac); } .s-trk{ stroke:var(--trk); } .s-bg{ stroke:var(--bg); }
+
+/* ---------- section 5 ---------- */
+.vids{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.vid{ position:relative; border-radius:var(--r); overflow:hidden; background:#1C1C1B; aspect-ratio:3 / 4; }
+.vid svg.fr{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+.vid .vl{ position:absolute; left:8px; top:8px; font-size:11.5px; font-weight:600; padding:3px 7px; border-radius:3px; background:rgba(0,0,0,.62); color:#FFFFFF; }
+.vid .vl.k{ background:#F07BE0; color:#0E0E0E; }
+.vid .pl{ position:absolute; right:8px; bottom:8px; width:30px; height:30px; }
+.cues{ list-style:none; margin:0; padding:0; display:grid; }
+.cues li{ padding:9px 0; border-top:1px solid var(--ln); font-size:13.5px; line-height:1.4; }
+.cues li:first-child{ border-top:0; padding-top:0; }
+.cues .ct{ font-weight:600; display:block; }
+.setup{ font-size:14.5px; font-weight:600; line-height:1.35; }
+.mmap{ display:grid; justify-items:center; gap:8px; }
+.mmap > svg{ width:100%; max-width:210px; height:auto; display:block; }
+
+.grp{ display:grid; }
+.grp > .eyebrow{ padding:0 2px 6px; color:var(--mu); font-weight:600; }
+.srow{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--ln); font-size:14px; }
+.srow:first-child{ border-top:0; padding-top:0; }
+.srow .hs{ font-size:12px; color:var(--mu); margin-top:1px; line-height:1.35; }
+.srow .chev{ color:var(--mu); font-size:18px; line-height:1; }
+.acts{ display:flex; gap:14px; flex:none; }
+.tb{ appearance:none; border:0; background:none; font:inherit; font-size:13px; font-weight:600; color:var(--tx); text-decoration:underline; text-underline-offset:3px; padding:4px 0; cursor:pointer; }
+button.srow{ appearance:none; border:0; border-top:1px solid var(--ln); background:none; font:inherit; color:inherit; width:100%; text-align:left; cursor:pointer; }
+.confirm{ display:grid; gap:8px; padding:12px; border-radius:var(--r); background:var(--bg); box-shadow:inset 0 0 0 1.5px var(--warn); }
+.confirm[hidden]{ display:none; }
+.confirm .ct{ font-weight:600; font-size:14px; color:var(--warn); }
+
+.chg{ list-style:none; margin:0; padding:0; display:grid; }
+.chg li{ padding:9px 0; border-top:1px solid var(--ln); font-size:14px; line-height:1.4; }
+.chg li:first-child{ border-top:0; padding-top:0; }
+.warnline{ color:var(--warn); font-weight:600; font-size:13px; line-height:1.4; margin:0; }
+.warnline[hidden], [data-for][hidden]{ display:none; }
+
+.ift{ display:grid; gap:3px; padding:10px 0; border-top:1px solid var(--ln); font-size:13.5px; line-height:1.4; }
+.ift:first-of-type{ border-top:0; padding-top:0; }
+.ift b{ font-weight:700; }
+.ift .th{ font-weight:600; color:var(--tx); }
+.ift .th b{ color:var(--ac); }
+.simout{ display:grid; gap:4px; padding:12px; border-radius:var(--r); background:var(--bg); box-shadow:inset 0 0 0 1.5px var(--tx); }
+
+.rail{ display:grid; grid-template-columns:repeat(12,1fr); gap:3px; }
+.rail span{ height:22px; border-radius:2px; background:var(--trk); font-family:var(--numf); font-weight:700; font-size:12px; display:grid; place-items:center; color:var(--mu); }
+.rail span.c{ background:var(--ac); color:var(--onac); }
+.rail span.now{ box-shadow:inset 0 0 0 2px var(--tx); }
+.led{ list-style:none; margin:0; padding:0; display:grid; }
+.led li{ display:grid; grid-template-columns:46px 1fr; gap:12px; padding:12px 0; border-top:1px solid var(--ln); }
+.led li:first-child{ border-top:0; padding-top:0; }
+.led .w{ font-family:var(--numf); font-weight:800; font-size:20px; line-height:1; }
+.led .w small{ display:block; font-family:var(--body); font-weight:500; font-size:11.5px; color:var(--mu); margin-top:4px; }
+.led .bd{ display:grid; gap:4px; }
+.led .tg{ justify-self:start; font-size:11px; font-weight:700; padding:2px 6px; border-radius:2px; background:var(--dec); color:var(--dectx); }
+.led .tg.now{ background:var(--ac); color:var(--onac); }
+.led .t{ font-size:14px; font-weight:600; line-height:1.35; }
+.led .a{ font-size:12.5px; color:var(--tx2); line-height:1.4; }
+.led .a b{ font-weight:700; color:var(--tx); }
+
+.share{ border-radius:var(--r); overflow:hidden; box-shadow:inset 0 0 0 1px var(--ln); display:grid; }
+.share .top{ padding:18px; display:grid; gap:10px; border-radius:0; }
+.share .sb{ font-family:var(--disp); font-size:18px; font-weight:800; color:var(--ac); }
+.share .sh{ font-family:var(--disp); font-size:29px; font-weight:800; line-height:1; margin:0; }
+.share .sw8[hidden]{ display:none; }
+.share .bot{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--ln); }
+.share .bot > div{ background:var(--sf); padding:12px 14px; display:grid; gap:2px; }
+.share .bot .tv{ font-family:var(--numf); font-size:28px; font-weight:800; line-height:1; }
+
+/* lock screen: system surface, same in both themes */
+.lockscr{ background:#1D1E21; color:#FFFFFF; }
+.lk{ flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 16px 12px; }
+.lk .date{ font-size:17px; font-weight:600; margin-top:10px; color:rgba(255,255,255,.88); }
+.lk .clock{ font-size:92px; font-weight:700; line-height:1; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+.lw{ margin-top:12px; width:100%; max-width:252px; background:rgba(255,255,255,.14); border-radius:18px; padding:10px 14px; display:grid; gap:2px; }
+.lw .a{ font-size:12px; font-weight:600; color:rgba(255,255,255,.72); }
+.lw .b{ font-size:16px; font-weight:600; }
+.lw .c{ font-size:13px; color:rgba(255,255,255,.78); }
+.la{ margin-top:auto; width:100%; background:rgba(0,0,0,.6); border-radius:24px; padding:14px 16px; display:grid; grid-template-columns:auto 1fr auto; gap:4px 14px; align-items:center; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+.la .rl{ font-size:12px; font-weight:600; color:#F07BE0; }
+.la .t{ font-family:var(--numf); font-size:36px; font-weight:800; line-height:1; }
+.la .nx{ font-size:12px; color:rgba(255,255,255,.72); }
+.la .nv{ font-size:14px; font-weight:600; line-height:1.3; }
+.la .plus{ appearance:none; border:0; font:inherit; font-size:12.5px; font-weight:700; padding:8px 10px; border-radius:14px; background:rgba(255,255,255,.16); color:#FFFFFF; cursor:pointer; }
+.la .trk{ grid-column:1 / -1; height:5px; border-radius:3px; background:rgba(255,255,255,.16); overflow:hidden; margin-top:6px; }
+.la .trk i{ display:block; height:100%; width:30%; background:#F07BE0; }
+.lk .bot{ width:100%; display:flex; justify-content:space-between; margin-top:16px; padding:0 20px; }
+.lk .bot span{ width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.14); display:grid; place-items:center; }
+.lk .home{ width:130px; height:5px; border-radius:3px; background:#FFFFFF; margin-top:16px; }
+
+/* ---------- inverse surfaces: the decision block and selected states flip with the theme ---------- */
+.dec, .inv, .tile.dark, .scn.me, .ex.on, .rest, .bub, .opt[aria-pressed="true"], .plan[aria-pressed="true"]{
+  background:var(--dec); color:var(--dectx);
+  --tx:var(--dectx); --tx2:var(--dectx2); --mu:var(--decmu); --ln:var(--decln); --trk:var(--decln);
+  --ac:var(--acink); --onac:var(--onacink);
 }
+.dec .eyebrow, .tile.dark .eyebrow, .inv .eyebrow{ color:var(--ac); }
+.dec .pill{ background:var(--decln); color:var(--dectx); }
+.dec .seg{ background:var(--decln); }
+.dec .seg button[aria-pressed="true"]{ background:var(--ac); color:var(--onac); }
+.tile.dark .ts{ color:var(--tx2); }
+.opt[aria-pressed="true"] .os, .plan[aria-pressed="true"] .ps{ color:var(--tx2); }
+.opt[aria-pressed="true"] .rd, .plan[aria-pressed="true"] .rd{ background:var(--dectx); box-shadow:inset 0 0 0 6px var(--ac); }
+
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{ animation:none !important; transition:none !important; }
 }
 </style>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-today" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="3.5" y1="10" x2="20.5" y2="10" stroke="currentColor" stroke-width="1.8"/><line x1="8" y1="3" x2="8" y2="6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="16" y1="3" x2="16" y2="6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-train" viewBox="0 0 24 24"><rect x="2" y="9" width="3" height="6" rx="1" fill="currentColor"/><rect x="5" y="6.5" width="3" height="11" rx="1" fill="currentColor"/><rect x="8" y="11" width="8" height="2" fill="currentColor"/><rect x="16" y="6.5" width="3" height="11" rx="1" fill="currentColor"/><rect x="19" y="9" width="3" height="6" rx="1" fill="currentColor"/></symbol>
+  <symbol id="i-food" viewBox="0 0 24 24"><path d="M3 11 H21 A9 9 0 0 1 3 11 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><line x1="9" y1="3.5" x2="10" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="14.5" y1="3.5" x2="14" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-prog" viewBox="0 0 24 24"><rect x="4" y="13" width="3.5" height="7" rx="1" fill="currentColor"/><rect x="10.25" y="9" width="3.5" height="11" rx="1" fill="currentColor"/><rect x="16.5" y="4" width="3.5" height="16" rx="1" fill="currentColor"/></symbol>
+</svg>
+
 <div class="wrap">
+  <div class="themebar">
+    <div class="theme" role="group" aria-label="Phone theme">
+      <span>Phones</span>
+      <button type="button" data-theme-set="light" aria-pressed="true">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
   <header class="intro">
-    <h1>Keel · ekran prototipi</h1>
-    <p>Uygulamanın dört akışı, 28 ekran, hepsi Yön C dilinde. Soldan sağa oku; her telefonun altında ekranın adı ve dayandığı karar ya da araştırma yazıyor.</p>
-    <p>Tüm ekranlar aynı kullanıcıyı gösteriyor: 12. hafta, cut fazının 3. haftası, 81.4 kg, 2,300 kcal hedef, bench 80 kg. Karar ekranları aynı pazartesinin olası sonuçları; gerçekte biri görünür.</p>
+    <h1>Keel · ekran prototipi v2</h1>
+    <p>37 ekran, beş bölüm. Görsel dil RUBİN: C'nin iskeleti aynı (beyaz zemin, karar bloğu, dar başlık, 6/4 px köşe), vurgu <b>#B0129A</b>, uyarı ayrı renk, gövde sistem fontu. Büyük harf yalnız ekran başlığında ve karar başlığında.</p>
+    <p>Sağ üstteki <b>Light / Dark</b> anahtarı bütün telefonları koyu token setine geçirir. Koyuda karar bloğu ters döner: açık blok, koyu metin.</p>
+    <p>Tüm ekranlar aynı kullanıcıyı gösteriyor: 12. hafta, cut fazının 3. haftası, 81.4 kg, 2,300 kcal hedef, bench 80 kg. Bugün Salı, 29 Eylül 2026. Karar ekranları aynı pazartesinin olası sonuçları; gerçekte biri görünür.</p>
+    <p>v2'de yeni: Apple Health'e antrenman yazma, geçmişi içe aktarma, ısınma seti etiketi, sert set sayacı ve Bölüm 5 (hareket gösterimi, ayarlar, durum modu, kilit ekranı, kararın şeffaflık araçları).</p>
   </header>
+
+  <div id="phones">
 
   <!-- =========================================================
        BÖLÜM 1 · ONBOARDING + PAYWALL
        ========================================================= -->
   <section class="sec" aria-labelledby="s1">
     <header class="sec-h">
-      <span class="k">Bölüm 1 · 10 ekran</span>
+      <span class="k">Bölüm 1 · 11 ekran</span>
       <h2 id="s1">Onboarding ve paywall</h2>
       <p>Az soru, her sorunun nedeni ekranda. Kullanıcı ilk dakikada ürünün karar verdiğini ve nedenini gösterdiğini görüyor.</p>
     </header>
@@ -334,7 +476,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="brand">KEEL</div>
+            <div class="brand">keel</div>
             <h3 class="h1 xl" style="margin-top:28px">Everything else shows you the data. <em>This one makes the call.</em></h3>
             <p class="lede">And it always shows you why.</p>
             <div class="card dec">
@@ -349,7 +491,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Welcome</div>
+          <div><b>Ekran:</b> 1.1 Welcome</div>
           <div><b>Dayanak:</b> Faz 4 konumlandırma. Rakiplerin boş bıraktığı kelime alanı: karar ve neden. Örnek karar kartı vaadi somutlaştırıyor.</div>
         </figcaption>
       </figure>
@@ -359,7 +501,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">1/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">1/9</span></div>
             <h3 class="h1" style="margin-top:14px">What do you want?</h3>
             <div class="opts">
               <button class="opt" type="button" aria-pressed="true"><span class="ot">Lose fat</span><span class="rd"></span><span class="os">Bring your weight down and keep your strength.</span></button>
@@ -371,7 +513,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Goal</div>
+          <div><b>Ekran:</b> 1.2 Goal</div>
           <div><b>Dayanak:</b> Faz kapısı kararını motor verir. "Decide for me" seçeneği bu yüzden eşit ağırlıkta.</div>
         </figcaption>
       </figure>
@@ -381,7 +523,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">2/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">2/9</span></div>
             <h3 class="h1" style="margin-top:14px">Do you already follow a program?</h3>
             <div class="opts">
               <button class="opt" type="button" aria-pressed="false"><span class="ot">Yes, I'll bring mine</span><span class="rd"></span><span class="os">Enter your split once. Food and weekly calls adjust around it.</span></button>
@@ -392,7 +534,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Program</div>
+          <div><b>Ekran:</b> 1.3 Program</div>
           <div><b>Dayanak:</b> Levent kararı, 29 Eylül: ikisi de desteklenir, seçim onboarding'de yapılır.</div>
         </figcaption>
       </figure>
@@ -402,7 +544,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">3/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">3/9</span></div>
             <h3 class="h1" style="margin-top:6px">When can you train?</h3>
             <div class="lbl">Days that could work</div>
             <div class="days">
@@ -421,17 +563,17 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               <button type="button" aria-pressed="false">4</button>
               <button type="button" aria-pressed="false">5+</button>
             </div>
-            <div class="field"><span class="fl">Usual training time</span><span class="fv">18:30</span><span class="fs">Reminders arrive before your own session, not at a fixed hour.</span></div>
+            <div class="field"><span class="fl">Usual training time</span><span class="fv">18:30</span><span class="fs">Reminders follow your own session time.</span></div>
             <div class="card dec">
               <span class="eyebrow">What we'll plan</span>
-              <div class="dec-title" style="font-size:24px">4 days fit your week. We'll plan for 4, not 6.</div>
+              <div class="dec-title" style="font-size:24px">4 days fit your week. We'll plan for 4.</div>
               <p class="dec-body">Starting near what you already do keeps the plan going. Add a day once 4 feels easy.</p>
             </div>
             <div class="foot"><button class="btn" type="button">Continue</button></div>
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Schedule</div>
+          <div><b>Ekran:</b> 1.4 Schedule</div>
           <div><b>Dayanak:</b> I1, gerçekçi sıklık çıkarımı. Bildirim saati kullanıcının kendi antrenman saatine bağlı (saat ipucu r=0,11).</div>
         </figcaption>
       </figure>
@@ -441,7 +583,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div><span class="meta">4/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><span class="meta">4/9</span></div>
             <h3 class="h1" style="margin-top:14px">Where you start</h3>
             <div class="field"><span class="fl">Height</span><span class="fv">180<small>cm</small></span></div>
             <div class="field"><span class="fl">Weight</span><span class="fv">82.0<small>kg</small></span><span class="fs">Syncs from Apple Health if you use a smart scale.</span></div>
@@ -450,13 +592,13 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               <button type="button" aria-pressed="true">Male</button>
               <button type="button" aria-pressed="false">Female</button>
             </div>
-            <div class="field"><span class="fl">Waist <span class="opt-tag">Optional</span></span><span class="fv" style="color:#9A9A95">&ndash;<small>cm</small></span><span class="fs">We'll ask only when we need it: when your weight and training point in different directions.</span></div>
+            <div class="field"><span class="fl">Waist <span class="opt-tag">Optional</span></span><span class="fv ghost">&ndash;<small>cm</small></span><span class="fs">We'll ask only when we need it: when your weight and training point in different directions.</span></div>
             <p class="small">Units shown in metric. Change them in Settings.</p>
             <div class="foot"><button class="btn" type="button">Continue</button></div>
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Baseline</div>
+          <div><b>Ekran:</b> 1.5 Baseline</div>
           <div><b>Dayanak:</b> Veri talebi modeli (CAT). Bel ölçüsü sadece sinyaller çeliştiğinde istenir; ilk gün zorunlu değil.</div>
         </figcaption>
       </figure>
@@ -466,12 +608,12 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><span class="meta">5/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div><span class="meta">5/9</span></div>
             <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true" style="margin-top:10px">
-              <rect x="0" y="0" width="56" height="56" rx="6" fill="#0E0E0E"/>
-              <rect x="17" y="10" width="22" height="36" rx="3" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
-              <rect x="22" y="26" width="12" height="10" rx="1.5" fill="#FF4F12"/>
-              <path d="M24.5 26 V23 a3.5 3.5 0 0 1 7 0 V26" fill="none" stroke="#FF4F12" stroke-width="2.2"/>
+              <rect x="0" y="0" width="56" height="56" rx="6" fill="#0E0E0E" class="f-tx"/>
+              <rect x="17" y="10" width="22" height="36" rx="3" fill="none" stroke="#FFFFFF" class="s-bg" stroke-width="2.5"/>
+              <rect x="22" y="26" width="12" height="10" rx="1.5" fill="#B0129A" class="f-ac"/>
+              <path d="M24.5 26 V23 a3.5 3.5 0 0 1 7 0 V26" fill="none" stroke="#B0129A" class="s-ac" stroke-width="2.2"/>
             </svg>
             <h3 class="h1">Your photos stay on your phone</h3>
             <ul class="pts">
@@ -486,7 +628,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Your photos stay on your phone</div>
+          <div><b>Ekran:</b> 1.6 Your photos stay on your phone</div>
           <div><b>Dayanak:</b> H1 + gizlilik (Amazon Halo dersi). Vücut fotoğrafı GDPR Md.9 özel kategori veri; cihaz dışına çıkmaz.</div>
         </figcaption>
       </figure>
@@ -496,11 +638,11 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="meta">6/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><span class="meta">6/9</span></div>
             <h3 class="h1" style="margin-top:10px;font-size:32px">For the first 4 weeks I won't show you the scale trend.</h3>
             <p class="lede">I'll show you this instead.</p>
             <div class="prev">
-              <div class="tile dark"><span class="eyebrow" style="color:#FF4F12">Consistency</span><span class="tv">84<small>%</small></span><span class="ts">16 of 19 planned actions this week</span></div>
+              <div class="tile dark"><span class="eyebrow">Consistency</span><span class="tv">84<small>%</small></span><span class="ts">16 of 19 planned actions this week</span></div>
               <div class="tile"><span class="eyebrow">Performance</span><span class="tv">+1<small>rep</small></span><span class="ts">Bench 80 kg × 7 → × 8, same effort</span></div>
             </div>
             <div class="card">
@@ -511,8 +653,8 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> What to expect</div>
-          <div><b>Dayanak:</b> I1. İlk 4 hafta güvenilir fiziksel sinyal yok; beklenti önceden düşürülür ve boşluk tutarlılık ile performansla doldurulur.</div>
+          <div><b>Ekran:</b> 1.7 What to expect</div>
+          <div><b>Dayanak:</b> I1. İlk 4 hafta güvenilir fiziksel sinyal yok; beklenti önceden düşürülür ve boşluk tutarlılık ile performansla doldurulur. Geçmiş getiren kullanıcıda (1.9) trend hemen görünür.</div>
         </figcaption>
       </figure>
 
@@ -521,18 +663,23 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="meta">7/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="meta">7/9</span></div>
             <h3 class="h1" style="margin-top:14px">Connect Apple Health</h3>
             <p class="lede">Less typing. These arrive on their own.</p>
             <div class="card" style="gap:0">
               <span class="eyebrow" style="margin-bottom:6px">We read</span>
-              <div class="hrow"><div><div>Steps</div><div class="hs">Daily total</div></div><span class="tgl on" aria-hidden="true"></span></div>
-              <div class="hrow"><div><div>Sleep</div><div class="hs">Hours per night</div></div><span class="tgl on" aria-hidden="true"></span></div>
-              <div class="hrow"><div><div>Weight</div><div class="hs">From your scale, if it syncs</div></div><span class="tgl on" aria-hidden="true"></span></div>
+              <div class="hrow"><div><div>Steps</div><div class="hs">Daily total</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Read steps"></button></div>
+              <div class="hrow"><div><div>Sleep</div><div class="hs">Hours per night</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Read sleep"></button></div>
+              <div class="hrow"><div><div>Weight</div><div class="hs">From your scale, if it syncs</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Read weight"></button></div>
+              <div class="hrow"><div><div>Active energy</div><div class="hs">So a calorie cut never goes too far</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Read active energy"></button></div>
+            </div>
+            <div class="card" style="gap:0">
+              <span class="eyebrow" style="margin-bottom:6px">We add</span>
+              <div class="hrow"><div><div>Workouts you log</div><div class="hs">So they count toward your Fitness rings</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Add workouts to Apple Health"></button></div>
             </div>
             <div class="callout">
               <span class="lbl">We don't read</span>
-              <p class="small">Heart data, cycle data, medications, health records, location. Nothing is written back.</p>
+              <p class="small">Heart data, cycle data, medications, health records, location.</p>
             </div>
             <div class="foot">
               <button class="btn" type="button">Connect</button>
@@ -541,17 +688,47 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Apple Health</div>
-          <div><b>Dayanak:</b> Pasif veri, sıfır ek yük. Okunmayanlar da açıkça listeleniyor.</div>
+          <div><b>Ekran:</b> 1.8 Apple Health</div>
+          <div><b>Dayanak:</b> Pasif veri, sıfır ek yük. Levent kararı: antrenman Health'e yazılır, ayrı anahtarla (L3 #19 ve P8: halkalara kredi yalnız HKWorkout ile; Hevy ve Strong yazıyor). Active energy güvenlik ağı için okunur (L3 P9, U13). Okunmayanlar açıkça listeleniyor. ADR-007 buna göre güncellenmeli.</div>
         </figcaption>
       </figure>
 
-      <!-- 1.9 AI consent -->
+      <!-- 1.9 Bring your history -->
       <figure class="col">
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="meta">8/8</span></div>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="meta">8/9</span></div>
+            <h3 class="h1" style="margin-top:14px">Bring your history</h3>
+            <p class="lede">Start from what you've already done.</p>
+            <div class="card" style="gap:0">
+              <div class="hrow"><div><div>Apple Health weight</div><div class="hs">Last 90 days · 58 weigh-ins found</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Import Apple Health weight history"></button></div>
+              <div class="hrow"><div><div>Strong</div><div class="hs">CSV export · workouts, sets, weights</div></div><button class="btn sm ghost" type="button">Choose file</button></div>
+              <div class="hrow"><div><div>Hevy</div><div class="hs">CSV export · workouts, sets, weights</div></div><button class="btn sm ghost" type="button">Choose file</button></div>
+            </div>
+            <div class="callout">
+              <span class="lbl">Your past trend shows right away.</span>
+              <p class="small">The first call still comes on your first Monday check-in.</p>
+            </div>
+            <p class="small">Imported lifts set your starting weights, so the plan doesn't guess. Skip this and your first trend shows in week 5.</p>
+            <div class="foot">
+              <button class="btn" type="button">Import</button>
+              <button class="lnk" type="button">Skip for now</button>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 1.9 Bring your history</div>
+          <div><b>Dayanak:</b> L3 §3 geçiş maliyeti. Strong CSV herkes tarafından dışa aktarılabiliyor, Hevy yalnız Strong CSV içe alıyor; Apple Health kilo geçmişi okuması zaten var (efor S). Levent kararı: içe alınan veri trendi hemen gösterir, ilk karar yine ilk pazartesi (U8 ile U15 dengesi, ADR'e yazılmalı). Health bağlandıktan sonra gelir, o yüzden 1.8'in arkasında.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 1.10 AI consent -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content ob">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="meta">9/9</span></div>
             <h3 class="h1" style="margin-top:14px">Before you analyze a meal</h3>
             <p class="lede">Meal photos you choose to analyze are sent to <span class="slot">Provider</span> to estimate portions. Nothing else.</p>
             <div class="card">
@@ -573,17 +750,17 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> AI data consent</div>
-          <div><b>Dayanak:</b> Apple 5.1.2(i) (13 Kas 2025): üçüncü taraf AI'a veri öncesi adı geçen açık onay. EU AI Act Md.50 şeffaflık. Sağlayıcı adı henüz seçilmedi, turuncu yer tutucu.</div>
+          <div><b>Ekran:</b> 1.10 AI data consent</div>
+          <div><b>Dayanak:</b> Apple 5.1.2(i) (13 Kas 2025): üçüncü taraf AI'a veri öncesi adı geçen açık onay. EU AI Act Md.50 şeffaflık. Sağlayıcı adı henüz seçilmedi, vurgu renginde yer tutucu.</div>
         </figcaption>
       </figure>
 
-      <!-- 1.10 Paywall -->
+      <!-- 1.11 Paywall -->
       <figure class="col">
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content ob">
-            <div class="brand" style="font-size:16px">KEEL</div>
+            <div class="brand" style="font-size:18px">keel</div>
             <h3 class="h1" style="margin-top:2px">Try it for 7 days</h3>
             <div class="opts">
               <button class="plan" type="button" aria-pressed="true"><span class="rd"></span><span class="pn">Yearly <span class="badge">Best value</span></span><span class="pp">$59.99</span><span class="ps">$5.00 a month, billed once a year</span></button>
@@ -604,7 +781,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Paywall</div>
+          <div><b>Ekran:</b> 1.11 Paywall</div>
           <div><b>Dayanak:</b> K5 fiyat kararı, ücretsiz katman yok. Noom'un $62M davası iptal akışı yüzündendi; iptal iki dokunuş ve deneme bitmeden hatırlatma. Pause seçeneği %60-80 geri dönüş.</div>
         </figcaption>
       </figure>
@@ -619,11 +796,11 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
     <header class="sec-h">
       <span class="k">Bölüm 2 · 6 ekran</span>
       <h2 id="s2">Günlük akış</h2>
-      <p>Salı günü: Today, yemek kaydı, antrenman. Kalori tahmini hep aralık, set kaydı tek dokunuş.</p>
+      <p>Salı günü: Today, yemek kaydı, antrenman. Kalori tahmini hep aralık, set kaydı tek dokunuş, ısınma setleri ayrı.</p>
     </header>
     <div class="row">
 
-      <!-- 2.1 Today (reference C, verbatim) -->
+      <!-- 2.1 Today -->
       <figure class="col">
         <div class="phone"><div class="screen v-c">
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
@@ -631,7 +808,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <div class="hdr"><span class="day">Tuesday</span><span class="ph">Week 3 · Cut phase</span></div>
 
             <div class="card">
-              <div class="eyebrow">Consistency · this week</div>
+              <div class="eyebrow">Consistency this week</div>
               <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
                 <div class="big">84<small>%</small></div>
                 <div class="meta" style="text-align:right">16 of 19<br>planned actions</div>
@@ -675,15 +852,15 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <div class="ask"><span>Ask, or log "pulldown 60 kg × 8"</span><span class="snd" aria-hidden="true">↑</span></div>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab on"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Today</div>
-          <div><b>Dayanak:</b> Yön C kararı; referans ekran birebir. "Why this call" açık geliyor, dokununca kapanıyor (tam hali Bölüm 3'te).</div>
+          <div><b>Ekran:</b> 2.1 Today</div>
+          <div><b>Dayanak:</b> Yön C kararı, RUBİN token'larıyla. "Why this call" açık geliyor, dokununca kapanıyor (tam hali Bölüm 3'te). Tab bar sistem camı; marka rengi yalnız seçili sekme ikonunda (L2 §3).</div>
         </figcaption>
       </figure>
 
@@ -724,8 +901,8 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               </div>
               <p class="small">Bars show how much of the range each item causes.</p>
             </div>
-            <div class="card" style="background:#FFFFFF;box-shadow:inset 0 0 0 1.5px #0E0E0E">
-              <span class="eyebrow" style="color:#FF4F12">One question</span>
+            <div class="card outline">
+              <span class="eyebrow ac">One question</span>
               <div class="h2">Is the rice about one cup?</div>
               <div class="seg">
                 <button type="button" aria-pressed="false">Less</button>
@@ -737,14 +914,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <button class="btn" type="button">Log lunch</button>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab on"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Food · photo result</div>
+          <div><b>Ekran:</b> 2.2 Food · photo result</div>
           <div><b>Dayanak:</b> F. Gram sorusu karb hatasını %56,6'dan %20,2'ye düşürüyor. Soru yalnız belirsizlik yüksek ve tek kalem öğünü domine ediyorsa gelir; çubuklar bunu görünür kılar.</div>
         </figcaption>
       </figure>
@@ -755,10 +932,10 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content">
             <div class="hdr"><span class="day">Breakfast</span><span class="ph">08:05</span></div>
-            <button class="card" type="button" style="appearance:none;font:inherit;color:inherit;text-align:left;cursor:pointer;background:#0E0E0E;color:#FFFFFF">
-              <span class="eyebrow" style="color:#FF4F12">One tap</span>
+            <button class="card inv" type="button">
+              <span class="eyebrow">One tap</span>
               <span class="h3">Same as yesterday's breakfast</span>
-              <span class="small" style="color:#D6D6D2">Greek yogurt, oats, banana · 420–480 kcal · 30–34 g protein</span>
+              <span class="small">Greek yogurt, oats, banana · 420–480 kcal · 30–34 g protein</span>
             </button>
             <div class="inp">2 eggs and toast<span class="caret"></span></div>
             <div class="card">
@@ -766,7 +943,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               <div class="kv">
                 <div><span>Eggs, whole · 2 large</span><span class="v">140–160</span></div>
                 <div><span>Toast, whole wheat · 1 slice</span><span class="v">80–100</span></div>
-                <div><span style="font-weight:600">Total · kcal</span><span class="v" style="color:#FF4F12">220–260</span></div>
+                <div><span style="font-weight:600">Total · kcal</span><span class="v acx">220–260</span></div>
               </div>
               <p class="small">15–17 g protein</p>
               <div class="btnrow">
@@ -776,11 +953,11 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             </div>
             <div class="btnrow">
               <button class="tool" type="button">
-                <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><rect x="0" y="0" width="2" height="16" fill="#0E0E0E"/><rect x="4" y="0" width="1" height="16" fill="#0E0E0E"/><rect x="7" y="0" width="3" height="16" fill="#0E0E0E"/><rect x="12" y="0" width="1" height="16" fill="#0E0E0E"/><rect x="15" y="0" width="2" height="16" fill="#0E0E0E"/><rect x="19" y="0" width="1" height="16" fill="#0E0E0E"/></svg>
+                <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><rect x="0" y="0" width="2" height="16" fill="#0E0E0E" class="f-tx"/><rect x="4" y="0" width="1" height="16" fill="#0E0E0E" class="f-tx"/><rect x="7" y="0" width="3" height="16" fill="#0E0E0E" class="f-tx"/><rect x="12" y="0" width="1" height="16" fill="#0E0E0E" class="f-tx"/><rect x="15" y="0" width="2" height="16" fill="#0E0E0E" class="f-tx"/><rect x="19" y="0" width="1" height="16" fill="#0E0E0E" class="f-tx"/></svg>
                 Scan barcode
               </button>
               <button class="tool" type="button">
-                <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><rect x="1" y="3" width="18" height="12" rx="2" fill="none" stroke="#0E0E0E" stroke-width="1.8"/><rect x="6" y="1" width="8" height="3" rx="1" fill="#0E0E0E"/><circle cx="10" cy="9" r="3.2" fill="none" stroke="#0E0E0E" stroke-width="1.8"/></svg>
+                <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><rect x="1" y="3" width="18" height="12" rx="2" fill="none" stroke="#0E0E0E" class="s-tx" stroke-width="1.8"/><rect x="6" y="1" width="8" height="3" rx="1" fill="#0E0E0E" class="f-tx"/><circle cx="10" cy="9" r="3.2" fill="none" stroke="#0E0E0E" class="s-tx" stroke-width="1.8"/></svg>
                 Meal photo
               </button>
             </div>
@@ -791,14 +968,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             </div>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab on"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Food · quick log</div>
+          <div><b>Ekran:</b> 2.3 Food · quick log</div>
           <div><b>Dayanak:</b> I2. Tahmin veritabanından gelir (ham LLM MAE 652 kcal, veritabanı eşlemesi 171-191). Tekrar hafızası en üstte, tek dokunuş.</div>
         </figcaption>
       </figure>
@@ -817,14 +994,16 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               <div class="ex"><span class="n">5</span><span class="t">Triceps pushdown</span><span class="m">2 sets</span></div>
             </div>
             <div class="card">
-              <div class="rowhead"><span class="eyebrow">Lat pulldown</span><span class="meta">Target RIR 0–1</span></div>
+              <div class="rowhead"><a class="howto" href="#s5-1">Lat pulldown <span class="ht">How to ›</span></a><span class="meta">Target RIR 0–1</span></div>
               <div class="sethd"><span>#</span><span>Today</span><span>Last time</span><span></span></div>
               <div class="sets">
+                <div class="set wu"><span class="sn">W</span><span class="val">35 kg × 10</span><span class="last">35 × 10</span><button class="ck done" type="button" aria-label="Warm-up set done">✓</button></div>
                 <div class="set"><span class="sn">1</span><span class="val">60 kg × 8</span><span class="last">57.5 × 8</span><button class="ck done" type="button" aria-label="Set 1 done">✓</button></div>
                 <div class="set cur"><span class="sn">2</span><span class="val ghost">60 kg × 8</span><span class="last">57.5 × 8</span><button class="ck" type="button" aria-label="Complete set 2">✓</button></div>
                 <div class="set"><span class="sn">3</span><span class="val ghost">60 kg × 7</span><span class="last">57.5 × 7</span><button class="ck" type="button" aria-label="Complete set 3">✓</button></div>
               </div>
-              <span class="lbl" style="margin-top:4px">Set 1 · reps left in the tank</span>
+              <p class="small">W is a warm-up. Warm-ups don't count toward effort or 1RM.</p>
+              <span class="lbl" style="margin-top:2px">Set 1 · reps left in the tank</span>
               <div class="rir">
                 <button type="button" aria-pressed="false">0</button>
                 <button type="button" aria-pressed="true">1</button>
@@ -840,15 +1019,15 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <div class="ask"><span>Log, e.g. "pulldown 60 kg x 8"</span><span class="snd" aria-hidden="true">↑</span></div>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab on"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Workout · in session</div>
-          <div><b>Dayanak:</b> B / 6.5: set başına 1 dokunuş; soluk değer önerilen set, tik atınca kaydolur. RIR 0-1 hedefi (Güray).</div>
+          <div><b>Ekran:</b> 2.4 Workout · in session</div>
+          <div><b>Dayanak:</b> B / 6.5: set başına 1 dokunuş; soluk değer önerilen set, tik atınca kaydolur. RIR 0-1 hedefi (Güray). Set tipi (L3 #2, P6): ısınma seti soluk "W" satırı, e1RM ve efora girmez. Hareket adındaki "How to" 5.1'e gider.</div>
         </figcaption>
       </figure>
 
@@ -886,14 +1065,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <div class="ask"><span>Log the next set</span><span class="snd" aria-hidden="true">↑</span></div>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab on"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Workout · natural language parse</div>
+          <div><b>Ekran:</b> 2.5 Workout · natural language parse</div>
           <div><b>Dayanak:</b> I2. Belirsizliği itiraf etmek yerine çözülebilir kıl: karar ver, güveni sayıyla göster, tek dokunuşla çıkış bırak.</div>
         </figcaption>
       </figure>
@@ -914,39 +1093,44 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <div class="card" style="gap:0">
               <div class="res">
                 <div class="rt"><span class="rh">Bench press</span><span class="meta">80 kg × 8</span></div>
-                <span class="rs">Bench: same weight, one more rep (RIR 1)</span>
-                <span class="rs up">Estimated 1RM up 2 kg · 102 → 104 kg</span>
+                <span class="rs">Same weight, one more rep at RIR 1</span>
+                <span class="rs up"><span class="prt">PR</span>Estimated 1RM 102 → 104 kg</span>
               </div>
               <div class="res">
                 <div class="rt"><span class="rh">Lat pulldown</span><span class="meta">60 kg × 8, 8, 7</span></div>
-                <span class="rs">Up 2.5 kg from last week at RIR 1</span>
+                <span class="rs up"><span class="prt">PR</span>Up 2.5 kg from last week at RIR 1</span>
               </div>
               <div class="res">
                 <div class="rt"><span class="rh">Seated row</span><span class="meta">65 kg × 10</span></div>
                 <span class="rs">RIR 2. Next time, aim for 1.</span>
               </div>
               <div class="res">
-                <div class="rt"><span class="rh">Lateral raise</span><span class="meta">RIR 0</span></div>
-                <span class="rs">No load tracking. Hit the effort, that's the win.</span>
+                <div class="rt"><span class="rh">Lateral raise</span><span class="meta">14, 13, 12 · RIR 0</span></div>
+                <span class="rs up"><span class="prt">PR</span>Most reps at target effort: 14</span>
+                <span class="rs">Isolation move: reps and effort count here. Load isn't tracked.</span>
               </div>
               <div class="res">
-                <div class="rt"><span class="rh">Triceps pushdown</span><span class="meta">RIR 1</span></div>
-                <span class="rs">No load tracking. Effort hit.</span>
+                <div class="rt"><span class="rh">Triceps pushdown</span><span class="meta">12, 12 · RIR 1</span></div>
+                <span class="rs">Effort hit. Reps held at 12.</span>
               </div>
+            </div>
+            <div class="card">
+              <div class="rowhead"><span class="eyebrow">Hard sets this week · back</span><span class="meta">Warm-ups not counted</span></div>
+              <div class="meter"><span class="trk"><i style="width:100%"></i></span><span class="mv">10 of 10 planned</span></div>
             </div>
             <p class="small">Total volume 9,180 kg, shown for reference. Calls use effort and estimated 1RM.</p>
             <button class="btn" type="button">Finish</button>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab on"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Workout · summary</div>
-          <div><b>Dayanak:</b> B. İncelenen 24 uygulamanın ana metriği total volume ve efor artıranı cezalandırıyor; burada ana metrik efor. Güray K-33: izolasyonda yük takibi yok.</div>
+          <div><b>Ekran:</b> 2.6 Workout · summary</div>
+          <div><b>Dayanak:</b> B. İncelenen 24 uygulamanın ana metriği total volume ve efor artıranı cezalandırıyor; burada ana metrik efor. PR satırları Güray K-33'e göre: bileşikte yük/e1RM, izolasyonda tekrar ve efor (L3 #6). Sert set sayacı L3 Y6: ısınmalar düşer; hangi RIR'ın "sert" sayılacağı motor kuralı, kaynak bekliyor (U14).</div>
         </figcaption>
       </figure>
 
@@ -960,7 +1144,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
     <header class="sec-h">
       <span class="k">Bölüm 3 · 6 ekran</span>
       <h2 id="s3">Karar anları</h2>
-      <p>Pazartesi check-in ve haftanın kararı. Üç karar ekranı aynı pazartesinin üç olası sonucu. Siyah blok sadece karar için kullanılıyor.</p>
+      <p>Pazartesi check-in ve haftanın kararı. Üç karar ekranı aynı pazartesinin üç olası sonucu. Karar bloğu zeminin tersi (açıkta siyah, koyuda açık) ve yalnız karar için kullanılıyor.</p>
     </header>
     <div class="row">
 
@@ -992,14 +1176,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <button class="btn" type="button">See this week's call</button>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab on"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Monday check-in</div>
+          <div><b>Ekran:</b> 3.1 Monday check-in</div>
           <div><b>Dayanak:</b> I2, CAT. Haftalık soru bütçesi en fazla 2; kazanç susmaktan geliyor. Pasif gelen veri tekrar sorulmaz.</div>
         </figcaption>
       </figure>
@@ -1029,14 +1213,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <button class="btn" type="button">Got it</button>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab on"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Decision · continue</div>
+          <div><b>Ekran:</b> 3.2 Decision · continue</div>
           <div><b>Dayanak:</b> Güray haftalık check-in kuralı: hedefe doğru ilerleme + stabil antrenman = değişiklik yok. "Değişiklik yok" da açık bir karar olarak sunulur.</div>
         </figcaption>
       </figure>
@@ -1067,14 +1251,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <button class="lnk" type="button">Why this call</button>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab on"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Decision · change one thing</div>
+          <div><b>Ekran:</b> 3.3 Decision · change one thing</div>
           <div><b>Dayanak:</b> Güray: aynı anda tek değişken; adım en kolay kaldıraç (1.000 adım ≈ 50 kcal, hedef 10.000). Kalori BMR tabanına yakın olduğu için motor kaloriyi değil hareketi değiştiriyor (U13). Kalori adımı gerektiğinde minimum 500 kcal (K-97).</div>
         </figcaption>
       </figure>
@@ -1107,15 +1291,15 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <button class="btn" type="button">Got it</button>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab on"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Decision · not yet</div>
-          <div><b>Dayanak:</b> Güray haftalık check-in kuralı: sabit ölçüm + yüksek uyum = bekle. Beklemek de karar olarak aynı siyah blokta.</div>
+          <div><b>Ekran:</b> 3.4 Decision · not yet</div>
+          <div><b>Dayanak:</b> Güray haftalık check-in kuralı: sabit ölçüm + yüksek uyum = bekle. Beklemek de karar olarak aynı blokta.</div>
         </figcaption>
       </figure>
 
@@ -1145,25 +1329,25 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               <div class="rule"><span>Target loss rate is 0.5–1% of body weight a week.</span><span class="src res" style="justify-self:start">Research-based</span></div>
             </div>
             <div class="card">
-              <div class="rowhead"><span class="eyebrow">Confidence · high</span><span class="conf" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+              <div class="rowhead"><span class="eyebrow">Confidence: high</span><span class="conf" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
               <p class="small">Weight, performance and adherence point the same way.</p>
               <div class="kv">
                 <div><span class="k">Next review</span><span class="v">Mon, Oct 5</span></div>
               </div>
-              <p class="small"><b style="color:#0E0E0E">What would change it:</b> two flat weeks in a row with adherence above 80%.</p>
+              <p class="small"><b>What would change it:</b> two flat weeks in a row with adherence above 80%. <a class="howto" href="#s5-6"><span class="ht">Try it ›</span></a></p>
             </div>
             <p class="small">The AI explains. It doesn't decide. The call comes from the rules above.</p>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab on"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Why this call (açılmış)</div>
-          <div><b>Dayanak:</b> Ö-25 şeffaflık: veri, kural, güven, sonraki tarih. Ö-26 kaynak etiketi (Experience-based / Research-based). AI sınır cümlesi burada.</div>
+          <div><b>Ekran:</b> 3.5 Why this call (açılmış)</div>
+          <div><b>Dayanak:</b> Ö-25 şeffaflık: veri, kural, güven, sonraki tarih. Ö-26 kaynak etiketi (Experience-based / Research-based). AI sınır cümlesi burada. "Try it" 5.6'ya gider.</div>
         </figcaption>
       </figure>
 
@@ -1193,14 +1377,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <div class="ask"><span>Ask about this call</span><span class="snd" aria-hidden="true">↑</span></div>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab on"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab"><span class="d"></span>Progress</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Pushback</div>
+          <div><b>Ekran:</b> 3.6 Pushback</div>
           <div><b>Dayanak:</b> Sycophancy: MedPRESS'te baskı altında doğruluk %84,3'ten %19,9'a düşüyor. Karar kodda; ısrarla değil yeni veriyle değişir ve hangi verinin değiştireceği söylenir.</div>
         </figcaption>
       </figure>
@@ -1228,23 +1412,20 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <div class="cam">
               <svg viewBox="0 0 324 430" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
                 <rect x="0" y="0" width="324" height="430" fill="#0E0E0E"/>
-                <!-- frame guide corners -->
-                <path d="M40 60 V40 H60" fill="none" stroke="#FF4F12" stroke-width="3"/>
-                <path d="M264 40 H284 V60" fill="none" stroke="#FF4F12" stroke-width="3"/>
-                <path d="M40 370 V390 H60" fill="none" stroke="#FF4F12" stroke-width="3"/>
-                <path d="M264 390 H284 V370" fill="none" stroke="#FF4F12" stroke-width="3"/>
-                <!-- ghost silhouette from last photo -->
-                <g transform="translate(102 58) scale(1)" fill="none" stroke="#9A9A95" stroke-width="1.6" stroke-dasharray="5 4" opacity="0.9">
-                  <circle cx="60" cy="26" r="15"/>
-                  <path d="M60 46 C52 46 30 48 24 56 C21 72 25 98 29 118 C30 128 27 136 27 146 L31 300 L52 300 L57 170 L63 170 L68 300 L89 300 L93 146 C93 136 90 128 91 118 C95 98 99 72 96 56 C90 48 68 46 60 46 Z"/>
-                  <path d="M24 58 C16 62 12 90 10 150 L18 152 C20 110 24 84 28 70"/>
-                  <path d="M96 58 C104 62 108 90 110 150 L102 152 C100 110 96 84 92 70"/>
+                <path d="M40 60 V40 H60" fill="none" stroke="#F07BE0" stroke-width="3"/>
+                <path d="M264 40 H284 V60" fill="none" stroke="#F07BE0" stroke-width="3"/>
+                <path d="M40 370 V390 H60" fill="none" stroke="#F07BE0" stroke-width="3"/>
+                <path d="M264 390 H284 V370" fill="none" stroke="#F07BE0" stroke-width="3"/>
+                <g transform="translate(102 58)" fill="none" stroke="#9A9A95" stroke-width="1.6" stroke-dasharray="5 4" opacity="0.9">
+                  <circle cx="60" cy="26" r="15" fill="none"/>
+                  <path d="M60 46 C52 46 30 48 24 56 C21 72 25 98 29 118 C30 128 27 136 27 146 L31 300 L52 300 L57 170 L63 170 L68 300 L89 300 L93 146 C93 136 90 128 91 118 C95 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="none"/>
+                  <path d="M24 58 C16 62 12 90 10 150 L18 152 C20 110 24 84 28 70" fill="none"/>
+                  <path d="M96 58 C104 62 108 90 110 150 L102 152 C100 110 96 84 92 70" fill="none"/>
                 </g>
-                <!-- level line -->
                 <line x1="70" y1="215" x2="146" y2="215" stroke="#FFFFFF" stroke-width="1.5"/>
                 <line x1="178" y1="215" x2="254" y2="215" stroke="#FFFFFF" stroke-width="1.5"/>
-                <circle cx="162" cy="215" r="7" fill="none" stroke="#FF4F12" stroke-width="2"/>
-                <circle cx="163" cy="215" r="3" fill="#FF4F12"/>
+                <circle cx="162" cy="215" r="7" fill="none" stroke="#F07BE0" stroke-width="2"/>
+                <circle cx="163" cy="215" r="3" fill="#F07BE0"/>
               </svg>
               <div class="lvl">Level <b>0.5°</b> hold steady</div>
             </div>
@@ -1258,8 +1439,8 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           </div>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Photo check · guided capture</div>
-          <div><b>Dayanak:</b> Poz normalizasyonu ölçüm hatasını yaklaşık %50 azaltıyor (Wong 2021). Eğim göstergesi sektörde eksik; önceki fotoğrafın hayaleti aynı pozu verdiriyor.</div>
+          <div><b>Ekran:</b> 4.1 Photo check · guided capture</div>
+          <div><b>Dayanak:</b> Poz normalizasyonu ölçüm hatasını yaklaşık %50 azaltıyor (Wong 2021). Eğim göstergesi sektörde eksik; önceki fotoğrafın hayaleti aynı pozu verdiriyor. Vizör her iki temada koyu kalır.</div>
         </figcaption>
       </figure>
 
@@ -1307,14 +1488,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <p class="small">Both photos are aligned by pose before you see them.</p>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab on"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Compare · Day 1 vs today</div>
+          <div><b>Ekran:</b> 4.2 Compare · Day 1 vs today</div>
           <div><b>Dayanak:</b> Karşılaştırma çıpası: insan dünü hatırlar, başlangıcı hatırlamaz; varsayılan çift Day 1 ve Today. Siluetler yüzsüz yer tutucu.</div>
         </figcaption>
       </figure>
@@ -1328,8 +1509,8 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <h3 class="h1" style="font-size:46px;margin-top:10px">Weight flat. <em>Waist down 2&nbsp;cm.</em></h3>
             <p class="lede">That's body composition changing. The scale can't see it.</p>
             <div class="prev">
-              <div class="tile"><span class="eyebrow">Trend weight</span><span class="tv">81.9<small style="color:#6B6B68">kg</small></span><span class="ts">82.0 kg on Day 1</span></div>
-              <div class="tile dark"><span class="eyebrow" style="color:#FF4F12">Waist</span><span class="tv">88<small>cm</small></span><span class="ts">90 cm on Day 1</span></div>
+              <div class="tile"><span class="eyebrow">Trend weight</span><span class="tv">81.9<small class="mu">kg</small></span><span class="ts">82.0 kg on Day 1</span></div>
+              <div class="tile dark"><span class="eyebrow">Waist</span><span class="tv">88<small>cm</small></span><span class="ts">90 cm on Day 1</span></div>
             </div>
             <div class="card">
               <span class="eyebrow">Also moving</span>
@@ -1341,14 +1522,14 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             <p class="small">Waist and strength count in your weekly call, next to the scale.</p>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab on"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Composition message</div>
+          <div><b>Ekran:</b> 4.3 Composition message</div>
           <div><b>Dayanak:</b> Ross 2000: kilo sabitken bel inebiliyor. Terazi durunca kullanıcı bırakıyor; bu ekran o anı yakalıyor.</div>
         </figcaption>
       </figure>
@@ -1359,7 +1540,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
           <div class="content">
             <div class="hdr"><span class="day">Strength</span><span class="ph">Estimated 1RM</span></div>
-            <div class="chips">
+            <div class="chips" data-single>
               <button class="chip" type="button" aria-pressed="true">Bench</button>
               <button class="chip" type="button" aria-pressed="false">Squat</button>
               <button class="chip" type="button" aria-pressed="false">Row</button>
@@ -1370,53 +1551,53 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
                 <div class="meta" style="text-align:right">+8 kg<br>in 12 weeks</div>
               </div>
               <svg class="chart" viewBox="0 0 300 170" role="img" aria-label="Bench estimated 1RM by week, from 96 kg in week 1 to 104 kg in week 12">
-                <rect x="255" y="10" width="39" height="130" fill="#FFFFFF"/>
-                <text x="274.5" y="22" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="9" font-weight="700" fill="#FF4F12">CALL</text>
-                <line x1="34" y1="119" x2="294" y2="119" stroke="#E2E2DE" stroke-width="1"/>
-                <line x1="34" y1="77" x2="294" y2="77" stroke="#E2E2DE" stroke-width="1"/>
-                <line x1="34" y1="35" x2="294" y2="35" stroke="#E2E2DE" stroke-width="1"/>
-                <line x1="34" y1="140" x2="294" y2="140" stroke="#6B6B68" stroke-width="1"/>
-                <text x="26" y="123" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">96</text>
-                <text x="26" y="81" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">100</text>
-                <text x="26" y="39" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">104</text>
-                <text x="34" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W1</text>
-                <text x="103.8" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W4</text>
-                <text x="196.9" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W8</text>
-                <text x="290" y="158" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="11" fill="#6B6B68">W12</text>
-                <polyline points="34,119 57.3,108.5 80.5,108.5 103.8,98 127.1,87.5 150.4,87.5 173.6,77 196.9,77 220.2,66.5 243.5,66.5 266.7,56 290,35" fill="none" stroke="#0E0E0E" stroke-width="2.2" stroke-linejoin="round"/>
-                <circle cx="34" cy="119" r="3" fill="#0E0E0E"/>
-                <circle cx="57.3" cy="108.5" r="3" fill="#0E0E0E"/>
-                <circle cx="103.8" cy="98" r="3" fill="#0E0E0E"/>
-                <circle cx="127.1" cy="87.5" r="3" fill="#0E0E0E"/>
-                <circle cx="173.6" cy="77" r="3" fill="#0E0E0E"/>
-                <circle cx="220.2" cy="66.5" r="3" fill="#0E0E0E"/>
-                <circle cx="266.7" cy="56" r="3" fill="#0E0E0E"/>
-                <circle cx="80.5" cy="108.5" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
-                <circle cx="150.4" cy="87.5" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
-                <circle cx="196.9" cy="77" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
-                <circle cx="243.5" cy="66.5" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2.2"/>
-                <circle cx="290" cy="35" r="5" fill="#FF4F12"/>
+                <rect x="255" y="10" width="39" height="130" fill="#FFFFFF" class="f-bg"/>
+                <text x="274.5" y="24" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" font-weight="700" fill="#B0129A" class="f-ac">Call</text>
+                <line x1="34" y1="119" x2="294" y2="119" stroke="#E2E2DE" class="s-trk" stroke-width="1"/>
+                <line x1="34" y1="77" x2="294" y2="77" stroke="#E2E2DE" class="s-trk" stroke-width="1"/>
+                <line x1="34" y1="35" x2="294" y2="35" stroke="#E2E2DE" class="s-trk" stroke-width="1"/>
+                <line x1="34" y1="140" x2="294" y2="140" stroke="#6B6B68" class="s-mu" stroke-width="1"/>
+                <text x="26" y="123" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" fill="#6B6B68" class="f-mu">96</text>
+                <text x="26" y="81" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" fill="#6B6B68" class="f-mu">100</text>
+                <text x="26" y="39" text-anchor="end" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" fill="#6B6B68" class="f-mu">104</text>
+                <text x="34" y="160" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" fill="#6B6B68" class="f-mu">W1</text>
+                <text x="103.8" y="160" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" fill="#6B6B68" class="f-mu">W4</text>
+                <text x="196.9" y="160" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" fill="#6B6B68" class="f-mu">W8</text>
+                <text x="286" y="160" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="12.5" fill="#6B6B68" class="f-mu">W12</text>
+                <polyline points="34,119 57.3,108.5 80.5,108.5 103.8,98 127.1,87.5 150.4,87.5 173.6,77 196.9,77 220.2,66.5 243.5,66.5 266.7,56 290,35" fill="none" stroke="#0E0E0E" class="s-tx" stroke-width="2.2" stroke-linejoin="round"/>
+                <circle cx="34" cy="119" r="3" fill="#0E0E0E" class="f-tx"/>
+                <circle cx="57.3" cy="108.5" r="3" fill="#0E0E0E" class="f-tx"/>
+                <circle cx="103.8" cy="98" r="3" fill="#0E0E0E" class="f-tx"/>
+                <circle cx="127.1" cy="87.5" r="3" fill="#0E0E0E" class="f-tx"/>
+                <circle cx="173.6" cy="77" r="3" fill="#0E0E0E" class="f-tx"/>
+                <circle cx="220.2" cy="66.5" r="3" fill="#0E0E0E" class="f-tx"/>
+                <circle cx="266.7" cy="56" r="3" fill="#0E0E0E" class="f-tx"/>
+                <circle cx="80.5" cy="108.5" r="5" fill="#FFFFFF" class="f-bg s-ac" stroke="#B0129A" stroke-width="2.2"/>
+                <circle cx="150.4" cy="87.5" r="5" fill="#FFFFFF" class="f-bg s-ac" stroke="#B0129A" stroke-width="2.2"/>
+                <circle cx="196.9" cy="77" r="5" fill="#FFFFFF" class="f-bg s-ac" stroke="#B0129A" stroke-width="2.2"/>
+                <circle cx="243.5" cy="66.5" r="5" fill="#FFFFFF" class="f-bg s-ac" stroke="#B0129A" stroke-width="2.2"/>
+                <circle cx="290" cy="35" r="5" fill="#B0129A" class="f-ac"/>
               </svg>
               <div class="legend">
-                <span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3" fill="#0E0E0E"/></svg>Estimated 1RM, kg</span>
-                <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="#FFFFFF" stroke="#FF4F12" stroke-width="2"/></svg>Same load, more reps in reserve</span>
+                <span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3" fill="#0E0E0E" class="f-tx"/></svg>Estimated 1RM, kg</span>
+                <span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="#FFFFFF" class="f-bg s-ac" stroke="#B0129A" stroke-width="2"/></svg>Same load, more reps in reserve</span>
               </div>
             </div>
             <div class="win">
               <div class="tile"><span class="eyebrow">Decisions</span><span class="h3">Every 1–2 weeks</span><span class="ts">The white band. Short windows adjust food and training.</span></div>
-              <div class="tile dark"><span class="eyebrow" style="color:#FF4F12">Progress</span><span class="h3">Judged over 3 months</span><span class="ts">The whole line. Flat weeks inside it are normal.</span></div>
+              <div class="tile dark"><span class="eyebrow">Progress</span><span class="h3">Judged over 3 months</span><span class="ts">The whole line. Flat weeks inside it are normal.</span></div>
             </div>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab on"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Strength · effort</div>
-          <div><b>Dayanak:</b> Güray: gelişim 3 ayda değerlendirilir, karar 1-2 haftada; iki pencere ayrı gösteriliyor. Halka işaretler: yük aynı, efor arttı (düz haftalar kayıp sayılmıyor).</div>
+          <div><b>Ekran:</b> 4.4 Strength · effort</div>
+          <div><b>Dayanak:</b> Güray: gelişim 3 ayda değerlendirilir, karar 1-2 haftada; iki pencere ayrı gösteriliyor. Halka işaretler: yük aynı ama yedekte kalan tekrar arttı, yani aynı ağırlık daha kolay (düz haftalar kayıp sayılmıyor).</div>
         </figcaption>
       </figure>
 
@@ -1427,7 +1608,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
           <div class="content">
             <div class="hdr"><span class="day">Projection</span><span class="ph">Waist 88 → 84 cm</span></div>
             <div class="card">
-              <div class="trow"><div><div class="h3">Shape projection</div><div class="small">Off unless you turn it on.</div></div><span class="tgl on" aria-hidden="true"></span></div>
+              <div class="trow"><div><div class="h3">Shape projection</div><div class="small">Off unless you turn it on.</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Shape projection"></button></div>
             </div>
             <div class="fig" style="grid-template-columns:1fr;padding:12px">
               <svg viewBox="0 0 120 240" aria-hidden="true" style="max-width:130px">
@@ -1436,11 +1617,11 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
                 <path d="M60 46 C52 46 30 48 24 56 C21 72 27 98 31 118 C32 128 27 136 27 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L93 146 C93 136 88 128 89 118 C93 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="#D6D6D2"/>
                 <path d="M24 58 C16 62 12 90 10 140 L18 142 C20 100 24 80 28 70 Z" fill="#D6D6D2"/>
                 <path d="M96 58 C104 62 108 90 110 140 L102 142 C100 100 96 80 92 70 Z" fill="#D6D6D2"/>
-                <path d="M60 46 C52 46 30 48 24 56 C21 72 30 98 35 118 C36 128 28 136 28 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L92 146 C92 136 84 128 85 118 C90 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="none" stroke="#FF4F12" stroke-width="2" stroke-dasharray="4 3"/>
+                <path d="M60 46 C52 46 30 48 24 56 C21 72 30 98 35 118 C36 128 28 136 28 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L92 146 C92 136 84 128 85 118 C90 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="none" stroke="#B0129A" class="s-ac" stroke-width="2" stroke-dasharray="4 3"/>
               </svg>
               <div class="legend" style="justify-content:center">
-                <span><span class="sw" style="background:#D6D6D2"></span>Now</span>
-                <span><svg width="16" height="4" viewBox="0 0 16 4" aria-hidden="true"><line x1="0" y1="2" x2="16" y2="2" stroke="#FF4F12" stroke-width="2" stroke-dasharray="4 3"/></svg>At 84 cm waist</span>
+                <span><span class="sw sil"></span>Now</span>
+                <span><svg width="16" height="4" viewBox="0 0 16 4" aria-hidden="true"><line x1="0" y1="2" x2="16" y2="2" stroke="#B0129A" class="s-ac" stroke-width="2" stroke-dasharray="4 3"/></svg>At 84 cm waist</span>
               </div>
             </div>
             <div style="display:grid;gap:4px">
@@ -1448,17 +1629,17 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               <div class="scn me"><span class="sa">80% of planned actions</span><span class="sr">4–7 mo</span><span class="ss">Closest to your last 12 weeks (84%)</span></div>
               <div class="scn"><span class="sa">60% of planned actions</span><span class="sr">6–9 mo</span></div>
             </div>
-            <p class="small"><b style="color:#0E0E0E">A range, not a promise. Built from your own measurements.</b> Updates every 4 weeks with your new photo and waist.</p>
+            <p class="small"><b>A range built from your own measurements.</b> Updates every 4 weeks with your new photo and waist.</p>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab on"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Shape projection</div>
+          <div><b>Ekran:</b> 4.5 Shape projection</div>
           <div><b>Dayanak:</b> H2: fotogerçekçi yüz+vücut iptal (EU AI Act Md.50, Apple 1.4.1). Parametrik siluet, sadece ileri yön, varsayılan kapalı, ilk oturumda gösterilmez (en erken 4. hafta).</div>
         </figcaption>
       </figure>
@@ -1481,7 +1662,7 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
               <div class="legend">
                 <span><span class="sw"></span>On track</span>
                 <span><span class="sw g"></span>Grace week</span>
-                <span><span class="sw" style="box-shadow:inset 0 -3px 0 #FF4F12"></span>This week</span>
+                <span><span class="sw now"></span>This week</span>
               </div>
             </div>
             <div class="card">
@@ -1501,23 +1682,469 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
             </div>
           </div>
           <nav class="tabs" aria-label="Main">
-            <span class="tab"><span class="d"></span>Today</span>
-            <span class="tab"><span class="d"></span>Train</span>
-            <span class="tab"><span class="d"></span>Food</span>
-            <span class="tab on"><span class="d"></span>Progress</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
           </nav>
         </div></div>
         <figcaption class="notes">
-          <div><b>Ekran:</b> Consistency history</div>
+          <div><b>Ekran:</b> 4.6 Consistency history</div>
           <div><b>Dayanak:</b> I1: Duolingo streak freeze churn'ü %21 azalttı; salon verisi 1 haftalık toleransı destekliyor. Haftalık, kümülatif, sıfırlanmayan sayaç.</div>
         </figcaption>
       </figure>
 
     </div>
   </section>
+
+  <!-- =========================================================
+       BÖLÜM 5 · HAREKET VE AYARLAR
+       ========================================================= -->
+  <section class="sec" aria-labelledby="s5">
+    <header class="sec-h">
+      <span class="k">Bölüm 5 · 8 ekran</span>
+      <h2 id="s5">Hareket ve ayarlar</h2>
+      <p>Hareket gösterimi, ayarlar, hayat araya girdiğinde durum modu, kilit ekranı ve kararın şeffaflık araçları: ne değiştirir, geçmişte ne oldu, nasıl paylaşılır.</p>
+    </header>
+    <div class="row">
+
+      <!-- 5.1 Exercise how to -->
+      <figure class="col" id="s5-1">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><span class="meta" style="flex:1;text-align:left">Upper A · set 2 of 3</span></div>
+            <div class="hdr" style="padding-top:0"><span class="day">Lat pulldown</span><span class="ph">How to · back</span></div>
+            <div class="vids">
+              <div class="vid">
+                <svg class="fr" viewBox="0 0 150 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                  <rect x="0" y="0" width="150" height="200" fill="#1C1C1B"/>
+                  <rect x="20" y="12" width="110" height="5" fill="#3A3A38"/>
+                  <rect x="125" y="12" width="5" height="188" fill="#3A3A38"/>
+                  <rect x="74" y="17" width="2" height="72" fill="#6B6B68"/>
+                  <rect x="33" y="52" width="84" height="3" rx="1.5" fill="#9A9A95" fill-opacity=".18"/>
+                  <rect x="33" y="64" width="84" height="3" rx="1.5" fill="#9A9A95" fill-opacity=".3"/>
+                  <rect x="33" y="76" width="84" height="3" rx="1.5" fill="#9A9A95" fill-opacity=".45"/>
+                  <rect x="33" y="88" width="84" height="4" rx="2" fill="#D6D6D2"/>
+                  <circle cx="75" cy="74" r="11" fill="#6B6B68"/>
+                  <path d="M56 96 L94 96 L90 146 L60 146 Z" fill="#6B6B68"/>
+                  <path d="M57 97 L40 114 L42 90" fill="none" stroke="#6B6B68" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M93 97 L110 114 L108 90" fill="none" stroke="#6B6B68" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="54" y="128" width="42" height="7" rx="3" fill="#3A3A38"/>
+                  <rect x="52" y="146" width="46" height="9" rx="2" fill="#6B6B68"/>
+                  <rect x="54" y="155" width="10" height="36" rx="3" fill="#6B6B68"/>
+                  <rect x="86" y="155" width="10" height="36" rx="3" fill="#6B6B68"/>
+                  <rect x="50" y="156" width="50" height="6" fill="#3A3A38"/>
+                </svg>
+                <span class="vl">Rep 1</span>
+                <svg class="pl" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="15" fill="#FFFFFF" fill-opacity=".92"/><path d="M12 9.5 L21 15 L12 20.5 Z" fill="#0E0E0E"/></svg>
+              </div>
+              <div class="vid">
+                <svg class="fr" viewBox="0 0 150 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                  <rect x="0" y="0" width="150" height="200" fill="#1C1C1B"/>
+                  <rect x="20" y="12" width="110" height="5" fill="#3A3A38"/>
+                  <rect x="125" y="12" width="5" height="188" fill="#3A3A38"/>
+                  <rect x="74" y="17" width="2" height="72" fill="#6B6B68"/>
+                  <rect x="33" y="79" width="84" height="3" rx="1.5" fill="#9A9A95" fill-opacity=".3"/>
+                  <rect x="33" y="84" width="84" height="3" rx="1.5" fill="#9A9A95" fill-opacity=".45"/>
+                  <rect x="33" y="88" width="84" height="4" rx="2" fill="#D6D6D2"/>
+                  <circle cx="75" cy="74" r="11" fill="#6B6B68"/>
+                  <path d="M56 96 L94 96 L90 146 L60 146 Z" fill="#6B6B68"/>
+                  <path d="M57 97 L40 114 L42 90" fill="none" stroke="#6B6B68" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M93 97 L110 114 L108 90" fill="none" stroke="#6B6B68" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="54" y="128" width="42" height="7" rx="3" fill="#3A3A38"/>
+                  <rect x="52" y="146" width="46" height="9" rx="2" fill="#6B6B68"/>
+                  <rect x="54" y="155" width="10" height="36" rx="3" fill="#6B6B68"/>
+                  <rect x="86" y="155" width="10" height="36" rx="3" fill="#6B6B68"/>
+                  <rect x="50" y="156" width="50" height="6" fill="#3A3A38"/>
+                </svg>
+                <span class="vl k">Last rep · RIR 1</span>
+                <svg class="pl" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="15" fill="#FFFFFF" fill-opacity=".92"/><path d="M12 9.5 L21 15 L12 20.5 Z" fill="#0E0E0E"/></svg>
+              </div>
+            </div>
+            <p class="txt">Watch the last rep slow down on its own. That's what RIR 1 looks like.</p>
+            <p class="small">Most people guess about one rep short, so the last rep is usually closer than it feels. Example set, filmed by us.</p>
+            <div class="card">
+              <span class="eyebrow">Cues</span>
+              <ul class="cues">
+                <li><span class="ct">Full range while you can.</span>Late in the set, partial reps are fine here.</li>
+                <li><span class="ct">Let the bar up under control. Pull down hard.</span>Fast on the pull, controlled on the way back.</li>
+                <li><span class="ct">When the rep slows down on its own, that's the set.</span>You don't slow it on purpose.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <div class="rowhead"><span class="eyebrow">Your setup</span><button class="lnk" type="button" style="padding:0;font-size:12.5px">Edit</button></div>
+              <span class="setup">Seat 4 · Thigh pad 2 · Grip just outside shoulders</span>
+              <p class="small">Same seat, same angle every time. Saved on this phone.</p>
+            </div>
+            <div class="card mmap">
+              <span class="eyebrow" style="justify-self:start">Muscles</span>
+              <svg viewBox="0 0 250 250" role="img" aria-label="Muscle map, front and back. Lats highlighted as the main muscle; biceps and rear shoulders as helpers.">
+                <g>
+                  <circle cx="60" cy="26" r="15" fill="#CFCFCB" class="f-body"/>
+                  <rect x="54" y="38" width="12" height="10" fill="#CFCFCB" class="f-body"/>
+                  <path d="M60 46 C52 46 30 48 24 56 C21 72 25 98 29 118 C30 128 27 136 27 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L93 146 C93 136 90 128 91 118 C95 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="#CFCFCB" class="f-body"/>
+                  <path d="M24 58 C16 62 12 90 10 140 L18 142 C20 100 24 80 28 70 Z" fill="#CFCFCB" class="f-body"/>
+                  <path d="M96 58 C104 62 108 90 110 140 L102 142 C100 100 96 80 92 70 Z" fill="#CFCFCB" class="f-body"/>
+                  <ellipse cx="19" cy="88" rx="4.5" ry="13" transform="rotate(12 19 88)" fill="#B0129A" fill-opacity=".45" class="f-ac"/>
+                  <ellipse cx="101" cy="88" rx="4.5" ry="13" transform="rotate(-12 101 88)" fill="#B0129A" fill-opacity=".45" class="f-ac"/>
+                  <text x="60" y="248" text-anchor="middle" font-size="14" fill="#6B6B68" class="f-mu">Front</text>
+                </g>
+                <g transform="translate(130 0)">
+                  <circle cx="60" cy="26" r="15" fill="#CFCFCB" class="f-body"/>
+                  <rect x="54" y="38" width="12" height="10" fill="#CFCFCB" class="f-body"/>
+                  <path d="M60 46 C52 46 30 48 24 56 C21 72 25 98 29 118 C30 128 27 136 27 146 L31 232 L52 232 L57 162 L63 162 L68 232 L89 232 L93 146 C93 136 90 128 91 118 C95 98 99 72 96 56 C90 48 68 46 60 46 Z" fill="#CFCFCB" class="f-body"/>
+                  <path d="M24 58 C16 62 12 90 10 140 L18 142 C20 100 24 80 28 70 Z" fill="#CFCFCB" class="f-body"/>
+                  <path d="M96 58 C104 62 108 90 110 140 L102 142 C100 100 96 80 92 70 Z" fill="#CFCFCB" class="f-body"/>
+                  <path d="M32 64 C28 84 31 104 40 122 L54 116 C50 98 48 80 48 64 Z" fill="#B0129A" class="f-ac"/>
+                  <path d="M88 64 C92 84 89 104 80 122 L66 116 C70 98 72 80 72 64 Z" fill="#B0129A" class="f-ac"/>
+                  <ellipse cx="27" cy="60" rx="6" ry="5" fill="#B0129A" fill-opacity=".45" class="f-ac"/>
+                  <ellipse cx="93" cy="60" rx="6" ry="5" fill="#B0129A" fill-opacity=".45" class="f-ac"/>
+                  <text x="60" y="248" text-anchor="middle" font-size="14" fill="#6B6B68" class="f-mu">Back</text>
+                </g>
+              </svg>
+              <div class="legend">
+                <span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="0" y="0" width="12" height="12" rx="2" fill="#B0129A" class="f-ac"/></svg>Lats · main</span>
+                <span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="0" y="0" width="12" height="12" rx="2" fill="#B0129A" fill-opacity=".45" class="f-ac"/></svg>Biceps, rear shoulders · helping</span>
+              </div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.1 Exercise · how to (Lat pulldown)</div>
+          <div><b>Dayanak:</b> L1 §7: kurucunun kendi çektiği sessiz döngü videolar, gerçek video yok, burada yer tutucu. "İlk tekrar / son tekrar" yan yana (L1 A1, ayrışma: sektörde RIR'ın nasıl göründüğünü gösteren yok). Güray K-8 istemsiz yavaşlama, K-45 kontrollü negatif, K-29 standardizasyon (kurulum kartı cihazda), sırt hareketi olduğu için K-50 tam ROM'a K-56 set sonu yarım tekrar istisnası eklendi. Halperin 2022: insanlar kalan tekrarı ~1 eksik tahmin ediyor. Kas haritası MIT lisanslı body-highlighter mantığıyla, ön/arka.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 5.2 Settings -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><span class="meta" style="flex:1;text-align:left">Today</span></div>
+            <div class="hdr" style="padding-top:0"><span class="day">Settings</span></div>
+
+            <div class="grp">
+              <span class="eyebrow">Units</span>
+              <div class="card" style="gap:8px">
+                <div class="seg">
+                  <button type="button" aria-pressed="true">kg</button>
+                  <button type="button" aria-pressed="false">lb</button>
+                </div>
+                <p class="small">Calls and targets convert on the spot. Your history stays as logged.</p>
+              </div>
+            </div>
+
+            <div class="grp">
+              <span class="eyebrow">Notifications · these three, nothing else</span>
+              <div class="card" style="gap:0">
+                <div class="srow"><div><div>30 min before training</div><div class="hs">18:00 on your training days</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="30 minutes before training"></button></div>
+                <div class="srow"><div><div>Monday check-in</div><div class="hs">Mondays at 08:00</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Monday check-in"></button></div>
+                <div class="srow"><div><div>One note after 7 quiet days</div><div class="hs">Only if you've been away</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="One note after 7 quiet days"></button></div>
+              </div>
+            </div>
+
+            <div class="grp">
+              <span class="eyebrow">Your data and consents</span>
+              <div class="card" style="gap:0">
+                <div class="srow"><div><div>Health data</div><div class="hs">Weight, waist, sleep, check-ins</div></div><span class="acts"><button class="tb" type="button">View</button><button class="tb" type="button">Withdraw</button></span></div>
+                <div class="srow"><div><div>Apple Health</div><div class="hs">Reading 4 · adding workouts</div></div><span class="acts"><button class="tb" type="button">View</button><button class="tb" type="button">Withdraw</button></span></div>
+                <div class="srow"><div><div>Meal analysis</div><div class="hs">Meal photos to <span class="slot">Provider</span></div></div><span class="acts"><button class="tb" type="button">View</button><button class="tb" type="button">Withdraw</button></span></div>
+              </div>
+            </div>
+
+            <div class="grp">
+              <span class="eyebrow">Subscription</span>
+              <div class="card">
+                <div class="rowhead"><span style="font-size:14px;font-weight:600">Yearly · $59.99</span><span class="meta">Renews Jul 14, 2027</span></div>
+                <div class="btnrow">
+                  <button class="btn sm ghost" type="button">Pause</button>
+                  <button class="btn sm ghost" type="button">Cancel</button>
+                </div>
+                <p class="small">Pause up to 3 months. Your history stays.</p>
+              </div>
+            </div>
+
+            <div class="card" style="gap:0">
+              <div class="srow"><div><div>Export my data</div><div class="hs">CSV and JSON, everything we hold</div></div><span class="chev" aria-hidden="true">›</span></div>
+              <button class="srow" type="button" data-reveal="del-confirm" aria-expanded="false" aria-controls="del-confirm"><div><div>Delete account</div><div class="hs">Removes everything, on every device</div></div><span class="chev" aria-hidden="true">›</span></button>
+              <div class="confirm" id="del-confirm" hidden>
+                <span class="ct">Delete your account and all data?</span>
+                <p class="small">Logs, photos on this phone, calls and consents. This can't be undone. Export first if you want a copy.</p>
+                <button class="btn warn" type="button">Delete everything</button>
+                <button class="lnk" type="button" data-reveal="del-confirm">Keep my account</button>
+              </div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.2 Settings</div>
+          <div><b>Dayanak:</b> L3 P7: prototip üç yerde Settings'e yönlendiriyordu, ekran yoktu (K-802 hesap silme ve K-204 rıza geri alma UI'sız). Bildirim slotları 04 §7.4: üç tür, fazlası yok. Bütçe tür sayısı, haftalık adet değil (Levent, 29 Eyl). Rızalar ayrı ayrı görüntülenip geri alınır (V2, V3; ADR-007 Health okuma/yazma). Abonelikte Pause ve Cancel eşit görünür (Noom dersi). Hesap silme uygulama içinde (App Review 5.1.1(v), V6); satır nötr, uyarı rengi yalnız dokununca açılan onay adımında.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 5.3 State mode -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content" data-state-root>
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><span class="meta" style="flex:1;text-align:left">Tue, Sep 29</span></div>
+            <h3 class="h1" style="font-size:34px">This week is different</h3>
+            <div class="opts compact" data-state-opts>
+              <button class="opt" type="button" aria-pressed="true" data-state="travel"><span class="ot">Traveling</span><span class="rd"></span><span class="os">Hotel gym or none. The plan uses what's there.</span></button>
+              <button class="opt" type="button" aria-pressed="false" data-state="sick"><span class="ot">Sick</span><span class="rd"></span><span class="os">No training, no calorie cuts.</span></button>
+              <button class="opt" type="button" aria-pressed="false" data-state="pain"><span class="ot">Pain</span><span class="rd"></span><span class="os">Pick the area. Moves that load it swap out.</span></button>
+              <button class="opt" type="button" aria-pressed="false" data-state="busy"><span class="ot">Busy / exams</span><span class="rd"></span><span class="os">Short sessions: fewer sets, same effort.</span></button>
+              <button class="opt" type="button" aria-pressed="false" data-state="gym"><span class="ot">New gym</span><span class="rd"></span><span class="os">First session sets a new baseline.</span></button>
+            </div>
+            <div data-for="travel">
+              <div class="seg">
+                <button type="button" aria-pressed="true">Hotel gym</button>
+                <button type="button" aria-pressed="false">No equipment</button>
+              </div>
+            </div>
+            <div class="chips" data-for="pain" data-single hidden>
+              <button class="chip" type="button" aria-pressed="false">Shoulder</button>
+              <button class="chip" type="button" aria-pressed="false">Elbow</button>
+              <button class="chip" type="button" aria-pressed="true">Lower back</button>
+              <button class="chip" type="button" aria-pressed="false">Knee</button>
+            </div>
+            <div class="card">
+              <span class="eyebrow" data-state-title>While you travel</span>
+              <ul class="chg" data-state-lines>
+                <li>No call this week.</li>
+                <li>Your consistency count pauses. It doesn't reset.</li>
+                <li>Hotel gym or no equipment: your plan swaps to what you have.</li>
+              </ul>
+              <p class="warnline" data-state-warn hidden></p>
+            </div>
+            <div class="field"><span class="fl">Until</span><span class="fv">Sun, Oct 4</span><span class="fs">End it early any time from Today.</span></div>
+            <button class="btn" type="button">Set for this week</button>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.3 State mode · This week is different</div>
+          <div><b>Dayanak:</b> L3 §4.2 durum modu. Beyan yeni veridir, ısrar değil (U2); motor NO_DECISION_YET(CONTEXT) döner (U3). Sayaç duraklar, sıfırlanmaz, af haftası yanmaz (U7). Durum soruyla değil kullanıcı beyanıyla gelir (U9). Pain teşhis değil bağlam; keskin ağrıda yönlendirme gerçek uyarı olduğu için warn renginde (U6). Dönüş yükü, minimum doz ve gürültülü tartı süresi motor kuralı, kaynak bekliyor (U14). Seçenekler dokununca değişir.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 5.4 Decision context -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Tuesday</span><span class="ph">Week 12 · Traveling</span></div>
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">This week's call</span><span class="pill">No call</span></div>
+              <div class="dec-title" style="font-size:34px">No call this week. You're traveling.</div>
+              <p class="dec-body">Back home, we take one week to re-baseline.</p>
+              <ul class="whylist">
+                <li><span class="l">Reason</span><span>You set Traveling, Sep 29 to Oct 4</span></li>
+                <li><span class="l">Weigh-ins</span><span>Travel days kept out of your trend</span></li>
+                <li><span class="l">Consistency</span><span class="num">Paused at 11 of 12</span></li>
+                <li><span class="l">Next call</span><span class="num">Mon, Oct 12</span></li>
+              </ul>
+            </div>
+            <div class="card">
+              <span class="eyebrow">Until then</span>
+              <div class="kv">
+                <div><span class="k">Calories</span><span class="v">2,300 kcal</span></div>
+                <div><span class="k">Protein</span><span class="v">160 g</span></div>
+                <div><span class="k">Training</span><span class="v">Hotel gym plan</span></div>
+                <div><span class="k">Oct 5 to 11</span><span class="v">Re-baseline week</span></div>
+              </div>
+            </div>
+            <p class="small">Weigh in when you can. Nothing is missed while this is on.</p>
+            <button class="lnk" type="button">I'm back early</button>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.4 Decision · context</div>
+          <div><b>Dayanak:</b> NO_DECISION_YET(CONTEXT). U3: "henüz karar yok" geçerli bir çıktı ve dört parça yine var (eylem, gerekçe, durum, sonraki tarih). L3 §4.2 Traveling satırı: seyahat tartıları gürültülü sayılır, dönüşte 1 hafta re-baseline. Tarihler: beyan Salı 29 Eyl, dönüş haftası 5 Eki, ilk karar Pzt 12 Eki.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 5.5 Lock screen -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c lockscr">
+          <div class="status"><span></span><span class="isl"></span><span>100%</span></div>
+          <div class="lk">
+            <svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><rect x="1" y="8" width="12" height="9" rx="2" fill="#FFFFFF"/><path d="M3.5 8 V5.5 a3.5 3.5 0 0 1 7 0 V8" fill="none" stroke="#FFFFFF" stroke-width="1.8"/></svg>
+            <div class="date">Tuesday 29 September</div>
+            <div class="clock">18:47</div>
+            <div class="lw" aria-label="keel widget">
+              <span class="a">keel</span>
+              <span class="b">This week: no change</span>
+              <span class="c">Next call Mon</span>
+            </div>
+            <div class="la" aria-label="Live Activity, rest timer">
+              <span class="rl">Rest</span>
+              <span class="nx">Next</span>
+              <span></span>
+              <span class="t">1:24</span>
+              <span class="nv">Lat pulldown<br>60 × 8</span>
+              <button class="plus" type="button">+30 s</button>
+              <span class="trk"><i></i></span>
+            </div>
+            <div class="bot">
+              <span><svg width="16" height="20" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 1 H13 V5 L10 9 V19 H6 V9 L3 5 Z" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+              <span><svg width="22" height="18" viewBox="0 0 22 18" aria-hidden="true"><rect x="1" y="4" width="20" height="13" rx="2.5" fill="none" stroke="#FFFFFF" stroke-width="1.6"/><rect x="7" y="1" width="8" height="3.5" rx="1" fill="#FFFFFF"/><circle cx="11" cy="10.5" r="3.5" fill="none" stroke="#FFFFFF" stroke-width="1.6"/></svg></span>
+            </div>
+            <span class="home"></span>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.5 Lock screen · widget + Live Activity</div>
+          <div><b>Dayanak:</b> L3 Y1: kilit ekranında karar widget'ı; rakiplerde widget var, karar widget'ı yok (expo-widgets SDK 57'de stabil). Widget'ta sayı yok, yalnız eylem: kilit ekranında sağlık sayısı görünmez (V3). Live Activity: arka planda dinlenme sayacı + sıradaki set (L3 masa bahsi #5; Hevy, Alpha Progression, MacroFactor Workouts'ta var). Sistem yüzeyi olduğu için iki temada aynı.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 5.6 What would change the call -->
+      <figure class="col" id="s5-6">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><span class="h3" style="flex:1">What would change the call</span></div>
+            <div class="card dec">
+              <div class="rowhead"><span class="eyebrow">Mon, Sep 28</span><span class="pill">High confidence</span></div>
+              <div class="dec-title" style="font-size:26px">No change. Hold 2,300&nbsp;kcal.</div>
+            </div>
+            <div class="card" style="gap:0">
+              <div class="ift"><span><b>If</b> next week's trend is flat and you log 80%+</span><span class="th"><b>Then</b> carbs down, one 500 kcal step</span></div>
+              <div class="ift"><span><b>If</b> your bench drops two sessions in a row</span><span class="th"><b>Then</b> training first, no calorie change</span></div>
+              <div class="ift"><span><b>If</b> the trend keeps dropping 0.5–1% a week</span><span class="th"><b>Then</b> no change, same as now</span></div>
+            </div>
+            <div class="card" data-sim>
+              <span class="eyebrow">Try it with example data</span>
+              <span class="lbl">Next week's trend</span>
+              <div class="seg" data-k="trend">
+                <button type="button" aria-pressed="false" data-v="down">Down</button>
+                <button type="button" aria-pressed="true" data-v="flat">Flat</button>
+              </div>
+              <span class="lbl">Logged</span>
+              <div class="seg" data-k="log">
+                <button type="button" aria-pressed="false" data-v="lo">Under 80%</button>
+                <button type="button" aria-pressed="true" data-v="hi">80% or more</button>
+              </div>
+              <span class="lbl">Bench</span>
+              <div class="seg" data-k="bench">
+                <button type="button" aria-pressed="true" data-v="ok">Holding</button>
+                <button type="button" aria-pressed="false" data-v="drop">Dropped twice</button>
+              </div>
+              <div class="simout" aria-live="polite">
+                <span class="eyebrow ac">Result</span>
+                <span class="h2" data-out>Carbs down, one 500 kcal step.</span>
+                <span class="small" data-why>2,300 → 1,800 kcal. If that's under your floor, steps go up instead.</span>
+              </div>
+            </div>
+            <p class="small">This runs the same rules on example data. No AI involved.</p>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.6 What would change the call</div>
+          <div><b>Dayanak:</b> L3 Y3: 3.5'teki "What would change it" satırı etkileşimli oldu. Motor varsayımsal veriyle deterministik çalışır; LLM yok (U1). Hangi verinin kararı değiştireceği açık (U2). Kalori adımı 500 kcal (K-97); taban kontrolü her kalori kararından önce çalışır, 3.3'teki durum tam bu (U13). Şekil projeksiyonuyla (U12) karışmaz: zaman ya da vücut değil, kural simülasyonu. Seçimler dokununca sonuç değişir.</div>
+        </figcaption>
+      </figure>
+
+      <!-- 5.7 Decision ledger -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="hdr"><span class="day">Calls</span><span class="ph">Since Jul 7</span></div>
+            <div class="card">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+                <div class="big" style="font-size:72px">5</div>
+                <div class="meta" style="text-align:right">calls in 12 weeks<br>2 wait · 1 steps · 1 calories · 1 deload</div>
+              </div>
+              <div class="rail" aria-label="Weeks 1 to 12, calls in weeks 1, 5, 8, 10 and 12">
+                <span class="c">1</span><span>2</span><span>3</span><span>4</span><span class="c">5</span><span>6</span><span>7</span><span class="c">8</span><span>9</span><span class="c">10</span><span>11</span><span class="c now">12</span>
+              </div>
+            </div>
+            <div class="card">
+              <ol class="led">
+                <li><span class="w">W12<small>Sep 28</small></span><div class="bd"><span class="tg now">Wait · now</span><span class="t">No change. Hold 2,300 kcal.</span><span class="a"><b>After:</b> next review Mon, Oct 5.</span></div></li>
+                <li><span class="w">W10<small>Sep 14</small></span><div class="bd"><span class="tg">Calories</span><span class="t">Cut starts: 2,800 → 2,300 kcal.</span><span class="a"><b>After:</b> trend 82.3 → 81.9 kg by week 12. Bench 80 kg × 7 → × 8.</span></div></li>
+                <li><span class="w">W8<small>Aug 31</small></span><div class="bd"><span class="tg">Deload</span><span class="t">Half the sets, same weights.</span><span class="a"><b>After:</b> bench e1RM 100 → 101 kg over the next two weeks.</span></div></li>
+                <li><span class="w">W5<small>Aug 10</small></span><div class="bd"><span class="tg">Steps</span><span class="t">Steps up to 8,000 a day.</span><span class="a"><b>After:</b> averaged 8,300 a day. Waist 90 → 89 cm by week 8.</span></div></li>
+                <li><span class="w">W1<small>Jul 13</small></span><div class="bd"><span class="tg">Wait</span><span class="t">Not yet. Two weeks of weigh-ins first.</span><span class="a"><b>After:</b> 14 of 14 days weighed. First trend in week 3.</span></div></li>
+              </ol>
+            </div>
+            <p class="small">After shows what happened next. Weeks without a new call kept the last one.</p>
+          </div>
+          <nav class="tabs" aria-label="Main">
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-today"/></svg>Today</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-train"/></svg>Train</span>
+            <span class="tab"><svg class="ti" aria-hidden="true"><use href="#i-food"/></svg>Food</span>
+            <span class="tab on"><svg class="ti" aria-hidden="true"><use href="#i-prog"/></svg>Progress</span>
+          </nav>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.7 Decision ledger</div>
+          <div><b>Dayanak:</b> L3 Y4: 12 haftada 5 karar ve her birinin ardından ne olduğu. Dil "after", "because" yok: nedensellik iddiası kurulmaz. Veri hazır: K-212 kararları Snapshot + hash ile saklıyor. Ö-23 üç aylık değerlendirme penceresiyle aynı ölçek. Sayılar diğer ekranlarla tutarlı (4.4 e1RM çizgisi, 4.2 bel, 3.5 trend).</div>
+        </figcaption>
+      </figure>
+
+      <!-- 5.8 Share card -->
+      <figure class="col">
+        <div class="phone"><div class="screen v-c">
+          <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+          <div class="content">
+            <div class="topbar"><span class="bk" aria-hidden="true">‹</span><span class="h3" style="flex:1">Share this week</span></div>
+            <div class="share">
+              <div class="top dec">
+                <span class="sb">keel</span>
+                <p class="sh">The app told me not to cut calories this week. Here's why.</p>
+                <p class="dec-body">Trend weight down 0.4 kg. Lifts held. 16 of 19 planned actions done.</p>
+                <p class="dec-body sw8" data-weight hidden>81.4 kg today · 82.0 kg on Day 1</p>
+              </div>
+              <div class="bot">
+                <div><span class="tv">11 of 12</span><span class="small">weeks on track</span></div>
+                <div><span class="tv">+8 kg</span><span class="small">bench e1RM</span></div>
+              </div>
+            </div>
+            <div class="card" style="gap:0">
+              <div class="hrow"><div><div>Show the why</div><div class="hs">Trend, lifts and actions</div></div><button class="tgl on" type="button" role="switch" aria-checked="true" aria-label="Show the why"></button></div>
+              <div class="hrow"><div><div>Show my weight</div><div class="hs">Off by default</div></div><button class="tgl" type="button" role="switch" aria-checked="false" aria-label="Show my weight" data-controls="weight"></button></div>
+              <div class="hrow"><div><div>Body photos</div><div class="hs">Can't be added to share cards</div></div><span class="meta">Off</span></div>
+            </div>
+            <div class="btnrow">
+              <button class="btn" type="button">Share</button>
+              <button class="btn ghost" type="button">Save image</button>
+            </div>
+            <p class="small">Made on this phone. Nothing leaves it until you tap Share.</p>
+          </div>
+        </div></div>
+        <figcaption class="notes">
+          <div><b>Ekran:</b> 5.8 Share card</div>
+          <div><b>Dayanak:</b> L3 Y5: kullanıcı başlatmalı paylaşım, before/after değil; karar paylaşan rakip yok. Yağ yüzdesi yok (U4), vücut görseli ve fotoğraf yok (U12, V1), kilo varsayılan gizli (V3; anahtar açılınca satır görünür). Suçlama ya da kıyas dili yok (U7). Görsel cihazda üretilir. Levent'in videolarında aynı kart formatı kanal köprüsü olur.</div>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  </div>
 </div>
 
 <script>
+(function () {
+  var phones = document.getElementById('phones');
+  var themeBtns = document.querySelectorAll('[data-theme-set]');
+  themeBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var dark = b.getAttribute('data-theme-set') === 'dark';
+      phones.classList.toggle('t-dark', dark);
+      themeBtns.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    });
+  });
+
   document.querySelectorAll('.why[aria-expanded]').forEach(function (btn) {
     var list = btn.parentElement.querySelector('.whylist');
     if (!list) return;
@@ -1528,4 +2155,89 @@ body{ margin:0; background:var(--page); color:var(--ink); font-family:"Barlow",s
       btn.querySelector('span').textContent = open ? '⌄' : '›';
     });
   });
+
+  // single-select groups
+  document.querySelectorAll('.seg, .rir, .scale, .opts, .chips[data-single]').forEach(function (g) {
+    g.addEventListener('click', function (e) {
+      var btn = e.target.closest('button[aria-pressed]');
+      if (!btn || btn.parentElement !== g) return;
+      Array.prototype.forEach.call(g.children, function (o) {
+        if (o.hasAttribute('aria-pressed')) o.setAttribute('aria-pressed', String(o === btn));
+      });
+      g.dispatchEvent(new CustomEvent('pick', { detail: btn }));
+    });
+  });
+
+  document.querySelectorAll('.dy').forEach(function (d) {
+    d.addEventListener('click', function () {
+      d.setAttribute('aria-pressed', String(d.getAttribute('aria-pressed') !== 'true'));
+    });
+  });
+
+  document.querySelectorAll('.tgl[role="switch"]').forEach(function (t) {
+    t.addEventListener('click', function () {
+      var on = !t.classList.contains('on');
+      t.classList.toggle('on', on);
+      t.setAttribute('aria-checked', String(on));
+      var target = t.getAttribute('data-controls');
+      if (target) {
+        var el = t.closest('.content').querySelector('[data-' + target + ']');
+        if (el) el.hidden = !on;
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-reveal]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var el = document.getElementById(b.getAttribute('data-reveal'));
+      if (!el) return;
+      el.hidden = !el.hidden;
+      var opener = document.querySelector('.srow[data-reveal="' + el.id + '"]');
+      if (opener) opener.setAttribute('aria-expanded', String(!el.hidden));
+    });
+  });
+
+  // 5.6 simulator: same rule order as the engine, example data only
+  var sim = document.querySelector('[data-sim]');
+  if (sim) {
+    var val = function (k) {
+      var b = sim.querySelector('[data-k="' + k + '"] [aria-pressed="true"]');
+      return b ? b.getAttribute('data-v') : '';
+    };
+    var out = sim.querySelector('[data-out]'), why = sim.querySelector('[data-why]');
+    var run = function () {
+      var t = val('trend'), l = val('log'), b = val('bench'), r;
+      if (b === 'drop') r = ['Training first. No calorie change.', 'Two sessions down in a row points to fatigue. Calories stay at 2,300 kcal.'];
+      else if (t === 'down') r = ['No change. Hold 2,300 kcal.', 'Trend moving toward goal and training stable.'];
+      else if (l === 'hi') r = ['Carbs down, one 500 kcal step.', '2,300 → 1,800 kcal. If that’s under your floor, steps go up instead.'];
+      else r = ['No change yet.', 'Under 80% logged, the plan hasn’t been tested. Same targets, one more week.'];
+      out.textContent = r[0];
+      why.textContent = r[1];
+    };
+    sim.querySelectorAll('.seg').forEach(function (s) { s.addEventListener('pick', run); });
+  }
+
+  // 5.3 state mode
+  var root = document.querySelector('[data-state-root]');
+  if (root) {
+    var S = {
+      travel: { t: 'While you travel', l: ['No call this week.', 'Your consistency count pauses. It doesn’t reset.', 'Hotel gym or no equipment: your plan swaps to what you have.'], w: '' },
+      sick: { t: 'While you’re sick', l: ['No call this week, and no calorie cut.', 'Your consistency count pauses. It doesn’t reset.', 'Training stops. When you’re back, you pick how fast to return.'], w: '' },
+      pain: { t: 'While it hurts', l: ['Moves that load that area swap out.', 'This week’s call and your count carry on as normal.', 'Everything else in your plan stays.'], w: 'Sharp pain, or pain that lasts: see a doctor or physio.' },
+      busy: { t: 'During a busy week', l: ['No call this week. A rushed week makes noisy data.', 'Your consistency count pauses. It doesn’t reset.', 'Short sessions: fewer sets, same effort.'], w: '' },
+      gym: { t: 'At a new gym', l: ['The call runs as normal.', 'Your first session on each machine sets a new baseline.', 'Load comparisons skip that session.'], w: '' }
+    };
+    var title = root.querySelector('[data-state-title]'), lines = root.querySelector('[data-state-lines]'), warn = root.querySelector('[data-state-warn]');
+    root.querySelector('[data-state-opts]').addEventListener('pick', function (e) {
+      var k = e.detail.getAttribute('data-state'), s = S[k];
+      if (!s) return;
+      title.textContent = s.t;
+      lines.innerHTML = '';
+      s.l.forEach(function (txt) { var li = document.createElement('li'); li.textContent = txt; lines.appendChild(li); });
+      warn.textContent = s.w;
+      warn.hidden = !s.w;
+      root.querySelectorAll('[data-for]').forEach(function (el) { el.hidden = el.getAttribute('data-for') !== k; });
+    });
+  }
+})();
 </script>

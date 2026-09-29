@@ -391,6 +391,8 @@ Bu, §5'teki "streak mekaniği yapılmayacak" maddesini **inceltir:** yasaklanan
 
 ### 7.4 · Bildirim: haftada ≤3, hafta içi jenerik yok
 
+> **Karar notu (29 Eyl, Levent):** "≤3" haftalık adet değil, **tür** sayısı olarak okunur. 4 antrenman günü + Pazartesi = haftada 5 bildirim olabilir; dördüncü bir tür eklenmez.
+
 Altın standart — **mikro-randomize deneme, n=1.255, 89 gün:**
 
 | Ne | Etki |

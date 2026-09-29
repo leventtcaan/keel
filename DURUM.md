@@ -6,20 +6,18 @@ guncelleme: 2026-09-29
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M0 · Temel neredeyse bitti** — tek açık görev Levent'in incelemesi (K-011). Kod iskeleti derleniyor, CI yeşil,
-karar motorunun spesifikasyonu hazır ama motor yazılmadı (bilerek: ön aktarımla birlikte yazılacak).
+**M0 · Temel neredeyse bitti.** Prototip v2 yayında (K-012 kapandı). Kod iskeleti derleniyor, CI yeşil, karar motorunun
+spesifikasyonu hazır ama motor yazılmadı (bilerek: ön aktarımla birlikte yazılacak).
 
 ## Aktif görev
-Yok. Sıradaki: **K-011 · Levent incelemesi**, sonra **K-101 · Motor alan tipleri** (M1'in ilk görevi).
+Yok. Sıradaki: **K-011 · Levent incelemesi**, sonra **K-101 · Motor alan tipleri** (M1'in ilk görevi, ön aktarımla).
 
-## Sıradaki tek adım
-**Levent sabah şu sırayla okur:**
-1. `plan/kararlar.md` → 13 ÖNERİ ADR'yi KABUL ya da değişiklik ile işaretler (en kritikleri: ADR-003 motor,
-   ADR-004 LLM katmanları, ADR-015 modül haritası)
-2. Prototip: https://claude.ai/artifact/JMDAKqn45CgH7oYTPfqWu3 — onay ya da değişiklik listesi
-3. GitHub Project: https://github.com/users/leventtcaan/projects/2 (varsayılan görünüm tablo; Status ya da Milestone ile gruplanan bir Board görünümü arayüzden 30 saniyede eklenir)
-4. Aşağıdaki "Açık sorular"ı cevaplar
-Sonra K-101 skill `gorev-baslat` ile, ön aktarımla başlar.
+## Sıradaki tek adım (Levent)
+1. **PR #130'u merge et** (RUBİN token'ları + kontrast testi, CI yeşil): https://github.com/leventtcaan/keel/pull/130
+2. **Eklentileri kur:** Expo + Design (kart gösterildi; kurulunca prototip `design-critique`'ten geçecek)
+3. **Prototip v2'ye bak:** https://claude.ai/artifact/JMDAKqn45CgH7oYTPfqWu3 (37 ekran, üstte Light/Dark) → onay ya da değişiklik listesi
+4. `plan/kararlar.md` → 13 ÖNERİ ADR'yi KABUL ya da değişiklik (K-011; kritik: ADR-003, ADR-004, ADR-015)
+5. İsteğe bağlı: RUBİN 5 saniye testi (8 kişiden 2'den fazlası "kadın uygulaması" derse Saha `#0B7F05`'e geç)
 
 ## Gece kurulumu — ne yapıldı (29 Eyl)
 - [x] Anayasa ve hafıza: `CLAUDE.md`, `docs/anayasa.md` (U1-U15, V1-V6, K1-K10, G1-G4), `docs/aktarim-protokolu.md`,
@@ -46,15 +44,18 @@ Sonra K-101 skill `gorev-baslat` ile, ön aktarımla başlar.
 ## Açık sorular (Levent'e)
 1. **Dil modeli sağlayıcısı** (29 Eyl'de açıklandı): M5'te üç sağlayıcı kendi değerlendirme setimizle ölçülüp seçilecek
    (görev K-511). Rıza ekranı seçilen şirketin adını yazacak.
+2. **Güray'ın kurallarının açık kural kitabında yayınlanma izni**
+3. **Kaynak bekleyen motor kuralları (U14):** "zor set" hangi RIR, aradan sonra dönüş yükü, yoğun hafta kısa seans
 
 ## 29 Eyl sabah turu — sonuç
 - L1-L3 araştırmaları yapıldı · **ADR-016** (RUBİN, koyu mod, Liquid Glass sistem katmanı; ADR-014'ün yerine) ·
   **ADR-017** (hareket gösterimi: Levent çeker, ilk/son tekrar) · **ADR-018** (Health'e yazma, içe aktarma) — üçü KABUL
 - Backlog 95 → **129 görev**; L3'ün 16 plan hatası onarıldı; M11 eklendi; senkron aracına sıralama doğrulaması eklendi
-- Prototip v2 hazırlanıyor (K-012)
+- Prototip v2 yayınlandı (K-012 ✓): 37 ekran, RUBİN açık/koyu, hareket gösterimi, ayarlar, durum modu, kilit ekranı, "ne değiştirir" simülatörü, karar defteri, paylaşım kartı
 - **Hâlâ açık:** 13 ÖNERİ ADR'nin KABUL'ü (K-011) · Expo + Design eklentilerinin kurulması (kart gösterildi)
 
 ## Levent cevapları (29 Eyl sabah)
+- **Bildirim bütçesi: 3 tür** (antrenman öncesi · Pazartesi check-in · 7 gün sessizlik), haftalık adet sınırı yok. Tetikleyiciler (K-512) push değil uygulama içi soru (Levent onayladı).
 - ADR'leri okudu; eksik buldu: **hareket gösterimi** → araştırılıyor (L1)
 - Renklerin başka bir uygulamadan çalıntı olmaması ve güncel/psikolojik olarak doğru tasarım → araştırılıyor (L2)
 - Eksik zorunlu özellikler + yaratıcı öneriler → araştırılıyor (L3)

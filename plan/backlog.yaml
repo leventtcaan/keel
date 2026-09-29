@@ -221,7 +221,7 @@ tasks:
     module: design
     type: docs
     size: L
-    status: todo
+    status: done
     depends_on: [K-005, K-013]
     why: "Strava çakışması ve L1-L3 bulguları prototipe işlensin"
     acceptance:
@@ -1254,7 +1254,7 @@ tasks:
     why: "Tasarımı hazırdı (04 §7.4), görevi yoktu (L3 P3)"
     acceptance:
       - "Antrenmandan 30 dk önce (kullanıcının kendi cümlesiyle) · pazartesi check-in · 7 gün sessizlikte tek öz-şefkat mesajı"
-      - "Haftada ≤3; metinler en.json'da, yasaklı ifade testi"
+      - "Yalnız bu üç tür, dördüncü tür eklenmez (Levent 29 Eyl: bütçe tür sayısı, haftalık adet değil); metinler en.json'da, yasaklı ifade testi"
       - "Durum modu (hasta/sınav) bildirimleri susturur"
       - "expo-notifications bağımlılığı Levent onayıyla (K5)"
     tests:
@@ -1639,7 +1639,7 @@ tasks:
     why: "Ürünün koçluk davranışı backlog'da yoktu (Ö-18, L3 P3)"
     acceptance:
       - "En az: adım düşüşü, 2 kaçan antrenman, kuvvet düşüşü, 'hiç aç değilim' (ilk 2 gün)"
-      - "Her tetikleyici kural kimliği + kaynak taşır; haftalık soru/bildirim bütçesini aşmaz"
+      - "Her tetikleyici kural kimliği + kaynak taşır; push bildirimi değil, uygulama içi soru olarak çıkar (bildirim türleri K-410'daki üçle sınırlı)"
     tests:
       - "TriggerTests"
     refs: ["arastirma/ham/guray/G5-surec-supplement.md", "arastirma/03-guray-karar-omurgasi.md#3"]

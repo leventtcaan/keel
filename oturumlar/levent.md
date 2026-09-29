@@ -15,3 +15,10 @@
 - takıldım: yok. Düzeltilenler DURUM'da (RIR mantık hatası, kalori adımı ↔ BMR, gözlem süresi, Expo 57 API değişikliği)
 - sıradaki: Levent incelemesi (K-011) → K-101 ön aktarımla
 - AI: agent tüm dosyaları, kodu ve testleri yazdı; testlerin boşuna geçmediği bilerek bozularak doğrulandı; Levent henüz incelemedi
+
+## 2026-09-29 · Sabah turu: L1-L3, RUBİN, prototip v2
+- yaptım: L1 hareket gösterimi, L2 görsel kimlik, L3 özellik boşluğu araştırması; ADR-016/017/018; backlog 95 → 129; RUBİN token'ları + kontrast testi (PR #130); prototip v2 (37 ekran) yayında
+- karar: RUBİN (Strava çakışması yüzünden turuncu bırakıldı), Levent hareketleri kendi çeker, Health'e yazma var, içe aktarmada trend hemen karar Pazartesi
+- takıldım: bildirim bütçesi araştırmada kendi içinde çelişiyor (açık soru 2); eklentiler henüz kurulmadı
+- sıradaki: Levent PR #130 merge + eklentiler + K-011 → K-101 ön aktarımla
+- AI: prototip v2'yi subagent yazdı, ben baştan sona okuyup 8 tutarsızlık düzelttim (e1RM grafikle ledger uyuşmuyordu, gözlem 4 hafta yazılmıştı → 2, "X, not Y" kalıpları)
