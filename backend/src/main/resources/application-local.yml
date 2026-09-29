@@ -1,6 +1,6 @@
-# Local development against compose.yaml's PostgreSQL: SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+# Local development against compose.yaml's PostgreSQL (no password; it trusts 127.0.0.1):
+# SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
 spring:
   datasource:
     url: jdbc:postgresql://127.0.0.1:55432/keel
     username: keel
-    password: keel-local-only

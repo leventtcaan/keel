@@ -13,9 +13,10 @@ import java.util.stream.Stream;
 
 /**
  * How migrations are written (ADR-005, ADR-023). Files are {@code V<n>__<owner>_<what>.sql}, numbered 1, 2, 3… without
- * gaps. The owner is a module, and a module's migration touches only tables in its own schema — every table it
- * creates, alters, indexes or references is {@code <module>.<table>} — so no module reaches into another's tables,
- * not even with a foreign key. The one other owner is {@code modulith}: the event registry, in {@code public}.
+ * gaps. The owner is a module, and a module's migration names only tables in its own schema, {@code <module>.<table>},
+ * wherever a statement names one — so no module reaches into another's tables, not even with a foreign key. Quoted
+ * names are refused (they would hide the schema). The one other owner is {@code modulith}: the event registry, in
+ * {@code public}. A quick lint over the files; the database's own catalog is the final check (ModuleBoundary).
  */
 final class MigrationConventions {
 
@@ -24,10 +25,23 @@ final class MigrationConventions {
     static final String FRAMEWORK = "modulith";
 
     private static final Pattern NAME = Pattern.compile("V(\\d+)__([a-z]+)_[a-z0-9_]+\\.sql");
-    // The table after CREATE/ALTER/DROP TABLE, CREATE INDEX … ON, and REFERENCES.
     private static final Pattern COMMENT = Pattern.compile("--[^\n]*");
-    private static final Pattern TABLE = Pattern.compile(
-            "\\b(?:table(?:\\s+if\\s+(?:not\\s+)?exists)?|\\son|references)\\s+([a-z_][a-z0-9_.]*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern STRING = Pattern.compile("'[^']*'");
+    private static final String NAME_PART = "([a-z_][a-z0-9_.]*)";
+    // Every place a statement names a table or schema: CREATE/ALTER/DROP/COMMENT ON TABLE, INDEX … ON, TRIGGER … ON,
+    // VIEW, REFERENCES, INTO, FROM, JOIN, UPDATE (not ON UPDATE), LIKE, PARTITION OF, SCHEMA, COMMENT ON COLUMN.
+    private static final List<Pattern> TARGETS = Stream.of(
+            "\\btable\\s+(?:if\\s+(?:not\\s+)?exists\\s+)?(?:only\\s+)?",
+            "\\bindex\\b[^;]*?\\bon\\s+(?:only\\s+)?",
+            "\\btrigger\\b[^;]*?\\bon\\s+",
+            "\\bview\\s+(?:if\\s+not\\s+exists\\s+)?",
+            "\\breferences\\s+",
+            "\\b(?:into|from|join|like)\\s+(?:only\\s+)?",
+            "(?<!on\\s)\\bupdate\\s+(?:only\\s+)?",
+            "\\bpartition\\s+of\\s+",
+            "\\bschema\\s+(?:if\\s+not\\s+exists\\s+)?",
+            "\\bcomment\\s+on\\s+column\\s+")
+            .map(prefix -> Pattern.compile(prefix + NAME_PART, Pattern.CASE_INSENSITIVE)).toList();
 
     private MigrationConventions() {
     }
@@ -40,6 +54,18 @@ final class MigrationConventions {
             names.add(FRAMEWORK);
             return Set.copyOf(names);
         }
+    }
+
+    /** The tables and schemas the statements name, in the order they appear. */
+    private static List<String> targets(String statements) {
+        java.util.TreeMap<Integer, String> found = new java.util.TreeMap<>();
+        for (Pattern pattern : TARGETS) {
+            Matcher target = pattern.matcher(statements);
+            while (target.find()) {
+                found.put(target.start(1), target.group(1).toLowerCase(Locale.ROOT));
+            }
+        }
+        return List.copyOf(found.values());
     }
 
     /** What is wrong with these migration files; empty when they follow the rules. */
@@ -58,10 +84,15 @@ final class MigrationConventions {
                 problems.add(file + ": owner '" + owner + "' is not a module");
                 continue;
             }
-            Matcher table = TABLE.matcher(COMMENT.matcher(content.apply(file)).replaceAll(""));
-            while (table.find()) {
-                String target = table.group(1).toLowerCase(Locale.ROOT);
-                boolean ok = owner.equals(FRAMEWORK) ? !target.contains(".") : target.startsWith(owner + ".");
+            String sql = content.apply(file);
+            if (sql.contains("\"")) {
+                problems.add(file + ": quoted names are not allowed");
+                continue;
+            }
+            String statements = STRING.matcher(COMMENT.matcher(sql).replaceAll("")).replaceAll("''");
+            for (String target : targets(statements)) {
+                boolean ok = owner.equals(FRAMEWORK) ? !target.contains(".")
+                        : target.equals(owner) || target.startsWith(owner + ".");
                 if (!ok) {
                     problems.add(file + ": touches " + target + ", outside " + (owner.equals(FRAMEWORK) ? "public" : owner + "."));
                 }

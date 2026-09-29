@@ -1,14 +1,15 @@
 # Local PostgreSQL for development (K-202, ADR-020): `docker compose up -d` in backend/, then run the application with
 # the `local` profile. The image is the one in gradle/libs.versions.toml (postgres-image; VersionCatalogTests checks).
-# Host port 55432, not 5432: a PostgreSQL installed on the machine often holds 5432.
-# The password is for this local container only; a deployed database takes its credentials from the environment (V5).
+# Host port 55432, not 5432: a PostgreSQL installed on the machine often holds 5432. No password (V5: none in the
+# repository): the port listens on 127.0.0.1 only and the container trusts local connections. A deployed database
+# takes its credentials from the environment.
 services:
   postgres:
     image: postgres:18.6
     environment:
       POSTGRES_DB: keel
       POSTGRES_USER: keel
-      POSTGRES_PASSWORD: keel-local-only
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "127.0.0.1:55432:5432"
     volumes:

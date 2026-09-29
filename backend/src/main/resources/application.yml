@@ -8,7 +8,7 @@ spring:
     username: ${KEEL_DB_USER}
     password: ${KEEL_DB_PASSWORD}
   # Flyway runs every migration in db/migration when the application starts (K-202). Modulith's registry table comes
-  # from V1, not from Modulith itself (ADR-023).
+  # from V1 (ADR-023); Modulith's own schema creation is off by default and stated here so it stays off.
   flyway:
     locations: classpath:db/migration
   modulith:

@@ -21,7 +21,7 @@ class MigrationConventionTests {
     void theRepositorysMigrationsFollowTheConventions() throws IOException {
         List<String> files;
         try (Stream<Path> migrations = Files.list(MigrationConventions.DIRECTORY)) {
-            files = migrations.map(file -> file.getFileName().toString()).sorted().toList();
+            files = migrations.map(file -> file.getFileName().toString()).filter(name -> !name.startsWith(".")).sorted().toList();
         }
 
         assertThat(files).isNotEmpty();
@@ -53,6 +53,45 @@ class MigrationConventionTests {
         Map<String, String> files = Map.of("V1__profile_goals.sql", """
                 -- the goal is set once the account exists (relies on identity.account through the API, not a key)
                 create table profile.goal (id uuid primary key); -- see also on profile.goal""");
+
+        assertThat(MigrationConventions.problems(List.of("V1__profile_goals.sql"), files::get, OWNERS)).isEmpty();
+    }
+
+    @Test
+    void anotherModulesTableIsFoundWhereverTheStatementReachesIt() {
+        Map<String, String> files = Map.of("V1__profile_goals.sql", """
+                insert into identity.account (id) select id from profile.goal;
+                create view profile.v as select * from profile.goal join identity.account using (id);
+                alter table profile.goal set schema identity;
+                create table profile.copy (like identity.account);""");
+
+        assertThat(MigrationConventions.problems(List.of("V1__profile_goals.sql"), files::get, OWNERS)).containsExactly(
+                "V1__profile_goals.sql: touches identity.account, outside profile.",
+                "V1__profile_goals.sql: touches identity.account, outside profile.",
+                "V1__profile_goals.sql: touches identity, outside profile.",
+                "V1__profile_goals.sql: touches identity.account, outside profile.");
+    }
+
+    @Test
+    void quotedNamesAreNotAllowedSinceTheyHideTheSchema() {
+        Map<String, String> files = Map.of("V1__profile_goals.sql",
+                "create table profile.goal (account_id uuid references \"identity\".\"account\" (id));");
+
+        assertThat(MigrationConventions.problems(List.of("V1__profile_goals.sql"), files::get, OWNERS))
+                .containsExactly("V1__profile_goals.sql: quoted names are not allowed");
+    }
+
+    @Test
+    void ordinarySqlInsideTheModulesOwnSchemaPasses() {
+        Map<String, String> files = Map.of("V1__profile_goals.sql", """
+                create table profile.goal (id uuid primary key, parent uuid references profile.goal on delete cascade);
+                alter table only profile.goal add column x int;
+                comment on table profile.goal is 'goals';
+                comment on column profile.goal.x is 'x';
+                create unique index goal_x on profile.goal (x);
+                insert into profile.goal (id) values (gen_random_uuid()) on conflict do nothing;
+                update profile.goal set x = 1;
+                delete from profile.goal where x = 2;""");
 
         assertThat(MigrationConventions.problems(List.of("V1__profile_goals.sql"), files::get, OWNERS)).isEmpty();
     }

@@ -17,11 +17,14 @@ PostgreSQL sürücüsü 42.7.13, Testcontainers 2.0.5); sunucu imajı PostgreSQL
 1. **Spring Data JDBC** (+ gerektiğinde `JdbcClient` ile açık SQL). JPA/Hibernate yok.
 2. **Her modül bir PostgreSQL şeması:** `identity.account`, `profile.goal`… Göç dosyaları `V<n>__<modül>_<ne>.sql`,
    1'den boşluksuz; bir modülün göçü yalnız kendi şemasındaki tabloları oluşturur, değiştirir, dizinler ve **referans
-   verir** — modüller arası yabancı anahtar yok (kimlik değer olarak taşınır). `MigrationConventionTests` yakalar.
+   verir** — modüller arası yabancı anahtar yok (kimlik değer olarak taşınır). İki kat kontrol: `MigrationConventionTests`
+   dosyaları tarar (tırnaklı ad yasak, tablo adı geçen her yer); `MigrationTests` göçlerden sonra **PostgreSQL
+   kataloğuna** bakar: şemalar arası yabancı anahtar ya da görünüm yok, `public`'te yalnız çerçeve tabloları.
 3. **Modulith olay kaydı** (`event_publication`) `public` şemasında, **Flyway göçüyle** (V1, kurulu jar'ın v2 şemasından);
    Modulith kendi tablosunu oluşturmaz (`schema-initialization.enabled: false`). `public`'te yalnız o ve Flyway geçmişi.
 4. **Yerel:** `backend/compose.yaml`, PostgreSQL 18.6, host portu **55432** (makinede kurulu PostgreSQL 5432'yi tutuyor);
-   `local` profili ona bağlanır. Dağıtılmış ortam kimlik bilgilerini ortamdan alır (`KEEL_DB_URL/USER/PASSWORD`, V5).
+   `local` profili ona bağlanır. **Parola yok** (V5: repoda parola olmaz): port yalnız 127.0.0.1'de, konteyner yerel
+   bağlantıya güvenir (`POSTGRES_HOST_AUTH_METHOD: trust`). Dağıtılmış ortam kimlik bilgilerini ortamdan alır (`KEEL_DB_URL/USER/PASSWORD`, V5).
 5. **Testler:** Testcontainers + `@ServiceConnection`, compose ile aynı imaj; imaj sürümü tek yerde
    (`libs.versions.toml › postgres-image`), compose'daki satır bir testle ona bağlı.
 

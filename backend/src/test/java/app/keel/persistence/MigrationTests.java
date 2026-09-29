@@ -53,9 +53,26 @@ class MigrationTests {
     }
 
     @Test
-    void theServerIsTheCatalogsPostgresRelease() {
-        String release = System.getProperty(PostgresTestConfiguration.IMAGE_PROPERTY).substring("postgres:".length());
+    void afterMigratingNoTableOrViewReachesIntoAnotherSchema() {
+        // The database's own catalog is the boundary check the file rule (MigrationConventions) only approximates.
+        assertThat(ModuleBoundary.crossings(jdbc)).isEmpty();
+        assertThat(ModuleBoundary.publicTables(jdbc)).containsExactlyInAnyOrder("event_publication", "flyway_schema_history");
+    }
 
-        assertThat(jdbc.sql("show server_version").query(String.class).single()).startsWith(release);
+    @Test
+    void theBoundaryCheckSeesAForeignKeyAndAViewAcrossSchemas() {
+        jdbc.sql("create schema boundary_a").update();
+        jdbc.sql("create schema boundary_b").update();
+        try {
+            jdbc.sql("create table boundary_a.account (id int primary key)").update();
+            jdbc.sql("create table boundary_b.goal (account_id int references boundary_a.account (id))").update();
+            jdbc.sql("create view boundary_b.accounts as select id from boundary_a.account").update();
+
+            assertThat(ModuleBoundary.crossings(jdbc)).containsExactlyInAnyOrder(
+                    "foreign key boundary_b.goal -> boundary_a.account", "view boundary_b.accounts reads boundary_a.account");
+        } finally {
+            jdbc.sql("drop schema boundary_b cascade").update();
+            jdbc.sql("drop schema boundary_a cascade").update();
+        }
     }
 }

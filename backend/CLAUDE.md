@@ -18,7 +18,8 @@ Spring Boot 4.1 + Spring Modulith 2.1 modüler monolit, Java 25, Gradle 9 (Kotli
 - Motor eşikleri kodda değil `../data/parameters/*.yaml`'da; `ParameterProvenanceTests` kaynaksızı yakalar.
 - Modülün temel paketindeki tipler API'sidir; alt paketler iç ayrıntıdır, başka modül göremez.
 - **Veritabanı (ADR-023):** göç `src/main/resources/db/migration/V<n>__<modül>_<ne>.sql`, 1'den boşluksuz; modül yalnız
-  kendi şemasına (`<modül>.<tablo>`) dokunur, başka modüle yabancı anahtar yok (`MigrationConventionTests`). Yayınlanmış
+  kendi şemasına (`<modül>.<tablo>`) dokunur, tırnaklı ad yok, başka modüle yabancı anahtar ya da görünüm yok
+  (`MigrationConventionTests` dosyada, `MigrationTests` veritabanı kataloğunda). Yayınlanmış
   göç değiştirilmez, yenisi yazılır. Her yabancı anahtara dizin; zaman serisinde `(account_id, zaman)` dizini; para/kcal
   aralığı `low`/`high` iki sütun. Yerel: `docker compose up -d` (port 55432) + `SPRING_PROFILES_ACTIVE=local`.
   Entegrasyon testi: `@Import(PostgresTestConfiguration.class)` (Testcontainers, compose ile aynı imaj).
