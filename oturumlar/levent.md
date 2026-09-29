@@ -29,3 +29,10 @@
 - takıldım: kendi hatam: 3 commit'e Co-Authored-By koydum (Studio'dan çalışırken keel kuralı yüklenmemişti) → soft reset + force-with-lease ile düzelttim, Levent'e söylendi
 - sıradaki: K-101 motor alan tipleri, ön aktarımla
 - AI: tüm ayar ve dokümanları agent yaptı; Levent kararları soru kartıyla verdi
+
+## 2026-09-29 · Skill kaynakları ve mekanik kapılar
+- yaptım: dış skill araştırması (L4); 4 disiplin skill'i vendor (superpowers, Trail of Bits); git_guard hook + commit-msg; pr-review-toolkit; 7 skill'imiz iyileşti; CI'da Tooling kontrolü zorunlu, action'lar SHA'ya sabit
+- karar: dış skill plugin değil vendor (kaynak commit + lisans + keel notu); ertelenenler görev refs'ine bağlandı
+- takıldım: hook testi ilk RED'de boşuna geçiyordu (eksik Python dosyası da 2 döner) → test yalnız hook'un işaretini sayıyor
+- sıradaki: K-101 motor alan tipleri, ön aktarımla
+- AI: tamamı agent; Levent "yapabildiğin yere kadar yap" dedi

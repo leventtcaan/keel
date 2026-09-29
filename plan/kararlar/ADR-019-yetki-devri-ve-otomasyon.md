@@ -29,8 +29,13 @@ projede her PR ve her teknik iznin Levent'i beklemesi akışı durduruyordu. Oto
    birleştirir, değilse DURUM'a yazar.
 7. **Claude Code eklentileri (proje kapsamı, `.claude/settings.json`):** `expo` (resmî Expo becerileri),
    `security-guidance` (düzenleme uyarıları + tur sonu ve commit'te güvenlik incelemesi), `jdtls-lsp`,
-   `typescript-lsp`. Expo'nun telemetrisi varsayılan kapalı; açılmaz, geri bildirim gönderilmez.
-8. **Öğrenme bozulmaz:** ön/son aktarım (`docs/aktarim-protokolu.md`) aynen sürer. Levent PR'ı onaylamasa da her
+   `typescript-lsp`, `pr-review-toolkit` (gorev-kapat'ta ikinci göz). Expo'nun telemetrisi varsayılan kapalı; açılmaz,
+   geri bildirim gönderilmez. Dış skill'ler plugin olarak değil **vendor** edilir (kaynak commit + lisans notu, gövde
+   okunmuş): superpowers TDD/debug/doğrulama, Trail of Bits PBT. Kaynak araştırması: `arastirma/ham/L4-skill-kaynaklari.md`.
+8. **Mekanik kapılar:** `.claude/hooks/git_guard.py` (PreToolUse/Bash: main'e force push, `reset --hard`, `clean -f`,
+   `branch -D`, `--no-verify`, AI imzası, dal korumasını silme → blok; `tools/test_git_guard.py` CI'da zorunlu kontrol)
+   · `.githooks/commit-msg` · CI action'ları commit SHA'sına sabit.
+9. **Öğrenme bozulmaz:** ön/son aktarım (`docs/aktarim-protokolu.md`) aynen sürer. Levent PR'ı onaylamasa da her
    görevin aktarımını alır; "vibe coder değil" hedefi değişmedi.
 
 ## Neden

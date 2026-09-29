@@ -28,8 +28,13 @@ K-101'i başlat: dal `engine/<issue>-domain-types`, ön aktarım (Snapshot → D
 - GitHub: yalnız squash, auto-merge açık, birleşen dal silinir · `main` koruması: `Backend (Gradle build)` +
   `Mobile (typecheck, lint, test)` zorunlu, doğrusal geçmiş, force push kapalı
 - Dependabot: güvenlik uyarıları + güvenlik düzeltme PR'ları; Actions sürümleri haftalık (`.github/dependabot.yml`)
-- Claude Code eklentileri (proje kapsamı): `expo`, `security-guidance`, `jdtls-lsp`, `typescript-lsp`
+- Zorunlu CI kontrolleri: Backend · Mobile · **Tooling (git guard)** · action'lar SHA'ya sabit (PR #133)
+- Claude Code eklentileri (proje kapsamı): `expo`, `security-guidance`, `jdtls-lsp`, `typescript-lsp`, `pr-review-toolkit`
   (yerel: `brew install jdtls`, `npm i -g typescript-language-server typescript`)
+- Vendor skill'ler: `test-driven-development`, `systematic-debugging`, `verification-before-completion`,
+  `property-based-testing` · Git koruması: `.claude/hooks/git_guard.py` + `.githooks/commit-msg`
+- **Zamanı gelince alınacak skill'ler** (L4, görev `refs`'inde): Postgres/Flyway → K-202 · sözleşme skill'i (spectral +
+  oasdiff) → K-201 · RNTL → K-301 · app-store-review + `claude-security` → K-803/K-903
 
 ## Gece kurulumu — ne yapıldı (29 Eyl)
 - [x] Anayasa ve hafıza: `CLAUDE.md`, `docs/anayasa.md` (U1-U15, V1-V6, K1-K10, G1-G4), `docs/aktarim-protokolu.md`,
