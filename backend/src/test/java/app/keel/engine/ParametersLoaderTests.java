@@ -323,6 +323,14 @@ class ParametersLoaderTests {
     }
 
     @Test
+    void failsWhenTheAdherenceFixLineIsNotBelowOnTrack() {
+        Map<String, Object> documents = repositoryDocuments();
+        entry(documents, "windows.yaml", "adherence_fix_below").put("value", 0.7); // on track is 0.7
+
+        assertProblem(documents, "windows.yaml", "adherence_fix_below", "on_track_min_ratio");
+    }
+
+    @Test
     void failsOnNotANumber() {
         Map<String, Object> documents = repositoryDocuments();
         entry(documents, "measurement.yaml", "whtr_threshold").put("value", Double.NaN);

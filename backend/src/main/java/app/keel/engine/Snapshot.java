@@ -18,9 +18,10 @@ import java.util.Objects;
  * @param menstrualLossReported the answer to the one-tap question shown when energy availability is low (J1 C6,
  *     ADR-020 L-1). Health data (GDPR Art. 9) that ADR-020 says is not kept: whoever stores a Snapshot (the decision
  *     module, K-212) must leave this field out. toString hides it for logs
+ * @param checkIn this week's answers besides the scale, for the weekly spine (K-106)
  */
 public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
-        Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported) {
+        Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn) {
 
     public Snapshot {
         Objects.requireNonNull(today, "today");
@@ -30,6 +31,7 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         Objects.requireNonNull(weights, "weights");
         Objects.requireNonNull(fatProxyPct, "fatProxyPct");
         Objects.requireNonNull(energy, "energy");
+        Objects.requireNonNull(checkIn, "checkIn");
         if (planStart.isAfter(today)) {
             throw new IllegalArgumentException("planStart " + planStart + " is after today " + today);
         }
@@ -46,7 +48,7 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
     public String toString() {
         return "Snapshot[today=" + today + ", sex=" + sex + ", phase=" + phase + ", planStart=" + planStart
                 + ", weights=" + weights.weighIns().size() + " weigh-ins, fatProxyPct=" + (fatProxyPct.isPresent() ? "<hidden>" : "none")
-                + ", energy=" + energy.map(Object::toString).orElse("none") + ", menstrualLossReported=<hidden>]";
+                + ", energy=" + energy.map(Object::toString).orElse("none") + ", menstrualLossReported=<hidden>, checkIn=" + checkIn + "]";
     }
 
     /** A Snapshot without a body-fat estimate (none measured yet). */
@@ -57,14 +59,18 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
     /** A Snapshot with the basics and, possibly, a body-fat estimate; the other inputs are added with the withers. */
     public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
             Optional<BigDecimal> fatProxyPct) {
-        this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false);
+        this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE);
     }
 
     public Snapshot withEnergy(EnergyBudget budget) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn);
     }
 
     public Snapshot withMenstrualLossReported(boolean reported) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn);
+    }
+
+    public Snapshot withCheckIn(CheckIn answers) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers);
     }
 }

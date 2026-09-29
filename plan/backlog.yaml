@@ -358,7 +358,7 @@ tasks:
     module: engine
     type: feature
     size: L
-    status: todo
+    status: done
     depends_on: [K-104, K-105]
     why: "Ürünün kalbi: yön → görüntü → antrenman → toparlanma → genetik limit"
     acceptance:

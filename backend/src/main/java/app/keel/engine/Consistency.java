@@ -9,6 +9,7 @@ import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The daily number: consistency (U15, Levent 29 Sep). Weekly, cumulative, never reset, one missed week forgiven
@@ -29,6 +30,19 @@ public final class Consistency {
         }
         return BigDecimal.valueOf(week.done())
                 .divide(BigDecimal.valueOf(week.planned()), MathContext.DECIMAL64);
+    }
+
+    /**
+     * Adherence over a decision window (ADR-020 L-6: the spine's adherence is this ratio): everything done over
+     * everything planned in those weeks, each kind capped at its plan. Empty when nothing was planned.
+     */
+    public static Optional<BigDecimal> windowRatio(List<WeekTally> weeks) {
+        int planned = weeks.stream().mapToInt(WeekTally::planned).sum();
+        if (planned == 0) {
+            return Optional.empty();
+        }
+        int done = weeks.stream().mapToInt(WeekTally::done).sum();
+        return Optional.of(BigDecimal.valueOf(done).divide(BigDecimal.valueOf(planned), MathContext.DECIMAL64));
     }
 
     /**

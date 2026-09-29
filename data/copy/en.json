@@ -36,6 +36,22 @@
       "window_not_full": {
         "title": "Not yet. Your plan needs its full window.",
         "body": "Keep going as planned. Judging it early would read water and daily swings as progress or as a stall."
+      },
+      "wait_one_more_week": {
+        "title": "Hold steady one more week.",
+        "body": "Your weight has only just paused. One flat week is usually water, and the change tends to show up all at once. Nothing changes yet."
+      },
+      "check_in_needed_training": {
+        "title": "How is training going?",
+        "body": "Before any change to food, the coach needs to know whether your lifts are holding up. Log this week's sessions or answer the training question, and the call follows."
+      },
+      "check_in_needed_recovery": {
+        "title": "How are you recovering?",
+        "body": "Your weight is moving the right way and training is holding. One question about sleep and energy decides whether anything should change."
+      },
+      "check_in_needed_adherence": {
+        "title": "How much of the plan happened?",
+        "body": "Your weight isn't moving yet. Whether that calls for a new plan depends on how much of this one happened. Log the week and the call follows."
       }
     },
     "increase_calories": {
@@ -112,6 +128,39 @@
       "loads_regressed": {
         "title": "Look at food and sleep first.",
         "body": "This week you couldn't lift what you lifted last week. Going backwards is rarely about the training itself: check how you ate and slept, one thing at a time."
+      },
+      "recovery_poor": {
+        "title": "Your training is fine. Your recovery isn't.",
+        "body": "The work is getting done but you're not bouncing back. Protein and sleep come first this week; food amounts stay the same."
+      }
+    },
+    "continue": {
+      "label": "Keep going",
+      "toward_goal": {
+        "title": "Keep going exactly as you are.",
+        "body": "Your weight is moving the right way and nothing says it needs help. Changing a plan that works only adds noise."
+      }
+    },
+    "fix_adherence": {
+      "label": "Back to the plan",
+      "adherence_low": {
+        "title": "The plan comes first, not a new plan.",
+        "body": "Less than half of the plan happened over the last few weeks. Changing calories now would change a plan that hasn't been tried. Pick the one habit that slipped most and start there."
+      },
+      "adherence_partial": {
+        "title": "Close, but not enough to judge the plan yet.",
+        "body": "A good part of the plan happened, not quite enough to tell whether it works. Calories stay where they are while the plan gets a fair try."
+      }
+    },
+    "fix_training": {
+      "label": "Fix training first",
+      "performance_red_flag": {
+        "title": "Your lifts come first. No calorie cut this week.",
+        "body": "Your training is slipping while your weight isn't moving toward your goal. Cutting more now would cost muscle. Calories stay, and the focus is getting your sessions back on track."
+      },
+      "training_first": {
+        "title": "Training first, food decisions later.",
+        "body": "Your training is going backwards. Before anything about food changes, look at how you train: rest between sessions, sleep, and not doing too much."
       }
     }
   }
