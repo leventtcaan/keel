@@ -16,10 +16,10 @@ Paket kökü `app.keel` (geçici; ürün adı gelince değişebilir). Modüller:
 | `identity` | Hesap, Sign in with Apple, oturum | — |
 | `consent` | Rıza kayıtları (sağlık, Health, AI) | identity |
 | `profile` | Hedef, cinsiyet, takvim, program tercihi, gıda tercihleri | identity |
-| `measurement` | Kilo, bel, fotoğraftan türetilmiş değerler, trendler | profile |
-| `nutrition` | Öğün kayıtları, besin eşleme, günlük bütçe | profile |
+| `measurement` | Kilo, bel, fotoğraftan türetilmiş değerler, trendler | profile, consent, engine (ADR-026) |
+| `nutrition` | Öğün kayıtları, besin eşleme, günlük bütçe | profile, consent (ADR-026) |
 | `training` | Program, seanslar, setler, egzersiz kataloğu | profile |
-| `decision` | Haftalık check-in, Snapshot kurma, motoru çağırma, karar kaydı | engine, profile, measurement, nutrition, training |
+| `decision` | Haftalık check-in, Snapshot kurma, motoru çağırma, karar kaydı | engine, profile, measurement, nutrition, training, consent (ADR-026) |
 | `subscription` | Yetki, kota sayaçları | identity |
 | `privacy` | Tek egress kapısı, veri dışa aktarma, silme olayı | consent |
 | `coach` | Dil katmanı: anlatım, serbest metin → kayıt, soru bütçesi | decision, nutrition, training, subscription, privacy |

@@ -275,7 +275,10 @@ paths:
     get:
       tags: [measurement]
       operationId: getWeightTrend
-      summary: The trend weight per day (7-day average, the engine's WeightTrend), days without weigh-ins left out
+      summary: The trend weight per day (7-day average, the engine's WeightTrend)
+      description: |
+        One point per day, up to today in the user's time zone, whose 7 days hold at least one weigh-in (the day's first
+        counts). Needs the profile (NOT_FOUND without one). At most 400 days per request.
       parameters:
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -864,7 +867,7 @@ components:
       name: from
       in: query
       required: true
-      description: First day, inclusive
+      description: First day, inclusive (local day). A range is at most 400 days.
       schema:
         type: string
         format: date
@@ -1196,6 +1199,8 @@ components:
         kg:
           type: number
           exclusiveMinimum: 0
+          maximum: 500
+          description: At most 2 decimals (the store keeps 2; a finer value is a validation error, not a silent rounding).
         source:
           $ref: "#/components/schemas/MeasurementSource"
     WeighIn:
@@ -1228,6 +1233,8 @@ components:
         cm:
           type: number
           exclusiveMinimum: 0
+          maximum: 300
+          description: At most 1 decimal.
     WaistMeasurement:
       allOf:
         - $ref: "#/components/schemas/NewWaistMeasurement"
