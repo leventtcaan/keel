@@ -84,6 +84,12 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
    içeride mi kalsın?
 10. **(K-207, ürün)** Barkod Türk ürünlerinde bulunamayacak (FDC'de yok). Bulunamayınca ne olsun: etiketten tek seferlik
    elle giriş (sonra hafızada) mı, yalnız genel gıda araması mı? İleride Türkiye kaynağı (TürKomp) araştırılsın mı?
+11. **(K-201, sağlık/ürün — ÖNEMLİ)** Motorun iç yağ tahmini (`fatProxyPct`) nereden gelecek? Faz kapısı (bulk tavanı,
+   cut → bulk) ve **düşük enerji güvenlik ağı** bu sayı olmadan çalışmıyor (LEA → adet sorusu → hard stop zinciri de).
+   Araştırma: mezura formülü (Navy) değişimi izlemede başarısız (H1 §3.2), WHtR bir eşik, Ö-4 "görsel proxy" diyor
+   ama nasıl toplanacağı yok. Seçenekler: (a) kullanıcı referans görsellerden kendine en yakını seçer (Güray'ın göbek
+   testi), (b) bel/boy'dan kaba bant (yalnız kapı için, izleme için değil), (c) ikisi, (d) hiçbiri → iki kural kapalı.
+   U4 gereği sayı hiçbir yerde gösterilmez.
 9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
    `tag: urun`). Onay mı?
 
