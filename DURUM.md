@@ -25,8 +25,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-102 parametre yükleme | ✅ birleşti | PR #135 | `docs/aktarim/M1/K-102.md` |
 | K-103 trend, veri yeterliliği | ✅ birleşti | PR #136 | `docs/aktarim/M1/K-103.md` |
 | K-104 güvenlik ağı | kısmi ✅ birleşti (tavan + BMR); 8%/EA L-1'i bekliyor | PR #137 | `docs/aktarim/M1/K-104.md` |
-| K-105 faz kapısı | inceleme | `engine/16-phase-gate` | — |
-| K-106 check-in omurgası | — | | |
+| K-105 faz kapısı | PR açık, auto-merge | PR #138 | `docs/aktarim/M1/K-105.md` |
+| K-106 check-in omurgası | **tasarım önerisi, akşam konuşulacak** | `plan/m1-k106-tasarim-onerisi.md` | |
 | K-107 kalori merdiveni | — | | |
 | K-108 makrolar | — | | |
 | K-109 progresyon | — | | |
@@ -50,7 +50,9 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 4. **Sağlık/ürün kararları L-1…L-8** → `plan/m1-kural-haritasi.md` (kaynak satırlarıyla). En acili **L-1**: K-104 kartı
    "8 haftada >%8" ve "EA ≤30" için hard stop diyor, kaynak (J1 C6/L2.1) "açığı daralt + uyar" diyor; tek hard stop adet
    kaybı bildirimi. Bu iki kural L-1 cevaplanana kadar yazılmıyor; K-104'ün geri kalanı yazılıyor.
-5. K1 açıklaması (K-103): iki testin beklenen tarihi inceleme bulgusu (kırılan `nextReview` sözü) üzerine değişti.
+5. **K-106 tasarımı** → `plan/m1-k106-tasarim-onerisi.md` (L-5, L-6, L-9, L-10 orada)
+6. Bilgi (K-105): zorunlu bulk geçişi kaynağa göre <%12 (kadın <%22); %12-25 kullanıcının hedefine bırakıldı → hedef girdisi ürün kapsamı
+7. K1 açıklaması (K-103): iki testin beklenen tarihi inceleme bulgusu (kırılan `nextReview` sözü) üzerine değişti.
 **Alınan teknik kararlar (aktarımda anlatılacak):**
 - K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
   Source yalnız arastirma/*.md · PRODUCT etiketli kaynak kural gerekçesi olamaz (U14) · EnginePurityTests: yalnız JDK,
@@ -66,7 +68,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-K-105 · Faz kapısı · dal `engine/16-phase-gate` (issue #16) — öz-denetimde → sonra K-106
+K-105 PR #138 CI'da · K-106 akşam kararına bağlı → bu arada bağımsız görevler: K-108 makrolar, K-109 progresyon
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
