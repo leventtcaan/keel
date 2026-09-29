@@ -35,4 +35,18 @@ class TrainingConfiguration {
         }
         return ExerciseCatalog.of(files, vocabulary);
     }
+
+    /** The program templates (K-211, data/programs), checked against the catalog as they load. */
+    @Bean
+    ProgramTemplates programTemplates(ExerciseCatalog catalog) throws IOException {
+        LoaderOptions strict = new LoaderOptions();
+        strict.setAllowDuplicateKeys(false);
+        Map<String, Object> files = new HashMap<>();
+        for (Resource file : new PathMatchingResourcePatternResolver().getResources("classpath:data/programs/*.yaml")) {
+            try (InputStream in = file.getInputStream()) {
+                files.put(file.getFilename(), new Yaml(strict).load(in));
+            }
+        }
+        return ProgramTemplates.of(files, catalog);
+    }
 }

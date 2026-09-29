@@ -35,3 +35,8 @@ Düşük.
 
 ## Etkilenen
 `measurement`, `nutrition`, `decision` package-info; `ModularityTests`; `build.gradle.kts`; ADR-015 tablosu.
+
+## Ek (30 Eyl 2026, K-211)
+`training` → **engine** eklendi (`training` → profile, engine). Program üretimi motorun parametrelerini okur (tekrar
+aralığı, hedef RIR: `data/parameters/training.yaml`); motor saf olduğu için döngü yok, `measurement` → engine ile aynı
+gerekçe. Motorun karar fonksiyonlarını training çağırmaz; kararı `decision` verir.

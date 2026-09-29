@@ -17,6 +17,34 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H3-bosluk-literatur.md#B15"
     note: "Mayhew 2008: denklemler 2-10 tekrarda en iyi; Reynolds 2006: yüksek tekrarda doğruluk düşer. Tekrar + RIR bunu aşan setten e1RM üretilmez."
+  - key: rep_range_compound_min
+    value: 6
+    unit: reps
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-21"
+    note: "Bileşikte 6-8 (K-21); omuz presinde 10'a kadar; yeni başlayana 8-10 (K-20). Program 6-10 verir: çift progresyonun tırmanacağı bir aralık (H3 B4)."
+  - key: rep_range_compound_max
+    value: 10
+    unit: reps
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-21"
+  - key: rep_range_isolation_min
+    value: 8
+    unit: reps
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-21"
+    note: "İzolasyonda 8-12; 12-15'i aşmak için sebep yok (K-21)."
+  - key: rep_range_isolation_max
+    value: 12
+    unit: reps
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-21"
+  - key: arm_weekly_sets_min
+    value: 6
+    unit: sets_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-61"
+    note: "Biceps ve triceps haftada 6-8 work set, iki seansa bölünmüş (K-61). Hammer/reverse curl ön kol sayılır (K-67). Tek günlük şablonda tutmaz (seans başı ≤5, K-10)."
   - key: weekly_sets_per_muscle
     value: 10
     unit: sets_per_week

@@ -22,6 +22,7 @@ profil → ölçüm/beslenme/antrenman → karar.
 10. K-214 gizlilik — silme, dışa aktarma, tek dışarı kapısı
 11. K-218 set tipi ve yük modeli — hangi set sayılır, e1RM
 12. K-219 hareket kataloğu — veri tasarımı, kapalı sözlük, klip incelemesi
+13. K-211 program — şablon veri, set bütçesi, programı değiştirmek
 11. (sıradakiler görev bitince eklenir)
 
 ## Durum
@@ -39,3 +40,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-214 gizlilik | `K-214.md` | ✅ | — | — | — |
 | K-218 set tipi, yük modeli, e1RM | `K-218.md` | ✅ | — | — | — |
 | K-219 hareket kataloğu (40 hareket) | `K-219.md` | ✅ | — | — | — |
+| K-211 program üretimi ve içe alma (V8) | `K-211.md` | ✅ | — | — | — |

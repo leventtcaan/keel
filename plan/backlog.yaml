@@ -738,7 +738,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-210]
     why: "Onboarding'de ikisi de seçilebilir (Levent kararı 29 Eyl)"
     acceptance:

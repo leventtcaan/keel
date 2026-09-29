@@ -61,6 +61,10 @@ tasks.processResources {
     from("../data/exercises") {
         into("data/exercises")
     }
+    // The program templates (K-211), checked against the catalog as they load.
+    from("../data/programs") {
+        into("data/programs")
+    }
     // Its two closed vocabularies: muscles (with regions) and setup fields (K-219).
     from(files("../data/muscles.yaml", "../data/exercise-setup.yaml")) {
         into("data")

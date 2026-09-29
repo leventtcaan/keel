@@ -537,7 +537,7 @@ paths:
     put:
       tags: [training]
       operationId: putOwnProgram
-      summary: Bring your own program; the engine coaches on top of it
+      summary: Bring your own program; the engine coaches on top of it. Replaces the current one
       requestBody:
         required: true
         content:
@@ -557,7 +557,7 @@ paths:
     post:
       tags: [training]
       operationId: generateProgram
-      summary: Build a program for the days the user has (4-day upper/lower by default)
+      summary: Build a program for the days the user has (4-day upper/lower by default); replaces the current one
       requestBody:
         required: true
         content:
@@ -1570,14 +1570,16 @@ components:
           format: date
     ProgramDay:
       type: object
-      required: [id, name, exercises]
+      description: A generated day names itself by nameKey (programDays.<day>.name, "Upper A"); a day of the user's own program by name.
+      required: [id, exercises]
       properties:
         id:
           type: string
           format: uuid
+        nameKey:
+          type: string
         name:
           type: string
-          description: e.g. "Upper A".
         weekday:
           $ref: "#/components/schemas/Weekday"
         exercises:
@@ -1613,6 +1615,7 @@ components:
           description: The reps to aim for next session (double progression, K-217); absent until known.
     RepRange:
       type: object
+      description: min < max (a range to climb in, double progression); max at most 100.
       required: [min, max]
       properties:
         min:
@@ -1623,22 +1626,29 @@ components:
           minimum: 1
     OwnProgram:
       type: object
+      description: |
+        The user's own program (K-211). Limits are keel.training's: a day's weekday is used once; exercises come from
+        /v1/exercises; reps.max is above reps.min and at most 100.
       required: [days]
       properties:
         days:
           type: array
           minItems: 1
+          maxItems: 7
           items:
             type: object
             required: [name, exercises]
             properties:
               name:
                 type: string
+                minLength: 1
+                maxLength: 60
               weekday:
                 $ref: "#/components/schemas/Weekday"
               exercises:
                 type: array
                 minItems: 1
+                maxItems: 20
                 items:
                   type: object
                   required: [exerciseId, sets, reps]
@@ -1648,6 +1658,7 @@ components:
                     sets:
                       type: integer
                       minimum: 1
+                      maximum: 20
                     reps:
                       $ref: "#/components/schemas/RepRange"
     ProgramRequest:
@@ -1656,7 +1667,9 @@ components:
       properties:
         trainingDays:
           type: array
+          description: 1 to 6 days; seven leave no rest day (G1 K-70).
           minItems: 1
+          maxItems: 6
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Weekday"
