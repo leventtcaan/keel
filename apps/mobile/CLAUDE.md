@@ -1,7 +1,7 @@
 # apps/mobile/ — CLAUDE.md
 
 Expo SDK 57 · React Native · TypeScript · expo-router. Kök kurallar: `../../CLAUDE.md`, `../../docs/anayasa.md`.
-Görsel dil **C** (ADR-014) · mimari ADR-006.
+Görsel dil **C iskeleti + RUBİN**, açık ve koyu tema, sistem katmanı Liquid Glass (ADR-016) · mimari ADR-006.
 
 ## Expo her sürümde değişir — ezberden yazma
 Expo her SDK'da API kırar; hatırladığın API büyük ihtimalle taşınmış ya da kalkmıştır. Bir Expo/EAS/React Native API'sine

@@ -43,6 +43,8 @@ Tutarlılık haftalık, kümülatif ve 1 hafta aflıdır ("12 haftanın 11'i"). 
 **U8 · Ölç sık, yorumla seyrek.** Günlük veri alınır; ilk 14 gün trend yorumu yok; kilo trendi 7 günlük gösterilir,
 karar penceresi erkekte 2-3 hafta, kadında 28 gün (döngü gürültüsünü matematiksel olarak sıfırlar).
 Değerlendirme penceresi 3 ay; karar penceresi 1-2 hafta; ikisi arayüzde ayrıdır.
+İçe aktarılan geçmiş (Apple Health, Strong/Hevy) trendi hemen gösterir, ama ilk karar yine en erken ilk pazartesi check-in'de
+gelir (ADR-018).
 *Kaynak:* `03-guray-karar-omurgasi.md` §8 · `ham/J1-cinsiyet.md` · `04-faz3-urun.md` Ö-23.
 
 **U9 · Veri talebi.** Sistem soru sormak için **sebep göstermek** zorundadır ve nedeni sorunun yanında yazar.

@@ -47,6 +47,13 @@ Sonra K-101 skill `gorev-baslat` ile, ön aktarımla başlar.
 1. **Dil modeli sağlayıcısı** (29 Eyl'de açıklandı): M5'te üç sağlayıcı kendi değerlendirme setimizle ölçülüp seçilecek
    (görev K-511). Rıza ekranı seçilen şirketin adını yazacak.
 
+## 29 Eyl sabah turu — sonuç
+- L1-L3 araştırmaları yapıldı · **ADR-016** (RUBİN, koyu mod, Liquid Glass sistem katmanı; ADR-014'ün yerine) ·
+  **ADR-017** (hareket gösterimi: Levent çeker, ilk/son tekrar) · **ADR-018** (Health'e yazma, içe aktarma) — üçü KABUL
+- Backlog 95 → **129 görev**; L3'ün 16 plan hatası onarıldı; M11 eklendi; senkron aracına sıralama doğrulaması eklendi
+- Prototip v2 hazırlanıyor (K-012)
+- **Hâlâ açık:** 13 ÖNERİ ADR'nin KABUL'ü (K-011) · Expo + Design eklentilerinin kurulması (kart gösterildi)
+
 ## Levent cevapları (29 Eyl sabah)
 - ADR'leri okudu; eksik buldu: **hareket gösterimi** → araştırılıyor (L1)
 - Renklerin başka bir uygulamadan çalıntı olmaması ve güncel/psikolojik olarak doğru tasarım → araştırılıyor (L2)

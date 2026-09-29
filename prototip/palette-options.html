@@ -1,0 +1,207 @@
+<title>Keel Palette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap">
+<style>
+:root{
+  --page:#ECEEF0; --ink:#1A1F24; --muted:#5A6570; --rule:#D3D8DD; --chip:#E1E5E9;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --page:#14181C; --ink:#E4E8EB; --muted:#98A3AD; --rule:#2A3138; --chip:#232A31; color-scheme: dark; }
+}
+:root[data-theme="dark"]{ --page:#14181C; --ink:#E4E8EB; --muted:#98A3AD; --rule:#2A3138; --chip:#232A31; color-scheme: dark; }
+
+body{ background:var(--page); color:var(--ink); font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; }
+.wrap{ max-width:1240px; margin:0 auto; padding-inline:20px; padding-block:36px 64px; }
+.intro{ max-width:66ch; display:grid; gap:10px; margin-bottom:32px; }
+.intro h1{ font-size:clamp(22px,3vw,30px); font-weight:600; margin:0; text-wrap:balance; letter-spacing:-.01em; }
+.intro p{ margin:0; color:var(--muted); line-height:1.55; font-size:15px; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:32px 28px; align-items:start; }
+.col{ display:grid; gap:14px; justify-items:center; }
+.tag{ justify-self:stretch; display:grid; gap:4px; }
+.tag .k{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+.tag .n{ font-size:18px; font-weight:600; }
+.notes{ justify-self:stretch; display:grid; gap:8px; font-size:13.5px; line-height:1.5; color:var(--muted); border-top:1px solid var(--rule); padding-top:12px; }
+.notes b{ color:var(--ink); font-weight:600; }
+
+/* ---------- phone shell ---------- */
+.phone{ width:360px; max-width:100%; border-radius:46px; padding:10px; background:#0B0D0F; box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 24px 60px -24px rgba(0,0,0,.45); }
+.screen{ border-radius:37px; overflow:hidden; background:var(--bg); color:var(--tx); font-family:var(--body); display:flex; flex-direction:column; }
+.status{ display:flex; justify-content:space-between; align-items:center; padding:14px 26px 6px; font-size:13px; font-weight:600; font-family:var(--body); }
+.status .isl{ width:92px; height:26px; border-radius:20px; background:#000; }
+.content{ padding:8px 18px 18px; display:grid; gap:14px; }
+.hdr{ display:flex; justify-content:space-between; align-items:baseline; padding-top:4px; }
+.hdr .day{ font-family:var(--disp); }
+.hdr .ph{ font-size:12px; color:var(--mu); }
+.card{ background:var(--sf); border:1px solid var(--ln); border-radius:var(--r); padding:16px; display:grid; gap:10px; }
+.eyebrow{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--mu); font-weight:600; }
+.num{ font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.bars{ display:grid; gap:7px; }
+.bar{ display:grid; grid-template-columns:78px 1fr 34px; align-items:center; gap:10px; font-size:12.5px; }
+.bar .trk{ height:6px; border-radius:6px; background:var(--trk); overflow:hidden; }
+.bar .trk i{ display:block; height:100%; background:var(--ac); border-radius:6px; }
+.bar .v{ text-align:right; color:var(--mu); font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.dec-title{ font-family:var(--disp); }
+.dec-body{ font-size:13.5px; line-height:1.5; color:var(--tx2); margin:0; }
+.why{ appearance:none; border:0; background:none; padding:0; font:inherit; font-size:13px; font-weight:600; color:var(--ac); cursor:pointer; justify-self:start; display:flex; align-items:center; gap:6px; }
+.why:focus-visible,.go:focus-visible,.chip:focus-visible{ outline:2px solid var(--ac); outline-offset:3px; border-radius:6px; }
+.whylist{ margin:0; padding:10px 0 0; border-top:1px dashed var(--ln); list-style:none; display:grid; gap:6px; font-size:12.5px; color:var(--tx2); }
+.whylist li{ display:grid; grid-template-columns:96px 1fr; gap:8px; }
+.whylist .l{ color:var(--mu); }
+.pill{ font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; background:var(--pillbg); color:var(--pilltx); justify-self:start; }
+.rowhead{ display:flex; justify-content:space-between; align-items:center; }
+.list{ display:grid; }
+.item{ display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:center; padding:11px 0; border-top:1px solid var(--ln); }
+.item:first-child{ border-top:0; padding-top:2px; }
+.ico{ width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:var(--icbg); color:var(--ictx); font-size:13px; font-weight:700; font-family:var(--numf); }
+.ico.done{ background:var(--ac); color:var(--onac); }
+.it-t{ font-size:14px; font-weight:600; }
+.it-s{ font-size:12px; color:var(--mu); margin-top:2px; }
+.go{ appearance:none; border:0; font:inherit; font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:var(--btnr); background:var(--ac); color:var(--onac); cursor:pointer; }
+.meta{ font-size:12px; color:var(--mu); font-family:var(--numf); font-variant-numeric:tabular-nums; }
+.fit{ font-size:12px; color:var(--tx2); margin-top:4px; }
+.chips{ display:flex; flex-wrap:wrap; gap:7px; }
+.chip{ appearance:none; font:inherit; font-size:12px; padding:7px 11px; border-radius:20px; border:1px solid var(--ln); background:var(--sf); color:var(--tx); cursor:pointer; }
+.ask{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; border-radius:var(--btnr); background:var(--askbg); border:1px solid var(--ln); font-size:13px; color:var(--mu); }
+.ask .snd{ width:26px; height:26px; border-radius:50%; background:var(--ac); color:var(--onac); display:grid; place-items:center; font-size:13px; }
+.tabs{ display:grid; grid-template-columns:repeat(4,1fr); padding:10px 8px 22px; border-top:1px solid var(--ln); background:var(--tabbg); }
+.tab{ display:grid; justify-items:center; gap:4px; font-size:10.5px; color:var(--mu); font-weight:500; }
+.tab .d{ width:20px; height:20px; border-radius:6px; border:1.6px solid currentColor; }
+.tab.on{ color:var(--ac); }
+.tab.on .d{ background:currentColor; }
+
+
+.vc{ --r:6px; --btnr:4px; --body:"Barlow",system-ui,sans-serif; --disp:"Barlow Condensed","Arial Narrow",sans-serif; --numf:"Barlow Condensed","Arial Narrow",sans-serif; }
+.vc .go{ background:var(--acfill); color:var(--onac); }
+.vc .ico.done{ background:var(--acfill); color:var(--onac); }
+.vc .ask .snd{ background:var(--acfill); color:var(--onac); }
+.vc .bar .trk i{ background:var(--ac); }
+.vc .tab.on{ color:var(--ac); }
+.vc .dec{ background:var(--decbg); color:var(--dectx); --tx2:var(--dectx2); --mu:var(--decmu); --ln:var(--decln); }
+.vc .dec .eyebrow, .vc .dec .why{ color:var(--acink); }
+.vc .dec .pill{ background:var(--decpill); color:var(--decpilltx); }
+.vc .big small, .vc .left{ color:var(--ac); }
+.light{ --bg:#FFFFFF; --sf:#F2F2F0; --ln:#E4E4E1; --tx:#0E0E0E; --tx2:#2B2B2B; --mu:#6B6B68; --trk:#E2E2DE;
+  --icbg:#0E0E0E; --ictx:#FFFFFF; --pillbg:#0E0E0E; --pilltx:#FFFFFF; --askbg:#F2F2F0; --tabbg:#FFFFFF; --onac:#FFFFFF;
+  --decbg:#0E0E0E; --dectx:#FFFFFF; --dectx2:#D6D6D2; --decmu:#9A9A95; --decln:#2C2C2A; --decpill:#2C2C2A; --decpilltx:#FFFFFF; }
+.dark{ --bg:#0E0E0E; --sf:#1A1A19; --ln:#2A2A28; --tx:#F4F4F2; --tx2:#D6D6D2; --mu:#9A9A95; --trk:#2C2C2A;
+  --icbg:#F4F4F2; --ictx:#0E0E0E; --pillbg:#F4F4F2; --pilltx:#0E0E0E; --askbg:#1A1A19; --tabbg:#0E0E0E; --onac:#0E0E0E;
+  --decbg:#F4F4F2; --dectx:#0E0E0E; --dectx2:#2B2B2B; --decmu:#6B6B68; --decln:#D6D6D2; --decpill:#E4E4E1; --decpilltx:#0E0E0E; }
+.p-orange{ --ac:#FF4F12; --acfill:#FF4F12; --acink:#FF4F12; }
+.p-rubin.light{ --ac:#B0129A; --acfill:#B0129A; --acink:#F07BE0; }
+.p-rubin.dark{ --ac:#F07BE0; --acfill:#F07BE0; --acink:#B0129A; }
+.p-saha.light{ --ac:#0B7F05; --acfill:#0B7F05; --acink:#9BE7A6; }
+.p-saha.dark{ --ac:#9BE7A6; --acfill:#9BE7A6; --acink:#0B7F05; }
+
+.vc .hdr .day{ font-size:34px; font-weight:800; text-transform:uppercase; letter-spacing:.01em; line-height:1; }
+.vc .card{ border:0; }
+.vc .big{ font-family:var(--numf); font-size:96px; font-weight:800; line-height:.85; letter-spacing:-.02em; }
+.vc .big small{ font-size:40px; color:var(--ac); }
+.vc .eyebrow{ color:var(--tx); letter-spacing:.14em; }
+.vc .dec{ background:#0E0E0E; color:#FFFFFF; --tx2:#D6D6D2; --mu:#9A9A95; --ln:#2C2C2A; }
+.vc .dec .eyebrow{ color:var(--ac); }
+.vc .dec-title{ font-size:30px; font-weight:800; text-transform:uppercase; line-height:.98; letter-spacing:.01em; }
+.vc .it-t{ font-family:var(--disp); font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; }
+.vc .go{ text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+.vc .left{ color:var(--ac); font-family:var(--disp); font-size:22px; font-weight:800; }
+.vc .tab.on .d{ border-radius:2px; }
+
+</style>
+<div class="wrap">
+  <header class="intro">
+    <h1>Vurgu rengi — Strava çakışması ve adaylar</h1>
+    <p>Aynı Bugün ekranı, aynı içerik. Yalnız vurgu rengi değişiyor. C'nin iskeleti (beyaz zemin, siyah karar bloğu, dar başlık, köşeler) hepsinde aynı. Ölçümler ve kaynaklar: <code>arastirma/ham/L2-gorsel-kimlik.md</code>.</p>
+  </header>
+  <main class="grid">
+    <section class="col">
+      <div class="tag"><span class="k">ŞU ANKİ C</span><span class="n">Turuncu #FF4F12 — Strava'ya ΔE 1,3-2,0</span></div>
+      <div class="phone"><div class="screen vc p-orange light" data-screen></div></div>
+      <div class="notes"><div>Strava'nın turuncusuyla pratikte aynı renk. Beyaz metin bu turuncunun üstünde 3,29:1 — erişilebilirlik (4,5:1) geçmiyor. Karar kartındaki turuncu 'uyarı' gibi okunuyor.</div></div>
+    </section>
+    <section class="col">
+      <div class="tag"><span class="k">RUBİN · önerilen</span><span class="n">#B0129A — en yakın fitness rakibine ΔE ≥ 18, Strava'ya 44</span></div>
+      <div class="phone"><div class="screen vc p-rubin light" data-screen></div></div>
+      <div class="notes"><div>Kategoride boş kalan tek sıcak, doygun renk. Turuncunun enerjisini koruyor ama uyarı/hata anlamı taşımıyor. Beyaz metin 6,18:1. Riski: pembeye kayarsa 'kadın uygulaması' gibi okunabilir — bu yüzden kırmızı tarafta tutuldu.</div></div>
+    </section>
+    <section class="col">
+      <div class="tag"><span class="k">RUBİN · koyu mod</span><span class="n">Karar bloğu ters çevrilir, vurgu #F07BE0</span></div>
+      <div class="phone"><div class="screen vc p-rubin dark" data-screen></div></div>
+      <div class="notes"><div>Apple tek modda bile iki renk seti istiyor; salon ışığında birçok kullanıcı koyu kullanıyor. Varsayılan: telefonun sistem ayarı.</div></div>
+    </section>
+    <section class="col">
+      <div class="tag"><span class="k">SAHA · alternatif</span><span class="n">#0B7F05 — rakiplerden en uzak renk (ΔE ≥ 18,7)</span></div>
+      <div class="phone"><div class="screen vc p-saha light" data-screen></div></div>
+      <div class="notes"><div>En güvenli ayrışma ama enerjisi bir kademe düşük; yeşil 'sağlık uygulaması' kalıbına yakın.</div></div>
+    </section>
+  </main>
+</div>
+<template id="today">
+  <div class="status"><span>9:41</span><span class="isl"></span><span>100%</span></div>
+  <div class="content">
+    <div class="hdr"><span class="day">Tuesday</span><span class="ph">Week 3 · Cut phase</span></div>
+
+    <div class="card">
+      <div class="eyebrow">Consistency · this week</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+        <div class="big">84<small>%</small></div>
+        <div class="meta" style="text-align:right">16 of 19<br>planned actions</div>
+      </div>
+      <div class="bars">
+        <div class="bar"><span>Training</span><span class="trk"><i style="width:67%"></i></span><span class="v">2/3</span></div>
+        <div class="bar"><span>Protein</span><span class="trk"><i style="width:75%"></i></span><span class="v">3/4</span></div>
+        <div class="bar"><span>Steps</span><span class="trk"><i style="width:100%"></i></span><span class="v">5/5</span></div>
+        <div class="bar"><span>Weigh-ins</span><span class="trk"><i style="width:86%"></i></span><span class="v">6/7</span></div>
+      </div>
+    </div>
+
+    <div class="card dec">
+      <div class="rowhead"><span class="eyebrow">This week's call</span><span class="pill">High confidence</span></div>
+      <div class="dec-title">No change. Hold 2,300&nbsp;kcal.</div>
+      <p class="dec-body">Your trend weight is down 0.4&nbsp;kg and your lifts held. The plan is working, so we wait another week.</p>
+      <button class="why" type="button" aria-expanded="false">Why this call <span aria-hidden="true">›</span></button>
+      <ul class="whylist" hidden>
+        <li><span class="l">Trend weight</span><span class="num">82.3 → 81.9 kg (7-day)</span></li>
+        <li><span class="l">Performance</span><span class="num">Bench 80 kg × 7 → × 8</span></li>
+        <li><span class="l">Rule</span><span>Moving toward goal and training stable, so change nothing</span></li>
+        <li><span class="l">Next review</span><span class="num">Mon, Oct 5</span></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Today</div>
+      <div class="list">
+        <div class="item"><span class="ico done">✓</span><div><div class="it-t">Weigh-in</div><div class="it-s">Logged at 07:12</div></div><span class="meta">81.4 kg</span></div>
+        <div class="item"><span class="ico">A</span><div><div class="it-t">Upper A</div><div class="it-s">5 exercises · about 50 min</div></div><button class="go" type="button">Start</button></div>
+        <div class="item"><span class="ico">kc</span><div><div class="it-t">Food left today</div><div class="it-s"><span class="left num">780–950 kcal</span> · 64 g protein</div><div class="fit">Fits tonight: chicken rice bowl, or eggs with Greek yogurt</div></div><span></span></div>
+        <div class="item"><span class="ico">st</span><div><div class="it-t">Steps</div><div class="it-s">From Apple Health</div></div><span class="meta">6,240 / 8,000</span></div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <button class="chip" type="button">What fits in 850 kcal?</button>
+      <button class="chip" type="button">Swap lat pulldown</button>
+      <button class="chip" type="button">Bench trend</button>
+    </div>
+    <div class="ask"><span>Ask, or log "pulldown 60 kg × 8"</span><span class="snd" aria-hidden="true">↑</span></div>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <span class="tab on"><span class="d"></span>Today</span>
+    <span class="tab"><span class="d"></span>Train</span>
+    <span class="tab"><span class="d"></span>Food</span>
+    <span class="tab"><span class="d"></span>Progress</span>
+  </nav>
+</template>
+<script>
+  const tpl = document.getElementById('today');
+  document.querySelectorAll('[data-screen]').forEach(s => {
+    s.appendChild(tpl.content.cloneNode(true));
+    const btn = s.querySelector('.why'), list = s.querySelector('.whylist');
+    btn.addEventListener('click', () => {
+      const open = list.hidden;
+      list.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      btn.querySelector('span').textContent = open ? '⌄' : '›';
+    });
+  });
+</script>

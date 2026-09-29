@@ -1,5 +1,5 @@
 # ADR-014 · Görsel dil: C — cesur, enerjik
-- **Durum:** KABUL
+- **Durum:** YERİNİ ALDI → ADR-016 (vurgu rengi Strava ile çakışıyordu; iskelet korundu)
 - **Tarih:** 2026-09-29 · **Karar veren:** Levent
 
 ## Bağlam

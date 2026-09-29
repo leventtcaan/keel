@@ -37,26 +37,29 @@ ve karar kaydı · tek egress kapısı · hesap silme olayı · sözleşme v1.
 
 ## M3 · Mobil kabuk
 **Hedef:** C görsel dilinde, offline-first, sözleşmeden tipli bir uygulama iskeleti.
-**Çıkış:** token'lar ve temel bileşenler · metin sistemi · üretilen API istemcisi · yerel depo + senkron · giriş ·
-onboarding akışı · sekmeler.
+**Çıkış:** RUBİN token'ları (açık + koyu) ve temel bileşenler · metin sistemi · üretilen API istemcisi · yerel depo + senkron ·
+giriş · onboarding (içe aktarma, Health okuma/yazma izni dahil) · sistem sekme çubuğu · **cihazda development build + dahili
+TestFlight** · Ayarlar · kg/lb.
 **Öğrenme:** React bileşen modeli, TypeScript, expo-router, SQLite, senkron kuyruğu.
 
 ## M4 · Günlük akış
 **Hedef:** kullanıcının günü ~40 saniye (`arastirma/04-faz3-urun.md` §2).
 **Çıkış:** Bugün ekranı · tartı · HealthKit (adım, uyku, kilo) · antrenman seansı ve özeti · öğün kaydı (metin, barkod,
-fotoğraf → aralık + gram sorusu) · kalan bütçe · tutarlılık sayısı.
+fotoğraf → aralık + gram sorusu) · kalan bütçe · tutarlılık sayısı · **hareket gösterimi (kendi çekimler, ilk/son tekrar)** ·
+bildirimler · dinlenme sayacı + Live Activity · Health'e yazma · tarif hafızası · salon profili · PR/geçmiş/süperset.
 **Öğrenme:** native köprü, kamera, görüntü küçültme, form UX, performans.
 
 ## M5 · Karar anları + koç
 **Hedef:** ürünün tezi ekranda: karar kartı, gerekçe, itiraza dayanan koç.
 **Çıkış:** pazartesi check-in · karar kartı varyantları + gerekçe · LLM portu ve yapılandırılmış çıktı · karar anlatımı ·
-soru bütçesi · gün içi öneriler · kota · "hayır diyen koç" değerlendirme seti CI'da · Apple FM spike.
+soru bütçesi · gün içi öneriler · kota · "hayır diyen koç" değerlendirme seti CI'da · Apple FM spike · **dil modeli sağlayıcısı seçimi (ölçümle)** · proaktif
+tetikleyiciler · ilk 8 hafta akışı + 5. hafta risk skoru · kilit ekranı karar widget'ı · durum modu · haftalık koç notu.
 **Öğrenme:** LLM API, JSON şema, prompt tasarımı, değerlendirme (eval), maliyet kontrolü.
 
 ## M6 · İlerleme
 **Hedef:** "gelişiyorum" duygusunu kanıtla vermek (karşılaştırma çıpası, efor grafikleri, projeksiyon).
 **Çıkış:** rehberli fotoğraf · karşılaştırma · kompozisyon mesajı · efor grafikleri + iki pencere · şekil projeksiyonu
-(dışlama kurallarıyla) · tutarlılık geçmişi.
+(dışlama kurallarıyla) · tutarlılık geçmişi · geçmiş içe aktarma · "kararı ne değiştirir" · karar defteri · paylaşım kartı.
 **Öğrenme:** grafik çizimi, cihaz üstü işleme, fizyolojik model (Hall), güvenli tasarım.
 
 ## M7 · Abonelik
@@ -77,3 +80,9 @@ App Store gizlilik etiketleri ve yaş derecelendirmesi · yasaklı ifade taramas
 **Çıkış:** ürün adı + marka kontrolü · ASO (başlık/alt başlık/keyword, 3 yerelleştirme hilesi) · ilk 2 ekran görüntüsü mesajı
 taşıyor · LLM'in çıkarabileceği açıklama (GEO) · Custom Product Pages · Featuring başvurusu (≥3 hafta önce) · yorum cevap
 rutini · Product Hunt + Show HN aynı 48 saat. **Ocak'ta lansman yok** (`arastirma/05-faz4-pazarlama.md` §1).
+
+## M11 · Lansman sonrası
+Maliyeti görünsün diye listede duran, ilk yayında olmayan işler: Apple Watch uygulaması (Swift).
+
+> Not: `arastirma/ham/K1-lansman-otopsileri.md` "MVP = karar mantığı, kalanı v2" önerir; bu öneri **reddedildi**
+> (Levent, 9 Eyl: MVP diye kısma yok).

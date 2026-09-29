@@ -71,6 +71,18 @@ def validate(backlog):
         for dep in t.get("depends_on", []):
             if dep not in ids:
                 problems.append(f"{t['id']}: unknown dependency {dep}")
+    # Sequencing rules: no dependency on a later milestone; a done task cannot wait on an unfinished one.
+    order = {m["id"]: i for i, m in enumerate(backlog["milestones"])}
+    by_id = {t["id"]: t for t in tasks}
+    for t in tasks:
+        for dep in t.get("depends_on", []):
+            d = by_id.get(dep)
+            if d is None:
+                continue
+            if order.get(d["milestone"], 0) > order.get(t["milestone"], 0):
+                problems.append(f"{t['id']} ({t['milestone']}) depends on later {dep} ({d['milestone']})")
+            if t["status"] == "done" and d["status"] != "done":
+                problems.append(f"{t['id']} is done but depends on unfinished {dep}")
     if problems:
         sys.exit("backlog.yaml is invalid:\n  " + "\n  ".join(problems))
 
