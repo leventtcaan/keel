@@ -84,6 +84,11 @@ Bu oturum M1'i kapattı (#150-#153) ve M2'de K-201, K-202, K-203, K-204, K-205, 
    `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; M3 kabul kriterine ekle: tek uçuşlu refresh, ADR-025) → özet.
    Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra bu sohbette (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 
+**Dependabot #2 (30 Eyl, orta):** `decode-uri-component` 0.2.2 ← `query-string` 7.1.3 ← `expo-router` 57. Düzeltme 0.5.0
+(0.x'te ana sürüm atlaması, Expo'nun bağımlılığını ezmek gerekir; ADR-019 madde 6 → zorlamadım). Risk: uygulamanın kendi
+derin bağlantısında bozuk yüzde kodlamalı girdiyle yavaşlama (sunucu değil). M3'te (K-3xx mobil kabuk) Expo güncellemesiyle
+ya da `overrides` + test ile kapatılacak.
+
 **Bilgi (Levent'e, soru değil):** K-113 GS-10 — erkekte ideal bulk hızı (ayda 1 kg) 21 günlük pencerede "sabit" okunur,
 motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "çok hızlı" kuralı M1 kapsamında değil).
 
