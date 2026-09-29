@@ -51,9 +51,9 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G4-ilerleme-metabolik.md#K-10"
     note: "YALNIZ İÇ DEĞİŞKEN (U4). Güray: >%25'te konan kas görünmez, >%30 kesinlikle bulk yasak → önce yağ ver (G4 K-10, G4 K-4 '%99 önce yağ verir'; 03 §2.1). Kadın +10 puan ofseti J1 B1 [literatür, güçlü]."
-  - key: bulk_band_min_fat_proxy_pct
-    by_sex: {male: 15, female: 25}
+  - key: surplus_below_fat_proxy_pct
+    by_sex: {male: 12, female: 22}
     unit: percent_internal_only
     tag: tecrube
-    source: "arastirma/ham/guray/G6-eski-arsiv.md#K-8"
-    note: "YALNIZ İÇ DEĞİŞKEN (U4). Çalışma bandı %15-20 (G6 K-8): cut bandın altına inince yön bulk'a döner (maintenance seçenek değil, 03 §2.1). Kadın %25-30 J1 B3 (ofset güçlü, bandın kendisi zayıf — erkekte de aynı statüde)."
+    source: "arastirma/03-guray-karar-omurgasi.md#2.1"
+    note: "YALNIZ İÇ DEĞİŞKEN (U4). Giriş kapısı: <%12 → surplus; %12-25 hedef ve tercihe göre (03 §2.1). G6 K-8'in %15-20 bandı bir tercih bandıdır (kuru görünmek isteyen alt sınıra oturur), zorunlu geçiş değil. Kadın +10 puan J1 B1; 22, J1 B3'ün '18-20 altına inerken uyar' eşiğinin üstünde."

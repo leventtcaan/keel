@@ -40,15 +40,19 @@ final class EngineFixtures {
         return new WeightSeries(weighIns);
     }
 
-    /** The texts behind a copy key in data/copy/en.json (JSON is valid YAML); empty if the key is not a text group. */
-    @SuppressWarnings("unchecked")
-    static Map<String, Object> copyGroup(CopyKey key) {
-        Object node;
+    /** The whole of data/copy/en.json (JSON is valid YAML). */
+    static Map<String, Object> copyTree() {
         try (Reader reader = Files.newBufferedReader(Path.of("../data/copy/en.json"))) {
-            node = ParametersLoaderTests.strictYaml().load(reader);
+            return ParametersLoaderTests.strictYaml().load(reader);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /** The texts behind a copy key in data/copy/en.json; empty if the key is not a text group. */
+    @SuppressWarnings("unchecked")
+    static Map<String, Object> copyGroup(CopyKey key) {
+        Object node = copyTree();
         for (String part : key.value().split("\\.")) {
             node = node instanceof Map<?, ?> map ? map.get(part) : null;
         }

@@ -38,6 +38,44 @@ class NoFatNumberInOutputTests {
     }
 
     @Test
+    void theEstimateItselfNeverAppearsInADecisionOrInASnapshotPrintout() {
+        // Value check, not just names: sentinel estimates that cannot occur by accident.
+        java.time.LocalDate today = java.time.LocalDate.of(2026, 10, 26);
+        for (Sex sex : Sex.values()) {
+            for (Phase phase : Phase.values()) {
+                for (String sentinel : List.of("23.4567", "33.4567", "9.4567", "40.4567")) {
+                    Snapshot snapshot = new Snapshot(today, sex, phase, today.minusDays(30),
+                            new WeightSeries(List.of()), java.util.Optional.of(new java.math.BigDecimal(sentinel)));
+                    String digits = sentinel.substring(0, sentinel.indexOf('.') + 3);
+
+                    PhaseGate.check(snapshot, EngineFixtures.parameters(sex)).ifPresent(decision ->
+                            assertThat(decision.toString()).doesNotContain(digits));
+                    assertThat(snapshot.toString()).as("Snapshot.toString, in case it is ever logged").doesNotContain(digits);
+                }
+            }
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void noDecisionTextStatesAPercentage() {
+        java.util.Map<String, Object> decision = (java.util.Map<String, Object>) EngineFixtures.copyTree().get("decision");
+        List<String> texts = new ArrayList<>();
+        collectStrings(decision, texts);
+
+        assertThat(texts).isNotEmpty().noneMatch(text -> text.matches("(?is).*(\\d\\s*%|percent).*"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void collectStrings(Object node, List<String> into) {
+        if (node instanceof String text) {
+            into.add(text);
+        } else if (node instanceof java.util.Map<?, ?> map) {
+            map.values().forEach(value -> collectStrings(value, into));
+        }
+    }
+
+    @Test
     void theWalkReallySeesTheActionsAndTheSnapshotFieldWouldBeCaught() {
         // Guards the guard: the walk reaches the action records, and the same name check flags Snapshot's own field.
         assertThat(reachableFrom(Decision.class)).contains(Action.ChangePhase.class, Reason.class, Source.class);

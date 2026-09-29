@@ -62,9 +62,9 @@
         "title": "Lose fat first.",
         "body": "Muscle you build now would stay hidden. Most people start here, and a cut first makes every later gain visible."
       },
-      "cut_floor_reached": {
+      "surplus_zone": {
         "title": "Time to switch to a bulk.",
-        "body": "You're at the lean end of your working range. Going further is hard to hold; building from here is the next step."
+        "body": "You're lean enough that cutting further costs more than it gives. Building from here is the next step."
       }
     }
   }

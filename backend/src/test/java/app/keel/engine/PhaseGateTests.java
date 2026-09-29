@@ -77,20 +77,21 @@ class PhaseGateTests {
 
     @ParameterizedTest
     @EnumSource(Sex.class)
-    void aCutThatReachesTheBottomOfTheBandTurnsIntoABulk(Sex sex) {
-        BigDecimal bandMin = band(sex, ParameterKey.BULK_BAND_MIN_FAT_PROXY_PCT);
+    void aCutBelowTheSurplusLineTurnsIntoABulk(Sex sex) {
+        // 03 §2.1: under 12 % (a woman 22 %) the direction is surplus.
+        BigDecimal justBelow = band(sex, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT).subtract(STEP);
 
-        assertChangesTo(PhaseGate.check(snapshot(sex, Phase.CUT, bandMin), parameters(sex)), Phase.BULK, "cut_floor_reached");
-        assertChangesTo(PhaseGate.check(snapshot(sex, Phase.CUT, bandMin.subtract(STEP)), parameters(sex)), Phase.BULK,
-                "cut_floor_reached");
+        assertChangesTo(PhaseGate.check(snapshot(sex, Phase.CUT, justBelow), parameters(sex)), Phase.BULK, "surplus_zone");
     }
 
     @ParameterizedTest
     @EnumSource(Sex.class)
-    void aCutAboveTheBandContinues(Sex sex) {
-        BigDecimal justAbove = band(sex, ParameterKey.BULK_BAND_MIN_FAT_PROXY_PCT).add(STEP);
+    void aCutAtOrAboveTheSurplusLineIsTheUsersChoice(Sex sex) {
+        // 12-25 %: "by goal and preference" (03 §2.1); someone who wants to look drier may keep cutting (G6 K-8).
+        BigDecimal line = band(sex, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT);
 
-        assertThat(PhaseGate.check(snapshot(sex, Phase.CUT, justAbove), parameters(sex))).isNotPresent();
+        assertThat(PhaseGate.check(snapshot(sex, Phase.CUT, line), parameters(sex))).isNotPresent();
+        assertThat(PhaseGate.check(snapshot(sex, Phase.CUT, line.add(new BigDecimal("3"))), parameters(sex))).isNotPresent();
     }
 
     // ── no estimate, sources, output ────────────────────────────────────────────────────────────────────────
@@ -116,6 +117,16 @@ class PhaseGateTests {
     }
 
     @Test
+    void eachRuleNamesItsOwnResearch() {
+        assertThat(PhaseGate.check(snapshot(Sex.MALE, Phase.BULK, new BigDecimal("30")), parameters(Sex.MALE)))
+                .hasValueSatisfying(d -> assertThat(d.reasons().getFirst()).isEqualTo(new Reason(new RuleId("fat_first"),
+                        new Source("arastirma/ham/guray/G4-ilerleme-metabolik.md#K-10", SourceTag.EXPERIENCE))));
+        assertThat(PhaseGate.check(snapshot(Sex.MALE, Phase.CUT, new BigDecimal("10")), parameters(Sex.MALE)))
+                .hasValueSatisfying(d -> assertThat(d.reasons().getFirst()).isEqualTo(new Reason(new RuleId("surplus_zone"),
+                        new Source("arastirma/03-guray-karar-omurgasi.md#2.1", SourceTag.EXPERIENCE))));
+    }
+
+    @Test
     void aVisualEstimateIsMediumConfidenceWithAKeyPerRule() {
         Optional<Decision> decision = PhaseGate.check(snapshot(Sex.MALE, Phase.BULK, new BigDecimal("22")), parameters(Sex.MALE));
 
@@ -128,7 +139,7 @@ class PhaseGateTests {
 
     @Test
     void everyCopyKeyItCanReturnHasATitleAndBodyInEnJson() {
-        for (String rule : List.of("bulk_ceiling", "fat_first", "cut_floor_reached")) {
+        for (String rule : List.of("bulk_ceiling", "fat_first", "surplus_zone")) {
             assertThat(EngineFixtures.copyGroup(new CopyKey("decision.change_phase." + rule))).as(rule)
                     .hasEntrySatisfying("title", title -> assertThat(title).isInstanceOf(String.class))
                     .hasEntrySatisfying("body", body -> assertThat(body).isInstanceOf(String.class));

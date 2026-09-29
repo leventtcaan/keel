@@ -33,6 +33,13 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         });
     }
 
+    /** Leaves the body-fat estimate out, so a Snapshot that is ever logged or printed cannot show it (U4). */
+    @Override
+    public String toString() {
+        return "Snapshot[today=" + today + ", sex=" + sex + ", phase=" + phase + ", planStart=" + planStart
+                + ", weights=" + weights.weighIns().size() + " weigh-ins, fatProxyPct=" + (fatProxyPct.isPresent() ? "<hidden>" : "none") + "]";
+    }
+
     /** A Snapshot without a body-fat estimate (none measured yet). */
     public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights) {
         this(today, sex, phase, planStart, weights, Optional.empty());

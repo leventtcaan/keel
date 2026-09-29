@@ -13,7 +13,8 @@ import java.util.Optional;
  *   <li>A bulk above the fat ceiling turns into a cut (G6 K-7: above 20 % muscle gain is at a disadvantage).</li>
  *   <li>Above the fat-first line the reason is stronger: lose fat first (G4 K-10: added muscle does not show;
  *       G4 K-4: nearly every beginner starts here).</li>
- *   <li>A cut that reaches the bottom of the working band turns into a bulk (G6 K-8: band 15-20 %).</li>
+ *   <li>A cut below the surplus line turns into a bulk (03 §2.1: under 12 % the direction is surplus; 12-25 % is
+ *       the user's goal and preference — G6 K-8's 15-20 % band is where people choose to sit, not a forced switch).</li>
  * </ul>
  *
  * <p>A woman's bands sit 10 points higher (J1 B1: essential fat ~12 % vs ~3 %); her decisions name that research
@@ -24,12 +25,12 @@ public final class PhaseGate {
 
     static final RuleId BULK_CEILING = new RuleId("bulk_ceiling");
     static final RuleId FAT_FIRST = new RuleId("fat_first");
-    static final RuleId CUT_FLOOR_REACHED = new RuleId("cut_floor_reached");
+    static final RuleId SURPLUS_ZONE = new RuleId("surplus_zone");
     static final RuleId FEMALE_FAT_OFFSET = new RuleId("female_fat_offset");
 
     private static final Source GURAY_CEILING = new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-7", SourceTag.EXPERIENCE);
     private static final Source GURAY_FAT_FIRST = new Source("arastirma/ham/guray/G4-ilerleme-metabolik.md#K-10", SourceTag.EXPERIENCE);
-    private static final Source GURAY_BAND = new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-8", SourceTag.EXPERIENCE);
+    private static final Source GURAY_ENTRY_GATE = new Source("arastirma/03-guray-karar-omurgasi.md#2.1", SourceTag.EXPERIENCE);
     private static final Source FEMALE_OFFSET = new Source("arastirma/ham/J1-cinsiyet.md#B1", SourceTag.LITERATURE);
 
     private static final int DAYS_PER_WEEK = 7;
@@ -53,8 +54,9 @@ public final class PhaseGate {
                 }
                 yield Optional.empty();
             }
-            case CUT -> fat.compareTo(band(parameters, ParameterKey.BULK_BAND_MIN_FAT_PROXY_PCT)) <= 0
-                    ? Optional.of(change(snapshot, Phase.BULK, CUT_FLOOR_REACHED, GURAY_BAND))
+            // Strictly below: "< %12" (03 §2.1). From there up to ~25 % the direction is the user's goal.
+            case CUT -> fat.compareTo(band(parameters, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT)) < 0
+                    ? Optional.of(change(snapshot, Phase.BULK, SURPLUS_ZONE, GURAY_ENTRY_GATE))
                     : Optional.empty();
         };
     }
