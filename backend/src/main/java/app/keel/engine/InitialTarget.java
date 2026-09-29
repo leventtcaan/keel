@@ -19,6 +19,9 @@ import java.util.Optional;
  *   <li><b>Observation</b>: the estimate is only a start. It holds for maintenance_observation_days (men 14, women 28)
  *       while the scale shows what maintenance really is — observation beats the formula (G2 K-8).</li>
  * </ul>
+ *
+ * <p>Güray starts from the last 2-3 months of eating (G2 K-9) rather than a formula; ADR-020 L-7 chose the formula,
+ * because declared intake is under-counted (G2 K-13, NASEM 2023) and observation corrects the start either way.
  */
 public final class InitialTarget {
 

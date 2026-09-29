@@ -80,7 +80,7 @@ parameters:
     unit: days
     tag: tecrube
     source: "arastirma/ham/guray/G2-kilo-verme.md#K-8"
-    note: "Başlangıç hedefi (formül tahmini) bu kadar gün değişmez; kilo sabitse o kalori kişinin bakımıdır (K-8 'gözlem formülü yener'). Erkek 14: Güray 1-2 hafta, literatür en az 2 (H3 B3); tam iki haftalık döngü (H6 A4). Kadın 28: döngü sinyali (J1 D1, H3 Ç5) — ADR-020 L-7."
+    note: "Kadın değeri 28: J1 D1 (döngü sinyali 28 günde sıfırlanır) ve H3 Ç5, ADR-020 L-7 ile Güray'ın 1-2 haftasının yerine; erkek değeri Güray. Başlangıç hedefi (formül tahmini) bu kadar gün değişmez; kilo sabitse o kalori kişinin bakımıdır (K-8 'gözlem formülü yener'). Erkek 14: Güray 1-2 hafta, literatür en az 2 (H3 B3); tam iki haftalık döngü (H6 A4). Kadın 28: döngü sinyali (J1 D1, H3 Ç5) — ADR-020 L-7."
   - key: resting_kcal_per_kg
     value: 10
     unit: kcal_per_kg_per_day
@@ -136,7 +136,7 @@ parameters:
     unit: ratio
     tag: literatur
     source: "arastirma/ham/H6-baslangic-kalori.md#A4"
-    note: "Formül tahmini aralık olarak gösterilir (U5): ±%15. RMR ±%10 ve PAL ±%8-10 birlikte ≈ ±%13 (H6 A4, türetilmiş); sporcuda Mifflin daha kötü (A2)."
+    note: "TÜRETİLMİŞ. Formül tahmini aralık olarak gösterilir (U5): ±%15. RMR ±%10 ve PAL ±%8-10 birlikte ≈ ±%13 (H6 A4, türetilmiş); sporcuda Mifflin daha kötü (A2)."
   - key: bulk_stall_weeks
     value: 2
     unit: weeks

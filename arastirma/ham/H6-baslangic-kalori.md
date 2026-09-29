@@ -33,7 +33,7 @@ Birim kcal/gün. Makaledeki diğer bulgular:
 
 **Dikkat — iki farklı katsayı seti dolaşıyor.** ADA/AND 2006 *Adult Weight Management* kılavuzu Mifflin'i
 `9.99 × kg + 6.25 × cm − 4.92 × yaş + 5 / −161` diye basıyor (sadeleşmemiş eğim + sadeleşmiş sabit karışımı).
-80 kg, 30 yaşında biri için iki form arasındaki fark ~3 kcal/gün; pratikte önemsiz. Motor, orijinal özetteki
+80 kg, 30 yaşında biri için iki form arasındaki fark ~1,6 kcal/gün; pratikte önemsiz. Motor, orijinal özetteki
 sadeleştirilmiş formu (10 / 6.25 / 5) kullanmalı — kaynağı en net olan o.
 
 → https://pubmed.ncbi.nlm.nih.gov/2305711/ (özet Europe PMC üzerinden okundu: https://europepmc.org/article/MED/2305711)
@@ -185,8 +185,9 @@ Kaba birleşik büyüklük (benim hesabım, kaynak değil): ±%10 RMR ve ±%9 PA
 - **Sanghvi ve ark. 2015** (Am J Clin Nutr, PMC4515869, CALERIE, 140 kişi, 2 yıl): yalnız kilo verisi kullanan
   model, alım değişimini DLW/DXA yöntemine göre ortalamada **40 kcal/gün** içinde buldu; bireyde RMS sapma **215
   kcal/gün**, çoğu değer **132 kcal/gün** içinde.
-- Yani uzun pencerede kilodan çıkarılan harcama, formülün ~±300 kcal'lik bireysel hatasıyla aynı ya da daha iyi
-  düzeyde; pencere kısaldıkça gürültü artıyor (0-4 hafta SD 118 → farklı kriterle 226-272).
+- Yani kilodan çıkarılan harcama, formülün ~±300 kcal'lik bireysel hatasıyla aynı ya da daha iyi düzeyde. Pencere
+  uzunluğu ile gürültü arasında bu verilerden bir sonuç çıkmıyor (0-4 hafta SD 118, 4-12 hafta 230; 226-272 farklı bir
+  ölçütle, DLW/DXA).
 
 **Pencere uzunluğunu belirleyen gürültü kaynakları:**
 - **Haftalık ritim:** Orsama ve ark. 2014 (Obes Facts, 80 kişi, 4657 ölçüm): kilo pazar-pazartesi yüksek, hafta içi
@@ -221,7 +222,7 @@ Kaba birleşik büyüklük (benim hesabım, kaynak değil): ±%10 RMR ve ±%9 PA
 - **Mifflin'de kadın için tek fark sabit terim:** birleşik formda `+166 × cinsiyet − 161` → erkek +5, kadın −161.
   Kilo, boy ve yaş eğimleri iki cinsiyette **aynı**. Yazarlara göre cinsiyete ayırmak ve sadeleştirmek öngörüyü
   bozmadı. Başka bir kadın düzeltmesi Mifflin'de **yok**.
-- **Doğruluk kadınlarda da aynı sınırlar içinde değil:** O'Neill 2023 kadın sporcularda bir çalışmada Mifflin'in RMR'yi
+- **Kadında ayrı bir bozulma işareti yok (tek çalışma hariç):** O'Neill 2023 kadın sporcularda bir çalışmada Mifflin'in RMR'yi
   ~%15 fazla tahmin ettiğini aktarıyor; meta-analiz De Lorenzo ve Harris-Benedict'te cinsiyet farkı buldu; FAO, Owen,
   Mifflin, Cunningham ve Ten-Haaf için "cinsiyet doğruluğu etkilemiyor gibi görünüyor" diyor. Yani Mifflin'in
   kadında ayrıca bozulduğuna dair meta-analitik işaret yok; ~%15'lik sapma tek çalışma.
@@ -259,7 +260,7 @@ Bu bölüm önerdir; ürün kararları (hangi soru sorulur, kaç seçenek) Leven
 | Aktivite kategorileri | NASEM 2023 tipik değerleri: **1,4 / 1,6 / 1,75 / 2,05** | Ölçülmüş (DLW) PAL dağılımına dayanan en güncel set (A3-c); 1,2-1,9 setinin kaynağı yok ve alt ucu gerçekçi değil (A3-d) |
 | Varsayılan katsayı (bilgi yoksa) | **1,6** | DLW'de sedanter Batılı modal PAL 1,60 (Black 1996, FAO); NASEM "low active" tipik değeri 1,6. Kitlemiz direnç antrenmanı yapıyor, "inactive" (1,4) büyük olasılıkla düşük kalır |
 | Antrenman yapan + fiziksel işi olan | 1,75; ağır fiziksel iş + antrenman 2,05 | NASEM Tablo 7-1 örnekleri |
-| Başlangıç tahmininin önceliği | K-9'daki **geçmiş beslenme** varsa o, formül yalnız yoksa ya da mantık denetimi (sanity check) için | Güray K-9 (U14: çelişkide Güray kazanır); NASEM beyan edilen alımın yanlı olduğunu da söylüyor → geçmiş beslenme beyanına K-13 düzeltmesi uygulanır |
+| Başlangıç tahmininin önceliği | **Karar (ADR-020 L-7): formül.** Bu taramanın önerisi K-9'daki geçmiş beslenmeydi; Levent formülü seçti — geçmiş beslenme beyanı yanlı (K-13, NASEM), gözlem zaten 14/28 günde düzeltir | Güray K-9 bilerek kullanılmıyor (ADR-020 L-7) |
 | Formül tahmini aralık olarak | **±%15** bant (ör. 2500 → 2125-2875) | A4 kaba birleşik hata ~±%13; U5 "tahmin daima aralık" |
 | Gözlemin formülü değiştirmesi | **14 gün** (mevcut `maintenance_observation_days: 14` ile aynı) | Güray K-8 "1-2 hafta"; haftalık ritim yüzünden tam hafta katı gerekli (A4); 14 gün = iki tam haftalık döngü. Kilo sabitse **gözlem tamamen yerini alır**, harmanlama (blend) yok — K-8 "gözlem kazanır" |
 | Kilo sabit değilse | Gözlem penceresi uzar; kalori kilo yönüne göre ayarlanır (G2 K-8 tablosu) — **kilo→kcal için sabit 7700 kullanılmaz** ya da kullanılırsa zayıf kişide fazla düzelttiği bilinerek | Hall 2008 (A4) |
