@@ -25,7 +25,8 @@ class WorkoutStore {
     record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId) {
     }
 
-    record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps, Integer rir, Side side) {
+    record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps, Integer rir, Side side,
+            UUID workoutId) {
     }
 
     record Stored<T>(T record, boolean created) {
@@ -100,6 +101,6 @@ class WorkoutStore {
         String side = row.getString("side");
         return new LoggedSet(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class), row.getString("exercise_id"),
                 SetType.valueOf(row.getString("set_type")), Decimals.plain(row.getBigDecimal("load_kg")), row.getInt("reps"),
-                row.getObject("rir", Integer.class), side == null ? null : Side.valueOf(side));
+                row.getObject("rir", Integer.class), side == null ? null : Side.valueOf(side), row.getObject("workout_id", UUID.class));
     }
 }

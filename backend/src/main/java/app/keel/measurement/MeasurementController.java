@@ -10,6 +10,7 @@ import app.keel.engine.WeightTrend;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
+import app.keel.shared.ApiLimits;
 import app.keel.shared.Decimals;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
@@ -70,30 +71,32 @@ class MeasurementController {
     private final ConsentGate consent;
     private final ParameterSet parameters;
     private final MeasurementLimits limits;
+    private final ApiLimits api;
     private final Clock clock;
 
     MeasurementController(MeasurementStore store, Measurements measurements, Profiles profiles, ConsentGate consent,
-            ParameterSet parameters, MeasurementLimits limits, Clock clock) {
+            ParameterSet parameters, MeasurementLimits limits, ApiLimits api, Clock clock) {
         this.store = store;
         this.measurements = measurements;
         this.profiles = profiles;
         this.consent = consent;
         this.parameters = parameters;
         this.limits = limits;
+        this.api = api;
         this.clock = clock;
     }
 
     @PostMapping("/v1/weigh-ins")
     ResponseEntity<MeasurementStore.WeighIn> addWeighIn(AccountId account, @RequestBody NewWeighIn weighIn) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(weighIn.clientId() != null && weighIn.measuredAt() != null && weighIn.source() != null && limits.weight(weighIn.kg()));
+        require(weighIn.clientId() != null && api.moment(weighIn.measuredAt()) && weighIn.source() != null && limits.weight(weighIn.kg()));
         return created(store.add(account, weighIn.clientId(), weighIn.measuredAt(), weighIn.kg(), weighIn.source()));
     }
 
     @GetMapping("/v1/weigh-ins")
     List<MeasurementStore.WeighIn> weighIns(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(limits.range(from, to));
+        require(api.range(from, to));
         ZoneId zone = measurements.zoneOf(account);
         return store.weighIns(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant());
     }
@@ -110,28 +113,28 @@ class MeasurementController {
     @PostMapping("/v1/waist-measurements")
     ResponseEntity<MeasurementStore.Waist> addWaist(AccountId account, @RequestBody NewWaist waist) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(waist.clientId() != null && waist.measuredOn() != null && limits.waist(waist.cm()));
+        require(waist.clientId() != null && api.day(waist.measuredOn()) && limits.waist(waist.cm()));
         return created(store.add(account, waist.clientId(), waist.measuredOn(), waist.cm()));
     }
 
     @GetMapping("/v1/waist-measurements")
     List<MeasurementStore.Waist> waists(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(limits.range(from, to));
+        require(api.range(from, to));
         return store.waists(account, from, to);
     }
 
     @PostMapping("/v1/photo-checks")
     ResponseEntity<MeasurementStore.PhotoCheck> addPhotoCheck(AccountId account, @RequestBody NewPhotoCheck check) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(check.clientId() != null && check.takenOn() != null && check.look() != null);
+        require(check.clientId() != null && api.day(check.takenOn()) && check.look() != null);
         return created(store.add(account, check.clientId(), check.takenOn(), check.look()));
     }
 
     @PutMapping("/v1/activity-days")
     ActivityDay putActivityDay(AccountId account, @RequestBody ActivityDay day) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(day.day() != null && notNegative(day.steps()) && notNegative(day.sleepMinutes()) && notNegative(day.activeEnergyKcal()));
+        require(api.day(day.day()) && notNegative(day.steps()) && notNegative(day.sleepMinutes()) && notNegative(day.activeEnergyKcal()));
         store.put(account, new MeasurementStore.ActivityDay(day.day(), day.steps(), day.sleepMinutes(), day.activeEnergyKcal()));
         // What was stored, so the answer is what a later read returns.
         MeasurementStore.ActivityDay stored = store.activityDay(account, day.day()).orElseThrow();
@@ -142,7 +145,7 @@ class MeasurementController {
     @GetMapping("/v1/weight-trend")
     List<TrendPoint> trend(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        require(limits.range(from, to));
+        require(api.range(from, to));
         ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         int days = parameters.forSex(Sex.valueOf(profile.sex().name())).wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
         WeightSeries series = new WeightSeries(measurements.dailyWeights(account, from.minusDays(days - 1L), to));

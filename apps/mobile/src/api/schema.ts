@@ -499,6 +499,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description A clientId already used for a set of another workout is 409 CONFLICT, not a replay. */
         post: operations["logSet"];
         delete?: never;
         options?: never;
@@ -1104,6 +1105,7 @@ export interface components {
             clientId: components["schemas"]["ClientId"];
             exerciseId: string;
             setType: components["schemas"]["SetType"];
+            /** @description At most 2 decimals. */
             loadKg: number;
             reps: number;
             /** @description Reps left in the tank; absent when not given. */

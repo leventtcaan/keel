@@ -61,6 +61,9 @@ tasks.processResources {
     from("../data/exercises") {
         into("data/exercises")
     }
+    from("../data/muscles.yaml") {
+        into("data")
+    }
 }
 
 // Integration tests start the same PostgreSQL image as compose.yaml, named once in the version catalog (K-202).

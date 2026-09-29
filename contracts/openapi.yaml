@@ -647,6 +647,7 @@ paths:
     post:
       tags: [training]
       operationId: logSet
+      description: A clientId already used for a set of another workout is 409 CONFLICT, not a replay.
       requestBody:
         required: true
         content:
@@ -1718,6 +1719,8 @@ components:
         loadKg:
           type: number
           minimum: 0
+          maximum: 1000
+          description: At most 2 decimals.
         reps:
           type: integer
           minimum: 0

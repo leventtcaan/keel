@@ -3,6 +3,7 @@ package app.keel.training;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
+import app.keel.shared.ApiLimits;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,6 +14,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,7 +32,19 @@ import org.springframework.web.bind.annotation.RestController;
  * else. Training logs are not on V3's health-data list, so no consent gate here (ADR-026).
  */
 @RestController
+@EnableConfigurationProperties(WorkoutController.TrainingLimits.class)
 class WorkoutController {
+
+    /** What a set can be (K-210, keel.training); 2 decimals, the column's. */
+    @ConfigurationProperties("keel.training")
+    record TrainingLimits(BigDecimal maxLoadKg) {
+
+        static final int LOAD_DECIMALS = 2;
+
+        boolean load(BigDecimal kg) {
+            return kg != null && kg.signum() >= 0 && kg.compareTo(maxLoadKg) <= 0 && kg.stripTrailingZeros().scale() <= LOAD_DECIMALS;
+        }
+    }
 
     /** Contract Exercise (K-219 adds aliases, setup fields and clips). */
     record Exercise(String id, String nameKey, ExerciseCatalog.Kind kind, List<String> muscles, List<String> alternatives,
@@ -64,11 +79,15 @@ class WorkoutController {
     private final ExerciseCatalog catalog;
     private final WorkoutStore store;
     private final Profiles profiles;
+    private final TrainingLimits limits;
+    private final ApiLimits api;
 
-    WorkoutController(ExerciseCatalog catalog, WorkoutStore store, Profiles profiles) {
+    WorkoutController(ExerciseCatalog catalog, WorkoutStore store, Profiles profiles, TrainingLimits limits, ApiLimits api) {
         this.catalog = catalog;
         this.store = store;
         this.profiles = profiles;
+        this.limits = limits;
+        this.api = api;
     }
 
     @GetMapping("/v1/exercises")
@@ -79,14 +98,14 @@ class WorkoutController {
 
     @PostMapping("/v1/workouts")
     ResponseEntity<Workout> start(AccountId account, @RequestBody NewWorkout workout) {
-        require(workout.clientId() != null && workout.startedAt() != null);
+        require(workout.clientId() != null && api.moment(workout.startedAt()));
         WorkoutStore.Stored<WorkoutStore.Workout> stored = store.start(account, workout.clientId(), workout.startedAt(), workout.programDayId());
         return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(read(stored.record()));
     }
 
     @GetMapping("/v1/workouts")
     List<Workout> list(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
-        require(!to.isBefore(from));
+        require(api.range(from, to));
         ZoneId zone = profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
         return store.between(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant())
                 .stream().map(this::read).toList();
@@ -100,7 +119,7 @@ class WorkoutController {
     @PostMapping("/v1/workouts/{id}/finish")
     Workout finish(AccountId account, @PathVariable UUID id, @RequestBody Finish finish) {
         WorkoutStore.Workout workout = owned(account, id);
-        require(finish.endedAt() != null && !finish.endedAt().isBefore(workout.startedAt()));
+        require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()));
         store.finish(account, id, finish.endedAt());
         return read(owned(account, id));
     }
@@ -109,10 +128,14 @@ class WorkoutController {
     ResponseEntity<LoggedSet> log(AccountId account, @PathVariable UUID id, @RequestBody NewSet set) {
         owned(account, id);
         require(set.clientId() != null && catalog.find(set.exerciseId()).isPresent() && set.setType() != null
-                && set.loadKg() != null && set.loadKg().signum() >= 0 && set.reps() != null && set.reps() >= 0
+                && limits.load(set.loadKg()) && set.reps() != null && set.reps() >= 0
                 && (set.rir() == null || set.rir() >= 0));
         WorkoutStore.Stored<WorkoutStore.LoggedSet> stored = store.log(account, id, new WorkoutStore.LoggedSet(null, set.clientId(),
-                set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side()));
+                set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), id));
+        if (!stored.record().workoutId().equals(id)) {
+            // The clientId is already a set of another workout: not a replay of this one (ADR-024 §11).
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
         return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(LoggedSet.of(stored.record()));
     }
 
