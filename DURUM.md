@@ -16,6 +16,8 @@ Yok. Sıradaki: **K-101 · Motor alan tipleri** (skill `gorev-baslat`, ön aktar
 
 ## Sıradaki tek adım
 K-101'i başlat: dal `engine/<issue>-domain-types`, ön aktarım (Snapshot → Decision neden saf fonksiyon), sonra test önce.
+Oturum `~/Projects/keel` klasöründen açılır (hook, eklenti ve skill'ler ancak öyle yüklenir); ilk iş skill `oturum-baslat`.
+İlk çalışmada `git config core.hooksPath` kontrolü ve eklentilerin yüklendiği (`/plugin` listesi) doğrulanır.
 
 ## Levent'i bekleyen (acil değil)
 - **Design eklentisi** (claude.ai kataloğu, `design-critique`): CLI'dan kurulamıyor, karttan bir tık. Kurulmazsa
