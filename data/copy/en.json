@@ -66,6 +66,24 @@
         "title": "Time to switch to a bulk.",
         "body": "You're lean enough that cutting further costs more than it gives. Building from here is the next step."
       }
+    },
+    "stop_load_increase": {
+      "label": "Hold the weight",
+      "plateau": {
+        "title": "Keep the same weight this week.",
+        "body": "The lifts that stalled keep the same weight for a week before anything else changes."
+      }
+    },
+    "deload": {
+      "label": "Lighter week",
+      "load_held_still_stalled": {
+        "title": "A lighter week.",
+        "body": "Holding the weight didn't move things, so this week has fewer sets. A lighter week often gives your body room to recover."
+      },
+      "long_stagnation": {
+        "title": "A lighter week.",
+        "body": "Months at the same weights often mean tiredness has built up. This week has fewer sets; after it, build back up gradually."
+      }
     }
   }
 }
