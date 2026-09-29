@@ -3,20 +3,26 @@ package app.keel.architecture;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.engine.Action;
+import app.keel.engine.ActivityLevel;
 import app.keel.engine.ActionType;
 import app.keel.engine.Confidence;
 import app.keel.engine.Decision;
 import app.keel.engine.Phase;
+import app.keel.engine.Reason;
+import app.keel.engine.Sex;
+import app.keel.engine.Source;
 import app.keel.engine.SourceTag;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.RecordComponent;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -34,10 +40,14 @@ class ContractTests {
 
     // Gradle runs tests with the project directory (backend/) as the working directory.
     private static final Path CONTRACT = Path.of("../contracts/openapi.yaml");
-    private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch");
-    // Calorie numbers that are a plan or a step, not an estimate: one number the user follows (ADR-020 L-13).
-    private static final Set<String> PLAN_NUMBERS = Set.of("targetKcal", "kcalPerDay");
-    private static final Pattern FAT_NUMBER = Pattern.compile("(?i)body.?fat|fat.?(pct|percent|proxy|ratio)|fat_?mass");
+    private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "trace");
+    // Calorie numbers that are not estimates (U5: "a target and a decision may be one number"): the plan's daily target
+    // and a decision's step, and a device's own reading passed through as given.
+    private static final Set<String> SINGLE_CALORIE_NUMBERS = Set.of("Targets.targetKcal", "DayBudget.targetKcal",
+            "AdjustCalories.kcalPerDay", "IncreaseCalories.kcalPerDay", "ActivityDay.activeEnergyKcal");
+    private static final Set<String> RANGES = Set.of("#/components/schemas/KcalRange", "#/components/schemas/KcalBalance");
+    private static final Pattern FAT_NUMBER = Pattern.compile(
+            "(?i)body.?fat|fat.?(pct|percent|proxy|ratio|free)|fat_?mass|percent.?fat|lean.?mass|\\bffm\\b|body.?composition");
 
     @Test
     void everyActionOfTheEngineIsAVariantOfTheContractsActionWithTheSameFields() throws IOException {
@@ -55,7 +65,23 @@ class ContractTests {
 
             assertThat(properties(variant).keySet()).as(name).containsExactlyInAnyOrderElementsOf(concat("type", engineFields));
             assertThat(list(variant.get("required"))).as(name).containsExactlyInAnyOrderElementsOf(concat("type", engineFields));
+            assertThat(map(properties(variant).get("type")).get("const")).as(name + " const").isEqualTo(name);
+            for (RecordComponent component : kind.getRecordComponents()) {
+                assertThat(typeOf(map(properties(variant).get(component.getName())))).as(name + "." + component.getName())
+                        .isEqualTo(jsonTypeOf(component.getType()));
+            }
         }
+        // The generated TypeScript union is built from oneOf: it must hold exactly the mapped variants.
+        assertThat(list(action.get("oneOf")).stream().map(ref -> (String) map(ref).get("$ref")).toList())
+                .containsExactlyInAnyOrderElementsOf(mapping.values().stream().map(String.class::cast).toList());
+    }
+
+    @Test
+    void reasonAndSourceAreTheEnginesRecords() throws IOException {
+        Map<String, Object> schemas = schemas();
+
+        assertThat(properties(map(schemas.get("Reason"))).keySet()).containsExactlyInAnyOrderElementsOf(names(Reason.class));
+        assertThat(properties(map(schemas.get("Source"))).keySet()).containsExactlyInAnyOrderElementsOf(names(Source.class));
     }
 
     @Test
@@ -74,22 +100,32 @@ class ContractTests {
         assertThat(list(map(schemas.get("Confidence")).get("enum"))).containsExactlyElementsOf(names(Confidence.values()));
         assertThat(list(map(schemas.get("SourceTag")).get("enum"))).containsExactlyElementsOf(names(SourceTag.values()));
         assertThat(list(map(schemas.get("Phase")).get("enum"))).containsExactlyElementsOf(names(Phase.values()));
+        assertThat(list(map(schemas.get("Sex")).get("enum"))).containsExactlyElementsOf(names(Sex.values()));
+        assertThat(list(map(schemas.get("ActivityLevel")).get("enum"))).containsExactlyElementsOf(names(ActivityLevel.values()));
     }
 
     @Test
     void everyCalorieEstimateIsARange() throws IOException {
-        // U5: a property named kcal is a KcalRange; any other calorie property is one of the plan numbers.
+        // U5, over every schema at any depth — nested objects, allOf branches, array items, and the inline schemas of
+        // paths: a property whose name says kcal, calorie or energy is a range, or one of the single numbers above.
         List<String> problems = new ArrayList<>();
-        schemas().forEach((schema, body) -> properties(map(body)).forEach((property, definition) -> {
-            boolean calorie = property.toLowerCase(Locale.ROOT).contains("kcal");
-            boolean range = "#/components/schemas/KcalRange".equals(map(definition).get("$ref"));
-            if (calorie && !range && !PLAN_NUMBERS.contains(property)) {
-                problems.add(schema + "." + property);
-            }
-        }));
+        walk("components", map(contract().get("components")), problems);
+        walk("paths", map(contract().get("paths")), problems);
 
         assertThat(problems).isEmpty();
         assertThat(properties(map(schemas().get("KcalRange"))).keySet()).containsExactlyInAnyOrder("low", "high");
+        assertThat(properties(map(schemas().get("KcalBalance"))).keySet()).containsExactlyInAnyOrder("low", "high");
+    }
+
+    @Test
+    void theCalorieWalkSeesNestedAndInlineFields() {
+        Map<String, Object> nested = Map.of("schemas", Map.of("DayBudget", Map.of("properties", Map.of(
+                "left", Map.of("properties", Map.of("kcal", Map.of("type", "integer")))))),
+                "Other", Map.of("allOf", List.of(Map.of("properties", Map.of("calories", Map.of("type", "integer"))))));
+        List<String> problems = new ArrayList<>();
+        walk("components", new LinkedHashMap<>(nested), problems);
+
+        assertThat(problems).containsExactlyInAnyOrder("components.schemas.DayBudget.left.kcal", "components.Other.allOf.0.calories");
     }
 
     @Test
@@ -124,6 +160,9 @@ class ContractTests {
                 problems.add(where + ": no default error response");
             }
             boolean open = path.equals("/health") || path.startsWith("/v1/auth/");
+            if (operation.containsKey("security") && list(operation.get("security")).stream().anyMatch(entry -> map(entry).isEmpty())) {
+                problems.add(where + ": an empty security entry makes the session optional");
+            }
             if (open != List.of().equals(operation.get("security"))) {
                 problems.add(where + (open ? ": sign-in must not need a session" : ": must not turn the session off"));
             }
@@ -146,6 +185,56 @@ class ContractTests {
                 "/v1/workouts", "/v1/check-ins", "/v1/decisions", "/v1/coach/messages")) {
             assertThat(paths).as(resource).anyMatch(p -> p.startsWith(resource));
         }
+    }
+
+    /** Every property at any depth whose name is about calories and is neither a range nor a known single number. */
+    private static void walk(String where, Map<String, Object> node, List<String> problems) {
+        node.forEach((key, value) -> {
+            String here = where + "." + key;
+            if (value instanceof Map<?, ?> child) {
+                if (where.endsWith(".properties") || where.equals("properties")) {
+                    checkCalorie(where, key, map(child), problems);
+                }
+                walk(here, map(child), problems);
+            } else if (value instanceof List<?> items) {
+                for (int i = 0; i < items.size(); i++) {
+                    if (items.get(i) instanceof Map<?, ?> item) {
+                        walk(here + "." + i, map(item), problems);
+                    }
+                }
+            }
+        });
+    }
+
+    private static void checkCalorie(String where, String property, Map<String, Object> definition, List<String> problems) {
+        String name = property.toLowerCase(Locale.ROOT);
+        if (!name.contains("kcal") && !name.contains("calor") && !name.contains("energy")) {
+            return;
+        }
+        String owner = where.substring(0, where.length() - ".properties".length());
+        String ownerName = owner.substring(owner.lastIndexOf('.') + 1);
+        boolean range = definition.get("$ref") instanceof String ref && RANGES.contains(ref);
+        if (!range && !SINGLE_CALORIE_NUMBERS.contains(ownerName + "." + property)) {
+            problems.add(owner.replace(".properties", "") + "." + property);
+        }
+    }
+
+    private static String typeOf(Map<String, Object> property) {
+        return property.get("$ref") instanceof String ref ? ref.substring(ref.lastIndexOf('/') + 1) : (String) property.get("type");
+    }
+
+    private static String jsonTypeOf(Class<?> type) {
+        if (type == int.class || type == Integer.class || type == long.class) {
+            return "integer";
+        }
+        if (type == BigDecimal.class || type == double.class) {
+            return "number";
+        }
+        return type.getSimpleName(); // an engine enum: the schema of the same name
+    }
+
+    private static List<String> names(Class<? extends Record> record) {
+        return Arrays.stream(record.getRecordComponents()).map(RecordComponent::getName).toList();
     }
 
     // ── reading the contract ────────────────────────────────────────────────────────────────────────────────

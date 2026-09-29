@@ -6,8 +6,8 @@ info:
     Contract-first API (anayasa K3, ADR-006, ADR-024). The backend implements this file; the mobile client's types are
     generated from it, never hand-written. Rules the contract keeps, each checked by backend ContractTests:
     - The Decision is the engine's Decision field for field (U3). Actions are a tagged union on `type`.
-    - Every calorie estimate is a range, `KcalRange` (U5). Plan numbers the user follows (a daily target, a step) are
-      single numbers (ADR-020 L-13).
+    - Every calorie estimate is a range, `KcalRange` / `KcalBalance` (U5). A target and a decision's step may be one
+      number (U5); a device's own reading is passed through as given.
     - The engine's fat estimate never appears, in any form (U4). Error messages never carry health data (V3).
     Conventions: everything but health and sign-in is under /v1 and needs a session. Records the phone creates
     offline carry a `clientId` (a UUID the phone makes): sending one twice stores it once and answers 200 with the
@@ -271,6 +271,25 @@ paths:
           description: Deleted
         default:
           $ref: "#/components/responses/Error"
+  /v1/weight-trend:
+    get:
+      tags: [measurement]
+      operationId: getWeightTrend
+      summary: The trend weight per day (7-day average, the engine's WeightTrend), days without weigh-ins left out
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: One point per day that has a trend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendPoint"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/waist-measurements:
     get:
       tags: [measurement]
@@ -345,19 +364,18 @@ paths:
           $ref: "#/components/responses/Error"
 
   # ── nutrition (K-208, K-209, ADR-008) ──────────────────────────────────────────────────────────────────────
-  /v1/foods:
-    get:
+  /v1/foods/search:
+    post:
       tags: [nutrition]
       operationId: searchFoods
       summary: Search the food database by name
-      parameters:
-        - name: q
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 2
-        - $ref: "#/components/parameters/Limit"
+      description: A POST so the search words stay out of URLs and access logs (V3).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FoodSearch"
       responses:
         "200":
           description: Best matches first
@@ -369,17 +387,18 @@ paths:
                   $ref: "#/components/schemas/Food"
         default:
           $ref: "#/components/responses/Error"
-  /v1/foods/barcodes/{gtin}:
-    get:
+  /v1/foods/barcode-lookup:
+    post:
       tags: [nutrition]
-      operationId: getFoodByBarcode
-      parameters:
-        - name: gtin
-          in: path
-          required: true
-          schema:
-            type: string
-            pattern: "^[0-9]{8,14}$"
+      operationId: lookUpBarcode
+      summary: The product with this barcode (USDA FDC Branded Foods, ADR-008)
+      description: A POST so the barcode stays out of URLs and access logs (V3). NOT_FOUND when FDC has no such product.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BarcodeLookup"
       responses:
         "200":
           description: The product
@@ -679,6 +698,9 @@ paths:
       tags: [check-in]
       operationId: answerCheckIn
       summary: Answer the check-in; the engine makes this week's call
+      description: |
+        The answers name their week (`weekOf`). Sent again with the same clientId, the stored call comes back (200) and
+        the engine does not run twice; answers for a week that is not the current one are 409 CONFLICT.
       requestBody:
         required: true
         content:
@@ -718,6 +740,7 @@ paths:
       tags: [decision]
       operationId: getCurrentDecision
       summary: The call in force and the targets it set
+      description: NOT_FOUND before the first check-in has produced a call.
       responses:
         "200":
           description: The current call
@@ -749,9 +772,26 @@ paths:
       tags: [decision]
       operationId: applyDecision
       summary: Apply the call; only the one thing it changes moves, everything else stays (U3)
+      description: Only the current call can be applied (409 CONFLICT otherwise); applying twice changes nothing.
       responses:
         "200":
           description: The targets after the call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Targets"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/decisions/{id}/undo:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [decision]
+      operationId: undoDecision
+      summary: Put the targets back as they were before the call was applied (kept in the audit trail)
+      responses:
+        "200":
+          description: The targets after the undo
           content:
             application/json:
               schema:
@@ -779,6 +819,9 @@ paths:
       tags: [coach]
       operationId: askCoach
       summary: Ask about a call or the plan; the coach explains, it does not decide (U1)
+      description: |
+        The question goes to a third-party language model, so it needs the THIRD_PARTY_AI consent (V2); without it the
+        answer is 403 CONSENT_REQUIRED. Quota: coach_messages_per_day (429 RATE_LIMITED).
       requestBody:
         required: true
         content:
@@ -941,6 +984,32 @@ components:
         high:
           type: integer
           minimum: 0
+    KcalBalance:
+      type: object
+      description: What is left of a target, as a range; negative when the day went past it. low ≤ high.
+      required: [low, high]
+      properties:
+        low:
+          type: integer
+        high:
+          type: integer
+    GramBalance:
+      type: object
+      description: Grams left of a target, as a range; negative past it. low ≤ high.
+      required: [low, high]
+      properties:
+        low:
+          type: integer
+        high:
+          type: integer
+    Left:
+      type: object
+      required: [kcal, proteinG]
+      properties:
+        kcal:
+          $ref: "#/components/schemas/KcalBalance"
+        proteinG:
+          $ref: "#/components/schemas/GramBalance"
     ClientId:
       type: string
       format: uuid
@@ -957,6 +1026,11 @@ components:
         nonce:
           type: string
           description: The raw nonce the phone hashed into its Apple request.
+        authorizationCode:
+          type: string
+          description: |
+            Apple's one-time code, exchanged on the server for the refresh token that account deletion must revoke
+            (K-214; Apple's rule on deleting accounts that use Sign in with Apple — verified in K-203).
     RefreshRequest:
       type: object
       required: [refreshToken]
@@ -1133,6 +1207,15 @@ components:
             id:
               type: string
               format: uuid
+    TrendPoint:
+      type: object
+      required: [day, kg]
+      properties:
+        day:
+          type: string
+          format: date
+        kg:
+          type: number
     NewWaistMeasurement:
       type: object
       required: [clientId, measuredOn, cm]
@@ -1192,9 +1275,10 @@ components:
         sleepMinutes:
           type: integer
           minimum: 0
-        activeEnergy:
-          $ref: "#/components/schemas/KcalRange"
-          description: Apple Health's active energy, a device estimate; stored as a range around its figure.
+        activeEnergyKcal:
+          type: integer
+          minimum: 0
+          description: Apple Health's own figure, passed through as given; any range around it is made on the server.
 
     # ── nutrition ────────────────────────────────────────────────────────────────────────────────────────────
     Food:
@@ -1250,14 +1334,35 @@ components:
           type: string
           enum: [WEIGHED, ESTIMATED]
           description: A weighed amount narrows the range; an estimated one widens it.
+    FoodSearch:
+      type: object
+      required: [q]
+      properties:
+        q:
+          type: string
+          minLength: 2
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+    BarcodeLookup:
+      type: object
+      required: [gtin]
+      properties:
+        gtin:
+          type: string
+          pattern: "^[0-9]{8,14}$"
     FoodEstimateRequest:
       type: object
+      description: |
+        Structured items only. Free text and meal photos need a language model, which only comes with the third-party
+        AI consent (M5, V2) — added then, in a later contract version.
+      required: [items]
       properties:
-        text:
-          type: string
-          description: The user's own words, e.g. "2 eggs and toast".
         items:
           type: array
+          minItems: 1
           items:
             $ref: "#/components/schemas/ItemRequest"
     ItemRequest:
@@ -1314,8 +1419,15 @@ components:
       enum: [BREAKFAST, LUNCH, DINNER, SNACK]
     NewMeal:
       type: object
-      description: Either items, or repeatOf (an earlier meal logged again).
+      description: Either items, or repeatOf (an earlier meal logged again) — exactly one.
       required: [clientId, eatenAt, slot]
+      oneOf:
+        - required: [items]
+          not:
+            required: [repeatOf]
+        - required: [repeatOf]
+          not:
+            required: [items]
       properties:
         clientId:
           $ref: "#/components/schemas/ClientId"
@@ -1366,13 +1478,7 @@ components:
         eaten:
           $ref: "#/components/schemas/Nutrients"
         left:
-          type: object
-          required: [kcal, proteinG]
-          properties:
-            kcal:
-              $ref: "#/components/schemas/KcalRange"
-            proteinG:
-              $ref: "#/components/schemas/GramRange"
+          $ref: "#/components/schemas/Left"
 
     # ── training ─────────────────────────────────────────────────────────────────────────────────────────────
     Exercise:
@@ -1405,10 +1511,28 @@ components:
           enum: [EXTERNAL, BODYWEIGHT, BODYWEIGHT_PLUS_EXTERNAL]
         unilateral:
           type: boolean
+        setupFields:
+          type: array
+          description: What the user sets on the machine and keeps on the phone (seat, pad, grip; ADR-017).
+          items:
+            type: string
+        clips:
+          $ref: "#/components/schemas/ExerciseClips"
+    ExerciseClips:
+      type: object
+      description: The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR.
+      required: [firstRep, lastRep]
+      properties:
+        firstRep:
+          type: string
+        lastRep:
+          type: string
     Program:
       type: object
       required: [id, source, days]
       properties:
+        deload:
+          $ref: "#/components/schemas/DeloadWeek"
         id:
           type: string
           format: uuid
@@ -1419,6 +1543,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProgramDay"
+    DeloadWeek:
+      type: object
+      description: A lighter week in force (K-217); ends on its own after `until`.
+      required: [setsFactor, until]
+      properties:
+        setsFactor:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 1
+        until:
+          type: string
+          format: date
     ProgramDay:
       type: object
       required: [id, name, exercises]
@@ -1437,13 +1573,18 @@ components:
             $ref: "#/components/schemas/PlannedExercise"
     PlannedExercise:
       type: object
-      required: [exerciseId, sets, reps, targetRir]
+      required: [exerciseId, baseSets, sets, reps, targetRir]
       properties:
         exerciseId:
           type: string
+        baseSets:
+          type: integer
+          minimum: 1
+          description: The program's sets.
         sets:
           type: integer
           minimum: 1
+          description: This week's sets (baseSets, or fewer in a deload).
         reps:
           $ref: "#/components/schemas/RepRange"
         targetRir:
@@ -1453,6 +1594,10 @@ components:
           type: number
           minimum: 0
           description: The load for the next session after progression and deload (K-217); absent until known.
+        nextReps:
+          type: integer
+          minimum: 1
+          description: The reps to aim for next session (double progression, K-217); absent until known.
     RepRange:
       type: object
       required: [min, max]
@@ -1588,11 +1733,13 @@ components:
     # ── check-in ─────────────────────────────────────────────────────────────────────────────────────────────
     QuestionKind:
       type: string
-      description: What the engine can be missing (CheckIn in the engine) plus the scales the app asks with.
-      enum: [ADHERENCE, TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED]
+      description: |
+        What the engine can be missing (its CheckIn) plus the scales the app asks with. Adherence is not asked: it is the
+        week's consistency, counted from the logs (ADR-020 L-6).
+      enum: [TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED]
     Question:
       type: object
-      required: [kind, format, copyKey]
+      required: [kind, format, copyKey, reasonCopyKey]
       properties:
         kind:
           $ref: "#/components/schemas/QuestionKind"
@@ -1606,6 +1753,9 @@ components:
             type: string
         copyKey:
           type: string
+        reasonCopyKey:
+          type: string
+          description: Why this is asked, shown next to the question (U9).
     CheckIn:
       type: object
       required: [weekOf, questions, answered]
@@ -1638,8 +1788,14 @@ components:
           exclusiveMinimum: 0
     CheckInAnswers:
       type: object
-      required: [answers]
+      required: [clientId, weekOf, answers]
       properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        weekOf:
+          type: string
+          format: date
+          description: The check-in day these answers belong to (CheckIn.weekOf).
         answers:
           type: array
           items:
@@ -1648,7 +1804,7 @@ components:
     # ── decision (the engine's Decision, field for field — ContractTests) ────────────────────────────────────
     Decision:
       type: object
-      required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, applied]
+      required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, application]
       properties:
         id:
           type: string
@@ -1671,9 +1827,22 @@ components:
         copyKey:
           type: string
           description: Where the words for this call live in en.json.
-        applied:
-          type: boolean
-          description: Whether the user applied it (K-216); calls that change nothing count as applied.
+        application:
+          $ref: "#/components/schemas/Application"
+    Application:
+      type: object
+      description: Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED.
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [NOT_NEEDED, PENDING, APPLIED, UNDONE]
+        appliedAt:
+          type: string
+          format: date-time
+        undoneAt:
+          type: string
+          format: date-time
     DecisionPage:
       type: object
       required: [items]

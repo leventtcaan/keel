@@ -198,6 +198,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/weight-trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The trend weight per day (7-day average, the engine's WeightTrend), days without weigh-ins left out */
+        get: operations["getWeightTrend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waist-measurements": {
         parameters: {
             query?: never;
@@ -248,33 +265,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/foods": {
+    "/v1/foods/search": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Search the food database by name */
-        get: operations["searchFoods"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Search the food database by name
+         * @description A POST so the search words stay out of URLs and access logs (V3).
+         */
+        post: operations["searchFoods"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/foods/barcodes/{gtin}": {
+    "/v1/foods/barcode-lookup": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getFoodByBarcode"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * The product with this barcode (USDA FDC Branded Foods, ADR-008)
+         * @description A POST so the barcode stays out of URLs and access logs (V3). NOT_FOUND when FDC has no such product.
+         */
+        post: operations["lookUpBarcode"];
         delete?: never;
         options?: never;
         head?: never;
@@ -527,7 +551,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Answer the check-in; the engine makes this week's call */
+        /**
+         * Answer the check-in; the engine makes this week's call
+         * @description The answers name their week (`weekOf`). Sent again with the same clientId, the stored call comes back (200) and
+         *     the engine does not run twice; answers for a week that is not the current one are 409 CONFLICT.
+         */
         post: operations["answerCheckIn"];
         delete?: never;
         options?: never;
@@ -559,7 +587,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The call in force and the targets it set */
+        /**
+         * The call in force and the targets it set
+         * @description NOT_FOUND before the first check-in has produced a call.
+         */
         get: operations["getCurrentDecision"];
         put?: never;
         post?: never;
@@ -598,8 +629,30 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Apply the call; only the one thing it changes moves, everything else stays (U3) */
+        /**
+         * Apply the call; only the one thing it changes moves, everything else stays (U3)
+         * @description Only the current call can be applied (409 CONFLICT otherwise); applying twice changes nothing.
+         */
         post: operations["applyDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/decisions/{id}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put the targets back as they were before the call was applied (kept in the audit trail) */
+        post: operations["undoDecision"];
         delete?: never;
         options?: never;
         head?: never;
@@ -632,7 +685,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ask about a call or the plan; the coach explains, it does not decide (U1) */
+        /**
+         * Ask about a call or the plan; the coach explains, it does not decide (U1)
+         * @description The question goes to a third-party language model, so it needs the THIRD_PARTY_AI consent (V2); without it the
+         *     answer is 403 CONSENT_REQUIRED. Quota: coach_messages_per_day (429 RATE_LIMITED).
+         */
         post: operations["askCoach"];
         delete?: never;
         options?: never;
@@ -665,6 +722,20 @@ export interface components {
             low: number;
             high: number;
         };
+        /** @description What is left of a target, as a range; negative when the day went past it. low ≤ high. */
+        KcalBalance: {
+            low: number;
+            high: number;
+        };
+        /** @description Grams left of a target, as a range; negative past it. low ≤ high. */
+        GramBalance: {
+            low: number;
+            high: number;
+        };
+        Left: {
+            kcal: components["schemas"]["KcalBalance"];
+            proteinG: components["schemas"]["GramBalance"];
+        };
         /**
          * Format: uuid
          * @description Made by the phone when the record is created; the same record sent again is stored once.
@@ -675,6 +746,11 @@ export interface components {
             identityToken: string;
             /** @description The raw nonce the phone hashed into its Apple request. */
             nonce: string;
+            /**
+             * @description Apple's one-time code, exchanged on the server for the refresh token that account deletion must revoke
+             *     (K-214; Apple's rule on deleting accounts that use Sign in with Apple — verified in K-203).
+             */
+            authorizationCode?: string;
         };
         RefreshRequest: {
             refreshToken: string;
@@ -771,6 +847,11 @@ export interface components {
             /** Format: uuid */
             id: string;
         };
+        TrendPoint: {
+            /** Format: date */
+            day: string;
+            kg: number;
+        };
         NewWaistMeasurement: {
             clientId: components["schemas"]["ClientId"];
             /** Format: date */
@@ -802,8 +883,8 @@ export interface components {
             day: string;
             steps?: number;
             sleepMinutes?: number;
-            /** @description Apple Health's active energy, a device estimate; stored as a range around its figure. */
-            activeEnergy?: components["schemas"]["KcalRange"];
+            /** @description Apple Health's own figure, passed through as given; any range around it is made on the server. */
+            activeEnergyKcal?: number;
         };
         Food: {
             /** @description The database's identifier (USDA FoodData Central, ADR-008). */
@@ -834,10 +915,20 @@ export interface components {
              */
             certainty?: "WEIGHED" | "ESTIMATED";
         };
+        FoodSearch: {
+            q: string;
+            /** @default 20 */
+            limit: number;
+        };
+        BarcodeLookup: {
+            gtin: string;
+        };
+        /**
+         * @description Structured items only. Free text and meal photos need a language model, which only comes with the third-party
+         *     AI consent (M5, V2) — added then, in a later contract version.
+         */
         FoodEstimateRequest: {
-            /** @description The user's own words, e.g. "2 eggs and toast". */
-            text?: string;
-            items?: components["schemas"]["ItemRequest"][];
+            items: components["schemas"]["ItemRequest"][];
         };
         ItemRequest: {
             foodId: string;
@@ -865,7 +956,7 @@ export interface components {
         };
         /** @enum {string} */
         MealSlot: "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
-        /** @description Either items, or repeatOf (an earlier meal logged again). */
+        /** @description Either items, or repeatOf (an earlier meal logged again) — exactly one. */
         NewMeal: {
             clientId: components["schemas"]["ClientId"];
             /** Format: date-time */
@@ -874,7 +965,7 @@ export interface components {
             items?: components["schemas"]["ItemRequest"][];
             /** Format: uuid */
             repeatOf?: string;
-        };
+        } & (unknown | unknown);
         Meal: {
             /** Format: uuid */
             id: string;
@@ -892,10 +983,7 @@ export interface components {
             /** @description The day's target (a plan number, one figure). */
             targetKcal: number;
             eaten: components["schemas"]["Nutrients"];
-            left: {
-                kcal: components["schemas"]["KcalRange"];
-                proteinG: components["schemas"]["GramRange"];
-            };
+            left: components["schemas"]["Left"];
         };
         Exercise: {
             id: string;
@@ -910,13 +998,28 @@ export interface components {
             /** @enum {string} */
             load?: "EXTERNAL" | "BODYWEIGHT" | "BODYWEIGHT_PLUS_EXTERNAL";
             unilateral?: boolean;
+            /** @description What the user sets on the machine and keeps on the phone (seat, pad, grip; ADR-017). */
+            setupFields?: string[];
+            clips?: components["schemas"]["ExerciseClips"];
+        };
+        /** @description The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR. */
+        ExerciseClips: {
+            firstRep: string;
+            lastRep: string;
         };
         Program: {
+            deload?: components["schemas"]["DeloadWeek"];
             /** Format: uuid */
             id: string;
             /** @enum {string} */
             source: "GENERATED" | "OWN";
             days: components["schemas"]["ProgramDay"][];
+        };
+        /** @description A lighter week in force (K-217); ends on its own after `until`. */
+        DeloadWeek: {
+            setsFactor: number;
+            /** Format: date */
+            until: string;
         };
         ProgramDay: {
             /** Format: uuid */
@@ -928,11 +1031,16 @@ export interface components {
         };
         PlannedExercise: {
             exerciseId: string;
+            /** @description The program's sets. */
+            baseSets: number;
+            /** @description This week's sets (baseSets, or fewer in a deload). */
             sets: number;
             reps: components["schemas"]["RepRange"];
             targetRir: number;
             /** @description The load for the next session after progression and deload (K-217); absent until known. */
             nextLoadKg?: number;
+            /** @description The reps to aim for next session (double progression, K-217); absent until known. */
+            nextReps?: number;
         };
         RepRange: {
             min: number;
@@ -1001,10 +1109,11 @@ export interface components {
             id: string;
         };
         /**
-         * @description What the engine can be missing (CheckIn in the engine) plus the scales the app asks with.
+         * @description What the engine can be missing (its CheckIn) plus the scales the app asks with. Adherence is not asked: it is the
+         *     week's consistency, counted from the logs (ADR-020 L-6).
          * @enum {string}
          */
-        QuestionKind: "ADHERENCE" | "TRAINING" | "RECOVERY" | "SLEEP_QUALITY" | "ENERGY" | "LOOK" | "WAIST" | "APPETITE" | "CYCLE_STOPPED";
+        QuestionKind: "TRAINING" | "RECOVERY" | "SLEEP_QUALITY" | "ENERGY" | "LOOK" | "WAIST" | "APPETITE" | "CYCLE_STOPPED";
         Question: {
             kind: components["schemas"]["QuestionKind"];
             /** @enum {string} */
@@ -1012,6 +1121,8 @@ export interface components {
             /** @description CHOICE only — the allowed answers. */
             choices?: string[];
             copyKey: string;
+            /** @description Why this is asked, shown next to the question (U9). */
+            reasonCopyKey: string;
         };
         CheckIn: {
             /**
@@ -1030,6 +1141,12 @@ export interface components {
             cm?: number;
         };
         CheckInAnswers: {
+            clientId: components["schemas"]["ClientId"];
+            /**
+             * Format: date
+             * @description The check-in day these answers belong to (CheckIn.weekOf).
+             */
+            weekOf: string;
             answers: components["schemas"]["Answer"][];
         };
         Decision: {
@@ -1044,8 +1161,16 @@ export interface components {
             nextReview: string;
             /** @description Where the words for this call live in en.json. */
             copyKey: string;
-            /** @description Whether the user applied it (K-216); calls that change nothing count as applied. */
-            applied: boolean;
+            application: components["schemas"]["Application"];
+        };
+        /** @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED. */
+        Application: {
+            /** @enum {string} */
+            state: "NOT_NEEDED" | "PENDING" | "APPLIED" | "UNDONE";
+            /** Format: date-time */
+            appliedAt?: string;
+            /** Format: date-time */
+            undoneAt?: string;
         };
         DecisionPage: {
             items: components["schemas"]["Decision"][];
@@ -1599,6 +1724,32 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    getWeightTrend: {
+        parameters: {
+            query: {
+                /** @description First day, inclusive */
+                from: components["parameters"]["From"];
+                /** @description Last day, inclusive */
+                to: components["parameters"]["To"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One point per day that has a trend */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendPoint"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     listWaistMeasurements: {
         parameters: {
             query: {
@@ -1688,15 +1839,16 @@ export interface operations {
     };
     searchFoods: {
         parameters: {
-            query: {
-                q: string;
-                limit?: components["parameters"]["Limit"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoodSearch"];
+            };
+        };
         responses: {
             /** @description Best matches first */
             200: {
@@ -1710,16 +1862,18 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    getFoodByBarcode: {
+    lookUpBarcode: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                gtin: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BarcodeLookup"];
+            };
+        };
         responses: {
             /** @description The product */
             200: {
@@ -2198,6 +2352,29 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The targets after the call */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Targets"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    undoDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The targets after the undo */
             200: {
                 headers: {
                     [name: string]: unknown;

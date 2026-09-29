@@ -22,10 +22,20 @@ birebir, kalori alanları aralık (U5), yağ yüzdesi yok (U4). Alan adları bac
 5. **Hata:** tek `Error` gövdesi (`code`, `message`), her işlemde `default` cevabı; mesajda sağlık verisi yok (V3).
 6. **Karar:** `Decision` motorun `Decision`'ının alanlarını birebir taşır (+ `id`, `madeOn`, `applied`); `Action` bir
    etiketli birleşim (`oneOf` + `discriminator: type`), her türün alanları motordaki record'un bileşenleriyle aynı adda.
-7. **Sayılar:** tahmin olan her kalori `KcalRange {low, high}`, gram tahmini `GramRange`; kullanıcının izlediği plan
-   sayıları (`targetKcal`, adım olarak `kcalPerDay`) tek sayı (ADR-020 L-13). Apple Health'in aktif enerjisi de bir
-   cihaz tahmini → aralık.
-8. **Fotoğraf:** sunucuya yalnız telefondaki karşılaştırmanın sonucu gider (`look`), görüntü ya da vücut ölçümü değil (V1).
+7. **Sayılar:** tahmin olan her kalori `KcalRange {low, high}` (≥ 0), bir hedeften kalan `KcalBalance` (eksi olabilir,
+   gün hedefi aştıysa), gram için `GramRange`/`GramBalance`. Hedef ve kararın adımı tek sayı (`targetKcal`, `kcalPerDay`;
+   U5: "Hedef ve karar tek sayı olabilir"). Apple Health'in aktif enerjisi cihazın kendi sayısı olarak geçer
+   (`activeEnergyKcal`); aralık gerekirse sunucuda parametreyle yapılır (K2). Test her derinlikte yürür.
+8. **Fotoğraf:** sunucuya yalnız telefondaki karşılaştırmanın sonucu gider (`look`), görüntü değil (V1). Motorun iç yağ
+   tahmininin (`fatProxyPct`, faz kapısı ve düşük enerji ağı için) **nereden geleceği açık** — sağlık/ürün kararı,
+   Levent'e soru (DURUM #11); cevaba göre alan eklenir (eklemeli, kırıcı değil). O zamana dek bu iki kural çalışmaz.
+10. **Veri URL'de değil:** yemek araması ve barkod `POST` gövdesinde (`/v1/foods/search`, `/v1/foods/barcode-lookup`),
+    erişim loglarına düşmez (V3).
+11. **Check-in cevabı** `clientId` + `weekOf` taşır: tekrar gönderim saklı kararı döndürür (motor iki kez çalışmaz),
+    başka haftanın cevabı 409. **Karar uygulama** durumu `application.state` (NOT_NEEDED/PENDING/APPLIED/UNDONE) +
+    zamanları; `POST …/apply` ve `…/undo` (K-216 denetim izi). Uyum sorulmaz, kayıtlardan sayılır (ADR-020 L-6).
+12. **Serbest metin ve fotoğraf tahmini v1'de yok** (dil modeli gerektirir → üçüncü taraf AI rızası, M5, V2);
+    koç (`askCoach`) aynı rızayı ister, yoksa 403 CONSENT_REQUIRED.
 9. **Araçlar:** `contracts/package.json` — `openapi-typescript` 7.13.0 + TypeScript 5.9.3 (openapi-typescript TS 6'yı
    desteklemiyor; uygulamanın TS'sine dokunmamak için ayrı proje). `npm run generate` → `apps/mobile/src/api/schema.ts`;
    `npm run check` CI'da (Mobile işi): belge çözülemezse ya da tipler eskiyse kırmızı. Proje kuralları
@@ -44,12 +54,12 @@ birebir, kalori alanları aralık (U5), yağ yüzdesi yok (U4). Alan adları bac
 | `@redocly/cli` | Telemetri varsayılan açık; ek araç |
 | openapi-typescript'i uygulamaya kurmak (`overrides` ile TS 6) | Desteklenmeyen eşleşmeyi uygulamanın bağımlılık ağacına sokar |
 | Karar eylemini düz `type` + isteğe bağlı alanlar | Hangi alanın hangi türde dolu olduğu tipte görünmez |
-| Her kalori alanı aralık (hedef dahil) | Kullanıcıya tek sayı ilkesiyle çelişir (L-13); hedef bir tahmin değil, plan |
+| Her kalori alanı aralık (hedef dahil) | Hedef bir tahmin değil, plan; U5 hedefe ve karara tek sayı izni veriyor |
 
 ## Sonuçlar
 Olumlu: mobil tipler üretilir ve CI'da güncelliği kontrol edilir; sözleşme motorla birlikte değişmek zorunda.
 Olumsuz: `openapi.yaml` büyük (≈1.850 satır); `ContractTests` backend'de, sözleşme dosyasını göreli yolla okur.
-Açık: `FoodEstimateRequest` için fotoğraf yolu yok — üçüncü taraf AI (M5) eklendiğinde ayrı ADR ve rıza kapısıyla.
+Açık: yağ tahmininin kaynağı (madde 8, Levent); serbest metin/fotoğraf tahmini (madde 12, M5).
 Durum modu (seyahat, hastalık) ve abonelik uç noktaları kendi görevlerinde eklenecek.
 
 ## Geri dönmenin maliyeti
