@@ -1,0 +1,328 @@
+# Golden scenarios (K-113): realistic user journeys, week by week, through the assembled engine.
+# Each week: the user weighs in at that week's weight — every morning, or `mornings` times, spread over the week and
+# always on the check-in morning (0 = no weigh-in that week); `mornings` can be set for the journey or for one week.
+# The check-in is at the end of the week. The harness applies each decision to the plan (a calorie change starts a new
+# plan the next day, a phase change starts a new phase) — so the expected sequence tests the engine's timing as well
+# as its rules.
+# Expectations are derived from the rules by hand, never copied from the engine's output; the arithmetic of the
+# less obvious ones is in their comment.
+# Shorthand: a NO_DECISION_YET is its reason (`observing`, `window_not_full`, `data_insufficient`,
+# `wait_one_more_week`, `check_in_needed_*`); any other decision is action[:kcal]/reason, the reason being the first
+# one. `{is: …, next: N, confidence: …}` also pins the review day (N days after the check-in) and the confidence.
+# Defaults: 30 years, 180 cm (men) / 165 cm (women), activity unknown (×1.6), 300 kcal exercise a day, adherence 0.9,
+# training stable. The starting target is the maintenance estimate (Mifflin-St Jeor × activity) at the first weight:
+# a 30-year-old 180 cm man at 80 kg, (800 + 1125 − 150 + 5) × 1.6 = 2848 kcal. Timing: a man is observed 14 days, so
+# week 1 observes, week 2 waits for the 21-day window and week 3 is the first call; a woman is observed 28 days and her
+# first call is week 4. Movement is "the window's first and last weekly means differ by more than 0.58 kg" (L-10).
+
+scenarios:
+  - id: GS-01
+    title: "Man cutting 0.6 kg a week on plan: two weeks of observing, then keep going"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.2, 77.6, 77.0]
+    expect: [{is: observing, next: 7, confidence: low}, {is: window_not_full, next: 7},
+             {is: continue/toward_goal, next: 7, confidence: high}, continue/toward_goal, continue/toward_goal,
+             continue/toward_goal]
+
+  - id: GS-02
+    title: "Man cutting, two flat weeks: one step down, a new three-week window, then moving again"
+    user: {sex: male, phase: cut}
+    # Week 5 [78.8, 78.2, 78.2]: 0.6 > 0.58, still moving. Week 6 all 78.2: flat, the two weeks before inside the
+    # margin → 2 flat weeks > flat_wait_weeks 1 → 2848 − 500; BMR at 78.2 is 1762.
+    weeks: [80.0, 79.4, 78.8, 78.2, 78.2, 78.2, 77.8, 77.2, 76.6]
+    expect: [observing, window_not_full, continue/toward_goal, continue/toward_goal, continue/toward_goal,
+             {is: "adjust_calories:-500/not_toward_goal", next: 21, confidence: high},
+             window_not_full, window_not_full, continue/toward_goal]
+
+  - id: GS-03
+    title: "Flat weight but under half of the plan done: fix adherence, calories stay"
+    user: {sex: male, phase: cut}
+    checkin: {adherence: 0.45}
+    weeks: [80.0, 80.0, 80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, fix_adherence/adherence_low, fix_adherence/adherence_low, fix_adherence/adherence_low]
+
+  - id: GS-04
+    title: "Flat weight, 60 % of the plan: softer adherence nudge, calories stay (L-9)"
+    user: {sex: male, phase: cut}
+    checkin: {adherence: 0.6}
+    weeks: [80.0, 80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, fix_adherence/adherence_partial, fix_adherence/adherence_partial]
+
+  - id: GS-05
+    title: "Flat on a cut while lifts slip: red flag, no calorie cut (G7 K-98)"
+    user: {sex: male, phase: cut}
+    checkin: {training: declining}
+    weeks: [80.0, 80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, fix_training/performance_red_flag, fix_training/performance_red_flag]
+
+  - id: GS-06
+    title: "Light man losing 1.2 kg a week: the weekly cap raises calories as soon as it can measure"
+    user: {sex: male, phase: cut}
+    # Week 2 is the first with two dense weeks after the first 14 days: 1.2 > min(1.0, 1 % of 68.8) → +500, a safety
+    # call during the observation. Week 3 again (1.2 > 0.676). Week 4 0.4: under the cap; the new plan's window runs.
+    weeks: [70.0, 68.8, 67.6, 67.2, 66.8]
+    expect: [observing, {is: "increase_calories:500/loss_rate_cap", next: 7, confidence: high},
+             "increase_calories:500/loss_rate_cap", window_not_full, window_not_full]
+
+  - id: GS-07
+    title: "Woman cutting 0.4 kg a week: four weeks of observing (28-day window), then keep going"
+    user: {sex: female, phase: cut}
+    weeks: [65.0, 64.6, 64.2, 63.8, 63.4, 63.0]
+    expect: [{is: observing, next: 21}, observing, observing, continue/toward_goal, continue/toward_goal, continue/toward_goal]
+
+  - id: GS-08
+    title: "Woman training hard on too little food: raise at once, and later a cut step stops at the energy floor"
+    user: {sex: female, phase: cut, fat_proxy_pct: 30, exercise_kcal: 1000}
+    # Target 2112 (60 kg). Fat-free mass 42 kg: (2112 − 1000) / 42 = 26.5 ≤ 30 → +500 (the floor is 1261 + 1000 = 2261,
+    # only 149 away, so the full step). Week 5, window full and flat: 2612 − 500 = 2112 < 2261 → calories stay.
+    weeks: [60.0, 60.0, 60.0, 60.0, 60.0]
+    expect: ["increase_calories:500/low_energy_availability", window_not_full, window_not_full, window_not_full,
+             continue/energy_floor]
+
+  - id: GS-09
+    title: "Woman on a cut reports her cycle stopped: the one hard stop"
+    user: {sex: female, phase: cut}
+    weeks: [65.0, 64.6, 64.2, 63.8, 63.4, 63.0]
+    overrides: {6: {menstrual_loss_reported: true}}
+    expect: [observing, observing, observing, continue/toward_goal, continue/toward_goal,
+             {is: hard_stop/menstrual_loss_reported, confidence: high}]
+
+  - id: GS-10
+    title: "Man bulking at the ideal 1 kg a month: a 21-day window cannot confirm it, so +250 (detection limit, L-10)"
+    user: {sex: male, phase: bulk}
+    # Week 3 [70.0, 70.25, 70.5]: 0.5 ≤ 0.58, and both earlier weeks are inside the margin of the last → 2 flat weeks
+    # = bulk_stall_weeks → +250. The new plan's window is full again in week 6: the same.
+    weeks: [70.0, 70.25, 70.5, 70.75, 71.0, 71.25]
+    expect: [observing, window_not_full, "adjust_calories:250/not_toward_goal", window_not_full, window_not_full,
+             "adjust_calories:250/not_toward_goal"]
+
+  - id: GS-11
+    title: "Man bulking 0.5 kg a week: keep going; a week of five weigh-ins makes the call MEDIUM, not HIGH (K-112)"
+    user: {sex: male, phase: bulk}
+    # Week 3's window has a week under dense_weighins_per_week 6 (but over the minimum 4); weeks 6 onward are dense again.
+    weeks: [70.0, 70.5, 71.0, 71.5, 72.0, 72.5]
+    overrides: {3: {mornings: 5}}
+    expect: [observing, window_not_full, {is: continue/toward_goal, confidence: medium}, continue/toward_goal,
+             {is: continue/toward_goal, confidence: medium}, {is: continue/toward_goal, confidence: high}]
+
+  - id: GS-12
+    title: "Bulk stalls for two weeks: +250 from carbs (G3 K-10)"
+    user: {sex: male, phase: bulk}
+    # Week 4 [70.7, 71.4, 71.4]: 0.7 > 0.58, still moving. Week 5 all 71.4: 2 flat weeks → +250.
+    weeks: [70.0, 70.7, 71.4, 71.4, 71.4]
+    expect: [observing, window_not_full, continue/toward_goal, continue/toward_goal, "adjust_calories:250/not_toward_goal"]
+
+  - id: GS-13
+    title: "Bulk above the fat ceiling: switch to a cut once the data can carry a call (K-105)"
+    user: {sex: male, phase: bulk, fat_proxy_pct: 22}
+    weeks: [70.0, 70.5, 71.0]
+    expect: [observing, window_not_full, {is: change_phase/bulk_ceiling, confidence: medium}]
+
+  - id: GS-14
+    title: "Six months into a bulk, appetite gone: a mini cut (G7 K-102)"
+    user: {sex: male, phase: bulk, bulk_months_before: 6}
+    weeks: [70.0, 70.5, 71.0, 71.5]
+    overrides: {4: {appetite: gone}}
+    expect: [observing, window_not_full, continue/toward_goal, {is: mini_cut/appetite_gone, next: 28}]
+
+  - id: GS-15
+    title: "Bench stalls: hold the load, then a lighter week (K-110 rungs 1-2)"
+    user: {sex: male, phase: bulk}
+    weeks: [70.0, 70.5, 71.0, 71.5, 72.0, 72.5]
+    overrides: {4: {stalled_sessions: 3}, 5: {stalled_sessions: 5, weeks_load_held: 1}, 6: {rested_last_week: true, stalled_sessions: 6, weeks_load_held: 2}}
+    expect: [observing, window_not_full, continue/toward_goal, stop_load_increase/plateau, deload/load_held_still_stalled,
+             continue/toward_goal]
+
+  - id: GS-16
+    title: "Plan missed two weeks running: a full week off, even before a food call (G7 K-70/K-73)"
+    user: {sex: male, phase: cut}
+    # Week 4 [79.4, 78.8, 78.8]: 0.6 > 0.58, still moving; one missed week is not yet overtraining.
+    weeks: [80.0, 79.4, 78.8, 78.8, 78.8]
+    overrides: {4: {plan_missed_weeks: 1}, 5: {plan_missed_weeks: 2}}
+    expect: [observing, window_not_full, continue/toward_goal, continue/toward_goal, full_rest_week/plan_missed]
+
+  - id: GS-17
+    title: "Bulk, last week's loads lost: food and sleep first (G7 K-68 rung 3)"
+    user: {sex: male, phase: bulk}
+    weeks: [70.0, 70.5, 71.0, 71.5]
+    overrides: {4: {loads_below_last_week: true}}
+    expect: [observing, window_not_full, continue/toward_goal, fix_recovery/loads_regressed]
+
+  - id: GS-18
+    title: "Cut moving but looking worse, training fine, recovery poor: protein and sleep"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.2]
+    overrides: {4: {look: worse, recovery: poor}}
+    expect: [observing, window_not_full, continue/toward_goal, fix_recovery/recovery_poor]
+
+  - id: GS-19
+    title: "Cut moving but looking worse with everything fine: genetic limit, ease the deficit (L-5)"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 79.4, 78.8, 78.2]
+    overrides: {4: {look: worse, recovery: good}}
+    expect: [observing, window_not_full, continue/toward_goal, "adjust_calories:500/genetic_limit"]
+
+  - id: GS-20
+    title: "Beginner who weighs in twice a week: the engine keeps asking for data instead of guessing (U3)"
+    user: {sex: male, phase: cut}
+    # Weigh-ins on days 3 and 6: the first is on day 3, so the first 14 days run to day 16 — week 2 is still inside
+    # them; from week 3 every week has 2 < min_weighins_per_week 4.
+    mornings: 2
+    weeks: [80.0, 79.5, 79.0, 78.5]
+    expect: [observing, data_insufficient, data_insufficient, {is: data_insufficient, confidence: low}]
+
+  - id: GS-21
+    title: "Small older man flat on a cut: one step, then BMR is the floor and movement goes up (G2 K-11, E #10)"
+    user: {sex: male, phase: cut, age: 50, height: 160, activity: inactive}
+    # BMR 550 + 1000 − 250 + 5 = 1305; target 1305 × 1.4 = 1827. Week 3: 1327 ≥ 1305 → −500. Week 6: 827 < 1305.
+    weeks: [55.0, 55.0, 55.0, 55.0, 55.0, 55.0, 55.0]
+    expect: [observing, window_not_full, "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full,
+             change_movement/bmr_floor, change_movement/bmr_floor]
+
+  - id: GS-22
+    title: "No training answer on a flat cut: the engine asks about training instead of guessing (U3)"
+    user: {sex: male, phase: cut}
+    checkin: {training: unknown}
+    weeks: [80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, check_in_needed_training]
+
+  - id: GS-23
+    title: "Man losing 0.29 kg a week: exactly the noise margin over the window reads as flat, so one step down (L-10)"
+    user: {sex: male, phase: cut}
+    weeks: [80.00, 79.71, 79.42]
+    expect: [observing, window_not_full, "adjust_calories:-500/not_toward_goal"]
+
+  - id: GS-24
+    title: "Man losing 0.5 kg a week, one flat week: it reads as two flat weeks, so one step down (L-10, open question)"
+    user: {sex: male, phase: cut}
+    # Week 5 [79.0, 78.5, 78.5]: 0.5 ≤ 0.58, not moving; 78.5 is flat and 79.0 is only 0.5 from 78.5, inside the
+    # margin → 2 flat weeks > flat_wait_weeks 1: no "one more week" (K-64). 2848 − 500 = 2348 ≥ BMR 1765.
+    weeks: [80.0, 79.5, 79.0, 78.5, 78.5, 78.0, 77.5, 77.0]
+    expect: [observing, window_not_full, continue/toward_goal, continue/toward_goal,
+             "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full, continue/toward_goal]
+
+  - id: GS-25
+    title: "Man losing 0.5 kg a week, one week of water: a step down, and the week after a step back up (open question)"
+    user: {sex: male, phase: cut}
+    # Week 5 [79.0, 78.5, 79.2]: the last week is 0.7 above the one before → the wrong way, no wait → −500.
+    # Week 6 the water is gone: 79.2 → 78.0 is 1.2 > min(1.0, 1 % of 78.0 = 0.78) → the weekly cap gives the 500 back.
+    weeks: [80.0, 79.5, 79.0, 78.5, 79.2, 78.0, 77.6, 77.2, 76.8]
+    expect: [observing, window_not_full, continue/toward_goal, continue/toward_goal,
+             "adjust_calories:-500/not_toward_goal", "increase_calories:500/loss_rate_cap",
+             window_not_full, window_not_full, continue/toward_goal]
+
+  - id: GS-26
+    title: "One sparse week: no call until it has left the window, and the promised day holds from week to week (U3)"
+    user: {sex: male, phase: cut}
+    # Week 4 has weigh-ins on days 24 and 27 only. Weeks are counted back from the day looked at, so with daily
+    # weigh-ins from day 28 the window is readable on days 29-31 and 36-38 but not for good until day 43 (the oldest
+    # block, day X−20..X−14, holds 4 from X = 43). Week 4 (day 27): next 16; week 5 (day 34): next 9; week 6 (day
+    # 41): next 2 — the same day each time. Week 7 (day 48): the sparse week is out of the window.
+    weeks: [80.0, 79.4, 78.8, 78.2, 77.6, 77.0, 76.4]
+    overrides: {4: {mornings: 2}}
+    expect: [observing, window_not_full, continue/toward_goal, {is: data_insufficient, next: 16},
+             {is: data_insufficient, next: 9}, {is: data_insufficient, next: 2},
+             {is: continue/toward_goal, confidence: high}]
+
+  - id: GS-27
+    title: "Twice-a-week weigher losing 1.2 kg a week: invisible to the weekly cap, caught by the 8-week loss (J1 C6)"
+    user: {sex: male, phase: cut, height: 190}
+    # Two weigh-ins a week are too few to read a weekly rate, so every week is data_insufficient. Week 9 (day 62): the
+    # trend 8 weeks back (days 0-6) is 100.0, now 90.4: 9.6 kg > 8 % of 100 and still falling → +500. Week 10 holds at
+    # 90.4: 8 weeks back is now 98.8, 8.4 kg > 7.9 still, but the loss has stopped — raising again would stack; the
+    # new plan's window comes before the weigh-in count (DataSufficiency order).
+    mornings: 2
+    weeks: [100.0, 98.8, 97.6, 96.4, 95.2, 94.0, 92.8, 91.6, 90.4, 90.4]
+    expect: [observing, data_insufficient, data_insufficient, data_insufficient, data_insufficient, data_insufficient,
+             data_insufficient, data_insufficient, {is: "increase_calories:500/rapid_loss", confidence: high},
+             window_not_full]
+
+  - id: GS-28
+    title: "Woman bulking at the ideal 0.5 kg a month: a 28-day window reads it as flat, so +250 every 28 days (L-10)"
+    user: {sex: female, phase: bulk}
+    # Week 4 [55.0 … 55.375]: 0.375 ≤ 0.58, all three earlier weeks inside the margin → 3 ≥ bulk_stall_weeks → +250.
+    # The new plan's 28-day window is full again in week 8: the same.
+    weeks: [55.0, 55.125, 55.25, 55.375, 55.5, 55.625, 55.75, 55.875]
+    expect: [observing, observing, observing, {is: "adjust_calories:250/not_toward_goal", next: 28},
+             window_not_full, window_not_full, window_not_full, "adjust_calories:250/not_toward_goal"]
+
+  - id: GS-29
+    title: "Woman bulking above her fat ceiling (30 %): a cut, and the cut then runs on its own window (K-105, J1 B1)"
+    user: {sex: female, phase: bulk, fat_proxy_pct: 31}
+    # 31 > 30 (ceiling) and ≤ 35 (fat first) → bulk_ceiling. The cut starts on day 28; its window is full on day 55.
+    # There, 60.0 → 59.1 is 0.9 > 0.58; energy availability (2112 − 300) / (59.1 × 0.69) ≈ 44 is not low; 31 % is not
+    # under the surplus line (22 %), so the gate leaves the cut alone.
+    weeks: [60.0, 60.1, 60.2, 60.3, 60.0, 59.7, 59.4, 59.1]
+    expect: [observing, observing, observing, change_phase/bulk_ceiling, window_not_full, window_not_full,
+             window_not_full, continue/toward_goal]
+
+  - id: GS-30
+    title: "Program hopper: the plateau count restarts with every new program, so no rung is ever reached (G6 K-35)"
+    user: {sex: male, phase: bulk}
+    # The app counts stalled sessions per lift; a new program starts the count again. Under plateau_sessions 3 the
+    # ladder stays silent. Changing program is not itself a signal the engine sees (M1).
+    weeks: [70.0, 70.5, 71.0, 71.5, 72.0, 72.5, 73.0]
+    overrides: {3: {stalled_sessions: 2}, 4: {stalled_sessions: 0}, 5: {stalled_sessions: 2}, 6: {stalled_sessions: 0},
+                7: {stalled_sessions: 2}}
+    expect: [observing, window_not_full, continue/toward_goal, continue/toward_goal, continue/toward_goal,
+             continue/toward_goal, continue/toward_goal]
+
+  - id: GS-31
+    title: "Woman losing 1 kg a week while her maintenance is still observed: the safety net does not wait"
+    user: {sex: female, phase: cut}
+    # Week 2 (day 13) is past the first 14 days with two dense weeks: 1.0 > min(1.0, 1 % of 59.0) → +500, which ends
+    # the observation. Week 3 again (1.0 > 0.58). Week 4: 0.5 < 0.575; the new plan's 28-day window runs.
+    weeks: [60.0, 59.0, 58.0, 57.5, 57.0]
+    expect: [observing, "increase_calories:500/loss_rate_cap", "increase_calories:500/loss_rate_cap",
+             window_not_full, window_not_full]
+
+  - id: GS-32
+    title: "Woman of 60, 155 cm, 75 kg, flat on a cut: a step would break the macro floors, so move more (L-11)"
+    user: {sex: female, phase: cut, age: 60, height: 155, activity: inactive}
+    # BMR 750 + 968.75 − 300 − 161 = 1257.75; target × 1.4 = 1761. A step: 1261 ≥ BMR 1258, but protein 2.2 g/kg
+    # (45+) 165 g + fat floor 0.75 g/kg 56 g + carbs 50 g = 660 + 504 + 200 = 1364 > 1261 → no honest split.
+    weeks: [75.0, 75.0, 75.0, 75.0, 75.0]
+    expect: [observing, observing, observing, change_movement/carb_squeeze, change_movement/carb_squeeze]
+
+  - id: GS-33
+    title: "Cut, a week up and back: the window is flat but last week moved, so wait one more week (G2 K-64)"
+    user: {sex: male, phase: cut}
+    # Week 3 [80.0, 80.7, 80.0]: 0 over the window, not moving; but last week fell 0.7 > 0.58 toward the goal, so it is
+    # not the wrong way, and no week before it is flat → 0 ≤ flat_wait_weeks → wait. Week 4 [80.7, 80.0, 80.0]: the
+    # high week is the first one now, 0.7 → reads as moving. Week 5 all 80.0: two flat weeks → −500.
+    # (In a man's 3-week window this pattern is the only way to a wait: one flat week after a clear drop already
+    # reads as moving — K-64 by construction, ADR-021.)
+    weeks: [80.0, 80.7, 80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, {is: wait_one_more_week, next: 7, confidence: low}, continue/toward_goal,
+             "adjust_calories:-500/not_toward_goal"]
+
+  - id: GS-34
+    title: "The same week with the waist going up: no waiting, one step down (G2 K-64: weight and waist flat)"
+    user: {sex: male, phase: cut}
+    weeks: [80.0, 80.7, 80.0, 80.0, 80.0]
+    overrides: {3: {waist: up}}
+    expect: [observing, window_not_full, "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full]
+
+  - id: GS-35
+    title: "No adherence answer on a flat week: the engine asks for it, calories stay (U3)"
+    user: {sex: male, phase: cut}
+    checkin: {adherence: ~}
+    weeks: [80.0, 80.0, 80.0]
+    expect: [observing, window_not_full, check_in_needed_adherence]
+
+  - id: GS-36
+    title: "Woman, one flat week after a clear drop inside her 4-week window: wait one more week (G2 K-64)"
+    user: {sex: female, phase: cut}
+    # 80 kg keeps the 0.7 drop under the weekly cap (0.8). Week 4 [80.0, 80.7, 80.0, 80.0]: 0 over the window; the
+    # last week is flat against the one before (1 flat week) and 0.7 under the one before that → 1 ≤ flat_wait_weeks →
+    # wait. Week 5 [80.7, 80.0, 80.0, 80.0]: 0.7 → moving. Week 6 all 80.0: 3 flat weeks → 2432 − 500 = 1932.
+    weeks: [80.0, 80.7, 80.0, 80.0, 80.0, 80.0]
+    expect: [observing, observing, observing, wait_one_more_week, continue/toward_goal, "adjust_calories:-500/not_toward_goal"]
+
+  - id: GS-37
+    title: "Woman training very hard on maintenance food: raised to the energy floor, more than one step (J1 L2.1)"
+    user: {sex: female, phase: cut, fat_proxy_pct: 30, exercise_kcal: 1500}
+    # Target 2112, fat-free mass 42 kg: (2112 − 1500) / 42 = 14.6. The floor is ⌊30 × 42⌋ + 1 + 1500 = 2761, 649 away:
+    # more than the 500 step, so all of it. Week 2: (2761 − 1500) / 42 = 30.02, above the line.
+    weeks: [60.0, 60.0]
+    expect: ["increase_calories:649/low_energy_availability", window_not_full]

@@ -496,7 +496,7 @@ tasks:
     module: engine
     type: test
     size: M
-    status: todo
+    status: done
     depends_on: [K-112]
     why: "Motorun bütün olarak doğru davrandığının regresyon kanıtı"
     acceptance:
