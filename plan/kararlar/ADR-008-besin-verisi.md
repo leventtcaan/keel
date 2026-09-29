@@ -1,5 +1,5 @@
 # ADR-008 · Besin verisi
-- **Durum:** KABUL (Levent, 2026-09-29)
+- **Durum:** KABUL (Levent, 2026-09-29) · **güncellendi:** ADR-020 (yalnız FDC) ve K-207 spike'ı (lisans, veri yolu)
 - **Tarih:** 2026-09-29 · **Karar veren:** Levent (öneren: agent)
 
 ## Bağlam
@@ -8,15 +8,46 @@ Kullanıcı girdisi sistematik olarak eksik bildirilir (%20-27) → ölçülen s
 (`arastirma/04-faz3-urun.md` Ö-14, §8.6).
 
 ## Karar
-- **Birincil kaynak: USDA FoodData Central** (genel gıdalar). **Barkod: Open Food Facts.**
+- **Tek kaynak: USDA FoodData Central** — genel gıdalar ve barkod (Branded Foods'taki GTIN). Open Food Facts
+  kullanılmaz (ADR-020: ODbL paylaşım-benzeri yükümlülüğünden kaçınma).
 - LLM serbest metni/fotoğrafı `{yemek, miktar, belirsizlik}` yapısına çevirir; kalori ve makro **veritabanı
   eşlemesinden** hesaplanır ve **aralık** olarak döner (U5).
 - **Gram sorusu** yalnız belirsizlik yüksek ve öğün günün kalorisini domine ediyorsa sorulur (U9).
 - **Sapma kalibrasyonu:** fotoğraf/metin tahmini mutlak değer değil, sapması öğrenilen bir seri olarak modellenir;
   gerçek referans kilo trendidir. Kullanıcının kişisel sapması zamanla öğrenilir.
-- **Lisans yükümlülükleri `[doğrulanmadı]`:** FDC'nin kamu malı (CC0) olduğu, Open Food Facts veritabanının ODbL
-  (paylaşım-benzeri, atıf) olduğu biliniyor; yükümlülükler ilk veri görevinde resmî sayfalardan doğrulanıp bu ADR'ye
-  işlenecek.
+- **Lisans (doğrulandı, K-207, 2026-09-29):** FDC API kılavuzu (fdc.nal.usda.gov/api-guide): "USDA FoodData Central
+  data are in the public domain and they are not copyrighted. They are published under CC0 1.0 Universal"; kaynak
+  olarak FoodData Central'ın anılması **isteniyor** (zorunluluk değil) → uygulamanın "Hakkında/Kaynaklar" ekranında
+  atıf satırı. OFF artık kullanılmadığı için ODbL yükümlülüğü yok.
+
+## Güncelleme — K-207 spike (2026-09-29, agent; teknik karar ADR-019)
+**Veri seti (resmî indirme sayfası, fdc.nal.usda.gov/download-datasets):**
+| Veri tipi | Son sürüm | CSV (sıkışık / açık) | Ne için |
+|---|---|---|---|
+| Foundation Foods | Nisan 2026 | 3,7 MB / 32 MB | işlenmemiş gıdalar, örnek bazlı değişkenlik |
+| SR Legacy | Nisan 2018 (son, güncellenmiyor) | 6,7 MB / 54 MB | geniş genel gıda kapsamı |
+| FNDDS (Survey) | Ekim 2024 (2021-2023) | 200 MB / 1,6 GB | pişmiş/karışık yemekler, porsiyonlar; 2 yılda bir |
+| Branded Foods | Nisan 2026 | 428 MB / 2,9 GB | barkodlu ürünler (GDSN, Label Insight); API'de aylık yayın tarihleri görülüyor |
+
+**API'de doğrulandı (DEMO_KEY, salt okuma):** Branded kaydında `gtinUpc` alanı var (14 haneye sıfırla doldurulmuş, ör.
+`00016000275287`), GTIN ile arama tek kaydı buluyor; besin değerleri **100 g başına tek sayı** (ör. enerji 359 kcal),
+`servingSize` + `householdServingFullText` porsiyonu veriyor. API: data.gov anahtarı, **1.000 istek/saat/IP**, aşımda 429.
+
+**Veri yolu kararı: toplu indirme + kendi veritabanımıza içe aktarma, çalışma anında API yok.**
+- Neden: (1) kullanıcının yemek araması ve barkodu **USDA'ya gitmez** (V2 ruhu: kullanıcıdan türeyen veri dışarı
+  çıkmaz); (2) saatlik 1.000 istek sınırı ve dış servis kesintisi ürünü durdurmaz; (3) sürümlenmiş, tekrar
+  üretilebilir veri (karar denetimi, ADR-003).
+- Kapsam, K-208: Foundation + SR Legacy + FNDDS (genel gıda ve yemek, ~1,7 GB açık CSV'den yalnız gereken tablolar:
+  gıda, besin (enerji + 3 makro), porsiyon). Branded: yalnız `gtin_upc`, ad, marka, porsiyon ve 4 besin sütunu
+  süzülerek (tam 2,9 GB değil). İçe aktarma bir komut (sürüm etiketiyle); yenileme: Branded ayda bir, diğerleri
+  yayın oldukça. Ham dosyalar repoya girmez.
+- **Aralık bizim modelimizden gelir:** FDC tek sayı verir; kcal/makro aralığı miktar belirsizliği (tartılmış /
+  tahmini) ve kaynak türünden türetilir — parametreleri K-208'de araştırmadan kaynakla (`arastirma/ham/F-…`, I2).
+
+**Bilinen zayıflık (Riskler'e yazıldı):** Türk markalı ürün kapsamı **yok denecek kadar az** — "ülker" 2 kayıt (ABD'ye
+ithal zeytinyağı), "eti", "torku", "tadım" 0 ya da ilgisiz. Barkod okuma Türkiye'deki ürünlerde çoğunlukla "bulunamadı"
+diyecek; genel gıda eşlemesi (Foundation/SR/FNDDS) çalışır. Seçenekler (ürün kararı, Levent): kullanıcıya etiketten
+elle giriş (tek sefer, sonra hafıza) · ileride Türkiye kaynağı (TürKomp vb., lisansı ayrıca doğrulanır).
 
 ## Neden
 Doğruluk + savunulabilirlik + maliyet. Sapma kalibrasyonu, "fotoğraf loglama adaptif TDEE'yi bozar" çelişkisini çözer.
@@ -32,7 +63,7 @@ Doğruluk + savunulabilirlik + maliyet. Sapma kalibrasyonu, "fotoğraf loglama a
 Orta.
 
 ## Etkilenen
-`nutrition`, `coach`.
+`nutrition` (K-208 içe aktarma, eşleme; K-209), `coach`, sözleşme `GET /v1/foods/barcodes/{gtin}` (ADR-024).
 
 ## Doğrulama
 Eşleme testleri; aralık çıktısı testleri; sapma kalibrasyonu simülasyon testi.

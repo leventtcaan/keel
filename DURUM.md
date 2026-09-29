@@ -33,7 +33,9 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-113 altın senaryolar (37 yolculuk + DataSufficiency söz hatası düzeltildi) | ✅ birleşti | #152 | `M1/K-113.md` |
 | K-115 sapma kalibrasyonu (aralık: formül + tartı payı; son iki pencere anlaşmalı) | ✅ birleşti | #153 | `M1/K-115.md` |
 | tooling: git guard worktree dalını görür | ✅ birleşti | #151 | (küçük) |
-| **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | inceleme | `backend/26-postgres-flyway` | `M2/K-202.md` |
+| **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | PR, auto-merge | #154 | `M2/K-202.md` |
+| K-201 sözleşme v1 (+ ADR-024) | inceleme | `contracts/25-contract-v1` | `M2/K-201.md` |
+| K-207 besin spike (ADR-008 güncellendi) | ✅ main | — | `M2/K-207.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -80,6 +82,8 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
 8. **(K-115, ürün)** Kayıt sapması yalnız büyükse görünür (erkek 2800 kcal'de günde ~640+): formül hatası ve tartı
    gürültüsünden ayrılamıyor. Bu mesaj uygulamada gösterilsin mi (iki okumayı birden söyleyen metinle), yoksa yalnız
    içeride mi kalsın?
+10. **(K-207, ürün)** Barkod Türk ürünlerinde bulunamayacak (FDC'de yok). Bulunamayınca ne olsun: etiketten tek seferlik
+   elle giriş (sonra hafızada) mı, yalnız genel gıda araması mı? İleride Türkiye kaynağı (TürKomp) araştırılsın mı?
 9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
    `tag: urun`). Onay mı?
 
@@ -169,6 +173,9 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
 - 2026-09-29 · M0 gece kurulumu (yukarıda)
 
 ## Riskler
+- **Türk ürün kapsamı (K-207):** USDA FDC Branded'da Türk markaları yok denecek kadar az ("ülker" 2 ithal kayıt,
+  "torku"/"tadım" 0). Barkod Türkiye'de çoğunlukla "bulunamadı"; genel gıda eşlemesi çalışır. Ürün kararı Levent'te
+  (soru 10).
 - **Dependabot #2 · decode-uri-component ≤0.4.2** (orta, DoS): expo-router → query-string@7 üzerinden uygulamada çalışıyor.
   Düzeltme 0.5.0 yalnız ESM, query-string@7 CJS → override kırar. Etki: bozuk bir derin bağlantı kullanıcının kendi
   uygulamasını dondurabilir. **Bekliyor:** Expo güncellemesi; her SDK yükseltmesinde kontrol. (#1 uuid kapatıldı:

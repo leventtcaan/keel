@@ -661,16 +661,16 @@ tasks:
     learn: ["Zaman serisi modelleme", "Idempotency"]
 
   - id: K-207
-    title: "Spike: besin veritabanı ve lisanslar (USDA FDC + Open Food Facts)"
+    title: "Spike: besin veritabanı ve lisanslar (USDA FDC; OFF ADR-020 ile çıktı)"
     milestone: M2
     module: nutrition
     type: spike
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-008'deki doğrulanmamış lisans yükümlülükleri"
     acceptance:
-      - "FDC ve OFF lisansları resmî sayfalardan doğrulanıp ADR-008'e işlendi"
+      - "FDC lisansı resmî sayfadan doğrulanıp ADR-008'e işlendi (OFF ADR-020 ile kullanılmıyor)"
       - "Veri alma yolu seçildi (toplu indirme / API), boyut ve güncelleme sıklığı yazıldı"
     tests:
       - "ADR-008 güncel"
@@ -688,7 +688,7 @@ tasks:
     why: "Tahmin veritabanından, LLM'den değil (U1)"
     acceptance:
       - "{yemek, miktar, belirsizlik} → kcal ve makro ARALIĞI"
-      - "Barkod → OFF kaydı"
+      - "Barkod → FDC Branded kaydı (GTIN); bulunamazsa açık \"bulunamadı\" (ADR-008 güncellemesi)"
       - "Belirsizlik yüksek ve öğün günü domine ediyorsa gram sorusu işareti döner"
     tests:
       - "FoodMappingTests"
