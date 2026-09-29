@@ -38,12 +38,30 @@ public sealed interface Action {
     record Continue() implements Action {
     }
 
-    /** Move calories one step in the working direction (K-107 adds the step). */
-    record AdjustCalories() implements Action {
+    /**
+     * Move calories one step (K-107): {@code kcalPerDay} is the signed change to the daily target, e.g. -500 on a
+     * stalled cut, +250 on a stalled bulk. Macros follow from the new target (K-108), so a bulk step lands on carbs.
+     */
+    record AdjustCalories(int kcalPerDay) implements Action {
+
+        public AdjustCalories {
+            if (kcalPerDay == 0) {
+                throw new IllegalArgumentException("A calorie adjustment changes the target; 0 kcal is not one");
+            }
+        }
     }
 
-    /** Safety net: narrow the deficit — losing too fast, or too little energy left after training (U13, K-104). */
-    record IncreaseCalories() implements Action {
+    /**
+     * Safety net: narrow the deficit — losing too fast, or too little energy left after training (U13, K-104).
+     * {@code kcalPerDay} is how much the daily target goes up (K-107).
+     */
+    record IncreaseCalories(int kcalPerDay) implements Action {
+
+        public IncreaseCalories {
+            if (kcalPerDay <= 0) {
+                throw new IllegalArgumentException("An increase is positive, was " + kcalPerDay);
+            }
+        }
     }
 
     /** Calories are at the floor: change activity instead of eating less (spec WC-12). */
