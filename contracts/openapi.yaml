@@ -1730,9 +1730,11 @@ components:
         reps:
           type: integer
           minimum: 0
+          maximum: 100
         rir:
           type: integer
           minimum: 0
+          maximum: 10
           description: Reps left in the tank; absent when not given.
         side:
           $ref: "#/components/schemas/Side"

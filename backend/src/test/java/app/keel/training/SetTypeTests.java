@@ -55,6 +55,7 @@ class SetTypeTests {
         assertThat(SetRules.accepts(BENCH, SetType.WORKING, kg("80"), 1, null)).isTrue();
         assertThat(SetRules.accepts(BENCH, SetType.WORKING, kg("80"), 1, Side.BOTH)).isTrue();
         assertThat(SetRules.accepts(BENCH, SetType.WORKING, kg("80"), 1, Side.LEFT)).isFalse();
+        assertThat(SetRules.accepts(BENCH, SetType.WORKING, kg("80"), 1, Side.RIGHT)).isFalse();
     }
 
     @Test
@@ -70,6 +71,7 @@ class SetTypeTests {
         assertThat(SetRules.accepts(BENCH, SetType.FAILURE, kg("80"), 0, null)).isTrue();
         assertThat(SetRules.accepts(BENCH, SetType.FAILURE, kg("80"), null, null)).isTrue();
         assertThat(SetRules.accepts(BENCH, SetType.FAILURE, kg("80"), 2, null)).isFalse();
+        assertThat(SetRules.accepts(BENCH, SetType.FAILURE, kg("80"), 1, null)).isFalse();
         assertThat(SetRules.accepts(BENCH, SetType.WARM_UP, kg("40"), 5, null)).isTrue();
     }
 
@@ -82,6 +84,21 @@ class SetTypeTests {
         assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("pull_up", "WORKING", 10, 1, "LEFT"))).hasStatus(400);
         assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "FAILURE", 80, 3, null))).hasStatus(400);
         assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "FAILURE", 80, 0, null))).hasStatus(201);
+    }
+
+    @Test
+    void repsAndRepsInReserveHaveCeilings() throws Exception {
+        // No set is 101 reps or 11 reps short of failure; such numbers are a client bug, and the engine does
+        // arithmetic on them (keel.training, K-218 review).
+        AccountId account = TestSessions.newAccount();
+        String workout = (String) JSON.readValue(post(account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(),
+                "startedAt", "2026-09-30T15:40:00Z")).getResponse().getContentAsString(), Map.class).get("id");
+        Map<String, Object> tooManyReps = set("bench_press", "WORKING", 40, 1, null);
+        tooManyReps.put("reps", 101);
+
+        assertThat(post(account, "/v1/workouts/" + workout + "/sets", tooManyReps)).hasStatus(400);
+        assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 40, 11, null))).hasStatus(400);
+        assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 40, 10, null))).hasStatus(201);
     }
 
     private static ExerciseCatalog.Exercise move(ExerciseCatalog.Load load, boolean unilateral) {

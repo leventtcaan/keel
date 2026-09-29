@@ -13,6 +13,7 @@
 - B-EK · Karbonhidrat alt sınırı ve performans
 - B8 · Haftada kaç gün antrenman
 - B14 · Kilo verirken düzelme sırası
+- B15 · e1RM tahmini: formül, geçerli tekrar aralığı, RIR
 - ÇELİŞKİLER
 - BULUNAMADI
 

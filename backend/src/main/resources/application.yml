@@ -54,9 +54,12 @@ keel:
   measurement:
     max-weight-kg: 500
     max-waist-cm: 300
-  # What a set can be (K-210): the heaviest loads people move (a leg press) stay well under this.
+  # What a set can be (K-210, K-218): the heaviest loads people move (a leg press) stay well under this; a set is at most
+  # 100 reps (a long calf-raise set stays under); reps in reserve end at 10 (the RIR scale's 0-10, Helms 2016, H3 B15).
   training:
     max-load-kg: 1000
+    max-reps: 100
+    max-rir: 10
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:

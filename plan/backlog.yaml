@@ -862,7 +862,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-210]
     why: "Isınma setleri e1RM ve efor metriklerini bozuyordu; vücut ağırlığı ve tek taraflı hareketin yük modeli yoktu (L3 P6)"
     acceptance:

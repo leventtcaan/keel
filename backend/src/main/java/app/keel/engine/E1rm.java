@@ -18,8 +18,6 @@ import java.util.Optional;
  */
 public final class E1rm {
 
-    static final Source SOURCE = new Source("arastirma/ham/H3-bosluk-literatur.md#B15", SourceTag.LITERATURE);
-
     private E1rm() {
     }
 
@@ -27,15 +25,17 @@ public final class E1rm {
         if (rir == null || rir < 0 || reps < 1 || loadKg == null || loadKg.signum() <= 0) {
             return Optional.empty();
         }
-        int toFailure = reps + rir;
-        if (toFailure > parameters.wholeNumber(ParameterKey.E1RM_MAX_REPS_TO_FAILURE)) {
+        int max = parameters.wholeNumber(ParameterKey.E1RM_MAX_REPS_TO_FAILURE);
+        // Each part checked before the sum: reps + RIR in int arithmetic could wrap to a negative (K-218 review).
+        if (reps > max || rir > max || reps + rir > max) {
             return Optional.empty();
         }
+        int toFailure = reps + rir;
         if (toFailure == 1) {
-            return Optional.of(loadKg.setScale(1, RoundingMode.HALF_EVEN));
+            return Optional.of(loadKg.setScale(1, RoundingMode.HALF_UP));
         }
         BigDecimal factor = BigDecimal.ONE.add(BigDecimal.valueOf(toFailure)
                 .divide(BigDecimal.valueOf(parameters.wholeNumber(ParameterKey.E1RM_EPLEY_DIVISOR)), MathContext.DECIMAL64));
-        return Optional.of(loadKg.multiply(factor).setScale(1, RoundingMode.HALF_EVEN));
+        return Optional.of(loadKg.multiply(factor).setScale(1, RoundingMode.HALF_UP));
     }
 }

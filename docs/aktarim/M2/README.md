@@ -20,6 +20,7 @@ profil → ölçüm/beslenme/antrenman → karar.
 8. K-206 ölçüm — zaman serisi, idempotency, yerel gün
 9. K-210 antrenman kaydı — katalog veri, takas, sahiplik
 10. K-214 gizlilik — silme, dışa aktarma, tek dışarı kapısı
+11. K-218 set tipi ve yük modeli — hangi set sayılır, e1RM
 11. (sıradakiler görev bitince eklenir)
 
 ## Durum
@@ -35,3 +36,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-206 ölçüm (+ ADR-026) | `K-206.md` | ✅ | — | — | — |
 | K-210 antrenman kaydı | `K-210.md` | ✅ | — | — | — |
 | K-214 gizlilik | `K-214.md` | ✅ | — | — | — |
+| K-218 set tipi, yük modeli, e1RM | `K-218.md` | ✅ | — | — | — |

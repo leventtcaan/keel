@@ -50,6 +50,19 @@ class E1rmTests {
         assertThat(E1rm.estimate(BigDecimal.ZERO, 5, 1, P)).isEmpty();
     }
 
+    @Test
+    void anAbsurdCountIsNoEstimateNotAnOverflow() {
+        // reps + RIR in int arithmetic would wrap to a negative number and a negative e1RM (K-218 review).
+        assertThat(E1rm.estimate(new BigDecimal("100"), 5, Integer.MAX_VALUE, P)).isEmpty();
+        assertThat(E1rm.estimate(new BigDecimal("100"), Integer.MAX_VALUE, 0, P)).isEmpty();
+    }
+
+    @Test
+    void roundsHalfUpLikeTheRestOfTheEngine() {
+        // 91.5 × (1 + 3/30) = 100.65 → 100.7
+        assertThat(E1rm.estimate(new BigDecimal("91.5"), 2, 1, P)).contains(new BigDecimal("100.7"));
+    }
+
     @Property
     void neverUnderTheLoadAndNeverDownWithMoreReps(@ForAll @BigRange(min = "1", max = "500") @Scale(2) BigDecimal load,
             @ForAll @IntRange(min = 1, max = 10) int reps, @ForAll @IntRange(min = 0, max = 9) int rir) {
@@ -61,7 +74,7 @@ class E1rmTests {
         BigDecimal estimate = E1rm.estimate(load, reps, rir, P).orElseThrow();
         BigDecimal oneMore = E1rm.estimate(load, reps + 1, rir, P).orElseThrow();
 
-        assertThat(estimate).isGreaterThanOrEqualTo(load.setScale(1, java.math.RoundingMode.HALF_EVEN));
+        assertThat(estimate).isGreaterThanOrEqualTo(load.setScale(1, java.math.RoundingMode.HALF_UP));
         assertThat(oneMore).isGreaterThanOrEqualTo(estimate);
     }
 }
