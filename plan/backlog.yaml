@@ -554,7 +554,7 @@ tasks:
     module: contracts
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-008, K-112]
     why: "Backend ve mobil aynı sözleşmeden türesin (K3)"
     acceptance:
