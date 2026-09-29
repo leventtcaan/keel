@@ -52,6 +52,32 @@ class ProgressionTests {
         Progression next = Progression.next(bench("60", List.of(set(12, 1), set(12, 1), set(11, 0)), true), P);
 
         assertThat(next.step()).isEqualTo(new ProgressionStep.AddReps());
+        assertThat(next.reasons()).containsExactly(new Reason(new RuleId("double_progression"),
+                new Source("arastirma/ham/H3-bosluk-literatur.md#B4", SourceTag.LITERATURE)));
+    }
+
+    @Test
+    void uncleanTechniqueBelowTheTopAlsoHolds() {
+        // H3 B4: reps are added "with good technique"; chasing a rep on broken form is not progress (G6 K-32/K-33).
+        Progression next = Progression.next(bench("60", List.of(set(10, 1), set(9, 1)), false), P);
+
+        assertThat(next.step()).isEqualTo(new ProgressionStep.Hold());
+        assertThat(next.reasons()).extracting(Reason::rule).containsExactly(new RuleId("technique_gate"));
+    }
+
+    @Test
+    void oneSetLeftFarFromFailureIsEnoughForTheNote() {
+        int targetRir = P.wholeNumber(ParameterKey.TARGET_RIR_MAX);
+        Progression next = Progression.next(bench("60", List.of(set(10, targetRir), set(10, targetRir + 2)), true), P);
+
+        assertThat(next.reasons()).extracting(Reason::rule)
+                .containsExactly(new RuleId("double_progression"), new RuleId("closer_to_failure"));
+    }
+
+    @Test
+    void aProgressionWithoutAReasonCannotBeBuilt() {
+        assertThatThrownBy(() -> new Progression(new ProgressionStep.AddReps(), List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -129,6 +155,20 @@ class ProgressionTests {
         boolean added = Progression.next(session, P).step() instanceof ProgressionStep.AddLoad;
         boolean earned = session.techniqueClean() && session.sets().stream().allMatch(s -> s.reps() >= session.range().max());
         return added == earned;
+    }
+
+    @Property
+    boolean uncleanTechniqueAlwaysHolds(@ForAll("compoundSessions") LiftSession session) {
+        return session.techniqueClean() || Progression.next(session, P).step() instanceof ProgressionStep.Hold;
+    }
+
+    @Property
+    boolean theEffortNoteAppearsExactlyWhenRepsAreAddedAndASetWasLeftShort(@ForAll("compoundSessions") LiftSession session) {
+        Progression next = Progression.next(session, P);
+        int targetRir = P.wholeNumber(ParameterKey.TARGET_RIR_MAX);
+        boolean noted = next.reasons().stream().anyMatch(r -> r.rule().equals(new RuleId("closer_to_failure")));
+        boolean due = next.step() instanceof ProgressionStep.AddReps && session.sets().stream().anyMatch(s -> s.rir() > targetRir);
+        return noted == due;
     }
 
     @Property
