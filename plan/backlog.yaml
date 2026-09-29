@@ -267,7 +267,7 @@ tasks:
     acceptance:
       - "Decision = action + reasons + confidence + nextReview + copyKey; değişmez (record)"
       - "NO_DECISION_YET birinci sınıf eylem"
-      - "NO_DECISION_YET dışındaki her karar en az bir Reason içerir; Reason kural kimliği ve kaynak taşır"
+      - "NO_DECISION_YET dahil her karar en az bir Reason içerir (ADR-020); Reason kural kimliği ve kaynak taşır; kaynak dosya + kural çapası (#K-n) ve çapa dosyada gerçek bir başlık (U14, ADR-020)"
       - "engine modülü Spring'e bağımlı değil"
     tests:
       - "DecisionTests (geçersiz karar kurulamaz)"

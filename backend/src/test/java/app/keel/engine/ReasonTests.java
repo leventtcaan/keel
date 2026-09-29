@@ -48,7 +48,7 @@ class ReasonTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"arastirma/ham/H1-olcum.md", "arastirma/03-guray-karar-omurgasi.md#2.4",
+    @ValueSource(strings = {"arastirma/ham/H1-olcum.md#3.4", "arastirma/03-guray-karar-omurgasi.md#2.4",
             "arastirma/ham/guray/G7-whisper-arsiv.md#K-66"})
     void acceptsSourcesInsideTheResearchFolder(String reference) {
         assertThat(new Source(reference, SourceTag.LITERATURE).reference()).isEqualTo(reference);
@@ -66,6 +66,15 @@ class ReasonTests {
                 .hasMessageContaining("Source");
     }
 
+    // ADR-020 (U14): a whole file is not a source; the rule or section number is part of the reference.
+    @ParameterizedTest
+    @ValueSource(strings = {"arastirma/ham/H1-olcum.md", "arastirma/ham/guray/G7-whisper-arsiv.md"})
+    void rejectsASourceWithoutARuleAnchor(String reference) {
+        assertThatThrownBy(() -> new Source(reference, SourceTag.LITERATURE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("#");
+    }
+
     @Test
     void rejectsAReasonBackedOnlyByAProductDecision() {
         // U14: an engine rule rests on Güray's experience or the literature. A product call is not evidence.
@@ -80,7 +89,7 @@ class ReasonTests {
     void rejectsASourceWithoutReferenceOrTag() {
         assertThatThrownBy(() -> new Source(null, SourceTag.LITERATURE))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("reference");
-        assertThatThrownBy(() -> new Source("arastirma/ham/H1-olcum.md", null))
+        assertThatThrownBy(() -> new Source("arastirma/ham/H1-olcum.md#3.4", null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("tag");
     }
 }

@@ -82,4 +82,4 @@ parameters:
     unit: sessions
     tag: literatur
     source: "arastirma/ham/H3-bosluk-literatur.md#B5"
-    note: "Antrenman platosu: aynı egzersizde 3 ardışık seans ne tekrar ne yük artışı (H3 B5). Kanıt: uzman görüşü, RCT'li eşik yok — Levent onayı bekliyor. Güray K-68 merdivenin ilk basamağını tetikler."
+    note: "Antrenman platosu: aynı egzersizde 3 ardışık seans ne tekrar ne yük artışı (H3 B5). Kanıt: uzman görüşü, RCT'li eşik yok — ADR-020 ile onaylandı. Güray K-68 merdivenin ilk basamağını tetikler."

@@ -3,7 +3,7 @@ parameters:
     value: 0.5
     unit: ratio
     tag: literatur
-    source: "arastirma/ham/H1-olcum.md"
+    source: "arastirma/ham/H1-olcum.md#1.3"
     note: "NICE NG246; öz-ölçüm için önerilmiş; cinsiyetten bağımsız (J1 B4). Güray cm eşiği vermiyor — boşluk."
   - key: waist_cm_elevated
     by_sex: {male: 94, female: 80}
@@ -15,21 +15,21 @@ parameters:
     value: 1.0
     unit: cm
     tag: literatur
-    source: "arastirma/ham/H1-olcum.md"
+    source: "arastirma/ham/H1-olcum.md#1.2"
   - key: weight_daily_noise_sd_kg
     value: 0.42
     unit: kg
     tag: literatur
-    source: "arastirma/ham/H1-olcum.md"
+    source: "arastirma/ham/H1-olcum.md#3.4"
   - key: photo_min_detectable_fat_mass_kg
     value: 1.2
     unit: kg
     tag: literatur
-    source: "arastirma/ham/H1-olcum.md"
+    source: "arastirma/ham/H1-olcum.md#2.2"
     note: "Profesyonel tarayıcıda 1,2-1,5 kg; telefon bundan iyi olamaz."
   - key: photo_interval_weeks
     value: 4
     unit: weeks
     tag: literatur
-    source: "arastirma/ham/H1-olcum.md"
+    source: "arastirma/ham/H1-olcum.md#2.5"
     note: "Bel, fotoğraf ve kilo trendi üç bağımsız hesapta aynı sabite çıkıyor."
