@@ -1,7 +1,13 @@
-# Exercise catalog (K-210; K-219 adds aliases, setup fields and the two clips, ADR-017).
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.lat_pulldown. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
 id: lat_pulldown
 kind: compound
 muscles: [lats, biceps]
-alternatives: [pull_up, seated_row]
+alternatives: [pull_up, close_grip_lat_pulldown]
 load: external
 unilateral: false
+setup: [thigh_pad, grip_width, handle]
+clips:
+  first_rep: clips/lat_pulldown/first-rep.mp4
+  last_rep: clips/lat_pulldown/last-rep.mp4
+review: pending

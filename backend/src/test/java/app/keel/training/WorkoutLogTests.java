@@ -42,8 +42,17 @@ class WorkoutLogTests {
         List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
 
         assertThat(exercises).anySatisfy(move -> assertThat(move).containsEntry("id", "lat_pulldown").containsEntry("kind", "COMPOUND")
-                .containsEntry("nameKey", "exercises.lat_pulldown.name").containsEntry("alternatives", List.of("pull_up", "seated_row"))
+                .containsEntry("nameKey", "exercises.lat_pulldown.name").containsEntry("alternatives", List.of("pull_up", "close_grip_lat_pulldown"))
                 .containsEntry("load", "EXTERNAL").containsEntry("unilateral", false));
+    }
+
+    @Test
+    void aMovesSetupIsServedAndItsClipsOnlyOnceReviewed() throws Exception {
+        // ADR-017: a clip reaches the phone only after it passed the filming checklist; until then the phone shows none.
+        List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
+
+        assertThat(exercises).anySatisfy(move -> assertThat(move).containsEntry("id", "leg_press")
+                .containsEntry("setupFields", List.of("back_pad", "foot_position")).doesNotContainKey("clips"));
     }
 
     @Test

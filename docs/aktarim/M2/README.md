@@ -21,6 +21,7 @@ profil → ölçüm/beslenme/antrenman → karar.
 9. K-210 antrenman kaydı — katalog veri, takas, sahiplik
 10. K-214 gizlilik — silme, dışa aktarma, tek dışarı kapısı
 11. K-218 set tipi ve yük modeli — hangi set sayılır, e1RM
+12. K-219 hareket kataloğu — veri tasarımı, kapalı sözlük, klip incelemesi
 11. (sıradakiler görev bitince eklenir)
 
 ## Durum
@@ -37,3 +38,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-210 antrenman kaydı | `K-210.md` | ✅ | — | — | — |
 | K-214 gizlilik | `K-214.md` | ✅ | — | — | — |
 | K-218 set tipi, yük modeli, e1RM | `K-218.md` | ✅ | — | — | — |
+| K-219 hareket kataloğu (40 hareket) | `K-219.md` | ✅ | — | — | — |

@@ -61,7 +61,8 @@ tasks.processResources {
     from("../data/exercises") {
         into("data/exercises")
     }
-    from("../data/muscles.yaml") {
+    // Its two closed vocabularies: muscles (with regions) and setup fields (K-219).
+    from(files("../data/muscles.yaml", "../data/exercise-setup.yaml")) {
         into("data")
     }
 }
@@ -69,6 +70,12 @@ tasks.processResources {
 // Integration tests start the same PostgreSQL image as compose.yaml, named once in the version catalog (K-202).
 tasks.withType<Test>().configureEach {
     systemProperty("keel.postgres.image", "postgres:${libs.versions.postgres.image.get()}")
+    // Tests read the repository's own files (parameters, catalog, copy, contract, research anchors, app assets). Declared
+    // as inputs so a change there reruns them: otherwise Gradle calls the tests up to date after a data-only change.
+    inputs.dir("../data").withPropertyName("repositoryData").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file("../contracts/openapi.yaml").withPropertyName("contract").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir("../arastirma").withPropertyName("research").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir("../apps/mobile/assets").withPropertyName("appAssets").withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 // ADR-009: specification tests written before their task starts carry @Tag("pending").

@@ -994,22 +994,31 @@ export interface components {
         };
         Exercise: {
             id: string;
-            /** @description Copy key of the name (en.json); aliases are for search. */
+            /**
+             * @description Copy key of the name (en.json, exercises.<id>.name). The search aliases are the app's text too:
+             *     exercises.<id>.aliases, comma-separated.
+             */
             nameKey: string;
-            aliases?: string[];
             /** @enum {string} */
             kind: "COMPOUND" | "ISOLATION";
             muscles: string[];
             /** @description Exercise ids that can take its place. */
             alternatives: string[];
             /** @enum {string} */
-            load?: "EXTERNAL" | "BODYWEIGHT" | "BODYWEIGHT_PLUS_EXTERNAL";
-            unilateral?: boolean;
-            /** @description What the user sets on the machine and keeps on the phone (seat, pad, grip; ADR-017). */
-            setupFields?: string[];
+            load: "EXTERNAL" | "BODYWEIGHT" | "BODYWEIGHT_PLUS_EXTERNAL";
+            unilateral: boolean;
+            /**
+             * @description What the user sets on the machine and keeps on the phone (seat, pad, grip; ADR-017). Labels:
+             *     exerciseSetup.<field>.label.
+             */
+            setupFields: string[];
+            /** @description Absent until the clips passed the filming checklist; the app then shows no demonstration. */
             clips?: components["schemas"]["ExerciseClips"];
         };
-        /** @description The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR. */
+        /**
+         * @description The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR. Paths in the app's
+         *     assets (clips/<id>/first-rep.mp4, clips/<id>/last-rep.mp4).
+         */
         ExerciseClips: {
             firstRep: string;
             lastRep: string;

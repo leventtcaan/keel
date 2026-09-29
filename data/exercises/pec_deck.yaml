@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.pec_deck. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: pec_deck
+kind: isolation
+muscles: [chest]
+alternatives: [cable_fly]
+load: external
+unilateral: false
+setup: [seat_height]
+clips:
+  first_rep: clips/pec_deck/first-rep.mp4
+  last_rep: clips/pec_deck/last-rep.mp4
+review: pending

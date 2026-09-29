@@ -12,7 +12,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 
-/** The exercise catalog and its muscle vocabulary, read once from the classpath (data/, packaged by the build). */
+/** The exercise catalog and its vocabularies (muscles, setup fields), read once from the classpath (data/, packaged by the build). */
 @Configuration(proxyBeanMethods = false)
 class TrainingConfiguration {
 
@@ -26,8 +26,13 @@ class TrainingConfiguration {
                 files.put(file.getFilename(), new Yaml(strict).load(in));
             }
         }
-        try (InputStream in = new ClassPathResource("data/muscles.yaml").getInputStream()) {
-            return ExerciseCatalog.of(files, new Yaml(strict).load(in));
+        // The two closed vocabularies a move names from: muscles (with their regions) and setup fields.
+        Map<String, Object> vocabulary = new HashMap<>();
+        for (String file : new String[] {"data/muscles.yaml", "data/exercise-setup.yaml"}) {
+            try (InputStream in = new ClassPathResource(file).getInputStream()) {
+                vocabulary.putAll(new Yaml(strict).<Map<String, Object>>load(in));
+            }
         }
+        return ExerciseCatalog.of(files, vocabulary);
     }
 }

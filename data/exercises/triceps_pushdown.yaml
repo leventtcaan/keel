@@ -1,7 +1,13 @@
-# Exercise catalog (K-210; K-219 adds aliases, setup fields and the two clips, ADR-017).
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.triceps_pushdown. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
 id: triceps_pushdown
 kind: isolation
 muscles: [triceps]
-alternatives: []
+alternatives: [overhead_triceps_extension]
 load: external
 unilateral: false
+setup: [cable_height, handle]
+clips:
+  first_rep: clips/triceps_pushdown/first-rep.mp4
+  last_rep: clips/triceps_pushdown/last-rep.mp4
+review: pending

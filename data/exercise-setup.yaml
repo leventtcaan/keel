@@ -1,0 +1,4 @@
+# What the user sets on a machine or bench and keeps on the phone (K-219, ADR-017 setup card; Güray G1 K-38
+# standardisation: the same setup every time). A move names its fields from this list; a name outside it stops the
+# application. Labels: data/copy/en.json › exerciseSetup.<field>.label.
+setup_fields: [seat_height, back_pad, chest_pad, thigh_pad, ankle_pad, bench_angle, grip, grip_width, stance_width, foot_position, cable_height, handle]

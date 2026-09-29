@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.barbell_curl. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: barbell_curl
+kind: isolation
+muscles: [biceps]
+alternatives: [dumbbell_curl]
+load: external
+unilateral: false
+setup: [grip_width]
+clips:
+  first_rep: clips/barbell_curl/first-rep.mp4
+  last_rep: clips/barbell_curl/last-rep.mp4
+review: pending

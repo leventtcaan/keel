@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.leg_extension. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: leg_extension
+kind: isolation
+muscles: [quads]
+alternatives: []
+load: external
+unilateral: false
+setup: [back_pad, ankle_pad]
+clips:
+  first_rep: clips/leg_extension/first-rep.mp4
+  last_rep: clips/leg_extension/last-rep.mp4
+review: pending

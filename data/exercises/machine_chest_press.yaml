@@ -1,0 +1,13 @@
+# Exercise catalog (K-210, K-219). Name and search aliases: data/copy/en.json › exercises.machine_chest_press. Clips are filmed and
+# checked by hand (ADR-017, docs/hareket-cekim-kontrol-listesi.md); until then review is pending and the app gets none.
+id: machine_chest_press
+kind: compound
+muscles: [chest, front_delts, triceps]
+alternatives: [bench_press, dumbbell_bench_press]
+load: external
+unilateral: false
+setup: [seat_height, grip]
+clips:
+  first_rep: clips/machine_chest_press/first-rep.mp4
+  last_rep: clips/machine_chest_press/last-rep.mp4
+review: pending
