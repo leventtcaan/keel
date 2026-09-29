@@ -261,7 +261,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-006, K-011]
     why: "Motorun girdisi ve çıktısı; U3'ün (dört parçalı karar) koddaki karşılığı"
     acceptance:

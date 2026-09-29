@@ -21,8 +21,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 
 | Görev | Durum | Dal / PR | Aktarım |
 |---|---|---|---|
-| K-101 alan tipleri | PR açık, auto-merge | PR #134 | `docs/aktarim/M1/K-101.md` |
-| K-102 parametre yükleme | — | | |
+| K-101 alan tipleri | ✅ birleşti | PR #134 | `docs/aktarim/M1/K-101.md` |
+| K-102 parametre yükleme | inceleme | `engine/13-parameters` | — |
 | K-103 trend, veri yeterliliği | — | | |
 | K-104 güvenlik ağı | — | | |
 | K-105 faz kapısı | — | | |
@@ -51,7 +51,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 - K-102 (plan): motor dosya okumaz; ham YAML yapısını doğrulayıp tipli `Parameters`'a çevirir; okuma test/`decision`'da
 
 ## Aktif görev
-K-101 PR #134 CI'da (auto-merge) → sıradaki K-102 · Parametre yükleme
+K-102 · Parametre yükleme · dal `engine/13-parameters` (issue #13) — öz-denetimde
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
