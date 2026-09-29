@@ -20,14 +20,33 @@ ATTRIBUTION = re.compile(r"Co-Authored-By:\s*Claude|noreply@anthropic\.com|Gener
                          re.IGNORECASE)
 
 
-def current_branch() -> str:
-    if "GIT_GUARD_BRANCH" in os.environ:  # tests
-        return os.environ["GIT_GUARD_BRANCH"]
+DIRECTORY = r"(\"[^\"]+\"|'[^']+'|[^\s;&|]+)"
+
+
+def branch_in(directory: str) -> str:
+    """The branch checked out in `directory` ("." is the hook's own); the hook's own branch if that cannot be read."""
+    if "GIT_GUARD_BRANCHES" in os.environ:  # tests: {directory: branch}, "" being the hook's own directory
+        branches = json.loads(os.environ["GIT_GUARD_BRANCHES"])
+        return branches.get("" if directory == "." else directory, branches.get("", ""))
     try:
-        return subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True,
-                              timeout=5).stdout.strip()
+        run = subprocess.run(["git", "-C", directory, "branch", "--show-current"], capture_output=True, text=True, timeout=5)
+        if run.returncode == 0 or directory == ".":
+            return run.stdout.strip()
     except (OSError, subprocess.SubprocessError):
-        return ""
+        pass
+    return branch_in(".") if directory != "." else ""
+
+
+def push_directory(cmd: str, push: re.Match) -> str:
+    """Where a push runs: `git -C <dir>`, else after the `cd`s before it, in order (a worktree, ADR-019)."""
+    here = "."
+    for cd in re.finditer(rf"(?:^|[;&|\n])\s*cd\s+{DIRECTORY}", cmd[:push.start()]):
+        here = os.path.normpath(os.path.join(here, cd.group(1).strip("\"'")))
+    option = re.search(rf"\bgit\s+-C\s+{DIRECTORY}", push.group(0))
+    if option:
+        here = os.path.normpath(os.path.join(here, option.group(1).strip("\"'")))
+    # A directory only the shell can resolve ($VAR, ~) is judged by the hook's own directory.
+    return "." if re.search(r"[$~`]", here) else here
 
 
 def reasons(cmd: str) -> list[str]:
@@ -35,7 +54,7 @@ def reasons(cmd: str) -> list[str]:
     for push in re.finditer(rf"\bgit\b{SEG}\bpush\b{SEG}", cmd):
         seg = push.group(0)
         forced = re.search(r"(--force(-with-lease)?\b|\s-[a-zA-Z]*f\b|\s\+\S)", seg)
-        targets_main = re.search(r"\b(main|master)\b", seg) or current_branch() in ("main", "master")
+        targets_main = re.search(r"\b(main|master)\b", seg) or branch_in(push_directory(cmd, push)) in ("main", "master")
         if forced and targets_main:
             found.append("force push to main is not allowed; ask Levent (ADR-019 item 5)")
     if re.search(rf"\bgit\b{SEG}\breset\b{SEG}--hard", cmd):

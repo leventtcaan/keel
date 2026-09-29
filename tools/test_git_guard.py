@@ -1,7 +1,9 @@
 """Table tests for .claude/hooks/git_guard.py (ADR-019 item 5, CLAUDE.md "Git").
 
 Run: python3 tools/test_git_guard.py
-Each row: (command, current branch, expected exit code). 2 = blocked, 0 = allowed.
+Each row: (command, current branch, expected exit code). 2 = blocked, 0 = allowed. The branch is either one name (the
+directory the hook runs in) or a map from directory to branch, "" being the hook's own directory: a push after
+`cd <dir>` or with `git -C <dir>` is judged by the branch checked out there (a worktree, ADR-019).
 """
 import json
 import pathlib
@@ -36,6 +38,16 @@ ROWS = [
     ("gh api -X DELETE repos/leventtcaan/keel/branches/main/protection", "main", 2),
     ("gh repo delete leventtcaan/keel --yes", "main", 2),
     ("gh api repos/leventtcaan/keel/branches/main/protection", "main", 0),
+    # a push from another worktree is judged by that worktree's branch, not the main checkout's
+    ("cd ../keel-k113 && git push --force-with-lease origin engine/24-golden-scenarios",
+     {"": "main", "../keel-k113": "engine/24-golden-scenarios"}, 0),
+    ("cd ../keel-k113 && git push --force-with-lease", {"": "engine/41-types", "../keel-k113": "main"}, 2),
+    ("git -C ../keel-k113 push -f", {"": "engine/41-types", "../keel-k113": "main"}, 2),
+    ("git -C ../keel-k113 push -f", {"": "main", "../keel-k113": "engine/24-golden-scenarios"}, 0),
+    ("cd ../keel-k113 && ls && cd ../keel && git push -f",
+     {"": "engine/41-types", "../keel-k113": "x/1-y", "../keel": "main"}, 2),
+    # a directory the hook cannot read is judged by its own directory (the safe side when that is main)
+    ("cd $SOMEWHERE && git push -f", {"": "main"}, 2),
     # chained commands are checked as a whole
     ("git add -A && git commit -m ok && git push --force origin main", "main", 2),
     # not git at all
@@ -43,9 +55,10 @@ ROWS = [
 ]
 
 
-def run(command: str, branch: str) -> int:
+def run(command: str, branch) -> int:
     payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
-    env = {"GIT_GUARD_BRANCH": branch, "PATH": "/usr/bin:/bin"}
+    branches = branch if isinstance(branch, dict) else {"": branch}
+    env = {"GIT_GUARD_BRANCHES": json.dumps(branches), "PATH": "/usr/bin:/bin"}
     r = subprocess.run([sys.executable, str(HOOK)], input=payload, text=True, capture_output=True, env=env)
     # A missing or crashing hook also exits 2 under Python; count a block only when the hook says so.
     if r.returncode == 2 and "Blocked by" not in r.stderr:
