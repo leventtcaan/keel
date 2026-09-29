@@ -35,6 +35,13 @@ for m in mutations:
             verdict = 'NO RESULT: ' + (run.stdout + run.stderr)[-300:].replace('\n', ' ')
         results.append((m['name'], verdict))
     finally:
-        shutil.move(backup, path)
+        # Write the original back (not a rename over the file): Gradle's file watching missed a rename and called the
+        # mutated classes up to date afterwards (K-208, 30 Sep).
+        with open(backup) as original, open(path, 'w') as restored:
+            restored.write(original.read())
+        os.remove(backup)
+# Leave no mutant's classes behind, whatever the watcher saw.
+subprocess.run(['./gradlew', 'compileJava', 'compileTestJava', '--rerun-tasks', '-q'], cwd=os.path.join(root, 'backend'),
+               capture_output=True, text=True)
 for name, verdict in results:
     print(f'{name:45} {verdict}')
