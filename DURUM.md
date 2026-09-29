@@ -28,8 +28,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-105 faz kapısı | ✅ birleşti | PR #138 | `docs/aktarim/M1/K-105.md` |
 | K-106 check-in omurgası | **tasarım önerisi, akşam konuşulacak** | `plan/m1-k106-tasarim-onerisi.md` | |
 | K-107 kalori merdiveni | — | | |
-| K-108 makrolar | inceleme | `engine/19-macro-targets` | — |
-| K-109 progresyon | — | | |
+| K-108 makrolar | PR açık, auto-merge | PR #139 | `docs/aktarim/M1/K-108.md` |
+| K-109 progresyon | inceleme | `engine/20-progression` (worktree `../keel-k109`) | — |
 | K-110 deload | — | | |
 | K-111 tutarlılık sayısı | — | | |
 | K-112 karar montajı | — | | |
@@ -52,7 +52,11 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
    kaybı bildirimi. Bu iki kural L-1 cevaplanana kadar yazılmıyor; K-104'ün geri kalanı yazılıyor.
 5. **K-106 tasarımı** → `plan/m1-k106-tasarim-onerisi.md` (L-5, L-6, L-9, L-10 orada)
 6. Bilgi (K-105): zorunlu bulk geçişi kaynağa göre <%12 (kadın <%22); %12-25 kullanıcının hedefine bırakıldı → hedef girdisi ürün kapsamı
-7. K1 açıklaması (K-103): iki testin beklenen tarihi inceleme bulgusu (kırılan `nextReview` sözü) üzerine değişti.
+7. **L-11** (K-108): kalori hedefi makro tabanlarının (protein + yağ tabanı + karb tabanı) altında kalırsa motor bölünme
+   uydurmuyor, `TargetTooLow(en düşük kcal)` diyor. Omurga o zaman ne yapsın: kaloriyi yükselt mi, hareketi mi artır?
+   Öneri: BMR tabanı gibi CHANGE_MOVEMENT (G2:869).
+8. K1 açıklaması: K-103'te iki testin beklenen tarihi (kırılan `nextReview` sözü), K-108'de iki testin beklentisi
+   (sessiz kalori aşımı → `TargetTooLow`) inceleme bulgusu üzerine değişti. Testler birleşmeden önce, aynı dalda.
 **Alınan teknik kararlar (aktarımda anlatılacak):**
 - K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
   Source yalnız arastirma/*.md · PRODUCT etiketli kaynak kural gerekçesi olamaz (U14) · EnginePurityTests: yalnız JDK,
@@ -68,7 +72,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-K-108 · Makrolar · dal `engine/19-macro-targets` (issue #19) — öz-denetimde · K-106 akşam kararına bağlı → sonra K-109
+K-108 PR #139 CI'da · K-109 öz-denetimde (worktree `../keel-k109`) · K-106 akşam kararına bağlı
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.

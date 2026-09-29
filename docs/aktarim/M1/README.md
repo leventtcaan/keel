@@ -21,3 +21,9 @@ kurar; M1 sonunda senaryo uçtan uca motorun içinden geçer.
 ## Durum
 | Görev | Aktarım dosyası | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
 |---|---|---|---|---|
+| K-101 | `K-101.md` | — | — | — |
+| K-102 | `K-102.md` | — | — | — |
+| K-103 | `K-103.md` | — | — | — |
+| K-104 | `K-104.md` | — | — | — |
+| K-105 | `K-105.md` | — | — | — |
+| K-108 | `K-108.md` | — | — | — |
