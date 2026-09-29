@@ -628,7 +628,7 @@ tasks:
     module: profile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-203]
     why: "Motorun kullanıcıya özgü girdileri"
     acceptance:
