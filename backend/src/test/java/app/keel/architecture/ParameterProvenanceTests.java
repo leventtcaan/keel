@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -44,7 +45,8 @@ class ParameterProvenanceTests {
                 if (!(parameter.get("unit") instanceof String)) {
                     problems.add(where + ": missing unit");
                 }
-                if (!TAGS.contains(parameter.get("tag"))) {
+                // instanceof first: Set.of(...).contains(null) throws instead of reporting a missing tag.
+                if (!(parameter.get("tag") instanceof String tag) || !TAGS.contains(tag)) {
                     problems.add(where + ": tag must be one of " + TAGS);
                 }
 
@@ -81,7 +83,10 @@ class ParameterProvenanceTests {
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> readParameters(Path file) throws IOException {
         try (Reader reader = Files.newBufferedReader(file)) {
-            Map<String, Object> document = new Yaml().load(reader);
+            // Duplicate keys are an error, not "last one wins" (the engine loader's callers do the same).
+            LoaderOptions options = new LoaderOptions();
+            options.setAllowDuplicateKeys(false);
+            Map<String, Object> document = new Yaml(options).load(reader);
             assertThat(document).as(file + " has a top-level 'parameters' list").containsKey("parameters");
             return (List<Map<String, Object>>) document.get("parameters");
         }
