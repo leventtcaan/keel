@@ -50,20 +50,22 @@ class FoodMappingTests {
         food("fdc:1897574", "Toasted oat cereal", "Cheerios", "BRANDED", "400", "10", "70", "8", "00016000275287", null);
         food("fdc:746782", "Milk, whole", null, "FOUNDATION", "61", "3.3", "4.8", "3.2", null, "1.03");
         food("fdc:999001", "Chicken nuggets", "Frozen Brand", "BRANDED", "280", "14", "16", "18", "00012345678905", null);
+        food("fdc:999003", "Rice with chicken", null, "SR_LEGACY", "150", "8", "20", "4", null, null);
     }
 
     @Test
     void searchFindsEveryWordAndPutsNamesThatStartWithItFirst() throws Exception {
         List<Map<String, Object>> found = list(post("/v1/foods/search", Map.of("q", "chicken")));
 
-        assertThat(found).extracting(food -> food.get("id")).containsSubsequence("fdc:171477", "fdc:999001");
+        // Names that start with the word first, the shorter of those first; a name holding it elsewhere after them.
+        assertThat(found).extracting(food -> food.get("id")).containsExactly("fdc:999001", "fdc:171477", "fdc:999003");
         assertThat(list(post("/v1/foods/search", Map.of("q", "chicken roasted")))).extracting(food -> food.get("id")).containsExactly("fdc:171477");
         assertThat(list(post("/v1/foods/search", Map.of("q", "cheerios")))).extracting(food -> food.get("id")).containsExactly("fdc:1897574");
     }
 
     @Test
     void aFoodComesWithItsValueAsRangesAndItsServings() throws Exception {
-        Map<String, Object> rice = list(post("/v1/foods/search", Map.of("q", "rice"))).getFirst();
+        Map<String, Object> rice = list(post("/v1/foods/search", Map.of("q", "rice white"))).getFirst();
 
         assertThat(rice).containsEntry("name", "Rice, white, cooked")
                 .containsEntry("per100g", Map.of("kcal", Map.of("low", 117, "high", 143), "proteinG", Map.of("low", 2, "high", 3),
