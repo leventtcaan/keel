@@ -43,6 +43,9 @@ final class ParameterDocuments {
             new Order(ParameterKey.GAIN_RATE_IDEAL_KG_PER_MONTH, ParameterKey.GAIN_RATE_MAX_KG_PER_MONTH, false),
             new Order(ParameterKey.SETS_PER_SESSION_PER_MUSCLE_MIN, ParameterKey.SETS_PER_SESSION_PER_MUSCLE_MAX, false),
             new Order(ParameterKey.DELOAD_LOAD_REDUCTION_MIN, ParameterKey.DELOAD_LOAD_REDUCTION_MAX, false),
+            // Under the fix line adherence is the problem; between it and on-track the plan is not followed well
+            // enough to judge (G2 K-60, ADR-020 L-9).
+            new Order(ParameterKey.ADHERENCE_FIX_BELOW, ParameterKey.ON_TRACK_MIN_RATIO, true),
             // Phase-gate lines (U4: internal only): below the surplus line a cut ends, above the ceiling a bulk stops,
             // above the fat-first line a bulk is not even started (03 §2.1, G6 K-7, G4 K-10).
             new Order(ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT, ParameterKey.BULK_CEILING_FAT_PROXY_PCT, true),

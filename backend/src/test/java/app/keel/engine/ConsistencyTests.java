@@ -54,6 +54,39 @@ class ConsistencyTests {
         assertThat(record(week(10, 6)).onTrackWeeks()).isZero();
     }
 
+    // ── a decision window (ADR-020 L-6: the spine's adherence) ──────────────────────────────────────────────
+
+    @Test
+    void aWindowsAdherenceIsEverythingDoneOverEverythingPlanned() {
+        // 7 of 10, 9 of 10, and a week with nothing planned: 16 of 20 = 0.8 (not the mean of per-week ratios).
+        List<WeekTally> window = List.of(training(MONDAY, 10, 7), training(MONDAY.plusWeeks(1), 10, 9),
+                training(MONDAY.plusWeeks(2), 0, 0));
+
+        assertThat(Consistency.windowRatio(window)).hasValueSatisfying(ratio -> assertThat(ratio).isEqualByComparingTo("0.8"));
+    }
+
+    @Test
+    void anOverdoneWeekDoesNotMakeUpForAMissedOne() {
+        // U7: 8 sessions of 4 count as 4, so 4 of 8 over the window = 0.5, not 8 of 8.
+        List<WeekTally> window = List.of(training(MONDAY, 4, 8), training(MONDAY.plusWeeks(1), 4, 0));
+
+        assertThat(Consistency.windowRatio(window)).hasValueSatisfying(ratio -> assertThat(ratio).isEqualByComparingTo("0.5"));
+    }
+
+    @Test
+    void aWindowsRatioIsNotTheMeanOfItsWeeklyRatios() {
+        // 9 of 10 and 0 of 2: 9 of 12 = 0.75. The mean of 0.9 and 0 would be 0.45 — under the fix line.
+        List<WeekTally> window = List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 2, 0));
+
+        assertThat(Consistency.windowRatio(window)).hasValueSatisfying(ratio -> assertThat(ratio).isEqualByComparingTo("0.75"));
+    }
+
+    @Test
+    void aWindowWithNothingPlannedHasNoRatio() {
+        assertThat(Consistency.windowRatio(List.of(training(MONDAY, 0, 0)))).isEmpty();
+        assertThat(Consistency.windowRatio(List.of())).isEmpty();
+    }
+
     // ── the counter ─────────────────────────────────────────────────────────────────────────────────────────
 
     @Test

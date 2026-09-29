@@ -31,6 +31,7 @@ public enum ParameterKey {
     GAIN_RATE_IDEAL_KG_PER_MONTH(ParameterDomain.NUTRITION, Unit.KG_PER_MONTH),
     GAIN_RATE_MAX_KG_PER_MONTH(ParameterDomain.NUTRITION, Unit.KG_PER_MONTH),
     MAINTENANCE_OBSERVATION_DAYS(ParameterDomain.NUTRITION, Unit.DAYS),
+    BULK_STALL_WEEKS(ParameterDomain.NUTRITION, Unit.WEEKS),
 
     WEEKLY_LOSS_CAP_KG(ParameterDomain.SAFETY, Unit.KG_PER_WEEK),
     WEEKLY_LOSS_CAP_PCT_BODYWEIGHT(ParameterDomain.SAFETY, Unit.RATIO),
@@ -66,7 +67,10 @@ public enum ParameterKey {
     NO_INTERPRETATION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     EVALUATION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     MIN_WEIGHINS_PER_WEEK(ParameterDomain.WINDOWS, Unit.WEIGHINS_PER_WEEK),
-    ON_TRACK_MIN_RATIO(ParameterDomain.WINDOWS, Unit.RATIO);
+    ON_TRACK_MIN_RATIO(ParameterDomain.WINDOWS, Unit.RATIO),
+    ADHERENCE_FIX_BELOW(ParameterDomain.WINDOWS, Unit.RATIO),
+    FLAT_MARGIN_KG(ParameterDomain.WINDOWS, Unit.KG),
+    FLAT_WAIT_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS);
 
     private final ParameterDomain domain;
     private final Unit unit;

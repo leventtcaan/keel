@@ -32,7 +32,8 @@ rows:
     title: "Not moving toward goal, plan followed, training fine: adjust calories"
     given: {phase: cut, trend: flat, flat_weeks: 3, training: stable, adherence: 0.91}
     expect: {action: ADJUST_CALORIES, direction: down, step_param: cut_step_min_kcal}
-    source: "arastirma/03-guray-karar-omurgasi.md#2.4"
+    source: "arastirma/ham/H3-bosluk-literatur.md#B3"
+    note: "The tree says adjust (03 §2.4, reason not_toward_goal); how long flat before adjusting is Güray's gap (G2 B-1), filled by H3 B3's 2-3 weeks: the decision window (reason stall_window)."
 
   - id: WC-05
     title: "Toward goal but looks worse and training is bad: fix training first, no calorie decision"
@@ -47,16 +48,18 @@ rows:
     source: "arastirma/03-guray-karar-omurgasi.md#2.4"
 
   - id: WC-07
-    title: "Everything fine but still looks worse on a bulk: genetic limit, pull calories back"
+    title: "Everything fine but still looks worse on a bulk: genetic limit, pull the surplus back"
     given: {phase: bulk, trend: toward_goal, look: worse, training: stable, recovery: good, adherence: 0.9}
     expect: {action: ADJUST_CALORIES, direction: down}
     source: "arastirma/03-guray-karar-omurgasi.md#2.4"
+    note: "ADR-020 L-5: the tree pulls calories back in both phases; the cut side is WC-24."
 
   - id: WC-08
     title: "Weight and waist flat one week, adherence high: wait, the drop usually comes"
-    given: {phase: cut, trend: flat, flat_weeks: 1, waist: flat, adherence: 0.95}
+    given: {sex: female, phase: cut, trend: flat, flat_weeks: 1, waist: flat, adherence: 0.95}
     expect: {action: NO_DECISION_YET, reason: wait_one_more_week}
-    source: "arastirma/03-guray-karar-omurgasi.md#2.4"
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-64"
+    note: "ADR-021: on a man's 21-day window one flat week after a clear drop still reads as moving (K-64 holds by construction); the explicit wait shows on the 28-day window."
 
   - id: WC-09
     title: "Adherence under 50%: do not touch calories, fix adherence"
@@ -154,3 +157,10 @@ rows:
     expect: {action: FIX_RECOVERY, reason: loads_regressed}
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-68"
     note: "ADR-020 L-12: rung 3 of K-68 ('not fatigue; check food and sleep one by one')."
+
+  - id: WC-24
+    title: "Everything fine but still looks worse on a cut: genetic limit, narrow the deficit"
+    given: {phase: cut, trend: toward_goal, look: worse, training: stable, recovery: good, adherence: 0.9}
+    expect: {action: ADJUST_CALORIES, direction: up}
+    source: "arastirma/03-guray-karar-omurgasi.md#2.4"
+    note: "ADR-020 L-5: 'pull calories back' toward maintenance runs both ways."
