@@ -1,6 +1,6 @@
 ---
 name: gorev-baslat
-description: keel'de bir backlog görevine (K-ID, ör. K-012) başlarken kullan. "Şu göreve başlayalım", "K-012", "sıradaki görev", "motoru yazalım" gibi bir uygulama işi başladığında mutlaka kullan. Kabul kriterlerini doğrular, dalı açar, ön aktarımı yapar; kod ondan sonra yazılır.
+description: keel'de bir backlog görevine (K-ID, ör. K-012) başlarken kullan. "Şu göreve başlayalım", "K-012", "sıradaki görev", "motoru yazalım" gibi bir uygulama işi başladığında mutlaka kullan.
 ---
 
 # Görev başlat
@@ -17,7 +17,10 @@ description: keel'de bir backlog görevine (K-ID, ör. K-012) başlarken kullan.
 2. **Dal:** `git switch -c <module>/<issue>-<kisa-ad>` (issue numarası backlog kaydındaki `issue` alanı).
 3. **Ön aktarım** (skill `aktarim`, aşama 1): bu görev projenin neresinde · neden şimdi · hangi kavramlar ·
    hangi dosyalar değişecek · hedef seviye ve basamak listesi. Levent "devam" demeden koda geçme.
-4. **Test önce:** her kabul kriteri için test. `pending` etiketli hazır spesifikasyon testi varsa etiketi kaldır,
-   testin kırmızı olduğunu **çıktıyla göster.**
+4. **Test önce** (skill `test-driven-development`): her kabul kriteri için test. `pending` etiketli hazır spesifikasyon
+   testi varsa etiketi kaldır, testin kırmızı olduğunu **çıktıyla göster.**
+   **Geçerli RED:** test beklenen assertion ile kırmızı; derleme hatası ya da exception RED sayılmaz. İlk koşuda yeşilse
+   var olan davranışı test ediyordur → testi düzelt. Saf fonksiyonlarda (motor) özellik testi de yaz (skill
+   `property-based-testing`).
 5. **Kod:** testleri geçiren en basit kod. Parametre ve metin dosyadan (K2). Görev dışına taşma.
 6. DURUM.md → "Aktif görev: K-0NN · <başlık> · dal `<dal>`".

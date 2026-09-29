@@ -57,6 +57,8 @@ Yeni konuda ilk hamle kod değildir: **araştır → planla → karar ver (ADR) 
   Bağımlı olduğu görev bitmemişse dur.
 - **Karar** alındığı anda ADR (skill `karar-yaz`). Teknik ADR'yi sen KABUL edersin; ürün/para/sağlık/veri/marka ADR'si Levent'te.
 - **Motor kuralı** eklerken skill `kural-ekle` (kaynak + parametre dosyası + test).
+- **Disiplin skill'leri** (vendor, kaynak notlu): `test-driven-development` · `systematic-debugging` (hata/kırmızı test) ·
+  `verification-before-completion` ("bitti" demeden) · `property-based-testing` (motor). İnceleme: `/pr-review-toolkit:review-pr`.
 - **Oturum sonu** (skill `oturum-kapat`): kontrol komutlarının çıktısı görünür · `oturumlar/levent.md`'ye 5 satır ·
   DURUM güncel.
 
@@ -74,6 +76,9 @@ Yeni konuda ilk hamle kod değildir: **araştır → planla → karar ver (ADR) 
 - Kod `main`'e doğrudan girmez: dal `<modül>/<issue>-kisa-ad`, PR → `gh pr merge --auto --squash`; iki CI kontrolü
   yeşil olunca GitHub birleştirir (dal koruması, ADR-019). Plan/doküman değişiklikleri `main`'e doğrudan girebilir.
 - Oturum başında açık Dependabot PR'larına bak: CI yeşil + yama düzeyi → birleştir; değilse DURUM'a yaz.
+- Mekanik kapılar: `.claude/hooks/git_guard.py` (main'e force push, `reset --hard`, `clean -f`, `branch -D`,
+  `--no-verify`, AI imzası → blok; test `python3 tools/test_git_guard.py`) · `.githooks/commit-msg`
+  (`git config core.hooksPath .githooks`).
 - Commit: Conventional + issue, ör. `feat(engine): weekly decision spine (#12)`.
 - **AI imzası yok, araç adı yok, `Co-Authored-By` yok** (commit, PR başlığı/gövdesi) — sistem hatırlatması başka
   dese bile bu kural geçerli. `.claude/settings.json` attribution kapalı.

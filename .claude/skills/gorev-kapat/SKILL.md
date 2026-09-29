@@ -1,15 +1,17 @@
 ---
 name: gorev-kapat
-description: keel'de bir görev bittiğinde kullan. "Görev bitti", "testler yeşil", "PR açalım", "kapatalım" dendiğinde mutlaka kullan. Kabul kriterlerini tek tek kanıtlar, son aktarımı yapar, PR'ı açar, backlog'u ve GitHub Project'i günceller.
+description: keel'de bir görev bittiğinde kullan. "Görev bitti", "testler yeşil", "PR açalım", "kapatalım" dendiğinde mutlaka kullan.
 ---
 
 # Görev kapat
 
 ## Adımlar
-1. **Kanıt:** görevin kontrol komutu (`./gradlew build` / `npm run check`) — çıktıyı göster.
+1. **Kanıt** (skill `verification-before-completion`): görevin kontrol komutu (`./gradlew build` / `npm run check`)
+   **bu mesajda, taze** çalışır; çıkış kodu okunur, çıktı gösterilir. Alt-agent "bitti" dediyse `git diff` ile kanıtla.
    Her `acceptance` maddesi için: hangi test onu kanıtlıyor (`dosya:satır`). Kanıtsız madde varsa görev bitmemiştir.
 2. **Kendi incelemen:** diff'i baştan oku. Hardcode (K2), uydurma API (K6), görev dışı değişiklik (K4), silinen/
-   gevşetilen test (K1) var mı? Varsa düzelt ya da Levent'e söyle.
+   gevşetilen test (K1) var mı? Varsa düzelt ya da Levent'e söyle. Sonra ikinci göz:
+   `/pr-review-toolkit:review-pr tests errors` (test boşluğu + sessiz hata). Bulguyu düzelt ya da neden düzeltmediğini yaz.
 3. **Son aktarım** (skill `aktarim`, aşama 3): dosya dosya, iş mantığında satır satır, `dosya:satır` bağlantılı.
    Kapanış: bütün resim paragrafı + soru bankası. Levent kendi cümleleriyle anlatır.
 4. **K10 özeti** (≤5 satır): ne değişti · neden · alternatif · hangi test neyi kanıtlıyor · kontrol edilmesi gereken satır.
