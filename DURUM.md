@@ -46,8 +46,20 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
    `git fetch && git rebase --onto origin/main 9cd0e46` (9cd0e46 = K-113 dalındaki eski K-112 ucu; yalnız cafc639 taşınır — `git log` ile doğrula) →
    `./gradlew build` → inceleme (pr-test-analyzer: yolculuk beklentileri kurallardan türetildi mi, düzenek bir karar
    kısaltmasıyla yanlış sebeple geçiyor mu, kadın bulk / 45+ kapsamı) → düzelt → backlog K-113 done → PR `--auto --squash`.
-3. **K-115** (`../keel-k115`, dal `engine/99-intake-calibration`, taban `main`): inceleme (code-reviewer: enerji dengesi
-   matematiği, EWMA sırası, "formül hatası" eşiği, test sahte kullanıcısı) → düzelt → backlog K-115 done →
+3. **K-115** (`../keel-k115`, dal `engine/99-intake-calibration`, taban `main`): code-reviewer **bitti** (matematik,
+   gün aralığı `window−7`, EWMA sırası, işaret doğru). Uygulanacak 5 bulgu, TDD ile:
+   (a) KRİTİK: "sapma" formül hatasını da içeriyor (referans − kayıt birimi harcama = formül hatası + kayıt hatası); eşik
+   yalnız büyüklüğe bakıp hepsini sapma diye döndürüyor → yalnız bandın ötesini bildir (`işaret·(|fark|−formülHatası)`)
+   ya da aralık döndür (U5); gerçek harcaması REFERENCE'tan farklı sahte kullanıcı testi ekle; javadoc "referans
+   Mifflin×aktivite" desin.
+   (b) KRİTİK: `logging_bias_smoothing` 0,5 H1 §3.4'ten türemiyor (günlük α 0,1 → 21 günde ≈0,89) ve notdaki "iki
+   pencerede yarıya" yanlış (her pencerede yarıya) → dürüst türetme ya da "kaynaksız seçim" etiketi.
+   (c) `min_logged_days_per_week` kaynağı (H1 §3.4) yemek kaydı hakkında değil; `logging_bias_min_windows` Thomas/Sanghvi
+   dinamik modelinden türemiyor → notları dürüstleştir, gerekirse onay listesine yaz.
+   (d) Metin `calibration.logs_run_low`: fazla kayıt (negatif sapma) yönü yok, "a little" ve "true for everyone"
+   kaynaksız, "already account for it" henüz yok → iki yönlü, iddiasız metin.
+   (e) `decisionsNeverReadLoggedFood`: `IntakeBias` tipini ve iç içe record'ları da taramalı.
+   Test boşlukları: gürültülü tartı, iyi pencereler arasında tek kötü pencere. → düzelt → backlog K-115 done →
    `origin/main` üstüne rebase → `npm run check` **ana dizinde** (worktree'de node_modules yok) → PR.
 4. M1 kapanışı: `docs/aktarim/M1/README.md` durum tablosuna K-106/107/112/113/114/115 ekle; DURUM "Şu an" = M1 kapandı.
    Worktree'leri temizle (`git worktree remove`).
