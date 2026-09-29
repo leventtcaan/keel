@@ -1,3 +1,18 @@
 spring:
   application:
     name: keel
+  # The database comes from the environment (V5: no credentials in the repository). For local development the
+  # `local` profile (application-local.yml) points at compose.yaml's container; tests use Testcontainers.
+  datasource:
+    url: ${KEEL_DB_URL}
+    username: ${KEEL_DB_USER}
+    password: ${KEEL_DB_PASSWORD}
+  # Flyway runs every migration in db/migration when the application starts (K-202). Modulith's registry table comes
+  # from V1 (ADR-023); Modulith's own schema creation is off by default and stated here so it stays off.
+  flyway:
+    locations: classpath:db/migration
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false

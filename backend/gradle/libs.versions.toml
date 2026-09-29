@@ -8,6 +8,9 @@ spring-boot = "4.1.1"
 spring-modulith = "2.1.1"
 # Verified on Maven Central 2026-09-29 (maven-metadata.xml <release>); not in the Boot BOM.
 jqwik = "1.10.1"
+# The PostgreSQL server image for docker compose and Testcontainers (K-202). Docker Hub library/postgres, newest
+# stable on 2026-09-29 (19 is still in beta). compose.yaml is checked against it (VersionCatalogTests).
+postgres-image = "18.6"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -21,6 +24,16 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 snakeyaml = { module = "org.yaml:snakeyaml" }
 archunit = { module = "com.tngtech.archunit:archunit" }
 jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
+# Persistence (K-202, ADR-023). Versions from the Boot 4.1.1 BOM: Flyway 12.4.0, PostgreSQL driver 42.7.13,
+# Testcontainers 2.0.5 (checked in spring-boot-dependencies-4.1.1.pom on 2026-09-29).
+spring-boot-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+postgresql = { module = "org.postgresql:postgresql" }
+spring-modulith-starter-jdbc = { module = "org.springframework.modulith:spring-modulith-starter-jdbc" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
