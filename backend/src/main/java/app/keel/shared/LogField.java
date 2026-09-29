@@ -2,7 +2,8 @@ package app.keel.shared;
 
 /**
  * The only fields a log line can carry (K-215, V3). None of them can hold health data: identifiers, the HTTP method,
- * the route template (never the raw path or query), a status, a duration, an error code and an exception type.
+ * the route template (never the raw path or query), a status, a duration, an error code, an exception's type and
+ * the code locations it was thrown from.
  * LogWhitelistTests turns red if a field that could carry health data is added.
  */
 public enum LogField {
@@ -12,7 +13,8 @@ public enum LogField {
     STATUS("status"),
     DURATION_MS("duration_ms"),
     ERROR_CODE("error_code"),
-    EXCEPTION("exception");
+    EXCEPTION("exception"),
+    AT("at");
 
     private final String key;
 

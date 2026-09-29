@@ -4,6 +4,8 @@ import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.shared.SafeLog;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
@@ -35,24 +37,21 @@ class ApiErrorHandler {
      */
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> other(Exception e, HttpServletRequest request) {
-        ErrorCode code = e instanceof ErrorResponse framework ? codeFor(framework.getStatusCode().value()) : ErrorCode.INTERNAL;
-        return answer(code, e, request);
+        if (e instanceof ErrorResponse framework) {
+            // Keep the headers the status needs (Allow on 405, Retry-After on 429/503); never the reason text.
+            return answer(ErrorCode.forStatus(framework.getStatusCode().value()), e, request, framework.getHeaders());
+        }
+        return answer(ErrorCode.INTERNAL, e, request);
     }
 
     private static ResponseEntity<ApiError> answer(ErrorCode code, Exception e, HttpServletRequest request) {
-        SafeLog.failure(RequestLogFilter.requestId(request), code, e.getClass());
-        return ResponseEntity.status(code.status()).body(ApiError.of(code));
+        return answer(code, e, request, HttpHeaders.EMPTY);
     }
 
-    static ErrorCode codeFor(int status) {
-        return switch (status) {
-            case 401 -> ErrorCode.UNAUTHENTICATED;
-            case 403 -> ErrorCode.FORBIDDEN;
-            case 404 -> ErrorCode.NOT_FOUND;
-            case 405 -> ErrorCode.METHOD_NOT_ALLOWED;
-            case 409 -> ErrorCode.CONFLICT;
-            case 429 -> ErrorCode.RATE_LIMITED;
-            default -> status >= 400 && status < 500 ? ErrorCode.VALIDATION_FAILED : ErrorCode.INTERNAL;
-        };
+    // JSON whatever the client's Accept says: left to content negotiation, an Accept: text/html would make this handler
+    // fail, and the container would log the original exception's message (K-215 review).
+    private static ResponseEntity<ApiError> answer(ErrorCode code, Exception e, HttpServletRequest request, HttpHeaders headers) {
+        SafeLog.failure(RequestLogFilter.requestId(request), code, e);
+        return ResponseEntity.status(code.status()).headers(headers).contentType(MediaType.APPLICATION_JSON).body(ApiError.of(code));
     }
 }

@@ -1,6 +1,9 @@
 package app.keel.shared;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -13,13 +16,17 @@ import org.slf4j.spi.LoggingEventBuilder;
  * The one door to the log (K-215, V3). Its methods take typed values only — an id, a method, a route template, a
  * status, a duration, an error code, an exception's type — so a weight, a meal, a message or an exception's text
  * cannot be passed in. LogWhitelistTests fails any other class that logs. Each line carries its fields twice: as
- * key-values for structured output and as {@code key=value} text for a plain console.
+ * key-values for structured output and as {@code key=value} text for a plain console. LogWhitelistTests pins the
+ * fields and the parameter types of every public method.
  */
 public final class SafeLog {
 
     private static final Logger LOG = LoggerFactory.getLogger("keel");
-    // A route template: path segments and {variables}, no query. Anything else is replaced, never logged.
-    private static final Pattern ROUTE_TEMPLATE = Pattern.compile("/[A-Za-z0-9/{}_*.\\-]*");
+    // A route template: literal segments that start with a letter ("v1", "weigh-ins"), {variables} and /**. A value
+    // (82.4, 2026-09-30, a UUID) starts with a digit or holds a dot, so a raw path is refused; so is any query.
+    private static final Pattern ROUTE_TEMPLATE = Pattern.compile("(/([A-Za-z][A-Za-z0-9_-]*|\\{[A-Za-z][A-Za-z0-9_]*}|\\*\\*))*/?");
+    // Enough of the root cause's stack to find the failing line; frames are code locations, never data.
+    private static final int FRAMES = 5;
     private static final String UNREADABLE_ROUTE = "unreadable-route";
 
     private SafeLog() {
@@ -36,12 +43,25 @@ public final class SafeLog {
         write(LOG.atInfo(), "request", fields);
     }
 
-    /** A request that failed: its code and the exception's type, never the exception's message. */
-    public static void failure(UUID requestId, ErrorCode code, Class<? extends Throwable> exceptionType) {
+    /**
+     * A request that failed: its code, the exception's type and its causes' types, and where the root cause was thrown
+     * (class#method:line) — never a message, which may hold what the request carried (V3). Our bugs (INTERNAL) are
+     * errors; the rest are warnings.
+     */
+    public static void failure(UUID requestId, ErrorCode code, Throwable failure) {
         Map<LogField, Object> fields = new EnumMap<>(LogField.class);
         fields.put(LogField.REQUEST_ID, requestId);
         fields.put(LogField.ERROR_CODE, code);
-        fields.put(LogField.EXCEPTION, exceptionType.getName());
+        List<String> chain = new ArrayList<>();
+        Throwable root = failure;
+        for (Throwable cause = failure; cause != null && chain.size() < FRAMES; cause = cause.getCause()) {
+            chain.add(cause.getClass().getName());
+            root = cause;
+        }
+        fields.put(LogField.EXCEPTION, String.join("<-", chain));
+        fields.put(LogField.AT, Arrays.stream(root.getStackTrace()).limit(FRAMES)
+                .map(frame -> frame.getClassName() + "#" + frame.getMethodName() + ":" + frame.getLineNumber())
+                .collect(Collectors.joining(",")));
         write(code == ErrorCode.INTERNAL ? LOG.atError() : LOG.atWarn(), "failure", fields);
     }
 

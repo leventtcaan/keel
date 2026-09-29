@@ -12,9 +12,13 @@ public enum ErrorCode {
     FORBIDDEN(403, "That isn't available to this account."),
     NOT_FOUND(404, "We couldn't find that."),
     METHOD_NOT_ALLOWED(405, "That action isn't supported here."),
+    NOT_ACCEPTABLE(406, "That format isn't available."),
     CONFLICT(409, "That conflicts with what's already stored."),
+    PAYLOAD_TOO_LARGE(413, "That's more than we can take in one request."),
+    UNSUPPORTED_MEDIA_TYPE(415, "That format isn't supported."),
     RATE_LIMITED(429, "Too many requests. Try again in a moment."),
-    INTERNAL(500, "Something went wrong on our side.");
+    INTERNAL(500, "Something went wrong on our side."),
+    SERVICE_UNAVAILABLE(503, "We're briefly unavailable. Try again in a moment.");
 
     private final int status;
     private final String message;
@@ -30,5 +34,15 @@ public enum ErrorCode {
 
     public String message() {
         return message;
+    }
+
+    /** The code for an HTTP status Spring or the servlet container answered with; unknown 4xx are validation, 5xx ours. */
+    public static ErrorCode forStatus(int status) {
+        for (ErrorCode code : values()) {
+            if (code.status == status && code != CONSENT_REQUIRED) {
+                return code;
+            }
+        }
+        return status >= 400 && status < 500 ? VALIDATION_FAILED : INTERNAL;
     }
 }

@@ -25,6 +25,18 @@ public final class LeakyLoggingFixture {
         }
     }
 
+    static final class UsesSpringsLogAccessor {
+        void log(double kg) {
+            new org.springframework.core.log.LogAccessor(UsesSpringsLogAccessor.class).info("weight " + kg);
+        }
+    }
+
+    static final class UsesSystemLoggerWithABundle {
+        void log(double kg) {
+            System.getLogger("x", null).log(System.Logger.Level.INFO, "weight " + kg);
+        }
+    }
+
     static final class PrintsToOut {
         void log(double kg) {
             System.out.println("weight " + kg);
