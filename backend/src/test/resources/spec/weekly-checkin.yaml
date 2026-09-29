@@ -14,7 +14,7 @@ rows:
     title: "First 14 days: no interpretation"
     given: {phase: cut, days_since_start: 10, weighins_last_7: 7, adherence: 0.95}
     expect: {action: NO_DECISION_YET, reason: data_insufficient}
-    source: "arastirma/ham/H1-olcum.md"
+    source: "arastirma/ham/H1-olcum.md#3.4"
 
   - id: WC-02
     title: "Decision window not full yet (female, 21 of 28 days)"
@@ -62,7 +62,7 @@ rows:
     title: "Adherence under 50%: do not touch calories, fix adherence"
     given: {phase: cut, trend: flat, flat_weeks: 3, adherence: 0.45}
     expect: {action: FIX_ADHERENCE}
-    source: "arastirma/ham/guray/G2-kilo-verme.md"
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-60"
 
   - id: WC-10
     title: "Losing faster than the weekly cap: raise calories"
@@ -99,7 +99,7 @@ rows:
     title: "User pushes back with no new data: decision unchanged"
     given: {phase: cut, trend: toward_goal, look: better, training: stable, adherence: 0.84, user_pushback: true, new_data: false}
     expect: {action: CONTINUE}
-    source: "docs/anayasa.md"
+    source: "docs/anayasa.md#U2"
     note: "U2 — the same Snapshot must produce the same Decision."
 
   - id: WC-16
@@ -130,4 +130,4 @@ rows:
     title: "Appetite gone on a bulk: mini cut"
     given: {phase: bulk, appetite: gone, forcing_food: true}
     expect: {action: MINI_CUT}
-    source: "arastirma/ham/guray/G7-whisper-arsiv.md"
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"

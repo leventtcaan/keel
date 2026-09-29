@@ -1,7 +1,6 @@
 package app.keel.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
@@ -35,8 +34,9 @@ class DecisionTests {
         assertThat(decision.copyKey()).isEqualTo(COPY_KEY);
     }
 
+    // ADR-020: NO_DECISION_YET too, so the user can always be told what would change the call (U2).
     @ParameterizedTest
-    @MethodSource("actionsThatChangeSomething")
+    @MethodSource("everyAction")
     void rejectsADecisionWithoutAReason(Action action) {
         assertThatThrownBy(() -> new Decision(action, List.of(), Confidence.HIGH, NEXT_REVIEW, COPY_KEY))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -44,15 +44,9 @@ class DecisionTests {
     }
 
     @Test
-    void acceptsNoDecisionYetWithoutAReason() {
-        assertThatNoException().isThrownBy(() -> new Decision(
-                new Action.NoDecisionYet(), List.of(), Confidence.LOW, NEXT_REVIEW, new CopyKey("decision.no_decision_yet")));
-    }
-
-    @Test
     void acceptsNoDecisionYetWithAReason() {
         Reason dataInsufficient = new Reason(
-                new RuleId("data_insufficient"), new Source("arastirma/ham/H1-olcum.md", SourceTag.LITERATURE));
+                new RuleId("data_insufficient"), new Source("arastirma/ham/H1-olcum.md#3.4", SourceTag.LITERATURE));
 
         Decision decision = new Decision(
                 new Action.NoDecisionYet(), List.of(dataInsufficient), Confidence.LOW, NEXT_REVIEW,
@@ -118,7 +112,7 @@ class DecisionTests {
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
-    static Stream<Action> actionsThatChangeSomething() {
-        return Actions.all().stream().filter(action -> !(action instanceof Action.NoDecisionYet));
+    static Stream<Action> everyAction() {
+        return Actions.all().stream();
     }
 }

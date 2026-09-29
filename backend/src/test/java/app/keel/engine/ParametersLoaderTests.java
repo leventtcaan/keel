@@ -497,7 +497,7 @@ class ParametersLoaderTests {
         String before = ParameterSet.fromDocuments(repositoryDocuments()).versionHash();
         Map<String, Object> documents = repositoryDocuments();
         entry(documents, "nutrition.yaml", "cut_step_min_kcal").put("note", "reworded");
-        entry(documents, "nutrition.yaml", "cut_step_min_kcal").put("source", "arastirma/ham/guray/G7-whisper-arsiv.md");
+        entry(documents, "nutrition.yaml", "cut_step_min_kcal").put("source", "arastirma/ham/guray/G7-whisper-arsiv.md#K-98");
         Collections.reverse(parameters(documents, "training.yaml"));
         Map<String, Object> reorderedFiles = new LinkedHashMap<>();
         new ArrayList<>(documents.keySet()).reversed().forEach(file -> reorderedFiles.put(file, documents.get(file)));
