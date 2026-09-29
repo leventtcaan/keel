@@ -99,6 +99,20 @@
         "title": "A lighter week.",
         "body": "Months at the same weights often mean tiredness has built up. This week has fewer sets; after it, build back up gradually."
       }
+    },
+    "full_rest_week": {
+      "label": "Week off",
+      "plan_missed": {
+        "title": "Take this week off from the gym.",
+        "body": "For a while now the plan hasn't gone the way it was written. A lighter week rarely fixes that; a full week away does. Come back gradually after it."
+      }
+    },
+    "fix_recovery": {
+      "label": "Recover better",
+      "loads_regressed": {
+        "title": "Look at food and sleep first.",
+        "body": "This week you couldn't lift what you lifted last week. Going backwards is rarely about the training itself: check how you ate and slept, one thing at a time."
+      }
     }
   }
 }
