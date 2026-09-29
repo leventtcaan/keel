@@ -42,7 +42,7 @@ class WorkoutLogTests {
         List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
 
         assertThat(exercises).anySatisfy(move -> assertThat(move).containsEntry("id", "lat_pulldown").containsEntry("kind", "COMPOUND")
-                .containsEntry("nameKey", "exercises.lat_pulldown.name").containsEntry("alternatives", List.of("pull_up", "seated_row"))
+                .containsEntry("nameKey", "exercises.lat_pulldown.name").containsEntry("alternatives", List.of("pull_up", "close_grip_lat_pulldown"))
                 .containsEntry("load", "EXTERNAL").containsEntry("unilateral", false));
     }
 
