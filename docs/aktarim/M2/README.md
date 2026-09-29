@@ -16,7 +16,8 @@ profil → ölçüm/beslenme/antrenman → karar.
 4. K-215 ortak altyapı — hata ve log (V3 yapısal)
 5. K-203 kimlik — kim olduğunu kanıtlamak
 6. K-204 rıza — izni kanıtlamak ve geri almak
-7. (sıradakiler görev bitince eklenir)
+7. K-205 profil — modülün dışa açtığı yüz
+8. (sıradakiler görev bitince eklenir)
 
 ## Durum
 | Görev | Aktarım dosyası | Kod | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
@@ -27,3 +28,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-215 ortak altyapı | `K-215.md` | ✅ | — | — | — |
 | K-203 kimlik (+ ADR-025) | `K-203.md` | ✅ | — | — | — |
 | K-204 rıza | `K-204.md` | ✅ | — | — | — |
+| K-205 profil | `K-205.md` | ✅ | — | — | — |
