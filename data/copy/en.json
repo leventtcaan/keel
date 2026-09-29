@@ -37,6 +37,20 @@
         "title": "Not yet. Your plan needs its full window.",
         "body": "Keep going as planned. Judging it early would read water and daily swings as progress or as a stall."
       }
+    },
+    "increase_calories": {
+      "label": "Eat a little more",
+      "loss_rate_cap": {
+        "title": "You're losing faster than your body can keep up with.",
+        "body": "Past this pace the extra is mostly water and muscle, not fat. Calories go up a step this week so the loss that stays is the kind you want."
+      }
+    },
+    "change_movement": {
+      "label": "Move more",
+      "bmr_floor": {
+        "title": "Food stays where it is. Movement goes up.",
+        "body": "Another calorie cut would take you under what your body needs at rest. More daily steps get the same result without eating less."
+      }
     }
   }
 }

@@ -1,9 +1,15 @@
 package app.keel.engine;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Shared test inputs: the real repository parameters and small builders for weigh-in series. */
 final class EngineFixtures {
@@ -32,5 +38,20 @@ final class EngineFixtures {
 
     static WeightSeries series(List<WeighIn> weighIns) {
         return new WeightSeries(weighIns);
+    }
+
+    /** The texts behind a copy key in data/copy/en.json (JSON is valid YAML); empty if the key is not a text group. */
+    @SuppressWarnings("unchecked")
+    static Map<String, Object> copyGroup(CopyKey key) {
+        Object node;
+        try (Reader reader = Files.newBufferedReader(Path.of("../data/copy/en.json"))) {
+            node = ParametersLoaderTests.strictYaml().load(reader);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        for (String part : key.value().split("\\.")) {
+            node = node instanceof Map<?, ?> map ? map.get(part) : null;
+        }
+        return node instanceof Map<?, ?> group ? (Map<String, Object>) group : Map.of();
     }
 }
