@@ -810,7 +810,7 @@ tasks:
     module: backend
     type: chore
     size: S
-    status: todo
+    status: done
     depends_on: [K-202]
     why: "Sağlık verisi logda yok (V3)"
     acceptance:

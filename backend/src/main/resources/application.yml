@@ -16,3 +16,17 @@ spring:
       jdbc:
         schema-initialization:
           enabled: false
+# V3 (K-215): failures are logged by SafeLog, by type and code location only. The container's and Spring MVC's own
+# loggers would print an exception's message, which may hold what the request carried; and the fallback error body
+# never repeats the path.
+server:
+  error:
+    include-path: never
+    include-message: never
+    include-exception: false
+    include-stacktrace: never
+logging:
+  level:
+    "[org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]]": off
+    org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver: off
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: off

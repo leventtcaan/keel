@@ -24,6 +24,8 @@ dependencies {
     implementation(libs.spring.modulith.starter.core)
     // Persistence (ADR-005, ADR-023): Spring Data JDBC, Flyway migrations, the PostgreSQL driver, and Modulith's
     // event publication registry on the same database (its table comes from a migration, not auto-created).
+    // The HTTP API (ADR-024) and its shared error model and request log (K-215).
+    implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.data.jdbc)
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.modulith.starter.jdbc)
@@ -38,6 +40,7 @@ dependencies {
     // Property-based tests for pure engine functions (skill property-based-testing, K-103).
     testImplementation(libs.jqwik)
     // Integration tests run against a real PostgreSQL in a container, the same image as docker compose (ADR-020).
+    testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.junit.jupiter)
