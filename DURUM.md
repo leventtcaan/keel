@@ -54,13 +54,13 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (30 Eyl, üçüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-2.md`)
 Bu oturum M1'i kapattı (#150-#153) ve M2'de K-201, K-202, K-203, K-204, K-205, K-207, K-215'i birleştirdi.
-1. **Açık iş (30 Eyl):** K-206 #160, K-210 #161, K-214 #162, K-218 #163 ✅ birleşti. **K-219** `data/103-exercise-catalog`
-   (`../keel-k219`, main üstünde, commit a774c0e): inceleme ajanı çalıştı/çalışıyor → bulgular TDD → PR `--auto --squash`.
-   **⚠ DİSK DOLU (30 Eyl):** Mac'te ~1 GB boş (228 GB'ın 201'i); Docker Desktop açılmıyor → veritabanlı testler yerelde
-   koşmuyor. Yalnız kendi ürettiğim `node_modules`/`build` silindi; Levent'in dosyalarına dokunulmadı. Levent yer açana dek:
-   Docker'sız testler (`app.keel.engine.*`, `ExerciseCatalogTests`, `app.keel.architecture.*`) yerelde, tam doğrulama CI'da.
-   Worktree'lerde `npm ci` yapma (640 MB); gerekirse ana checkout'un `node_modules`'ı.
-2. **Sonraki göç numarası V8** (V7 = K-214). Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
+1. **Açık iş (30 Eyl):** K-206/K-210/K-214/K-218 ✅. **K-219 PR #164** (auto-merge; CI ilk koşuda K-210'un sabitlediği
+   takas beklentisiyle kırmızıydı → veri düzeltmesine göre güncellendi, 4709e3a). **K-211** `training/35-program`
+   (`../keel-k211`, taban K-219 ucu **b8e3e94**, V8): kod + testler + aktarım yazıldı, inceleme ajanı çalışıyor → bulgular
+   TDD → #164 birleşince `git rebase --onto origin/main 4709e3a` (ya da b8e3e94) → PR. DB testleri yalnız CI'da.
+   **⚠ DİSK DOLU:** ~900 MB boş; Docker açılmıyor → veritabanlı testler yerelde koşmuyor; tam doğrulama CI'da.
+   Worktree'de yalnız `contracts` için `npm ci` (43 MB); mobil `node_modules` kurma (640 MB).
+2. **Sonraki göç numarası V9** (V7 = K-214, V8 = K-211). Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
    ek yük, tek taraflı) → **K-219** hareket kataloğu 30-40 (+ aliases, setup_fields, clips, review; `data/muscles.yaml`
    sözlüğü var, bilinmeyen alan reddi var → alan listesini genişlet) → **K-211** program üretimi/içe alma → **K-208** besin
    eşleme + aralık (FDC toplu içe aktarma, ADR-008 güncellemesi; aralık modeli parametreleri araştırmadan kaynakla) →
@@ -125,6 +125,12 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
     sağlık verisi rızası geçersiz; K-8xx (SCOFF) 18 yaş altında özellikleri kapatıyor. Onboarding'de yaş kapısı olsun mu, kaç?
 14. **(K-205, veri)** "Yiyemediğim gıdalar" alerji/çölyak gibi sağlık verisi olabilir (Md. 9). Profil sağlık verisi rızasına
     bağlansın mı, yoksa alan "sevmediğim" diye mi daraltılsın?
+15. **(K-211, ürün/koçluk)** Altı program şablonu (`data/programs/1-days.yaml` … `6-days.yaml`) **taslak**: hangi hareket,
+    kaç set. Güray sınırlarında (seans ≤5, hafta ≤10 set/kas, 4+ günde frekans 2) ama içerik onayı Levent'in. 7 gün seçen
+    kullanıcıya program yok (400, G1 K-70) — uygulama "en fazla 6" desin mi, yoksa 6'lık program + bir gün dinlenme mi?
+16. **(K-208, dışarıdan dosya indirme — izin)** FDC toplu verisi (USDA, CC0): Foundation + SR Legacy (~birkaç MB zip) ve
+    Branded (~400 MB+ zip, barkod için) indirilip içe aktarılsın mı? İndirme izin ister; ayrıca Branded diske yer ister (disk
+    şu an dolu). İzin gelene dek K-208 elle yazılmış küçük test verisiyle ilerler.
 9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
    `tag: urun`). Onay mı?
 
