@@ -16,6 +16,12 @@ parameters:
     tag: literatur
     source: "arastirma/ham/J1-cinsiyet.md#A5"
     note: "Güray'da kadına özel protein kuralı yok; boşluk literatürle dolduruldu."
+  - key: protein_female_higher_from_age
+    value: 45
+    unit: years
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#C5"
+    note: "Perimenopoz ~45'te başlar (ortalama menopoz ~51); J1 C5: ayrı soru sormadan yaş ≥45 ve kadın ile bant kaydırılır. protein_g_per_kg_female_45_plus bu yaştan itibaren."
   - key: fat_g_per_kg_min
     by_sex: {male: 0.5, female: 0.75}
     unit: g_per_kg_bodyweight
