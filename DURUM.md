@@ -36,11 +36,13 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | ✅ birleşti | #154 | `M2/K-202.md` |
 | K-201 sözleşme v1 (+ ADR-024) | ✅ birleşti | #155 | `M2/K-201.md` |
 | K-215 ortak altyapı (hata, SafeLog, health) | ✅ birleşti (gerçek Tomcat'te V3 sızıntısı bulundu, düzeltildi) | #156 | `M2/K-215.md` |
-| K-203 kimlik (+ ADR-025) | PR auto-merge; güvenlik incelemesi 3 bulgu düzeltildi | #157 | `M2/K-203.md` |
-| K-204 rıza | dal itildi (K-203 üstünde), inceleme sürüyor | `consent/28-three-consents` | `M2/K-204.md` |
-| K-205 profil | dal itildi (K-204 üstünde), inceleme sürüyor | `profile/29-profile` | `M2/K-205.md` |
-| K-207 besin spike | ✅ main (ADR-008) | — | `M2/K-207.md` |
+| K-203 kimlik (+ ADR-025) | ✅ birleşti; güvenlik incelemesi 3 bulgu düzeltildi | #157 | `M2/K-203.md` |
+| K-204 rıza | ✅ birleşti; inceleme: AI rızası sağlayıcıya bağlandı, `seq` sırası | #158 | `M2/K-204.md` |
+| K-205 profil | ✅ birleşti; inceleme: katı JSON tipleri | #159 | `M2/K-205.md` |
 | K-207 besin spike (ADR-008 güncellendi) | ✅ main | — | `M2/K-207.md` |
+| K-206 ölçüm (+ ADR-026) | PR auto-merge; inceleme 5 bulgu düzeltildi | #160 | `M2/K-206.md` |
+| K-210 antrenman kaydı | dal itildi (K-206 üstünde), inceleme bulguları düzeltildi, PR yok | `training/34-workout-log` | `M2/K-210.md` |
+| K-214 gizlilik (silme, dışa aktarma, egress) | dal itildi (K-210 üstünde), **inceleme yapılmadı**, PR yok | `privacy/38-deletion-export-egress` | `M2/K-214.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -48,27 +50,42 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (29 Eyl gece, ikinci oturum)
-Bu oturum (prompt `plan/oturum-promptlari/M2-devam.md`) M1 kalanını bitirdi; sırada M2.
-1. ✅ M1 kapandı: #150, #152, #153 birleşti; worktree'ler kaldırıldı; `docs/aktarim/M1/README.md` güncel.
-2. **Açık işler (dal zinciri — göç numaraları ardışık olsun diye):** K-203 #157 (auto-merge) → K-204
-   `consent/28-three-consents` (V3, `../keel-k204`) → K-205 `profile/29-profile` (V4, `../keel-k205`). K-203 birleşince:
-   `cd ../keel-k204 && git fetch && git rebase --onto origin/main 1ffd6ff` (1ffd6ff = K-203'ün son commit'i) → PR;
-   K-204 birleşince K-205'i aynı şekilde (`--onto origin/main 152352b`) → PR. K-204+K-205 incelemesi sürüyor.
-   Sonraki göç numarası **V5**. Mutasyon betiği: scratchpad `mutate.py` (`MUT_DIR=<modül>`).
-   Sıradaki: **K-206 ölçüm** (K-205 üstünde; HEALTH_DATA rıza kapısı → ADR-015 bağımlılık genişletmesi `consent`),
-   K-210 antrenman, K-214 gizlilik, K-208 besin.
-3. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
-   K-206, K-210, K-208, K-214 → K-209, K-211, K-218, K-219 → K-212 → K-213, K-216, K-217. Skill'ler: Postgres/Flyway →
-   K-202, sözleşme (spectral + oasdiff) → K-201 (`arastirma/ham/L4-skill-kaynaklari.md` §6-8).
-   - Docker Desktop açık (29.2.1). Kapalıysa `open -a Docker`.
-   - **ADR-008 güncellenecek:** ADR-020 "yalnız USDA FDC, OFF yok" dedi; ADR-008 ve K-208'in "barkod → OFF" kriteri
-     buna göre değişir (FDC Branded Foods'ta GTIN var mı, K-207 spike doğrular). Türk ürün kapsamı zayıflığı → Riskler.
-   - M2 notu (K-212): "süren mini cut" Snapshot'ta temsil edilmiyor; `menstrualLossReported` saklanmaz (mimari m.4);
-     faz değişiminde hedefin korunması altın senaryoların varsayımı (GS-13/29) — K-212 farklı karar verirse senaryolar değişir.
-   - Mutasyon betiği: scratchpad'de; yeniden yazmak gerekirse: dosyayı `.bak`'a kopyala, değiştir, testi koş, `.bak`'tan geri taşı.
-4. Bitiş: sorular (aşağıdaki liste) AskUserQuestion ile toplu → ADR → kalan iş → `plan/oturum-promptlari/M3.md` → özet.
-   Session kapanmaz; M1 kalanı + M2 aktarımı bu işi yapan oturumda yapılır.
+## ▶ DEVAM NOKTASI (30 Eyl, üçüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-2.md`)
+Bu oturum M1'i kapattı (#150-#153) ve M2'de K-201, K-202, K-203, K-204, K-205, K-207, K-215'i birleştirdi.
+1. **Açık dal zinciri** (göç numaraları ardışık olsun diye sıralı; her biri öncekinin üstünde):
+   - **K-206** `measurement/30-series` (`../keel-k206`, main üstünde, V5) → **PR #160** auto-merge. Kırmızıysa düzelt.
+   - **K-210** `training/34-workout-log` (`../keel-k210`, V6): commit'ler 43fbed1, 0b30cee, 9aa255c; taban = eski K-206 ucu
+     **6754823**. #160 birleşince: `cd ../keel-k210 && git fetch && git rebase --onto origin/main 6754823` → `./gradlew build`
+     → push (`--force-with-lease`) → PR `--auto --squash`. İnceleme yapıldı, bulgular düzeltildi (aktarım dosyasında).
+   - **K-214** `privacy/38-deletion-export-egress` (`../keel-k214`, göç yok): commit **c93c53c**; taban = K-210 ucu **9aa255c**.
+     **İnceleme ajanı henüz çalışmadı** → code-reviewer + silent-failure-hunter çalıştır (deletion listener hataları, olay
+     kaydı tekrar denemesi, dışa aktarmada sızıntı, egress kuralı) → bulgular TDD → K-210 birleşince
+     `git rebase --onto origin/main 9aa255c` → PR.
+   - Birleşen dal worktree'lerini kaldır (`git worktree remove`); yerel dal etiketleri zararsız (squash yüzünden `-d` reddeder, `-D` koruma engeller — bırak).
+2. **Sonraki göç numarası V7.** Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
+   ek yük, tek taraflı) → **K-219** hareket kataloğu 30-40 (+ aliases, setup_fields, clips, review; `data/muscles.yaml`
+   sözlüğü var, bilinmeyen alan reddi var → alan listesini genişlet) → **K-211** program üretimi/içe alma → **K-208** besin
+   eşleme + aralık (FDC toplu içe aktarma, ADR-008 güncellemesi; aralık modeli parametreleri araştırmadan kaynakla) →
+   **K-209** öğün + günlük bütçe (`KcalBalance` eksi olabilir; HEALTH_DATA rıza kapısı) → **K-212** Snapshot + karar kaydı
+   (ADR-003; parametre `versionHash`; `Measurements.dailyWeights`, `Profiles.of`; check-in günü profil saat diliminde) →
+   **K-213** check-in soruları (soru bütçesi parametreden, `reasonCopyKey`) → **K-216** kararı hedeflere uygula (+ undo,
+   `application.state`) → **K-217** programa yansıma (deload `until`, `nextLoadKg/nextReps`, bölgeye göre yük adımı).
+3. **Kurallar (bu koşuda öğrenilenler):**
+   - Her uç noktada: rıza kapısı (sağlık verisi ise, ADR-026), `ApiLimits` (`keel.api`: aralık ≤400 gün, yıl 1900-2200),
+     saklanamayan değer 400 (asla 500), sayılar `Decimals.plain`, clientId idempotency (201/200; başka ebeveyne aynı
+     clientId → 409), PUT cevabı saklananı geri okur. Katı JSON açık (`spring.jackson.*`).
+   - Yeni modül verisi: `*AccountData` (silme dinleyicisi + dışa aktarma bölümü) yaz — `AccountDataTests` veritabanındaki
+     her `account_id` tablosunu kontrol eder, unutulursa kırmızı.
+   - Test yardımcıları: `app.keel.identity.TestSessions` (bearer), `PostgresTestConfiguration`, measurement'ta
+     `MeasurementTestSupport`. Test yapılandırması `src/test/resources/config/application.yml`.
+   - **Mutasyon betiği:** `plan/oturum-promptlari/mutate.py` (kopya). Kullanım: bir JSON listesi
+     `[{name,file,old,new}]` yaz, `MUT_DIR=<modül|.> python3 plan/oturum-promptlari/mutate.py <worktree> '<test filtresi>' <json>`;
+     dosyayı `.bak`'a kopyalar, değiştirir, Gradle testini koşar, `.bak`'tan geri taşır; sonucu Gradle çıktısından okur.
+   - Docker Desktop açık olmalı (`open -a Docker`); yerel DB `cd backend && docker compose up -d` (port 55432, parolasız);
+     yerel çalıştırma `KEEL_SESSION_SECRET=$(openssl rand -base64 32)`.
+4. **Bitiş:** sorular (aşağıdaki liste, 0-14) AskUserQuestion ile toplu → cevapları ADR'ye işle → kalan iş →
+   `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; M3 kabul kriterine ekle: tek uçuşlu refresh, ADR-025) → özet.
+   Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra bu sohbette (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 
 **Bilgi (Levent'e, soru değil):** K-113 GS-10 — erkekte ideal bulk hızı (ayda 1 kg) 21 günlük pencerede "sabit" okunur,
 motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "çok hızlı" kuralı M1 kapsamında değil).
