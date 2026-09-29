@@ -40,3 +40,9 @@ Düşük.
 `training` → **engine** eklendi (`training` → profile, engine). Program üretimi motorun parametrelerini okur (tekrar
 aralığı, hedef RIR: `data/parameters/training.yaml`); motor saf olduğu için döngü yok, `measurement` → engine ile aynı
 gerekçe. Motorun karar fonksiyonlarını training çağırmaz; kararı `decision` verir.
+
+## Ek (30 Eyl 2026, K-208)
+`nutrition` → **engine** eklendi (`nutrition` → profile, consent, engine): besin aralığının oranları (miktar ve veri hatası,
+`arastirma/ham/H7-besin-araligi.md`) motorun parametre dosyasında (`nutrition.yaml`), gram sorusu eşiği motorun en küçük
+kalori adımı (`bulk_step_kcal`). Besin araması ve tahmin **rıza istemez**: hiçbir şey saklanmaz, dışarı gitmez; öğün kaydı
+(K-209) sağlık verisidir ve HEALTH_DATA ister.

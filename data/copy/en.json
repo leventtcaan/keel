@@ -488,5 +488,10 @@
     "legs_b": {
       "name": "Legs B"
     }
+  },
+  "foodEstimate": {
+    "question": {
+      "grams": "How many grams was it? Weighing it narrows this the most."
+    }
   }
 }

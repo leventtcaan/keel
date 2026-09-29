@@ -67,3 +67,11 @@ Orta.
 
 ## Doğrulama
 Eşleme testleri; aralık çıktısı testleri; sapma kalibrasyonu simülasyon testi.
+
+## Güncelleme (30 Eyl 2026, K-208)
+- **Aralık modeli:** `arastirma/ham/H7-besin-araligi.md` — değer hatası (analiz ±%10; etiket mevzuat gereği tek yönlü:
+  enerji/yağ +%20, protein/karbonhidrat −%20, 21 CFR 101.9(g)(4)-(5)) × miktar hatası (tartı ±%5, porsiyon ±%25, göz
+  kararı ±%50). Üç oran `tag: urun`, onay listesinde.
+- **Barkod:** GTIN-14'e normalize, GS1 kontrol hanesi doğrulanır; FDC'de yoksa NOT_FOUND.
+- **Toplu içe aktarma bekliyor:** FDC dosyalarını indirmek dışarıdan dosya indirme → Levent izni (DURUM soru 16); Branded
+  paketi büyük ve disk şu an dolu. O zamana dek `nutrition.food` boş, arama sonuç vermez (dürüst boşluk).

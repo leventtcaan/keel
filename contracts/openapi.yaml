@@ -1337,13 +1337,16 @@ components:
         quantity:
           type: number
           exclusiveMinimum: 0
+          description: At most 2 decimals; the amount it makes is at most 5000 g.
         unit:
           type: string
-          description: grams (g), millilitres (ml) or the name of one of the food's servings.
+          description: |
+            grams (g), millilitres (ml: only for a food with a known density) or the name of one of the food's servings
+            (a serving is a measure: its own range, whatever certainty says).
         certainty:
           type: string
           enum: [WEIGHED, ESTIMATED]
-          description: A weighed amount narrows the range; an estimated one widens it.
+          description: A weighed amount narrows the range; an estimated one (the default) widens it.
     FoodSearch:
       type: object
       required: [q]
