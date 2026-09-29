@@ -33,8 +33,9 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-113 altın senaryolar (37 yolculuk + DataSufficiency söz hatası düzeltildi) | ✅ birleşti | #152 | `M1/K-113.md` |
 | K-115 sapma kalibrasyonu (aralık: formül + tartı payı; son iki pencere anlaşmalı) | ✅ birleşti | #153 | `M1/K-115.md` |
 | tooling: git guard worktree dalını görür | ✅ birleşti | #151 | (küçük) |
-| **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | PR, auto-merge | #154 | `M2/K-202.md` |
-| K-201 sözleşme v1 (+ ADR-024) | inceleme | `contracts/25-contract-v1` | `M2/K-201.md` |
+| **M2** K-202 PostgreSQL + Flyway (+ ADR-023) | ✅ birleşti | #154 | `M2/K-202.md` |
+| K-201 sözleşme v1 (+ ADR-024) | PR, auto-merge; inceleme 10/11 düzeltildi | #155 | `M2/K-201.md` |
+| K-215 ortak altyapı (hata, SafeLog, health) | dal itildi, silent-failure incelemesi sürüyor | `backend/39-common-infra` | `M2/K-215.md` |
 | K-207 besin spike (ADR-008 güncellendi) | ✅ main | — | `M2/K-207.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
@@ -46,9 +47,11 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (29 Eyl gece, ikinci oturum)
 Bu oturum (prompt `plan/oturum-promptlari/M2-devam.md`) M1 kalanını bitirdi; sırada M2.
 1. ✅ M1 kapandı: #150, #152, #153 birleşti; worktree'ler kaldırıldı; `docs/aktarim/M1/README.md` güncel.
-2. **K-202** (`../keel-k202`, dal `backend/26-postgres-flyway`): commit 6c4caba, inceleme ajanı çalışıyor → bulgular →
-   `docs/aktarim/M2/K-202.md` → PR. Yerel DB: `cd backend && docker compose up -d` (port **55432**; Levent'in makinesinde
-   PostgreSQL 16/17 5432'de kurulu — dokunma).
+2. **Açık işler:** K-201 #155 (auto-merge) · K-215 dal `backend/39-common-infra` (`../keel-k215`, commit 8401535):
+   silent-failure-hunter incelemesi bitti mi → bulgular TDD → PR. Worktree `../keel-k201` PR birleşince kaldır.
+   Mutasyon betiği: scratchpad `mutate.py` (`MUT_DIR=shared` ile başka paket). Yerel DB: `cd backend && docker compose up -d`
+   (port 55432, parolasız). Sıradaki: **K-203 kimlik** (Apple kimlikleri yapılandırmadan; `authorizationCode` ile iptal
+   kuralını Apple dokümanından doğrula).
 3. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
    K-206, K-210, K-208, K-214 → K-209, K-211, K-218, K-219 → K-212 → K-213, K-216, K-217. Skill'ler: Postgres/Flyway →
    K-202, sözleşme (spectral + oasdiff) → K-201 (`arastirma/ham/L4-skill-kaynaklari.md` §6-8).
