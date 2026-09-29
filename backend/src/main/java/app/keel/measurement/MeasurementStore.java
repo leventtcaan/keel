@@ -101,6 +101,20 @@ class MeasurementStore {
                         Look.valueOf(row.getString("look")))).single(), created == 1);
     }
 
+    List<PhotoCheck> photoChecks(AccountId account) {
+        return jdbc.sql("select * from measurement.photo_check where account_id = :account order by taken_on, id")
+                .param("account", account.value())
+                .query((row, n) -> new PhotoCheck(uuid(row, "id"), uuid(row, "client_id"), row.getObject("taken_on", LocalDate.class),
+                        Look.valueOf(row.getString("look")))).list();
+    }
+
+    List<ActivityDay> activityDays(AccountId account) {
+        return jdbc.sql("select * from measurement.activity_day where account_id = :account order by day")
+                .param("account", account.value())
+                .query((row, n) -> new ActivityDay(row.getObject("day", LocalDate.class), row.getObject("steps", Integer.class),
+                        row.getObject("sleep_minutes", Integer.class), row.getObject("active_energy_kcal", Integer.class))).list();
+    }
+
     /** The day's values replace what was stored for it (Apple Health resends a day as it fills up). */
     void put(AccountId account, ActivityDay day) {
         jdbc.sql("""
