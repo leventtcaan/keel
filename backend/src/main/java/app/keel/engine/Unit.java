@@ -21,9 +21,10 @@ public enum Unit {
     KG_PER_MONTH("kg_per_month", Kind.FRACTION, Bound.POSITIVE),
     G_PER_KG_BODYWEIGHT("g_per_kg_bodyweight", Kind.FRACTION, Bound.POSITIVE),
     G_PER_DAY("g_per_day", Kind.FRACTION, Bound.POSITIVE),
-    KCAL_PER_DAY("kcal_per_day", Kind.FRACTION, Bound.POSITIVE),
     KCAL_PER_KG_FFM_PER_DAY("kcal_per_kg_ffm_per_day", Kind.FRACTION, Bound.POSITIVE),
 
+    // Calorie targets and steps are whole kcal (Güray: 500, 250).
+    KCAL_PER_DAY("kcal_per_day", Kind.WHOLE, Bound.POSITIVE),
     DAYS("days", Kind.WHOLE, Bound.POSITIVE),
     WEEKS("weeks", Kind.WHOLE, Bound.POSITIVE),
     MONTHS("months", Kind.WHOLE, Bound.POSITIVE),

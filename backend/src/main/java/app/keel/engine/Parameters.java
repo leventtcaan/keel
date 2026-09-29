@@ -26,13 +26,16 @@ public final class Parameters {
         return decimal(key).doubleValue();
     }
 
-    /** For counts and day windows; fails if the file holds a fraction, instead of silently rounding it. */
+    /**
+     * For counts, day windows and kcal. Only keys whose unit counts whole things (checked at load, so this never
+     * rounds); asking for a whole number of kg is a bug in the rule, whatever today's value happens to be.
+     */
     public int wholeNumber(ParameterKey key) {
-        BigDecimal decimal = decimal(key).stripTrailingZeros();
-        if (decimal.scale() > 0) {
-            throw new IllegalStateException(key.yamlKey() + " is " + decimal.toPlainString() + ", not a whole number");
+        if (key.unit().kind() != Unit.Kind.WHOLE) {
+            throw new IllegalStateException(
+                    key.yamlKey() + " is in " + key.unit().yamlName() + ", which is not a whole-number unit");
         }
-        return decimal.intValueExact();
+        return decimal(key).intValueExact();
     }
 
     public boolean flag(ParameterKey key) {

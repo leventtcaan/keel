@@ -84,6 +84,15 @@ class ParametersLoaderTests {
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("whtr_threshold");
     }
 
+    @Test
+    void refusesAWholeNumberReadOfAUnitThatAllowsFractions() {
+        // weekly_loss_cap_kg is 1.0 today, but kg allows 0.8 tomorrow: a rule must not depend on the value's luck.
+        Parameters male = ParameterSet.fromDocuments(repositoryDocuments()).forSex(Sex.MALE);
+
+        assertThatThrownBy(() -> male.wholeNumber(ParameterKey.WEEKLY_LOSS_CAP_KG))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("weekly_loss_cap_kg");
+    }
+
     // ── invalid: one broken thing each ──────────────────────────────────────────────────────────────────────
 
     @Test
