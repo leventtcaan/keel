@@ -16,6 +16,14 @@
 3. **Referanslı son aktarım** — yazılanın üzerinden dosya dosya, tıklanabilir `dosya:satır` bağlantılarıyla.
    İş mantığında istisnasız **satır satır**; iskelet/yapılandırmada yalnız kritik kısım.
 
+### Toplu mod (Levent kararı, 29 Eyl 2026 — M1'den itibaren)
+Levent paralelde başka iş yaparken agent bir kilometre taşını baştan sona uygular; aktarım sonra, toplu yapılır.
+- Ön aktarım **yazılı** hazırlanır: her görev için `docs/aktarim/<M>/<K-ID>.md` (basamak merdiveni, satır satır
+  anlatılacak yerler, canlı kanıt, soru bankası). Koda geçmek için Levent'in "devam"ı beklenmez.
+- Her görev kapanınca aktarım dosyası **gerçek `dosya:satır` referanslarıyla** güncellenir (birleşen koddan).
+- Aktarım oturumu: Levent döner → merdiven sıfırdan, 2-3 basamak/mesaj, kendi cümleleri → Apple Notes (son adım).
+- Hakimiyet ölçütü değişmez: birleşmiş kod, Levent anlatabilene kadar "aktarılmamış" sayılır (DURUM'da işaretli).
+
 ## Seviye merdiveni
 - Önce **hedef ve basamaklar:** iş 10 üzerinden kaç seviyedeyse o seviyeye çıkan basamak listesi Levent'e gösterilir.
   Her basamak tek kavram, bir sonrakinin ön koşulu.

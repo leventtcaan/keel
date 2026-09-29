@@ -11,13 +11,41 @@ guncelleme: 2026-09-29
 (dal koruması: iki CI kontrolü zorunlu). Levent'i bekleyen: ürün kapsamı, para, sağlık/regülasyon, kullanıcı
 verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 
+## M1 koşusu — toplu mod (29 Eyl öğleden itibaren; bağlam sıkışırsa buradan devam)
+Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/aktarim-protokolu.md` › Toplu mod).
+**Her görev döngüsü:** `gorev-baslat` → test önce (RED çıktısı) → kod → `./gradlew build` → pr-review-toolkit
+(code-reviewer + pr-test-analyzer, gerekirse silent-failure-hunter/type-design-analyzer) → düzelt → aktarım dosyası
+`docs/aktarim/M1/K-1NN.md` → PR `--auto --squash` → CI yeşil + birleşti → aşağıdaki satırı işaretle → sıradaki.
+**Eksik eşik politikası (Levent, 29 Eyl):** araştırmadan kaynakla koy (dosya + kural no + tag; çelişkide Güray),
+"Onay bekleyen eşikler" listesine yaz.
+
+| Görev | Durum | Dal / PR | Aktarım |
+|---|---|---|---|
+| K-101 alan tipleri | sürüyor | `engine/12-domain-types` | — |
+| K-102 parametre yükleme | — | | |
+| K-103 trend, veri yeterliliği | — | | |
+| K-104 güvenlik ağı | — | | |
+| K-105 faz kapısı | — | | |
+| K-106 check-in omurgası | — | | |
+| K-107 kalori merdiveni | — | | |
+| K-108 makrolar | — | | |
+| K-109 progresyon | — | | |
+| K-110 deload | — | | |
+| K-111 tutarlılık sayısı | — | | |
+| K-112 karar montajı | — | | |
+| K-113 altın senaryolar | — | | |
+| K-114 başlangıç hedefi | — | | |
+| K-115 sapma kalibrasyonu | — | | |
+
+**Onay bekleyen eşikler (akşam Levent'e):** —
+**Akşam sorulacaklar:** —
+**Alınan teknik kararlar (aktarımda anlatılacak):** —
+
 ## Aktif görev
-Yok. Sıradaki: **K-101 · Motor alan tipleri** (skill `gorev-baslat`, ön aktarımla).
+K-101 · Motor alan tipleri · dal `engine/12-domain-types` (issue #12)
 
 ## Sıradaki tek adım
-K-101'i başlat: dal `engine/<issue>-domain-types`, ön aktarım (Snapshot → Decision neden saf fonksiyon), sonra test önce.
-Oturum `~/Projects/keel` klasöründen açılır (hook, eklenti ve skill'ler ancak öyle yüklenir); ilk iş skill `oturum-baslat`.
-İlk çalışmada `git config core.hooksPath` kontrolü ve eklentilerin yüklendiği (`/plugin` listesi) doğrulanır.
+Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
 
 ## Levent'i bekleyen (acil değil)
 - **Design eklentisi** (claude.ai kataloğu, `design-critique`): CLI'dan kurulamıyor, karttan bir tık. Kurulmazsa
