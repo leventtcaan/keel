@@ -43,7 +43,7 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 Önceki oturum burada durdu; yeni oturum **buradan** devam eder (prompt: `plan/oturum-promptlari/M2-devam.md`).
 1. **#150 (K-112)** birleşti mi bak (`gh pr view 150`). Kırmızıysa düzelt.
 2. **K-113** (`../keel-k113`, dal `engine/24-golden-scenarios`): taban eski K-112 commit'leri. #150 birleşince
-   `git fetch && git rebase --onto origin/main 9cd0e46` (9cd0e46 = K-113 dalındaki eski K-112 ucu; yalnız cafc639 taşınır — `git log` ile doğrula) →
+   `git fetch && git rebase --onto origin/main 9cd0e46` (9cd0e46 = K-113 dalındaki eski K-112 ucu; K-113 commit'leri cafc639 + 4652ba8 taşınır — `git log` ile doğrula) →
    `./gradlew build` → pr-test-analyzer **bitti**: 23 beklentinin hepsi kurallarla doğru; ama 32 motor mutasyonundan
    20'si altın senaryolarda yeşil kalıyor (hepsi birim/spec testlerinde yakalanıyor). Uygulanacaklar (her beklentiyi
    **elle yeniden türet**; ajanın sıraları öneri, kopya değil — önerilen YAML'lar ajan çıktısında vardı, burada özet):
