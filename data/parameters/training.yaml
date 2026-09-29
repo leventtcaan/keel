@@ -5,6 +5,18 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G1-antrenman.md#K-5"
     note: "Çalışma setleri RIR 0-1. Eski arşivde RIR 1-2 (G6 K-40) — 2026 görüşü geçerli."
+  - key: e1rm_epley_divisor
+    value: 30
+    unit: reps
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B15"
+    note: "Epley: e1RM = yük × (1 + tükenişe kadar tekrar / 30). Tükenişe kadar tekrar = tekrar + RIR. Bir eğilim metriği, mutlak kuvvet iddiası değil."
+  - key: e1rm_max_reps_to_failure
+    value: 10
+    unit: reps
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B15"
+    note: "Mayhew 2008: denklemler 2-10 tekrarda en iyi; Reynolds 2006: yüksek tekrarda doğruluk düşer. Tekrar + RIR bunu aşan setten e1RM üretilmez."
   - key: weekly_sets_per_muscle
     value: 10
     unit: sets_per_week

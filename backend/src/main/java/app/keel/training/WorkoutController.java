@@ -57,8 +57,8 @@ class WorkoutController {
     record Finish(Instant endedAt) {
     }
 
-    record NewSet(UUID clientId, String exerciseId, WorkoutStore.SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
-            WorkoutStore.Side side) {
+    record NewSet(UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
+            Side side) {
     }
 
     /** Contract Workout. */
@@ -68,8 +68,8 @@ class WorkoutController {
 
     /** Contract LoggedSet. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record LoggedSet(UUID id, UUID clientId, String exerciseId, WorkoutStore.SetType setType, BigDecimal loadKg, int reps,
-            Integer rir, WorkoutStore.Side side) {
+    record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps,
+            Integer rir, Side side) {
 
         static LoggedSet of(WorkoutStore.LoggedSet set) {
             return new LoggedSet(set.id(), set.clientId(), set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side());
@@ -130,6 +130,7 @@ class WorkoutController {
         require(set.clientId() != null && catalog.find(set.exerciseId()).isPresent() && set.setType() != null
                 && limits.load(set.loadKg()) && set.reps() != null && set.reps() >= 0
                 && (set.rir() == null || set.rir() >= 0));
+        require(SetRules.accepts(catalog.find(set.exerciseId()).orElseThrow(), set.setType(), set.loadKg(), set.rir(), set.side()));
         WorkoutStore.Stored<WorkoutStore.LoggedSet> stored = store.log(account, id, new WorkoutStore.LoggedSet(null, set.clientId(),
                 set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), id));
         if (!stored.record().workoutId().equals(id)) {

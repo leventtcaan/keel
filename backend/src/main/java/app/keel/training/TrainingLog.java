@@ -1,0 +1,58 @@
+package app.keel.training;
+
+import app.keel.shared.AccountId;
+import app.keel.shared.Decimals;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Service;
+
+/**
+ * Training's log for the other modules (K-218): the working sets of a move — the only sets that count toward effort
+ * and the estimated one-rep max (L3 P6). decision (K-212) reads it and adds the bodyweight from measurement.
+ */
+@Service
+public class TrainingLog {
+
+    /** One working set, with the workout's start and how its move is loaded. */
+    public record WorkSet(String exerciseId, Instant at, ExerciseCatalog.Load load, BigDecimal loadKg, int reps, Integer rir, Side side) {
+
+        /**
+         * The load the muscles moved: the bar's for an external load; bodyweight plus the added load for a bodyweight
+         * move — nothing when the bodyweight is not known, rather than a load that leaves the body out.
+         */
+        public Optional<BigDecimal> effectiveLoadKg(Optional<BigDecimal> bodyWeightKg) {
+            return load == ExerciseCatalog.Load.EXTERNAL ? Optional.of(loadKg) : bodyWeightKg.map(body -> body.add(loadKg));
+        }
+    }
+
+    private final JdbcClient jdbc;
+    private final ExerciseCatalog catalog;
+
+    TrainingLog(JdbcClient jdbc, ExerciseCatalog catalog) {
+        this.jdbc = jdbc;
+        this.catalog = catalog;
+    }
+
+    /** The working sets of a move in workouts started in [from, to), in the order they were done. */
+    public List<WorkSet> workingSets(AccountId account, String exerciseId, Instant from, Instant to) {
+        ExerciseCatalog.Load load = catalog.find(exerciseId).orElseThrow(() -> new IllegalArgumentException("Not in the catalog: " + exerciseId))
+                .load();
+        return jdbc.sql("""
+                select w.started_at, s.load_kg, s.reps, s.rir, s.side from training.workout_set s
+                join training.workout w on w.id = s.workout_id
+                where s.account_id = :account and s.exercise_id = :exercise and s.set_type = 'WORKING'
+                  and w.started_at >= :from and w.started_at < :to
+                order by w.started_at, s.seq""")
+                .param("account", account.value()).param("exercise", exerciseId)
+                .param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
+                .query((row, n) -> new WorkSet(exerciseId, row.getObject("started_at", OffsetDateTime.class).toInstant(), load,
+                        Decimals.plain(row.getBigDecimal("load_kg")), row.getInt("reps"), row.getObject("rir", Integer.class),
+                        row.getString("side") == null ? null : Side.valueOf(row.getString("side"))))
+                .list();
+    }
+}

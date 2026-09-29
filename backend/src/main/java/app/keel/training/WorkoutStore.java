@@ -18,10 +18,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 class WorkoutStore {
 
-    enum SetType { WARM_UP, WORKING, DROP, FAILURE }
-
-    enum Side { BOTH, LEFT, RIGHT }
-
     record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId) {
     }
 

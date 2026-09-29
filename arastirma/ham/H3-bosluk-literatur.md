@@ -556,6 +556,31 @@ Bu maddeler için karar motoruna sayı koyacaksan **"uzman görüşü/konvansiyo
 
 ---
 
+## B15 · e1RM tahmini: formül, geçerli tekrar aralığı, RIR (30 Eyl 2026, K-218 için eklendi)
+
+**Soru:** Bir setin yük × tekrarından tahmini tek tekrar maksimumu (e1RM) nasıl hesaplanır, hangi setlerde güvenilir?
+
+- **Formül (Epley):** e1RM = yük × (1 + tekrar / 30). Yaygın denklemlerden biri; K-109/K-406 "e1RM (Epley)" diye
+  adlandırıyor. `[doğrulanmadı: Epley'in 1985 özgün çizelgesi okunmadı; formül ikincil kaynaklardan (Wikipedia
+  "One-repetition maximum"), karşılaştırma çalışmalarında aynı biçimde geçiyor]`
+- **Geçerli aralık:** Mayhew ve ark. 2008 (JSCR 22(5):1570-1577) giriş bölümü: denklemlerin çoğu **2-10 tekrarlık
+  yükte en iyi** çalışır; kendi bulguları da 10'dan az tekrarda tahminin daha doğru olduğu yönünde. Reynolds, Gordon,
+  Robergs 2006 (JSCR 20(3):584-592): 5RM'den tahmin 10RM ve 20RM'den daha doğru (R² göğüs presi 0,993 / 0,976 / 0,955).
+  → **10 tekrarın üstündeki setten e1RM üretilmez.**
+- **RIR ile:** RIR, setin tükenişe uzaklığıdır; tükenişe kadar tekrar ≈ tekrar + RIR. Helms, Cronin, Storey, Zourdos
+  2016 (Strength Cond J 38(4):42-49): RIR tahmini **tükenişe yaklaştıkça daha doğru** (deneyimli sporcuda tek tekrar
+  SD %100 1RM'de 0,32, %60'ta 1,18); yazarlar RIR–%1RM tablosunun "kesin dönüşüm aracı değil" olduğunu söyler.
+  → e1RM tekrar + RIR üstünden hesaplanır; **RIR yoksa e1RM yok** (tükenişe uzaklık bilinmeden 8 tekrar RIR 0 ile
+  RIR 5 aynı sayıyı verirdi). Tekrar + RIR de 10'u geçmemeli.
+- **Isınma, drop, tükeniş sonrası setler:** yük ya da yorgunluk durumu çalışma setinden farklı; e1RM ve efor özetine
+  girmez (L3 P6).
+- **Tek tekrar:** tükenişe kadar 1 tekrar = yükün kendisi (tanım); Epley 1'de yükün üstüne %3 ekler.
+
+**Karar motoru için:** e1RM bir **eğilim** metriğidir (aynı hareketin haftalar içindeki yönü), mutlak kuvvet iddiası
+değil. Hareketler arası ve kişiler arası kıyas yok.
+
+---
+
 ## KAYNAK LİSTESİ
 **Meta-analiz / sistematik derleme**
 - Fiber & kabızlık meta-analizi (AJCN 2022, 16 RCT, n=1251): https://pmc.ncbi.nlm.nih.gov/articles/PMC9535527/
@@ -579,6 +604,9 @@ Bu maddeler için karar motoruna sayı koyacaksan **"uzman görüşü/konvansiyo
 - Coleman/Schoenfeld ve ark. 2024 (PeerJ) — 1 haftalık deload: https://peerj.com/articles/16777/
 - Magkos ve ark. 2016 (Cell Metab) — kademeli kilo kaybı ve metabolik belirteçler: https://www.cell.com/cell-metabolism/fulltext/S1550-4131(16)30053-5
 - Plett/Schoenfeld ve ark. 2022 — yük vs tekrar ilerlemesi: https://pmc.ncbi.nlm.nih.gov/articles/PMC9528903/
+- Mayhew ve ark. 2008 (JSCR) — 1RM tahmin denklemlerinin doğruluğu: https://www.unm.edu/~rrobergs/478PredictionAccuracy.pdf
+- Reynolds, Gordon, Robergs 2006 (JSCR) — çoklu RM'den 1RM tahmini: https://pubmed.ncbi.nlm.nih.gov/16937972/
+- Helms ve ark. 2016 (Strength Cond J) — RIR tabanlı RPE ölçeği: https://pmc.ncbi.nlm.nih.gov/articles/PMC4961270/
 - Bouchard aşırı besleme çalışması: https://pubmed.ncbi.nlm.nih.gov/23736367/
 - Glikojen ve direnç antrenmanı adaptasyonları: https://pmc.ncbi.nlm.nih.gov/articles/PMC4687103/
 

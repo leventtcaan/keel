@@ -1,0 +1,67 @@
+package app.keel.engine;
+
+import static app.keel.engine.EngineFixtures.parameters;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.math.BigDecimal;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
+import net.jqwik.api.constraints.BigRange;
+import net.jqwik.api.constraints.IntRange;
+import net.jqwik.api.constraints.Scale;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Estimated one-rep max (K-218, H3 B15): Epley on the reps the set was from failure — reps + RIR — to 0.1 kg; nothing
+ * where the estimate is not trustworthy: no RIR (distance from failure unknown), more than ten reps to failure (Mayhew
+ * 2008), no rep or no load.
+ */
+class E1rmTests {
+
+    private static final Parameters P = parameters(Sex.MALE);
+    private static final int MAX = P.wholeNumber(ParameterKey.E1RM_MAX_REPS_TO_FAILURE);
+
+    @Test
+    void epleyOnRepsPlusRepsInReserve() {
+        // 100 kg × 5 at RIR 1 → 6 reps to failure → 100 × (1 + 6/30) = 120.0
+        assertThat(E1rm.estimate(new BigDecimal("100"), 5, 1, P)).contains(new BigDecimal("120.0"));
+        // 80 kg × 8 at RIR 2 → 10 → 80 × 1.333… = 106.7
+        assertThat(E1rm.estimate(new BigDecimal("80"), 8, 2, P)).contains(new BigDecimal("106.7"));
+    }
+
+    @Test
+    void oneRepToFailureIsTheLoadItself() {
+        // By definition; Epley would add 3 %.
+        assertThat(E1rm.estimate(new BigDecimal("140"), 1, 0, P)).contains(new BigDecimal("140.0"));
+    }
+
+    @Test
+    void noEstimateBeyondTenRepsToFailure() {
+        assertThat(E1rm.estimate(new BigDecimal("100"), 8, 2, P)).isPresent();
+        assertThat(E1rm.estimate(new BigDecimal("100"), 9, 2, P)).isEmpty();
+        assertThat(E1rm.estimate(new BigDecimal("60"), 15, 0, P)).isEmpty();
+    }
+
+    @Test
+    void noEstimateWithoutRepsInReserveARepOrALoad() {
+        // 8 reps at RIR 0 and at RIR 5 are different sets; without RIR we cannot tell which.
+        assertThat(E1rm.estimate(new BigDecimal("100"), 8, null, P)).isEmpty();
+        assertThat(E1rm.estimate(new BigDecimal("100"), 0, 0, P)).isEmpty();
+        assertThat(E1rm.estimate(BigDecimal.ZERO, 5, 1, P)).isEmpty();
+    }
+
+    @Property
+    void neverUnderTheLoadAndNeverDownWithMoreReps(@ForAll @BigRange(min = "1", max = "500") @Scale(2) BigDecimal load,
+            @ForAll @IntRange(min = 1, max = 10) int reps, @ForAll @IntRange(min = 0, max = 9) int rir) {
+        if (reps + rir >= MAX) {
+            return;
+        }
+        assertThat(E1rm.estimate(load, reps, rir, P)).isPresent();
+        assertThat(E1rm.estimate(load, reps + 1, rir, P)).isPresent();
+        BigDecimal estimate = E1rm.estimate(load, reps, rir, P).orElseThrow();
+        BigDecimal oneMore = E1rm.estimate(load, reps + 1, rir, P).orElseThrow();
+
+        assertThat(estimate).isGreaterThanOrEqualTo(load.setScale(1, java.math.RoundingMode.HALF_EVEN));
+        assertThat(oneMore).isGreaterThanOrEqualTo(estimate);
+    }
+}
