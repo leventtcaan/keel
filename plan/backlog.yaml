@@ -564,7 +564,7 @@ tasks:
     tests:
       - "Şema doğrulama"
       - "Mobil tip üretimi"
-    refs: ["plan/kararlar/ADR-006-mobil-mimari.md", "plan/kararlar/ADR-003-karar-motoru.md"]
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md", "plan/kararlar/ADR-003-karar-motoru.md", "arastirma/ham/L4-skill-kaynaklari.md §8 yeni skill boşlukları"]
     learn: ["REST kaynak tasarımı", "OpenAPI şemaları", "Sürümleme"]
 
   - id: K-202
@@ -583,7 +583,7 @@ tasks:
       - "Sürümler doğrulanmış ve version catalog'da"
     tests:
       - "MigrationTests"
-    refs: ["plan/kararlar/ADR-005-veri-modeli.md"]
+    refs: ["plan/kararlar/ADR-005-veri-modeli.md", "arastirma/ham/L4-skill-kaynaklari.md §6 ve §7"]
     learn: ["İlişkisel veritabanı", "Migration", "Docker Compose", "Testcontainers"]
 
   - id: K-203
@@ -914,7 +914,7 @@ tasks:
       - "Bileşen render testleri (iki tema)"
       - "Kontrast testi"
       - "Sabit renk taraması"
-    refs: ["plan/kararlar/ADR-016-gorsel-dil-rubin.md", "prototip/"]
+    refs: ["plan/kararlar/ADR-016-gorsel-dil-rubin.md", "prototip/", "arastirma/ham/L4-skill-kaynaklari.md §9"]
     learn: ["React bileşeni ve props", "StyleSheet", "Tasarım sistemi"]
 
   - id: K-302
@@ -2064,7 +2064,7 @@ tasks:
       - "Yaş derecelendirmesi anketi gerekçeli cevaplandı"
     tests:
       - "Envanter ile kod karşılaştırması"
-    refs: ["arastirma/ham/D-pazar-regulasyon.md"]
+    refs: ["arastirma/ham/D-pazar-regulasyon.md", "arastirma/ham/L4-skill-kaynaklari.md §4"]
     learn: ["App Store Connect uyum adımları"]
 
   - id: K-804
@@ -2184,7 +2184,7 @@ tasks:
       - "Bundle kimliği ve imzalama bilgileri yapılandırmada, kodda değil"
     tests:
       - "TestFlight'ta kurulum"
-    refs: ["arastirma/ham/K2-appstore-soguk-baslangic.md"]
+    refs: ["arastirma/ham/K2-appstore-soguk-baslangic.md", "arastirma/ham/L4-skill-kaynaklari.md §4 ve §8"]
     learn: ["Mobil derleme ve imzalama", "TestFlight"]
 
   - id: K-904
