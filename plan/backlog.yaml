@@ -337,7 +337,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-103]
     why: "Maintenance'ta kalmak seçenek değil; yön seçilir (Güray)"
     acceptance:

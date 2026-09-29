@@ -24,8 +24,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-101 alan tipleri | ✅ birleşti | PR #134 | `docs/aktarim/M1/K-101.md` |
 | K-102 parametre yükleme | ✅ birleşti | PR #135 | `docs/aktarim/M1/K-102.md` |
 | K-103 trend, veri yeterliliği | ✅ birleşti | PR #136 | `docs/aktarim/M1/K-103.md` |
-| K-104 güvenlik ağı | kısmi: tavan + BMR (8%/EA L-1'i bekliyor) | `engine/15-safety-net` | — |
-| K-105 faz kapısı | — | | |
+| K-104 güvenlik ağı | kısmi ✅ birleşti (tavan + BMR); 8%/EA L-1'i bekliyor | PR #137 | `docs/aktarim/M1/K-104.md` |
+| K-105 faz kapısı | inceleme | `engine/16-phase-gate` | — |
 | K-106 check-in omurgası | — | | |
 | K-107 kalori merdiveni | — | | |
 | K-108 makrolar | — | | |
@@ -59,10 +59,14 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   sayı) · min≤max çiftleri · hash = key|unit|male|female (not/kaynak hariç), format testle sabit · quota motor dışı ·
   çağıran katı YAML kullanır (yinelenen anahtar hata) — üretim okuyucusu M2 `decision` modülünde
 - K-103: jqwik 1.10.1 (JUnit Platform 6 üzerinde denendi, shrink çalışıyor) · Snapshot'a planStart + WeightSeries ·
-  14 gün kuralı ilk tartıdan sayılır (ADR-018 içe aktarma) · kontrol sırası: 14 gün → pencere → haftalık tartı
+  14 gün kuralı ilk tartıdan sayılır (ADR-018 içe aktarma) · kontrol sırası: 14 gün → pencere → haftalık tartı ·
+  nextReview = üç kapının birlikte açıldığı en erken gün (simülasyon)
+- K-104: kayıp tavanı yalnız cut'ta ve iki yoğun ardışık haftada (tek tartıda gürültü tavanı aşar) · güvenlik kararı HIGH
+- K-105: yeni eylem CHANGE_PHASE(faz) — veri taşıyan ilk eylem · Snapshot'ta isteğe bağlı iç yağ tahmini (U4: yansımalı
+  test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-K-104 (kısmi) öz-denetimde · dal `engine/15-safety-net` (issue #15) → sonra K-105
+K-105 · Faz kapısı · dal `engine/16-phase-gate` (issue #16) — öz-denetimde → sonra K-106
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
