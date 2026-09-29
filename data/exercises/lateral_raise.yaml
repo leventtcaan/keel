@@ -1,0 +1,7 @@
+# Exercise catalog (K-210; K-219 adds aliases, setup fields and the two clips, ADR-017).
+id: lateral_raise
+kind: isolation
+muscles: [side_delts]
+alternatives: []
+load: external
+unilateral: false

@@ -1,0 +1,16 @@
+# The muscles the exercise catalog may name (K-210 review), each with its body region: weekly sets are counted per
+# muscle (K-211: weekly_sets_per_muscle) and the load step is chosen by region (K-217: load_increment_upper_kg /
+# load_increment_lower_kg). A move naming a muscle outside this list stops the application.
+muscles:
+  chest: upper
+  front_delts: upper
+  side_delts: upper
+  rear_delts: upper
+  lats: upper
+  upper_back: upper
+  biceps: upper
+  triceps: upper
+  quads: lower
+  glutes: lower
+  hamstrings: lower
+  calves: lower

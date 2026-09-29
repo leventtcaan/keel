@@ -1,0 +1,7 @@
+# Exercise catalog (K-210; K-219 adds aliases, setup fields and the two clips, ADR-017).
+id: pull_up
+kind: compound
+muscles: [lats, biceps]
+alternatives: [lat_pulldown]
+load: bodyweight_plus_external
+unilateral: false

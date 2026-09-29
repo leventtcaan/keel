@@ -18,7 +18,8 @@ profil → ölçüm/beslenme/antrenman → karar.
 6. K-204 rıza — izni kanıtlamak ve geri almak
 7. K-205 profil — modülün dışa açtığı yüz
 8. K-206 ölçüm — zaman serisi, idempotency, yerel gün
-9. (sıradakiler görev bitince eklenir)
+9. K-210 antrenman kaydı — katalog veri, takas, sahiplik
+10. (sıradakiler görev bitince eklenir)
 
 ## Durum
 | Görev | Aktarım dosyası | Kod | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
@@ -31,3 +32,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-204 rıza | `K-204.md` | ✅ | — | — | — |
 | K-205 profil | `K-205.md` | ✅ | — | — | — |
 | K-206 ölçüm (+ ADR-026) | `K-206.md` | ✅ | — | — | — |
+| K-210 antrenman kaydı | `K-210.md` | ✅ | — | — | — |

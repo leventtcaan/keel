@@ -1,0 +1,7 @@
+# Exercise catalog (K-210; K-219 adds aliases, setup fields and the two clips, ADR-017).
+id: bench_press
+kind: compound
+muscles: [chest, triceps, front_delts]
+alternatives: [dumbbell_bench_press]
+load: external
+unilateral: false
