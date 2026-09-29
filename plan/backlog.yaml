@@ -281,7 +281,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-101, K-009]
     why: "Motor eşiklerini koddan değil kaynaklı dosyadan almak (K2, ADR-010)"
     acceptance:

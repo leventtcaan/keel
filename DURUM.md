@@ -22,8 +22,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | Görev | Durum | Dal / PR | Aktarım |
 |---|---|---|---|
 | K-101 alan tipleri | ✅ birleşti | PR #134 | `docs/aktarim/M1/K-101.md` |
-| K-102 parametre yükleme | inceleme | `engine/13-parameters` | — |
-| K-103 trend, veri yeterliliği | — | | |
+| K-102 parametre yükleme | ✅ birleşti | PR #135 | `docs/aktarim/M1/K-102.md` |
+| K-103 trend, veri yeterliliği | inceleme | `engine/14-trend-sufficiency` | — |
 | K-104 güvenlik ağı | — | | |
 | K-105 faz kapısı | — | | |
 | K-106 check-in omurgası | — | | |
@@ -37,7 +37,10 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-114 başlangıç hedefi | — | | |
 | K-115 sapma kalibrasyonu | — | | |
 
-**Onay bekleyen eşikler (akşam Levent'e):** —
+**Onay bekleyen eşikler (akşam Levent'e):**
+- `min_weighins_per_week: 4` (windows.yaml, K-103) — araştırmada sayı yok; H1'in 0,42 kg gürültü SD'sinden türetildi:
+  n=4 → iki haftalık ortalama farkında ~0,3 kg/hafta ayırt edilir; n=2 → yavaş kaybı sabitten ayıramaz. Sonuç: ilk karar
+  pratikte pencere kadar (erkek 21, kadın 28 gün) düzenli tartıdan sonra gelir.
 **Akşam sorulacaklar:**
 1. (K-101) NO_DECISION_YET de en az bir gerekçe taşımalı mı? Kabul kriteri izin veriyor; spesifikasyonda hepsi gerekçeli;
    inceleme ajanı "evet" öneriyor (U2: neyin kararı değiştireceği söylenebilsin). Öneri: evet → kriter + test değişir (K1).
@@ -48,10 +51,14 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 - K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
   Source yalnız arastirma/*.md · PRODUCT etiketli kaynak kural gerekçesi olamaz (U14) · EnginePurityTests: yalnız JDK,
   I/O/saat/rastgelelik/ortam yok · ArchUnit test bağımlılığı (Modulith BOM sürümü)
-- K-102 (plan): motor dosya okumaz; ham YAML yapısını doğrulayıp tipli `Parameters`'a çevirir; okuma test/`decision`'da
+- K-102: motor dosya okumaz; ham YAML → `ParameterSet` (tüm hatalar birden) · `Unit` enum (tür + aralık: oran ≤1, gün tam
+  sayı) · min≤max çiftleri · hash = key|unit|male|female (not/kaynak hariç), format testle sabit · quota motor dışı ·
+  çağıran katı YAML kullanır (yinelenen anahtar hata) — üretim okuyucusu M2 `decision` modülünde
+- K-103: jqwik 1.10.1 (JUnit Platform 6 üzerinde denendi, shrink çalışıyor) · Snapshot'a planStart + WeightSeries ·
+  14 gün kuralı ilk tartıdan sayılır (ADR-018 içe aktarma) · kontrol sırası: 14 gün → pencere → haftalık tartı
 
 ## Aktif görev
-K-102 · Parametre yükleme · dal `engine/13-parameters` (issue #13) — öz-denetimde
+K-103 · Trend ve veri yeterliliği · dal `engine/14-trend-sufficiency` (issue #14) — öz-denetimde
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
