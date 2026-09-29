@@ -22,23 +22,48 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-101 değişikliği (NO_DECISION_YET gerekçeli, U14 çapa zorunlu) | ✅ birleşti | #143 | `M1/K-101.md` › ADR-020 kısmı |
-| build: `tasks.register<Test>` + deprecation = kırmızı build | ✅ birleşti | #144 | (küçük; M1 README'de) |
+| build: `tasks.register<Test>` + deprecation = kırmızı build | ✅ birleşti | #144 | (küçük) |
 | K-104 kalanı (LEA, hızlı kayıp → daralt; tek hard stop) | ✅ birleşti | #145 | `M1/K-104.md` › ADR-020 kısmı |
 | K-110 basamak 3 (L-12 iki sinyal) | ✅ birleşti | #146 | `M1/K-110.md` › ADR-020 kısmı |
 | K-106 omurga (+ ADR-021 "sabit" ölçümü) | ✅ birleşti | #147 | `M1/K-106.md` |
 | K-107 kalori merdiveni | ✅ birleşti | #148 | `M1/K-107.md` |
-| K-114 başlangıç hedefi (+ `arastirma/ham/H6` Mifflin kaynağı) | PR'da, auto-merge | #149 | `M1/K-114.md` |
-| K-112 montaj (spesifikasyon 24/24 gerçek motordan; mini cut WC-20) | inceleme ajanlarında · worktree `../keel-k112` | | (yazılacak) |
-| K-113 altın senaryolar → K-115 sapma kalibrasyonu | — | | |
-| M2: K-201…K-219 | — | | |
-
-Sıra değişikliği (teknik): K-114, K-112'den önce yapıldı — montaj BMR tabanı için Mifflin'e ihtiyaç duyuyor.
+| K-114 başlangıç hedefi (+ `arastirma/ham/H6` Mifflin) | ✅ birleşti | #149 | `M1/K-114.md` |
+| K-112 montaj (+ ADR-022 sıra; spesifikasyon 24/24 gerçek; mini cut WC-20) | PR açık, auto-merge, iki inceleme uygulandı | #150 | `M1/K-112.md` |
+| K-113 altın senaryolar (23 yolculuk) | dal itildi, **PR yok**; inceleme ajanı yarıda kaldı → yeniden çalıştır | `engine/24-golden-scenarios` | `M1/K-113.md` |
+| K-115 sapma kalibrasyonu | dal itildi, **PR yok**; inceleme ajanı yarıda kaldı → yeniden çalıştır | `engine/99-intake-calibration` | `M1/K-115.md` |
+| M2: K-201…K-219 | başlamadı | | |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
+
+## ▶ DEVAM NOKTASI (29 Eyl gece, bağlam temizlenmeden önce yazıldı)
+Önceki oturum burada durdu; yeni oturum **buradan** devam eder (prompt: `plan/oturum-promptlari/M2-devam.md`).
+1. **#150 (K-112)** birleşti mi bak (`gh pr view 150`). Kırmızıysa düzelt.
+2. **K-113** (`../keel-k113`, dal `engine/24-golden-scenarios`): taban eski K-112 commit'leri. #150 birleşince
+   `git fetch && git rebase --onto origin/main 1de8df4` (1de8df4 = eski K-112 ucu; `git log` ile doğrula) →
+   `./gradlew build` → inceleme (pr-test-analyzer: yolculuk beklentileri kurallardan türetildi mi, düzenek bir karar
+   kısaltmasıyla yanlış sebeple geçiyor mu, kadın bulk / 45+ kapsamı) → düzelt → backlog K-113 done → PR `--auto --squash`.
+3. **K-115** (`../keel-k115`, dal `engine/99-intake-calibration`, taban `main`): inceleme (code-reviewer: enerji dengesi
+   matematiği, EWMA sırası, "formül hatası" eşiği, test sahte kullanıcısı) → düzelt → backlog K-115 done →
+   `origin/main` üstüne rebase → `npm run check` **ana dizinde** (worktree'de node_modules yok) → PR.
+4. M1 kapanışı: `docs/aktarim/M1/README.md` durum tablosuna K-106/107/112/113/114/115 ekle; DURUM "Şu an" = M1 kapandı.
+   Worktree'leri temizle (`git worktree remove`).
+5. **M2** — sıra: K-201 sözleşme + K-202 Postgres (bağımsız) → K-207 besin spike → K-215 → K-203 kimlik → K-204, K-205 →
+   K-206, K-210, K-208, K-214 → K-209, K-211, K-218, K-219 → K-212 → K-213, K-216, K-217. Skill'ler: Postgres/Flyway →
+   K-202, sözleşme (spectral + oasdiff) → K-201 (`arastirma/ham/L4-skill-kaynaklari.md` §6-8).
+   - **Docker daemon kapalı** (`docker info` bağlanamadı): K-202 Testcontainers için Docker Desktop açılmalı
+     (`open -a Docker`; açılmazsa Levent'e sor).
+   - **ADR-008 güncellenecek:** ADR-020 "yalnız USDA FDC, OFF yok" dedi; ADR-008 ve K-208'in "barkod → OFF" kriteri
+     buna göre değişir (FDC Branded Foods'ta GTIN var mı, K-207 spike doğrular). Türk ürün kapsamı zayıflığı → Riskler.
+   - M2 notu (K-212): "süren mini cut" Snapshot'ta temsil edilmiyor; `menstrualLossReported` saklanmaz (mimari m.4).
+6. Bitiş: sorular (aşağıdaki liste) AskUserQuestion ile toplu → ADR → kalan iş → `plan/oturum-promptlari/M3.md` →
+   özet. Session kapanmaz; M1 kalanı + M2 aktarımı bu işi yapan oturumda (ya da devam oturumunda) yapılır.
+
+**Bilgi (Levent'e, soru değil):** K-113 GS-10 — erkekte ideal bulk hızı (ayda 1 kg) 21 günlük pencerede "sabit" okunur,
+motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "çok hızlı" kuralı M1 kapsamında değil).
 
 ## Session sonunda Levent'e sorulacaklar (toplu, AskUserQuestion)
 1. **L-4** (sağlık): iç yağ tahmini <%18 (kadın) / <%8 (erkek) → açığı durdur (J1 L2.1)? ADR-020'de yok; yazılmadı.
