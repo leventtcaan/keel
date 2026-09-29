@@ -1,0 +1,13 @@
+{
+  "name": "keel-contracts",
+  "private": true,
+  "description": "Contract tooling (K-201, ADR-024): validates contracts/openapi.yaml and generates the mobile API types.",
+  "scripts": {
+    "generate": "openapi-typescript openapi.yaml -o ../apps/mobile/src/api/schema.ts",
+    "check": "openapi-typescript openapi.yaml --check -o ../apps/mobile/src/api/schema.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}

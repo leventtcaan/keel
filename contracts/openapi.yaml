@@ -1,18 +1,43 @@
 openapi: 3.1.0
 info:
   title: keel API
-  version: 0.1.0
+  version: 1.0.0
   description: |
-    Contract-first API (anayasa K3, ADR-006). The mobile client types are generated from this file; never hand-written.
-    v0.1 is the skeleton: health and the shared error model. The full v1 contract is task K-201.
+    Contract-first API (anayasa K3, ADR-006, ADR-024). The backend implements this file; the mobile client's types are
+    generated from it, never hand-written. Rules the contract keeps, each checked by backend ContractTests:
+    - The Decision is the engine's Decision field for field (U3). Actions are a tagged union on `type`.
+    - Every calorie estimate is a range, `KcalRange` (U5). Plan numbers the user follows (a daily target, a step) are
+      single numbers (ADR-020 L-13).
+    - The engine's fat estimate never appears, in any form (U4). Error messages never carry health data (V3).
+    Conventions: everything but health and sign-in is under /v1 and needs a session. Records the phone creates
+    offline carry a `clientId` (a UUID the phone makes): sending one twice stores it once and answers 200 with the
+    stored record instead of 201. Days are `date` (the user's local calendar day); moments are `date-time` with offset.
+    Lists page backwards: `limit` and `before` (the cursor of the last item seen).
 servers:
   - url: http://localhost:8080
     description: Local development
+security:
+  - session: []
+tags:
+  - name: system
+  - name: auth
+  - name: account
+  - name: profile
+  - name: consent
+  - name: measurement
+  - name: nutrition
+  - name: training
+  - name: check-in
+  - name: decision
+  - name: coach
+
 paths:
   /health:
     get:
+      tags: [system]
       operationId: getHealth
       summary: Liveness check
+      security: []
       responses:
         "200":
           description: The service is up
@@ -22,8 +47,860 @@ paths:
                 $ref: "#/components/schemas/Health"
         default:
           $ref: "#/components/responses/Error"
+
+  # ── auth (K-203, ADR-011) ──────────────────────────────────────────────────────────────────────────────────
+  /v1/auth/apple:
+    post:
+      tags: [auth]
+      operationId: signInWithApple
+      summary: Sign in with Apple; creates the account on first sign-in
+      description: |
+        The identity token is checked against Apple's public keys (signature, issuer, audience, expiry) and the nonce
+        the phone sent to Apple. Answers a session; `newAccount` tells the app to start onboarding.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppleSignIn"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refreshSession
+      summary: Trade a refresh token for a new session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: A new session; the old refresh token no longer works
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/auth/sign-out:
+    post:
+      tags: [auth]
+      operationId: signOut
+      summary: End the session and revoke its refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "204":
+          description: Signed out
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── account (K-214, V6) ────────────────────────────────────────────────────────────────────────────────────
+  /v1/account:
+    delete:
+      tags: [account]
+      operationId: deleteAccount
+      summary: Delete the account and every record of it, in every module
+      responses:
+        "202":
+          description: Deletion started; every module removes its own data (AccountDeletionRequested)
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/account/export:
+    get:
+      tags: [account]
+      operationId: exportAccount
+      summary: Everything held about the user, as JSON
+      responses:
+        "200":
+          description: The export, one section per module
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountExport"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── profile (K-205) ────────────────────────────────────────────────────────────────────────────────────────
+  /v1/profile:
+    get:
+      tags: [profile]
+      operationId: getProfile
+      responses:
+        "200":
+          description: The profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        default:
+          $ref: "#/components/responses/Error"
+    put:
+      tags: [profile]
+      operationId: putProfile
+      summary: Set the whole profile (onboarding and settings)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Profile"
+      responses:
+        "200":
+          description: The stored profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── consent (K-204, ADR-007) ───────────────────────────────────────────────────────────────────────────────
+  /v1/consents:
+    get:
+      tags: [consent]
+      operationId: listConsents
+      summary: The current state of each of the three consents
+      responses:
+        "200":
+          description: One entry per kind
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Consent"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/consents/{kind}:
+    parameters:
+      - $ref: "#/components/parameters/ConsentKind"
+    put:
+      tags: [consent]
+      operationId: grantConsent
+      summary: Grant a consent to the version of its text the user saw
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentGrant"
+      responses:
+        "200":
+          description: Granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consent"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [consent]
+      operationId: withdrawConsent
+      summary: Withdraw a consent; the features it covers stop at once
+      responses:
+        "200":
+          description: Withdrawn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consent"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── measurement (K-206) ────────────────────────────────────────────────────────────────────────────────────
+  /v1/weigh-ins:
+    get:
+      tags: [measurement]
+      operationId: listWeighIns
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Weigh-ins in the range, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeighIn"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [measurement]
+      operationId: recordWeighIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewWeighIn"
+      responses:
+        "201":
+          $ref: "#/components/responses/WeighInCreated"
+        "200":
+          $ref: "#/components/responses/WeighInCreated"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/weigh-ins/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    delete:
+      tags: [measurement]
+      operationId: deleteWeighIn
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/waist-measurements:
+    get:
+      tags: [measurement]
+      operationId: listWaistMeasurements
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Waist measurements in the range, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WaistMeasurement"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [measurement]
+      operationId: recordWaistMeasurement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewWaistMeasurement"
+      responses:
+        "201":
+          $ref: "#/components/responses/WaistMeasurementCreated"
+        "200":
+          $ref: "#/components/responses/WaistMeasurementCreated"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/photo-checks:
+    post:
+      tags: [measurement]
+      operationId: recordPhotoCheck
+      summary: What the phone concluded from a progress photo; the photo itself never leaves the phone (V1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPhotoCheck"
+      responses:
+        "201":
+          $ref: "#/components/responses/PhotoCheckCreated"
+        "200":
+          $ref: "#/components/responses/PhotoCheckCreated"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/activity-days:
+    put:
+      tags: [measurement]
+      operationId: putActivityDay
+      summary: A day's steps, sleep and active energy from Apple Health (replaces that day's values)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityDay"
+      responses:
+        "200":
+          description: Stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityDay"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── nutrition (K-208, K-209, ADR-008) ──────────────────────────────────────────────────────────────────────
+  /v1/foods:
+    get:
+      tags: [nutrition]
+      operationId: searchFoods
+      summary: Search the food database by name
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Best matches first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Food"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/foods/barcodes/{gtin}:
+    get:
+      tags: [nutrition]
+      operationId: getFoodByBarcode
+      parameters:
+        - name: gtin
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{8,14}$"
+      responses:
+        "200":
+          description: The product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Food"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/food-estimates:
+    post:
+      tags: [nutrition]
+      operationId: estimateFood
+      summary: Match food and amounts to the database and answer ranges (U1, U5); nothing is stored
+      description: |
+        The estimate comes from the database, never from a language model's numbers. When one item dominates the
+        range, `question` asks the one thing that would narrow it (at most one question).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FoodEstimateRequest"
+      responses:
+        "200":
+          description: The estimate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodEstimate"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/meals:
+    get:
+      tags: [nutrition]
+      operationId: listMeals
+      parameters:
+        - $ref: "#/components/parameters/Day"
+      responses:
+        "200":
+          description: The day's meals, in time order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meal"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [nutrition]
+      operationId: logMeal
+      summary: Log a meal from items, or repeat an earlier meal ("same as yesterday")
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewMeal"
+      responses:
+        "201":
+          $ref: "#/components/responses/MealCreated"
+        "200":
+          $ref: "#/components/responses/MealCreated"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/meals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    delete:
+      tags: [nutrition]
+      operationId: deleteMeal
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/days/{day}/budget:
+    parameters:
+      - name: day
+        in: path
+        required: true
+        schema:
+          type: string
+          format: date
+    get:
+      tags: [nutrition]
+      operationId: getDayBudget
+      summary: What is left of the day's target, as a range (target minus the logged range)
+      responses:
+        "200":
+          description: The budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayBudget"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── training (K-210, K-211, K-218, K-219) ──────────────────────────────────────────────────────────────────
+  /v1/exercises:
+    get:
+      tags: [training]
+      operationId: listExercises
+      summary: The exercise catalog
+      responses:
+        "200":
+          description: Every exercise
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exercise"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/program:
+    get:
+      tags: [training]
+      operationId: getProgram
+      summary: The current program with this week's targets
+      responses:
+        "200":
+          description: The program
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
+    put:
+      tags: [training]
+      operationId: putOwnProgram
+      summary: Bring your own program; the engine coaches on top of it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OwnProgram"
+      responses:
+        "200":
+          description: The stored program
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/program/generate:
+    post:
+      tags: [training]
+      operationId: generateProgram
+      summary: Build a program for the days the user has (4-day upper/lower by default)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgramRequest"
+      responses:
+        "200":
+          description: The new program
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/workouts:
+    get:
+      tags: [training]
+      operationId: listWorkouts
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Workouts in the range, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workout"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [training]
+      operationId: startWorkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewWorkout"
+      responses:
+        "201":
+          $ref: "#/components/responses/WorkoutCreated"
+        "200":
+          $ref: "#/components/responses/WorkoutCreated"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/workouts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [training]
+      operationId: getWorkout
+      responses:
+        "200":
+          description: The workout with its sets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/workouts/{id}/finish:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [training]
+      operationId: finishWorkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkoutFinish"
+      responses:
+        "200":
+          description: The finished workout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/workouts/{id}/sets:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [training]
+      operationId: logSet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewSet"
+      responses:
+        "201":
+          $ref: "#/components/responses/SetCreated"
+        "200":
+          $ref: "#/components/responses/SetCreated"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/workouts/{id}/sets/{setId}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - name: setId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      tags: [training]
+      operationId: deleteSet
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── check-in (K-213) ───────────────────────────────────────────────────────────────────────────────────────
+  /v1/check-ins/current:
+    get:
+      tags: [check-in]
+      operationId: getCurrentCheckIn
+      summary: This week's check-in and the few questions it needs (question budget, U9)
+      description: |
+        Only what the data does not already say is asked: weight, steps, sleep hours and training arrive on their own.
+        At most question_budget_per_week questions (question_budget_per_week_anomaly when the data disagrees).
+      responses:
+        "200":
+          description: The check-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckIn"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/check-ins/current/answers:
+    post:
+      tags: [check-in]
+      operationId: answerCheckIn
+      summary: Answer the check-in; the engine makes this week's call
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInAnswers"
+      responses:
+        "200":
+          description: This week's call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── decision (K-212, K-216, K-217, ADR-003) ────────────────────────────────────────────────────────────────
+  /v1/decisions:
+    get:
+      tags: [decision]
+      operationId: listDecisions
+      summary: Every call so far, newest first (the call ledger)
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: A page of calls
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionPage"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/decisions/current:
+    get:
+      tags: [decision]
+      operationId: getCurrentDecision
+      summary: The call in force and the targets it set
+      responses:
+        "200":
+          description: The current call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/decisions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [decision]
+      operationId: getDecision
+      responses:
+        "200":
+          description: The call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/decisions/{id}/apply:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [decision]
+      operationId: applyDecision
+      summary: Apply the call; only the one thing it changes moves, everything else stays (U3)
+      responses:
+        "200":
+          description: The targets after the call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Targets"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/targets:
+    get:
+      tags: [decision]
+      operationId: getTargets
+      summary: The targets the user follows today
+      responses:
+        "200":
+          description: The targets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Targets"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ── coach (M5, ADR-004) ────────────────────────────────────────────────────────────────────────────────────
+  /v1/coach/messages:
+    post:
+      tags: [coach]
+      operationId: askCoach
+      summary: Ask about a call or the plan; the coach explains, it does not decide (U1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachQuestion"
+      responses:
+        "200":
+          description: The answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachAnswer"
+        default:
+          $ref: "#/components/responses/Error"
+
 components:
+  securitySchemes:
+    session:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: The access token of a Session (K-203).
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ConsentKind:
+      name: kind
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/ConsentKind"
+    From:
+      name: from
+      in: query
+      required: true
+      description: First day, inclusive
+      schema:
+        type: string
+        format: date
+    To:
+      name: to
+      in: query
+      required: true
+      description: Last day, inclusive
+      schema:
+        type: string
+        format: date
+    Day:
+      name: day
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Before:
+      name: before
+      in: query
+      description: The cursor of the last item already seen; omitted for the newest page
+      schema:
+        type: string
+
+  responses:
+    Error:
+      description: Any error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    WeighInCreated:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WeighIn"
+    WaistMeasurementCreated:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WaistMeasurement"
+    PhotoCheckCreated:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PhotoCheck"
+    MealCreated:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Meal"
+    WorkoutCreated:
+      description: Started (201), or already started with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Workout"
+    SetCreated:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/LoggedSet"
+
   schemas:
+    # ── shared ───────────────────────────────────────────────────────────────────────────────────────────────
     Health:
       type: object
       required: [status]
@@ -38,14 +915,979 @@ components:
       properties:
         code:
           type: string
-          description: Stable machine-readable code, e.g. VALIDATION_FAILED.
+          description: Stable machine-readable code, e.g. VALIDATION_FAILED, NOT_FOUND, CONSENT_REQUIRED.
         message:
           type: string
           description: English, safe to show to the user.
-  responses:
-    Error:
-      description: Any error
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
+    KcalRange:
+      type: object
+      description: An energy estimate, kcal a day or a meal, as a range (U5). low ≤ high.
+      required: [low, high]
+      properties:
+        low:
+          type: integer
+          minimum: 0
+        high:
+          type: integer
+          minimum: 0
+    GramRange:
+      type: object
+      description: A macro estimate in grams, as a range (U5). low ≤ high.
+      required: [low, high]
+      properties:
+        low:
+          type: integer
+          minimum: 0
+        high:
+          type: integer
+          minimum: 0
+    ClientId:
+      type: string
+      format: uuid
+      description: Made by the phone when the record is created; the same record sent again is stored once.
+
+    # ── auth ─────────────────────────────────────────────────────────────────────────────────────────────────
+    AppleSignIn:
+      type: object
+      required: [identityToken, nonce]
+      properties:
+        identityToken:
+          type: string
+          description: The JWT Apple gave the phone.
+        nonce:
+          type: string
+          description: The raw nonce the phone hashed into its Apple request.
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    Session:
+      type: object
+      required: [accessToken, accessTokenExpiresAt, refreshToken, newAccount]
+      properties:
+        accessToken:
+          type: string
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+        refreshToken:
+          type: string
+        newAccount:
+          type: boolean
+          description: True on the first sign-in; the app starts onboarding.
+
+    # ── account ──────────────────────────────────────────────────────────────────────────────────────────────
+    AccountExport:
+      type: object
+      description: Everything held about the user, one section per module; the shape of each section is that module's.
+      required: [exportedAt, sections]
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+        sections:
+          type: object
+          additionalProperties: true
+
+    # ── profile ──────────────────────────────────────────────────────────────────────────────────────────────
+    Profile:
+      type: object
+      required: [goal, sex, heightCm, birthYear, programChoice, schedule, units]
+      properties:
+        goal:
+          type: string
+          enum: [LOSE_FAT, BUILD_MUSCLE, DECIDE_FOR_ME]
+          description: What the user wants; the phase itself is the engine's call (K-105).
+        sex:
+          $ref: "#/components/schemas/Sex"
+        heightCm:
+          type: integer
+          minimum: 100
+          maximum: 250
+        birthYear:
+          type: integer
+          minimum: 1900
+        activityLevel:
+          $ref: "#/components/schemas/ActivityLevel"
+        programChoice:
+          type: string
+          enum: [BUILD_ONE_FOR_ME, BRING_MY_OWN]
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+        food:
+          $ref: "#/components/schemas/FoodPreferences"
+        units:
+          type: string
+          enum: [METRIC, IMPERIAL]
+    Sex:
+      type: string
+      enum: [MALE, FEMALE]
+    ActivityLevel:
+      type: string
+      description: The whole day's activity, training included (K-114). Absent until asked.
+      enum: [INACTIVE, LOW_ACTIVE, ACTIVE, VERY_ACTIVE]
+    Weekday:
+      type: string
+      enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+    Schedule:
+      type: object
+      required: [trainingDays, checkInDay, timeZone]
+      properties:
+        trainingDays:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Weekday"
+        usualTrainingTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          description: Local time, HH:mm; reminders follow it.
+        sessionsLastMonth:
+          type: string
+          enum: [NONE_OR_ONE, TWO_TO_THREE, FOUR, FIVE_OR_MORE]
+        checkInDay:
+          $ref: "#/components/schemas/Weekday"
+        timeZone:
+          type: string
+          description: IANA zone, e.g. Europe/Istanbul; the check-in day is the user's local day.
+    FoodPreferences:
+      type: object
+      properties:
+        avoid:
+          type: array
+          description: Foods the user does not eat or cannot eat, in their own words.
+          items:
+            type: string
+        budgetNote:
+          type: string
+
+    # ── consent ──────────────────────────────────────────────────────────────────────────────────────────────
+    ConsentKind:
+      type: string
+      enum: [HEALTH_DATA, APPLE_HEALTH, THIRD_PARTY_AI]
+    ConsentGrant:
+      type: object
+      required: [textVersion]
+      properties:
+        textVersion:
+          type: string
+          description: The version of the consent text the user saw.
+        provider:
+          type: string
+          description: THIRD_PARTY_AI only — the company the data goes to, as named on the screen (Apple 5.1.2(i)).
+        dataTypes:
+          type: array
+          description: THIRD_PARTY_AI only — what is sent, as named on the screen.
+          items:
+            type: string
+    Consent:
+      type: object
+      required: [kind, status]
+      properties:
+        kind:
+          $ref: "#/components/schemas/ConsentKind"
+        status:
+          type: string
+          enum: [GRANTED, WITHDRAWN, NEVER_ASKED]
+        textVersion:
+          type: string
+        provider:
+          type: string
+        dataTypes:
+          type: array
+          items:
+            type: string
+        grantedAt:
+          type: string
+          format: date-time
+        withdrawnAt:
+          type: string
+          format: date-time
+
+    # ── measurement ──────────────────────────────────────────────────────────────────────────────────────────
+    MeasurementSource:
+      type: string
+      enum: [MANUAL, APPLE_HEALTH, IMPORT]
+    NewWeighIn:
+      type: object
+      required: [clientId, measuredAt, kg, source]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        measuredAt:
+          type: string
+          format: date-time
+        kg:
+          type: number
+          exclusiveMinimum: 0
+        source:
+          $ref: "#/components/schemas/MeasurementSource"
+    WeighIn:
+      allOf:
+        - $ref: "#/components/schemas/NewWeighIn"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+    NewWaistMeasurement:
+      type: object
+      required: [clientId, measuredOn, cm]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        measuredOn:
+          type: string
+          format: date
+        cm:
+          type: number
+          exclusiveMinimum: 0
+    WaistMeasurement:
+      allOf:
+        - $ref: "#/components/schemas/NewWaistMeasurement"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+    Look:
+      type: string
+      description: The photo compared with the last one, judged on the phone.
+      enum: [BETTER, SAME, WORSE]
+    NewPhotoCheck:
+      type: object
+      description: Derived on the phone; no image, no measurement of the body leaves it (V1).
+      required: [clientId, takenOn, look]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        takenOn:
+          type: string
+          format: date
+        look:
+          $ref: "#/components/schemas/Look"
+    PhotoCheck:
+      allOf:
+        - $ref: "#/components/schemas/NewPhotoCheck"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+    ActivityDay:
+      type: object
+      required: [day]
+      properties:
+        day:
+          type: string
+          format: date
+        steps:
+          type: integer
+          minimum: 0
+        sleepMinutes:
+          type: integer
+          minimum: 0
+        activeEnergy:
+          $ref: "#/components/schemas/KcalRange"
+          description: Apple Health's active energy, a device estimate; stored as a range around its figure.
+
+    # ── nutrition ────────────────────────────────────────────────────────────────────────────────────────────
+    Food:
+      type: object
+      required: [id, name, per100g]
+      properties:
+        id:
+          type: string
+          description: The database's identifier (USDA FoodData Central, ADR-008).
+        name:
+          type: string
+        brand:
+          type: string
+        per100g:
+          $ref: "#/components/schemas/Nutrients"
+        servings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Serving"
+    Nutrients:
+      type: object
+      required: [kcal, proteinG, carbsG, fatG]
+      properties:
+        kcal:
+          $ref: "#/components/schemas/KcalRange"
+        proteinG:
+          $ref: "#/components/schemas/GramRange"
+        carbsG:
+          $ref: "#/components/schemas/GramRange"
+        fatG:
+          $ref: "#/components/schemas/GramRange"
+    Serving:
+      type: object
+      required: [name, grams]
+      properties:
+        name:
+          type: string
+          description: e.g. "1 cup", "1 large".
+        grams:
+          type: number
+          exclusiveMinimum: 0
+    Amount:
+      type: object
+      required: [quantity, unit]
+      properties:
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          description: grams (g), millilitres (ml) or the name of one of the food's servings.
+        certainty:
+          type: string
+          enum: [WEIGHED, ESTIMATED]
+          description: A weighed amount narrows the range; an estimated one widens it.
+    FoodEstimateRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The user's own words, e.g. "2 eggs and toast".
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemRequest"
+    ItemRequest:
+      type: object
+      required: [foodId, amount]
+      properties:
+        foodId:
+          type: string
+        amount:
+          $ref: "#/components/schemas/Amount"
+    EstimatedItem:
+      type: object
+      required: [foodId, name, amount, kcal, proteinG]
+      properties:
+        foodId:
+          type: string
+        name:
+          type: string
+        amount:
+          $ref: "#/components/schemas/Amount"
+        kcal:
+          $ref: "#/components/schemas/KcalRange"
+        proteinG:
+          $ref: "#/components/schemas/GramRange"
+        carbsG:
+          $ref: "#/components/schemas/GramRange"
+        fatG:
+          $ref: "#/components/schemas/GramRange"
+    FoodEstimate:
+      type: object
+      required: [items, kcal, proteinG]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EstimatedItem"
+        kcal:
+          $ref: "#/components/schemas/KcalRange"
+        proteinG:
+          $ref: "#/components/schemas/GramRange"
+        question:
+          $ref: "#/components/schemas/AmountQuestion"
+    AmountQuestion:
+      type: object
+      description: The one question that would narrow the range most, about the item that dominates it.
+      required: [foodId, copyKey]
+      properties:
+        foodId:
+          type: string
+        copyKey:
+          type: string
+    MealSlot:
+      type: string
+      enum: [BREAKFAST, LUNCH, DINNER, SNACK]
+    NewMeal:
+      type: object
+      description: Either items, or repeatOf (an earlier meal logged again).
+      required: [clientId, eatenAt, slot]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        eatenAt:
+          type: string
+          format: date-time
+        slot:
+          $ref: "#/components/schemas/MealSlot"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemRequest"
+        repeatOf:
+          type: string
+          format: uuid
+    Meal:
+      type: object
+      required: [id, clientId, eatenAt, slot, items, kcal, proteinG]
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        eatenAt:
+          type: string
+          format: date-time
+        slot:
+          $ref: "#/components/schemas/MealSlot"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EstimatedItem"
+        kcal:
+          $ref: "#/components/schemas/KcalRange"
+        proteinG:
+          $ref: "#/components/schemas/GramRange"
+    DayBudget:
+      type: object
+      required: [day, targetKcal, eaten, left]
+      properties:
+        day:
+          type: string
+          format: date
+        targetKcal:
+          type: integer
+          description: The day's target (a plan number, one figure).
+        eaten:
+          $ref: "#/components/schemas/Nutrients"
+        left:
+          type: object
+          required: [kcal, proteinG]
+          properties:
+            kcal:
+              $ref: "#/components/schemas/KcalRange"
+            proteinG:
+              $ref: "#/components/schemas/GramRange"
+
+    # ── training ─────────────────────────────────────────────────────────────────────────────────────────────
+    Exercise:
+      type: object
+      required: [id, nameKey, kind, muscles, alternatives]
+      properties:
+        id:
+          type: string
+        nameKey:
+          type: string
+          description: Copy key of the name (en.json); aliases are for search.
+        aliases:
+          type: array
+          items:
+            type: string
+        kind:
+          type: string
+          enum: [COMPOUND, ISOLATION]
+        muscles:
+          type: array
+          items:
+            type: string
+        alternatives:
+          type: array
+          description: Exercise ids that can take its place.
+          items:
+            type: string
+        load:
+          type: string
+          enum: [EXTERNAL, BODYWEIGHT, BODYWEIGHT_PLUS_EXTERNAL]
+        unilateral:
+          type: boolean
+    Program:
+      type: object
+      required: [id, source, days]
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+          enum: [GENERATED, OWN]
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProgramDay"
+    ProgramDay:
+      type: object
+      required: [id, name, exercises]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: e.g. "Upper A".
+        weekday:
+          $ref: "#/components/schemas/Weekday"
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlannedExercise"
+    PlannedExercise:
+      type: object
+      required: [exerciseId, sets, reps, targetRir]
+      properties:
+        exerciseId:
+          type: string
+        sets:
+          type: integer
+          minimum: 1
+        reps:
+          $ref: "#/components/schemas/RepRange"
+        targetRir:
+          type: integer
+          minimum: 0
+        nextLoadKg:
+          type: number
+          minimum: 0
+          description: The load for the next session after progression and deload (K-217); absent until known.
+    RepRange:
+      type: object
+      required: [min, max]
+      properties:
+        min:
+          type: integer
+          minimum: 1
+        max:
+          type: integer
+          minimum: 1
+    OwnProgram:
+      type: object
+      required: [days]
+      properties:
+        days:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [name, exercises]
+            properties:
+              name:
+                type: string
+              weekday:
+                $ref: "#/components/schemas/Weekday"
+              exercises:
+                type: array
+                minItems: 1
+                items:
+                  type: object
+                  required: [exerciseId, sets, reps]
+                  properties:
+                    exerciseId:
+                      type: string
+                    sets:
+                      type: integer
+                      minimum: 1
+                    reps:
+                      $ref: "#/components/schemas/RepRange"
+    ProgramRequest:
+      type: object
+      required: [trainingDays]
+      properties:
+        trainingDays:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Weekday"
+    NewWorkout:
+      type: object
+      required: [clientId, startedAt]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        startedAt:
+          type: string
+          format: date-time
+        programDayId:
+          type: string
+          format: uuid
+    WorkoutFinish:
+      type: object
+      required: [endedAt]
+      properties:
+        endedAt:
+          type: string
+          format: date-time
+    Workout:
+      type: object
+      required: [id, clientId, startedAt, sets]
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        programDayId:
+          type: string
+          format: uuid
+        sets:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoggedSet"
+    SetType:
+      type: string
+      description: Only WORKING sets count toward effort and estimated 1RM (K-218).
+      enum: [WARM_UP, WORKING, DROP, FAILURE]
+    Side:
+      type: string
+      enum: [BOTH, LEFT, RIGHT]
+    NewSet:
+      type: object
+      description: |
+        One set. exerciseId may differ from the plan (a swap, e.g. pull-ups for lat pulldown). A bodyweight exercise
+        logs the added load in loadKg (0 without); the engine adds the bodyweight.
+      required: [clientId, exerciseId, setType, reps, loadKg]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        exerciseId:
+          type: string
+        setType:
+          $ref: "#/components/schemas/SetType"
+        loadKg:
+          type: number
+          minimum: 0
+        reps:
+          type: integer
+          minimum: 0
+        rir:
+          type: integer
+          minimum: 0
+          description: Reps left in the tank; absent when not given.
+        side:
+          $ref: "#/components/schemas/Side"
+    LoggedSet:
+      allOf:
+        - $ref: "#/components/schemas/NewSet"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+
+    # ── check-in ─────────────────────────────────────────────────────────────────────────────────────────────
+    QuestionKind:
+      type: string
+      description: What the engine can be missing (CheckIn in the engine) plus the scales the app asks with.
+      enum: [ADHERENCE, TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED]
+    Question:
+      type: object
+      required: [kind, format, copyKey]
+      properties:
+        kind:
+          $ref: "#/components/schemas/QuestionKind"
+        format:
+          type: string
+          enum: [SCALE_1_10, CHOICE, CENTIMETRES]
+        choices:
+          type: array
+          description: CHOICE only — the allowed answers.
+          items:
+            type: string
+        copyKey:
+          type: string
+    CheckIn:
+      type: object
+      required: [weekOf, questions, answered]
+      properties:
+        weekOf:
+          type: string
+          format: date
+          description: The check-in day of this week, in the user's time zone.
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        answered:
+          type: boolean
+    Answer:
+      type: object
+      description: One answer; exactly the field the question's format names is set.
+      required: [kind]
+      properties:
+        kind:
+          $ref: "#/components/schemas/QuestionKind"
+        scale:
+          type: integer
+          minimum: 1
+          maximum: 10
+        choice:
+          type: string
+        cm:
+          type: number
+          exclusiveMinimum: 0
+    CheckInAnswers:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Answer"
+
+    # ── decision (the engine's Decision, field for field — ContractTests) ────────────────────────────────────
+    Decision:
+      type: object
+      required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, applied]
+      properties:
+        id:
+          type: string
+          format: uuid
+        madeOn:
+          type: string
+          format: date
+        action:
+          $ref: "#/components/schemas/Action"
+        reasons:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Reason"
+        confidence:
+          $ref: "#/components/schemas/Confidence"
+        nextReview:
+          type: string
+          format: date
+        copyKey:
+          type: string
+          description: Where the words for this call live in en.json.
+        applied:
+          type: boolean
+          description: Whether the user applied it (K-216); calls that change nothing count as applied.
+    DecisionPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Decision"
+        next:
+          type: string
+          description: The cursor for the next (older) page; absent on the last page.
+    Reason:
+      type: object
+      required: [rule, source]
+      properties:
+        rule:
+          type: string
+          pattern: "^[a-z][a-z0-9_]*$"
+        source:
+          $ref: "#/components/schemas/Source"
+    Source:
+      type: object
+      description: "The rule's authority (U14): a research file and anchor, and what kind of source it is."
+      required: [reference, tag]
+      properties:
+        reference:
+          type: string
+        tag:
+          $ref: "#/components/schemas/SourceTag"
+    SourceTag:
+      type: string
+      enum: [EXPERIENCE, LITERATURE, PRODUCT]
+    Confidence:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+    Phase:
+      type: string
+      enum: [CUT, BULK]
+    Action:
+      description: What the engine decided (the engine's sealed Action); `type` names the kind, the rest is its data.
+      oneOf:
+        - $ref: "#/components/schemas/NoDecisionYet"
+        - $ref: "#/components/schemas/Continue"
+        - $ref: "#/components/schemas/AdjustCalories"
+        - $ref: "#/components/schemas/IncreaseCalories"
+        - $ref: "#/components/schemas/ChangeMovement"
+        - $ref: "#/components/schemas/FixTraining"
+        - $ref: "#/components/schemas/FixRecovery"
+        - $ref: "#/components/schemas/FixAdherence"
+        - $ref: "#/components/schemas/HardStop"
+        - $ref: "#/components/schemas/StopLoadIncrease"
+        - $ref: "#/components/schemas/Deload"
+        - $ref: "#/components/schemas/FullRestWeek"
+        - $ref: "#/components/schemas/MiniCut"
+        - $ref: "#/components/schemas/ChangePhase"
+      discriminator:
+        propertyName: type
+        mapping:
+          NO_DECISION_YET: "#/components/schemas/NoDecisionYet"
+          CONTINUE: "#/components/schemas/Continue"
+          ADJUST_CALORIES: "#/components/schemas/AdjustCalories"
+          INCREASE_CALORIES: "#/components/schemas/IncreaseCalories"
+          CHANGE_MOVEMENT: "#/components/schemas/ChangeMovement"
+          FIX_TRAINING: "#/components/schemas/FixTraining"
+          FIX_RECOVERY: "#/components/schemas/FixRecovery"
+          FIX_ADHERENCE: "#/components/schemas/FixAdherence"
+          HARD_STOP: "#/components/schemas/HardStop"
+          STOP_LOAD_INCREASE: "#/components/schemas/StopLoadIncrease"
+          DELOAD: "#/components/schemas/Deload"
+          FULL_REST_WEEK: "#/components/schemas/FullRestWeek"
+          MINI_CUT: "#/components/schemas/MiniCut"
+          CHANGE_PHASE: "#/components/schemas/ChangePhase"
+    NoDecisionYet:
+      type: object
+      description: Not enough data, or the window is not full — said, not guessed (U3).
+      required: [type]
+      properties:
+        type:
+          const: NO_DECISION_YET
+    Continue:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: CONTINUE
+    AdjustCalories:
+      type: object
+      description: One calorie step on the daily target (K-107), e.g. -500 on a stalled cut, +250 on a stalled bulk.
+      required: [type, kcalPerDay]
+      properties:
+        type:
+          const: ADJUST_CALORIES
+        kcalPerDay:
+          type: integer
+          not:
+            const: 0
+    IncreaseCalories:
+      type: object
+      description: The safety net narrowing a deficit (U13, K-104).
+      required: [type, kcalPerDay]
+      properties:
+        type:
+          const: INCREASE_CALORIES
+        kcalPerDay:
+          type: integer
+          minimum: 1
+    ChangeMovement:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: CHANGE_MOVEMENT
+    FixTraining:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: FIX_TRAINING
+    FixRecovery:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: FIX_RECOVERY
+    FixAdherence:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: FIX_ADHERENCE
+    HardStop:
+      type: object
+      description: "The one hard stop (U13): any deficit ends, maintenance at least, see a doctor."
+      required: [type]
+      properties:
+        type:
+          const: HARD_STOP
+    StopLoadIncrease:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: STOP_LOAD_INCREASE
+    Deload:
+      type: object
+      description: A lighter week; weekly sets scale by setsFactor (K-110).
+      required: [type, setsFactor]
+      properties:
+        type:
+          const: DELOAD
+        setsFactor:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 1
+    FullRestWeek:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: FULL_REST_WEEK
+    MiniCut:
+      type: object
+      required: [type, minWeeks, maxWeeks]
+      properties:
+        type:
+          const: MINI_CUT
+        minWeeks:
+          type: integer
+          minimum: 1
+        maxWeeks:
+          type: integer
+          minimum: 1
+    ChangePhase:
+      type: object
+      required: [type, to]
+      properties:
+        type:
+          const: CHANGE_PHASE
+        to:
+          $ref: "#/components/schemas/Phase"
+    Targets:
+      type: object
+      description: What the user follows today; each a plan number set by calls (ADR-020 L-13).
+      required: [targetKcal, proteinG, carbsG, fatG, stepsPerDay, trainingSessionsPerWeek]
+      properties:
+        targetKcal:
+          type: integer
+        proteinG:
+          type: integer
+        carbsG:
+          type: integer
+        fatG:
+          type: integer
+        stepsPerDay:
+          type: integer
+        trainingSessionsPerWeek:
+          type: integer
+
+    # ── coach ────────────────────────────────────────────────────────────────────────────────────────────────
+    CoachQuestion:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 2000
+        decisionId:
+          type: string
+          format: uuid
+          description: The call the question is about, if any.
+    CoachAnswer:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: Words only; numbers in it come from the engine or the database (U1).

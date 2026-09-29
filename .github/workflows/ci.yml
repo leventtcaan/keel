@@ -40,6 +40,10 @@ jobs:
           cache-dependency-path: apps/mobile/package-lock.json
       - run: npm ci
       - run: npm run check
+      # The API types are generated from contracts/openapi.yaml; stale or invalid → red (K-201, ADR-024).
+      - name: Contract valid and mobile types up to date
+        working-directory: contracts
+        run: npm ci && npm run check
 
   tooling:
     name: Tooling (git guard)
