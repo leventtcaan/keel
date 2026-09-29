@@ -90,6 +90,10 @@ K-101'i başlat: dal `engine/<issue>-domain-types`, ön aktarım (Snapshot → D
 - 2026-09-29 · M0 gece kurulumu (yukarıda)
 
 ## Riskler
+- **Dependabot #2 · decode-uri-component ≤0.4.2** (orta, DoS): expo-router → query-string@7 üzerinden uygulamada çalışıyor.
+  Düzeltme 0.5.0 yalnız ESM, query-string@7 CJS → override kırar. Etki: bozuk bir derin bağlantı kullanıcının kendi
+  uygulamasını dondurabilir. **Bekliyor:** Expo güncellemesi; her SDK yükseltmesinde kontrol. (#1 uuid kapatıldı:
+  yalnız derleme zamanı, `uuid.v4()` tampon olmadan, etkilenmiyor.)
 - **Retention ↔ geç değer:** Apple sıralaması retention'a bakıyor, değerimiz 4-8 haftada geliyor → U15 ve günlük
   tutarlılık sayısı bunun için var. `arastirma/05-faz4-pazarlama.md` §2
 - **Apple Intelligence cihaz payı bilinmiyor** → cihaz üstü katmanın kapsamı belirsiz (ADR-004, K-510)
