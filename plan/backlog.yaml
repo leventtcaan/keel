@@ -456,7 +456,7 @@ tasks:
     module: engine
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-101]
     why: "Günlük sayı (Levent kararı 29 Eyl); sonuç gelmezken kullanıcıyı tutan şey (U15)"
     acceptance:

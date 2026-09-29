@@ -37,8 +37,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-107 kalori merdiveni | — | | |
 | K-108 makrolar | ✅ birleşti | PR #139 | `docs/aktarim/M1/K-108.md` |
 | K-109 progresyon | ✅ birleşti | PR #140 | `docs/aktarim/M1/K-109.md` |
-| K-110 deload | kısmi, inceleme (basamak 3 L-12'yi bekliyor) | `engine/21-deload` (worktree `../keel-k109`) | — |
-| K-111 tutarlılık sayısı | — | | |
+| K-110 deload | kısmi: PR açık (basamak 3 L-12'yi bekliyor) | PR #141 | `docs/aktarim/M1/K-110.md` |
+| K-111 tutarlılık sayısı | PR açık, auto-merge | PR #142 | `docs/aktarim/M1/K-111.md` |
 | K-112 karar montajı | — | | |
 | K-113 altın senaryolar | — | | |
 | K-114 başlangıç hedefi | — | | |
@@ -51,6 +51,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 - `plateau_sessions: 3` (training.yaml, K-110) — H3 B5 "3 ardışık seans" (uzman görüşü, RCT yok).
 - `protein_female_higher_from_age: 45` (nutrition.yaml, K-108) — J1 C5 perimenopoz ~45 (kaynakta açık; bilgi için).
 - Faz kapısı çizgileri `fat_first` {25,35}, `surplus_below` {12,22} (safety.yaml, K-105) — Güray + J1 +10 ofset (bilgi için).
+- `on_track_min_ratio: 0.7` (windows.yaml, K-111) — Güray G2 K-60; K-106 uyum eşiğiyle aynı mı olacağı L-6.
 **Akşam sorulacaklar:**
 1. (K-101) NO_DECISION_YET de en az bir gerekçe taşımalı mı? Kabul kriteri izin veriyor; spesifikasyonda hepsi gerekçeli;
    inceleme ajanı "evet" öneriyor (U2: neyin kararı değiştireceği söylenebilsin). Öneri: evet → kriter + test değişir (K1).
@@ -68,7 +69,9 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 8. **L-12** (K-110): Güray kendi içinde çelişiyor — G7 K-68 basamak 3 "geçen haftanın kilosunu kaldıramıyorsan yorgunluk
    değil, beslenme/uykuya tek tek bak" · K-70/K-73 "plana uyamıyorsan overtraining, 1 hafta TAM mola". Aynı belirtiye iki
    tedavi. Deload merdiveninin 3. basamağı (FULL_REST_WEEK) ve WC-18'in 0,4 eşiği (kaynaksız) bu karara bağlı.
-9. K1 açıklaması: K-103'te iki testin beklenen tarihi (kırılan `nextReview` sözü), K-108'de iki testin beklentisi
+9. **L-13** (K-111): ekranda yalnız kümülatif "12'de 9" mu, "seri" de mi? Kabul kriteri tek sayı ("1 hafta aflı,
+   sıfırlanmaz") diyor; motor ikisini veriyor: kümülatif (hiç düşmez) + seri (tek kaçan hafta affedilir, art arda iki biter).
+10. K1 açıklaması: K-103'te iki testin beklenen tarihi (kırılan `nextReview` sözü), K-108'de iki testin beklentisi
    (sessiz kalori aşımı → `TargetTooLow`) inceleme bulgusu üzerine değişti. Testler birleşmeden önce, aynı dalda.
 **Alınan teknik kararlar (aktarımda anlatılacak):**
 - K-101: Action = sealed interface + record, ActionType ayrı kimlik (tek exhaustive switch) · CopyKey/RuleId değer tipleri ·
@@ -85,7 +88,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-K-110 (kısmi) öz-denetimde · sıradaki K-111 tutarlılık · K-106 akşam kararına bağlı
+**Uygulanabilir her şey yapıldı.** Kalan M1 görevleri (K-106/107/112/113 omurga zinciri, K-114/115 başlangıç hedefi) Levent kararlarına bağlı → akşam oturumu
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
