@@ -19,11 +19,23 @@ kurar; M1 sonunda senaryo uçtan uca motorun içinden geçer.
 8. K-112 montaj — bütün resim · K-113 altın senaryolar — kanıt
 
 ## Durum
-| Görev | Aktarım dosyası | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
-|---|---|---|---|---|
-| K-101 | `K-101.md` | — | — | — |
-| K-102 | `K-102.md` | — | — | — |
-| K-103 | `K-103.md` | — | — | — |
-| K-104 | `K-104.md` | — | — | — |
-| K-105 | `K-105.md` | — | — | — |
-| K-108 | `K-108.md` | — | — | — |
+| Görev | Aktarım dosyası | Kod | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
+|---|---|---|---|---|---|
+| K-101 alan tipleri | `K-101.md` | ✅ | — | — | — |
+| K-102 parametreler | `K-102.md` | ✅ | — | — | — |
+| K-103 trend + veri yeterliliği | `K-103.md` | ✅ | — | — | — |
+| K-104 güvenlik ağı (kısmi) | `K-104.md` | ✅ kısmi | — | — | — |
+| K-105 faz kapısı | `K-105.md` | ✅ | — | — | — |
+| K-108 makrolar | `K-108.md` | ✅ | — | — | — |
+| K-109 progresyon | `K-109.md` | ✅ | — | — | — |
+| K-110 deload (kısmi) | `K-110.md` | ✅ kısmi | — | — | — |
+| K-111 tutarlılık | `K-111.md` | ✅ | — | — | — |
+| K-106, K-107, K-112…K-115 | — | kararları bekliyor | | | |
+
+## Bugünün ortak dersleri (her dosyada ayrıca)
+- **Test önce, ve testin kendisi de test edilir:** her görevde en az bir test "boş geçiyordu" ya da bir mutasyonu kaçırıyordu;
+  mutasyon (kodu bilerek bozma) ve özellik testleri (jqwik) bunları yakaladı.
+- **Öz-denetim ajanları gerçek hata buldu:** sessiz kalori aşımı (K-108), kırılan `nextReview` sözü (K-103), %800 oran riski
+  (K-102), sonsuz deload (K-110), U4 değer sızıntısı (K-105), telafi mekaniği (K-111).
+- **Kaynak ≠ kart:** üç yerde görev kartı araştırmayla çelişti (K-104 hard stop, K-105 %15, K-110 basamak 3); kod kaynağı izledi,
+  çelişki Levent'e soru oldu.
