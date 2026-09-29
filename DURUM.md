@@ -37,8 +37,8 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
 | K-107 kalori merdiveni | — | | |
 | K-108 makrolar | ✅ birleşti | PR #139 | `docs/aktarim/M1/K-108.md` |
 | K-109 progresyon | ✅ birleşti | PR #140 | `docs/aktarim/M1/K-109.md` |
-| K-110 deload | kısmi: PR açık (basamak 3 L-12'yi bekliyor) | PR #141 | `docs/aktarim/M1/K-110.md` |
-| K-111 tutarlılık sayısı | PR açık, auto-merge | PR #142 | `docs/aktarim/M1/K-111.md` |
+| K-110 deload | kısmi ✅ birleşti; basamak 3 L-12'yi bekliyor | PR #141 | `docs/aktarim/M1/K-110.md` |
+| K-111 tutarlılık sayısı | ✅ birleşti | PR #142 | `docs/aktarim/M1/K-111.md` |
 | K-112 karar montajı | — | | |
 | K-113 altın senaryolar | — | | |
 | K-114 başlangıç hedefi | — | | |
@@ -88,7 +88,7 @@ Levent paralelde başka işte; M1'i agent uygular, akşam toplu aktarım (`docs/
   test çıktıda yağ/yüzde alanı olmadığını kanıtlar) · yeni parametreler fat_first {25,35}, bulk_band_min {15,25} (Güray + J1 ofset)
 
 ## Aktif görev
-**Uygulanabilir her şey yapıldı.** Kalan M1 görevleri (K-106/107/112/113 omurga zinciri, K-114/115 başlangıç hedefi) Levent kararlarına bağlı → akşam oturumu
+Yok (uygulanabilir M1 işi bitti; 7 görev birleşti, 2 kısmi). **Uygulanabilir her şey yapıldı.** Kalan M1 görevleri (K-106/107/112/113 omurga zinciri, K-114/115 başlangıç hedefi) Levent kararlarına bağlı → akşam oturumu
 
 ## Sıradaki tek adım
 Tablodaki ilk açık görev. Levent dönünce: skill `aktarim` ile `docs/aktarim/M1/` sırasıyla.
