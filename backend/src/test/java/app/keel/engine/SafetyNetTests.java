@@ -95,6 +95,67 @@ class SafetyNetTests {
         assertThat(SafetyNet.check(snapshot, MALE)).isNotPresent();
     }
 
+    @Test
+    void aSteadyDailyLossIsMeasuredWeekOverWeek() {
+        // Losing 0.12 kg every day for two weeks: consecutive 7-day means differ by 0.84 kg > 0.7 kg cap at ~70 kg.
+        // At 0.09 kg/day they differ by 0.63 kg: under the cap. (Pins the one-week lag: a longer lag would add days.)
+        assertThat(SafetyNet.check(steadyLoss("71.60", "0.12"), MALE)).isPresent();
+        assertThat(SafetyNet.check(steadyLoss("71.30", "0.09"), MALE)).isNotPresent();
+    }
+
+    @Test
+    void aSwingBetweenTwoSingleMorningsIsNotALoss() {
+        // Both weeks average exactly 70.0 kg, but the last morning of the old week (70.6) and today (69.6) differ by
+        // 1.0 kg. Only the weekly means count; one morning is mostly water (H1 §3.4).
+        List<WeighIn> weighIns = new ArrayList<>();
+        String[] oldWeek = {"69.4", "70.3", "69.7", "70.0", "70.1", "69.9", "70.6"};
+        String[] thisWeek = {"70.6", "69.4", "70.3", "70.1", "70.0", "70.0", "69.6"};
+        for (int i = 0; i < 7; i++) {
+            weighIns.add(weighIn(TODAY.minusDays(13 - i), oldWeek[i]));
+            weighIns.add(weighIn(TODAY.minusDays(6 - i), thisWeek[i]));
+        }
+
+        assertThat(SafetyNet.check(cut(weighIns), MALE)).isNotPresent();
+    }
+
+    @Test
+    void oneWeighInPerWeekIsTooLittleToCallALossRate() {
+        // A single weigh-in each week carries ±1.2 kg of noise on the difference, more than the cap itself.
+        List<WeighIn> sparse = new ArrayList<>(EngineFixtures.daily(TODAY.minusDays(60), TODAY.minusDays(14), "72.0"));
+        sparse.add(weighIn(TODAY.minusDays(10), "71.5"));
+        sparse.add(weighIn(TODAY, "70.0"));
+
+        assertThat(SafetyNet.check(cut(sparse), MALE)).isNotPresent();
+    }
+
+    @Test
+    void theFirstWeeksWaterDropIsNotALossRate() {
+        // Güray K-19: the first week's drop is water and glycogen. Nothing is interpreted before
+        // no_interpretation_days of data (H1), the safety net included.
+        List<WeighIn> weighIns = new ArrayList<>(EngineFixtures.daily(TODAY.minusDays(12), TODAY.minusDays(7), "72.0"));
+        weighIns.addAll(EngineFixtures.daily(TODAY.minusDays(6), TODAY, "70.5"));
+
+        assertThat(SafetyNet.check(cut(weighIns), MALE)).isNotPresent();
+    }
+
+    @Test
+    void theLossCapIsACutRule() {
+        // On a bulk, losing weight is a wrong-direction question for the weekly spine (K-106), not this rule.
+        Snapshot bulking = new Snapshot(TODAY, Sex.MALE, Phase.BULK, TODAY.minusDays(60), losing("70.9", "70.0").weights());
+
+        assertThat(SafetyNet.check(bulking, MALE)).isNotPresent();
+    }
+
+    @Test
+    void safetyCallsOnDenseDataAreHighConfidence() {
+        assertThat(SafetyNet.check(losing("70.9", "70.0"), MALE)).hasValueSatisfying(
+                d -> assertThat(d.confidence()).isEqualTo(Confidence.HIGH));
+        assertThat(SafetyNet.bmrFloor(1450, 1500, snapshot(), MALE)).hasValueSatisfying(d -> {
+            assertThat(d.confidence()).isEqualTo(Confidence.HIGH);
+            assertThat(d.nextReview()).isEqualTo(TODAY.plusDays(7));
+        });
+    }
+
     // ── BMR floor ───────────────────────────────────────────────────────────────────────────────────────────
 
     @Test
@@ -177,8 +238,23 @@ class SafetyNetTests {
 
     /** Seven days at {@code weekAgoKg} then seven days at {@code nowKg}: the trend drops by exactly the difference. */
     private static Snapshot losing(String weekAgoKg, String nowKg) {
-        List<WeighIn> weighIns = new ArrayList<>(EngineFixtures.daily(TODAY.minusDays(13), TODAY.minusDays(7), weekAgoKg));
+        List<WeighIn> weighIns = new ArrayList<>(EngineFixtures.daily(TODAY.minusDays(40), TODAY.minusDays(7), weekAgoKg));
         weighIns.addAll(EngineFixtures.daily(TODAY.minusDays(6), TODAY, nowKg));
+        return new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(60), series(weighIns));
+    }
+
+    /** Daily weigh-ins for the last 14 days, starting at {@code startKg} and dropping {@code perDayKg} each day. */
+    private static Snapshot steadyLoss(String startKg, String perDayKg) {
+        List<WeighIn> weighIns = new ArrayList<>(EngineFixtures.daily(TODAY.minusDays(40), TODAY.minusDays(14), startKg));
+        BigDecimal kg = new BigDecimal(startKg);
+        for (int ago = 13; ago >= 0; ago--) {
+            kg = kg.subtract(new BigDecimal(perDayKg));
+            weighIns.add(new WeighIn(TODAY.minusDays(ago), kg));
+        }
+        return cut(weighIns);
+    }
+
+    private static Snapshot cut(List<WeighIn> weighIns) {
         return new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(60), series(weighIns));
     }
 

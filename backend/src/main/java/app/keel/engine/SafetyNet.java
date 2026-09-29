@@ -10,7 +10,7 @@ import java.util.Optional;
  * The first step of every decision (U13, ADR-003 §4): nothing lowers calories before this has looked.
  *
  * <ul>
- *   <li><b>Weekly loss cap</b>: trend weight falling faster than min(weekly_loss_cap_kg, bodyweight ×
+ *   <li><b>Weekly loss cap</b> (cut only, dense data only): trend weight falling faster than min(weekly_loss_cap_kg, bodyweight ×
  *       weekly_loss_cap_pct_bodyweight) raises calories. Güray's 1 kg (G2 K-17: "don't try to go above it, you lose
  *       muscle") and the literature's 1 % (H3 Ç1) together: the 1 % only ever makes Güray's cap stricter.</li>
  *   <li><b>BMR floor</b>: a proposed calorie target is never below BMR; the answer is more movement instead
@@ -37,6 +37,11 @@ public final class SafetyNet {
 
     /** A safety decision if the data calls for one today; empty if the next step may decide. */
     public static Optional<Decision> check(Snapshot snapshot, Parameters parameters) {
+        // The cap is a cut rule (G2 decision table: "loss above target and >1 kg/week"); a bulk losing weight is a
+        // wrong-direction question for the weekly spine.
+        if (snapshot.phase() != Phase.CUT || !enoughToMeasureALossRate(snapshot, parameters)) {
+            return Optional.empty();
+        }
         LocalDate today = snapshot.today();
         int trendDays = parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
         Optional<BigDecimal> now = WeightTrend.at(snapshot.weights(), today, trendDays);
@@ -63,6 +68,24 @@ public final class SafetyNet {
         return Optional.of(safetyDecision(snapshot, new Action.ChangeMovement(), List.of(new Reason(BMR_FLOOR, GURAY_BMR_FLOOR))));
     }
 
+    /**
+     * A loss rate is only read from two dense, consecutive weeks after the first no_interpretation_days: with one
+     * weigh-in a week the noise on the difference (~1.2 kg at 95 %) is larger than the cap itself, and the first
+     * week's drop is water and glycogen (G2 K-19, H1 §3.4).
+     */
+    private static boolean enoughToMeasureALossRate(Snapshot snapshot, Parameters parameters) {
+        LocalDate today = snapshot.today();
+        WeightSeries weights = snapshot.weights();
+        int noInterpretationDays = parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS);
+        boolean pastFirstDays = weights.firstDay()
+                .map(first -> !today.isBefore(first.plusDays(noInterpretationDays - 1L)))
+                .orElse(false);
+        int minPerWeek = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+        boolean thisWeekDense = weights.countBetween(today.minusDays(DAYS_PER_WEEK - 1L), today) >= minPerWeek;
+        boolean lastWeekDense = weights.countBetween(today.minusDays(2L * DAYS_PER_WEEK - 1), today.minusDays(DAYS_PER_WEEK)) >= minPerWeek;
+        return pastFirstDays && thisWeekDense && lastWeekDense;
+    }
+
     /** The weekly loss cap for this bodyweight, in kg: never above weekly_loss_cap_kg. */
     static BigDecimal weeklyLossCapKg(BigDecimal bodyweightKg, Parameters parameters) {
         BigDecimal absolute = BigDecimal.valueOf(parameters.number(ParameterKey.WEEKLY_LOSS_CAP_KG));
@@ -70,8 +93,9 @@ public final class SafetyNet {
         return absolute.min(relative);
     }
 
-    // A safety call is made on clear data and errs toward caution, so it carries HIGH confidence; it is looked at
-    // again at the next weekly check-in. (K-112 derives confidence for the other steps.)
+    // A safety call is made only on dense data (loss cap) or on given numbers (BMR floor), and it errs toward
+    // caution, so it carries HIGH confidence; it is looked at again at the next weekly check-in (G2 decision table).
+    // K-112 derives confidence for the other steps.
     private static Decision safetyDecision(Snapshot snapshot, Action action, List<Reason> reasons) {
         return new Decision(action, reasons, Confidence.HIGH, snapshot.today().plusDays(DAYS_PER_WEEK),
                 new CopyKey("decision." + action.type().name().toLowerCase(Locale.ROOT) + "." + reasons.getFirst().rule().value()));
