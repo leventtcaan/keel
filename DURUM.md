@@ -14,8 +14,9 @@ verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 ## Akşam kararları alındı (29 Eyl) → ADR-020
 Levent L-1…L-13'ü, eşikleri ve M2/M3 ön kararlarını verdi: `plan/kararlar/ADR-020-m1-kural-kararlari.md`.
 **Çalışma planı (Levent kararı):** her kilometre taşı ayrı session'da otonom uygulanır ve "aktarıma hazır" noktada durur;
-session sonunda bir sonraki kilometre taşı için hazır prompt verilir. Aktarım (merdiven, satır satır) yarından itibaren
-`docs/aktarim/M*/` dosyalarından yapılır — kod önden gider, aktarım yazılı koda dayanır.
+session sonunda bir sonraki kilometre taşı için hazır prompt verilir. **Session'lar kapanmaz: her session kendi yaptığını
+aktarır** (M1 aktarımı → M1'i uygulayan sohbet; M2 → M2 sohbeti…). Levent boş olduğunda ilgili sohbete döner; aktarım
+`docs/aktarim/M*/` dosyalarından, temelden, basamak basamak — kod önden gider, aktarım yazılı koda dayanır.
 **Sıradaki:** yeni session → M1'in kalanı (ADR-020 uygulaması) + M2.
 
 ## M1 koşusu — toplu mod (29 Eyl öğleden itibaren; bağlam sıkışırsa buradan devam)
