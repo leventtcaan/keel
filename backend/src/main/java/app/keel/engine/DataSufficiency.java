@@ -68,26 +68,32 @@ public final class DataSufficiency {
     }
 
     /**
-     * The review date promised to the user: the first day on which all three checks pass if they weigh in every
-     * morning from tomorrow. Found by trying each day in turn rather than by a formula, so it stays right when the
-     * checks interact (14 days of data can still leave the window's oldest week empty). The search is bounded:
-     * with daily weigh-ins every check passes within the longer of the two periods.
+     * The review date promised to the user: the first day from which all three checks pass, on that day and every
+     * later one, if they weigh in every morning from tomorrow. "From which", not "on which": weeks are counted back
+     * from the day looked at, so a thin week can pass on a Thursday, when it is split across two weeks, and fail
+     * again at the next weekly check-in, when it is whole. Found by trying each day in turn rather than by a formula,
+     * so it stays right when the checks interact. The search is bounded: from the longer of the two periods on, the
+     * window holds only the daily weigh-ins, and every check stays passed.
      */
     private static LocalDate earliestEnoughDay(Snapshot snapshot, Parameters parameters) {
         int horizon = Math.max(parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS),
                 parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS));
         List<WeighIn> weighIns = new ArrayList<>(snapshot.weights().weighIns());
         BigDecimal lastKg = weighIns.isEmpty() ? BigDecimal.ONE : weighIns.getLast().kg();
+        LocalDate lastShort = snapshot.today();
         for (int ahead = 1; ahead <= horizon; ahead++) {
             LocalDate day = snapshot.today().plusDays(ahead);
             // Only the dates matter to these checks; the weight value is a placeholder.
             weighIns.add(new WeighIn(day, lastKg));
             Snapshot then = new Snapshot(day, snapshot.sex(), snapshot.phase(), snapshot.planStart(), new WeightSeries(weighIns));
-            if (firstGap(then, parameters).isEmpty()) {
-                return day;
+            if (firstGap(then, parameters).isPresent()) {
+                lastShort = day;
             }
         }
-        throw new IllegalStateException("No day within " + horizon + " days makes the data sufficient");
+        if (lastShort.equals(snapshot.today().plusDays(horizon))) {
+            throw new IllegalStateException("No day within " + horizon + " days makes the data sufficient");
+        }
+        return lastShort.plusDays(1);
     }
 
 }

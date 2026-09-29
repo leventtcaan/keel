@@ -178,6 +178,24 @@ class DataSufficiencyTests {
         assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(4));
     }
 
+    @Test
+    void aThinWeekInsideTheWindowPromisesTheDayFromWhichTheDataStaysEnough() {
+        // Daily, except the week TODAY-13..-7 has only TODAY-13 and TODAY-10. Weeks are counted back from the day
+        // looked at, so with daily weigh-ins from tomorrow the check passes on TODAY+3..+5 (the thin week is split
+        // across two blocks), fails again on TODAY+6..+9 (the oldest block holds TODAY-14..-8 at most 3) and holds for
+        // good from TODAY+10 (the oldest block starts at TODAY-10). Promising TODAY+3 would break at the next weekly
+        // check-in, TODAY+7.
+        List<WeighIn> weighIns = new ArrayList<>(daily(LONG_AGO, TODAY.minusDays(14), "80.0"));
+        weighIns.add(weighIn(TODAY.minusDays(13), "80.0"));
+        weighIns.add(weighIn(TODAY.minusDays(10), "80.0"));
+        weighIns.addAll(daily(TODAY.minusDays(6), TODAY, "80.0"));
+
+        Optional<Decision> decision = DataSufficiency.check(snapshot(Sex.MALE, LONG_AGO, weighIns), MALE);
+
+        assertNoDecisionYet(decision, "data_insufficient");
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(10));
+    }
+
     @ParameterizedTest(name = "{0}, week {1} back")
     @MethodSource("everyWeekOfEveryWindow")
     void aThinWeekAnywhereInTheWindowBlocks(Sex sex, int weeksBack) {
@@ -276,6 +294,28 @@ class DataSufficiencyTests {
         Snapshot onPromisedDay = new Snapshot(promised, sex, Phase.CUT, planStart, series(kept));
 
         return DataSufficiency.check(onPromisedDay, parameters(sex)).isEmpty();
+    }
+
+    @Property
+    boolean afterThePromisedDayDailyWeighInsKeepTheDataEnough(
+            @ForAll("weighInDays") List<Integer> daysAgo, @ForAll("planAges") int planAge, @ForAll Sex sex) {
+        // "Look again on D" must hold on D and on every later look — above all the next weekly check-in. Until the
+        // window has moved past today's data, weeks counted back from a later day can split a thin week differently.
+        LocalDate planStart = TODAY.minusDays(planAge);
+        Optional<Decision> decision = DataSufficiency.check(snapshot(sex, planStart, weighInsOn(daysAgo)), parameters(sex));
+        if (decision.isEmpty()) {
+            return true;
+        }
+        LocalDate promised = decision.get().nextReview();
+        int window = parameters(sex).wholeNumber(ParameterKey.DECISION_WINDOW_DAYS);
+        for (LocalDate day = promised; !day.isAfter(promised.plusDays(window)); day = day.plusDays(1)) {
+            List<WeighIn> kept = new ArrayList<>(weighInsOn(daysAgo));
+            kept.addAll(daily(TODAY.plusDays(1), day, "80.0"));
+            if (DataSufficiency.check(new Snapshot(day, sex, Phase.CUT, planStart, series(kept)), parameters(sex)).isPresent()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Property
