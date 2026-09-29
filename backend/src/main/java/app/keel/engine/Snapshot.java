@@ -14,9 +14,13 @@ import java.util.Objects;
  * @param weights every weigh-in up to today, imported history included (ADR-018)
  * @param fatProxyPct the internal body-fat estimate from the visual/waist proxy, if there is one. U4: an input only;
  *     no Decision carries it, and it is never shown as a number
+ * @param energy the plan's calories and exercise burn, when both are known (energy availability, K-104)
+ * @param menstrualLossReported the answer to the one-tap question shown when energy availability is low (J1 C6,
+ *     ADR-020 L-1). Health data (GDPR Art. 9) that ADR-020 says is not kept: whoever stores a Snapshot (the decision
+ *     module, K-212) must leave this field out. toString hides it for logs
  */
 public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
-        Optional<BigDecimal> fatProxyPct) {
+        Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported) {
 
     public Snapshot {
         Objects.requireNonNull(today, "today");
@@ -25,6 +29,7 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         Objects.requireNonNull(planStart, "planStart");
         Objects.requireNonNull(weights, "weights");
         Objects.requireNonNull(fatProxyPct, "fatProxyPct");
+        Objects.requireNonNull(energy, "energy");
         if (planStart.isAfter(today)) {
             throw new IllegalArgumentException("planStart " + planStart + " is after today " + today);
         }
@@ -33,15 +38,33 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         });
     }
 
-    /** Leaves the body-fat estimate out, so a Snapshot that is ever logged or printed cannot show it (U4). */
+    /**
+     * Leaves the body-fat estimate and the cycle answer out, so a Snapshot that is ever logged or printed cannot show
+     * them (U4, GDPR Art. 9).
+     */
     @Override
     public String toString() {
         return "Snapshot[today=" + today + ", sex=" + sex + ", phase=" + phase + ", planStart=" + planStart
-                + ", weights=" + weights.weighIns().size() + " weigh-ins, fatProxyPct=" + (fatProxyPct.isPresent() ? "<hidden>" : "none") + "]";
+                + ", weights=" + weights.weighIns().size() + " weigh-ins, fatProxyPct=" + (fatProxyPct.isPresent() ? "<hidden>" : "none")
+                + ", energy=" + energy.map(Object::toString).orElse("none") + ", menstrualLossReported=<hidden>]";
     }
 
     /** A Snapshot without a body-fat estimate (none measured yet). */
     public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights) {
         this(today, sex, phase, planStart, weights, Optional.empty());
+    }
+
+    /** A Snapshot with the basics and, possibly, a body-fat estimate; the other inputs are added with the withers. */
+    public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
+            Optional<BigDecimal> fatProxyPct) {
+        this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false);
+    }
+
+    public Snapshot withEnergy(EnergyBudget budget) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported);
+    }
+
+    public Snapshot withMenstrualLossReported(boolean reported) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported);
     }
 }

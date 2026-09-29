@@ -47,7 +47,10 @@ final class ParameterDocuments {
             // above the fat-first line a bulk is not even started (03 §2.1, G6 K-7, G4 K-10).
             new Order(ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT, ParameterKey.BULK_CEILING_FAT_PROXY_PCT, true),
             new Order(ParameterKey.BULK_CEILING_FAT_PROXY_PCT, ParameterKey.FAT_FIRST_FAT_PROXY_PCT, true),
-            // Below the LEA threshold is a hard stop; the adequate level must sit above it (J1 C6).
+            // Energy availability bands, low to adequate (J1 C6, L2.1): under LEA the deficit narrows, under the
+            // warning line the app warns, under adequate is the normal fat-loss band.
+            new Order(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, ParameterKey.EA_WARNING_KCAL_PER_KG_FFM, true),
+            new Order(ParameterKey.EA_WARNING_KCAL_PER_KG_FFM, ParameterKey.EA_ADEQUATE_KCAL_PER_KG_FFM, true),
             new Order(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, ParameterKey.EA_ADEQUATE_KCAL_PER_KG_FFM, true));
 
     private static final Map<String, ParameterKey> KEYS_BY_YAML = Arrays.stream(ParameterKey.values())

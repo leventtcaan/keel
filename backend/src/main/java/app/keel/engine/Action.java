@@ -42,7 +42,7 @@ public sealed interface Action {
     record AdjustCalories() implements Action {
     }
 
-    /** Safety net: losing too fast, raise calories (U13, K-104). */
+    /** Safety net: narrow the deficit — losing too fast, or too little energy left after training (U13, K-104). */
     record IncreaseCalories() implements Action {
     }
 
@@ -62,7 +62,11 @@ public sealed interface Action {
     record FixAdherence() implements Action {
     }
 
-    /** Safety net: stop the deficit (rapid loss, low energy availability; U13, K-104). */
+    /**
+     * The one hard stop (U13, K-104): a reported loss of the menstrual cycle ends any deficit — calories at least at
+     * maintenance, and a doctor is suggested (J1 C6, ADR-020 L-1). Rapid loss and low energy availability narrow the
+     * deficit instead ({@link IncreaseCalories}).
+     */
     record HardStop() implements Action {
     }
 

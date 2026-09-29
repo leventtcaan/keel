@@ -259,9 +259,9 @@ class ParametersLoaderTests {
     void failsOnARatioWrittenAsAPercentage() {
         // 0.08 means 8 %. Writing 8 would mean 800 % and the rapid-loss stop could never fire.
         Map<String, Object> documents = repositoryDocuments();
-        entry(documents, "safety.yaml", "rapid_loss_hard_stop_pct").put("value", 8);
+        entry(documents, "safety.yaml", "rapid_loss_narrow_pct").put("value", 8);
 
-        assertProblem(documents, "safety.yaml", "rapid_loss_hard_stop_pct", "between 0 and 1");
+        assertProblem(documents, "safety.yaml", "rapid_loss_narrow_pct", "between 0 and 1");
     }
 
     @Test
@@ -306,9 +306,20 @@ class ParametersLoaderTests {
     @Test
     void failsWhenTheLowEnergyThresholdIsNotBelowTheAdequateLevel() {
         Map<String, Object> documents = repositoryDocuments();
-        entry(documents, "safety.yaml", "lea_threshold_kcal_per_kg_ffm").put("value", 45); // adequate is 45
+        bySex(documents, "safety.yaml", "lea_threshold_kcal_per_kg_ffm").put("male", 45); // adequate is 45
 
         assertProblem(documents, "safety.yaml", "lea_threshold_kcal_per_kg_ffm", "ea_adequate_kcal_per_kg_ffm");
+    }
+
+    @Test
+    void failsWhenTheWarningLineIsNotBetweenTheLowAndAdequateLines() {
+        Map<String, Object> underLow = repositoryDocuments();
+        bySex(underLow, "safety.yaml", "ea_warning_kcal_per_kg_ffm").put("female", 30); // female LEA line is 30
+        Map<String, Object> overAdequate = repositoryDocuments();
+        bySex(overAdequate, "safety.yaml", "ea_warning_kcal_per_kg_ffm").put("male", 45); // adequate is 45
+
+        assertProblem(underLow, "safety.yaml", "lea_threshold_kcal_per_kg_ffm", "ea_warning_kcal_per_kg_ffm");
+        assertProblem(overAdequate, "safety.yaml", "ea_warning_kcal_per_kg_ffm", "ea_adequate_kcal_per_kg_ffm");
     }
 
     @Test

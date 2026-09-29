@@ -52,6 +52,36 @@ class SnapshotTests {
     }
 
     @Test
+    void withersAddAnInputAndKeepTheRest() {
+        Snapshot base = new Snapshot(MONDAY, Sex.FEMALE, Phase.CUT, MONDAY, NO_WEIGHINS);
+        EnergyBudget budget = new EnergyBudget(1800, 300);
+
+        Snapshot withBoth = base.withEnergy(budget).withMenstrualLossReported(true);
+
+        assertThat(withBoth.energy()).contains(budget);
+        assertThat(withBoth.menstrualLossReported()).isTrue();
+        assertThat(withBoth.withEnergy(budget).withMenstrualLossReported(false))
+                .isEqualTo(base.withEnergy(budget));
+        assertThat(base.energy()).isEmpty();
+        assertThat(base.menstrualLossReported()).isFalse();
+    }
+
+    @Test
+    void aPrintedSnapshotNeverShowsTheCycleAnswer() {
+        // GDPR Art. 9: the answer is used for one decision and never logged (ADR-020 L-1).
+        Snapshot reported = new Snapshot(MONDAY, Sex.FEMALE, Phase.CUT, MONDAY, NO_WEIGHINS).withMenstrualLossReported(true);
+
+        assertThat(reported.toString()).doesNotContain("true").contains("menstrualLossReported=<hidden>");
+    }
+
+    @Test
+    void anEnergyBudgetIsPositiveFoodAndNonNegativeExercise() {
+        assertThatThrownBy(() -> new EnergyBudget(0, 0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new EnergyBudget(1800, -1)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(new EnergyBudget(1800, 0).exerciseKcalPerDay()).isZero();
+    }
+
+    @Test
     void twoSnapshotsWithTheSameContentAreEqual() {
         // Same input → same output needs "same input" to be checkable by value (ADR-003 §1, U2).
         assertThat(new Snapshot(MONDAY, Sex.FEMALE, Phase.BULK, MONDAY, NO_WEIGHINS)).isEqualTo(new Snapshot(MONDAY, Sex.FEMALE, Phase.BULK, MONDAY, NO_WEIGHINS));

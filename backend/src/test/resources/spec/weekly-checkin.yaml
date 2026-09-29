@@ -72,10 +72,11 @@ rows:
     note: "Cap = min(1 kg, 1% of 70 kg = 0.7 kg) → 0.9 kg exceeds it."
 
   - id: WC-11
-    title: "More than 8% bodyweight lost in 8 weeks: hard stop"
+    title: "More than 8% bodyweight lost in 8 weeks: narrow the deficit and warn"
     given: {phase: cut, bodyweight_8w_ago_kg: 90, bodyweight_kg: 82}
-    expect: {action: HARD_STOP, reason: rapid_loss}
+    expect: {action: INCREASE_CALORIES, reason: rapid_loss}
     source: "arastirma/ham/J1-cinsiyet.md#C6"
+    note: "ADR-020 L-1: the research says narrow + warn (J1 C6 tier 2); the only hard stop is a reported loss of the cycle (WC-22)."
 
   - id: WC-12
     title: "A calorie cut would go under BMR: change movement instead"
@@ -131,3 +132,17 @@ rows:
     given: {phase: bulk, appetite: gone, forcing_food: true}
     expect: {action: MINI_CUT}
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"
+
+  - id: WC-21
+    title: "Plan leaves too little energy after training: narrow the deficit"
+    given: {sex: male, phase: cut, bodyweight_kg: 80, fat_proxy_pct: 25, target_kcal: 1800, exercise_kcal: 400}
+    expect: {action: INCREASE_CALORIES, reason: low_energy_availability}
+    source: "arastirma/ham/J1-cinsiyet.md#L2.1"
+    note: "(1800 − 400) / (80 × 0.75) = 23.3 kcal/kg fat-free mass, under the male line 25 (ADR-020 L-2)."
+
+  - id: WC-22
+    title: "Loss of the menstrual cycle reported: the one hard stop"
+    given: {sex: female, phase: cut, menstrual_loss_reported: true}
+    expect: {action: HARD_STOP, reason: menstrual_loss_reported}
+    source: "arastirma/ham/J1-cinsiyet.md#C6"
+    note: "Cut stops, maintenance, see a doctor (ADR-020 L-1). The answer is used for this decision only (GDPR Art. 9)."

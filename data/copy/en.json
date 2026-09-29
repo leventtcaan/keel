@@ -43,6 +43,14 @@
       "loss_rate_cap": {
         "title": "You're losing faster than your body can keep up with.",
         "body": "Past this pace you start losing muscle, and the extra on the scale is mostly water. Calories go up a step this week so what you lose stays fat."
+      },
+      "rapid_loss": {
+        "title": "You've lost a lot in a short time. Time to ease off.",
+        "body": "The scale has been dropping faster than a steady pace for a while now. Calories go up a step so your body keeps up and what you lose stays fat."
+      },
+      "low_energy_availability": {
+        "title": "Your plan leaves too little fuel for your training.",
+        "body": "After what your workouts burn, what's left is less than your body needs to run well. Calories go up so training, sleep and recovery have enough to work with."
       }
     },
     "change_movement": {
@@ -50,6 +58,13 @@
       "bmr_floor": {
         "title": "Food stays where it is. Movement goes up.",
         "body": "Another calorie cut would take you under what your body needs at rest. More daily steps get the same result without eating less."
+      }
+    },
+    "hard_stop": {
+      "label": "Pause the plan",
+      "menstrual_loss_reported": {
+        "title": "Your plan pauses here.",
+        "body": "A change in your cycle is a sign your body needs more fuel. No more eating under your needs: calories stay at least at maintenance, and it's worth talking to your doctor about it."
       }
     },
     "change_phase": {

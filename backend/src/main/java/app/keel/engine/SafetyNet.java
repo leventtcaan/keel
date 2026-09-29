@@ -1,7 +1,10 @@
 package app.keel.engine;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -15,20 +18,35 @@ import java.util.Optional;
  *       muscle") and the literature's 1 % (H3 Ç1) together: the 1 % only ever makes Güray's cap stricter.</li>
  *   <li><b>BMR floor</b>: a proposed calorie target is never below BMR; the answer is more movement instead
  *       (G2 K-11, G2 decision table). BMR is an input: Güray uses the value an online calculator gives.</li>
+ *   <li><b>Low energy availability</b> (any phase): (plan kcal − exercise kcal) / fat-free mass at or under lea_threshold
+ *       (male 25, female 30) narrows the deficit (J1 C6/L2.1, ADR-020 L-1/L-2). Fat-free mass comes from the internal
+ *       fat estimate (U4: only the band leaves the engine). Under ea_warning the app warns; no decision changes.</li>
+ *   <li><b>Rapid loss</b> (cut only): more than rapid_loss_narrow_pct of bodyweight in rapid_loss_window_weeks, while
+ *       still losing, also narrows the deficit (J1 C6). Not a hard stop (ADR-020 L-1).</li>
+ *   <li><b>The one hard stop</b> (any phase): a reported loss of the menstrual cycle ends any deficit — at least
+ *       maintenance, see a doctor (J1 C6 third tier). It comes before every other rule.</li>
  * </ul>
  *
- * <p>Not here yet: rapid loss over 8 weeks and low energy availability. The task card and the research disagree on
- * whether they stop the deficit or narrow it (plan/m1-kural-haritasi.md, L-1); they wait for that decision.
+ * <p>When several deficit-narrowing rules fire, the strongest evidence leads (energy availability, then the 8-week
+ * loss, then the weekly cap) and the others follow as supporting reasons. Not here: a fat estimate under 18 % / 8 %
+ * stopping the deficit (J1 L2.1) — a health threshold the product owner has not decided (L-4).
  */
 public final class SafetyNet {
 
     static final RuleId LOSS_RATE_CAP = new RuleId("loss_rate_cap");
     static final RuleId LOSS_RATE_CAP_BODYWEIGHT = new RuleId("loss_rate_cap_bodyweight");
     static final RuleId BMR_FLOOR = new RuleId("bmr_floor");
+    static final RuleId RAPID_LOSS = new RuleId("rapid_loss");
+    static final RuleId LOW_ENERGY_AVAILABILITY = new RuleId("low_energy_availability");
+    static final RuleId MENSTRUAL_LOSS_REPORTED = new RuleId("menstrual_loss_reported");
 
     private static final Source GURAY_LOSS_CAP = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-17", SourceTag.EXPERIENCE);
     private static final Source LITERATURE_LOSS_CAP = new Source("arastirma/ham/H3-bosluk-literatur.md#Ç1", SourceTag.LITERATURE);
     private static final Source GURAY_BMR_FLOOR = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-11", SourceTag.EXPERIENCE);
+    private static final Source REDS_TIERS = new Source("arastirma/ham/J1-cinsiyet.md#C6", SourceTag.LITERATURE);
+    private static final Source ENERGY_GATE = new Source("arastirma/ham/J1-cinsiyet.md#L2.1", SourceTag.LITERATURE);
+
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     private static final int DAYS_PER_WEEK = 7;
 
@@ -37,24 +55,62 @@ public final class SafetyNet {
 
     /** A safety decision if the data calls for one today; empty if the next step may decide. */
     public static Optional<Decision> check(Snapshot snapshot, Parameters parameters) {
-        // The cap is a cut rule (G2 decision table: "loss above target and >1 kg/week"); a bulk losing weight is a
-        // wrong-direction question for the weekly spine.
-        if (snapshot.phase() != Phase.CUT || !enoughToMeasureALossRate(snapshot, parameters)) {
-            return Optional.empty();
+        requireSameSex(snapshot, parameters);
+        if (snapshot.menstrualLossReported()) {
+            return Optional.of(safetyDecision(snapshot, new Action.HardStop(), List.of(new Reason(MENSTRUAL_LOSS_REPORTED, REDS_TIERS))));
+        }
+        List<Reason> narrow = new ArrayList<>();
+        if (energyAvailability(snapshot, parameters).filter(band -> band == EnergyAvailability.LOW).isPresent()) {
+            narrow.add(new Reason(LOW_ENERGY_AVAILABILITY, ENERGY_GATE));
+        }
+        // Both loss-rate rules are cut rules (G2 decision table: "loss above target and >1 kg/week"); a bulk losing
+        // weight is a wrong-direction question for the weekly spine.
+        if (snapshot.phase() == Phase.CUT) {
+            if (lostTooMuchOverTheWindow(snapshot, parameters)) {
+                narrow.add(new Reason(RAPID_LOSS, REDS_TIERS));
+            }
+            if (overTheWeeklyCap(snapshot, parameters)) {
+                narrow.add(new Reason(LOSS_RATE_CAP, GURAY_LOSS_CAP));
+                narrow.add(new Reason(LOSS_RATE_CAP_BODYWEIGHT, LITERATURE_LOSS_CAP));
+            }
+        }
+        return narrow.isEmpty() ? Optional.empty() : Optional.of(safetyDecision(snapshot, new Action.IncreaseCalories(), narrow));
+    }
+
+    private static boolean overTheWeeklyCap(Snapshot snapshot, Parameters parameters) {
+        if (!enoughToMeasureALossRate(snapshot, parameters)) {
+            return false;
         }
         LocalDate today = snapshot.today();
         int trendDays = parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
         Optional<BigDecimal> now = WeightTrend.at(snapshot.weights(), today, trendDays);
         Optional<BigDecimal> weekAgo = WeightTrend.at(snapshot.weights(), today.minusDays(DAYS_PER_WEEK), trendDays);
         if (now.isEmpty() || weekAgo.isEmpty()) {
-            return Optional.empty();
+            return false;
         }
         BigDecimal weeklyLoss = weekAgo.get().subtract(now.get());
-        if (weeklyLoss.compareTo(weeklyLossCapKg(now.get(), parameters)) <= 0) {
-            return Optional.empty();
+        return weeklyLoss.compareTo(weeklyLossCapKg(now.get(), parameters)) > 0;
+    }
+
+    /**
+     * Trend now against the trend rapid_loss_window_weeks ago, and only while the loss is still going on (trend lower
+     * than a week ago). Once the deficit has been narrowed and weight holds, the 8-week figure stays high until the
+     * window passes the old weight; narrowing again every week would stack calorie increases. Over eight weeks one
+     * morning's water (~0.4 kg) is small next to 8 % of bodyweight, so any weigh-in at both ends is enough; with none
+     * eight weeks back, nothing is judged.
+     */
+    private static boolean lostTooMuchOverTheWindow(Snapshot snapshot, Parameters parameters) {
+        int trendDays = parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
+        LocalDate today = snapshot.today();
+        LocalDate windowStart = today.minusWeeks(parameters.wholeNumber(ParameterKey.RAPID_LOSS_WINDOW_WEEKS));
+        Optional<BigDecimal> then = WeightTrend.at(snapshot.weights(), windowStart, trendDays);
+        Optional<BigDecimal> weekAgo = WeightTrend.at(snapshot.weights(), today.minusDays(DAYS_PER_WEEK), trendDays);
+        Optional<BigDecimal> now = WeightTrend.at(snapshot.weights(), today, trendDays);
+        if (then.isEmpty() || weekAgo.isEmpty() || now.isEmpty() || now.get().compareTo(weekAgo.get()) >= 0) {
+            return false;
         }
-        return Optional.of(safetyDecision(snapshot, new Action.IncreaseCalories(),
-                List.of(new Reason(LOSS_RATE_CAP, GURAY_LOSS_CAP), new Reason(LOSS_RATE_CAP_BODYWEIGHT, LITERATURE_LOSS_CAP))));
+        BigDecimal allowed = then.get().multiply(BigDecimal.valueOf(parameters.number(ParameterKey.RAPID_LOSS_NARROW_PCT)));
+        return then.get().subtract(now.get()).compareTo(allowed) > 0;
     }
 
     /**
@@ -86,6 +142,59 @@ public final class SafetyNet {
         return pastFirstDays && thisWeekDense && lastWeekDense;
     }
 
+    /** The energy-availability band of the current plan; empty without a plan budget, a fat estimate or a trend. */
+    public static Optional<EnergyAvailability> energyAvailability(Snapshot snapshot, Parameters parameters) {
+        requireSameSex(snapshot, parameters);
+        Optional<BigDecimal> fatFree = fatFreeMassKg(snapshot, parameters);
+        if (fatFree.isEmpty() || snapshot.energy().isEmpty()) {
+            return Optional.empty();
+        }
+        EnergyBudget budget = snapshot.energy().get();
+        BigDecimal available = BigDecimal.valueOf((long) budget.targetKcal() - budget.exerciseKcalPerDay())
+                .divide(fatFree.get(), MathContext.DECIMAL64);
+        // "≤ threshold" is low (ADR-020 L-1, J1 C6 table); the warning and adequate lines are "under" (J1 L2.1).
+        if (available.compareTo(line(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, parameters)) <= 0) {
+            return Optional.of(EnergyAvailability.LOW);
+        }
+        if (available.compareTo(line(ParameterKey.EA_WARNING_KCAL_PER_KG_FFM, parameters)) < 0) {
+            return Optional.of(EnergyAvailability.WARNING);
+        }
+        if (available.compareTo(line(ParameterKey.EA_ADEQUATE_KCAL_PER_KG_FFM, parameters)) < 0) {
+            return Optional.of(EnergyAvailability.REDUCED);
+        }
+        return Optional.of(EnergyAvailability.ADEQUATE);
+    }
+
+    /**
+     * The lowest whole daily target whose energy availability is above lea_threshold (on the line is already low):
+     * the next whole kcal above threshold × fat-free mass, plus the exercise burn. A floor for calorie steps (K-107).
+     */
+    public static Optional<Integer> leaFloorKcal(Snapshot snapshot, Parameters parameters) {
+        requireSameSex(snapshot, parameters);
+        return fatFreeMassKg(snapshot, parameters).flatMap(fatFree -> snapshot.energy().map(budget ->
+                line(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, parameters).multiply(fatFree)
+                        .setScale(0, RoundingMode.FLOOR).intValueExact() + 1 + budget.exerciseKcalPerDay()));
+    }
+
+    // Fat-free mass = trend weight × (1 − fat estimate). U4: used inside the engine only.
+    private static Optional<BigDecimal> fatFreeMassKg(Snapshot snapshot, Parameters parameters) {
+        Optional<BigDecimal> weight = WeightTrend.at(snapshot.weights(), snapshot.today(),
+                parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS));
+        return weight.flatMap(kg -> snapshot.fatProxyPct().map(fatPct ->
+                kg.multiply(BigDecimal.ONE.subtract(fatPct.divide(HUNDRED, MathContext.DECIMAL64)))));
+    }
+
+    // The energy lines differ by sex: a woman's plan read with the male line would miss a low-energy plan.
+    private static void requireSameSex(Snapshot snapshot, Parameters parameters) {
+        if (snapshot.sex() != parameters.sex()) {
+            throw new IllegalArgumentException("Snapshot sex " + snapshot.sex() + " read with " + parameters.sex() + " parameters");
+        }
+    }
+
+    private static BigDecimal line(ParameterKey key, Parameters parameters) {
+        return BigDecimal.valueOf(parameters.number(key));
+    }
+
     /** The weekly loss cap for this bodyweight, in kg: never above weekly_loss_cap_kg. */
     static BigDecimal weeklyLossCapKg(BigDecimal bodyweightKg, Parameters parameters) {
         BigDecimal absolute = BigDecimal.valueOf(parameters.number(ParameterKey.WEEKLY_LOSS_CAP_KG));
@@ -93,8 +202,8 @@ public final class SafetyNet {
         return absolute.min(relative);
     }
 
-    // A safety call is made only on dense data (loss cap) or on given numbers (BMR floor), and it errs toward
-    // caution, so it carries HIGH confidence; it is looked at again at the next weekly check-in (G2 decision table).
+    // A safety call is made only on dense data (loss cap), a long window (8-week loss), given numbers (BMR floor,
+    // energy availability) or the user's own report, and it errs toward caution, so it carries HIGH confidence; it is looked at again at the next weekly check-in (G2 decision table).
     // K-112 derives confidence for the other steps.
     private static Decision safetyDecision(Snapshot snapshot, Action action, List<Reason> reasons) {
         return new Decision(action, reasons, Confidence.HIGH, snapshot.today().plusDays(DAYS_PER_WEEK),
