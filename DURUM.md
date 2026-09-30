@@ -133,6 +133,10 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
 16. **(K-208, dışarıdan dosya indirme — izin)** FDC toplu verisi (USDA, CC0): Foundation + SR Legacy (~birkaç MB zip) ve
     Branded (~400 MB+ zip, barkod için) indirilip içe aktarılsın mı? İndirme izin ister; ayrıca Branded diske yer ister (disk
     şu an dolu). İzin gelene dek K-208 elle yazılmış küçük test verisiyle ilerler.
+17. **(K-212, sağlık/ürün)** Hedefi "karar sen ver" (`DECIDE_FOR_ME`) olan kullanıcının başlangıç fazı: faz kapısı yağ
+    tahmini ister (soru 11), yoksa kapı devre dışı. Güray G4 K-4: "neredeyse her yeni başlayan buradan başlar" (önce yağ
+    kaybı) → varsayılan **CUT** mı, yoksa kullanıcıya iki seçenek sunulup seçtirilsin mi? Şimdilik bu kullanıcıda check-in
+    karar üretmez (409).
 9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
    `tag: urun`). Onay mı?
 
