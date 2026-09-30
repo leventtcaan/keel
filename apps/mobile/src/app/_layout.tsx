@@ -9,6 +9,10 @@ import { ThemeProvider, useTheme } from '@/theme/theme';
 // Keep the splash up until the heading font is ready, so titles never flash in the fallback face.
 void SplashScreen.preventAutoHideAsync();
 
+// The tabs always sit under the coach, even when a link (keel://coach) opens the app straight on it; without an anchor
+// the coach would be the only screen, with no tab bar and nothing to go back to.
+export const unstable_settings = { anchor: '(tabs)' };
+
 // Root stack: the tabs, and the coach as a sheet over whichever tab opened it (K-307). The tabs themselves are in
 // (tabs)/_layout.tsx; the app opens on the first one, Today.
 function AppStack() {

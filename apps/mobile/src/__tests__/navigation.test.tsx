@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { render } from '@testing-library/react-native';
+import { router as appRouter } from 'expo-router';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import type { ComponentType } from 'react';
 
@@ -63,7 +64,8 @@ test.each(TABS.map((tab) => tab.name))('the %s tab shows the coach entry', async
 test.each(TABS.map((tab, position) => [tab.name, position] as const))(
   'from the %s tab, its coach entry opens the coach over the tabs',
   async (name, position) => {
-    const router = renderRouter(APP, { initialUrl: name === 'index' ? '/' : `/${name}` });
+    const start = name === 'index' ? '/' : `/${name}`;
+    const router = renderRouter(APP, { initialUrl: start });
     await router;
     // Native tabs keep every tab mounted (entries in tab order); only the focused tab's entry is live, as on a phone.
     await fireEvent.press(screen.getAllByRole('button', { name: t('coach.entry') })[position]);
@@ -73,6 +75,13 @@ test.each(TABS.map((tab, position) => [tab.name, position] as const))(
     });
     expect(router.getPathname()).toBe('/coach');
     expect(screen.getByRole('header', { name: t('screens.coach.title') })).toBeOnTheScreen();
+    // Pushed over the tabs, not replacing them: closing the coach returns to the same tab.
+    expect(appRouter.canGoBack()).toBe(true);
+    await act(async () => {
+      appRouter.back();
+      jest.runAllTimers();
+    });
+    expect(router.getPathname()).toBe(start);
   },
 );
 
@@ -80,4 +89,15 @@ test('the coach screen does not offer a way to itself', async () => {
   const router = renderRouter(APP, { initialUrl: '/coach' });
   await router;
   expect(screen.queryByRole('button', { name: t('coach.entry') })).toBeNull();
+});
+
+test('opened cold from a link (keel://coach), the coach still has the tabs underneath', async () => {
+  const router = renderRouter(APP, { initialUrl: '/coach' });
+  await router;
+  expect(appRouter.canGoBack()).toBe(true);
+  await act(async () => {
+    appRouter.back();
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/');
 });
