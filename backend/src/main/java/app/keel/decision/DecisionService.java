@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>What the data says is read, not asked (K-213): how it looks from the week's photo check, where the waist went over
  * the decision window. The plan's target is in it (K-216), with the exercise burn not known. Not yet in the Snapshot, so
  * the engine treats them as unknown: the fat estimate (DURUM question 11 — without it the low-energy floor cannot be
- * computed), adherence (K-220) and where training stands (K-221).
+ * computed) and where training stands (K-221). Adherence is counted from the logs over the window (K-220, WeekLogs).
  *
  * <p>Applying a call (K-216): only the latest, only what it is about, and only on the plan it judged; the call keeps when
  * it was applied and undone and the plan before and after.
@@ -58,11 +58,13 @@ class DecisionService {
     private final ParameterSet parameters;
     private final QuestionBudget budget;
     private final Clock clock;
+    private final WeekLogs logs;
 
     private static final int DAYS_PER_WEEK = 7;
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
-            QuestionBudget budget, Clock clock) {
+            QuestionBudget budget, Clock clock, WeekLogs logs) {
+        this.logs = logs;
         this.calls = calls;
         this.profiles = profiles;
         this.measurements = measurements;
@@ -92,7 +94,8 @@ class DecisionService {
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
         // the estimate a plan without a target would get.
         CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
-        return new CheckInView(week.weekOf(), asked(week, plan).stream().map(CheckInQuestions::describe).toList(), false);
+        return new CheckInView(week.weekOf(), asked(week, plan, dataSays(account, week, plan)).stream().map(CheckInQuestions::describe).toList(),
+                false);
     }
 
     /**
@@ -128,8 +131,9 @@ class DecisionService {
             }
             return estimated;
         }).orElseGet(() -> calls.start(account, firstPlan(week)));
-        CheckIn checkIn = new CheckIn(week.dataSays().look(), answers.checkIn().training(), answers.checkIn().recovery(), week.dataSays().waist(),
-                week.dataSays().adherence(), week.dataSays().appetite());
+        CheckIn dataSays = dataSays(account, week, plan);
+        CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
+                dataSays.adherence(), dataSays.appetite());
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported());
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
@@ -170,9 +174,21 @@ class DecisionService {
         return CheckInWeek.taken(weekOf, calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(CallStore.Call::weekOf));
     }
 
-    private List<Answers.Kind> asked(Week week, CallStore.Plan plan) {
+    private List<Answers.Kind> asked(Week week, CallStore.Plan plan, CheckIn dataSays) {
         return CheckInQuestions.needed(checkIn -> DecisionPipeline.decide(snapshot(week, plan, checkIn, false), week.parameters()),
-                week.dataSays(), budget.forWeek(CheckInQuestions.anomaly(week.dataSays(), plan.phase())));
+                dataSays, budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase())));
+    }
+
+    /** What the data says, with how the plan was followed over the window, counted from the logs (K-220). */
+    private CheckIn dataSays(AccountId account, Week week, CallStore.Plan plan) {
+        return logs.adherence(account, week.profile(), week.today(), plan, bodyweight(account, week), week.body().ageYears(), week.parameters())
+                .map(week.dataSays()::withAdherence).orElse(week.dataSays());
+    }
+
+    // Today's trend weight, or the last weight known however old (K-216 review).
+    private Optional<BigDecimal> bodyweight(AccountId account, Week week) {
+        return WeightTrend.at(new WeightSeries(week.weights()), week.today(), week.parameters().wholeNumber(ParameterKey.TREND_DISPLAY_DAYS))
+                .or(() -> measurements.latestWeightKg(account));
     }
 
     private Snapshot snapshot(Week week, CallStore.Plan plan, CheckIn checkIn, boolean menstrualLossReported) {
@@ -294,9 +310,7 @@ class DecisionService {
         Week week = week(account);
         // Today's trend weight, or the last weight known however old: a user who stopped weighing in can still read the
         // targets and take a call back (K-216 review). A target exists only after a weigh-in, so there is always one.
-        BigDecimal bodyweight = WeightTrend.at(new WeightSeries(week.weights()), week.today(), week.parameters().wholeNumber(ParameterKey.TREND_DISPLAY_DAYS))
-                .or(() -> measurements.latestWeightKg(account))
-                .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        BigDecimal bodyweight = bodyweight(account, week).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), week.profile().trainingDays(), week.parameters())
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));
     }

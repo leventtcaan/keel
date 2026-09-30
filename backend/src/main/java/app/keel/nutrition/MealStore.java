@@ -74,6 +74,11 @@ class MealStore {
         return meals("m.account_id = :account and m.day = :day", Map.of("account", account.value(), "day", day));
     }
 
+    /** Meals of the days from {@code from} to {@code to}, both included. */
+    List<Meal> days(AccountId account, LocalDate from, LocalDate to) {
+        return meals("m.account_id = :account and m.day between :from and :to", Map.of("account", account.value(), "from", from, "to", to));
+    }
+
     /** Every meal of the account (the export, K-214). */
     List<Meal> all(AccountId account) {
         return meals("m.account_id = :account", Map.of("account", account.value()));

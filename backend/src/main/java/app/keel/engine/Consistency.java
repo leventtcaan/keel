@@ -18,7 +18,7 @@ import java.util.Optional;
 public final class Consistency {
 
     /** Weeks run Monday to Sunday: the weekly check-in is on Monday (Levent, 29 Sep). */
-    static final DayOfWeek WEEK_STARTS_ON = DayOfWeek.MONDAY;
+    public static final DayOfWeek WEEK_STARTS_ON = DayOfWeek.MONDAY;
 
     private Consistency() {
     }

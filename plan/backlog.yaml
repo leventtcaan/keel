@@ -900,7 +900,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-212, K-216, K-209, K-211]
     why: "Motor kaloriye yalnız uyulmuş planda dokunur (G2 K-60); uyum sorulmaz, kayıtlardan sayılır (ADR-020 L-6). Üreticisi yoktu: 30 Eyl K-213 hazırlığında görüldü"
     acceptance:
