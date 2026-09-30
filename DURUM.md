@@ -49,7 +49,8 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-208 besin aralığı + barkod (V9, + H7) | ✅ birleşti; inceleme: etiket sınırı kaynaksız yön, UPC-E, göç yorumu; CI sıralama testini yakaladı | #166 | `M2/K-208.md` |
 | K-209 öğün + günlük bütçe (V10) | ✅ birleşti; inceleme: boş assertion, tekrar gönderim sırası | #167 | `M2/K-209.md` |
 | K-212 Snapshot + karar kaydı (V11) | ✅ birleşti; inceleme: döngü sorusu herkesten alınıyordu, yaş 0 → 500, dışa aktarmada yağ alanı | #168 | `M2/K-212.md` |
-| K-213 check-in soruları + soru bütçesi | **PR #171 açık, auto-merge KAPALI**; inceleme ajanları + aktarım dosyası yapılmadı | #171 | `M2/K-213.md` (yazılmadı) |
+| K-213 check-in soruları + soru bütçesi | ✅ birleşti; inceleme: sorulan soruya 400 (veri GET→POST arasında değişince), GET/POST hafta kuralı ayrıydı, `needed` sonsuz döngü riski, aynı gün iki ölçüm | #171 | `M2/K-213.md` |
+| K-216 kararı hedeflere uygula + geri al | **sürüyor** — dal `decision/100-apply-decision` (`../keel-k216`) | — | — |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -60,7 +61,12 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
 Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
-1. **Açık iş — K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
+0. **(güncel, K-213 birleşti #171)** Sıradaki: K-216 dalı `decision/100-apply-decision` (`../keel-k216`, main üstünde,
+   commit'lenmemiş iş var: EnergyBudget egzersiz bilinmiyor + SafetyNet, adım parametreleri, PlanChange/PlanTargets saf +
+   ApplyDecisionTests yeşil). Kalan: V12 (plan.steps_per_day, weekly_call applied_at/undone_at/plan_before/plan_after),
+   CallStore, apply/undo/targets uçları, DailyTargets bean'i, ProfileFacts.trainingDays, Snapshot'a plan hedefi, API
+   testleri, sözleşme. Soru 19 (adım hedefi) listeye eklenecek; K-222 (faz/mini cut/hard stop uygulaması) backlog'a.
+1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
    KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
    MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
    **Kalan:** (a) CI sonucuna bak (ccd_pr `get_status`, `gh` ile yoklama yok); kırmızıysa düzelt; (b) inceleme ajanları
