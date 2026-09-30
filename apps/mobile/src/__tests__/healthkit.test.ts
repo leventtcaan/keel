@@ -16,20 +16,27 @@ function kit(available = true): Kit & { requested: unknown[] } {
   };
 }
 
-test('the library cannot be loaded (Expo Go: no native module): not available, and nothing is asked', () => {
+test('in Expo Go the library is not even loaded: Metro would report its failure as a fatal error before any catch', () => {
+  const load = jest.fn(() => kit());
+  const access = healthKitAccess(load, () => true);
+  expect(access.available).toBe(false);
+  expect(load).not.toHaveBeenCalled();
+});
+
+test('elsewhere, a library that still cannot be loaded (no native module): not available', () => {
   const access = healthKitAccess(() => {
-    throw new Error('NitroModules are not supported in Expo Go');
-  });
+    throw new Error('NitroModules are not supported');
+  }, () => false);
   expect(access.available).toBe(false);
 });
 
 test('the device has no Health data store (an iPad): not available', () => {
-  expect(healthKitAccess(() => kit(false)).available).toBe(false);
+  expect(healthKitAccess(() => kit(false), () => false).available).toBe(false);
 });
 
 test("available: the sheet asks to read exactly the consent's list, and to write nothing", async () => {
   const fake = kit();
-  const access = healthKitAccess(() => fake);
+  const access = healthKitAccess(() => fake, () => false);
   expect(access.available).toBe(true);
   await access.requestRead();
   expect(fake.requested).toEqual([{ toRead: READ_TYPES }]);
@@ -48,5 +55,5 @@ test('never heart, cycle, medication, clinical or location data (ADR-018 §4)', 
 
 test('a sheet that fails reaches the caller (onboarding and Settings word it)', async () => {
   const failing = { ...kit(), requestAuthorization: async () => Promise.reject(new Error('denied')) };
-  await expect(healthKitAccess(() => failing).requestRead()).rejects.toThrow('denied');
+  await expect(healthKitAccess(() => failing, () => false).requestRead()).rejects.toThrow('denied');
 });

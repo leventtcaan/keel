@@ -11,9 +11,11 @@ birinci taraf HealthKit modülü yok (30 Eyl: `expo-healthkit`, `@expo/healthkit
 1. **`@kingstinct/react-native-healthkit` 16.x** (+ `react-native-nitro-modules` 0.37), `npx expo install` ile. Expo config
    plugin'i var (Info.plist açıklamaları, HealthKit entitlement'ı).
 2. Ekranlar kütüphaneyi değil **`HealthAccess`** arayüzünü tanır (`src/health/health.ts`); telefon uygulaması
-   `healthKitAccess()` (`src/health/healthKit.ts`). Kütüphane istenince yüklenir; yüklenemezse (Expo Go) ya da cihazda
-   Health deposu yoksa (iPad) "kullanılamaz" — ekranlar bunu söyler. (`Constants.executionEnvironment` Expo Go ile
-   development build'i ayıramaz: ikisi de `storeClient`.)
+   `healthKitAccess()` (`src/health/healthKit.ts`). **Expo Go'da kütüphane hiç yüklenmez** (`isRunningInExpoGo()`, Expo
+   Go'nun kendi yerel modülüne bakar): ilk yüklemeden sonra `require` edilen modülün yükleme hatasını Metro yakalayıp
+   ölümcül hata ekranı gösterir, bizim `try/catch`'imize gelmez (K-403 incelemesi; metro-runtime `guardedLoadModule`).
+   Başka yerde yüklenemezse ya da cihazda Health deposu yoksa (iPad) "kullanılamaz" — ekranlar bunu söyler.
+   (`Constants.executionEnvironment` Expo Go ile development build'i ayıramaz: ikisi de `storeClient`.)
 3. **Yalnız okuma**, rıza metnindeki beş tür (`READ_TYPES`); yazma izni K-412'de ayrı düğmeyle; arka plan teslimi kapalı
    (K-404 okumaya başlayınca karar verilir). ADR-018 §4 dışlamaları (kalp, döngü, ilaç, klinik, konum) testle.
 4. iOS izin metni kullanıcıya görünür → `data/copy/en.json › permissions.healthRead`; `app.config.ts` onu plugin'e verir
