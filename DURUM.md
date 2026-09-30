@@ -71,7 +71,8 @@ Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #1
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
 0. **(güncel, 30 Eyl öğleden sonra)** M2 uygulaması bitti. Cevap işleri: K-225 #182, K-226 #184, K-223 #183, K-224 #185
    birleşti; **K-222 #186 birleşti** (README düzeltmesi içinde). K-227 issue'su açıldı (M3, backend).
-   `plan/oturum-promptlari/M3.md` yazıldı. Açık sorular: 21, 22, 23, 24 (+ Apple kimlikleri) → M3 prompt'u ilk iş olarak
+   M3 **üç part'a bölündü** (token sınırı): `plan/oturum-promptlari/M3.md` (ortak) + `M3-part1.md`, `M3-part2.md`,
+   `M3-part3.md`; ilerleme aşağıda "## M3 ilerleme". Açık sorular: 21, 22, 23, 24 (+ Apple kimlikleri) → M3 prompt'u ilk iş olarak
    sorar. Açık worktree yok.
    Session açık: Levent dönünce **M1 (akşam) + M2 aktarımı** (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
@@ -103,6 +104,22 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
 4. **Bitiş:** sorular (aşağıdaki liste, 0-20) AskUserQuestion ile toplu → cevapları ADR'ye işle → kalan iş →
    `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; kabul kriterlerine: tek uçuşlu refresh ADR-025, UPC-E sunucuda açılır,
    Dependabot #2) → özet. Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
+
+## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
+
+| Part | Görevler | Durum |
+|---|---|---|
+| 1 · Temel | 0a disk, 0b sorular → ADR-028 · K-301, K-302, K-303, K-307 · Dependabot #2 | başlamadı |
+| 2 · Veri ve kimlik | K-304, K-305, K-310 | başlamadı |
+| 3 · Akış ve teslim | K-306, K-309, K-308, K-227 (+ K-228… ADR-028'den) · M3 çıkış kontrolü · M4 part prompt'ları | başlamadı |
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| (part'lar görev bitince satır ekler) | | | |
+
+**Part 0 (hazırlık) ÇIKIŞ — 30 Eyl:** M2 bitti (K-222 #186 son), açık PR/worktree yok, `main` temiz. Açık sorular 21-24 +
+Apple kimlikleri + referans görsel lisansı Part 1'in 0b adımında toplu sorulacak. K-227 issue #187 (backend, Part 3).
 
 ## Session sonunda Levent'e sorulacaklar
 **Hepsi cevaplandı (30 Eyl) → `plan/kararlar/ADR-027-m2-sonu-cevaplari.md`.** Açık kalan: Apple kimlikleri (M3 başında).
