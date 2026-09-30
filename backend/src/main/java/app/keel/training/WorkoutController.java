@@ -140,7 +140,8 @@ class WorkoutController {
         WorkoutStore.Workout workout = owned(account, id);
         require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()));
         List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
-        require(!unclean.contains(null) && unclean.stream().allMatch(exercise -> catalog.find(exercise).isPresent())
+        // No contains(null): an immutable list (the default here) throws on it.
+        require(unclean.stream().allMatch(exercise -> exercise != null && catalog.find(exercise).isPresent())
                 && Set.copyOf(unclean).size() == unclean.size());
         // Kept with the next session's load and reps of the day's planned moves (K-217).
         progress.finish(account, workout, finish.endedAt(), Set.copyOf(unclean));
