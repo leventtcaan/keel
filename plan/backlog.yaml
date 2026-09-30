@@ -845,7 +845,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-212, K-211]
     why: "Deload ve progresyon kararlarının programa işlenmesi (L3 P2)"
     acceptance:
