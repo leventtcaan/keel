@@ -918,7 +918,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-218, K-211]
     why: "Deload merdiveni (K-110) en çok takılan bileşik hareketin durumunu okur; set kaydından üreten yoktu (30 Eyl)"
     acceptance:
