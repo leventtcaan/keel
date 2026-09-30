@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-/** Training's part of the user's data (K-214): every workout with its sets, and the program (K-211). */
+/** Training's part of the user's data (K-214): every workout with its sets, the program (K-211) and its calls (K-217). */
 @Component
 class TrainingAccountData implements AccountDataExport {
 
@@ -16,7 +16,10 @@ class TrainingAccountData implements AccountDataExport {
     private final WorkoutStore store;
     private final ProgramStore programs;
 
-    TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs) {
+    private final TrainingCalls calls;
+
+    TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs, TrainingCalls calls) {
+        this.calls = calls;
         this.jdbc = jdbc;
         this.store = store;
         this.programs = programs;
@@ -28,7 +31,7 @@ class TrainingAccountData implements AccountDataExport {
         jdbc.sql("delete from training.workout_set where account_id = :account").param("account", deletion.account().value()).update();
         jdbc.sql("delete from training.workout where account_id = :account").param("account", deletion.account().value()).update();
         // The program's days and moves go with it (on delete cascade); by account too, as for sets.
-        for (String table : new String[] {"planned_exercise", "program_day", "program"}) {
+        for (String table : new String[] {"program_change", "planned_exercise", "program_day", "program"}) {
             jdbc.sql("delete from training." + table + " where account_id = :account").param("account", deletion.account().value()).update();
         }
     }
@@ -44,6 +47,7 @@ class TrainingAccountData implements AccountDataExport {
         training.put("workouts", store.all(account).stream()
                 .map(workout -> Map.of("workout", workout, "sets", store.sets(workout.id()))).toList());
         programs.current(account).ifPresent(program -> training.put("program", program));
+        training.put("programChanges", calls.changes(account));
         return training;
     }
 }

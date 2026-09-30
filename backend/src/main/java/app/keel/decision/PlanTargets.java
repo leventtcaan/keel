@@ -14,10 +14,16 @@ import java.util.Set;
  * Contract Targets: what the user follows today, each a plan number set by calls (K-216, ADR-020 L-13). The macros are
  * the engine's split of the calorie target at today's bodyweight (K-108); protein does not depend on calories, so it is
  * always there. When no split fits the target — the engine never sets one, but a heavier trend or a birthday can move
- * the floor later — carbs and fat are left out rather than guessed. Training days are the ones the user chose.
+ * the floor later — carbs and fat are left out rather than guessed. Training days are the ones the user chose. Before
+ * the first estimate there are no calories and no macros: only steps and training days ({@link #withoutCalories}).
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-record PlanTargets(int targetKcal, int proteinG, Integer carbsG, Integer fatG, int stepsPerDay, int trainingSessionsPerWeek) {
+record PlanTargets(Integer targetKcal, Integer proteinG, Integer carbsG, Integer fatG, int stepsPerDay, int trainingSessionsPerWeek) {
+
+    /** What is known before the first estimate: the steps and the training days (a training call applied, K-217). */
+    static PlanTargets withoutCalories(CallStore.Plan plan, Set<DayOfWeek> trainingDays, Parameters parameters) {
+        return new PlanTargets(null, null, null, null, PlanChange.steps(plan, parameters), trainingDays.size());
+    }
 
     /** Empty before the first estimate. */
     static Optional<PlanTargets> of(CallStore.Plan plan, BigDecimal bodyweightKg, Sex sex, int ageYears, Set<DayOfWeek> trainingDays,

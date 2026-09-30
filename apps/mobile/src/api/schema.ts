@@ -657,9 +657,11 @@ export interface paths {
          * @description Only the latest call, only while PENDING, and only on the plan target it judged (else 409: another call moved the
          *     plan while this one was being made). Applied twice (or by two requests at once), the targets move once. A
          *     calorie call moves the calorie target (and restarts its wait); more movement raises the step target. CONFLICT (409):
-         *     an older call, one that changes nothing (NOT_NEEDED), one undone, and a call whose kind is not applied here yet —
-         *     the training calls change the program (K-217); a phase change, a mini cut and the hard stop need what the engine
-         *     cannot read yet. NOT_FOUND for an unknown id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
+         *     an older call, one that changes nothing (NOT_NEEDED), one undone, a training call without a program to change,
+         *     and a call whose kind is not applied yet — a phase change, a mini cut and the hard stop need what the engine
+         *     cannot read yet. The deload ladder's calls change the program (K-217): hold the load from today; a lighter week or
+         *     a week off from today to the day before the call's nextReview. NOT_FOUND for an unknown id. Health data:
+         *     CONSENT_REQUIRED without the HEALTH_DATA consent.
          */
         post: operations["applyDecision"];
         delete?: never;
@@ -1060,8 +1062,20 @@ export interface components {
             firstRep: string;
             lastRep: string;
         };
+        /**
+         * @description The program as it is this week: the deload ladder's calls in force today on the user's calendar (K-217) — a
+         *     lighter week (`deload`, the sets of each exercise lowered), a week off (`restUntil`), the load held since a day
+         *     (`loadHeldSince`: no load is added until the next rung).
+         */
         Program: {
             deload?: components["schemas"]["DeloadWeek"];
+            /**
+             * Format: date
+             * @description A week off in force; ends on its own after this day.
+             */
+            restUntil?: string;
+            /** Format: date */
+            loadHeldSince?: string;
             /** Format: uuid */
             id: string;
             /** @enum {string} */
@@ -1375,11 +1389,12 @@ export interface components {
         /**
          * @description What the user follows today; each a plan number set by calls (ADR-020 L-13). Protein does not depend on calories
          *     and is always there; carbs and fat are absent when no split fits the target (the macro floors moved with a
-         *     heavier trend or a birthday after the target was set).
+         *     heavier trend or a birthday after the target was set). Before the first estimate there is no calorie target:
+         *     GET /v1/targets is NOT_FOUND, and an apply or undo (a training call) answers with the steps and training days only.
          */
         Targets: {
-            targetKcal: number;
-            proteinG: number;
+            targetKcal?: number;
+            proteinG?: number;
             carbsG?: number;
             fatG?: number;
             stepsPerDay: number;
