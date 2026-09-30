@@ -1,8 +1,11 @@
 package app.keel.training;
 
 import app.keel.shared.AccountId;
+import app.keel.shared.Decimals;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,7 +23,17 @@ class ProgramStore {
 
     enum Source { GENERATED, OWN }
 
-    record PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir) {
+    /**
+     * {@code nextLoadKg} and {@code nextReps}: the next session's target, once a workout of the day set it (K-217), with
+     * {@code lastLoadKg} the load it came from; {@code id} the stored row (null before it is stored).
+     */
+    record PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
+            BigDecimal lastLoadKg, UUID id) {
+
+        /** As planned, before any workout. */
+        PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir) {
+            this(exerciseId, sets, repMin, repMax, targetRir, null, null, null, null);
+        }
     }
 
     /** One day: {@code nameKey} for a generated day, {@code name} for the user's own. */
@@ -90,11 +103,14 @@ class ProgramStore {
         record Row(UUID day, PlannedExercise exercise) {
         }
         Map<UUID, List<PlannedExercise>> exercises = jdbc.sql("""
-                select e.day_id, e.exercise_id, e.sets, e.rep_min, e.rep_max, e.target_rir from training.planned_exercise e
+                select e.id, e.day_id, e.exercise_id, e.sets, e.rep_min, e.rep_max, e.target_rir, e.next_load_kg, e.next_reps, e.last_load_kg
+                from training.planned_exercise e
                 join training.program_day d on d.id = e.day_id where d.program_id = :program order by e.day_id, e.seq""")
                 .param("program", program)
                 .query((row, n) -> new Row(row.getObject("day_id", UUID.class), new PlannedExercise(row.getString("exercise_id"),
-                        row.getInt("sets"), row.getInt("rep_min"), row.getInt("rep_max"), row.getInt("target_rir"))))
+                        row.getInt("sets"), row.getInt("rep_min"), row.getInt("rep_max"), row.getInt("target_rir"),
+                        plain(row.getBigDecimal("next_load_kg")), row.getObject("next_reps", Integer.class), plain(row.getBigDecimal("last_load_kg")),
+                        row.getObject("id", UUID.class))))
                 .list().stream()
                 .collect(Collectors.groupingBy(Row::day, LinkedHashMap::new, Collectors.mapping(Row::exercise, Collectors.toList())));
         List<Day> days = jdbc.sql("select id, name_key, name, weekday from training.program_day where program_id = :program order by seq")
@@ -105,5 +121,21 @@ class ProgramStore {
                 .map(day -> new Day(day.id(), day.nameKey(), day.name(), day.weekday(), List.copyOf(exercises.getOrDefault(day.id(), List.of()))))
                 .toList();
         return Optional.of(new Program(program, head.get().source(), days));
+    }
+
+    /**
+     * The next session's target for a planned exercise (K-217), unless a later workout already set one: a workout
+     * finished late, or a finish sent again after a newer one, does not roll the target back (K-217 review).
+     */
+    void setNext(AccountId account, UUID plannedId, BigDecimal loadKg, int reps, BigDecimal lastLoadKg, Instant from) {
+        jdbc.sql("""
+                update training.planned_exercise set next_load_kg = :load, next_reps = :reps, last_load_kg = :last, next_from = :from
+                where account_id = :account and id = :id and (next_from is null or next_from <= :from)""")
+                .param("account", account.value()).param("id", plannedId).param("load", loadKg).param("reps", reps).param("last", lastLoadKg)
+                .param("from", from.atOffset(ZoneOffset.UTC)).update();
+    }
+
+    private static BigDecimal plain(BigDecimal kg) {
+        return kg == null ? null : Decimals.plain(kg);
     }
 }
