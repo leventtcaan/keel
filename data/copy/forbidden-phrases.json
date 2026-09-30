@@ -1,0 +1,152 @@
+{
+  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions. Every rule carries examples it must catch and near-misses it must let through; coachingNonExamples are ordinary coaching sentences no rule may catch. A number in copy is usually a {placeholder}, so number branches accept both.",
+  "rules": [
+    {
+      "id": "body-fat-number",
+      "rule": "U4",
+      "source": "docs/anayasa.md#U4",
+      "why": "A body-fat percentage is never shown, nor lean or fat mass as a share (lean % is 100 − fat %); fat is an internal engine variable. Bare 'fat' is not matched: macro splits (30% fat) are food copy.",
+      "pattern": "\\b(body[\\s-]*fat|bf|fat[\\s-]*mass|lean([\\s-]*(body[\\s-]*)?mass)?)\\b[^.%\\n]{0,20}?(\\d+|\\{\\w+\\})\\s*(%|percent(age)?|per\\s*cent)|(\\d+|\\{\\w+\\})\\s*(%|percent|per\\s*cent)\\s*(body[\\s-]*fat|bf\\b|fat[\\s-]*mass|lean)|\\b(body[\\s-]*fat|bf|fat[\\s-]*mass|lean[\\s-]*mass)\\s*(%|percent(age)?)|\\bpercent(age)?\\s+(of\\s+)?(body[\\s-]*fat|fat[\\s-]*mass|lean)",
+      "examples": [
+        "Body fat %",
+        "your body-fat percentage",
+        "about 18% body fat",
+        "BF%",
+        "percentage of body fat",
+        "Body fat: 18%",
+        "body fat sits at 18%",
+        "BF 18%",
+        "18%BF",
+        "18 per cent body fat",
+        "Body fat {value}%",
+        "{low}–{high}% body fat",
+        "lean mass 82%",
+        "Lean: 82%",
+        "fat mass 12%"
+      ],
+      "nonExamples": [
+        "You lose fat, not muscle",
+        "80% of the plan happened",
+        "fat 60 g",
+        "a lower-fat meal",
+        "Protein 30%, carbs 40%, fat 30%",
+        "2% fat milk",
+        "18 % fat",
+        "Lean: {weight} kg",
+        "You're lean enough"
+      ]
+    },
+    {
+      "id": "condition-names",
+      "rule": "U6",
+      "source": "docs/anayasa.md#U6",
+      "why": "No diagnosis or condition names, insulin resistance included.",
+      "pattern": "\\binsulin[\\s-]+resist\\w*|\\b(pre)?diabet\\w*|\\bmetabolic\\s+(syndrome|damage)|\\bpcos\\b|\\bhypo(thyroid|glyc)\\w*|\\bhyperthyroid\\w*|\\bthyroid\\w*|\\bdisease\\w*|\\bdisorders?\\b|\\bsymptoms?\\b|\\bsyndromes?\\b|\\bobes(e|ity)\\b|\\bhypertensi\\w*|\\bamenorrh\\w*|\\bred-s\\b|\\brelative\\s+energy\\s+deficiency|\\banorexi\\w*|\\bbulimi\\w*|\\bfatty\\s+liver|\\bleptin\\s+resist\\w*|\\billness(es)?\\b|\\b(medical|health)\\s+conditions?\\b",
+      "examples": [
+        "insulin resistance",
+        "Insulin-resistant",
+        "prediabetes",
+        "diabetic",
+        "metabolic syndrome",
+        "PCOS",
+        "hypothyroidism",
+        "heart disease",
+        "eating disorder",
+        "a symptom",
+        "amenorrhea",
+        "RED-S",
+        "relative energy deficiency",
+        "obesity",
+        "hyperthyroidism",
+        "anorexia",
+        "bulimia",
+        "fatty liver",
+        "hypertension",
+        "leptin resistance",
+        "metabolic damage",
+        "an illness",
+        "a medical condition",
+        "syndromes"
+      ],
+      "nonExamples": [
+        "insulin",
+        "your metabolism adapts",
+        "resistance training",
+        "Reverse curl",
+        "in good condition",
+        "conditioning work",
+        "We don't read medications"
+      ]
+    },
+    {
+      "id": "treatment-claims",
+      "rule": "U6",
+      "source": "docs/anayasa.md#U6",
+      "why": "No claim that the app treats, prevents, cures, heals or diagnoses (FDA general wellness, EU MDR Rule 11).",
+      "pattern": "\\b(cure[sd]?|curing|prevent(s|ed|ing|ion|ive)?|heal(s|ed|ing)?|diagnos\\w*|therap(y|ies|eutic)|clinical(ly)?|prescription|remed(y|ies))\\b|\\bprescribed\\s+(by|medication|drug)|\\bpatients\\b|\\b(the|a|your)\\s+patient\\b(?!ly)|(?<!\\b(a|the|your|little)\\s)\\btreat(s|ed|ing|ment|ments)?\\b(?!\\s+(yourself|meal|day))",
+      "examples": [
+        "cures",
+        "treats fatigue",
+        "treatment",
+        "prevents injury",
+        "prevention",
+        "heals",
+        "diagnose",
+        "a diagnosis",
+        "therapy",
+        "clinically proven",
+        "prescribed by your doctor",
+        "a prescription",
+        "the patient",
+        "patients",
+        "remedies"
+      ],
+      "nonExamples": [
+        "healthy",
+        "retreat",
+        "a treaty",
+        "curious",
+        "secured",
+        "at your own pace",
+        "Be patient",
+        "the program prescribes 3 sets",
+        "a treat meal",
+        "Treat yourself"
+      ]
+    },
+    {
+      "id": "risk-and-lab-claims",
+      "rule": "U6",
+      "source": "docs/anayasa.md#U6",
+      "why": "No risk-reduction claims and no reading of lab markers; blood tests are not interpreted (U6).",
+      "pattern": "\\b(reduces?|lowers?)\\s+(the\\s+|your\\s+)?risk|\\bprotects?\\s+against|\\bblood\\s+(sugar|glucose|tests?|work|pressure)|\\bglucose\\b|\\bhba1c\\b|\\bcholesterol\\b",
+      "examples": [
+        "reduces the risk of",
+        "lowers your risk",
+        "protects against",
+        "blood sugar",
+        "glucose",
+        "HbA1c",
+        "cholesterol",
+        "your blood test"
+      ],
+      "nonExamples": [
+        "reduces your calories",
+        "lowers the weight",
+        "protects your muscle"
+      ]
+    }
+  ],
+  "coachingNonExamples": [
+    "Be patient; the trend shows in weeks.",
+    "The program prescribes 3 sets of 8.",
+    "A treat meal won't undo a week.",
+    "Reverse curl",
+    "You're lean enough that cutting further costs more than it gives.",
+    "Protein 30%, carbs 40%, fat 30%",
+    "Keep your joints in good condition.",
+    "We don't read medications.",
+    "This keeps your lifts from stalling.",
+    "80% of the plan happened."
+  ]
+}
