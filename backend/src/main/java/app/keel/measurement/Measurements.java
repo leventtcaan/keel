@@ -1,5 +1,7 @@
 package app.keel.measurement;
 
+import app.keel.engine.CheckIn;
+import app.keel.engine.WaistTrend;
 import app.keel.engine.WeighIn;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
@@ -11,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 /**
@@ -43,5 +46,25 @@ public class Measurements {
             firstOfDay.putIfAbsent(day, new WeighIn(day, weighIn.kg()));
         }
         return new ArrayList<>(firstOfDay.values());
+    }
+
+    /** Waist measurements from {@code from} to {@code to}, both included, for the engine's WaistTrend (K-213). */
+    public List<WaistTrend.Reading> waists(AccountId account, LocalDate from, LocalDate to) {
+        return store.waists(account, from, to).stream().map(waist -> new WaistTrend.Reading(waist.measuredOn(), waist.cm())).toList();
+    }
+
+    /** The latest photo check's conclusion in the days given, as the phone compared it (V1: the photo stays on the phone). */
+    public Optional<CheckIn.Look> photoLook(AccountId account, LocalDate from, LocalDate to) {
+        return latestLook(store.photoChecks(account), from, to);
+    }
+
+    /** The latest day's verdict; two checks that disagree on that day say nothing (the day has no time to order them). */
+    static Optional<CheckIn.Look> latestLook(List<MeasurementStore.PhotoCheck> checks, LocalDate from, LocalDate to) {
+        List<MeasurementStore.PhotoCheck> inDays = checks.stream().filter(check -> !check.takenOn().isBefore(from) && !check.takenOn().isAfter(to))
+                .toList();
+        return inDays.stream().map(MeasurementStore.PhotoCheck::takenOn).max(LocalDate::compareTo)
+                .map(latest -> inDays.stream().filter(check -> check.takenOn().equals(latest)).map(MeasurementStore.PhotoCheck::look).distinct().toList())
+                .filter(looks -> looks.size() == 1)
+                .map(looks -> CheckIn.Look.valueOf(looks.getFirst().name()));
     }
 }

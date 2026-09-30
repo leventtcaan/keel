@@ -202,6 +202,21 @@ public final class WeeklySpine {
         return BigDecimal.valueOf(parameters.number(key));
     }
 
+    /** A check-in answer the spine can be missing; adherence is not one — it is counted from the logs (ADR-020 L-6). */
+    public enum Missing { TRAINING, RECOVERY }
+
+    /** The answer this decision waits for, if it is a "not yet: tell me …" (K-213 asks exactly that). */
+    public static java.util.Optional<Missing> missingAnswer(Decision decision) {
+        if (!(decision.action() instanceof Action.NoDecisionYet)) {
+            return java.util.Optional.empty();
+        }
+        RuleId rule = decision.reasons().getFirst().rule();
+        if (rule.equals(CHECK_IN_NEEDED_TRAINING)) {
+            return java.util.Optional.of(Missing.TRAINING);
+        }
+        return rule.equals(CHECK_IN_NEEDED_RECOVERY) ? java.util.Optional.of(Missing.RECOVERY) : java.util.Optional.empty();
+    }
+
     /** No decision yet, naming the missing answer so the app can ask exactly that (U2, U3). */
     private static SpineResult checkInNeeded(Snapshot snapshot, RuleId missing) {
         return decided(snapshot, new Action.NoDecisionYet(), missing, TREE);

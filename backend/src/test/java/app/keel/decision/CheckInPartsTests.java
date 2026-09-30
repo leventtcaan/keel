@@ -36,6 +36,27 @@ class CheckInPartsTests {
     }
 
     @Test
+    void aWeekThatOverlapsTheLastCallIsTakenForTheQuestionsAndTheAnswersAlike() {
+        // One call a week (K-212). GET and POST read the same rule (K-213 review): a check-in day moved from Monday to
+        // Thursday must not offer a check-in whose answers would all get CONFLICT.
+        LocalDate monday = LocalDate.of(2026, 9, 28);
+        assertThat(CheckInWeek.taken(monday, java.util.Optional.empty())).as("no call yet").isFalse();
+        assertThat(CheckInWeek.taken(monday, java.util.Optional.of(monday))).as("this week answered").isTrue();
+        assertThat(CheckInWeek.taken(monday.plusDays(3), java.util.Optional.of(monday))).as("check-in day moved to Thursday").isTrue();
+        assertThat(CheckInWeek.taken(monday.plusDays(6), java.util.Optional.of(monday))).as("the week's last day").isTrue();
+        assertThat(CheckInWeek.taken(monday.plusDays(7), java.util.Optional.of(monday))).as("a week later").isFalse();
+    }
+
+    @Test
+    void anAnswerIsTakenForEveryQuestionTheEngineCanWaitFor() {
+        // Not only this moment's questions: data can change between asking and answering (a new weigh-in, midnight), and
+        // a question the app just showed must not come back as 400 (K-213 review). What the data says (look, waist) is
+        // never an answer.
+        assertThat(java.util.Arrays.stream(Answers.Kind.values()).filter(CheckInQuestions::answerable))
+                .containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+    }
+
+    @Test
     void aCallOnTheWireIsTheEnginesDecisionWithItsKindNamed() {
         Decision decision = new Decision(new Action.AdjustCalories(-500),
                 List.of(new Reason(new RuleId("cut_stalled"), new Source("arastirma/ham/guray/G2-kilo-verme.md#K-14", SourceTag.EXPERIENCE))),

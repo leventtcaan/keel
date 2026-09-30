@@ -774,7 +774,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-212]
     why: "Haftalık soru bütçesi ≤2 normal, ≤5 anomali (U9)"
     acceptance:
