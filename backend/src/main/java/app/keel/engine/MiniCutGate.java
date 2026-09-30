@@ -51,13 +51,15 @@ public final class MiniCutGate {
     /**
      * The mini cut's daily target: one minimum cut step under maintenance (G7 K-97, K-102) — under a floor a calorie step
      * down would not go under (the low-energy floor, resting energy, the macro floors; CalorieLadder), or for a woman
-     * without a fat estimate (ADR-027 #11b), maintenance: the bulk's surplus ends, no deficit is opened. The snapshot
-     * needs the profile and a weight trend for the floors; without them, maintenance.
+     * without a fat estimate (ADR-027 #11b), maintenance: the bulk's surplus ends, no deficit is opened. The floors need
+     * the profile, a weight trend and the plan's energy (the low-energy floor adds its exercise burn); without them,
+     * maintenance.
      */
     public static int target(Snapshot snapshot, int maintenanceKcal, Parameters parameters) {
         int proposed = maintenanceKcal - parameters.wholeNumber(ParameterKey.CUT_STEP_MIN_KCAL);
         Optional<BigDecimal> weight = WeightTrend.at(snapshot.weights(), snapshot.today(), parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS));
-        if (snapshot.profile().isEmpty() || weight.isEmpty() || snapshot.sex() == Sex.FEMALE && snapshot.fatProxyPct().isEmpty()) {
+        if (snapshot.profile().isEmpty() || weight.isEmpty() || snapshot.energy().isEmpty()
+                || snapshot.sex() == Sex.FEMALE && snapshot.fatProxyPct().isEmpty()) {
             return maintenanceKcal;
         }
         int bmr = InitialTarget.restingKcal(snapshot.sex(), weight.get(), snapshot.profile().get(), parameters);

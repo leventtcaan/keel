@@ -107,7 +107,7 @@ class MiniCutGateTests {
 
     @Test
     void underASafetyFloorTheMiniCutStaysAtMaintenance() {
-        // Under the resting energy (Mifflin at 82 kg, 30 y, 180 cm ≈ 1800): one step from 2100 would be 1600.
+        // One step from 2100 would be 1600: under the low-energy floor (18 % → ≈1682) and the resting energy (≈1800).
         assertThat(MiniCutGate.target(onTheMiniCut(Optional.empty()), 2100, MALE)).isEqualTo(2100);
     }
 
@@ -132,10 +132,34 @@ class MiniCutGateTests {
 
     @Test
     void withoutTheProfileOrAWeightTheFloorsCannotBeReadAndTheMiniCutStaysAtMaintenance() {
-        Snapshot noProfile = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21), series(EngineFixtures.daily(TODAY.minusDays(21), TODAY, "82.0")));
-        Snapshot noWeight = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21), series(List.of())).withProfile(new Profile(30, 180));
+        Snapshot noProfile = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21), series(EngineFixtures.daily(TODAY.minusDays(21), TODAY, "82.0")))
+                .withEnergy(EnergyBudget.exerciseUnknown(2600));
+        Snapshot noWeight = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21), series(List.of())).withProfile(new Profile(30, 180))
+                .withEnergy(EnergyBudget.exerciseUnknown(2600));
 
         assertThat(MiniCutGate.target(noProfile, 2600, MALE)).isEqualTo(2600);
         assertThat(MiniCutGate.target(noWeight, 2600, MALE)).isEqualTo(2600);
+    }
+
+    @Test
+    void aWomanWithAnEstimateStaysAtMaintenanceUnderHerLowEnergyFloorAndStepsDownAboveIt() {
+        // 62 kg, 15 %: fat-free 52.7 kg → low-energy floor ≈1582; resting energy ≈1340 — the low-energy floor decides.
+        Snapshot her = new Snapshot(TODAY, Sex.FEMALE, Phase.CUT, TODAY.minusDays(21),
+                series(EngineFixtures.daily(TODAY.minusDays(21), TODAY, "62.0")), Optional.of(new BigDecimal("15")))
+                .withProfile(new Profile(30, 165)).withEnergy(EnergyBudget.exerciseUnknown(2200));
+        Parameters female = parameters(Sex.FEMALE);
+
+        assertThat(MiniCutGate.target(her, 2000, female)).isEqualTo(2000);
+        assertThat(MiniCutGate.target(her, 2100, female)).isEqualTo(2100 - female.wholeNumber(ParameterKey.CUT_STEP_MIN_KCAL));
+    }
+
+    @Test
+    void withoutThePlansEnergyTheLowEnergyFloorCannotBeReadAndTheMiniCutStaysAtMaintenance() {
+        // The floor adds the exercise burn from the plan's budget; without one it is not known, and a step could go under it.
+        Snapshot noEnergy = new Snapshot(TODAY, Sex.FEMALE, Phase.CUT, TODAY.minusDays(21),
+                series(EngineFixtures.daily(TODAY.minusDays(21), TODAY, "62.0")), Optional.of(new BigDecimal("15")))
+                .withProfile(new Profile(30, 165));
+
+        assertThat(MiniCutGate.target(noEnergy, 2000, parameters(Sex.FEMALE))).isEqualTo(2000);
     }
 }

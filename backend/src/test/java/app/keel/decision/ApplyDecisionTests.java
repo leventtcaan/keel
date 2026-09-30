@@ -134,6 +134,18 @@ class ApplyDecisionTests {
     }
 
     @Test
+    void aPlanKeptBeforeTheMiniCutReadsAsNotOnOne() throws Exception {
+        // The plan before and after each applied call is kept as JSON (K-216); those kept before K-227 have no mini cut day.
+        tools.jackson.databind.json.JsonMapper json = tools.jackson.databind.json.JsonMapper.builder().build();
+        String kept = "{\"phase\":\"CUT\",\"phaseStart\":\"2026-08-03\",\"planStart\":\"2026-09-07\",\"targetKcal\":2600,"
+                + "\"observingMaintenance\":false,\"stepsPerDay\":null}";
+
+        assertThat(json.readValue(kept, CallStore.Plan.class)).isEqualTo(CUT);
+        CallStore.Plan onIt = new CallStore.Plan(Phase.CUT, TODAY, TODAY, 2100, false, null, TODAY.plusWeeks(6));
+        assertThat(json.readValue(json.writeValueAsString(onIt), CallStore.Plan.class)).isEqualTo(onIt);
+    }
+
+    @Test
     void aNewDirectionStartsFromTheMaintenanceEstimateWatched() {
         // K-222: the phase gate turns the direction; the new phase starts like a first plan (K-114): today, at the
         // maintenance estimate, watched before it is judged. The steps stay.

@@ -195,6 +195,20 @@ class QuestionBudgetTests {
     }
 
     @Test
+    void afterAHardStopAGoneAppetiteAlsoAsksTheCycle() {
+        // K-227 review: held after a hard stop (K-229), a gone appetite would make a mini cut — a deficit — so the call
+        // would wait for the cycle question: it is asked in the same check-in.
+        Function<CheckIn, Decision> held = checkIn -> checkIn.appetite() == CheckIn.Appetite.GONE ? waiting("cycle_check_needed") : SPINE.apply(checkIn);
+        CheckIn known = CheckIn.NONE.withTraining(CheckIn.Training.STABLE).withRecovery(CheckIn.Recovery.GOOD);
+
+        List<Answers.Kind> asked = CheckInQuestions.needed(held, known, 2);
+
+        assertThat(asked).containsExactly(Answers.Kind.APPETITE);
+        assertThat(CheckInQuestions.cycleAwaited(held, known, asked)).isTrue();
+        assertThat(CheckInQuestions.cycleAwaited(SPINE, known, CheckInQuestions.needed(SPINE, known, 2))).isFalse();
+    }
+
+    @Test
     void appetiteIsAChoiceOfNormalOrGoneWithItsWordsAndIsTaken() {
         Map<String, Object> copy = copy();
         CheckInQuestions.Question question = CheckInQuestions.describe(Answers.Kind.APPETITE);
