@@ -73,3 +73,27 @@ test('the app database (expo-sqlite) fits the slice the store uses — checked b
   const fits: Fits = true;
   expect(fits).toBe(true);
 });
+
+test('a database from a newer app version is refused, not misread', async () => {
+  const db = nodeSqlite();
+  await db.execAsync('PRAGMA user_version = 99');
+  await expect(openRecordStore(db)).rejects.toThrow(/newer/);
+});
+
+test('a migration that fails leaves no open transaction: the next open succeeds', async () => {
+  const db = nodeSqlite();
+  let broken = true;
+  const failing = {
+    ...db,
+    execAsync: (source: string) => {
+      if (broken && source.includes('CREATE INDEX')) {
+        broken = false;
+        return db.execAsync(source.replace('CREATE INDEX', 'CREATE INDEXX'));
+      }
+      return db.execAsync(source);
+    },
+  };
+  await expect(openRecordStore(failing)).rejects.toThrow();
+  const store = await openRecordStore(db);
+  expect(await store.all()).toEqual([]);
+});

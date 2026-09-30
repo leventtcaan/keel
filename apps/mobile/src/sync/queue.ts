@@ -3,7 +3,9 @@
  * Sending twice is safe — the record carries its clientId, and the server answers a second send with the stored copy
  * (200) — so the queue never has to know whether a lost reply meant "stored" or "not stored": it just sends again.
  * The server's answer replaces the local copy (server wins). A refusal is kept and marked, never dropped, and does not
- * hold back the records behind it; a passing failure (offline, 401, 5xx…) stops the drain until the next trigger.
+ * hold back the records behind it; a passing failure (no answer, 401, 5xx…) stops the drain until the next trigger.
+ * Anything else — a bug, a broken store — is not taken for "offline": it surfaces, by name only (V3: records carry
+ * health data, and error messages can quote it).
  */
 import type { components } from '@/api/schema';
 
@@ -24,10 +26,18 @@ export type Outbound =
 /** The server's answer, reduced: 200/201 carry the stored record; an error carries the contract's code. */
 export type SendResult = { status: number; id?: string; body?: unknown; errorCode?: string };
 
-/** Sends one record; `parentServerId` is its parent's server id (a set's workout). Throws when the network fails. */
+/** The request got no answer the contract knows (offline, dropped, not JSON). The only error that means "try later". */
+export class NoAnswer extends Error {
+  override name = 'NoAnswer';
+}
+
+/** Sends one record; `parentServerId` is its parent's server id (a set's workout). Throws NoAnswer when nothing came back. */
 export type Send = (record: Outbound, parentServerId: string | null) => Promise<SendResult>;
 
-type Store = Pick<RecordStore, 'insert' | 'nextPending' | 'find' | 'markSynced' | 'markRejected'>;
+/** What went wrong, by name only: never the message, never the record (V3). */
+export type SyncProblem = { name: string };
+
+type Store = Pick<RecordStore, 'insert' | 'nextPending' | 'find' | 'markSynced' | 'markRejected' | 'rejected'>;
 
 /** Worth trying again later: the session, the network or the server, not the record. */
 function passing(status: number): boolean {
@@ -47,7 +57,9 @@ function toOutbound(row: LocalRecord): Outbound {
 
 export type SyncQueue = ReturnType<typeof createSyncQueue>;
 
-export function createSyncQueue({ store, send }: { store: Store; send: Send }) {
+type Options = { store: Store; send: Send; report: (problem: SyncProblem) => void };
+
+export function createSyncQueue({ store, send, report }: Options) {
   let running: Promise<void> | null = null;
   let again = false;
 
@@ -71,11 +83,18 @@ export function createSyncQueue({ store, send }: { store: Store; send: Send }) {
       let result: SendResult;
       try {
         result = await send(toOutbound(next), parentServerId);
-      } catch {
-        return; // no answer: offline, or the reply was lost — the same clientId goes again next time
+      } catch (error) {
+        if (error instanceof NoAnswer) return; // offline, or the reply was lost: the same clientId goes again next time
+        throw error;
       }
       if (result.status === 200 || result.status === 201) {
-        await store.markSynced(next.clientId, result.id ?? null, result.body);
+        if (result.id === undefined) {
+          // Not the contract's answer (a proxy?). Not stored as synced — its children would have no server id. Sending
+          // again is safe (ADR-024), so the record waits; the report makes it visible.
+          report({ name: 'NO_STORED_RECORD' });
+          return;
+        }
+        await store.markSynced(next.clientId, result.id, result.body);
       } else if (passing(result.status)) {
         return;
       } else {
@@ -95,26 +114,47 @@ export function createSyncQueue({ store, send }: { store: Store; send: Send }) {
       return running;
     }
     running = (async () => {
-      do {
-        again = false;
-        await sendAll();
-      } while (again);
-    })().finally(() => {
-      running = null;
-    });
+      try {
+        do {
+          again = false;
+          await sendAll();
+        } while (again);
+      } finally {
+        // In the same step as the last `again` check: no moment remains where a caller could join a drain that has
+        // already decided to end. (A `.finally()` on the promise would run one microtask later.)
+        running = null;
+      }
+    })();
     return running;
   }
 
+  /** For callers that do not wait: a failure is reported, never an unhandled rejection. */
+  function drainInBackground(): void {
+    drain().catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
+  }
+
   return {
-    /** Saves the record on the phone, then starts a drain without waiting for the network. */
-    record: async (record: Outbound): Promise<void> => {
+    /**
+     * Saves the record on the phone, then starts a drain without waiting for the network. False: this clientId was
+     * already saved, and the first copy stays.
+     */
+    record: async (record: Outbound): Promise<boolean> => {
       const parent = parentOf(record);
       if (parent !== null && (await store.find(parent)) === null) {
         throw new Error(`${record.kind} recorded before the record it belongs to`);
       }
-      await store.insert({ clientId: record.body.clientId, kind: record.kind, parentClientId: parent, body: record.body });
-      void drain();
+      const stored = await store.insert({
+        clientId: record.body.clientId,
+        kind: record.kind,
+        parentClientId: parent,
+        body: record.body,
+      });
+      drainInBackground();
+      return stored;
     },
     drain,
+    drainInBackground,
+    /** The records the server refused, for a screen to show — without their bodies. */
+    rejected: () => store.rejected(),
   };
 }

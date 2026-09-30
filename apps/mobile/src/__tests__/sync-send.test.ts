@@ -2,8 +2,11 @@
  * Each queued record goes to its contract endpoint (K-304); the answer is reduced to what the queue needs.
  */
 import { createApiClient } from '@/api/client';
-import type { Outbound } from '@/sync/queue';
-import { sendWithApi } from '@/sync/send';
+import { NoAnswer, type Outbound } from '@/sync/queue';
+import { newClientId, sendWithApi } from '@/sync/send';
+
+// jest-expo stubs native modules; the phone's randomUUID is swapped for Node's, the same RFC 4122 v4 generator.
+jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 
 const BASE = 'https://api.example.test';
 const ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
@@ -58,4 +61,28 @@ test('a replay (200) is a success like the first store', async () => {
 test('an error keeps its status and the contract error code', async () => {
   const result = await send(server(409, { code: 'CONFLICT', message: 'x' }))(cases[0][0], null);
   expect(result).toEqual({ status: 409, errorCode: 'CONFLICT' });
+});
+
+test('no answer (the network failed, or the answer was not the contract JSON) is NoAnswer', async () => {
+  const offline = jest.fn(async (_request: Request): Promise<Response> => {
+    throw new TypeError('Network request failed');
+  });
+  await expect(send(offline)(cases[0][0], null)).rejects.toBeInstanceOf(NoAnswer);
+  const portal = jest.fn(async (_request: Request) => new Response('<html>sign in to wifi</html>', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+  await expect(send(portal)(cases[0][0], null)).rejects.toBeInstanceOf(NoAnswer);
+});
+
+test('a set without its workout server id is a bug, not the network', async () => {
+  const record: Outbound = {
+    kind: 'set',
+    workoutClientId: ID,
+    body: { clientId: ID, exerciseId: 'back-squat', setType: 'WORKING', reps: 5, loadKg: 100 },
+  };
+  await expect(send(server(201, {}))(record, null)).rejects.not.toBeInstanceOf(NoAnswer);
+});
+
+test('a new clientId is a version 4 UUID, different every time', () => {
+  const a = newClientId();
+  expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  expect(newClientId()).not.toBe(a);
 });

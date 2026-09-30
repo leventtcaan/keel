@@ -41,6 +41,14 @@ test('drains when the connection comes back, not on every report of being online
   expect(drain).toHaveBeenCalledTimes(3);
 });
 
+test('a first "online" report drains even when no "offline" came before (Android opened offline)', () => {
+  const drain = jest.fn(async () => {});
+  const t = triggers();
+  startAutoSync(drain, t.sources);
+  t.network(true);
+  expect(drain).toHaveBeenCalledTimes(2);
+});
+
 test('drains when the app comes back to the front', () => {
   const drain = jest.fn(async () => {});
   const t = triggers();

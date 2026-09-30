@@ -4,7 +4,7 @@
  * stores once and answers the stored record (200). The server's answer replaces the local copy (server wins).
  * The store runs on real SQL here (node:sqlite, the same engine expo-sqlite wraps), not a mock.
  */
-import { type Outbound, type SendResult, createSyncQueue } from '@/sync/queue';
+import { NoAnswer, type Outbound, type SendResult, type SyncProblem, createSyncQueue } from '@/sync/queue';
 import { openRecordStore } from '@/sync/store';
 
 import { nodeSqlite } from './support/nodeSqlite';
@@ -32,7 +32,7 @@ function fakeServer() {
   let nextStatus: number[] = [];
   const calls: { kind: string; clientId: string; parentId?: string }[] = [];
   const send = jest.fn(async (record: Outbound, parentId: string | null): Promise<SendResult> => {
-    if (offline) throw new TypeError('Network request failed');
+    if (offline) throw new NoAnswer();
     const clientId = record.body.clientId;
     calls.push({ kind: record.kind, clientId, ...(parentId === null ? {} : { parentId }) });
     const forced = nextStatus.shift();
@@ -57,7 +57,8 @@ function fakeServer() {
 async function setup() {
   const store = await openRecordStore(nodeSqlite());
   const server = fakeServer();
-  const queue = createSyncQueue({ store, send: server.send });
+  const problems: SyncProblem[] = [];
+  const queue = createSyncQueue({ store, send: server.send, report: (p) => problems.push(p) });
   /** Records while offline and lets the drains they start settle, so the test begins with a quiet queue, online. */
   const recordOffline = async (...records: Outbound[]) => {
     server.goOffline();
@@ -65,7 +66,7 @@ async function setup() {
     await queue.drain();
     server.goOnline();
   };
-  return { store, server, queue, recordOffline };
+  return { store, server, queue, recordOffline, problems };
 }
 
 test('a record is in SQLite, pending, before anything is sent', async () => {
@@ -97,7 +98,7 @@ test('a reply lost on the way back: the retry carries the same clientId and gets
   // The server stored it, but the answer never arrived:
   server.send.mockImplementationOnce(async (record) => {
     server.stored.set(record.body.clientId, { id: 'srv-1', body: { ...record.body, id: 'srv-1' } });
-    throw new TypeError('Network request failed');
+    throw new NoAnswer();
   });
   await queue.drain();
   expect((await store.all())[0].state).toBe('PENDING');
@@ -134,7 +135,7 @@ test('a record made just as a drain finds the queue empty is still sent by that 
       return next;
     },
   };
-  const queue = createSyncQueue({ store: held, send: server.send });
+  const queue = createSyncQueue({ store: held, send: server.send, report: () => {} });
   const running = queue.drain();
   await new Promise((r) => setTimeout(r, 0));
   await queue.record(weighIn());
@@ -203,4 +204,130 @@ test('recording the same clientId twice keeps one record', async () => {
   await queue.record(weighIn());
   await queue.record(weighIn());
   expect(await store.all()).toHaveLength(1);
+});
+
+test('a record saved in the last moments of a drain is still sent (every microtask of the ending)', async () => {
+  for (let k = 0; k <= 40; k++) {
+    const { server, queue } = await setup();
+    const running = queue.drain();
+    for (let i = 0; i < k; i++) await Promise.resolve();
+    await queue.record(weighIn());
+    await running;
+    await new Promise((r) => setTimeout(r, 0));
+    expect([k, server.calls.length]).toEqual([k, 1]);
+  }
+});
+
+test('a drain that fails (the store threw) does not stick: the next drain runs', async () => {
+  const { store, server, recordOffline } = await setup();
+  await recordOffline(weighIn());
+  let fail = true;
+  const flaky = {
+    ...store,
+    nextPending: async () => {
+      if (fail) {
+        fail = false;
+        throw new Error('database is locked');
+      }
+      return store.nextPending();
+    },
+  };
+  const queue = createSyncQueue({ store: flaky, send: server.send, report: () => {} });
+  await expect(queue.drain()).rejects.toThrow('database is locked');
+  await queue.drain();
+  expect((await store.all())[0].state).toBe('SYNCED');
+});
+
+test('only "no answer" means try later: any other error from sending surfaces, the record stays', async () => {
+  const { store, server, queue, recordOffline } = await setup();
+  await recordOffline(weighIn());
+  server.send.mockImplementationOnce(async () => {
+    throw new TypeError('a bug');
+  });
+  await expect(queue.drain()).rejects.toThrow('a bug');
+  expect((await store.all())[0].state).toBe('PENDING');
+});
+
+test('a drain started by saving a record reports its failure by name only, never unhandled', async () => {
+  const { server, queue, problems } = await setup();
+  server.send.mockImplementationOnce(async () => {
+    throw new TypeError('kg 81.5 is not valid');
+  });
+  await queue.record(weighIn());
+  await new Promise((r) => setTimeout(r, 0));
+  expect(problems).toEqual([{ name: 'TypeError' }]);
+});
+
+test('a 2xx without the stored record is not taken as stored: the drain stops and says so', async () => {
+  const { store, server, queue, recordOffline, problems } = await setup();
+  await recordOffline(workout, set(S1));
+  server.send.mockImplementationOnce(async () => ({ status: 201 }));
+  await queue.drain();
+  expect((await store.all()).map((r) => r.state)).toEqual(['PENDING', 'PENDING']);
+  expect(problems).toEqual([{ name: 'NO_STORED_RECORD' }]);
+});
+
+test.each([403, 404, 409, 422])('a refusal (%i) is kept and marked, and the queue moves on', async (status) => {
+  const { store, server, queue, recordOffline } = await setup();
+  await recordOffline(weighIn('55555555-5555-4555-8555-555555555555'), weighIn('66666666-6666-4666-8666-666666666666'));
+  server.answerNext(status);
+  await queue.drain();
+  expect((await store.all()).map((r) => r.state)).toEqual(['REJECTED', 'SYNCED']);
+});
+
+test('without the consent the server asks for, a health record stays on the phone, refused, not sent again', async () => {
+  const { store, server, queue, recordOffline } = await setup();
+  await recordOffline(weighIn());
+  const before = server.send.mock.calls.length;
+  server.send.mockImplementationOnce(async () => ({ status: 403, errorCode: 'CONSENT_REQUIRED' }));
+  await queue.drain();
+  await queue.drain();
+  expect(await store.find(WEIGH)).toMatchObject({ state: 'REJECTED', errorCode: 'CONSENT_REQUIRED' });
+  expect(server.send.mock.calls.length - before).toBe(1);
+});
+
+test('a refusal without a contract code keeps the HTTP status', async () => {
+  const { store, server, queue, recordOffline } = await setup();
+  await recordOffline(weighIn());
+  server.send.mockImplementationOnce(async () => ({ status: 413 }));
+  await queue.drain();
+  expect((await store.find(WEIGH))?.errorCode).toBe('HTTP_413');
+});
+
+test('server wins on a replay too: the stored copy the 200 brings replaces the local one', async () => {
+  const { store, server, queue, recordOffline } = await setup();
+  await recordOffline(weighIn());
+  server.stored.set(WEIGH, { id: 'srv-7', body: { clientId: WEIGH, kg: 81.4, id: 'srv-7' } });
+  await queue.drain();
+  expect(await store.find(WEIGH)).toMatchObject({ state: 'SYNCED', serverId: 'srv-7', serverBody: { kg: 81.4 } });
+});
+
+test('a set whose workout is gone from the phone is refused, and the queue moves on', async () => {
+  const { store, server, queue } = await setup();
+  server.goOffline();
+  await store.insert({ clientId: S1, kind: 'set', parentClientId: W, body: set(S1).body });
+  await queue.record(weighIn());
+  await queue.drain();
+  server.goOnline();
+  await queue.drain();
+  expect((await store.all()).map((r) => [r.kind, r.state])).toEqual([
+    ['set', 'REJECTED'],
+    ['weighIn', 'SYNCED'],
+  ]);
+  expect(server.calls.map((c) => c.kind)).toEqual(['weighIn']);
+});
+
+test('recording says whether it stored something new', async () => {
+  const { queue, recordOffline } = await setup();
+  await recordOffline();
+  expect(await queue.record(weighIn())).toBe(true);
+  expect(await queue.record(weighIn())).toBe(false);
+});
+
+test('the refused records can be listed — without their bodies', async () => {
+  const { server, queue, recordOffline } = await setup();
+  await recordOffline(weighIn(), workout);
+  server.answerNext(400);
+  await queue.drain();
+  expect(await queue.rejected()).toEqual([{ clientId: WEIGH, kind: 'weighIn', errorCode: 'X' }]);
 });
