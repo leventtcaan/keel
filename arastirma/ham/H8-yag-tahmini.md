@@ -29,7 +29,7 @@ fit") ve `arastirma/ham/guray/G6-eski-arsiv.md` K-7/K-9 (göbek testi, sayı yer
 Görseller bir **varlık** konusudur (lisans, çekim: M3/M4); sunucu yalnız seçilen **seviyeyi** saklar.
 
 ## C. İkisi çelişince
-ADR-027 #11: "temkinli olan". Motorun bu sayıyı okuyan kuralları (LEA, L-4 alt yağ sınırı, surplus bölgesine dönüş)
-**düşük** tahminde daha korumacı davranır (daha az yağsız kütle değil — daha çok: düşük yağ → yüksek yağsız kütle → düşük
-enerji uygunluğu → daha erken güvenlik). Bu yüzden iki tahmin varken **küçüğü** kullanılır. Bulk tavanı (yüksek yağda
+ADR-027 #11: "temkinli olan". Motorun bu sayıyı okuyan güvenlik kuralları **düşük** tahminde daha korumacıdır: düşük yağ
+→ daha yüksek yağsız kütle → aynı kaloride daha düşük enerji uygunluğu → LEA ağı daha erken; L-4 alt yağ sınırı ve
+surplus bölgesine dönüş de daha erken. Bu yüzden iki tahmin varken **küçüğü** kullanılır. Bulk tavanı (yüksek yağda
 cut'a dönüş) bu seçimde biraz geç kalabilir: sağlık değil verim konusu, bilinçli bedel.
