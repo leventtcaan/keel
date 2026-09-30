@@ -61,7 +61,6 @@ describe('builds (K-308)', () => {
 });
 
 describe('eas.json (K-308)', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const eas = require('../../eas.json') as {
     cli: { version: string; appVersionSource: string };
     build: Record<string, { developmentClient?: boolean; distribution?: string; ios?: { simulator?: boolean }; extends?: string; autoIncrement?: boolean }>;
