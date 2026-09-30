@@ -63,6 +63,22 @@
       "tag": "literatur",
       "source": "arastirma/ham/H1-olcum.md#3.4",
       "note": "The same as windows.yaml › no_interpretation_days (U8); parameters.test.ts keeps them equal."
+    },
+    {
+      "key": "weigh_in_max_kg",
+      "value": 500,
+      "unit": "kg",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewWeighIn",
+      "note": "NewWeighIn.kg maximum: a heavier starting weight would be refused by the server and lost from the queue."
+    },
+    {
+      "key": "waist_max_cm",
+      "value": 300,
+      "unit": "cm",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewWaistMeasurement",
+      "note": "NewWaistMeasurement.cm maximum."
     }
   ]
 }

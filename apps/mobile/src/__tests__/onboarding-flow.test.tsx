@@ -31,9 +31,10 @@ const mockConsentAnswer = async (_path: string, _init: unknown) =>
   mockConsentStatus === 200
     ? { data: { status: 'GRANTED' }, response: new Response(null, { status: 200 }) }
     : { error: { code: 'X' }, response: new Response(null, { status: mockConsentStatus }) };
-const mockApi = { PUT: jest.fn(mockConsentAnswer) };
+const mockApi = { PUT: jest.fn(mockConsentAnswer), DELETE: jest.fn(mockConsentAnswer) };
 const mockQueue = { record: jest.fn(async (_record: unknown) => true) };
 const mockHealth = { available: false, requestRead: jest.fn(async () => {}) };
+const mockReport = jest.fn();
 const mockKeepOnPhone = jest.fn(async (system: 'METRIC' | 'IMPERIAL') => {
   mockUnits = system;
   mockUnitsListeners.forEach((listener) => listener());
@@ -60,6 +61,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     api: mockApi,
     queue: mockQueue,
     health: mockHealth,
+    report: mockReport,
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
   }),
 }));
@@ -75,8 +77,10 @@ beforeEach(() => {
   mockSignOut.mockClear();
   mockConsentStatus = 200;
   mockApi.PUT.mockReset().mockImplementation(mockConsentAnswer);
+  mockApi.DELETE.mockReset().mockImplementation(mockConsentAnswer);
   mockQueue.record.mockReset().mockResolvedValue(true);
   mockHealth.available = false;
+  mockReport.mockClear();
   mockHealth.requestRead.mockReset().mockResolvedValue(undefined);
   mockProfile.refresh.mockReset().mockResolvedValue(undefined);
   mockKeepOnPhone.mockClear();
@@ -241,7 +245,7 @@ describe('the walk through', () => {
   });
 
   test('a save that does not go through says so, and the same answers go again', async () => {
-    mockProfile.save.mockRejectedValueOnce(new Error('profile save failed with HTTP 503'));
+    mockProfile.save.mockRejectedValueOnce(Object.assign(new Error('profile save: no answer'), { name: 'NoConnection' }));
     const router = await walkTo('appleHealth');
     await press(t('onboarding.appleHealth.finish'));
     expect(screen.getByText(t('onboarding.saveFailed'))).toBeOnTheScreen();
@@ -479,7 +483,7 @@ describe('the health data consent (K-312, ADR-007)', () => {
     expect(router.getPathname()).toBe('/onboarding/about');
   });
 
-  test('allowed: the weight and waist are asked, the foods step is in the walk, and the records go before the profile', async () => {
+  test('allowed: the weight and waist are asked, the foods step is in the walk, and the profile goes before the records', async () => {
     const order: string[] = [];
     mockQueue.record.mockImplementation(async (record) => (order.push((record as { kind: string }).kind), true));
     mockProfile.save.mockImplementation(async () => {
@@ -495,7 +499,7 @@ describe('the health data consent (K-312, ADR-007)', () => {
     await press(t('onboarding.continue'));
     await press(t('onboarding.expectations.action'));
     await press(t('onboarding.appleHealth.finish'));
-    expect(order).toEqual(['weighIn', 'profile']);
+    expect(order).toEqual(['profile', 'weighIn']);
     expect(mockQueue.record).toHaveBeenCalledWith({
       kind: 'weighIn',
       body: expect.objectContaining({ kg: 82.4, source: 'MANUAL', clientId: expect.stringMatching(/^[0-9a-f-]{36}$/) }),
@@ -526,7 +530,8 @@ describe('the health data consent (K-312, ADR-007)', () => {
     mockConsentStatus = 503;
     const router = await walkTo('healthData');
     await press(t('onboarding.healthData.allow'));
-    expect(screen.getByText(t('onboarding.healthData.failed'))).toBeOnTheScreen();
+    // The server answered (503): not called a connection problem.
+    expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen();
     expect(router.getPathname()).toBe('/onboarding/health-data');
   });
 
@@ -573,14 +578,17 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
       order.push('profile');
       mockBecome('done');
     });
-    await walkTo('appleHealth');
+    await walkTo('appleHealth', () => {}, true);
+    order.length = 0; // the health data consent on the way
     await press(t('onboarding.appleHealth.connect'));
-    expect(order).toEqual(['consent APPLE_HEALTH', 'sheet', 'profile']);
+    // Apple's sheet first: if it fails, no consent is left recorded for a connection that never happened.
+    expect(order).toEqual(['sheet', 'consent APPLE_HEALTH', 'profile']);
   });
 
   test('"Not now" records nothing and finishes', async () => {
     mockHealth.available = true;
-    await walkTo('appleHealth');
+    await walkTo('appleHealth', () => {}, true);
+    mockApi.PUT.mockClear();
     await press(t('onboarding.appleHealth.notNow'));
     expect(mockApi.PUT).not.toHaveBeenCalled();
     expect(mockHealth.requestRead).not.toHaveBeenCalled();
@@ -589,10 +597,10 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
 
   test('a connection that fails says so and does not finish: the choice is the user\'s to make again', async () => {
     mockHealth.available = true;
+    await walkTo('appleHealth', () => {}, true);
     mockConsentStatus = 503;
-    await walkTo('appleHealth');
     await press(t('onboarding.appleHealth.connect'));
-    expect(screen.getByText(t('onboarding.appleHealth.failed'))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen(); // the server answered 503
     expect(mockProfile.save).not.toHaveBeenCalled();
   });
 
@@ -603,5 +611,106 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
     await press(t('onboarding.appleHealth.finish'));
     expect(mockApi.PUT).not.toHaveBeenCalled();
     expect(mockProfile.save).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('review fixes (K-312)', () => {
+  test('while "Allow" is on its way, "Not now" and back are off: the last choice is the one that counts', async () => {
+    let answer: (value: Awaited<ReturnType<typeof mockConsentAnswer>>) => void = () => {};
+    mockApi.PUT.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
+    await walkTo('healthData');
+    const overlapNote = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await act(async () => {
+        void fireEvent.press(screen.getByRole('button', { name: t('onboarding.healthData.allow') }));
+        void fireEvent.press(screen.getByRole('button', { name: t('onboarding.healthData.allow') }));
+      });
+    } finally {
+      overlapNote.mockRestore();
+    }
+    expect(mockApi.PUT).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: t('onboarding.healthData.notNow') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('onboarding.back') })).toBeDisabled();
+    await act(async () => answer({ data: { status: 'GRANTED' }, response: new Response(null, { status: 200 }) }));
+  });
+
+  test('allowed, the consent can be taken back here: withdrawn on the server, health answers cleared, not asked again', async () => {
+    const router = await walkTo('about', () => {}, true);
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.weight')), '82');
+    await press(t('onboarding.back'));
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+    await press(t('onboarding.healthData.withdraw'));
+    expect(mockApi.DELETE).toHaveBeenCalledWith('/v1/consents/{kind}', { params: { path: { kind: 'HEALTH_DATA' } } });
+    expect(router.getPathname()).toBe('/onboarding/about');
+    expect(screen.queryByLabelText(t('onboarding.about.weight'))).toBeNull();
+    await press(t('onboarding.back'));
+    await press(t('onboarding.healthData.allow'));
+    expect(screen.getByLabelText(t('onboarding.about.weight')).props.value).toBe(''); // the 82 went with the consent
+  });
+
+  test('declined, then back and allowed: the weight is asked and the walk has 10 steps', async () => {
+    await walkTo('about');
+    expect(screen.getByText(t('onboarding.count', { step: 5, total: 9 }))).toBeOnTheScreen();
+    await press(t('onboarding.back'));
+    await press(t('onboarding.healthData.allow'));
+    expect(screen.getByLabelText(t('onboarding.about.weight'))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.count', { step: 5, total: 10 }))).toBeOnTheScreen();
+  });
+
+  test('changing the units after typing a weight clears it: 82 kg must not become 82 lb', async () => {
+    await walkTo('about', () => {}, true);
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.weight')), '82');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.waist')), '84');
+    await press(t('onboarding.about.imperial'));
+    expect(screen.getByLabelText(t('onboarding.about.weight')).props.value).toBe('');
+    expect(screen.getByLabelText(t('onboarding.about.waist')).props.value).toBe('');
+  });
+
+  test('imperial weight all the way: 180 lb goes as 81.65 kg', async () => {
+    await walkTo('about', () => {}, true);
+    await press(t('onboarding.about.imperial'));
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightFeet')), '5');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightInches')), '10');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.birthYear')), '1990');
+    await press(t('onboarding.about.male'));
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.weight')), '180');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.waist')), '34');
+    await press(t('onboarding.continue'));
+    await choose(t('onboarding.activity.ACTIVE.title'));
+    for (let i = 0; i < 3; i++) await press(t('onboarding.continue'));
+    await press(t('onboarding.expectations.action'));
+    await press(t('onboarding.appleHealth.finish'));
+    expect(mockQueue.record).toHaveBeenCalledWith(expect.objectContaining({ kind: 'weighIn', body: expect.objectContaining({ kg: 81.65 }) }));
+    expect(mockQueue.record).toHaveBeenCalledWith(expect.objectContaining({ kind: 'waist', body: expect.objectContaining({ cm: 86.4 }) }));
+    expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ units: 'IMPERIAL' }));
+  });
+
+  test('without the health consent, Apple Health is not offered even where HealthKit is in the build', async () => {
+    mockHealth.available = true;
+    await walkTo('appleHealth');
+    expect(screen.queryByRole('button', { name: t('onboarding.appleHealth.connect') })).toBeNull();
+    expect(screen.getByText(t('onboarding.appleHealth.needsConsent'))).toBeOnTheScreen();
+  });
+
+  test("Apple's sheet failing says so, records no consent, and \"Not now\" still finishes cleanly", async () => {
+    mockHealth.available = true;
+    await walkTo('appleHealth', () => {}, true);
+    mockApi.PUT.mockClear();
+    mockHealth.requestRead.mockRejectedValueOnce(new Error('HealthKit'));
+    await press(t('onboarding.appleHealth.connect'));
+    expect(screen.getByText(t('onboarding.appleHealth.sheetFailed'))).toBeOnTheScreen();
+    expect(mockApi.PUT).not.toHaveBeenCalled();
+    expect(mockReport).toHaveBeenCalledWith({ name: 'Error' });
+    await press(t('onboarding.appleHealth.notNow'));
+    expect(mockApi.PUT).not.toHaveBeenCalled();
+    expect(mockProfile.save).toHaveBeenCalledTimes(1);
+  });
+
+  test('a server that refuses (not the network) is not called a connection problem', async () => {
+    mockProfile.save.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'ProfileSaveFailed' }));
+    await walkTo('appleHealth');
+    await press(t('onboarding.appleHealth.finish'));
+    expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen();
+    expect(mockReport).toHaveBeenCalledWith({ name: 'ProfileSaveFailed' });
   });
 });

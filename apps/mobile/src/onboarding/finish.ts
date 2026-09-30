@@ -1,14 +1,15 @@
 /**
- * The end of onboarding (K-312). With the health consent, the starting weight and the waist go to the queue first —
- * saved on the phone at once, sent when the network allows (K-304), each under an id made once for the draft, so a retry
- * after a failed save queues the same records (the queue and the server both keep the first, ADR-024). Then the one
- * profile PUT; once it lands, the root layout leaves onboarding (K-306).
+ * The end of onboarding (K-312). The one profile PUT first: a failed save queues nothing, so a value the user corrects
+ * before trying again is the value that goes (the queue keeps the first record of an id, ADR-024). Then, with the health
+ * consent, the starting weight and the waist go to the queue — saved on the phone at once, sent when the network allows
+ * (K-304) — under ids made once for the draft. Once the profile lands the root layout leaves onboarding (K-306); this
+ * function carries on regardless of the screen.
  */
 import type { SyncQueue } from '@/sync/queue';
 import type { ProfileStatus } from '@/onboarding/profileStatus';
-import { type UnitSystem, parseWaistCm, parseWeightKg } from '@/units/units';
+import type { UnitSystem } from '@/units/units';
 
-import { type Draft, toProfile } from './draft';
+import { type Draft, startingWaistCm, startingWeightKg, toProfile } from './draft';
 
 type Options = {
   draft: Draft;
@@ -25,18 +26,18 @@ const localDay = (now: Date, timeZone: string) => new Intl.DateTimeFormat('en-CA
 export async function finishOnboarding({ draft, units, queue, profile, now, timeZone }: Options): Promise<void> {
   // Built first: an incomplete draft throws before anything is queued.
   const finished = toProfile(draft, { units, timeZone, thisYear: now.getFullYear() });
+  await profile.save(finished);
   if (draft.healthConsent === 'granted') {
-    const kg = parseWeightKg(draft.weight, units);
+    const kg = startingWeightKg(draft.weight, units);
     if (kg !== null) {
       await queue.record({
         kind: 'weighIn',
         body: { clientId: draft.ids.weighIn, measuredAt: now.toISOString(), kg, source: 'MANUAL' },
       });
     }
-    const cm = draft.waist.trim() === '' ? null : parseWaistCm(draft.waist, units);
+    const cm = draft.waist.trim() === '' ? null : startingWaistCm(draft.waist, units);
     if (cm !== null) {
       await queue.record({ kind: 'waist', body: { clientId: draft.ids.waist, measuredOn: localDay(now, timeZone), cm } });
     }
   }
-  await profile.save(finished);
 }

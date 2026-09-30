@@ -3,14 +3,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
-import { birthYearProblem, heightCm } from '@/onboarding/draft';
+import { birthYearProblem, heightCm, startingWaistCm, startingWeightKg } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { onboardingParams } from '@/onboarding/params';
 import { StepFrame } from '@/onboarding/StepFrame';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { type UnitSystem, parseWaistCm, parseWeightKg } from '@/units/units';
+import type { UnitSystem } from '@/units/units';
 
 const YEAR_LENGTH = 4;
 /** The shortest height in centimetres has three digits (100, the profile's minimum). */
@@ -37,8 +37,12 @@ export default function AboutStep() {
   const yearTyped = draft.birthYear.trim().length >= YEAR_LENGTH;
   const yearKey = yearTyped ? PROBLEMS[birthYearProblem(draft.birthYear, new Date().getFullYear()) ?? 'missing'] : null;
 
-  // No profile yet: the choice stays on the phone, without the network, and goes out with the profile (K-310).
-  const choose = (next: UnitSystem) => void units.keepOnPhone(next);
+  // No profile yet: the choice stays on the phone, without the network, and goes out with the profile (K-310). A weight or
+  // waist already typed is cleared: "82" typed as kg must not quietly become 82 lb. (Height has its own fields per unit.)
+  const choose = (next: UnitSystem) => {
+    if (next !== system) update({ weight: '', waist: '' });
+    void units.keepOnPhone(next);
+  };
 
   // Metric types centimetres; imperial feet and inches (K-310). Built here, outside the JSX below.
   const heightFields = metric ? (
@@ -73,11 +77,11 @@ export default function AboutStep() {
   // With the health consent only (ADR-030 #25): the starting weight, and the waist if the user knows it.
   const granted = draft.healthConsent === 'granted';
   const weightProblem =
-    draft.weight.trim().length >= MIN_WEIGHT_DIGITS && parseWeightKg(draft.weight, system) === null
+    draft.weight.trim().length >= MIN_WEIGHT_DIGITS && startingWeightKg(draft.weight, system) === null
       ? t('onboarding.about.weightInvalid')
       : null;
   const waistProblem =
-    draft.waist.trim().length >= MIN_WEIGHT_DIGITS && parseWaistCm(draft.waist, system) === null
+    draft.waist.trim().length >= MIN_WEIGHT_DIGITS && startingWaistCm(draft.waist, system) === null
       ? t('onboarding.about.waistInvalid')
       : null;
   const healthFields = granted ? (

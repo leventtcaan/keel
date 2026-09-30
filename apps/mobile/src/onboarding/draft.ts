@@ -174,7 +174,21 @@ export function stepComplete(step: Step, draft: Draft, system: UnitSystem, thisY
 
 /** With the consent, about you asks the weight (needed for the starting calories, K-114) and, if typed, the waist. */
 function healthAnswersValid(draft: Draft, system: UnitSystem): boolean {
-  return parseWeightKg(draft.weight, system) !== null && (draft.waist.trim() === '' || parseWaistCm(draft.waist, system) !== null);
+  return startingWeightKg(draft.weight, system) !== null && (draft.waist.trim() === '' || startingWaistCm(draft.waist, system) !== null);
+}
+
+// Within what the server keeps (the contract's bounds, after the one rounding): a value it would refuse must not leave
+// onboarding looking saved and then vanish from the queue.
+const within = (value: number | null, max: number) => (value !== null && value > 0 && value <= max ? value : null);
+
+/** The starting weight in kg, rounded once (K-310); null when it is not one the server keeps. */
+export function startingWeightKg(typed: string, system: UnitSystem): number | null {
+  return within(parseWeightKg(typed, system), P.weighInMaxKg);
+}
+
+/** The waist in cm, rounded once; null when it is not one the server keeps. */
+export function startingWaistCm(typed: string, system: UnitSystem): number | null {
+  return within(parseWaistCm(typed, system), P.waistMaxCm);
 }
 
 type Context = { units: UnitSystem; timeZone: string; thisYear: number };

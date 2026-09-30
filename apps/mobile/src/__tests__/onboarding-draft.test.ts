@@ -205,6 +205,16 @@ describe('health answers, only with the consent (ADR-027 #14, ADR-030 #25)', () 
     expect(stepComplete('about', granted({ weight: 'heavy' }), 'METRIC', THIS_YEAR)).toBe(false);
   });
 
+  test('the weight and the waist within what the server keeps (contract: above 0, at most 500 kg and 300 cm)', () => {
+    for (const weight of ['0', '0.001', '501']) {
+      expect(stepComplete('about', granted({ weight }), 'METRIC', THIS_YEAR)).toBe(false);
+    }
+    expect(stepComplete('about', granted({ weight: '500' }), 'METRIC', THIS_YEAR)).toBe(true);
+    expect(stepComplete('about', granted({ weight: '1200' }), 'IMPERIAL', THIS_YEAR)).toBe(false); // 544 kg
+    expect(stepComplete('about', granted({ waist: '301' }), 'METRIC', THIS_YEAR)).toBe(false);
+    expect(stepComplete('about', granted({ waist: '300' }), 'METRIC', THIS_YEAR)).toBe(true);
+  });
+
   test('a waist typed must be a waist', () => {
     expect(stepComplete('about', granted({ waist: '84' }), 'METRIC', THIS_YEAR)).toBe(true);
     expect(stepComplete('about', granted({ waist: 'x' }), 'METRIC', THIS_YEAR)).toBe(false);

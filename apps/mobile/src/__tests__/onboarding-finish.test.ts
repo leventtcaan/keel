@@ -1,6 +1,7 @@
 /**
- * Finishing onboarding (K-312): the starting weight and waist go to the queue with ids made once, so a retry after a
- * failed save sends the same records (ADR-024); then the one profile PUT. Health answers only with the consent.
+ * Finishing onboarding (K-312): the one profile PUT first — a failed save queues nothing, so a value corrected before the
+ * retry is the one that goes — then the starting weight and waist to the queue, with ids made once for the draft
+ * (ADR-024). Health answers only with the consent.
  */
 import { type Draft, emptyDraft } from '@/onboarding/draft';
 import { finishOnboarding } from '@/onboarding/finish';
@@ -37,10 +38,10 @@ function fakes() {
 const run = (d: Draft, f: ReturnType<typeof fakes>, units: 'METRIC' | 'IMPERIAL' = 'METRIC') =>
   finishOnboarding({ draft: d, units, queue: f.queue, profile: f.profile, now: NOW, timeZone: 'Europe/Istanbul' });
 
-test('with the consent: the weight and the waist are queued first, then the profile is saved once', async () => {
+test('with the consent: the profile is saved once, then the weight and the waist are queued', async () => {
   const f = fakes();
   await run(draft(), f);
-  expect(f.calls).toEqual(['record weighIn', 'record waist', 'save']);
+  expect(f.calls).toEqual(['save', 'record weighIn', 'record waist']);
   expect(f.queue.record).toHaveBeenCalledWith({
     kind: 'weighIn',
     body: { clientId: IDS.weighIn, measuredAt: NOW.toISOString(), kg: 82.45, source: 'MANUAL' },
@@ -60,7 +61,7 @@ test('imperial: the pounds and inches typed go as kilograms and centimetres, rou
 test('no waist typed: only the weight', async () => {
   const f = fakes();
   await run(draft({ waist: '' }), f);
-  expect(f.calls).toEqual(['record weighIn', 'save']);
+  expect(f.calls).toEqual(['save', 'record weighIn']);
 });
 
 test('without the consent: nothing health is sent, whatever was typed before declining', async () => {
@@ -70,12 +71,26 @@ test('without the consent: nothing health is sent, whatever was typed before dec
   expect(f.profile.save).toHaveBeenCalledWith(expect.not.objectContaining({ food: expect.anything() }));
 });
 
-test('a retry after a failed save queues the same records, by the same ids', async () => {
+test('a failed save queues nothing: the value corrected before the retry is the one that goes', async () => {
   const f = fakes();
   f.profile.save.mockRejectedValueOnce(new Error('profile save failed with HTTP 503'));
-  await expect(run(draft(), f)).rejects.toThrow('503');
-  await run(draft(), f);
-  const ids = f.queue.record.mock.calls.map(([record]) => (record as unknown as { body: { clientId: string } }).body.clientId);
-  expect(ids).toEqual([IDS.weighIn, IDS.waist, IDS.weighIn, IDS.waist]);
-  expect(f.profile.save).toHaveBeenCalledTimes(2);
+  await expect(run(draft({ weight: '58' }), f)).rejects.toThrow('503');
+  expect(f.queue.record).not.toHaveBeenCalled();
+  await run(draft({ weight: '85' }), f);
+  expect(f.queue.record).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ kg: 85, clientId: IDS.weighIn }) }));
+  expect(f.queue.record).toHaveBeenCalledTimes(2);
+});
+
+test('an incomplete draft throws before anything is saved or queued', async () => {
+  for (const broken of [draft({ weight: '' }), draft({ waist: 'x' }), draft({ sex: null })]) {
+    const f = fakes();
+    await expect(run(broken, f)).rejects.toThrow();
+    expect(f.calls).toEqual([]);
+  }
+});
+
+test('a record the phone cannot keep (a broken local database) reaches the caller', async () => {
+  const f = fakes();
+  f.queue.record.mockRejectedValueOnce(new Error('database is locked'));
+  await expect(run(draft(), f)).rejects.toThrow('database is locked');
 });

@@ -24,9 +24,25 @@ export function consentVersion(kind: ConsentKind): string {
  * data (K-511). Throws when the server did not record it, so a screen never goes on as if it had.
  */
 export async function grantConsent(api: ApiClient, kind: Exclude<ConsentKind, 'THIRD_PARTY_AI'>): Promise<void> {
-  const { data, response } = await api.PUT('/v1/consents/{kind}', {
-    params: { path: { kind } },
-    body: { textVersion: consentVersion(kind) },
-  });
-  if (data === undefined) throw new Error(`consent ${kind} not recorded: HTTP ${response.status}`);
+  const answer = await reach(() => api.PUT('/v1/consents/{kind}', { params: { path: { kind } }, body: { textVersion: consentVersion(kind) } }));
+  if (answer.data === undefined) throw named('ConsentRefused', `consent ${kind} not recorded: HTTP ${answer.response.status}`);
+}
+
+/** Takes the consent back; the features it covers stop at once (K-204). Throws like grantConsent. */
+export async function withdrawConsent(api: ApiClient, kind: ConsentKind): Promise<void> {
+  const answer = await reach(() => api.DELETE('/v1/consents/{kind}', { params: { path: { kind } } }));
+  if (answer.data === undefined) throw named('ConsentRefused', `consent ${kind} not withdrawn: HTTP ${answer.response.status}`);
+}
+
+/** By name, so a screen tells no connection from a server that answered no (V3: never the message). */
+function named(name: 'NoConnection' | 'ConsentRefused', message: string): Error {
+  return Object.assign(new Error(message), { name });
+}
+
+async function reach<T>(request: () => Promise<T>): Promise<T> {
+  try {
+    return await request();
+  } catch {
+    throw named('NoConnection', 'consent: no answer');
+  }
 }

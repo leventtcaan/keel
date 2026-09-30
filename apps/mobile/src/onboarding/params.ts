@@ -19,4 +19,6 @@ export const onboardingParams = {
   checkInDay: param<components['schemas']['Weekday']>('check_in_day'),
   photoIntervalWeeks: param<number>('photo_interval_weeks'),
   noInterpretationDays: param<number>('no_interpretation_days'),
+  weighInMaxKg: param<number>('weigh_in_max_kg'),
+  waistMaxCm: param<number>('waist_max_cm'),
 };

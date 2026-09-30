@@ -3,6 +3,7 @@
  * Continue at the bottom — off until the step is answered. Continue opens the next step; on the last one, `onFinish`.
  */
 import { type Href, router } from 'expo-router';
+import { Stack } from 'expo-router/stack';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,9 +41,11 @@ type Props = {
   continueLabel?: string;
   /** In place of Continue: steps whose answer is a choice of buttons (a consent, the last step). */
   actions?: ReactNode;
+  /** While a step's answer is on its way to the server, leaving it would leave that answer behind. */
+  backDisabled?: boolean;
 };
 
-export function StepFrame({ step, title, children, continueLabel, actions }: Props) {
+export function StepFrame({ step, title, children, continueLabel, actions, backDisabled = false }: Props) {
   const { color } = useTheme();
   const { draft } = useDraft();
   const units = useUnits();
@@ -58,6 +61,8 @@ export function StepFrame({ step, title, children, continueLabel, actions }: Pro
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('onboarding.back')}
+        accessibilityState={{ disabled: backDisabled }}
+        disabled={backDisabled}
         onPress={() => router.back()}
         hitSlop={tokens.space.md}>
         <Text style={[styles.back, { color: color.text }]}>{t('onboarding.backMark')}</Text>
@@ -68,6 +73,8 @@ export function StepFrame({ step, title, children, continueLabel, actions }: Pro
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+      {/* The system's swipe back too, not only the button. */}
+      <Stack.Screen options={{ gestureEnabled: !backDisabled }} />
       <View style={styles.top}>
         {back}
         <Text

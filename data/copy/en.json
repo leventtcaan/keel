@@ -643,7 +643,8 @@
       "notNow": "Not now",
       "allowed": "Allowed. You can withdraw this in Settings at any time.",
       "declinedNote": "Without it we can't keep your weight, so there are no weekly calls. You can allow it later in Settings.",
-      "failed": "Couldn't record your choice. Check your connection and try again."
+      "failed": "Couldn't record your choice. Check your connection and try again.",
+      "withdraw": "Withdraw"
     },
     "about": {
       "title": "About you",
@@ -733,8 +734,11 @@
       "notNow": "Not now, I'll type it",
       "unavailable": "Apple Health connects in the app's device build. You can connect it later in Settings.",
       "finish": "Start",
-      "failed": "Couldn't connect. Check your connection and try again."
+      "failed": "Couldn't connect. Check your connection and try again.",
+      "needsConsent": "Apple Health brings in health data, so it needs the health data consent first. You can allow both later in Settings.",
+      "sheetFailed": "Apple Health didn't open. Try again, or go on without it."
     },
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "serverError": "Something went wrong on our side. Try again in a moment."
   }
 }

@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { createApiClient } from '@/api/client';
-import { consentVersion, grantConsent } from '@/consent/consents';
+import { consentVersion, grantConsent, withdrawConsent } from '@/consent/consents';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const BASE = 'https://api.example.test';
@@ -48,4 +48,21 @@ test('a refused grant throws: the screen must not go on as if the consent were g
   const fake = server(400);
   const api = createApiClient({ baseUrl: BASE, accessToken: async () => 't', fetch: fake.fetch });
   await expect(grantConsent(api, 'APPLE_HEALTH')).rejects.toThrow('400');
+});
+
+test('no answer is NoConnection, an answer that refuses is ConsentRefused: the screen words them differently', async () => {
+  const offline = createApiClient({ baseUrl: BASE, accessToken: async () => 't', fetch: async () => { throw new TypeError('Network request failed'); } });
+  await expect(grantConsent(offline, 'HEALTH_DATA')).rejects.toMatchObject({ name: 'NoConnection' });
+  const refusing = createApiClient({ baseUrl: BASE, accessToken: async () => 't', fetch: server(400).fetch });
+  await expect(grantConsent(refusing, 'HEALTH_DATA')).rejects.toMatchObject({ name: 'ConsentRefused' });
+});
+
+test('a withdrawal is a DELETE of that consent', async () => {
+  const fake = server();
+  const fetch = jest.fn(async (request: Request) => {
+    fake.seen.push({ method: request.method, path: request.url.slice(BASE.length), body: null });
+    return new Response(JSON.stringify({ kind: 'HEALTH_DATA', status: 'WITHDRAWN' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  });
+  await withdrawConsent(createApiClient({ baseUrl: BASE, accessToken: async () => 't', fetch }), 'HEALTH_DATA');
+  expect(fake.seen).toEqual([{ method: 'DELETE', path: '/v1/consents/HEALTH_DATA', body: null }]);
 });
