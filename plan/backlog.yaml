@@ -1013,12 +1013,12 @@ tasks:
     module: nutrition
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-208]
     why: "nutrition.food boş; Levent Foundation + SR Legacy indirmeye izin verdi (ADR-027 #16). Branded disk açılınca"
     acceptance:
       - "İndirilen resmi CSV'lerden (fdc.nal.usda.gov, CC0) kcal/protein/karb/yağ ve porsiyonlar içe aktarılır; tekrar çalıştırmak aynı sonucu verir"
-      - "Kaynak etiketi FOUNDATION / SR_LEGACY; ham dosyalar repoya girmez, sürüm ve indirme tarihi kaydedilir"
+      - "Kaynak etiketi FOUNDATION / SR_LEGACY; ham dosyalar repoya girmez; sürüm, dosya özeti ve içe aktarma zamanı veritabanında, indirme tarihi ve adresi ADR-008 ekinde"
       - "Arama (K-208) içe aktarılan veriyle çalışır; aralıklar analiz hatasıyla (H7)"
     tests:
       - "FdcImportTests"

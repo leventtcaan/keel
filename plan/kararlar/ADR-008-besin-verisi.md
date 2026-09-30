@@ -78,3 +78,16 @@ Eşleme testleri; aralık çıktısı testleri; sapma kalibrasyonu simülasyon t
 - **İçe aktarmada dikkat (K-208 incelemesi):** Branded'da aynı `gtin_upc` birden çok kayıtta olabilir `[doğrulanmadı]`
   → içe aktarıcı en yeni kaydı tutar (V9'da `gtin` benzersiz); `%kelime%` araması indekssiz tüm tabloyu tarar → Branded
   yüklenince `pg_trgm` GIN indeksi (ayrı göç).
+
+## Ek — toplu içe aktarma (K-226, 30 Eyl 2026; ADR-027 #16)
+Levent Foundation + SR Legacy'nin indirilmesine izin verdi; Branded (~400 MB+, barkod) disk açılınca ayrıca.
+- Foundation Foods, Aralık 2025: `https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_csv_2025-12-18.zip`
+  (3,4 MB; sha256 `3850de85effd6d9aa471f48aab2a76c20f9bc5feb3f2f52c8ce693f9cf75d52b`) → 376 besin, 60 atlandı (değer eksik).
+- SR Legacy, Nisan 2018 (son sürüm): `https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip`
+  (6,7 MB; sha256 `b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0`) → 7.793 besin.
+- Değer seçimi (K-226 incelemesi): "farkla karbonhidrat" (1005) FDC'nin yuvarlamasıyla bazı etlerde sıfırın biraz altında
+  (−0,48 g) → **0** okunur; negatif enerji/protein/yağ ise besin sayılmaz (atlanır). Bir sürüm yüklenince o veri
+  setinin artık olmayan besinleri silinir (FDC güncellenen besine yeni id verir); veri seti başına yalnız en yeni sürüm.
+- Ham dosyalar repoya girmez. Yükleme: dosyaları açıp `keel.fdc.import-dir` ile uygulamayı başlatmak
+  (`./gradlew bootRun --args='--keel.fdc.import-dir=<klasör>'`); aynı sürüm tekrar yüklenince aynı satırlar
+  (`nutrition.food_import` sürümü, dosya özetini ve sayıları tutar).
