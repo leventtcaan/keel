@@ -4,7 +4,7 @@
  * Pure: the screens and the tests share it.
  */
 import type { components } from '@/api/schema';
-import { type UnitSystem, heightCmFromImperial, roundTo } from '@/units/units';
+import { type UnitSystem, heightCmFromImperial, parseWaistCm, parseWeightKg, roundTo } from '@/units/units';
 
 import { onboardingParams as P } from './params';
 
@@ -13,8 +13,24 @@ export type Weekday = Schemas['Weekday'];
 export type SessionsLastMonth = NonNullable<Schemas['Schedule']['sessionsLastMonth']>;
 export type Profile = Schemas['Profile'];
 
-/** The prototype's order (prototip/keel-prototype.html, section 1); consents and Health are K-312's. */
-export const STEPS = ['goal', 'program', 'schedule', 'about', 'activity', 'photos', 'expectations'] as const;
+/**
+ * Every step, in the prototype's order (prototip/keel-prototype.html, section 1). The health consent comes before the
+ * first health question (about you asks the weight), and Apple Health is last (1.8). The reference look (K-313) and the
+ * AI consent (K-511) join later; with them the walk stays within 12 screens (I1 F1).
+ */
+export const STEPS = [
+  'goal', 'program', 'schedule', 'healthData', 'about', 'activity', 'foods', 'photos', 'expectations', 'appleHealth',
+] as const;
+
+/** The steps this user walks: the foods to avoid may be health data (an allergy), so only with the consent (#14). */
+export function stepsFor(draft: Draft): Step[] {
+  return STEPS.filter((step) => step !== 'foods' || draft.healthConsent === 'granted');
+}
+
+/** The foods typed, one per comma or line, trimmed; empty and repeated ones dropped. */
+export function avoidList(typed: string): string[] {
+  return [...new Set(typed.split(/[,\n]/).map((food) => food.trim()).filter((food) => food !== ''))];
+}
 export type Step = (typeof STEPS)[number];
 
 export const WEEK: readonly Weekday[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
@@ -31,6 +47,11 @@ export type Draft = {
   birthYear: string;
   sex: Schemas['Sex'] | null;
   activityLevel: Schemas['ActivityLevel'] | null;
+  healthConsent: 'granted' | 'declined' | null;
+  weight: string;
+  waist: string;
+  avoid: string;
+  ids: { weighIn: string; waist: string };
 };
 
 export const emptyDraft: Draft = {
@@ -43,6 +64,11 @@ export const emptyDraft: Draft = {
   birthYear: '',
   sex: null,
   activityLevel: null,
+  healthConsent: null,
+  weight: '',
+  waist: '',
+  avoid: '',
+  ids: { weighIn: '', waist: '' },
 };
 
 /** Adds or removes a day, in week order. A day past the limit is not added: the seventh stays rest (ADR-027 #15). */
@@ -127,28 +153,53 @@ export function stepComplete(step: Step, draft: Draft, system: UnitSystem, thisY
         draft.sessionsLastMonth !== null &&
         usualTime(draft.usualTrainingTime) !== undefined
       );
+    case 'healthData':
+      return draft.healthConsent !== null;
     case 'about':
       return (
         heightCm(draft.height, system) !== null &&
         birthYearProblem(draft.birthYear, thisYear) === null &&
-        draft.sex !== null
+        draft.sex !== null &&
+        (draft.healthConsent !== 'granted' || healthAnswersValid(draft, system))
       );
     case 'activity':
       return draft.activityLevel !== null;
+    case 'foods':
     case 'photos':
     case 'expectations':
+    case 'appleHealth':
       return true;
   }
+}
+
+/** With the consent, about you asks the weight (needed for the starting calories, K-114) and, if typed, the waist. */
+function healthAnswersValid(draft: Draft, system: UnitSystem): boolean {
+  return startingWeightKg(draft.weight, system) !== null && (draft.waist.trim() === '' || startingWaistCm(draft.waist, system) !== null);
+}
+
+// Within what the server keeps (the contract's bounds, after the one rounding): a value it would refuse must not leave
+// onboarding looking saved and then vanish from the queue.
+const within = (value: number | null, max: number) => (value !== null && value > 0 && value <= max ? value : null);
+
+/** The starting weight in kg, rounded once (K-310); null when it is not one the server keeps. */
+export function startingWeightKg(typed: string, system: UnitSystem): number | null {
+  return within(parseWeightKg(typed, system), P.weighInMaxKg);
+}
+
+/** The waist in cm, rounded once; null when it is not one the server keeps. */
+export function startingWaistCm(typed: string, system: UnitSystem): number | null {
+  return within(parseWaistCm(typed, system), P.waistMaxCm);
 }
 
 type Context = { units: UnitSystem; timeZone: string; thisYear: number };
 
 /** The profile to PUT. Throws on a draft that is not complete: the screens only offer "finish" once it is. */
 export function toProfile(draft: Draft, { units, timeZone, thisYear }: Context): Profile {
-  const incomplete = STEPS.find((step) => !stepComplete(step, draft, units, thisYear));
+  const incomplete = stepsFor(draft).find((step) => !stepComplete(step, draft, units, thisYear));
   if (incomplete !== undefined) throw new Error(`onboarding step ${incomplete} is not complete`);
   // Checked by stepComplete above; the non-null reads below cannot fail.
   const time = usualTime(draft.usualTrainingTime);
+  const avoid = draft.healthConsent === 'granted' ? avoidList(draft.avoid) : [];
   return {
     goal: draft.goal!,
     sex: draft.sex!,
@@ -164,5 +215,6 @@ export function toProfile(draft: Draft, { units, timeZone, thisYear }: Context):
       timeZone,
     },
     units,
+    ...(avoid.length > 0 ? { food: { avoid } } : {}),
   };
 }

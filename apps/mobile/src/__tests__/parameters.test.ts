@@ -128,3 +128,22 @@ describe('the onboarding promises the engine\'s own numbers (K-306)', () => {
     expect(onboarding.find((p) => p.key === key)?.value).toBe(yamlValue(file, key));
   });
 });
+
+describe('the starting measurements stay within what the contract keeps (K-312)', () => {
+  const contract = fs.readFileSync(path.join(ROOT, 'contracts/openapi.yaml'), 'utf8').split('\n');
+  const onboarding = (JSON.parse(fs.readFileSync(path.join(DIR, 'onboarding.json'), 'utf8')) as { parameters: Parameter[] })
+    .parameters;
+  function maximum(schema: string, field: string): number {
+    const start = contract.findIndex((line) => line.trim() === `${schema}:`);
+    const at = contract.findIndex((line, i) => i > start && line.trim() === `${field}:`);
+    const found = contract.slice(at, at + 8).map((line) => /maximum: (\d+)/.exec(line)).find((m) => m !== null);
+    if (start < 0 || at < 0 || found === undefined || found === null) throw new Error(`no maximum for ${schema}.${field}`);
+    return Number(found[1]);
+  }
+  test.each([
+    ['weigh_in_max_kg', 'NewWeighIn', 'kg'],
+    ['waist_max_cm', 'NewWaistMeasurement', 'cm'],
+  ])('%s = %s.%s maximum', (key, schema, field) => {
+    expect(onboarding.find((p) => p.key === key)?.value).toBe(maximum(schema, field));
+  });
+});

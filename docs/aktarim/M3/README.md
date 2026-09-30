@@ -18,3 +18,4 @@ renkli blokta durur ("EAT A LITTLE MORE"), altında kalori **aralığı** (1800�
 7. K-305 Apple ile giriş — nonce, Keychain, korumalı rota, servislerin tek kökü
 8. K-310 birimler — tek yuvarlama noktası, gidiş-dönüş, tercih (profil + önbellek)
 9. K-306 onboarding — profil durumu (üç durum), korumalı rota ile yönlendirme, saf taslak, 18+ ve 6 gün kuralı
+10. K-312 onboarding rızaları — sürümlü rıza, koşullu adım, idempotent başlangıç kayıtları, yetenek arayüzü (HealthAccess)

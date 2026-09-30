@@ -1229,26 +1229,26 @@ tasks:
     learn: ["Çok adımlı form akışı", "Durum yönetimi", "Koruma (guard) ile yönlendirme"]
 
   - id: K-312
-    title: "Onboarding: rızalar, başlangıç ölçümleri, Apple Health"
+    title: "Onboarding: sağlık rızası, başlangıç ölçümleri, Apple Health"
     milestone: M3
     module: mobile
     type: feature
     size: M
     status: todo
     depends_on: [K-306, K-204, K-304]
-    why: "K-306'dan ayrıldı (30 Eyl). Sağlık verisi rızası toplamadan önce; ölçüm ve görünüş rızaya bağlı (ADR-007, ADR-028)"
+    why: "K-306'dan ayrıldı (30 Eyl). Sağlık verisi rızası toplamadan önce; ölçüm ve gıda kısıtı rızaya bağlı (ADR-007, ADR-027 #14)"
     acceptance:
-      - "Sağlık verisi rızası ayrı ekran, metin sürümüyle PUT; reddedilirse sağlık alanları (kilo, bel, görünüş, yiyemediğim gıdalar) gösterilmez ve gönderilmez (ADR-027 #14, ADR-030 #25)"
-      - "Başlangıç kilosu ve isteğe bağlı bel kullanıcının biriminde; profil kaydedildikten sonra kuyruğa (clientId)"
-      - "Referans görünüş: 7 seviye yer tutucu (ADR-028), yalnız seviye gönderilir, hiçbir yerde sayı yok (U4); atlanabilir"
-      - "Apple Health ekranı: okunan/okunmayan listesi, APPLE_HEALTH rızası; izin diyaloğu K-403'ün kütüphanesiyle, kütüphane yokken (Expo Go) ekran bunu söyler"
-      - "AI rızası sağlayıcıyı adıyla anar; sağlayıcı seçilmediyse ekran akışta yok (ilk kullanımda sorulur)"
-      - "Geçmiş içe aktarma K-609'da (M6); toplam ekran ≤12"
+      - "Sağlık verisi rızası ayrı ekran, metnin sürümüyle PUT (sürüm en.json = sunucu yapılandırması, testle); reddedilirse sağlık alanları (kilo, bel, yiyemediğim gıdalar) gösterilmez ve gönderilmez (ADR-027 #14, ADR-030 #25)"
+      - "Başlangıç kilosu (rızayla zorunlu) ve isteğe bağlı bel kullanıcının biriminde; kuyruğa clientId ile, tekrar denemede aynı kimlikle (ADR-024)"
+      - "Apple Health ekranı: okunan/okunmayan listesi; 'Connect' APPLE_HEALTH rızası + izin diyaloğu (K-403'ün kütüphanesi); kütüphane yokken (Expo Go) ekran bunu söyler, rıza kaydedilmez"
+      - "Son adım Apple Health; bitişte kayıtlar + tek profil PUT; toplam ekran ≤12 (görünüş K-313, AI rızası K-511 ile eklenince de)"
     tests:
-      - "onboarding-consent.test.tsx (rıza var/yok, sürüm)"
-      - "onboarding-finish.test.ts (profil + kayıtlar, sıra)"
+      - "onboarding-draft.test.ts (rızaya bağlı adımlar)"
+      - "onboarding-finish.test.ts (kayıtlar, kimlikler, sıra)"
+      - "consent-versions.test.ts"
+      - "onboarding-flow.test.tsx (rıza var/yok, Health var/yok)"
     refs: ["plan/kararlar/ADR-007-gizlilik-ve-riza.md", "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md", "plan/kararlar/ADR-028-m3-basi-cevaplari.md"]
-    learn: ["Rıza kaydı tasarımı (istemci)", "Koşullu adımlar"]
+    learn: ["Rıza kaydı tasarımı (istemci)", "Koşullu adımlar", "Idempotent gönderim"]
 
   - id: K-307
     title: "Gezinme: sekmeler ve koç girişi"
@@ -1668,6 +1668,24 @@ tasks:
     refs: ["docs/hareket-cekim-kontrol-listesi.md", "plan/kararlar/ADR-017-hareket-gosterimi.md"]
     learn:
       - "Video üretim hattı (ffmpeg)"
+
+  - id: K-313
+    title: "Onboarding: referans görünüş adımı"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-312, K-224]
+    why: "K-312'den ayrıldı (30 Eyl): 7 seviye motorun iç yağ tahminini, dolayısıyla LEA tabanını ve faz kapısını besler; kaynak yalnız tek eşiği betimliyor (G6 K-9 göbek testi). Metinle mi, çizimle mi — Levent'e (soru 28)"
+    acceptance:
+      - "Sağlık rızasıyla gösterilir; yalnız seviye gönderilir (POST /v1/body-looks), hiçbir yerde sayı yok (U4); atlanabilir"
+      - "Görseller ADR-028'e göre (çizim, telifi devredilmiş) ya da Levent'in soru 28 cevabına göre"
+      - "Cinsiyete göre ayrı set (J1 B1: kadında +10 puan)"
+    tests:
+      - "onboarding-flow.test.tsx (görünüş seçimi)"
+    refs: ["arastirma/ham/H8-yag-tahmini.md", "plan/kararlar/ADR-028-m3-basi-cevaplari.md"]
+    learn: ["Görsel ölçek ile belirsiz girdi"]
 
   - id: K-230
     title: "engine: LEA ağı RFM bandının temkinli ucunu okur"

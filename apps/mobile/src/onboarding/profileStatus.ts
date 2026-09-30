@@ -15,7 +15,7 @@ type Options = { kv: KeyValue; api: ApiClient; units: UnitsPreference };
 const KEY = 'onboarded';
 
 /** By name, so a screen can tell no connection from a server that answered with an error. */
-function failure(name: 'NoConnection' | 'ProfileReadFailed', message: string): Error {
+function failure(name: 'NoConnection' | 'ProfileReadFailed' | 'ProfileSaveFailed', message: string): Error {
   const error = new Error(message);
   error.name = name;
   return error;
@@ -91,8 +91,14 @@ export async function createProfileStatus({ kv, api, units }: Options) {
     save: async (profile: Profile): Promise<void> => {
       const startedIn = generation;
       const adoptUnits = units.beginRead();
-      const { data, response } = await api.PUT('/v1/profile', { body: profile });
-      if (data === undefined) throw new Error(`profile save failed with HTTP ${response.status}`);
+      let answer;
+      try {
+        answer = await api.PUT('/v1/profile', { body: profile });
+      } catch {
+        throw failure('NoConnection', 'profile save: no answer');
+      }
+      const { data, response } = answer;
+      if (data === undefined) throw failure('ProfileSaveFailed', `profile save failed with HTTP ${response.status}`);
       await adoptUnits(data.units);
       await markDone(startedIn);
     },

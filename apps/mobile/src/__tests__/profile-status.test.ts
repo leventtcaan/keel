@@ -168,3 +168,11 @@ test('a failed read tells a server problem from no connection', async () => {
   offline.server.goOffline();
   await expect(offline.status.refresh()).rejects.toMatchObject({ name: 'NoConnection' });
 });
+
+test('a failed save tells no connection from a refusal, by name', async () => {
+  const offline = await setup({ profile: null });
+  offline.server.goOffline();
+  await expect(offline.status.save(PROFILE)).rejects.toMatchObject({ name: 'NoConnection' });
+  const refused = await setup({ profile: null, failPut: 400 });
+  await expect(refused.status.save(PROFILE)).rejects.toMatchObject({ name: 'ProfileSaveFailed' });
+});

@@ -33,6 +33,8 @@ export type AppServices = {
   /** Records the server does not have yet; a sign-out drops them, so the screen warns first (K-309). */
   pendingCount(): Promise<number>;
   signOut(): Promise<void>;
+  /** A problem, by name only (V3): the same reporter the queue uses. */
+  report(problem: SyncProblem): void;
 };
 
 export async function createAppServices({ baseUrl, storage, db, fetch, report, kv, locale }: Deps): Promise<AppServices> {
@@ -67,6 +69,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     queue,
     units,
     profile,
+    report,
     pendingCount: store.pendingCount,
     signOut: async () => {
       const refreshToken = await session.refreshToken();
