@@ -8,9 +8,21 @@
 - **Açık PR:** K-228 #207 (`decision/188-hard-stop-general-kind`, auto-merge açık). CI'ya ccd_pr `get_status` ile bak; kırmızıysa
   düzelt (DB testleri yalnız CI'da: `HardStopKeptGenerallyMigrationTests`, `CheckInQuestionsApiTests`).
 - **Dalda, PR yok:** K-229 `decision/189-cycle-question-after-hard-stop` (K-228'in üstünde; saf testler yeşil, mutasyon 11/11,
-  aktarım `docs/aktarim/M3/K-229.md`). Bir code-reviewer ajanı çalışıyordu; sonucu kayboldu say → **yeniden incelet**
-  (aynı odak: hold türetme, Snapshot wither'ları, eski StoredSnapshot satırları, DB test fixture'ının gerçekten faz kapısına
-  (CUT) ulaşması). #207 birleşince `git rebase --onto origin/main decision/188-hard-stop-general-kind`, PR, auto-merge.
+  aktarım `docs/aktarim/M3/K-229.md`). **İnceleme geldi (compact öncesi), 3 bulgu — önce bunları TDD ile düzelt:**
+  1. (92) `CheckInQuestionsApiTests.womanHeldAfterAHardStop` satırı `snapshot = '{}'` ile ekliyor; `SafetyHolds.from(calls.all())`
+     her satırın anlık görüntüsünü `StoredSnapshot`'a okuyor, Jackson 3 `FAIL_ON_NULL_FOR_PRIMITIVES` → 500; 3 DB testi CI'da
+     kırmızı olur. **Düzeltme:** `CallStore`'a yalnız `decided_at, application, decision` okuyan küçük bir sorgu
+     (ör. `appliedDecisions(account)`); `SafetyHolds` onu kullansın (her `week()`'te 90 günlük anlık görüntü parse'ı da biter).
+     Fixture'a yine de geçerli bir anlık görüntü koy.
+  2. (82) Döngü sorusu yalnız cevapsız kuru çalıştırmaya bakıyor: hold'da kilo artıyor + görünüş WORSE → spine önce
+     TRAINING/RECOVERY ister; cevaplanınca `AdjustCalories(-x)` → hold → `cycle_check_needed` bekler ama döngü sorusu hiç
+     sorulmadı (her hafta tekrarlayabilir). **Düzeltme:** `needed()`'in denediği cevap birleşimlerinden herhangi biri
+     `waitsForTheCycle` ise CYCLE_STOPPED'ı da sor (ör. `needed`'e verilen motor fonksiyonu bekleyişi kaydetsin). Test ekle.
+  3. (85) Commit'e IDE derleme çıktısı girmiş: `backend/bin/**` (~400 dosya, .class). **Düzeltme:** ayrı bir chore:
+     `git rm -r --cached backend/bin` + `.gitignore`'a `backend/bin/` (main'de zaten 175 dosya izleniyormuş). K-229 dalından
+     bin değişikliklerini çıkar (`git checkout origin/main -- backend/bin` sonra commit) — K-228 (#207) içermiyor (kontrol edildi)
+     K-227 dalı da K-229 üstünde → aynı temizlik.
+  Sonra #207 birleşince `git rebase --onto origin/main decision/188-hard-stop-general-kind`, PR, auto-merge.
 - **Yarım:** K-227 `decision/187-mini-cut` (K-229'un üstünde). Son commit yalnız motor testleri (`MiniCutGateTests` sonuna
   eklenen 5 test) — **derlenmiyor**, çünkü kod yok. Sıradaki: aşağıdaki K-227 planı.
 

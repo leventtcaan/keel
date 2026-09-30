@@ -107,7 +107,7 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
 
 ## ▶ DEVAM NOKTASI (M3 Part 3, 30 Eyl gece — compact öncesi)
 Prompt: `plan/oturum-promptlari/M3-part3-devam.md` (tam durum, K-227 planı, bitiş adımları). Özet: K-306/312/309/403 ve
-K-308 yapılandırması birleşti; K-228 PR #207 (auto-merge); K-229 dalda (yeniden incelet, #207 sonrası PR); K-227 dalında
+K-308 yapılandırması birleşti; K-228 PR #207 (auto-merge); K-229 dalda (inceleme geldi: 3 bulgu devam dosyasında, düzelt, #207 sonrası PR); K-227 dalında
 yalnız motor testleri (derlenmiyor). Açık sorular 25-31 + K-308 hesap onayı.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
