@@ -61,6 +61,11 @@ class MealStore {
         return new Stored(meal, created == 1);
     }
 
+    Optional<Meal> findByClient(AccountId account, UUID clientId) {
+        return meals("m.account_id = :account and m.client_id = :client", Map.of("account", account.value(), "client", clientId))
+                .stream().findFirst();
+    }
+
     Optional<Meal> find(AccountId account, UUID id) {
         return meals("m.account_id = :account and m.id = :id", Map.of("account", account.value(), "id", id)).stream().findFirst();
     }

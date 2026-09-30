@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
@@ -67,6 +68,12 @@ class MealController {
     ResponseEntity<Meal> log(AccountId account, @RequestBody NewMeal meal) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(meal.clientId() != null && api.moment(meal.eatenAt()) && meal.slot() != null && (meal.items() == null) != (meal.repeatOf() == null));
+        // A replay answers with what was stored (ADR-024), before anything is estimated or looked up again: the meal it
+        // repeated may be gone, or a food row changed, since the first send (K-209 review).
+        Optional<MealStore.Meal> replayed = store.findByClient(account, meal.clientId());
+        if (replayed.isPresent()) {
+            return ResponseEntity.ok(view(replayed.get()));
+        }
         List<FoodEstimator.EstimatedItem> items = meal.items() != null
                 ? estimator.estimate(account, meal.items()).items()
                 // "Same as yesterday": the earlier meal's items as they were logged — only the user's own meals.
@@ -97,7 +104,8 @@ class MealController {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(api.day(day));
         // The targets come from calls (decision, K-216); no target yet, no budget.
-        DailyTargets.Targets target = targets.stream().findFirst().flatMap(provider -> provider.forDay(account, day))
+        // One provider (decision); a second would be a wiring mistake, and getIfUnique does not pick one quietly.
+        DailyTargets.Targets target = Optional.ofNullable(targets.getIfUnique()).flatMap(provider -> provider.forDay(account, day))
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         FoodRanges.Nutrients eaten = FoodRanges.total(store.day(account, day).stream().flatMap(meal -> meal.items().stream())
                 .map(FoodEstimator.EstimatedItem::nutrients).toList());

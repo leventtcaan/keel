@@ -84,8 +84,28 @@ class MealLogTests {
                 "slot", "BREAKFAST", "repeatOf", yesterday));
 
         assertThat(repeated).hasStatus(201);
-        assertThat(map(repeated)).containsEntry("kcal", Map.of("low", 372, "high", 742)).isNotEqualTo(yesterday);
+        assertThat(map(repeated).get("id")).as("a new meal").isNotEqualTo(yesterday);
+        assertThat(map(repeated)).containsEntry("kcal", Map.of("low", 372, "high", 742));
+        Object original = list(send(account, "GET", "/v1/meals?day=2026-09-29", null)).getFirst().get("items");
+        assertThat(map(repeated).get("items")).as("the items as logged").isEqualTo(original);
         assertThat(list(send(account, "GET", "/v1/meals?day=2026-09-30", null))).hasSize(1);
+    }
+
+    @Test
+    void aReplayGetsTheStoredMealEvenWhenItsSourceIsGone() throws Exception {
+        // ADR-024: the second send of a clientId answers 200 with what was stored — not a 404 because the meal it
+        // repeated was deleted in between (K-209 review).
+        AccountId account = consenting();
+        String yesterday = (String) map(send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-29T08:00:00Z", "BREAKFAST"))).get("id");
+        Map<String, Object> repeat = Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T08:05:00Z", "slot", "BREAKFAST",
+                "repeatOf", yesterday);
+        MvcTestResult first = send(account, "POST", "/v1/meals", repeat);
+        send(account, "DELETE", "/v1/meals/" + yesterday, null);
+
+        MvcTestResult again = send(account, "POST", "/v1/meals", repeat);
+
+        assertThat(again).hasStatus(200);
+        assertThat(map(again)).isEqualTo(map(first));
     }
 
     @Test
@@ -100,6 +120,8 @@ class MealLogTests {
         assertThat(send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T08:00:00Z",
                 "slot", "BREAKFAST"))).as("neither").hasStatus(400);
         assertThat(send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T08:00:00Z",
+                "slot", "BREAKFAST", "items", List.of()))).as("no items").hasStatus(400);
+        assertThat(send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T08:00:00Z",
                 "slot", "BREAKFAST", "repeatOf", theirs))).as("someone else's meal").hasStatus(404);
     }
 
@@ -110,6 +132,7 @@ class MealLogTests {
         assertThat(send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-30T12:30:00Z", "LUNCH"))).hasStatus(403);
         assertThat(send(account, "GET", "/v1/meals?day=2026-09-30", null)).hasStatus(403);
         assertThat(send(account, "GET", "/v1/days/2026-09-30/budget", null)).hasStatus(403);
+        assertThat(send(account, "DELETE", "/v1/meals/" + UUID.randomUUID(), null)).hasStatus(403);
     }
 
     @Test
