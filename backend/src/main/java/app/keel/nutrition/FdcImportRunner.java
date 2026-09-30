@@ -6,8 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,8 +21,6 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty("keel.fdc.import-dir")
 class FdcImportRunner implements ApplicationRunner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FdcImportRunner.class);
-
     private final FdcImporter importer;
     private final Path root;
 
@@ -37,8 +33,8 @@ class FdcImportRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         for (Path folder : releases(root)) {
             FdcImport.Dataset dataset = Files.exists(folder.resolve("foundation_food.csv")) ? FdcImport.Dataset.FOUNDATION : FdcImport.Dataset.SR_LEGACY;
-            FdcImporter.Imported imported = importer.load(folder, dataset, release(folder.getFileName().toString()));
-            LOG.info("FDC {} {}: {} foods, {} skipped", imported.dataset(), imported.release(), imported.foods(), imported.skipped());
+            // What came in is recorded in nutrition.food_import (release, file hash, counts), not in the log (V3: SafeLog only).
+            importer.load(folder, dataset, release(folder.getFileName().toString()));
         }
     }
 
