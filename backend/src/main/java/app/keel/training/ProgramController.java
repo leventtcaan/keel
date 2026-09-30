@@ -3,6 +3,7 @@ package app.keel.training;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
+import app.keel.engine.RepRange;
 import app.keel.engine.Sex;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
@@ -150,14 +151,25 @@ class ProgramController {
         LocalDate today = LocalDate.now(clock.withZone(profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC)));
         List<TrainingChanges.Change> changes = calls.changes(account);
         Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(changes, TrainingChanges.Kind.LIGHTER_WEEK, today);
+        boolean held = TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).isPresent();
         return new Program(program.id(), program.source(), program.days().stream().map(day -> new ProgramDay(day.id(), day.nameKey(),
                 day.name(), day.weekday(), day.exercises().stream().map(planned -> new PlannedExercise(planned.exerciseId(), planned.sets(),
                         TrainingChanges.sets(planned.sets(), lighter), new Reps(planned.repMin(), planned.repMax()), planned.targetRir(),
-                        planned.nextLoadKg(), planned.nextReps())).toList()))
+                        next(planned, held).map(NextTargets.Target::loadKg).orElse(null), next(planned, held).map(NextTargets.Target::reps).orElse(null)))
+                        .toList()))
                 .toList(),
                 lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null));
+    }
+
+    /** The next session's target as shown today: a hold of the deload ladder in force keeps the last load (K-217). */
+    private static Optional<NextTargets.Target> next(ProgramStore.PlannedExercise planned, boolean held) {
+        if (planned.nextLoadKg() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(NextTargets.shown(new NextTargets.Target(planned.nextLoadKg(), planned.nextReps()), planned.lastLoadKg(),
+                new RepRange(planned.repMin(), planned.repMax()), held));
     }
 
     private static void require(boolean valid) {

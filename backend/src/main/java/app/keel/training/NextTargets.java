@@ -17,7 +17,7 @@ import java.util.Optional;
  * means on the program. An added load starts again from the bottom of the range — unless the deload ladder holds the
  * load (K-110 first rung), then the top of the range is the target. Added reps aim one above the weakest set, within the
  * range. A held session (unclean form, G6 K-31) is repeated, never under the range. An isolation lift has no target
- * (G6 K-33).
+ * (G6 K-33). Load is added only when every planned set was done at the top.
  */
 final class NextTargets {
 
@@ -27,12 +27,15 @@ final class NextTargets {
     private NextTargets() {
     }
 
-    static Optional<Target> after(LiftSession session, Progression progression, boolean loadHeld) {
+    static Optional<Target> after(LiftSession session, Progression progression, boolean loadHeld, int plannedSets) {
         RepRange range = session.range();
         int weakest = session.sets().stream().mapToInt(SetResult::reps).min().orElseThrow();
         return switch (progression.step()) {
+            // Every planned set at the top, not just the ones done at the day's top load (K-217 review): fewer means the
+            // load is repeated at the top of the range.
             case ProgressionStep.AddLoad(BigDecimal newLoadKg, int targetReps) ->
-                    Optional.of(loadHeld ? new Target(session.loadKg(), range.max()) : new Target(newLoadKg, targetReps));
+                    Optional.of(loadHeld || session.sets().size() < plannedSets ? new Target(session.loadKg(), range.max())
+                            : new Target(newLoadKg, targetReps));
             case ProgressionStep.AddReps() -> Optional.of(new Target(session.loadKg(), Math.min(weakest + 1, range.max())));
             case ProgressionStep.Hold() -> Optional.of(new Target(session.loadKg(), Math.max(weakest, range.min())));
             case ProgressionStep.NotTracked() -> Optional.empty();
@@ -48,5 +51,18 @@ final class NextTargets {
         Optional<BigDecimal> top = sets.stream().map(TrainingLog.WorkSet::loadKg).max(Comparator.naturalOrder()).filter(kg -> kg.signum() > 0);
         return top.map(load -> new LiftSession(kind, region, range, load, sets.stream().filter(set -> set.loadKg().compareTo(load) == 0)
                 .map(set -> new SetResult(set.reps(), set.rir() != null ? set.rir() : plannedRir)).toList(), techniqueClean));
+    }
+
+    /**
+     * The target as shown today: a load added while the deload ladder now holds the load is the last load at the top of
+     * the range — the hold may have begun after the target was set (K-217 review).
+     */
+    static Target shown(Target stored, BigDecimal lastLoadKg, RepRange range, boolean holdInForce) {
+        return holdInForce && stored.loadKg().compareTo(lastLoadKg) > 0 ? new Target(lastLoadKg, range.max()) : stored;
+    }
+
+    /** A one-sided move's target: the side that did less decides (each side is its own set, SetRules). */
+    static Optional<Target> weaker(List<Target> sides) {
+        return sides.stream().min(Comparator.comparing(Target::loadKg).thenComparingInt(Target::reps));
     }
 }

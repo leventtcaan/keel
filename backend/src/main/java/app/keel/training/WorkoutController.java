@@ -142,9 +142,8 @@ class WorkoutController {
         List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
         require(!unclean.contains(null) && unclean.stream().allMatch(exercise -> catalog.find(exercise).isPresent())
                 && Set.copyOf(unclean).size() == unclean.size());
-        store.finish(account, id, finish.endedAt());
-        // The day's planned moves get the next session's load and reps (K-217).
-        progress.after(account, workout, Set.copyOf(unclean));
+        // Kept with the next session's load and reps of the day's planned moves (K-217).
+        progress.finish(account, workout, finish.endedAt(), Set.copyOf(unclean));
         return read(owned(account, id));
     }
 
