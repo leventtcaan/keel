@@ -50,3 +50,12 @@
 - takıldım: yok; inceleme ajanları her görevde gerçek hata buldu (Tomcat'te V3 sızıntısı, AI rızası sağlayıcıya bağlı değildi, 500 dönen sınır değerleri, başka seansa düşen set)
 - sıradaki: DURUM › DEVAM NOKTASI (30 Eyl) — zincir K-206 → K-210 → K-214, sonra K-218…K-217; prompt `plan/oturum-promptlari/M2-devam-2.md`
 - AI: tamamı agent; Levent'e 15 soru birikti (DURUM), aktarım M1 akşam + M2 bu sohbette yapılacak
+
+## 2026-09-30 (gece, toplu mod, compact öncesi)
+- Birleşti: K-206, K-210, K-214 (silme tekrar denenir, silinen hesabın token'ı reddedilir, ikinci geçiş), K-218 (e1RM, H3 B15),
+  K-219 (40 hareket), K-211 (6 program şablonu, taslak), K-208 (besin aralığı, H7, UPC-E), K-209 (öğün + bütçe), K-212 (karar kaydı).
+- K-213 PR #171 açık (inceleme yapılmadı). Backlog'a K-220 (uyum) ve K-221 (TrainingStatus) eklendi.
+- Disk doldu (Mac ~1 GB): Docker yok, DB testleri CI'da. Mutasyon betiğinde yeniden derleme hatası bulundu, düzeltildi.
+- Yeni sorular 15-18 (program şablonları, FDC indirme izni, DECIDE_FOR_ME fazı, hard stop kararının saklanması).
+- Sıradaki: K-213'ü kapat → K-216 → K-220 → K-221 → K-217 → sorular → M3 prompt'u.
+

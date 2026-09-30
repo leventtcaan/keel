@@ -48,7 +48,8 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-211 program (V8, 6 şablon taslak) | ✅ birleşti; inceleme: iç içe okuma, eşzamanlı değiştirme 500, kol hacmi K-61 | #165 | `M2/K-211.md` |
 | K-208 besin aralığı + barkod (V9, + H7) | ✅ birleşti; inceleme: etiket sınırı kaynaksız yön, UPC-E, göç yorumu; CI sıralama testini yakaladı | #166 | `M2/K-208.md` |
 | K-209 öğün + günlük bütçe (V10) | ✅ birleşti; inceleme: boş assertion, tekrar gönderim sırası | #167 | `M2/K-209.md` |
-| K-212 Snapshot + karar kaydı (V11) | PR açık (auto-merge inceleme sonrası); inceleme + test analizi çalışıyor | #168 | `M2/K-212.md` |
+| K-212 Snapshot + karar kaydı (V11) | ✅ birleşti; inceleme: döngü sorusu herkesten alınıyordu, yaş 0 → 500, dışa aktarmada yağ alanı | #168 | `M2/K-212.md` |
+| K-213 check-in soruları + soru bütçesi | **PR #171 açık, auto-merge KAPALI**; inceleme ajanları + aktarım dosyası yapılmadı | #171 | `M2/K-213.md` (yazılmadı) |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -56,46 +57,38 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (30 Eyl, üçüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-2.md`)
-Bu oturum M1'i kapattı (#150-#153) ve M2'de K-201, K-202, K-203, K-204, K-205, K-207, K-215'i birleştirdi.
-1. **Açık iş (30 Eyl):** K-209 #167 ✅. **K-212 PR #168** (`../keel-k212`, V11; auto-merge **açılmadı** — inceleme bulguları
-   düzeltilince `gh pr merge --auto --squash 168`). Sıradaki: **K-213** (check-in soruları, soru bütçesi: `GET
-   /v1/check-ins/current`; SLEEP_QUALITY/ENERGY/WAIST cevapları; uyum K-111 kayıtlardan) → **K-216** (kararı hedeflere
-   uygula + geri al; `DailyTargets` bean'ini decision verir) → **K-217** (programa yansıma).
-   **⚠ DİSK DOLU:** Docker açılmıyor → DB testleri yalnız CI'da. Worktree'de yalnız `contracts` için `npm ci` (43 MB);
-   worktree silerken `--force`.
-2. **Sonraki göç numarası V12** (V7 = K-214, V8 = K-211, V9 = K-208, V10 = K-209, V11 = K-212). Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
-   ek yük, tek taraflı) → **K-219** hareket kataloğu 30-40 (+ aliases, setup_fields, clips, review; `data/muscles.yaml`
-   sözlüğü var, bilinmeyen alan reddi var → alan listesini genişlet) → **K-211** program üretimi/içe alma → **K-208** besin
-   eşleme + aralık (FDC toplu içe aktarma, ADR-008 güncellemesi; aralık modeli parametreleri araştırmadan kaynakla) →
-   **K-209** öğün + günlük bütçe (`KcalBalance` eksi olabilir; HEALTH_DATA rıza kapısı) → **K-212** Snapshot + karar kaydı
-   (ADR-003; parametre `versionHash`; `Measurements.dailyWeights`, `Profiles.of`; check-in günü profil saat diliminde) →
-   **K-213** check-in soruları (soru bütçesi parametreden, `reasonCopyKey`) → **K-216** kararı hedeflere uygula (+ undo,
-   `application.state`) → **K-217** programa yansıma (deload `until`, `nextLoadKg/nextReps`, bölgeye göre yük adımı).
-3. **Kurallar (bu koşuda öğrenilenler):**
-   - Her uç noktada: rıza kapısı (sağlık verisi ise, ADR-026), `ApiLimits` (`keel.api`: aralık ≤400 gün, yıl 1900-2200),
-     saklanamayan değer 400 (asla 500), sayılar `Decimals.plain`, clientId idempotency (201/200; başka ebeveyne aynı
-     clientId → 409), PUT cevabı saklananı geri okur. Katı JSON açık (`spring.jackson.*`).
-   - Yeni modül verisi: `*AccountData` (silme dinleyicisi + dışa aktarma bölümü) yaz — `AccountDataTests` veritabanındaki
-     her `account_id` tablosunu kontrol eder, unutulursa kırmızı.
-   - Test yardımcıları: `app.keel.identity.TestSessions` (bearer), `PostgresTestConfiguration`, measurement'ta
-     `MeasurementTestSupport`. Test yapılandırması `src/test/resources/config/application.yml`.
-   - **Mutasyon betiği:** `plan/oturum-promptlari/mutate.py` (kopya). Kullanım: bir JSON listesi
-     `[{name,file,old,new}]` yaz, `MUT_DIR=<modül|.> python3 plan/oturum-promptlari/mutate.py <worktree> '<test filtresi>' <json>`;
-     dosyayı `.bak`'a kopyalar, değiştirir, Gradle testini koşar, `.bak`'tan geri taşır; sonucu Gradle çıktısından okur.
-   - Docker Desktop açık olmalı (`open -a Docker`); yerel DB `cd backend && docker compose up -d` (port 55432, parolasız);
-     yerel çalıştırma `KEEL_SESSION_SECRET=$(openssl rand -base64 32)`.
-4. **Bitiş:** sorular (aşağıdaki liste, 0-14) AskUserQuestion ile toplu → cevapları ADR'ye işle → kalan iş →
-   `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; M3 kabul kriterine ekle: tek uçuşlu refresh, ADR-025) → özet.
-   Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra bu sohbette (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
-
-**Dependabot #2 (30 Eyl, orta):** `decode-uri-component` 0.2.2 ← `query-string` 7.1.3 ← `expo-router` 57. Düzeltme 0.5.0
-(0.x'te ana sürüm atlaması, Expo'nun bağımlılığını ezmek gerekir; ADR-019 madde 6 → zorlamadım). Risk: uygulamanın kendi
-derin bağlantısında bozuk yüzde kodlamalı girdiyle yavaşlama (sunucu değil). M3'te (K-3xx mobil kabuk) Expo güncellemesiyle
-ya da `overrides` + test ile kapatılacak.
-
-**Bilgi (Levent'e, soru değil):** K-113 GS-10 — erkekte ideal bulk hızı (ayda 1 kg) 21 günlük pencerede "sabit" okunur,
-motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "çok hızlı" kuralı M1 kapsamında değil).
+## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
+Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
+K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
+1. **Açık iş — K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
+   KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
+   MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
+   **Kalan:** (a) CI sonucuna bak (ccd_pr `get_status`, `gh` ile yoklama yok); kırmızıysa düzelt; (b) inceleme ajanları
+   (code-reviewer + pr-test-analyzer) `git diff origin/main...HEAD`; bulgular TDD; (c) mutasyon (saf: CheckInQuestions,
+   WaistTrend, missingAnswer); (d) `docs/aktarim/M2/K-213.md` + README satırı (K-212'nin kalıbıyla); (e) `gh pr merge
+   --auto --squash 171`.
+   K-213 tasarımı: soru = motorun bekleyeceği cevap (`WeeklySpine.missingAnswer`, yalnız TRAINING/RECOVERY); motor veriyle
+   ve her olası cevapla kuru çalıştırılır (`CheckInQuestions.needed`); bütçe `quota.yaml` (`QuestionBudget`: 2, veri faza
+   ters ise 5); görünüş haftanın foto kontrolünden, bel `WaistTrend` ile karar penceresinden (`Measurements.photoLook`,
+   `Measurements.waists`); sorulmayan soruya cevap 400. K-212'nin bir testi buna göre değişti (LOOK cevabı → cevapsız).
+2. **Kalan M2 sırası:** **K-216** kararı hedeflere uygula + geri al (decision; `DailyTargets` bean'ini decision sağlar —
+   K-209'daki arayüz; `CallStore.Application` PENDING→APPLIED/UNDONE; plan.target_kcal güncellenir; U3 tek değişken) →
+   **K-220** haftalık uyum kayıtlardan (backlog'a eklendi, #169; WeekTally) → **K-221** TrainingStatus set kaydından (#170)
+   → **K-217** programa yansıma (deload `until`, `nextLoadKg/nextReps`, bölgeye göre yük adımı). Sonraki göç **V12**.
+3. **Kurallar (bu koşuda öğrenilen, hepsi geçerli):** her uç noktada rıza kapısı (sağlık verisi), `ApiLimits`, 400 asla
+   500 (motorun reddettiği veri 409), `Decimals.plain`, clientId idempotency (tekrar gönderim önce saklananı döner), katı
+   JSON, sözleşmede sınırlar (ADR-024 §13), `*AccountData` (silme + dışa aktarma; `AccountDataTests` fixture'ına yeni tablo
+   verisi ekle), satır eşleyicide sorgu yok (düz sorgular), U4 yağ tahmini hiçbir çıktıda yok.
+   - **⚠ DİSK DOLU:** Mac'te ~1 GB boş, Docker açılmıyor → DB testleri yalnız CI'da. Worktree'de yalnız `contracts` için
+     `npm ci` (43 MB); mobil `node_modules` kurma. Worktree silerken `--force`.
+   - **PR takibi:** PR açınca ccd_pr `get_status` (CI'yı `gh pr checks` ile yoklama).
+   - **Mutasyon betiği** `plan/oturum-promptlari/mutate.py` (düzeltildi: içeriği geri yazar + sonda yeniden derler).
+     Kullanım: `MUT_DIR=. python3 plan/oturum-promptlari/mutate.py ../keel-<iş> '<tek test sınıfı>' <json>`; DB testi
+     içeren filtre verme (Docker yokken her mutantı "öldü" sayar).
+   - RED geçerliliği: iskelet null dönerse NPE → geçerli RED değil; iskelet gerçek ama eksik değer döndürsün.
+4. **Bitiş:** sorular (aşağıdaki liste, 0-18) AskUserQuestion ile toplu → cevapları ADR'ye işle → kalan iş →
+   `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; kabul kriterlerine: tek uçuşlu refresh ADR-025, UPC-E sunucuda açılır,
+   Dependabot #2) → özet. Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 
 ## Session sonunda Levent'e sorulacaklar (toplu, AskUserQuestion)
 0. **(K-113 A, sağlık)** Haftada ~0,5 kg veren erkek tek sabit haftada kalori kesintisi alıyor (L-10 payı 0,58 kg iki
