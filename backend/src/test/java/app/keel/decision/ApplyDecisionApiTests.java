@@ -260,6 +260,47 @@ class ApplyDecisionApiTests {
     }
 
     @Test
+    void aMiniCutCutsFromTodayUntilItsLongestWeeksAndUndoPutsTheBulkBack() throws Exception {
+        // K-227, G7 K-102.
+        AccountId account = onABulkOf(2600);
+        UUID miniCut = pending(account, new Action.MiniCut(4, 6));
+
+        assertThat(send(account, "POST", "/v1/decisions/" + miniCut + "/apply")).hasStatusOk();
+
+        assertThat(store.plan(account)).hasValueSatisfying(plan -> {
+            assertThat(plan.phase()).isEqualTo(Phase.CUT);
+            assertThat(plan.phaseStart()).isEqualTo(TODAY);
+            assertThat(plan.planStart()).isEqualTo(TODAY);
+            assertThat(plan.observingMaintenance()).isFalse();
+            assertThat(plan.miniCutUntil()).isEqualTo(TODAY.plusWeeks(6));
+            assertThat(plan.targetKcal()).isLessThan(2600);
+        });
+        assertThat(send(account, "POST", "/v1/decisions/" + miniCut + "/undo")).hasStatusOk();
+        assertThat(store.plan(account)).contains(new CallStore.Plan(Phase.BULK, PLAN_START, PLAN_START, 2600, false, null, null));
+    }
+
+    @Test
+    void theMiniCutIsOneMinimumCutStepUnderTheMaintenanceItsEndGoesBackTo() throws Exception {
+        // Its end is a change of phase to building, which starts at the maintenance estimate (K-222): the step between
+        // the two is the mini cut's, cut_step_min_kcal (G7 K-97) — the body here is far from any floor.
+        AccountId account = onABulkOf(2600);
+        send(account, "POST", "/v1/decisions/" + pending(account, new Action.MiniCut(4, 6), TODAY.minusWeeks(1), Instant.now().minusSeconds(3600))
+                + "/apply");
+        CallStore.Plan onIt = store.plan(account).orElseThrow();
+        UUID over = pending(account, new Action.ChangePhase(Phase.BULK), CheckInWeek.weekOf(TODAY, java.time.DayOfWeek.MONDAY), Instant.now(),
+                onIt.targetKcal());
+
+        assertThat(send(account, "POST", "/v1/decisions/" + over + "/apply")).hasStatusOk();
+
+        CallStore.Plan back = store.plan(account).orElseThrow();
+        assertThat(back.phase()).isEqualTo(Phase.BULK);
+        assertThat(back.miniCutUntil()).isNull();
+        assertThat(back.targetKcal() - onIt.targetKcal()).isEqualTo(steps(ParameterKey.CUT_STEP_MIN_KCAL));
+        Map<String, Object> export = map(send(account, "GET", "/v1/account/export"));
+        assertThat(JSON.writeValueAsString(export)).contains("\"miniCutUntil\":\"" + TODAY.plusWeeks(6) + "\"");
+    }
+
+    @Test
     void moreMovementRaisesOnlyTheStepTarget() throws Exception {
         AccountId account = onACut();
         UUID call = pending(account, new Action.ChangeMovement());
@@ -438,6 +479,15 @@ class ApplyDecisionApiTests {
         jdbc.sql("""
                 insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
                 values (:a, 'CUT', :start, :start, :target, false)""").param("a", account.value()).param("start", PLAN_START)
+                .param("target", targetKcal).update();
+        return account;
+    }
+
+    private AccountId onABulkOf(int targetKcal) {
+        AccountId account = ready();
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'BULK', :start, :start, :target, false)""").param("a", account.value()).param("start", PLAN_START)
                 .param("target", targetKcal).update();
         return account;
     }

@@ -142,6 +142,10 @@
       "low_energy_safety": {
         "title": "Your plan pauses here.",
         "body": "What you told us is a sign your body needs more fuel. No more eating under your needs: calories stay at least at maintenance, and it's worth talking to your doctor about it."
+      },
+      "mini_cut_over": {
+        "title": "The short cut is done: back to building.",
+        "body": "The weeks of eating less are over. Calories go back up to where building starts, and the bulk picks up where it left off."
       }
     },
     "stop_load_increase": {
@@ -189,6 +193,10 @@
       "energy_floor": {
         "title": "Calories stay where they are.",
         "body": "Going lower would leave too little fuel after your training. Progress may be slower from here, and that's the safe side to be on."
+      },
+      "mini_cut_running": {
+        "title": "Hold steady: the short cut runs its weeks.",
+        "body": "Calories stay where the short cut set them until it ends, whatever the scale does this week. Then the bulk picks up again."
       }
     },
     "fix_adherence": {
@@ -228,7 +236,7 @@
       "label": "Short cut",
       "appetite_gone": {
         "title": "A short cut to bring your appetite back.",
-        "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating a bit under your needs resets your appetite and clears the fat the bulk added; then the bulk picks up again."
+        "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating less than on the bulk resets your appetite and clears some of the fat the bulk added; then the bulk picks up again."
       }
     }
   },
@@ -524,12 +532,14 @@
     "question": {
       "training": "How did training go this week?",
       "recovery": "How are you recovering between sessions?",
-      "cycle_stopped": "Has your period stopped in recent months?"
+      "cycle_stopped": "Has your period stopped in recent months?",
+      "appetite": "How's your appetite lately?"
     },
     "reason": {
       "training": "How training goes decides what changes next: food, or how you train.",
       "recovery": "How you recover decides whether the next change is food or rest.",
-      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is."
+      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is.",
+      "appetite": "After a long bulk, forcing food down is a sign the bulk has stopped paying off."
     },
     "choice": {
       "training": {
@@ -544,6 +554,10 @@
       "cycle_stopped": {
         "yes": "Yes",
         "no": "No"
+      },
+      "appetite": {
+        "normal": "Normal, I eat what I planned",
+        "gone": "Gone, I force food down"
       }
     }
   },

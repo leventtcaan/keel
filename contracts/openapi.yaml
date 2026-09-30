@@ -743,9 +743,11 @@ paths:
         without a profile yet are 409 CONFLICT. A goal of DECIDE_FOR_ME starts where the phase gate puts the fat estimate,
         a cut without one. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/decisions route.
         Taken: TRAINING and RECOVERY, the questions the engine can wait for — also when the data has changed since they
-        were asked, so a question shown is never refused — and CYCLE_STOPPED (YES/NO) from a woman: asked in the low energy
-        band, never kept, a man's is VALIDATION_FAILED. Any other kind is VALIDATION_FAILED (400): how it looks and the
-        waist come from the data, the rest are read with their own questions later.
+        were asked, so a question shown is never refused —, APPETITE (NORMAL/GONE: asked on a long bulk when GONE would
+        change the call, inside the week's budget; a gone appetite is the mini cut's reason) and CYCLE_STOPPED (YES/NO)
+        from a woman: asked in the low energy band or when the call would wait for it after a hard stop, never kept, a
+        man's is VALIDATION_FAILED. Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from the
+        data, the rest are read with their own questions later.
       requestBody:
         required: true
         content:
@@ -820,12 +822,14 @@ paths:
       description: |
         Only the latest call, only while PENDING, and only on the plan target it judged (else 409: another call moved the
         plan while this one was being made). Applied twice (or by two requests at once), the targets move once. A
-        calorie call moves the calorie target (and restarts its wait); more movement raises the step target. CONFLICT (409):
-        an older call, one that changes nothing (NOT_NEEDED), one undone, a training call without a program to change,
-        and a call whose kind is not applied yet — a phase change, a mini cut and the hard stop need what the engine
-        cannot read yet. The deload ladder's calls change the program (K-217): hold the load from today; a lighter week or
-        a week off from today to the day before the call's nextReview. NOT_FOUND for an unknown id. Health data:
-        CONSENT_REQUIRED without the HEALTH_DATA consent.
+        calorie call moves the calorie target (and restarts its wait); more movement raises the step target. A change of
+        phase (the hard stop's too, marked `safety`) starts the new direction today at the maintenance estimate, watched;
+        the hard stop never under maintenance and is not undone. A mini cut is a cut from today at the engine's target
+        (one cut step under maintenance, or maintenance under a safety floor), not watched, until its longest length is
+        over; the engine turns it back to building on that day. CONFLICT (409): an older call, one that changes nothing
+        (NOT_NEEDED), one undone, a training call without a program to change. The deload ladder's calls change the
+        program (K-217): hold the load from today; a lighter week or a week off from today to the day before the call's
+        nextReview. NOT_FOUND for an unknown id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
       responses:
         "200":
           description: The targets after the call

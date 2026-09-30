@@ -63,6 +63,17 @@ class StoredSnapshotTests {
     }
 
     @Test
+    void theMiniCutsDayIsKeptAndACallKeptBeforeItReadsAsNoMiniCut() throws Exception {
+        // K-227: the call is made again the same only with the day the mini cut ends.
+        Snapshot onIt = full(false).withMiniCutUntil(TODAY.plusWeeks(2));
+        assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(onIt)), StoredSnapshot.class).toSnapshot()).isEqualTo(onIt);
+
+        String before = JSON.writeValueAsString(StoredSnapshot.of(full(false))).replace(",\"miniCutUntil\":null", "");
+        assertThat(before).doesNotContain("miniCutUntil");
+        assertThat(JSON.readValue(before, StoredSnapshot.class).toSnapshot()).isEqualTo(full(false));
+    }
+
+    @Test
     void twoFatEstimatesComeBackBoth() throws Exception {
         Snapshot two = full(false).withFatProxy(new BigDecimal("15"), new BigDecimal("32.2"));
 

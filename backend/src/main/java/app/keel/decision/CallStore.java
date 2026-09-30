@@ -20,8 +20,17 @@ class CallStore {
 
     enum Application { NOT_NEEDED, PENDING, APPLIED, UNDONE }
 
-    /** {@code stepsPerDay} null: no step target set yet, the starting one applies (K-216). */
-    record Plan(Phase phase, LocalDate phaseStart, LocalDate planStart, Integer targetKcal, boolean observingMaintenance, Integer stepsPerDay) {
+    /**
+     * {@code stepsPerDay} null: no step target set yet, the starting one applies (K-216). {@code miniCutUntil} null: not on
+     * a mini cut (K-227).
+     */
+    record Plan(Phase phase, LocalDate phaseStart, LocalDate planStart, Integer targetKcal, boolean observingMaintenance, Integer stepsPerDay,
+            LocalDate miniCutUntil) {
+
+        /** A plan not on a mini cut. */
+        Plan(Phase phase, LocalDate phaseStart, LocalDate planStart, Integer targetKcal, boolean observingMaintenance, Integer stepsPerDay) {
+            this(phase, phaseStart, planStart, targetKcal, observingMaintenance, stepsPerDay, null);
+        }
     }
 
     /** {@code appliedAt} and the plan before and after it are set once the call is applied; {@code undoneAt} once undone (K-216). */
@@ -51,18 +60,20 @@ class CallStore {
         return jdbc.sql("select * from decision.plan where account_id = :account").param("account", account.value())
                 .query((row, n) -> new Plan(Phase.valueOf(row.getString("phase")), row.getObject("phase_start", LocalDate.class),
                         row.getObject("plan_start", LocalDate.class), row.getObject("target_kcal", Integer.class),
-                        row.getBoolean("observing_maintenance"), row.getObject("steps_per_day", Integer.class)))
+                        row.getBoolean("observing_maintenance"), row.getObject("steps_per_day", Integer.class),
+                        row.getObject("mini_cut_until", LocalDate.class)))
                 .optional();
     }
 
     /** The first plan; a plan written at the same moment by another request wins and is read back. */
     Plan start(AccountId account, Plan plan) {
         jdbc.sql("""
-                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance, steps_per_day)
-                values (:account, :phase, :phaseStart, :planStart, :target, :observing, :steps) on conflict (account_id) do nothing""")
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance, steps_per_day,
+                    mini_cut_until)
+                values (:account, :phase, :phaseStart, :planStart, :target, :observing, :steps, :miniCutUntil) on conflict (account_id) do nothing""")
                 .param("account", account.value()).param("phase", plan.phase().name()).param("phaseStart", plan.phaseStart())
                 .param("planStart", plan.planStart()).param("target", plan.targetKcal()).param("observing", plan.observingMaintenance())
-                .param("steps", plan.stepsPerDay()).update();
+                .param("steps", plan.stepsPerDay()).param("miniCutUntil", plan.miniCutUntil()).update();
         return plan(account).orElseThrow();
     }
 
@@ -70,10 +81,10 @@ class CallStore {
     void replace(AccountId account, Plan plan) {
         jdbc.sql("""
                 update decision.plan set phase = :phase, phase_start = :phaseStart, plan_start = :planStart, target_kcal = :target,
-                observing_maintenance = :observing, steps_per_day = :steps where account_id = :account""")
+                observing_maintenance = :observing, steps_per_day = :steps, mini_cut_until = :miniCutUntil where account_id = :account""")
                 .param("account", account.value()).param("phase", plan.phase().name()).param("phaseStart", plan.phaseStart())
                 .param("planStart", plan.planStart()).param("target", plan.targetKcal()).param("observing", plan.observingMaintenance())
-                .param("steps", plan.stepsPerDay()).update();
+                .param("steps", plan.stepsPerDay()).param("miniCutUntil", plan.miniCutUntil()).update();
     }
 
     /**

@@ -94,13 +94,55 @@ class ApplyDecisionTests {
 
     @Test
     void callsThatCannotBeAppliedYetChangeNothing() {
-        // Training calls change the program, not the plan (K-217, TrainingCalls); the mini cut waits for the appetite
-        // question the engine needs to make it (K-222 scope). Not yet, continue and advice have nothing to apply.
+        // Training calls change the program, not the plan (K-217, TrainingCalls); the mini cut needs its target (K-227,
+        // the overload with it). Not yet, continue and advice have nothing to apply.
         for (Action action : List.of(new Action.StopLoadIncrease(), new Action.Deload(new BigDecimal("0.5")), new Action.FullRestWeek(),
                 new Action.MiniCut(2, 4), new Action.NoDecisionYet(),
                 new Action.Continue(), new Action.FixTraining(), new Action.FixRecovery(), new Action.FixAdherence())) {
             assertThat(PlanChange.after(CUT, action, TODAY, P, Optional.empty())).as(action.type().name()).isEmpty();
         }
+    }
+
+    @Test
+    void aMiniCutStartsTodayAsACutAtItsTargetUntilItsLongestWeeks() {
+        // K-227, G7 K-102: a few weeks under maintenance, from today; not watched — the target is not the formula's
+        // estimate being observed. It ends on the day its longest length is over (the engine turns it back then).
+        CallStore.Plan bulk = new CallStore.Plan(Phase.BULK, TODAY.minusDays(200), TODAY.minusDays(20), 3000, false, 9000);
+
+        assertThat(PlanChange.after(bulk, new Action.MiniCut(4, 6), TODAY, P, Optional.of(2800), Optional.of(2300)))
+                .contains(new CallStore.Plan(Phase.CUT, TODAY, TODAY, 2300, false, 9000, TODAY.plusWeeks(6)));
+        assertThat(PlanChange.after(bulk, new Action.MiniCut(4, 6), TODAY, P, Optional.of(2800), Optional.empty()))
+                .as("without its target there is nothing to apply").isEmpty();
+        CallStore.Plan startsTomorrow = new CallStore.Plan(Phase.BULK, TODAY.minusDays(200), TODAY.plusDays(1), 3000, false, null);
+        assertThat(PlanChange.after(startsTomorrow, new Action.MiniCut(4, 6), TODAY, P, Optional.empty(), Optional.of(2300)))
+                .as("a plan started later on the calendar").contains(new CallStore.Plan(Phase.CUT, TODAY.plusDays(1), TODAY.plusDays(1), 2300, false,
+                        null, TODAY.plusDays(1).plusWeeks(6)));
+    }
+
+    @Test
+    void onAMiniCutCaloriesAndMovementKeepItsDayAndANewDirectionEndsIt() {
+        CallStore.Plan mini = new CallStore.Plan(Phase.CUT, TODAY.minusDays(14), TODAY.minusDays(14), 2300, false, 9000, TODAY.plusWeeks(4));
+
+        for (Action keeps : List.of(new Action.AdjustCalories(-500), new Action.IncreaseCalories(250), new Action.ChangeMovement())) {
+            assertThat(PlanChange.after(mini, keeps, TODAY, P, Optional.of(2800))).as(keeps.type().name())
+                    .hasValueSatisfying(after -> assertThat(after.miniCutUntil()).isEqualTo(TODAY.plusWeeks(4)));
+        }
+        for (Action ends : List.of(new Action.ChangePhase(Phase.BULK), new Action.HardStop())) {
+            assertThat(PlanChange.after(mini, ends, TODAY, P, Optional.of(2800))).as(ends.type().name())
+                    .hasValueSatisfying(after -> assertThat(after.miniCutUntil()).isNull());
+        }
+    }
+
+    @Test
+    void aPlanKeptBeforeTheMiniCutReadsAsNotOnOne() throws Exception {
+        // The plan before and after each applied call is kept as JSON (K-216); those kept before K-227 have no mini cut day.
+        tools.jackson.databind.json.JsonMapper json = tools.jackson.databind.json.JsonMapper.builder().build();
+        String kept = "{\"phase\":\"CUT\",\"phaseStart\":\"2026-08-03\",\"planStart\":\"2026-09-07\",\"targetKcal\":2600,"
+                + "\"observingMaintenance\":false,\"stepsPerDay\":null}";
+
+        assertThat(json.readValue(kept, CallStore.Plan.class)).isEqualTo(CUT);
+        CallStore.Plan onIt = new CallStore.Plan(Phase.CUT, TODAY, TODAY, 2100, false, null, TODAY.plusWeeks(6));
+        assertThat(json.readValue(json.writeValueAsString(onIt), CallStore.Plan.class)).isEqualTo(onIt);
     }
 
     @Test

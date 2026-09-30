@@ -181,6 +181,47 @@ class QuestionBudgetTests {
     }
 
     @Test
+    void appetiteIsAskedWhenItsAnswerWouldChangeTheCallAndTheBudgetHasRoom() {
+        // K-227, G7 K-102: a long bulk whose appetite has gone gets a mini cut — only the user can say so. Asked after the
+        // engine's own questions, inside the budget (U9: few questions).
+        Function<CheckIn, Decision> longBulk = checkIn -> checkIn.appetite() == CheckIn.Appetite.GONE ? miniCut() : SPINE.apply(checkIn);
+        CheckIn trainingAndRecoveryKnown = CheckIn.NONE.withTraining(CheckIn.Training.STABLE).withRecovery(CheckIn.Recovery.GOOD);
+
+        assertThat(CheckInQuestions.needed(longBulk, trainingAndRecoveryKnown, 2)).containsExactly(Answers.Kind.APPETITE);
+        assertThat(CheckInQuestions.needed(longBulk, CheckIn.NONE, 3))
+                .containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY, Answers.Kind.APPETITE);
+        assertThat(CheckInQuestions.needed(longBulk, CheckIn.NONE, 2)).as("the budget is full").containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+        assertThat(CheckInQuestions.needed(SPINE, trainingAndRecoveryKnown, 2)).as("an answer that changes nothing").isEmpty();
+    }
+
+    @Test
+    void afterAHardStopAGoneAppetiteAlsoAsksTheCycle() {
+        // K-227 review: held after a hard stop (K-229), a gone appetite would make a mini cut — a deficit — so the call
+        // would wait for the cycle question: it is asked in the same check-in.
+        Function<CheckIn, Decision> held = checkIn -> checkIn.appetite() == CheckIn.Appetite.GONE ? waiting("cycle_check_needed") : SPINE.apply(checkIn);
+        CheckIn known = CheckIn.NONE.withTraining(CheckIn.Training.STABLE).withRecovery(CheckIn.Recovery.GOOD);
+
+        List<Answers.Kind> asked = CheckInQuestions.needed(held, known, 2);
+
+        assertThat(asked).containsExactly(Answers.Kind.APPETITE);
+        assertThat(CheckInQuestions.cycleAwaited(held, known, asked)).isTrue();
+        assertThat(CheckInQuestions.cycleAwaited(SPINE, known, CheckInQuestions.needed(SPINE, known, 2))).isFalse();
+    }
+
+    @Test
+    void appetiteIsAChoiceOfNormalOrGoneWithItsWordsAndIsTaken() {
+        Map<String, Object> copy = copy();
+        CheckInQuestions.Question question = CheckInQuestions.describe(Answers.Kind.APPETITE);
+
+        assertThat(question).isEqualTo(new CheckInQuestions.Question(Answers.Kind.APPETITE, "CHOICE", List.of("NORMAL", "GONE"),
+                "checkIn.question.appetite", "checkIn.reason.appetite"));
+        for (String key : List.of(question.copyKey(), question.reasonCopyKey(), "checkIn.choice.appetite.normal", "checkIn.choice.appetite.gone")) {
+            assertThat(lookUp(copy, key)).as(key).isInstanceOf(String.class);
+        }
+        assertThat(CheckInQuestions.answerable(Answers.Kind.APPETITE)).isTrue();
+    }
+
+    @Test
     void theCycleQuestionIsAYesOrNoWithItsWords() {
         Map<String, Object> copy = copy();
         CheckInQuestions.Question question = CheckInQuestions.describe(Answers.Kind.CYCLE_STOPPED);
@@ -246,6 +287,12 @@ class QuestionBudgetTests {
         return new Decision(new Action.NoDecisionYet(), List.of(new Reason(new RuleId(rule),
                 new Source("arastirma/03-guray-karar-omurgasi.md#2.4", SourceTag.EXPERIENCE))), Confidence.MEDIUM, LocalDate.of(2026, 10, 5),
                 new CopyKey("decision.no_decision_yet.x"));
+    }
+
+    private static Decision miniCut() {
+        return new Decision(new Action.MiniCut(4, 6), List.of(new Reason(new RuleId("appetite_gone"),
+                new Source("arastirma/ham/guray/G7-whisper-arsiv.md#K-102", SourceTag.EXPERIENCE))), Confidence.MEDIUM, LocalDate.of(2026, 10, 5),
+                new CopyKey("decision.mini_cut.appetite_gone"));
     }
 
     private static Decision decided() {

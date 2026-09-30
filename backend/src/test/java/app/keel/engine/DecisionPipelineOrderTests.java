@@ -57,6 +57,41 @@ class DecisionPipelineOrderTests {
         assertThat(DecisionPipeline.decide(lean, FEMALE).action()).isEqualTo(new Action.HardStop());
     }
 
+    // K-227 review: a stopped cycle on the mini cut's last day is the hard stop (U13), not "back to building".
+    @Test
+    void theSafetyNetComesBeforeTheMiniCutsEnd() {
+        Snapshot lastDay = new Snapshot(TODAY, Sex.FEMALE, Phase.CUT, TODAY.minusDays(27), weekly("60.0", "59.6", "59.2", "58.8"),
+                Optional.of(new BigDecimal("18"))).withCheckIn(ON_PLAN).withEnergy(new EnergyBudget(2000, 300))
+                .withProfile(new Profile(30, 165)).withMenstrualLossReported(true).withMiniCutUntil(TODAY);
+
+        assertThat(DecisionPipeline.decide(lastDay, FEMALE).action()).isEqualTo(new Action.HardStop());
+    }
+
+    // K-227: the mini cut ends on its day even in a week training goes wrong — one change a week (U3), the rest next.
+    @Test
+    void theMiniCutsEndComesBeforeTrainingGoingWrong() {
+        Snapshot lastDay = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(27), weekly("80.0", "79.6", "79.2", "78.8"),
+                Optional.of(new BigDecimal("18"))).withCheckIn(ON_PLAN).withEnergy(new EnergyBudget(2300, 300))
+                .withProfile(new Profile(30, 180)).withTraining(PLAN_MISSED).withMiniCutUntil(TODAY);
+
+        assertThat(DecisionPipeline.decide(lastDay.withMiniCutUntil(TODAY.plusDays(1)), MALE).action()).as("the day not come yet")
+                .isEqualTo(new Action.FullRestWeek());
+        assertThat(DecisionPipeline.decide(lastDay, MALE).action()).isEqualTo(new Action.ChangePhase(Phase.BULK));
+    }
+
+    // ADR-030 #32: while a mini cut runs, the spine's calorie steps wait for its day (G7 K-102 sets weeks of deficit, not
+    // a deeper one); after it, a flat cut steps down as usual.
+    @Test
+    void aMiniCutHoldsItsCaloriesUntilItsDay() {
+        Snapshot flatCut = user(Phase.CUT, weekly("80.0", "80.0", "80.0"));
+
+        assertThat(DecisionPipeline.decide(flatCut, MALE).action()).as("an ordinary cut").isEqualTo(new Action.AdjustCalories(-500));
+        Decision onIt = DecisionPipeline.decide(flatCut.withMiniCutUntil(TODAY.plusWeeks(2)), MALE);
+        assertThat(onIt.action()).isEqualTo(new Action.Continue());
+        assertThat(onIt.reasons().getFirst().rule()).isEqualTo(MiniCutGate.MINI_CUT_RUNNING);
+        assertThat(EngineFixtures.copyGroup(onIt.copyKey())).containsKeys("title", "body");
+    }
+
     // ADR-022 step 2 before step 4.
     @Test
     void trainingGoingWrongComesBeforeThePhaseGateAndTheMiniCut() {

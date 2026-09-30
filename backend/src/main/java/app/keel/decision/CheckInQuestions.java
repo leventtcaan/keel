@@ -54,15 +54,21 @@ final class CheckInQuestions {
                 choices(kind).forEach(choice -> toTry.add(answered(checkIn, kind, choice)));
             });
         }
+        // Appetite (K-227, G7 K-102): the engine never waits for it — a long bulk simply goes on — but only the user can
+        // say it has gone. Asked when that answer would change the call, after the engine's own questions and inside the
+        // budget.
+        if (asked.size() < budget && !engine.apply(dataSays.withAppetite(CheckIn.Appetite.GONE)).equals(engine.apply(dataSays))) {
+            asked.add(Answers.Kind.APPETITE);
+        }
         return List.copyOf(asked.subList(0, Math.min(budget, asked.size())));
     }
 
     /**
-     * Whether an answer of this kind is taken: a question the engine can wait for, asked this week or not — and the cycle
-     * question, whose answer is a woman's (Answers).
+     * Whether an answer of this kind is taken: a question the engine can wait for, asked this week or not — the cycle
+     * question, whose answer is a woman's (Answers), and appetite (K-227).
      */
     static boolean answerable(Answers.Kind kind) {
-        return kind == Answers.Kind.CYCLE_STOPPED || Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
+        return kind == Answers.Kind.CYCLE_STOPPED || kind == Answers.Kind.APPETITE || Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
     }
 
     /** Whether the cycle question is asked (V4, ADR-020 L-1): a woman whose plan is in the low energy band. */
@@ -107,6 +113,7 @@ final class CheckInQuestions {
             case TRAINING -> CheckIn.Training.values();
             case RECOVERY -> CheckIn.Recovery.values();
             case CYCLE_STOPPED -> Answers.Cycle.values();
+            case APPETITE -> CheckIn.Appetite.values();
             default -> throw new IllegalArgumentException(kind + " is not a question the engine waits for");
         };
         return Arrays.stream(values).map(Enum::name).filter(name -> !name.equals("UNKNOWN")).toList();
@@ -118,6 +125,7 @@ final class CheckInQuestions {
                     checkIn.adherence(), checkIn.appetite());
             case RECOVERY -> new CheckIn(checkIn.look(), checkIn.training(), CheckIn.Recovery.valueOf(choice), checkIn.waist(),
                     checkIn.adherence(), checkIn.appetite());
+            case APPETITE -> checkIn.withAppetite(CheckIn.Appetite.valueOf(choice));
             default -> throw new IllegalArgumentException(kind + " is not a question the engine waits for");
         };
     }

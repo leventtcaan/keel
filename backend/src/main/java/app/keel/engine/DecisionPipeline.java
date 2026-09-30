@@ -11,6 +11,7 @@ import java.util.Optional;
  *
  * <ol>
  *   <li>Safety net (U13): the one hard stop, low energy, losing too fast.</li>
+ *   <li>The mini cut's day has come (K-227): back to building, whatever else would wait.</li>
  *   <li>Training going wrong — a plan missed two weeks running, or last week's loads lost (G7 K-68/K-70/K-73): Güray's
  *       tree fixes training before any food decision.</li>
  *   <li>Maintenance being observed (G2 K-8) · not enough weight data (U8): nothing about food yet.</li>
@@ -50,6 +51,10 @@ public final class DecisionPipeline {
     }
 
     private static Decision afterTheSafetyNet(Snapshot snapshot, Parameters parameters) {
+        Optional<Decision> miniCutOver = MiniCutGate.over(snapshot, parameters);
+        if (miniCutOver.isPresent()) {
+            return miniCutOver.get();
+        }
         Optional<Decision> ladder = snapshot.training().flatMap(status -> DeloadLadder.check(status, snapshot, parameters));
         if (ladder.isPresent() && trainingGoingWrong(ladder.get())) {
             return ladder.get();
@@ -64,7 +69,7 @@ public final class DecisionPipeline {
         }
         Decision weekly = switch (WeeklySpine.evaluate(snapshot, parameters)) {
             case SpineResult.Decided(Decision decided) -> decided;
-            case SpineResult.CaloriesNeeded need -> calorieStep(need, snapshot, parameters);
+            case SpineResult.CaloriesNeeded need -> MiniCutGate.running(snapshot).orElseGet(() -> calorieStep(need, snapshot, parameters));
         };
         boolean quiet = weekly.action() instanceof Action.Continue || weekly.action() instanceof Action.NoDecisionYet;
         if (quiet && ladder.isPresent()) {

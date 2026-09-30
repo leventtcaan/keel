@@ -31,12 +31,13 @@ import java.util.Objects;
  *     waits for the cycle question (ADR-028 #23)
  * @param cycleResolved this week's answer to that question is "not stopped". Health data like menstrualLossReported:
  *     never kept, hidden from toString
+ * @param miniCutUntil the day the mini cut the plan is on ends (K-227, G7 K-102); empty on any other plan
  */
 public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
         Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn,
         Optional<Profile> profile, boolean observingMaintenance,
         LocalDate phaseStart, Optional<TrainingStatus> training, Optional<BigDecimal> fatProxyHighPct, boolean safetyHold,
-        boolean cycleResolved) {
+        boolean cycleResolved, Optional<LocalDate> miniCutUntil) {
 
     public Snapshot {
         Objects.requireNonNull(today, "today");
@@ -51,6 +52,7 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         Objects.requireNonNull(phaseStart, "phaseStart");
         Objects.requireNonNull(training, "training");
         Objects.requireNonNull(fatProxyHighPct, "fatProxyHighPct");
+        Objects.requireNonNull(miniCutUntil, "miniCutUntil");
         if (fatProxyPct.isPresent() != fatProxyHighPct.isPresent()) {
             throw new IllegalArgumentException("A fat estimate has a lower and a higher value, or neither");
         }
@@ -77,7 +79,7 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         return "Snapshot[today=" + today + ", sex=" + sex + ", phase=" + phase + ", planStart=" + planStart
                 + ", weights=" + weights.weighIns().size() + " weigh-ins, fatProxyPct=" + (fatProxyPct.isPresent() ? "<hidden>" : "none")
                 + ", energy=" + energy.map(Object::toString).orElse("none") + ", menstrualLossReported=<hidden>, safetyHold=" + safetyHold
-                + ", cycleResolved=<hidden>, checkIn=" + checkIn + "]";
+                + ", cycleResolved=<hidden>, miniCutUntil=" + miniCutUntil.map(Object::toString).orElse("none") + ", checkIn=" + checkIn + "]";
     }
 
     /** A Snapshot without a body-fat estimate (none measured yet). */
@@ -89,6 +91,14 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
     public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
             Optional<BigDecimal> fatProxyPct) {
         this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE, Optional.empty(), false, planStart, Optional.empty());
+    }
+
+    /** Every input but the mini cut's end (not on one). */
+    public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights, Optional<BigDecimal> fatProxyPct,
+            Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn, Optional<Profile> profile, boolean observingMaintenance,
+            LocalDate phaseStart, Optional<TrainingStatus> training, Optional<BigDecimal> fatProxyHighPct, boolean safetyHold, boolean cycleResolved) {
+        this(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart,
+                training, fatProxyHighPct, safetyHold, cycleResolved, Optional.empty());
     }
 
     /** Every input but the safety hold (none) and its answer. */
@@ -115,48 +125,54 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
     /** Two estimates that disagree (K-224 review): each rule reads the one that is cautious for it. */
     public Snapshot withFatProxy(BigDecimal lowerPct, BigDecimal higherPct) {
         return new Snapshot(today, sex, phase, planStart, weights, Optional.of(lowerPct), energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training, Optional.of(higherPct), safetyHold, cycleResolved);
+                observingMaintenance, phaseStart, training, Optional.of(higherPct), safetyHold, cycleResolved, miniCutUntil);
     }
 
     public Snapshot withEnergy(EnergyBudget budget) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil);
     }
 
     public Snapshot withMenstrualLossReported(boolean reported) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil);
     }
 
     public Snapshot withCheckIn(CheckIn answers) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil);
     }
 
     public Snapshot withProfile(Profile facts) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil);
     }
 
     public Snapshot withObservingMaintenance(boolean observing) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil);
     }
 
     public Snapshot withPhaseStart(LocalDate day) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, day, training, fatProxyHighPct, safetyHold, cycleResolved);
+                observingMaintenance, day, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil);
     }
 
     public Snapshot withTraining(TrainingStatus status) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, Optional.of(status), fatProxyHighPct, safetyHold, cycleResolved);
+                observingMaintenance, phaseStart, Optional.of(status), fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil);
     }
 
     /** After a hard stop, until a deficit is opened again (K-229). */
     public Snapshot withSafetyHold(boolean held) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training, fatProxyHighPct, held, cycleResolved);
+                observingMaintenance, phaseStart, training, fatProxyHighPct, held, cycleResolved, miniCutUntil);
     }
 
     /** This week's answer to the cycle question is "not stopped" (K-229; never kept). */
     public Snapshot withCycleResolved(boolean resolved) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, resolved);
+                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, resolved, miniCutUntil);
+    }
+
+    /** On a mini cut that ends on this day (K-227). */
+    public Snapshot withMiniCutUntil(LocalDate day) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
+                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, Optional.of(day));
     }
 }
