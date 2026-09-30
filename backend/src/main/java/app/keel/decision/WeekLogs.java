@@ -1,6 +1,5 @@
 package app.keel.decision;
 
-import app.keel.engine.Consistency;
 import app.keel.engine.MacroTargets;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
@@ -14,9 +13,14 @@ import app.keel.training.TrainingLog;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
@@ -30,8 +34,10 @@ class WeekLogs {
     private final TrainingLog training;
     private final Measurements measurements;
     private final MealTotals meals;
+    private final CallStore calls;
 
-    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals) {
+    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals, CallStore calls) {
+        this.calls = calls;
         this.training = training;
         this.measurements = measurements;
         this.meals = meals;
@@ -43,7 +49,7 @@ class WeekLogs {
      */
     Optional<BigDecimal> adherence(AccountId account, ProfileFacts profile, LocalDate today, CallStore.Plan plan, Optional<BigDecimal> bodyweight,
             int ageYears, Parameters parameters) {
-        List<LocalDate> weeks = WeekTallies.weeks(today, parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS));
+        List<LocalDate> weeks = WeekTallies.weeks(today, parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS), plan.phaseStart());
         if (weeks.isEmpty()) {
             return Optional.empty();
         }
@@ -59,7 +65,27 @@ class WeekLogs {
                 measurements.stepsByDay(account, from, to));
         int proteinG = bodyweight.map(kg -> MacroTargets.proteinG(kg, Sex.valueOf(profile.sex().name()), ageYears, parameters)).orElse(0);
         WeekTallies.Plan asked = new WeekTallies.Plan(profile.trainingDays().size(), parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK), proteinG,
-                PlanChange.steps(plan, parameters));
-        return Consistency.windowRatio(WeekTallies.of(weeks, logs, asked));
+                stepTargets(account, plan, zone, parameters));
+        return WeekTallies.adherence(weeks, logs, asked);
+    }
+
+    /**
+     * The step target of each day: a step day is judged against the target in force that day, not today's (K-220
+     * review — else raising it would call the weeks before a miss). Changed only by applied calls; an undone one is as
+     * if never applied.
+     */
+    private Function<LocalDate, Integer> stepTargets(AccountId account, CallStore.Plan plan, ZoneId zone, Parameters parameters) {
+        List<CallStore.Call> changes = calls.all(account).stream()
+                .filter(call -> call.application() == CallStore.Application.APPLIED
+                        && !Objects.equals(call.planBefore().stepsPerDay(), call.planAfter().stepsPerDay()))
+                .sorted(Comparator.comparing(CallStore.Call::appliedAt)).toList();
+        if (changes.isEmpty()) {
+            int steps = PlanChange.steps(plan, parameters);
+            return day -> steps;
+        }
+        NavigableMap<LocalDate, Integer> from = new TreeMap<>();
+        changes.forEach(change -> from.put(change.appliedAt().atZone(zone).toLocalDate(), PlanChange.steps(change.planAfter(), parameters)));
+        int before = PlanChange.steps(changes.getFirst().planBefore(), parameters);
+        return day -> Optional.ofNullable(from.floorEntry(day)).map(Map.Entry::getValue).orElse(before);
     }
 }

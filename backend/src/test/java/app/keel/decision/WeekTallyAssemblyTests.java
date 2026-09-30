@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 class WeekTallyAssemblyTests {
 
     private static final LocalDate MON_28_SEP = LocalDate.of(2026, 9, 28);
-    private static final WeekTallies.Plan PLAN = new WeekTallies.Plan(3, 4, 160, 7000);
+    private static final WeekTallies.Plan PLAN = new WeekTallies.Plan(3, 4, 160, day -> 7000);
 
     @Test
     void theWindowsWeeksAreTheMondayWeeksOverByToday() {
@@ -31,6 +31,59 @@ class WeekTallyAssemblyTests {
         assertThat(WeekTallies.weeks(LocalDate.of(2026, 10, 8), 21)).containsExactly(LocalDate.of(2026, 9, 21), MON_28_SEP);
         // Sunday 4 Oct: from 13 Sep; the week of 28 Sep ends today, not over yet.
         assertThat(WeekTallies.weeks(LocalDate.of(2026, 10, 4), 21)).containsExactly(LocalDate.of(2026, 9, 14), LocalDate.of(2026, 9, 21));
+    }
+
+    @Test
+    void aWomansLongerWindowHoldsMoreWeeks() {
+        // decision_window_days: female 28 — four whole weeks before a Monday, three before a Thursday.
+        assertThat(WeekTallies.weeks(LocalDate.of(2026, 10, 5), 28)).hasSize(4);
+        assertThat(WeekTallies.weeks(LocalDate.of(2026, 10, 8), 28)).hasSize(3);
+    }
+
+    @Test
+    void weeksBeforeThePlanBeganAreNotCounted() {
+        // A plan begun on Wednesday 23 Sep: its first whole week is 28 Sep; nothing was asked before it (U7).
+        assertThat(WeekTallies.weeks(LocalDate.of(2026, 10, 5), 21, LocalDate.of(2026, 9, 23))).containsExactly(MON_28_SEP);
+        assertThat(WeekTallies.weeks(LocalDate.of(2026, 10, 5), 21, LocalDate.of(2026, 9, 21))).as("begun on a Monday")
+                .containsExactly(LocalDate.of(2026, 9, 21), MON_28_SEP);
+    }
+
+    @Test
+    void twoWorkoutsOnOneDayAreOneSession() {
+        // A workout abandoned and started again is still that day's session.
+        WeekTallies.Logs logs = new WeekTallies.Logs(List.of(MON_28_SEP, MON_28_SEP, MON_28_SEP.plusDays(2)), Set.of(), Map.of(), Map.of());
+
+        assertThat(WeekTallies.of(List.of(MON_28_SEP), logs, PLAN).getFirst().training()).isEqualTo(new ActionTally(3, 2));
+    }
+
+    @Test
+    void aStepDayIsJudgedAgainstTheTargetInForceThatDay() {
+        // Raised from 7000 to 10000 on Thursday (K-216, CHANGE_MOVEMENT): 8000 before it is done, 8000 after it is not.
+        WeekTallies.Plan raisedThursday = new WeekTallies.Plan(3, 4, 160, day -> day.isBefore(MON_28_SEP.plusDays(3)) ? 7000 : 10000);
+        WeekTallies.Logs logs = new WeekTallies.Logs(List.of(), Set.of(), Map.of(), Map.of(MON_28_SEP, 8000, MON_28_SEP.plusDays(2), 8000,
+                MON_28_SEP.plusDays(3), 8000, MON_28_SEP.plusDays(4), 10000));
+
+        assertThat(WeekTallies.of(List.of(MON_28_SEP), logs, raisedThursday).getFirst().steps()).isEqualTo(new ActionTally(4, 3));
+    }
+
+    @Test
+    void aProteinMiddleOneGramShortIsNotDone() {
+        // 159 + 160 = 319 < 320: the middle is 159.5 g, under 160.
+        WeekTallies.Logs logs = new WeekTallies.Logs(List.of(), Set.of(), Map.of(MON_28_SEP, new WeekTallies.ProteinLogged(159, 160)), Map.of());
+
+        assertThat(WeekTallies.of(List.of(MON_28_SEP), logs, PLAN).getFirst().protein()).isEqualTo(new ActionTally(1, 0));
+    }
+
+    @Test
+    void noLogAtAllInTheWindowIsNoAdherenceNotZero() {
+        // K-220: "veri yoksa boş" — nothing logged says nothing about following the plan.
+        WeekTallies.Logs nothing = new WeekTallies.Logs(List.of(), Set.of(), Map.of(), Map.of());
+        WeekTallies.Logs oneWeighIn = new WeekTallies.Logs(List.of(), Set.of(MON_28_SEP), Map.of(), Map.of());
+
+        assertThat(WeekTallies.adherence(List.of(MON_28_SEP), nothing, PLAN)).isEmpty();
+        assertThat(WeekTallies.adherence(List.of(MON_28_SEP), oneWeighIn, PLAN)).hasValueSatisfying(ratio ->
+                assertThat(ratio).isEqualByComparingTo(new BigDecimal("1").divide(new BigDecimal("7"), java.math.MathContext.DECIMAL64)));
+        assertThat(WeekTallies.adherence(List.of(), oneWeighIn, PLAN)).as("no whole week").isEmpty();
     }
 
     @Test

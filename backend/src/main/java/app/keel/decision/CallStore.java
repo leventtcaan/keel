@@ -116,6 +116,14 @@ class CallStore {
         return calls("account_id = :account and id = :id", Map.of("account", account.value(), "id", id), 1).stream().findFirst();
     }
 
+    /**
+     * The call, its row locked until the transaction ends: a second apply or undo of it waits, then reads the state the
+     * first one left (K-220 review: it read PENDING, then the plan the first one changed, and refused a stale call).
+     */
+    Optional<Call> lockedById(AccountId account, UUID id) {
+        return calls("account_id = :account and id = :id", Map.of("account", account.value(), "id", id), 1, " for update").stream().findFirst();
+    }
+
     /** Newest first; {@code before} a call's id continues after it (the ledger's cursor). */
     List<Call> newestFirst(AccountId account, Optional<Call> before, int limit) {
         return before.map(after -> calls("account_id = :account and (decided_at, id) < (:at, :id)",
@@ -128,12 +136,16 @@ class CallStore {
         return calls("account_id = :account", Map.of("account", account.value()), Integer.MAX_VALUE);
     }
 
-    @SuppressWarnings("unchecked")
     private List<Call> calls(String where, Map<String, Object> params, int limit) {
+        return calls(where, params, limit, "");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Call> calls(String where, Map<String, Object> params, int limit, String lock) {
         return jdbc.sql("""
                         select *, snapshot::text as snapshot_json, decision::text as decision_json, plan_before::text as plan_before_json,
                         plan_after::text as plan_after_json
-                        from decision.weekly_call""" + " where " + where + " order by decided_at desc, id desc limit :limit")
+                        from decision.weekly_call""" + " where " + where + " order by decided_at desc, id desc limit :limit" + lock)
                 .params(params).param("limit", limit)
                 .query((row, n) -> new Call(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
                         row.getObject("week_of", LocalDate.class), row.getObject("made_on", LocalDate.class),

@@ -321,7 +321,7 @@ class DecisionService {
 
     /** The call, if it is the latest: an older one is history (CONFLICT), a missing one NOT_FOUND. */
     private CallStore.Call latest(AccountId account, UUID id) {
-        CallStore.Call call = calls.byId(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        CallStore.Call call = calls.lockedById(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         boolean latest = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(newest -> newest.id().equals(id)).orElse(false);
         if (!latest) {
             throw new ApiException(ErrorCode.CONFLICT);
