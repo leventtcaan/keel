@@ -231,3 +231,11 @@ test('signing out forgets whether onboarding was done: the next account is asked
   expect(services.profile.current()).toBe('unknown');
   expect(kv.items.has('onboarded')).toBe(false);
 });
+
+test('opening without a session drops a "done" left on the phone (a backup restored to a new phone)', async () => {
+  const kv = memoryKv();
+  kv.items.set('onboarded', 'done');
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv, locale: 'en-US' });
+  expect(services.profile.current()).toBe('unknown');
+  expect(kv.items.has('onboarded')).toBe(false);
+});

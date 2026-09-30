@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { t } from '@/copy';
 import { toProfile } from '@/onboarding/draft';
 import { InfoList } from '@/onboarding/InfoList';
+import { onboardingParams } from '@/onboarding/params';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { StepFrame } from '@/onboarding/StepFrame';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -46,7 +47,14 @@ export default function ExpectationsStep() {
       step="expectations"
       title={t('onboarding.expectations.title')}
       finish={{ label: t('onboarding.expectations.action'), onPress: finish, busy, problem }}>
-      <InfoList prefix="onboarding.expectations" items={['weigh', 'monday', 'change']} />
+      <InfoList
+        prefix="onboarding.expectations"
+        items={['weigh', 'monday', 'change']}
+        vars={{
+          days: onboardingParams.noInterpretationDays,
+          day: t(`onboarding.schedule.dayName.${onboardingParams.checkInDay}`),
+        }}
+      />
     </StepFrame>
   );
 }

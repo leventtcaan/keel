@@ -13,6 +13,13 @@ type Profile = components['schemas']['Profile'];
 type Options = { kv: KeyValue; api: ApiClient; units: UnitsPreference };
 
 const KEY = 'onboarded';
+
+/** By name, so a screen can tell no connection from a server that answered with an error. */
+function failure(name: 'NoConnection' | 'ProfileReadFailed', message: string): Error {
+  const error = new Error(message);
+  error.name = name;
+  return error;
+}
 const DONE = 'done';
 
 export type ProfileStatus = Awaited<ReturnType<typeof createProfileStatus>>;
@@ -22,6 +29,30 @@ export async function createProfileStatus({ kv, api, units }: Options) {
   const listeners = new Set<() => void>();
   // Bumped by a sign-out: a read or save that started for the previous account must not land on the next one.
   let generation = 0;
+
+  let inFlight: Promise<void> | null = null;
+
+  async function read(): Promise<void> {
+    const startedIn = generation;
+    const adoptUnits = units.beginRead();
+    let answer;
+    try {
+      answer = await api.GET('/v1/profile');
+    } catch {
+      throw failure('NoConnection', 'profile read: no answer');
+    }
+    const { data, response } = answer;
+    if (data !== undefined) {
+      await adoptUnits(data.units);
+      await markDone(startedIn);
+    } else if (response.status === 404) {
+      if (startedIn !== generation) return;
+      await kv.removeItemAsync(KEY);
+      become('needed');
+    } else {
+      throw failure('ProfileReadFailed', `profile read failed with HTTP ${response.status}`);
+    }
+  }
 
   function become(next: OnboardingState) {
     if (next === state) return;
@@ -44,19 +75,16 @@ export async function createProfileStatus({ kv, api, units }: Options) {
       return () => listeners.delete(listener);
     },
 
-    /** Asks the server. A 404 means onboarding is needed; any other failure reaches the caller, nothing changed. */
-    refresh: async (): Promise<void> => {
-      const startedIn = generation;
-      const adoptUnits = units.beginRead();
-      const { data, response } = await api.GET('/v1/profile');
-      if (data !== undefined) {
-        await adoptUnits(data.units);
-        await markDone(startedIn);
-      } else if (response.status === 404) {
-        if (startedIn === generation) become('needed');
-      } else {
-        throw new Error(`profile read failed with HTTP ${response.status}`);
-      }
+    /**
+     * Asks the server. A 404 means onboarding is needed — even over a kept "done": the server holds the truth. Any other
+     * failure reaches the caller as NoConnection or ProfileReadFailed, nothing changed. Reads asked for while one is on
+     * its way join it (sign-in and the checking screen both ask).
+     */
+    refresh: (): Promise<void> => {
+      inFlight ??= read().finally(() => {
+        inFlight = null;
+      });
+      return inFlight;
     },
 
     /** The finished onboarding: the whole profile, once. A refusal throws with its status; onboarding stays open. */

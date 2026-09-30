@@ -17,4 +17,6 @@ export const onboardingParams = {
   heightMinCm: param<number>('height_min_cm'),
   heightMaxCm: param<number>('height_max_cm'),
   checkInDay: param<components['schemas']['Weekday']>('check_in_day'),
+  photoIntervalWeeks: param<number>('photo_interval_weeks'),
+  noInterpretationDays: param<number>('no_interpretation_days'),
 };

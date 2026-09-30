@@ -37,6 +37,7 @@ export function profileServer(initial: Profile | null, failPut?: number, failGet
   const puts: Profile[] = [];
   let offline = false;
   let holdNext = false;
+  let holdNextPut = false;
   let release = () => {};
   const fetch = jest.fn(async (request: Request) => {
     if (offline) throw new TypeError('Network request failed');
@@ -53,13 +54,16 @@ export function profileServer(initial: Profile | null, failPut?: number, failGet
     const body = (await request.json()) as Profile;
     puts.push(body);
     stored = body;
-    return json(200, body);
+    if (!holdNextPut) return json(200, body);
+    holdNextPut = false;
+    return new Promise<Response>((resolve) => (release = () => resolve(json(200, body))));
   });
   return {
     fetch,
     puts,
     goOffline: () => (offline = true),
     holdNextGet: () => (holdNext = true),
+    holdNextPut: () => (holdNextPut = true),
     release: () => release(),
   };
 }

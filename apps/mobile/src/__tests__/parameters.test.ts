@@ -107,3 +107,24 @@ describe('the onboarding limits are the contract\'s (K-306)', () => {
     expect(value('adult_min_year_gap')).toBe(Number(/must be at least (\d+)/.exec(year)?.[1]));
   });
 });
+
+describe('the onboarding promises the engine\'s own numbers (K-306)', () => {
+  const onboarding = (JSON.parse(fs.readFileSync(path.join(DIR, 'onboarding.json'), 'utf8')) as { parameters: Parameter[] })
+    .parameters;
+
+  /** `value:` of `key` in an engine YAML file (a plain number). */
+  function yamlValue(file: string, key: string): number {
+    const lines = fs.readFileSync(path.join(DIR, file), 'utf8').split('\n');
+    const at = lines.findIndex((line) => line.trim() === `- key: ${key}`);
+    const value = /value: (\d+)/.exec(lines[at + 1] ?? '');
+    if (at < 0 || value === null) throw new Error(`no ${key} in ${file}`);
+    return Number(value[1]);
+  }
+
+  test.each([
+    ['photo_interval_weeks', 'measurement.yaml'],
+    ['no_interpretation_days', 'windows.yaml'],
+  ])('%s = %s', (key, file) => {
+    expect(onboarding.find((p) => p.key === key)?.value).toBe(yamlValue(file, key));
+  });
+});

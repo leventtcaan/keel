@@ -5,6 +5,7 @@ import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { birthYearProblem, heightCm } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
+import { onboardingParams } from '@/onboarding/params';
 import { StepFrame } from '@/onboarding/StepFrame';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -12,6 +13,8 @@ import { tokens } from '@/theme/tokens';
 import type { UnitSystem } from '@/units/units';
 
 const YEAR_LENGTH = 4;
+/** The shortest height in centimetres has three digits (100, the profile's minimum). */
+const MIN_CM_DIGITS = String(onboardingParams.heightMinCm).length;
 const PROBLEMS = {
   missing: null,
   not_a_year: 'onboarding.about.notAYear',
@@ -26,9 +29,11 @@ export default function AboutStep() {
 
   const height = draft.height;
   const metric = system === 'METRIC';
-  const heightTyped = metric ? height.cm.trim() !== '' : height.feet.trim() !== '';
+  // A problem shows once the answer could be complete — not on the first digit of "178" or "1994".
+  const heightTyped = metric ? height.cm.trim().length >= MIN_CM_DIGITS : height.feet.trim() !== '';
   const heightProblem = heightTyped && heightCm(height, system) === null ? t('onboarding.about.heightInvalid') : null;
-  const yearKey = PROBLEMS[birthYearProblem(draft.birthYear, new Date().getFullYear()) ?? 'missing'];
+  const yearTyped = draft.birthYear.trim().length >= YEAR_LENGTH;
+  const yearKey = yearTyped ? PROBLEMS[birthYearProblem(draft.birthYear, new Date().getFullYear()) ?? 'missing'] : null;
 
   // No profile yet: the choice stays on the phone, without the network, and goes out with the profile (K-310).
   const choose = (next: UnitSystem) => void units.keepOnPhone(next);

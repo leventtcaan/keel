@@ -47,6 +47,22 @@
       "tag": "literatur",
       "source": "arastirma/ham/I1-onboarding-aliskanlik.md#D1",
       "note": "Self-monitoring drops Thursday to Sunday; Monday closes the week and plans the next at once. The first call comes on the first Monday (ADR-018)."
+    },
+    {
+      "key": "photo_interval_weeks",
+      "value": 4,
+      "unit": "weeks",
+      "tag": "literatur",
+      "source": "arastirma/ham/H1-olcum.md#2.5",
+      "note": "The same as measurement.yaml › photo_interval_weeks (the engine's); parameters.test.ts keeps them equal."
+    },
+    {
+      "key": "no_interpretation_days",
+      "value": 14,
+      "unit": "days",
+      "tag": "literatur",
+      "source": "arastirma/ham/H1-olcum.md#3.4",
+      "note": "The same as windows.yaml › no_interpretation_days (U8); parameters.test.ts keeps them equal."
     }
   ]
 }

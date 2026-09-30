@@ -42,6 +42,8 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
   const profile = await createProfileStatus({ kv, api, units });
+  // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
+  if (!(await session.isSignedIn())) await profile.forget();
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
   // deleted: the phone cannot tell which) — the records go with it: they belong to the account that made them, and

@@ -1,10 +1,12 @@
 import { StyleSheet, Text } from 'react-native';
 
+import { Button } from '@/components/Button';
 import { OptionCard } from '@/components/OptionCard';
 import { t } from '@/copy';
 import type { Profile } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { StepFrame } from '@/onboarding/StepFrame';
+import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -17,6 +19,7 @@ const GOALS: { value: Profile['goal']; key: string }[] = [
 
 export default function GoalStep() {
   const { draft, update } = useDraft();
+  const { signOut } = useAppServices();
   const { color } = useTheme();
   return (
     <StepFrame step="goal" title={t('onboarding.goal.title')}>
@@ -30,6 +33,8 @@ export default function GoalStep() {
         />
       ))}
       <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.goal.note')}</Text>
+      {/* The way out before any answer is kept: a different Apple ID, or not now. Nothing is saved until the end. */}
+      <Button label={t('onboarding.signOut')} variant="ghost" size="sm" onPress={() => void signOut()} />
     </StepFrame>
   );
 }

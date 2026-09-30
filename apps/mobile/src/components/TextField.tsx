@@ -27,6 +27,7 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, k
       <View style={[styles.box, { backgroundColor: color.surface, borderColor: problem ? color.text : color.surface }]}>
         <TextInput
           accessibilityLabel={label}
+          accessibilityHint={note ?? undefined}
           value={value}
           onChangeText={onChangeText}
           keyboardType={keyboardType}

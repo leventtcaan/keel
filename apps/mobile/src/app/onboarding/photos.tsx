@@ -2,6 +2,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { t } from '@/copy';
 import { InfoList } from '@/onboarding/InfoList';
+import { onboardingParams } from '@/onboarding/params';
 import { StepFrame } from '@/onboarding/StepFrame';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -10,10 +11,11 @@ import { tokens } from '@/theme/tokens';
 // due (photo_interval_weeks, H1 2.5).
 export default function PhotosStep() {
   const { color } = useTheme();
+  const weeks = onboardingParams.photoIntervalWeeks;
   return (
     <StepFrame step="photos" title={t('onboarding.photos.title')}>
-      <InfoList prefix="onboarding.photos" items={['local', 'cadence', 'purpose']} />
-      <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.photos.note')}</Text>
+      <InfoList prefix="onboarding.photos" items={['local', 'cadence', 'purpose']} vars={{ weeks }} />
+      <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.photos.note', { weeks })}</Text>
     </StepFrame>
   );
 }

@@ -122,3 +122,49 @@ test('a unit choice made while the profile is read is not undone by the read (K-
   await reading;
   expect(units.current()).toBe('IMPERIAL');
 });
+
+test('a refused save writes nothing to the phone: the next start still asks', async () => {
+  const kv = memoryKv();
+  const { status } = await setup({ profile: null, failPut: 400, kv });
+  await expect(status.save(PROFILE)).rejects.toThrow('400');
+  expect(kv.items.has('onboarded')).toBe(false);
+  expect((await setup({ kv })).status.current()).toBe('unknown');
+});
+
+test('a save still on its way when the user signs out does not mark the next account done', async () => {
+  const { status, server, kv } = await setup({ profile: null });
+  server.holdNextPut();
+  const saving = status.save(PROFILE);
+  await new Promise((r) => setTimeout(r, 0)); // the request is on its way
+  await status.forget();
+  server.release();
+  await saving;
+  expect(status.current()).toBe('unknown');
+  expect(kv.items.has('onboarded')).toBe(false);
+});
+
+test('a kept "done" that the server contradicts (404) is dropped: the server holds the truth', async () => {
+  const kv = memoryKv();
+  await (await setup({ kv })).status.refresh();
+  const again = await setup({ kv, profile: null });
+  expect(again.status.current()).toBe('done');
+  await again.status.refresh();
+  expect(again.status.current()).toBe('needed');
+  expect(kv.items.has('onboarded')).toBe(false);
+});
+
+test('reads asked for at once share one request (sign-in and the checking screen both ask)', async () => {
+  const { status, server } = await setup();
+  await Promise.all([status.refresh(), status.refresh()]);
+  expect(server.fetch).toHaveBeenCalledTimes(1);
+  await status.refresh(); // a later read asks again
+  expect(server.fetch).toHaveBeenCalledTimes(2);
+});
+
+test('a failed read tells a server problem from no connection', async () => {
+  const down = await setup({ failGet: 500 });
+  await expect(down.status.refresh()).rejects.toMatchObject({ name: 'ProfileReadFailed' });
+  const offline = await setup();
+  offline.server.goOffline();
+  await expect(offline.status.refresh()).rejects.toMatchObject({ name: 'NoConnection' });
+});

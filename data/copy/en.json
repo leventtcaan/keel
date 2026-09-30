@@ -567,7 +567,8 @@
       "title": "One moment",
       "body": "Checking your account.",
       "offline": "No connection. Your account needs one, just this once.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "serverError": "Our server couldn't answer just now. Try again in a moment."
     },
     "goal": {
       "title": "What do you want?",
@@ -618,7 +619,7 @@
         "SATURDAY": "S",
         "SUNDAY": "S"
       },
-      "restDay": "Six days at most. The seventh is for rest.",
+      "restDay": "{max} days at most, so your week keeps a rest day.",
       "lastMonth": "Sessions last month",
       "sessions": {
         "NONE_OR_ONE": "0–1",
@@ -681,23 +682,23 @@
         "body": "Progress photos are never uploaded. Not to us, not to anyone."
       },
       "cadence": {
-        "title": "One photo every 4 weeks.",
-        "body": "Weekly changes are too small to see. Four weeks is the shortest gap that shows something."
+        "title": "One photo every {weeks} weeks.",
+        "body": "Weekly changes are too small to see. {weeks} weeks is the shortest gap that shows something."
       },
       "purpose": {
         "title": "Used for one thing.",
         "body": "Comparing you with you. Delete them here and they're gone."
       },
-      "note": "We'll ask for the camera in week 4, when the first photo is due."
+      "note": "We'll ask for the camera in week {weeks}, when the first photo is due."
     },
     "expectations": {
       "title": "What to expect",
       "weigh": {
         "title": "Weigh in most mornings.",
-        "body": "For the first two weeks you'll see your trend, but we read nothing into it: one morning is mostly water."
+        "body": "For the first {days} days you'll see your trend, but we read nothing into it: one morning is mostly water."
       },
       "monday": {
-        "title": "Your call comes on Mondays.",
+        "title": "Your call comes each {day}.",
         "body": "Each week closes with one call and the reasons for it. Early on, the call may be to wait for more data."
       },
       "change": {
@@ -705,6 +706,7 @@
         "body": "Until then, your consistency and your lifts show that it's working."
       },
       "action": "Sounds good"
-    }
+    },
+    "signOut": "Sign out"
   }
 }

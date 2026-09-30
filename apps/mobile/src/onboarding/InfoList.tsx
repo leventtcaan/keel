@@ -4,15 +4,20 @@ import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-/** The information steps' points: a bold line and what it means, from copy keys `<prefix>.<item>.title|body`. */
-export function InfoList({ prefix, items }: { prefix: string; items: string[] }) {
+type Props = { prefix: string; items: string[]; vars?: Record<string, string | number> };
+
+/**
+ * The information steps' points: a bold line and what it means, from copy keys `<prefix>.<item>.title|body`. `vars` fill
+ * the numbers the texts take from parameters (a photo every {weeks} weeks), so words and rules cannot drift apart.
+ */
+export function InfoList({ prefix, items, vars = {} }: Props) {
   const { color } = useTheme();
   return (
     <View style={styles.list}>
       {items.map((item) => (
         <View key={item} style={[styles.item, { borderTopColor: color.line }]}>
-          <Text style={[styles.title, { color: color.text }]}>{t(`${prefix}.${item}.title`)}</Text>
-          <Text style={[styles.body, { color: color.textSecondary }]}>{t(`${prefix}.${item}.body`)}</Text>
+          <Text style={[styles.title, { color: color.text }]}>{t(`${prefix}.${item}.title`, vars)}</Text>
+          <Text style={[styles.body, { color: color.textSecondary }]}>{t(`${prefix}.${item}.body`, vars)}</Text>
         </View>
       ))}
     </View>

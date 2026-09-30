@@ -56,7 +56,11 @@ export default function ScheduleStep() {
           );
         })}
       </View>
-      {full && <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.schedule.restDay')}</Text>}
+      {full && (
+        <Text style={[styles.note, { color: color.muted }]}>
+          {t('onboarding.schedule.restDay', { max: onboardingParams.maxTrainingDays })}
+        </Text>
+      )}
       <Text style={[styles.label, { color: color.muted }]}>{t('onboarding.schedule.lastMonth')}</Text>
       <View style={styles.row}>
         {SESSIONS.map((value) => (

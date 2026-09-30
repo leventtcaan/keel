@@ -9,23 +9,34 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
+type Failure = null | 'offline' | 'serverError';
+
 /**
  * Signed in, but whether onboarding is done is not known yet (K-306): the first start on this phone, and no answer from
- * the server. Asks once on arrival and again on request; the root layout moves on when the answer comes.
+ * the server. Asks on arrival (joining a read already on its way) and again on request; the root layout moves on when
+ * the answer comes. No connection and a server error are told apart, and signing out is always a way off this screen.
  */
 export default function CheckingScreen() {
-  const { profile } = useAppServices();
+  const { profile, signOut } = useAppServices();
   const { color } = useTheme();
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<Failure>(null);
 
-  const ask = useCallback(() => profile.refresh().catch(() => setFailed(true)), [profile]);
+  const ask = useCallback(
+    () =>
+      profile
+        .refresh()
+        .catch((error: unknown) =>
+          setFailure(error instanceof Error && error.name === 'NoConnection' ? 'offline' : 'serverError'),
+        ),
+    [profile],
+  );
 
   useEffect(() => {
     void ask();
   }, [ask]);
 
   const retry = () => {
-    setFailed(false);
+    setFailure(null);
     void ask();
   };
 
@@ -34,14 +45,13 @@ export default function CheckingScreen() {
       <View style={styles.body}>
         <ScreenTitle>{t('onboarding.checking.title')}</ScreenTitle>
         <Text style={[styles.text, { color: color.muted }]}>
-          {failed ? t('onboarding.checking.offline') : t('onboarding.checking.body')}
+          {failure === null ? t('onboarding.checking.body') : t(`onboarding.checking.${failure}`)}
         </Text>
       </View>
-      {failed && (
-        <View style={styles.bottom}>
-          <Button label={t('onboarding.checking.retry')} onPress={retry} />
-        </View>
-      )}
+      <View style={styles.bottom}>
+        {failure !== null && <Button label={t('onboarding.checking.retry')} onPress={retry} />}
+        <Button label={t('onboarding.signOut')} variant="ghost" onPress={() => void signOut()} />
+      </View>
     </SafeAreaView>
   );
 }
@@ -49,6 +59,6 @@ export default function CheckingScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { flex: 1, paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, gap: tokens.space.sm },
-  bottom: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg },
+  bottom: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
 });
