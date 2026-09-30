@@ -712,7 +712,10 @@ paths:
       summary: Answer the check-in; the engine makes this week's call
       description: |
         The answers name their week (`weekOf`). Sent again with the same clientId, the stored call comes back (200) and
-        the engine does not run twice; answers for a week that is not the current one are 409 CONFLICT.
+        the engine does not run twice; answers for a week that is not the current one, a second call this week, a user
+        without a profile yet, or a goal of DECIDE_FOR_ME (its direction needs the phase gate) are 409 CONFLICT. Health
+        data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/decisions route. Read now: LOOK,
+        TRAINING, RECOVERY, APPETITE (the engine's choices) and CYCLE_STOPPED (YES/NO, used, never kept).
       requestBody:
         required: true
         content:

@@ -755,7 +755,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-206, K-209, K-211, K-112]
     why: "Motoru gerçek veriyle çalıştırmak ve her kararı yeniden üretilebilir saklamak (ADR-003)"
     acceptance:

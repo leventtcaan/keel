@@ -145,6 +145,14 @@ class AccountDataTests {
         assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("workouts")).hasSize(2);
         assertThat((Map<String, Object>) ((Map<String, Object>) sections.get("training")).get("program")).containsEntry("source", "GENERATED");
         assertThat((List<?>) ((Map<String, Object>) sections.get("nutrition")).get("meals")).hasSize(1);
+        Map<String, Object> decision = (Map<String, Object>) sections.get("decision");
+        assertThat((Map<String, Object>) decision.get("plan")).containsEntry("phase", "CUT");
+        assertThat((List<Map<String, Object>>) decision.get("calls")).singleElement().satisfies(call -> {
+            assertThat(call).containsKeys("weekOf", "action", "snapshot");
+            assertThat((List<?>) ((Map<String, Object>) call.get("snapshot")).get("weights")).isNotEmpty();
+        });
+        // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
+        assertThat(body).doesNotContainIgnoringCase("fatProxy");
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("consent")).get("events"))
                 .anySatisfy(event -> assertThat(event).containsEntry("provider", "Example AI")
@@ -201,6 +209,9 @@ class AccountDataTests {
         jdbc.sql("insert into nutrition.food (id, name, source, kcal, protein_g, carbs_g, fat_g) values ('fdc:171477', 'Chicken breast, roasted', 'FOUNDATION', 165, 31, 0, 3.6) on conflict (id) do nothing").update();
         send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T12:30:00Z", "slot", "LUNCH",
                 "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 200, "unit", "g")))));
+        // This week's check-in (Mondays, UTC): the plan and the call (K-212).
+        send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "answers", List.of(),
+                "weekOf", java.time.LocalDate.now(java.time.ZoneOffset.UTC).with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).toString()));
         MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-09-30T15:00:00Z"));
         String id = (String) JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id");
         send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
