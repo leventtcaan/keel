@@ -54,6 +54,8 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-220 uyum kayıtlardan (WeekTally) | ✅ birleşti; inceleme: adım hedefi geriye uygulanıyordu, plandan önceki haftalar, K-216 yarışı (satır kilidi) | #174 | `M2/K-220.md` |
 | K-217 programa yansıma (V13 tut/deload/dinlenme, V14 sonraki seans) | ✅ birleşti (iki PR); inceleme: aynı gün tutma kapanmıyordu, check-in'de başlayan tutma önceki hedefi kaçırıyordu, tek taraflı çift artış, eksik set, geç biten antrenman hedefi geri alıyordu; CI: List.of().contains(null) | #175, #176 | `M2/K-217.md` |
 | K-221 TrainingStatus (set kaydından) | ✅ birleşti; inceleme: kayıt tutmayana iki haftada bir tam mola, dinlenme haftası kendini tetikliyordu, tutma haftaları gün/7, durum her okumada | #177 | `M2/K-221.md` |
+| K-225 profil: 18+ ve kısıt alanı rızada (ADR-027 #13, #14) | PR, auto-merge açık; inceleme: kesin-18 ADR'ye yazıldı, ADR-015 tablosu | #182 | `M2/K-225.md` |
+| K-223 motor: ADR-027 #0, #1, #11b, #19 | PR, inceleme ajanı çalışıyor (`../keel-k223`) | #183 | `M2/K-223.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -101,6 +103,10 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
 
 ## Session sonunda Levent'e sorulacaklar
 **Hepsi cevaplandı (30 Eyl) → `plan/kararlar/ADR-027-m2-sonu-cevaplari.md`.** Açık kalan: Apple kimlikleri (M3 başında).
+21. **(K-225 incelemesi, veri/hukuk — YENİ)** Rıza geri alınınca sağlık verisi **silinmiyor, yalnız gizleniyor**
+    (`ConsentWithdrawn` olayını dinleyen modül yok; tüm sağlık verisi için aynı). GDPR Md. 7(3)/17: geri çekme silmeyi
+    zorunlu kılmaz ama beklenir. Seçenekler: (a) geri çekince o rızaya bağlı veri silinsin (geri dönüşsüz, uyarıyla);
+    (b) gizlensin, kullanıcı ayrıca silebilsin (şimdiki + silme düğmesi); (c) belirli süre sonra silinsin.
 
 ## Teknik kararlar (bu koşu, aktarımda anlatılacak)
 - U14 çapa kuralı: çapa dosyada başlık (`### K-17 ·`, `## 3.4`, `### 🚨 L2.1 ·`) ya da kalın etiket (`**U2 ·`) olmalı;
