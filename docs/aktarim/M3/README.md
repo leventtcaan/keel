@@ -21,3 +21,4 @@ renkli blokta durur ("EAT A LITTLE MORE"), altında kalori **aralığı** (1800�
 10. K-312 onboarding rızaları — sürümlü rıza, koşullu adım, idempotent başlangıç kayıtları, yetenek arayüzü (HealthAccess)
 11. K-309 Ayarlar — onay adımı, sunucu doğrudur, silme = sunucu + unutma, önbellekte veri bırakmama
 12. K-403 HealthKit — tembel yüklenen native modül, yetenek arayüzü, en az izin, config plugin
+13. K-228 hard stop genel türle — veri en aza indirme kayıt sınırında, jsonb göçü

@@ -1976,6 +1976,11 @@ components:
         copyKey:
           type: string
           description: Where the words for this call live in en.json.
+        safety:
+          type: boolean
+          description: |
+            Present (true) only on the hard stop, which is kept and shown as its change of phase to BULK so the record
+            does not give away the answer that led to it (K-228, ADR-028 #24, GDPR Art. 9). It cannot be undone.
         application:
           $ref: "#/components/schemas/Application"
     Application:
@@ -2126,7 +2131,7 @@ components:
           const: FIX_ADHERENCE
     HardStop:
       type: object
-      description: "The one hard stop (U13): any deficit ends, maintenance at least, see a doctor."
+      description: "The one hard stop (U13): any deficit ends, maintenance at least, see a doctor. The engine's own kind: never kept or returned as such — a call carries it as CHANGE_PHASE to BULK with safety true (K-228)."
       required: [type]
       properties:
         type:

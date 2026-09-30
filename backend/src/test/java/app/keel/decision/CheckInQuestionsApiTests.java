@@ -222,12 +222,15 @@ class CheckInQuestionsApiTests {
 
         assertThat(call.getResponse().getStatus()).isEqualTo(200);
         Map<String, Object> made = map(call);
-        assertThat((Map<String, Object>) made.get("action")).containsEntry("type", "HARD_STOP");
+        // K-228 (ADR-028 #24): shown and kept as its change of phase with the safety mark — the kind would give the
+        // answer away; nothing names the hard stop.
+        assertThat((Map<String, Object>) made.get("action")).isEqualTo(Map.of("type", "CHANGE_PHASE", "to", "BULK"));
+        assertThat(made).containsEntry("safety", true).containsEntry("copyKey", "decision.change_phase.low_energy_safety");
         assertThat(call.getResponse().getContentAsString()).contains("low_energy_safety").doesNotContainIgnoringCase("menstrual")
-                .doesNotContainIgnoringCase("cycle");
+                .doesNotContainIgnoringCase("cycle").doesNotContainIgnoringCase("hard_stop");
         String kept = jdbc.sql("select decision::text || snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
                 .query(String.class).single();
-        assertThat(kept).doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle");
+        assertThat(kept).doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle").doesNotContainIgnoringCase("hard_stop");
 
         assertThat(send(account, "POST", "/v1/decisions/" + made.get("id") + "/apply", null).getResponse().getStatus()).isEqualTo(200);
         Map<String, Object> plan = jdbc.sql("select phase, observing_maintenance, target_kcal from decision.plan where account_id = :a")
@@ -242,7 +245,8 @@ class CheckInQuestionsApiTests {
         // Not taken back (ADR-020 L-1), and the export — plans before and after included — carries no trace either.
         assertThat(send(account, "POST", "/v1/decisions/" + made.get("id") + "/undo", null).getResponse().getStatus()).isEqualTo(409);
         String export = send(account, "GET", "/v1/account/export", null).getResponse().getContentAsString();
-        assertThat(export).contains("low_energy_safety").doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle");
+        assertThat(export).contains("low_energy_safety").doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle")
+                .doesNotContainIgnoringCase("hard_stop");
     }
 
     @Test
@@ -261,7 +265,7 @@ class CheckInQuestionsApiTests {
                 values (:a, 'CUT', :start, :start, 1200, false)""").param("a", account.value()).param("start", today.minusDays(42)).update();
 
         MvcTestResult call = answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")));
-        assertThat((Map<String, Object>) map(call).get("action")).containsEntry("type", "HARD_STOP");
+        assertThat(map(call)).containsEntry("safety", true); // the hard stop, kept as its change of phase (K-228)
         assertThat(send(account, "POST", "/v1/decisions/" + map(call).get("id") + "/apply", null).getResponse().getStatus()).isEqualTo(200);
 
         int maintenance = InitialTarget.estimate(Sex.FEMALE, new BigDecimal("60.0"), new Profile(today.getYear() - 1996, 165), Optional.empty(),
