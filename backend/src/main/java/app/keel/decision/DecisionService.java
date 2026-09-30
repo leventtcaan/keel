@@ -10,6 +10,7 @@ import app.keel.engine.DecisionPipeline;
 import app.keel.engine.EnergyBudget;
 import app.keel.engine.FatEstimate;
 import app.keel.engine.InitialTarget;
+import app.keel.engine.MiniCutGate;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
@@ -159,8 +160,9 @@ class DecisionService {
             return estimated;
         }).orElseGet(() -> calls.start(account, firstPlan(week)));
         CheckIn dataSays = dataSays(account, week, plan);
+        // Appetite is the user's answer (K-227): no data says it.
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
-                dataSays.adherence(), dataSays.appetite());
+                dataSays.adherence(), answers.checkIn().appetite());
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
@@ -251,7 +253,7 @@ class DecisionService {
         return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()),
                 week.fatEstimate().map(FatEstimate.Estimate::lowerPct), Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown),
                 menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training,
-                week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.safetyHold(), cycleResolved);
+                week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.safetyHold(), cycleResolved, Optional.ofNullable(plan.miniCutUntil()));
     }
 
     /**
@@ -309,7 +311,7 @@ class DecisionService {
     /**
      * Applies the current call (K-216): only the one thing it is about moves (U3), and the call keeps when and the plan
      * before and after. Applied twice, nothing more changes; a call that changes nothing, one undone, one not the latest,
-     * or one whose kind is not applied here (the mini cut, K-227) is CONFLICT.
+     * or one whose kind is not applied here is CONFLICT.
      */
     @Transactional
     PlanTargets apply(AccountId account, UUID id) {
@@ -330,14 +332,28 @@ class DecisionService {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Action action = DecisionJson.action(call.decision());
+        Optional<Integer> maintenance = maintenance(account, week);
         CallStore.Plan after = (onTheProgram(account, id, action, week.today(), LocalDate.parse((String) call.decision().get("nextReview")))
-                ? Optional.of(before) : PlanChange.after(before, action, week.today(), week.parameters(), maintenance(account, week)))
+                ? Optional.of(before)
+                : PlanChange.after(before, action, week.today(), week.parameters(), maintenance, miniCutTarget(action, week, before, maintenance)))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         // Only the request that moved the call from PENDING changes the plan; another one at the same moment reads it.
         if (calls.markApplied(account, id, clock.instant(), before, after)) {
             calls.replace(account, after);
         }
         return targetsAfter(account);
+    }
+
+    /**
+     * The mini cut's target (K-227): from maintenance — or the plan's own target without an estimate — under today's data
+     * and the engine's floors. Empty for any other call, and with neither.
+     */
+    private Optional<Integer> miniCutTarget(Action action, Week week, CallStore.Plan before, Optional<Integer> maintenance) {
+        if (!(action instanceof Action.MiniCut)) {
+            return Optional.empty();
+        }
+        Snapshot today = snapshot(week, before, CheckIn.NONE, false, false, Optional.empty());
+        return maintenance.or(() -> Optional.ofNullable(before.targetKcal())).map(kcal -> MiniCutGate.target(today, kcal, week.parameters()));
     }
 
     /**

@@ -528,12 +528,14 @@
     "question": {
       "training": "How did training go this week?",
       "recovery": "How are you recovering between sessions?",
-      "cycle_stopped": "Has your period stopped in recent months?"
+      "cycle_stopped": "Has your period stopped in recent months?",
+      "appetite": "How's your appetite lately?"
     },
     "reason": {
       "training": "How training goes decides what changes next: food, or how you train.",
       "recovery": "How you recover decides whether the next change is food or rest.",
-      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is."
+      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is.",
+      "appetite": "After a long bulk, forcing food down is a sign the bulk has stopped paying off."
     },
     "choice": {
       "training": {
@@ -548,6 +550,10 @@
       "cycle_stopped": {
         "yes": "Yes",
         "no": "No"
+      },
+      "appetite": {
+        "normal": "Normal, I eat what I planned",
+        "gone": "Gone, I force food down"
       }
     }
   },

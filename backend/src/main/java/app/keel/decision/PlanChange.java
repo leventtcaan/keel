@@ -19,8 +19,11 @@ import java.util.Optional;
  * How long it holds is not decided (DURUM question 23): after the watch the phase gate may turn a body over the bulk
  * ceiling back to a cut.
  *
- * <p>Not applied here: the training calls change the program (K-217); the mini cut needs the appetite question the engine
- * has not asked yet (K-227).
+ * <p>The mini cut (K-227, G7 K-102) is a cut from today at the target the engine gives it, not watched, until its longest
+ * length is over — the engine turns the plan back to building on that day. Calorie and movement calls on it keep that
+ * day; a new direction ends it.
+ *
+ * <p>Not applied here: the training calls change the program (K-217).
  */
 final class PlanChange {
 
@@ -32,18 +35,28 @@ final class PlanChange {
      * maintenance estimate (K-114), none without a weigh-in in the window.
      */
     static Optional<CallStore.Plan> after(CallStore.Plan before, Action action, LocalDate today, Parameters parameters, Optional<Integer> maintenanceKcal) {
+        return after(before, action, today, parameters, maintenanceKcal, Optional.empty());
+    }
+
+    /** The same, with the mini cut's target (MiniCutGate.target); without it a mini cut has nothing to apply. */
+    static Optional<CallStore.Plan> after(CallStore.Plan before, Action action, LocalDate today, Parameters parameters, Optional<Integer> maintenanceKcal,
+            Optional<Integer> miniCutTargetKcal) {
         return switch (action) {
             case Action.AdjustCalories(int kcalPerDay) -> calories(before, kcalPerDay, today);
             case Action.IncreaseCalories(int kcalPerDay) -> calories(before, kcalPerDay, today);
             case Action.ChangeMovement() -> Optional.of(new CallStore.Plan(before.phase(), before.phaseStart(), before.planStart(),
                     before.targetKcal(), before.observingMaintenance(),
-                    Math.max(steps(before, parameters), parameters.wholeNumber(ParameterKey.STEPS_TARGET_RAISED))));
+                    Math.max(steps(before, parameters), parameters.wholeNumber(ParameterKey.STEPS_TARGET_RAISED)), before.miniCutUntil()));
             case Action.ChangePhase(Phase to) -> Optional.of(direction(before, to, maintenanceKcal.orElse(before.targetKcal()), today));
             case Action.HardStop() -> Optional.of(direction(before, Phase.BULK, maintenanceKcal
                     .map(maintenance -> before.targetKcal() == null ? maintenance : Math.max(before.targetKcal(), maintenance))
                     .orElse(before.targetKcal()), today));
+            case Action.MiniCut(int _, int maxWeeks) -> miniCutTargetKcal.map(target -> {
+                LocalDate start = today.isAfter(before.planStart()) ? today : before.planStart();
+                return new CallStore.Plan(Phase.CUT, start, start, target, false, before.stepsPerDay(), start.plusWeeks(maxWeeks));
+            });
             case Action.NoDecisionYet _, Action.Continue _, Action.FixTraining _, Action.FixRecovery _, Action.FixAdherence _,
-                 Action.StopLoadIncrease _, Action.Deload _, Action.FullRestWeek _, Action.MiniCut _ -> Optional.empty();
+                 Action.StopLoadIncrease _, Action.Deload _, Action.FullRestWeek _ -> Optional.empty();
         };
     }
 
@@ -75,6 +88,6 @@ final class PlanChange {
         }
         LocalDate start = today.isAfter(before.planStart()) ? today : before.planStart();
         return Optional.of(new CallStore.Plan(before.phase(), before.phaseStart(), start, before.targetKcal() + kcalPerDay, false,
-                before.stepsPerDay()));
+                before.stepsPerDay(), before.miniCutUntil()));
     }
 }

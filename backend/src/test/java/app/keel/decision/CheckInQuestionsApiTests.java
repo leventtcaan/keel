@@ -335,6 +335,26 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void aLongBulkIsAskedAboutAppetiteAndGoneIsAMiniCut() throws Exception {
+        // K-227, G7 K-102: only the user can say the appetite has gone; the answer is read from the answers, not the data.
+        AccountId account = onALongBulk();
+
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
+        assertThat(questions).extracting(question -> question.get("kind")).contains("APPETITE");
+        Map<String, Object> made = map(answer(account, List.of(Map.of("kind", "APPETITE", "choice", "GONE"))));
+
+        assertThat((Map<String, Object>) made.get("action")).containsEntry("type", "MINI_CUT");
+        assertThat(made).containsEntry("copyKey", "decision.mini_cut.appetite_gone");
+    }
+
+    @Test
+    void aCutIsNotAskedAboutAppetite() throws Exception {
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(losingButLookingWorse(), "GET", "/v1/check-ins/current", null))
+                .get("questions");
+        assertThat(questions).extracting(question -> question.get("kind")).doesNotContain("APPETITE");
+    }
+
+    @Test
     void theWaistComesFromItsMeasurements() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
@@ -381,11 +401,27 @@ class CheckInQuestionsApiTests {
         return account;
     }
 
+    /** A man building for half a year, 80 kg flat over the window, no fat estimate (the phase gate stays quiet). */
+    private AccountId onALongBulk() {
+        AccountId account = ready(false);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'BULK', :phaseStart, :start, 2800, false)""").param("a", account.value()).param("phaseStart", today.minusMonths(6))
+                .param("start", today.minusDays(42)).update();
+        for (int day = 28; day >= 0; day--) {
+            Instant at = today.minusDays(day).atStartOfDay(ZoneOffset.UTC).plusHours(6).toInstant();
+            if (at.isBefore(Instant.now())) {
+                weighIn(account, at, 80.0);
+            }
+        }
+        return account;
+    }
+
     private AccountId ready() {
         return ready(true);
     }
 
-    /** A woman of 60 kg who picked look 3 (30 %), on a 1200 kcal cut: energy availability in the low band. */
     /**
      * A woman whose hard stop was applied weeks ago (K-229): the plan builds at 2200 kcal, her estimate is over the bulk
      * ceiling (the reference look at its fullest), so the phase gate would turn her to a cut — a deficit again.
@@ -432,6 +468,7 @@ class CheckInQuestionsApiTests {
         return account;
     }
 
+    /** A woman of 60 kg who picked look 3 (30 %), on a 1200 kcal cut: energy availability in the low band. */
     private AccountId womanOnALowPlan() {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
