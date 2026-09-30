@@ -16,6 +16,7 @@ import app.keel.engine.Phase;
 import app.keel.engine.Profile;
 import app.keel.engine.Sex;
 import app.keel.engine.Snapshot;
+import app.keel.engine.TrainingStatus;
 import app.keel.engine.WaistTrend;
 import app.keel.engine.WeighIn;
 import app.keel.engine.WeightSeries;
@@ -27,6 +28,7 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.training.TrainingCalls;
+import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -44,8 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>What the data says is read, not asked (K-213): how it looks from the week's photo check, where the waist went over
  * the decision window. The plan's target is in it (K-216), with the exercise burn not known. Not yet in the Snapshot, so
- * the engine treats them as unknown: the fat estimate (DURUM question 11 — without it the low-energy floor cannot be
- * computed) and where training stands (K-221). Adherence is counted from the logs over the window (K-220, WeekLogs).
+ * unknown to the engine: the fat estimate (DURUM question 11 — without it the low-energy floor cannot be computed). Where training stands is read from the set log (K-221, TrainingStatusReader); adherence is counted from
+ * the logs over the window (K-220, WeekLogs).
  *
  * <p>Applying a call (K-216): only the latest, only what it is about, and only on the plan it judged; the call keeps when
  * it was applied and undone and the plan before and after.
@@ -62,11 +64,13 @@ class DecisionService {
     private final Clock clock;
     private final WeekLogs logs;
     private final TrainingCalls training;
+    private final TrainingStatusReader statuses;
 
     private static final int DAYS_PER_WEEK = 7;
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
-            QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training) {
+            QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses) {
+        this.statuses = statuses;
         this.logs = logs;
         this.training = training;
         this.calls = calls;
@@ -84,7 +88,7 @@ class DecisionService {
 
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
-            List<WeighIn> weights, CheckIn dataSays) {
+            List<WeighIn> weights, CheckIn dataSays, Optional<TrainingStatus> training) {
     }
 
     /** This week's check-in and its questions (K-213): only what the engine would wait for, within the budget. */
@@ -169,8 +173,9 @@ class DecisionService {
         CheckIn.Waist waist = WaistTrend.direction(measurements.waists(account,
                 today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
+        // Where training stands, from the set log (K-221): the deload ladder reads it.
         return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights,
-                dataSays);
+                dataSays, statuses.status(account, today, profile.timeZone()));
     }
 
     /** One call a week (K-212): the same rule for offering the check-in and for taking its answers. */
@@ -203,7 +208,7 @@ class DecisionService {
         // The plan's target is what the calorie ladder moves (K-216); what training burns is not known yet.
         return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()), Optional.empty(),
                 Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown), menstrualLossReported, checkIn,
-                Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), Optional.empty());
+                Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), week.training());
     }
 
     /**
