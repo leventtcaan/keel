@@ -5,6 +5,7 @@ import static app.keel.engine.EngineFixtures.series;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.engine.CheckIn.Appetite;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

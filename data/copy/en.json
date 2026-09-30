@@ -142,6 +142,10 @@
       "low_energy_safety": {
         "title": "Your plan pauses here.",
         "body": "What you told us is a sign your body needs more fuel. No more eating under your needs: calories stay at least at maintenance, and it's worth talking to your doctor about it."
+      },
+      "mini_cut_over": {
+        "title": "The short cut is done: back to building.",
+        "body": "The weeks of eating a bit under your needs are over. Calories go back up to where building starts, and the bulk picks up where it left off."
       }
     },
     "stop_load_increase": {

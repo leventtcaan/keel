@@ -68,28 +68,38 @@ public final class CalorieLadder {
             return decision(snapshot, new Action.AdjustCalories(size), reasons, snapshot.today().plusDays(window));
         }
 
+        int proposed = target - size;
+        return floor(proposed, snapshot, bmrKcal, parameters)
+                .orElseGet(() -> decision(snapshot, new Action.AdjustCalories(proposed - target), reasons, snapshot.today().plusDays(window)));
+    }
+
+    /**
+     * The floor a lower daily target would go under, as the call it makes instead; empty when the target is safe. The same
+     * floors for a calorie step down and for the mini cut's target (K-227). Needs the profile (age) for the macro floors
+     * and a weight trend.
+     */
+    static Optional<Decision> floor(int proposedKcal, Snapshot snapshot, int bmrKcal, Parameters parameters) {
         Profile profile = snapshot.profile()
                 .orElseThrow(() -> new IllegalArgumentException("A calorie step down needs the profile (age) for the macro floors"));
-        int proposed = target - size;
         // The low-energy floor first: under it neither less food nor more exercise is an answer (both lower energy
         // availability). A shorter step is not one either — under the minimum step is noise (K-97) — so calories stay.
         Optional<Integer> leaFloor = SafetyNet.leaFloorKcal(snapshot, parameters);
-        if (leaFloor.isPresent() && proposed < leaFloor.get()) {
-            return decision(snapshot, new Action.Continue(), List.of(new Reason(ENERGY_FLOOR, ENERGY_GATE)),
-                    snapshot.today().plusDays(DAYS_PER_WEEK));
+        if (leaFloor.isPresent() && proposedKcal < leaFloor.get()) {
+            return Optional.of(decision(snapshot, new Action.Continue(), List.of(new Reason(ENERGY_FLOOR, ENERGY_GATE)),
+                    snapshot.today().plusDays(DAYS_PER_WEEK)));
         }
-        Optional<Decision> underBmr = SafetyNet.bmrFloor(proposed, bmrKcal, snapshot, parameters);
+        Optional<Decision> underBmr = SafetyNet.bmrFloor(proposedKcal, bmrKcal, snapshot, parameters);
         if (underBmr.isPresent()) {
-            return underBmr.get();
+            return underBmr;
         }
         BigDecimal bodyweight = WeightTrend.at(snapshot.weights(), snapshot.today(), parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS))
                 .orElseThrow(() -> new IllegalArgumentException("A calorie step needs a weight trend"));
-        if (MacroTargets.forTarget(proposed, bodyweight, snapshot.sex(), profile.ageYears(), parameters)
+        if (MacroTargets.forTarget(proposedKcal, bodyweight, snapshot.sex(), profile.ageYears(), parameters)
                 instanceof MacroResult.TargetTooLow(int _, List<Reason> squeeze)) {
             // ADR-020 L-11: no honest macro split under this target; like the BMR floor, move more instead.
-            return decision(snapshot, new Action.ChangeMovement(), squeeze, snapshot.today().plusDays(DAYS_PER_WEEK));
+            return Optional.of(decision(snapshot, new Action.ChangeMovement(), squeeze, snapshot.today().plusDays(DAYS_PER_WEEK)));
         }
-        return decision(snapshot, new Action.AdjustCalories(proposed - target), reasons, snapshot.today().plusDays(window));
+        return Optional.empty();
     }
 
     // Ladder calls rest on the spine's reading of the window; the assembly (K-112) derives the final confidence.
