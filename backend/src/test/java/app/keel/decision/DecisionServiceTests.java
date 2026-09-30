@@ -243,7 +243,8 @@ class DecisionServiceTests {
     void theKeptSnapshotMakesTheSameCallAgain() throws Exception {
         // ADR-003 §6: a past call can be reproduced from what was kept.
         AccountId account = ready("LOSE_FAT");
-        answer(account, UUID.randomUUID(), thisWeek(), List.of(Map.of("kind", "LOOK", "choice", "SAME")));
+        // No answers: since K-213 only the questions the week asked are answered, and a first check-in asks none.
+        answer(account, UUID.randomUUID(), thisWeek(), List.of());
         Map<String, Object> kept = jdbc.sql("select snapshot::text as snapshot, decision::text as decision from decision.weekly_call where account_id = :a")
                 .param("a", account.value()).query().singleRow();
 

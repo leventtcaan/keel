@@ -38,6 +38,11 @@ class DecisionController {
         this.decisions = decisions;
     }
 
+    @GetMapping("/v1/check-ins/current")
+    DecisionService.CheckInView checkIn(AccountId account) {
+        return decisions.currentCheckIn(account);
+    }
+
     @PostMapping("/v1/check-ins/current/answers")
     Map<String, Object> answer(AccountId account, @RequestBody CheckInAnswers answers) {
         require(answers.clientId() != null && answers.weekOf() != null && answers.answers() != null);

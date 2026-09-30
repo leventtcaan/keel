@@ -493,5 +493,26 @@
     "question": {
       "grams": "How many grams was it? Weighing it narrows this the most."
     }
+  },
+  "checkIn": {
+    "question": {
+      "training": "How did training go this week?",
+      "recovery": "How are you recovering between sessions?"
+    },
+    "reason": {
+      "training": "How training goes decides what changes next: food, or how you train.",
+      "recovery": "How you recover decides whether the next change is food or rest."
+    },
+    "choice": {
+      "training": {
+        "improving": "Getting stronger",
+        "stable": "About the same",
+        "declining": "Getting weaker"
+      },
+      "recovery": {
+        "good": "Recovering well",
+        "poor": "Still tired, sore or sleeping badly"
+      }
+    }
   }
 }
