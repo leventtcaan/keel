@@ -68,3 +68,17 @@
 - `.expo/types/router.d.ts` eskiyse sil (CI'da yok) ya da `expo start` ile yenilet.
 - Disk ~4 GB: `npm cache clean --force` gerekirse. Docker yok → DB testleri CI'da.
 - Komutta `cat` ile stdin bekletme (bir kez takıldı).
+
+## Güncel (compact sonrası koşu, 30 Eyl gece)
+- Birleşti: K-228 #207, backend/bin chore #208, K-229 #209. Backlog status + sync yapıldı (K-229/K-227 `doing`, K-308 `doing`).
+- K-227 dalda (`decision/187-mini-cut`, PR yok): motor + karar + iştah sorusu + V18 + aktarım yazıldı, mutasyon motor 9/9, karar 8/9 (1 eşdeğer).
+  **pr-test-analyzer bulguları (uygula, TDD):** (1) pipeline sırası testi: güvenlik ağı mini cut bitişinden önce (kadın,
+  CUT, miniCutUntil=bugün, menstrualLoss=true → HardStop); (2) QuestionBudgetTests: GONE → cycle_check_needed motorunda
+  needed=[APPETITE] ve cycleAwaited(..., [APPETITE]) true; (3) LEA tabanı yolu: kadın 62 kg/165/30y/%15, enerji 2200 →
+  target(2000)=2000, target(2100)=1600; enerji yoksa `target` bakım (guard ekle); (4) mini cut bitişi "antrenman kötü
+  gidiyor"dan önce (FullRestWeek veren TrainingStatus); (5) Plan JSON'u miniCutUntil olmadan okunur (Jackson). Yanıltıcı
+  yorum: `underASafetyFloorTheMiniCutStaysAtMaintenance` LEA tabanı da deliniyor.
+  code-reviewer sonucu bekleniyor.
+- M4 kalıbı: `plan/oturum-promptlari/M4.md` taslak (4 part). Kalan: M4-part1..4.md, sorular 25-32 + K-308 onayı → ADR-030.
+- Soru 32 (yeni): mini cut sürerken (4-6 hafta) haftalık omurga pencere (21/28 gün) dolunca bir kalori adımı daha
+  atabilir → (a) kabul; (b) mini cut sürerken kalori adımı yok (gün gelene kadar sabit).
