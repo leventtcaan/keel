@@ -105,6 +105,11 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
    `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; kabul kriterlerine: tek uçuşlu refresh ADR-025, UPC-E sunucuda açılır,
    Dependabot #2) → özet. Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 
+## ▶ DEVAM NOKTASI (M3 Part 3, 30 Eyl gece — compact öncesi)
+Prompt: `plan/oturum-promptlari/M3-part3-devam.md` (tam durum, K-227 planı, bitiş adımları). Özet: K-306/312/309/403 ve
+K-308 yapılandırması birleşti; K-228 PR #207 (auto-merge); K-229 dalda (yeniden incelet, #207 sonrası PR); K-227 dalında
+yalnız motor testleri (derlenmiyor). Açık sorular 25-31 + K-308 hesap onayı.
+
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
 
@@ -127,9 +132,9 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 | K-312 onboarding: sağlık rızası, kilo/bel, gıda, Apple Health | ✅ birleşti; inceleme 7+9 bulgu (Allow/Not now yarışı, geri çekme, profil önce, sınırlar, Health yalnız rızayla, önce sayfa); mutasyon 21/21 | #203 | `M3/K-312.md` |
 | K-309 Ayarlar (birim, rızalar, dışa aktarma, hesap silme, çıkış; + expo-file-system) | ✅ birleşti; simülatör: onay en dipte, geri düğmesi yok → düzeltildi; inceleme 1+13 bulgu (yeniden okuma hatasında eski durum, pendingCount hatası, 202 sonrası anahtarlık); mutasyon 17/17 | #204 | `M3/K-309.md` |
 | K-403 HealthKit kütüphanesi (ADR-031, @kingstinct 16) | ✅ birleşti; inceleme: Expo Go'da Metro yükleme hatasını ölümcül gösteriyordu → `isRunningInExpoGo` kapısı; mutasyon 7/7 | #205 | `M3/K-403.md` |
-| K-308 EAS (eas.json, dev client, paket kimliği yapılandırmada, runbook `docs/eas-derleme.md`) | dalda (`mobile/104-eas-dev-build`), K-403 birleşince rebase + PR; **cihaz/TestFlight adımları Levent'te** (bitiş sorularında) | — | — |
+| K-308 EAS (eas.json, dev client, paket kimliği yapılandırmada, runbook `docs/eas-derleme.md`) | yapılandırma ✅ birleşti; **cihaz/TestFlight adımları Levent'te** (bitiş sorularında) | #206 | — |
 | K-228 hard stop genel türle (CHANGE_PHASE→BULK + `safety`, V17) | PR'da (auto-merge); inceleme: V17 tırnak → göç kuralı kırmızı olurdu, düzeltildi; mutasyon 6/6; artık risk → soru 30 | #207 | `M3/K-228.md` |
-| K-229 hard stop sonrası döngü sorusu (motor `SafetyHold`, hold geçmişten) | dalda (`decision/189-…`, K-228 üstünde), inceleme sürüyor; mutasyon 11/11; K-228 birleşince PR | — | `M3/K-229.md` |
+| K-229 hard stop sonrası döngü sorusu (motor `SafetyHold`, hold geçmişten) | dalda (`decision/189-…`, K-228 üstünde), **yeniden incelet**; mutasyon 11/11; K-228 birleşince PR | — | `M3/K-229.md` |
 | K-307 gezinme (NativeTabs, koç girişi, koç sayfası) | ✅ birleşti; simülatör: koç çubuğu sekme çubuğu altındaydı → alt güvenli alan; inceleme: `keel://coach` soğuk açılış sekmesiz kalıyordu → `anchor`; mutasyon 10/10 | #195 | `M3/K-307.md` |
 
 **Part 3 ara not (30 Eyl gece):** K-313 (referans görünüş adımı) M4'e ayrıldı — 7 seviye motorun iç yağ tahminini
