@@ -19,7 +19,7 @@ class FdcImportTests {
     void onlyTheDatasetsOwnFoodsAreReadAndOneMissingAValueIsSkipped() {
         FdcImport.Read read = FdcImport.read(FOUNDATION, FdcImport.Dataset.FOUNDATION);
 
-        assertThat(read.foods()).extracting(FdcImport.Food::id).containsExactly("fdc:100", "fdc:101", "fdc:104");
+        assertThat(read.foods()).extracting(FdcImport.Food::id).containsExactly("fdc:100", "fdc:101", "fdc:104", "fdc:105", "fdc:106");
         assertThat(read.skipped()).as("103 has no protein").isEqualTo(1);
     }
 
@@ -69,6 +69,19 @@ class FdcImportTests {
     }
 
     @Test
+    void aNegativeCarbohydrateByDifferenceIsZero() {
+        // By difference = 100 − water − protein − fat − ash: FDC's own rounding leaves meat at −0.48 g (the real
+        // release has ten). Zero, not a skipped chicken — and not a value the database refuses (K-226 review).
+        assertThat(food("fdc:105").carbsG()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void aFluidOunceNamedInTheModifierIsAVolume() {
+        // SR Legacy's drinks: "fl oz" is two words; 31 g per 29.5735 mL → 1.048 g/mL (K-226 review: 307 drinks had none).
+        assertThat(food("fdc:106").gramsPerMl()).isEqualByComparingTo("1.048");
+    }
+
+    @Test
     void aReleaseIsReadFromFdcsFolderName() {
         assertThat(FdcImportRunner.release("FoodData_Central_foundation_food_csv_2025-12-18")).isEqualTo("2025-12-18");
         assertThat(FdcImportRunner.release("FoodData_Central_sr_legacy_food_csv_2018-04")).isEqualTo("2018-04");
@@ -83,6 +96,10 @@ class FdcImportTests {
         java.nio.file.Files.createFile(legacy.resolve("sr_legacy_food.csv"));
         java.nio.file.Files.createDirectories(root.resolve("c/unrelated"));
 
+        Path olderFoundation = java.nio.file.Files.createDirectories(root.resolve("a/FoodData_Central_foundation_food_csv_2024-10-31"));
+        java.nio.file.Files.createFile(olderFoundation.resolve("foundation_food.csv"));
+
+        // One release per dataset, the newest: an older one alongside would bring back foods the new one dropped.
         assertThat(FdcImportRunner.releases(root)).containsExactly(foundation, legacy);
     }
 }

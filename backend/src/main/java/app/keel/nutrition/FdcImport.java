@@ -25,7 +25,8 @@ import java.util.stream.Stream;
  * <ul>
  *   <li>Energy: nutrient 1008; a Foundation food without it has the Atwater specific factors (2048), else the general
  *       ones (2047) — FDC's own calculations.</li>
- *   <li>Carbohydrate: by difference (1005), else by summation (1050).</li>
+ *   <li>Carbohydrate: by difference (1005), else by summation (1050); a by-difference value under zero is FDC's rounding
+ *       and reads as zero. A negative energy, protein or fat is not a food.</li>
  *   <li>Protein 1003, fat 1004. A food missing any of the four is skipped and counted, never guessed.</li>
  *   <li>Servings: FDC's portions in its order, named by amount, unit and modifier; one without a weight or an amount
  *       (the real release has amounts of 0) is left out.
@@ -117,7 +118,14 @@ final class FdcImport {
                             .multiply(volume(portion, units).orElseThrow()), MathContext.DECIMAL64)
                             .setScale(GRAMS_PER_ML_DECIMALS, RoundingMode.HALF_UP))
                     .orElse(null);
-            foods.add(new Food("fdc:" + food.getKey(), food.getValue(), dataset, kcal.get(), values.get(PROTEIN), carbs.get(), values.get(FAT), gramsPerMl,
+            if (kcal.get().signum() < 0 || values.get(PROTEIN).signum() < 0 || values.get(FAT).signum() < 0) {
+                skipped++;
+                continue;
+            }
+            // By difference is 100 − water − protein − fat − ash: FDC's rounding leaves some meats a little under zero
+            // (−0.48 g on a raw drumstick) — no carbohydrate, not a measurement to refuse (K-226 review, ADR-008).
+            BigDecimal carbsG = carbs.get().max(BigDecimal.ZERO);
+            foods.add(new Food("fdc:" + food.getKey(), food.getValue(), dataset, kcal.get(), values.get(PROTEIN), carbsG, values.get(FAT), gramsPerMl,
                     servings));
         }
         return new Read(foods, skipped);
@@ -128,12 +136,15 @@ final class FdcImport {
      * ("cup, chopped", "tbsp").
      */
     private static Optional<BigDecimal> volume(Map<String, String> portion, Map<String, String> units) {
-        String unit = units.getOrDefault(portion.get("measure_unit_id"), "");
-        if (UNDETERMINED_UNIT.equals(portion.get("measure_unit_id")) && portion.get("modifier") != null) {
-            String word = portion.get("modifier").split("[ ,]", 2)[0].toLowerCase(java.util.Locale.ROOT);
-            unit = ABBREVIATIONS.getOrDefault(word, word);
+        if (!UNDETERMINED_UNIT.equals(portion.get("measure_unit_id"))) {
+            return Optional.ofNullable(MILLILITRES.get(units.getOrDefault(portion.get("measure_unit_id"), "")));
         }
-        return Optional.ofNullable(MILLILITRES.get(unit));
+        // The modifier starts with the unit, maybe two words ("fl oz"), followed by a word end: no two names can both match.
+        String modifier = portion.get("modifier") == null ? "" : portion.get("modifier").toLowerCase(java.util.Locale.ROOT);
+        return Stream.concat(MILLILITRES.keySet().stream(), ABBREVIATIONS.keySet().stream())
+                .filter(name -> modifier.equals(name) || modifier.startsWith(name + " ") || modifier.startsWith(name + ","))
+                .findFirst()
+                .map(name -> MILLILITRES.get(ABBREVIATIONS.getOrDefault(name, name)));
     }
 
     private static Optional<BigDecimal> first(Map<String, BigDecimal> values, String... ids) {

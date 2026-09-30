@@ -5,6 +5,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -38,12 +40,21 @@ class FdcImportRunner implements ApplicationRunner {
         }
     }
 
-    /** Every folder under the root holding an FDC dataset's own food list. */
+    /**
+     * The newest release of each dataset under the root (FDC's release names sort by date): an older one alongside would
+     * bring back foods the new one dropped.
+     */
     static List<Path> releases(Path root) {
         try (Stream<Path> walk = Files.walk(root, 3)) {
-            return walk.filter(Files::isDirectory)
-                    .filter(folder -> Files.exists(folder.resolve("foundation_food.csv")) || Files.exists(folder.resolve("sr_legacy_food.csv")))
-                    .sorted().toList();
+            Map<String, Path> newest = new TreeMap<>();
+            walk.filter(Files::isDirectory).forEach(folder -> {
+                String list = Files.exists(folder.resolve("foundation_food.csv")) ? "foundation_food.csv"
+                        : Files.exists(folder.resolve("sr_legacy_food.csv")) ? "sr_legacy_food.csv" : null;
+                if (list != null) {
+                    newest.merge(list, folder, (a, b) -> release(a.getFileName().toString()).compareTo(release(b.getFileName().toString())) >= 0 ? a : b);
+                }
+            });
+            return newest.values().stream().sorted().toList();
         } catch (IOException unreadable) {
             throw new UncheckedIOException(unreadable);
         }

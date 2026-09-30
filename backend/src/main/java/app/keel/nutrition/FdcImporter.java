@@ -23,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Loads a FoodData Central release into nutrition.food (K-226): one transaction per dataset, each food upserted by its
- * FDC id and its servings replaced, so importing the same release again gives the same rows. Values are stored to the
+ * FDC id and its servings replaced, the dataset's foods the release no longer has removed — so importing a release gives
+ * exactly its rows, again and again. Values are stored to the
  * columns' two decimals here, not rounded silently by the database.
  */
 @Service
@@ -61,6 +62,9 @@ class FdcImporter {
                 values (:id, :name, :source, :kcal, :protein, :carbs, :fat, :gml)
                 on conflict (id) do update set name = excluded.name, source = excluded.source, kcal = excluded.kcal, protein_g = excluded.protein_g,
                 carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, grams_per_ml = excluded.grams_per_ml""", foods.toArray(MapSqlParameterSource[]::new));
+        // A food this release no longer has (FDC gives an updated food a new id) goes; its servings go with it.
+        jdbc.update("delete from nutrition.food where source = :source and id like 'fdc:%' and not (id = any(:ids))",
+                new MapSqlParameterSource("source", dataset.name()).addValue("ids", read.foods().stream().map(FdcImport.Food::id).toArray(String[]::new)));
         jdbc.batchUpdate("delete from nutrition.food_serving where food_id = :id",
                 read.foods().stream().map(food -> new MapSqlParameterSource("id", food.id())).toArray(MapSqlParameterSource[]::new));
         jdbc.batchUpdate("insert into nutrition.food_serving (food_id, seq, name, grams) values (:food, :seq, :name, :grams)",
