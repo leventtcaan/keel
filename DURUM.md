@@ -57,7 +57,8 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-225 profil: 18+ ve kısıt alanı rızada (ADR-027 #13, #14) | ✅ birleşti; inceleme: kesin-18 ADR'ye yazıldı, ADR-015 tablosu | #182 | `M2/K-225.md` |
 | K-223 motor: ADR-027 #0, #1, #11b, #19 | ✅ birleşti; inceleme: L-4 LEA artışını eziyordu (güvenlik), kadın penceresi, pay sınır testi | #183 | `M2/K-223.md` |
 | K-226 FDC Foundation + SR Legacy (V15) | ✅ birleşti; inceleme: negatif karb Foundation'ı düşürüyordu, fl oz, eski sürüm satırları | #184 | `M2/K-226.md` |
-| K-224 iç yağ tahmini (RFM + referans görünüş, V16) | auto-merge açık (CI); inceleme: bel 9 → RFM −336 → +6.720 kcal (olanaksız değer artık yok sayılıyor), "küçüğü" bulk kapılarını susturuyordu (artık kurala göre alt/üst), belge "yalnız kapı" diyordu | #185 | `M2/K-224.md` |
+| K-224 iç yağ tahmini (RFM + referans görünüş, V16) | ✅ birleşti; inceleme: bel 9 → RFM −336 → +6.720 kcal (olanaksız değer artık yok sayılıyor), "küçüğü" bulk kapılarını susturuyordu (artık kurala göre alt/üst), belge "yalnız kapı" diyordu | #185 | `M2/K-224.md` |
+| K-222 faz/hard stop uygulaması, DECIDE_FOR_ME, döngü sorusu (V4), genel etiket | auto-merge açık (CI); inceleme: hard stop geri alınıyordu (artık 409), pencerede tartı yokken cut hedefi kalıyordu, "saklanmaz" metni; soru 23, 24. Mini cut → K-227 (M3) | #186 | `M2/K-222.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -68,12 +69,11 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
 Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
-0. **(güncel)** Sorular cevaplandı (ADR-027); cevap işleri: K-225 ✅ #182, K-226 ✅ #184 (FDC; indirilen zip'ler
-   scratchpad'deydi, repoda değil — URL+sha ADR-008 ekinde), K-223 #183 (auto-merge, CI), K-224 #185 (inceleme). Kalan:
-   **K-222** (faz/mini cut/hard stop + DECIDE_FOR_ME + döngü sorusu V4 + gerekçe genel etiket; K-224'e bağlı) →
-   **README düzeltmesi**: `docs/aktarim/M2/README.md` listesinde ve tablosunda K-226 (ve K-224) satırı eksik (python
-   replace'in çapası yoktu, sessizce atladı) → main'de elle ekle. → `M3.md` → özet. Soru 21 (rıza geri alınınca silme)
-   yeni, Levent'e sorulacak (M3 başında ya da bu sohbette).
+0. **(güncel, 30 Eyl öğleden sonra)** M2 uygulaması bitti. Cevap işleri: K-225 #182, K-226 #184, K-223 #183, K-224 #185
+   birleşti; **K-222 #186 auto-merge açık** (CI yeşil olunca birleşir; kırmızıysa düzelt). README düzeltmesi #186 içinde.
+   `plan/oturum-promptlari/M3.md` yazıldı. Açık sorular: 21, 22, 23, 24 (+ Apple kimlikleri) → M3 prompt'u ilk iş olarak
+   sorar. Kalan: #186 birleşince `python3 tools/sync_backlog.py --apply` (K-227 issue'su), worktree `../keel-k222` sil.
+   Session açık: Levent dönünce **M1 (akşam) + M2 aktarımı** (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
    KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
    MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
@@ -116,6 +116,16 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
     Seçenekler: (a) böyle kalsın — LEA ağı RFM'le de çalışsın (şimdiki; görünüş seçmeyen ama belini ölçen korunur);
     (b) LEA ağı ve tabanı yalnız görünüşle, RFM yalnız faz kapısı/L-4 için; (c) LEA'da RFM'in bandının temkinli ucu
     (alt − 5/6 puan) okunsun.
+23. **(K-222 incelemesi, sağlık — YENİ)** Hard stop (adet kaybı → açık biter, plan BULK + bakım) **ne kadar sürer?** Şimdi:
+    bakım gözlemi (kadında 28 gün) bitince motor normal işler; yağ tahmini bulk tavanının (%30) üstündeyse faz kapısı cut'a
+    döndürür ve açık geri gelir. Döngü sorusu yalnız plan yine LOW olunca sorulur. Geri alma (undo) kapalı (L-1).
+    Seçenekler: (a) hard stop'tan sonra N hafta (ör. 12) cut'a dönüş ve aşağı adım yok; (b) cut'a dönmeden önce döngü
+    sorusu yeniden sorulsun ("hayır" gelirse dönülür); (c) kullanıcı "doktorum onayladı" diyene kadar sürsün.
+24. **(K-222 incelemesi, veri/hukuk — YENİ)** ADR-027 #18 "karar saklanır, adet cevabının izi kalmaz" diyor; ama HARD_STOP
+    yalnız "evet" cevabıyla çıkıyor → saklanan/dışa aktarılan karar türü cevabı ele veriyor (GDPR Md. 9). Şimdi: gerekçe
+    genel etiket, metin "cevabın saklanmaz; planı değiştirirse o değişiklik saklanır" diyor. Seçenekler: (a) böyle kalsın
+    (karar = denetim izi); (b) karar türü de genel saklansın (ör. INCREASE_CALORIES + "güvenlik" etiketi); (c) HARD_STOP
+    kararı belirli süre sonra silinsin.
 
 ## Teknik kararlar (bu koşu, aktarımda anlatılacak)
 - U14 çapa kuralı: çapa dosyada başlık (`### K-17 ·`, `## 3.4`, `### 🚨 L2.1 ·`) ya da kalın etiket (`**U2 ·`) olmalı;
