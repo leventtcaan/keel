@@ -79,6 +79,19 @@ class DecisionPipelineOrderTests {
         assertThat(DecisionPipeline.decide(lastDay, MALE).action()).isEqualTo(new Action.ChangePhase(Phase.BULK));
     }
 
+    // ADR-030 #32: while a mini cut runs, the spine's calorie steps wait for its day (G7 K-102 sets weeks of deficit, not
+    // a deeper one); after it, a flat cut steps down as usual.
+    @Test
+    void aMiniCutHoldsItsCaloriesUntilItsDay() {
+        Snapshot flatCut = user(Phase.CUT, weekly("80.0", "80.0", "80.0"));
+
+        assertThat(DecisionPipeline.decide(flatCut, MALE).action()).as("an ordinary cut").isEqualTo(new Action.AdjustCalories(-500));
+        Decision onIt = DecisionPipeline.decide(flatCut.withMiniCutUntil(TODAY.plusWeeks(2)), MALE);
+        assertThat(onIt.action()).isEqualTo(new Action.Continue());
+        assertThat(onIt.reasons().getFirst().rule()).isEqualTo(MiniCutGate.MINI_CUT_RUNNING);
+        assertThat(EngineFixtures.copyGroup(onIt.copyKey())).containsKeys("title", "body");
+    }
+
     // ADR-022 step 2 before step 4.
     @Test
     void trainingGoingWrongComesBeforeThePhaseGateAndTheMiniCut() {

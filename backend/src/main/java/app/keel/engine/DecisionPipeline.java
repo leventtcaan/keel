@@ -69,7 +69,7 @@ public final class DecisionPipeline {
         }
         Decision weekly = switch (WeeklySpine.evaluate(snapshot, parameters)) {
             case SpineResult.Decided(Decision decided) -> decided;
-            case SpineResult.CaloriesNeeded need -> calorieStep(need, snapshot, parameters);
+            case SpineResult.CaloriesNeeded need -> MiniCutGate.running(snapshot).orElseGet(() -> calorieStep(need, snapshot, parameters));
         };
         boolean quiet = weekly.action() instanceof Action.Continue || weekly.action() instanceof Action.NoDecisionYet;
         if (quiet && ladder.isPresent()) {

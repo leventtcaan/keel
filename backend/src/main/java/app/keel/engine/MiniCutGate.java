@@ -15,7 +15,10 @@ public final class MiniCutGate {
 
     static final RuleId APPETITE_GONE = new RuleId("appetite_gone");
     public static final RuleId MINI_CUT_OVER = new RuleId("mini_cut_over");
+    public static final RuleId MINI_CUT_RUNNING = new RuleId("mini_cut_running");
     private static final Source MINI_CUT = new Source("arastirma/ham/guray/G7-whisper-arsiv.md#K-102", SourceTag.EXPERIENCE);
+
+    private static final int DAYS_PER_WEEK = 7;
 
     private MiniCutGate() {
     }
@@ -46,6 +49,18 @@ public final class MiniCutGate {
         return Optional.of(new Decision(new Action.ChangePhase(Phase.BULK), List.of(new Reason(MINI_CUT_OVER, MINI_CUT)), Confidence.MEDIUM,
                 snapshot.today().plusDays(parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS)),
                 new CopyKey("decision.change_phase." + MINI_CUT_OVER.value())));
+    }
+
+    /**
+     * While the mini cut runs (ADR-030 #32): the weekly spine's calorie steps wait for its day, up or down — G7 K-102 sets
+     * weeks of deficit, not a deeper one. The safety net still runs before this; the day itself is {@link #over}.
+     */
+    public static Optional<Decision> running(Snapshot snapshot) {
+        if (snapshot.phase() != Phase.CUT || snapshot.miniCutUntil().filter(until -> snapshot.today().isBefore(until)).isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new Decision(new Action.Continue(), List.of(new Reason(MINI_CUT_RUNNING, MINI_CUT)), Confidence.MEDIUM,
+                snapshot.today().plusDays(DAYS_PER_WEEK), new CopyKey("decision.continue." + MINI_CUT_RUNNING.value())));
     }
 
     /**

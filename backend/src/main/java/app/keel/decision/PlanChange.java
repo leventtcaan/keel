@@ -20,8 +20,8 @@ import java.util.Optional;
  * ceiling back to a cut.
  *
  * <p>The mini cut (K-227, G7 K-102) is a cut from today at the target the engine gives it, not watched, until its longest
- * length is over — the engine turns the plan back to building on that day. Calorie and movement calls on it keep that
- * day; a new direction ends it.
+ * length is over — the engine turns the plan back to building on that day, and holds its calories until then (ADR-030
+ * #32). Movement calls on it, and a safety increase, keep that day; a new direction ends it.
  *
  * <p>Not applied here: the training calls change the program (K-217).
  */

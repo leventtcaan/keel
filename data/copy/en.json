@@ -193,6 +193,10 @@
       "energy_floor": {
         "title": "Calories stay where they are.",
         "body": "Going lower would leave too little fuel after your training. Progress may be slower from here, and that's the safe side to be on."
+      },
+      "mini_cut_running": {
+        "title": "Hold steady: the short cut runs its weeks.",
+        "body": "Calories stay where the short cut set them until it ends, whatever the scale does this week. Then the bulk picks up again."
       }
     },
     "fix_adherence": {
