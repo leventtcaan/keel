@@ -12,7 +12,8 @@ import { type ReactNode, createContext, useContext, useEffect, useState, useSync
 import { Share } from 'react-native';
 
 import { apiBaseUrl } from '@/api/config';
-import { type HealthAccess, healthUnavailable } from '@/health/health';
+import type { HealthAccess } from '@/health/health';
+import { healthKitAccess } from '@/health/healthKit';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
@@ -53,7 +54,7 @@ async function build(): Promise<PhoneServices> {
     signInWithApple: () =>
       signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session }),
     appleAvailable: () => AppleAuthentication.isAvailableAsync(),
-    health: healthUnavailable, // K-403 plugs in HealthKit
+    health: healthKitAccess(), // not available in Expo Go (no native module)
     exportData: () =>
       exportAccount({
         api: services.api,

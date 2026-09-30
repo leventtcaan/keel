@@ -1,6 +1,6 @@
 /**
- * Access to Apple Health (K-312; the library and the real reads are K-403/K-404). The screens ask this, never a library:
- * the phone build plugs in HealthKit, Expo Go and tests plug in what they can.
+ * Access to Apple Health (K-312). The screens ask this, never a library: the phone plugs in HealthKit (healthKit.ts,
+ * K-403; the reads themselves are K-404), and where there is none — Expo Go, an iPad, tests — it is not available.
  */
 export type HealthAccess = {
   /** Whether Apple Health can be asked on this build (Expo Go cannot: HealthKit needs a native build, K-308). */
@@ -9,7 +9,7 @@ export type HealthAccess = {
   requestRead(): Promise<void>;
 };
 
-/** Until K-403 chooses the library: nothing to ask. */
+/** Where Apple Health cannot be asked. */
 export const healthUnavailable: HealthAccess = {
   available: false,
   requestRead: async () => {
