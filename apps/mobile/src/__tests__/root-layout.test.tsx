@@ -21,14 +21,25 @@ jest.mock('expo-router/stack', () => {
   Stack.Screen = function Screen() {
     return null;
   };
+  Stack.Protected = function Protected() {
+    return null;
+  };
   return { Stack };
 });
+// The services need a phone (SQLite, keychain); signed in is enough for what this file checks. `mockServicesReady`
+// stands for the database and keychain having been read.
+let mockServicesReady = true;
+jest.mock('@/services/ServicesProvider', () => ({
+  ServicesProvider: ({ children }: { children: unknown }) => (mockServicesReady ? children : null),
+  useSignedIn: () => true,
+}));
 
 const fonts = useFonts as jest.Mock;
 const hide = SplashScreen.hideAsync as jest.Mock;
 
 beforeEach(() => {
   hide.mockClear();
+  mockServicesReady = true;
 });
 
 test('while the font loads: nothing rendered, splash kept', async () => {
@@ -56,4 +67,17 @@ test('font failed: splash hidden, app rendered anyway, failure reported', async 
   } finally {
     warn.mockRestore();
   }
+});
+
+test('font loaded but the services still opening: splash kept, so no blank screen shows', async () => {
+  fonts.mockReturnValue([true, null]);
+  mockServicesReady = false;
+  await render(<RootLayout />);
+  expect(hide).not.toHaveBeenCalled();
+});
+
+test('an error while starting is shown by the root error screen, not a crash', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const layout = require('@/app/_layout') as { ErrorBoundary?: unknown };
+  expect(layout.ErrorBoundary).toBeDefined();
 });
