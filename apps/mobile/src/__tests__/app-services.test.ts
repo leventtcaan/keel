@@ -203,3 +203,31 @@ test("signing in brings the account's own unit choice to the phone", async () =>
   expect(services.units.current()).toBe('METRIC');
   expect(kv.items.get('units')).toBe('METRIC');
 });
+
+test('signing in asks, with the same single read, whether onboarding is done (K-306)', async () => {
+  const kv = memoryKv();
+  const fetch = jest.fn(async () => new Response(JSON.stringify({ code: 'NOT_FOUND', message: 'x' }), { status: 404, headers: { 'Content-Type': 'application/json' } }));
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US' });
+  expect(services.profile.current()).toBe('unknown');
+  await services.session.signIn(SESSION);
+  await settle();
+  expect(services.profile.current()).toBe('needed');
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+test('signing out forgets whether onboarding was done: the next account is asked afresh', async () => {
+  const kv = memoryKv();
+  const fetch = jest.fn(async (request: Request) =>
+    request.url.endsWith('/v1/profile')
+      ? new Response(JSON.stringify({ goal: 'LOSE_FAT', sex: 'MALE', heightCm: 178, birthYear: 1994, programChoice: 'BUILD_ONE_FOR_ME', schedule: { trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'America/New_York' }, units: 'METRIC' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      : new Response(null, { status: 204 }),
+  );
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US' });
+  await services.session.signIn(SESSION);
+  await settle();
+  expect(services.profile.current()).toBe('done');
+  await services.signOut();
+  await settle();
+  expect(services.profile.current()).toBe('unknown');
+  expect(kv.items.has('onboarded')).toBe(false);
+});

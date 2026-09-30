@@ -4,6 +4,7 @@
  * database, keychain, fetch — is passed in, so this runs in tests on node:sqlite and a fake server.
  */
 import { type ApiClient, createApiClient } from '@/api/client';
+import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
@@ -27,6 +28,8 @@ export type AppServices = {
   api: ApiClient;
   queue: SyncQueue;
   units: UnitsPreference;
+  /** Whether this account has finished onboarding (K-306). */
+  profile: ProfileStatus;
   /** Records the server does not have yet; a sign-out drops them, so the screen warns first (K-309). */
   pendingCount(): Promise<number>;
   signOut(): Promise<void>;
@@ -38,6 +41,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
   const store = await openRecordStore(db);
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
+  const profile = await createProfileStatus({ kv, api, units });
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
   // deleted: the phone cannot tell which) — the records go with it: they belong to the account that made them, and
@@ -45,12 +49,14 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
   const reportError = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   session.subscribe((signedIn) => {
     if (signedIn) {
-      // The account's own choice replaces the phone's guess; offline, the kept one stays until the next sign-in.
-      units.refresh().catch(() => undefined);
+      // One read of the profile answers both: has this account finished onboarding (K-306), and its own unit choice
+      // in place of the phone's guess (K-310). Offline, the kept answers stay and the screen offers to try again.
+      profile.refresh().catch(() => undefined);
       return;
     }
     store.clear().catch(reportError);
     units.forget().catch(reportError); // the preference belongs to the account too
+    profile.forget().catch(reportError); // and so does "onboarding done"
   });
 
   return {
@@ -58,6 +64,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     api,
     queue,
     units,
+    profile,
     pendingCount: store.pendingCount,
     signOut: async () => {
       const refreshToken = await session.refreshToken();
