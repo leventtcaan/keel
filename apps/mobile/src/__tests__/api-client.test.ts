@@ -3,7 +3,7 @@
  * (K-303). The server is a fake fetch here; the real session store arrives in K-305 and refresh in K-304.
  */
 import { type AccessTokenSource, createApiClient } from '@/api/client';
-import { apiBaseUrl } from '@/api/config';
+import { parseBaseUrl } from '@/api/config';
 
 function fakeServer(body: unknown = { status: 'UP' }, status = 200) {
   return jest.fn(
@@ -79,13 +79,20 @@ test('an error response comes back as error, typed from the contract', async () 
   expect(error).toEqual({ code: 'validation', message: 'bad' });
 });
 
+test('a redirect is refused, so the session token never follows it to another host', async () => {
+  const fetch = fakeServer();
+  const api = createApiClient({ baseUrl: 'https://api.example.test', accessToken: async () => 'tok-1', fetch });
+  await api.GET('/health');
+  expect(fetch.mock.calls[0][0].redirect).toBe('error');
+});
+
 describe('base URL from configuration (K2: never in code)', () => {
   test('reads the configured value and drops a trailing slash', () => {
-    expect(apiBaseUrl('https://api.example.test/')).toBe('https://api.example.test');
+    expect(parseBaseUrl('https://api.example.test/')).toBe('https://api.example.test');
   });
 
   test('missing configuration fails loudly with the variable name', () => {
-    expect(() => apiBaseUrl(undefined)).toThrow(/EXPO_PUBLIC_API_URL/);
-    expect(() => apiBaseUrl('')).toThrow(/EXPO_PUBLIC_API_URL/);
+    expect(() => parseBaseUrl(undefined)).toThrow(/EXPO_PUBLIC_API_URL/);
+    expect(() => parseBaseUrl('  ')).toThrow(/EXPO_PUBLIC_API_URL/);
   });
 });

@@ -33,7 +33,8 @@ type Options = {
 };
 
 export function createApiClient({ baseUrl, accessToken, fetch }: Options): ApiClient {
-  const client = createClient<paths>({ baseUrl, fetch });
+  // The API never redirects; refusing one keeps the Authorization header from following it to another host.
+  const client = createClient<paths>({ baseUrl, fetch, redirect: 'error' });
   client.use(bearerAuth(accessToken));
   return client;
 }
