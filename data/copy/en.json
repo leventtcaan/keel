@@ -134,6 +134,10 @@
       "low_fat_floor": {
         "title": "Time to stop cutting.",
         "body": "You're lean enough that eating below maintenance now takes more than it gives. Calories go up and the next phase builds."
+      },
+      "low_energy_safety": {
+        "title": "Your plan pauses here.",
+        "body": "What you told us is a sign your body needs more fuel. No more eating under your needs: calories stay at least at maintenance, and it's worth talking to your doctor about it."
       }
     },
     "stop_load_increase": {

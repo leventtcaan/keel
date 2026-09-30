@@ -1289,6 +1289,11 @@ export interface components {
             nextReview: string;
             /** @description Where the words for this call live in en.json. */
             copyKey: string;
+            /**
+             * @description Present (true) only on the hard stop, which is kept and shown as its change of phase to BULK so the record
+             *     does not give away the answer that led to it (K-228, ADR-028 #24, GDPR Art. 9). It cannot be undone.
+             */
+            safety?: boolean;
             application: components["schemas"]["Application"];
         };
         /**
@@ -1386,7 +1391,7 @@ export interface components {
              */
             type: "FIX_ADHERENCE";
         };
-        /** @description The one hard stop (U13): any deficit ends, maintenance at least, see a doctor. */
+        /** @description The one hard stop (U13): any deficit ends, maintenance at least, see a doctor. The engine's own kind: never kept or returned as such — a call carries it as CHANGE_PHASE to BULK with safety true (K-228). */
         HardStop: {
             /**
              * @description discriminator enum property added by openapi-typescript
