@@ -1090,7 +1090,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-007]
     why: "Tüm ekranlar aynı dili konuşsun (ADR-014)"
     acceptance:

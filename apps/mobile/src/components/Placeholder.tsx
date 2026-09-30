@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 type Props = {
@@ -11,24 +13,19 @@ type Props = {
 
 /** Temporary screen body until the real screen is built (M3/M4). */
 export function Placeholder({ screen }: Props) {
+  const { color } = useTheme();
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top']}>
       <View style={styles.body}>
-        <Text style={styles.title}>{t(`screens.${screen}.title`)}</Text>
-        <Text style={styles.note}>{t(`screens.${screen}.note`)}</Text>
+        <ScreenTitle>{t(`screens.${screen}.title`)}</ScreenTitle>
+        <Text style={[styles.note, { color: color.muted }]}>{t(`screens.${screen}.note`)}</Text>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: tokens.color.background },
+  safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, gap: tokens.space.sm },
-  title: {
-    color: tokens.color.text,
-    fontSize: tokens.type.displaySize,
-    fontWeight: tokens.type.displayWeight,
-    textTransform: 'uppercase',
-  },
-  note: { color: tokens.color.muted, fontSize: tokens.type.bodySize },
+  note: { fontSize: tokens.type.body },
 });
