@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import app.keel.consent.ConsentGate;
 import app.keel.consent.ConsentKind;
+import app.keel.engine.Action;
 import app.keel.engine.ActivityLevel;
 import app.keel.engine.CheckIn;
 import app.keel.engine.Decision;
@@ -25,6 +26,7 @@ import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.training.TrainingCalls;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -59,12 +61,14 @@ class DecisionService {
     private final QuestionBudget budget;
     private final Clock clock;
     private final WeekLogs logs;
+    private final TrainingCalls training;
 
     private static final int DAYS_PER_WEEK = 7;
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
-            QuestionBudget budget, Clock clock, WeekLogs logs) {
+            QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training) {
         this.logs = logs;
+        this.training = training;
         this.calls = calls;
         this.profiles = profiles;
         this.measurements = measurements;
@@ -267,7 +271,9 @@ class DecisionService {
         if (!Objects.equals(judged, before.targetKcal())) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
-        CallStore.Plan after = PlanChange.after(before, DecisionJson.action(call.decision()), week.today(), week.parameters())
+        Action action = DecisionJson.action(call.decision());
+        CallStore.Plan after = (onTheProgram(account, id, action, week.today(), LocalDate.parse((String) call.decision().get("nextReview")))
+                ? Optional.of(before) : PlanChange.after(before, action, week.today(), week.parameters()))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         // Only the request that moved the call from PENDING changes the plan; another one at the same moment reads it.
         if (calls.markApplied(account, id, clock.instant(), before, after)) {
@@ -289,8 +295,35 @@ class DecisionService {
         }
         if (calls.markUndone(account, id, clock.instant())) {
             calls.replace(account, call.planBefore());
+            training.undo(account, id);
         }
         return targetsOf(account);
+    }
+
+    /**
+     * The deload ladder's calls go to the program (K-217): hold the load from today; a lighter week or a week off from
+     * today until the day before the call's next review, when the next call decides again. CONFLICT without a program.
+     * False for any other call: it is the plan's.
+     */
+    private boolean onTheProgram(AccountId account, UUID id, Action action, LocalDate today, LocalDate nextReview) {
+        boolean applied = switch (action) {
+            case Action.StopLoadIncrease _ -> training.holdLoad(account, id, today);
+            case Action.Deload(BigDecimal setsFactor) -> training.lighterWeek(account, id, setsFactor, today, lastDayBefore(today, nextReview));
+            case Action.FullRestWeek _ -> training.restWeek(account, id, today, lastDayBefore(today, nextReview));
+            default -> {
+                yield false;
+            }
+        };
+        boolean programs = action instanceof Action.StopLoadIncrease || action instanceof Action.Deload || action instanceof Action.FullRestWeek;
+        if (programs && !applied) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
+        return programs;
+    }
+
+    private static LocalDate lastDayBefore(LocalDate today, LocalDate nextReview) {
+        LocalDate last = nextReview.minusDays(1);
+        return last.isBefore(today) ? today : last;
     }
 
     /** The targets the user follows today; NOT_FOUND before the first estimate. */

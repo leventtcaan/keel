@@ -276,10 +276,47 @@ class ApplyDecisionApiTests {
         UUID deload = pending(account, new Action.Deload(new BigDecimal("0.5")));
 
         assertThat(send(account, "POST", "/v1/decisions/" + older + "/apply")).as("history").hasStatus(409);
-        assertThat(send(account, "POST", "/v1/decisions/" + deload + "/apply")).as("the program's (K-217)").hasStatus(409);
+        assertThat(send(account, "POST", "/v1/decisions/" + deload + "/apply")).as("no program to lighten (K-217)").hasStatus(409);
         assertThat(send(account, "POST", "/v1/decisions/" + deload + "/undo")).as("never applied").hasStatus(409);
         assertThat(send(account, "POST", "/v1/decisions/" + UUID.randomUUID() + "/apply")).hasStatus(404);
         assertThat(store.plan(account).orElseThrow().targetKcal()).isEqualTo(2600);
+    }
+
+    @Test
+    void aLighterWeekLowersTheProgramsSetsUntilTheCallsNextReviewAndUndoingItRestoresThem() throws Exception {
+        // K-217: deload_volume_factor on the sets, from today to the day before the next review; the plan does not move.
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        UUID deload = pending(account, new Action.Deload(new BigDecimal("0.5")));
+
+        assertThat(send(account, "POST", "/v1/decisions/" + deload + "/apply")).hasStatusOk();
+
+        Map<String, Object> program = map(send(account, "GET", "/v1/program"));
+        assertThat((Map<String, Object>) program.get("deload")).containsEntry("until", TODAY.plusDays(6).toString());
+        List<Map<String, Object>> exercises = (List<Map<String, Object>>) ((List<Map<String, Object>>) program.get("days")).getFirst().get("exercises");
+        assertThat(exercises).allSatisfy(planned -> assertThat((Integer) planned.get("sets"))
+                .isEqualTo(Math.max(1, (Integer) planned.get("baseSets") / 2)));
+        assertThat(store.plan(account).orElseThrow().targetKcal()).as("the plan does not move").isEqualTo(2600);
+
+        assertThat(send(account, "POST", "/v1/decisions/" + deload + "/undo")).hasStatusOk();
+        Map<String, Object> restored = map(send(account, "GET", "/v1/program"));
+        assertThat(restored).doesNotContainKey("deload");
+        assertThat((List<Map<String, Object>>) ((List<Map<String, Object>>) restored.get("days")).getFirst().get("exercises"))
+                .allSatisfy(planned -> assertThat(planned.get("sets")).isEqualTo(planned.get("baseSets")));
+    }
+
+    @Test
+    void holdingTheLoadShowsOnTheProgramAndTheNextRungEndsIt() throws Exception {
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        UUID hold = pending(account, new Action.StopLoadIncrease(), TODAY.minusWeeks(1).with(java.time.DayOfWeek.MONDAY), Instant.now().minusSeconds(60));
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+        assertThat(map(send(account, "GET", "/v1/program"))).containsEntry("loadHeldSince", TODAY.toString());
+
+        UUID rest = pending(account, new Action.FullRestWeek());
+        assertThat(send(account, "POST", "/v1/decisions/" + rest + "/apply")).hasStatusOk();
+
+        assertThat(map(send(account, "GET", "/v1/program"))).doesNotContainKey("loadHeldSince").containsEntry("restUntil", TODAY.plusDays(6).toString());
     }
 
     @Test

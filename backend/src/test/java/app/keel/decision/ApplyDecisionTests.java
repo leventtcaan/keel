@@ -94,8 +94,8 @@ class ApplyDecisionTests {
 
     @Test
     void callsThatCannotBeAppliedYetChangeNothing() {
-        // Training calls go to the program (K-217); the phase, the mini cut and the hard stop wait for what the engine
-        // cannot read yet (DURUM 11, 17, 18). Not yet, continue and advice have nothing to apply.
+        // Training calls change the program, not the plan (K-217, TrainingCalls); the phase, the mini cut and the hard stop
+        // wait for what the engine cannot read yet (DURUM 11, 17, 18). Not yet, continue and advice have nothing to apply.
         for (Action action : List.of(new Action.StopLoadIncrease(), new Action.Deload(new BigDecimal("0.5")), new Action.FullRestWeek(),
                 new Action.ChangePhase(Phase.BULK), new Action.MiniCut(2, 4), new Action.HardStop(), new Action.NoDecisionYet(),
                 new Action.Continue(), new Action.FixTraining(), new Action.FixRecovery(), new Action.FixAdherence())) {

@@ -4,16 +4,22 @@ import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
 import app.keel.engine.Sex;
+import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,8 +59,17 @@ class ProgramController {
     record ProgramDay(UUID id, String nameKey, String name, DayOfWeek weekday, List<PlannedExercise> exercises) {
     }
 
-    /** Contract Program. */
-    record Program(UUID id, ProgramStore.Source source, List<ProgramDay> days) {
+    /** Contract DeloadWeek: a lighter week in force (K-217). */
+    record DeloadWeek(BigDecimal setsFactor, LocalDate until) {
+    }
+
+    /**
+     * Contract Program, with the deload ladder's calls in force today (K-217): a lighter week, a week off
+     * ({@code restUntil}), the load held ({@code loadHeldSince}).
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record Program(UUID id, ProgramStore.Source source, List<ProgramDay> days, DeloadWeek deload, LocalDate restUntil,
+            LocalDate loadHeldSince) {
     }
 
     private final ProgramStore store;
@@ -64,8 +79,13 @@ class ProgramController {
     private final Profiles profiles;
     private final WorkoutController.TrainingLimits limits;
 
+    private final TrainingCalls calls;
+    private final Clock clock;
+
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
-            WorkoutController.TrainingLimits limits) {
+            WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock) {
+        this.calls = calls;
+        this.clock = clock;
         this.store = store;
         this.templates = templates;
         this.catalog = catalog;
@@ -76,7 +96,7 @@ class ProgramController {
 
     @GetMapping("/v1/program")
     Program current(AccountId account) {
-        return store.current(account).map(ProgramController::view).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return store.current(account).map(program -> view(account, program)).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
     @PostMapping("/v1/program/generate")
@@ -91,7 +111,7 @@ class ProgramController {
                                 planned.reps().max(), planned.targetRir()))
                         .toList()))
                 .toList();
-        return view(store.replace(account, ProgramStore.Source.GENERATED, program));
+        return view(account, store.replace(account, ProgramStore.Source.GENERATED, program));
     }
 
     @PutMapping("/v1/program")
@@ -113,7 +133,7 @@ class ProgramController {
                         targetRir);
             }).toList());
         }).toList();
-        return view(store.replace(account, ProgramStore.Source.OWN, days));
+        return view(account, store.replace(account, ProgramStore.Source.OWN, days));
     }
 
     /**
@@ -124,10 +144,18 @@ class ProgramController {
         return parameters.forSex(profiles.of(account).map(facts -> Sex.valueOf(facts.sex().name())).orElse(Sex.MALE));
     }
 
-    private static Program view(ProgramStore.Program program) {
+    /** The program as it is this week: the calls in force today on the user's calendar (K-217). */
+    private Program view(AccountId account, ProgramStore.Program program) {
+        LocalDate today = LocalDate.now(clock.withZone(profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC)));
+        List<TrainingChanges.Change> changes = calls.changes(account);
+        Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(changes, TrainingChanges.Kind.LIGHTER_WEEK, today);
         return new Program(program.id(), program.source(), program.days().stream().map(day -> new ProgramDay(day.id(), day.nameKey(),
                 day.name(), day.weekday(), day.exercises().stream().map(planned -> new PlannedExercise(planned.exerciseId(), planned.sets(),
-                        planned.sets(), new Reps(planned.repMin(), planned.repMax()), planned.targetRir())).toList())).toList());
+                        TrainingChanges.sets(planned.sets(), lighter), new Reps(planned.repMin(), planned.repMax()), planned.targetRir())).toList()))
+                .toList(),
+                lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
+                TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
+                TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null));
     }
 
     private static void require(boolean valid) {

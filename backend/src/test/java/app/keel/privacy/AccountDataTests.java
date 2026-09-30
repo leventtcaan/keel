@@ -144,6 +144,7 @@ class AccountDataTests {
         assertThat((List<?>) measurement.get("activityDays")).hasSize(1);
         assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("workouts")).hasSize(2);
         assertThat((Map<String, Object>) ((Map<String, Object>) sections.get("training")).get("program")).containsEntry("source", "GENERATED");
+        assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("programChanges")).hasSize(1);
         assertThat((List<?>) ((Map<String, Object>) sections.get("nutrition")).get("meals")).hasSize(1);
         Map<String, Object> decision = (Map<String, Object>) sections.get("decision");
         assertThat((Map<String, Object>) decision.get("plan")).containsEntry("phase", "CUT");
@@ -206,6 +207,8 @@ class AccountDataTests {
         send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "look", "SAME"));
         send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 8000));
         send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY")));
+        // A call of the deload ladder on the program (K-217), as decision applies it.
+        context.getBean(app.keel.training.TrainingCalls.class).holdLoad(account, UUID.randomUUID(), java.time.LocalDate.of(2026, 9, 28));
         jdbc.sql("insert into nutrition.food (id, name, source, kcal, protein_g, carbs_g, fat_g) values ('fdc:171477', 'Chicken breast, roasted', 'FOUNDATION', 165, 31, 0, 3.6) on conflict (id) do nothing").update();
         send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T12:30:00Z", "slot", "LUNCH",
                 "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 200, "unit", "g")))));
