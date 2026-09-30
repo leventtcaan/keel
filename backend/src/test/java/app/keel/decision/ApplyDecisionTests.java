@@ -131,11 +131,19 @@ class ApplyDecisionTests {
     }
 
     @Test
-    void noSplitNoTargets() {
-        // 800 kcal at 80 kg cannot hold 2 g/kg protein and the fat floor (K-108 TargetTooLow): no targets, not a guess.
+    void whenNoSplitFitsTheTargetTheCaloriesProteinAndStepsStayAndCarbsAndFatAreLeftOut() {
+        // 800 kcal at 80 kg cannot hold 2 g/kg protein and the fat floor (K-108 TargetTooLow). The engine never sets
+        // that, but a heavier trend or a birthday can move the floor after a target was set (K-216 review): the targets
+        // stay readable — protein does not depend on calories — and carbs and fat are not guessed.
         CallStore.Plan tooLow = new CallStore.Plan(Phase.CUT, TODAY, TODAY, 800, false, null);
 
-        assertThat(PlanTargets.of(tooLow, new BigDecimal("80.0"), Sex.MALE, 30, EnumSet.of(DayOfWeek.MONDAY), P)).isEmpty();
+        assertThat(PlanTargets.of(tooLow, new BigDecimal("80.0"), Sex.MALE, 30, EnumSet.of(DayOfWeek.MONDAY), P)).hasValueSatisfying(t -> {
+            assertThat(t.targetKcal()).isEqualTo(800);
+            assertThat(t.proteinG()).isEqualTo(160);
+            assertThat(t.carbsG()).isNull();
+            assertThat(t.fatG()).isNull();
+            assertThat(t.stepsPerDay()).isEqualTo(P.wholeNumber(ParameterKey.STEPS_TARGET_START));
+        });
     }
 
     @Test

@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -40,8 +41,12 @@ import org.springframework.transaction.annotation.Transactional;
  * hash. The week is the user's check-in day in their own time zone (L3 P13).
  *
  * <p>What the data says is read, not asked (K-213): how it looks from the week's photo check, where the waist went over
- * the decision window. Not yet in the Snapshot, so the engine treats them as unknown: the fat estimate (DURUM question
- * 11), the energy budget (it needs that estimate), adherence (K-220) and where training stands (K-221).
+ * the decision window. The plan's target is in it (K-216), with the exercise burn not known. Not yet in the Snapshot, so
+ * the engine treats them as unknown: the fat estimate (DURUM question 11 — without it the low-energy floor cannot be
+ * computed), adherence (K-220) and where training stands (K-221).
+ *
+ * <p>Applying a call (K-216): only the latest, only what it is about, and only on the plan it judged; the call keeps when
+ * it was applied and undone and the plan before and after.
  */
 @Service
 class DecisionService {
@@ -84,8 +89,9 @@ class DecisionService {
         if (taken(account, week.weekOf())) {
             return new CheckInView(week.weekOf(), List.of(), true);
         }
-        // Before the first call there is no plan yet: the first one, as the answers would start it, not stored.
-        CallStore.Plan plan = calls.plan(account).orElseGet(() -> firstPlan(week));
+        // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
+        // the estimate a plan without a target would get.
+        CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
         return new CheckInView(week.weekOf(), asked(week, plan).stream().map(CheckInQuestions::describe).toList(), false);
     }
 
@@ -115,7 +121,13 @@ class DecisionService {
         if (!answered.stream().map(Answers.Answer::kind).allMatch(CheckInQuestions::answerable)) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
-        CallStore.Plan plan = calls.plan(account).orElseGet(() -> calls.start(account, firstPlan(week)));
+        CallStore.Plan plan = calls.plan(account).map(existing -> {
+            CallStore.Plan estimated = withEstimate(existing, week);
+            if (!estimated.equals(existing)) {
+                calls.replace(account, estimated);
+            }
+            return estimated;
+        }).orElseGet(() -> calls.start(account, firstPlan(week)));
         CheckIn checkIn = new CheckIn(week.dataSays().look(), answers.checkIn().training(), answers.checkIn().recovery(), week.dataSays().waist(),
                 week.dataSays().adherence(), week.dataSays().appetite());
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported());
@@ -185,9 +197,26 @@ class DecisionService {
             // The phase gate needs the fat estimate (DURUM questions 11, 17): no direction is guessed.
             case DECIDE_FOR_ME -> throw new ApiException(ErrorCode.CONFLICT);
         };
-        Integer target = week.weights().isEmpty() ? null : InitialTarget.estimate(week.sex(), week.weights().getLast().kg(), week.body(),
+        return new CallStore.Plan(phase, week.today(), week.today(), estimate(week), true, null);
+    }
+
+    /** The maintenance estimate at the last weigh-in of the window (K-114); none without one. */
+    private Integer estimate(Week week) {
+        return week.weights().isEmpty() ? null : InitialTarget.estimate(week.sex(), week.weights().getLast().kg(), week.body(),
                 week.profile().activity().map(activity -> ActivityLevel.valueOf(activity.name())), week.parameters()).maintenanceKcal();
-        return new CallStore.Plan(phase, week.today(), week.today(), target, true, null);
+    }
+
+    /**
+     * A plan begun before any weigh-in has no target: once there is a weight, the estimate starts, watched (K-114) from
+     * today — else it would stay without one for good (K-216 review).
+     */
+    private CallStore.Plan withEstimate(CallStore.Plan plan, Week week) {
+        Integer estimate = estimate(week);
+        if (plan.targetKcal() != null || estimate == null) {
+            return plan;
+        }
+        LocalDate start = week.today().isAfter(plan.planStart()) ? week.today() : plan.planStart();
+        return new CallStore.Plan(plan.phase(), plan.phaseStart(), start, estimate, true, plan.stepsPerDay());
     }
 
     /** Whether the call changes the plan (applied by K-216): a pause, "continue" or advice changes nothing. */
@@ -216,6 +245,12 @@ class DecisionService {
         }
         Week week = week(account);
         CallStore.Plan before = calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        // The call judged a target; if the plan holds another one now (a call applied while this one was being made), its
+        // step would land on top of that one (K-216 review).
+        Integer judged = call.snapshot().energy() == null ? null : call.snapshot().energy().targetKcal();
+        if (!Objects.equals(judged, before.targetKcal())) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
         CallStore.Plan after = PlanChange.after(before, DecisionJson.action(call.decision()), week.today(), week.parameters())
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         // Only the request that moved the call from PENDING changes the plan; another one at the same moment reads it.

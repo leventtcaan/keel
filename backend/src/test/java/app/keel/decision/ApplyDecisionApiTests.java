@@ -158,21 +158,47 @@ class ApplyDecisionApiTests {
     }
 
     @Test
-    void aCallWhoseTargetsCannotBeSplitIsNotAppliedAndLeavesNothingBehind() {
-        // 1300 − 500 = 800 kcal at 80 kg holds neither 2 g/kg protein nor the fat floor (K-108): 409, and the whole
-        // transaction goes back — the plan and the call as they were.
-        AccountId account = ready();
-        jdbc.sql("""
-                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
-                values (:a, 'CUT', :start, :start, 1300, false)""").param("a", account.value()).param("start", PLAN_START).update();
-        UUID call = pending(account, new Action.AdjustCalories(-500));
+    void aCallIsAppliedEvenWhenNoMacroSplitFitsItsTargetAndTheTargetsSaySo() throws Exception {
+        // 1300 − 500 = 800 kcal at 80 kg holds neither 2 g/kg protein nor the fat floor (K-108). An approved call is not
+        // refused over how the targets are shown (K-216 review): applied, carbs and fat left out.
+        AccountId account = onAPlanOf(1300);
+        UUID call = pending(account, new Action.AdjustCalories(-500), 1300);
+
+        Map<String, Object> targets = map(send(account, "POST", "/v1/decisions/" + call + "/apply"));
+
+        assertThat(targets).containsEntry("targetKcal", 800).containsEntry("proteinG", 160).doesNotContainKeys("carbsG", "fatG");
+        assertThat(map(send(account, "POST", "/v1/decisions/" + call + "/undo"))).containsEntry("targetKcal", 1300);
+    }
+
+    @Test
+    void aCallMadeOnAnotherTargetIsNotApplied() {
+        // The call judged 2600; the plan now holds 2400 (a call applied while this one was being made): its step would
+        // land twice (K-216 review). CONFLICT, nothing moves.
+        AccountId account = onAPlanOf(2400);
+        UUID call = pending(account, new Action.AdjustCalories(-500), 2600);
 
         assertThat(send(account, "POST", "/v1/decisions/" + call + "/apply")).hasStatus(409);
+        assertThat(store.plan(account).orElseThrow().targetKcal()).isEqualTo(2400);
+        assertThat(store.byId(account, call).orElseThrow().application()).isEqualTo(CallStore.Application.PENDING);
+    }
 
-        assertThat(store.plan(account)).contains(new CallStore.Plan(Phase.CUT, PLAN_START, PLAN_START, 1300, false, null));
-        assertThat(store.byId(account, call).orElseThrow()).satisfies(kept -> {
-            assertThat(kept.application()).isEqualTo(CallStore.Application.PENDING);
-            assertThat(kept.appliedAt()).isNull();
+    @Test
+    void aPlanStartedWithoutAWeighInGetsItsEstimateAtTheNextCheckIn() {
+        // The first check-in came before any weigh-in: no estimate, no target. Once there is a weight the next check-in
+        // starts the estimate and its watch (K-114) — else the plan would stay without a target for good (K-216 review).
+        AccountId account = ready();
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, observing_maintenance)
+                values (:a, 'CUT', :start, :start, true)""").param("a", account.value()).param("start", PLAN_START).update();
+
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "weekOf",
+                CheckInWeek.weekOf(TODAY, java.time.DayOfWeek.MONDAY).toString(), "answers", List.of()))).hasStatusOk();
+
+        assertThat(store.plan(account)).hasValueSatisfying(plan -> {
+            assertThat(plan.targetKcal()).isNotNull().isPositive();
+            assertThat(plan.observingMaintenance()).isTrue();
+            assertThat(plan.planStart()).isEqualTo(TODAY);
+            assertThat(plan.phaseStart()).isEqualTo(PLAN_START);
         });
     }
 
@@ -287,10 +313,18 @@ class ApplyDecisionApiTests {
     }
 
     private AccountId onACut(Instant weighedAt) {
-        AccountId account = ready(weighedAt);
+        return onAPlanOf(ready(weighedAt), 2600);
+    }
+
+    private AccountId onAPlanOf(int targetKcal) {
+        return onAPlanOf(ready(), targetKcal);
+    }
+
+    private AccountId onAPlanOf(AccountId account, int targetKcal) {
         jdbc.sql("""
                 insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
-                values (:a, 'CUT', :start, :start, 2600, false)""").param("a", account.value()).param("start", PLAN_START).update();
+                values (:a, 'CUT', :start, :start, :target, false)""").param("a", account.value()).param("start", PLAN_START)
+                .param("target", targetKcal).update();
         return account;
     }
 
@@ -310,14 +344,24 @@ class ApplyDecisionApiTests {
     }
 
     private UUID pending(AccountId account, Action action) {
-        return pending(account, action, CheckInWeek.weekOf(TODAY, java.time.DayOfWeek.MONDAY), Instant.now());
+        return pending(account, action, 2600);
+    }
+
+    private UUID pending(AccountId account, Action action, int judgedKcal) {
+        return pending(account, action, CheckInWeek.weekOf(TODAY, java.time.DayOfWeek.MONDAY), Instant.now(), judgedKcal);
     }
 
     private UUID pending(AccountId account, Action action, LocalDate weekOf, Instant at) {
+        return pending(account, action, weekOf, at, 2600);
+    }
+
+    /** A call as the engine would have kept it, made on a plan of {@code judgedKcal}. */
+    private UUID pending(AccountId account, Action action, LocalDate weekOf, Instant at, int judgedKcal) {
         Decision decision = new Decision(action, List.of(new Reason(new RuleId("r"), new Source("arastirma/x.md#1", SourceTag.LITERATURE))),
                 Confidence.MEDIUM, TODAY.plusDays(7), new CopyKey("decision.continue"));
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), UUID.randomUUID(), weekOf, TODAY, at, parameters.versionHash(),
-                StoredSnapshot.of(new Snapshot(TODAY, Sex.MALE, Phase.CUT, PLAN_START, new WeightSeries(List.of()))), DecisionJson.of(decision),
+                StoredSnapshot.of(new Snapshot(TODAY, Sex.MALE, Phase.CUT, PLAN_START, new WeightSeries(List.of()))
+                        .withEnergy(app.keel.engine.EnergyBudget.exerciseUnknown(judgedKcal))), DecisionJson.of(decision),
                 DecisionService.application(decision));
         assertThat(store.keep(account, call)).isTrue();
         return call.id();

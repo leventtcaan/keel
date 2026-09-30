@@ -654,7 +654,8 @@ export interface paths {
         put?: never;
         /**
          * Apply the call; only the one thing it changes moves, everything else stays (U3)
-         * @description Only the latest call, and only while PENDING: applied twice (or by two requests at once), the targets move once. A
+         * @description Only the latest call, only while PENDING, and only on the plan target it judged (else 409: another call moved the
+         *     plan while this one was being made). Applied twice (or by two requests at once), the targets move once. A
          *     calorie call moves the calorie target (and restarts its wait); more movement raises the step target. CONFLICT (409):
          *     an older call, one that changes nothing (NOT_NEEDED), one undone, and a call whose kind is not applied here yet —
          *     the training calls change the program (K-217); a phase change, a mini cut and the hard stop need what the engine
@@ -1371,12 +1372,16 @@ export interface components {
             type: "CHANGE_PHASE";
             to: components["schemas"]["Phase"];
         };
-        /** @description What the user follows today; each a plan number set by calls (ADR-020 L-13). */
+        /**
+         * @description What the user follows today; each a plan number set by calls (ADR-020 L-13). Protein does not depend on calories
+         *     and is always there; carbs and fat are absent when no split fits the target (the macro floors moved with a
+         *     heavier trend or a birthday after the target was set).
+         */
         Targets: {
             targetKcal: number;
             proteinG: number;
-            carbsG: number;
-            fatG: number;
+            carbsG?: number;
+            fatG?: number;
             stepsPerDay: number;
             trainingSessionsPerWeek: number;
         };

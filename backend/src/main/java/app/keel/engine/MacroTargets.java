@@ -43,9 +43,7 @@ public final class MacroTargets {
             throw new IllegalArgumentException(
                     "Macros need a positive calorie target and bodyweight and an age, got " + kcal + " kcal, " + bodyweightKg + " kg, " + ageYears);
         }
-        ParameterKey proteinKey = sex == Sex.FEMALE && ageYears >= parameters.wholeNumber(ParameterKey.PROTEIN_FEMALE_HIGHER_FROM_AGE)
-                ? ParameterKey.PROTEIN_G_PER_KG_FEMALE_45_PLUS : ParameterKey.PROTEIN_G_PER_KG;
-        int protein = grams(bodyweightKg, parameters.number(proteinKey));
+        int protein = proteinG(bodyweightKg, sex, ageYears, parameters);
         int fatMax = grams(bodyweightKg, parameters.number(ParameterKey.FAT_G_PER_KG_MAX));
         int fatMin = grams(bodyweightKg, parameters.number(ParameterKey.FAT_G_PER_KG_MIN));
         double carbsMin = parameters.number(ParameterKey.CARBS_MIN_G_PER_DAY);
@@ -67,6 +65,17 @@ public final class MacroTargets {
         }
         int carbs = (int) Math.round(carbsFor(kcal, protein, fat));
         return new MacroResult.Split(new Macros(protein, fat, carbs, fiber, notes));
+    }
+
+    /**
+     * The day's protein: bodyweight × protein_g_per_kg (women from protein_female_higher_from_age: the 45+ value). It
+     * does not depend on the calorie target — never lowered to make room for anything — so it is known even when no split
+     * fits the target (K-216).
+     */
+    public static int proteinG(BigDecimal bodyweightKg, Sex sex, int ageYears, Parameters parameters) {
+        ParameterKey proteinKey = sex == Sex.FEMALE && ageYears >= parameters.wholeNumber(ParameterKey.PROTEIN_FEMALE_HIGHER_FROM_AGE)
+                ? ParameterKey.PROTEIN_G_PER_KG_FEMALE_45_PLUS : ParameterKey.PROTEIN_G_PER_KG;
+        return grams(bodyweightKg, parameters.number(proteinKey));
     }
 
     private static double carbsFor(int kcal, int proteinG, int fatG) {
