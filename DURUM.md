@@ -46,7 +46,8 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-218 set tipi, yük modeli, e1RM (+ H3 B15) | ✅ birleşti; inceleme: int taşması, tekrar/RIR tavanı | #163 | `M2/K-218.md` |
 | K-219 hareket kataloğu (40 hareket) | ✅ birleşti; inceleme: takas deseni, T-bar, face pull; K-210 beklentisi veriye göre | #164 | `M2/K-219.md` |
 | K-211 program (V8, 6 şablon taslak) | ✅ birleşti; inceleme: iç içe okuma, eşzamanlı değiştirme 500, kol hacmi K-61 | #165 | `M2/K-211.md` |
-| K-208 besin aralığı + barkod (V9, + H7) | dal `nutrition/32-food-ranges` (`../keel-k208`), inceleme sürüyor | — | `M2/K-208.md` |
+| K-208 besin aralığı + barkod (V9, + H7) | ✅ birleşti; inceleme: etiket sınırı kaynaksız yön, UPC-E, göç yorumu; CI sıralama testini yakaladı | #166 | `M2/K-208.md` |
+| K-209 öğün + günlük bütçe (V10) | PR auto-merge; inceleme: boş assertion, tekrar gönderim sırası | #167 | `M2/K-209.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -56,13 +57,14 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (30 Eyl, üçüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-2.md`)
 Bu oturum M1'i kapattı (#150-#153) ve M2'de K-201, K-202, K-203, K-204, K-205, K-207, K-215'i birleştirdi.
-1. **Açık iş (30 Eyl):** K-219 #164, K-211 #165 ✅. **K-208** `nutrition/32-food-ranges` (`../keel-k208`, taban K-211 ucu
-   **785fe1c**, V9; araştırma `arastirma/ham/H7-besin-araligi.md`): kod + saf testler (RangeTests, GtinTests) + DB testleri
-   (FoodMappingTests, CI'da) yazıldı, commit d231daf, inceleme ajanı çalışıyor → bulgular TDD → `git rebase --onto origin/main
-   785fe1c` → PR. FDC toplu içe aktarma soru 16'yı bekliyor (tablo boş).
-   **⚠ DİSK DOLU:** ~800 MB boş; Docker açılmıyor → veritabanlı testler yalnız CI'da. Worktree'de yalnız `contracts` için
-   `npm ci` (43 MB).
-2. **Sonraki göç numarası V10** (V7 = K-214, V8 = K-211, V9 = K-208). Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
+1. **Açık iş (30 Eyl):** K-208 #166 ✅. **K-209 PR #167** (auto-merge; `../keel-k209`, V10). Sıradaki **K-212** (V11):
+   plan kaydı (faz, plan başlangıcı, hedef, gözlem) ilk check-in'de `InitialTarget`'tan; Snapshot modül API'lerinden
+   (profil, `Measurements.dailyWeights`, check-in cevapları); fatProxy ve TrainingStatus şimdilik boş (soru 11; set
+   kaydından özet ayrı iş); `DECIDE_FOR_ME` → 409 (soru 17); karar Snapshot (menstrual alanı hariç) + parametre
+   hash'iyle saklanır; yeniden üretilebilirlik testi.
+   **⚠ DİSK DOLU:** Docker açılmıyor → DB testleri yalnız CI'da. Worktree'de yalnız `contracts` için `npm ci` (43 MB);
+   worktree silerken `--force` (içinde node_modules var). **Mutasyon betiği düzeltildi** (move yerine yazar + sonda derler).
+2. **Sonraki göç numarası V11** (V7 = K-214, V8 = K-211, V9 = K-208, V10 = K-209). Kalan M2 (sıra): **K-218** set tipi/yük modeli (K-210 üstü; e1RM yalnız WORKING, vücut ağırlığı +
    ek yük, tek taraflı) → **K-219** hareket kataloğu 30-40 (+ aliases, setup_fields, clips, review; `data/muscles.yaml`
    sözlüğü var, bilinmeyen alan reddi var → alan listesini genişlet) → **K-211** program üretimi/içe alma → **K-208** besin
    eşleme + aralık (FDC toplu içe aktarma, ADR-008 güncellemesi; aralık modeli parametreleri araştırmadan kaynakla) →
