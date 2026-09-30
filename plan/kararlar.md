@@ -33,3 +33,4 @@
 | [ADR-026](kararlar/ADR-026-modul-bagimliliklari-riza-ve-motor.md) | Modül haritası: sağlık verisi tutanlar rıza kapısına, ölçüm motora bağlı; parametreler çalışma anında (K-206) | KABUL |
 | [ADR-027](kararlar/ADR-027-m2-sonu-cevaplari.md) | M2 sonu: Levent'in cevapları (sorular 0-20) — yağ tahmini, LEA, hard stop etiketi, yaş 18+, FDC | KABUL |
 | [ADR-028](kararlar/ADR-028-m3-basi-cevaplari.md) | M3 başı: sorular 21-24 (rıza geri çekince silme, LEA temkinli uç, hard stop sonrası yeniden sor, genel karar türü), referans görseller çizim | KABUL |
+| [ADR-029](kararlar/ADR-029-birimler-ve-mobil-parametreleri.md) | Birimler: depolama metrik, dönüşüm telefonda, tek yuvarlama noktası; telefonun okuduğu parametreler JSON (aynı şema) | KABUL |
