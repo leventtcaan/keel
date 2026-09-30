@@ -24,6 +24,7 @@ profil → ölçüm/beslenme/antrenman → karar.
 12. K-219 hareket kataloğu — veri tasarımı, kapalı sözlük, klip incelemesi
 13. K-211 program — şablon veri, set bütçesi, programı değiştirmek
 14. K-208 besin aralığı — belirsizlik çarpımı, etiket mevzuatı, barkod
+15. K-209 öğün ve bütçe — tarihi yeniden yazmamak, yerel gün, bağımlılığı tersine çevirmek
 11. (sıradakiler görev bitince eklenir)
 
 ## Durum
@@ -43,3 +44,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-219 hareket kataloğu (40 hareket) | `K-219.md` | ✅ | — | — | — |
 | K-211 program üretimi ve içe alma (V8) | `K-211.md` | ✅ | — | — | — |
 | K-208 besin aralığı ve barkod (V9) | `K-208.md` | ✅ | — | — | — |
+| K-209 öğün kaydı ve günlük bütçe (V10) | `K-209.md` | ✅ | — | — | — |
