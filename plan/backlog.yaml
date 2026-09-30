@@ -1031,7 +1031,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-222]
     why: "Motor mini cut'ı (G7 K-102) yalnız iştah 'kayboldu' cevabıyla verir; check-in iştahı hiç sormuyor (spine'da yok), bu yüzden MiniCut üretilemiyor ve uygulanamıyor (K-222'den ayrıldı, 30 Eyl)"
     acceptance:
@@ -1051,7 +1051,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-222]
     why: "HARD_STOP türü adet cevabını ele veriyor (GDPR Md. 9); Levent (b) seçti (ADR-028 #24)"
     acceptance:
@@ -1070,7 +1070,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-222]
     why: "Hard stop'tan sonra motor cut'a ya da aşağı adıma dönebiliyor; Levent (b) seçti: önce yeniden sorulsun (ADR-028 #23)"
     acceptance:
@@ -1210,7 +1210,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-301, K-302, K-305, K-310, K-205]
     why: "İlk 5 dakikada kişiselleştirilmiş plan; beklenti kalibrasyonu (U15). L bölündü (30 Eyl): rıza, ölçüm ve Health K-312'de"
     acceptance:
@@ -1234,7 +1234,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-306, K-204, K-304]
     why: "K-306'dan ayrıldı (30 Eyl). Sağlık verisi rızası toplamadan önce; ölçüm ve gıda kısıtı rızaya bağlı (ADR-007, ADR-027 #14)"
     acceptance:
@@ -1274,7 +1274,7 @@ tasks:
     module: mobile
     type: chore
     size: S
-    status: todo
+    status: doing
     depends_on: [K-007]
     why: "HealthKit, Sign in with Apple ve kamera Expo Go'da çalışmaz; M3-M4 testleri bloke olmasın (L3 P5)"
     acceptance:
@@ -1293,7 +1293,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-301, K-204]
     why: "Prototip üç yerde Ayarlar'a yönlendiriyor; hesap silme ve rıza geri alma arayüzsüzdü (L3 P7)"
     acceptance:
@@ -1369,7 +1369,7 @@ tasks:
     module: mobile
     type: spike
     size: S
-    status: todo
+    status: done
     depends_on: [K-007]
     why: "Bağımlılık seçimi gerekçeli olmalı (K5). M3'e çekildi (30 Eyl): K-308 HealthKit diyaloğunu, K-312 Health iznini ister"
     acceptance:
