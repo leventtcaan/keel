@@ -818,6 +818,10 @@ export interface components {
             goal: "LOSE_FAT" | "BUILD_MUSCLE" | "DECIDE_FOR_ME";
             sex: components["schemas"]["Sex"];
             heightCm: number;
+            /**
+             * @description Adults only (K-225): only the year is kept, so this year minus birthYear must be at least 19 on the user's
+             *     calendar — certainly 18 on every day of the year. Younger is VALIDATION_FAILED.
+             */
             birthYear: number;
             activityLevel?: components["schemas"]["ActivityLevel"];
             /** @enum {string} */
@@ -847,7 +851,11 @@ export interface components {
             timeZone: string;
         };
         FoodPreferences: {
-            /** @description Foods the user does not eat or cannot eat, in their own words. */
+            /**
+             * @description Foods the user does not eat or cannot eat, in their own words. May be health data (an allergy, coeliac
+             *     disease; GDPR Art. 9): kept only with the HEALTH_DATA consent (CONSENT_REQUIRED without it), and absent from
+             *     responses while the consent is not given (K-225).
+             */
             avoid?: string[];
             budgetNote?: string;
         };

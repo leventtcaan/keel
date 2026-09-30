@@ -1,5 +1,7 @@
 package app.keel.profile;
 
+import app.keel.consent.ConsentGate;
+import app.keel.consent.ConsentKind;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
@@ -7,11 +9,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** The contract's /v1/profile (K-205): read it, or replace it whole. */
 @RestController
+@EnableConfigurationProperties(ProfileLimits.class)
 @RequestMapping("/v1/profile")
 class ProfileController {
 
@@ -53,25 +58,45 @@ class ProfileController {
 
     private final ProfileStore store;
     private final Clock clock;
+    private final ProfileLimits limits;
+    private final ConsentGate consent;
 
-    ProfileController(ProfileStore store, Clock clock) {
+    ProfileController(ProfileStore store, Clock clock, ProfileLimits limits, ConsentGate consent) {
         this.store = store;
         this.clock = clock;
+        this.limits = limits;
+        this.consent = consent;
     }
 
     @GetMapping
     Profile get(AccountId account) {
-        return store.find(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return shown(account, store.find(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
     }
 
+    /**
+     * An adult's profile (K-225). The foods one cannot eat may be health data — an allergy, coeliac disease (GDPR Art.
+     * 9): kept and read only with the HEALTH_DATA consent (ADR-027 #14).
+     */
     @PutMapping
     Profile put(AccountId account, @RequestBody Profile profile) {
         if (!valid(profile)) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
+        if (profile.food() != null && profile.food().avoid() != null && !profile.food().avoid().isEmpty()) {
+            consent.require(account, ConsentKind.HEALTH_DATA);
+        }
         store.save(account, profile);
-        return store.find(account).orElseThrow(); // what was stored, so the answer is what a GET returns
+        return shown(account, store.find(account).orElseThrow()); // what was stored, so the answer is what a GET returns
+    }
 
+    // Without the consent (never given, or taken back) the foods to avoid are not read out.
+    private Profile shown(AccountId account, Profile profile) {
+        if (profile.food() == null || profile.food().avoid() == null || consent.granted(account, ConsentKind.HEALTH_DATA)) {
+            return profile;
+        }
+        Food food = profile.food().budgetNote() == null ? null : new Food(null, profile.food().budgetNote());
+        return new Profile(profile.goal(), profile.sex(), profile.heightCm(), profile.birthYear(), profile.activityLevel(), profile.programChoice(),
+                profile.schedule(), food, profile.units());
     }
 
     // The contract's limits (openapi.yaml › Profile, Schedule); enum values are checked by the JSON reader already.
@@ -86,7 +111,8 @@ class ProfileController {
         boolean born = profile.birthYear() >= MIN_BIRTH_YEAR && profile.birthYear() <= Year.now(clock).getValue();
         boolean days = !schedule.trainingDays().contains(null) && new HashSet<>(schedule.trainingDays()).size() == schedule.trainingDays().size();
         boolean time = schedule.usualTrainingTime() == null || CLOCK_TIME.matcher(schedule.usualTrainingTime()).matches();
-        return height && born && days && time && knownZone(schedule.timeZone());
+        return height && born && days && time && knownZone(schedule.timeZone())
+                && AgeGate.certainlyAtLeast(profile.birthYear(), LocalDate.now(clock.withZone(ZoneId.of(schedule.timeZone()))), limits.adultAge());
     }
 
     private static boolean knownZone(String zone) {

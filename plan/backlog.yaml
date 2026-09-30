@@ -996,11 +996,11 @@ tasks:
     module: profile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-205, K-204]
     why: "ADR-027 #13 (canlıda sorun çıkarmayacak yaş: 18+) ve #14 (kısıt alanı sağlık verisi olabilir, GDPR Md. 9)"
     acceptance:
-      - "Doğum yılı bugün 18 yaşından küçük gösteriyorsa profil 400 (kod: sözleşmede); eşik parametre/yapılandırmadan"
+      - "Kesin 18: yalnız yıl tutulduğu için bu yıl − doğum yılı ≥ 19 (kullanıcının takviminde), değilse 400 (ADR-027 #13); eşik yapılandırmadan"
       - "Kısıt alanı sağlık verisi rızası olmadan yazılamaz ve okunmaz; rıza geri alınınca cevaplarda görünmez"
     tests:
       - "ProfileApiTests"

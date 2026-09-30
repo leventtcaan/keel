@@ -125,10 +125,13 @@ class DecisionServiceTests {
 
     @Test
     void aBodyTheEngineCannotReadIsAConflictNotA500() {
-        // Born this year: age 0, which the engine's Profile refuses (K-212 review).
+        // Born this year: age 0, which the engine's Profile refuses (K-212 review). The profile API refuses it since K-225
+        // (adults only), so it is written into the table: the check-in still must not 500 on a body it cannot read.
         AccountId baby = TestSessions.newAccount();
         send(baby, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
-        send(baby, "PUT", "/v1/profile", profile("LOSE_FAT", "MALE", LocalDate.now(ZoneOffset.UTC).getYear(), "UTC", null));
+        send(baby, "PUT", "/v1/profile", profile("LOSE_FAT", "MALE", 1996, "UTC", null));
+        jdbc.sql("update profile.profile set birth_year = :year where account_id = :a").param("year", LocalDate.now(ZoneOffset.UTC).getYear())
+                .param("a", baby.value()).update();
 
         assertThat(answer(baby, UUID.randomUUID(), thisWeek(), List.of())).hasStatus(409);
     }

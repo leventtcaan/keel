@@ -22,7 +22,7 @@ sorulacaklar" listesinde biriktirildi (0-20). Bu ADR cevapları ve her birinin k
 | 11 | İç yağ tahmini kaynağı | **İkisi birden:** referans görsellerden seçim (göbek testi, Ö-4) + bel/boy'dan kaba bant yalnız kapı için; çelişirse temkinli olan | K-224 (araştırma: WHtR → bant eşlemesi kaynaklanmalı, U14) |
 | 11b | LEA tabanı yokken aşağı adım | **Kadında dursun:** yağ tahmini yokken kadında kalori aşağı adımı yok (hız ve güvenlik kararları çalışır); erkekte BMR + makro tabanıyla devam | K-223 |
 | 12 | Rıza metinleri | **Şimdilik onaylı;** M8'de hukuk gözden geçirmesi, sürüm 1-draft kalır | Değişiklik yok |
-| 13 | Yaş kapısı | Levent: "canlıya çıkarken sorun çıkarmayacak şekilde" → **18+** (agent seçimi: ülkeye göre değişmeyen tek eşik; GDPR Md. 8 ebeveyn rızası ve ülke farkları yok; SCOFF 18 kuralıyla tutarlı) | Profil doğrulaması; K-225 |
+| 13 | Yaş kapısı | Levent: "canlıya çıkarken sorun çıkarmayacak şekilde" → **kesin 18+** (agent seçimi: ülkeye göre değişmeyen tek eşik; GDPR Md. 8 ebeveyn rızası ve ülke farkları yok; SCOFF 18 kuralıyla tutarlı). Yalnız doğum yılı tutulduğu için kesinlik = bu yıl − doğum yılı ≥ 19 (yılın her günü 18); bu yıl 18 olan Ocak'a kadar bekler | Profil doğrulaması; K-225 |
 | 14 | "Yiyemediğim gıdalar" | **Sağlık rızasına bağlansın** | Profil alanı rıza kapısında; K-225 |
 | 15 | Program şablonları | **Onaylı; uygulama en fazla 6 gün** seçtirir, 7. gün dinlenme | M3 onboarding (sunucu zaten 7'ye 400) |
 | 16 | FDC toplu veri | **Foundation + SR Legacy şimdi** indirilip içe aktarılsın; Branded disk açılınca ayrıca | K-226 |

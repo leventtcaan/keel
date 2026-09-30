@@ -62,7 +62,7 @@ class ProfileApiTests {
 
     @Test
     void theProfileIsStoredAndReadBackAsSent() throws Exception {
-        AccountId account = TestSessions.newAccount();
+        AccountId account = consenting();
 
         assertThat(put(account, onboarding())).hasStatusOk();
 
@@ -71,7 +71,7 @@ class ProfileApiTests {
 
     @Test
     void settingsReplaceTheWholeProfile() throws Exception {
-        AccountId account = TestSessions.newAccount();
+        AccountId account = consenting();
         put(account, onboarding());
         Map<String, Object> changed = onboarding();
         changed.put("goal", "DECIDE_FOR_ME");
@@ -85,7 +85,7 @@ class ProfileApiTests {
 
     @Test
     void theAnswerToAPutIsWhatAGetWillReturn() throws Exception {
-        AccountId account = TestSessions.newAccount();
+        AccountId account = consenting();
         Map<String, Object> profile = onboarding();
         profile.put("food", Map.of());
 
@@ -96,7 +96,7 @@ class ProfileApiTests {
 
     @Test
     void otherModulesReadWhatTheEngineNeeds() {
-        AccountId account = TestSessions.newAccount();
+        AccountId account = consenting();
         put(account, onboarding());
 
         Optional<ProfileFacts> facts = profiles.of(account);
@@ -108,7 +108,7 @@ class ProfileApiTests {
 
     @Test
     void impossibleValuesAreValidationErrors() {
-        AccountId account = TestSessions.newAccount();
+        AccountId account = consenting();
         List<Map.Entry<String, Object>> bads = List.of(Map.entry("heightCm", 99), Map.entry("heightCm", 251),
                 Map.entry("birthYear", 1899), Map.entry("birthYear", Year.now().getValue() + 1), Map.entry("goal", "GET_RICH"),
                 Map.entry("sex", "OTHER"), Map.entry("units", "PARSECS"));
@@ -124,7 +124,7 @@ class ProfileApiTests {
         // K-205 review: by default the JSON reader turns "sex": 1 into FEMALE, "heightCm": 180.7 into 180 and "180" into
         // 180 — a client's index bug would silently store the wrong sex or check-in day. The contract says strings and
         // integers; anything else is a validation error.
-        AccountId account = TestSessions.newAccount();
+        AccountId account = consenting();
         List<Map.Entry<String, Object>> loose = List.of(Map.entry("sex", 1), Map.entry("goal", 0), Map.entry("heightCm", 180.7),
                 Map.entry("heightCm", "180"));
         for (Map.Entry<String, Object> value : loose) {
@@ -139,7 +139,7 @@ class ProfileApiTests {
 
     @Test
     void theScheduleMustBeUsable() {
-        AccountId account = TestSessions.newAccount();
+        AccountId account = consenting();
         for (Map<String, Object> schedule : List.of(
                 Map.<String, Object>of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "Mars/Olympus"),
                 Map.<String, Object>of("trainingDays", List.of("MONDAY", "MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC"),
@@ -161,6 +161,47 @@ class ProfileApiTests {
 
     private MvcTestResult get(AccountId account) {
         return mvc.get().uri("/v1/profile").header("Authorization", TestSessions.bearer(context, account)).exchange();
+    }
+
+    @Test
+    void onlyACertainAdultHoldsAProfile() {
+        // K-225, ADR-027 #13: only the birth year is kept, so the year must make the user 18 on every day of this one.
+        Map<String, Object> almost = onboarding();
+        // The server reads "this year" on the profile's own calendar (Europe/Istanbul): so does the test, at New Year too.
+        int thisYear = java.time.Year.now(java.time.ZoneId.of("Europe/Istanbul")).getValue();
+        almost.put("birthYear", thisYear - 18);
+        Map<String, Object> adult = onboarding();
+        adult.put("birthYear", thisYear - 19);
+
+        assertThat(put(consenting(), almost)).hasStatus(400).bodyJson().extractingPath("$.code").isEqualTo("VALIDATION_FAILED");
+        assertThat(put(consenting(), adult)).hasStatusOk();
+    }
+
+    @Test
+    void theFoodsOneCannotEatAreKeptAndReadOnlyWithTheHealthDataConsent() throws Exception {
+        // ADR-027 #14: an allergy or coeliac disease is health data (GDPR Art. 9).
+        AccountId noConsent = TestSessions.newAccount();
+        assertThat(put(noConsent, onboarding())).hasStatus(403).bodyJson().extractingPath("$.code").isEqualTo("CONSENT_REQUIRED");
+        Map<String, Object> nothingToAvoid = onboarding();
+        nothingToAvoid.put("food", Map.of("budgetNote", "student budget"));
+        assertThat(put(noConsent, nothingToAvoid)).as("no foods to avoid, no health data").hasStatusOk();
+        Map<String, Object> emptyList = onboarding();
+        emptyList.put("food", Map.of("avoid", List.of(), "budgetNote", "student budget"));
+        assertThat(put(noConsent, emptyList)).as("an empty list is nothing to avoid").hasStatusOk();
+
+        AccountId account = consenting();
+        put(account, onboarding());
+        assertThat((Map<String, Object>) read(get(account)).get("food")).containsEntry("avoid", List.of("mushrooms"));
+        mvc.delete().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account)).exchange();
+
+        assertThat((Map<String, Object>) read(get(account)).get("food")).doesNotContainKey("avoid").containsEntry("budgetNote", "student budget");
+    }
+
+    private AccountId consenting() {
+        AccountId account = TestSessions.newAccount();
+        assertThat(mvc.put().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"1-draft\"}").exchange()).hasStatusOk();
+        return account;
     }
 
     private MvcTestResult put(AccountId account, Map<String, Object> profile) {
