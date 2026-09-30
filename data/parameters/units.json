@@ -1,0 +1,52 @@
+{
+  "parameters": [
+    {
+      "key": "weight_display_decimals",
+      "value": 1,
+      "unit": "count",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#7",
+      "note": "Body weight in kg and lb alike, as a scale shows it (81.5 kg, 179.7 lb). ADR-029."
+    },
+    {
+      "key": "load_display_decimals",
+      "value": 1,
+      "unit": "count",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#7",
+      "note": "Bar and dumbbell loads; a trailing .0 is dropped (100 kg, 225 lb, 102.5 kg). ADR-029."
+    },
+    {
+      "key": "waist_display_decimals",
+      "value": 1,
+      "unit": "count",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#7",
+      "note": "A tape reads to about 0.1 in / 0.5 cm; one decimal in both. ADR-029."
+    },
+    {
+      "key": "stored_kg_decimals",
+      "value": 2,
+      "unit": "count",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#At most 2 decimals",
+      "note": "The server keeps body weight and load to 2 decimals; a finer value is a 400. A value typed in lb is rounded here, once."
+    },
+    {
+      "key": "stored_waist_cm_decimals",
+      "value": 1,
+      "unit": "count",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#At most 1 decimal",
+      "note": "The server keeps the waist to 1 decimal."
+    },
+    {
+      "key": "imperial_regions",
+      "value": ["US", "LR", "MM"],
+      "unit": "region",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#7",
+      "note": "Only the default before the user chooses (onboarding asks, settings change it): the countries that use US customary units."
+    }
+  ]
+}
