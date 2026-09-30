@@ -150,6 +150,37 @@ class QuestionBudgetTests {
     }
 
     @Test
+    void theCycleIsAskedWhenAnAnswerTheWeekCanGiveWouldLeaveTheCallWaitingForIt() {
+        // K-229 review: held after a hard stop, the spine first waits for training; a declining answer would cut — and
+        // then wait for the cycle. Looking only at the unanswered call, the cycle question was never asked and every
+        // such week would end without a call.
+        Function<CheckIn, Decision> held = checkIn -> switch (checkIn.training()) {
+            case UNKNOWN -> waiting("check_in_needed_training");
+            case DECLINING -> waiting("cycle_check_needed");
+            default -> decided();
+        };
+
+        assertThat(CheckInQuestions.cycleAwaited(held, CheckIn.NONE, List.of(Answers.Kind.TRAINING))).isTrue();
+        assertThat(CheckInQuestions.cycleAwaited(held, CheckIn.NONE, List.of())).as("training not asked: it cannot be answered").isFalse();
+        assertThat(CheckInQuestions.cycleAwaited(SPINE, CheckIn.NONE, List.of(Answers.Kind.TRAINING, Answers.Kind.RECOVERY))).isFalse();
+        assertThat(CheckInQuestions.cycleAwaited(checkIn -> waiting("cycle_check_needed"), CheckIn.NONE, List.of()))
+                .as("the data alone").isTrue();
+    }
+
+    @Test
+    void theCycleIsAwaitedAfterTwoAnswersOrWithTheSecondLeftOpen() {
+        Function<CheckIn, Decision> late = checkIn -> checkIn.training() == CheckIn.Training.STABLE && checkIn.recovery() == CheckIn.Recovery.GOOD
+                ? waiting("cycle_check_needed") : decided();
+        Function<CheckIn, Decision> skipped = checkIn -> checkIn.training() == CheckIn.Training.STABLE && checkIn.recovery() == CheckIn.Recovery.UNKNOWN
+                ? waiting("cycle_check_needed") : decided();
+        List<Answers.Kind> both = List.of(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+
+        assertThat(CheckInQuestions.cycleAwaited(late, CheckIn.NONE, both)).isTrue();
+        assertThat(CheckInQuestions.cycleAwaited(skipped, CheckIn.NONE, both)).as("a question may be left unanswered").isTrue();
+        assertThat(CheckInQuestions.cycleAwaited(late, CheckIn.NONE, List.of(Answers.Kind.TRAINING))).isFalse();
+    }
+
+    @Test
     void theCycleQuestionIsAYesOrNoWithItsWords() {
         Map<String, Object> copy = copy();
         CheckInQuestions.Question question = CheckInQuestions.describe(Answers.Kind.CYCLE_STOPPED);

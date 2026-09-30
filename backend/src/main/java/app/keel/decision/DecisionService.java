@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -110,14 +111,17 @@ class DecisionService {
         CheckIn dataSays = dataSays(account, week, plan);
         Optional<TrainingStatus> training = training(account, week);
         // The cycle question first, outside the budget: a safety question (V4, ADR-020 L-1), asked in the low energy band —
-        // and after a hard stop, when this week's call would open a deficit again and waits for it (K-229).
+        // and after a hard stop, when this week's call, on the data or on the answers asked for, would open a deficit
+        // again and waits for it (K-229).
+        Function<CheckIn, Decision> engine = engine(week, plan, training);
+        List<Answers.Kind> spine = CheckInQuestions.needed(engine, dataSays, budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase())));
         List<Answers.Kind> asked = new ArrayList<>();
         Snapshot unanswered = snapshot(week, plan, dataSays, false, false, training);
         if (CheckInQuestions.asksAboutTheCycle(week.sex(), SafetyNet.energyAvailability(unanswered, week.parameters()))
-                || CheckInQuestions.waitsForTheCycle(DecisionPipeline.decide(unanswered, week.parameters()))) {
+                || CheckInQuestions.cycleAwaited(engine, dataSays, spine)) {
             asked.add(Answers.Kind.CYCLE_STOPPED);
         }
-        asked.addAll(asked(week, plan, dataSays, training));
+        asked.addAll(spine);
         return new CheckInView(week.weekOf(), asked.stream().map(CheckInQuestions::describe).toList(), false);
     }
 
@@ -215,9 +219,9 @@ class DecisionService {
         return CheckInWeek.taken(weekOf, calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(CallStore.Call::weekOf));
     }
 
-    private List<Answers.Kind> asked(Week week, CallStore.Plan plan, CheckIn dataSays, Optional<TrainingStatus> training) {
-        return CheckInQuestions.needed(checkIn -> DecisionPipeline.decide(snapshot(week, plan, checkIn, false, false, training), week.parameters()),
-                dataSays, budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase())));
+    /** The engine on this week's data with the answers tried, before any cycle answer (the questions are found with it). */
+    private Function<CheckIn, Decision> engine(Week week, CallStore.Plan plan, Optional<TrainingStatus> training) {
+        return checkIn -> DecisionPipeline.decide(snapshot(week, plan, checkIn, false, false, training), week.parameters());
     }
 
     /** What the data says, with how the plan was followed over the window, counted from the logs (K-220). */
