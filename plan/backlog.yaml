@@ -930,6 +930,24 @@ tasks:
     refs: ["arastirma/ham/guray/G7-whisper-arsiv.md", "arastirma/ham/H3-bosluk-literatur.md#B5"]
     learn: ["Zaman serisinden durum çıkarma"]
 
+  - id: K-222
+    title: "decision: faz, mini cut ve hard stop kararlarının plana uygulanması"
+    milestone: M2
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-216]
+    why: "K-216 kalori ve adım kararlarını uygular; ChangePhase, MiniCut ve HardStop 409 döner — motor bunları yağ tahmini olmadan veremiyor (DURUM 11, 17, 18). O cevaplar gelince uygulanmaları gerekir (30 Eyl, K-216)"
+    acceptance:
+      - "ChangePhase: faz ve faz başlangıcı değişir; hedef bakım tahminine döner ve gözlenir (K-114, ilk planla aynı)"
+      - "MiniCut: min-max hafta CUT, sonra BULK'a dönüş; dönüş koşulu planda"
+      - "HardStop: hedef en az bakım (ADR-020 L-1); saklama DURUM 18'e göre"
+    tests:
+      - "ApplyDecisionTests"
+    refs: ["plan/kararlar/ADR-020-m1-kural-kararlari.md", "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"]
+    learn: ["Durum geçişi"]
+
 # ───────────────────────────── M3 · Mobil kabuk ─────────────────────────────
   - id: K-301
     title: "Tasarım sistemi: token'lar, fontlar, temel bileşenler (C)"
