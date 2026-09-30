@@ -62,6 +62,17 @@ public final class PhaseGate {
         };
     }
 
+    /**
+     * The first direction when the user leaves it to the engine (ADR-027 #17, K-222): a build only for a body the gate
+     * would turn to building from a cut and would not stop building; anything else, and without an estimate, a cut (G4 K-4:
+     * most people start by losing fat).
+     */
+    public static Phase startingPhase(Optional<BigDecimal> lowerPct, Optional<BigDecimal> higherPct, Parameters parameters) {
+        boolean lean = lowerPct.filter(pct -> pct.compareTo(band(parameters, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT)) < 0).isPresent();
+        boolean underTheCeiling = higherPct.filter(pct -> pct.compareTo(band(parameters, ParameterKey.BULK_CEILING_FAT_PROXY_PCT)) <= 0).isPresent();
+        return lean && underTheCeiling ? Phase.BULK : Phase.CUT;
+    }
+
     private static BigDecimal band(Parameters parameters, ParameterKey key) {
         return BigDecimal.valueOf(parameters.number(key));
     }

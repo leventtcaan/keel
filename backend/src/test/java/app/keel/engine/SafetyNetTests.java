@@ -201,7 +201,7 @@ class SafetyNetTests {
         for (CopyKey key : List.of(new CopyKey("decision.increase_calories.loss_rate_cap"),
                 new CopyKey("decision.change_movement.bmr_floor"), new CopyKey("decision.increase_calories.rapid_loss"),
                 new CopyKey("decision.increase_calories.low_energy_availability"),
-                new CopyKey("decision.hard_stop.menstrual_loss_reported"))) {
+                new CopyKey("decision.hard_stop.low_energy_safety"))) {
             assertThat(EngineFixtures.copyGroup(key)).as(key.value())
                     .hasEntrySatisfying("title", title -> assertThat(title).isInstanceOf(String.class))
                     .hasEntrySatisfying("body", body -> assertThat(body).isInstanceOf(String.class));
@@ -479,9 +479,10 @@ class SafetyNetTests {
 
         assertThat(SafetyNet.check(reported, FEMALE)).hasValueSatisfying(d -> {
             assertThat(d.action()).isEqualTo(new Action.HardStop());
-            assertThat(d.reasons()).containsExactly(new Reason(new RuleId("menstrual_loss_reported"),
+            // ADR-027 #18: the call is kept, its reason under a general label — no trace of the cycle answer anywhere.
+            assertThat(d.reasons()).containsExactly(new Reason(new RuleId("low_energy_safety"),
                     new Source("arastirma/ham/J1-cinsiyet.md#C6", SourceTag.LITERATURE)));
-            assertThat(d.copyKey()).isEqualTo(new CopyKey("decision.hard_stop.menstrual_loss_reported"));
+            assertThat(d.copyKey()).isEqualTo(new CopyKey("decision.hard_stop.low_energy_safety"));
             assertThat(d.confidence()).isEqualTo(Confidence.HIGH);
         });
     }

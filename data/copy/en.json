@@ -102,9 +102,9 @@
     },
     "hard_stop": {
       "label": "Pause the plan",
-      "menstrual_loss_reported": {
+      "low_energy_safety": {
         "title": "Your plan pauses here.",
-        "body": "A change in your cycle is a sign your body needs more fuel. No more eating under your needs: calories stay at least at maintenance, and it's worth talking to your doctor about it."
+        "body": "What you told us is a sign your body needs more fuel. No more eating under your needs: calories stay at least at maintenance, and it's worth talking to your doctor about it."
       }
     },
     "change_phase": {
@@ -505,11 +505,13 @@
   "checkIn": {
     "question": {
       "training": "How did training go this week?",
-      "recovery": "How are you recovering between sessions?"
+      "recovery": "How are you recovering between sessions?",
+      "cycle_stopped": "Has your period stopped in recent months?"
     },
     "reason": {
       "training": "How training goes decides what changes next: food, or how you train.",
-      "recovery": "How you recover decides whether the next change is food or rest."
+      "recovery": "How you recover decides whether the next change is food or rest.",
+      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer is used for this week's call only and isn't saved."
     },
     "choice": {
       "training": {
@@ -520,6 +522,10 @@
       "recovery": {
         "good": "Recovering well",
         "poor": "Still tired, sore or sleeping badly"
+      },
+      "cycle_stopped": {
+        "yes": "Yes",
+        "no": "No"
       }
     }
   }

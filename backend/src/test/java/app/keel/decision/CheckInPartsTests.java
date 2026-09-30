@@ -11,6 +11,7 @@ import app.keel.engine.Decision;
 import app.keel.engine.Phase;
 import app.keel.engine.Reason;
 import app.keel.engine.RuleId;
+import app.keel.engine.Sex;
 import app.keel.engine.Source;
 import app.keel.engine.SourceTag;
 import java.math.BigDecimal;
@@ -51,9 +52,10 @@ class CheckInPartsTests {
     void anAnswerIsTakenForEveryQuestionTheEngineCanWaitFor() {
         // Not only this moment's questions: data can change between asking and answering (a new weigh-in, midnight), and
         // a question the app just showed must not come back as 400 (K-213 review). What the data says (look, waist) is
-        // never an answer.
+        // never an answer. The cycle question too (V4, K-222): the band can leave "low" between asking and answering; whose
+        // answer it is, Answers decides (a woman's).
         assertThat(java.util.Arrays.stream(Answers.Kind.values()).filter(CheckInQuestions::answerable))
-                .containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+                .containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY, Answers.Kind.CYCLE_STOPPED);
     }
 
     @Test
@@ -83,30 +85,47 @@ class CheckInPartsTests {
                 new Answers.Answer(Answers.Kind.LOOK, null, "BETTER", null),
                 new Answers.Answer(Answers.Kind.TRAINING, null, "STABLE", null),
                 new Answers.Answer(Answers.Kind.RECOVERY, null, "POOR", null),
-                new Answers.Answer(Answers.Kind.APPETITE, null, "GONE", null)));
+                new Answers.Answer(Answers.Kind.APPETITE, null, "GONE", null)), Sex.MALE);
 
         assertThat(read.checkIn()).isEqualTo(new CheckIn(CheckIn.Look.BETTER, CheckIn.Training.STABLE, CheckIn.Recovery.POOR,
                 CheckIn.Waist.UNKNOWN, java.util.Optional.empty(), CheckIn.Appetite.GONE));
         assertThat(read.menstrualLossReported()).isFalse();
-        assertThat(Answers.read(List.of()).checkIn()).as("nothing answered: all unknown, the engine asks").isEqualTo(CheckIn.NONE);
+        assertThat(Answers.read(List.of(), Sex.MALE).checkIn()).as("nothing answered: all unknown, the engine asks").isEqualTo(CheckIn.NONE);
     }
 
     @Test
     void anAnswerOutsideItsChoicesOrTwiceIsRefused() {
-        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, null, "AMAZING", null))));
-        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, 7, null, null))));
+        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, null, "AMAZING", null)), Sex.MALE));
+        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, 7, null, null)), Sex.MALE));
         assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, null, "SAME", null),
-                new Answers.Answer(Answers.Kind.LOOK, null, "BETTER", null))));
-        // Read with their questions (K-213): the scales, the waist — and the cycle question, asked only to a woman in the
-        // low energy band (V4), which cannot be computed yet (K-212 review: accepted from anyone, it stopped a man's plan).
-        // Each in its own well-formed shape, so the refusal is for the kind, not the shape.
+                new Answers.Answer(Answers.Kind.LOOK, null, "BETTER", null)), Sex.MALE));
+        // Read with their questions (K-213): the scales and the waist. Each in its own well-formed shape, so the refusal is
+        // for the kind, not the shape.
         for (Answers.Answer later : List.of(new Answers.Answer(Answers.Kind.SLEEP_QUALITY, 3, null, null),
-                new Answers.Answer(Answers.Kind.ENERGY, 7, null, null), new Answers.Answer(Answers.Kind.WAIST, null, null, new BigDecimal("88")),
-                new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "YES", null), new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "NO", null))) {
-            assertThatIllegalArgumentException().as(later.kind().name()).isThrownBy(() -> Answers.read(List.of(later)));
+                new Answers.Answer(Answers.Kind.ENERGY, 7, null, null), new Answers.Answer(Answers.Kind.WAIST, null, null, new BigDecimal("88")))) {
+            assertThatIllegalArgumentException().as(later.kind().name()).isThrownBy(() -> Answers.read(List.of(later), Sex.MALE));
         }
         // UNKNOWN is the engine's word for "not answered", not an answer.
-        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, null, "UNKNOWN", null))));
+        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, null, "UNKNOWN", null)), Sex.MALE));
+    }
+
+    @Test
+    void theCycleAnswerIsTakenFromAWomanOnly() {
+        // V4 (K-222): asked only of a woman in the low energy band; taken from anyone it stopped a man's plan (K-212 review).
+        Answers.Answer yes = new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "YES", null);
+        Answers.Answer no = new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "NO", null);
+
+        assertThat(Answers.read(List.of(yes), Sex.FEMALE).menstrualLossReported()).isTrue();
+        assertThat(Answers.read(List.of(no), Sex.FEMALE).menstrualLossReported()).isFalse();
+        assertThat(Answers.read(List.of(yes), Sex.FEMALE).checkIn()).as("nothing else is answered").isEqualTo(CheckIn.NONE);
+        for (Answers.Answer answer : List.of(yes, no)) {
+            assertThatIllegalArgumentException().as("a man: " + answer.choice()).isThrownBy(() -> Answers.read(List.of(answer), Sex.MALE));
+        }
+        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "MAYBE", null)),
+                Sex.FEMALE));
+        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.CYCLE_STOPPED, 1, null, null)),
+                Sex.FEMALE));
+        assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(yes, no), Sex.FEMALE));
     }
 
     @Test

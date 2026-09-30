@@ -2,7 +2,9 @@ package app.keel.decision;
 
 import app.keel.engine.CheckIn;
 import app.keel.engine.Decision;
+import app.keel.engine.EnergyAvailability;
 import app.keel.engine.Phase;
+import app.keel.engine.Sex;
 import app.keel.engine.WeeklySpine;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -11,6 +13,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -51,9 +54,17 @@ final class CheckInQuestions {
         return List.copyOf(asked.subList(0, Math.min(budget, asked.size())));
     }
 
-    /** Whether an answer of this kind is taken: a question the engine can wait for, asked this week or not. */
+    /**
+     * Whether an answer of this kind is taken: a question the engine can wait for, asked this week or not — and the cycle
+     * question, whose answer is a woman's (Answers).
+     */
     static boolean answerable(Answers.Kind kind) {
-        return Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
+        return kind == Answers.Kind.CYCLE_STOPPED || Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
+    }
+
+    /** Whether the cycle question is asked (V4, ADR-020 L-1): a woman whose plan is in the low energy band. */
+    static boolean asksAboutTheCycle(Sex sex, Optional<EnergyAvailability> band) {
+        return sex == Sex.FEMALE && band.filter(inBand -> inBand == EnergyAvailability.LOW).isPresent();
     }
 
     static boolean anomaly(CheckIn dataSays, Phase phase) {
@@ -71,6 +82,7 @@ final class CheckInQuestions {
         Enum<?>[] values = switch (kind) {
             case TRAINING -> CheckIn.Training.values();
             case RECOVERY -> CheckIn.Recovery.values();
+            case CYCLE_STOPPED -> Answers.Cycle.values();
             default -> throw new IllegalArgumentException(kind + " is not a question the engine waits for");
         };
         return Arrays.stream(values).map(Enum::name).filter(name -> !name.equals("UNKNOWN")).toList();

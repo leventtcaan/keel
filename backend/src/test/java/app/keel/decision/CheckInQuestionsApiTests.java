@@ -192,6 +192,51 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void aWomanOnAPlanTooLowIsAskedAboutHerCycleFirst() throws Exception {
+        // V4 (K-222): 60 kg at look 3 (30 %) is 42 kg fat-free; 1200 kcal is 28.6 per kg, under her line (30): low.
+        AccountId account = womanOnALowPlan();
+
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
+
+        assertThat(questions).isNotEmpty();
+        assertThat(questions.getFirst()).containsEntry("kind", "CYCLE_STOPPED").containsEntry("choices", List.of("YES", "NO"))
+                .containsEntry("copyKey", "checkIn.question.cycle_stopped");
+    }
+
+    @Test
+    void herYesIsTheHardStopUnderAGeneralLabelAndItsApplyingEndsTheDeficit() throws Exception {
+        // ADR-020 L-1, ADR-027 #18: the call is kept, its reason a general label; the answer leaves no trace. Applied, the
+        // plan turns to building at no less than maintenance, watched (K-222).
+        AccountId account = womanOnALowPlan();
+
+        MvcTestResult call = answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")));
+
+        assertThat(call.getResponse().getStatus()).isEqualTo(200);
+        Map<String, Object> made = map(call);
+        assertThat((Map<String, Object>) made.get("action")).containsEntry("type", "HARD_STOP");
+        assertThat(call.getResponse().getContentAsString()).contains("low_energy_safety").doesNotContainIgnoringCase("menstrual")
+                .doesNotContainIgnoringCase("cycle");
+        String kept = jdbc.sql("select decision::text || snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        assertThat(kept).doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle");
+
+        assertThat(send(account, "POST", "/v1/decisions/" + made.get("id") + "/apply", null).getResponse().getStatus()).isEqualTo(200);
+        Map<String, Object> plan = jdbc.sql("select phase, observing_maintenance, target_kcal from decision.plan where account_id = :a")
+                .param("a", account.value()).query().singleRow();
+        assertThat(plan).containsEntry("phase", "BULK").containsEntry("observing_maintenance", true);
+        assertThat((Integer) plan.get("target_kcal")).isGreaterThan(1200);
+    }
+
+    @Test
+    void herNoMakesTheUsualCallAndAMansAnswerIsRefused() throws Exception {
+        MvcTestResult no = answer(womanOnALowPlan(), List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "NO")));
+        assertThat(no.getResponse().getStatus()).isEqualTo(200);
+        assertThat((Map<String, Object>) map(no).get("action")).containsEntry("type", "INCREASE_CALORIES");
+
+        assertThat(answer(losingButLookingWorse(), List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES"))).getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
     void theWaistComesFromItsMeasurements() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
@@ -240,6 +285,28 @@ class CheckInQuestionsApiTests {
 
     private AccountId ready() {
         return ready(true);
+    }
+
+    /** A woman of 60 kg who picked look 3 (30 %), on a 1200 kcal cut: energy availability in the low band. */
+    private AccountId womanOnALowPlan() {
+        AccountId account = TestSessions.newAccount();
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :start, :start, 1200, false)""").param("a", account.value()).param("start", today.minusDays(42)).update();
+        for (int day = 28; day >= 0; day--) {
+            Instant at = today.minusDays(day).atStartOfDay(ZoneOffset.UTC).plusHours(6).toInstant();
+            if (at.isBefore(Instant.now())) {
+                weighIn(account, at, 60.0);
+            }
+        }
+        assertThat(send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "level", 3))
+                .getResponse().getStatus()).isLessThan(300);
+        return account;
     }
 
     private AccountId ready(boolean oneWeighIn) {

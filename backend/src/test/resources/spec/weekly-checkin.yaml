@@ -147,9 +147,9 @@ rows:
   - id: WC-22
     title: "Loss of the menstrual cycle reported: the one hard stop"
     given: {sex: female, phase: cut, menstrual_loss_reported: true}
-    expect: {action: HARD_STOP, reason: menstrual_loss_reported}
+    expect: {action: HARD_STOP, reason: low_energy_safety}
     source: "arastirma/ham/J1-cinsiyet.md#C6"
-    note: "Cut stops, maintenance, see a doctor (ADR-020 L-1). The answer is used for this decision only (GDPR Art. 9)."
+    note: "Cut stops, maintenance, see a doctor (ADR-020 L-1). The answer is used for this decision only (GDPR Art. 9); the reason is a general label (ADR-027 #18)."
 
   - id: WC-23
     title: "Can't lift last week's loads any more (off a cut): food and sleep, not a deload"

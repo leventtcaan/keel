@@ -14,7 +14,9 @@ import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
 import app.keel.engine.Phase;
+import app.keel.engine.PhaseGate;
 import app.keel.engine.Profile;
+import app.keel.engine.SafetyNet;
 import app.keel.engine.Sex;
 import app.keel.engine.Snapshot;
 import app.keel.engine.TrainingStatus;
@@ -34,6 +36,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -104,9 +107,16 @@ class DecisionService {
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
         // the estimate a plan without a target would get.
         CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
-        return new CheckInView(week.weekOf(), asked(week, plan, dataSays(account, week, plan), training(account, week)).stream()
-                .map(CheckInQuestions::describe).toList(),
-                false);
+        CheckIn dataSays = dataSays(account, week, plan);
+        Optional<TrainingStatus> training = training(account, week);
+        // The cycle question first, outside the budget: a safety question (V4, ADR-020 L-1), asked in the low energy band.
+        List<Answers.Kind> asked = new ArrayList<>();
+        if (CheckInQuestions.asksAboutTheCycle(week.sex(),
+                SafetyNet.energyAvailability(snapshot(week, plan, dataSays, false, training), week.parameters()))) {
+            asked.add(Answers.Kind.CYCLE_STOPPED);
+        }
+        asked.addAll(asked(week, plan, dataSays, training));
+        return new CheckInView(week.weekOf(), asked.stream().map(CheckInQuestions::describe).toList(), false);
     }
 
     /**
@@ -126,7 +136,7 @@ class DecisionService {
         }
         Answers.Read answers;
         try {
-            answers = Answers.read(answered);
+            answers = Answers.read(answered, week.sex());
         } catch (IllegalArgumentException unreadable) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, unreadable);
         }
@@ -245,8 +255,9 @@ class DecisionService {
         Phase phase = switch (week.profile().goal()) {
             case LOSE_FAT -> Phase.CUT;
             case BUILD_MUSCLE -> Phase.BULK;
-            // The phase gate needs the fat estimate (DURUM questions 11, 17): no direction is guessed.
-            case DECIDE_FOR_ME -> throw new ApiException(ErrorCode.CONFLICT);
+            // The phase gate on the fat estimate; without one, a cut (ADR-027 #17, G4 K-4).
+            case DECIDE_FOR_ME -> PhaseGate.startingPhase(week.fatEstimate().map(FatEstimate.Estimate::lowerPct),
+                    week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.parameters());
         };
         return new CallStore.Plan(phase, week.today(), week.today(), estimate(week), true, null);
     }
@@ -282,7 +293,7 @@ class DecisionService {
     /**
      * Applies the current call (K-216): only the one thing it is about moves (U3), and the call keeps when and the plan
      * before and after. Applied twice, nothing more changes; a call that changes nothing, one undone, one not the latest,
-     * or one whose kind is not applied here (training → K-217; phase, mini cut, hard stop → DURUM 11, 17, 18) is CONFLICT.
+     * or one whose kind is not applied here (the mini cut, K-227) is CONFLICT.
      */
     @Transactional
     PlanTargets apply(AccountId account, UUID id) {
@@ -304,7 +315,7 @@ class DecisionService {
         }
         Action action = DecisionJson.action(call.decision());
         CallStore.Plan after = (onTheProgram(account, id, action, week.today(), LocalDate.parse((String) call.decision().get("nextReview")))
-                ? Optional.of(before) : PlanChange.after(before, action, week.today(), week.parameters()))
+                ? Optional.of(before) : PlanChange.after(before, action, week.today(), week.parameters(), Optional.ofNullable(estimate(week))))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         // Only the request that moved the call from PENDING changes the plan; another one at the same moment reads it.
         if (calls.markApplied(account, id, clock.instant(), before, after)) {

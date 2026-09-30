@@ -936,12 +936,12 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-216, K-224]
     why: "K-216 kalori ve adım kararlarını uygular; ChangePhase, MiniCut ve HardStop 409 döner — motor bunları yağ tahmini olmadan veremiyor (DURUM 11, 17, 18). O cevaplar gelince uygulanmaları gerekir (30 Eyl, K-216)"
     acceptance:
       - "ChangePhase: faz ve faz başlangıcı değişir; hedef bakım tahminine döner ve gözlenir (K-114, ilk planla aynı)"
-      - "MiniCut: min-max hafta CUT, sonra BULK'a dönüş; dönüş koşulu planda"
+      - "MiniCut → K-227'ye taşındı (30 Eyl): motor iştah sorusunu sormadığı için MiniCut üretemiyor; uygulaması soruyla birlikte"
       - "HardStop: hedef en az bakım (ADR-020 L-1); gerekçe genel etiketle saklanır, adet cevabının izi kalmaz (ADR-027 #18)"
       - "DECIDE_FOR_ME: başlangıç fazı yağ tahminiyle faz kapısından; tahmin yoksa CUT (ADR-027 #17, G4 K-4)"
       - "Döngü sorusu yalnız düşük enerji bandındaki kadına sorulur (V4); bant yağ tahmininden (K-224)"
@@ -1024,6 +1024,26 @@ tasks:
       - "FdcImportTests"
     refs: ["plan/kararlar/ADR-008-besin-verisi.md", "arastirma/ham/H7-besin-araligi.md"]
     learn: ["Toplu veri içe aktarma, idempotent yükleme"]
+
+  - id: K-227
+    title: "decision: iştah sorusu ve mini cut'ın plana uygulanması"
+    milestone: M3
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-222]
+    why: "Motor mini cut'ı (G7 K-102) yalnız iştah 'kayboldu' cevabıyla verir; check-in iştahı hiç sormuyor (spine'da yok), bu yüzden MiniCut üretilemiyor ve uygulanamıyor (K-222'den ayrıldı, 30 Eyl)"
+    acceptance:
+      - "İştah sorusu yalnız uzun bulk'ta (mini_cut_after_bulk_months) sorulur; bütçe içinde, motorun beklediği bir soru olarak"
+      - "MiniCut: min-max hafta CUT, sonra BULK'a dönüş; dönüş günü planda (V17), motor Snapshot'tan okur"
+      - "Geri alma: plan önceki bulk'a döner (K-216 gibi)"
+    tests:
+      - "ApplyDecisionTests"
+      - "MiniCutGateTests"
+      - "QuestionBudgetTests"
+    refs: ["arastirma/ham/guray/G7-whisper-arsiv.md#K-102", "backend/src/main/java/app/keel/engine/MiniCutGate.java"]
+    learn: ["Süreli durum geçişi, dönüş koşulunu veride tutmak"]
 
 # ───────────────────────────── M3 · Mobil kabuk ─────────────────────────────
   - id: K-301
