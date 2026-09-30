@@ -23,3 +23,4 @@ renkli blokta durur ("EAT A LITTLE MORE"), altında kalori **aralığı** (1800�
 12. K-403 HealthKit — tembel yüklenen native modül, yetenek arayüzü, en az izin, config plugin
 13. K-228 hard stop genel türle — veri en aza indirme kayıt sınırında, jsonb göçü
 14. K-229 hard stop sonrası döngü sorusu — geçmişten türetilen durum, motor kuralı + soru mekanizması
+15. K-227 mini cut — soru = cevaba duyarlılık, ortak tabanlar, süre planda, bitişi gün belirler
