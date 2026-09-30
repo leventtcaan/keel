@@ -1,0 +1,61 @@
+package app.keel.nutrition;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
+/**
+ * Imports the FoodData Central releases unzipped under {@code keel.fdc.import-dir} at startup (K-226): each folder that
+ * holds foundation_food.csv or sr_legacy_food.csv, its release read from FDC's folder name
+ * (FoodData_Central_foundation_food_csv_2025-12-18 → 2025-12-18). Off unless the property is set; the files are not in
+ * the repository.
+ */
+@Component
+@ConditionalOnProperty("keel.fdc.import-dir")
+class FdcImportRunner implements ApplicationRunner {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FdcImportRunner.class);
+
+    private final FdcImporter importer;
+    private final Path root;
+
+    FdcImportRunner(FdcImporter importer, org.springframework.core.env.Environment environment) {
+        this.importer = importer;
+        this.root = Path.of(environment.getRequiredProperty("keel.fdc.import-dir"));
+    }
+
+    @Override
+    public void run(ApplicationArguments args) {
+        for (Path folder : releases(root)) {
+            FdcImport.Dataset dataset = Files.exists(folder.resolve("foundation_food.csv")) ? FdcImport.Dataset.FOUNDATION : FdcImport.Dataset.SR_LEGACY;
+            FdcImporter.Imported imported = importer.load(folder, dataset, release(folder.getFileName().toString()));
+            LOG.info("FDC {} {}: {} foods, {} skipped", imported.dataset(), imported.release(), imported.foods(), imported.skipped());
+        }
+    }
+
+    /** Every folder under the root holding an FDC dataset's own food list. */
+    static List<Path> releases(Path root) {
+        try (Stream<Path> walk = Files.walk(root, 3)) {
+            return walk.filter(Files::isDirectory)
+                    .filter(folder -> Files.exists(folder.resolve("foundation_food.csv")) || Files.exists(folder.resolve("sr_legacy_food.csv")))
+                    .sorted().toList();
+        } catch (IOException unreadable) {
+            throw new UncheckedIOException(unreadable);
+        }
+    }
+
+    /** FDC names its folders ..._csv_&lt;release&gt;: the part after the last "_csv_", or the whole name. */
+    static String release(String folderName) {
+        int at = folderName.lastIndexOf("_csv_");
+        return at < 0 ? folderName : folderName.substring(at + "_csv_".length());
+    }
+}
