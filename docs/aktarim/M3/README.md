@@ -14,3 +14,4 @@ renkli blokta durur ("EAT A LITTLE MORE"), altında kalori **aralığı** (1800�
 3. K-303 API istemcisi — sözleşmeden tip, kimlik ara katmanı
 4. K-307 gezinme — sistem sekme çubuğu
 5. K-311 oturum — tek uçuşlu yenileme, bellek + nesil sayacı
+6. K-304 yerel depo + kuyruk — SQLite, clientId idempotency, NoAnswer
