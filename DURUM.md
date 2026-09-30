@@ -50,7 +50,7 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-209 öğün + günlük bütçe (V10) | ✅ birleşti; inceleme: boş assertion, tekrar gönderim sırası | #167 | `M2/K-209.md` |
 | K-212 Snapshot + karar kaydı (V11) | ✅ birleşti; inceleme: döngü sorusu herkesten alınıyordu, yaş 0 → 500, dışa aktarmada yağ alanı | #168 | `M2/K-212.md` |
 | K-213 check-in soruları + soru bütçesi | ✅ birleşti; inceleme: sorulan soruya 400 (veri GET→POST arasında değişince), GET/POST hafta kuralı ayrıydı, `needed` sonsuz döngü riski, aynı gün iki ölçüm | #171 | `M2/K-213.md` |
-| K-216 kararı hedeflere uygula + geri al | **sürüyor** — dal `decision/100-apply-decision` (`../keel-k216`) | — | — |
+| K-216 kararı hedeflere uygula + geri al (V12) | PR açık, auto-merge AÇIK; inceleme: bayat karar, split sığmayınca apply reddi, hedefsiz plan, LEA tabanı (soru 11); CI: text block boşluğu | #172 | `M2/K-216.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -61,11 +61,12 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
 Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
-0. **(güncel, K-213 birleşti #171)** Sıradaki: K-216 dalı `decision/100-apply-decision` (`../keel-k216`, main üstünde,
-   commit'lenmemiş iş var: EnergyBudget egzersiz bilinmiyor + SafetyNet, adım parametreleri, PlanChange/PlanTargets saf +
-   ApplyDecisionTests yeşil). Kalan: V12 (plan.steps_per_day, weekly_call applied_at/undone_at/plan_before/plan_after),
-   CallStore, apply/undo/targets uçları, DailyTargets bean'i, ProfileFacts.trainingDays, Snapshot'a plan hedefi, API
-   testleri, sözleşme. Soru 19 (adım hedefi) listeye eklenecek; K-222 (faz/mini cut/hard stop uygulaması) backlog'a.
+0. **(güncel)** K-213 birleşti #171. **K-216 PR #172** — inceleme + TDD + mutasyon 12/12 + `M2/K-216.md` tamam,
+   auto-merge açık; CI yeşil olunca birleşir (kırmızıysa düzelt). Birleşince `../keel-k216` worktree'sini sil (`--force`).
+   Sıradaki: **K-221** (training, K-216'ya bağlı değil) ve **K-220** (K-216 birleşince; tasarım: tamamlanmış Pazartesi
+   haftaları karar penceresinde; antrenman planı = profil antrenman günü sayısı, yapılan = o hafta başlayan antrenman;
+   tartı planı = min_weighins_per_week, yapılan = tartı günleri; protein/adım: yalnız kaydı olan gün planlı sayılır, protein
+   günü = kayıt aralığının ortası ≥ hedef, adım günü = adım ≥ plan adımı — soru 20). Sonra K-217.
 1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
    KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
    MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
@@ -92,7 +93,7 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
      Kullanım: `MUT_DIR=. python3 plan/oturum-promptlari/mutate.py ../keel-<iş> '<tek test sınıfı>' <json>`; DB testi
      içeren filtre verme (Docker yokken her mutantı "öldü" sayar).
    - RED geçerliliği: iskelet null dönerse NPE → geçerli RED değil; iskelet gerçek ama eksik değer döndürsün.
-4. **Bitiş:** sorular (aşağıdaki liste, 0-19) AskUserQuestion ile toplu → cevapları ADR'ye işle → kalan iş →
+4. **Bitiş:** sorular (aşağıdaki liste, 0-20) AskUserQuestion ile toplu → cevapları ADR'ye işle → kalan iş →
    `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; kabul kriterlerine: tek uçuşlu refresh ADR-025, UPC-E sunucuda açılır,
    Dependabot #2) → özet. Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 
@@ -152,6 +153,12 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
     diyor: kesilmeyen adım 500 kcal, 3.000 adım ≈ 150 kcal (G2 K-43). Seçenekler: (a) 10.000 tavanı kalsın, metin "daha
     az ama güvenli" diye düzeltilsin; (b) adım kalori karşılığı kadar artsın (500 kcal = +10.000 adım → 17.000, gerçekçi
     değil); (c) 10.000'den sonra kardiyo önerilsin (G2: haftada 2-3 × 20-30 dk) — yeni bir hedef alanı demek.
+20. **(K-220, ürün/sağlık)** Uyum kayıtlardan sayılıyor (ADR-020 L-6). Kaydı hiç olmayan gün ne sayılsın? Varsayılan
+    (uygulandı): **kaydı olmayan gün ne yapıldı ne kaçırıldı** — protein yalnız yemek kaydı olan günde, adım yalnız adım
+    verisi olan günde planlı sayılır (U3 tahmin yok, U7 suçlama yok); antrenman ve tartı her hafta planlı. Protein günü
+    "tuttu" = kaydedilen aralığın ortası ≥ hedef. Alternatifler: (a) kaydı olmayan gün "kaçırıldı" (yemek kaydını
+    zorlar; kaydetmeyen kullanıcı hep FIX_ADHERENCE alır); (b) protein/adım uyuma hiç girmesin (yalnız antrenman + tartı);
+    (c) aralığın alt ucu ≥ hedef (daha sıkı).
 9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
    `tag: urun`). Onay mı?
 
