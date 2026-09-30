@@ -511,7 +511,7 @@
     "reason": {
       "training": "How training goes decides what changes next: food, or how you train.",
       "recovery": "How you recover decides whether the next change is food or rest.",
-      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer is used for this week's call only and isn't saved."
+      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is."
     },
     "choice": {
       "training": {

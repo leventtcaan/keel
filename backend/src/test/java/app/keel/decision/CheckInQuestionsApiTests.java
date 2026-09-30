@@ -246,6 +246,31 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void aHardStopWithNoWeighInInTheWindowStillEndsTheDeficit() throws Exception {
+        // K-222 review: with the last weigh-in older than the evaluation window, the maintenance estimate comes from that
+        // last known weight — not "no estimate, the cut target stays".
+        AccountId account = TestSessions.newAccount();
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        weighIn(account, today.minusDays(120).atStartOfDay(ZoneOffset.UTC).plusHours(6).toInstant(), 60.0);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :start, :start, 1200, false)""").param("a", account.value()).param("start", today.minusDays(42)).update();
+
+        MvcTestResult call = answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")));
+        assertThat((Map<String, Object>) map(call).get("action")).containsEntry("type", "HARD_STOP");
+        assertThat(send(account, "POST", "/v1/decisions/" + map(call).get("id") + "/apply", null).getResponse().getStatus()).isEqualTo(200);
+
+        int maintenance = InitialTarget.estimate(Sex.FEMALE, new BigDecimal("60.0"), new Profile(today.getYear() - 1996, 165), Optional.empty(),
+                parameters.forSex(Sex.FEMALE)).maintenanceKcal();
+        assertThat(jdbc.sql("select target_kcal from decision.plan where account_id = :a").param("a", account.value()).query(Integer.class).single())
+                .isEqualTo(Math.max(1200, maintenance));
+    }
+
+    @Test
     void aWomanNotInTheLowBandOrWithoutAnEstimateIsNotAskedAboutHerCycle() throws Exception {
         // V4: only in the low band — the answer is special-category data (GDPR Art. 9), not asked of every woman.
         AccountId fed = womanOnALowPlan();

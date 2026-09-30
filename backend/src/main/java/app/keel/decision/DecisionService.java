@@ -269,6 +269,15 @@ class DecisionService {
     }
 
     /**
+     * The maintenance estimate a new direction or the hard stop starts from: at today's trend weight, or the last weight
+     * known however old (K-222 review — without it, a hard stop would keep the cut target). None before any weigh-in.
+     */
+    private Optional<Integer> maintenance(AccountId account, Week week) {
+        return bodyweight(account, week).map(kg -> InitialTarget.estimate(week.sex(), kg, week.body(),
+                week.profile().activity().map(activity -> ActivityLevel.valueOf(activity.name())), week.parameters()).maintenanceKcal());
+    }
+
+    /**
      * A plan begun before any weigh-in has no target: once there is a weight, the estimate starts, watched (K-114) from
      * today — else it would stay without one for good (K-216 review).
      */
@@ -315,7 +324,7 @@ class DecisionService {
         }
         Action action = DecisionJson.action(call.decision());
         CallStore.Plan after = (onTheProgram(account, id, action, week.today(), LocalDate.parse((String) call.decision().get("nextReview")))
-                ? Optional.of(before) : PlanChange.after(before, action, week.today(), week.parameters(), Optional.ofNullable(estimate(week))))
+                ? Optional.of(before) : PlanChange.after(before, action, week.today(), week.parameters(), maintenance(account, week)))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         // Only the request that moved the call from PENDING changes the plan; another one at the same moment reads it.
         if (calls.markApplied(account, id, clock.instant(), before, after)) {

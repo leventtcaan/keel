@@ -16,6 +16,8 @@ import java.util.Optional;
  * <p>A new direction (K-222) starts like a first plan (K-114): today, at the maintenance estimate, watched before it is
  * judged; the steps stay. The hard stop (ADR-020 L-1) ends the deficit: the plan turns to building — maintenance is not a
  * direction (03 §2.1), and a cut would take the deficit back at its next step — at no less than maintenance, watched.
+ * How long it holds is not decided (DURUM question 23): after the watch the phase gate may turn a body over the bulk
+ * ceiling back to a cut.
  *
  * <p>Not applied here: the training calls change the program (K-217); the mini cut needs the appetite question the engine
  * has not asked yet (K-227).
