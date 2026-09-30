@@ -1205,7 +1205,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-301]
     why: "Ana ekran Bugün (Levent kararı 29 Eyl)"
     acceptance:

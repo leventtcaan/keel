@@ -1,32 +1,23 @@
 import { useFonts } from 'expo-font';
-import { Tabs } from 'expo-router/js-tabs';
+import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
-import { t } from '@/copy';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 
 // Keep the splash up until the heading font is ready, so titles never flash in the fallback face.
 void SplashScreen.preventAutoHideAsync();
 
-// Main navigation: Today is the first tab and the screen the app opens on (Levent, 29 Sep; ADR-006).
-function AppTabs() {
+// Root stack: the tabs, and the coach as a sheet over whichever tab opened it (K-307). The tabs themselves are in
+// (tabs)/_layout.tsx; the app opens on the first one, Today.
+function AppStack() {
   const { color } = useTheme();
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        sceneStyle: { backgroundColor: color.background },
-        tabBarActiveTintColor: color.accent,
-        tabBarInactiveTintColor: color.muted,
-        tabBarStyle: { backgroundColor: color.background, borderTopColor: color.line },
-      }}>
-      <Tabs.Screen name="index" options={{ title: t('tabs.today') }} />
-      <Tabs.Screen name="train" options={{ title: t('tabs.train') }} />
-      <Tabs.Screen name="food" options={{ title: t('tabs.food') }} />
-      <Tabs.Screen name="progress" options={{ title: t('tabs.progress') }} />
-    </Tabs>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
+    </Stack>
   );
 }
 
@@ -46,7 +37,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <AppTabs />
+      <AppStack />
     </ThemeProvider>
   );
 }
