@@ -110,19 +110,27 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Temel | 0a disk, 0b sorular → ADR-028 · K-301, K-302, K-303, K-307 · Dependabot #2 | başlamadı |
+| 1 · Temel | 0a disk, 0b sorular → ADR-028 · K-301, K-302, K-303, K-307 · Dependabot #2 | sürüyor (0a ✓, 0b ✓ ADR-028) |
 | 2 · Veri ve kimlik | K-304, K-305, K-310 | başlamadı |
-| 3 · Akış ve teslim | K-306, K-309, K-308, K-227 (+ K-228… ADR-028'den) · M3 çıkış kontrolü · M4 part prompt'ları | başlamadı |
+| 3 · Akış ve teslim | K-306, K-309, K-308, K-227, K-228, K-229 (ADR-028) · M3 çıkış kontrolü · M4 part prompt'ları | başlamadı |
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | (part'lar görev bitince satır ekler) | | | |
 
+**Part 1 başı (30 Eyl):** senkron tamam (K-222 #186 birleşik, açık PR/worktree yok). **Disk:** 2,0 GB boştu → Levent
+"önbellekleri temizle" dedi → npm, Homebrew, pip, node-gyp, dotslash önbellekleri silindi → **4,8 GB**. Docker açılmıyor
+(DB testleri yalnız CI'da). Xcode 16.1 = RN 0.86'nın en düşüğü (`min_xcode_version_supported`); simülatörde Expo Go 57.0.2
+kurulu (iPhone 16 Pro Max, iOS 18.1) → Part 1 native derleme istemez. **⚠ K-308 (Part 3) native derleme ~3-5 GB ister:**
+Docker 15 GB (`docker system prune`) ya da başka yer gerekecek → Levent'e sorulacak.
+**0b cevapları → ADR-028:** 21 (a) sil+uyarı → K-231 (M4) · 22 (c) LEA temkinli uç → K-230 (M4) · 23 (b) yeniden sor →
+K-229 (Part 3) · 24 (b) genel tür → K-228 (Part 3) · Apple kimlikleri: sonra · görseller: çizim, M3'te yer tutucu.
+
 **Part 0 (hazırlık) ÇIKIŞ — 30 Eyl:** M2 bitti (K-222 #186 son), açık PR/worktree yok, `main` temiz. Açık sorular 21-24 +
 Apple kimlikleri + referans görsel lisansı Part 1'in 0b adımında toplu sorulacak. K-227 issue #187 (backend, Part 3).
 
 ## Session sonunda Levent'e sorulacaklar
-**Hepsi cevaplandı (30 Eyl) → `plan/kararlar/ADR-027-m2-sonu-cevaplari.md`.** Açık kalan: Apple kimlikleri (M3 başında).
+**0-20 → ADR-027; 21-24 → ADR-028 (30 Eyl, M3 Part 1 başı).** Açık kalan: Apple kimlikleri (K-305/K-308 öncesi), referans çizimlerin çizeri/bütçesi (M4 öncesi), K-308 için disk.
 21. **(K-225 incelemesi, veri/hukuk — YENİ)** Rıza geri alınınca sağlık verisi **silinmiyor, yalnız gizleniyor**
     (`ConsentWithdrawn` olayını dinleyen modül yok; tüm sağlık verisi için aynı). GDPR Md. 7(3)/17: geri çekme silmeyi
     zorunlu kılmaz ama beklenir. Seçenekler: (a) geri çekince o rızaya bağlı veri silinsin (geri dönüşsüz, uyarıyla);

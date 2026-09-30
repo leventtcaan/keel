@@ -1045,6 +1045,44 @@ tasks:
     refs: ["arastirma/ham/guray/G7-whisper-arsiv.md#K-102", "backend/src/main/java/app/keel/engine/MiniCutGate.java"]
     learn: ["Süreli durum geçişi, dönüş koşulunu veride tutmak"]
 
+  - id: K-228
+    title: "decision: hard stop kaydı genel türle saklanır"
+    milestone: M3
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-222]
+    why: "HARD_STOP türü adet cevabını ele veriyor (GDPR Md. 9); Levent (b) seçti (ADR-028 #24)"
+    acceptance:
+      - "Saklanan ve dışa aktarılan karar türü plan değişikliğinin kendisi (ör. INCREASE_CALORIES) + 'güvenlik' etiketi; HARD_STOP dizgisi kayıtta ve dışa aktarmada yok"
+      - "Motorun iç ActionType'ı değişmez; eşleme yalnız kayıt sınırında"
+      - "Mevcut satırlar göçle genelleşir"
+    tests:
+      - "CallStoreTests"
+      - "AccountDataTests (dışa aktarma)"
+    refs: ["plan/kararlar/ADR-028-m3-basi-cevaplari.md", "plan/kararlar/ADR-027-m2-sonu-cevaplari.md"]
+    learn: ["Veri en aza indirme: kayıt sınırında eşleme"]
+
+  - id: K-229
+    title: "decision: hard stop sonrası açığa dönmeden döngü sorusu"
+    milestone: M3
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-222]
+    why: "Hard stop'tan sonra motor cut'a ya da aşağı adıma dönebiliyor; Levent (b) seçti: önce yeniden sorulsun (ADR-028 #23)"
+    acceptance:
+      - "Hard stop'tan sonra açığa dönecek ilk kararda döngü sorusu sorulur (soru bütçesinde, motorun beklediği soru)"
+      - "'Düzeldi' → açığa dönülür; cevapsız ya da 'hayır' → bakım sürer"
+      - "Cevap saklanmaz/loglanmaz (ADR-027 #18)"
+    tests:
+      - "ApplyDecisionTests"
+      - "CheckInQuestionsApiTests"
+    refs: ["plan/kararlar/ADR-028-m3-basi-cevaplari.md", "arastirma/ham/J1-cinsiyet.md"]
+    learn: ["Süreli güvenlik durumundan çıkış koşulu"]
+
 # ───────────────────────────── M3 · Mobil kabuk ─────────────────────────────
   - id: K-301
     title: "Tasarım sistemi: token'lar, fontlar, temel bileşenler (C)"
@@ -1579,6 +1617,44 @@ tasks:
     refs: ["docs/hareket-cekim-kontrol-listesi.md", "plan/kararlar/ADR-017-hareket-gosterimi.md"]
     learn:
       - "Video üretim hattı (ffmpeg)"
+
+  - id: K-230
+    title: "engine: LEA ağı RFM bandının temkinli ucunu okur"
+    milestone: M4
+    module: engine
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-224]
+    why: "RFM ±5 puan hata LEA tabanını ~±100 kcal oynatıyor; Levent (c) seçti (ADR-028 #22)"
+    acceptance:
+      - "LEA ağı ve tabanı RFM için bandın temkinli ucunu (alt − parametre puan) okur; faz kapısı ve L-4 nokta tahminle kalır"
+      - "Görünüş seçimi de varsa ikisinin temkinlisi (ADR-027 #11)"
+      - "Puan payı data/parameters'ta, kaynağıyla (U14)"
+    tests:
+      - "FatEstimateTests"
+      - "SafetyNetTests"
+    refs: ["plan/kararlar/ADR-028-m3-basi-cevaplari.md", "backend/src/main/java/app/keel/engine/FatEstimate.java"]
+    learn: ["Belirsizliği güvenlik yönünde okumak"]
+
+  - id: K-231
+    title: "privacy: rıza geri çekilince bağlı veri silinir"
+    milestone: M4
+    module: privacy
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-204, K-214]
+    why: "Şimdi yalnız gizleniyor; GDPR Md. 17(1)(b). Levent (a) seçti (ADR-028 #21)"
+    acceptance:
+      - "ConsentWithdrawn olayını dinleyen modüller o rızaya bağlı veriyi siler (K-214 silme yolu, tekrar denenebilir)"
+      - "Geri çekme API'si onay ister; mobil (K-309) uyarı + dışa aktarma bağlantısı gösterir"
+      - "Silme olayı logda sağlık verisi taşımaz (V3)"
+    tests:
+      - "ConsentWithdrawalDeletionTests"
+      - "AccountDataTests"
+    refs: ["plan/kararlar/ADR-028-m3-basi-cevaplari.md", "backend/src/main/java/app/keel/consent/ConsentWithdrawn.java"]
+    learn: ["Olay güdümlü silme, modül sınırı"]
 
 # ───────────────────────────── M5 · Karar anları + koç ─────────────────────────────
   - id: K-501
