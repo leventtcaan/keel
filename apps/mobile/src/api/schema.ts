@@ -543,8 +543,11 @@ export interface paths {
         };
         /**
          * This week's check-in and the few questions it needs (question budget, U9)
-         * @description Only what the data does not already say is asked: weight, steps, sleep hours and training arrive on their own.
-         *     At most question_budget_per_week questions (question_budget_per_week_anomaly when the data disagrees).
+         * @description Only what the data does not already say is asked: weight, steps, sleep hours and training arrive on their own;
+         *     how it looks comes from the week's photo check and the waist from its measurements. A question is asked only when
+         *     the engine would wait for its answer this week (found by running it on the data and on each possible answer), at
+         *     most question_budget_per_week (question_budget_per_week_anomaly when the photo or waist disagrees with the phase).
+         *     No questions once the week is answered. Choice texts: checkIn.choice.<kind>.<choice lowercased>.
          */
         get: operations["getCurrentCheckIn"];
         put?: never;
