@@ -82,3 +82,9 @@
 - M4 kalıbı: `plan/oturum-promptlari/M4.md` taslak (4 part). Kalan: M4-part1..4.md, sorular 25-32 + K-308 onayı → ADR-030.
 - Soru 32 (yeni): mini cut sürerken (4-6 hafta) haftalık omurga pencere (21/28 gün) dolunca bir kalori adımı daha
   atabilir → (a) kabul; (b) mini cut sürerken kalori adımı yok (gün gelene kadar sabit).
+- **code-reviewer (K-227) bulguları:** (A) PhaseGate CUT→BULK (surplus_zone, lower <%12) mini cut'ı 3. haftada bitirir →
+  mini cut sürerken faz kapısının CUT kolu çalışmasın (mini cut kendi gününde döner), motor testi; (B) sözleşme
+  `contracts/openapi.yaml` ~745 (answerCheckIn kabul edilen türler: APPETITE ekle) ve ~824 (applyDecision: mini cut artık
+  uygulanır; eski "not applied yet" cümlesi) → `npm run generate`; (C) not: batıya saat dilimi + MiniCut apply → CONFLICT
+  (kabul, aktarımda); metin `decision.mini_cut.appetite_gone` "under your needs" → "less than on the bulk" (taban engellerse
+  hedef bakım). pr-test-analyzer bulguları 1-5 uygulandı (dalda, commit bekliyor).
