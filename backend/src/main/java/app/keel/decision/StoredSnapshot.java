@@ -25,7 +25,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
     record Weight(LocalDate date, BigDecimal kg) {
     }
 
-    record Energy(int targetKcal, int exerciseKcalPerDay) {
+    /** {@code exerciseKcalPerDay} null: not known when the call was made. */
+    record Energy(int targetKcal, Integer exerciseKcalPerDay) {
     }
 
     record Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
@@ -44,7 +45,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
         return new StoredSnapshot(snapshot.today(), snapshot.sex(), snapshot.phase(), snapshot.planStart(),
                 snapshot.weights().weighIns().stream().map(weighIn -> new Weight(weighIn.date(), weighIn.kg())).toList(),
                 snapshot.fatProxyPct().orElse(null),
-                snapshot.energy().map(energy -> new Energy(energy.targetKcal(), energy.exerciseKcalPerDay())).orElse(null),
+                snapshot.energy().map(energy -> new Energy(energy.targetKcal(), energy.exerciseKcalPerDay().isPresent()
+                        ? energy.exerciseKcalPerDay().getAsInt() : null)).orElse(null),
                 new Answered(in.look(), in.training(), in.recovery(), in.waist(), in.adherence().orElse(null), in.appetite()),
                 snapshot.profile().map(profile -> new Body(profile.ageYears(), profile.heightCm())).orElse(null),
                 snapshot.observingMaintenance(), snapshot.phaseStart(),
@@ -56,7 +58,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
     Snapshot toSnapshot() {
         return new Snapshot(today, sex, phase, planStart,
                 new WeightSeries(weights.stream().map(weight -> new WeighIn(weight.date(), weight.kg())).toList()),
-                Optional.ofNullable(fatProxyPct), Optional.ofNullable(energy).map(e -> new EnergyBudget(e.targetKcal(), e.exerciseKcalPerDay())),
+                Optional.ofNullable(fatProxyPct), Optional.ofNullable(energy).map(e -> e.exerciseKcalPerDay() == null ? EnergyBudget.exerciseUnknown(e.targetKcal())
+                        : new EnergyBudget(e.targetKcal(), e.exerciseKcalPerDay())),
                 false,
                 new CheckIn(checkIn.look(), checkIn.training(), checkIn.recovery(), checkIn.waist(), Optional.ofNullable(checkIn.adherence()),
                         checkIn.appetite()),

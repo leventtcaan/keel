@@ -70,13 +70,36 @@ class DecisionController {
         return view(decisions.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
     }
 
-    /** Contract Decision: the id and the day, the engine's decision field for field, and whether it has been applied. */
+    @PostMapping("/v1/decisions/{id}/apply")
+    PlanTargets apply(AccountId account, @PathVariable UUID id) {
+        return decisions.apply(account, id);
+    }
+
+    @PostMapping("/v1/decisions/{id}/undo")
+    PlanTargets undo(AccountId account, @PathVariable UUID id) {
+        return decisions.undo(account, id);
+    }
+
+    @GetMapping("/v1/targets")
+    PlanTargets targets(AccountId account) {
+        return decisions.targets(account);
+    }
+
+    /** Contract Decision: the id and the day, the engine's decision field for field, and whether and when it was applied. */
     static Map<String, Object> view(CallStore.Call call) {
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("id", call.id());
         view.put("madeOn", call.madeOn());
         view.putAll(call.decision());
-        view.put("application", Map.of("state", call.application().name()));
+        Map<String, Object> application = new LinkedHashMap<>();
+        application.put("state", call.application().name());
+        if (call.appliedAt() != null) {
+            application.put("appliedAt", call.appliedAt());
+        }
+        if (call.undoneAt() != null) {
+            application.put("undoneAt", call.undoneAt());
+        }
+        view.put("application", application);
         return view;
     }
 

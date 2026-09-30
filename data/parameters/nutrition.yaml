@@ -57,6 +57,18 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-10"
     note: "Tamamı karbonhidrattan (G6 K-16)."
+  - key: steps_target_start
+    value: 7000
+    unit: steps_per_day
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-42"
+    note: "Her dönem bir günlük adım hedefi; anılan sayı 7.000 (K-216). Onay bekliyor: DURUM soru 19."
+  - key: steps_target_raised
+    value: 10000
+    unit: steps_per_day
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-42"
+    note: "CHANGE_MOVEMENT hedefi buraya kaldırır (K-216): 10.000 adımda 'ekstra kardiyo gerekmeyebilir'. Kaloride karşılığı (K-43: 1.000 adım ≈ 50 kcal) 3.000 adım ≈ 150 kcal — 500 kcal'lik adımın yerini tutmaz; metin 'aynı sonuç' diyor. Onay bekliyor: DURUM soru 19."
   - key: calorie_change_min_wait_weeks
     value: 2
     unit: weeks

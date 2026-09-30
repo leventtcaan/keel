@@ -22,6 +22,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -212,13 +213,18 @@ class MealLogTests {
         return JSON.readValue(result.getResponse().getContentAsString(), List.class);
     }
 
-    /** The day's targets as decision will give them (K-216): 2200 kcal, 160 g protein, for the accounts a test names. */
+    /**
+     * The day's targets as decision gives them: 2200 kcal, 160 g protein, for the accounts a test names. Primary over
+     * decision's own (K-216), so nutrition's budget is tested apart from how a plan is made; ApplyDecisionApiTests reads
+     * the budget through the real one.
+     */
     @TestConfiguration(proxyBeanMethods = false)
     static class Targets {
 
         static final Set<AccountId> WITH_TARGETS = ConcurrentHashMap.newKeySet();
 
         @Bean
+        @Primary
         DailyTargets dailyTargets() {
             return (account, day) -> WITH_TARGETS.contains(account) ? Optional.of(new DailyTargets.Targets(2200, 160)) : Optional.empty();
         }

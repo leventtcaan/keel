@@ -827,7 +827,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-212]
     why: "Karar ekranda kalıyordu, hedeflere yansımıyordu (L3 P2)"
     acceptance:

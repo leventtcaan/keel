@@ -6,6 +6,7 @@ import app.keel.engine.WeighIn;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -46,6 +47,11 @@ public class Measurements {
             firstOfDay.putIfAbsent(day, new WeighIn(day, weighIn.kg()));
         }
         return new ArrayList<>(firstOfDay.values());
+    }
+
+    /** The last weight the user gave, however long ago (the targets' macros, K-216). */
+    public Optional<BigDecimal> latestWeightKg(AccountId account) {
+        return store.latestKg(account);
     }
 
     /** Waist measurements from {@code from} to {@code to}, both included, for the engine's WaistTrend (K-213). */

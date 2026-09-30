@@ -53,6 +53,19 @@ class StoredSnapshotTests {
         assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(bare)), StoredSnapshot.class).toSnapshot()).isEqualTo(bare);
     }
 
+    @Test
+    void anExerciseBurnNotKnownStaysNotKnownAndZeroStaysZero() throws Exception {
+        // Made again from what was kept, a call must come out the same (K-212): unknown exercise read back as 0 would
+        // give the safety net a band it did not have (K-216).
+        for (EnergyBudget energy : List.of(EnergyBudget.exerciseUnknown(2200), new EnergyBudget(2200, 0))) {
+            Snapshot snapshot = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(14),
+                    new WeightSeries(List.of(new WeighIn(TODAY, new BigDecimal("82.0"))))).withEnergy(energy);
+
+            assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(snapshot)), StoredSnapshot.class).toSnapshot().energy())
+                    .contains(energy);
+        }
+    }
+
     private static Snapshot full(boolean menstrualLoss) {
         return new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21),
                 new WeightSeries(List.of(new WeighIn(TODAY.minusDays(2), new BigDecimal("82.4")), new WeighIn(TODAY, new BigDecimal("82.1")))),

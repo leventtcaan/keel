@@ -20,11 +20,19 @@ class CallStore {
 
     enum Application { NOT_NEEDED, PENDING, APPLIED, UNDONE }
 
-    record Plan(Phase phase, LocalDate phaseStart, LocalDate planStart, Integer targetKcal, boolean observingMaintenance) {
+    /** {@code stepsPerDay} null: no step target set yet, the starting one applies (K-216). */
+    record Plan(Phase phase, LocalDate phaseStart, LocalDate planStart, Integer targetKcal, boolean observingMaintenance, Integer stepsPerDay) {
     }
 
+    /** {@code appliedAt} and the plan before and after it are set once the call is applied; {@code undoneAt} once undone (K-216). */
     record Call(UUID id, UUID clientId, LocalDate weekOf, LocalDate madeOn, Instant decidedAt, String parametersHash, StoredSnapshot snapshot,
-            Map<String, Object> decision, Application application) {
+            Map<String, Object> decision, Application application, Instant appliedAt, Instant undoneAt, Plan planBefore, Plan planAfter) {
+
+        /** A call as the engine made it, not applied yet. */
+        Call(UUID id, UUID clientId, LocalDate weekOf, LocalDate madeOn, Instant decidedAt, String parametersHash, StoredSnapshot snapshot,
+                Map<String, Object> decision, Application application) {
+            this(id, clientId, weekOf, madeOn, decidedAt, parametersHash, snapshot, decision, application, null, null, null, null);
+        }
     }
 
     private final JdbcClient jdbc;
@@ -39,18 +47,49 @@ class CallStore {
         return jdbc.sql("select * from decision.plan where account_id = :account").param("account", account.value())
                 .query((row, n) -> new Plan(Phase.valueOf(row.getString("phase")), row.getObject("phase_start", LocalDate.class),
                         row.getObject("plan_start", LocalDate.class), row.getObject("target_kcal", Integer.class),
-                        row.getBoolean("observing_maintenance")))
+                        row.getBoolean("observing_maintenance"), row.getObject("steps_per_day", Integer.class)))
                 .optional();
     }
 
     /** The first plan; a plan written at the same moment by another request wins and is read back. */
     Plan start(AccountId account, Plan plan) {
         jdbc.sql("""
-                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
-                values (:account, :phase, :phaseStart, :planStart, :target, :observing) on conflict (account_id) do nothing""")
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance, steps_per_day)
+                values (:account, :phase, :phaseStart, :planStart, :target, :observing, :steps) on conflict (account_id) do nothing""")
                 .param("account", account.value()).param("phase", plan.phase().name()).param("phaseStart", plan.phaseStart())
-                .param("planStart", plan.planStart()).param("target", plan.targetKcal()).param("observing", plan.observingMaintenance()).update();
+                .param("planStart", plan.planStart()).param("target", plan.targetKcal()).param("observing", plan.observingMaintenance())
+                .param("steps", plan.stepsPerDay()).update();
         return plan(account).orElseThrow();
+    }
+
+    /** The plan as a call left it (K-216). */
+    void replace(AccountId account, Plan plan) {
+        jdbc.sql("""
+                update decision.plan set phase = :phase, phase_start = :phaseStart, plan_start = :planStart, target_kcal = :target,
+                observing_maintenance = :observing, steps_per_day = :steps where account_id = :account""")
+                .param("account", account.value()).param("phase", plan.phase().name()).param("phaseStart", plan.phaseStart())
+                .param("planStart", plan.planStart()).param("target", plan.targetKcal()).param("observing", plan.observingMaintenance())
+                .param("steps", plan.stepsPerDay()).update();
+    }
+
+    /**
+     * PENDING → APPLIED with the plan before and after; false when the call was not PENDING. The row stays locked until
+     * the transaction ends, so of two requests applying at once only one changes the plan (K-216).
+     */
+    boolean markApplied(AccountId account, UUID callId, Instant at, Plan before, Plan after) {
+        return jdbc.sql("""
+                update decision.weekly_call set application = 'APPLIED', applied_at = :at, plan_before = cast(:before as jsonb),
+                plan_after = cast(:after as jsonb) where account_id = :account and id = :id and application = 'PENDING'""")
+                .param("account", account.value()).param("id", callId).param("at", at.atOffset(ZoneOffset.UTC))
+                .param("before", json.writeValueAsString(before)).param("after", json.writeValueAsString(after)).update() == 1;
+    }
+
+    /** APPLIED → UNDONE; false when the call was not APPLIED. */
+    boolean markUndone(AccountId account, UUID callId, Instant at) {
+        return jdbc.sql("""
+                update decision.weekly_call set application = 'UNDONE', undone_at = :at
+                where account_id = :account and id = :id and application = 'APPLIED'""")
+                .param("account", account.value()).param("id", callId).param("at", at.atOffset(ZoneOffset.UTC)).update() == 1;
     }
 
     /** Keeps the call; false when this account already has one for that week or that clientId (the caller reads it back). */
@@ -91,14 +130,26 @@ class CallStore {
 
     @SuppressWarnings("unchecked")
     private List<Call> calls(String where, Map<String, Object> params, int limit) {
-        return jdbc.sql("select *, snapshot::text as snapshot_json, decision::text as decision_json from decision.weekly_call where " + where
-                        + " order by decided_at desc, id desc limit :limit")
+        return jdbc.sql("""
+                        select *, snapshot::text as snapshot_json, decision::text as decision_json, plan_before::text as plan_before_json,
+                        plan_after::text as plan_after_json
+                        from decision.weekly_call""" + " where " + where + " order by decided_at desc, id desc limit :limit")
                 .params(params).param("limit", limit)
                 .query((row, n) -> new Call(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
                         row.getObject("week_of", LocalDate.class), row.getObject("made_on", LocalDate.class),
                         row.getObject("decided_at", OffsetDateTime.class).toInstant(), row.getString("parameters_hash"),
                         json.readValue(row.getString("snapshot_json"), StoredSnapshot.class),
-                        json.readValue(row.getString("decision_json"), Map.class), Application.valueOf(row.getString("application"))))
+                        json.readValue(row.getString("decision_json"), Map.class), Application.valueOf(row.getString("application")),
+                        instant(row.getObject("applied_at", OffsetDateTime.class)), instant(row.getObject("undone_at", OffsetDateTime.class)),
+                        plan(row.getString("plan_before_json")), plan(row.getString("plan_after_json"))))
                 .list();
+    }
+
+    private Plan plan(String kept) {
+        return kept == null ? null : json.readValue(kept, Plan.class);
+    }
+
+    private static Instant instant(OffsetDateTime at) {
+        return at == null ? null : at.toInstant();
     }
 }

@@ -358,6 +358,37 @@ class SafetyNetTests {
     }
 
     @Test
+    void withoutTheExerciseBurnOnlyACertainlyLowPlanIsLow() {
+        // EA = (intake − exercise) / fat-free mass. Exercise not known yet is at least 0, so the target alone is the best
+        // case (K-216: the plan's target reaches the Snapshot before any exercise data does). 80 kg at 25 % → 60 kg
+        // fat-free: 1400 / 60 = 23.3, low even then (male line 25). 1700 or 2800 would be warning or adequate only if no
+        // exercise at all — the band is not known, never a guessed "adequate".
+        assertThat(SafetyNet.energyAvailability(unknownExercise("80.0", 1400), MALE)).contains(EnergyAvailability.LOW);
+        assertThat(SafetyNet.energyAvailability(unknownExercise("80.0", 1700), MALE)).isEmpty();
+        assertThat(SafetyNet.energyAvailability(unknownExercise("80.0", 2800), MALE)).isEmpty();
+        assertThat(SafetyNet.check(unknownExercise("80.0", 1400), MALE)).hasValueSatisfying(d -> assertThat(d.action())
+                .isInstanceOf(Action.IncreaseCalories.class));
+        assertThat(SafetyNet.check(unknownExercise("80.0", 2800), MALE)).isNotPresent();
+    }
+
+    @Test
+    void withoutTheExerciseBurnAWomansPlanIsReadOnHerLine() {
+        // Female line 30: 60 kg at 30 % → 42 kg fat-free; 1260 is on the line (low), 1261 above it — not known.
+        Snapshot onTheLine = fueled(Sex.FEMALE, "60.0", "30", 1260, 0).withEnergy(EnergyBudget.exerciseUnknown(1260));
+        Snapshot above = fueled(Sex.FEMALE, "60.0", "30", 1261, 0).withEnergy(EnergyBudget.exerciseUnknown(1261));
+
+        assertThat(SafetyNet.energyAvailability(onTheLine, FEMALE)).contains(EnergyAvailability.LOW);
+        assertThat(SafetyNet.energyAvailability(above, FEMALE)).isEmpty();
+    }
+
+    @Test
+    void withoutTheExerciseBurnTheLowEnergyFloorIsItsLeastValue() {
+        // The floor is threshold × fat-free mass + exercise; with exercise unknown, the part known for certain: 81 kg at
+        // 25 % → 1518.75 → 1519 (with 400 kcal of exercise it would be 1919). A step under it is low whatever the exercise.
+        assertThat(SafetyNet.leaFloorKcal(unknownExercise("81.0", 2500), MALE)).contains(1519);
+    }
+
+    @Test
     void theLowEnergyFloorIsTheSmallestTargetAboveTheLine() {
         // 81 kg at 25 % → 60.75 kg fat-free; 25 × 60.75 = 1518.75 → the next whole kcal above it is 1519, plus 400
         // kcal of exercise = 1919.
@@ -549,6 +580,10 @@ class SafetyNetTests {
     private static Snapshot fueled(Sex sex, String kg, String fatPct, int targetKcal, int exerciseKcal) {
         return new Snapshot(TODAY, sex, Phase.CUT, TODAY.minusDays(60), series(EngineFixtures.daily(TODAY.minusDays(40), TODAY, kg)),
                 Optional.of(new BigDecimal(fatPct))).withEnergy(new EnergyBudget(targetKcal, exerciseKcal));
+    }
+
+    private static Snapshot unknownExercise(String kg, int targetKcal) {
+        return fueled(Sex.MALE, kg, "25", targetKcal, 0).withEnergy(EnergyBudget.exerciseUnknown(targetKcal));
     }
 
     private static Optional<EnergyAvailability> band(int targetKcal) {

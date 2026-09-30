@@ -48,7 +48,9 @@ public enum Unit {
     // 0 is a real target here: a set taken to failure.
     REPS_IN_RESERVE("reps_in_reserve", Kind.WHOLE, Bound.ZERO_OR_MORE),
     // A count of repetitions (e1RM formula terms, H3 B15).
-    REPS("reps", Kind.WHOLE, Bound.POSITIVE);
+    REPS("reps", Kind.WHOLE, Bound.POSITIVE),
+    // The daily step target (G2 K-42).
+    STEPS_PER_DAY("steps_per_day", Kind.WHOLE, Bound.POSITIVE);
 
     /** What a value in this unit is. */
     public enum Kind {

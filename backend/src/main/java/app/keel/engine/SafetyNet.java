@@ -163,11 +163,16 @@ public final class SafetyNet {
             return Optional.empty();
         }
         EnergyBudget budget = snapshot.energy().get();
-        BigDecimal available = BigDecimal.valueOf((long) budget.targetKcal() - budget.exerciseKcalPerDay())
+        // Exercise not known yet is at least 0: the target alone is the best case (K-216). Low even then is low; any
+        // other band would be a guess.
+        BigDecimal available = BigDecimal.valueOf((long) budget.targetKcal() - budget.exerciseKcalPerDay().orElse(0))
                 .divide(fatFree.get(), MathContext.DECIMAL64);
         // "≤ threshold" is low (ADR-020 L-1, J1 C6 table); the warning and adequate lines are "under" (J1 L2.1).
         if (available.compareTo(line(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, parameters)) <= 0) {
             return Optional.of(EnergyAvailability.LOW);
+        }
+        if (budget.exerciseKcalPerDay().isEmpty()) {
+            return Optional.empty();
         }
         if (available.compareTo(line(ParameterKey.EA_WARNING_KCAL_PER_KG_FFM, parameters)) < 0) {
             return Optional.of(EnergyAvailability.WARNING);
@@ -181,12 +186,13 @@ public final class SafetyNet {
     /**
      * The lowest whole daily target whose energy availability is above lea_threshold (on the line is already low):
      * the next whole kcal above threshold × fat-free mass, plus the exercise burn. A floor for calorie steps (K-107).
+     * With the exercise not known yet, the part known for certain: a step under it is low whatever the exercise (K-216).
      */
     public static Optional<Integer> leaFloorKcal(Snapshot snapshot, Parameters parameters) {
         requireSameSex(snapshot, parameters);
         return fatFreeMassKg(snapshot, parameters).flatMap(fatFree -> snapshot.energy().map(budget ->
                 line(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, parameters).multiply(fatFree)
-                        .setScale(0, RoundingMode.FLOOR).intValueExact() + 1 + budget.exerciseKcalPerDay()));
+                        .setScale(0, RoundingMode.FLOOR).intValueExact() + 1 + budget.exerciseKcalPerDay().orElse(0)));
     }
 
     // Fat-free mass = trend weight × (1 − fat estimate). U4: used inside the engine only.

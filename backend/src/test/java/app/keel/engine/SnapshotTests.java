@@ -78,7 +78,7 @@ class SnapshotTests {
     void anEnergyBudgetIsPositiveFoodAndNonNegativeExercise() {
         assertThatThrownBy(() -> new EnergyBudget(0, 0)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new EnergyBudget(1800, -1)).isInstanceOf(IllegalArgumentException.class);
-        assertThat(new EnergyBudget(1800, 0).exerciseKcalPerDay()).isZero();
+        assertThat(new EnergyBudget(1800, 0).exerciseKcalPerDay()).hasValue(0);
     }
 
     @Test
