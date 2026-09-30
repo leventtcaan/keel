@@ -123,7 +123,13 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 | K-304 SQLite kuyruğu (clientId idempotency, ADR-024) | ✅ birleşti; inceleme: `catch {}` her hatayı çevrimdışı sayıyordu → `NoAnswer`; boşaltma sonu mikro-görev boşluğu; Android çevrimdışı açılış; mutasyon 31/31 + 44/44 | #198 | `M3/K-304.md` |
 | K-305 Apple ile giriş (nonce, Keychain, `Stack.Protected`, servislerin tek kökü) | ✅ birleşti; inceleme: reddedilen yenilemede A'nın kayıtları B'nin hesabına gidiyordu → oturum sonu kayıtları siler; ErrorBoundary; splash; çift dokunma; mutasyon 33/34 (1 eşdeğer) | #199 | `M3/K-305.md` |
 | K-310 birimler (ADR-029; tek yuvarlama, tercih profil + kv önbellek) | ✅ birleşti; inceleme: yavaş refresh seçimi eziyordu → nesil sayacı; ondalık virgül; girişte hesabın birimi okunmasa testler kör → düzeltildi; parametre sözleşmeye bağlı; mutasyon 28/28 | #200 | `M3/K-310.md` |
+| K-306 onboarding: yönlendirme + profil (profil durumu, 7 adım, tek PUT) | ✅ birleşti; simülatör: birim çipi çevrimdışı hiçbir şey yapmıyordu → `keepOnPhone`; inceleme 3+9 bulgu (metinde parametre, sunucu hatası ≠ bağlantı, çıkış yolu, tek uçuş okuma, saklı done + 404); mutasyon 20/20 | #202 | `M3/K-306.md` |
+| K-312 onboarding: sağlık rızası, kilo/bel, gıda, Apple Health | PR'da (auto-merge); inceleme 7+9 bulgu (Allow/Not now yarışı, geri çekme, profil önce, sınırlar, Health yalnız rızayla, önce sayfa); mutasyon 21/21 | #203 | `M3/K-312.md` |
 | K-307 gezinme (NativeTabs, koç girişi, koç sayfası) | ✅ birleşti; simülatör: koç çubuğu sekme çubuğu altındaydı → alt güvenli alan; inceleme: `keel://coach` soğuk açılış sekmesiz kalıyordu → `anchor`; mutasyon 10/10 | #195 | `M3/K-307.md` |
+
+**Part 3 ara not (30 Eyl gece):** K-313 (referans görünüş adımı) M4'e ayrıldı — 7 seviye motorun iç yağ tahminini
+besliyor, kaynak yalnız tek eşiği betimliyor → **soru 28** (aşağıda). AI rızası K-511 ile. Beklenti ekranı U8'e göre
+(prototipin "4 hafta trend göstermem"i anayasayla çelişiyordu). Sıradaki: K-309 → K-403 → K-308 → K-228 → K-229 → K-227.
 
 **Part 3 başı (30 Eyl):** senkron tamam (Part 1/2 ÇIKIŞ git ile tutarlı: #192-#200 birleşik, açık PR/worktree yok).
 **Disk:** 4,3 GB → Levent "önbellekler + bulut derleme" → ShipIt/dotslash/JetBrains/npm önbelleği → **5,5 GB**; K-308 EAS
@@ -223,6 +229,14 @@ K-229 (Part 3) · 24 (b) genel tür → K-228 (Part 3) · Apple kimlikleri: sonr
 Apple kimlikleri + referans görsel lisansı Part 1'in 0b adımında toplu sorulacak. K-227 issue #187 (backend, Part 3).
 
 ## Session sonunda Levent'e sorulacaklar
+28. **(K-312, sağlık — YENİ, Part 3)** Referans görünüş (7 seviye) motorun iç yağ tahminini, dolayısıyla LEA tabanını ve
+    faz kapısını besliyor. ADR-028 "M3'te metin açıklamalı yer tutucu" dedi; ama kaynak yalnız bir eşiği betimliyor
+    (G6 K-9: göbek görünüyorsa erkekte %20 üstü). Seçenekler: (a) çizimler gelene kadar adım **gizli**, motor bel/RFM ile
+    çalışır (önerilen; kaynaksız girdi yok); (b) 7 seviyeyi metinle betimle (kaynaksız, U14 dışı — senin onayınla);
+    (c) yalnız iki seçenek: "göbek görünüyor / görünmüyor" (kaynaklı tek eşik, kaba). → K-313.
+29. **(K-306, ürün — YENİ, Part 3)** Takvim ekranı "gerçekçi gün" çıkarımı: şimdi plan = seçilen günler; geçen ay daha
+    azsa "geçen aydan fazla, bildiğine yakın başlamak planı yürütür" der, sınır koymaz (kaynaklı sayı yok). Seçenekler:
+    (a) böyle kalsın; (b) plan gün sayısını geçen aya göre sınırla (ör. geçen ay +1 — kaynaksız eşik, senin kararın).
 26. **(K-310, K1 onayı — YENİ, Part 2)** `app-services.test.ts`'teki bir beklentiyi değiştirdim (#199'da yazılmıştı):
     "yavaş ağda çıkış isteği sunucu cevaplamadan gitti" testi fetch çağrısını **bir** diye sayıyordu; girişte artık profil
     de okunuyor (birim tercihi) → iki çağrı. Yeni hâli: her istek kendi adresiyle beklenir ve `/v1/auth/sign-out`'a **tam
