@@ -167,9 +167,11 @@ class ProfileApiTests {
     void onlyACertainAdultHoldsAProfile() {
         // K-225, ADR-027 #13: only the birth year is kept, so the year must make the user 18 on every day of this one.
         Map<String, Object> almost = onboarding();
-        almost.put("birthYear", java.time.Year.now().getValue() - 18);
+        // The server reads "this year" on the profile's own calendar (Europe/Istanbul): so does the test, at New Year too.
+        int thisYear = java.time.Year.now(java.time.ZoneId.of("Europe/Istanbul")).getValue();
+        almost.put("birthYear", thisYear - 18);
         Map<String, Object> adult = onboarding();
-        adult.put("birthYear", java.time.Year.now().getValue() - 19);
+        adult.put("birthYear", thisYear - 19);
 
         assertThat(put(consenting(), almost)).hasStatus(400).bodyJson().extractingPath("$.code").isEqualTo("VALIDATION_FAILED");
         assertThat(put(consenting(), adult)).hasStatusOk();
@@ -183,6 +185,9 @@ class ProfileApiTests {
         Map<String, Object> nothingToAvoid = onboarding();
         nothingToAvoid.put("food", Map.of("budgetNote", "student budget"));
         assertThat(put(noConsent, nothingToAvoid)).as("no foods to avoid, no health data").hasStatusOk();
+        Map<String, Object> emptyList = onboarding();
+        emptyList.put("food", Map.of("avoid", List.of(), "budgetNote", "student budget"));
+        assertThat(put(noConsent, emptyList)).as("an empty list is nothing to avoid").hasStatusOk();
 
         AccountId account = consenting();
         put(account, onboarding());

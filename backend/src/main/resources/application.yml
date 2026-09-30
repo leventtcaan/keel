@@ -50,10 +50,10 @@ keel:
     max-range-days: 400
     earliest-year: 1900
     latest-year: 2200
-  # What a measurement can be (K-206, contract): a real body.
   # Who can hold an account (K-225, ADR-027 #13): adults only, one age everywhere so a launch has no country table.
   profile:
     adult-age: 18
+  # What a measurement can be (K-206, contract): a real body.
   measurement:
     max-weight-kg: 500
     max-waist-cm: 300

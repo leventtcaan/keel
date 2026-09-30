@@ -8,7 +8,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-/** Profile's part of the user's data (K-214): the profile as the API shows it. */
+/**
+ * Profile's part of the user's data (K-214): the whole stored profile — the foods to avoid too, even while the health
+ * data consent is not given (the right of access covers what is kept, GDPR Art. 15; the API hides them, K-225).
+ */
 @Component
 class ProfileAccountData implements AccountDataExport {
 

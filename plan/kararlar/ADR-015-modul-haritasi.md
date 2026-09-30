@@ -15,7 +15,7 @@ Paket kökü `app.keel` (geçici; ürün adı gelince değişebilir). Modüller:
 | `engine` | Saf karar motoru, kurallar, parametre yükleme | — |
 | `identity` | Hesap, Sign in with Apple, oturum | — |
 | `consent` | Rıza kayıtları (sağlık, Health, AI) | identity |
-| `profile` | Hedef, cinsiyet, takvim, program tercihi, gıda tercihleri | identity |
+| `profile` | Hedef, cinsiyet, takvim, program tercihi, gıda tercihleri | identity, consent (ADR-027 #14, K-225) |
 | `measurement` | Kilo, bel, fotoğraftan türetilmiş değerler, trendler | profile, consent, engine (ADR-026) |
 | `nutrition` | Öğün kayıtları, besin eşleme, günlük bütçe | profile, consent (ADR-026), engine (ADR-026) |
 | `training` | Program, seanslar, setler, egzersiz kataloğu | profile, engine (ADR-026) |
