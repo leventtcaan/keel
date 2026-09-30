@@ -1141,9 +1141,15 @@ export interface components {
             /** Format: uuid */
             programDayId?: string;
         };
+        /**
+         * @description Finishing a workout of a program day sets each planned move's next load and reps (K-217, double progression).
+         *     The moves whose form was not clean keep their load and reps (G6 K-31); each id once, from the catalog, else
+         *     VALIDATION_FAILED.
+         */
         WorkoutFinish: {
             /** Format: date-time */
             endedAt: string;
+            uncleanExerciseIds?: string[];
         };
         Workout: {
             /** Format: uuid */

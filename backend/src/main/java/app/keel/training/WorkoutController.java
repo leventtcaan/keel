@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -67,7 +68,8 @@ class WorkoutController {
     record NewWorkout(UUID clientId, Instant startedAt, UUID programDayId) {
     }
 
-    record Finish(Instant endedAt) {
+    /** {@code uncleanExerciseIds}: the moves whose form was not clean (G6 K-31) — their load and reps are held (K-217). */
+    record Finish(Instant endedAt, List<String> uncleanExerciseIds) {
     }
 
     record NewSet(UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
@@ -94,8 +96,11 @@ class WorkoutController {
     private final Profiles profiles;
     private final TrainingLimits limits;
     private final ApiLimits api;
+    private final SessionProgress progress;
 
-    WorkoutController(ExerciseCatalog catalog, WorkoutStore store, Profiles profiles, TrainingLimits limits, ApiLimits api) {
+    WorkoutController(ExerciseCatalog catalog, WorkoutStore store, Profiles profiles, TrainingLimits limits, ApiLimits api,
+            SessionProgress progress) {
+        this.progress = progress;
         this.catalog = catalog;
         this.store = store;
         this.profiles = profiles;
@@ -134,7 +139,12 @@ class WorkoutController {
     Workout finish(AccountId account, @PathVariable UUID id, @RequestBody Finish finish) {
         WorkoutStore.Workout workout = owned(account, id);
         require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()));
+        List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
+        require(!unclean.contains(null) && unclean.stream().allMatch(exercise -> catalog.find(exercise).isPresent())
+                && Set.copyOf(unclean).size() == unclean.size());
         store.finish(account, id, finish.endedAt());
+        // The day's planned moves get the next session's load and reps (K-217).
+        progress.after(account, workout, Set.copyOf(unclean));
         return read(owned(account, id));
     }
 

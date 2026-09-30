@@ -51,7 +51,8 @@ class ProgramController {
     }
 
     /** Contract PlannedExercise; {@code sets} is this week's (a deload lowers it, K-217), {@code baseSets} the program's. */
-    record PlannedExercise(String exerciseId, int baseSets, int sets, Reps reps, int targetRir) {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record PlannedExercise(String exerciseId, int baseSets, int sets, Reps reps, int targetRir, BigDecimal nextLoadKg, Integer nextReps) {
     }
 
     /** Contract ProgramDay: {@code nameKey} for a generated day, {@code name} for the user's own. */
@@ -151,7 +152,8 @@ class ProgramController {
         Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(changes, TrainingChanges.Kind.LIGHTER_WEEK, today);
         return new Program(program.id(), program.source(), program.days().stream().map(day -> new ProgramDay(day.id(), day.nameKey(),
                 day.name(), day.weekday(), day.exercises().stream().map(planned -> new PlannedExercise(planned.exerciseId(), planned.sets(),
-                        TrainingChanges.sets(planned.sets(), lighter), new Reps(planned.repMin(), planned.repMax()), planned.targetRir())).toList()))
+                        TrainingChanges.sets(planned.sets(), lighter), new Reps(planned.repMin(), planned.repMax()), planned.targetRir(),
+                        planned.nextLoadKg(), planned.nextReps())).toList()))
                 .toList(),
                 lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
