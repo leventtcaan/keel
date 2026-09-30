@@ -121,7 +121,10 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
    Araştırma: mezura formülü (Navy) değişimi izlemede başarısız (H1 §3.2), WHtR bir eşik, Ö-4 "görsel proxy" diyor
    ama nasıl toplanacağı yok. Seçenekler: (a) kullanıcı referans görsellerden kendine en yakını seçer (Güray'ın göbek
    testi), (b) bel/boy'dan kaba bant (yalnız kapı için, izleme için değil), (c) ikisi, (d) hiçbiri → iki kural kapalı.
-   U4 gereği sayı hiçbir yerde gösterilmez.
+   U4 gereği sayı hiçbir yerde gösterilmez. **K-216'dan beri ek sonuç:** plan hedefi motora gidiyor, kalori merdiveni
+   çalışıyor; yağ tahmini yokken LEA tabanı hesaplanamadığı için cut'ta aşağı adımı yalnız BMR ve makro tabanları
+   sınırlıyor (önce merdiven hiç çalışmıyordu). Kabul mü, yoksa bu soru cevaplanana dek aşağı adım dursun mu (özellikle
+   kadında)?
 12. **(K-204, onay/hukuk)** Üç rıza metni taslak (`data/copy/en.json › consent.*`, sürüm `1-draft`): onay; mağaza öncesi
     hukuk gözden geçirmesi (M8). İçindeki taahhütler ("asla satmayız", "reklam yok") ürün sözü.
 13. **(K-205, hukuk/ürün)** Yaş sınırı: doğum yılında alt sınır yok. GDPR Md. 8'e göre 16 yaş altının (ülkeye göre 13-16)
