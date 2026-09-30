@@ -700,7 +700,7 @@ describe('review fixes (K-312)', () => {
     await press(t('onboarding.appleHealth.connect'));
     expect(screen.getByText(t('onboarding.appleHealth.sheetFailed'))).toBeOnTheScreen();
     expect(mockApi.PUT).not.toHaveBeenCalled();
-    expect(mockReport).toHaveBeenCalledWith({ name: 'Error' });
+    expect(mockReport).toHaveBeenCalledWith({ name: 'HealthSheetFailed' }); // named by connectAppleHealth (K-309)
     await press(t('onboarding.appleHealth.notNow'));
     expect(mockApi.PUT).not.toHaveBeenCalled();
     expect(mockProfile.save).toHaveBeenCalledTimes(1);

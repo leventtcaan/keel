@@ -5,15 +5,18 @@
  */
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as SecureStore from 'expo-secure-store';
+import { File, Paths } from 'expo-file-system';
 import { openDatabaseAsync } from 'expo-sqlite';
 import Storage from 'expo-sqlite/kv-store';
 import { type ReactNode, createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
+import { Share } from 'react-native';
 
 import { apiBaseUrl } from '@/api/config';
 import { type HealthAccess, healthUnavailable } from '@/health/health';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
+import { exportAccount } from '@/settings/exportData';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
 import type { UnitSystem } from '@/units/units';
 
@@ -23,6 +26,8 @@ export type PhoneServices = AppServices & {
   signInWithApple(): Promise<SignInResult>;
   appleAvailable(): Promise<boolean>;
   health: HealthAccess;
+  /** The account's data as a JSON file, handed to the share sheet (K-309). */
+  exportData(): Promise<void>;
 };
 
 const DATABASE = 'keel.db';
@@ -49,6 +54,17 @@ async function build(): Promise<PhoneServices> {
       signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session }),
     appleAvailable: () => AppleAuthentication.isAvailableAsync(),
     health: healthUnavailable, // K-403 plugs in HealthKit
+    exportData: () =>
+      exportAccount({
+        api: services.api,
+        saveFile: (name, content) => {
+          const file = new File(Paths.cache, name);
+          file.write(content);
+          return { uri: file.uri, remove: () => file.delete() };
+        },
+        share: async (uri) => void (await Share.share({ url: uri })),
+        now: new Date(),
+      }),
   };
 }
 

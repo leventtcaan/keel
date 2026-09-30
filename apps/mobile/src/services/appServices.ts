@@ -33,6 +33,7 @@ export type AppServices = {
   /** Records the server does not have yet; a sign-out drops them, so the screen warns first (K-309). */
   pendingCount(): Promise<number>;
   signOut(): Promise<void>;
+  deleteAccount(): Promise<void>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
 };
@@ -70,6 +71,25 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     units,
     profile,
     report,
+    /**
+     * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
+     * answer on its tokens are refused, so the phone only forgets: the session, and with it the records and settings
+     * (the listener above). A refusal keeps everything and throws by name.
+     */
+    deleteAccount: async () => {
+      let status: number;
+      try {
+        status = (await api.DELETE('/v1/account')).response.status;
+      } catch {
+        throw Object.assign(new Error('account deletion: no answer'), { name: 'NoConnection' });
+      }
+      if (status !== 202) throw Object.assign(new Error(`account deletion failed with HTTP ${status}`), { name: 'DeletionFailed' });
+      try {
+        await session.signOut();
+      } finally {
+        await store.clear();
+      }
+    },
     pendingCount: store.pendingCount,
     signOut: async () => {
       const refreshToken = await session.refreshToken();

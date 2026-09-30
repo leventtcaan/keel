@@ -1,6 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { router } from 'expo-router';
+
+import { Button } from '@/components/Button';
 import { CoachEntry } from '@/components/CoachEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
@@ -12,11 +15,17 @@ type Props = {
   screen: string;
   /** The coach bar; every tab shows it, the coach screen itself does not. */
   coachEntry?: boolean;
+  /** Today's way to Settings (prototype 5.2: "‹ Today"). */
+  settingsEntry?: boolean;
 };
 
 /** Temporary screen body until the real screen is built (M3/M4). */
-export function Placeholder({ screen, coachEntry = true }: Props) {
+export function Placeholder({ screen, coachEntry = true, settingsEntry = false }: Props) {
   const { color } = useTheme();
+  // Built outside the JSX below (the raw-text guard reads JSX children).
+  const settings = settingsEntry ? (
+    <Button label={t('settings.entry')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+  ) : null;
   return (
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the coach bar sits above it.
     <SafeAreaView
@@ -26,6 +35,7 @@ export function Placeholder({ screen, coachEntry = true }: Props) {
       <View style={styles.body}>
         <ScreenTitle>{t(`screens.${screen}.title`)}</ScreenTitle>
         <Text style={[styles.note, { color: color.muted }]}>{t(`screens.${screen}.note`)}</Text>
+        {settings}
       </View>
       {coachEntry && (
         <View style={styles.coach}>

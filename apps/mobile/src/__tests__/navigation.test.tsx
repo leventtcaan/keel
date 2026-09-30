@@ -21,11 +21,21 @@ import { ThemeProvider } from '@/theme/theme';
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 // The services need a phone (SQLite, keychain); the session state is what navigation reads from them (K-305).
 let mockSignedIn = true;
+const mockServices = {
+  signInWithApple: jest.fn(),
+  appleAvailable: async () => false,
+  // What the settings screen reads on arrival (K-309).
+  api: { GET: async () => ({ data: [], response: new Response(null, { status: 200 }) }) },
+  health: { available: false },
+  report: () => {},
+};
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,
   useSignedIn: () => mockSignedIn,
   useOnboarding: () => 'done', // this file is about a finished account; onboarding-flow.test.tsx is about the rest
-  useAppServices: () => ({ signInWithApple: jest.fn(), appleAvailable: async () => false }),
+  // One object for the life of the test, as the real services are built once per process: a screen may depend on it.
+  useAppServices: () => mockServices,
+  useUnits: () => 'METRIC',
 }));
 
 beforeEach(() => {
@@ -132,4 +142,26 @@ test('signed in, sign-in is not reachable', async () => {
     jest.runAllTimers();
   });
   expect(router.getPathname()).toBe('/');
+});
+
+test('Settings opens from Today, over the tabs (K-309, prototype 5.2)', async () => {
+  const router = renderRouter(APP, { initialUrl: '/' });
+  await router;
+  await fireEvent.press(screen.getByRole('button', { name: t('settings.entry') }));
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/settings');
+  expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
+  expect(appRouter.canGoBack()).toBe(true);
+});
+
+test('signed out, Settings is not reachable', async () => {
+  mockSignedIn = false;
+  const router = renderRouter(APP, { initialUrl: '/settings' });
+  await router;
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/sign-in');
 });
