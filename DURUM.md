@@ -111,7 +111,7 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Temel | 0a disk, 0b sorular → ADR-028 · K-301, K-302, K-303, K-307 · Dependabot #2 | ✅ bitti (30 Eyl) |
-| 2 · Veri ve kimlik | K-311, K-304, K-305, K-310 | sürüyor (30 Eyl) |
+| 2 · Veri ve kimlik | K-311, K-304, K-305, K-310 (+ ADR-029) | ✅ bitti (30 Eyl) |
 | 3 · Akış ve teslim | K-306, K-309, K-308, K-227, K-228, K-229 (ADR-028) · M3 çıkış kontrolü · M4 part prompt'ları | başlamadı |
 
 | Görev | Durum | PR | Aktarım |
@@ -120,7 +120,9 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 | K-302 yasaklı ifade taraması (U4/U6) + ham metin bekçisi (AST) | ✅ birleşti; inceleme: "Body fat: 18%" ve `{value}%` kaçıyordu, "Be patient" yanlış pozitif, `options={{ title }}` kaçıyordu → düzeltildi; mutasyon 6/6 | #193 | `M3/K-302.md` |
 | K-303 tipli API istemcisi (openapi-fetch + Bearer ara katmanı) | ✅ birleşti; inceleme ≥80 bulgu yok; saf URL ayrıştırma + `redirect: 'error'`; mutasyon 9/9 | #194 | `M3/K-303.md` |
 | K-311 tek uçuşlu oturum yenileme (ADR-025) | ✅ birleşti; inceleme: yenileme uçarken çıkış oturumu geri yazıyordu → bellek + nesil sayacı; Keychain yazma hatası r1'i tekrar yollatıyordu → bellek önce; mutasyon 21/21 | #197 | `M3/K-311.md` |
-| K-304 SQLite kuyruğu (clientId idempotency, ADR-024) | PR'da (auto-merge); inceleme: `catch {}` her hatayı çevrimdışı sayıyordu → `NoAnswer`; boşaltma sonu mikro-görev boşluğu; Android çevrimdışı açılış; mutasyon 31/31 + 44/44 | #198 | `M3/K-304.md` |
+| K-304 SQLite kuyruğu (clientId idempotency, ADR-024) | ✅ birleşti; inceleme: `catch {}` her hatayı çevrimdışı sayıyordu → `NoAnswer`; boşaltma sonu mikro-görev boşluğu; Android çevrimdışı açılış; mutasyon 31/31 + 44/44 | #198 | `M3/K-304.md` |
+| K-305 Apple ile giriş (nonce, Keychain, `Stack.Protected`, servislerin tek kökü) | ✅ birleşti; inceleme: reddedilen yenilemede A'nın kayıtları B'nin hesabına gidiyordu → oturum sonu kayıtları siler; ErrorBoundary; splash; çift dokunma; mutasyon 33/34 (1 eşdeğer) | #199 | `M3/K-305.md` |
+| K-310 birimler (ADR-029; tek yuvarlama, tercih profil + kv önbellek) | ✅ birleşti; inceleme: yavaş refresh seçimi eziyordu → nesil sayacı; ondalık virgül; girişte hesabın birimi okunmasa testler kör → düzeltildi; parametre sözleşmeye bağlı; mutasyon 28/28 | #200 | `M3/K-310.md` |
 | K-307 gezinme (NativeTabs, koç girişi, koç sayfası) | ✅ birleşti; simülatör: koç çubuğu sekme çubuğu altındaydı → alt güvenli alan; inceleme: `keel://coach` soğuk açılış sekmesiz kalıyordu → `anchor`; mutasyon 10/10 | #195 | `M3/K-307.md` |
 
 **Part 2 başı (30 Eyl):** senkron tamam (Part 1 ÇIKIŞ git ile tutarlı: #192-#195 birleşik, ADR-028 var, açık PR/worktree
@@ -135,6 +137,47 @@ kurulu (iPhone 16 Pro Max, iOS 18.1) → Part 1 native derleme istemez. **⚠ K-
 Docker 15 GB (`docker system prune`) ya da başka yer gerekecek → Levent'e sorulacak.
 **0b cevapları → ADR-028:** 21 (a) sil+uyarı → K-231 (M4) · 22 (c) LEA temkinli uç → K-230 (M4) · 23 (b) yeniden sor →
 K-229 (Part 3) · 24 (b) genel tür → K-228 (Part 3) · Apple kimlikleri: sonra · görseller: çizim, M3'te yer tutucu.
+
+**Part 2 ÇIKIŞ (30 Eyl):**
+- **Birleşen:** K-311 #197 · K-304 #198 · K-305 #199 · K-310 #200 (hepsi auto-merge, üç CI yeşil). `main`'e doğrudan:
+  K-304 bölünmesi + K-311 kartı (#196), ADR-029, DURUM. Açık PR yok, açık worktree yok, dallar silindi.
+- **Çıkış kriteri kanıtı:** çevrimdışı kayıt kuyruğa girer ve bağlantı gelince **bir kez** gider, tekrar gönderim saklı
+  kaydı alır (`sync-queue.test.ts`, gerçek SQL: `node:sqlite`); aynı anda 401 alan istekler **tek** refresh yapar
+  (`session-refresh.test.ts`); Apple ile giriş akışı birim testlerde uçtan uca (nonce → Apple → `/v1/auth/apple` →
+  Keychain → koruma), simülatörde uygulama açılıyor, servisler kuruluyor, oturum yok → giriş ekranı
+  (`docs/aktarim/M3/img/K-305-*.png`); birimler ayarlanabilir: `units.set()` profili günceller, `useUnits()` ekranı
+  yeniden çizer (seçim arayüzü K-306/K-309'da). `npm run check` **462/462**.
+- **Apple ile giriş — eksik olan (Levent):** Apple düğmesi bu simülatörde/Expo Go'da `isAvailableAsync() = false` →
+  "kullanılamaz" yolu görünüyor. Uçtan uca giriş için: (1) Bundle ID → mobilde `ios.bundleIdentifier` (K-308, EAS/
+  app.config), backend'de `KEEL_APPLE_CLIENT_ID` (aynı değer; `AppleProperties`); (2) development build (K-308) ve
+  Apple Developer'da Sign in with Apple yeteneği açık App ID; (3) çalışan backend (Docker açılmıyor). Team ID/Key ID/.p8
+  yalnız sunucu tarafı token iptali için (K-214), girişe gerekmez. `app.json`: `ios.usesAppleSignIn: true` eklendi.
+- **Kalan iş:** yok (Part 2 kapsamı tamam). Aktarım yapılmadı (toplu mod): `docs/aktarim/M3/README.md` sırası 5-8.
+- **Part 3'ün bilmesi gerekenler:**
+  - **Servisler tek kökten:** `src/services/appServices.ts` (`createAppServices`: session → istemci (K-311 yenileme) →
+    kayıt deposu + kuyruk (K-304) → `units`); ekranlar `useAppServices()`, `useSignedIn()`, `useUnits()`
+    (`src/services/ServicesProvider.tsx`). Servisler süreç başına **bir kez** kurulur; ekrandan yeni istemci/oturum kurma.
+  - **Kayıt yazmak:** `services.queue.record({ kind, body })`, `clientId` = `newClientId()` (`src/sync/send.ts`);
+    kayıt SQLite'a yazılır, ağ beklenmez. Reddedilenler `queue.rejected()` (gövdesiz), bekleyenler `pendingCount()`.
+  - **Çıkış:** `services.signOut()` oturumu + yerel kayıtları + birim tercihini siler, sonra sunucuya haber. **K-309:**
+    çıkıştan önce `pendingCount() > 0` ise uyar (gönderilmemiş kayıt gider). Reddedilen yenileme de aynı temizliği yapar.
+  - **Kök düzen:** `Stack.Protected` — oturum yoksa yalnız `sign-in`. **K-306:** `signInWithApple()` sonucu
+    `newAccount: true` → onboarding'e yönlendirme henüz yok (giriş ekranı sonucu atıyor); onboarding rotası da korumalı
+    grupta olmalı ve profil yokken sekmeler yerine onu göstermeli.
+  - **Birimler:** `src/units/units.ts` — `parseWeightKg/parseLoadKg/parseWaistCm` (sunucu hassasiyetine bir kez yuvarlar,
+    virgül kabul), `format*`, `heightCmFromImperial`. **K-306:** boy girişinde en az 3 ft 4 in (100 cm; 3 ft 3 in = 99 cm
+    reddedilir), profil yokken seçilen birim `units.current()`'tan profil PUT'una girer. **K-309:** birim seçimi
+    `units.set()` (çevrimdışında hata verir, yarım uygulanmaz).
+  - **Metin/parametre:** yeni metin `data/copy/en.json`; telefonun okuduğu parametre `data/parameters/*.json` (ADR-029,
+    köken testi `parameters.test.ts`).
+  - **Test kalıpları:** kök düzeni çizen testler `@/services/ServicesProvider`'ı taklit eder (`navigation.test.tsx`);
+    gerçek sağlayıcı testi `services-provider.test.tsx` (expo-sqlite → node:sqlite, SecureStore → Map). Mobil mutasyon
+    betiği önce temel koşuyu doğrular (kırmızıysa durur) — kopya dizinde `data/`, `contracts/`, `arastirma/` göreli yolda
+    olmalı.
+  - **Disk:** 3,3 GB (simülatör cihaz verisi `CoreSimulator/Devices` 3,7 GB, açılışta yeniden oluştu). K-308 native
+    derleme ~3-5 GB → Docker (15 GB) budama ya da başka yer: Part 3 başında Levent'e.
+- **Yeni sorular:** 25 (CONSENT_REQUIRED kayıtları), 26 (K1 onayı), 27 (profil PUT'u ile rızası geri çekilmiş
+  kullanıcının gıda listesi) — aşağıda.
 
 **Part 1 ÇIKIŞ (30 Eyl):**
 - **Birleşen:** K-301 #192 · K-302 #193 · K-303 #194 · K-307 #195 (hepsi auto-merge, iki CI yeşil). ADR-028 + K-228…K-231
@@ -170,6 +213,16 @@ K-229 (Part 3) · 24 (b) genel tür → K-228 (Part 3) · Apple kimlikleri: sonr
 Apple kimlikleri + referans görsel lisansı Part 1'in 0b adımında toplu sorulacak. K-227 issue #187 (backend, Part 3).
 
 ## Session sonunda Levent'e sorulacaklar
+26. **(K-310, K1 onayı — YENİ, Part 2)** `app-services.test.ts`'teki bir beklentiyi değiştirdim (#199'da yazılmıştı):
+    "yavaş ağda çıkış isteği sunucu cevaplamadan gitti" testi fetch çağrısını **bir** diye sayıyordu; girişte artık profil
+    de okunuyor (birim tercihi) → iki çağrı. Yeni hâli: her istek kendi adresiyle beklenir ve `/v1/auth/sign-out`'a **tam
+    bir** çağrı gitmiş olmalı — aynı iddia, daha sıkı. K1 "beklenti sorulmadan değişmez" dediği için onayına: (a) onay;
+    (b) geri al, başka yol (girişte profil okumayı ertelemek).
+27. **(K-310 incelemesi, sağlık verisi — YENİ, Part 2)** Birim değiştirmek (ve K-309'daki her ayar) **bütün profili**
+    PUT eder. Sağlık rızası geri çekilmiş kullanıcıda GET "yiyemediğim gıdalar"ı gizler → PUT onu boş yazar → rıza yeniden
+    verilince liste yok. ADR-028 #21 (geri çekince silinir) ile sonuç aynı ama uyarısız, yan etkiyle. Öneri (teknik,
+    K-231'e): sunucu, rıza yokken PUT'ta gelmeyen `avoid`'i korusun (ya da K-231 geri çekmede zaten silsin → tutarlı).
+    Karar: K-231 ile birlikte mi, şimdi mi?
 25. **(K-304 incelemesi, sağlık/rıza verisi — YENİ, Part 2)** Telefonda çevrimdışı girilen bir sağlık kaydı (tartı, bel,
     öğün…) gönderilirken sunucu **403 CONSENT_REQUIRED** derse (rıza hiç verilmemiş, geri çekilmiş ya da rıza metninin
     sürümü değişmiş ve yeniden onaylanmamış) ne olsun? Şimdi (en temkinli, geçici): kayıt REJECTED, telefonda kalır, bir

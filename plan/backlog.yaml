@@ -1149,7 +1149,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-303, K-311]
     why: "Salonda sinyal kopar; kayıt kaybolmamalı"
     acceptance:
@@ -1171,7 +1171,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-303]
     why: "ADR-025: aynı refresh token iki kez giderse bütün aile düşer, kullanıcı yeniden giriş yapar (K-304'ten bölündü)"
     acceptance:
@@ -1191,7 +1191,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-203, K-303, K-311]
     why: "Tek dokunuş giriş (ADR-011)"
     acceptance:
@@ -1286,7 +1286,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-301, K-205]
     why: "Hedef pazar ABD; lb kullanıcısı için giriş engeli (L3 P10)"
     acceptance:
