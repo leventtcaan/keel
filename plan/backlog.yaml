@@ -1113,7 +1113,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-007]
     why: "Metin koda gömülmez (K2); tıbbi dil ve yağ yüzdesi yasak (U4, U6)"
     acceptance:
