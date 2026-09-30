@@ -389,6 +389,35 @@ class SafetyNetTests {
     }
 
     @Test
+    void aCutUnderTheFatFloorStopsTheDeficit() {
+        // ADR-027 #1, J1 L2.1: under 18 % (women) / 8 % (men) the deficit stops. The engine has no "maintenance" direction
+        // (03 §2.1), and this is well under the surplus line: the phase turns to building, in the first step of the week.
+        assertThat(SafetyNet.check(fueled(Sex.FEMALE, "55.0", "17.9", 2200, 0), FEMALE)).hasValueSatisfying(woman -> {
+            assertThat(woman.action()).isEqualTo(new Action.ChangePhase(Phase.BULK));
+            assertThat(woman.reasons().getFirst().rule()).isEqualTo(new RuleId("low_fat_floor"));
+            assertThat(woman.confidence()).isEqualTo(Confidence.HIGH);
+        });
+
+        assertThat(SafetyNet.check(fueled(Sex.FEMALE, "55.0", "18", 2200, 0), FEMALE)).as("on the floor").isEmpty();
+        assertThat(SafetyNet.check(fueled(Sex.MALE, "75.0", "7.9", 3000, 0), MALE)).hasValueSatisfying(d ->
+                assertThat(d.reasons().getFirst().rule()).isEqualTo(new RuleId("low_fat_floor")));
+        assertThat(SafetyNet.check(fueled(Sex.MALE, "75.0", "8", 3000, 0), MALE)).isEmpty();
+        Snapshot leanBulk = new Snapshot(TODAY, Sex.FEMALE, Phase.BULK, TODAY.minusDays(60), series(EngineFixtures.daily(TODAY.minusDays(40), TODAY,
+                "55.0")), Optional.of(new BigDecimal("17.9"))).withEnergy(new EnergyBudget(2600, 0));
+        assertThat(SafetyNet.check(leanBulk, FEMALE)).as("no deficit to stop").isEmpty();
+    }
+
+    @Test
+    void underTheFatFloorWithLowEnergyTheIncreaseComesFirst() {
+        // K-223 review: the leaner, higher-risk woman must not lose the low-energy increase to a phase change that moves
+        // no calorie (ChangePhase waits for K-222). 55 kg at 17.9 %, 1400 kcal, 300 exercise: EA ≈ 24 < 30.
+        assertThat(SafetyNet.check(fueled(Sex.FEMALE, "55.0", "17.9", 1400, 300), FEMALE)).hasValueSatisfying(d -> {
+            assertThat(d.action()).isInstanceOf(Action.IncreaseCalories.class);
+            assertThat(d.reasons()).extracting(Reason::rule).startsWith(new RuleId("low_energy_availability")).contains(new RuleId("low_fat_floor"));
+        });
+    }
+
+    @Test
     void theLowEnergyFloorIsTheSmallestTargetAboveTheLine() {
         // 81 kg at 25 % → 60.75 kg fat-free; 25 × 60.75 = 1518.75 → the next whole kcal above it is 1519, plus 400
         // kcal of exercise = 1919.

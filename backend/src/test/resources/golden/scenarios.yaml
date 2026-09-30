@@ -187,19 +187,22 @@ scenarios:
     expect: [observing, window_not_full, check_in_needed_training]
 
   - id: GS-23
-    title: "Man losing 0.29 kg a week: exactly the noise margin over the window reads as flat, so one step down (L-10)"
+    title: "Man losing 0.29 kg a week: flat over the window, but each week reaches the per-week 0.29 — moving (ADR-027 #0)"
     user: {sex: male, phase: cut}
+    # The window's 0.58 kg is inside the margin (L-10), but a steady loss at flat_margin_kg's own "≈ 0.3 kg/week is
+    # movement" is a slow loser, not a plateau. (Before ADR-027: one step down.)
     weeks: [80.00, 79.71, 79.42]
-    expect: [observing, window_not_full, "adjust_calories:-500/not_toward_goal"]
+    expect: [observing, window_not_full, continue/toward_goal]
 
   - id: GS-24
-    title: "Man losing 0.5 kg a week, one flat week: it reads as two flat weeks, so one step down (L-10, open question)"
+    title: "Man losing 0.5 kg a week, one flat week: one flat week is not a plateau, he waits (ADR-027 #0, K-64)"
     user: {sex: male, phase: cut}
-    # Week 5 [79.0, 78.5, 78.5]: 0.5 ≤ 0.58, not moving; 78.5 is flat and 79.0 is only 0.5 from 78.5, inside the
-    # margin → 2 flat weeks > flat_wait_weeks 1: no "one more week" (K-64). 2848 − 500 = 2348 ≥ BMR 1765.
+    # Week 5 [79.0, 78.5, 78.5]: 0.5 ≤ 0.58, the window reads flat — but the step before the latest moved 0.5 ≥ the
+    # per-week 0.29: wait one more week. Week 6 [78.5, 78.5, 78.0]: this week lost 0.5 → moving again, continue.
+    # (Before ADR-027 week 5 cut 500 kcal: the open question 0.)
     weeks: [80.0, 79.5, 79.0, 78.5, 78.5, 78.0, 77.5, 77.0]
     expect: [observing, window_not_full, continue/toward_goal, continue/toward_goal,
-             "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full, continue/toward_goal]
+             wait_one_more_week, continue/toward_goal, continue/toward_goal, continue/toward_goal]
 
   - id: GS-25
     title: "Man losing 0.5 kg a week, one week of water: a step down, and the week after a step back up (open question)"
@@ -278,7 +281,9 @@ scenarios:
 
   - id: GS-32
     title: "Woman of 60, 155 cm, 75 kg, flat on a cut: a step would break the macro floors, so move more (L-11)"
-    user: {sex: female, phase: cut, age: 60, height: 155, activity: inactive}
+    user: {sex: female, phase: cut, age: 60, height: 155, activity: inactive, fat_proxy_pct: 45, exercise_kcal: 0}
+    # A fat estimate, since a woman without one gets no step down (ADR-027 #11b): 45 % → fat-free 41.25 kg; no exercise
+    # (inactive), energy floor ⌊30 × 41.25⌋ + 1 = 1238 ≤ the step's 1261, so the floors below still decide.
     # BMR 750 + 968.75 − 300 − 161 = 1257.75; target × 1.4 = 1761. A step: 1261 ≥ BMR 1258, but protein 2.2 g/kg
     # (45+) 165 g + fat floor 0.75 g/kg 56 g + carbs 50 g = 660 + 504 + 200 = 1364 > 1261 → no honest split.
     weeks: [75.0, 75.0, 75.0, 75.0, 75.0]
@@ -312,7 +317,9 @@ scenarios:
 
   - id: GS-36
     title: "Woman, one flat week after a clear drop inside her 4-week window: wait one more week (G2 K-64)"
-    user: {sex: female, phase: cut}
+    user: {sex: female, phase: cut, fat_proxy_pct: 30, exercise_kcal: 0}
+    # A fat estimate (ADR-027 #11b): 30 % → fat-free 56 kg; with no exercise counted the energy floor 1681 ≤ the step's
+    # 1932, so this journey still tests K-64 and not the floor (GS-37 does that).
     # 80 kg keeps the 0.7 drop under the weekly cap (0.8). Week 4 [80.0, 80.7, 80.0, 80.0]: 0 over the window; the
     # last week is flat against the one before (1 flat week) and 0.7 under the one before that → 1 ≤ flat_wait_weeks →
     # wait. Week 5 [80.7, 80.0, 80.0, 80.0]: 0.7 → moving. Week 6 all 80.0: 3 flat weeks → 2432 − 500 = 1932.
@@ -326,3 +333,10 @@ scenarios:
     # more than the 500 step, so all of it. Week 2: (2761 − 1500) / 42 = 30.02, above the line.
     weeks: [60.0, 60.0]
     expect: ["increase_calories:649/low_energy_availability", window_not_full]
+
+  - id: GS-38
+    title: "Woman flat on a cut with no fat estimate: no step down until there is one (ADR-027 #11b)"
+    user: {sex: female, phase: cut}
+    # Without an estimate the energy floor cannot be computed, and low energy is the higher risk for her (J1 C6).
+    weeks: [65.0, 65.0, 65.0, 65.0, 65.0]
+    expect: [observing, observing, observing, fat_estimate_needed, fat_estimate_needed]

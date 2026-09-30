@@ -28,7 +28,7 @@ import java.util.Optional;
  * </ol>
  *
  * <p>The week after a deload or a week off is never another ladder call (G7 K-72). Rungs 1-2 also run on a cut,
- * where K-68 sets no diet condition; whether a cut should skip them is still open (DURUM, K-110 question).
+ * where K-68 sets no diet condition (ADR-027 #3: they do).
  */
 public final class DeloadLadder {
 

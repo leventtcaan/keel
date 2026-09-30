@@ -138,6 +138,23 @@ class DecisionPipelineTests {
         assertThat(DecisionPipeline.decide(bulk, MALE).action()).isEqualTo(new Action.AdjustCalories(250));
     }
 
+    @Test
+    void aWomanWithoutAFatEstimateGetsNoStepDownButAManDoes() {
+        // ADR-027 #11b: without a fat estimate the low-energy floor cannot be computed, and low energy is the higher risk
+        // for women (J1 C6): no calorie step down for her until there is one. Safety calls and steps up still run.
+        Snapshot woman = new Snapshot(TODAY, Sex.FEMALE, Phase.CUT, TODAY.minusDays(40), weekly("65.0", "65.0", "65.0", "65.0"))
+                .withCheckIn(ON_PLAN).withEnergy(EnergyBudget.exerciseUnknown(2000)).withProfile(new Profile(30, 168));
+        Snapshot man = user(Phase.CUT, weekly("80.0", "80.0", "80.0")).withEnergy(EnergyBudget.exerciseUnknown(2600));
+
+        Decision hers = DecisionPipeline.decide(woman, parameters(Sex.FEMALE));
+
+        assertThat(hers.action()).isEqualTo(new Action.NoDecisionYet());
+        assertThat(hers.reasons().getFirst().rule()).isEqualTo(new RuleId("fat_estimate_needed"));
+        assertThat(DecisionPipeline.decide(woman.withFatProxyPct(new BigDecimal("30")), parameters(Sex.FEMALE)).action())
+                .as("with an estimate the ladder runs").isInstanceOf(Action.AdjustCalories.class);
+        assertThat(DecisionPipeline.decide(man, MALE).action()).isEqualTo(new Action.AdjustCalories(-500));
+    }
+
     // ── confidence and next review ──────────────────────────────────────────────────────────────────────────
 
     @Test

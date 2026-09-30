@@ -141,11 +141,12 @@ class WeeklySpineTests {
 
         assertThat(decided(WeeklySpine.evaluate(fourMornings, MALE)).action()).isEqualTo(new Action.Continue());
 
-        // Uneven mornings in the first week average 79.85: 0.55 kg over the window is inside the margin.
+        // Uneven mornings in the first week average 79.85: 0.5 kg over the window is inside the margin, in two steps of
+        // 0.25 — a plateau (ADR-027 #0: both under the per-week 0.29). Averaged over seven days it would not be.
         List<WeighIn> uneven = new ArrayList<>(List.of(weighIn(first, "80.6"), weighIn(first.plusDays(2), "79.6"),
                 weighIn(first.plusDays(4), "79.6"), weighIn(first.plusDays(6), "79.6")));
-        uneven.addAll(daily(first.plusDays(7), first.plusDays(13), "79.5"));
-        uneven.addAll(daily(first.plusDays(14), TODAY, "79.3"));
+        uneven.addAll(daily(first.plusDays(7), first.plusDays(13), "79.6"));
+        uneven.addAll(daily(first.plusDays(14), TODAY, "79.35"));
         Snapshot unevenWeek = new Snapshot(TODAY, Sex.MALE, Phase.CUT, first, series(uneven)).withCheckIn(ON_PLAN);
 
         assertThat(WeeklySpine.evaluate(unevenWeek, MALE)).isInstanceOf(SpineResult.CaloriesNeeded.class);
@@ -224,11 +225,24 @@ class WeeklySpineTests {
 
     @Test
     void aChangeWithinTheNoiseMarginIsFlat() {
-        // flat_margin_kg (0.58 kg, ADR-020 L-10): 0.58 kg down over the window is not movement; 0.59 kg is.
-        assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.30", "80.00"))
-                .isInstanceOf(SpineResult.CaloriesNeeded.class);
+        // flat_margin_kg (0.58 kg, ADR-020 L-10): 0.58 kg down over the window is not movement over the window; 0.59 kg
+        // is. Since ADR-027 #0 a flat window whose last step still lost 0.30 kg (≥ the per-week 0.29) is a slow loser
+        // moving; two steps of 0.28 are the plateau that cuts.
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.30", "80.00")).action()).isEqualTo(new Action.Continue());
         assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.59", "80.30", "80.00")).action())
                 .isEqualTo(new Action.Continue());
+        assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.56", "80.28", "80.00")).isInstanceOf(SpineResult.CaloriesNeeded.class);
+        // The margin itself, where the new rule does not reach (a rise then a drop): 0.58 over the window is flat → a
+        // wait; 0.59 is toward the goal (K-223 review: the boundary had lost its test).
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.70", "80.00")).action()).isEqualTo(new Action.NoDecisionYet());
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.59", "80.70", "80.00")).action()).isEqualTo(new Action.Continue());
+    }
+
+    @Test
+    void aWomanUpOverHerWindowIsNotMovingWhateverTheLastStep() {
+        // Her 4 weeks: 65.0 → 65.5 → 65.5 → 65.3 is 0.3 kg up; the last step down does not make her "moving" (review).
+        assertThat(spine(Sex.FEMALE, Phase.CUT, ON_PLAN.withWaist(Waist.FLAT), "65.0", "65.5", "65.5", "65.3"))
+                .as("flat within the margin, no step moved: the plateau call").isInstanceOf(SpineResult.CaloriesNeeded.class);
     }
 
     @Test
@@ -332,6 +346,27 @@ class WeeklySpineTests {
         assertThat(decided(result).reasons()).containsExactly(new Reason(new RuleId("wait_one_more_week"),
                 new Source("arastirma/ham/guray/G2-kilo-verme.md#K-64", SourceTag.EXPERIENCE)));
         assertThat(decided(result).nextReview()).isEqualTo(TODAY.plusDays(7));
+    }
+
+    @Test
+    void aSlowLoserWhoseDropStoppedThisWeekWaitsOneMoreWeek() {
+        // ADR-027 #0 (K-113 finding A): losing 0.5 kg a week, then a week at the same weight. The window reads flat —
+        // 0.5 kg is inside flat_margin_kg — but the drop stopped only this week: one flat week is not a plateau (G2 K-64).
+        // The per-week share of the margin (0.58 / 2 steps = 0.29 kg, the parameter's own "0.3 kg/week is movement")
+        // tells a step that moved from one that did not.
+        SpineResult oneFlatWeek = spine(Sex.MALE, Phase.CUT, ON_PLAN.withWaist(Waist.FLAT), "86.0", "85.5", "85.5");
+        SpineResult twoFlatWeeks = spine(Sex.MALE, Phase.CUT, ON_PLAN.withWaist(Waist.FLAT), "86.0", "85.5", "85.5", "85.5");
+
+        assertThat(decided(oneFlatWeek).reasons().getFirst().rule()).isEqualTo(new RuleId("wait_one_more_week"));
+        assertThat(twoFlatWeeks).as("the second flat week acts").isInstanceOf(SpineResult.CaloriesNeeded.class);
+    }
+
+    @Test
+    void aSteadySlowLoserKeepsGoingAndOnlyADropAfterARiseWaits() {
+        // 0.29 kg a week, every week: moving (continue), not a plateau every week (ADR-027 #0).
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.29", "80.00")).action()).isEqualTo(new Action.Continue());
+        // Up 0.7 then down 0.7: this week's drop only undoes the rise — wait, not "moving" (aDropThisWeek… below).
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.0", "80.7", "80.0")).action()).isEqualTo(new Action.NoDecisionYet());
     }
 
     @Test

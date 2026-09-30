@@ -10,6 +10,16 @@ ancak ~2 sabit haftadan sonra "sabit" okunuyor; üstüne bir hafta beklemek G2 k
 geç" ve G3 K-10'un "2 hafta artmadıysa +250" kurallarıyla çelişiyordu.
 
 ## Karar
+> **ADR-027 #0 güncellemesi (K-223):** penceresi paydan dolayı "sabit" okunan yavaş kaybedende de K-64 işler. Haftalık
+> adım payı = `flat_margin_kg` ÷ haftalık adım sayısı (erkek 0,29, kadın 0,19 kg) — orantılı bir bölüştürme, kendi başına
+> bir istatistik testi değil (tek adım, bütün pencere kadar gürültülü): bu yüzden tek adım plato kararı *vermez*, yalnız
+> geciktirir. Cut'ta: bu haftanın adımı payı bulduysa, önceki hafta bir yükseliş değilse ve pencere bütünüyle hedef
+> yöndeyse → hedef yönde (devam); yalnız önceki adım bulduysa → ilk sabit hafta, bekle; ikisi de küçükse plato → madde
+> 2'deki kalori kuralı. İnceleme ölçümü (Monte Carlo, haftada 4 tartı): gerçek platoda ilk uygun haftada kalori kararı
+> erkekte %95 → %80, kadında %92 → %67; gecikme bir-iki hafta — K-64'ün bilinçli bedeli.
+> Sonuç: haftada 0,5 kg veren erkeğin tek sabit haftası artık kesinti değil (GS-24), 0,29 kg/hafta düzenli kayıp
+> "devam" (GS-23).
+
 1. **Sabit hafta sayısı:** karar penceresinin haftalık ortalamaları (erkek 3, kadın 4); son haftaya `flat_margin_kg`
    içinde kalan **ardışık önceki hafta** sayısı. 1 = "bir haftadır aynı", 2 = "iki haftadır aynı".
 2. **Bekleme:** pencere hedef yönde değilse — cut: sabit hafta ≤ `flat_wait_weeks` (1) ve bel yukarı gitmiyorsa bekle;
@@ -19,7 +29,7 @@ geç" ve G3 K-10'un "2 hafta artmadıysa +250" kurallarıyla çelişiyordu.
    okur — K-64 yapısal olarak sağlanır; açık bekleme kadında ve pencerenin içinde yakın zamanda düşüş olan durumlarda çıkar.
 3. **Düz bulk'ta antrenman kapısı yok:** ağacın "hedef yönde değil" dalı yalnız "kaloriyi ayarla" der; antrenman kırmızı
    alarmı (G7 K-98, G2 karar tablosu) cut kuralıdır. Duran bulk G3 K-10 ile kalori artırır.
-4. **(Geçici)** Görünüş SAME ya da UNKNOWN (bu hafta fotoğraf yok) → devam. Ağaç "daha iyi mi?" diye sorar; "aynı"yı
+4. **(ADR-027 #4 ile kalıcı)** Görünüş SAME ya da UNKNOWN (bu hafta fotoğraf yok) → devam. Ağaç "daha iyi mi?" diye sorar; "aynı"yı
    "hayır" saymak, fotoğrafın 4 haftada bir anlamlı fark gösterdiği bir üründe (H1 §2.5, LSC 1,2-1,5 kg) neredeyse her
    hafta "genetik limit → kaloriyi geri çek" üretirdi. Devam, kaloriyi değiştirmeyen taraftır. **Levent'e soru**
    (DURUM › sorulacaklar); cevap gelince bu madde güncellenir.

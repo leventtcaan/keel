@@ -956,7 +956,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-216]
     why: "Levent'in cevapları (ADR-027 #0, #1, #11b, #19) motor davranışını değiştiriyor"
     acceptance:
