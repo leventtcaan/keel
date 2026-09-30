@@ -64,10 +64,11 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
 Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
-0. **(güncel, M2 uygulanabilir iş BİTTİ)** Birleşenler bu koşuda: K-213 #171, K-216 #172, K-220 #174, K-217 #175+#176,
-   K-221 #177. Kalan M2: **K-222** (faz/mini cut/hard stop uygulaması) sorular 11, 17, 18'e bağlı. Sıradaki: **soruları
-   (0-20) AskUserQuestion ile toplu sor** → cevapları ADR'ye işle → cevaba bağlı işi bitir (K-222 vb.) → `M3.md` yaz
-   (taslak scratchpad'de değil, bu adımda yeniden yaz) → özet. Sonra Levent dönünce M1 (akşam) + M2 aktarımı.
+0. **(güncel)** M2 ana işi bitti (K-213…K-221 birleşti). Sorular cevaplandı → ADR-027. **Cevaplardan doğan işler**
+   (backlog'da, sırayla): K-225 profil (18+, kısıt alanı rıza kapısında) → K-223 motor (K-64 herkese, L-4 alt yağ, kadında
+   LEA'sız aşağı adım yok, adım metni) → K-226 FDC Foundation + SR Legacy içe aktarma (Levent indirmeye izin verdi) →
+   K-224 iç yağ tahmini (referans seçimi + WHtR bandı; eşleme araştırmadan, U14) → K-222 faz/mini cut/hard stop +
+   DECIDE_FOR_ME + genel etiket. Sonra `M3.md` (Apple kimlikleri M3'ün ilk işi) → özet → aktarım (M1 akşam + M2).
 1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
    KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
    MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
@@ -98,70 +99,8 @@ K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tam
    `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; kabul kriterlerine: tek uçuşlu refresh ADR-025, UPC-E sunucuda açılır,
    Dependabot #2) → özet. Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 
-## Session sonunda Levent'e sorulacaklar (toplu, AskUserQuestion)
-0. **(K-113 A, sağlık)** Haftada ~0,5 kg veren erkek tek sabit haftada kalori kesintisi alıyor (L-10 payı 0,58 kg iki
-   haftalık farkı "sabit" sayıyor); tek haftalık su sıçraması −500/+500 salınımı yapıyor. Kabul mü, yoksa K-64 beklemesi
-   yavaş kaybedende de mi işlesin? (ADR-021 değişir.)
-1. **L-4** (sağlık): iç yağ tahmini <%18 (kadın) / <%8 (erkek) → açığı durdur (J1 L2.1)? ADR-020'de yok; yazılmadı.
-2. **Hard stop gerekçesinin saklanması** (veri, GDPR Art. 9): Snapshot'taki cevap saklanmıyor (`docs/mimari.md` madde 4);
-   `menstrual_loss_reported` gerekçeli karar kaydı saklanabilir mi, yoksa gerekçe genel bir etiketle mi saklansın?
-3. **Deload basamak 1-2 cut'ta** da çalışsın mı? (ADR-020 cevaplamadı; şimdilik çalışıyor. Basamak 3 "gerileme" cut'ta
-   susturuldu: G6 K-30.)
-4. **ADR-021 madde 4** (sağlık/ürün): görünüş "aynı" ya da "bu hafta fotoğraf yok" → devam (şimdiki, kalori değişmez) mi,
-   ağaçtaki gibi "daha iyi değil" → antrenman/toparlanma/genetik limit mi?
-5. **Açık yağdan mı karbdan mı** (bilgi/sağlık): G7 K-117 "yağdan ver" · 03 §2.3 ve G3 K-22 "karb ayar kolu". Kart
-   uygulandı (karb, karb tabanında yağ 0,5 g/kg'a iner).
-6. **Aktivite sorusu** (ürün, K-114): kaç seçenek, nasıl sorulur? Gün boyu, antrenman dahil olmalı.
-7. Apple Team ID / Bundle ID / Services ID.
-8. **(K-115, ürün)** Kayıt sapması yalnız büyükse görünür (erkek 2800 kcal'de günde ~640+): formül hatası ve tartı
-   gürültüsünden ayrılamıyor. Bu mesaj uygulamada gösterilsin mi (iki okumayı birden söyleyen metinle), yoksa yalnız
-   içeride mi kalsın?
-10. **(K-207, ürün)** Barkod Türk ürünlerinde bulunamayacak (FDC'de yok). Bulunamayınca ne olsun: etiketten tek seferlik
-   elle giriş (sonra hafızada) mı, yalnız genel gıda araması mı? İleride Türkiye kaynağı (TürKomp) araştırılsın mı?
-11. **(K-201, sağlık/ürün — ÖNEMLİ)** Motorun iç yağ tahmini (`fatProxyPct`) nereden gelecek? Faz kapısı (bulk tavanı,
-   cut → bulk) ve **düşük enerji güvenlik ağı** bu sayı olmadan çalışmıyor (LEA → adet sorusu → hard stop zinciri de).
-   Araştırma: mezura formülü (Navy) değişimi izlemede başarısız (H1 §3.2), WHtR bir eşik, Ö-4 "görsel proxy" diyor
-   ama nasıl toplanacağı yok. Seçenekler: (a) kullanıcı referans görsellerden kendine en yakını seçer (Güray'ın göbek
-   testi), (b) bel/boy'dan kaba bant (yalnız kapı için, izleme için değil), (c) ikisi, (d) hiçbiri → iki kural kapalı.
-   U4 gereği sayı hiçbir yerde gösterilmez. **K-216'dan beri ek sonuç:** plan hedefi motora gidiyor, kalori merdiveni
-   çalışıyor; yağ tahmini yokken LEA tabanı hesaplanamadığı için cut'ta aşağı adımı yalnız BMR ve makro tabanları
-   sınırlıyor (önce merdiven hiç çalışmıyordu). Kabul mü, yoksa bu soru cevaplanana dek aşağı adım dursun mu (özellikle
-   kadında)?
-12. **(K-204, onay/hukuk)** Üç rıza metni taslak (`data/copy/en.json › consent.*`, sürüm `1-draft`): onay; mağaza öncesi
-    hukuk gözden geçirmesi (M8). İçindeki taahhütler ("asla satmayız", "reklam yok") ürün sözü.
-13. **(K-205, hukuk/ürün)** Yaş sınırı: doğum yılında alt sınır yok. GDPR Md. 8'e göre 16 yaş altının (ülkeye göre 13-16)
-    sağlık verisi rızası geçersiz; K-8xx (SCOFF) 18 yaş altında özellikleri kapatıyor. Onboarding'de yaş kapısı olsun mu, kaç?
-14. **(K-205, veri)** "Yiyemediğim gıdalar" alerji/çölyak gibi sağlık verisi olabilir (Md. 9). Profil sağlık verisi rızasına
-    bağlansın mı, yoksa alan "sevmediğim" diye mi daraltılsın?
-15. **(K-211, ürün/koçluk)** Altı program şablonu (`data/programs/1-days.yaml` … `6-days.yaml`) **taslak**: hangi hareket,
-    kaç set. Güray sınırlarında (seans ≤5, hafta ≤10 set/kas, 4+ günde frekans 2) ama içerik onayı Levent'in. 7 gün seçen
-    kullanıcıya program yok (400, G1 K-70) — uygulama "en fazla 6" desin mi, yoksa 6'lık program + bir gün dinlenme mi?
-16. **(K-208, dışarıdan dosya indirme — izin)** FDC toplu verisi (USDA, CC0): Foundation + SR Legacy (~birkaç MB zip) ve
-    Branded (~400 MB+ zip, barkod için) indirilip içe aktarılsın mı? İndirme izin ister; ayrıca Branded diske yer ister (disk
-    şu an dolu). İzin gelene dek K-208 elle yazılmış küçük test verisiyle ilerler.
-17. **(K-212, sağlık/ürün)** Hedefi "karar sen ver" (`DECIDE_FOR_ME`) olan kullanıcının başlangıç fazı: faz kapısı yağ
-    tahmini ister (soru 11), yoksa kapı devre dışı. Güray G4 K-4: "neredeyse her yeni başlayan buradan başlar" (önce yağ
-    kaybı) → varsayılan **CUT** mı, yoksa kullanıcıya iki seçenek sunulup seçtirilsin mi? Şimdilik bu kullanıcıda check-in
-    karar üretmez (409).
-18. **(K-212, sağlık/veri — ÖNEMLİ)** Adet kaybı cevabı (V4, ADR-020 L-1) kararı etkiler ama **saklanmaz**. Ama o cevapla
-    verilen HARD_STOP kararı saklanıyor (ADR-003 §6: her karar girdisiyle saklanır) ve gerekçesi (`menstrual_loss_reported`)
-    cevabı açığa vurur. Seçenekler: (a) karar saklanır, gerekçe genel bir etiketle ("güvenlik: düşük enerji") yazılır; (b)
-    karar saklanır, gerekçe olduğu gibi — cevabın dolaylı kaydı kabul edilir (rıza metnine yazılır); (c) bu karar hiç
-    saklanmaz (yeniden üretilebilirlik bu tek karar için yok). Şimdilik soru hiç alınmıyor (400): LEA bandı yağ tahmini
-    olmadan hesaplanamıyor (soru 11), yani soru zaten sorulamaz. Soru 2 ile aynı konu, cevap ikisini birden kapatır.
-19. **(K-216, sağlık/ürün)** Adım hedefi: başlangıç **7.000/gün**, "daha çok hareket" (CHANGE_MOVEMENT) kararı **10.000'e**
-    kaldırır (Güray G2 K-42; `nutrition.yaml › steps_target_*`). Ama karar metni "aynı sonucu daha çok adımla alırsın"
-    diyor: kesilmeyen adım 500 kcal, 3.000 adım ≈ 150 kcal (G2 K-43). Seçenekler: (a) 10.000 tavanı kalsın, metin "daha
-    az ama güvenli" diye düzeltilsin; (b) adım kalori karşılığı kadar artsın (500 kcal = +10.000 adım → 17.000, gerçekçi
-    değil); (c) 10.000'den sonra kardiyo önerilsin (G2: haftada 2-3 × 20-30 dk) — yeni bir hedef alanı demek.
-20. **(K-220, ürün/sağlık)** Uyum kayıtlardan sayılıyor (ADR-020 L-6). Kaydı hiç olmayan gün ne sayılsın? Varsayılan
-    (uygulandı): **kaydı olmayan gün ne yapıldı ne kaçırıldı** — protein yalnız yemek kaydı olan günde, adım yalnız adım
-    verisi olan günde planlı sayılır (U3 tahmin yok, U7 suçlama yok); antrenman ve tartı her hafta planlı. Protein günü
-    "tuttu" = kaydedilen aralığın ortası ≥ hedef. Alternatifler: (a) kaydı olmayan gün "kaçırıldı" (yemek kaydını
-    zorlar; kaydetmeyen kullanıcı hep FIX_ADHERENCE alır); (b) protein/adım uyuma hiç girmesin (yalnız antrenman + tartı);
-    (c) aralığın alt ucu ≥ hedef (daha sıkı).
-9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
-   `tag: urun`). Onay mı?
+## Session sonunda Levent'e sorulacaklar
+**Hepsi cevaplandı (30 Eyl) → `plan/kararlar/ADR-027-m2-sonu-cevaplari.md`.** Açık kalan: Apple kimlikleri (M3 başında).
 
 ## Teknik kararlar (bu koşu, aktarımda anlatılacak)
 - U14 çapa kuralı: çapa dosyada başlık (`### K-17 ·`, `## 3.4`, `### 🚨 L2.1 ·`) ya da kalın etiket (`**U2 ·`) olmalı;

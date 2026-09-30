@@ -1,5 +1,5 @@
 # ADR-021 · Haftalık omurga: "sabit" ve "bekle" nasıl ölçülür
-- **Durum:** KABUL (teknik, agent — ADR-019) · madde 4 geçici, Levent'e soru
+- **Durum:** KABUL (teknik, agent — ADR-019) · **ADR-027:** madde 2 değişti (K-64 beklemesi herkese, K-223), madde 4 kalıcı
 - **Tarih:** 2026-09-29 · **Karar veren:** agent
 
 ## Bağlam

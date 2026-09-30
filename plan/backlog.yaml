@@ -937,16 +937,93 @@ tasks:
     type: feature
     size: S
     status: todo
-    depends_on: [K-216]
+    depends_on: [K-216, K-224]
     why: "K-216 kalori ve adım kararlarını uygular; ChangePhase, MiniCut ve HardStop 409 döner — motor bunları yağ tahmini olmadan veremiyor (DURUM 11, 17, 18). O cevaplar gelince uygulanmaları gerekir (30 Eyl, K-216)"
     acceptance:
       - "ChangePhase: faz ve faz başlangıcı değişir; hedef bakım tahminine döner ve gözlenir (K-114, ilk planla aynı)"
       - "MiniCut: min-max hafta CUT, sonra BULK'a dönüş; dönüş koşulu planda"
-      - "HardStop: hedef en az bakım (ADR-020 L-1); saklama DURUM 18'e göre"
+      - "HardStop: hedef en az bakım (ADR-020 L-1); gerekçe genel etiketle saklanır, adet cevabının izi kalmaz (ADR-027 #18)"
+      - "DECIDE_FOR_ME: başlangıç fazı yağ tahminiyle faz kapısından; tahmin yoksa CUT (ADR-027 #17, G4 K-4)"
+      - "Döngü sorusu yalnız düşük enerji bandındaki kadına sorulur (V4); bant yağ tahmininden (K-224)"
     tests:
       - "ApplyDecisionTests"
     refs: ["plan/kararlar/ADR-020-m1-kural-kararlari.md", "arastirma/ham/guray/G7-whisper-arsiv.md#K-102"]
     learn: ["Durum geçişi"]
+
+  - id: K-223
+    title: "engine: ADR-027 motor cevapları (K-64 herkese, alt yağ sınırı, kadında LEA'sız aşağı adım yok)"
+    milestone: M2
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-216]
+    why: "Levent'in cevapları (ADR-027 #0, #1, #11b, #19) motor davranışını değiştiriyor"
+    acceptance:
+      - "Tek sabit hafta, yavaş kaybedende de kesinti değil: bir hafta daha beklenir (G2 K-64; ADR-021 madde 2 güncel)"
+      - "İç yağ tahmini kadında <%18, erkekte <%8 → açık durur (J1 L2.1); eşikler parametre dosyasında, kaynaklı"
+      - "Yağ tahmini yokken kadında kalori aşağı adımı yok: 'yağ tahmini gerekli' gerekçeli NoDecisionYet; hız ve güvenlik kararları çalışır"
+      - "CHANGE_MOVEMENT metni 'aynı sonuç' demez (ADR-027 #19)"
+    tests:
+      - "WeeklySpineTests"
+      - "SafetyNetTests"
+      - "GoldenScenarioTests"
+    refs: ["plan/kararlar/ADR-027-m2-sonu-cevaplari.md", "arastirma/ham/guray/G2-kilo-verme.md#K-64", "arastirma/ham/J1-cinsiyet.md#L2.1"]
+    learn: ["Kural değişikliğinin altın senaryolara etkisi"]
+
+  - id: K-224
+    title: "measurement: iç yağ tahmini — referans görsel seçimi + bel/boy bandı (yalnız motor içi)"
+    milestone: M2
+    module: measurement
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-206]
+    why: "Faz kapısı, bulk tavanı, LEA ağı ve L-4 yağ tahmini ister (ADR-027 #11); sayı hiçbir yerde gösterilmez (U4)"
+    acceptance:
+      - "Kullanıcı referans görsellerden kendine en yakını seçer (Ö-4 göbek testi bantları); seçim saklanır, dışa aktarmada sayı yok"
+      - "Bel/boy'dan kaba bant yalnız kapı için; eşleme kaynaklı (araştırma notu arastirma/ham'a, U14) ya da kaynak yoksa kullanılmaz"
+      - "İkisi çelişirse temkinli olan (LEA için yüksek yağ = düşük yağsız kütle değil; her kural için yönü yazılı)"
+      - "Snapshot.fatProxyPct bu tahminden; U4 testi: hiçbir API cevabında ve dışa aktarmada yok"
+    tests:
+      - "FatEstimateTests"
+    refs: ["arastirma/04-faz3-urun.md#Ö-4", "arastirma/ham/H1-olcum.md", "plan/kararlar/ADR-027-m2-sonu-cevaplari.md"]
+    learn: ["Belirsiz ölçümü aralıkla ve temkinli yönle kullanmak"]
+
+  - id: K-225
+    title: "profile: 18+ yaş kapısı ve 'yiyemediğim gıdalar' sağlık rızasında"
+    milestone: M2
+    module: profile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-205, K-204]
+    why: "ADR-027 #13 (canlıda sorun çıkarmayacak yaş: 18+) ve #14 (kısıt alanı sağlık verisi olabilir, GDPR Md. 9)"
+    acceptance:
+      - "Doğum yılı bugün 18 yaşından küçük gösteriyorsa profil 400 (kod: sözleşmede); eşik parametre/yapılandırmadan"
+      - "Kısıt alanı sağlık verisi rızası olmadan yazılamaz ve okunmaz; rıza geri alınınca cevaplarda görünmez"
+    tests:
+      - "ProfileApiTests"
+    refs: ["plan/kararlar/ADR-027-m2-sonu-cevaplari.md"]
+    learn: ["Yaş doğrulaması, veri sınıfına göre erişim"]
+
+  - id: K-226
+    title: "nutrition: USDA FDC Foundation + SR Legacy toplu içe aktarma"
+    milestone: M2
+    module: nutrition
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-208]
+    why: "nutrition.food boş; Levent Foundation + SR Legacy indirmeye izin verdi (ADR-027 #16). Branded disk açılınca"
+    acceptance:
+      - "İndirilen resmi CSV'lerden (fdc.nal.usda.gov, CC0) kcal/protein/karb/yağ ve porsiyonlar içe aktarılır; tekrar çalıştırmak aynı sonucu verir"
+      - "Kaynak etiketi FOUNDATION / SR_LEGACY; ham dosyalar repoya girmez, sürüm ve indirme tarihi kaydedilir"
+      - "Arama (K-208) içe aktarılan veriyle çalışır; aralıklar analiz hatasıyla (H7)"
+    tests:
+      - "FdcImportTests"
+    refs: ["plan/kararlar/ADR-008-besin-verisi.md", "arastirma/ham/H7-besin-araligi.md"]
+    learn: ["Toplu veri içe aktarma, idempotent yükleme"]
 
 # ───────────────────────────── M3 · Mobil kabuk ─────────────────────────────
   - id: K-301
