@@ -53,7 +53,7 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-216 kararı hedeflere uygula + geri al (V12) | ✅ birleşti; inceleme: bayat karar, split sığmayınca apply reddi, hedefsiz plan, LEA tabanı (soru 11); CI: text block boşluğu | #172 | `M2/K-216.md` |
 | K-220 uyum kayıtlardan (WeekTally) | ✅ birleşti; inceleme: adım hedefi geriye uygulanıyordu, plandan önceki haftalar, K-216 yarışı (satır kilidi) | #174 | `M2/K-220.md` |
 | K-217 programa yansıma (V13 tut/deload/dinlenme, V14 sonraki seans) | ✅ birleşti (iki PR); inceleme: aynı gün tutma kapanmıyordu, check-in'de başlayan tutma önceki hedefi kaçırıyordu, tek taraflı çift artış, eksik set, geç biten antrenman hedefi geri alıyordu; CI: List.of().contains(null) | #175, #176 | `M2/K-217.md` |
-| K-221 TrainingStatus (set kaydından) | PR açık, inceleme ajanları çalışıyor (`../keel-k221`) | #177 | `M2/K-221.md` |
+| K-221 TrainingStatus (set kaydından) | ✅ birleşti; inceleme: kayıt tutmayana iki haftada bir tam mola, dinlenme haftası kendini tetikliyordu, tutma haftaları gün/7, durum her okumada | #177 | `M2/K-221.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -64,15 +64,10 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
 Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
-0. **(güncel)** K-213 #171, K-216 #172 birleşti. **K-220 PR #174** her şeyi tamam, auto-merge açık (CI bekliyor;
-   kırmızıysa düzelt). **K-217 1. kısım** `../keel-k217` dalında commit'li (TrainingChanges saf + mutasyon 7/7, V13
-   `training.program_change`, TrainingCalls, program görünümü, decision apply/undo → training, sözleşme): K-220 birleşince
-   `git rebase origin/main` (DecisionService.apply/latest çakışabilir: K-220 `lockedById` ekledi), push, PR, inceleme
-   ajanları, `M2/K-217.md`. **K-217 2. kısım** (ayrı PR): V14 `planned_exercise.next_load_kg/next_reps`; workout finish
-   `uncleanExerciseIds` (teknik kapısı G6 K-31); her planlı hareket için LiftSession (katalog kind/region, rep aralığı, en
-   ağır çalışma seti yükü, setler; RIR yoksa hedef RIR) → `Progression.next` → AddLoad: yeni yük/alt tekrar (yük tutma
-   yürürlükteyse yük aynı, tekrar üst); AddReps: yük aynı, en düşük set tekrarı + 1 (üstle sınırlı); Hold: aynı;
-   NotTracked: boş. Sonra **K-221** (TrainingStatus; weeksLoadHeld/restedLastWeek = `program_change`'den).
+0. **(güncel, M2 uygulanabilir iş BİTTİ)** Birleşenler bu koşuda: K-213 #171, K-216 #172, K-220 #174, K-217 #175+#176,
+   K-221 #177. Kalan M2: **K-222** (faz/mini cut/hard stop uygulaması) sorular 11, 17, 18'e bağlı. Sıradaki: **soruları
+   (0-20) AskUserQuestion ile toplu sor** → cevapları ADR'ye işle → cevaba bağlı işi bitir (K-222 vb.) → `M3.md` yaz
+   (taslak scratchpad'de değil, bu adımda yeniden yaz) → özet. Sonra Levent dönünce M1 (akşam) + M2 aktarımı.
 1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
    KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
    MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
