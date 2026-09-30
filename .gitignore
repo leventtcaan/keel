@@ -24,3 +24,6 @@ apps/mobile/android/
 
 # JVM heap dumps (a build that ran out of memory)
 *.hprof
+
+# IDE (Eclipse/VS Code Java) build output
+backend/bin/
