@@ -806,5 +806,8 @@
     "account": {
       "title": "Your account"
     }
+  },
+  "permissions": {
+    "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location."
   }
 }
