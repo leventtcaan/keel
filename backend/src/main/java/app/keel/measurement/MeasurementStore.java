@@ -126,6 +126,14 @@ class MeasurementStore {
                         Look.valueOf(row.getString("look")))).list();
     }
 
+    /** Activity days from {@code from} to {@code to}, both included. */
+    List<ActivityDay> activityDays(AccountId account, LocalDate from, LocalDate to) {
+        return jdbc.sql("select * from measurement.activity_day where account_id = :account and day between :from and :to order by day")
+                .param("account", account.value()).param("from", from).param("to", to)
+                .query((row, n) -> new ActivityDay(row.getObject("day", LocalDate.class), row.getObject("steps", Integer.class),
+                        row.getObject("sleep_minutes", Integer.class), row.getObject("active_energy_kcal", Integer.class))).list();
+    }
+
     List<ActivityDay> activityDays(AccountId account) {
         return jdbc.sql("select * from measurement.activity_day where account_id = :account order by day")
                 .param("account", account.value())

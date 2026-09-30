@@ -179,6 +179,28 @@ class MealLogTests {
         assertThat(send(consenting(), "GET", "/v1/days/2026-09-30/budget", null)).hasStatus(404);
     }
 
+    @Test
+    void eachDaysProteinIsTheSumOfItsMealsRangesForTheDaysAsked() throws Exception {
+        // MealTotals.proteinByDay (K-220): the days from and to both included, each day's low and high summed apart, a day
+        // with no meal absent, another account's meals never.
+        AccountId account = consenting();
+        Map<String, Object> one = map(send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-28T08:00:00Z", "BREAKFAST")));
+        send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-28T19:00:00Z", "DINNER"));
+        send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-30T12:00:00Z", "LUNCH"));
+        send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-27T12:00:00Z", "LUNCH"));
+        send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-10-01T12:00:00Z", "LUNCH"));
+        send(consenting(), "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-29T12:00:00Z", "LUNCH"));
+        Map<String, Object> protein = (Map<String, Object>) one.get("proteinG");
+        int low = (Integer) protein.get("low");
+        int high = (Integer) protein.get("high");
+
+        Map<java.time.LocalDate, MealTotals.ProteinRange> days = context.getBean(MealTotals.class).proteinByDay(account,
+                java.time.LocalDate.of(2026, 9, 28), java.time.LocalDate.of(2026, 9, 30));
+
+        assertThat(days).containsExactly(Map.entry(java.time.LocalDate.of(2026, 9, 28), new MealTotals.ProteinRange(2 * low, 2 * high)),
+                Map.entry(java.time.LocalDate.of(2026, 9, 30), new MealTotals.ProteinRange(low, high)));
+    }
+
     private AccountId consenting() {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"))).hasStatusOk();

@@ -137,6 +137,24 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void theAdherenceIsCountedFromTheWeeksLogs() throws Exception {
+        // K-220: training on Mondays (1 a week), weighed every day (4 a week asked), no food or steps logged — so neither
+        // planned. One workout in the window's first week: (1 + 4 × weeks) done of 5 × weeks planned.
+        AccountId account = losingButLookingWorse();
+        List<LocalDate> weeks = WeekTallies.weeks(LocalDate.now(ZoneOffset.UTC), 21);
+        assertThat(send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
+                weeks.getFirst().atTime(10, 0).toInstant(ZoneOffset.UTC).toString())).getResponse().getStatus()).isLessThan(300);
+
+        answer(account, List.of(Map.of("kind", "TRAINING", "choice", "STABLE"), Map.of("kind", "RECOVERY", "choice", "GOOD")));
+
+        String snapshot = jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        assertThat(JSON.readValue(snapshot, StoredSnapshot.class).checkIn().adherence())
+                .isEqualByComparingTo(java.math.BigDecimal.valueOf(1 + 4L * weeks.size()).divide(java.math.BigDecimal.valueOf(5L * weeks.size()),
+                        java.math.MathContext.DECIMAL64));
+    }
+
+    @Test
     void theWaistComesFromItsMeasurements() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);

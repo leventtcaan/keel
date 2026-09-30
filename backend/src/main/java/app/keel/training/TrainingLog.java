@@ -38,6 +38,15 @@ public class TrainingLog {
         this.catalog = catalog;
     }
 
+    /** When each workout started in [from, to), oldest first: the sessions done that consistency counts (K-220). */
+    public List<Instant> workoutStarts(AccountId account, Instant from, Instant to) {
+        return jdbc.sql("""
+                select started_at from training.workout where account_id = :account and started_at >= :from and started_at < :to
+                order by started_at""")
+                .param("account", account.value()).param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
+                .query((row, n) -> row.getObject("started_at", OffsetDateTime.class).toInstant()).list();
+    }
+
     /** The working sets of a move in workouts started in [from, to), in the order they were done. */
     public List<WorkSet> workingSets(AccountId account, String exerciseId, Instant from, Instant to) {
         ExerciseCatalog.Load load = catalog.find(exerciseId).orElseThrow(() -> new IllegalArgumentException("Not in the catalog: " + exerciseId))

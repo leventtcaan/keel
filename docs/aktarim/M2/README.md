@@ -28,6 +28,7 @@ profil → ölçüm/beslenme/antrenman → karar.
 16. K-212 haftalık karar — Snapshot kurmak, motoru çağırmak, yeniden üretilebilir saklamak
 17. K-213 check-in soruları — motora sorarak soru seçmek, bütçe, veri söylüyorsa sormamak
 18. K-216 kararı uygulamak — komut, durum makinesi, eşzamanlılık, denetim izi, bayat karar
+19. K-220 uyumu saymak — çok modüllü özet, bilinmeyen ≠ kaçırılan, günün hedefi, satır kilidi
 11. (sıradakiler görev bitince eklenir)
 
 ## Durum
@@ -51,3 +52,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-212 Snapshot, motor çağrısı, karar kaydı (V11) | `K-212.md` | ✅ | — | — | — |
 | K-213 check-in soruları + soru bütçesi | `K-213.md` | ✅ | — | — | — |
 | K-216 kararı hedeflere uygula + geri al (V12) | `K-216.md` | ✅ | — | — | — |
+| K-220 uyum kayıtlardan (WeekTally) | `K-220.md` | ✅ | — | — | — |

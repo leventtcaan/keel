@@ -54,6 +54,13 @@ public class Measurements {
         return store.latestKg(account);
     }
 
+    /** The step count of each day that has one, from {@code from} to {@code to}, both included (K-220). */
+    public Map<LocalDate, Integer> stepsByDay(AccountId account, LocalDate from, LocalDate to) {
+        Map<LocalDate, Integer> steps = new LinkedHashMap<>();
+        store.activityDays(account, from, to).stream().filter(day -> day.steps() != null).forEach(day -> steps.put(day.day(), day.steps()));
+        return steps;
+    }
+
     /** Waist measurements from {@code from} to {@code to}, both included, for the engine's WaistTrend (K-213). */
     public List<WaistTrend.Reading> waists(AccountId account, LocalDate from, LocalDate to) {
         return store.waists(account, from, to).stream().map(waist -> new WaistTrend.Reading(waist.measuredOn(), waist.cm())).toList();
