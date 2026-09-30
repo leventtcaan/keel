@@ -24,6 +24,10 @@
     "progress": {
       "title": "Progress",
       "note": "Photos, strength and projection arrive in M6."
+    },
+    "coach": {
+      "title": "Coach",
+      "note": "Questions about your plan and this week's call arrive in M5."
     }
   },
   "decision": {
@@ -532,5 +536,8 @@
   "format": {
     "range": "{low}–{high}",
     "rangeSpoken": "between {low} and {high}"
+  },
+  "coach": {
+    "entry": "Ask the coach"
   }
 }

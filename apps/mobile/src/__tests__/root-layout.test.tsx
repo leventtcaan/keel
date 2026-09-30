@@ -13,15 +13,15 @@ jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
   hideAsync: jest.fn(() => Promise.resolve()),
 }));
-jest.mock('expo-router/js-tabs', () => {
+jest.mock('expo-router/stack', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
-  function Tabs() {
-    return <View testID="tabs" />;
+  function Stack() {
+    return <View testID="app" />;
   }
-  Tabs.Screen = function Screen() {
+  Stack.Screen = function Screen() {
     return null;
   };
-  return { Tabs };
+  return { Stack };
 });
 
 const fonts = useFonts as jest.Mock;
@@ -34,23 +34,23 @@ beforeEach(() => {
 test('while the font loads: nothing rendered, splash kept', async () => {
   fonts.mockReturnValue([false, null]);
   await render(<RootLayout />);
-  expect(screen.queryByTestId('tabs')).toBeNull();
+  expect(screen.queryByTestId('app')).toBeNull();
   expect(hide).not.toHaveBeenCalled();
 });
 
-test('font loaded: splash hidden, tabs rendered', async () => {
+test('font loaded: splash hidden, app rendered', async () => {
   fonts.mockReturnValue([true, null]);
   await render(<RootLayout />);
-  expect(screen.getByTestId('tabs')).toBeOnTheScreen();
+  expect(screen.getByTestId('app')).toBeOnTheScreen();
   expect(hide).toHaveBeenCalled();
 });
 
-test('font failed: splash hidden, tabs rendered anyway, failure reported', async () => {
+test('font failed: splash hidden, app rendered anyway, failure reported', async () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
   try {
     fonts.mockReturnValue([false, new Error('asset missing')]);
     await render(<RootLayout />);
-    expect(screen.getByTestId('tabs')).toBeOnTheScreen();
+    expect(screen.getByTestId('app')).toBeOnTheScreen();
     expect(hide).toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(expect.stringMatching(/font/i), 'asset missing');
   } finally {
