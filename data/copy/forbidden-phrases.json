@@ -1,0 +1,32 @@
+{
+  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions; every rule carries examples it must catch and near-misses it must let through, so a broken pattern fails the test instead of passing silently.",
+  "rules": [
+    {
+      "id": "body-fat-number",
+      "rule": "U4",
+      "source": "docs/anayasa.md#U4",
+      "why": "A body-fat percentage is never shown; fat is an internal engine variable.",
+      "pattern": "\\b(body[\\s-]*)?fat\\s*(%|percent(age)?)|\\d+(\\.\\d+)?\\s*%\\s*(body[\\s-]*)?fat|\\bbf\\s*%|\\bpercent(age)?\\s+(of\\s+)?body[\\s-]*fat",
+      "examples": ["Body fat %", "your body-fat percentage", "about 18% body fat", "18 % fat", "BF%", "percentage of body fat", "fat percent"],
+      "nonExamples": ["You lose fat, not muscle", "80% of the plan happened", "fat 60 g", "a lower-fat meal"]
+    },
+    {
+      "id": "condition-names",
+      "rule": "U6",
+      "source": "docs/anayasa.md#U6",
+      "why": "No diagnosis or condition names, insulin resistance included.",
+      "pattern": "\\binsulin[\\s-]+resist\\w*|\\b(pre)?diabet\\w*|\\bmetabolic\\s+syndrome|\\bpcos\\b|\\bhypo(thyroid|glyc)\\w*|\\bdisease\\w*|\\bdisorders?\\b|\\bsymptoms?\\b|\\bsyndrome\\b",
+      "examples": ["insulin resistance", "Insulin-resistant", "prediabetes", "diabetic", "metabolic syndrome", "PCOS", "hypothyroidism", "heart disease", "eating disorder", "a symptom"],
+      "nonExamples": ["insulin", "your metabolism adapts", "resistance training"]
+    },
+    {
+      "id": "treatment-claims",
+      "rule": "U6",
+      "source": "docs/anayasa.md#U6",
+      "why": "No claim that the app treats, prevents, cures, heals or diagnoses (FDA general wellness, EU MDR Rule 11).",
+      "pattern": "\\b(cure[sd]?|curing|treat(s|ed|ing|ment|ments)?|prevent(s|ed|ing|ion|ive)?|heal(s|ed|ing)?|diagnos\\w*|therap(y|ies|eutic)|clinical(ly)?|prescri\\w*|patients?)\\b",
+      "examples": ["cures", "treats fatigue", "treatment", "prevents injury", "prevention", "heals", "diagnose", "a diagnosis", "therapy", "clinically proven", "prescribed", "patients"],
+      "nonExamples": ["healthy", "retreat", "a treaty", "curious", "secured", "at your own pace"]
+    }
+  ]
+}
