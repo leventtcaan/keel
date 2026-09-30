@@ -1031,7 +1031,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-222]
     why: "Motor mini cut'ı (G7 K-102) yalnız iştah 'kayboldu' cevabıyla verir; check-in iştahı hiç sormuyor (spine'da yok), bu yüzden MiniCut üretilemiyor ve uygulanamıyor (K-222'den ayrıldı, 30 Eyl)"
     acceptance:
@@ -1070,7 +1070,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-222]
     why: "Hard stop'tan sonra motor cut'a ya da aşağı adıma dönebiliyor; Levent (b) seçti: önce yeniden sorulsun (ADR-028 #23)"
     acceptance:

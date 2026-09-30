@@ -59,3 +59,10 @@
 - Yeni sorular 15-18 (program şablonları, FDC indirme izni, DECIDE_FOR_ME fazı, hard stop kararının saklanması).
 - Sıradaki: K-213'ü kapat → K-216 → K-220 → K-221 → K-217 → sorular → M3 prompt'u.
 
+
+## 2026-10-01 · M3 Part 3 sonu (toplu mod, compact sonrası)
+- yaptım: K-228 #207, backend/bin #208, K-229 #209 (inceleme: outcomes, cycleAwaited), K-227 #211 (mini cut: iştah sorusu, hedef, V18, bitiş, sürerken sabit); M3 çıkış kontrolü; M4 dört part prompt'u
+- karar: ADR-030 (Levent: 25 girişte rıza, 28 görünüş gizli, 31 mini cut açığı onay, 32 mini cut'ta adım yok, 30 artık risk, K-308 M4 başında)
+- takıldım: mutasyonda DB testli filtre her mutantı "öldü" gösterdi (düzeltildi); DURUM'da eski blok içinde başlık eşleşmesi
+- sıradaki: bu sohbette M3 aktarımı (docs/aktarim/M3/README.md 1-15); sonra M4 Part 1 (K-308 cihaz adımları önce)
+- AI: bütün kod, test, ADR metni agent; ürün/sağlık kararları Levent (AskUserQuestion)

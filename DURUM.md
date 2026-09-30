@@ -1,13 +1,14 @@
 ---
-guncelleme: 2026-09-30
+guncelleme: 2026-10-01
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M1 · Karar motoru KAPANDI (29 Eyl gece)** — kod birleşti, aktarım bekliyor (`docs/aktarim/M1/`). **M2 · Backend
-temel servisler sürüyor.** M0 kapandı (19 ADR, prototip v2, RUBİN).
+**M3 · Mobil kabuk KAPANDI (1 Eki, kod)** — cihaz derlemesi + TestFlight hariç (ADR-030: M4 Part 1 başında Levent'le).
+Aktarım bekliyor: M1 (akşam kısmı), M2, M3 (`docs/aktarim/M3/README.md` 1-15). Sıradaki koşu **M4 · Günlük akış**, dört
+part (`plan/oturum-promptlari/M4.md`, `M4-part1.md`). M0, M1, M2 kapandı.
 Çalışma modu değişti → **ADR-019:** teknik işte agent karar verir, uygular, PR'ı `--auto --squash` ile birleştirir
 (dal koruması: iki CI kontrolü zorunlu). Levent'i bekleyen: ürün kapsamı, para, sağlık/regülasyon, kullanıcı
 verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
@@ -66,49 +67,10 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
-Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
-K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
-0. **(güncel, 30 Eyl öğleden sonra)** M2 uygulaması bitti. Cevap işleri: K-225 #182, K-226 #184, K-223 #183, K-224 #185
-   birleşti; **K-222 #186 birleşti** (README düzeltmesi içinde). K-227 issue'su açıldı (M3, backend).
-   M3 **üç part'a bölündü** (token sınırı): `plan/oturum-promptlari/M3.md` (ortak) + `M3-part1.md`, `M3-part2.md`,
-   `M3-part3.md`; ilerleme aşağıda "## M3 ilerleme". Açık sorular: 21, 22, 23, 24 (+ Apple kimlikleri) → M3 prompt'u ilk iş olarak
-   sorar. Açık worktree yok.
-   Session açık: Levent dönünce **M1 (akşam) + M2 aktarımı** (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
-1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
-   KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
-   MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
-   **Kalan:** (a) CI sonucuna bak (ccd_pr `get_status`, `gh` ile yoklama yok); kırmızıysa düzelt; (b) inceleme ajanları
-   (code-reviewer + pr-test-analyzer) `git diff origin/main...HEAD`; bulgular TDD; (c) mutasyon (saf: CheckInQuestions,
-   WaistTrend, missingAnswer); (d) `docs/aktarim/M2/K-213.md` + README satırı (K-212'nin kalıbıyla); (e) `gh pr merge
-   --auto --squash 171`.
-   K-213 tasarımı: soru = motorun bekleyeceği cevap (`WeeklySpine.missingAnswer`, yalnız TRAINING/RECOVERY); motor veriyle
-   ve her olası cevapla kuru çalıştırılır (`CheckInQuestions.needed`); bütçe `quota.yaml` (`QuestionBudget`: 2, veri faza
-   ters ise 5); görünüş haftanın foto kontrolünden, bel `WaistTrend` ile karar penceresinden (`Measurements.photoLook`,
-   `Measurements.waists`); sorulmayan soruya cevap 400. K-212'nin bir testi buna göre değişti (LOOK cevabı → cevapsız).
-2. **Kalan M2 sırası:** **K-216** kararı hedeflere uygula + geri al (decision; `DailyTargets` bean'ini decision sağlar —
-   K-209'daki arayüz; `CallStore.Application` PENDING→APPLIED/UNDONE; plan.target_kcal güncellenir; U3 tek değişken) →
-   **K-220** haftalık uyum kayıtlardan (backlog'a eklendi, #169; WeekTally) → **K-221** TrainingStatus set kaydından (#170)
-   → **K-217** programa yansıma (deload `until`, `nextLoadKg/nextReps`, bölgeye göre yük adımı). Sonraki göç **V12**.
-3. **Kurallar (bu koşuda öğrenilen, hepsi geçerli):** her uç noktada rıza kapısı (sağlık verisi), `ApiLimits`, 400 asla
-   500 (motorun reddettiği veri 409), `Decimals.plain`, clientId idempotency (tekrar gönderim önce saklananı döner), katı
-   JSON, sözleşmede sınırlar (ADR-024 §13), `*AccountData` (silme + dışa aktarma; `AccountDataTests` fixture'ına yeni tablo
-   verisi ekle), satır eşleyicide sorgu yok (düz sorgular), U4 yağ tahmini hiçbir çıktıda yok.
-   - **⚠ DİSK DOLU:** Mac'te ~1 GB boş, Docker açılmıyor → DB testleri yalnız CI'da. Worktree'de yalnız `contracts` için
-     `npm ci` (43 MB); mobil `node_modules` kurma. Worktree silerken `--force`.
-   - **PR takibi:** PR açınca ccd_pr `get_status` (CI'yı `gh pr checks` ile yoklama).
-   - **Mutasyon betiği** `plan/oturum-promptlari/mutate.py` (düzeltildi: içeriği geri yazar + sonda yeniden derler).
-     Kullanım: `MUT_DIR=. python3 plan/oturum-promptlari/mutate.py ../keel-<iş> '<tek test sınıfı>' <json>`; DB testi
-     içeren filtre verme (Docker yokken her mutantı "öldü" sayar).
-   - RED geçerliliği: iskelet null dönerse NPE → geçerli RED değil; iskelet gerçek ama eksik değer döndürsün.
-4. **Bitiş:** sorular (aşağıdaki liste, 0-20) AskUserQuestion ile toplu → cevapları ADR'ye işle → kalan iş →
-   `plan/oturum-promptlari/M3.md` (M3 · Mobil kabuk; kabul kriterlerine: tek uçuşlu refresh ADR-025, UPC-E sunucuda açılır,
-   Dependabot #2) → özet. Session kapanmaz; M1 (akşam kısmı) + M2 aktarımı sonra (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
-
-## ▶ DEVAM NOKTASI (M3 Part 3, 30 Eyl gece — compact öncesi)
-Prompt: `plan/oturum-promptlari/M3-part3-devam.md` (tam durum, K-227 planı, bitiş adımları). Özet: K-306/312/309/403 ve
-K-308 yapılandırması birleşti; K-228 PR #207 (auto-merge); K-229 dalda (inceleme geldi: 3 bulgu devam dosyasında, düzelt, #207 sonrası PR); K-227 dalında
-yalnız motor testleri (derlenmiyor). Açık sorular 25-31 + K-308 hesap onayı.
+## ▶ DEVAM NOKTASI (1 Eki — M3 bitti)
+M3'ün bütün kodu birleşti (son: K-227 #211). Bu sohbet açık kalıyor: Levent dönünce **M3 aktarımı** (skill `aktarim`,
+`docs/aktarim/M3/README.md` sırası 1-15, temelden, basamak basamak, satır satır). Sonra yeni session: **M4 Part 1**
+(`plan/oturum-promptlari/M4-part1.md` — ilk iş K-308 cihaz adımları, Levent'in terminalinde). Açık PR yok, worktree yok.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -117,7 +79,7 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 |---|---|---|
 | 1 · Temel | 0a disk, 0b sorular → ADR-028 · K-301, K-302, K-303, K-307 · Dependabot #2 | ✅ bitti (30 Eyl) |
 | 2 · Veri ve kimlik | K-311, K-304, K-305, K-310 (+ ADR-029) | ✅ bitti (30 Eyl) |
-| 3 · Akış ve teslim | K-306, K-312, K-309, K-403, K-308, K-227, K-228, K-229 · M3 çıkış kontrolü · M4 part prompt'ları | sürüyor |
+| 3 · Akış ve teslim | K-306, K-312, K-309, K-403, K-308, K-227, K-228, K-229 · M3 çıkış kontrolü · M4 part prompt'ları | ✅ bitti (1 Eki) — K-308 cihaz adımı M4 Part 1'e |
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
@@ -132,10 +94,42 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 | K-312 onboarding: sağlık rızası, kilo/bel, gıda, Apple Health | ✅ birleşti; inceleme 7+9 bulgu (Allow/Not now yarışı, geri çekme, profil önce, sınırlar, Health yalnız rızayla, önce sayfa); mutasyon 21/21 | #203 | `M3/K-312.md` |
 | K-309 Ayarlar (birim, rızalar, dışa aktarma, hesap silme, çıkış; + expo-file-system) | ✅ birleşti; simülatör: onay en dipte, geri düğmesi yok → düzeltildi; inceleme 1+13 bulgu (yeniden okuma hatasında eski durum, pendingCount hatası, 202 sonrası anahtarlık); mutasyon 17/17 | #204 | `M3/K-309.md` |
 | K-403 HealthKit kütüphanesi (ADR-031, @kingstinct 16) | ✅ birleşti; inceleme: Expo Go'da Metro yükleme hatasını ölümcül gösteriyordu → `isRunningInExpoGo` kapısı; mutasyon 7/7 | #205 | `M3/K-403.md` |
-| K-308 EAS (eas.json, dev client, paket kimliği yapılandırmada, runbook `docs/eas-derleme.md`) | yapılandırma ✅ birleşti; **cihaz/TestFlight adımları Levent'te** (bitiş sorularında) | #206 | — |
-| K-228 hard stop genel türle (CHANGE_PHASE→BULK + `safety`, V17) | PR'da (auto-merge); inceleme: V17 tırnak → göç kuralı kırmızı olurdu, düzeltildi; mutasyon 6/6; artık risk → soru 30 | #207 | `M3/K-228.md` |
-| K-229 hard stop sonrası döngü sorusu (motor `SafetyHold`, hold geçmişten) | dalda (`decision/189-…`, K-228 üstünde), **yeniden incelet**; mutasyon 11/11; K-228 birleşince PR | — | `M3/K-229.md` |
+| K-308 EAS (eas.json, dev client, paket kimliği yapılandırmada, runbook `docs/eas-derleme.md`) | yapılandırma ✅ birleşti; **cihaz/TestFlight adımları M4 Part 1 başında Levent'le** (ADR-030) | #206 | — |
+| K-228 hard stop genel türle (CHANGE_PHASE→BULK + `safety`, V17) | ✅ birleşti; inceleme: V17 tırnak → göç kuralı kırmızı olurdu, düzeltildi; mutasyon 6/6; artık risk → ADR-030 #30 kabul | #207 | `M3/K-228.md` |
+| K-229 hard stop sonrası döngü sorusu (motor `SafetyHold`, hold geçmişten) | ✅ birleşti; inceleme: hold her hafta bütün anlık görüntüleri okuyordu → `CallStore.outcomes`; döngü sorusu yalnız cevapsız kuru çalıştırmaya bakıyordu → `cycleAwaited`; CI: APPLIED fikstürü plan eksik → düzeltildi; mutasyon 11/11 + 5/5 | #209 | `M3/K-229.md` |
+| K-227 mini cut plana (iştah sorusu, hedef, V18 `mini_cut_until`, bitiş, sürerken sabit) | ✅ birleşti; inceleme: faz kapısı mini cut'ı 3. haftada bitiriyordu → kapı mini cut'ta susar; sözleşme açıklamaları; enerji yoksa bakım; ADR-030 #31 onay, #32 `mini_cut_running`; mutasyon 17/17 motor + 8/9 karar (1 eşdeğer) | #211 | `M3/K-227.md` |
+| chore: `backend/bin` (IDE çıktısı) izlenmez | ✅ birleşti (K-229 incelemesinde yakalandı) | #208 | — |
 | K-307 gezinme (NativeTabs, koç girişi, koç sayfası) | ✅ birleşti; simülatör: koç çubuğu sekme çubuğu altındaydı → alt güvenli alan; inceleme: `keel://coach` soğuk açılış sekmesiz kalıyordu → `anchor`; mutasyon 10/10 | #195 | `M3/K-307.md` |
+
+**Part 3 ÇIKIŞ = M3 ÇIKIŞ (1 Eki):**
+- **Birleşen (Part 3):** K-306 #202 · K-312 #203 · K-309 #204 · K-403 #205 · K-308 yapılandırma #206 · K-228 #207 ·
+  chore bin #208 · K-229 #209 · K-227 #211. Açık PR yok, açık worktree yok, `main` temiz. ADR-030 (sorular 25-32 + K-308).
+  Backlog: K-306, K-312, K-309, K-403, K-228 `done`; K-229, K-227 `done` (bu blokla); K-308 `doing` (cihaz adımı).
+- **M3 çıkış kriterleri (`plan/yol-haritasi.md › M3`), kanıtla:**
+  | Kriter | Durum | Kanıt |
+  |---|---|---|
+  | RUBİN token'ları (açık + koyu) + temel bileşenler | ✅ | K-301 #192, `src/theme`, `img/K-301-*` |
+  | Metin sistemi | ✅ | K-302 #193, `copy-literals.test.ts`, yasaklı ifade taraması |
+  | Üretilen API istemcisi | ✅ | K-303 #194, `src/api/schema.ts` (`contracts` `npm run check` CI'da) |
+  | Yerel depo + senkron | ✅ | K-304 #198, K-311 #197 |
+  | Giriş | ✅ | K-305 #199 (Sign in with Apple) |
+  | Onboarding (Health okuma izni dahil) | ✅ | K-306 #202, K-312 #203, K-403 #205 |
+  | ↳ Health **yazma** izni | ↪ M4 | ADR-031: okuma ayrı, yazma K-412 (M4 Part 4) ayrı düğmeyle |
+  | ↳ **İçe aktarma** | ↪ M6 | K-609 (Apple Health kilo geçmişi, Strong/Hevy CSV) — yol haritasındaki M3 ifadesi backlog'la çelişiyor; backlog doğru kabul edildi |
+  | Sistem sekme çubuğu | ✅ | K-307 #195 (NativeTabs) |
+  | **Cihazda development build + dahili TestFlight** | ❌ açık | yapılandırma #206 hazır; hesap adımları Levent'te → M4 Part 1'in 0b adımı (ADR-030) |
+  | Ayarlar | ✅ | K-309 #204 |
+  | kg/lb | ✅ | K-310 #200 |
+  Kontrol çıktısı (1 Eki, `main`): mobil `npm run check` → 38 suite, **665/665**; backend saf testler (motor + karar + mimari)
+  yeşil, DB testleri CI'da yeşil (#209, #211).
+- **Kalan iş:** K-308 cihaz adımları (M4 Part 1). Ekran kriterleri M4/M5 kartlarına taşındı (K-401, K-405, K-409, K-501;
+  `plan/oturum-promptlari/M4.md › devralınan`). K-313 çizim bekliyor (ADR-030 #28).
+- **M4'ün bilmesi gerekenler:** mini cut planı `decision.plan.mini_cut_until` (V18) — sözleşmede yok; hedefler ekranı
+  göstermek isterse sözleşmeye eklenir. Soru türü APPETITE ve CYCLE_STOPPED sunucudan gelir. `safety: true` karar =
+  genel etiket. Yığılmış dal akışı: alttaki birleşince `git rebase --onto origin/main <eski-taban>`. Mutasyon betiği
+  yalnız saf test sınıfıyla (DB testi filtreye girerse Docker'sız her mutant "öldü" görünür — bu koşuda bir kez yanıldı).
+- **Yeni sorular:** yok (25-32 cevaplandı → ADR-030). Açık: referans çizimlerin çizeri/bütçesi (K-313).
+
 
 **Part 3 ara not (30 Eyl gece):** K-313 (referans görünüş adımı) M4'e ayrıldı — 7 seviye motorun iç yağ tahminini
 besliyor, kaynak yalnız tek eşiği betimliyor → **soru 28** (aşağıda). AI rızası K-511 ile. Beklenti ekranı U8'e göre
@@ -238,7 +232,18 @@ K-229 (Part 3) · 24 (b) genel tür → K-228 (Part 3) · Apple kimlikleri: sonr
 **Part 0 (hazırlık) ÇIKIŞ — 30 Eyl:** M2 bitti (K-222 #186 son), açık PR/worktree yok, `main` temiz. Açık sorular 21-24 +
 Apple kimlikleri + referans görsel lisansı Part 1'in 0b adımında toplu sorulacak. K-227 issue #187 (backend, Part 3).
 
+## M4 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` … `M4-part4.md`.
+
+| Part | Görevler | Durum |
+|---|---|---|
+| 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-401, K-409, K-402, K-404 | başlamadı |
+| 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 | başlamadı |
+| 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | başlamadı |
+| 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
+
 ## Session sonunda Levent'e sorulacaklar
+**25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
 30. **(K-228 incelemesi, veri/hukuk — YENİ, Part 3)** Hard stop artık "CHANGE_PHASE → BULK + safety: true" olarak saklanıyor;
     ama `safety` işareti **yalnız** hard stop'ta çıkıyor → kaydı okuyan cevabı yine çıkarabilir (ADR-028 (b)'nin doğası).
     Seçenekler: (a) kabul (artık risk, ADR'ye yaz); (b) güvenlik ağının **tüm** kararları (hızlı kayıp, LEA daraltma) da
