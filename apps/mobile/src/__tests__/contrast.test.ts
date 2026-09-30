@@ -1,5 +1,5 @@
 /**
- * Text on filled controls must reach WCAG AA (4.5:1) in both themes (ADR-016).
+ * Text on filled controls, and every text colour on its surface, must reach WCAG AA (4.5:1) in both themes (ADR-016).
  * The previous orange failed at 3.29:1.
  */
 import { palettes } from '@/theme/tokens';
@@ -30,6 +30,26 @@ describe.each(Object.entries(palettes))('%s palette', (_, p) => {
 
   test('text inside the decision block reaches 4.5:1', () => {
     expect(contrast(p.decisionText, p.decisionBackground)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('text on the warning fill reaches 4.5:1', () => {
+    expect(contrast(p.warn, p.onWarn)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('text on the block accent (a button inside the decision block) reaches 4.5:1', () => {
+    expect(contrast(p.accentInk, p.onAccentInk)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('the block accent as text on the decision block reaches 4.5:1', () => {
+    expect(contrast(p.accentInk, p.decisionBackground)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('secondary and muted text reach 4.5:1 on the background and inside the block', () => {
+    expect(contrast(p.textSecondary, p.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p.muted, p.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p.muted, p.surface)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p.decisionTextSecondary, p.decisionBackground)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p.decisionMuted, p.decisionBackground)).toBeGreaterThanOrEqual(4.5);
   });
 
   test('warning is a separate colour from the accent', () => {
