@@ -94,6 +94,16 @@ class PhaseGateTests {
         assertThat(PhaseGate.check(snapshot(sex, Phase.CUT, line.add(new BigDecimal("3"))), parameters(sex))).isNotPresent();
     }
 
+    @ParameterizedTest
+    @EnumSource(Sex.class)
+    void aMiniCutIsNotTurnedBackByTheSurplusLineItEndsOnItsOwnDay(Sex sex) {
+        // K-227 review: a lean body on a mini cut (G7 K-102: 4-6 weeks) would be turned back to a bulk at its first
+        // judged week, under mini_cut_weeks_min and with the lean-zone words. The mini cut returns to building itself.
+        BigDecimal justBelow = band(sex, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT).subtract(STEP);
+
+        assertThat(PhaseGate.check(snapshot(sex, Phase.CUT, justBelow).withMiniCutUntil(TODAY.plusWeeks(2)), parameters(sex))).isNotPresent();
+    }
+
     // ── no estimate, sources, output ────────────────────────────────────────────────────────────────────────
 
     @Test

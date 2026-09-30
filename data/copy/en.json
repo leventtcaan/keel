@@ -145,7 +145,7 @@
       },
       "mini_cut_over": {
         "title": "The short cut is done: back to building.",
-        "body": "The weeks of eating a bit under your needs are over. Calories go back up to where building starts, and the bulk picks up where it left off."
+        "body": "The weeks of eating less are over. Calories go back up to where building starts, and the bulk picks up where it left off."
       }
     },
     "stop_load_increase": {
@@ -232,7 +232,7 @@
       "label": "Short cut",
       "appetite_gone": {
         "title": "A short cut to bring your appetite back.",
-        "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating a bit under your needs resets your appetite and clears the fat the bulk added; then the bulk picks up again."
+        "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating less than on the bulk resets your appetite and clears some of the fat the bulk added; then the bulk picks up again."
       }
     }
   },

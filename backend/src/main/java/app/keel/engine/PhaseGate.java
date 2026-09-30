@@ -14,7 +14,8 @@ import java.util.Optional;
  *   <li>Above the fat-first line the reason is stronger: lose fat first (G4 K-10: added muscle does not show;
  *       G4 K-4: nearly every beginner starts here).</li>
  *   <li>A cut below the surplus line turns into a bulk (03 §2.1: under 12 % the direction is surplus; 12-25 % is
- *       the user's goal and preference — G6 K-8's 15-20 % band is where people choose to sit, not a forced switch).</li>
+ *       the user's goal and preference — G6 K-8's 15-20 % band is where people choose to sit, not a forced switch).
+ *       Not a mini cut: it ends on its own day (K-227).</li>
  * </ul>
  *
  * <p>A woman's bands sit 10 points higher (J1 B1: essential fat ~12 % vs ~3 %); her decisions name that research
@@ -56,7 +57,9 @@ public final class PhaseGate {
                 yield Optional.empty();
             }
             // Strictly below: "< %12" (03 §2.1). From there up to ~25 % the direction is the user's goal.
-            case CUT -> fat.compareTo(band(parameters, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT)) < 0
+            // A mini cut is not turned back here: it returns to building on its own day (K-227, MiniCutGate.over) —
+            // turned at its first judged week it would end under mini_cut_weeks_min (G7 K-102).
+            case CUT -> snapshot.miniCutUntil().isEmpty() && fat.compareTo(band(parameters, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT)) < 0
                     ? Optional.of(change(snapshot, Phase.BULK, SURPLUS_ZONE, GURAY_ENTRY_GATE))
                     : Optional.empty();
         };
