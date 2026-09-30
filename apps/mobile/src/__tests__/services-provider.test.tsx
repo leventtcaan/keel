@@ -6,7 +6,7 @@ import { act, render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
 
-import { ServicesProvider, useAppServices, useSignedIn } from '@/services/ServicesProvider';
+import { ServicesProvider, useAppServices, useSignedIn, useUnits } from '@/services/ServicesProvider';
 
 jest.mock('expo-secure-store', () => {
   const items = new Map<string, string>();
@@ -20,6 +20,17 @@ jest.mock('expo-secure-store', () => {
 jest.mock('expo-sqlite', () => ({
   openDatabaseAsync: async () => jest.requireActual<typeof import('./support/nodeSqlite')>('./support/nodeSqlite').nodeSqlite(),
 }));
+jest.mock('expo-sqlite/kv-store', () => {
+  const items = new Map<string, string>();
+  return {
+    __esModule: true,
+    default: {
+      getItemAsync: async (key: string) => items.get(key) ?? null,
+      setItemAsync: async (key: string, value: string) => void items.set(key, value),
+      removeItemAsync: async (key: string) => items.delete(key),
+    },
+  };
+});
 jest.mock('expo-apple-authentication', () => ({ isAvailableAsync: async () => true, signInAsync: jest.fn() }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'u' }));
 jest.mock('@/api/config', () => ({ apiBaseUrl: () => 'https://api.example.test' }));
@@ -32,7 +43,7 @@ function Probe() {
   useEffect(() => {
     services = current;
   }, [current]);
-  return <Text>{useSignedIn() ? 'in' : 'out'}</Text>;
+  return <Text>{`${useSignedIn() ? 'in' : 'out'} ${useUnits()}`}</Text>;
 }
 
 test('follows the session: out, signed in, signed out', async () => {
@@ -42,16 +53,33 @@ test('follows the session: out, signed in, signed out', async () => {
     </ServicesProvider>,
   );
   await act(async () => {});
-  expect(screen.getByText('out')).toBeOnTheScreen();
+  expect(screen.getByText(/^out /)).toBeOnTheScreen();
 
   await act(async () => {
     await services!.session.signIn({ accessToken: 'a', refreshToken: 'r', accessTokenExpiresAt: '2026-09-30T12:15:00Z' });
   });
-  expect(screen.getByText('in')).toBeOnTheScreen();
+  expect(screen.getByText(/^in /)).toBeOnTheScreen();
 
   global.fetch = jest.fn(async () => new Response(null, { status: 204 }));
   await act(async () => {
     await services!.signOut();
   });
-  expect(screen.getByText('out')).toBeOnTheScreen();
+  expect(screen.getByText(/^out /)).toBeOnTheScreen();
+});
+
+test('the unit system reaches the screen, and a change re-renders it', async () => {
+  global.fetch = jest.fn(async () => new Response('{"code":"NOT_FOUND","message":"x"}', { status: 404, headers: { 'Content-Type': 'application/json' } }));
+  await render(
+    <ServicesProvider>
+      <Probe />
+    </ServicesProvider>,
+  );
+  await act(async () => {});
+  const before = services!.units.current();
+  const other = before === 'METRIC' ? 'IMPERIAL' : 'METRIC';
+  expect(screen.getByText(new RegExp(` ${before}$`))).toBeOnTheScreen();
+  await act(async () => {
+    await services!.units.set(other);
+  });
+  expect(screen.getByText(new RegExp(` ${other}$`))).toBeOnTheScreen();
 });

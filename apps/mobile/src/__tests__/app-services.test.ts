@@ -33,8 +33,20 @@ function server(status = 201) {
   return { fetch, seen, goOffline: () => (offline = true), goOnline: () => (offline = false) };
 }
 
-async function setup(fake = server(), storage: ReturnType<typeof memoryStorage> = memoryStorage()) {
-  const services = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: fake.fetch, report: () => {} });
+function memoryKv() {
+  const items = new Map<string, string>();
+  return {
+    items,
+    getItemAsync: async (key: string) => items.get(key) ?? null,
+    setItemAsync: async (key: string, value: string) => void items.set(key, value),
+    removeItemAsync: async (key: string) => void items.delete(key),
+  };
+}
+
+const PHONE = { kv: memoryKv(), locale: 'en-US' };
+
+async function setup(fake = server(), storage: ReturnType<typeof memoryStorage> = memoryStorage(), kv = memoryKv()) {
+  const services = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: fake.fetch, report: () => {}, kv, locale: 'en-US' });
   return { services, fake };
 }
 
@@ -102,9 +114,10 @@ test('pending records are counted, so a sign-out can warn before they are droppe
 });
 
 test('the phone forgets before the server answers: signed out at once, even on a slow network', async () => {
-  let answer!: (response: Response) => void;
-  const fetch = jest.fn((_request: Request) => new Promise<Response>((r) => (answer = r)));
-  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {} });
+  // Every call waits for its own answer, by address; signing in also reads the profile (the unit choice, K-310).
+  const waiting = new Map<string, (response: Response) => void>();
+  const fetch = jest.fn((request: Request) => new Promise<Response>((resolve) => waiting.set(request.url, resolve)));
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, ...PHONE });
   await services.session.signIn(SESSION);
   const heard: boolean[] = [];
   services.session.subscribe((signedIn) => heard.push(signedIn));
@@ -112,8 +125,8 @@ test('the phone forgets before the server answers: signed out at once, even on a
   await settle();
   expect(heard).toEqual([false]);
   expect(await services.session.isSignedIn()).toBe(false);
-  expect(fetch).toHaveBeenCalledTimes(1);
-  answer(new Response(null, { status: 204 }));
+  expect(fetch.mock.calls.filter(([request]) => request.url === `${BASE}/v1/auth/sign-out`)).toHaveLength(1);
+  waiting.get(`${BASE}/v1/auth/sign-out`)!(new Response(null, { status: 204 }));
   await signingOut;
 });
 
@@ -162,4 +175,31 @@ test('a listener that unsubscribed hears nothing more', async () => {
   stop();
   await services.signOut();
   expect(heard).toEqual([true]);
+});
+
+test('the unit choice goes with the session: forgotten at sign-out', async () => {
+  const kv = memoryKv();
+  const { services } = await setup(server(404), memoryStorage(), kv);
+  await services.units.set('METRIC'); // no profile yet: kept on the phone
+  expect(kv.items.get('units')).toBe('METRIC');
+  await services.session.signIn(SESSION);
+  await services.signOut();
+  await settle();
+  expect(kv.items.has('units')).toBe(false);
+  expect(services.units.current()).toBe('IMPERIAL');
+});
+
+test("signing in brings the account's own unit choice to the phone", async () => {
+  const kv = memoryKv();
+  const fetch = jest.fn(async (request: Request) =>
+    request.url.endsWith('/v1/profile')
+      ? new Response(JSON.stringify({ goal: 'LOSE_FAT', sex: 'MALE', heightCm: 178, birthYear: 1994, programChoice: 'BUILD_ONE_FOR_ME', schedule: { trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'America/New_York' }, units: 'METRIC' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      : new Response(null, { status: 204 }),
+  );
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US' });
+  expect(services.units.current()).toBe('IMPERIAL'); // the region's guess
+  await services.session.signIn(SESSION);
+  await settle();
+  expect(services.units.current()).toBe('METRIC');
+  expect(kv.items.get('units')).toBe('METRIC');
 });

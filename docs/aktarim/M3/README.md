@@ -16,3 +16,4 @@ renkli blokta durur ("EAT A LITTLE MORE"), altında kalori **aralığı** (1800�
 5. K-311 oturum — tek uçuşlu yenileme, bellek + nesil sayacı
 6. K-304 yerel depo + kuyruk — SQLite, clientId idempotency, NoAnswer
 7. K-305 Apple ile giriş — nonce, Keychain, korumalı rota, servislerin tek kökü
+8. K-310 birimler — tek yuvarlama noktası, gidiş-dönüş, tercih (profil + önbellek)

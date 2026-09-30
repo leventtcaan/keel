@@ -8,6 +8,7 @@ import { type SessionManager, type SessionStorage, createSessionManager, refresh
 import { type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
 import { type SqlDatabase, openRecordStore } from '@/sync/store';
+import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
 
 type Deps = {
   baseUrl: string;
@@ -15,34 +16,48 @@ type Deps = {
   db: SqlDatabase;
   fetch?: (request: Request) => Promise<Response>;
   report: (problem: SyncProblem) => void;
+  /** Small settings kept on the phone (expo-sqlite/kv-store). */
+  kv: KeyValue;
+  /** The device locale (BCP 47), for defaults before the user chooses. */
+  locale: string;
 };
 
 export type AppServices = {
   session: SessionManager;
   api: ApiClient;
   queue: SyncQueue;
+  units: UnitsPreference;
   /** Records the server does not have yet; a sign-out drops them, so the screen warns first (K-309). */
   pendingCount(): Promise<number>;
   signOut(): Promise<void>;
 };
 
-export async function createAppServices({ baseUrl, storage, db, fetch, report }: Deps): Promise<AppServices> {
+export async function createAppServices({ baseUrl, storage, db, fetch, report, kv, locale }: Deps): Promise<AppServices> {
   const session = createSessionManager({ storage, refresh: refreshWithServer({ baseUrl, fetch }) });
   const api = createApiClient({ baseUrl, accessToken: session.accessToken, refresh: session.refresh, fetch });
   const store = await openRecordStore(db);
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
+  const units = await createUnitsPreference({ kv, api, locale });
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
   // deleted: the phone cannot tell which) — the records go with it: they belong to the account that made them, and
   // the next person to sign in on this phone must not inherit them (contract: DELETE /v1/account).
+  const reportError = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   session.subscribe((signedIn) => {
-    if (!signedIn) store.clear().catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
+    if (signedIn) {
+      // The account's own choice replaces the phone's guess; offline, the kept one stays until the next sign-in.
+      units.refresh().catch(() => undefined);
+      return;
+    }
+    store.clear().catch(reportError);
+    units.forget().catch(reportError); // the preference belongs to the account too
   });
 
   return {
     session,
     api,
     queue,
+    units,
     pendingCount: store.pendingCount,
     signOut: async () => {
       const refreshToken = await session.refreshToken();
