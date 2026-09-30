@@ -320,6 +320,83 @@ class ApplyDecisionApiTests {
     }
 
     @Test
+    void eachCallOfTheLadderNeedsAProgramAndLeavesNothingBehindWithoutOne() throws Exception {
+        // No program: CONFLICT, the call still PENDING, no change kept — then with a program the same call applies.
+        for (Action action : List.of(new Action.StopLoadIncrease(), new Action.Deload(new BigDecimal("0.5")), new Action.FullRestWeek())) {
+            AccountId account = onACut();
+            UUID call = pending(account, action);
+
+            assertThat(send(account, "POST", "/v1/decisions/" + call + "/apply")).as(action.type().name()).hasStatus(409);
+            assertThat(store.byId(account, call).orElseThrow().application()).isEqualTo(CallStore.Application.PENDING);
+            assertThat(jdbc.sql("select count(*) from training.program_change where account_id = :a").param("a", account.value())
+                    .query(Integer.class).single()).isZero();
+            send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+            assertThat(send(account, "POST", "/v1/decisions/" + call + "/apply")).as(action.type().name()).hasStatusOk();
+        }
+    }
+
+    @Test
+    void undoingTheRungThatEndedAHoldOpensTheHoldAgain() throws Exception {
+        // Both applied the same day (last week's hold on this week's check-in day): the rest week ends the hold — it was
+        // left open for good before the K-217 review — and undoing the rest week brings the hold back.
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        UUID hold = pending(account, new Action.StopLoadIncrease(), TODAY.minusWeeks(1).with(java.time.DayOfWeek.MONDAY), Instant.now().minusSeconds(60));
+        send(account, "POST", "/v1/decisions/" + hold + "/apply");
+        UUID rest = pending(account, new Action.FullRestWeek());
+        send(account, "POST", "/v1/decisions/" + rest + "/apply");
+        assertThat(map(send(account, "GET", "/v1/program"))).doesNotContainKey("loadHeldSince");
+
+        assertThat(send(account, "POST", "/v1/decisions/" + rest + "/undo")).hasStatusOk();
+
+        assertThat(map(send(account, "GET", "/v1/program"))).containsEntry("loadHeldSince", TODAY.toString()).doesNotContainKey("restUntil");
+    }
+
+    @Test
+    void aLighterWeekOrAWeekOffEndsOnItsOwnLastDay() throws Exception {
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        change(account, "LIGHTER_WEEK", TODAY.minusDays(10), TODAY.minusDays(1), new BigDecimal("0.5"));
+        change(account, "REST_WEEK", TODAY.minusDays(10), TODAY.minusDays(1), null);
+        assertThat(map(send(account, "GET", "/v1/program"))).doesNotContainKeys("deload", "restUntil");
+
+        change(account, "LIGHTER_WEEK", TODAY.minusDays(6), TODAY, new BigDecimal("0.5"));
+        change(account, "REST_WEEK", TODAY.minusDays(6), TODAY, null);
+        Map<String, Object> program = map(send(account, "GET", "/v1/program"));
+        assertThat(program).containsEntry("restUntil", TODAY.toString());
+        assertThat((Map<String, Object>) program.get("deload")).containsEntry("until", TODAY.toString());
+    }
+
+    @Test
+    void aCallOfTheLadderAppliesOnAPlanWithoutACalorieTargetYet() throws Exception {
+        // The ladder speaks before the first estimate (training data, no weigh-in): applied, answered with what is known.
+        AccountId account = ready();
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, observing_maintenance)
+                values (:a, 'CUT', :start, :start, true)""").param("a", account.value()).param("start", PLAN_START).update();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        Decision decision = new Decision(new Action.Deload(new BigDecimal("0.5")), List.of(new Reason(new RuleId("r"),
+                new Source("arastirma/x.md#1", SourceTag.LITERATURE))), Confidence.MEDIUM, TODAY.plusDays(7), new CopyKey("decision.continue"));
+        CallStore.Call call = new CallStore.Call(UUID.randomUUID(), UUID.randomUUID(), CheckInWeek.weekOf(TODAY, java.time.DayOfWeek.MONDAY), TODAY,
+                Instant.now(), parameters.versionHash(), StoredSnapshot.of(new Snapshot(TODAY, Sex.MALE, Phase.CUT, PLAN_START,
+                new WeightSeries(List.of()))), DecisionJson.of(decision), CallStore.Application.PENDING);
+        store.keep(account, call);
+
+        MvcTestResult applied = send(account, "POST", "/v1/decisions/" + call.id() + "/apply");
+
+        assertThat(applied).hasStatusOk();
+        assertThat(map(applied)).containsEntry("trainingSessionsPerWeek", 1).containsKey("stepsPerDay").doesNotContainKeys("targetKcal", "proteinG");
+        assertThat(send(account, "POST", "/v1/decisions/" + call.id() + "/undo")).hasStatusOk();
+    }
+
+    private void change(AccountId account, String kind, LocalDate from, LocalDate until, BigDecimal factor) {
+        jdbc.sql("""
+                insert into training.program_change (id, account_id, call_id, kind, starts_on, ends_on, sets_factor)
+                values (:id, :a, :call, :kind, :from, :until, :factor)""").param("id", UUID.randomUUID()).param("a", account.value())
+                .param("call", UUID.randomUUID()).param("kind", kind).param("from", from).param("until", until).param("factor", factor).update();
+    }
+
+    @Test
     void theTargetsAreHealthDataAndStartWithTheFirstEstimate() throws Exception {
         AccountId account = onACut();
         assertThat(map(send(account, "GET", "/v1/targets"))).containsEntry("targetKcal", 2600);

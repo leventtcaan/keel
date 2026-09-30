@@ -258,7 +258,7 @@ class DecisionService {
         consent.require(account, ConsentKind.HEALTH_DATA);
         CallStore.Call call = latest(account, id);
         if (call.application() == CallStore.Application.APPLIED) {
-            return targetsOf(account);
+            return targetsAfter(account);
         }
         if (call.application() != CallStore.Application.PENDING) {
             throw new ApiException(ErrorCode.CONFLICT);
@@ -279,7 +279,7 @@ class DecisionService {
         if (calls.markApplied(account, id, clock.instant(), before, after)) {
             calls.replace(account, after);
         }
-        return targetsOf(account);
+        return targetsAfter(account);
     }
 
     /** Puts the plan back as it was before the call (kept in the audit trail). Undone twice, nothing more changes. */
@@ -288,7 +288,7 @@ class DecisionService {
         consent.require(account, ConsentKind.HEALTH_DATA);
         CallStore.Call call = latest(account, id);
         if (call.application() == CallStore.Application.UNDONE) {
-            return targetsOf(account);
+            return targetsAfter(account);
         }
         if (call.application() != CallStore.Application.APPLIED) {
             throw new ApiException(ErrorCode.CONFLICT);
@@ -297,7 +297,7 @@ class DecisionService {
             calls.replace(account, call.planBefore());
             training.undo(account, id);
         }
-        return targetsOf(account);
+        return targetsAfter(account);
     }
 
     /**
@@ -346,6 +346,18 @@ class DecisionService {
         BigDecimal bodyweight = bodyweight(account, week).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), week.profile().trainingDays(), week.parameters())
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));
+    }
+
+    /**
+     * The targets after an apply or undo: without a calorie target yet (a training call on a plan that has none, K-217
+     * review), what is known — the steps and the training days — rather than NOT_FOUND for a call that was applied.
+     */
+    private PlanTargets targetsAfter(AccountId account) {
+        return targetsNow(account).orElseGet(() -> {
+            Week week = week(account);
+            return PlanTargets.withoutCalories(calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)), week.profile().trainingDays(),
+                    week.parameters());
+        });
     }
 
     private PlanTargets targetsOf(AccountId account) {

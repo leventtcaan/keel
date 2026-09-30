@@ -1389,11 +1389,12 @@ export interface components {
         /**
          * @description What the user follows today; each a plan number set by calls (ADR-020 L-13). Protein does not depend on calories
          *     and is always there; carbs and fat are absent when no split fits the target (the macro floors moved with a
-         *     heavier trend or a birthday after the target was set).
+         *     heavier trend or a birthday after the target was set). Before the first estimate there is no calorie target:
+         *     GET /v1/targets is NOT_FOUND, and an apply or undo (a training call) answers with the steps and training days only.
          */
         Targets: {
-            targetKcal: number;
-            proteinG: number;
+            targetKcal?: number;
+            proteinG?: number;
             carbsG?: number;
             fatG?: number;
             stepsPerDay: number;

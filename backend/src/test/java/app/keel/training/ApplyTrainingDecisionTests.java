@@ -46,13 +46,26 @@ class ApplyTrainingDecisionTests {
     }
 
     @Test
-    void theNextRungEndsTheHold() {
-        // Holding the load was the first rung; a lighter week or a week off replaces it (K-110), from the day before.
-        TrainingChanges.Change hold = new TrainingChanges.Change(UUID.randomUUID(), TrainingChanges.Kind.HOLD_LOAD, MONDAY.minusWeeks(2), null, null);
+    void theNextRungEndsTheHoldTheDayBeforeItStartsEvenAHoldBegunThatDay() {
+        // Holding the load was the first rung; a lighter week or a week off replaces it (K-110). A hold begun the same
+        // day (last week's call applied on this week's check-in day) or later (a time zone moved west) ends before it
+        // began: never in force (K-217 review — it stayed open for good).
+        TrainingChanges.Change earlier = hold(MONDAY.minusWeeks(2));
+        TrainingChanges.Change sameDay = hold(MONDAY);
+        TrainingChanges.Change later = hold(MONDAY.plusDays(1));
 
-        assertThat(TrainingChanges.holdEndsBefore(MONDAY)).isEqualTo(MONDAY.minusDays(1));
-        assertThat(TrainingChanges.inForce(List.of(new TrainingChanges.Change(hold.callId(), hold.kind(), hold.startsOn(), TrainingChanges.holdEndsBefore(MONDAY),
-                null)), TrainingChanges.Kind.HOLD_LOAD, MONDAY)).isEmpty();
+        assertThat(TrainingChanges.holdClosedOn(earlier, MONDAY)).isEqualTo(MONDAY.minusDays(1));
+        assertThat(TrainingChanges.holdClosedOn(sameDay, MONDAY)).isEqualTo(MONDAY.minusDays(1));
+        assertThat(TrainingChanges.holdClosedOn(later, MONDAY)).isEqualTo(MONDAY);
+        for (TrainingChanges.Change hold : List.of(earlier, sameDay, later)) {
+            TrainingChanges.Change closed = new TrainingChanges.Change(hold.callId(), hold.kind(), hold.startsOn(), TrainingChanges.holdClosedOn(hold, MONDAY), null);
+            assertThat(TrainingChanges.inForce(List.of(closed), TrainingChanges.Kind.HOLD_LOAD, MONDAY)).as(hold.startsOn().toString()).isEmpty();
+            assertThat(TrainingChanges.inForce(List.of(closed), TrainingChanges.Kind.HOLD_LOAD, MONDAY.plusDays(3))).isEmpty();
+        }
+    }
+
+    private static TrainingChanges.Change hold(LocalDate from) {
+        return new TrainingChanges.Change(UUID.randomUUID(), TrainingChanges.Kind.HOLD_LOAD, from, null, null);
     }
 
     private static TrainingChanges.Change lighter(LocalDate from, LocalDate until, String factor) {

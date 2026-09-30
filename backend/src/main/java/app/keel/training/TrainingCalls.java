@@ -42,9 +42,12 @@ public class TrainingCalls {
         return nextRung(account, new TrainingChanges.Change(callId, TrainingChanges.Kind.REST_WEEK, from, until, null));
     }
 
-    /** The call's change is gone; a hold it ended is not reopened (a later call decides again). */
+    /** The call's change is gone, and a hold it ended is in force again: as if the call had never been applied. */
+    @Transactional
     public void undo(AccountId account, UUID callId) {
         jdbc.sql("delete from training.program_change where account_id = :account and call_id = :call")
+                .param("account", account.value()).param("call", callId).update();
+        jdbc.sql("update training.program_change set ends_on = null, ended_by = null where account_id = :account and ended_by = :call")
                 .param("account", account.value()).param("call", callId).update();
     }
 
@@ -62,10 +65,12 @@ public class TrainingCalls {
         if (!add(account, change)) {
             return false;
         }
+        // TrainingChanges.holdClosedOn in SQL: every open hold, a hold begun that day or later closed before it began.
+        // The rung is recorded, so undoing it opens the hold again.
         jdbc.sql("""
-                update training.program_change set ends_on = :end
-                where account_id = :account and kind = 'HOLD_LOAD' and ends_on is null and starts_on <= :end""")
-                .param("account", account.value()).param("end", TrainingChanges.holdEndsBefore(change.startsOn())).update();
+                update training.program_change set ends_on = greatest(:dayBefore, starts_on - 1), ended_by = :call
+                where account_id = :account and kind = 'HOLD_LOAD' and ends_on is null""")
+                .param("account", account.value()).param("dayBefore", change.startsOn().minusDays(1)).param("call", change.callId()).update();
         return true;
     }
 

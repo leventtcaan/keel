@@ -38,8 +38,12 @@ final class TrainingChanges {
                 .intValueExact())).orElse(baseSets);
     }
 
-    /** A hold in force ends the day before the next rung starts. */
-    static LocalDate holdEndsBefore(LocalDate nextRungStarts) {
-        return nextRungStarts.minusDays(1);
+    /**
+     * The last day of a hold the next rung ends: the day before the rung starts — or, for a hold begun that day or later
+     * (a time zone moved west), the day before the hold began, so it is never in force.
+     */
+    static LocalDate holdClosedOn(Change hold, LocalDate nextRungStarts) {
+        LocalDate dayBefore = nextRungStarts.minusDays(1);
+        return hold.startsOn().isAfter(dayBefore) ? hold.startsOn().minusDays(1) : dayBefore;
     }
 }
