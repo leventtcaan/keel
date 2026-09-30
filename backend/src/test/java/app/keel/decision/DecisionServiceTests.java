@@ -302,8 +302,10 @@ class DecisionServiceTests {
         // at the decision was a cost, and one unreadable snapshot would have made every week fail.
         AccountId account = TestSessions.newAccount();
         jdbc.sql("""
-                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision, application)
-                values (:id, :a, :client, :week, :week, now(), 'h', cast('{}' as jsonb), cast(:decision as jsonb), 'APPLIED')""")
+                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision, application,
+                    applied_at, plan_before, plan_after)
+                values (:id, :a, :client, :week, :week, now(), 'h', cast('{}' as jsonb), cast(:decision as jsonb), 'APPLIED', now(),
+                    cast('{}' as jsonb), cast('{}' as jsonb))""")
                 .param("id", UUID.randomUUID()).param("a", account.value()).param("client", UUID.randomUUID()).param("week", thisWeek())
                 .param("decision", "{\"action\": {\"type\": \"CHANGE_PHASE\", \"to\": \"BULK\"}, \"safety\": true}").update();
 
