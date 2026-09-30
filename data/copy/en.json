@@ -528,5 +528,9 @@
         "no": "No"
       }
     }
+  },
+  "format": {
+    "range": "{low}–{high}",
+    "rangeSpoken": "between {low} and {high}"
   }
 }
