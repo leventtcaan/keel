@@ -996,7 +996,7 @@ tasks:
     module: profile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-205, K-204]
     why: "ADR-027 #13 (canlıda sorun çıkarmayacak yaş: 18+) ve #14 (kısıt alanı sağlık verisi olabilir, GDPR Md. 9)"
     acceptance:
