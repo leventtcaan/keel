@@ -36,9 +36,9 @@ class ApplyDecisionTests {
     @Test
     void aCalorieCallMovesOnlyTheTargetAndStartsItsWait() {
         // The ladder waits calorie_change_min_wait_weeks from the day the target began (K-107): the plan starts today.
-        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-500), TODAY, P))
+        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-500), TODAY, P, Optional.empty()))
                 .contains(new CallStore.Plan(Phase.CUT, CUT.phaseStart(), TODAY, 2100, false, null));
-        assertThat(PlanChange.after(CUT, new Action.IncreaseCalories(250), TODAY, P))
+        assertThat(PlanChange.after(CUT, new Action.IncreaseCalories(250), TODAY, P, Optional.empty()))
                 .contains(new CallStore.Plan(Phase.CUT, CUT.phaseStart(), TODAY, 2850, false, null));
     }
 
@@ -47,7 +47,7 @@ class ApplyDecisionTests {
         // A target the engine moved is no longer the formula's estimate being observed (K-114).
         CallStore.Plan watched = new CallStore.Plan(Phase.BULK, TODAY.minusDays(30), TODAY.minusDays(30), 2700, true, 9000);
 
-        assertThat(PlanChange.after(watched, new Action.AdjustCalories(250), TODAY, P))
+        assertThat(PlanChange.after(watched, new Action.AdjustCalories(250), TODAY, P, Optional.empty()))
                 .contains(new CallStore.Plan(Phase.BULK, watched.phaseStart(), TODAY, 2950, false, 9000));
     }
 
@@ -58,9 +58,9 @@ class ApplyDecisionTests {
         CallStore.Plan startsTomorrow = new CallStore.Plan(Phase.CUT, TODAY.minusDays(30), TODAY.plusDays(1), 2600, false, null);
         CallStore.Plan startsToday = new CallStore.Plan(Phase.CUT, TODAY.minusDays(30), TODAY, 2600, false, null);
 
-        assertThat(PlanChange.after(startsTomorrow, new Action.AdjustCalories(-500), TODAY, P)).hasValueSatisfying(plan ->
+        assertThat(PlanChange.after(startsTomorrow, new Action.AdjustCalories(-500), TODAY, P, Optional.empty())).hasValueSatisfying(plan ->
                 assertThat(plan.planStart()).isEqualTo(TODAY.plusDays(1)));
-        assertThat(PlanChange.after(startsToday, new Action.AdjustCalories(-500), TODAY, P)).hasValueSatisfying(plan ->
+        assertThat(PlanChange.after(startsToday, new Action.AdjustCalories(-500), TODAY, P, Optional.empty())).hasValueSatisfying(plan ->
                 assertThat(plan.planStart()).isEqualTo(TODAY));
     }
 
@@ -70,9 +70,9 @@ class ApplyDecisionTests {
         // target_kcal > 0 violation, both 500s.
         CallStore.Plan noTarget = new CallStore.Plan(Phase.CUT, TODAY, TODAY, null, true, null);
 
-        assertThat(PlanChange.after(noTarget, new Action.AdjustCalories(-500), TODAY, P)).isEmpty();
-        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-2600), TODAY, P)).isEmpty();
-        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-2599), TODAY, P)).hasValueSatisfying(plan ->
+        assertThat(PlanChange.after(noTarget, new Action.AdjustCalories(-500), TODAY, P, Optional.empty())).isEmpty();
+        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-2600), TODAY, P, Optional.empty())).isEmpty();
+        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-2599), TODAY, P, Optional.empty())).hasValueSatisfying(plan ->
                 assertThat(plan.targetKcal()).isEqualTo(1));
     }
 
@@ -80,10 +80,10 @@ class ApplyDecisionTests {
     void moreMovementRaisesOnlyTheStepTarget() {
         int raised = P.wholeNumber(ParameterKey.STEPS_TARGET_RAISED);
 
-        assertThat(PlanChange.after(CUT, new Action.ChangeMovement(), TODAY, P))
+        assertThat(PlanChange.after(CUT, new Action.ChangeMovement(), TODAY, P, Optional.empty()))
                 .contains(new CallStore.Plan(Phase.CUT, CUT.phaseStart(), CUT.planStart(), 2600, false, raised));
         CallStore.Plan alreadyHigher = new CallStore.Plan(Phase.CUT, CUT.phaseStart(), CUT.planStart(), 2600, false, raised + 2000);
-        assertThat(PlanChange.after(alreadyHigher, new Action.ChangeMovement(), TODAY, P)).as("never lowered").contains(alreadyHigher);
+        assertThat(PlanChange.after(alreadyHigher, new Action.ChangeMovement(), TODAY, P, Optional.empty())).as("never lowered").contains(alreadyHigher);
     }
 
     @Test
@@ -94,13 +94,67 @@ class ApplyDecisionTests {
 
     @Test
     void callsThatCannotBeAppliedYetChangeNothing() {
-        // Training calls change the program, not the plan (K-217, TrainingCalls); the phase, the mini cut and the hard stop
-        // wait for what the engine cannot read yet (DURUM 11, 17, 18). Not yet, continue and advice have nothing to apply.
+        // Training calls change the program, not the plan (K-217, TrainingCalls); the mini cut waits for the appetite
+        // question the engine needs to make it (K-222 scope). Not yet, continue and advice have nothing to apply.
         for (Action action : List.of(new Action.StopLoadIncrease(), new Action.Deload(new BigDecimal("0.5")), new Action.FullRestWeek(),
-                new Action.ChangePhase(Phase.BULK), new Action.MiniCut(2, 4), new Action.HardStop(), new Action.NoDecisionYet(),
+                new Action.MiniCut(2, 4), new Action.NoDecisionYet(),
                 new Action.Continue(), new Action.FixTraining(), new Action.FixRecovery(), new Action.FixAdherence())) {
-            assertThat(PlanChange.after(CUT, action, TODAY, P)).as(action.type().name()).isEmpty();
+            assertThat(PlanChange.after(CUT, action, TODAY, P, Optional.empty())).as(action.type().name()).isEmpty();
         }
+    }
+
+    @Test
+    void aNewDirectionStartsFromTheMaintenanceEstimateWatched() {
+        // K-222: the phase gate turns the direction; the new phase starts like a first plan (K-114): today, at the
+        // maintenance estimate, watched before it is judged. The steps stay.
+        CallStore.Plan lean = new CallStore.Plan(Phase.CUT, TODAY.minusDays(90), TODAY.minusDays(20), 1900, false, 9000);
+
+        assertThat(PlanChange.after(lean, new Action.ChangePhase(Phase.BULK), TODAY, P, Optional.of(2400)))
+                .contains(new CallStore.Plan(Phase.BULK, TODAY, TODAY, 2400, true, 9000));
+        assertThat(PlanChange.after(lean, new Action.ChangePhase(Phase.BULK), TODAY, P, Optional.empty())).as("no estimate: the target stays")
+                .contains(new CallStore.Plan(Phase.BULK, TODAY, TODAY, 1900, true, 9000));
+    }
+
+    @Test
+    void theHardStopEndsTheDeficitAtLeastAtMaintenance() {
+        // ADR-020 L-1: no more eating under maintenance. Maintenance is not a direction (03 §2.1): the plan turns to building
+        // at the maintenance estimate — so the cut ladder cannot take the deficit back next week — and is watched.
+        CallStore.Plan cut = new CallStore.Plan(Phase.CUT, TODAY.minusDays(90), TODAY.minusDays(20), 1600, false, null);
+        CallStore.Plan alreadyHigher = new CallStore.Plan(Phase.CUT, TODAY.minusDays(90), TODAY.minusDays(20), 2600, false, null);
+
+        assertThat(PlanChange.after(cut, new Action.HardStop(), TODAY, P, Optional.of(2200)))
+                .contains(new CallStore.Plan(Phase.BULK, TODAY, TODAY, 2200, true, null));
+        assertThat(PlanChange.after(alreadyHigher, new Action.HardStop(), TODAY, P, Optional.of(2200))).as("never lowered")
+                .contains(new CallStore.Plan(Phase.BULK, TODAY, TODAY, 2600, true, null));
+        // A bulk goes on: its phase keeps the day it began. Without an estimate the target stays; without a target, maintenance.
+        CallStore.Plan bulk = new CallStore.Plan(Phase.BULK, TODAY.minusDays(90), TODAY.minusDays(20), 2000, false, null);
+        assertThat(PlanChange.after(bulk, new Action.HardStop(), TODAY, P, Optional.of(2200)))
+                .contains(new CallStore.Plan(Phase.BULK, TODAY.minusDays(90), TODAY, 2200, true, null));
+        assertThat(PlanChange.after(cut, new Action.HardStop(), TODAY, P, Optional.empty()))
+                .contains(new CallStore.Plan(Phase.BULK, TODAY, TODAY, 1600, true, null));
+        CallStore.Plan noTarget = new CallStore.Plan(Phase.CUT, TODAY.minusDays(90), TODAY.minusDays(20), null, true, null);
+        assertThat(PlanChange.after(noTarget, new Action.HardStop(), TODAY, P, Optional.of(2200)))
+                .contains(new CallStore.Plan(Phase.BULK, TODAY, TODAY, 2200, true, null));
+    }
+
+    @Test
+    void theHardStopIsNotTakenBackAndEveryOtherCallIs() {
+        // ADR-020 L-1: after the hard stop, no more eating under maintenance — an undo would put the deficit back with
+        // one tap (K-222 review). Every other applied call can be taken back (K-216).
+        assertThat(PlanChange.undoable(new Action.HardStop())).isFalse();
+        for (Action action : List.of(new Action.AdjustCalories(-250), new Action.IncreaseCalories(250), new Action.ChangeMovement(),
+                new Action.ChangePhase(Phase.BULK), new Action.StopLoadIncrease(), new Action.Deload(new BigDecimal("0.5")), new Action.FullRestWeek())) {
+            assertThat(PlanChange.undoable(action)).as(action.type().name()).isTrue();
+        }
+    }
+
+    @Test
+    void aNewDirectionOnAPlanStartedLaterOnTheCalendarStartsWithIt() {
+        // A time zone moved west: the plan begins "tomorrow" on today's calendar; the new one cannot start before it.
+        CallStore.Plan startsTomorrow = new CallStore.Plan(Phase.CUT, TODAY.minusDays(30), TODAY.plusDays(1), 1900, false, null);
+
+        assertThat(PlanChange.after(startsTomorrow, new Action.ChangePhase(Phase.BULK), TODAY, P, Optional.of(2400)))
+                .contains(new CallStore.Plan(Phase.BULK, TODAY.plusDays(1), TODAY.plusDays(1), 2400, true, null));
     }
 
     @Test

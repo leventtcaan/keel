@@ -33,7 +33,10 @@ profil → ölçüm/beslenme/antrenman → karar.
 21. K-221 antrenman durumu — zaman serisinden durum, ilerleme tanımı, merdivenin kendi izi
 22. K-225 profil — yalnız yıldan kesin yaş, veri sınıfına göre alan erişimi
 23. K-223 cevaplardan kurala — haftalık pay, L-4, kadında tahminsiz adım yok
-11. (sıradakiler görev bitince eklenir)
+24. K-226 FDC içe aktarma — toplu veri, idempotent yükleme, veriyi kaynağında doğrulamak
+25. K-224 iç yağ tahmini — gösterilmeyen sayı, kaynaklı formül, olanaksız değer, kurala göre temkinli olan
+26. K-222 faz, hard stop, döngü sorusu — durum geçişi, genel etiket, "karar sen ver"
+27. (sıradakiler görev bitince eklenir)
 
 ## Durum
 | Görev | Aktarım dosyası | Kod | Anlatıldı | Levent kendi cümlesiyle | Apple Notes |
@@ -61,3 +64,6 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-221 TrainingStatus set kaydından | `K-221.md` | ✅ | — | — | — |
 | K-225 profil: 18+ ve kısıt alanı rızada | `K-225.md` | ✅ | — | — | — |
 | K-223 ADR-027 motor cevapları | `K-223.md` | ✅ | — | — | — |
+| K-226 FDC Foundation + SR Legacy (V15) | `K-226.md` | ✅ | — | — | — |
+| K-224 iç yağ tahmini (V16) | `K-224.md` | ✅ | — | — | — |
+| K-222 faz, hard stop, döngü sorusu, DECIDE_FOR_ME | `K-222.md` | ✅ | — | — | — |

@@ -85,7 +85,7 @@ scenarios:
     weeks: [65.0, 64.6, 64.2, 63.8, 63.4, 63.0]
     overrides: {6: {menstrual_loss_reported: true}}
     expect: [observing, observing, observing, continue/toward_goal, continue/toward_goal,
-             {is: hard_stop/menstrual_loss_reported, confidence: high}]
+             {is: hard_stop/low_energy_safety, confidence: high}]
 
   - id: GS-10
     title: "Man bulking at the ideal 1 kg a month: a 21-day window cannot confirm it, so +250 (detection limit, L-10)"

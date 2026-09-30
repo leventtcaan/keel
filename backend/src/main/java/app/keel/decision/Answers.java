@@ -1,6 +1,7 @@
 package app.keel.decision;
 
 import app.keel.engine.CheckIn;
+import app.keel.engine.Sex;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
@@ -10,8 +11,8 @@ import java.util.Set;
 /**
  * The check-in answers as the engine reads them (K-212): choices for how it looks, training, recovery and appetite.
  * Anything not answered stays UNKNOWN and the engine asks instead of guessing (U3). The scales and the waist are read with
- * the questions that ask them (K-213). The cycle question is not taken yet: V4 asks it only of a woman in the low energy
- * band, which needs the fat estimate (DURUM question 11); taken from anyone it stopped a man's plan (K-212 review).
+ * the questions that ask them (K-213). The cycle question is a woman's (V4, K-222): taken from anyone it stopped a man's
+ * plan (K-212 review). Its answer is read for this call only and never kept (ADR-020 L-1).
  */
 final class Answers {
 
@@ -25,17 +26,21 @@ final class Answers {
     record Read(CheckIn checkIn, boolean menstrualLossReported) {
     }
 
-    private static final Set<Kind> CHOICES = EnumSet.of(Kind.LOOK, Kind.TRAINING, Kind.RECOVERY, Kind.APPETITE);
+    private static final Set<Kind> CHOICES = EnumSet.of(Kind.LOOK, Kind.TRAINING, Kind.RECOVERY, Kind.APPETITE, Kind.CYCLE_STOPPED);
 
     private Answers() {
     }
 
+    /** The cycle question's answers (V4). */
+    enum Cycle { YES, NO }
+
     /** IllegalArgumentException for an answer the engine cannot read: a choice it does not have, a kind twice, the wrong field. */
-    static Read read(List<Answer> answers) {
+    static Read read(List<Answer> answers, Sex sex) {
         CheckIn.Look look = CheckIn.Look.UNKNOWN;
         CheckIn.Training training = CheckIn.Training.UNKNOWN;
         CheckIn.Recovery recovery = CheckIn.Recovery.UNKNOWN;
         CheckIn.Appetite appetite = CheckIn.Appetite.UNKNOWN;
+        boolean cycleStopped = false;
         Set<Kind> seen = EnumSet.noneOf(Kind.class);
         for (Answer answer : answers) {
             require(answer != null && answer.kind() != null && seen.add(answer.kind()), "each question is answered once");
@@ -46,10 +51,14 @@ final class Answers {
                 case TRAINING -> training = choice(CheckIn.Training.class, answer.choice());
                 case RECOVERY -> recovery = choice(CheckIn.Recovery.class, answer.choice());
                 case APPETITE -> appetite = choice(CheckIn.Appetite.class, answer.choice());
+                case CYCLE_STOPPED -> {
+                    require(sex == Sex.FEMALE, "the cycle question is asked only of a woman (V4)");
+                    cycleStopped = choice(Cycle.class, answer.choice()) == Cycle.YES;
+                }
                 default -> throw new IllegalStateException("unreachable: " + answer.kind());
             }
         }
-        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), false);
+        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), cycleStopped);
     }
 
     // UNKNOWN is the engine's word for "not answered", never an answer.

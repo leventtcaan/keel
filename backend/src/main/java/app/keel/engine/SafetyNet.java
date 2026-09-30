@@ -41,7 +41,8 @@ public final class SafetyNet {
     static final RuleId BMR_FLOOR = new RuleId("bmr_floor");
     static final RuleId RAPID_LOSS = new RuleId("rapid_loss");
     static final RuleId LOW_ENERGY_AVAILABILITY = new RuleId("low_energy_availability");
-    static final RuleId MENSTRUAL_LOSS_REPORTED = new RuleId("menstrual_loss_reported");
+    // ADR-027 #18: kept with the call under a general label — the cycle answer leaves no trace (ADR-020 L-1, GDPR Art. 9).
+    static final RuleId LOW_ENERGY_SAFETY = new RuleId("low_energy_safety");
     static final RuleId LOW_FAT_FLOOR = new RuleId("low_fat_floor");
 
     private static final Source GURAY_LOSS_CAP = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-17", SourceTag.EXPERIENCE);
@@ -61,7 +62,7 @@ public final class SafetyNet {
     public static Optional<Decision> check(Snapshot snapshot, Parameters parameters) {
         requireSameSex(snapshot, parameters);
         if (snapshot.menstrualLossReported()) {
-            return Optional.of(safetyDecision(snapshot, new Action.HardStop(), List.of(new Reason(MENSTRUAL_LOSS_REPORTED, REDS_TIERS))));
+            return Optional.of(safetyDecision(snapshot, new Action.HardStop(), List.of(new Reason(LOW_ENERGY_SAFETY, REDS_TIERS))));
         }
         List<Reason> narrow = new ArrayList<>();
         if (energyAvailability(snapshot, parameters).filter(band -> band == EnergyAvailability.LOW).isPresent()) {

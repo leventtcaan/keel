@@ -2,15 +2,21 @@ package app.keel.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.engine.InitialTarget;
+import app.keel.engine.ParameterSet;
+import app.keel.engine.Profile;
+import app.keel.engine.Sex;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +49,9 @@ class CheckInQuestionsApiTests {
 
     @Autowired
     JdbcClient jdbc;
+
+    @Autowired
+    ParameterSet parameters;
 
     @Test
     void aFirstCheckInWhileMaintenanceIsWatchedAsksNothing() throws Exception {
@@ -192,6 +201,99 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void aWomanOnAPlanTooLowIsAskedAboutHerCycleFirst() throws Exception {
+        // V4 (K-222): 60 kg at look 3 (30 %) is 42 kg fat-free; 1200 kcal is 28.6 per kg, under her line (30): low.
+        AccountId account = womanOnALowPlan();
+
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
+
+        assertThat(questions).isNotEmpty();
+        assertThat(questions.getFirst()).containsEntry("kind", "CYCLE_STOPPED").containsEntry("choices", List.of("YES", "NO"))
+                .containsEntry("copyKey", "checkIn.question.cycle_stopped");
+    }
+
+    @Test
+    void herYesIsTheHardStopUnderAGeneralLabelAndItsApplyingEndsTheDeficit() throws Exception {
+        // ADR-020 L-1, ADR-027 #18: the call is kept, its reason a general label; the answer leaves no trace. Applied, the
+        // plan turns to building at no less than maintenance, watched (K-222).
+        AccountId account = womanOnALowPlan();
+
+        MvcTestResult call = answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")));
+
+        assertThat(call.getResponse().getStatus()).isEqualTo(200);
+        Map<String, Object> made = map(call);
+        assertThat((Map<String, Object>) made.get("action")).containsEntry("type", "HARD_STOP");
+        assertThat(call.getResponse().getContentAsString()).contains("low_energy_safety").doesNotContainIgnoringCase("menstrual")
+                .doesNotContainIgnoringCase("cycle");
+        String kept = jdbc.sql("select decision::text || snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        assertThat(kept).doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle");
+
+        assertThat(send(account, "POST", "/v1/decisions/" + made.get("id") + "/apply", null).getResponse().getStatus()).isEqualTo(200);
+        Map<String, Object> plan = jdbc.sql("select phase, observing_maintenance, target_kcal from decision.plan where account_id = :a")
+                .param("a", account.value()).query().singleRow();
+        assertThat(plan).containsEntry("phase", "BULK").containsEntry("observing_maintenance", true);
+        // The maintenance estimate at her weight, height and age (K-114), not just any number above the old target.
+        int maintenance = InitialTarget.estimate(Sex.FEMALE, new BigDecimal("60.0"),
+                new Profile(LocalDate.now(ZoneOffset.UTC).getYear() - 1996, 165), Optional.empty(),
+                parameters.forSex(Sex.FEMALE)).maintenanceKcal();
+        assertThat((Integer) plan.get("target_kcal")).isEqualTo(Math.max(1200, maintenance));
+
+        // Not taken back (ADR-020 L-1), and the export — plans before and after included — carries no trace either.
+        assertThat(send(account, "POST", "/v1/decisions/" + made.get("id") + "/undo", null).getResponse().getStatus()).isEqualTo(409);
+        String export = send(account, "GET", "/v1/account/export", null).getResponse().getContentAsString();
+        assertThat(export).contains("low_energy_safety").doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle");
+    }
+
+    @Test
+    void aHardStopWithNoWeighInInTheWindowStillEndsTheDeficit() throws Exception {
+        // K-222 review: with the last weigh-in older than the evaluation window, the maintenance estimate comes from that
+        // last known weight — not "no estimate, the cut target stays".
+        AccountId account = TestSessions.newAccount();
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        weighIn(account, today.minusDays(120).atStartOfDay(ZoneOffset.UTC).plusHours(6).toInstant(), 60.0);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :start, :start, 1200, false)""").param("a", account.value()).param("start", today.minusDays(42)).update();
+
+        MvcTestResult call = answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")));
+        assertThat((Map<String, Object>) map(call).get("action")).containsEntry("type", "HARD_STOP");
+        assertThat(send(account, "POST", "/v1/decisions/" + map(call).get("id") + "/apply", null).getResponse().getStatus()).isEqualTo(200);
+
+        int maintenance = InitialTarget.estimate(Sex.FEMALE, new BigDecimal("60.0"), new Profile(today.getYear() - 1996, 165), Optional.empty(),
+                parameters.forSex(Sex.FEMALE)).maintenanceKcal();
+        assertThat(jdbc.sql("select target_kcal from decision.plan where account_id = :a").param("a", account.value()).query(Integer.class).single())
+                .isEqualTo(Math.max(1200, maintenance));
+    }
+
+    @Test
+    void aWomanNotInTheLowBandOrWithoutAnEstimateIsNotAskedAboutHerCycle() throws Exception {
+        // V4: only in the low band — the answer is special-category data (GDPR Art. 9), not asked of every woman.
+        AccountId fed = womanOnALowPlan();
+        jdbc.sql("update decision.plan set target_kcal = 2000 where account_id = :a").param("a", fed.value()).update();
+        AccountId noEstimate = womanOnALowPlan();
+        jdbc.sql("delete from measurement.body_look where account_id = :a").param("a", noEstimate.value()).update();
+
+        for (AccountId account : List.of(fed, noEstimate)) {
+            List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
+            assertThat(questions).extracting(question -> question.get("kind")).doesNotContain("CYCLE_STOPPED");
+        }
+    }
+
+    @Test
+    void herNoMakesTheUsualCallAndAMansAnswerIsRefused() throws Exception {
+        MvcTestResult no = answer(womanOnALowPlan(), List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "NO")));
+        assertThat(no.getResponse().getStatus()).isEqualTo(200);
+        assertThat((Map<String, Object>) map(no).get("action")).containsEntry("type", "INCREASE_CALORIES");
+
+        assertThat(answer(losingButLookingWorse(), List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES"))).getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
     void theWaistComesFromItsMeasurements() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
@@ -240,6 +342,28 @@ class CheckInQuestionsApiTests {
 
     private AccountId ready() {
         return ready(true);
+    }
+
+    /** A woman of 60 kg who picked look 3 (30 %), on a 1200 kcal cut: energy availability in the low band. */
+    private AccountId womanOnALowPlan() {
+        AccountId account = TestSessions.newAccount();
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :start, :start, 1200, false)""").param("a", account.value()).param("start", today.minusDays(42)).update();
+        for (int day = 28; day >= 0; day--) {
+            Instant at = today.minusDays(day).atStartOfDay(ZoneOffset.UTC).plusHours(6).toInstant();
+            if (at.isBefore(Instant.now())) {
+                weighIn(account, at, 60.0);
+            }
+        }
+        assertThat(send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "level", 3))
+                .getResponse().getStatus()).isLessThan(300);
+        return account;
     }
 
     private AccountId ready(boolean oneWeighIn) {

@@ -13,6 +13,7 @@ import app.keel.engine.RuleId;
 import app.keel.engine.Source;
 import app.keel.engine.SourceTag;
 import app.keel.engine.DecisionPipeline;
+import app.keel.engine.EnergyAvailability;
 import app.keel.engine.ParameterDomain;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
@@ -134,6 +135,29 @@ class QuestionBudgetTests {
                 String key = "checkIn.choice." + missing.name().toLowerCase(java.util.Locale.ROOT) + "." + choice.toLowerCase(java.util.Locale.ROOT);
                 assertThat(lookUp(copy, key)).as(key).isInstanceOf(String.class);
             });
+        }
+    }
+
+    @Test
+    void theCycleIsAskedOnlyOfAWomanInTheLowEnergyBand() {
+        // V4, ADR-020 L-1: one tap when energy availability is low; the band needs the fat estimate (K-224).
+        assertThat(CheckInQuestions.asksAboutTheCycle(Sex.FEMALE, Optional.of(EnergyAvailability.LOW))).isTrue();
+        for (EnergyAvailability band : List.of(EnergyAvailability.WARNING, EnergyAvailability.REDUCED, EnergyAvailability.ADEQUATE)) {
+            assertThat(CheckInQuestions.asksAboutTheCycle(Sex.FEMALE, Optional.of(band))).as(band.name()).isFalse();
+        }
+        assertThat(CheckInQuestions.asksAboutTheCycle(Sex.FEMALE, Optional.empty())).as("band not known").isFalse();
+        assertThat(CheckInQuestions.asksAboutTheCycle(Sex.MALE, Optional.of(EnergyAvailability.LOW))).isFalse();
+    }
+
+    @Test
+    void theCycleQuestionIsAYesOrNoWithItsWords() {
+        Map<String, Object> copy = copy();
+        CheckInQuestions.Question question = CheckInQuestions.describe(Answers.Kind.CYCLE_STOPPED);
+
+        assertThat(question).isEqualTo(new CheckInQuestions.Question(Answers.Kind.CYCLE_STOPPED, "CHOICE", List.of("YES", "NO"),
+                "checkIn.question.cycle_stopped", "checkIn.reason.cycle_stopped"));
+        for (String key : List.of(question.copyKey(), question.reasonCopyKey(), "checkIn.choice.cycle_stopped.yes", "checkIn.choice.cycle_stopped.no")) {
+            assertThat(lookUp(copy, key)).as(key).isInstanceOf(String.class);
         }
     }
 

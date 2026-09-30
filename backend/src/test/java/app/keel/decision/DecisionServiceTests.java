@@ -103,8 +103,23 @@ class DecisionServiceTests {
         send(noProfile, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
         assertThat(answer(noProfile, UUID.randomUUID(), thisWeek(), List.of())).as("no profile yet").hasStatus(409);
 
-        // DECIDE_FOR_ME needs the phase gate, which needs the fat estimate (DURUM questions 11, 17).
-        assertThat(answer(ready("DECIDE_FOR_ME"), UUID.randomUUID(), thisWeek(), List.of())).hasStatus(409);
+        // DECIDE_FOR_ME (ADR-027 #17, K-222): the phase gate on the fat estimate; without one, a cut (G4 K-4).
+        AccountId leftToTheEngine = ready("DECIDE_FOR_ME");
+        assertThat(answer(leftToTheEngine, UUID.randomUUID(), thisWeek(), List.of())).hasStatus(200);
+        assertThat(jdbc.sql("select phase from decision.plan where account_id = :a").param("a", leftToTheEngine.value()).query(String.class).single())
+                .isEqualTo("CUT");
+    }
+
+    @Test
+    void leftToTheEngineALeanBodyStartsBuilding() {
+        // Look 1 for a man is 10 %, under the surplus line (12): the gate turns to building (ADR-027 #17).
+        AccountId account = ready("DECIDE_FOR_ME");
+        send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", LocalDate.now(java.time.ZoneOffset.UTC).toString(),
+                "level", 1));
+
+        assertThat(answer(account, UUID.randomUUID(), thisWeek(), List.of())).hasStatus(200);
+        assertThat(jdbc.sql("select phase from decision.plan where account_id = :a").param("a", account.value()).query(String.class).single())
+                .isEqualTo("BULK");
     }
 
     @Test

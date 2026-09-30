@@ -173,6 +173,24 @@ class PhaseGateTests {
         assertChangesTo(PhaseGate.check(snapshot(sex, Phase.CUT, high).withFatProxy(underSurplus, high), parameters(sex)), Phase.BULK, "surplus_zone");
     }
 
+    // ── the first direction, left to the engine (ADR-027 #17) ─────────────────────────────────────────────────
+
+    @ParameterizedTest
+    @EnumSource(Sex.class)
+    void leftToTheEngineALeanBodyBuildsAndAnyOtherCuts(Sex sex) {
+        BigDecimal underSurplus = band(sex, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT).subtract(STEP);
+        BigDecimal surplus = band(sex, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT);
+        BigDecimal ceiling = band(sex, ParameterKey.BULK_CEILING_FAT_PROXY_PCT);
+
+        assertThat(PhaseGate.startingPhase(Optional.of(underSurplus), Optional.of(underSurplus), parameters(sex))).isEqualTo(Phase.BULK);
+        assertThat(PhaseGate.startingPhase(Optional.of(underSurplus), Optional.of(ceiling), parameters(sex))).as("the higher at the ceiling")
+                .isEqualTo(Phase.BULK);
+        assertThat(PhaseGate.startingPhase(Optional.of(underSurplus), Optional.of(ceiling.add(STEP)), parameters(sex)))
+                .as("the higher would stop the build at once").isEqualTo(Phase.CUT);
+        assertThat(PhaseGate.startingPhase(Optional.of(surplus), Optional.of(surplus), parameters(sex))).as("on the line").isEqualTo(Phase.CUT);
+        assertThat(PhaseGate.startingPhase(Optional.empty(), Optional.empty(), parameters(sex))).as("no estimate: G4 K-4").isEqualTo(Phase.CUT);
+    }
+
     private static Snapshot snapshot(Sex sex, Phase phase, BigDecimal fatProxyPct) {
         return new Snapshot(TODAY, sex, phase, TODAY.minusDays(30), series(List.of()), Optional.of(fatProxyPct));
     }
