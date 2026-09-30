@@ -184,3 +184,33 @@ parameters:
     tag: urun
     source: "arastirma/ham/H1-olcum.md#3.4"
     note: "SEÇİM, TÜRETİLMEDİ (Levent onayı bekliyor). H1 §3.4 tartı gürültüsü hakkında, yemek kaydı hakkında değil; araştırmada yemek kaydı için doğrudan sayı yok. min_weighins_per_week ile aynı sayı (haftanın yarısından fazlası) aktarıldı. Kaydı olmayan gün 0 kcal sayılmaz, ortalamaya girmez."
+  - key: amount_error_estimated_ratio
+    value: 0.50
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H7-besin-araligi.md#2"
+    note: "Göz kararı miktar: uzman olmayanın ortalama kalori hatası %53, diyetisyenin %41 (Nutrition5k). Ortalama hata: bazı kayıtlar aşar."
+  - key: amount_error_measured_ratio
+    value: 0.25
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H7-besin-araligi.md#3"
+    note: "Kaşık/bardak (bir porsiyon adı): Gibson 2016'da tahminlerin yalnız %29'u ±%25 içinde — bu değer iyimser. Onay listesinde."
+  - key: amount_error_weighed_ratio
+    value: 0.05
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H7-besin-araligi.md#4"
+    note: "Tartı: birkaç gram + çiğ/pişmiş karışıklığı payı. Onay listesinde."
+  - key: label_value_tolerance_ratio
+    value: 0.20
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H7-besin-araligi.md#5"
+    note: "21 CFR 101.9(g)(5): enerji ve yağ etiketin en fazla %20 üstünde; (g)(4): protein, karbonhidrat etiketin en az %80'i. Tek yönlü."
+  - key: analysed_value_error_ratio
+    value: 0.10
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H7-besin-araligi.md#6"
+    note: "FDC Foundation/SR Legacy analiz ortalaması; örnekler arası değişkenlik için sayısal kaynak okunmadı. Onay listesinde."

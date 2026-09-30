@@ -683,7 +683,7 @@ tasks:
     module: nutrition
     type: feature
     size: L
-    status: todo
+    status: done
     depends_on: [K-207, K-205]
     why: "Tahmin veritabanından, LLM'den değil (U1)"
     acceptance:

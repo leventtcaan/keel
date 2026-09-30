@@ -64,6 +64,13 @@ keel:
     max-planned-sets: 20
     max-day-exercises: 20
     max-day-name: 60
+  # Food search and estimates (K-208): a page of results, a query of a few words, a meal's items, and no item over 5 kg.
+  nutrition:
+    default-search-results: 20
+    max-search-results: 50
+    max-query-length: 100
+    max-items: 50
+    max-grams: 5000
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:

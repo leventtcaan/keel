@@ -913,11 +913,15 @@ export interface components {
             grams: number;
         };
         Amount: {
+            /** @description At most 2 decimals; the amount it makes is at most 5000 g. */
             quantity: number;
-            /** @description grams (g), millilitres (ml) or the name of one of the food's servings. */
+            /**
+             * @description grams (g), millilitres (ml: only for a food with a known density) or the name of one of the food's servings
+             *     (a serving is a measure: its own range, whatever certainty says).
+             */
             unit: string;
             /**
-             * @description A weighed amount narrows the range; an estimated one widens it.
+             * @description A weighed amount narrows the range; an estimated one (the default) widens it.
              * @enum {string}
              */
             certainty?: "WEIGHED" | "ESTIMATED";
@@ -928,6 +932,7 @@ export interface components {
             limit: number;
         };
         BarcodeLookup: {
+            /** @description As scanned — EAN-8, UPC-E (expanded by the server), UPC-A, EAN-13 or GTIN-14. A wrong check digit is 400. */
             gtin: string;
         };
         /**
