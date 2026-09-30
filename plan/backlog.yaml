@@ -1341,6 +1341,8 @@ tasks:
       - "Haftanın kararı kalıcı kart; 'Why this call' gerekçe listesini açar"
       - "Bugün listesi: tartı, antrenman, kalan yemek aralığı, adım"
       - "Koç çipleri o günün verisinden türetilir (chat asla boş değil)"
+      - "Haftanın kararı copyKey'den; `safety: true` kararı genel etiketle (ADR-028 #24) — hard stop ya da döngü sözü ekranda/cihazda yok"
+      - "NO_DECISION_YET varyantı `cycle_check_needed` dahil; mini cut kararı ve `mini_cut_running`/`mini_cut_over` metinleri (K-227)"
     tests:
       - "Ekran render testleri (veri var / yok / NO_DECISION_YET)"
     refs: ["prototip/today-directions.html", "arastirma/04-faz3-urun.md#8.4"]
@@ -1358,6 +1360,7 @@ tasks:
     acceptance:
       - "Elle giriş ya da HealthKit'ten (akıllı tartı) otomatik"
       - "Ham nokta soluk, 7 günlük trend belirgin; ilk 14 gün yorum yok (U8)"
+      - "Sağlık rızası yoksa tartı girişi önce rızayı ister; rızasız kayıt telefonda tutulmaz (ADR-030 #25)"
     tests:
       - "WeighInTests"
     refs: ["arastirma/ham/H1-olcum.md"]
@@ -1411,6 +1414,7 @@ tasks:
       - "RIR seçici (0, 1, 2, 3+)"
       - "Dinlenme sayacı"
       - "Çevrimdışı çalışır"
+      - "Program görünümü (K-217): deload setsFactor, restUntil, loadHeldSince, nextLoadKg/nextReps, uncleanExerciseIds — sunucudan, istemci hesaplamaz"
     tests:
       - "WorkoutSessionTests"
     refs: ["arastirma/ham/B-antrenman.md#6.5", "prototip/"]
@@ -1447,6 +1451,7 @@ tasks:
       - "Barkod okuma cihazda; ham kod sunucuya gider, UPC-E istemcide açılmaz (K-208)"
       - "Dünkü öğünü tek dokunuşla tekrar"
       - "Kayıt düzeltmesi birinci sınıf (düzeltme güven kaynağı)"
+      - "Sağlık rızası yoksa öğün girişi önce rızayı ister; rızasız kayıt telefonda tutulmaz (ADR-030 #25)"
     tests:
       - "QuickLogTests"
     refs: ["arastirma/ham/I2-etkilesim-modeli.md", "plan/kararlar/ADR-008-besin-verisi.md"]
@@ -1482,6 +1487,7 @@ tasks:
     acceptance:
       - "Kalan kalori ve protein aralıkla"
       - "Sayı değil yön: öneriler M5'te (K-507)"
+      - "Hedefler (K-216): carbsG/fatG yoksa 'sığmıyor' (sayı uydurma yok); targetKcal yoksa yalnız adım ve antrenman günleri; aralık (U5)"
     tests:
       - "RemainingCardTests"
     refs: ["arastirma/04-faz3-urun.md#Ö-17"]
@@ -1685,6 +1691,7 @@ tasks:
       - "Sağlık rızasıyla gösterilir; yalnız seviye gönderilir (POST /v1/body-looks), hiçbir yerde sayı yok (U4); atlanabilir"
       - "Görseller ADR-028'e göre (çizim, telifi devredilmiş) ya da Levent'in soru 28 cevabına göre"
       - "Cinsiyete göre ayrı set (J1 B1: kadında +10 puan)"
+      - "Referans çizimler gelmeden başlamaz (ADR-030 #28: o zamana kadar adım gizli, motor bel/RFM ile)"
     tests:
       - "onboarding-flow.test.tsx (görünüş seçimi)"
     refs: ["arastirma/ham/H8-yag-tahmini.md", "plan/kararlar/ADR-028-m3-basi-cevaplari.md"]
@@ -1723,6 +1730,7 @@ tasks:
       - "Geri çekme API'si onay ister; mobil (K-309) uyarı + dışa aktarma bağlantısı gösterir"
       - "Silme olayı logda sağlık verisi taşımaz (V3)"
       - "Rıza yokken profil PUT'u gelmeyen food.avoid'i sessizce boşaltmaz; geri çekme onu zaten uyarıyla siler (ADR-030 #27)"
+      - "Profil PUT'u rıza yokken gelmeyen `avoid` listesini sessizce ezmez; geri çekmedeki silmeyle tutarlı (ADR-030 #27), test"
     tests:
       - "ConsentWithdrawalDeletionTests"
       - "AccountDataTests"
@@ -1742,6 +1750,7 @@ tasks:
     acceptance:
       - "Sorular backend'den; her birinin nedeni görünür"
       - "Cevaplar senkronlanınca karar tetiklenir"
+      - "Yalnız sunucunun sorduğu sorular, sırasıyla; CYCLE_STOPPED cevabı cihazda saklanmaz/loglanmaz (V4); APPETITE seçenekleri checkIn.choice.appetite.* (K-227)"
     tests:
       - "CheckinTests"
     refs: ["arastirma/04-faz3-urun.md#8.5"]
