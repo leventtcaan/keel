@@ -16,4 +16,9 @@ final class CheckInWeek {
     static LocalDate weekOf(LocalDate today, DayOfWeek checkInDay) {
         return today.with(TemporalAdjusters.previousOrSame(checkInDay));
     }
+
+    /** Whether this week already has its call: the last call's week and this one overlap (one call a week, K-212). */
+    static boolean taken(LocalDate weekOf, java.util.Optional<LocalDate> lastCallWeek) {
+        return lastCallWeek.filter(last -> weekOf.isBefore(last.plusWeeks(1))).isPresent();
+    }
 }

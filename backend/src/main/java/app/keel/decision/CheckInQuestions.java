@@ -8,8 +8,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -30,9 +32,14 @@ final class CheckInQuestions {
     static List<Answers.Kind> needed(Function<CheckIn, Decision> engine, CheckIn dataSays, int budget) {
         List<Answers.Kind> asked = new ArrayList<>();
         Deque<CheckIn> toTry = new ArrayDeque<>(List.of(dataSays));
-        // Each answer fills a field the engine can wait for; there are finitely many, so this ends.
+        Set<CheckIn> tried = new HashSet<>();
+        // Each answer fills a field the engine can wait for, and each CheckIn is tried once: finitely many, so this ends
+        // even if the engine waited again for a field already answered (K-213 review).
         while (!toTry.isEmpty() && asked.size() < budget) {
             CheckIn checkIn = toTry.poll();
+            if (!tried.add(checkIn)) {
+                continue;
+            }
             WeeklySpine.missingAnswer(engine.apply(checkIn)).ifPresent(missing -> {
                 Answers.Kind kind = Answers.Kind.valueOf(missing.name());
                 if (!asked.contains(kind)) {
@@ -42,6 +49,11 @@ final class CheckInQuestions {
             });
         }
         return List.copyOf(asked.subList(0, Math.min(budget, asked.size())));
+    }
+
+    /** Whether an answer of this kind is taken: a question the engine can wait for, asked this week or not. */
+    static boolean answerable(Answers.Kind kind) {
+        return Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
     }
 
     static boolean anomaly(CheckIn dataSays, Phase phase) {

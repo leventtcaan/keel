@@ -78,7 +78,7 @@ class DecisionService {
     CheckInView currentCheckIn(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         Week week = week(account);
-        if (calls.byWeek(account, week.weekOf()).isPresent()) {
+        if (taken(account, week.weekOf())) {
             return new CheckInView(week.weekOf(), List.of(), true);
         }
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored.
@@ -88,7 +88,7 @@ class DecisionService {
 
     /**
      * This week's call from these answers. A clientId sent again gets the call it made (the engine does not run twice);
-     * another week's answers, or a second call this week, are CONFLICT; an answer to a question not asked is refused.
+     * another week's answers, or a second call this week, are CONFLICT; an answer the engine never waits for is refused.
      */
     @Transactional
     CallStore.Call checkIn(AccountId account, UUID clientId, LocalDate weekOf, List<Answers.Answer> answered) {
@@ -98,27 +98,21 @@ class DecisionService {
             return replay.get();
         }
         Week week = week(account);
-        if (!weekOf.equals(week.weekOf()) || calls.byWeek(account, weekOf).isPresent()) {
+        if (!weekOf.equals(week.weekOf()) || taken(account, weekOf)) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
-        // A new check-in day, or a time zone moved, can name a week that overlaps the last call's: one call a week.
-        calls.newestFirst(account, Optional.empty(), 1).stream().findFirst()
-                .filter(last -> weekOf.isBefore(last.weekOf().plusWeeks(1)))
-                .ifPresent(last -> {
-                    throw new ApiException(ErrorCode.CONFLICT);
-                });
         Answers.Read answers;
         try {
             answers = Answers.read(answered);
         } catch (IllegalArgumentException unreadable) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, unreadable);
         }
-        CallStore.Plan plan = calls.plan(account).orElseGet(() -> calls.start(account, firstPlan(week)));
-        // Only the questions this week asked (U9): what the data already says is not overwritten by an answer.
-        List<Answers.Kind> asked = asked(week, plan);
-        if (!answered.stream().map(Answers.Answer::kind).allMatch(asked::contains)) {
+        // What the data says (look, waist) is not overwritten by an answer. A question the engine can wait for is taken
+        // even if this moment's data would not ask it: data can change between asking and answering (K-213 review).
+        if (!answered.stream().map(Answers.Answer::kind).allMatch(CheckInQuestions::answerable)) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
+        CallStore.Plan plan = calls.plan(account).orElseGet(() -> calls.start(account, firstPlan(week)));
         CheckIn checkIn = new CheckIn(week.dataSays().look(), answers.checkIn().training(), answers.checkIn().recovery(), week.dataSays().waist(),
                 week.dataSays().adherence(), week.dataSays().appetite());
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported());
@@ -145,13 +139,20 @@ class DecisionService {
         Sex sex = Sex.valueOf(profile.sex().name());
         Parameters p = parameters.forSex(sex);
         List<WeighIn> weights = measurements.dailyWeights(account, today.minusDays(p.wholeNumber(ParameterKey.EVALUATION_WINDOW_DAYS) - 1L), today);
-        // The photo check of the last seven days (the phone compared it; V1), the waist over the decision window.
-        CheckIn.Look look = measurements.photoLook(account, today.minusDays(DAYS_PER_WEEK - 1L), today).orElse(CheckIn.Look.UNKNOWN);
+        // The photo check (the phone compared it; V1) from seven days before the week's check-in day: the window starts
+        // with the week, so it does not slide off a check at midnight. The waist over the decision window.
+        LocalDate weekOf = CheckInWeek.weekOf(today, profile.checkInDay());
+        CheckIn.Look look = measurements.photoLook(account, weekOf.minusDays(DAYS_PER_WEEK - 1L), today).orElse(CheckIn.Look.UNKNOWN);
         CheckIn.Waist waist = WaistTrend.direction(measurements.waists(account,
                 today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
-        return new Week(profile, today, CheckInWeek.weekOf(today, profile.checkInDay()), sex, p, new Profile(age, profile.heightCm()), weights,
+        return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights,
                 dataSays);
+    }
+
+    /** One call a week (K-212): the same rule for offering the check-in and for taking its answers. */
+    private boolean taken(AccountId account, LocalDate weekOf) {
+        return CheckInWeek.taken(weekOf, calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(CallStore.Call::weekOf));
     }
 
     private List<Answers.Kind> asked(Week week, CallStore.Plan plan) {

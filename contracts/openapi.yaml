@@ -695,10 +695,12 @@ paths:
       summary: This week's check-in and the few questions it needs (question budget, U9)
       description: |
         Only what the data does not already say is asked: weight, steps, sleep hours and training arrive on their own;
-        how it looks comes from the week's photo check and the waist from its measurements. A question is asked only when
+        how it looks comes from the week's photo check (from seven days before the check-in day) and the waist from its
+        measurements. A question is asked only when
         the engine would wait for its answer this week (found by running it on the data and on each possible answer), at
         most question_budget_per_week (question_budget_per_week_anomaly when the photo or waist disagrees with the phase).
-        No questions once the week is answered. Choice texts: checkIn.choice.<kind>.<choice lowercased>.
+        No questions, and `answered`, once the week has its call — or once the last call's week overlaps it (the check-in
+        day moved). Choice texts: checkIn.choice.<kind>.<choice lowercased>.
       responses:
         "200":
           description: The check-in
@@ -717,8 +719,10 @@ paths:
         The answers name their week (`weekOf`). Sent again with the same clientId, the stored call comes back (200) and
         the engine does not run twice; answers for a week that is not the current one, a second call this week, a user
         without a profile yet, or a goal of DECIDE_FOR_ME (its direction needs the phase gate) are 409 CONFLICT. Health
-        data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/decisions route. Read now: LOOK,
-        TRAINING, RECOVERY, APPETITE (the engine's choices) and CYCLE_STOPPED (YES/NO, used, never kept).
+        data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/decisions route. Taken: TRAINING and
+        RECOVERY, the questions the engine can wait for — also when the data has changed since they were asked, so a
+        question shown is never refused. Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from
+        the data, the rest are read with their own questions later (CYCLE_STOPPED waits for the energy band, K-212).
       requestBody:
         required: true
         content:

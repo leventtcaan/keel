@@ -70,13 +70,70 @@ class CheckInQuestionsApiTests {
     void anAnswerToAQuestionNotAskedIsRefusedAndTheAskedOnesMakeTheCall() throws Exception {
         AccountId account = losingButLookingWorse();
 
-        // LOOK comes from the photo check: an answer would overwrite what the data says.
+        // LOOK comes from the photo check: an answer would overwrite what the data says. The engine never waits for it.
         assertThat(answer(account, List.of(Map.of("kind", "LOOK", "choice", "BETTER")))).hasStatus(400);
         MvcTestResult call = answer(account, List.of(Map.of("kind", "TRAINING", "choice", "DECLINING")));
 
         assertThat(call).hasStatusOk();
         assertThat((Map<String, Object>) map(call).get("action")).containsEntry("type", "FIX_TRAINING");
         assertThat(map(send(account, "GET", "/v1/check-ins/current", null))).containsEntry("answered", true).containsEntry("questions", List.of());
+    }
+
+    @Test
+    void bothQuestionsAskedAreTakenAndMakeTheCall() throws Exception {
+        AccountId account = losingButLookingWorse();
+
+        MvcTestResult call = answer(account, List.of(Map.of("kind", "TRAINING", "choice", "STABLE"), Map.of("kind", "RECOVERY", "choice", "POOR")));
+
+        assertThat(call).hasStatusOk();
+        assertThat((Map<String, Object>) map(call).get("action")).containsEntry("type", "FIX_RECOVERY");
+    }
+
+    @Test
+    void anAnswerTheEngineCanWaitForIsTakenEvenWhenTheDataChangedSinceTheQuestions() throws Exception {
+        // Asked nothing (maintenance is watched), answered anyway — as a question shown before a new weigh-in or midnight
+        // would be (K-213 review): taken, not 400.
+        AccountId account = ready();
+        assertThat(map(send(account, "GET", "/v1/check-ins/current", null))).containsEntry("questions", List.of());
+
+        assertThat(answer(account, List.of(Map.of("kind", "TRAINING", "choice", "STABLE")))).hasStatusOk();
+    }
+
+    @Test
+    void aRefusedAnswerLeavesNoPlanBehind() {
+        AccountId account = ready();
+
+        assertThat(answer(account, List.of(Map.of("kind", "LOOK", "choice", "SAME")))).hasStatus(400);
+
+        assertThat(jdbc.sql("select count(*) from decision.plan where account_id = :a").param("a", account.value()).query(Integer.class).single())
+                .isZero();
+    }
+
+    @Test
+    void theWeeksPhotoWindowStartsSevenDaysBeforeItsCheckInDay() throws Exception {
+        LocalDate weekOf = thisWeek();
+        AccountId outside = losingWithAPhotoOn(weekOf.minusDays(7));
+        AccountId inside = losingWithAPhotoOn(weekOf.minusDays(6));
+
+        assertThat(map(send(outside, "GET", "/v1/check-ins/current", null))).containsEntry("questions", List.of());
+        assertThat((List<Map<String, Object>>) map(send(inside, "GET", "/v1/check-ins/current", null)).get("questions"))
+                .extracting(question -> question.get("kind")).containsExactly("TRAINING", "RECOVERY");
+    }
+
+    @Test
+    void aWeekOverlappingTheLastCallIsAnsweredForTheQuestionsAsForTheAnswers() throws Exception {
+        // Checked in this week on Monday, then the check-in day moved to today: no second call this week (K-212), and the
+        // check-in says so instead of asking questions whose answers would all get CONFLICT (K-213 review).
+        AccountId account = ready();
+        assertThat(answer(account, List.of())).hasStatusOk();
+        DayOfWeek today = LocalDate.now(ZoneOffset.UTC).getDayOfWeek();
+        send(account, "PUT", "/v1/profile", profile(today));
+        LocalDate movedWeek = CheckInWeek.weekOf(LocalDate.now(ZoneOffset.UTC), today);
+
+        assertThat(map(send(account, "GET", "/v1/check-ins/current", null))).containsEntry("weekOf", movedWeek.toString())
+                .containsEntry("answered", true).containsEntry("questions", List.of());
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "weekOf", movedWeek.toString(),
+                "answers", List.of()))).hasStatus(409);
     }
 
     @Test
@@ -106,6 +163,10 @@ class CheckInQuestionsApiTests {
      * photo check this week that looks worse.
      */
     private AccountId losingButLookingWorse() {
+        return losingWithAPhotoOn(LocalDate.now(ZoneOffset.UTC));
+    }
+
+    private AccountId losingWithAPhotoOn(LocalDate takenOn) {
         AccountId account = ready(false);
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         jdbc.sql("""
@@ -117,7 +178,8 @@ class CheckInQuestionsApiTests {
                 weighIn(account, at, 86.0 - 0.1 * (28 - day));
             }
         }
-        send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "look", "WORSE"));
+        assertThat(send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", takenOn.toString(), "look", "WORSE"))
+                .getResponse().getStatus()).isLessThan(300);
         return account;
     }
 
@@ -128,13 +190,16 @@ class CheckInQuestionsApiTests {
     private AccountId ready(boolean oneWeighIn) {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
-        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
-                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
-                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        send(account, "PUT", "/v1/profile", profile(DayOfWeek.MONDAY));
         if (oneWeighIn) {
             weighIn(account, Instant.now().minusSeconds(3600), 82.4);
         }
         return account;
+    }
+
+    private static Map<String, Object> profile(DayOfWeek checkInDay) {
+        return Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996, "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", checkInDay.name(), "timeZone", "UTC"));
     }
 
     private void weighIn(AccountId account, Instant at, double kg) {

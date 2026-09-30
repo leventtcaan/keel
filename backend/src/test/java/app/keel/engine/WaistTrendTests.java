@@ -31,6 +31,20 @@ class WaistTrendTests {
     }
 
     @Test
+    void theErrorLineHoldsOnTheWayUpAsOnTheWayDown() {
+        assertThat(WaistTrend.direction(List.of(reading(0, "90.0"), reading(14, "91.0")), P)).as("exactly the error").isEqualTo(CheckIn.Waist.FLAT);
+        assertThat(WaistTrend.direction(List.of(reading(0, "90.0"), reading(14, "91.1")), P)).isEqualTo(CheckIn.Waist.UP);
+        assertThat(WaistTrend.direction(List.of(reading(0, "90.0"), reading(14, "88.9")), P)).isEqualTo(CheckIn.Waist.DOWN);
+    }
+
+    @Test
+    void aDayMeasuredTwiceCountsAsTheMeanOfItsReadingsInAnyOrder() {
+        // Two readings on the first day (90.0 and 92.0 → 91.0), 91.5 on the last: within the error, whichever came first.
+        assertThat(WaistTrend.direction(List.of(reading(0, "90.0"), reading(0, "92.0"), reading(14, "91.5")), P)).isEqualTo(CheckIn.Waist.FLAT);
+        assertThat(WaistTrend.direction(List.of(reading(0, "92.0"), reading(0, "90.0"), reading(14, "91.5")), P)).isEqualTo(CheckIn.Waist.FLAT);
+    }
+
+    @Test
     void theFirstAndLastDayCountWhateverTheOrderGiven() {
         assertThat(WaistTrend.direction(List.of(reading(14, "88.0"), reading(7, "95.0"), reading(0, "90.0")), P)).isEqualTo(CheckIn.Waist.DOWN);
     }

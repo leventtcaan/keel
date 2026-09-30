@@ -55,8 +55,16 @@ public class Measurements {
 
     /** The latest photo check's conclusion in the days given, as the phone compared it (V1: the photo stays on the phone). */
     public Optional<CheckIn.Look> photoLook(AccountId account, LocalDate from, LocalDate to) {
-        return store.photoChecks(account).stream().filter(check -> !check.takenOn().isBefore(from) && !check.takenOn().isAfter(to))
-                .max(java.util.Comparator.comparing(MeasurementStore.PhotoCheck::takenOn))
-                .map(check -> CheckIn.Look.valueOf(check.look().name()));
+        return latestLook(store.photoChecks(account), from, to);
+    }
+
+    /** The latest day's verdict; two checks that disagree on that day say nothing (the day has no time to order them). */
+    static Optional<CheckIn.Look> latestLook(List<MeasurementStore.PhotoCheck> checks, LocalDate from, LocalDate to) {
+        List<MeasurementStore.PhotoCheck> inDays = checks.stream().filter(check -> !check.takenOn().isBefore(from) && !check.takenOn().isAfter(to))
+                .toList();
+        return inDays.stream().map(MeasurementStore.PhotoCheck::takenOn).max(LocalDate::compareTo)
+                .map(latest -> inDays.stream().filter(check -> check.takenOn().equals(latest)).map(MeasurementStore.PhotoCheck::look).distinct().toList())
+                .filter(looks -> looks.size() == 1)
+                .map(looks -> CheckIn.Look.valueOf(looks.getFirst().name()));
     }
 }
