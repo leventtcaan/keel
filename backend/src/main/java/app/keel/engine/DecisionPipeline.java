@@ -87,7 +87,7 @@ public final class DecisionPipeline {
             return missing(snapshot, PROFILE_NEEDED, RESTING_FORMULA);
         }
         // ADR-027 #11b: without a fat estimate the low-energy floor cannot be computed, and low energy is the higher risk
-        // for women (J1 C6): no step down for her until there is one. Steps up and the safety net still run.
+        // for women (J1 C6): no step down for her until there is one. Calorie steps up and the safety net still run.
         if (snapshot.sex() == Sex.FEMALE && snapshot.fatProxyPct().isEmpty()) {
             return missing(snapshot, FAT_ESTIMATE_NEEDED, WOMEN_ENERGY_RISK);
         }

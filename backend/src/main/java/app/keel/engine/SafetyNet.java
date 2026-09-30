@@ -28,8 +28,11 @@ import java.util.Optional;
  * </ul>
  *
  * <p>When several deficit-narrowing rules fire, the strongest evidence leads (energy availability, then the 8-week
- * loss, then the weekly cap) and the others follow as supporting reasons. Not here: a fat estimate under 18 % / 8 %
- * stopping the deficit (J1 L2.1) — a health threshold the product owner has not decided (L-4).
+ * loss, then the weekly cap) and the others follow as supporting reasons.
+ *
+ * <p><b>The fat floor</b> (cut only, L-4, ADR-027 #1): a fat estimate under deficit_stop_fat_proxy_pct (male 8, female
+ * 18; J1 L2.1) stops the deficit — alone it turns the phase to building; with a narrowing rule it joins that rule's
+ * calorie increase as a supporting reason.
  */
 public final class SafetyNet {
 
@@ -60,12 +63,6 @@ public final class SafetyNet {
         if (snapshot.menstrualLossReported()) {
             return Optional.of(safetyDecision(snapshot, new Action.HardStop(), List.of(new Reason(MENSTRUAL_LOSS_REPORTED, REDS_TIERS))));
         }
-        // L-4 (ADR-027 #1, J1 L2.1): a cut under the fat floor stops its deficit. Maintenance is not a direction (03 §2.1)
-        // and this sits far under the surplus line: the phase turns to building, before any weekly reading.
-        if (snapshot.phase() == Phase.CUT && snapshot.fatProxyPct()
-                .filter(pct -> pct.compareTo(BigDecimal.valueOf(parameters.number(ParameterKey.DEFICIT_STOP_FAT_PROXY_PCT))) < 0).isPresent()) {
-            return Optional.of(safetyDecision(snapshot, new Action.ChangePhase(Phase.BULK), List.of(new Reason(LOW_FAT_FLOOR, ENERGY_GATE))));
-        }
         List<Reason> narrow = new ArrayList<>();
         if (energyAvailability(snapshot, parameters).filter(band -> band == EnergyAvailability.LOW).isPresent()) {
             narrow.add(new Reason(LOW_ENERGY_AVAILABILITY, ENERGY_GATE));
@@ -80,6 +77,17 @@ public final class SafetyNet {
                 narrow.add(new Reason(LOSS_RATE_CAP, GURAY_LOSS_CAP));
                 narrow.add(new Reason(LOSS_RATE_CAP_BODYWEIGHT, LITERATURE_LOSS_CAP));
             }
+        }
+        // L-4 (ADR-027 #1, J1 L2.1): a cut under the fat floor stops its deficit. When a narrowing rule fires too, its
+        // calorie increase comes first — a phase change moves no calorie until it is applied (K-223 review) — and the
+        // floor supports it; alone, the phase turns to building (maintenance is not a direction, 03 §2.1).
+        boolean underTheFatFloor = snapshot.phase() == Phase.CUT && snapshot.fatProxyPct()
+                .filter(pct -> pct.compareTo(BigDecimal.valueOf(parameters.number(ParameterKey.DEFICIT_STOP_FAT_PROXY_PCT))) < 0).isPresent();
+        if (underTheFatFloor && narrow.isEmpty()) {
+            return Optional.of(safetyDecision(snapshot, new Action.ChangePhase(Phase.BULK), List.of(new Reason(LOW_FAT_FLOOR, ENERGY_GATE))));
+        }
+        if (underTheFatFloor) {
+            narrow.add(new Reason(LOW_FAT_FLOOR, ENERGY_GATE));
         }
         return narrow.isEmpty() ? Optional.empty()
                 : Optional.of(safetyDecision(snapshot, new Action.IncreaseCalories(increaseKcal(snapshot, parameters)), narrow));

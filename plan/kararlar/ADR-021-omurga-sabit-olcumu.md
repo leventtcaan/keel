@@ -11,9 +11,12 @@ geç" ve G3 K-10'un "2 hafta artmadıysa +250" kurallarıyla çelişiyordu.
 
 ## Karar
 > **ADR-027 #0 güncellemesi (K-223):** penceresi paydan dolayı "sabit" okunan yavaş kaybedende de K-64 işler. Haftalık
-> adım payı = `flat_margin_kg` ÷ haftalık adım sayısı (erkek 0,29, kadın 0,19 kg; parametrenin "≈0,3 kg/hafta hareket"
-> notuyla aynı türetme). Cut'ta: bu haftanın adımı payı bulduysa ve önceki hafta bir yükseliş değilse → hedef yönde
-> (devam); yalnız önceki adım bulduysa → ilk sabit hafta, bekle; ikisi de küçükse plato → madde 2'deki kalori kuralı.
+> adım payı = `flat_margin_kg` ÷ haftalık adım sayısı (erkek 0,29, kadın 0,19 kg) — orantılı bir bölüştürme, kendi başına
+> bir istatistik testi değil (tek adım, bütün pencere kadar gürültülü): bu yüzden tek adım plato kararı *vermez*, yalnız
+> geciktirir. Cut'ta: bu haftanın adımı payı bulduysa, önceki hafta bir yükseliş değilse ve pencere bütünüyle hedef
+> yöndeyse → hedef yönde (devam); yalnız önceki adım bulduysa → ilk sabit hafta, bekle; ikisi de küçükse plato → madde
+> 2'deki kalori kuralı. İnceleme ölçümü (Monte Carlo, haftada 4 tartı): gerçek platoda ilk uygun haftada kalori kararı
+> erkekte %95 → %80, kadında %92 → %67; gecikme bir-iki hafta — K-64'ün bilinçli bedeli.
 > Sonuç: haftada 0,5 kg veren erkeğin tek sabit haftası artık kesinti değil (GS-24), 0,29 kg/hafta düzenli kayıp
 > "devam" (GS-23).
 

@@ -408,6 +408,16 @@ class SafetyNetTests {
     }
 
     @Test
+    void underTheFatFloorWithLowEnergyTheIncreaseComesFirst() {
+        // K-223 review: the leaner, higher-risk woman must not lose the low-energy increase to a phase change that moves
+        // no calorie (ChangePhase waits for K-222). 55 kg at 17.9 %, 1400 kcal, 300 exercise: EA ≈ 24 < 30.
+        assertThat(SafetyNet.check(fueled(Sex.FEMALE, "55.0", "17.9", 1400, 300), FEMALE)).hasValueSatisfying(d -> {
+            assertThat(d.action()).isInstanceOf(Action.IncreaseCalories.class);
+            assertThat(d.reasons()).extracting(Reason::rule).startsWith(new RuleId("low_energy_availability")).contains(new RuleId("low_fat_floor"));
+        });
+    }
+
+    @Test
     void theLowEnergyFloorIsTheSmallestTargetAboveTheLine() {
         // 81 kg at 25 % → 60.75 kg fat-free; 25 × 60.75 = 1518.75 → the next whole kcal above it is 1519, plus 400
         // kcal of exercise = 1919.

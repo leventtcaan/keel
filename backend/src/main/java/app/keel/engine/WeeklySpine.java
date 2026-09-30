@@ -189,13 +189,16 @@ public final class WeeklySpine {
         }
 
         /**
-         * This week's step reached the per-week share of the margin (margin ÷ weekly steps: 0.29 kg for a man's 3 weeks —
-         * flat_margin_kg's own "≈ 0.3 kg/week is movement"), and not by undoing a rise the week before: a steady slow
-         * loser is moving, not stalled (ADR-027 #0).
+         * This week's step reached the per-week share of the margin (the margin split over the window's weekly steps:
+         * 0.29 kg for a man's 3 weeks, 0.19 for a woman's 4 — a proportional split, not a test of its own: one step is as
+         * noisy as the whole window, so a step alone only delays a plateau call, never makes one), not by undoing a rise
+         * the week before, and the window as a whole went toward the goal: a steady slow loser is moving, not stalled
+         * (ADR-027 #0).
          */
         boolean movingThisWeek() {
             int n = weeks.size();
-            return n >= 3 && step(weeks.get(n - 2), latest()).compareTo(perWeek()) >= 0 && step(weeks.get(n - 3), weeks.get(n - 2)).signum() >= 0;
+            return n >= 3 && step(weeks.get(n - 2), latest()).compareTo(perWeek()) >= 0 && step(weeks.get(n - 3), weeks.get(n - 2)).signum() >= 0
+                    && step(first(), latest()).signum() > 0;
         }
 
         /** The step before this week's reached the per-week share: this week is the first flat one (G2 K-64). */

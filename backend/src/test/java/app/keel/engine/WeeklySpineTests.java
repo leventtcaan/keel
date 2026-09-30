@@ -232,6 +232,17 @@ class WeeklySpineTests {
         assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.59", "80.30", "80.00")).action())
                 .isEqualTo(new Action.Continue());
         assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.56", "80.28", "80.00")).isInstanceOf(SpineResult.CaloriesNeeded.class);
+        // The margin itself, where the new rule does not reach (a rise then a drop): 0.58 over the window is flat → a
+        // wait; 0.59 is toward the goal (K-223 review: the boundary had lost its test).
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.70", "80.00")).action()).isEqualTo(new Action.NoDecisionYet());
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.59", "80.70", "80.00")).action()).isEqualTo(new Action.Continue());
+    }
+
+    @Test
+    void aWomanUpOverHerWindowIsNotMovingWhateverTheLastStep() {
+        // Her 4 weeks: 65.0 → 65.5 → 65.5 → 65.3 is 0.3 kg up; the last step down does not make her "moving" (review).
+        assertThat(spine(Sex.FEMALE, Phase.CUT, ON_PLAN.withWaist(Waist.FLAT), "65.0", "65.5", "65.5", "65.3"))
+                .as("flat within the margin, no step moved: the plateau call").isInstanceOf(SpineResult.CaloriesNeeded.class);
     }
 
     @Test
