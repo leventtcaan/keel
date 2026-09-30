@@ -2,6 +2,7 @@ package app.keel.engine;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -9,9 +10,12 @@ import java.util.Optional;
  *
  * <ul>
  *   <li><b>From waist and height</b>: Relative Fat Mass = rfm_intercept − rfm_height_to_waist × height / waist +
- *       rfm_female_offset for a woman (Woolcott &amp; Bergman 2018 against DXA; H8 A1) — a rough band, for the gates only.</li>
+ *       rfm_female_offset for a woman (Woolcott &amp; Bergman 2018 against DXA; H8 A1). A point estimate: the phase gate,
+ *       the fat floor and the size of the low-energy floor read it. Under essential fat's low end (rfm_plausible_min, J1
+ *       B2) the waist was typed wrong and there is no estimate.</li>
  *   <li><b>From the reference look</b> the user picks: look_level_first + look_level_step × (level − 1) (Ö-4).</li>
- *   <li>Both: the smaller — the safety rules that read it are most protective there (H8 C).</li>
+ *   <li>Both: the lower and the higher are kept; each rule reads the one cautious for it (ADR-027 #11, H8 C) — the
+ *       bulk gates the higher, the cut gate and the safety net the lower.</li>
  * </ul>
  */
 public final class FatEstimate {
@@ -19,10 +23,23 @@ public final class FatEstimate {
     private FatEstimate() {
     }
 
-    public static BigDecimal rfm(int heightCm, BigDecimal waistCm, Parameters parameters) {
+    /** Both estimates: the lower and the higher (the same one when there is one). */
+    public record Estimate(BigDecimal lowerPct, BigDecimal higherPct) {
+
+        public Estimate {
+            Objects.requireNonNull(lowerPct, "lowerPct");
+            Objects.requireNonNull(higherPct, "higherPct");
+            if (higherPct.compareTo(lowerPct) < 0) {
+                throw new IllegalArgumentException("The higher fat estimate is under the lower");
+            }
+        }
+    }
+
+    public static Optional<BigDecimal> rfm(int heightCm, BigDecimal waistCm, Parameters parameters) {
         BigDecimal heightToWaist = BigDecimal.valueOf(heightCm).divide(waistCm, MathContext.DECIMAL64);
-        return number(ParameterKey.RFM_INTERCEPT_PCT, parameters).subtract(number(ParameterKey.RFM_HEIGHT_TO_WAIST_PCT, parameters).multiply(heightToWaist))
+        BigDecimal rfm = number(ParameterKey.RFM_INTERCEPT_PCT, parameters).subtract(number(ParameterKey.RFM_HEIGHT_TO_WAIST_PCT, parameters).multiply(heightToWaist))
                 .add(parameters.sex() == Sex.FEMALE ? number(ParameterKey.RFM_FEMALE_OFFSET_PCT, parameters) : BigDecimal.ZERO);
+        return rfm.compareTo(number(ParameterKey.RFM_PLAUSIBLE_MIN_PCT, parameters)) < 0 ? Optional.empty() : Optional.of(rfm);
     }
 
     /** {@code level} from 1 to {@link #levels}. */
@@ -34,11 +51,11 @@ public final class FatEstimate {
                 .multiply(BigDecimal.valueOf(level - 1L)));
     }
 
-    public static Optional<BigDecimal> of(Optional<BigDecimal> fromLook, Optional<BigDecimal> fromWaist) {
+    public static Optional<Estimate> of(Optional<BigDecimal> fromLook, Optional<BigDecimal> fromWaist) {
         if (fromLook.isPresent() && fromWaist.isPresent()) {
-            return Optional.of(fromLook.get().min(fromWaist.get()));
+            return Optional.of(new Estimate(fromLook.get().min(fromWaist.get()), fromLook.get().max(fromWaist.get())));
         }
-        return fromLook.or(() -> fromWaist);
+        return fromLook.or(() -> fromWaist).map(one -> new Estimate(one, one));
     }
 
     public static int levels(Parameters parameters) {

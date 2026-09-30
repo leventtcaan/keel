@@ -49,6 +49,7 @@ class DecisionAccountData implements AccountDataExport {
             // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
             Map<String, Object> snapshot = json.convertValue(call.snapshot(), Map.class);
             snapshot.remove("fatProxyPct");
+            snapshot.remove("fatProxyHighPct");
             entry.put("snapshot", snapshot);
             return entry;
         }).toList());

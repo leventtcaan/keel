@@ -408,6 +408,16 @@ class SafetyNetTests {
     }
 
     @Test
+    void theFatFloorAndTheEnergyLineReadTheLowerOfTwoEstimates() {
+        // K-224 review: a lower fat estimate is the cautious one here — more fat-free mass, so less energy available and a
+        // higher floor; under the fat floor sooner.
+        assertThat(SafetyNet.check(fueled(Sex.MALE, "75.0", "7.9", 3000, 0).withFatProxy(new BigDecimal("7.9"), new BigDecimal("20")), MALE))
+                .hasValueSatisfying(d -> assertThat(d.reasons().getFirst().rule()).isEqualTo(new RuleId("low_fat_floor")));
+        assertThat(SafetyNet.leaFloorKcal(fueled(Sex.MALE, "81.0", "25", 2500, 400).withFatProxy(new BigDecimal("25"), new BigDecimal("35")), MALE))
+                .contains(1919);
+    }
+
+    @Test
     void underTheFatFloorWithLowEnergyTheIncreaseComesFirst() {
         // K-223 review: the leaner, higher-risk woman must not lose the low-energy increase to a phase change that moves
         // no calorie (ChangePhase waits for K-222). 55 kg at 17.9 %, 1400 kcal, 300 exercise: EA ≈ 24 < 30.

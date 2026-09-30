@@ -45,6 +45,21 @@ class StoredSnapshotTests {
     }
 
     @Test
+    void twoFatEstimatesComeBackBoth() throws Exception {
+        Snapshot two = full(false).withFatProxy(new BigDecimal("15"), new BigDecimal("32.2"));
+
+        assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(two)), StoredSnapshot.class).toSnapshot()).isEqualTo(two);
+    }
+
+    @Test
+    void aCallKeptWithOneFatEstimateReadsItForBoth() throws Exception {
+        // Calls kept before the higher estimate (K-224 review) were made on one number for every rule: made again, the same.
+        String json = JSON.writeValueAsString(StoredSnapshot.of(full(false))).replace(",\"fatProxyHighPct\":18.5", "");
+
+        assertThat(JSON.readValue(json, StoredSnapshot.class).toSnapshot()).isEqualTo(full(false));
+    }
+
+    @Test
     void anEmptyOptionalStaysEmpty() throws Exception {
         // One weigh-in and nothing optional: every Optional comes back empty, not as a default.
         Snapshot bare = new Snapshot(TODAY, Sex.FEMALE, Phase.BULK, TODAY.minusDays(14),

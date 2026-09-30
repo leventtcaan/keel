@@ -38,7 +38,7 @@ parameters:
     unit: percent_internal_only
     tag: literatur
     source: "arastirma/ham/H8-yag-tahmini.md#A1"
-    note: "YALNIZ İÇ DEĞİŞKEN (U4). Relative Fat Mass = 64 − 20 × boy/bel + 12 × cinsiyet (Woolcott & Bergman 2018, DXA'ya karşı, NHANES n=12.581 + 3.456). Kaba bant: IQR erkek 4,2, kadın 4,9 puan (H8 A3); ADR-027 #11 'yalnız kapı için'."
+    note: "YALNIZ İÇ DEĞİŞKEN (U4). Relative Fat Mass = 64 − 20 × boy/bel + 12 × cinsiyet (Woolcott & Bergman 2018, DXA'ya karşı, NHANES n=12.581 + 3.456). Belirsizlik: IQR erkek 4,2, kadın 4,9 puan (H8 A3). Nokta tahmin olarak okunur: faz kapısı, L-4 ve LEA tabanının büyüklüğü (H8 A3; LEA'da kullanımı DURUM soru 22)."
   - key: rfm_height_to_waist_pct
     value: 20
     unit: percent_internal_only
@@ -51,6 +51,12 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H8-yag-tahmini.md#A1"
     note: "RFM'de cinsiyet terimi: 12 × cinsiyet (erkek 0, kadın 1) — yalnız kadında eklenir."
+  - key: rfm_plausible_min_pct
+    by_sex: {male: 2, female: 10}
+    unit: percent_internal_only
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#B2"
+    note: "YALNIZ İÇ DEĞİŞKEN (U4). Esansiyel yağın alt ucu (ACE: erkek %2-5, kadın %10-13). RFM bunun altındaysa bel yanlış girilmiştir (90 yerine 9, inç cm diye): tahmin yok sayılır, kırpılmaz — sıfırın altı bir yağ 'yağsız kütle > kilo' der ve LEA tabanını uydurur (K-224 review)."
   - key: look_level_first_pct
     by_sex: {male: 10, female: 20}
     unit: percent_internal_only

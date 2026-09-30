@@ -17,10 +17,12 @@ import java.util.Optional;
 /**
  * A Snapshot as it is kept with its call (K-212, ADR-003 §6): every input the engine read, so the call can be made again
  * and must come out the same — except the cycle answer, which ADR-020 L-1 does not keep (GDPR Art. 9); it comes back as
- * not reported. Plain records, so the stored JSON is the engine's input and nothing else.
+ * not reported. Plain records, so the stored JSON is the engine's input and nothing else. {@code fatProxyHighPct} null:
+ * a call kept before there were two estimates (K-224 review), made on its one.
  */
 record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, List<Weight> weights, BigDecimal fatProxyPct,
-        Energy energy, Answered checkIn, Body profile, boolean observingMaintenance, LocalDate phaseStart, Training training) {
+        Energy energy, Answered checkIn, Body profile, boolean observingMaintenance, LocalDate phaseStart, Training training,
+        BigDecimal fatProxyHighPct) {
 
     record Weight(LocalDate date, BigDecimal kg) {
     }
@@ -51,7 +53,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 snapshot.profile().map(profile -> new Body(profile.ageYears(), profile.heightCm())).orElse(null),
                 snapshot.observingMaintenance(), snapshot.phaseStart(),
                 snapshot.training().map(training -> new Training(training.stalledSessions(), training.weeksLoadHeld(), training.monthsStalled(),
-                        training.restedLastWeek(), training.loadsBelowLastWeek(), training.weeksPlanMissed())).orElse(null));
+                        training.restedLastWeek(), training.loadsBelowLastWeek(), training.weeksPlanMissed())).orElse(null),
+                snapshot.fatProxyHighPct().orElse(null));
     }
 
     /** The Snapshot again; the cycle answer as not reported (never kept). */
@@ -65,6 +68,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                         checkIn.appetite()),
                 Optional.ofNullable(profile).map(body -> new Profile(body.ageYears(), body.heightCm())), observingMaintenance, phaseStart,
                 Optional.ofNullable(training).map(t -> new TrainingStatus(t.stalledSessions(), t.weeksLoadHeld(), t.monthsStalled(),
-                        t.restedLastWeek(), t.loadsBelowLastWeek(), t.weeksPlanMissed())));
+                        t.restedLastWeek(), t.loadsBelowLastWeek(), t.weeksPlanMissed())),
+                // A call kept before there were two estimates read its one for every rule.
+                Optional.ofNullable(fatProxyHighPct).or(() -> Optional.ofNullable(fatProxyPct)));
     }
 }

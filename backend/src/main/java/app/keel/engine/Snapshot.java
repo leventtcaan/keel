@@ -13,8 +13,9 @@ import java.util.Objects;
  * @param planStart the day the current calorie target took effect — any change, a safety increase included; a plan is
  *     judged only after its decision window
  * @param weights every weigh-in up to today, imported history included (ADR-018)
- * @param fatProxyPct the internal body-fat estimate from the visual/waist proxy, if there is one. U4: an input only;
- *     no Decision carries it, and it is never shown as a number
+ * @param fatProxyPct the internal body-fat estimate from the visual/waist proxy, if there is one — the lower when the
+ *     look and the waist disagree, which the cut gate and the safety net read (K-224). U4: an input only; no Decision
+ *     carries it, and it is never shown as a number
  * @param energy the plan's calories and exercise burn, when both are known (energy availability, K-104)
  * @param menstrualLossReported the answer to the one-tap question shown when energy availability is low (J1 C6,
  *     ADR-020 L-1). Health data (GDPR Art. 9) that ADR-020 says is not kept: whoever stores a Snapshot (the decision
@@ -24,11 +25,13 @@ import java.util.Objects;
  * @param observingMaintenance the current target is the starting estimate, held while maintenance is observed (K-114)
  * @param phaseStart the day the current phase (cut or bulk) began; a plan lies inside its phase (mini cut, G7 K-102)
  * @param training where the most-stalled lift stands, from the set log, if known (deload ladder, K-110)
+ * @param fatProxyHighPct the higher of the two fat estimates, which the bulk gates read (K-224 review); the same as
+ *     fatProxyPct when there is one estimate, present exactly when it is. U4 as fatProxyPct
  */
 public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
         Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn,
         Optional<Profile> profile, boolean observingMaintenance,
-        LocalDate phaseStart, Optional<TrainingStatus> training) {
+        LocalDate phaseStart, Optional<TrainingStatus> training, Optional<BigDecimal> fatProxyHighPct) {
 
     public Snapshot {
         Objects.requireNonNull(today, "today");
@@ -42,6 +45,13 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(phaseStart, "phaseStart");
         Objects.requireNonNull(training, "training");
+        Objects.requireNonNull(fatProxyHighPct, "fatProxyHighPct");
+        if (fatProxyPct.isPresent() != fatProxyHighPct.isPresent()) {
+            throw new IllegalArgumentException("A fat estimate has a lower and a higher value, or neither");
+        }
+        if (fatProxyPct.isPresent() && fatProxyHighPct.get().compareTo(fatProxyPct.get()) < 0) {
+            throw new IllegalArgumentException("The higher fat estimate is under the lower");
+        }
         if (phaseStart.isAfter(planStart)) {
             throw new IllegalArgumentException("phaseStart " + phaseStart + " is after planStart " + planStart + ": a plan lies inside its phase");
         }
@@ -75,39 +85,52 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE, Optional.empty(), false, planStart, Optional.empty());
     }
 
+    /** Every input but the higher fat estimate: one estimate, so the higher is the same one. */
+    public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights, Optional<BigDecimal> fatProxyPct,
+            Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn, Optional<Profile> profile, boolean observingMaintenance,
+            LocalDate phaseStart, Optional<TrainingStatus> training) {
+        this(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart,
+                training, fatProxyPct);
+    }
+
     /** The fat estimate (U4: an engine input only, never shown), from the measurement module's estimate (K-224). */
     public Snapshot withFatProxyPct(BigDecimal pct) {
-        return new Snapshot(today, sex, phase, planStart, weights, Optional.of(pct), energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training);
+        return withFatProxy(pct, pct);
+    }
+
+    /** Two estimates that disagree (K-224 review): each rule reads the one that is cautious for it. */
+    public Snapshot withFatProxy(BigDecimal lowerPct, BigDecimal higherPct) {
+        return new Snapshot(today, sex, phase, planStart, weights, Optional.of(lowerPct), energy, menstrualLossReported, checkIn, profile,
+                observingMaintenance, phaseStart, training, Optional.of(higherPct));
     }
 
     public Snapshot withEnergy(EnergyBudget budget) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct);
     }
 
     public Snapshot withMenstrualLossReported(boolean reported) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance, phaseStart, training);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct);
     }
 
     public Snapshot withCheckIn(CheckIn answers) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance, phaseStart, training);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance, phaseStart, training, fatProxyHighPct);
     }
 
     public Snapshot withProfile(Profile facts) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance, phaseStart, training);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance, phaseStart, training, fatProxyHighPct);
     }
 
     public Snapshot withObservingMaintenance(boolean observing) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing, phaseStart, training);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing, phaseStart, training, fatProxyHighPct);
     }
 
     public Snapshot withPhaseStart(LocalDate day) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, day, training);
+                observingMaintenance, day, training, fatProxyHighPct);
     }
 
     public Snapshot withTraining(TrainingStatus status) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, Optional.of(status));
+                observingMaintenance, phaseStart, Optional.of(status), fatProxyHighPct);
     }
 }

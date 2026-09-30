@@ -90,7 +90,7 @@ class DecisionService {
 
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
-            List<WeighIn> weights, CheckIn dataSays, Optional<BigDecimal> fatProxyPct) {
+            List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate) {
     }
 
     /** This week's check-in and its questions (K-213): only what the engine would wait for, within the budget. */
@@ -182,14 +182,15 @@ class DecisionService {
 
     /**
      * The engine's internal fat estimate (K-224, ADR-027 #11; U4: it leaves the engine as nothing but its decisions): the
-     * latest look picked and the latest waist day in the evaluation window, the smaller of the two (H8 C).
+     * latest look picked and the latest waist day in the evaluation window, both kept as the lower and the higher (H8 C); a
+     * waist no body could have gives none (H8 A4).
      */
-    private Optional<BigDecimal> fatEstimate(AccountId account, ProfileFacts profile, LocalDate today, Parameters p) {
+    private Optional<FatEstimate.Estimate> fatEstimate(AccountId account, ProfileFacts profile, LocalDate today, Parameters p) {
         LocalDate from = today.minusDays(p.wholeNumber(ParameterKey.EVALUATION_WINDOW_DAYS) - 1L);
         Optional<BigDecimal> fromLook = measurements.latestLookLevel(account, from, today)
                 .filter(level -> level <= FatEstimate.levels(p)).map(level -> FatEstimate.fromLook(level, p));
         List<WaistTrend.Reading> waists = measurements.waists(account, from, today);
-        Optional<BigDecimal> fromWaist = waists.stream().map(WaistTrend.Reading::day).max(LocalDate::compareTo).map(last -> {
+        Optional<BigDecimal> fromWaist = waists.stream().map(WaistTrend.Reading::day).max(LocalDate::compareTo).flatMap(last -> {
             List<BigDecimal> onLastDay = waists.stream().filter(reading -> reading.day().equals(last)).map(WaistTrend.Reading::cm).toList();
             BigDecimal cm = onLastDay.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(onLastDay.size()), MathContext.DECIMAL64);
             return FatEstimate.rfm(profile.heightCm(), cm, p);
@@ -230,9 +231,10 @@ class DecisionService {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         // The plan's target is what the calorie ladder moves (K-216); what training burns is not known yet.
-        return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()), week.fatProxyPct(),
-                Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown), menstrualLossReported, checkIn,
-                Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training);
+        return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()),
+                week.fatEstimate().map(FatEstimate.Estimate::lowerPct), Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown),
+                menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training,
+                week.fatEstimate().map(FatEstimate.Estimate::higherPct));
     }
 
     /**
