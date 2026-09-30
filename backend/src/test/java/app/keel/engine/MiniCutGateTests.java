@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.engine.CheckIn.Appetite;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -118,5 +119,23 @@ class MiniCutGateTests {
                 .withProfile(new Profile(30, 165)).withEnergy(EnergyBudget.exerciseUnknown(2300)).withPhaseStart(TODAY.minusDays(21));
 
         assertThat(MiniCutGate.target(her, 2300, parameters(Sex.FEMALE))).isEqualTo(2300);
+    }
+
+    @Test
+    void onlyACutEndsAsAMiniCut() {
+        // A plan building again carries no mini cut; a day left behind by mistake does not turn it.
+        Snapshot building = new Snapshot(TODAY, Sex.MALE, Phase.BULK, TODAY.minusDays(21), series(EngineFixtures.daily(TODAY.minusDays(21), TODAY, "82.0")))
+                .withMiniCutUntil(TODAY);
+
+        assertThat(MiniCutGate.over(building, MALE)).isEmpty();
+    }
+
+    @Test
+    void withoutTheProfileOrAWeightTheFloorsCannotBeReadAndTheMiniCutStaysAtMaintenance() {
+        Snapshot noProfile = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21), series(EngineFixtures.daily(TODAY.minusDays(21), TODAY, "82.0")));
+        Snapshot noWeight = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(21), series(List.of())).withProfile(new Profile(30, 180));
+
+        assertThat(MiniCutGate.target(noProfile, 2600, MALE)).isEqualTo(2600);
+        assertThat(MiniCutGate.target(noWeight, 2600, MALE)).isEqualTo(2600);
     }
 }
