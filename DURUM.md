@@ -58,7 +58,7 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-223 motor: ADR-027 #0, #1, #11b, #19 | ✅ birleşti; inceleme: L-4 LEA artışını eziyordu (güvenlik), kadın penceresi, pay sınır testi | #183 | `M2/K-223.md` |
 | K-226 FDC Foundation + SR Legacy (V15) | ✅ birleşti; inceleme: negatif karb Foundation'ı düşürüyordu, fl oz, eski sürüm satırları | #184 | `M2/K-226.md` |
 | K-224 iç yağ tahmini (RFM + referans görünüş, V16) | ✅ birleşti; inceleme: bel 9 → RFM −336 → +6.720 kcal (olanaksız değer artık yok sayılıyor), "küçüğü" bulk kapılarını susturuyordu (artık kurala göre alt/üst), belge "yalnız kapı" diyordu | #185 | `M2/K-224.md` |
-| K-222 faz/hard stop uygulaması, DECIDE_FOR_ME, döngü sorusu (V4), genel etiket | auto-merge açık (CI); inceleme: hard stop geri alınıyordu (artık 409), pencerede tartı yokken cut hedefi kalıyordu, "saklanmaz" metni; soru 23, 24. Mini cut → K-227 (M3) | #186 | `M2/K-222.md` |
+| K-222 faz/hard stop uygulaması, DECIDE_FOR_ME, döngü sorusu (V4), genel etiket | ✅ birleşti; inceleme: hard stop geri alınıyordu (artık 409), pencerede tartı yokken cut hedefi kalıyordu, "saklanmaz" metni; soru 23, 24. Mini cut → K-227 (M3) | #186 | `M2/K-222.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -70,9 +70,9 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
 0. **(güncel, 30 Eyl öğleden sonra)** M2 uygulaması bitti. Cevap işleri: K-225 #182, K-226 #184, K-223 #183, K-224 #185
-   birleşti; **K-222 #186 auto-merge açık** (CI yeşil olunca birleşir; kırmızıysa düzelt). README düzeltmesi #186 içinde.
+   birleşti; **K-222 #186 birleşti** (README düzeltmesi içinde). K-227 issue'su açıldı (M3, backend).
    `plan/oturum-promptlari/M3.md` yazıldı. Açık sorular: 21, 22, 23, 24 (+ Apple kimlikleri) → M3 prompt'u ilk iş olarak
-   sorar. Kalan: #186 birleşince `python3 tools/sync_backlog.py --apply` (K-227 issue'su), worktree `../keel-k222` sil.
+   sorar. Açık worktree yok.
    Session açık: Levent dönünce **M1 (akşam) + M2 aktarımı** (skill `aktarim`, `docs/aktarim/M1/`, `M2/`).
 1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
    KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
