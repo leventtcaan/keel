@@ -551,6 +551,162 @@
     "lb": "{value} lb",
     "cm": "{value} cm",
     "in": "{value} in",
-    "feetInches": "{feet} ft {inches} in"
+    "feetInches": "{feet} ft {inches} in",
+    "cmUnit": "cm",
+    "ftUnit": "ft",
+    "inUnit": "in"
+  },
+  "onboarding": {
+    "progress": "{step} of {total}",
+    "count": "{step}/{total}",
+    "back": "Back",
+    "backMark": "‹",
+    "continue": "Continue",
+    "saveFailed": "Couldn't save your answers. Check your connection and try again.",
+    "checking": {
+      "title": "One moment",
+      "body": "Checking your account.",
+      "offline": "No connection. Your account needs one, just this once.",
+      "retry": "Try again",
+      "serverError": "Our server couldn't answer just now. Try again in a moment."
+    },
+    "goal": {
+      "title": "What do you want?",
+      "lose_fat": {
+        "title": "Lose fat",
+        "body": "Bring your weight down and keep your strength."
+      },
+      "build_muscle": {
+        "title": "Build muscle",
+        "body": "Add size and strength at a steady pace."
+      },
+      "decide_for_me": {
+        "title": "Not sure, decide for me",
+        "body": "We read your numbers and pick the phase."
+      },
+      "note": "You can change this later. When your data says it's time to switch phase, we'll tell you and show why."
+    },
+    "program": {
+      "title": "Do you already follow a program?",
+      "bring_my_own": {
+        "title": "Yes, I'll bring mine",
+        "body": "Enter your split once. Food and weekly calls adjust around it."
+      },
+      "build_one_for_me": {
+        "title": "No, build one for me",
+        "body": "A plan sized to the days you really have."
+      },
+      "note": "Either way, calls use the same rules. You can switch at any time."
+    },
+    "schedule": {
+      "title": "When can you train?",
+      "days": "Days that could work",
+      "dayName": {
+        "MONDAY": "Monday",
+        "TUESDAY": "Tuesday",
+        "WEDNESDAY": "Wednesday",
+        "THURSDAY": "Thursday",
+        "FRIDAY": "Friday",
+        "SATURDAY": "Saturday",
+        "SUNDAY": "Sunday"
+      },
+      "dayShort": {
+        "MONDAY": "M",
+        "TUESDAY": "T",
+        "WEDNESDAY": "W",
+        "THURSDAY": "T",
+        "FRIDAY": "F",
+        "SATURDAY": "S",
+        "SUNDAY": "S"
+      },
+      "restDay": "{max} days at most, so your week keeps a rest day.",
+      "lastMonth": "Sessions last month",
+      "sessions": {
+        "NONE_OR_ONE": "0–1",
+        "TWO_TO_THREE": "2–3",
+        "FOUR": "4",
+        "FIVE_OR_MORE": "5+"
+      },
+      "time": "Usual training time",
+      "timeHint": "Optional. Reminders follow your own session time.",
+      "timeInvalid": "Type a time like 18:30.",
+      "planTitle": "What we'll plan",
+      "plan": "{days} days fit your week. We'll plan for {days}.",
+      "planOne": "One day fits your week. We'll plan for one.",
+      "lighter": "That's more than last month. Starting near what you already do keeps the plan going, and you can change your days at any time.",
+      "addLater": "Add a day once {days} feels easy."
+    },
+    "about": {
+      "title": "About you",
+      "units": "Units",
+      "metric": "Metric",
+      "imperial": "Imperial",
+      "heightCm": "Height in centimetres",
+      "heightFeet": "Height, feet",
+      "heightInches": "Height, inches",
+      "height": "Height",
+      "heightInvalid": "Check your height.",
+      "birthYear": "Year of birth",
+      "birthYearHint": "Only the year is kept.",
+      "notAYear": "Type the four-digit year.",
+      "tooYoung": "keel is for adults, 18 and over.",
+      "sex": "Sex",
+      "sexHint": "Energy needs and safety checks differ between the sexes.",
+      "male": "Male",
+      "female": "Female"
+    },
+    "activity": {
+      "title": "How active is your day?",
+      "note": "Your whole day, training included. It only sets your starting calories; your weight trend corrects them from there.",
+      "INACTIVE": {
+        "title": "Mostly sitting",
+        "body": "Desk or study days, getting around by car or bus, little walking beyond daily chores."
+      },
+      "LOW_ACTIVE": {
+        "title": "Lightly active",
+        "body": "About an hour of walking spread over the day, or a job with some time on your feet."
+      },
+      "ACTIVE": {
+        "title": "Active",
+        "body": "On your feet most of the day, like shop, teaching or nursing shifts, or long daily walks on top of training."
+      },
+      "VERY_ACTIVE": {
+        "title": "Very active",
+        "body": "Physical work such as building, farm or warehouse jobs, or hard training on top of an active day."
+      }
+    },
+    "photos": {
+      "title": "Your photos stay on your phone",
+      "local": {
+        "title": "Processed on this device.",
+        "body": "Progress photos are never uploaded. Not to us, not to anyone."
+      },
+      "cadence": {
+        "title": "One photo every {weeks} weeks.",
+        "body": "Weekly changes are too small to see. {weeks} weeks is the shortest gap that shows something."
+      },
+      "purpose": {
+        "title": "Used for one thing.",
+        "body": "Comparing you with you. Delete them here and they're gone."
+      },
+      "note": "We'll ask for the camera in week {weeks}, when the first photo is due."
+    },
+    "expectations": {
+      "title": "What to expect",
+      "weigh": {
+        "title": "Weigh in most mornings.",
+        "body": "For the first {days} days you'll see your trend, but we read nothing into it: one morning is mostly water."
+      },
+      "monday": {
+        "title": "Your call comes each {day}.",
+        "body": "Each week closes with one call and the reasons for it. Early on, the call may be to wait for more data."
+      },
+      "change": {
+        "title": "Visible change takes 4 to 8 weeks.",
+        "body": "Until then, your consistency and your lifts show that it's working."
+      },
+      "action": "Sounds good"
+    },
+    "signOut": "Sign out"
   }
 }

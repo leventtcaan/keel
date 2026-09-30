@@ -17,3 +17,4 @@ renkli blokta durur ("EAT A LITTLE MORE"), altında kalori **aralığı** (1800�
 6. K-304 yerel depo + kuyruk — SQLite, clientId idempotency, NoAnswer
 7. K-305 Apple ile giriş — nonce, Keychain, korumalı rota, servislerin tek kökü
 8. K-310 birimler — tek yuvarlama noktası, gidiş-dönüş, tercih (profil + önbellek)
+9. K-306 onboarding — profil durumu (üç durum), korumalı rota ile yönlendirme, saf taslak, 18+ ve 6 gün kuralı

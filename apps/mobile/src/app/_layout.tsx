@@ -3,7 +3,7 @@ import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
-import { ServicesProvider, useSignedIn } from '@/services/ServicesProvider';
+import { ServicesProvider, useOnboarding, useSignedIn } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 
@@ -21,18 +21,26 @@ export const unstable_settings = { anchor: '(tabs)' };
 // Root stack: the tabs, and the coach as a sheet over whichever tab opened it (K-307). The tabs themselves are in
 // (tabs)/_layout.tsx; the app opens on the first one, Today. Signed out, the only screen is sign-in (K-305): when the
 // session ends (sign-out, a refused refresh) the guarded screens leave the history and sign-in takes their place.
+// Signed in without a profile, the only screens are onboarding's (K-306); not known yet, the one that asks the server.
 function AppStack() {
   const { color } = useTheme();
   const signedIn = useSignedIn();
+  const onboarding = useOnboarding();
   // Mounted only once the services are ready (ServicesProvider renders nothing before).
   useEffect(() => {
     void SplashScreen.hideAsync();
   }, []);
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
-      <Stack.Protected guard={signedIn}>
+      <Stack.Protected guard={signedIn && onboarding === 'done'}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && onboarding === 'needed'}>
+        <Stack.Screen name="onboarding" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && onboarding === 'unknown'}>
+        <Stack.Screen name="checking" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" />

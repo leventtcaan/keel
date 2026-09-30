@@ -32,6 +32,7 @@ let mockServicesReady = true;
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => (mockServicesReady ? children : null),
   useSignedIn: () => true,
+  useOnboarding: () => 'done',
 }));
 
 const fonts = useFonts as jest.Mock;

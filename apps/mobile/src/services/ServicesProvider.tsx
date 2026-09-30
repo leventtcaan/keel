@@ -10,6 +10,7 @@ import Storage from 'expo-sqlite/kv-store';
 import { type ReactNode, createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 
 import { apiBaseUrl } from '@/api/config';
+import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
@@ -37,7 +38,8 @@ async function build(): Promise<PhoneServices> {
     kv: Storage,
     locale: Intl.DateTimeFormat().resolvedOptions().locale,
   });
-  if (await services.session.isSignedIn()) services.units.refresh().catch(() => undefined); // offline: the kept one
+  // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
+  if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);
   startAutoSync(services.queue.drainInBackground, deviceTriggers);
   return {
     ...services,
@@ -88,6 +90,12 @@ export function useAppServices(): PhoneServices {
 export function useUnits(): UnitSystem {
   const { units } = useAppServices();
   return useSyncExternalStore(units.subscribe, units.current);
+}
+
+/** Whether the signed-in account has finished onboarding (K-306); the root layout routes on it. */
+export function useOnboarding(): OnboardingState {
+  const { profile } = useAppServices();
+  return useSyncExternalStore(profile.subscribe, profile.current);
 }
 
 export function useSignedIn(): boolean {

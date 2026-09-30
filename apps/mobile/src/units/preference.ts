@@ -29,6 +29,14 @@ export async function createUnitsPreference({ kv, api, locale }: Options) {
   // guard as the session's, K-311).
   let generation = 0;
 
+  function beginRead(): (system: string) => Promise<void> {
+    const startedIn = generation;
+    // Only a unit system this app knows is kept: the answer crossed a network.
+    return async (system) => {
+      if (startedIn === generation && isSystem(system)) await keep(system);
+    };
+  }
+
   async function keep(system: UnitSystem): Promise<void> {
     await kv.setItemAsync(KEY, system);
     if (system === current) return;
@@ -47,11 +55,16 @@ export async function createUnitsPreference({ kv, api, locale }: Options) {
 
     /** Reads the profile; nothing changes when there is none yet. Network failures reach the caller. */
     refresh: async (): Promise<void> => {
-      const startedIn = generation;
+      const adopt = beginRead();
       const { data } = await api.GET('/v1/profile');
-      // Only a unit system this app knows is kept: the answer crossed a network.
-      if (data !== undefined && startedIn === generation && isSystem(data.units)) await keep(data.units);
+      if (data !== undefined) await adopt(data.units);
     },
+
+    /**
+     * For a profile read made elsewhere (K-306 reads it once for both answers): call before the request; the function
+     * returned keeps the read's units, unless a choice or a forget came in between.
+     */
+    beginRead,
 
     /**
      * 'profile': stored on the server. 'phone': there is no profile yet; kept here until onboarding sends it.
@@ -69,6 +82,15 @@ export async function createUnitsPreference({ kv, api, locale }: Options) {
       if (put.data === undefined) throw new Error(`profile update failed with HTTP ${put.response.status}`);
       await keep(put.data.units);
       return 'profile';
+    },
+
+    /**
+     * Onboarding (K-306): there is no profile yet, so the choice needs no network — it stays on the phone and goes out
+     * with the profile. Never used once a profile exists: then set() stores it on the server.
+     */
+    keepOnPhone: async (system: UnitSystem): Promise<void> => {
+      generation += 1;
+      await keep(system);
     },
 
     /** Sign-out: the preference belongs to the account. */

@@ -1,0 +1,68 @@
+{
+  "parameters": [
+    {
+      "key": "max_training_days",
+      "value": 6,
+      "unit": "days_per_week",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-70",
+      "note": "The seventh day stays rest (ADR-027 #15). The program contract allows the same: ProgramRequest.trainingDays maxItems."
+    },
+    {
+      "key": "adult_min_year_gap",
+      "value": 19,
+      "unit": "years",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#Profile",
+      "note": "Adults only, certainly 18 on every day of the year with only the birth year kept (ADR-027 #13, K-225)."
+    },
+    {
+      "key": "birth_year_min",
+      "value": 1900,
+      "unit": "year",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#Profile",
+      "note": "Profile.birthYear minimum."
+    },
+    {
+      "key": "height_min_cm",
+      "value": 100,
+      "unit": "cm",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#Profile",
+      "note": "Profile.heightCm minimum; in imperial the shortest accepted is 3 ft 4 in (K-310)."
+    },
+    {
+      "key": "height_max_cm",
+      "value": 250,
+      "unit": "cm",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#Profile",
+      "note": "Profile.heightCm maximum."
+    },
+    {
+      "key": "check_in_day",
+      "value": "MONDAY",
+      "unit": "weekday",
+      "tag": "literatur",
+      "source": "arastirma/ham/I1-onboarding-aliskanlik.md#D1",
+      "note": "Self-monitoring drops Thursday to Sunday; Monday closes the week and plans the next at once. The first call comes on the first Monday (ADR-018)."
+    },
+    {
+      "key": "photo_interval_weeks",
+      "value": 4,
+      "unit": "weeks",
+      "tag": "literatur",
+      "source": "arastirma/ham/H1-olcum.md#2.5",
+      "note": "The same as measurement.yaml › photo_interval_weeks (the engine's); parameters.test.ts keeps them equal."
+    },
+    {
+      "key": "no_interpretation_days",
+      "value": 14,
+      "unit": "days",
+      "tag": "literatur",
+      "source": "arastirma/ham/H1-olcum.md#3.4",
+      "note": "The same as windows.yaml › no_interpretation_days (U8); parameters.test.ts keeps them equal."
+    }
+  ]
+}

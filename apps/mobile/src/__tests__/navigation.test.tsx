@@ -24,6 +24,7 @@ let mockSignedIn = true;
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,
   useSignedIn: () => mockSignedIn,
+  useOnboarding: () => 'done', // this file is about a finished account; onboarding-flow.test.tsx is about the rest
   useAppServices: () => ({ signInWithApple: jest.fn(), appleAvailable: async () => false }),
 }));
 

@@ -3,67 +3,9 @@
  * value so it can show units offline and at start; before there is a profile, the device region decides.
  */
 import { createApiClient } from '@/api/client';
-import type { components } from '@/api/schema';
 import { createUnitsPreference } from '@/units/preference';
 
-const BASE = 'https://api.example.test';
-type Profile = components['schemas']['Profile'];
-
-const PROFILE: Profile = {
-  goal: 'LOSE_FAT',
-  sex: 'MALE',
-  heightCm: 178,
-  birthYear: 1994,
-  programChoice: 'BUILD_ONE_FOR_ME',
-  schedule: { trainingDays: ['MONDAY', 'THURSDAY'], checkInDay: 'MONDAY', timeZone: 'America/New_York' },
-  units: 'METRIC',
-};
-
-function memoryKv() {
-  const items = new Map<string, string>();
-  return {
-    items,
-    getItemAsync: async (key: string) => items.get(key) ?? null,
-    setItemAsync: async (key: string, value: string) => void items.set(key, value),
-    removeItemAsync: async (key: string) => void items.delete(key),
-  };
-}
-
-/**
- * A profile server: GET answers the stored profile (or 404), PUT stores it; `failPut` answers PUT with that status,
- * `failGet` the GET. `holdNextGet` keeps the next GET's answer (as it was when asked) until `release()` — a slow network.
- */
-function profileServer(initial: Profile | null, failPut?: number, failGet?: number) {
-  let stored = initial;
-  const puts: Profile[] = [];
-  let offline = false;
-  let holdNext = false;
-  let release = () => {};
-  const fetch = jest.fn(async (request: Request) => {
-    if (offline) throw new TypeError('Network request failed');
-    const json = (status: number, body: unknown) =>
-      new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-    if (request.method === 'GET') {
-      if (failGet !== undefined) return json(failGet, { code: 'UNAVAILABLE', message: 'x' });
-      const answer = stored === null ? json(404, { code: 'NOT_FOUND', message: 'x' }) : json(200, stored);
-      if (!holdNext) return answer;
-      holdNext = false;
-      return new Promise<Response>((resolve) => (release = () => resolve(answer)));
-    }
-    if (failPut !== undefined) return json(failPut, { code: 'VALIDATION_FAILED', message: 'x' });
-    const body = (await request.json()) as Profile;
-    puts.push(body);
-    stored = body;
-    return json(200, body);
-  });
-  return {
-    fetch,
-    puts,
-    goOffline: () => (offline = true),
-    holdNextGet: () => (holdNext = true),
-    release: () => release(),
-  };
-}
+import { BASE, PROFILE, type Profile, memoryKv, profileServer } from './support/profileServer';
 
 async function setup({
   profile = PROFILE as Profile | null,
@@ -198,4 +140,29 @@ test('forgetting tells whoever listens when the system changes back', async () =
   units.subscribe(() => heard++);
   await units.forget();
   expect(heard).toBe(1);
+});
+
+describe('before there is a profile (onboarding, K-306)', () => {
+  test('keepOnPhone: the choice is kept and shown at once, without the network', async () => {
+    const { units, server, kv } = await setup({ profile: null });
+    server.goOffline();
+    const heard: string[] = [];
+    units.subscribe(() => heard.push(units.current()));
+    await units.keepOnPhone('METRIC'); // the region (en-US) guessed imperial
+    expect(units.current()).toBe('METRIC');
+    expect(kv.items.get('units')).toBe('METRIC');
+    expect(heard).toEqual(['METRIC']);
+    expect(server.fetch).not.toHaveBeenCalled();
+  });
+
+  test('a read that started before it does not undo it', async () => {
+    const { units, server } = await setup();
+    server.holdNextGet();
+    const reading = units.refresh();
+    await new Promise((r) => setTimeout(r, 0));
+    await units.keepOnPhone('IMPERIAL');
+    server.release();
+    await reading;
+    expect(units.current()).toBe('IMPERIAL');
+  });
 });

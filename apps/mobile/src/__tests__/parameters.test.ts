@@ -74,3 +74,57 @@ describe('the precision the phone rounds to is the one the contract keeps', () =
     expect(value(key)).toBe(decimals(schema, field));
   });
 });
+
+describe('the onboarding limits are the contract\'s (K-306)', () => {
+  const contract = fs.readFileSync(path.join(ROOT, 'contracts/openapi.yaml'), 'utf8').split('\n');
+  const onboarding = (JSON.parse(fs.readFileSync(path.join(DIR, 'onboarding.json'), 'utf8')) as { parameters: Parameter[] })
+    .parameters;
+  const value = (key: string) => onboarding.find((p) => p.key === key)?.value;
+
+  /** The lines of `schema.field` in the contract, up to the next field at the same indent. */
+  function field(schema: string, name: string): string {
+    const start = contract.findIndex((line) => line.trim() === `${schema}:`);
+    const at = contract.findIndex((line, i) => i > start && line.trim() === `${name}:`);
+    if (start < 0 || at < 0) throw new Error(`no ${schema}.${name}`);
+    const indent = contract[at].search(/\S/);
+    const end = contract.findIndex((line, i) => i > at && line.trim() !== '' && line.search(/\S/) <= indent);
+    return contract.slice(at, end).join('\n');
+  }
+  const number = (block: string, key: string) => Number(new RegExp(`${key}: (\\d+)`).exec(block)?.[1]);
+
+  test('max_training_days = ProgramRequest.trainingDays maxItems', () => {
+    expect(value('max_training_days')).toBe(number(field('ProgramRequest', 'trainingDays'), 'maxItems'));
+  });
+
+  test('height_min_cm and height_max_cm = Profile.heightCm minimum and maximum', () => {
+    const height = field('Profile', 'heightCm');
+    expect([value('height_min_cm'), value('height_max_cm')]).toEqual([number(height, 'minimum'), number(height, 'maximum')]);
+  });
+
+  test('birth_year_min = Profile.birthYear minimum, and adult_min_year_gap is the gap its description gives', () => {
+    const year = field('Profile', 'birthYear');
+    expect(value('birth_year_min')).toBe(number(year, 'minimum'));
+    expect(value('adult_min_year_gap')).toBe(Number(/must be at least (\d+)/.exec(year)?.[1]));
+  });
+});
+
+describe('the onboarding promises the engine\'s own numbers (K-306)', () => {
+  const onboarding = (JSON.parse(fs.readFileSync(path.join(DIR, 'onboarding.json'), 'utf8')) as { parameters: Parameter[] })
+    .parameters;
+
+  /** `value:` of `key` in an engine YAML file (a plain number). */
+  function yamlValue(file: string, key: string): number {
+    const lines = fs.readFileSync(path.join(DIR, file), 'utf8').split('\n');
+    const at = lines.findIndex((line) => line.trim() === `- key: ${key}`);
+    const value = /value: (\d+)/.exec(lines[at + 1] ?? '');
+    if (at < 0 || value === null) throw new Error(`no ${key} in ${file}`);
+    return Number(value[1]);
+  }
+
+  test.each([
+    ['photo_interval_weeks', 'measurement.yaml'],
+    ['no_interpretation_days', 'windows.yaml'],
+  ])('%s = %s', (key, file) => {
+    expect(onboarding.find((p) => p.key === key)?.value).toBe(yamlValue(file, key));
+  });
+});
