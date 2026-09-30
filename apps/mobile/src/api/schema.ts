@@ -700,8 +700,8 @@ export interface paths {
         /**
          * The targets the user follows today
          * @description NOT_FOUND before the first estimate (no plan, or no weigh-in when it began). The macros split the calorie target
-         *     at today's trend weight (the last weigh-in when the trend has too few days); CONFLICT when there is no weigh-in in
-         *     the evaluation window to split it by. The food budget (/v1/days/{day}/budget) reads the same targets.
+         *     at today's trend weight, or the last weight known however old. The food budget (/v1/days/{day}/budget) reads the
+         *     same targets.
          */
         get: operations["getTargets"];
         put?: never;

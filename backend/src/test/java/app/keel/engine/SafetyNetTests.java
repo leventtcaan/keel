@@ -372,6 +372,16 @@ class SafetyNetTests {
     }
 
     @Test
+    void withoutTheExerciseBurnAWomansPlanIsReadOnHerLine() {
+        // Female line 30: 60 kg at 30 % → 42 kg fat-free; 1260 is on the line (low), 1261 above it — not known.
+        Snapshot onTheLine = fueled(Sex.FEMALE, "60.0", "30", 1260, 0).withEnergy(EnergyBudget.exerciseUnknown(1260));
+        Snapshot above = fueled(Sex.FEMALE, "60.0", "30", 1261, 0).withEnergy(EnergyBudget.exerciseUnknown(1261));
+
+        assertThat(SafetyNet.energyAvailability(onTheLine, FEMALE)).contains(EnergyAvailability.LOW);
+        assertThat(SafetyNet.energyAvailability(above, FEMALE)).isEmpty();
+    }
+
+    @Test
     void withoutTheExerciseBurnTheLowEnergyFloorIsItsLeastValue() {
         // The floor is threshold × fat-free mass + exercise; with exercise unknown, the part known for certain: 81 kg at
         // 25 % → 1518.75 → 1519 (with 400 kcal of exercise it would be 1919). A step under it is low whatever the exercise.

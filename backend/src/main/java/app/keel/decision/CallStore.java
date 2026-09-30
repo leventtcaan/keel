@@ -133,7 +133,7 @@ class CallStore {
         return jdbc.sql("""
                         select *, snapshot::text as snapshot_json, decision::text as decision_json, plan_before::text as plan_before_json,
                         plan_after::text as plan_after_json
-                        from decision.weekly_call where """ + where + " order by decided_at desc, id desc limit :limit")
+                        from decision.weekly_call""" + " where " + where + " order by decided_at desc, id desc limit :limit")
                 .params(params).param("limit", limit)
                 .query((row, n) -> new Call(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
                         row.getObject("week_of", LocalDate.class), row.getObject("made_on", LocalDate.class),

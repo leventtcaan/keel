@@ -257,9 +257,10 @@ class DecisionService {
             return Optional.empty();
         }
         Week week = week(account);
-        // Today's trend weight, or the last weigh-in of the window when the trend has too few days.
+        // Today's trend weight, or the last weight known however old: a user who stopped weighing in can still read the
+        // targets and take a call back (K-216 review). A target exists only after a weigh-in, so there is always one.
         BigDecimal bodyweight = WeightTrend.at(new WeightSeries(week.weights()), week.today(), week.parameters().wholeNumber(ParameterKey.TREND_DISPLAY_DAYS))
-                .or(() -> week.weights().isEmpty() ? Optional.empty() : Optional.of(week.weights().getLast().kg()))
+                .or(() -> measurements.latestWeightKg(account))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), week.profile().trainingDays(), week.parameters())
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));

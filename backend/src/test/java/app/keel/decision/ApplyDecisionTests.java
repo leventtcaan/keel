@@ -52,6 +52,31 @@ class ApplyDecisionTests {
     }
 
     @Test
+    void theDayATargetBeganNeverMovesBack() {
+        // A time zone moved west can make today earlier than the plan's start: the ladder's wait (K-107) must not shrink,
+        // and phase_start ≤ plan_start must hold.
+        CallStore.Plan startsTomorrow = new CallStore.Plan(Phase.CUT, TODAY.minusDays(30), TODAY.plusDays(1), 2600, false, null);
+        CallStore.Plan startsToday = new CallStore.Plan(Phase.CUT, TODAY.minusDays(30), TODAY, 2600, false, null);
+
+        assertThat(PlanChange.after(startsTomorrow, new Action.AdjustCalories(-500), TODAY, P)).hasValueSatisfying(plan ->
+                assertThat(plan.planStart()).isEqualTo(TODAY.plusDays(1)));
+        assertThat(PlanChange.after(startsToday, new Action.AdjustCalories(-500), TODAY, P)).hasValueSatisfying(plan ->
+                assertThat(plan.planStart()).isEqualTo(TODAY));
+    }
+
+    @Test
+    void aCalorieCallWithNothingToMoveOrNothingLeftIsNotApplied() {
+        // The engine does neither (plan_target_needed; its floors); if it ever did, CONFLICT — not an NPE or a
+        // target_kcal > 0 violation, both 500s.
+        CallStore.Plan noTarget = new CallStore.Plan(Phase.CUT, TODAY, TODAY, null, true, null);
+
+        assertThat(PlanChange.after(noTarget, new Action.AdjustCalories(-500), TODAY, P)).isEmpty();
+        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-2600), TODAY, P)).isEmpty();
+        assertThat(PlanChange.after(CUT, new Action.AdjustCalories(-2599), TODAY, P)).hasValueSatisfying(plan ->
+                assertThat(plan.targetKcal()).isEqualTo(1));
+    }
+
+    @Test
     void moreMovementRaisesOnlyTheStepTarget() {
         int raised = P.wholeNumber(ParameterKey.STEPS_TARGET_RAISED);
 
@@ -92,6 +117,25 @@ class ApplyDecisionTests {
             assertThat(t.stepsPerDay()).isEqualTo(P.wholeNumber(ParameterKey.STEPS_TARGET_START));
             assertThat(t.trainingSessionsPerWeek()).isEqualTo(3);
         });
+    }
+
+    @Test
+    void aWomansTargetsFollowHerParameters() {
+        // Women from protein_female_higher_from_age take protein_g_per_kg_female_45_plus (J1 A5): 60 kg at 50.
+        Parameters female = engineParameters().forSex(Sex.FEMALE);
+        CallStore.Plan plan = new CallStore.Plan(Phase.CUT, TODAY, TODAY, 1900, false, null);
+
+        assertThat(PlanTargets.of(plan, new BigDecimal("60.0"), Sex.FEMALE, 50, EnumSet.of(DayOfWeek.TUESDAY), female)).hasValueSatisfying(t ->
+                assertThat(t.proteinG()).isEqualTo(new BigDecimal("60.0").multiply(BigDecimal.valueOf(
+                        female.number(ParameterKey.PROTEIN_G_PER_KG_FEMALE_45_PLUS))).setScale(0, java.math.RoundingMode.HALF_UP).intValueExact()));
+    }
+
+    @Test
+    void noSplitNoTargets() {
+        // 800 kcal at 80 kg cannot hold 2 g/kg protein and the fat floor (K-108 TargetTooLow): no targets, not a guess.
+        CallStore.Plan tooLow = new CallStore.Plan(Phase.CUT, TODAY, TODAY, 800, false, null);
+
+        assertThat(PlanTargets.of(tooLow, new BigDecimal("80.0"), Sex.MALE, 30, EnumSet.of(DayOfWeek.MONDAY), P)).isEmpty();
     }
 
     @Test

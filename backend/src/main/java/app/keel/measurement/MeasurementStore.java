@@ -67,6 +67,12 @@ class MeasurementStore {
                 .query((row, n) -> weighIn(row)).list();
     }
 
+    /** The latest weigh-in's weight, whenever it was. */
+    Optional<BigDecimal> latestKg(AccountId account) {
+        return jdbc.sql("select kg from measurement.weigh_in where account_id = :account order by measured_at desc, id desc limit 1")
+                .param("account", account.value()).query(BigDecimal.class).optional();
+    }
+
     /** Every weigh-in of the account, oldest first (the export: whatever date it was stored with, K-214). */
     List<WeighIn> weighIns(AccountId account) {
         return jdbc.sql("select * from measurement.weigh_in where account_id = :account order by measured_at, id")

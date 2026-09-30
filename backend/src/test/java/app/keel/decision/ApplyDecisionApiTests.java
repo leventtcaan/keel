@@ -84,6 +84,8 @@ class ApplyDecisionApiTests {
         assertThat(store.plan(account)).contains(new CallStore.Plan(Phase.CUT, PLAN_START, TODAY, 2100, false, null));
         Map<String, Object> application = (Map<String, Object>) map(send(account, "GET", "/v1/decisions/" + call)).get("application");
         assertThat(application).containsEntry("state", "APPLIED").containsKey("appliedAt").doesNotContainKey("undoneAt");
+        assertThat(map(send(account, "GET", "/v1/days/" + TODAY + "/budget"))).as("the food budget reads the plan as it is now")
+                .containsEntry("targetKcal", 2100);
     }
 
     @Test
@@ -119,6 +121,83 @@ class ApplyDecisionApiTests {
         }
 
         assertThat(store.plan(account).orElseThrow().targetKcal()).isEqualTo(2100);
+        assertThat(store.byId(account, call).orElseThrow().planBefore().targetKcal()).as("the plan before is the one before either").isEqualTo(2600);
+    }
+
+    @Test
+    void onlyAPendingCallBecomesAppliedAndOnlyAnAppliedOneUndone() {
+        // The guard two requests at once rely on (K-216 review): the second one finds the state already moved.
+        AccountId account = onACut();
+        UUID call = pending(account, new Action.AdjustCalories(-500));
+        CallStore.Plan before = store.plan(account).orElseThrow();
+        CallStore.Plan after = new CallStore.Plan(Phase.CUT, PLAN_START, TODAY, 2100, false, null);
+
+        assertThat(store.markUndone(account, call, Instant.now())).as("never applied").isFalse();
+        assertThat(store.markApplied(account, call, Instant.now(), before, after)).isTrue();
+        Instant appliedAt = store.byId(account, call).orElseThrow().appliedAt();
+        assertThat(store.markApplied(account, call, Instant.now().plusSeconds(60), after, after)).as("applied already").isFalse();
+        assertThat(store.byId(account, call).orElseThrow().appliedAt()).isEqualTo(appliedAt);
+        assertThat(store.markUndone(account, call, Instant.now())).isTrue();
+        assertThat(store.markUndone(account, call, Instant.now())).as("undone already").isFalse();
+    }
+
+    @Test
+    void anOlderCallIsNotUndoneOverANewerOne() throws Exception {
+        // Undo writes the plan before the call over the whole plan: over a newer call it would erase what that one did.
+        AccountId account = onACut();
+        UUID older = pending(account, new Action.AdjustCalories(-500), TODAY.minusWeeks(1), Instant.now().minusSeconds(3600));
+        assertThat(send(account, "POST", "/v1/decisions/" + older + "/apply")).hasStatusOk();
+        pending(account, new Action.Continue());
+
+        assertThat(send(account, "POST", "/v1/decisions/" + older + "/undo")).hasStatus(409);
+        assertThat(store.plan(account).orElseThrow().targetKcal()).isEqualTo(2100);
+        assertThat(store.byId(account, older).orElseThrow()).satisfies(call -> {
+            assertThat(call.application()).isEqualTo(CallStore.Application.APPLIED);
+            assertThat(call.undoneAt()).isNull();
+        });
+    }
+
+    @Test
+    void aCallWhoseTargetsCannotBeSplitIsNotAppliedAndLeavesNothingBehind() {
+        // 1300 − 500 = 800 kcal at 80 kg holds neither 2 g/kg protein nor the fat floor (K-108): 409, and the whole
+        // transaction goes back — the plan and the call as they were.
+        AccountId account = ready();
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :start, :start, 1300, false)""").param("a", account.value()).param("start", PLAN_START).update();
+        UUID call = pending(account, new Action.AdjustCalories(-500));
+
+        assertThat(send(account, "POST", "/v1/decisions/" + call + "/apply")).hasStatus(409);
+
+        assertThat(store.plan(account)).contains(new CallStore.Plan(Phase.CUT, PLAN_START, PLAN_START, 1300, false, null));
+        assertThat(store.byId(account, call).orElseThrow()).satisfies(kept -> {
+            assertThat(kept.application()).isEqualTo(CallStore.Application.PENDING);
+            assertThat(kept.appliedAt()).isNull();
+        });
+    }
+
+    @Test
+    void theTargetsAndTheUndoNeedOnlyTheLastWeighInEver() throws Exception {
+        // A user who stopped weighing in months ago can still read the targets and take a call back: the macros split
+        // the target at the last weight known (K-216 review: undo failed with 409 once the window had no weigh-in).
+        AccountId account = onACut(Instant.now().minus(java.time.Duration.ofDays(200)));
+        UUID call = pending(account, new Action.AdjustCalories(-500));
+
+        assertThat(map(send(account, "POST", "/v1/decisions/" + call + "/apply"))).containsEntry("targetKcal", 2100);
+        assertThat(map(send(account, "POST", "/v1/decisions/" + call + "/undo"))).containsEntry("targetKcal", 2600);
+        assertThat(map(send(account, "GET", "/v1/targets"))).containsEntry("targetKcal", 2600);
+    }
+
+    @Test
+    void anotherAccountsCallIsNotFound() {
+        AccountId owner = onACut();
+        UUID call = pending(owner, new Action.AdjustCalories(-500));
+        AccountId other = onACut();
+
+        assertThat(send(other, "POST", "/v1/decisions/" + call + "/apply")).hasStatus(404);
+        assertThat(send(other, "POST", "/v1/decisions/" + call + "/undo")).hasStatus(404);
+        assertThat(store.byId(owner, call).orElseThrow().application()).isEqualTo(CallStore.Application.PENDING);
+        assertThat(store.plan(other).orElseThrow().targetKcal()).isEqualTo(2600);
     }
 
     @Test
@@ -204,7 +283,11 @@ class ApplyDecisionApiTests {
 
     /** A male cut six weeks in, 2600 kcal, past the maintenance watch, one weigh-in today, training on Mondays. */
     private AccountId onACut() {
-        AccountId account = ready();
+        return onACut(Instant.now().minusSeconds(60));
+    }
+
+    private AccountId onACut(Instant weighedAt) {
+        AccountId account = ready(weighedAt);
         jdbc.sql("""
                 insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
                 values (:a, 'CUT', :start, :start, 2600, false)""").param("a", account.value()).param("start", PLAN_START).update();
@@ -212,13 +295,17 @@ class ApplyDecisionApiTests {
     }
 
     private AccountId ready() {
+        return ready(Instant.now().minusSeconds(60));
+    }
+
+    private AccountId ready(Instant weighedAt) {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
-        assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
-                Instant.now().minusSeconds(60).toString(), "kg", 80.0, "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
+        assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", weighedAt.toString(), "kg", 80.0,
+                "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
         return account;
     }
 
