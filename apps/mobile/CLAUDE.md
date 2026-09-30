@@ -24,6 +24,8 @@ dokunmadan önce:
 - **Metin yalnız `../../data/copy/en.json`'da** — bileşen `t('anahtar')` ister; `copy-keys.test.ts` eksik anahtarı yakalar.
   Metro kökteki `data/`'yı `metro.config.js` üzerinden görür.
 - API tipleri `contracts/openapi.yaml`'dan üretilir (K-303); elle yazılmaz.
+  İstemci `src/api/client.ts` (`openapi-fetch`, her isteğe `Authorization: Bearer`). Sunucu adresi kodda değil:
+  `apps/mobile/.env` → `EXPO_PUBLIC_API_URL=http://localhost:8080` (gitignore'da; `src/api/config.ts` okur, yoksa hata).
 - `ios/` ve `android/` klasörleri üretilir (Continuous Native Generation); elle oluşturulmaz, düzenlenmez. Native ayar
   `app.json` ve config plugin'lerle yapılır.
 - Native kodlu bir kütüphane eklenince Expo Go yetmez; development build gerekir.
