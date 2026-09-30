@@ -1,7 +1,9 @@
 package app.keel.decision;
 
 import app.keel.engine.Action;
+import app.keel.engine.ActionType;
 import app.keel.engine.Decision;
+import app.keel.engine.Phase;
 import app.keel.shared.Decimals;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
@@ -28,6 +30,32 @@ final class DecisionJson {
         json.put("nextReview", decision.nextReview().toString());
         json.put("copyKey", decision.copyKey().value());
         return json;
+    }
+
+    /** The Action of a kept call ({@link #of}'s "action"), as the engine made it. */
+    @SuppressWarnings("unchecked")
+    static Action action(Map<String, Object> call) {
+        Map<String, Object> action = (Map<String, Object>) call.get("action");
+        return switch (ActionType.valueOf((String) action.get("type"))) {
+            case NO_DECISION_YET -> new Action.NoDecisionYet();
+            case CONTINUE -> new Action.Continue();
+            case ADJUST_CALORIES -> new Action.AdjustCalories(whole(action, "kcalPerDay"));
+            case INCREASE_CALORIES -> new Action.IncreaseCalories(whole(action, "kcalPerDay"));
+            case CHANGE_MOVEMENT -> new Action.ChangeMovement();
+            case FIX_TRAINING -> new Action.FixTraining();
+            case FIX_RECOVERY -> new Action.FixRecovery();
+            case FIX_ADHERENCE -> new Action.FixAdherence();
+            case HARD_STOP -> new Action.HardStop();
+            case STOP_LOAD_INCREASE -> new Action.StopLoadIncrease();
+            case DELOAD -> new Action.Deload(new BigDecimal(action.get("setsFactor").toString()));
+            case FULL_REST_WEEK -> new Action.FullRestWeek();
+            case MINI_CUT -> new Action.MiniCut(whole(action, "minWeeks"), whole(action, "maxWeeks"));
+            case CHANGE_PHASE -> new Action.ChangePhase(Phase.valueOf((String) action.get("to")));
+        };
+    }
+
+    private static int whole(Map<String, Object> action, String field) {
+        return ((Number) action.get(field)).intValue();
     }
 
     private static Map<String, Object> action(Action action) {

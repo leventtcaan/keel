@@ -654,7 +654,11 @@ export interface paths {
         put?: never;
         /**
          * Apply the call; only the one thing it changes moves, everything else stays (U3)
-         * @description Only the current call can be applied (409 CONFLICT otherwise); applying twice changes nothing.
+         * @description Only the latest call, and only while PENDING: applied twice (or by two requests at once), the targets move once. A
+         *     calorie call moves the calorie target (and restarts its wait); more movement raises the step target. CONFLICT (409):
+         *     an older call, one that changes nothing (NOT_NEEDED), one undone, and a call whose kind is not applied here yet —
+         *     the training calls change the program (K-217); a phase change, a mini cut and the hard stop need what the engine
+         *     cannot read yet. NOT_FOUND for an unknown id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
          */
         post: operations["applyDecision"];
         delete?: never;
@@ -674,7 +678,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Put the targets back as they were before the call was applied (kept in the audit trail) */
+        /**
+         * Put the targets back as they were before the call was applied (kept in the audit trail)
+         * @description Only the latest call, and only once APPLIED; undone twice, nothing more changes. An undone call is not applied
+         *     again (CONFLICT). The call keeps appliedAt and undoneAt.
+         */
         post: operations["undoDecision"];
         delete?: never;
         options?: never;
@@ -689,7 +697,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The targets the user follows today */
+        /**
+         * The targets the user follows today
+         * @description NOT_FOUND before the first estimate (no plan, or no weigh-in when it began). The macros split the calorie target
+         *     at today's trend weight (the last weigh-in when the trend has too few days); CONFLICT when there is no weigh-in in
+         *     the evaluation window to split it by. The food budget (/v1/days/{day}/budget) reads the same targets.
+         */
         get: operations["getTargets"];
         put?: never;
         post?: never;
@@ -1215,7 +1228,10 @@ export interface components {
             copyKey: string;
             application: components["schemas"]["Application"];
         };
-        /** @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED. */
+        /**
+         * @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,
+         *     undoneAt once undone.
+         */
         Application: {
             /** @enum {string} */
             state: "NOT_NEEDED" | "PENDING" | "APPLIED" | "UNDONE";

@@ -102,7 +102,7 @@ class ProfileApiTests {
         Optional<ProfileFacts> facts = profiles.of(account);
 
         assertThat(facts).contains(new ProfileFacts(Sex.MALE, 180, 1996, Optional.of(Activity.LOW_ACTIVE), Goal.LOSE_FAT,
-                DayOfWeek.MONDAY, ZoneId.of("Europe/Istanbul")));
+                DayOfWeek.MONDAY, ZoneId.of("Europe/Istanbul"), java.util.Set.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)));
         assertThat(profiles.of(TestSessions.newAccount())).isEmpty();
     }
 

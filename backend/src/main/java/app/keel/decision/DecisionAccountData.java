@@ -42,6 +42,10 @@ class DecisionAccountData implements AccountDataExport {
         decision.put("calls", calls.all(account).stream().map(call -> {
             Map<String, Object> entry = new LinkedHashMap<>(DecisionController.view(call));
             entry.put("weekOf", call.weekOf());
+            if (call.planBefore() != null) {
+                entry.put("planBefore", call.planBefore());
+                entry.put("planAfter", call.planAfter());
+            }
             // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
             Map<String, Object> snapshot = json.convertValue(call.snapshot(), Map.class);
             snapshot.remove("fatProxyPct");

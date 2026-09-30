@@ -6,6 +6,7 @@ import app.keel.engine.ActivityLevel;
 import app.keel.engine.CheckIn;
 import app.keel.engine.Decision;
 import app.keel.engine.DecisionPipeline;
+import app.keel.engine.EnergyBudget;
 import app.keel.engine.InitialTarget;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
@@ -17,12 +18,14 @@ import app.keel.engine.Snapshot;
 import app.keel.engine.WaistTrend;
 import app.keel.engine.WeighIn;
 import app.keel.engine.WeightSeries;
+import app.keel.engine.WeightTrend;
 import app.keel.measurement.Measurements;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
@@ -165,9 +168,10 @@ class DecisionService {
             // The plan began on a later date than today on the user's calendar now (a time zone moved west).
             throw new ApiException(ErrorCode.CONFLICT);
         }
+        // The plan's target is what the calorie ladder moves (K-216); what training burns is not known yet.
         return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()), Optional.empty(),
-                Optional.empty(), menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(),
-                Optional.empty());
+                Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown), menstrualLossReported, checkIn,
+                Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), Optional.empty());
     }
 
     /**
@@ -183,7 +187,7 @@ class DecisionService {
         };
         Integer target = week.weights().isEmpty() ? null : InitialTarget.estimate(week.sex(), week.weights().getLast().kg(), week.body(),
                 week.profile().activity().map(activity -> ActivityLevel.valueOf(activity.name())), week.parameters()).maintenanceKcal();
-        return new CallStore.Plan(phase, week.today(), week.today(), target, true);
+        return new CallStore.Plan(phase, week.today(), week.today(), target, true, null);
     }
 
     /** Whether the call changes the plan (applied by K-216): a pause, "continue" or advice changes nothing. */
@@ -193,6 +197,86 @@ class DecisionService {
                  app.keel.engine.Action.FixRecovery _, app.keel.engine.Action.FixAdherence _ -> CallStore.Application.NOT_NEEDED;
             default -> CallStore.Application.PENDING;
         };
+    }
+
+    /**
+     * Applies the current call (K-216): only the one thing it is about moves (U3), and the call keeps when and the plan
+     * before and after. Applied twice, nothing more changes; a call that changes nothing, one undone, one not the latest,
+     * or one whose kind is not applied here (training → K-217; phase, mini cut, hard stop → DURUM 11, 17, 18) is CONFLICT.
+     */
+    @Transactional
+    PlanTargets apply(AccountId account, UUID id) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        CallStore.Call call = latest(account, id);
+        if (call.application() == CallStore.Application.APPLIED) {
+            return targetsOf(account);
+        }
+        if (call.application() != CallStore.Application.PENDING) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
+        Week week = week(account);
+        CallStore.Plan before = calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        CallStore.Plan after = PlanChange.after(before, DecisionJson.action(call.decision()), week.today(), week.parameters())
+                .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        // Only the request that moved the call from PENDING changes the plan; another one at the same moment reads it.
+        if (calls.markApplied(account, id, clock.instant(), before, after)) {
+            calls.replace(account, after);
+        }
+        return targetsOf(account);
+    }
+
+    /** Puts the plan back as it was before the call (kept in the audit trail). Undone twice, nothing more changes. */
+    @Transactional
+    PlanTargets undo(AccountId account, UUID id) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        CallStore.Call call = latest(account, id);
+        if (call.application() == CallStore.Application.UNDONE) {
+            return targetsOf(account);
+        }
+        if (call.application() != CallStore.Application.APPLIED) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
+        if (calls.markUndone(account, id, clock.instant())) {
+            calls.replace(account, call.planBefore());
+        }
+        return targetsOf(account);
+    }
+
+    /** The targets the user follows today; NOT_FOUND before the first estimate. */
+    @Transactional(readOnly = true)
+    PlanTargets targets(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        return targetsOf(account);
+    }
+
+    /** The day's targets for the food budget (DailyTargets); the caller has checked consent. Empty before the first estimate. */
+    @Transactional(readOnly = true)
+    Optional<PlanTargets> targetsNow(AccountId account) {
+        Optional<CallStore.Plan> plan = calls.plan(account).filter(p -> p.targetKcal() != null);
+        if (plan.isEmpty()) {
+            return Optional.empty();
+        }
+        Week week = week(account);
+        // Today's trend weight, or the last weigh-in of the window when the trend has too few days.
+        BigDecimal bodyweight = WeightTrend.at(new WeightSeries(week.weights()), week.today(), week.parameters().wholeNumber(ParameterKey.TREND_DISPLAY_DAYS))
+                .or(() -> week.weights().isEmpty() ? Optional.empty() : Optional.of(week.weights().getLast().kg()))
+                .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), week.profile().trainingDays(), week.parameters())
+                .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));
+    }
+
+    private PlanTargets targetsOf(AccountId account) {
+        return targetsNow(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
+    /** The call, if it is the latest: an older one is history (CONFLICT), a missing one NOT_FOUND. */
+    private CallStore.Call latest(AccountId account, UUID id) {
+        CallStore.Call call = calls.byId(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        boolean latest = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(newest -> newest.id().equals(id)).orElse(false);
+        if (!latest) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
+        return call;
     }
 
     Optional<CallStore.Call> current(AccountId account) {
