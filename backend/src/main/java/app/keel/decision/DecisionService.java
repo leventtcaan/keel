@@ -8,6 +8,7 @@ import app.keel.engine.CheckIn;
 import app.keel.engine.Decision;
 import app.keel.engine.DecisionPipeline;
 import app.keel.engine.EnergyBudget;
+import app.keel.engine.FatEstimate;
 import app.keel.engine.InitialTarget;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
@@ -30,6 +31,7 @@ import app.keel.shared.ErrorCode;
 import app.keel.training.TrainingCalls;
 import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
@@ -45,8 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
  * hash. The week is the user's check-in day in their own time zone (L3 P13).
  *
  * <p>What the data says is read, not asked (K-213): how it looks from the week's photo check, where the waist went over
- * the decision window. The plan's target is in it (K-216), with the exercise burn not known. Not yet in the Snapshot, so
- * unknown to the engine: the fat estimate (DURUM question 11 — without it the low-energy floor cannot be computed). Where training stands is read from the set log (K-221, TrainingStatusReader); adherence is counted from
+ * the decision window. The plan's target is in it (K-216), with the exercise burn not known. The fat estimate comes from
+ * the look picked and the waist (K-224; U4: internal only). Where training stands is read from the set log (K-221, TrainingStatusReader); adherence is counted from
  * the logs over the window (K-220, WeekLogs).
  *
  * <p>Applying a call (K-216): only the latest, only what it is about, and only on the plan it judged; the call keeps when
@@ -88,7 +90,7 @@ class DecisionService {
 
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
-            List<WeighIn> weights, CheckIn dataSays) {
+            List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate) {
     }
 
     /** This week's check-in and its questions (K-213): only what the engine would wait for, within the budget. */
@@ -175,7 +177,25 @@ class DecisionService {
                 today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
         return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights,
-                dataSays);
+                dataSays, fatEstimate(account, profile, today, p));
+    }
+
+    /**
+     * The engine's internal fat estimate (K-224, ADR-027 #11; U4: it leaves the engine as nothing but its decisions): the
+     * latest look picked and the latest waist day in the evaluation window, both kept as the lower and the higher (H8 C); a
+     * waist no body could have gives none (H8 A4).
+     */
+    private Optional<FatEstimate.Estimate> fatEstimate(AccountId account, ProfileFacts profile, LocalDate today, Parameters p) {
+        LocalDate from = today.minusDays(p.wholeNumber(ParameterKey.EVALUATION_WINDOW_DAYS) - 1L);
+        Optional<BigDecimal> fromLook = measurements.latestLookLevel(account, from, today)
+                .filter(level -> level <= FatEstimate.levels(p)).map(level -> FatEstimate.fromLook(level, p));
+        List<WaistTrend.Reading> waists = measurements.waists(account, from, today);
+        Optional<BigDecimal> fromWaist = waists.stream().map(WaistTrend.Reading::day).max(LocalDate::compareTo).flatMap(last -> {
+            List<BigDecimal> onLastDay = waists.stream().filter(reading -> reading.day().equals(last)).map(WaistTrend.Reading::cm).toList();
+            BigDecimal cm = onLastDay.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(onLastDay.size()), MathContext.DECIMAL64);
+            return FatEstimate.rfm(profile.heightCm(), cm, p);
+        });
+        return FatEstimate.of(fromLook, fromWaist);
     }
 
     /** One call a week (K-212): the same rule for offering the check-in and for taking its answers. */
@@ -211,9 +231,10 @@ class DecisionService {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         // The plan's target is what the calorie ladder moves (K-216); what training burns is not known yet.
-        return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()), Optional.empty(),
-                Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown), menstrualLossReported, checkIn,
-                Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training);
+        return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()),
+                week.fatEstimate().map(FatEstimate.Estimate::lowerPct), Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown),
+                menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training,
+                week.fatEstimate().map(FatEstimate.Estimate::higherPct));
     }
 
     /**

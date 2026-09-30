@@ -43,7 +43,8 @@ public final class PhaseGate {
         if (snapshot.fatProxyPct().isEmpty()) {
             return Optional.empty();
         }
-        BigDecimal fat = snapshot.fatProxyPct().get();
+        // Each direction reads the estimate cautious for it (ADR-027 #11): a bulk stops on the higher, a cut turns on the lower.
+        BigDecimal fat = snapshot.phase() == Phase.BULK ? snapshot.fatProxyHighPct().orElseThrow() : snapshot.fatProxyPct().orElseThrow();
         return switch (snapshot.phase()) {
             case BULK -> {
                 if (fat.compareTo(band(parameters, ParameterKey.FAT_FIRST_FAT_PROXY_PCT)) > 0) {

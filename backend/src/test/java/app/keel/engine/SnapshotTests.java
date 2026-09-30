@@ -3,8 +3,10 @@ package app.keel.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** The engine's only input. "Today" is part of it, so the engine never reads a clock (ADR-003). */
@@ -49,6 +51,20 @@ class SnapshotTests {
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("after today");
         assertThatThrownBy(() -> new Snapshot(MONDAY, Sex.MALE, Phase.CUT, MONDAY.plusDays(1), NO_WEIGHINS))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("after today");
+    }
+
+    @Test
+    void theHigherFatEstimateIsNeverUnderTheLowerAndNeverAlone() {
+        Snapshot base = new Snapshot(MONDAY, Sex.MALE, Phase.CUT, MONDAY, NO_WEIGHINS);
+
+        assertThatThrownBy(() -> base.withFatProxy(new BigDecimal("20"), new BigDecimal("15"))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Snapshot(MONDAY, Sex.MALE, Phase.CUT, MONDAY, NO_WEIGHINS, Optional.empty(), Optional.empty(), false,
+                CheckIn.NONE, Optional.empty(), false, MONDAY, Optional.empty(), Optional.of(new BigDecimal("20"))))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Snapshot(MONDAY, Sex.MALE, Phase.CUT, MONDAY, NO_WEIGHINS, Optional.of(new BigDecimal("20")), Optional.empty(),
+                false, CheckIn.NONE, Optional.empty(), false, MONDAY, Optional.empty(), Optional.empty()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(base.withFatProxy(new BigDecimal("15"), new BigDecimal("20")).fatProxyHighPct()).contains(new BigDecimal("20"));
     }
 
     @Test

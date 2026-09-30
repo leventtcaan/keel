@@ -2,6 +2,7 @@ package app.keel.measurement;
 
 import app.keel.consent.ConsentGate;
 import app.keel.consent.ConsentKind;
+import app.keel.engine.FatEstimate;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Sex;
@@ -51,6 +52,9 @@ class MeasurementController {
     }
 
     record NewWaist(UUID clientId, LocalDate measuredOn, BigDecimal cm) {
+    }
+
+    record NewBodyLook(UUID clientId, LocalDate takenOn, Integer level) {
     }
 
     record NewPhotoCheck(UUID clientId, LocalDate takenOn, MeasurementStore.Look look) {
@@ -129,6 +133,18 @@ class MeasurementController {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(check.clientId() != null && api.day(check.takenOn()) && check.look() != null);
         return created(store.add(account, check.clientId(), check.takenOn(), check.look()));
+    }
+
+    /**
+     * The reference look closest to the user's own (K-224, Ö-4): a level from 1 to look_levels (the same for both sexes;
+     * what it means is the engine's). Health data. Never a percent in or out (U4).
+     */
+    @PostMapping("/v1/body-looks")
+    ResponseEntity<MeasurementStore.BodyLook> addBodyLook(AccountId account, @RequestBody NewBodyLook look) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        require(look.clientId() != null && api.day(look.takenOn()) && look.level() != null && look.level() >= 1
+                && look.level() <= FatEstimate.levels(parameters.forSex(Sex.MALE)));
+        return created(store.add(account, look.clientId(), look.takenOn(), look.level()));
     }
 
     @PutMapping("/v1/activity-days")

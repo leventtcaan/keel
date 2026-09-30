@@ -148,6 +148,31 @@ class PhaseGateTests {
 
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
 
+    // ── two estimates (K-224 review) ────────────────────────────────────────────────────────────────────────
+
+    @ParameterizedTest
+    @EnumSource(Sex.class)
+    void aBulkReadsTheHigherOfTwoEstimates(Sex sex) {
+        // A look picked lean and a waist that says more (ADR-027 #11 "the cautious one"): a bulk stops on the higher. G4
+        // K-10: above the fat-first line a bulk is never kept.
+        BigDecimal lean = band(sex, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT).add(STEP);
+        BigDecimal overFatFirst = band(sex, ParameterKey.FAT_FIRST_FAT_PROXY_PCT).add(STEP);
+        BigDecimal overCeiling = band(sex, ParameterKey.BULK_CEILING_FAT_PROXY_PCT).add(STEP);
+
+        assertChangesTo(PhaseGate.check(snapshot(sex, Phase.BULK, lean).withFatProxy(lean, overFatFirst), parameters(sex)), Phase.CUT, "fat_first");
+        assertChangesTo(PhaseGate.check(snapshot(sex, Phase.BULK, lean).withFatProxy(lean, overCeiling), parameters(sex)), Phase.CUT, "bulk_ceiling");
+    }
+
+    @ParameterizedTest
+    @EnumSource(Sex.class)
+    void aCutReadsTheLowerOfTwoEstimates(Sex sex) {
+        // Turning to a bulk is the protective call for the lean body, so a cut reads the lower.
+        BigDecimal underSurplus = band(sex, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT).subtract(STEP);
+        BigDecimal high = band(sex, ParameterKey.FAT_FIRST_FAT_PROXY_PCT).add(STEP);
+
+        assertChangesTo(PhaseGate.check(snapshot(sex, Phase.CUT, high).withFatProxy(underSurplus, high), parameters(sex)), Phase.BULK, "surplus_zone");
+    }
+
     private static Snapshot snapshot(Sex sex, Phase phase, BigDecimal fatProxyPct) {
         return new Snapshot(TODAY, sex, phase, TODAY.minusDays(30), series(List.of()), Optional.of(fatProxyPct));
     }

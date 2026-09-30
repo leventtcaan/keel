@@ -347,6 +347,28 @@ paths:
           $ref: "#/components/responses/PhotoCheckCreated"
         default:
           $ref: "#/components/responses/Error"
+  /v1/body-looks:
+    post:
+      tags: [measurement]
+      operationId: recordBodyLook
+      summary: The reference look closest to the user's own, as a level (K-224); never a percent in or out (U4)
+      description: |
+        The app shows reference looks (the belly test, Ö-4) and sends the level picked, 1 to look_levels (7). The engine
+        reads it, with the waist, as its internal estimate; no response anywhere carries a percent. Health data:
+        CONSENT_REQUIRED without the HEALTH_DATA consent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewBodyLook"
+      responses:
+        "201":
+          $ref: "#/components/responses/BodyLookCreated"
+        "200":
+          $ref: "#/components/responses/BodyLookCreated"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/activity-days:
     put:
       tags: [measurement]
@@ -954,6 +976,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/WaistMeasurement"
+    BodyLookCreated:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/BodyLook"
     PhotoCheckCreated:
       description: Stored (201), or already stored with this clientId (200)
       content:
@@ -1288,6 +1316,29 @@ components:
       type: string
       description: The photo compared with the last one, judged on the phone.
       enum: [BETTER, SAME, WORSE]
+    NewBodyLook:
+      type: object
+      required: [clientId, takenOn, level]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        takenOn:
+          type: string
+          format: date
+        level:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: The reference look picked, leanest first; what it means is the engine's (U4).
+    BodyLook:
+      allOf:
+        - $ref: "#/components/schemas/NewBodyLook"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
     NewPhotoCheck:
       type: object
       description: Derived on the phone; no image, no measurement of the body leaves it (V1).

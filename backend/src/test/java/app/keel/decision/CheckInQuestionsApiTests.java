@@ -155,6 +155,43 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void theFatEstimateKeepsTheLookAndTheWaistAndStaysInside() throws Exception {
+        // K-224: a man of 180 cm picks look 3 (10 + 2 × 5 = 20 %); his waist of 90 cm gives RFM 64 − 20 × 2 = 24 %: the
+        // engine keeps 20 as the lower and 24 as the higher (K-224 review). The call the app gets carries no percent (U4).
+        AccountId account = ready();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        waist(account, today, 90.0);
+        assertThat(send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "level", 3))
+                .getResponse().getStatus()).isLessThan(300);
+
+        MvcTestResult call = answer(account, List.of());
+
+        String snapshot = jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        assertThat(JSON.readValue(snapshot, StoredSnapshot.class).fatProxyPct()).isEqualByComparingTo("20");
+        assertThat(JSON.readValue(snapshot, StoredSnapshot.class).fatProxyHighPct()).isEqualByComparingTo("24");
+        assertThat(call.getResponse().getContentAsString()).doesNotContainIgnoringCase("fatProxy").doesNotContain("\"20\"");
+    }
+
+    @Test
+    void aWaistTypedWrongLeavesTheLookAlone() throws Exception {
+        // K-224 review: 9 typed for 90 is RFM −336 % — no body — so the engine reads the look only, not a fat-free mass
+        // larger than the man.
+        AccountId account = ready();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        waist(account, today, 9.0);
+        assertThat(send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "level", 3))
+                .getResponse().getStatus()).isLessThan(300);
+
+        answer(account, List.of());
+
+        StoredSnapshot kept = JSON.readValue(jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a")
+                .param("a", account.value()).query(String.class).single(), StoredSnapshot.class);
+        assertThat(kept.fatProxyPct()).isEqualByComparingTo("20");
+        assertThat(kept.fatProxyHighPct()).isEqualByComparingTo("20");
+    }
+
+    @Test
     void theWaistComesFromItsMeasurements() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);

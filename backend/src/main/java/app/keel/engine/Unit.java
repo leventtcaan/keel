@@ -50,7 +50,9 @@ public enum Unit {
     // A count of repetitions (e1RM formula terms, H3 B15).
     REPS("reps", Kind.WHOLE, Bound.POSITIVE),
     // The daily step target (G2 K-42).
-    STEPS_PER_DAY("steps_per_day", Kind.WHOLE, Bound.POSITIVE);
+    STEPS_PER_DAY("steps_per_day", Kind.WHOLE, Bound.POSITIVE),
+    // How many reference looks the user picks from (K-224).
+    LEVELS("levels", Kind.WHOLE, Bound.POSITIVE);
 
     /** What a value in this unit is. */
     public enum Kind {
