@@ -1148,18 +1148,42 @@ tasks:
     milestone: M3
     module: mobile
     type: feature
-    size: L
+    size: M
     status: todo
-    depends_on: [K-303]
+    depends_on: [K-303, K-311]
     why: "Salonda sinyal kopar; kayıt kaybolmamalı"
     acceptance:
-      - "Kayıtlar önce expo-sqlite'a, istemci kimliğiyle"
-      - "Bağlantı gelince kuyruk sırayla gönderilir; tekrar denemede çift kayıt yok"
-      - "Çakışmada sunucu kazanır"
+      - "Kayıtlar önce expo-sqlite'a, istemci kimliğiyle (clientId, UUID) — ağ çağrısından önce"
+      - "Bağlantı gelince kuyruk sırayla gönderilir; aynı anda iki boşaltma tek gönderim yapar"
+      - "Tekrar gönderim aynı clientId'yi taşır ve sunucunun saklı kaydını alır (200); çift kayıt yok (ADR-024)"
+      - "Çakışmada sunucu kazanır: cevap yerel kaydın yerine geçer; kalıcı red (4xx) kayıt silinmeden işaretlenir, kuyruğu tıkamaz"
+      - "Geçici hata (ağ, 5xx, 401, 429) boşaltmayı durdurur, kayıt kuyrukta kalır"
+      - "Çevrimdışı başlanan antrenmanın setleri, antrenmanın sunucu kimliği gelince gönderilir"
     tests:
-      - "SyncQueueTests (çevrimdışı, yeniden deneme, çift gönderim)"
-    refs: ["plan/kararlar/ADR-006-mobil-mimari.md", "plan/kararlar/ADR-005-veri-modeli.md"]
-    learn: ["SQLite", "Kuyruk ve yeniden deneme", "Eventual consistency"]
+      - "SyncQueueTests (çevrimdışı, yeniden deneme, çift gönderim, eşzamanlı boşaltma, red, bağımlı kayıt)"
+      - "SqliteOutboxTests (gerçek SQL: node:sqlite)"
+    refs: ["plan/kararlar/ADR-006-mobil-mimari.md", "plan/kararlar/ADR-005-veri-modeli.md", "plan/kararlar/ADR-024-api-sozlesmesi-v1.md"]
+    learn: ["SQLite", "Kuyruk ve yeniden deneme", "Eventual consistency", "Idempotency"]
+
+  - id: K-311
+    title: "Oturum: tek uçuşlu yenileme ve 401 tekrarı"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-303]
+    why: "ADR-025: aynı refresh token iki kez giderse bütün aile düşer, kullanıcı yeniden giriş yapar (K-304'ten bölündü)"
+    acceptance:
+      - "Aynı anda 401 alan istekler tek /v1/auth/refresh yapar; diğerleri onu bekler, yeni token'la bir kez yeniden dener"
+      - "Yenileme cevabı gelmeden ikinci yenileme yok"
+      - "Gövdeli istek yeniden denemede aynı gövdeyle gider (ilk gönderimden önce clone)"
+      - "Yenileme reddedilirse (401) oturum silinir, çıkış yapılmış sayılır; döngü yok"
+      - "Bir istek en fazla bir kez yeniden denenir"
+    tests:
+      - "SessionRefreshTests (eşzamanlı 401, red, gövde, tek tekrar)"
+    refs: ["plan/kararlar/ADR-025-oturum-tasarimi.md", "docs/aktarim/M3/K-303.md"]
+    learn: ["Tek uçuş (single flight)", "Refresh token rotation", "Promise paylaşımı"]
 
   - id: K-305
     title: "Giriş: Sign in with Apple"
@@ -1168,10 +1192,13 @@ tasks:
     type: feature
     size: S
     status: todo
-    depends_on: [K-203, K-303]
+    depends_on: [K-203, K-303, K-311]
     why: "Tek dokunuş giriş (ADR-011)"
     acceptance:
       - "expo-apple-authentication ile giriş; token backend'e; oturum güvenli depoda"
+      - "Nonce: rastgele ham nonce; Apple'a SHA-256 hex, sunucuya ham (K-203 AppleIdentityVerifier)"
+      - "Kullanıcı vazgeçerse hata değil, giriş ekranında kalır; oturum yoksa giriş ekranı, varsa sekmeler"
+      - "Apple kimlikleri koda gömülmez (ADR-028); yoksa eksik olan DURUM'da"
     tests:
       - "Giriş akışı birim testleri (mock)"
     refs: ["plan/kararlar/ADR-011-kimlik-dogrulama.md"]
@@ -1390,7 +1417,7 @@ tasks:
     why: "Sürtünmesiz kayıt"
     acceptance:
       - "Metin girişi → eşleme kartı (aralıkla)"
-      - "Barkod okuma cihazda"
+      - "Barkod okuma cihazda; ham kod sunucuya gider, UPC-E istemcide açılmaz (K-208)"
       - "Dünkü öğünü tek dokunuşla tekrar"
       - "Kayıt düzeltmesi birinci sınıf (düzeltme güven kaynağı)"
     tests:
