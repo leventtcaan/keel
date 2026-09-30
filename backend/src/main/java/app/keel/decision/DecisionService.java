@@ -88,7 +88,7 @@ class DecisionService {
 
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
-            List<WeighIn> weights, CheckIn dataSays, Optional<TrainingStatus> training) {
+            List<WeighIn> weights, CheckIn dataSays) {
     }
 
     /** This week's check-in and its questions (K-213): only what the engine would wait for, within the budget. */
@@ -102,7 +102,8 @@ class DecisionService {
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
         // the estimate a plan without a target would get.
         CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
-        return new CheckInView(week.weekOf(), asked(week, plan, dataSays(account, week, plan)).stream().map(CheckInQuestions::describe).toList(),
+        return new CheckInView(week.weekOf(), asked(week, plan, dataSays(account, week, plan), training(account, week)).stream()
+                .map(CheckInQuestions::describe).toList(),
                 false);
     }
 
@@ -142,7 +143,7 @@ class DecisionService {
         CheckIn dataSays = dataSays(account, week, plan);
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
                 dataSays.adherence(), dataSays.appetite());
-        Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported());
+        Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
                 StoredSnapshot.of(snapshot), DecisionJson.of(decision), application(decision));
@@ -173,9 +174,8 @@ class DecisionService {
         CheckIn.Waist waist = WaistTrend.direction(measurements.waists(account,
                 today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
-        // Where training stands, from the set log (K-221): the deload ladder reads it.
         return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights,
-                dataSays, statuses.status(account, today, profile.timeZone()));
+                dataSays);
     }
 
     /** One call a week (K-212): the same rule for offering the check-in and for taking its answers. */
@@ -183,8 +183,8 @@ class DecisionService {
         return CheckInWeek.taken(weekOf, calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(CallStore.Call::weekOf));
     }
 
-    private List<Answers.Kind> asked(Week week, CallStore.Plan plan, CheckIn dataSays) {
-        return CheckInQuestions.needed(checkIn -> DecisionPipeline.decide(snapshot(week, plan, checkIn, false), week.parameters()),
+    private List<Answers.Kind> asked(Week week, CallStore.Plan plan, CheckIn dataSays, Optional<TrainingStatus> training) {
+        return CheckInQuestions.needed(checkIn -> DecisionPipeline.decide(snapshot(week, plan, checkIn, false, training), week.parameters()),
                 dataSays, budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase())));
     }
 
@@ -200,7 +200,12 @@ class DecisionService {
                 .or(() -> measurements.latestWeightKg(account));
     }
 
-    private Snapshot snapshot(Week week, CallStore.Plan plan, CheckIn checkIn, boolean menstrualLossReported) {
+    /** Where training stands, from the set log (K-221): read once per check-in, only where the engine runs. */
+    private Optional<TrainingStatus> training(AccountId account, Week week) {
+        return statuses.status(account, week.today(), week.profile().timeZone(), week.profile().checkInDay());
+    }
+
+    private Snapshot snapshot(Week week, CallStore.Plan plan, CheckIn checkIn, boolean menstrualLossReported, Optional<TrainingStatus> training) {
         if (plan.planStart().isAfter(week.today())) {
             // The plan began on a later date than today on the user's calendar now (a time zone moved west).
             throw new ApiException(ErrorCode.CONFLICT);
@@ -208,7 +213,7 @@ class DecisionService {
         // The plan's target is what the calorie ladder moves (K-216); what training burns is not known yet.
         return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()), Optional.empty(),
                 Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown), menstrualLossReported, checkIn,
-                Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), week.training());
+                Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training);
     }
 
     /**

@@ -6,6 +6,7 @@ import app.keel.engine.TrainingStatus;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -53,31 +54,78 @@ class TrainingStatusApiTests {
 
     @Test
     void threeSessionsAtTheSameLoadAndRepsAreTwoStalled() throws Exception {
-        AccountId account = TestSessions.newAccount();
-        send("PUT", account, "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
-                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
-                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
-        send("POST", account, "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
-        // The program made a month ago, so the sessions below fall after it.
-        jdbc.sql("update training.program set created_at = now() - interval '30 days' where account_id = :a").param("a", account.value()).update();
-        Map<String, Object> day = ((List<Map<String, Object>>) map(send("GET", account, "/v1/program", null)).get("days")).getFirst();
-        String lift = ((List<Map<String, Object>>) day.get("exercises")).stream().map(planned -> (String) planned.get("exerciseId"))
-                .filter(id -> catalog.find(id).filter(move -> move.kind() == ExerciseCatalog.Kind.COMPOUND && move.load() == ExerciseCatalog.Load.EXTERNAL
-                        && !move.unilateral()).isPresent())
-                .findFirst().orElseThrow();
+        AccountId account = withAProgramMadeDaysAgo(30);
         for (int daysAgo : new int[] {15, 8, 1}) {
-            String workout = (String) map(send("POST", account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
-                    Instant.now().minus(daysAgo, ChronoUnit.DAYS).toString(), "programDayId", day.get("id")))).get("id");
-            send("POST", account, "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", lift, "setType", "WORKING",
-                    "loadKg", 80, "reps", 8, "rir", 1));
+            workout(account, daysAgo, "bench_press", 80, 8);
         }
 
-        TrainingStatus status = reader.status(account, LocalDate.now(ZoneOffset.UTC), ZoneOffset.UTC).orElseThrow();
+        TrainingStatus status = reader.status(account, LocalDate.now(ZoneOffset.UTC), ZoneOffset.UTC, DayOfWeek.MONDAY).orElseThrow();
 
         assertThat(status.stalledSessions()).isEqualTo(2);
         assertThat(status.loadsBelowLastWeek()).isFalse();
         assertThat(status.weeksLoadHeld()).isZero();
-        assertThat(reader.status(TestSessions.newAccount(), LocalDate.now(ZoneOffset.UTC), ZoneOffset.UTC)).as("no program").isEmpty();
+        assertThat(reader.status(TestSessions.newAccount(), LocalDate.now(ZoneOffset.UTC), ZoneOffset.UTC, DayOfWeek.MONDAY)).as("no program").isEmpty();
+    }
+
+    @Test
+    void onlyCompoundLiftsAfterTheProgramWasMadeCount() throws Exception {
+        // Squat goes up each session; the curl (isolation, not load-tracked) stalls for four; bench's session before the
+        // program is not read: nothing stalled.
+        AccountId account = withAProgramMadeDaysAgo(10);
+        workout(account, 20, "bench_press", 80, 8);
+        workout(account, 8, "bench_press", 80, 8);
+        workout(account, 1, "bench_press", 80, 9);
+        int load = 100;
+        for (int daysAgo : new int[] {9, 6, 3, 1}) {
+            workout(account, daysAgo, "squat", load, 5);
+            workout(account, daysAgo, "barbell_curl", 30, 10);
+            load += 5;
+        }
+
+        assertThat(reader.status(account, LocalDate.now(ZoneOffset.UTC), ZoneOffset.UTC, DayOfWeek.MONDAY).orElseThrow().stalledSessions()).isZero();
+    }
+
+    @Test
+    void aStalledLiftMakesTheCheckInHoldTheLoad() throws Exception {
+        // End to end (K-110 first rung): plateau_sessions stalled sessions of bench in the set log → the week's call is
+        // STOP_LOAD_INCREASE, and the Snapshot kept with it holds where training stood.
+        AccountId account = withAProgramMadeDaysAgo(40);
+        send("PUT", account, "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        for (int daysAgo : new int[] {29, 22, 15, 8, 1}) {
+            workout(account, daysAgo, "bench_press", 80, 8);
+        }
+
+        MvcTestResult call = send("POST", account, "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "weekOf",
+                LocalDate.now(ZoneOffset.UTC).with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString(), "answers", List.of()));
+
+        assertThat(call).hasStatusOk();
+        assertThat((Map<String, Object>) map(call).get("action")).containsEntry("type", "STOP_LOAD_INCREASE");
+        String snapshot = jdbc.sql("select snapshot->'training'->>'stalledSessions' from decision.weekly_call where account_id = :a")
+                .param("a", account.value()).query(String.class).single();
+        assertThat(snapshot).isEqualTo("4");
+    }
+
+    /** A man on UTC training on Mondays, with his own one-day program of bench, squat and curls made that many days ago. */
+    private AccountId withAProgramMadeDaysAgo(int days) {
+        AccountId account = TestSessions.newAccount();
+        send("PUT", account, "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "Full body", "weekday", "MONDAY", "exercises", List.of(
+                Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)),
+                Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 3, "max", 6)),
+                Map.of("exerciseId", "barbell_curl", "sets", 3, "reps", Map.of("min", 10, "max", 15)))))));
+        jdbc.sql("update training.program set created_at = now() - make_interval(days => :days) where account_id = :a").param("days", days)
+                .param("a", account.value()).update();
+        return account;
+    }
+
+    /** One workout that many days ago with one working set of the move. */
+    private void workout(AccountId account, int daysAgo, String move, double kg, int reps) throws Exception {
+        String workout = (String) map(send("POST", account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
+                Instant.now().minus(daysAgo, ChronoUnit.DAYS).toString()))).get("id");
+        assertThat(send("POST", account, "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", move,
+                "setType", "WORKING", "loadKg", kg, "reps", reps, "rir", 1, "side", "BOTH"))).hasStatus(201);
     }
 
     private MvcTestResult send(String method, AccountId account, String uri, Object body) {

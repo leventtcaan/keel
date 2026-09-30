@@ -88,16 +88,16 @@ class ProgramStore {
         return current(account).orElseThrow();
     }
 
-    /**
-     * The account's program in three flat reads (program, its days, their moves), each finished before the next: a read
-     * nested inside another's row mapper would hold one connection per level (K-211 review).
-     */
     /** When the account's program was made (or last replaced). */
     Optional<Instant> createdAt(AccountId account) {
         return jdbc.sql("select created_at from training.program where account_id = :account").param("account", account.value())
                 .query((row, n) -> row.getObject("created_at", OffsetDateTime.class).toInstant()).optional();
     }
 
+    /**
+     * The account's program in three flat reads (program, its days, their moves), each finished before the next: a read
+     * nested inside another's row mapper would hold one connection per level (K-211 review).
+     */
     Optional<Program> current(AccountId account) {
         Optional<Program> head = jdbc.sql("select id, source from training.program where account_id = :account")
                 .param("account", account.value())
