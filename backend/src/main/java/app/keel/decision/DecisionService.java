@@ -189,7 +189,7 @@ class DecisionService {
                 today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
         return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights,
-                dataSays, fatEstimate(account, profile, today, p), SafetyHolds.from(calls.all(account)));
+                dataSays, fatEstimate(account, profile, today, p), SafetyHolds.from(calls.outcomes(account)));
     }
 
     /**

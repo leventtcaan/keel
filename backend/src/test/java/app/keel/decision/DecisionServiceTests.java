@@ -296,6 +296,26 @@ class DecisionServiceTests {
         assertThat(send(ready("LOSE_FAT"), "GET", "/v1/decisions/" + latest, null)).as("someone else's").hasStatus(404);
     }
 
+    @Test
+    void whetherAHardStopHoldsIsReadWithoutTheCallsSnapshots() {
+        // K-229 review: every week read the hold from each call of the last months; parsing their snapshots only to look
+        // at the decision was a cost, and one unreadable snapshot would have made every week fail.
+        AccountId account = TestSessions.newAccount();
+        jdbc.sql("""
+                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision, application)
+                values (:id, :a, :client, :week, :week, now(), 'h', cast('{}' as jsonb), cast(:decision as jsonb), 'APPLIED')""")
+                .param("id", UUID.randomUUID()).param("a", account.value()).param("client", UUID.randomUUID()).param("week", thisWeek())
+                .param("decision", "{\"action\": {\"type\": \"CHANGE_PHASE\", \"to\": \"BULK\"}, \"safety\": true}").update();
+
+        List<CallStore.Outcome> outcomes = store.outcomes(account);
+
+        assertThat(outcomes).singleElement().satisfies(outcome -> {
+            assertThat(outcome.application()).isEqualTo(CallStore.Application.APPLIED);
+            assertThat(outcome.decision()).containsEntry("safety", true);
+        });
+        assertThat(SafetyHolds.from(outcomes)).isTrue();
+    }
+
     private AccountId ready(String goal) {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));

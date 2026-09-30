@@ -3,15 +3,14 @@ package app.keel.decision;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
  * Whether a hard stop holds (K-229): from the calls themselves, oldest first — an applied hard stop starts it, the next
- * applied call that opens a deficit ends it. Calls not applied, or undone, change nothing. No separate flag is kept.
+ * applied call that opens a deficit ends it. Calls not applied, or undone, change nothing. No separate flag is kept, and
+ * the calls' snapshots are not read (K-229 review): only when each was made, whether it was applied and what it decided.
  */
 class SafetyHoldHistoryTests {
 
@@ -23,13 +22,12 @@ class SafetyHoldHistoryTests {
 
     private static int day;
 
-    private static CallStore.Call call(Map<String, Object> decision, CallStore.Application application) {
+    private static CallStore.Outcome call(Map<String, Object> decision, CallStore.Application application) {
         day++;
-        return new CallStore.Call(UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 1, 1).plusWeeks(day), LocalDate.of(2026, 1, 1).plusWeeks(day),
-                Instant.parse("2026-01-01T08:00:00Z").plusSeconds(day * 604_800L), "h", null, decision, application);
+        return new CallStore.Outcome(Instant.parse("2026-01-01T08:00:00Z").plusSeconds(day * 604_800L), application, decision);
     }
 
-    private static CallStore.Call applied(Map<String, Object> decision) {
+    private static CallStore.Outcome applied(Map<String, Object> decision) {
         return call(decision, CallStore.Application.APPLIED);
     }
 
@@ -59,9 +57,9 @@ class SafetyHoldHistoryTests {
 
     @Test
     void theOrderIsTheCallsOwnNotTheListsAndASecondHardStopHoldsAgain() {
-        CallStore.Call first = applied(HARD_STOP);
-        CallStore.Call cut = applied(CUT);
-        CallStore.Call again = applied(HARD_STOP);
+        CallStore.Outcome first = applied(HARD_STOP);
+        CallStore.Outcome cut = applied(CUT);
+        CallStore.Outcome again = applied(HARD_STOP);
         // The store lists the newest first.
         assertThat(SafetyHolds.from(List.of(again, cut, first))).isTrue();
         assertThat(SafetyHolds.from(List.of(cut, first))).isFalse();

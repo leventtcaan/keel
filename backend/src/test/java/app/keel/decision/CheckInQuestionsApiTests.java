@@ -405,11 +405,17 @@ class CheckInQuestionsApiTests {
         jdbc.sql("""
                 insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision,
                     application, applied_at, plan_before, plan_after)
-                values (:id, :a, :client, :week, :week, :at, 'h', cast('{}' as jsonb), cast(:decision as jsonb), 'APPLIED', :at,
+                values (:id, :a, :client, :week, :week, :at, 'h', cast(:snapshot as jsonb), cast(:decision as jsonb), 'APPLIED', :at,
                     cast(:plan as jsonb), cast(:plan as jsonb))""")
                 .param("id", UUID.randomUUID()).param("a", account.value()).param("client", UUID.randomUUID())
                 .param("week", thisWeek().minusWeeks(6)).param("at", java.time.OffsetDateTime.now(ZoneOffset.UTC).minusWeeks(6))
                 .param("plan", plan)
+                // A snapshot as a real call keeps it (the ledger and the week's logs read every call's).
+                .param("snapshot", "{\"today\":\"" + thisWeek().minusWeeks(6) + "\",\"sex\":\"FEMALE\",\"phase\":\"CUT\",\"planStart\":\""
+                        + today.minusDays(90) + "\",\"weights\":[],\"fatProxyPct\":null,\"energy\":null,\"checkIn\":{\"look\":\"UNKNOWN\","
+                        + "\"training\":\"UNKNOWN\",\"recovery\":\"UNKNOWN\",\"waist\":\"UNKNOWN\",\"adherence\":null,\"appetite\":\"UNKNOWN\"},"
+                        + "\"profile\":null,\"observingMaintenance\":false,\"phaseStart\":\"" + today.minusDays(90)
+                        + "\",\"training\":null,\"fatProxyHighPct\":null,\"safetyHold\":false}")
                 .param("decision", """
                         {"action": {"type": "CHANGE_PHASE", "to": "BULK"}, "safety": true, "confidence": "HIGH", "nextReview": "2026-01-01",
                          "copyKey": "decision.change_phase.low_energy_safety",
