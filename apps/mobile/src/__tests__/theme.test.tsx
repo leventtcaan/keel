@@ -45,22 +45,32 @@ test('an explicit scheme overrides the phone setting', async () => {
 });
 
 test('useTheme outside a provider fails loudly instead of guessing a palette', async () => {
-  jest.spyOn(console, 'error').mockImplementation(() => {});
-  await expect(renderHook(() => useTheme())).rejects.toThrow(/ThemeProvider/);
+  const quiet = jest.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await expect(renderHook(() => useTheme())).rejects.toThrow(/ThemeProvider/);
+  } finally {
+    quiet.mockRestore();
+  }
 });
 
 describe.each(Object.entries(palettes))('inverse of the %s palette', (_, p) => {
   const inv = inverse(p);
 
-  test('text, background and accent take the decision-block values', () => {
-    expect(inv.background).toBe(p.decisionBackground);
-    expect(inv.text).toBe(p.decisionText);
-    expect(inv.textSecondary).toBe(p.decisionTextSecondary);
-    expect(inv.muted).toBe(p.decisionMuted);
-    expect(inv.line).toBe(p.decisionLine);
-    expect(inv.track).toBe(p.decisionLine);
-    expect(inv.accent).toBe(p.accentInk);
-    expect(inv.onAccent).toBe(p.onAccentInk);
+  test('text, surfaces, lines and accent take the decision-block values; nothing else changes', () => {
+    expect(inv).toEqual({
+      ...p,
+      background: p.decisionBackground,
+      // The block has no separate surface: a card or chip inside it sits on the block itself.
+      surface: p.decisionBackground,
+      raise: p.decisionLine,
+      text: p.decisionText,
+      textSecondary: p.decisionTextSecondary,
+      muted: p.decisionMuted,
+      line: p.decisionLine,
+      track: p.decisionLine,
+      accent: p.accentInk,
+      onAccent: p.onAccentInk,
+    });
   });
 
   test('warnings keep their colour inside the block', () => {

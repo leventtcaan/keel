@@ -101,6 +101,17 @@ describe.each(schemes)('%s theme', (scheme) => {
     expect(screen.getByRole('button', { name: 'Off' })).not.toBeSelected();
   });
 
+  test('a selected Chip inside the DecisionBlock stands out from the block', async () => {
+    await renderIn(
+      scheme,
+      <DecisionBlock title="t">
+        <Chip label="Hard" selected onPress={() => {}} />
+      </DecisionBlock>,
+    );
+    expect(screen.getByRole('button', { name: 'Hard' })).toHaveStyle({ backgroundColor: p.decisionText });
+    expect(screen.getByText('Hard')).toHaveStyle({ color: p.decisionBackground });
+  });
+
   test('ProgressBar fills with the accent on the track colour', async () => {
     await renderIn(scheme, <ProgressBar value={0.4} label="Protein" />);
     const bar = screen.getByRole('progressbar', { name: 'Protein' });
@@ -132,8 +143,23 @@ describe('Button behaviour', () => {
     await renderIn('light', <Button label="Apply" disabled onPress={onPress} />);
     const button = screen.getByRole('button', { name: 'Apply' });
     expect(button).toBeDisabled();
+    expect(button).toHaveStyle({ opacity: tokens.opacity.dim });
     await userEvent.setup().press(button);
     expect(onPress).not.toHaveBeenCalled();
+  });
+
+  test('an enabled Button at rest is not dimmed', async () => {
+    await renderIn('light', <Button label="Apply" onPress={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Apply' })).not.toHaveStyle({ opacity: tokens.opacity.dim });
+  });
+});
+
+describe('Chip behaviour', () => {
+  test('pressing calls onPress', async () => {
+    const onPress = jest.fn();
+    await renderIn('light', <Chip label="Easy" onPress={onPress} />);
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Easy' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
 

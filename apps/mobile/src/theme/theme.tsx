@@ -14,13 +14,16 @@ const ThemeContext = createContext<Theme | null>(null);
 /**
  * The palette inside an inverse surface: text, lines and accent swap to their decision-block values, so a Button or
  * ProgressBar placed in the block needs no special case (prototype: `.dec` redefines the same variables).
- * Warnings keep their colour: a real warning must look the same everywhere.
+ * Warnings keep their colour: a real warning must look the same everywhere. contrast.test.ts checks these pairs too.
  */
 export function inverse(p: Palette): Palette {
   return {
     ...p,
     background: p.decisionBackground,
-    surface: p.decisionLine,
+    // No separate surface inside the block: a card or chip there sits on the block itself, and muted text on a
+    // lighter surface would drop under 4.5:1 in dark mode (3.67:1 with decisionLine).
+    surface: p.decisionBackground,
+    raise: p.decisionLine,
     text: p.decisionText,
     textSecondary: p.decisionTextSecondary,
     muted: p.decisionMuted,

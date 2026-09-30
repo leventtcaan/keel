@@ -10,11 +10,14 @@ type Props = {
   onPress: () => void;
 };
 
-/** A choice among a few; the selected one takes the inverse surface (prototype `.chip[aria-pressed]`). */
+/**
+ * A choice among a few; the selected one is filled with the text colour (prototype `.chip[aria-pressed]`). On the page
+ * that equals the decision-block colours; inside the block (inverse palette) it flips, so it never vanishes into it.
+ */
 export function Chip({ label, selected = false, onPress }: Props) {
   const { color } = useTheme();
   const fill = selected
-    ? { backgroundColor: color.decisionBackground, borderColor: color.decisionBackground }
+    ? { backgroundColor: color.text, borderColor: color.text }
     : { backgroundColor: color.surface, borderColor: color.line };
   return (
     <Pressable
@@ -22,7 +25,7 @@ export function Chip({ label, selected = false, onPress }: Props) {
       accessibilityState={{ selected }}
       onPress={onPress}
       style={[styles.chip, fill]}>
-      <Text style={[styles.label, { color: selected ? color.decisionText : color.text }]}>{label}</Text>
+      <Text style={[styles.label, { color: selected ? color.background : color.text }]}>{label}</Text>
     </Pressable>
   );
 }
