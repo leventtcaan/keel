@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,7 +94,7 @@ class DecisionService {
 
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
-            List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate) {
+            List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate, boolean safetyHold) {
     }
 
     /** This week's check-in and its questions (K-213): only what the engine would wait for, within the budget. */
@@ -109,13 +110,18 @@ class DecisionService {
         CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
         CheckIn dataSays = dataSays(account, week, plan);
         Optional<TrainingStatus> training = training(account, week);
-        // The cycle question first, outside the budget: a safety question (V4, ADR-020 L-1), asked in the low energy band.
+        // The cycle question first, outside the budget: a safety question (V4, ADR-020 L-1), asked in the low energy band —
+        // and after a hard stop, when this week's call, on the data or on the answers asked for, would open a deficit
+        // again and waits for it (K-229).
+        Function<CheckIn, Decision> engine = engine(week, plan, training);
+        List<Answers.Kind> spine = CheckInQuestions.needed(engine, dataSays, budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase())));
         List<Answers.Kind> asked = new ArrayList<>();
-        if (CheckInQuestions.asksAboutTheCycle(week.sex(),
-                SafetyNet.energyAvailability(snapshot(week, plan, dataSays, false, training), week.parameters()))) {
+        Snapshot unanswered = snapshot(week, plan, dataSays, false, false, training);
+        if (CheckInQuestions.asksAboutTheCycle(week.sex(), SafetyNet.energyAvailability(unanswered, week.parameters()))
+                || CheckInQuestions.cycleAwaited(engine, dataSays, spine)) {
             asked.add(Answers.Kind.CYCLE_STOPPED);
         }
-        asked.addAll(asked(week, plan, dataSays, training));
+        asked.addAll(spine);
         return new CheckInView(week.weekOf(), asked.stream().map(CheckInQuestions::describe).toList(), false);
     }
 
@@ -155,7 +161,7 @@ class DecisionService {
         CheckIn dataSays = dataSays(account, week, plan);
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
                 dataSays.adherence(), dataSays.appetite());
-        Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), training(account, week));
+        Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
                 StoredSnapshot.of(snapshot), DecisionJson.of(decision), application(decision));
@@ -187,7 +193,7 @@ class DecisionService {
                 today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
         return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights,
-                dataSays, fatEstimate(account, profile, today, p));
+                dataSays, fatEstimate(account, profile, today, p), SafetyHolds.from(calls.outcomes(account)));
     }
 
     /**
@@ -213,9 +219,9 @@ class DecisionService {
         return CheckInWeek.taken(weekOf, calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(CallStore.Call::weekOf));
     }
 
-    private List<Answers.Kind> asked(Week week, CallStore.Plan plan, CheckIn dataSays, Optional<TrainingStatus> training) {
-        return CheckInQuestions.needed(checkIn -> DecisionPipeline.decide(snapshot(week, plan, checkIn, false, training), week.parameters()),
-                dataSays, budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase())));
+    /** The engine on this week's data with the answers tried, before any cycle answer (the questions are found with it). */
+    private Function<CheckIn, Decision> engine(Week week, CallStore.Plan plan, Optional<TrainingStatus> training) {
+        return checkIn -> DecisionPipeline.decide(snapshot(week, plan, checkIn, false, false, training), week.parameters());
     }
 
     /** What the data says, with how the plan was followed over the window, counted from the logs (K-220). */
@@ -235,7 +241,8 @@ class DecisionService {
         return statuses.status(account, week.today(), week.profile().timeZone(), week.profile().checkInDay());
     }
 
-    private Snapshot snapshot(Week week, CallStore.Plan plan, CheckIn checkIn, boolean menstrualLossReported, Optional<TrainingStatus> training) {
+    private Snapshot snapshot(Week week, CallStore.Plan plan, CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved,
+            Optional<TrainingStatus> training) {
         if (plan.planStart().isAfter(week.today())) {
             // The plan began on a later date than today on the user's calendar now (a time zone moved west).
             throw new ApiException(ErrorCode.CONFLICT);
@@ -244,7 +251,7 @@ class DecisionService {
         return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()),
                 week.fatEstimate().map(FatEstimate.Estimate::lowerPct), Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown),
                 menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training,
-                week.fatEstimate().map(FatEstimate.Estimate::higherPct));
+                week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.safetyHold(), cycleResolved);
     }
 
     /**

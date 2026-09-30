@@ -11,6 +11,7 @@ import app.keel.engine.Decision;
 import app.keel.engine.Phase;
 import app.keel.engine.Reason;
 import app.keel.engine.RuleId;
+import app.keel.engine.SafetyHold;
 import app.keel.engine.Sex;
 import app.keel.engine.Source;
 import app.keel.engine.SourceTag;
@@ -154,5 +155,32 @@ class CheckInPartsTests {
     private static Decision decision(Action action) {
         return new Decision(action, List.of(new Reason(new RuleId("r"), new Source("arastirma/x.md#1", SourceTag.LITERATURE))),
                 Confidence.LOW, LocalDate.of(2026, 10, 5), new CopyKey("decision.continue"));
+    }
+
+    @Test
+    void theCycleAnswerNoIsReadAsResolvedAndYesAsStoppedAndNeitherWhenNotAnswered() {
+        // K-229: after a hard stop, "no, it has not stopped" lets a deficit open again; the answer is never kept.
+        Answers.Read no = Answers.read(List.of(new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "NO", null)), Sex.FEMALE);
+        Answers.Read yes = Answers.read(List.of(new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "YES", null)), Sex.FEMALE);
+        Answers.Read none = Answers.read(List.of(), Sex.FEMALE);
+
+        assertThat(no.cycleResolved()).isTrue();
+        assertThat(no.menstrualLossReported()).isFalse();
+        assertThat(yes.cycleResolved()).isFalse();
+        assertThat(yes.menstrualLossReported()).isTrue();
+        assertThat(none.cycleResolved()).isFalse();
+        assertThat(none.menstrualLossReported()).isFalse();
+    }
+
+    @Test
+    void theCheckInSeesACallWaitingForTheCycleQuestionAndNothingElse() {
+        Source reds = new Source("arastirma/ham/J1-cinsiyet.md#C6", SourceTag.LITERATURE);
+        Decision waiting = new Decision(new Action.NoDecisionYet(), List.of(new Reason(SafetyHold.CYCLE_CHECK_NEEDED, reds)), Confidence.LOW,
+                LocalDate.of(2026, 10, 12), new CopyKey("decision.no_decision_yet.cycle_check_needed"));
+        Decision other = new Decision(new Action.NoDecisionYet(), List.of(new Reason(new RuleId("data_insufficient"), reds)), Confidence.LOW,
+                LocalDate.of(2026, 10, 12), new CopyKey("decision.no_decision_yet.data_insufficient"));
+
+        assertThat(CheckInQuestions.waitsForTheCycle(waiting)).isTrue();
+        assertThat(CheckInQuestions.waitsForTheCycle(other)).isFalse();
     }
 }

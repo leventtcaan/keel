@@ -82,6 +82,10 @@
       "fat_estimate_needed": {
         "title": "A lower target needs one more check first.",
         "body": "Before calories go down, the coach needs a rough read of your body shape — it keeps a lower target from leaving your body short of energy. Add it and the call follows; nothing else waits."
+      },
+      "cycle_check_needed": {
+        "title": "One question before any cut.",
+        "body": "Your plan paused for low energy. Before you eat under your needs again, we check in once more. Your answer itself isn't saved."
       }
     },
     "increase_calories": {

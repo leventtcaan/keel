@@ -275,6 +275,43 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void afterAHardStopACutWaitsForTheCycleQuestionAndItIsAsked() throws Exception {
+        // K-229, ADR-028 #23: the gate would turn her to a cut; before any deficit opens again, the question comes back.
+        AccountId account = womanHeldAfterAHardStop();
+
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
+        assertThat(questions).extracting(question -> question.get("kind")).contains("CYCLE_STOPPED");
+        Map<String, Object> made = map(answer(account, List.of()));
+        assertThat((Map<String, Object>) made.get("action")).containsEntry("type", "NO_DECISION_YET");
+        assertThat(made).containsEntry("copyKey", "decision.no_decision_yet.cycle_check_needed");
+        String kept = jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a and week_of = :w")
+                .param("a", account.value()).param("w", thisWeek()).query(String.class).single();
+        assertThat(kept).contains("\"safetyHold\": true").doesNotContainIgnoringCase("resolved").doesNotContainIgnoringCase("cycle");
+    }
+
+    @Test
+    void afterAHardStopNotStoppedLetsTheCutThrough() throws Exception {
+        AccountId account = womanHeldAfterAHardStop();
+
+        Map<String, Object> made = map(answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "NO"))));
+
+        assertThat((Map<String, Object>) made.get("action")).isEqualTo(Map.of("type", "CHANGE_PHASE", "to", "CUT"));
+        assertThat(made).doesNotContainKey("safety");
+        String kept = jdbc.sql("select decision::text || snapshot::text from decision.weekly_call where account_id = :a and week_of = :w")
+                .param("a", account.value()).param("w", thisWeek()).query(String.class).single();
+        assertThat(kept).doesNotContainIgnoringCase("resolved").doesNotContainIgnoringCase("cycle");
+    }
+
+    @Test
+    void afterAHardStopStillStoppedIsTheHardStopAgain() throws Exception {
+        AccountId account = womanHeldAfterAHardStop();
+
+        Map<String, Object> made = map(answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES"))));
+
+        assertThat(made).containsEntry("safety", true);
+    }
+
+    @Test
     void aWomanNotInTheLowBandOrWithoutAnEstimateIsNotAskedAboutHerCycle() throws Exception {
         // V4: only in the low band — the answer is special-category data (GDPR Art. 9), not asked of every woman.
         AccountId fed = womanOnALowPlan();
@@ -349,6 +386,52 @@ class CheckInQuestionsApiTests {
     }
 
     /** A woman of 60 kg who picked look 3 (30 %), on a 1200 kcal cut: energy availability in the low band. */
+    /**
+     * A woman whose hard stop was applied weeks ago (K-229): the plan builds at 2200 kcal, her estimate is over the bulk
+     * ceiling (the reference look at its fullest), so the phase gate would turn her to a cut — a deficit again.
+     */
+    private AccountId womanHeldAfterAHardStop() {
+        AccountId account = TestSessions.newAccount();
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'BULK', :start, :start, 2200, false)""").param("a", account.value()).param("start", today.minusDays(42)).update();
+        String plan = "{\"phase\":\"BULK\",\"phaseStart\":\"" + today.minusDays(42) + "\",\"planStart\":\"" + today.minusDays(42)
+                + "\",\"targetKcal\":2200,\"observingMaintenance\":true,\"stepsPerDay\":null}";
+        jdbc.sql("""
+                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision,
+                    application, applied_at, plan_before, plan_after)
+                values (:id, :a, :client, :week, :week, :at, 'h', cast(:snapshot as jsonb), cast(:decision as jsonb), 'APPLIED', :at,
+                    cast(:plan as jsonb), cast(:plan as jsonb))""")
+                .param("id", UUID.randomUUID()).param("a", account.value()).param("client", UUID.randomUUID())
+                .param("week", thisWeek().minusWeeks(6)).param("at", java.time.OffsetDateTime.now(ZoneOffset.UTC).minusWeeks(6))
+                .param("plan", plan)
+                // A snapshot as a real call keeps it (the ledger and the week's logs read every call's).
+                .param("snapshot", "{\"today\":\"" + thisWeek().minusWeeks(6) + "\",\"sex\":\"FEMALE\",\"phase\":\"CUT\",\"planStart\":\""
+                        + today.minusDays(90) + "\",\"weights\":[],\"fatProxyPct\":null,\"energy\":null,\"checkIn\":{\"look\":\"UNKNOWN\","
+                        + "\"training\":\"UNKNOWN\",\"recovery\":\"UNKNOWN\",\"waist\":\"UNKNOWN\",\"adherence\":null,\"appetite\":\"UNKNOWN\"},"
+                        + "\"profile\":null,\"observingMaintenance\":false,\"phaseStart\":\"" + today.minusDays(90)
+                        + "\",\"training\":null,\"fatProxyHighPct\":null,\"safetyHold\":false}")
+                .param("decision", """
+                        {"action": {"type": "CHANGE_PHASE", "to": "BULK"}, "safety": true, "confidence": "HIGH", "nextReview": "2026-01-01",
+                         "copyKey": "decision.change_phase.low_energy_safety",
+                         "reasons": [{"rule": "low_energy_safety", "source": {"reference": "arastirma/ham/J1-cinsiyet.md#C6", "tag": "LITERATURE"}}]}""")
+                .update();
+        for (int day = 28; day >= 0; day--) {
+            Instant at = today.minusDays(day).atStartOfDay(ZoneOffset.UTC).plusHours(6).toInstant();
+            if (at.isBefore(Instant.now())) {
+                weighIn(account, at, 60.0);
+            }
+        }
+        assertThat(send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "level", 7))
+                .getResponse().getStatus()).isLessThan(300);
+        return account;
+    }
+
     private AccountId womanOnALowPlan() {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));

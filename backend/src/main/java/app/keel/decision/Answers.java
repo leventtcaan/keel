@@ -23,7 +23,7 @@ final class Answers {
     record Answer(Kind kind, Integer scale, String choice, BigDecimal cm) {
     }
 
-    record Read(CheckIn checkIn, boolean menstrualLossReported) {
+    record Read(CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved) {
     }
 
     private static final Set<Kind> CHOICES = EnumSet.of(Kind.LOOK, Kind.TRAINING, Kind.RECOVERY, Kind.APPETITE, Kind.CYCLE_STOPPED);
@@ -41,6 +41,7 @@ final class Answers {
         CheckIn.Recovery recovery = CheckIn.Recovery.UNKNOWN;
         CheckIn.Appetite appetite = CheckIn.Appetite.UNKNOWN;
         boolean cycleStopped = false;
+        boolean cycleResolved = false;
         Set<Kind> seen = EnumSet.noneOf(Kind.class);
         for (Answer answer : answers) {
             require(answer != null && answer.kind() != null && seen.add(answer.kind()), "each question is answered once");
@@ -53,12 +54,14 @@ final class Answers {
                 case APPETITE -> appetite = choice(CheckIn.Appetite.class, answer.choice());
                 case CYCLE_STOPPED -> {
                     require(sex == Sex.FEMALE, "the cycle question is asked only of a woman (V4)");
-                    cycleStopped = choice(Cycle.class, answer.choice()) == Cycle.YES;
+                    Cycle cycle = choice(Cycle.class, answer.choice());
+                    cycleStopped = cycle == Cycle.YES;
+                    cycleResolved = cycle == Cycle.NO; // after a hard stop, a deficit may open again (K-229)
                 }
                 default -> throw new IllegalStateException("unreachable: " + answer.kind());
             }
         }
-        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), cycleStopped);
+        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), cycleStopped, cycleResolved);
     }
 
     // UNKNOWN is the engine's word for "not answered", never an answer.

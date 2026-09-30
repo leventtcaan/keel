@@ -45,6 +45,11 @@ public final class DecisionPipeline {
         if (safety.isPresent()) {
             return safety.get();
         }
+        // After a hard stop, no call opens a deficit again before the cycle question is answered (K-229).
+        return SafetyHold.check(afterTheSafetyNet(snapshot, parameters), snapshot);
+    }
+
+    private static Decision afterTheSafetyNet(Snapshot snapshot, Parameters parameters) {
         Optional<Decision> ladder = snapshot.training().flatMap(status -> DeloadLadder.check(status, snapshot, parameters));
         if (ladder.isPresent() && trainingGoingWrong(ladder.get())) {
             return ladder.get();

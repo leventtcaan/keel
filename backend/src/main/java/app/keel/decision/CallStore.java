@@ -35,6 +35,10 @@ class CallStore {
         }
     }
 
+    /** What a call decided and whether it changed the plan, without its snapshot: enough to follow a hard stop (K-229). */
+    record Outcome(Instant decidedAt, Application application, Map<String, Object> decision) {
+    }
+
     private final JdbcClient jdbc;
     private final JsonMapper json;
 
@@ -134,6 +138,18 @@ class CallStore {
     /** Every call of the account (the export, K-214). */
     List<Call> all(AccountId account) {
         return calls("account_id = :account", Map.of("account", account.value()), Integer.MAX_VALUE);
+    }
+
+    /** Every call of the account, as its outcome only: the snapshots are not read (K-229 review). */
+    @SuppressWarnings("unchecked")
+    List<Outcome> outcomes(AccountId account) {
+        return jdbc.sql("""
+                        select decided_at, application, decision::text as decision_json from decision.weekly_call
+                        where account_id = :account order by decided_at desc, id desc""")
+                .param("account", account.value())
+                .query((row, n) -> new Outcome(row.getObject("decided_at", OffsetDateTime.class).toInstant(),
+                        Application.valueOf(row.getString("application")), json.readValue(row.getString("decision_json"), Map.class)))
+                .list();
     }
 
     private List<Call> calls(String where, Map<String, Object> params, int limit) {

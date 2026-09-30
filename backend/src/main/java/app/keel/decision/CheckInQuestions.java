@@ -1,9 +1,11 @@
 package app.keel.decision;
 
+import app.keel.engine.Action;
 import app.keel.engine.CheckIn;
 import app.keel.engine.Decision;
 import app.keel.engine.EnergyAvailability;
 import app.keel.engine.Phase;
+import app.keel.engine.SafetyHold;
 import app.keel.engine.Sex;
 import app.keel.engine.WeeklySpine;
 import java.util.ArrayDeque;
@@ -16,6 +18,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Which questions a check-in asks (K-213, U9; 04 §8.5 — the gain is in staying quiet): the engine runs on what the data
@@ -65,6 +68,27 @@ final class CheckInQuestions {
     /** Whether the cycle question is asked (V4, ADR-020 L-1): a woman whose plan is in the low energy band. */
     static boolean asksAboutTheCycle(Sex sex, Optional<EnergyAvailability> band) {
         return sex == Sex.FEMALE && band.filter(inBand -> inBand == EnergyAvailability.LOW).isPresent();
+    }
+
+    /** Whether the call waits for the cycle question: after a hard stop, before it opens a deficit (K-229). */
+    static boolean waitsForTheCycle(Decision decision) {
+        return decision.action() instanceof Action.NoDecisionYet
+                && decision.reasons().stream().anyMatch(reason -> reason.rule().equals(SafetyHold.CYCLE_CHECK_NEEDED));
+    }
+
+    /**
+     * Whether the week's call can end waiting for the cycle question (K-229 review): on what the data says, or on any
+     * answers to the questions asked — each one answered or left open. Held after a hard stop, the spine can first wait
+     * for training and only then open a deficit; looking at the unanswered call alone, the cycle question would never be
+     * asked and every such week would end without a call.
+     */
+    static boolean cycleAwaited(Function<CheckIn, Decision> engine, CheckIn dataSays, List<Answers.Kind> asked) {
+        List<CheckIn> reachable = List.of(dataSays);
+        for (Answers.Kind kind : asked) {
+            reachable = reachable.stream().flatMap(checkIn -> Stream.concat(Stream.of(checkIn),
+                    choices(kind).stream().map(choice -> answered(checkIn, kind, choice)))).toList();
+        }
+        return reachable.stream().map(engine).anyMatch(CheckInQuestions::waitsForTheCycle);
     }
 
     static boolean anomaly(CheckIn dataSays, Phase phase) {
