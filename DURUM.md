@@ -112,7 +112,7 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 |---|---|---|
 | 1 · Temel | 0a disk, 0b sorular → ADR-028 · K-301, K-302, K-303, K-307 · Dependabot #2 | ✅ bitti (30 Eyl) |
 | 2 · Veri ve kimlik | K-311, K-304, K-305, K-310 (+ ADR-029) | ✅ bitti (30 Eyl) |
-| 3 · Akış ve teslim | K-306, K-309, K-308, K-227, K-228, K-229 (ADR-028) · M3 çıkış kontrolü · M4 part prompt'ları | sürüyor |
+| 3 · Akış ve teslim | K-306, K-312, K-309, K-403, K-308, K-227, K-228, K-229 · M3 çıkış kontrolü · M4 part prompt'ları | sürüyor |
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
@@ -130,6 +130,10 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 bulutunda derlenir (yerel native derleme yok). **Erken cevaplar (ADR-030'a işlenecek):** Apple Developer üyeliği **var** →
 K-308 cihaz + TestFlight bu part'ta (Apple girişi/onayı Levent) · soru 25 → (c) sağlık kaydı girişi rıza ister, yarışta 403
 gelirse REJECTED + ekran uyarısı · soru 27 → K-231 ile (M4; K-231 kartına kriter) · soru 26 bitişte.
+
+**Part 3 plan (30 Eyl):** K-306 (L) bölündü → **K-306** yönlendirme + profil (M) · **K-312** rızalar, başlangıç ölçümleri,
+Health (M). **K-403** HealthKit spike M4'ten M3'e (K-308 "HealthKit diyaloğu cihazda" ister). Geçmiş içe aktarma zaten
+K-609 (M6). Sıra: K-306 → K-312 → K-309 → K-403 → K-308 → K-228 → K-229 → K-227.
 
 **Part 2 başı (30 Eyl):** senkron tamam (Part 1 ÇIKIŞ git ile tutarlı: #192-#195 birleşik, ADR-028 var, açık PR/worktree
 yok). **Disk:** 3,7 GB → Levent "simülatör önbelleğini sil" dedi → `CoreSimulator/Caches` + `~/.npm` → **7,0 GB**.

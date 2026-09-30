@@ -1205,26 +1205,50 @@ tasks:
     learn: ["Mobil kimlik doğrulama", "Güvenli depolama (Keychain)"]
 
   - id: K-306
-    title: "Onboarding akışı"
+    title: "Onboarding akışı: yönlendirme ve profil"
     milestone: M3
     module: mobile
     type: feature
-    size: L
+    size: M
     status: todo
-    depends_on: [K-301, K-302, K-305, K-205, K-204]
-    why: "İlk 5 dakikada kişiselleştirilmiş plan; beklenti kalibrasyonu (U15)"
+    depends_on: [K-301, K-302, K-305, K-310, K-205]
+    why: "İlk 5 dakikada kişiselleştirilmiş plan; beklenti kalibrasyonu (U15). L bölündü (30 Eyl): rıza, ölçüm ve Health K-312'de"
     acceptance:
-      - "Ekranlar prototipteki sırayla: welcome, goal, program, schedule, baseline, photos, expectations, health, AI consent"
-      - "Schedule ekranı gerçekçi gün çıkarımı gösterir"
-      - "Rıza ekranları ayrı; AI rızası sağlayıcıyı adıyla anar"
-      - "Apple Health ekranı: okuma listesi + ayrı 'antrenmanları ekle' izni (ADR-018)"
-      - "Geçmiş içe aktarma seçeneği; trend hemen, ilk karar ilk pazartesi (ADR-018)"
-      - "≤12 ekran, ~5 dakika"
+      - "Oturum açık + profil yok (GET /v1/profile 404) → onboarding; profil var → sekmeler; bilinmiyor (çevrimdışı ilk açılış) → tekrar dene ekranı; onboarding biten kullanıcı bir daha görmez"
+      - "Ekranlar prototip sırasıyla: goal (DECIDE_FOR_ME eşit ağırlıkta, K-222) · program · schedule · about you (boy, doğum yılı, cinsiyet) · activity · photos · expectations; geri dönülebilir, taslak korunur"
+      - "Schedule: en fazla 6 gün seçilir, 7. dinlenme (ADR-027 #15, G1 K-70); seçilen günlerden plan cümlesi (gerçekçi gün çıkarımı), son ay seans sayısı ve saat"
+      - "Yaş kesin 18+ (ADR-027 #13): doğum yılı alanı sözleşmenin sınırını parametreden uygular; genç yıl gönderilmez"
+      - "Aktivite 4 NASEM düzeyi, günlük hayattan örnekli (ADR-027 #6)"
+      - "Boy kullanıcının biriminde (K-310), bir kez yuvarlanır; profil yokken seçilen birim PUT'a girer"
+      - "Bitişte tek profile PUT; başarısızsa taslak kalır ve tekrar denenir; başarıyla sekmelere geçilir"
     tests:
-      - "Akış testleri"
-      - "Rıza kaydı testi"
-    refs: ["prototip/", "arastirma/ham/I1-onboarding-aliskanlik.md", "plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
-    learn: ["Çok adımlı form akışı", "Durum yönetimi"]
+      - "onboarding-draft.test.ts (saf: adımlar, doğrulama, profile eşleme)"
+      - "profile-status.test.ts"
+      - "onboarding-flow.test.tsx (yönlendirme + akış)"
+    refs: ["prototip/keel-prototype.html", "arastirma/ham/I1-onboarding-aliskanlik.md", "plan/kararlar/ADR-027-m2-sonu-cevaplari.md"]
+    learn: ["Çok adımlı form akışı", "Durum yönetimi", "Koruma (guard) ile yönlendirme"]
+
+  - id: K-312
+    title: "Onboarding: rızalar, başlangıç ölçümleri, Apple Health"
+    milestone: M3
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-306, K-204, K-304]
+    why: "K-306'dan ayrıldı (30 Eyl). Sağlık verisi rızası toplamadan önce; ölçüm ve görünüş rızaya bağlı (ADR-007, ADR-028)"
+    acceptance:
+      - "Sağlık verisi rızası ayrı ekran, metin sürümüyle PUT; reddedilirse sağlık alanları (kilo, bel, görünüş, yiyemediğim gıdalar) gösterilmez ve gönderilmez (ADR-027 #14, ADR-030 #25)"
+      - "Başlangıç kilosu ve isteğe bağlı bel kullanıcının biriminde; profil kaydedildikten sonra kuyruğa (clientId)"
+      - "Referans görünüş: 7 seviye yer tutucu (ADR-028), yalnız seviye gönderilir, hiçbir yerde sayı yok (U4); atlanabilir"
+      - "Apple Health ekranı: okunan/okunmayan listesi, APPLE_HEALTH rızası; izin diyaloğu K-403'ün kütüphanesiyle, kütüphane yokken (Expo Go) ekran bunu söyler"
+      - "AI rızası sağlayıcıyı adıyla anar; sağlayıcı seçilmediyse ekran akışta yok (ilk kullanımda sorulur)"
+      - "Geçmiş içe aktarma K-609'da (M6); toplam ekran ≤12"
+    tests:
+      - "onboarding-consent.test.tsx (rıza var/yok, sürüm)"
+      - "onboarding-finish.test.ts (profil + kayıtlar, sıra)"
+    refs: ["plan/kararlar/ADR-007-gizlilik-ve-riza.md", "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md", "plan/kararlar/ADR-028-m3-basi-cevaplari.md"]
+    learn: ["Rıza kaydı tasarımı (istemci)", "Koşullu adımlar"]
 
   - id: K-307
     title: "Gezinme: sekmeler ve koç girişi"
@@ -1338,13 +1362,13 @@ tasks:
 
   - id: K-403
     title: "Spike: HealthKit kütüphanesi seçimi"
-    milestone: M4
+    milestone: M3
     module: mobile
     type: spike
     size: S
     status: todo
     depends_on: [K-007]
-    why: "Bağımlılık seçimi gerekçeli olmalı (K5)"
+    why: "Bağımlılık seçimi gerekçeli olmalı (K5). M3'e çekildi (30 Eyl): K-308 HealthKit diyaloğunu, K-312 Health iznini ister"
     acceptance:
       - "@kingstinct/react-native-healthkit ve alternatifleri: Expo SDK 57 uyumu, bakım, izin modeli karşılaştırıldı"
       - "Seçim ADR olarak yazıldı"
@@ -1677,6 +1701,7 @@ tasks:
       - "ConsentWithdrawn olayını dinleyen modüller o rızaya bağlı veriyi siler (K-214 silme yolu, tekrar denenebilir)"
       - "Geri çekme API'si onay ister; mobil (K-309) uyarı + dışa aktarma bağlantısı gösterir"
       - "Silme olayı logda sağlık verisi taşımaz (V3)"
+      - "Rıza yokken profil PUT'u gelmeyen food.avoid'i sessizce boşaltmaz; geri çekme onu zaten uyarıyla siler (ADR-030 #27)"
     tests:
       - "ConsentWithdrawalDeletionTests"
       - "AccountDataTests"
