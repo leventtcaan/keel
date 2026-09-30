@@ -155,6 +155,24 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void theFatEstimateIsTheSmallerOfTheLookAndTheWaistAndStaysInside() throws Exception {
+        // K-224: a man of 180 cm picks look 3 (10 + 2 × 5 = 20 %); his waist of 90 cm gives RFM 64 − 20 × 2 = 24 %: the
+        // engine reads 20. The call the app gets carries no percent (U4).
+        AccountId account = ready();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        waist(account, today, 90.0);
+        assertThat(send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "level", 3))
+                .getResponse().getStatus()).isLessThan(300);
+
+        MvcTestResult call = answer(account, List.of());
+
+        String snapshot = jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        assertThat(JSON.readValue(snapshot, StoredSnapshot.class).fatProxyPct()).isEqualByComparingTo("20");
+        assertThat(call.getResponse().getContentAsString()).doesNotContainIgnoringCase("fatProxy").doesNotContain("\"20\"");
+    }
+
+    @Test
     void theWaistComesFromItsMeasurements() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);

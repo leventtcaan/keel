@@ -9,11 +9,11 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-/** Measurement's part of the user's data (K-214): every weigh-in, waist, photo check and activity day. */
+/** Measurement's part of the user's data (K-214): every weigh-in, waist, photo check, activity day and look (levels, K-224). */
 @Component
 class MeasurementAccountData implements AccountDataExport {
 
-    private static final List<String> TABLES = List.of("weigh_in", "waist", "photo_check", "activity_day");
+    private static final List<String> TABLES = List.of("weigh_in", "waist", "photo_check", "activity_day", "body_look");
 
     private final JdbcClient jdbc;
     private final MeasurementStore store;
@@ -41,6 +41,7 @@ class MeasurementAccountData implements AccountDataExport {
                 "weighIns", store.weighIns(account),
                 "waistMeasurements", store.waists(account),
                 "photoChecks", store.photoChecks(account),
+                "bodyLooks", store.bodyLooks(account),
                 "activityDays", store.activityDays(account));
     }
 }

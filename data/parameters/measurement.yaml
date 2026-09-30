@@ -33,3 +33,39 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#2.5"
     note: "Bel, fotoğraf ve kilo trendi üç bağımsız hesapta aynı sabite çıkıyor."
+  - key: rfm_intercept_pct
+    value: 64
+    unit: percent_internal_only
+    tag: literatur
+    source: "arastirma/ham/H8-yag-tahmini.md#A1"
+    note: "YALNIZ İÇ DEĞİŞKEN (U4). Relative Fat Mass = 64 − 20 × boy/bel + 12 × cinsiyet (Woolcott & Bergman 2018, DXA'ya karşı, NHANES n=12.581 + 3.456). Kaba bant: IQR erkek 4,2, kadın 4,9 puan (H8 A3); ADR-027 #11 'yalnız kapı için'."
+  - key: rfm_height_to_waist_pct
+    value: 20
+    unit: percent_internal_only
+    tag: literatur
+    source: "arastirma/ham/H8-yag-tahmini.md#A1"
+    note: "RFM'de boy/bel katsayısı (puan / oran)."
+  - key: rfm_female_offset_pct
+    value: 12
+    unit: percent_internal_only
+    tag: literatur
+    source: "arastirma/ham/H8-yag-tahmini.md#A1"
+    note: "RFM'de cinsiyet terimi: 12 × cinsiyet (erkek 0, kadın 1) — yalnız kadında eklenir."
+  - key: look_level_first_pct
+    by_sex: {male: 10, female: 20}
+    unit: percent_internal_only
+    tag: tecrube
+    source: "arastirma/04-faz3-urun.md#Ö-4"
+    note: "YALNIZ İÇ DEĞİŞKEN (U4). Referans görünüşün ilk seviyesi. Ö-4: %12 fit, %15-20 bant, %20 tavan (göbek testi, G6 K-9); kadın +10 puan (J1 B1). Kullanıcı sayı değil görsel seçer (H8 B)."
+  - key: look_level_step_pct
+    value: 5
+    unit: percent_internal_only
+    tag: tecrube
+    source: "arastirma/04-faz3-urun.md#Ö-4"
+    note: "Seviyeler arası 5 puan: Ö-4 bantlarını (12 / 15-20 / 20+) ayırabilecek en kaba adım; görsel bir tahminin kendi belirsizliğinden ince değil."
+  - key: look_levels
+    value: 7
+    unit: levels
+    tag: tecrube
+    source: "arastirma/04-faz3-urun.md#Ö-4"
+    note: "Erkekte %10-40, kadında %20-50: kapının eşiklerini (surplus 12/22, tavan 20/30, önce yağ 25/35, alt sınır 8/18) kapsar."

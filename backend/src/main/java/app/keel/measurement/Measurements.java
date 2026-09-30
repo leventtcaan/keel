@@ -61,6 +61,21 @@ public class Measurements {
         return steps;
     }
 
+    /**
+     * The latest look picked from {@code from} to {@code to}, both included (K-224): its level. Two on the latest day (no
+     * time to order them): the lower, the side the safety rules read most protectively (H8 C).
+     */
+    public Optional<Integer> latestLookLevel(AccountId account, LocalDate from, LocalDate to) {
+        return latestLevel(store.bodyLooks(account), from, to);
+    }
+
+    static Optional<Integer> latestLevel(List<MeasurementStore.BodyLook> looks, LocalDate from, LocalDate to) {
+        List<MeasurementStore.BodyLook> inDays = looks.stream().filter(look -> !look.takenOn().isBefore(from) && !look.takenOn().isAfter(to)).toList();
+        return inDays.stream().map(MeasurementStore.BodyLook::takenOn).max(LocalDate::compareTo)
+                .flatMap(latest -> inDays.stream().filter(look -> look.takenOn().equals(latest)).map(MeasurementStore.BodyLook::level)
+                        .min(Integer::compareTo));
+    }
+
     /** Waist measurements from {@code from} to {@code to}, both included, for the engine's WaistTrend (K-213). */
     public List<WaistTrend.Reading> waists(AccountId account, LocalDate from, LocalDate to) {
         return store.waists(account, from, to).stream().map(waist -> new WaistTrend.Reading(waist.measuredOn(), waist.cm())).toList();

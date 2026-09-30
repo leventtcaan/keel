@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -30,6 +31,10 @@ class MeasurementStore {
     }
 
     record Waist(UUID id, UUID clientId, LocalDate measuredOn, BigDecimal cm) {
+    }
+
+    /** The reference look picked (K-224): a level, never a percent (U4). */
+    record BodyLook(UUID id, UUID clientId, LocalDate takenOn, int level) {
     }
 
     record PhotoCheck(UUID id, UUID clientId, LocalDate takenOn, Look look) {
@@ -117,6 +122,27 @@ class MeasurementStore {
                 .param("account", account.value()).param("client", clientId)
                 .query((row, n) -> new PhotoCheck(uuid(row, "id"), uuid(row, "client_id"), row.getObject("taken_on", LocalDate.class),
                         Look.valueOf(row.getString("look")))).single(), created == 1);
+    }
+
+    Stored<BodyLook> add(AccountId account, UUID clientId, LocalDate takenOn, int level) {
+        int created = jdbc.sql("""
+                insert into measurement.body_look (id, account_id, client_id, taken_on, level)
+                values (:id, :account, :client, :on, :level) on conflict (account_id, client_id) do nothing""")
+                .param("id", UUID.randomUUID()).param("account", account.value()).param("client", clientId)
+                .param("on", takenOn).param("level", level).update();
+        return new Stored<>(bodyLooks("account_id = :account and client_id = :client", Map.of("account", account.value(), "client", clientId))
+                .getFirst(), created == 1);
+    }
+
+    /** Every look of the account, oldest first; {@code where} over the account's rows. */
+    List<BodyLook> bodyLooks(AccountId account) {
+        return bodyLooks("account_id = :account", Map.of("account", account.value()));
+    }
+
+    private List<BodyLook> bodyLooks(String where, Map<String, Object> params) {
+        return jdbc.sql("select * from measurement.body_look where " + where + " order by taken_on, id").params(params)
+                .query((row, n) -> new BodyLook(uuid(row, "id"), uuid(row, "client_id"), row.getObject("taken_on", LocalDate.class), row.getInt("level")))
+                .list();
     }
 
     List<PhotoCheck> photoChecks(AccountId account) {

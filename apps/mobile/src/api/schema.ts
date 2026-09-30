@@ -252,6 +252,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/body-looks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The reference look closest to the user's own, as a level (K-224); never a percent in or out (U4)
+         * @description The app shows reference looks (the belly test, Ö-4) and sends the level picked, 1 to look_levels (7). The engine
+         *     reads it, with the waist, as its internal estimate; no response anywhere carries a percent. Health data:
+         *     CONSENT_REQUIRED without the HEALTH_DATA consent.
+         */
+        post: operations["recordBodyLook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/activity-days": {
         parameters: {
             query?: never;
@@ -916,6 +938,17 @@ export interface components {
          * @enum {string}
          */
         Look: "BETTER" | "SAME" | "WORSE";
+        NewBodyLook: {
+            clientId: components["schemas"]["ClientId"];
+            /** Format: date */
+            takenOn: string;
+            /** @description The reference look picked, leanest first; what it means is the engine's (U4). */
+            level: number;
+        };
+        BodyLook: components["schemas"]["NewBodyLook"] & {
+            /** Format: uuid */
+            id: string;
+        };
         /** @description Derived on the phone; no image, no measurement of the body leaves it (V1). */
         NewPhotoCheck: {
             clientId: components["schemas"]["ClientId"];
@@ -1456,6 +1489,15 @@ export interface components {
             };
         };
         /** @description Stored (201), or already stored with this clientId (200) */
+        BodyLookCreated: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["BodyLook"];
+            };
+        };
+        /** @description Stored (201), or already stored with this clientId (200) */
         PhotoCheckCreated: {
             headers: {
                 [name: string]: unknown;
@@ -1914,6 +1956,24 @@ export interface operations {
         responses: {
             200: components["responses"]["PhotoCheckCreated"];
             201: components["responses"]["PhotoCheckCreated"];
+            default: components["responses"]["Error"];
+        };
+    };
+    recordBodyLook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewBodyLook"];
+            };
+        };
+        responses: {
+            200: components["responses"]["BodyLookCreated"];
+            201: components["responses"]["BodyLookCreated"];
             default: components["responses"]["Error"];
         };
     };

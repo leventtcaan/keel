@@ -205,6 +205,7 @@ class AccountDataTests {
                 "source", "MANUAL"));
         send(account, "POST", "/v1/waist-measurements", Map.of("clientId", UUID.randomUUID(), "measuredOn", "2026-09-30", "cm", 88));
         send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "look", "SAME"));
+        send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "level", 3));
         send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 8000));
         send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY")));
         // A call of the deload ladder on the program (K-217), as decision applies it.

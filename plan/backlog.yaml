@@ -977,7 +977,7 @@ tasks:
     module: measurement
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-206]
     why: "Faz kapısı, bulk tavanı, LEA ağı ve L-4 yağ tahmini ister (ADR-027 #11); sayı hiçbir yerde gösterilmez (U4)"
     acceptance:
