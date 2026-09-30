@@ -30,6 +30,7 @@ profil → ölçüm/beslenme/antrenman → karar.
 18. K-216 kararı uygulamak — komut, durum makinesi, eşzamanlılık, denetim izi, bayat karar
 19. K-220 uyumu saymak — çok modüllü özet, bilinmeyen ≠ kaçırılan, günün hedefi, satır kilidi
 20. K-217 programa yansıma — değişiklik satırı, deload merdiveni, geri alma, seanstan sonraki hedef
+21. K-221 antrenman durumu — zaman serisinden durum, ilerleme tanımı, merdivenin kendi izi
 11. (sıradakiler görev bitince eklenir)
 
 ## Durum
@@ -55,3 +56,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-216 kararı hedeflere uygula + geri al (V12) | `K-216.md` | ✅ | — | — | — |
 | K-220 uyum kayıtlardan (WeekTally) | `K-220.md` | ✅ | — | — | — |
 | K-217 programa yansıma (V13, V14) | `K-217.md` | ✅ | — | — | — |
+| K-221 TrainingStatus set kaydından | `K-221.md` | ✅ | — | — | — |

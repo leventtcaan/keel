@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -85,6 +86,12 @@ class ProgramStore {
             }
         }
         return current(account).orElseThrow();
+    }
+
+    /** When the account's program was made (or last replaced). */
+    Optional<Instant> createdAt(AccountId account) {
+        return jdbc.sql("select created_at from training.program where account_id = :account").param("account", account.value())
+                .query((row, n) -> row.getObject("created_at", OffsetDateTime.class).toInstant()).optional();
     }
 
     /**
