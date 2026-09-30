@@ -166,6 +166,7 @@ class SessionProgressApiTests {
 
         assertThat(finish(account, workout, List.of("no_such_move"))).hasStatus(400);
         assertThat(finish(account, workout, List.of("bench_press", "bench_press"))).hasStatus(400);
+        assertThat(finish(account, workout, java.util.Arrays.asList((String) null))).as("a null in the answer").hasStatus(400);
 
         assertThat(map(send("GET", account, "/v1/workouts/" + workout, null))).doesNotContainKey("endedAt");
         assertThat(planned(account, 0)).doesNotContainKeys("nextLoadKg", "nextReps");
