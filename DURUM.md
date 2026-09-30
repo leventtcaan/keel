@@ -126,13 +126,15 @@ Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `
 | K-306 onboarding: yönlendirme + profil (profil durumu, 7 adım, tek PUT) | ✅ birleşti; simülatör: birim çipi çevrimdışı hiçbir şey yapmıyordu → `keepOnPhone`; inceleme 3+9 bulgu (metinde parametre, sunucu hatası ≠ bağlantı, çıkış yolu, tek uçuş okuma, saklı done + 404); mutasyon 20/20 | #202 | `M3/K-306.md` |
 | K-312 onboarding: sağlık rızası, kilo/bel, gıda, Apple Health | ✅ birleşti; inceleme 7+9 bulgu (Allow/Not now yarışı, geri çekme, profil önce, sınırlar, Health yalnız rızayla, önce sayfa); mutasyon 21/21 | #203 | `M3/K-312.md` |
 | K-309 Ayarlar (birim, rızalar, dışa aktarma, hesap silme, çıkış; + expo-file-system) | ✅ birleşti; simülatör: onay en dipte, geri düğmesi yok → düzeltildi; inceleme 1+13 bulgu (yeniden okuma hatasında eski durum, pendingCount hatası, 202 sonrası anahtarlık); mutasyon 17/17 | #204 | `M3/K-309.md` |
-| K-403 HealthKit kütüphanesi (ADR-031, @kingstinct 16) | PR'da (auto-merge); inceleme: Expo Go'da Metro yükleme hatasını ölümcül gösteriyordu → `isRunningInExpoGo` kapısı; mutasyon 7/7 | #205 | `M3/K-403.md` |
+| K-403 HealthKit kütüphanesi (ADR-031, @kingstinct 16) | ✅ birleşti; inceleme: Expo Go'da Metro yükleme hatasını ölümcül gösteriyordu → `isRunningInExpoGo` kapısı; mutasyon 7/7 | #205 | `M3/K-403.md` |
 | K-308 EAS (eas.json, dev client, paket kimliği yapılandırmada, runbook `docs/eas-derleme.md`) | dalda (`mobile/104-eas-dev-build`), K-403 birleşince rebase + PR; **cihaz/TestFlight adımları Levent'te** (bitiş sorularında) | — | — |
+| K-228 hard stop genel türle (CHANGE_PHASE→BULK + `safety`, V17) | PR'da (auto-merge); inceleme: V17 tırnak → göç kuralı kırmızı olurdu, düzeltildi; mutasyon 6/6; artık risk → soru 30 | #207 | `M3/K-228.md` |
+| K-229 hard stop sonrası döngü sorusu (motor `SafetyHold`, hold geçmişten) | dalda (`decision/189-…`, K-228 üstünde), inceleme sürüyor; mutasyon 11/11; K-228 birleşince PR | — | `M3/K-229.md` |
 | K-307 gezinme (NativeTabs, koç girişi, koç sayfası) | ✅ birleşti; simülatör: koç çubuğu sekme çubuğu altındaydı → alt güvenli alan; inceleme: `keel://coach` soğuk açılış sekmesiz kalıyordu → `anchor`; mutasyon 10/10 | #195 | `M3/K-307.md` |
 
 **Part 3 ara not (30 Eyl gece):** K-313 (referans görünüş adımı) M4'e ayrıldı — 7 seviye motorun iç yağ tahminini
 besliyor, kaynak yalnız tek eşiği betimliyor → **soru 28** (aşağıda). AI rızası K-511 ile. Beklenti ekranı U8'e göre
-(prototipin "4 hafta trend göstermem"i anayasayla çelişiyordu). Sıradaki: K-228 → K-229 → K-227 (backend); K-308 cihaz adımları bitiş sorularında.
+(prototipin "4 hafta trend göstermem"i anayasayla çelişiyordu). Sıradaki: K-229 PR → K-227 (V18: `mini_cut_until`; iştah sorusu bütçede; mini cut açığı TÜRETİLMİŞ = K-107 ilk adım → soru 31) → bitiş (M3 çıkış kontrolü, sorular 25-31 + K-308 onayı, M4 prompt'ları).
 
 **Part 3 başı (30 Eyl):** senkron tamam (Part 1/2 ÇIKIŞ git ile tutarlı: #192-#200 birleşik, açık PR/worktree yok).
 **Disk:** 4,3 GB → Levent "önbellekler + bulut derleme" → ShipIt/dotslash/JetBrains/npm önbelleği → **5,5 GB**; K-308 EAS
@@ -232,6 +234,15 @@ K-229 (Part 3) · 24 (b) genel tür → K-228 (Part 3) · Apple kimlikleri: sonr
 Apple kimlikleri + referans görsel lisansı Part 1'in 0b adımında toplu sorulacak. K-227 issue #187 (backend, Part 3).
 
 ## Session sonunda Levent'e sorulacaklar
+30. **(K-228 incelemesi, veri/hukuk — YENİ, Part 3)** Hard stop artık "CHANGE_PHASE → BULK + safety: true" olarak saklanıyor;
+    ama `safety` işareti **yalnız** hard stop'ta çıkıyor → kaydı okuyan cevabı yine çıkarabilir (ADR-028 (b)'nin doğası).
+    Seçenekler: (a) kabul (artık risk, ADR'ye yaz); (b) güvenlik ağının **tüm** kararları (hızlı kayıp, LEA daraltma) da
+    `safety` taşısın → işaret tek başına cevabı söylemez, ama "CHANGE_PHASE→BULK + safety" birleşimi yine yalnız hard stop;
+    (c) hard stop kararı belirli süre sonra silinsin (ADR-028'de (c) seçilmemişti).
+31. **(K-227, sağlık — YENİ, Part 3)** Mini cut'ın açığı kaynakta yok (G7 K-102: "4–6 hafta defisit", sayı yok). Önerim
+    (TÜRETİLMİŞ): bakım tahmini − kalori merdiveninin ilk kesim adımı (K-107), gözlem beklemeden; süre en fazla
+    `mini_cut_weeks_max`, sonra bulk'a dönüş. Seçenekler: (a) onay; (b) başka bir büyüklük (söyle); (c) mini cut şimdilik
+    uygulanmasın (motor önerir, plan değişmez).
 28. **(K-312, sağlık — YENİ, Part 3)** Referans görünüş (7 seviye) motorun iç yağ tahminini, dolayısıyla LEA tabanını ve
     faz kapısını besliyor. ADR-028 "M3'te metin açıklamalı yer tutucu" dedi; ama kaynak yalnız bir eşiği betimliyor
     (G6 K-9: göbek görünüyorsa erkekte %20 üstü). Seçenekler: (a) çizimler gelene kadar adım **gizli**, motor bel/RFM ile
