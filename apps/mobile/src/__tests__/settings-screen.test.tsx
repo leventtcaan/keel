@@ -71,7 +71,7 @@ const row = (kind: 'HEALTH_DATA' | 'APPLE_HEALTH') => t(`settings.consents.${kin
 test('the sections are there, and nothing is in the warn colour until a destructive step asks', async () => {
   await show();
   expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
-  for (const key of ['units.title', 'consents.title', 'export.title', 'delete.title', 'signOut.title']) {
+  for (const key of ['units.title', 'consents.title', 'account.title', 'export.title', 'delete.title', 'signOut.title']) {
     expect(screen.getAllByText(t(`settings.${key}`)).length).toBeGreaterThan(0);
   }
   expect(warnButtons()).toEqual([]);

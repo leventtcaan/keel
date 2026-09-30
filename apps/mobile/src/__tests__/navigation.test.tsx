@@ -153,7 +153,12 @@ test('Settings opens from Today, over the tabs (K-309, prototype 5.2)', async ()
   });
   expect(router.getPathname()).toBe('/settings');
   expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
-  expect(appRouter.canGoBack()).toBe(true);
+  // Its own way back (prototype: "‹ Today"), not only the swipe.
+  await fireEvent.press(screen.getByRole('button', { name: t('settings.back') }));
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/');
 });
 
 test('signed out, Settings is not reachable', async () => {

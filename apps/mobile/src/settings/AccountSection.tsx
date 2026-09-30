@@ -32,7 +32,7 @@ export function AccountSection() {
     else void run(signOut, {});
   };
 
-  const question =
+  const deleteQuestion =
     asking === 'delete' ? (
       <Confirm
         title={t('settings.delete.confirmTitle')}
@@ -43,7 +43,9 @@ export function AccountSection() {
         onKeep={() => setAsking(null)}
         busy={busy}
       />
-    ) : asking !== null ? (
+    ) : null;
+  const signOutQuestion =
+    asking !== null && asking !== 'delete' ? (
       <Confirm
         body={t('settings.signOut.pending', { count: asking.pending })}
         confirmLabel={t('settings.signOut.confirm')}
@@ -55,7 +57,7 @@ export function AccountSection() {
     ) : null;
 
   return (
-    <Section title={t('settings.export.title')}>
+    <Section title={t('settings.account.title')}>
       <View style={styles.item}>
         <Button label={t('settings.export.title')} variant="ghost" onPress={exportAll} disabled={busy} />
         <Text style={[styles.note, { color: color.muted }]}>{t('settings.export.note')}</Text>
@@ -64,8 +66,9 @@ export function AccountSection() {
         <Button label={t('settings.delete.title')} variant="ghost" onPress={() => setAsking('delete')} disabled={busy} />
         <Text style={[styles.note, { color: color.muted }]}>{t('settings.delete.note')}</Text>
       </View>
+      {deleteQuestion}
       <Button label={t('settings.signOut.title')} variant="ghost" onPress={() => void leave()} disabled={busy} />
-      {question}
+      {signOutQuestion}
       {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
     </Section>
   );
