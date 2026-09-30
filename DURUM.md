@@ -139,6 +139,12 @@ motor +250 verir; `gain_rate_max_kg_per_month` hiçbir kuralda yok (bulk'ta "ço
     tahmini ister (soru 11), yoksa kapı devre dışı. Güray G4 K-4: "neredeyse her yeni başlayan buradan başlar" (önce yağ
     kaybı) → varsayılan **CUT** mı, yoksa kullanıcıya iki seçenek sunulup seçtirilsin mi? Şimdilik bu kullanıcıda check-in
     karar üretmez (409).
+18. **(K-212, sağlık/veri — ÖNEMLİ)** Adet kaybı cevabı (V4, ADR-020 L-1) kararı etkiler ama **saklanmaz**. Ama o cevapla
+    verilen HARD_STOP kararı saklanıyor (ADR-003 §6: her karar girdisiyle saklanır) ve gerekçesi (`menstrual_loss_reported`)
+    cevabı açığa vurur. Seçenekler: (a) karar saklanır, gerekçe genel bir etiketle ("güvenlik: düşük enerji") yazılır; (b)
+    karar saklanır, gerekçe olduğu gibi — cevabın dolaylı kaydı kabul edilir (rıza metnine yazılır); (c) bu karar hiç
+    saklanmaz (yeniden üretilebilirlik bu tek karar için yok). Şimdilik soru hiç alınmıyor (400): LEA bandı yağ tahmini
+    olmadan hesaplanamıyor (soru 11), yani soru zaten sorulamaz. Soru 2 ile aynı konu, cevap ikisini birden kapatır.
 9. **(K-115, onay)** `min_logged_days_per_week` = 4 ve `logging_bias_min_windows` = 2 araştırmadan türemiyor (seçim,
    `tag: urun`). Onay mı?
 

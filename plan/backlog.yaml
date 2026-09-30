@@ -894,6 +894,42 @@ tasks:
     learn:
       - "Katalog verisi tasarımı"
 
+  - id: K-220
+    title: "decision: haftanın tutarlılığı kayıtlardan (WeekTally → uyum)"
+    milestone: M2
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-212, K-216, K-209, K-211]
+    why: "Motor kaloriye yalnız uyulmuş planda dokunur (G2 K-60); uyum sorulmaz, kayıtlardan sayılır (ADR-020 L-6). Üreticisi yoktu: 30 Eyl K-213 hazırlığında görüldü"
+    acceptance:
+      - "Haftanın WeekTally'si modül API'lerinden: planlanan/yapılan antrenman (program + seanslar), protein hedefi/kaydı, adım hedefi/aktivite günü, tartı sayısı/min_weighins_per_week"
+      - "Snapshot.checkIn.adherence = karar penceresinin oranı (Consistency.windowRatio); veri yoksa boş"
+      - "Hafta kullanıcının saat diliminde (Consistency.weekStartOf)"
+    tests:
+      - "WeekTallyAssemblyTests"
+    refs: ["plan/kararlar/ADR-020-m1-kural-kararlari.md", "arastirma/ham/guray/G2-kilo-verme.md"]
+    learn: ["Birden çok modülden özet"]
+
+  - id: K-221
+    title: "training: antrenman durumu özeti (TrainingStatus) set kaydından"
+    milestone: M2
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-218, K-211]
+    why: "Deload merdiveni (K-110) en çok takılan bileşik hareketin durumunu okur; set kaydından üreten yoktu (30 Eyl)"
+    acceptance:
+      - "En çok takılan bileşik hareket: ardışık seans (ne tekrar ne yük artışı), ay, yükün tutulduğu hafta, geçen hafta dinlenme"
+      - "Bu haftanın seansları geçen haftanın yüklerini kaldıramadıysa loadsBelowLastWeek; plana uyulmayan ardışık hafta"
+      - "Yalnız WORKING setler (K-218)"
+    tests:
+      - "TrainingStatusTests"
+    refs: ["arastirma/ham/guray/G7-whisper-arsiv.md", "arastirma/ham/H3-bosluk-literatur.md#B5"]
+    learn: ["Zaman serisinden durum çıkarma"]
+
 # ───────────────────────────── M3 · Mobil kabuk ─────────────────────────────
   - id: K-301
     title: "Tasarım sistemi: token'lar, fontlar, temel bileşenler (C)"
