@@ -4,13 +4,16 @@
  */
 import { type ReactNode, createContext, useContext, useState } from 'react';
 
+import { newClientId } from '@/sync/send';
+
 import { type Draft, emptyDraft } from './draft';
 
 type Value = { draft: Draft; update: (patch: Partial<Draft>) => void };
 const Context = createContext<Value | null>(null);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
+  // The records' ids are made once for the draft, so a retry sends the same records (ADR-024).
+  const [draft, setDraft] = useState<Draft>(() => ({ ...emptyDraft, ids: { weighIn: newClientId(), waist: newClientId() } }));
   const update = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }));
   return <Context.Provider value={{ draft, update }}>{children}</Context.Provider>;
 }

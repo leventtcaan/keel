@@ -10,6 +10,7 @@ import Storage from 'expo-sqlite/kv-store';
 import { type ReactNode, createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 
 import { apiBaseUrl } from '@/api/config';
+import { type HealthAccess, healthUnavailable } from '@/health/health';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
@@ -21,6 +22,7 @@ import { type AppServices, createAppServices } from './appServices';
 export type PhoneServices = AppServices & {
   signInWithApple(): Promise<SignInResult>;
   appleAvailable(): Promise<boolean>;
+  health: HealthAccess;
 };
 
 const DATABASE = 'keel.db';
@@ -46,6 +48,7 @@ async function build(): Promise<PhoneServices> {
     signInWithApple: () =>
       signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session }),
     appleAvailable: () => AppleAuthentication.isAvailableAsync(),
+    health: healthUnavailable, // K-403 plugs in HealthKit
   };
 }
 

@@ -14,12 +14,15 @@ import { useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-import { STEPS, type Step, stepComplete } from './draft';
+import { type Step, stepComplete, stepsFor } from './draft';
 import { useDraft } from './OnboardingContext';
 
 /** Each step's screen. Typed routes check every entry against src/app/onboarding, so a missing screen fails typecheck. */
 const ROUTES: Record<Step, Href> = {
   goal: '/onboarding',
+  healthData: '/onboarding/health-data',
+  foods: '/onboarding/foods',
+  appleHealth: '/onboarding/apple-health',
   program: '/onboarding/program',
   schedule: '/onboarding/schedule',
   about: '/onboarding/about',
@@ -33,22 +36,21 @@ type Props = {
   /** Already translated. */
   title: string;
   children: ReactNode;
-  /** The last step's button: its own label, and what it does instead of moving on. */
-  finish?: {
-    label: string;
-    onPress: () => void;
-    busy: boolean;
-    problem: string | null;
-  };
+  /** Continue's own words, when the step has them. */
+  continueLabel?: string;
+  /** In place of Continue: steps whose answer is a choice of buttons (a consent, the last step). */
+  actions?: ReactNode;
 };
 
-export function StepFrame({ step, title, children, finish }: Props) {
+export function StepFrame({ step, title, children, continueLabel, actions }: Props) {
   const { color } = useTheme();
   const { draft } = useDraft();
   const units = useUnits();
-  const index = STEPS.indexOf(step);
+  // The steps this user walks: some depend on earlier answers (the foods, only with the health consent).
+  const steps = stepsFor(draft);
+  const index = steps.indexOf(step);
   const ready = stepComplete(step, draft, units, new Date().getFullYear());
-  const next = STEPS[index + 1];
+  const next = steps[index + 1];
 
   // The first step has no way back: before it is sign-in, which the session guard has closed.
   const back =
@@ -71,10 +73,10 @@ export function StepFrame({ step, title, children, finish }: Props) {
         <Text
           accessibilityLabel={t('onboarding.progress', {
             step: index + 1,
-            total: STEPS.length,
+            total: steps.length,
           })}
           style={[styles.count, { color: color.muted }]}>
-          {t('onboarding.count', { step: index + 1, total: STEPS.length })}
+          {t('onboarding.count', { step: index + 1, total: steps.length })}
         </Text>
       </View>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
@@ -82,12 +84,9 @@ export function StepFrame({ step, title, children, finish }: Props) {
         {children}
       </ScrollView>
       <View style={styles.bottom}>
-        {finish?.problem && <Text style={[styles.problem, { color: color.text }]}>{finish.problem}</Text>}
-        {finish !== undefined ? (
-          <Button label={finish.label} onPress={finish.onPress} disabled={!ready || finish.busy} />
-        ) : (
+        {actions ?? (
           <Button
-            label={t('onboarding.continue')}
+            label={continueLabel ?? t('onboarding.continue')}
             onPress={() => next !== undefined && router.push(ROUTES[next])}
             disabled={!ready}
           />
@@ -118,5 +117,4 @@ const styles = StyleSheet.create({
     paddingBottom: tokens.space.lg,
     gap: tokens.space.sm,
   },
-  problem: { fontSize: tokens.type.body },
 });

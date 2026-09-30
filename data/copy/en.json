@@ -554,7 +554,9 @@
     "feetInches": "{feet} ft {inches} in",
     "cmUnit": "cm",
     "ftUnit": "ft",
-    "inUnit": "in"
+    "inUnit": "in",
+    "kgUnit": "kg",
+    "lbUnit": "lb"
   },
   "onboarding": {
     "progress": "{step} of {total}",
@@ -636,6 +638,13 @@
       "lighter": "That's more than last month. Starting near what you already do keeps the plan going, and you can change your days at any time.",
       "addLater": "Add a day once {days} feels easy."
     },
+    "healthData": {
+      "allow": "Allow",
+      "notNow": "Not now",
+      "allowed": "Allowed. You can withdraw this in Settings at any time.",
+      "declinedNote": "Without it we can't keep your weight, so there are no weekly calls. You can allow it later in Settings.",
+      "failed": "Couldn't record your choice. Check your connection and try again."
+    },
     "about": {
       "title": "About you",
       "units": "Units",
@@ -653,7 +662,13 @@
       "sex": "Sex",
       "sexHint": "Energy needs and safety checks differ between the sexes.",
       "male": "Male",
-      "female": "Female"
+      "female": "Female",
+      "weight": "Weight",
+      "weightHint": "This morning, if you weighed in.",
+      "weightInvalid": "Check your weight.",
+      "waist": "Waist (optional)",
+      "waistHint": "We'll ask for it only when it helps: when your weight and training point different ways.",
+      "waistInvalid": "Check your waist."
     },
     "activity": {
       "title": "How active is your day?",
@@ -674,6 +689,12 @@
         "title": "Very active",
         "body": "Physical work such as building, farm or warehouse jobs, or hard training on top of an active day."
       }
+    },
+    "foods": {
+      "title": "Anything you don't eat?",
+      "label": "Foods you don't or can't eat",
+      "hint": "Optional. Separate them with commas.",
+      "note": "Kept with your health data, because a food you can't eat can say something about your health."
     },
     "photos": {
       "title": "Your photos stay on your phone",
@@ -706,6 +727,13 @@
         "body": "Until then, your consistency and your lifts show that it's working."
       },
       "action": "Sounds good"
+    },
+    "appleHealth": {
+      "connect": "Connect",
+      "notNow": "Not now, I'll type it",
+      "unavailable": "Apple Health connects in the app's device build. You can connect it later in Settings.",
+      "finish": "Start",
+      "failed": "Couldn't connect. Check your connection and try again."
     },
     "signOut": "Sign out"
   }

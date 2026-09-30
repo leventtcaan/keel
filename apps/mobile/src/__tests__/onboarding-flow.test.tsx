@@ -11,6 +11,7 @@ import { t } from '@/copy';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
+jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 
 let mockSignedIn = true;
 let mockOnboarding: OnboardingState = 'needed';
@@ -24,6 +25,15 @@ let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 const mockUnitsListeners = new Set<() => void>();
 const mockProfile = { save: jest.fn(async (_profile: unknown) => {}), refresh: jest.fn(async () => {}) };
 const mockSignOut = jest.fn(async () => {});
+// The server's answer to a consent PUT; `mockConsentStatus` 200 records it.
+let mockConsentStatus = 200;
+const mockConsentAnswer = async (_path: string, _init: unknown) =>
+  mockConsentStatus === 200
+    ? { data: { status: 'GRANTED' }, response: new Response(null, { status: 200 }) }
+    : { error: { code: 'X' }, response: new Response(null, { status: mockConsentStatus }) };
+const mockApi = { PUT: jest.fn(mockConsentAnswer) };
+const mockQueue = { record: jest.fn(async (_record: unknown) => true) };
+const mockHealth = { available: false, requestRead: jest.fn(async () => {}) };
 const mockKeepOnPhone = jest.fn(async (system: 'METRIC' | 'IMPERIAL') => {
   mockUnits = system;
   mockUnitsListeners.forEach((listener) => listener());
@@ -47,6 +57,9 @@ jest.mock('@/services/ServicesProvider', () => ({
     appleAvailable: async () => false,
     profile: mockProfile,
     signOut: mockSignOut,
+    api: mockApi,
+    queue: mockQueue,
+    health: mockHealth,
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
   }),
 }));
@@ -60,6 +73,11 @@ beforeEach(() => {
   // Like the real service: a save that goes through marks onboarding done.
   mockProfile.save.mockReset().mockImplementation(async () => mockBecome('done'));
   mockSignOut.mockClear();
+  mockConsentStatus = 200;
+  mockApi.PUT.mockReset().mockImplementation(mockConsentAnswer);
+  mockQueue.record.mockReset().mockResolvedValue(true);
+  mockHealth.available = false;
+  mockHealth.requestRead.mockReset().mockResolvedValue(undefined);
   mockProfile.refresh.mockReset().mockResolvedValue(undefined);
   mockKeepOnPhone.mockClear();
 });
@@ -187,6 +205,8 @@ describe('the walk through', () => {
     await press(t('onboarding.schedule.sessions.FOUR'));
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.schedule.time')), '7:30');
     await press(t('onboarding.continue'));
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+    await press(t('onboarding.healthData.notNow'));
     expect(router.getPathname()).toBe('/onboarding/about');
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightCm')), '178');
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.birthYear')), '1994');
@@ -197,8 +217,10 @@ describe('the walk through', () => {
     expect(router.getPathname()).toBe('/onboarding/photos');
     await press(t('onboarding.continue'));
     expect(router.getPathname()).toBe('/onboarding/expectations');
-    expect(mockProfile.save).not.toHaveBeenCalled();
     await press(t('onboarding.expectations.action'));
+    expect(router.getPathname()).toBe('/onboarding/apple-health');
+    expect(mockProfile.save).not.toHaveBeenCalled();
+    await press(t('onboarding.appleHealth.finish'));
     expect(mockProfile.save).toHaveBeenCalledTimes(1);
     expect(mockProfile.save).toHaveBeenCalledWith({
       goal: 'DECIDE_FOR_ME',
@@ -220,18 +242,18 @@ describe('the walk through', () => {
 
   test('a save that does not go through says so, and the same answers go again', async () => {
     mockProfile.save.mockRejectedValueOnce(new Error('profile save failed with HTTP 503'));
-    const router = await walkTo('expectations');
-    await press(t('onboarding.expectations.action'));
+    const router = await walkTo('appleHealth');
+    await press(t('onboarding.appleHealth.finish'));
     expect(screen.getByText(t('onboarding.saveFailed'))).toBeOnTheScreen();
-    expect(router.getPathname()).toBe('/onboarding/expectations');
-    await press(t('onboarding.expectations.action'));
+    expect(router.getPathname()).toBe('/onboarding/apple-health');
+    await press(t('onboarding.appleHealth.finish'));
     expect(mockProfile.save).toHaveBeenCalledTimes(2);
     expect(mockProfile.save.mock.calls[1][0]).toEqual(mockProfile.save.mock.calls[0][0]);
   });
 
   test('once the profile is saved, the tabs open, and there is no way back into onboarding', async () => {
-    const router = await walkTo('expectations');
-    await press(t('onboarding.expectations.action'));
+    const router = await walkTo('appleHealth');
+    await press(t('onboarding.appleHealth.finish'));
     expect(router.getPathname()).toBe('/');
     expect(screen.getByRole('header', { name: t('screens.today.title') })).toBeOnTheScreen();
     expect(appRouter.canGoBack()).toBe(false);
@@ -240,8 +262,8 @@ describe('the walk through', () => {
   test('a second tap while saving sends nothing more, and the button is off', async () => {
     let finish = () => {};
     mockProfile.save.mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)));
-    await walkTo('expectations');
-    const button = screen.getByRole('button', { name: t('onboarding.expectations.action') });
+    await walkTo('appleHealth');
+    const button = screen.getByRole('button', { name: t('onboarding.appleHealth.finish') });
     // Two taps in the same moment while the save is on its way. Awaiting a press whose save never ends hangs React's
     // act(), so both go into one act unawaited; React notes the overlap, which is the point here, so the note is muted.
     const overlapNote = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -254,7 +276,7 @@ describe('the walk through', () => {
       overlapNote.mockRestore();
     }
     expect(mockProfile.save).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: t('onboarding.expectations.action') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('onboarding.appleHealth.finish') })).toBeDisabled();
     await act(async () => finish());
   });
 
@@ -270,6 +292,7 @@ describe('the walk through', () => {
     await press(t('onboarding.continue'));
     await press(t('onboarding.continue'));
     await press(t('onboarding.expectations.action'));
+    await press(t('onboarding.appleHealth.finish'));
     expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ heightCm: 178, units: 'IMPERIAL' }));
   });
 
@@ -280,6 +303,7 @@ describe('the walk through', () => {
     expect(screen.getByLabelText(t('onboarding.about.birthYear')).props.value).toBe('1990');
     expect(screen.getByRole('button', { name: t('onboarding.about.male') })).toBeSelected();
     expect(continueButton()).toBeEnabled();
+    await press(t('onboarding.back')); // the health consent
     await press(t('onboarding.back'));
     expect(screen.getByRole('button', { name: t('onboarding.schedule.dayName.MONDAY') })).toBeSelected();
     expect(screen.getByRole('button', { name: t('onboarding.schedule.sessions.FOUR') })).toBeSelected();
@@ -291,7 +315,7 @@ describe('the walk through', () => {
       expect(screen.queryByText(/\[missing:/)).toBeNull();
       expect(screen.queryByText(/\{\w+\}/)).toBeNull();
     };
-    await walkTo('expectations', clean);
+    await walkTo('appleHealth', clean);
     clean();
   });
 
@@ -399,12 +423,17 @@ describe('activity: the four NASEM levels, each with a day to recognise (ADR-027
   });
 });
 
-/** Answers every step before `step`, the shortest way, and stops on it. */
-async function walkTo(step: 'schedule' | 'about' | 'activity' | 'expectations', eachStep: () => void = () => {}) {
+/** Answers every step before `step`, the shortest way (the health consent declined unless `allow`), and stops on it. */
+async function walkTo(
+  step: 'schedule' | 'healthData' | 'about' | 'activity' | 'appleHealth',
+  eachStep: () => void = () => {},
+  allow = false,
+) {
   const router = await open();
   eachStep();
   await choose(t('onboarding.goal.lose_fat.title'));
   await press(t('onboarding.continue'));
+  eachStep();
   await choose(t('onboarding.program.build_one_for_me.title'));
   await press(t('onboarding.continue'));
   eachStep();
@@ -413,16 +442,166 @@ async function walkTo(step: 'schedule' | 'about' | 'activity' | 'expectations', 
   await press(t('onboarding.schedule.sessions.FOUR'));
   await press(t('onboarding.continue'));
   eachStep();
+  if (step === 'healthData') return router;
+  await press(t(allow ? 'onboarding.healthData.allow' : 'onboarding.healthData.notNow'));
+  eachStep();
   if (step === 'about') return router;
   await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightCm')), '180');
   await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.birthYear')), '1990');
   await press(t('onboarding.about.male'));
+  if (allow) await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.weight')), '82.4');
   await press(t('onboarding.continue'));
   eachStep();
   if (step === 'activity') return router;
   await choose(t('onboarding.activity.ACTIVE.title'));
   await press(t('onboarding.continue'));
-  eachStep(); // photos
-  await press(t('onboarding.continue'));
+  eachStep();
+  if (allow) {
+    await press(t('onboarding.continue')); // foods: optional
+    eachStep();
+  }
+  await press(t('onboarding.continue')); // photos
+  eachStep();
+  await press(t('onboarding.expectations.action'));
   return router;
 }
+
+describe('the health data consent (K-312, ADR-007)', () => {
+  test('its own step, with the consent text; "Allow" records the version shown, then moves on', async () => {
+    const router = await walkTo('healthData');
+    expect(screen.getByRole('header', { name: t('consent.health_data.title') })).toBeOnTheScreen();
+    expect(screen.getByText(t('consent.health_data.body'))).toBeOnTheScreen();
+    await press(t('onboarding.healthData.allow'));
+    expect(mockApi.PUT).toHaveBeenCalledWith('/v1/consents/{kind}', {
+      params: { path: { kind: 'HEALTH_DATA' } },
+      body: { textVersion: t('consent.health_data.version') },
+    });
+    expect(router.getPathname()).toBe('/onboarding/about');
+  });
+
+  test('allowed: the weight and waist are asked, the foods step is in the walk, and the records go before the profile', async () => {
+    const order: string[] = [];
+    mockQueue.record.mockImplementation(async (record) => (order.push((record as { kind: string }).kind), true));
+    mockProfile.save.mockImplementation(async () => {
+      order.push('profile');
+      mockBecome('done');
+    });
+    const router = await walkTo('activity', () => {}, true);
+    await choose(t('onboarding.activity.ACTIVE.title'));
+    await press(t('onboarding.continue'));
+    expect(router.getPathname()).toBe('/onboarding/foods');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.foods.label')), 'peanuts, shellfish');
+    await press(t('onboarding.continue'));
+    await press(t('onboarding.continue'));
+    await press(t('onboarding.expectations.action'));
+    await press(t('onboarding.appleHealth.finish'));
+    expect(order).toEqual(['weighIn', 'profile']);
+    expect(mockQueue.record).toHaveBeenCalledWith({
+      kind: 'weighIn',
+      body: expect.objectContaining({ kg: 82.4, source: 'MANUAL', clientId: expect.stringMatching(/^[0-9a-f-]{36}$/) }),
+    });
+    expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ food: { avoid: ['peanuts', 'shellfish'] } }));
+  });
+
+  test('"Not now": nothing recorded, no weight or waist asked, no foods step, no health records sent', async () => {
+    const router = await walkTo('about');
+    expect(mockApi.PUT).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText(t('onboarding.about.weight'))).toBeNull();
+    expect(screen.queryByLabelText(t('onboarding.about.waist'))).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightCm')), '180');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.birthYear')), '1990');
+    await press(t('onboarding.about.male'));
+    await press(t('onboarding.continue'));
+    await choose(t('onboarding.activity.ACTIVE.title'));
+    await press(t('onboarding.continue'));
+    expect(router.getPathname()).toBe('/onboarding/photos');
+    await press(t('onboarding.continue'));
+    await press(t('onboarding.expectations.action'));
+    await press(t('onboarding.appleHealth.finish'));
+    expect(mockQueue.record).not.toHaveBeenCalled();
+    expect(mockProfile.save).toHaveBeenCalledWith(expect.not.objectContaining({ food: expect.anything() }));
+  });
+
+  test('a consent the server did not record says so, and does not move on', async () => {
+    mockConsentStatus = 503;
+    const router = await walkTo('healthData');
+    await press(t('onboarding.healthData.allow'));
+    expect(screen.getByText(t('onboarding.healthData.failed'))).toBeOnTheScreen();
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+  });
+
+  test('allowed, the weight is required; a waist typed must be one', async () => {
+    await walkTo('about', () => {}, true);
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightCm')), '180');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.birthYear')), '1990');
+    await press(t('onboarding.about.male'));
+    expect(continueButton()).toBeDisabled();
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.weight')), '82');
+    await settle();
+    expect(continueButton()).toBeEnabled();
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.waist')), '8x');
+    await settle();
+    expect(screen.getByText(t('onboarding.about.waistInvalid'))).toBeOnTheScreen();
+    expect(continueButton()).toBeDisabled();
+  });
+
+  test('the step count follows the walk: 9 steps without the consent, 10 with it', async () => {
+    await walkTo('about');
+    expect(screen.getByText(t('onboarding.count', { step: 5, total: 9 }))).toBeOnTheScreen();
+  });
+
+  test('allowed, no step shows a missing text key or an unfilled placeholder either', async () => {
+    const clean = () => {
+      expect(screen.queryByText(/\[missing:/)).toBeNull();
+      expect(screen.queryByText(/\{\w+\}/)).toBeNull();
+    };
+    await walkTo('appleHealth', clean, true);
+    clean();
+  });
+});
+
+describe('Apple Health, the last step (K-312, ADR-018)', () => {
+  test('where HealthKit is in the build: "Connect" records the consent, shows Apple\'s sheet, then finishes', async () => {
+    mockHealth.available = true;
+    const order: string[] = [];
+    mockApi.PUT.mockImplementation(async (_path, init) => {
+      order.push(`consent ${(init as { params: { path: { kind: string } } }).params.path.kind}`);
+      return { data: { status: 'GRANTED' }, response: new Response(null, { status: 200 }) };
+    });
+    mockHealth.requestRead.mockImplementation(async () => void order.push('sheet'));
+    mockProfile.save.mockImplementation(async () => {
+      order.push('profile');
+      mockBecome('done');
+    });
+    await walkTo('appleHealth');
+    await press(t('onboarding.appleHealth.connect'));
+    expect(order).toEqual(['consent APPLE_HEALTH', 'sheet', 'profile']);
+  });
+
+  test('"Not now" records nothing and finishes', async () => {
+    mockHealth.available = true;
+    await walkTo('appleHealth');
+    await press(t('onboarding.appleHealth.notNow'));
+    expect(mockApi.PUT).not.toHaveBeenCalled();
+    expect(mockHealth.requestRead).not.toHaveBeenCalled();
+    expect(mockProfile.save).toHaveBeenCalledTimes(1);
+  });
+
+  test('a connection that fails says so and does not finish: the choice is the user\'s to make again', async () => {
+    mockHealth.available = true;
+    mockConsentStatus = 503;
+    await walkTo('appleHealth');
+    await press(t('onboarding.appleHealth.connect'));
+    expect(screen.getByText(t('onboarding.appleHealth.failed'))).toBeOnTheScreen();
+    expect(mockProfile.save).not.toHaveBeenCalled();
+  });
+
+  test('without HealthKit in the build (Expo Go): the screen says so, offers no Connect, records no consent', async () => {
+    await walkTo('appleHealth');
+    expect(screen.getByText(t('onboarding.appleHealth.unavailable'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('onboarding.appleHealth.connect') })).toBeNull();
+    await press(t('onboarding.appleHealth.finish'));
+    expect(mockApi.PUT).not.toHaveBeenCalled();
+    expect(mockProfile.save).toHaveBeenCalledTimes(1);
+  });
+});

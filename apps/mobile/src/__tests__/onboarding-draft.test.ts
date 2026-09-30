@@ -4,11 +4,13 @@
  */
 import {
   STEPS,
+  avoidList,
   birthYearProblem,
   emptyDraft,
   heightCm,
   lighterThanLastMonth,
   stepComplete,
+  stepsFor,
   toProfile,
   toggleDay,
   usualTime,
@@ -29,6 +31,7 @@ function complete(overrides: Partial<Draft> = {}): Draft {
     birthYear: '1994',
     sex: 'FEMALE',
     activityLevel: 'LOW_ACTIVE',
+    healthConsent: 'declined',
     ...overrides,
   };
 }
@@ -36,13 +39,31 @@ function complete(overrides: Partial<Draft> = {}): Draft {
 const CONTEXT = { units: 'METRIC' as const, timeZone: 'Europe/Istanbul', thisYear: THIS_YEAR };
 
 describe('steps', () => {
-  test('in the prototype order: goal, program, schedule, about you, activity, photos, expectations', () => {
-    expect(STEPS).toEqual(['goal', 'program', 'schedule', 'about', 'activity', 'photos', 'expectations']);
+  // K-312 put the health consent before the first health question, and Apple Health last (prototype 1.8).
+  test('in the prototype order, the health consent before any health question, Apple Health last', () => {
+    expect(STEPS).toEqual([
+      'goal', 'program', 'schedule', 'healthData', 'about', 'activity', 'foods', 'photos', 'expectations', 'appleHealth',
+    ]);
+  });
+
+  test('without the health consent, the foods step is not in the walk; with it, it is', () => {
+    expect(stepsFor(complete({ healthConsent: 'declined' }))).not.toContain('foods');
+    expect(stepsFor(complete({ healthConsent: null }))).not.toContain('foods');
+    expect(stepsFor(complete({ healthConsent: 'granted' }))).toEqual(STEPS);
+  });
+
+  test('at most 12 screens (I1 F1), with the look (K-313) and the AI consent (K-511) still to come', () => {
+    expect(STEPS.length + 2).toBeLessThanOrEqual(12);
   });
 
   test('an empty draft can leave only the steps that ask nothing', () => {
     const open = STEPS.filter((step) => stepComplete(step, emptyDraft, 'METRIC', THIS_YEAR));
-    expect(open).toEqual(['photos', 'expectations']);
+    expect(open).toEqual(['foods', 'photos', 'expectations', 'appleHealth']);
+  });
+
+  test('the consent step is answered either way, but answered', () => {
+    expect(stepComplete('healthData', complete({ healthConsent: null }), 'METRIC', THIS_YEAR)).toBe(false);
+    expect(stepComplete('healthData', complete({ healthConsent: 'declined' }), 'METRIC', THIS_YEAR)).toBe(true);
   });
 
   test('a complete draft can leave every step', () => {
@@ -172,6 +193,36 @@ describe('height, in the user\'s units, rounded once to whole centimetres', () =
     expect(stepComplete('about', complete({ height: { cm: '', feet: '', inches: '' } }), 'METRIC', THIS_YEAR)).toBe(false);
     expect(stepComplete('about', complete({ birthYear: '2010' }), 'METRIC', THIS_YEAR)).toBe(false);
     expect(stepComplete('about', complete({ sex: null }), 'METRIC', THIS_YEAR)).toBe(false);
+  });
+});
+
+describe('health answers, only with the consent (ADR-027 #14, ADR-030 #25)', () => {
+  const granted = (overrides: Partial<Draft> = {}) => complete({ healthConsent: 'granted', weight: '82.4', ...overrides });
+
+  test('with the consent, about you needs the weight; the waist may stay empty', () => {
+    expect(stepComplete('about', granted(), 'METRIC', THIS_YEAR)).toBe(true);
+    expect(stepComplete('about', granted({ weight: '' }), 'METRIC', THIS_YEAR)).toBe(false);
+    expect(stepComplete('about', granted({ weight: 'heavy' }), 'METRIC', THIS_YEAR)).toBe(false);
+  });
+
+  test('a waist typed must be a waist', () => {
+    expect(stepComplete('about', granted({ waist: '84' }), 'METRIC', THIS_YEAR)).toBe(true);
+    expect(stepComplete('about', granted({ waist: 'x' }), 'METRIC', THIS_YEAR)).toBe(false);
+  });
+
+  test('without the consent, weight and waist are not asked, whatever was typed before', () => {
+    expect(stepComplete('about', complete({ weight: '', waist: 'x' }), 'METRIC', THIS_YEAR)).toBe(true);
+  });
+
+  test('the foods to avoid: one per comma or line, trimmed, empty and repeated ones dropped', () => {
+    expect(avoidList(' peanuts, shellfish\n\nGluten ,peanuts,  ')).toEqual(['peanuts', 'shellfish', 'Gluten']);
+    expect(avoidList('')).toEqual([]);
+  });
+
+  test('the profile carries the foods to avoid only with the consent', () => {
+    expect(toProfile(granted({ avoid: 'peanuts' }), CONTEXT).food).toEqual({ avoid: ['peanuts'] });
+    expect(toProfile(complete({ avoid: 'peanuts' }), CONTEXT)).not.toHaveProperty('food');
+    expect(toProfile(granted({ avoid: '  ' }), CONTEXT)).not.toHaveProperty('food');
   });
 });
 

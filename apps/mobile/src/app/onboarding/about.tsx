@@ -10,11 +10,13 @@ import { StepFrame } from '@/onboarding/StepFrame';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import type { UnitSystem } from '@/units/units';
+import { type UnitSystem, parseWaistCm, parseWeightKg } from '@/units/units';
 
 const YEAR_LENGTH = 4;
 /** The shortest height in centimetres has three digits (100, the profile's minimum). */
 const MIN_CM_DIGITS = String(onboardingParams.heightMinCm).length;
+/** A weight or a waist has at least two digits; one typed digit is not yet wrong. */
+const MIN_WEIGHT_DIGITS = 2;
 const PROBLEMS = {
   missing: null,
   not_a_year: 'onboarding.about.notAYear',
@@ -68,6 +70,39 @@ export default function AboutStep() {
     </View>
   );
 
+  // With the health consent only (ADR-030 #25): the starting weight, and the waist if the user knows it.
+  const granted = draft.healthConsent === 'granted';
+  const weightProblem =
+    draft.weight.trim().length >= MIN_WEIGHT_DIGITS && parseWeightKg(draft.weight, system) === null
+      ? t('onboarding.about.weightInvalid')
+      : null;
+  const waistProblem =
+    draft.waist.trim().length >= MIN_WEIGHT_DIGITS && parseWaistCm(draft.waist, system) === null
+      ? t('onboarding.about.waistInvalid')
+      : null;
+  const healthFields = granted ? (
+    <>
+      <TextField
+        label={t('onboarding.about.weight')}
+        value={draft.weight}
+        onChangeText={(weight) => update({ weight })}
+        suffix={t(metric ? 'units.kgUnit' : 'units.lbUnit')}
+        keyboardType="decimal-pad"
+        hint={t('onboarding.about.weightHint')}
+        problem={weightProblem}
+      />
+      <TextField
+        label={t('onboarding.about.waist')}
+        value={draft.waist}
+        onChangeText={(waist) => update({ waist })}
+        suffix={t(metric ? 'units.cmUnit' : 'units.inUnit')}
+        keyboardType="decimal-pad"
+        hint={t('onboarding.about.waistHint')}
+        problem={waistProblem}
+      />
+    </>
+  ) : null;
+
   return (
     <StepFrame step="about" title={t('onboarding.about.title')}>
       <Text style={[styles.label, { color: color.muted }]}>{t('onboarding.about.units')}</Text>
@@ -103,6 +138,7 @@ export default function AboutStep() {
         />
       </View>
       <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.about.sexHint')}</Text>
+      {healthFields}
     </StepFrame>
   );
 }
