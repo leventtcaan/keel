@@ -45,6 +45,24 @@ class StoredSnapshotTests {
     }
 
     @Test
+    void theSafetyHoldIsKeptButTheResolvedAnswerIsNot() throws Exception {
+        // K-229: the hold (after a hard stop) is an input the call must be made again with; the answer "not stopped" is
+        // health data never kept (ADR-027 #18), like the cycle answer.
+        String json = JSON.writeValueAsString(StoredSnapshot.of(full(false).withSafetyHold(true).withCycleResolved(true)));
+
+        assertThat(json).doesNotContainIgnoringCase("cycle").doesNotContainIgnoringCase("resolved");
+        assertThat(JSON.readValue(json, StoredSnapshot.class).toSnapshot()).isEqualTo(full(false).withSafetyHold(true));
+    }
+
+    @Test
+    void aCallKeptBeforeTheHoldExistedReadsAsNotHeld() throws Exception {
+        String json = JSON.writeValueAsString(StoredSnapshot.of(full(false))).replace(",\"safetyHold\":false", "");
+
+        assertThat(json).doesNotContain("safetyHold");
+        assertThat(JSON.readValue(json, StoredSnapshot.class).toSnapshot()).isEqualTo(full(false));
+    }
+
+    @Test
     void twoFatEstimatesComeBackBoth() throws Exception {
         Snapshot two = full(false).withFatProxy(new BigDecimal("15"), new BigDecimal("32.2"));
 

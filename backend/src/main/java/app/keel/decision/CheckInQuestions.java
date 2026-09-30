@@ -1,9 +1,11 @@
 package app.keel.decision;
 
+import app.keel.engine.Action;
 import app.keel.engine.CheckIn;
 import app.keel.engine.Decision;
 import app.keel.engine.EnergyAvailability;
 import app.keel.engine.Phase;
+import app.keel.engine.SafetyHold;
 import app.keel.engine.Sex;
 import app.keel.engine.WeeklySpine;
 import java.util.ArrayDeque;
@@ -65,6 +67,12 @@ final class CheckInQuestions {
     /** Whether the cycle question is asked (V4, ADR-020 L-1): a woman whose plan is in the low energy band. */
     static boolean asksAboutTheCycle(Sex sex, Optional<EnergyAvailability> band) {
         return sex == Sex.FEMALE && band.filter(inBand -> inBand == EnergyAvailability.LOW).isPresent();
+    }
+
+    /** Whether the call waits for the cycle question: after a hard stop, before it opens a deficit (K-229). */
+    static boolean waitsForTheCycle(Decision decision) {
+        return decision.action() instanceof Action.NoDecisionYet
+                && decision.reasons().stream().anyMatch(reason -> reason.rule().equals(SafetyHold.CYCLE_CHECK_NEEDED));
     }
 
     static boolean anomaly(CheckIn dataSays, Phase phase) {
