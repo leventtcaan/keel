@@ -41,6 +41,10 @@ describe.each(forbidden.rules.map((r) => [r.id, r] as const))('rule %s', (_, rul
   });
 });
 
+test.each(forbidden.coachingNonExamples)('no rule catches ordinary coaching copy: "%s"', (text) => {
+  expect(forbidden.rules.filter((rule) => regex(rule).test(text)).map((rule) => rule.id)).toEqual([]);
+});
+
 test('no string in en.json contains a forbidden phrase', () => {
   const offenders = strings(en as Json).flatMap(([key, text]) =>
     forbidden.rules
