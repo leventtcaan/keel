@@ -55,7 +55,16 @@ describe('body weight', () => {
     expect(wrong).toEqual([]);
   });
 
-  test('not a weight: empty, text, zero, negative', () => {
+  test('a decimal comma is a decimal point (the iOS number pad types "," in Türkiye, Germany…)', () => {
+    expect(parseWeightKg('81,5', 'METRIC')).toBe(81.5);
+    expect(parseLoadKg('102,5', 'METRIC')).toBe(102.5);
+    expect(parseWaistCm('84,5', 'METRIC')).toBe(84.5);
+    expect(parseWeightKg('.5', 'METRIC')).toBe(0.5);
+    expect(parseWeightKg(' 81.5 ', 'METRIC')).toBe(81.5);
+  });
+
+  test('not a weight: empty, text, zero, negative, two separators, a bare separator', () => {
+    for (const text of ['81,5,0', '1.000,5', '80,', ',', '.']) expect(parseWeightKg(text, 'METRIC')).toBeNull();
     for (const text of ['', '  ', 'abc', '0', '-80', '80kg', '1e3']) expect(parseWeightKg(text, 'METRIC')).toBeNull();
   });
 });
@@ -80,6 +89,10 @@ describe('loads', () => {
     expect(wrong).toEqual([]);
   });
 
+  test('typed in kg, a load is rounded to what the server keeps too', () => {
+    expect(parseLoadKg('102.456', 'METRIC')).toBe(102.46);
+  });
+
   test('zero is a load (bodyweight moves log 0)', () => {
     expect(parseLoadKg('0', 'METRIC')).toBe(0);
   });
@@ -90,6 +103,10 @@ describe('waist', () => {
     expect(parseWaistCm('33', 'IMPERIAL')).toBe(83.8);
     expect(formatWaist(83.8, 'IMPERIAL')).toBe('33.0 in');
     expect(formatWaist(84, 'METRIC')).toBe('84.0 cm');
+  });
+
+  test('typed in cm, a waist is rounded to what the server keeps (1 decimal)', () => {
+    expect(parseWaistCm('84.25', 'METRIC')).toBe(84.3);
   });
 
   test('every waist typed in inches (0.1 steps, 20–70) comes back the same', () => {
@@ -131,6 +148,9 @@ describe('the default before the user chooses', () => {
     ['tr-TR', 'METRIC'],
     ['en', 'METRIC'],
     ['zh-Hans-US', 'IMPERIAL'],
+    ['en-LR', 'IMPERIAL'],
+    ['my-MM', 'IMPERIAL'],
+    ['en_US', 'IMPERIAL'],
   ] as const)('%s → %s', (locale, system) => {
     expect(defaultSystem(locale)).toBe(system);
   });

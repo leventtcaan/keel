@@ -40,10 +40,13 @@ export function roundTo(value: number, decimals: number): number {
   return (Math.sign(value) * Math.round(Math.abs(value) * factor * (1 + Number.EPSILON))) / factor;
 }
 
-/** A plain decimal number as a person types it: digits, one optional point. Anything else is not a number here. */
+/**
+ * A plain decimal number as a person types it: digits with at most one separator, a point or a comma (the iOS number
+ * pad types "," where the region writes decimals that way). No thousands separators, signs or exponents.
+ */
 function parseNumber(text: string): number | null {
-  const trimmed = text.trim();
-  return /^\d+(\.\d+)?$/.test(trimmed) ? Number(trimmed) : null;
+  const typed = text.trim();
+  return /^(\d+([.,]\d+)?|[.,]\d+)$/.test(typed) ? Number(typed.replace(',', '.')) : null;
 }
 
 const fixed = (value: number, decimals: number) => roundTo(value, decimals).toFixed(decimals);

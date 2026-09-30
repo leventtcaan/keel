@@ -6,12 +6,14 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { openDatabaseAsync } from 'expo-sqlite';
-import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import Storage from 'expo-sqlite/kv-store';
+import { type ReactNode, createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 
 import { apiBaseUrl } from '@/api/config';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
+import type { UnitSystem } from '@/units/units';
 
 import { type AppServices, createAppServices } from './appServices';
 
@@ -32,7 +34,10 @@ async function build(): Promise<PhoneServices> {
     db,
     // By name only: a message can quote a record, and records carry health data (V3).
     report: (problem) => console.warn('sync problem:', problem.name),
+    kv: Storage,
+    locale: Intl.DateTimeFormat().resolvedOptions().locale,
   });
+  if (await services.session.isSignedIn()) services.units.refresh().catch(() => undefined); // offline: the kept one
   startAutoSync(services.queue.drainInBackground, deviceTriggers);
   return {
     ...services,
@@ -77,6 +82,12 @@ export function useAppServices(): PhoneServices {
   const state = useContext(Context);
   if (state === null) throw new Error('useAppServices outside ServicesProvider');
   return state.services;
+}
+
+/** The user's unit system; the screen re-renders when it changes (K-310). */
+export function useUnits(): UnitSystem {
+  const { units } = useAppServices();
+  return useSyncExternalStore(units.subscribe, units.current);
 }
 
 export function useSignedIn(): boolean {

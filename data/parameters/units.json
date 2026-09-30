@@ -29,20 +29,24 @@
       "value": 2,
       "unit": "count",
       "tag": "urun",
-      "source": "contracts/openapi.yaml#At most 2 decimals",
-      "note": "The server keeps body weight and load to 2 decimals; a finer value is a 400. A value typed in lb is rounded here, once."
+      "source": "contracts/openapi.yaml#NewWeighIn",
+      "note": "The server keeps body weight (NewWeighIn.kg) and load (NewSet.loadKg) to 2 decimals; a finer value is a 400. A value typed in lb is rounded here, once. parameters.test.ts checks it against the contract."
     },
     {
       "key": "stored_waist_cm_decimals",
       "value": 1,
       "unit": "count",
       "tag": "urun",
-      "source": "contracts/openapi.yaml#At most 1 decimal",
-      "note": "The server keeps the waist to 1 decimal."
+      "source": "contracts/openapi.yaml#NewWaistMeasurement",
+      "note": "The server keeps the waist (NewWaistMeasurement.cm) to 1 decimal. parameters.test.ts checks it against the contract."
     },
     {
       "key": "imperial_regions",
-      "value": ["US", "LR", "MM"],
+      "value": [
+        "US",
+        "LR",
+        "MM"
+      ],
       "unit": "region",
       "tag": "urun",
       "source": "arastirma/ham/L3-ozellik-boslugu.md#7",
