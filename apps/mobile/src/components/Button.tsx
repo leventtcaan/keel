@@ -13,6 +13,8 @@ type Props = {
   variant?: ButtonVariant;
   size?: 'md' | 'sm';
   disabled?: boolean;
+  /** What a screen reader says when the label is short for it ("Withdraw" → "Withdraw Health data"). */
+  accessibilityLabel?: string;
 };
 
 function colours(variant: ButtonVariant, color: Palette) {
@@ -26,12 +28,13 @@ function colours(variant: ButtonVariant, color: Palette) {
   }
 }
 
-export function Button({ label, onPress, variant = 'primary', size = 'md', disabled = false }: Props) {
+export function Button({ label, onPress, variant = 'primary', size = 'md', disabled = false, accessibilityLabel }: Props) {
   const { color } = useTheme();
   const { fill, ink } = colours(variant, color);
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}

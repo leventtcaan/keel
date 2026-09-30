@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { grantConsent } from '@/consent/consents';
+import { connectAppleHealth } from '@/consent/consents';
 import { t } from '@/copy';
 import { finishOnboarding } from '@/onboarding/finish';
 import { useDraft } from '@/onboarding/OnboardingContext';
@@ -36,16 +36,13 @@ export default function AppleHealthStep() {
 
   async function connect(): Promise<boolean> {
     try {
-      await health.requestRead();
-    } catch (error) {
-      fail(error, 'onboarding.appleHealth.sheetFailed');
-      return false;
-    }
-    try {
-      await grantConsent(api, 'APPLE_HEALTH');
+      await connectAppleHealth(api, health);
       return true;
     } catch (error) {
-      fail(error, nameOf(error) === 'NoConnection' ? 'onboarding.appleHealth.failed' : 'onboarding.serverError');
+      const key = { HealthSheetFailed: 'onboarding.appleHealth.sheetFailed', NoConnection: 'onboarding.appleHealth.failed' }[
+        nameOf(error)
+      ];
+      fail(error, key ?? 'onboarding.serverError');
       return false;
     }
   }

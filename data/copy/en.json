@@ -740,5 +740,71 @@
     },
     "signOut": "Sign out",
     "serverError": "Something went wrong on our side. Try again in a moment."
+  },
+  "settings": {
+    "title": "Settings",
+    "entry": "Settings",
+    "serverError": "Something went wrong on our side. Try again in a moment.",
+    "units": {
+      "title": "Units",
+      "metric": "Metric (kg, cm)",
+      "imperial": "Imperial (lb, ft, in)",
+      "note": "Your history stays as logged; everything shows in the units you pick.",
+      "failed": "Couldn't change units. Check your connection and try again."
+    },
+    "consents": {
+      "title": "Your data and consents",
+      "HEALTH_DATA": "Health data",
+      "APPLE_HEALTH": "Apple Health",
+      "allowed": "Allowed",
+      "notAllowed": "Not allowed",
+      "view": "View",
+      "hide": "Hide",
+      "allow": "Allow",
+      "withdraw": "Withdraw",
+      "loadFailed": "Couldn't load your consents. Check your connection.",
+      "retry": "Try again",
+      "failed": "Couldn't change this consent. Check your connection and try again.",
+      "sheetFailed": "Apple Health didn't open. Try again.",
+      "needsHealthConsent": "Needs the health data consent first.",
+      "unavailable": "Apple Health connects in the app's device build."
+    },
+    "withdrawConfirm": {
+      "HEALTH_DATA": {
+        "title": "Withdraw the health data consent?",
+        "body": "Your weekly calls stop, and new health entries aren't kept, until you allow it again."
+      },
+      "APPLE_HEALTH": {
+        "title": "Stop reading Apple Health?",
+        "body": "Nothing more is read from Apple Health until you allow it again."
+      },
+      "confirm": "Withdraw",
+      "keep": "Keep it"
+    },
+    "export": {
+      "title": "Export my data",
+      "note": "Everything we hold about you, as one JSON file.",
+      "failed": "Couldn't export. Check your connection and try again."
+    },
+    "delete": {
+      "title": "Delete account",
+      "note": "Removes everything, on every device.",
+      "confirmTitle": "Delete your account and all data?",
+      "confirmBody": "Your logs, calls, consents and profile are deleted on our side, and this phone forgets you. This can't be undone. Export first if you want a copy.",
+      "confirm": "Delete everything",
+      "keep": "Keep my account",
+      "failed": "Couldn't delete your account. Check your connection and try again."
+    },
+    "signOut": {
+      "title": "Sign out",
+      "pending": "{count} entries haven't reached our server yet and will be lost if you sign out now.",
+      "confirm": "Sign out anyway",
+      "keep": "Stay signed in"
+    },
+    "back": "Today",
+    "backMark": "‹",
+    "account": {
+      "title": "Your account"
+    }
   }
 }

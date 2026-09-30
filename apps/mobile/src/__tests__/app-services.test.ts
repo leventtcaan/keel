@@ -239,3 +239,75 @@ test('opening without a session drops a "done" left on the phone (a backup resto
   expect(services.profile.current()).toBe('unknown');
   expect(kv.items.has('onboarded')).toBe(false);
 });
+
+describe('deleting the account (K-309, K-214)', () => {
+  function accountServer(status: number) {
+    const seen: string[] = [];
+    const fetch = jest.fn(async (request: Request) => {
+      seen.push(`${request.method} ${request.url.slice(BASE.length)}`);
+      if (request.url.endsWith('/v1/account')) return new Response(null, { status });
+      return new Response(JSON.stringify({ code: 'NOT_FOUND', message: 'x' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    });
+    return { fetch, seen };
+  }
+
+  test('the server deletes (202): the phone forgets the session and the records, and asks nothing more of the server', async () => {
+    const fake = accountServer(202);
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: fake.fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    await settle();
+    await services.queue.record(WEIGH);
+    fake.seen.length = 0;
+    await services.deleteAccount();
+    expect(fake.seen[0]).toBe('DELETE /v1/account');
+    expect(fake.seen).not.toContain('POST /v1/auth/sign-out'); // its tokens are already refused
+    expect(await services.session.isSignedIn()).toBe(false);
+    expect(await services.pendingCount()).toBe(0);
+  });
+
+  test('offline, nothing is forgotten: the account still exists, and so do the entries waiting for it', async () => {
+    const fetch = jest.fn(async () => {
+      throw new TypeError('Network request failed');
+    });
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    await services.queue.record(WEIGH);
+    await expect(services.deleteAccount()).rejects.toMatchObject({ name: 'NoConnection' });
+    expect(await services.session.isSignedIn()).toBe(true);
+    expect(await services.pendingCount()).toBe(1);
+  });
+
+  test('deleted: the settings kept for the account go too (units, "onboarding done")', async () => {
+    const kv = memoryKv();
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: accountServer(202).fetch, report: () => {}, kv, locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    kv.items.set('onboarded', 'done');
+    await services.units.keepOnPhone('METRIC');
+    await services.deleteAccount();
+    await settle();
+    expect(kv.items.has('onboarded')).toBe(false);
+    expect(kv.items.has('units')).toBe(false);
+  });
+
+  test('deleted on the server but the keychain will not clear: still done, the phone forgot what it could, and it is reported', async () => {
+    const storage = memoryStorage();
+    storage.clear = async () => {
+      throw Object.assign(new Error('keychain locked'), { name: 'KeychainError' });
+    };
+    const problems: string[] = [];
+    const services = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: accountServer(202).fetch, report: (p) => problems.push(p.name), kv: memoryKv(), locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    await services.queue.record(WEIGH);
+    await services.deleteAccount(); // the account is gone; a local hiccup is not a failed deletion
+    expect(await services.session.isSignedIn()).toBe(false);
+    expect(await services.pendingCount()).toBe(0);
+    expect(problems).toContain('KeychainError');
+  });
+
+  test.each([500, 400, 409])('a refused deletion (%i) keeps the session: nothing is forgotten on the phone, the error says why by name', async (status) => {
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: accountServer(status).fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    await expect(services.deleteAccount()).rejects.toMatchObject({ name: 'DeletionFailed' });
+    expect(await services.session.isSignedIn()).toBe(true);
+  });
+});

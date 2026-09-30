@@ -6,6 +6,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { t } from '@/copy';
+
 import en from '../../../../data/copy/en.json';
 
 const SRC = path.resolve(__dirname, '..');
@@ -43,5 +45,13 @@ test('every tab placeholder has a title and a note', () => {
   for (const screen of ['today', 'train', 'food', 'progress']) {
     expect(known.has(`screens.${screen}.title`)).toBe(true);
     expect(known.has(`screens.${screen}.note`)).toBe(true);
+  }
+});
+
+test('the keys the settings screen builds from a consent kind exist (K-309)', () => {
+  for (const kind of ['HEALTH_DATA', 'APPLE_HEALTH']) {
+    for (const key of [`settings.consents.${kind}`, `settings.withdrawConfirm.${kind}.title`, `settings.withdrawConfirm.${kind}.body`]) {
+      expect(t(key)).not.toMatch(/^\[missing/);
+    }
   }
 });

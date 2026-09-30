@@ -5,6 +5,7 @@
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import type { HealthAccess } from '@/health/health';
 
 export type ConsentKind = components['schemas']['ConsentKind'];
 
@@ -34,8 +35,31 @@ export async function withdrawConsent(api: ApiClient, kind: ConsentKind): Promis
   if (answer.data === undefined) throw named('ConsentRefused', `consent ${kind} not withdrawn: HTTP ${answer.response.status}`);
 }
 
+/**
+ * Connecting Apple Health (onboarding and Settings, ADR-018): Apple's sheet first, then the consent recorded — a sheet
+ * that fails leaves no consent behind for a connection that never happened, and nothing is read from Apple Health before
+ * the consent is recorded (K-404 reads only with it). A failing sheet is HealthSheetFailed; the grant fails like any.
+ */
+export async function connectAppleHealth(api: ApiClient, health: HealthAccess): Promise<void> {
+  try {
+    await health.requestRead();
+  } catch {
+    throw named('HealthSheetFailed', 'Apple Health sheet failed');
+  }
+  await grantConsent(api, 'APPLE_HEALTH');
+}
+
+export type ConsentStatus = components['schemas']['Consent']['status'];
+
+/** Each consent's state, from the server. Throws like the others. */
+export async function loadConsents(api: ApiClient): Promise<Partial<Record<ConsentKind, ConsentStatus>>> {
+  const answer = await reach(() => api.GET('/v1/consents'));
+  if (answer.data === undefined) throw named('ConsentRefused', `consents not read: HTTP ${answer.response.status}`);
+  return Object.fromEntries(answer.data.map((consent) => [consent.kind, consent.status]));
+}
+
 /** By name, so a screen tells no connection from a server that answered no (V3: never the message). */
-function named(name: 'NoConnection' | 'ConsentRefused', message: string): Error {
+function named(name: 'NoConnection' | 'ConsentRefused' | 'HealthSheetFailed', message: string): Error {
   return Object.assign(new Error(message), { name });
 }
 

@@ -1297,10 +1297,13 @@ tasks:
     depends_on: [K-301, K-204]
     why: "Prototip üç yerde Ayarlar'a yönlendiriyor; hesap silme ve rıza geri alma arayüzsüzdü (L3 P7)"
     acceptance:
-      - "Birim · bildirim slotları · rızalar (görüntüle/geri al) · abonelik (duraklat/iptal) · veri dışa aktar · hesap sil"
+      - "Bugün'den açılır (prototip 5.2); birim (profil PUT, K-310) · rızalar: görüntüle, ver, geri al (onay adımı; APPLE_HEALTH yalnız sağlık rızasıyla) · veri dışa aktar (JSON dosyası, paylaşım sayfası, önbellekten silinir) · hesap sil (onay adımı, K-214) · çıkış (gönderilmemiş kayıt varsa uyarır)"
       - "Uyarı rengi yalnız onay adımında"
+      - "Bildirim slotları K-410'da, abonelik duraklat/iptal ödeme kartında (M7) — o işler gelince bu ekrana eklenir"
     tests:
-      - "SettingsTests"
+      - "settings-screen.test.tsx"
+      - "export-data.test.ts"
+      - "app-services.test.ts (hesap silme)"
     refs: ["arastirma/ham/L3-ozellik-boslugu.md", "plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
     learn:
       - "Ayarlar mimarisi"
@@ -1387,7 +1390,7 @@ tasks:
     depends_on: [K-403, K-204]
     why: "Sıfır yüklü veri; adım düşüşü en yüksek öncelikli uyarı (Güray T-13)"
     acceptance:
-      - "Yalnız Health rızası varsa okunur; rıza geri alınınca durur"
+      - "Yalnız APPLE_HEALTH **ve** HEALTH_DATA rızası varsa okunur (Ayarlar'da sağlık verisi rızası geri çekilince Apple Health izni kalabiliyor, K-309 incelemesi); rıza geri alınınca durur"
       - "Günlük adım, uyku süresi, active energy ve dış antrenmanlar senkronlanır (enerji mevcudiyeti girdisi, ADR-018, L3 P9)"
     tests:
       - "HealthSyncTests (rıza var/yok)"
