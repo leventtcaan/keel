@@ -11,11 +11,13 @@ type Deps = {
   saveFile(name: string, content: string): { uri: string; remove(): void };
   share(uri: string): Promise<void>;
   now: Date;
+  /** A file the phone could not remove, by name (V3); the OS clears the cache in time. */
+  report?(problem: { name: string }): void;
 };
 
 const named = (name: 'NoConnection' | 'ExportFailed', message: string) => Object.assign(new Error(message), { name });
 
-export async function exportAccount({ api, saveFile, share, now }: Deps): Promise<void> {
+export async function exportAccount({ api, saveFile, share, now, report = () => {} }: Deps): Promise<void> {
   let answer;
   try {
     answer = await api.GET('/v1/account/export');
@@ -28,6 +30,11 @@ export async function exportAccount({ api, saveFile, share, now }: Deps): Promis
   try {
     await share(file.uri);
   } finally {
-    file.remove();
+    // A file left behind is not a failed export: the user has theirs. It is reported, and the cache is the OS's to clear.
+    try {
+      file.remove();
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+    }
   }
 }

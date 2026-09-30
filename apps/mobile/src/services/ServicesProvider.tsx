@@ -64,6 +64,7 @@ async function build(): Promise<PhoneServices> {
         },
         share: async (uri) => void (await Share.share({ url: uri })),
         now: new Date(),
+        report: services.report,
       }),
   };
 }

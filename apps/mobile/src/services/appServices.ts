@@ -84,11 +84,10 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
         throw Object.assign(new Error('account deletion: no answer'), { name: 'NoConnection' });
       }
       if (status !== 202) throw Object.assign(new Error(`account deletion failed with HTTP ${status}`), { name: 'DeletionFailed' });
-      try {
-        await session.signOut();
-      } finally {
-        await store.clear();
-      }
+      // The account is gone. A local step that fails now (a locked keychain) is not a failed deletion: it is reported, and
+      // the phone forgets what it can — a token left in the keychain is refused at the next start, which clears it.
+      await session.signOut().catch(reportError);
+      await store.clear().catch(reportError);
     },
     pendingCount: store.pendingCount,
     signOut: async () => {

@@ -54,9 +54,13 @@ export function ConsentsSection() {
     void load();
   }, [load]);
 
-  const change = async (action: () => Promise<void>) => {
+  // A change that went through is shown at once, as the server answered it; then the states are read again (the
+  // truth). If that read fails, the failure shows — never an old state passed off as current.
+  const change = async (kind: Kind, to: ConsentStatus, action: () => Promise<void>) => {
     setAsking(null);
-    if (await run(action, WORDS)) await load();
+    if (!(await run(action, WORDS))) return;
+    setStates((current) => ({ ...current, [kind]: to }));
+    await load();
   };
 
   if (states === null) {
@@ -85,7 +89,7 @@ export function ConsentsSection() {
             : null
         : null;
     const allow = () =>
-      change(() => (kind === 'APPLE_HEALTH' ? connectAppleHealth(api, health) : grantConsent(api, kind)));
+      change(kind, 'GRANTED', () => (kind === 'APPLE_HEALTH' ? connectAppleHealth(api, health) : grantConsent(api, kind)));
     const toggle = granted ? (
       <Button
         label={t('settings.consents.withdraw')}
@@ -113,7 +117,7 @@ export function ConsentsSection() {
           body={t(`settings.withdrawConfirm.${kind}.body`)}
           confirmLabel={t('settings.withdrawConfirm.confirm')}
           keepLabel={t('settings.withdrawConfirm.keep')}
-          onConfirm={() => void change(() => withdrawConsent(api, kind))}
+          onConfirm={() => void change(kind, 'WITHDRAWN', () => withdrawConsent(api, kind))}
           onKeep={() => setAsking(null)}
           busy={busy}
         />
@@ -143,10 +147,17 @@ export function ConsentsSection() {
     );
   });
 
+  const reloadFailed = loadFailed ? (
+    <View style={styles.row}>
+      <Text style={[styles.text, { color: color.text }]}>{t('settings.consents.loadFailed')}</Text>
+      <Button label={t('settings.consents.retry')} variant="ghost" size="sm" onPress={() => void load()} />
+    </View>
+  ) : null;
   return (
     <Section title={t('settings.consents.title')}>
       {rows}
       {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+      {reloadFailed}
     </Section>
   );
 }

@@ -772,7 +772,7 @@
     "withdrawConfirm": {
       "HEALTH_DATA": {
         "title": "Withdraw the health data consent?",
-        "body": "Your weekly calls stop, and new health entries aren't kept, until you allow it again. Export your data first if you want a copy."
+        "body": "Your weekly calls stop, and new health entries aren't kept, until you allow it again."
       },
       "APPLE_HEALTH": {
         "title": "Stop reading Apple Health?",

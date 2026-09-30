@@ -1390,7 +1390,7 @@ tasks:
     depends_on: [K-403, K-204]
     why: "Sıfır yüklü veri; adım düşüşü en yüksek öncelikli uyarı (Güray T-13)"
     acceptance:
-      - "Yalnız Health rızası varsa okunur; rıza geri alınınca durur"
+      - "Yalnız APPLE_HEALTH **ve** HEALTH_DATA rızası varsa okunur (Ayarlar'da sağlık verisi rızası geri çekilince Apple Health izni kalabiliyor, K-309 incelemesi); rıza geri alınınca durur"
       - "Günlük adım, uyku süresi, active energy ve dış antrenmanlar senkronlanır (enerji mevcudiyeti girdisi, ADR-018, L3 P9)"
     tests:
       - "HealthSyncTests (rıza var/yok)"

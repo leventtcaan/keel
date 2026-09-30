@@ -54,3 +54,21 @@ test('no answer is NoConnection; a refusal is ExportFailed; nothing is written e
   await expect(exportAccount(refused.deps)).rejects.toMatchObject({ name: 'ExportFailed' });
   expect([...offline.files, ...refused.files]).toEqual([]);
 });
+
+test('a file the phone cannot remove does not turn a done export into a failure: it is reported by name', async () => {
+  const problems: string[] = [];
+  const { deps } = setup(json(200, EXPORT));
+  const saveFile = deps.saveFile;
+  const withStuckFile = {
+    ...deps,
+    report: (problem: { name: string }) => void problems.push(problem.name),
+    saveFile: (name: string, content: string) => ({
+      ...saveFile(name, content),
+      remove: () => {
+        throw Object.assign(new Error('busy'), { name: 'FileError' });
+      },
+    }),
+  };
+  await exportAccount(withStuckFile);
+  expect(problems).toEqual(['FileError']);
+});

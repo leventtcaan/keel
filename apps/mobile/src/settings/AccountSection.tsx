@@ -26,11 +26,13 @@ export function AccountSection() {
 
   const exportAll = () => void run(exportData, { NoConnection: 'settings.export.failed' });
   const remove = () => void run(deleteAccount, { NoConnection: 'settings.delete.failed' });
-  const leave = async () => {
-    const pending = await pendingCount();
-    if (pending > 0) setAsking({ pending });
-    else void run(signOut, {});
-  };
+  // Counting what is waiting is part of the action: if the phone cannot tell, it does not sign out blind.
+  const leave = () =>
+    void run(async () => {
+      const pending = await pendingCount();
+      if (pending > 0) setAsking({ pending });
+      else await signOut();
+    }, {});
 
   const deleteQuestion =
     asking === 'delete' ? (
@@ -67,7 +69,7 @@ export function AccountSection() {
         <Text style={[styles.note, { color: color.muted }]}>{t('settings.delete.note')}</Text>
       </View>
       {deleteQuestion}
-      <Button label={t('settings.signOut.title')} variant="ghost" onPress={() => void leave()} disabled={busy} />
+      <Button label={t('settings.signOut.title')} variant="ghost" onPress={leave} disabled={busy} />
       {signOutQuestion}
       {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
     </Section>

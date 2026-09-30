@@ -265,8 +265,47 @@ describe('deleting the account (K-309, K-214)', () => {
     expect(await services.pendingCount()).toBe(0);
   });
 
-  test('a refused deletion keeps the session: nothing is forgotten on the phone, the error says why by name', async () => {
-    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: accountServer(500).fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
+  test('offline, nothing is forgotten: the account still exists, and so do the entries waiting for it', async () => {
+    const fetch = jest.fn(async () => {
+      throw new TypeError('Network request failed');
+    });
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    await services.queue.record(WEIGH);
+    await expect(services.deleteAccount()).rejects.toMatchObject({ name: 'NoConnection' });
+    expect(await services.session.isSignedIn()).toBe(true);
+    expect(await services.pendingCount()).toBe(1);
+  });
+
+  test('deleted: the settings kept for the account go too (units, "onboarding done")', async () => {
+    const kv = memoryKv();
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: accountServer(202).fetch, report: () => {}, kv, locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    kv.items.set('onboarded', 'done');
+    await services.units.keepOnPhone('METRIC');
+    await services.deleteAccount();
+    await settle();
+    expect(kv.items.has('onboarded')).toBe(false);
+    expect(kv.items.has('units')).toBe(false);
+  });
+
+  test('deleted on the server but the keychain will not clear: still done, the phone forgot what it could, and it is reported', async () => {
+    const storage = memoryStorage();
+    storage.clear = async () => {
+      throw Object.assign(new Error('keychain locked'), { name: 'KeychainError' });
+    };
+    const problems: string[] = [];
+    const services = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: accountServer(202).fetch, report: (p) => problems.push(p.name), kv: memoryKv(), locale: 'en-US' });
+    await services.session.signIn(SESSION);
+    await services.queue.record(WEIGH);
+    await services.deleteAccount(); // the account is gone; a local hiccup is not a failed deletion
+    expect(await services.session.isSignedIn()).toBe(false);
+    expect(await services.pendingCount()).toBe(0);
+    expect(problems).toContain('KeychainError');
+  });
+
+  test.each([500, 400, 409])('a refused deletion (%i) keeps the session: nothing is forgotten on the phone, the error says why by name', async (status) => {
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: accountServer(status).fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
     await services.session.signIn(SESSION);
     await expect(services.deleteAccount()).rejects.toMatchObject({ name: 'DeletionFailed' });
     expect(await services.session.isSignedIn()).toBe(true);

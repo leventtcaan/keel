@@ -99,7 +99,9 @@ describe('consents', () => {
     expect(screen.getByText(row('HEALTH_DATA'))).toBeOnTheScreen();
     expect(screen.getByText(row('APPLE_HEALTH'))).toBeOnTheScreen();
     expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
-    expect(screen.queryByText(t('consent.third_party_ai.title'))).toBeNull();
+    // Exactly the two health consents: no row, and no button, for the AI consent (V2: not before its provider is named).
+    expect(screen.getAllByRole('button', { name: new RegExp(`^${t('settings.consents.view')} `) })).toHaveLength(2);
+    expect(screen.queryAllByRole('button').filter((b) => /THIRD_PARTY_AI|missing/.test(String(b.props.accessibilityLabel)))).toEqual([]);
   });
 
   test('View shows the text the consent was given to', async () => {
@@ -113,7 +115,7 @@ describe('consents', () => {
     await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
     expect(mockServices.api.DELETE).not.toHaveBeenCalled();
     expect(screen.getByText(t('settings.withdrawConfirm.HEALTH_DATA.body'))).toBeOnTheScreen();
-    expect(warnButtons().map((b) => b.props.accessibilityLabel ?? '')).toHaveLength(1);
+    expect(warnButtons()).toEqual([button(t('settings.withdrawConfirm.confirm'))]); // the confirm, not "Keep it"
     await press(t('settings.withdrawConfirm.confirm'));
     expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/consents/{kind}', { params: { path: { kind: 'HEALTH_DATA' } } });
     expect(screen.queryAllByText(t('settings.consents.allowed'))).toHaveLength(0);
@@ -173,6 +175,39 @@ describe('consents', () => {
     expect(screen.getByText(row('HEALTH_DATA'))).toBeOnTheScreen();
   });
 
+  test('a change that went through shows at once, even when reading the states back fails — and the failure shows', async () => {
+    await show();
+    mockServices.api.GET.mockRejectedValueOnce(new TypeError('Network request failed'));
+    await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
+    await press(t('settings.withdrawConfirm.confirm'));
+    expect(screen.queryAllByText(t('settings.consents.allowed'))).toHaveLength(0); // withdrawn, as the server said
+    expect(screen.getByText(t('settings.consents.loadFailed'))).toBeOnTheScreen();
+    await press(t('settings.consents.retry'));
+    expect(screen.queryByText(t('settings.consents.loadFailed'))).toBeNull();
+  });
+
+  test('Apple Health can be withdrawn too, with its own question', async () => {
+    mockConsents.APPLE_HEALTH = 'GRANTED';
+    await show();
+    await press(`${t('settings.consents.withdraw')} ${row('APPLE_HEALTH')}`);
+    expect(screen.getByText(t('settings.withdrawConfirm.APPLE_HEALTH.body'))).toBeOnTheScreen();
+    await press(t('settings.withdrawConfirm.confirm'));
+    expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/consents/{kind}', { params: { path: { kind: 'APPLE_HEALTH' } } });
+  });
+
+  test("Apple's sheet failing in Settings says so and records nothing", async () => {
+    mockServices.health.requestRead.mockRejectedValueOnce(new Error('HealthKit'));
+    await show();
+    await press(`${t('settings.consents.allow')} ${row('APPLE_HEALTH')}`);
+    expect(screen.getByText(t('settings.consents.sheetFailed'))).toBeOnTheScreen();
+    expect(mockServices.api.PUT).not.toHaveBeenCalled();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'HealthSheetFailed' });
+  });
+
+  test('the withdrawal text does not say the data is deleted: today it is only no longer kept (deletion is K-231)', () => {
+    expect(t('settings.withdrawConfirm.HEALTH_DATA.body')).not.toMatch(/delet|export/i);
+  });
+
   test('a change the server refuses says so and keeps the state shown', async () => {
     mockServices.api.DELETE.mockResolvedValueOnce({ error: { code: 'X' }, response: new Response(null, { status: 500 }) } as never);
     await show();
@@ -202,7 +237,7 @@ describe('export, delete, sign out', () => {
     await show();
     await press(t('settings.delete.title'));
     expect(screen.getByText(t('settings.delete.confirmTitle'))).toBeOnTheScreen();
-    expect(warnButtons()).toHaveLength(1);
+    expect(warnButtons()).toEqual([button(t('settings.delete.confirm'))]);
     await press(t('settings.delete.keep'));
     expect(mockServices.deleteAccount).not.toHaveBeenCalled();
     await press(t('settings.delete.title'));
@@ -230,7 +265,54 @@ describe('export, delete, sign out', () => {
     await press(t('settings.signOut.title'));
     expect(mockServices.signOut).not.toHaveBeenCalled();
     expect(screen.getByText(t('settings.signOut.pending', { count: 3 }))).toBeOnTheScreen();
+    expect(warnButtons()).toEqual([button(t('settings.signOut.confirm'))]);
     await press(t('settings.signOut.confirm'));
     expect(mockServices.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  test('"Stay signed in" keeps the session and the entries', async () => {
+    mockServices.pendingCount.mockResolvedValue(3);
+    await show();
+    await press(t('settings.signOut.title'));
+    await press(t('settings.signOut.keep'));
+    expect(mockServices.signOut).not.toHaveBeenCalled();
+    expect(screen.queryByText(t('settings.signOut.pending', { count: 3 }))).toBeNull();
+  });
+
+  test('when the phone cannot count what is waiting, it does not sign out blind: it says so', async () => {
+    mockServices.pendingCount.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'SqliteError' }));
+    await show();
+    await press(t('settings.signOut.title'));
+    expect(mockServices.signOut).not.toHaveBeenCalled();
+    expect(screen.getByText(t('settings.serverError'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'SqliteError' });
+  });
+
+  test('deleting offline says it is the connection', async () => {
+    mockServices.deleteAccount.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }));
+    await show();
+    await press(t('settings.delete.title'));
+    await press(t('settings.delete.confirm'));
+    expect(screen.getByText(t('settings.delete.failed'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('settings.serverError'))).toBeNull();
+  });
+
+  test('two taps on "Delete everything" in the same moment delete once', async () => {
+    let finish = () => {};
+    mockServices.deleteAccount.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)));
+    await show();
+    await press(t('settings.delete.title'));
+    const confirm = button(t('settings.delete.confirm'));
+    const overlapNote = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await act(async () => {
+        void fireEvent.press(confirm);
+        void fireEvent.press(confirm);
+      });
+    } finally {
+      overlapNote.mockRestore();
+    }
+    expect(mockServices.deleteAccount).toHaveBeenCalledTimes(1);
+    await act(async () => finish());
   });
 });
