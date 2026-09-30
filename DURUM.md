@@ -52,9 +52,8 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-213 check-in soruları + soru bütçesi | ✅ birleşti; inceleme: sorulan soruya 400 (veri GET→POST arasında değişince), GET/POST hafta kuralı ayrıydı, `needed` sonsuz döngü riski, aynı gün iki ölçüm | #171 | `M2/K-213.md` |
 | K-216 kararı hedeflere uygula + geri al (V12) | ✅ birleşti; inceleme: bayat karar, split sığmayınca apply reddi, hedefsiz plan, LEA tabanı (soru 11); CI: text block boşluğu | #172 | `M2/K-216.md` |
 | K-220 uyum kayıtlardan (WeekTally) | ✅ birleşti; inceleme: adım hedefi geriye uygulanıyordu, plandan önceki haftalar, K-216 yarışı (satır kilidi) | #174 | `M2/K-220.md` |
-| K-217 programa yansıma — 1. kısım (tut/deload/dinlenme, V13) | auto-merge AÇIK, CI yeşil; inceleme: aynı gün başlayan tutma kapanmıyordu (CI kırmızısı), geri alma tutmayı açar, hedefsiz planda 404 | #175 | `M2/K-217.md` (2. kısımla) |
-| K-217 2. kısım (sonraki seans yük/tekrar, V14) | `../keel-k217b` `training/101-next-targets`, commit'li (NextTargets saf 6/6, SessionProgress, finish `uncleanExerciseIds`, görünüm); 1. kısım birleşince `rebase --onto origin/main 8ca91c7` → PR → inceleme | — | — |
-| K-221 TrainingStatus (set kaydından) | `../keel-k221` `training/170-training-status`, 2. kısmın üstüne yığılı, commit'li (TrainingStatuses saf 10/10, TrainingStatusReader, Snapshot'a bağlı, DB testi); 2. kısım birleşince rebase → PR → inceleme | — | — |
+| K-217 programa yansıma (V13 tut/deload/dinlenme, V14 sonraki seans) | ✅ birleşti (iki PR); inceleme: aynı gün tutma kapanmıyordu, check-in'de başlayan tutma önceki hedefi kaçırıyordu, tek taraflı çift artış, eksik set, geç biten antrenman hedefi geri alıyordu; CI: List.of().contains(null) | #175, #176 | `M2/K-217.md` |
+| K-221 TrainingStatus (set kaydından) | PR açık, inceleme ajanları çalışıyor (`../keel-k221`) | #177 | `M2/K-221.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
