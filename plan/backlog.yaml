@@ -1131,7 +1131,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-201]
     why: "Sözleşme ile mobil sessizce kopmasın (K3)"
     acceptance:
