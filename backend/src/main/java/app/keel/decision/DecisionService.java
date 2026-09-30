@@ -324,7 +324,10 @@ class DecisionService {
         return targetsAfter(account);
     }
 
-    /** Puts the plan back as it was before the call (kept in the audit trail). Undone twice, nothing more changes. */
+    /**
+     * Puts the plan back as it was before the call (kept in the audit trail). Undone twice, nothing more changes. The hard
+     * stop is CONFLICT: it is not taken back (ADR-020 L-1).
+     */
     @Transactional
     PlanTargets undo(AccountId account, UUID id) {
         consent.require(account, ConsentKind.HEALTH_DATA);
@@ -332,7 +335,7 @@ class DecisionService {
         if (call.application() == CallStore.Application.UNDONE) {
             return targetsAfter(account);
         }
-        if (call.application() != CallStore.Application.APPLIED) {
+        if (call.application() != CallStore.Application.APPLIED || !PlanChange.undoable(DecisionJson.action(call.decision()))) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         if (calls.markUndone(account, id, clock.instant())) {

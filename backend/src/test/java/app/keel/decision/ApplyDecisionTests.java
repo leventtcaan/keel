@@ -138,6 +138,17 @@ class ApplyDecisionTests {
     }
 
     @Test
+    void theHardStopIsNotTakenBackAndEveryOtherCallIs() {
+        // ADR-020 L-1: after the hard stop, no more eating under maintenance — an undo would put the deficit back with
+        // one tap (K-222 review). Every other applied call can be taken back (K-216).
+        assertThat(PlanChange.undoable(new Action.HardStop())).isFalse();
+        for (Action action : List.of(new Action.AdjustCalories(-250), new Action.IncreaseCalories(250), new Action.ChangeMovement(),
+                new Action.ChangePhase(Phase.BULK), new Action.StopLoadIncrease(), new Action.Deload(new BigDecimal("0.5")), new Action.FullRestWeek())) {
+            assertThat(PlanChange.undoable(action)).as(action.type().name()).isTrue();
+        }
+    }
+
+    @Test
     void aNewDirectionOnAPlanStartedLaterOnTheCalendarStartsWithIt() {
         // A time zone moved west: the plan begins "tomorrow" on today's calendar; the new one cannot start before it.
         CallStore.Plan startsTomorrow = new CallStore.Plan(Phase.CUT, TODAY.minusDays(30), TODAY.plusDays(1), 1900, false, null);

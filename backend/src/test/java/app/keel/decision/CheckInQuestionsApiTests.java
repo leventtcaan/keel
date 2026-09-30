@@ -2,15 +2,21 @@ package app.keel.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.engine.InitialTarget;
+import app.keel.engine.ParameterSet;
+import app.keel.engine.Profile;
+import app.keel.engine.Sex;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +49,9 @@ class CheckInQuestionsApiTests {
 
     @Autowired
     JdbcClient jdbc;
+
+    @Autowired
+    ParameterSet parameters;
 
     @Test
     void aFirstCheckInWhileMaintenanceIsWatchedAsksNothing() throws Exception {
@@ -224,7 +233,30 @@ class CheckInQuestionsApiTests {
         Map<String, Object> plan = jdbc.sql("select phase, observing_maintenance, target_kcal from decision.plan where account_id = :a")
                 .param("a", account.value()).query().singleRow();
         assertThat(plan).containsEntry("phase", "BULK").containsEntry("observing_maintenance", true);
-        assertThat((Integer) plan.get("target_kcal")).isGreaterThan(1200);
+        // The maintenance estimate at her weight, height and age (K-114), not just any number above the old target.
+        int maintenance = InitialTarget.estimate(Sex.FEMALE, new BigDecimal("60.0"),
+                new Profile(LocalDate.now(ZoneOffset.UTC).getYear() - 1996, 165), Optional.empty(),
+                parameters.forSex(Sex.FEMALE)).maintenanceKcal();
+        assertThat((Integer) plan.get("target_kcal")).isEqualTo(Math.max(1200, maintenance));
+
+        // Not taken back (ADR-020 L-1), and the export — plans before and after included — carries no trace either.
+        assertThat(send(account, "POST", "/v1/decisions/" + made.get("id") + "/undo", null).getResponse().getStatus()).isEqualTo(409);
+        String export = send(account, "GET", "/v1/account/export", null).getResponse().getContentAsString();
+        assertThat(export).contains("low_energy_safety").doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle");
+    }
+
+    @Test
+    void aWomanNotInTheLowBandOrWithoutAnEstimateIsNotAskedAboutHerCycle() throws Exception {
+        // V4: only in the low band — the answer is special-category data (GDPR Art. 9), not asked of every woman.
+        AccountId fed = womanOnALowPlan();
+        jdbc.sql("update decision.plan set target_kcal = 2000 where account_id = :a").param("a", fed.value()).update();
+        AccountId noEstimate = womanOnALowPlan();
+        jdbc.sql("delete from measurement.body_look where account_id = :a").param("a", noEstimate.value()).update();
+
+        for (AccountId account : List.of(fed, noEstimate)) {
+            List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
+            assertThat(questions).extracting(question -> question.get("kind")).doesNotContain("CYCLE_STOPPED");
+        }
     }
 
     @Test

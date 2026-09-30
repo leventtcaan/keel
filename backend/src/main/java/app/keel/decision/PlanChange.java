@@ -52,6 +52,14 @@ final class PlanChange {
         return new CallStore.Plan(to, before.phase() == to ? before.phaseStart() : start, start, targetKcal, true, before.stepsPerDay());
     }
 
+    /**
+     * Whether an applied call can be taken back: all but the hard stop — undone, it would put the deficit back with one
+     * tap, against ADR-020 L-1 (no more eating under maintenance; K-222 review).
+     */
+    static boolean undoable(Action action) {
+        return !(action instanceof Action.HardStop);
+    }
+
     /** The step target in force: the plan's, or the starting one before any was set. */
     static int steps(CallStore.Plan plan, Parameters parameters) {
         return plan.stepsPerDay() != null ? plan.stepsPerDay() : parameters.wholeNumber(ParameterKey.STEPS_TARGET_START);
