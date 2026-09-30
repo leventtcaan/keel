@@ -104,6 +104,8 @@ export const tokens = {
   },
   size: {
     track: 6,
+    /** A full-width control such as the Sign in with Apple button; above Apple's 44 pt minimum. */
+    control: 50,
   },
   opacity: {
     /** Pressed and disabled controls. */

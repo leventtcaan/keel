@@ -2,6 +2,12 @@
   "app": {
     "name": "keel"
   },
+  "signIn": {
+    "note": "One tap with your Apple ID. We keep no name and no email.",
+    "failed": "Sign-in didn't go through. Try again.",
+    "offline": "No connection. Sign-in needs one, just this once.",
+    "unavailable": "Sign in with Apple isn't available on this device."
+  },
   "tabs": {
     "today": "Today",
     "train": "Train",

@@ -36,6 +36,8 @@ export function createSessionManager({ storage, refresh }: Options) {
   // Bumped by sign-in and sign-out: a refresh that started before one of them must not write its answer after it.
   let generation = 0;
   let inFlight: Promise<string | null> | null = null;
+  const listeners = new Set<(signedIn: boolean) => void>();
+  const announce = (signedIn: boolean) => listeners.forEach((listener) => listener(signedIn));
 
   async function current(): Promise<StoredSession | null> {
     if (memory === undefined) {
@@ -58,6 +60,7 @@ export function createSessionManager({ storage, refresh }: Options) {
     if (generation !== startedIn) return null; // signed in or out meanwhile: this answer belongs to a session that is gone
     if (outcome.kind === 'rejected') {
       memory = null;
+      announce(false);
       await storage.clear();
       return null;
     }
@@ -70,6 +73,7 @@ export function createSessionManager({ storage, refresh }: Options) {
   async function replace(next: StoredSession | null): Promise<void> {
     generation += 1;
     memory = next;
+    announce(next !== null);
     await (next === null ? storage.clear() : storage.save(next));
   }
 
@@ -91,6 +95,14 @@ export function createSessionManager({ storage, refresh }: Options) {
         inFlight = null;
       });
       return inFlight;
+    },
+
+    isSignedIn: async (): Promise<boolean> => (await current()) !== null,
+    refreshToken: async (): Promise<string | null> => (await current())?.refreshToken ?? null,
+    /** Told on sign-in, sign-out and a refused refresh (the navigation switches screens on it). */
+    subscribe: (listener: (signedIn: boolean) => void): (() => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
 
     signIn: (session: StoredSession): Promise<void> => replace(session),

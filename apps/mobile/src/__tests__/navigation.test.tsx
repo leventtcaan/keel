@@ -19,6 +19,17 @@ import { TABS, type TabRoute } from '@/navigation/tabs';
 import { ThemeProvider } from '@/theme/theme';
 
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
+// The services need a phone (SQLite, keychain); the session state is what navigation reads from them (K-305).
+let mockSignedIn = true;
+jest.mock('@/services/ServicesProvider', () => ({
+  ServicesProvider: ({ children }: { children: unknown }) => children,
+  useSignedIn: () => mockSignedIn,
+  useAppServices: () => ({ signInWithApple: jest.fn(), appleAvailable: async () => false }),
+}));
+
+beforeEach(() => {
+  mockSignedIn = true;
+});
 
 const APP = path.resolve(__dirname, '../app');
 
@@ -97,6 +108,26 @@ test('opened cold from a link (keel://coach), the coach still has the tabs under
   expect(appRouter.canGoBack()).toBe(true);
   await act(async () => {
     appRouter.back();
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/');
+});
+
+test.each(['/', '/train', '/coach'])('signed out, the app opens on sign-in, even from %s', async (url) => {
+  mockSignedIn = false;
+  const router = renderRouter(APP, { initialUrl: url });
+  await router;
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/sign-in');
+  expect(screen.queryByRole('button', { name: t('coach.entry') })).toBeNull();
+});
+
+test('signed in, sign-in is not reachable', async () => {
+  const router = renderRouter(APP, { initialUrl: '/sign-in' });
+  await router;
+  await act(async () => {
     jest.runAllTimers();
   });
   expect(router.getPathname()).toBe('/');

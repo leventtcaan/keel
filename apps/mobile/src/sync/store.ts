@@ -136,6 +136,9 @@ export async function openRecordStore(db: SqlDatabase, now: () => Date = () => n
         [],
       ),
 
+    pendingCount: async (): Promise<number> =>
+      (await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) AS n FROM records WHERE state = 'PENDING'`, []))?.n ?? 0,
+
     all: async (): Promise<LocalRecord[]> =>
       (await db.getAllAsync<Row>(`SELECT ${COLUMNS} FROM records ORDER BY seq`, [])).map(toRecord),
 
