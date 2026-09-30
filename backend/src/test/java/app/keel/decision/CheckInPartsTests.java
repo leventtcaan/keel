@@ -62,12 +62,11 @@ class CheckInPartsTests {
                 new Answers.Answer(Answers.Kind.LOOK, null, "BETTER", null),
                 new Answers.Answer(Answers.Kind.TRAINING, null, "STABLE", null),
                 new Answers.Answer(Answers.Kind.RECOVERY, null, "POOR", null),
-                new Answers.Answer(Answers.Kind.APPETITE, null, "GONE", null),
-                new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "YES", null)));
+                new Answers.Answer(Answers.Kind.APPETITE, null, "GONE", null)));
 
         assertThat(read.checkIn()).isEqualTo(new CheckIn(CheckIn.Look.BETTER, CheckIn.Training.STABLE, CheckIn.Recovery.POOR,
                 CheckIn.Waist.UNKNOWN, java.util.Optional.empty(), CheckIn.Appetite.GONE));
-        assertThat(read.menstrualLossReported()).isTrue();
+        assertThat(read.menstrualLossReported()).isFalse();
         assertThat(Answers.read(List.of()).checkIn()).as("nothing answered: all unknown, the engine asks").isEqualTo(CheckIn.NONE);
     }
 
@@ -77,8 +76,39 @@ class CheckInPartsTests {
         assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, 7, null, null))));
         assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, null, "SAME", null),
                 new Answers.Answer(Answers.Kind.LOOK, null, "BETTER", null))));
+        // Read with their questions (K-213): the scales, the waist — and the cycle question, asked only to a woman in the
+        // low energy band (V4), which cannot be computed yet (K-212 review: accepted from anyone, it stopped a man's plan).
+        // Each in its own well-formed shape, so the refusal is for the kind, not the shape.
+        for (Answers.Answer later : List.of(new Answers.Answer(Answers.Kind.SLEEP_QUALITY, 3, null, null),
+                new Answers.Answer(Answers.Kind.ENERGY, 7, null, null), new Answers.Answer(Answers.Kind.WAIST, null, null, new BigDecimal("88")),
+                new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "YES", null), new Answers.Answer(Answers.Kind.CYCLE_STOPPED, null, "NO", null))) {
+            assertThatIllegalArgumentException().as(later.kind().name()).isThrownBy(() -> Answers.read(List.of(later)));
+        }
         // UNKNOWN is the engine's word for "not answered", not an answer.
         assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.LOOK, null, "UNKNOWN", null))));
+    }
+
+    @Test
+    void aCallThatChangesNothingNeedsNoApplyingAndEveryOtherDoes() {
+        // K-216 applies PENDING calls; "not yet", "continue" and advice change no target.
+        java.util.Map<Action, CallStore.Application> expected = new java.util.LinkedHashMap<>();
+        expected.put(new Action.NoDecisionYet(), CallStore.Application.NOT_NEEDED);
+        expected.put(new Action.Continue(), CallStore.Application.NOT_NEEDED);
+        expected.put(new Action.FixTraining(), CallStore.Application.NOT_NEEDED);
+        expected.put(new Action.FixRecovery(), CallStore.Application.NOT_NEEDED);
+        expected.put(new Action.FixAdherence(), CallStore.Application.NOT_NEEDED);
+        expected.put(new Action.AdjustCalories(-500), CallStore.Application.PENDING);
+        expected.put(new Action.IncreaseCalories(250), CallStore.Application.PENDING);
+        expected.put(new Action.ChangeMovement(), CallStore.Application.PENDING);
+        expected.put(new Action.HardStop(), CallStore.Application.PENDING);
+        expected.put(new Action.StopLoadIncrease(), CallStore.Application.PENDING);
+        expected.put(new Action.Deload(new BigDecimal("0.5")), CallStore.Application.PENDING);
+        expected.put(new Action.FullRestWeek(), CallStore.Application.PENDING);
+        expected.put(new Action.MiniCut(2, 4), CallStore.Application.PENDING);
+        expected.put(new Action.ChangePhase(Phase.BULK), CallStore.Application.PENDING);
+        assertThat(expected.keySet()).extracting(Action::type).containsExactlyInAnyOrder(app.keel.engine.ActionType.values());
+
+        expected.forEach((action, state) -> assertThat(DecisionService.application(decision(action))).as(action.type().name()).isEqualTo(state));
     }
 
     private static Decision decision(Action action) {

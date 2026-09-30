@@ -48,6 +48,9 @@ class DecisionServiceTests {
     @Autowired
     ParameterSet parameters;
 
+    @Autowired
+    CallStore store;
+
     @Test
     void theFirstCheckInStartsThePlanAndKeepsTheCall() throws Exception {
         AccountId account = ready("LOSE_FAT");
@@ -88,6 +91,7 @@ class DecisionServiceTests {
 
         assertThat(answer(account, UUID.randomUUID(), thisWeek(), List.of())).as("a second call this week").hasStatus(409);
         assertThat(answer(ready("LOSE_FAT"), UUID.randomUUID(), thisWeek().minusWeeks(1), List.of())).as("last week").hasStatus(409);
+        assertThat(answer(ready("LOSE_FAT"), UUID.randomUUID(), thisWeek().plusWeeks(1), List.of())).as("next week").hasStatus(409);
     }
 
     @Test
@@ -111,13 +115,128 @@ class DecisionServiceTests {
     }
 
     @Test
-    void theCycleAnswerDrivesTheCallButIsNotKept() throws Exception {
+    void theCycleQuestionIsNotTakenBeforeItIsAsked() {
+        // V4: asked only to a woman in the low energy band, which needs the fat estimate (question 11). Taken from anyone,
+        // it stopped a man's plan, and the stored call named the answer (K-212 review; storage: DURUM question 18).
         AccountId account = ready("LOSE_FAT");
 
-        answer(account, UUID.randomUUID(), thisWeek(), List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")));
+        assertThat(answer(account, UUID.randomUUID(), thisWeek(), List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")))).hasStatus(400);
+    }
 
-        assertThat(jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
-                .query(String.class).single()).doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle");
+    @Test
+    void aBodyTheEngineCannotReadIsAConflictNotA500() {
+        // Born this year: age 0, which the engine's Profile refuses (K-212 review).
+        AccountId baby = TestSessions.newAccount();
+        send(baby, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(baby, "PUT", "/v1/profile", profile("LOSE_FAT", "MALE", LocalDate.now(ZoneOffset.UTC).getYear(), "UTC", null));
+
+        assertThat(answer(baby, UUID.randomUUID(), thisWeek(), List.of())).hasStatus(409);
+    }
+
+    @Test
+    void aPlanThatStartsAfterTodayIsAConflictNotA500() {
+        // A time zone moved west after the plan began: the plan's first day is "tomorrow" on the new calendar.
+        AccountId account = ready("LOSE_FAT");
+        jdbc.sql("insert into decision.plan (account_id, phase, phase_start, plan_start, observing_maintenance) values (:a, 'CUT', :d, :d, true)")
+                .param("a", account.value()).param("d", LocalDate.now(ZoneOffset.UTC).plusDays(1)).update();
+
+        assertThat(answer(account, UUID.randomUUID(), thisWeek(), List.of())).hasStatus(409);
+    }
+
+    @Test
+    void theDirectionTheSexAndTheBodyComeFromTheProfile() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/profile", profile("BUILD_MUSCLE", "FEMALE", 1990, "UTC", "ACTIVE"));
+        weighIn(account, java.time.Instant.now().minusSeconds(3 * 86400), 60.2);
+        weighIn(account, java.time.Instant.now().minusSeconds(3600), 61.0);
+
+        answer(account, UUID.randomUUID(), thisWeek(), List.of());
+
+        Map<String, Object> plan = jdbc.sql("select phase, target_kcal from decision.plan where account_id = :a").param("a", account.value()).query().singleRow();
+        assertThat(plan).containsEntry("phase", "BULK");
+        // The latest weigh-in, the age by birth year, the activity level: the maintenance estimate (K-114).
+        int expected = app.keel.engine.InitialTarget.estimate(app.keel.engine.Sex.FEMALE, new java.math.BigDecimal("61.0"),
+                new app.keel.engine.Profile(LocalDate.now(ZoneOffset.UTC).getYear() - 1990, 180),
+                java.util.Optional.of(app.keel.engine.ActivityLevel.ACTIVE), parameters.forSex(app.keel.engine.Sex.FEMALE)).maintenanceKcal();
+        assertThat(plan.get("target_kcal")).isEqualTo(expected);
+        assertThat(storedSnapshot(account).sex()).isEqualTo(app.keel.engine.Sex.FEMALE);
+    }
+
+    @Test
+    void anExistingPlanIsWhatTheEngineJudges() throws Exception {
+        AccountId account = ready("LOSE_FAT");
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'BULK', :phase, :plan, 2900, false)""")
+                .param("a", account.value()).param("phase", today.minusDays(60)).param("plan", today.minusDays(20)).update();
+
+        answer(account, UUID.randomUUID(), thisWeek(), List.of());
+
+        StoredSnapshot snapshot = storedSnapshot(account);
+        assertThat(snapshot.phase()).isEqualTo(app.keel.engine.Phase.BULK);
+        assertThat(snapshot.phaseStart()).isEqualTo(today.minusDays(60));
+        assertThat(snapshot.planStart()).isEqualTo(today.minusDays(20));
+        assertThat(snapshot.observingMaintenance()).isFalse();
+    }
+
+    @Test
+    void theWeightsAreTheEvaluationWindow() throws Exception {
+        AccountId account = ready("LOSE_FAT");
+        int days = parameters.forSex(app.keel.engine.Sex.MALE).wholeNumber(app.keel.engine.ParameterKey.EVALUATION_WINDOW_DAYS);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        weighIn(account, today.minusDays(days - 1L).atStartOfDay(ZoneOffset.UTC).plusHours(12).toInstant(), 84.0);   // the window's first day
+        weighIn(account, today.minusDays(days).atStartOfDay(ZoneOffset.UTC).plusHours(12).toInstant(), 85.0);        // the day before it
+
+        answer(account, UUID.randomUUID(), thisWeek(), List.of());
+
+        assertThat(storedSnapshot(account).weights()).extracting(StoredSnapshot.Weight::date)
+                .contains(today.minusDays(days - 1L)).doesNotContain(today.minusDays(days));
+    }
+
+    @Test
+    void todayIsTheUsersOwnDate() throws Exception {
+        // Of UTC+14 and UTC-12, one is on another date than UTC at any moment: the call is made on that user's date.
+        java.time.Instant now = java.time.Instant.now();
+        String zone = LocalDate.ofInstant(now, java.time.ZoneId.of("Etc/GMT-14")).equals(LocalDate.ofInstant(now, ZoneOffset.UTC))
+                ? "Etc/GMT+12" : "Etc/GMT-14";
+        LocalDate theirs = LocalDate.ofInstant(now, java.time.ZoneId.of(zone));
+        AccountId account = TestSessions.newAccount();
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        Map<String, Object> profile = new java.util.HashMap<>(profile("LOSE_FAT", "MALE", 1996, zone, null));
+        profile.put("schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", theirs.getDayOfWeek().name(), "timeZone", zone));
+        send(account, "PUT", "/v1/profile", profile);
+
+        MvcTestResult result = answer(account, UUID.randomUUID(), theirs, List.of());
+
+        assertThat(result).hasStatusOk();
+        assertThat(map(result)).containsEntry("madeOn", theirs.toString());
+    }
+
+    @Test
+    void theCallsAreHealthDataAndGoWithTheConsent() throws Exception {
+        AccountId account = ready("LOSE_FAT");
+        String id = (String) map(answer(account, UUID.randomUUID(), thisWeek(), List.of())).get("id");
+
+        send(account, "DELETE", "/v1/consents/HEALTH_DATA", null);
+
+        assertThat(send(account, "GET", "/v1/decisions", null)).hasStatus(403);
+        assertThat(send(account, "GET", "/v1/decisions/current", null)).hasStatus(403);
+        assertThat(send(account, "GET", "/v1/decisions/" + id, null)).hasStatus(403);
+    }
+
+    @Test
+    void theSameClientIdIsKeptOnce() {
+        AccountId account = ready("LOSE_FAT");
+        CallStore.Call call = new CallStore.Call(UUID.randomUUID(), UUID.randomUUID(), thisWeek(), LocalDate.now(ZoneOffset.UTC), java.time.Instant.now(),
+                parameters.versionHash(), StoredSnapshot.of(new app.keel.engine.Snapshot(LocalDate.now(ZoneOffset.UTC), app.keel.engine.Sex.MALE,
+                        app.keel.engine.Phase.CUT, LocalDate.now(ZoneOffset.UTC), new app.keel.engine.WeightSeries(List.of()))),
+                Map.of("copyKey", "decision.continue"), CallStore.Application.NOT_NEEDED);
+
+        assertThat(store.keep(account, call)).isTrue();
+        assertThat(store.keep(account, new CallStore.Call(UUID.randomUUID(), call.clientId(), call.weekOf().minusWeeks(1), call.madeOn(),
+                call.decidedAt(), call.parametersHash(), call.snapshot(), call.decision(), call.application()))).as("same clientId").isFalse();
     }
 
     @Test
@@ -161,12 +280,29 @@ class DecisionServiceTests {
     private AccountId ready(String goal) {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
-        send(account, "PUT", "/v1/profile", Map.of("goal", goal, "sex", "MALE", "heightCm", 180, "birthYear", 1996,
-                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
-                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
-        send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
-                java.time.Instant.now().minusSeconds(3600).toString(), "kg", 82.4, "source", "MANUAL"));
+        send(account, "PUT", "/v1/profile", profile(goal, "MALE", 1996, "UTC", null));
+        weighIn(account, java.time.Instant.now().minusSeconds(3600), 82.4);
         return account;
+    }
+
+    private static Map<String, Object> profile(String goal, String sex, int birthYear, String zone, String activity) {
+        Map<String, Object> profile = new java.util.HashMap<>(Map.of("goal", goal, "sex", sex, "heightCm", 180, "birthYear", birthYear,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", zone)));
+        if (activity != null) {
+            profile.put("activityLevel", activity);
+        }
+        return profile;
+    }
+
+    private void weighIn(AccountId account, java.time.Instant at, double kg) {
+        assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", at.toString(), "kg", kg,
+                "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
+    }
+
+    private StoredSnapshot storedSnapshot(AccountId account) throws Exception {
+        return JSON.readValue(jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single(), StoredSnapshot.class);
     }
 
     private static LocalDate thisWeek() {
@@ -181,6 +317,7 @@ class DecisionServiceTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };
         request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));

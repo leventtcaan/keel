@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Decision's part of the user's data (K-214, K-212): the plan and every call with the Snapshot it was made from. */
 @Component
@@ -15,10 +16,12 @@ class DecisionAccountData implements AccountDataExport {
 
     private final JdbcClient jdbc;
     private final CallStore calls;
+    private final JsonMapper json;
 
-    DecisionAccountData(JdbcClient jdbc, CallStore calls) {
+    DecisionAccountData(JdbcClient jdbc, CallStore calls, JsonMapper json) {
         this.jdbc = jdbc;
         this.calls = calls;
+        this.json = json;
     }
 
     @ApplicationModuleListener
@@ -39,7 +42,10 @@ class DecisionAccountData implements AccountDataExport {
         decision.put("calls", calls.all(account).stream().map(call -> {
             Map<String, Object> entry = new LinkedHashMap<>(DecisionController.view(call));
             entry.put("weekOf", call.weekOf());
-            entry.put("snapshot", call.snapshot());
+            // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
+            Map<String, Object> snapshot = json.convertValue(call.snapshot(), Map.class);
+            snapshot.remove("fatProxyPct");
+            entry.put("snapshot", snapshot);
             return entry;
         }).toList());
         return decision;

@@ -145,7 +145,14 @@ class AccountDataTests {
         assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("workouts")).hasSize(2);
         assertThat((Map<String, Object>) ((Map<String, Object>) sections.get("training")).get("program")).containsEntry("source", "GENERATED");
         assertThat((List<?>) ((Map<String, Object>) sections.get("nutrition")).get("meals")).hasSize(1);
-        assertThat((List<?>) ((Map<String, Object>) sections.get("decision")).get("calls")).hasSize(1);
+        Map<String, Object> decision = (Map<String, Object>) sections.get("decision");
+        assertThat((Map<String, Object>) decision.get("plan")).containsEntry("phase", "CUT");
+        assertThat((List<Map<String, Object>>) decision.get("calls")).singleElement().satisfies(call -> {
+            assertThat(call).containsKeys("weekOf", "action", "snapshot");
+            assertThat((List<?>) ((Map<String, Object>) call.get("snapshot")).get("weights")).isNotEmpty();
+        });
+        // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
+        assertThat(body).doesNotContainIgnoringCase("fatProxy");
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("consent")).get("events"))
                 .anySatisfy(event -> assertThat(event).containsEntry("provider", "Example AI")

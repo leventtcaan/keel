@@ -73,6 +73,17 @@ class DecisionService {
         if (!weekOf.equals(CheckInWeek.weekOf(today, profile.checkInDay())) || calls.byWeek(account, weekOf).isPresent()) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
+        // A new check-in day, or a time zone moved, can name a week that overlaps the last call's: one call a week.
+        calls.newestFirst(account, Optional.empty(), 1).stream().findFirst()
+                .filter(last -> weekOf.isBefore(last.weekOf().plusWeeks(1)))
+                .ifPresent(last -> {
+                    throw new ApiException(ErrorCode.CONFLICT);
+                });
+        int age = today.getYear() - profile.birthYear();
+        if (age < 1) {
+            // Born this year (or next, on a calendar behind UTC): no body the engine can read (K-212 review).
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
         Answers.Read answers;
         try {
             answers = Answers.read(answered);
@@ -81,9 +92,13 @@ class DecisionService {
         }
         Sex sex = Sex.valueOf(profile.sex().name());
         Parameters p = parameters.forSex(sex);
-        Profile body = new Profile(today.getYear() - profile.birthYear(), profile.heightCm());
+        Profile body = new Profile(age, profile.heightCm());
         List<WeighIn> weights = measurements.dailyWeights(account, today.minusDays(p.wholeNumber(ParameterKey.EVALUATION_WINDOW_DAYS) - 1L), today);
         CallStore.Plan plan = calls.plan(account).orElseGet(() -> calls.start(account, firstPlan(profile, sex, body, weights, today, p)));
+        if (plan.planStart().isAfter(today)) {
+            // The plan began on a later date than today on the user's calendar now (a time zone moved west).
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
         Snapshot snapshot = new Snapshot(today, sex, plan.phase(), plan.planStart(), new WeightSeries(weights), Optional.empty(), Optional.empty(),
                 answers.menstrualLossReported(), answers.checkIn(), Optional.of(body), plan.observingMaintenance(), plan.phaseStart(), Optional.empty());
         Decision decision = DecisionPipeline.decide(snapshot, p);
