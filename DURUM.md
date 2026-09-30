@@ -55,9 +55,9 @@ PR `--auto --squash` → bu tablo. Paralel iş: `git worktree` (`../keel-<iş>`)
 | K-217 programa yansıma (V13 tut/deload/dinlenme, V14 sonraki seans) | ✅ birleşti (iki PR); inceleme: aynı gün tutma kapanmıyordu, check-in'de başlayan tutma önceki hedefi kaçırıyordu, tek taraflı çift artış, eksik set, geç biten antrenman hedefi geri alıyordu; CI: List.of().contains(null) | #175, #176 | `M2/K-217.md` |
 | K-221 TrainingStatus (set kaydından) | ✅ birleşti; inceleme: kayıt tutmayana iki haftada bir tam mola, dinlenme haftası kendini tetikliyordu, tutma haftaları gün/7, durum her okumada | #177 | `M2/K-221.md` |
 | K-225 profil: 18+ ve kısıt alanı rızada (ADR-027 #13, #14) | ✅ birleşti; inceleme: kesin-18 ADR'ye yazıldı, ADR-015 tablosu | #182 | `M2/K-225.md` |
-| K-223 motor: ADR-027 #0, #1, #11b, #19 | auto-merge açık; inceleme: L-4 LEA artışını eziyordu (güvenlik), kadın penceresi, pay sınır testi | #183 | `M2/K-223.md` |
-| K-226 FDC Foundation + SR Legacy (V15) | auto-merge açık; inceleme: negatif karb Foundation'ı düşürüyordu, fl oz, eski sürüm satırları | #184 | `M2/K-226.md` |
-| K-224 iç yağ tahmini (RFM + referans görünüş) | sürüyor — `../keel-k224`; kaynak `arastirma/ham/H8-yag-tahmini.md` | — | — |
+| K-223 motor: ADR-027 #0, #1, #11b, #19 | auto-merge açık (main'e rebase edildi, CI); inceleme: L-4 LEA artışını eziyordu (güvenlik), kadın penceresi, pay sınır testi | #183 | `M2/K-223.md` |
+| K-226 FDC Foundation + SR Legacy (V15) | ✅ birleşti; inceleme: negatif karb Foundation'ı düşürüyordu, fl oz, eski sürüm satırları | #184 | `M2/K-226.md` |
+| K-224 iç yağ tahmini (RFM + referans görünüş, V16) | PR, inceleme ajanı çalışıyor (`../keel-k224`); kaynak `arastirma/ham/H8-yag-tahmini.md` | #185 | `M2/K-224.md` |
 
 **M1 önceki koşu** (öğleden akşama, hepsi birleşti): K-101 #134 · K-102 #135 · K-103 #136 · K-104 ilk kısım #137 ·
 K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. Aktarım dosyaları `docs/aktarim/M1/`.
@@ -68,11 +68,12 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 ## ▶ DEVAM NOKTASI (30 Eyl, dördüncü oturum — bağlam dolmadan yazıldı; devam prompt'u `plan/oturum-promptlari/M2-devam-3.md`)
 Bu oturum birleştirdi: K-206 #160, K-210 #161, K-214 #162, K-218 #163, K-219 #164, K-211 #165, K-208 #166, K-209 #167,
 K-212 #168. Hepsinde inceleme ajanları + TDD + mutasyon + aktarım dosyası tamam.
-0. **(güncel)** M2 ana işi bitti (K-213…K-221 birleşti). Sorular cevaplandı → ADR-027. **Cevaplardan doğan işler**
-   (backlog'da, sırayla): K-225 profil (18+, kısıt alanı rıza kapısında) → K-223 motor (K-64 herkese, L-4 alt yağ, kadında
-   LEA'sız aşağı adım yok, adım metni) → K-226 FDC Foundation + SR Legacy içe aktarma (Levent indirmeye izin verdi) →
-   K-224 iç yağ tahmini (referans seçimi + WHtR bandı; eşleme araştırmadan, U14) → K-222 faz/mini cut/hard stop +
-   DECIDE_FOR_ME + genel etiket. Sonra `M3.md` (Apple kimlikleri M3'ün ilk işi) → özet → aktarım (M1 akşam + M2).
+0. **(güncel)** Sorular cevaplandı (ADR-027); cevap işleri: K-225 ✅ #182, K-226 ✅ #184 (FDC; indirilen zip'ler
+   scratchpad'deydi, repoda değil — URL+sha ADR-008 ekinde), K-223 #183 (auto-merge, CI), K-224 #185 (inceleme). Kalan:
+   **K-222** (faz/mini cut/hard stop + DECIDE_FOR_ME + döngü sorusu V4 + gerekçe genel etiket; K-224'e bağlı) →
+   **README düzeltmesi**: `docs/aktarim/M2/README.md` listesinde ve tablosunda K-226 (ve K-224) satırı eksik (python
+   replace'in çapası yoktu, sessizce atladı) → main'de elle ekle. → `M3.md` → özet. Soru 21 (rıza geri alınınca silme)
+   yeni, Levent'e sorulacak (M3 başında ya da bu sohbette).
 1. **(bitti) K-213** `decision/37-check-in-questions` (`../keel-k213`, main üstünde, göç yok) → **PR #171, auto-merge
    KAPALI**. Kod + testler yazıldı ve itildi; yerel saf testler yeşil (QuestionBudgetTests, WaistTrendTests,
    MissingAnswerTests, CheckInPartsTests), DB testleri (CheckInQuestionsApiTests, DecisionServiceTests) CI'da.
