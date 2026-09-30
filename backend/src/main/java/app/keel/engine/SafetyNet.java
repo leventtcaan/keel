@@ -39,6 +39,7 @@ public final class SafetyNet {
     static final RuleId RAPID_LOSS = new RuleId("rapid_loss");
     static final RuleId LOW_ENERGY_AVAILABILITY = new RuleId("low_energy_availability");
     static final RuleId MENSTRUAL_LOSS_REPORTED = new RuleId("menstrual_loss_reported");
+    static final RuleId LOW_FAT_FLOOR = new RuleId("low_fat_floor");
 
     private static final Source GURAY_LOSS_CAP = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-17", SourceTag.EXPERIENCE);
     private static final Source LITERATURE_LOSS_CAP = new Source("arastirma/ham/H3-bosluk-literatur.md#Ç1", SourceTag.LITERATURE);
@@ -58,6 +59,12 @@ public final class SafetyNet {
         requireSameSex(snapshot, parameters);
         if (snapshot.menstrualLossReported()) {
             return Optional.of(safetyDecision(snapshot, new Action.HardStop(), List.of(new Reason(MENSTRUAL_LOSS_REPORTED, REDS_TIERS))));
+        }
+        // L-4 (ADR-027 #1, J1 L2.1): a cut under the fat floor stops its deficit. Maintenance is not a direction (03 §2.1)
+        // and this sits far under the surplus line: the phase turns to building, before any weekly reading.
+        if (snapshot.phase() == Phase.CUT && snapshot.fatProxyPct()
+                .filter(pct -> pct.compareTo(BigDecimal.valueOf(parameters.number(ParameterKey.DEFICIT_STOP_FAT_PROXY_PCT))) < 0).isPresent()) {
+            return Optional.of(safetyDecision(snapshot, new Action.ChangePhase(Phase.BULK), List.of(new Reason(LOW_FAT_FLOOR, ENERGY_GATE))));
         }
         List<Reason> narrow = new ArrayList<>();
         if (energyAvailability(snapshot, parameters).filter(band -> band == EnergyAvailability.LOW).isPresent()) {

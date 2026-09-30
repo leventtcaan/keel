@@ -75,6 +75,12 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         this(today, sex, phase, planStart, weights, fatProxyPct, Optional.empty(), false, CheckIn.NONE, Optional.empty(), false, planStart, Optional.empty());
     }
 
+    /** The fat estimate (U4: an engine input only, never shown), from the measurement module's estimate (K-224). */
+    public Snapshot withFatProxyPct(BigDecimal pct) {
+        return new Snapshot(today, sex, phase, planStart, weights, Optional.of(pct), energy, menstrualLossReported, checkIn, profile,
+                observingMaintenance, phaseStart, training);
+    }
+
     public Snapshot withEnergy(EnergyBudget budget) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training);
     }

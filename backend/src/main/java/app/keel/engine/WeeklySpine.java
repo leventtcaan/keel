@@ -19,7 +19,8 @@ import java.util.Optional;
  * Weight moving toward the goal?
  * ├─ no  → adherence under adherence_fix_below → fix adherence; under on_track_min_ratio → fix adherence, softer
  * │        (G2 K-60, ADR-020 L-6/L-9) → cut: training declining → fix training, no calorie cut (G7 K-98)
- * │        → held for only one week (cut, waist not up) / under bulk_stall_weeks (bulk) → wait (G2 K-64, G3 K-10)
+ * │        → held for only one week, or moved the week before (cut, waist not up; ADR-027 #0) / under
+ * │          bulk_stall_weeks (bulk) → wait (G2 K-64, G3 K-10)
  * │        → calories toward the goal (cut down, bulk up; the amount is K-107's)
  * └─ yes → looks better, the same or not photographed → continue
  *          looks worse → training declining → fix training
@@ -68,7 +69,9 @@ public final class WeeklySpine {
             return new SpineResult.Decided(notEnoughData.get());
         }
         Window window = Window.of(snapshot, parameters);
-        return window.towardGoal(window.first()) > 0 ? towardGoal(snapshot, parameters) : notTowardGoal(snapshot, window, parameters);
+        // Toward the goal over the window — or, on a cut the window cannot tell from flat, moving this week (ADR-027 #0).
+        boolean moving = window.towardGoal(window.first()) > 0 || (window.cut() && !window.wrongWay() && window.movingThisWeek());
+        return moving ? towardGoal(snapshot, parameters) : notTowardGoal(snapshot, window, parameters);
     }
 
     private static SpineResult towardGoal(Snapshot snapshot, Parameters parameters) {
@@ -119,7 +122,9 @@ public final class WeeklySpine {
         // One flat week is not a plateau (G2 K-64, cut: weight and waist flat); a bulk waits until bulk_stall_weeks
         // without gain (G3 K-10). Going the wrong way is not a pause and does not wait.
         boolean waistAgainst = cut && checkIn.waist() == Waist.UP;
-        boolean stillEarly = cut ? window.flatWeeks() <= parameters.wholeNumber(ParameterKey.FLAT_WAIT_WEEKS)
+        // A cut that moved the week before this one waits too, however slowly it was losing (ADR-027 #0): within the
+        // margin a 0.5 kg-a-week loser looks flat for two weeks, and one flat week is not a plateau.
+        boolean stillEarly = cut ? window.flatWeeks() <= parameters.wholeNumber(ParameterKey.FLAT_WAIT_WEEKS) || window.movedLastWeek()
                 : window.flatWeeks() < parameters.wholeNumber(ParameterKey.BULK_STALL_WEEKS);
         if (!window.wrongWay() && !waistAgainst && stillEarly) {
             return decided(snapshot, new Action.NoDecisionYet(), WAIT_ONE_MORE_WEEK, cut ? ONE_FLAT_WEEK : BULK_STEP);
@@ -181,6 +186,31 @@ public final class WeeklySpine {
         /** Away from the goal over the window, or this week: not a pause. */
         boolean wrongWay() {
             return towardGoal(first()) < 0 || towardGoal(weeks.get(weeks.size() - 2)) < 0;
+        }
+
+        /**
+         * This week's step reached the per-week share of the margin (margin ÷ weekly steps: 0.29 kg for a man's 3 weeks —
+         * flat_margin_kg's own "≈ 0.3 kg/week is movement"), and not by undoing a rise the week before: a steady slow
+         * loser is moving, not stalled (ADR-027 #0).
+         */
+        boolean movingThisWeek() {
+            int n = weeks.size();
+            return n >= 3 && step(weeks.get(n - 2), latest()).compareTo(perWeek()) >= 0 && step(weeks.get(n - 3), weeks.get(n - 2)).signum() >= 0;
+        }
+
+        /** The step before this week's reached the per-week share: this week is the first flat one (G2 K-64). */
+        boolean movedLastWeek() {
+            int n = weeks.size();
+            return n >= 3 && step(weeks.get(n - 3), weeks.get(n - 2)).compareTo(perWeek()) >= 0;
+        }
+
+        private BigDecimal perWeek() {
+            return margin.divide(BigDecimal.valueOf(weeks.size() - 1L), MathContext.DECIMAL64);
+        }
+
+        // How far the weight went toward the goal from one weekly mean to the next.
+        private BigDecimal step(BigDecimal from, BigDecimal to) {
+            return cut ? from.subtract(to) : to.subtract(from);
         }
 
         /** Weeks right before the latest that are the same weight as it within noise: 1 = held for one week. */

@@ -68,6 +68,10 @@
       "profile_needed": {
         "title": "Your age and height, please.",
         "body": "Before lowering calories, the coach checks you won't go under what your body needs at rest. That needs your age and height."
+      },
+      "fat_estimate_needed": {
+        "title": "A lower target needs one more check first.",
+        "body": "Before calories go down, the coach needs a rough read of your body shape — it keeps a lower target from leaving your body short of energy. Add it and the call follows; nothing else waits."
       }
     },
     "increase_calories": {
@@ -89,11 +93,11 @@
       "label": "Move more",
       "bmr_floor": {
         "title": "Food stays where it is. Movement goes up.",
-        "body": "Another calorie cut would take you under what your body needs at rest. More daily steps get the same result without eating less."
+        "body": "Another calorie cut would take you under what your body needs at rest. More daily steps keep things moving without eating less — a gentler push than another cut."
       },
       "carb_squeeze": {
         "title": "Food stays where it is. Movement goes up.",
-        "body": "A lower target would leave too little room for protein and the carbs your training runs on. More daily steps get the same result without eating less."
+        "body": "A lower target would leave too little room for protein and the carbs your training runs on. More daily steps keep things moving without eating less — a gentler push than another cut."
       }
     },
     "hard_stop": {
@@ -116,6 +120,10 @@
       "surplus_zone": {
         "title": "Time to switch to a bulk.",
         "body": "You're lean enough that cutting further costs more than it gives. Building from here is the next step."
+      },
+      "low_fat_floor": {
+        "title": "Time to stop cutting.",
+        "body": "You're lean enough that eating below maintenance now takes more than it gives. Calories go up and the next phase builds."
       }
     },
     "stop_load_increase": {

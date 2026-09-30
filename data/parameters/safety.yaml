@@ -45,6 +45,12 @@ parameters:
     unit: kcal_per_kg_ffm_per_day
     tag: literatur
     source: "arastirma/ham/J1-cinsiyet.md#C6"
+  - key: deficit_stop_fat_proxy_pct
+    by_sex: {male: 8, female: 18}
+    unit: percent_internal_only
+    tag: literatur
+    source: "arastirma/ham/J1-cinsiyet.md#L2.1"
+    note: "YALNIZ İÇ DEĞİŞKEN (U4). L-4, ADR-027 #1: iç yağ tahmini bunun altındaysa açık durur (J1 L2.1 'deficit'i durdur, maintenance öner'). Motorda bakım bir yön değil (03 §2.1); surplus çizgisinin (erkek 12, kadın 22) çok altı → faz bulk'a döner, güvenlik ağında haftanın ilk adımında. Zayıf kanıtlı sağlık eşiği (m1-kural-haritasi), Levent onayladı."
   - key: bulk_ceiling_fat_proxy_pct
     by_sex: {male: 20, female: 30}
     unit: percent_internal_only

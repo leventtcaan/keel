@@ -32,6 +32,7 @@ profil → ölçüm/beslenme/antrenman → karar.
 20. K-217 programa yansıma — değişiklik satırı, deload merdiveni, geri alma, seanstan sonraki hedef
 21. K-221 antrenman durumu — zaman serisinden durum, ilerleme tanımı, merdivenin kendi izi
 22. K-225 profil — yalnız yıldan kesin yaş, veri sınıfına göre alan erişimi
+23. K-223 cevaplardan kurala — haftalık pay, L-4, kadında tahminsiz adım yok
 11. (sıradakiler görev bitince eklenir)
 
 ## Durum
@@ -59,3 +60,4 @@ profil → ölçüm/beslenme/antrenman → karar.
 | K-217 programa yansıma (V13, V14) | `K-217.md` | ✅ | — | — | — |
 | K-221 TrainingStatus set kaydından | `K-221.md` | ✅ | — | — | — |
 | K-225 profil: 18+ ve kısıt alanı rızada | `K-225.md` | ✅ | — | — | — |
+| K-223 ADR-027 motor cevapları | `K-223.md` | ✅ | — | — | — |

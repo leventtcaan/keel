@@ -29,8 +29,10 @@ public final class DecisionPipeline {
 
     static final RuleId PLAN_TARGET_NEEDED = new RuleId("plan_target_needed");
     static final RuleId PROFILE_NEEDED = new RuleId("profile_needed");
+    static final RuleId FAT_ESTIMATE_NEEDED = new RuleId("fat_estimate_needed");
     private static final Source PLAN_TARGET = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-8", SourceTag.EXPERIENCE);
     private static final Source RESTING_FORMULA = new Source("arastirma/ham/H6-baslangic-kalori.md#A1", SourceTag.LITERATURE);
+    private static final Source WOMEN_ENERGY_RISK = new Source("arastirma/ham/J1-cinsiyet.md#C6", SourceTag.LITERATURE);
 
     private static final int DAYS_PER_WEEK = 7;
 
@@ -83,6 +85,11 @@ public final class DecisionPipeline {
         }
         if (snapshot.profile().isEmpty()) {
             return missing(snapshot, PROFILE_NEEDED, RESTING_FORMULA);
+        }
+        // ADR-027 #11b: without a fat estimate the low-energy floor cannot be computed, and low energy is the higher risk
+        // for women (J1 C6): no step down for her until there is one. Steps up and the safety net still run.
+        if (snapshot.sex() == Sex.FEMALE && snapshot.fatProxyPct().isEmpty()) {
+            return missing(snapshot, FAT_ESTIMATE_NEEDED, WOMEN_ENERGY_RISK);
         }
         // Mifflin-St Jeor on today's trend weight is the BMR the step may not go under (K-114, G2 K-11). The spine ran
         // after DataSufficiency, so the window's weeks all have weigh-ins and today's trend exists.
