@@ -59,8 +59,16 @@ type Deps = {
 /** Sends the window's activity days that changed; answers today's steps as Health counts them (null when not read). */
 export async function syncActivityDays({ health, api, kv, consented, now }: Deps): Promise<{ stepsToday: number | null }> {
   if (!health.available || !(await consented())) return { stepsToday: null };
-  const from = new Date(now.getTime() - HEALTH_ACTIVITY_READ_DAYS * DAY_MS);
-  const [totals, sleep] = await Promise.all([health.readDailyTotals(from, now), health.readSleep(from, now)]);
+  // The window starts at the oldest day's local midnight; sleep is read from a day earlier, so the night that ends on
+  // that morning is whole — a day sent without its sleep would erase the sleep stored for it (PUT replaces the day;
+  // K-404 review). Days before the window are read for that night only, never sent.
+  const back = new Date(now.getTime() - HEALTH_ACTIVITY_READ_DAYS * DAY_MS);
+  const from = new Date(back.getFullYear(), back.getMonth(), back.getDate());
+  const oldest = localDay(from);
+  const [totals, sleep] = await Promise.all([
+    health.readDailyTotals(from, now),
+    health.readSleep(new Date(from.getFullYear(), from.getMonth(), from.getDate() - 1), now),
+  ]);
 
   const days = new Map<string, ActivityDay>();
   for (const total of totals) {
@@ -70,11 +78,11 @@ export async function syncActivityDays({ health, api, kv, consented, now }: Deps
     days.set(total.day, day);
   }
   for (const [day, minutes] of Object.entries(sleepMinutesByDay(sleep))) {
+    if (day < oldest) continue;
     days.set(day, { ...(days.get(day) ?? { day }), sleepMinutes: minutes });
   }
 
   const sent = await readSent(kv);
-  const oldest = localDay(from);
   const kept: Record<string, string> = Object.fromEntries(Object.entries(sent).filter(([day]) => day >= oldest));
   for (const day of [...days.values()].sort((a, b) => a.day.localeCompare(b.day))) {
     const values = JSON.stringify(day);

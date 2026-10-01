@@ -120,6 +120,31 @@ test('a day the server refused is not taken for sent either', async () => {
   expect(a.PUT).toHaveBeenCalledTimes(1);
 });
 
+test("late in the day, the window's oldest day still has its night: its sleep is never sent empty (K-404 review)", async () => {
+  const late = new Date('2026-10-01T22:00:00');
+  const oldest = new Date(late.getTime() - 28 * 24 * 3600 * 1000);
+  const oldestDay = localDay(oldest);
+  const nightBefore = new Date(oldest.getFullYear(), oldest.getMonth(), oldest.getDate(), 0, 0);
+  const records = [
+    // The night that ended on the oldest day's morning, and one that ended the day before (outside the window).
+    { start: new Date(nightBefore.getTime() - 2 * 3600e3).toISOString(), end: new Date(nightBefore.getTime() + 7 * 3600e3).toISOString(), asleep: true },
+    { start: new Date(nightBefore.getTime() - 26 * 3600e3).toISOString(), end: new Date(nightBefore.getTime() - 17 * 3600e3).toISOString(), asleep: true },
+  ];
+  // Like HealthKit's date filter: only records overlapping the asked span come back.
+  const access: HealthAccess = {
+    available: true,
+    requestRead: async () => {},
+    readWeights: async () => [],
+    readDailyTotals: async () => [{ day: oldestDay, steps: 5000 }],
+    readSleep: async (from, to) => records.filter((r) => Date.parse(r.end) > from.getTime() && Date.parse(r.start) < to.getTime()),
+  };
+  const a = api();
+
+  await syncActivityDays({ health: access, api: a as never, kv: memoryKv(), consented: async () => true, now: late });
+
+  expect(a.sent).toEqual([{ day: oldestDay, steps: 5000, sleepMinutes: 540 }]);
+});
+
 test('without both consents (or once either is withdrawn): nothing read, nothing sent', async () => {
   const h = health([{ day: TODAY, steps: 100 }], []);
   const a = api();
