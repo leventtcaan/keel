@@ -50,7 +50,8 @@ export function WeightChart({ from, to, weighIns, trend }: Props) {
 }
 
 const styles = StyleSheet.create({
-  chart: { height: HEIGHT, borderBottomWidth: tokens.border.hairline, marginTop: tokens.space.sm },
-  dot: { position: 'absolute', width: DOT, height: DOT, borderRadius: DOT / 2 },
-  trend: { position: 'absolute', width: TREND_DOT, height: TREND_DOT, borderRadius: TREND_DOT / 2 },
+  chart: { height: HEIGHT, borderBottomWidth: tokens.border.hairline, marginTop: tokens.space.sm, marginHorizontal: TREND_DOT / 2 },
+  // Placed by their centre, so a point on the window's first or last day stays inside the chart.
+  dot: { position: 'absolute', width: DOT, height: DOT, borderRadius: DOT / 2, marginLeft: -DOT / 2 },
+  trend: { position: 'absolute', width: TREND_DOT, height: TREND_DOT, borderRadius: TREND_DOT / 2, marginLeft: -TREND_DOT / 2 },
 });
