@@ -7,8 +7,9 @@
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
-import { type Loaded, load } from '@/today/today';
+import { type Loaded, load, localDay } from '@/today/today';
 import type { GymWeights } from '@/train/loadSteps';
+import { workoutParams } from '@/train/params';
 import type { KeyValue } from '@/units/preference';
 
 type Schemas = components['schemas'];
@@ -25,6 +26,7 @@ export type TrainData = {
 const PROGRAM = 'train.program';
 const EXERCISES = 'train.exercises';
 const GYM = 'train.gym';
+const HISTORY = 'train.history';
 
 /** The gym marked current, as weights to round to: "none" when no gym is in use (its kept copy goes). */
 function gymInUse(read: Loaded<Schemas['Gym'][]>): Loaded<GymWeights> {
@@ -44,6 +46,11 @@ function gymInUse(read: Loaded<Schemas['Gym'][]>): Loaded<GymWeights> {
 }
 
 export type TrainingCache = ReturnType<typeof createTrainingCache>;
+
+/** The first day of a move's history: history_days days, today included (ADR-033). */
+export function historyFrom(now: Date): string {
+  return localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (workoutParams.historyDays - 1)));
+}
 
 /**
  * The reads and the kept copies. A sign-out bumps the generation: a read still on its way then keeps nothing — the
@@ -86,10 +93,17 @@ export function createTrainingCache(kv: KeyValue) {
         kept: program.kept || exercises.kept,
       };
     },
+    /** The workouts behind a move's history (K-415, ADR-033). */
+    async history(api: ApiClient, now: Date): Promise<Loaded<Schemas['Workout'][]>> {
+      const startedIn = generation;
+      const [from, to] = [historyFrom(now), localDay(now)];
+      const read = await load(() => api.GET('/v1/workouts', { params: { query: { from, to } } }));
+      return (await withCopy(HISTORY, read, startedIn)).read;
+    },
     /** The kept copies belong to the account: they go at sign-out. */
     async forget(): Promise<void> {
       generation += 1;
-      await Promise.all([kv.removeItemAsync(PROGRAM), kv.removeItemAsync(EXERCISES), kv.removeItemAsync(GYM)]);
+      await Promise.all([kv.removeItemAsync(PROGRAM), kv.removeItemAsync(EXERCISES), kv.removeItemAsync(GYM), kv.removeItemAsync(HISTORY)]);
     },
   };
 }

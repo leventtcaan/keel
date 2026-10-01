@@ -39,6 +39,7 @@ function AppStack() {
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
         <Stack.Screen name="workout-summary" />
+        <Stack.Screen name="exercise-history" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'needed'}>
         <Stack.Screen name="onboarding" />

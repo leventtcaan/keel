@@ -212,3 +212,58 @@ describe('the gym in use (K-417): its weights kept on the phone, for the warm-up
     expect(kv.map.size).toBe(0);
   });
 });
+
+describe("the workouts behind a move's history (K-415): the server's last year, kept on the phone", () => {
+  const WORKOUTS = [{ id: 'srv-1', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [] }];
+  let asked: URL | null = null;
+  const listing = api((path) => (path === '/v1/workouts' ? json(WORKOUTS) : json([])));
+  const watching = createApiClient({
+    baseUrl: BASE,
+    accessToken: async () => 'tok',
+    fetch: async (request: Request) => {
+      asked = new URL(request.url);
+      return json(WORKOUTS);
+    },
+  });
+
+  test('read online: the last history_days days, ending today on the phone; kept', async () => {
+    const kv = memoryKv();
+    expect(await createTrainingCache(kv).history(watching, new Date(2026, 9, 1, 9))).toEqual({ state: 'ready', value: WORKOUTS });
+    expect(asked?.searchParams.get('to')).toBe('2026-10-01');
+    expect(asked?.searchParams.get('from')).toBe('2025-10-02'); // 365 days, today included
+    expect(
+      await createTrainingCache(kv).history(
+        api(() => 'offline'),
+        new Date(2026, 9, 1, 9),
+      ),
+    ).toEqual({ state: 'ready', value: WORKOUTS });
+  });
+
+  test('signing out forgets it', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    await cache.history(listing, new Date(2026, 9, 1, 9));
+    await cache.forget();
+    expect(kv.map.size).toBe(0);
+  });
+});
+
+test("a history read still on its way when the user signs out keeps nothing: the workouts were the last account's", async () => {
+  const kv = memoryKv();
+  const cache = createTrainingCache(kv);
+  let answer: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => (answer = resolve));
+  const slow = createApiClient({
+    baseUrl: BASE,
+    accessToken: async () => 'tok',
+    fetch: async () => {
+      await gate;
+      return json([{ id: 'srv-1', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [] }]);
+    },
+  });
+  const reading = cache.history(slow, new Date(2026, 9, 1, 9));
+  await cache.forget();
+  answer();
+  await reading;
+  expect(kv.map.size).toBe(0);
+});

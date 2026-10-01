@@ -76,6 +76,11 @@ export function parseWeightKg(text: string, system: UnitSystem): number | null {
 }
 
 // ── loads ────────────────────────────────────────────────────────────────────────────────────────────────────
+/** A load's number as formatLoad writes it, in the user's unit: two loads with the same value read as one weight. */
+export function loadValue(kg: number, system: UnitSystem): number {
+  return roundTo(system === 'METRIC' ? kg : kg / KG_PER_LB, P.loadDecimals);
+}
+
 export function formatLoad(kg: number, system: UnitSystem): string {
   const value = trimmed(system === 'METRIC' ? kg : kg / KG_PER_LB, P.loadDecimals);
   return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value });

@@ -174,3 +174,9 @@ test('a workout under way is continued, not started again', async () => {
   expect(mockPush).toHaveBeenCalledWith('/workout');
   expect(mockRecord).not.toHaveBeenCalled();
 });
+
+test('a move opens its history and records (K-415), named for a screen reader', async () => {
+  await show();
+  await fireEvent.press(await screen.findByLabelText('Squat: history'));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise-history', params: { exercise: 'squat' } });
+});

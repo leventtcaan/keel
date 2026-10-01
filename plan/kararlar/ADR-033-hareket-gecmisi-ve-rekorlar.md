@@ -8,17 +8,21 @@ rekoru yok, tekrar/efor rekoru var (G6 K-33); ana metrik efor, hacim değil (B �
 (ADR-006); notlar sunucuda K-422 ile (#231). Bugün telefonun yerel kayıtları yalnız o telefonda yapılanları tutuyor;
 sunucu `GET /v1/workouts?from&to` (en çok `keel.api.max-range-days` = 400 gün) her şeyi veriyor.
 
-## Karar
+## Karar · geçmişin kaynağı, rekor türleri, notlar
 1. **Geçmişin kaynağı:** sunucunun antrenman listesi, son `history_days` gün (`data/parameters/workout.json`), telefonda
    kopyası tutulur (çevrimdışı; K-405 kalıbı) + telefonda henüz gönderilmemiş kayıtlar. İkisi `clientId` ile birleşir:
    aynı antrenman bir kez, setleri `clientId` birleşimi. Bir telefonun kendi kayıtları tek kaynak **değildir** (yeni
-   telefon, yeniden kurulum).
+   telefon, yeniden kurulum). Telefonun kendi kayıtları da aynı pencereyle süzülür (inceleme: aksi hâlde rekor cihaza göre
+   değişirdi).
 2. **Yalnız çalışma setleri** rekor sayılır (`WORKING`; sözleşme SetType: efor ve e1RM yalnız onlardan). Isınma, drop,
    tükeniş seti geçmişte görünür, rekora girmez.
 3. **Rekor türleri** (hareketin `kind` ve `load`'una göre):
    - Bileşik, harici yük: **en ağır** (o yükteki en çok tekrar), **en yüksek tahmini max** (motorun Epley'i, RIR'li setten,
      K-218 — telefonda `summary.ts` `e1rm`), **yük başına en çok tekrar**.
-   - İzolasyon, harici yük: **yalnız yük başına en çok tekrar** (G6 K-33: yük takibi yok; aynı yükte fazla tekrar efordur).
+   - İzolasyon, harici yük: **yalnız yük başına en çok tekrar** — görev kartının kabul kriteri ("izolasyonda yük PR'ı yok,
+     tekrar/efor PR'ı var", L3 §1 #6). **Gerilim:** G6 K-33'ün kendi metni izolasyonda "kilo/tekrar takibi ve progresif
+     overload aranmaz" diyor (bir tekrar fazlası için form bozulur). Kart uygulanıyor; kaynakla çelişki Levent'te (soru 44 —
+     K-406 özetindeki "aynı yükte fazla tekrar" satırı da aynı soruya bağlı).
    - Vücut ağırlığı: **en çok tekrar**.
    - Ağırlıklı vücut ağırlığı: **en ağır eklenen yük** + **vücut ağırlığıyla en çok tekrar**; tahmini max yok (motor vücut
      ağırlığını ekler, telefon okumaz — K-406 ile aynı gerekçe).

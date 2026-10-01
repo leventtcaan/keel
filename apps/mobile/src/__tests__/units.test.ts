@@ -6,6 +6,7 @@ import {
   defaultSystem,
   formatHeight,
   formatLoad,
+  loadValue,
   formatPlate,
   formatWaist,
   formatWeight,
@@ -163,4 +164,11 @@ test('a plate as its size, without the unit: kg to the hundredth, lb on the quar
   expect(formatPlate(0.57, 'IMPERIAL')).toBe('1.25'); // a 1.25 lb plate, stored to the hundredth of a kg
   expect(formatPlate(1.13, 'IMPERIAL')).toBe('2.5');
   expect(formatPlate(20.41, 'IMPERIAL')).toBe('45');
+});
+
+test("a load's value as it is written: 62.5 and 62.51 kg are both 137.8 lb, and both 62.5 kg", () => {
+  expect(loadValue(62.5, 'IMPERIAL')).toBe(137.8);
+  expect(loadValue(62.51, 'IMPERIAL')).toBe(137.8);
+  expect(loadValue(62.51, 'METRIC')).toBe(62.5);
+  expect(loadValue(82.5, 'METRIC')).toBe(82.5);
 });

@@ -143,6 +143,14 @@
       "tag": "urun",
       "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
       "note": "The same in lb: a pair of 2.5 lb plates."
+    },
+    {
+      "key": "history_days",
+      "value": 365,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md#Karar",
+      "note": "How far back a move's history and records reach (ADR-033 §1): a year of training; the server answers at most 400 days (keel.api.max-range-days)."
     }
   ]
 }

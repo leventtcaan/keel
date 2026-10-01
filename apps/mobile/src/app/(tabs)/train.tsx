@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
@@ -110,7 +110,12 @@ export default function TrainScreen() {
           const next = nextLine(planned, units, moves.get(planned.exerciseId)?.load ?? 'EXTERNAL');
           return (
             <View key={`${planned.exerciseId}-${index}`} style={styles.move}>
-              <Text style={[styles.text, { color: color.text }]}>{exerciseName(planned.exerciseId)}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('history.openLabel', { exercise: exerciseName(planned.exerciseId) })}
+                onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: planned.exerciseId } })}>
+                <Text style={[styles.text, { color: color.text }]}>{exerciseName(planned.exerciseId)}</Text>
+              </Pressable>
               <Text style={[styles.small, { color: color.textSecondary }]}>{`${setsLine(planned)} · ${repsLine(planned)}`}</Text>
               {next !== null && <Text style={[styles.small, { color: color.text }]}>{next}</Text>}
             </View>
