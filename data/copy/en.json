@@ -1110,7 +1110,7 @@
       "stackStep": "Write the stack step as a number.",
       "machines": "Write each machine's step as a number."
     },
-    "refused": "This gym wasn't saved: some of it is past what one gym can hold. Check the lists.",
+    "refused": "This gym wasn't saved: something in it is past what the app takes. Check the name and the lists.",
     "saveFailed": "This gym couldn't be saved. Try again when you're online.",
     "deleteFailed": "This gym couldn't be deleted. Try again when you're online.",
     "unitNote": "The gym's weights, as its plates and dumbbells are marked:"
