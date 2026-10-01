@@ -77,6 +77,8 @@ class SnapshotTests {
         assertThat(base.withFatProxy(new BigDecimal("15"), new BigDecimal("20"), new BigDecimal("10")).fatProxyEnergyPct()).contains(new BigDecimal("10"));
         assertThat(base.withFatProxy(new BigDecimal("15"), new BigDecimal("20")).fatProxyEnergyPct()).contains(new BigDecimal("15"));
         assertThat(base.withFatProxyPct(new BigDecimal("18")).fatProxyEnergyPct()).contains(new BigDecimal("18"));
+        assertThat(new Snapshot(MONDAY, Sex.MALE, Phase.CUT, MONDAY, NO_WEIGHINS, Optional.of(new BigDecimal("18"))).fatProxyEnergyPct())
+                .as("a Snapshot made the way it was before K-230").contains(new BigDecimal("18"));
         assertThat(base.fatProxyEnergyPct()).isEmpty();
     }
 
