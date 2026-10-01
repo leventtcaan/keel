@@ -183,7 +183,15 @@
     "finishFailed": "The workout couldn't be finished on the phone. Try again.",
     "dayGone": "This workout's day is no longer in your program. Finish it to start a new one.",
     "loadFailed": "This workout couldn't be opened. Try again from the Train tab.",
-    "progressOne": "{done} of 1 exercise"
+    "progressOne": "{done} of 1 exercise",
+    "warmup": {
+      "title": "Warm-up",
+      "note": "Easy sets, nowhere near failure.",
+      "log": "Log warm-up {number}",
+      "done": "Done"
+    },
+    "plates": "{plates} a side",
+    "barOnly": "Just the bar"
   },
   "summary": {
     "title": "Workout done",

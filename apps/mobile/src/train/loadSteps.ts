@@ -156,3 +156,13 @@ export function platesPerSide(totalKg: number, baseKg: number, platesKg: number[
   }
   return found;
 }
+
+/**
+ * The plates on each side for a load on a barbell (over the gym's bar; none is the bar alone) or a sled (an empty sled
+ * is nothing to load); null for anything else, a gym without a bar, or a load its plates do not make.
+ */
+export function platesFor(equipment: Equipment, loadKg: number, gym: GymWeights): number[] | null {
+  if (equipment === 'BARBELL') return gym.barKg === null ? null : platesPerSide(loadKg, gym.barKg, gym.platesKg);
+  if (equipment === 'PLATE_LOADED' && loadKg > 0) return platesPerSide(loadKg, 0, gym.platesKg);
+  return null;
+}

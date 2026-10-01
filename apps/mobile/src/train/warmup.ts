@@ -41,3 +41,28 @@ export function warmups(workKg: number | null, move: Schemas['Exercise'], first:
   });
   return found;
 }
+
+type NewSet = Schemas['NewSet'];
+
+const SIDES: Schemas['Side'][] = ['LEFT', 'RIGHT'];
+
+const warmupsOf = (sets: NewSet[], move: Schemas['Exercise']) => sets.filter((s) => s.exerciseId === move.id && s.setType === 'WARM_UP');
+const ofSide = (sets: NewSet[], side: Schemas['Side']) => sets.filter((s) => s.side === side).length;
+
+/** How many of the move's warm-ups are logged; a one-sided move's counts when both its sides are. */
+export function warmupsDone(sets: NewSet[], move: Schemas['Exercise']): number {
+  const mine = warmupsOf(sets, move);
+  return move.unilateral ? Math.min(...SIDES.map((side) => ofSide(mine, side))) : mine.length;
+}
+
+/**
+ * The sets one tap logs for the next warm-up (no RIR, no id yet). A one-sided move's warm-up is each side (the server
+ * takes one side a set): a side already logged for it — the other failed to save — is not logged twice.
+ */
+export function warmupSets(warmup: Warmup, move: Schemas['Exercise'], sets: NewSet[]): Omit<NewSet, 'clientId'>[] {
+  const set = { exerciseId: move.id, setType: 'WARM_UP' as const, loadKg: warmup.loadKg, reps: warmup.reps };
+  if (!move.unilateral) return [set];
+  const mine = warmupsOf(sets, move);
+  const done = warmupsDone(sets, move);
+  return SIDES.filter((side) => ofSide(mine, side) <= done).map((side) => ({ ...set, side }));
+}

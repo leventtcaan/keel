@@ -5,7 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import type { GymWeights } from '@/train/loadSteps';
-import { warmups } from '@/train/warmup';
+import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 
 type Schemas = components['schemas'];
 const move = (id: string, equipment: Schemas['Equipment'], load: Schemas['Exercise']['load'] = 'EXTERNAL') =>
@@ -60,4 +60,38 @@ test('the ramp has a load and a rep count for each warm-up the source asks for (
   expect(workoutParams.warmup.other.reps).toHaveLength(workoutParams.warmup.other.sets);
   expect(workoutParams.warmup.first.sets).toBeGreaterThanOrEqual(3);
   expect(workoutParams.warmup.other.sets).toBeGreaterThanOrEqual(1);
+});
+
+describe('logging the warm-ups: one tap a warm-up, no RIR (G1 K-17: never near failure)', () => {
+  const LUNGE = move('lunge', 'DUMBBELL');
+  (LUNGE as { unilateral: boolean }).unilateral = true;
+  const warm = (exerciseId: string, side?: Schemas['Side']): Schemas['NewSet'] => ({
+    clientId: `w-${exerciseId}-${side ?? ''}`,
+    exerciseId,
+    setType: 'WARM_UP',
+    loadKg: 10,
+    reps: 5,
+    ...(side === undefined ? {} : { side }),
+  });
+  const work: Schemas['NewSet'] = { clientId: 'k', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 100, reps: 5, rir: 1 };
+
+  test("a warm-up is a set of its type, at its load and reps, without a RIR; a one-sided move's is both sides", () => {
+    expect(warmupSets({ loadKg: 50, reps: 8 }, BENCH, [])).toEqual([{ exerciseId: 'bench_press', setType: 'WARM_UP', loadKg: 50, reps: 8 }]);
+    expect(warmupSets({ loadKg: 6, reps: 5 }, LUNGE, [])).toEqual([
+      { exerciseId: 'lunge', setType: 'WARM_UP', loadKg: 6, reps: 5, side: 'LEFT' },
+      { exerciseId: 'lunge', setType: 'WARM_UP', loadKg: 6, reps: 5, side: 'RIGHT' },
+    ]);
+  });
+
+  test("the warm-ups done are the move's own; a one-sided one is done when both sides are", () => {
+    expect(warmupsDone([warm('bench_press'), warm('squat'), work], BENCH)).toBe(1);
+    expect(warmupsDone([warm('lunge', 'LEFT')], LUNGE)).toBe(0);
+    expect(warmupsDone([warm('lunge', 'LEFT'), warm('lunge', 'RIGHT')], LUNGE)).toBe(1);
+  });
+
+  test('a side that failed to save is the only one logged again', () => {
+    expect(warmupSets({ loadKg: 6, reps: 5 }, LUNGE, [warm('lunge', 'LEFT')])).toEqual([
+      { exerciseId: 'lunge', setType: 'WARM_UP', loadKg: 6, reps: 5, side: 'RIGHT' },
+    ]);
+  });
 });
