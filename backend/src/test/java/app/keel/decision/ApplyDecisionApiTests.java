@@ -446,7 +446,7 @@ class ApplyDecisionApiTests {
 
         AccountId noPlan = ready();
         assertThat(send(noPlan, "GET", "/v1/targets")).hasStatus(404);
-        send(account, "DELETE", "/v1/consents/HEALTH_DATA");
+        send(account, "DELETE", "/v1/consents/HEALTH_DATA?confirmDataDeletion=true");
         assertThat(send(account, "GET", "/v1/targets")).hasStatus(403);
     }
 

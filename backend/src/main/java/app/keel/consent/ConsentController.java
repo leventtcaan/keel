@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** The contract's /v1/consents (K-204). */
@@ -70,13 +71,21 @@ class ConsentController {
                 grant.textVersion(), grant.provider(), grant.dataTypes())));
     }
 
+    /**
+     * Withdraws the consent and, in this transaction, deletes the data it covered (K-231): the modules handle
+     * {@link ConsentWithdrawn} before this commits, so a failure anywhere undoes the whole withdrawal and it can be asked
+     * again. Irreversible, so it must be confirmed.
+     */
     @DeleteMapping("/{kind}")
     @Transactional
-    Consent withdraw(AccountId account, @PathVariable String kind) {
+    Consent withdraw(AccountId account, @PathVariable String kind, @RequestParam(defaultValue = "false") boolean confirmDataDeletion) {
         ConsentKind consent = kind(kind);
         Optional<ConsentEvents.Event> latest = events.latest(account, consent);
         if (latest.isEmpty() || latest.get().action() != ConsentEvents.Action.GRANTED) {
             return Consent.of(consent, latest); // nothing given, nothing to withdraw
+        }
+        if (consent.coversStoredData() && !confirmDataDeletion) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
         ConsentEvents.Event given = latest.get();
         ConsentEvents.Event withdrawn = events.append(account, consent, ConsentEvents.Action.WITHDRAWN, given.textVersion(),

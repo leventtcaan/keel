@@ -237,7 +237,7 @@ class DecisionServiceTests {
         AccountId account = ready("LOSE_FAT");
         String id = (String) map(answer(account, UUID.randomUUID(), thisWeek(), List.of())).get("id");
 
-        send(account, "DELETE", "/v1/consents/HEALTH_DATA", null);
+        send(account, "DELETE", "/v1/consents/HEALTH_DATA?confirmDataDeletion=true", null);
 
         assertThat(send(account, "GET", "/v1/decisions", null)).hasStatus(403);
         assertThat(send(account, "GET", "/v1/decisions/current", null)).hasStatus(403);

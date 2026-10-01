@@ -115,6 +115,23 @@ class AccountDataTests {
     }
 
     @Test
+    void theScheduledSecondPassDeletesTooNotOnlyTheSweepCalledDirectly() throws Exception {
+        // K-231 review: the scheduler calls scheduled(); calling sweep() from inside the bean skipped its @Transactional,
+        // and a module listener runs only after a transaction commits — so the scheduled second pass deleted nothing.
+        AccountId account = accountWithDataEverywhere();
+        assertThat(mvc.delete().uri("/v1/account").header("Authorization", bearer(account)).exchange()).hasStatus(202);
+        awaitNoRowsOf(account);
+        jdbc.sql("insert into training.workout (id, account_id, client_id, started_at) values (gen_random_uuid(), :account, gen_random_uuid(), now())")
+                .param("account", account.value()).update();
+        jdbc.sql("update privacy.deletion set requested_at = now() - interval '1 day' where deleted_account_id = :account")
+                .param("account", account.value()).update();
+
+        context.getBean(DeletionSweep.class).scheduled();
+
+        awaitNoRowsOf(account);
+    }
+
+    @Test
     void theExportHoldsEverythingHeldAndNothingOfAnyoneElse() throws Exception {
         AccountId account = accountWithDataEverywhere();
         // Any stored date is exported, not only the ones after 1970 (K-214 review): ApiLimits accepts years from 1900.

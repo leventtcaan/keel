@@ -63,6 +63,8 @@ class ConsentWithdrawalDeletionTests {
         assertThat(result).hasStatusOk().bodyJson().extractingPath("$.status").isEqualTo("WITHDRAWN");
         // At once: in the withdrawal's own transaction, not some time after it answered.
         Map<String, Integer> after = fixture().rowsOf(account);
+        assertThat(after).as("the withdrawal itself is kept").containsEntry("consent.consent_event", before.get("consent.consent_event") + 1);
+        after.remove("consent.consent_event");
         assertThat(after).allSatisfy((table, rows) -> {
             if (health(table)) {
                 assertThat(rows).as(table + " is health data").isZero();
@@ -149,6 +151,21 @@ class ConsentWithdrawalDeletionTests {
 
         assertThat(fixture().rowsOf(account).get("measurement.weigh_in")).isZero();
         assertThat(pendingSecondPasses(account)).as("the second pass is the last").isZero();
+    }
+
+    @Test
+    void theScheduledSecondPassRunsAsTheSweepDoes() throws Exception {
+        // The scheduler calls scheduled(), not sweep(): the second pass must run in a transaction there too (K-231 review).
+        AccountId account = fixture().withDataEverywhere();
+        assertThat(withdraw(account, "HEALTH_DATA", true)).hasStatusOk();
+        insertWeighIn(account);
+        jdbc.sql("update privacy.consent_withdrawal set withdrawn_at = now() - interval '1 day' where withdrawn_account_id = :account")
+                .param("account", account.value()).update();
+
+        context.getBean(ConsentWithdrawalSweep.class).scheduled();
+
+        assertThat(fixture().rowsOf(account).get("measurement.weigh_in")).isZero();
+        assertThat(pendingSecondPasses(account)).isZero();
     }
 
     @Test

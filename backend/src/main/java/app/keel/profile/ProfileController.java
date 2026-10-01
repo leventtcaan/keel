@@ -85,8 +85,23 @@ class ProfileController {
         if (profile.food() != null && profile.food().avoid() != null && !profile.food().avoid().isEmpty()) {
             consent.require(account, ConsentKind.HEALTH_DATA);
         }
-        store.save(account, profile);
+        store.save(account, consent.granted(account, ConsentKind.HEALTH_DATA) ? profile : keepingTheStoredAvoid(account, profile));
         return shown(account, store.find(account).orElseThrow()); // what was stored, so the answer is what a GET returns
+    }
+
+    /**
+     * Without the consent the user cannot see the stored list, so a PUT that leaves it out (settings PUT the whole
+     * profile) is not a wish to empty it: it stays as stored (ADR-030 #27). Withdrawing the consent deletes it (K-231),
+     * so what stays here is a list kept under a consent closed by a revised text, not withdrawn.
+     */
+    private Profile keepingTheStoredAvoid(AccountId account, Profile profile) {
+        List<String> stored = store.find(account).map(Profile::food).map(Food::avoid).orElse(null);
+        if (stored == null) {
+            return profile;
+        }
+        Food food = new Food(stored, profile.food() == null ? null : profile.food().budgetNote());
+        return new Profile(profile.goal(), profile.sex(), profile.heightCm(), profile.birthYear(), profile.activityLevel(), profile.programChoice(),
+                profile.schedule(), food, profile.units());
     }
 
     // Without the consent (never given, or taken back) the foods to avoid are not read out.

@@ -157,7 +157,15 @@ export interface paths {
         /** Grant a consent to the version of its text the user saw */
         put: operations["grantConsent"];
         post?: never;
-        /** Withdraw a consent; the features it covers stop at once */
+        /**
+         * Withdraw a consent; the features it covers stop and the data it covered is deleted
+         * @description The features behind the consent stop at once. Withdrawing HEALTH_DATA also deletes, irreversibly and in the
+         *     same request, every health record it covered — weigh-ins, waist measurements, photo checks, looks, activity
+         *     days, meals, weekly calls and the plan, and the foods to avoid (K-231, ADR-028 #21); training and the profile
+         *     stay. Because of that it must be confirmed (`confirmDataDeletion=true`, otherwise VALIDATION_FAILED); the app
+         *     offers the export first. APPLE_HEALTH and THIRD_PARTY_AI cover no stored data and need no confirmation.
+         *     Withdrawing a consent that is not given changes nothing.
+         */
         delete: operations["withdrawConsent"];
         options?: never;
         head?: never;
@@ -881,7 +889,9 @@ export interface components {
             /**
              * @description Foods the user does not eat or cannot eat, in their own words. May be health data (an allergy, coeliac
              *     disease; GDPR Art. 9): kept only with the HEALTH_DATA consent (CONSENT_REQUIRED without it), and absent from
-             *     responses while the consent is not given (K-225).
+             *     responses while the consent is not given (K-225). While it is not given, a PUT leaves the stored list as it
+             *     is (the user cannot see it, so its absence is not a wish to empty it); withdrawing the consent deletes it
+             *     (K-231, ADR-030 #27).
              */
             avoid?: string[];
             budgetNote?: string;
@@ -1795,7 +1805,10 @@ export interface operations {
     };
     withdrawConsent: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The user confirmed that the data the consent covered will be deleted. Required for HEALTH_DATA. */
+                confirmDataDeletion?: boolean;
+            };
             header?: never;
             path: {
                 kind: components["parameters"]["ConsentKind"];
