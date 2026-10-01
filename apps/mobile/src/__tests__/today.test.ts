@@ -92,8 +92,9 @@ describe('loadToday', () => {
     expect(GET).toHaveBeenCalledWith('/v1/weigh-ins', {
       params: { query: { from: '2026-10-01', to: '2026-10-01' } },
     });
+    expect(GET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-10-01' } } });
     expect(GET.mock.calls.map(([path]) => path).sort()).toEqual(
-      ['/v1/consistency', '/v1/decisions/current', '/v1/program', '/v1/targets', '/v1/weigh-ins'].sort(),
+      ['/v1/consistency', '/v1/days/{day}/budget', '/v1/decisions/current', '/v1/program', '/v1/targets', '/v1/weigh-ins'].sort(),
     );
   });
 });
@@ -131,6 +132,7 @@ describe('chips', () => {
     program: { state: 'none' },
     weighIns: { state: 'ready', value: [] },
     targets: { state: 'none' },
+    budget: { state: 'none' },
   };
 
   test("they come from the day's data", () => {

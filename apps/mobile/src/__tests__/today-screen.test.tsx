@@ -258,6 +258,18 @@ test("today's list: the weigh-in done, the program's session for today, the step
   expect(screen.getByText(t('today.list.steps.target', { steps: '8,000' }))).toBeOnTheScreen();
 });
 
+test("today's list: what is left of the day's food, as ranges (K-409)", async () => {
+  mockAnswers['/v1/days/{day}/budget'] = ok({
+    day: '2026-09-29',
+    targetKcal: 2300,
+    eaten: { kcal: { low: 1350, high: 1520 }, proteinG: { low: 80, high: 96 }, carbsG: { low: 1, high: 2 }, fatG: { low: 1, high: 2 } },
+    left: { kcal: { low: 780, high: 950 }, proteinG: { low: 64, high: 80 } },
+  });
+  await show();
+  expect(screen.getByText(t('today.list.food.title'))).toBeOnTheScreen();
+  expect(screen.getByText(`${t('format.range', { low: 780, high: 950 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
+});
+
 test('before anything is there: each part says what comes, and the others still show', async () => {
   mockAnswers = {
     '/v1/weigh-ins': ok([]),

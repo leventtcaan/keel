@@ -20,6 +20,8 @@ export type TodayData = {
   program: Loaded<Schemas['Program']>;
   weighIns: Loaded<Schemas['WeighIn'][]>;
   targets: Loaded<Schemas['Targets']>;
+  /** What is left of today's food (K-409). */
+  budget: Loaded<Schemas['DayBudget']>;
 };
 
 type Answer<T> = { data?: T; error?: { code?: string }; response: Response };
@@ -39,14 +41,15 @@ export async function load<T>(request: () => Promise<Answer<T>>): Promise<Loaded
 
 /** Every part at once; `day` is today on the phone's calendar (YYYY-MM-DD). */
 export async function loadToday(api: ApiClient, day: string): Promise<TodayData> {
-  const [consistency, decision, program, weighIns, targets] = await Promise.all([
+  const [consistency, decision, program, weighIns, targets, budget] = await Promise.all([
     load(() => api.GET('/v1/consistency')),
     load(() => api.GET('/v1/decisions/current')),
     load(() => api.GET('/v1/program')),
     load(() => api.GET('/v1/weigh-ins', { params: { query: { from: day, to: day } } })),
     load(() => api.GET('/v1/targets')),
+    load(() => api.GET('/v1/days/{day}/budget', { params: { path: { day } } })),
   ]);
-  return { consistency, decision, program, weighIns, targets };
+  return { consistency, decision, program, weighIns, targets, budget };
 }
 
 /** Today on the phone's calendar, as the API writes a day. */

@@ -48,7 +48,8 @@ export default function TodayScreen() {
     data === null || (data.decision.state !== 'ready' && data.decision.state !== 'none') ? null : (
       <CallCard decision={data.decision.state === 'ready' ? data.decision.value : null} />
     );
-  const list = data === null ? null : <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} />;
+  const list =
+    data === null ? null : <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} />;
   const coachChips = data === null ? null : <CoachChips keys={chips(data, day)} />;
 
   return (
