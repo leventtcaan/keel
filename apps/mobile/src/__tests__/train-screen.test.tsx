@@ -8,6 +8,8 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import TrainScreen from '@/app/(tabs)/train';
 import type { components } from '@/api/schema';
 import { ThemeProvider } from '@/theme/theme';
+import type { Outbound } from '@/sync/queue';
+import type { LocalRecord } from '@/sync/store';
 import type { TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -40,13 +42,23 @@ const PROGRAM: Schemas['Program'] = {
 
 let mockData: TrainData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
 const mockRead = jest.fn(async () => mockData);
-const mockServices = { api: {}, training: { read: mockRead } };
+let mockRecords: LocalRecord[] = [];
+const mockRecord = jest.fn(async (_outbound: Outbound) => true);
+const mockServices = {
+  api: {},
+  training: { read: mockRead },
+  workoutRecords: async () => mockRecords,
+  queue: { record: (outbound: Outbound) => mockRecord(outbound) },
+  report: jest.fn(),
+};
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useUnits: () => 'METRIC',
 }));
+const mockPush = jest.fn();
+jest.mock('expo-crypto', () => ({ randomUUID: () => 'new-workout' }));
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn() },
+  router: { push: (...args: unknown[]) => mockPush(...args) },
   useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -65,6 +77,7 @@ afterAll(() => jest.useRealTimers());
 beforeEach(() => {
   jest.clearAllMocks();
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
+  mockRecords = [];
 });
 
 const show = () =>
@@ -118,6 +131,40 @@ test('a failed read says so once, and trying again reads again', async () => {
   mockData = { program: { state: 'failed', problem: 'NoConnection' }, exercises: { state: 'failed', problem: 'NoConnection' }, kept: false };
   await show();
   expect(await screen.findByText("Your program couldn't load.")).toBeTruthy();
-  fireEvent.press(screen.getByText('Try again'));
+  await fireEvent.press(screen.getByText('Try again'));
   expect(mockRead).toHaveBeenCalledTimes(2);
+});
+
+test("today's day starts a workout: it is recorded on the phone under that day, and the session opens", async () => {
+  await show();
+  await fireEvent.press(await screen.findByText('Start workout'));
+  expect(mockRecord).toHaveBeenCalledWith({
+    kind: 'workout',
+    body: { clientId: 'new-workout', startedAt: expect.any(String), programDayId: 'b' },
+  });
+  expect(mockPush).toHaveBeenCalledWith('/workout');
+  // Another day can be started too (a session moved to today).
+  expect(screen.getAllByText('Start').length).toBe(1);
+});
+
+test('a workout under way is continued, not started again', async () => {
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  await show();
+  expect(await screen.findByText('Workout in progress')).toBeTruthy();
+  expect(screen.queryByText('Start workout')).toBeNull();
+  await fireEvent.press(screen.getByText('Continue'));
+  expect(mockPush).toHaveBeenCalledWith('/workout');
+  expect(mockRecord).not.toHaveBeenCalled();
 });

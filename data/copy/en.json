@@ -122,7 +122,62 @@
     },
     "reps": "{min}–{max} reps",
     "next": "Next {load} × {reps}",
-    "nextAdded": "Next +{load} × {reps}"
+    "nextAdded": "Next +{load} × {reps}",
+    "start": "Start workout",
+    "startThis": "Start",
+    "inProgress": "Workout in progress",
+    "continue": "Continue"
+  },
+  "workout": {
+    "title": "Workout",
+    "progress": "{done} of {count} exercises",
+    "targetRir": "Target RIR 0–{max}",
+    "head": {
+      "set": "#",
+      "today": "Today",
+      "last": "Last time"
+    },
+    "side": {
+      "LEFT": "L",
+      "RIGHT": "R"
+    },
+    "set": "{load} × {reps}",
+    "bodyweight": "Bodyweight × {reps}",
+    "added": "+{load} × {reps}",
+    "loadLabel": "Weight ({unit})",
+    "addedLabel": "Added weight ({unit})",
+    "repsLabel": "Reps",
+    "log": "Log set {number}",
+    "logSide": "Log set {number} · {side}",
+    "sideName": {
+      "LEFT": "left",
+      "RIGHT": "right"
+    },
+    "logged": "Set {number} logged",
+    "invalid": "Check the weight and the reps.",
+    "saveFailed": "That set couldn't be saved on the phone. Try again.",
+    "rir": {
+      "label": "Set {number} · reps left in the tank",
+      "more": "3+"
+    },
+    "rest": {
+      "label": "Rest · {min}–{max}",
+      "time": "{minutes}:{seconds}"
+    },
+    "sets": "{count} sets",
+    "setOf": "Set {number} of {count}",
+    "allDone": "All sets done",
+    "finish": "Finish workout",
+    "form": {
+      "title": "How was your form?",
+      "note": "A move whose form wasn't clean keeps its weight and reps next time, until it is.",
+      "clean": "Clean",
+      "unclean": "Not clean"
+    },
+    "finishNow": "Finish",
+    "keepGoing": "Keep going",
+    "kept": "You're offline. Everything you log is saved on the phone and sent later.",
+    "unknownMove": "This exercise isn't known to this version of the app."
   },
   "food": {
     "budget": {

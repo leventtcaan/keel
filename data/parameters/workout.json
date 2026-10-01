@@ -1,0 +1,48 @@
+{
+  "parameters": [
+    {
+      "key": "rest_seconds_min",
+      "value": 120,
+      "unit": "seconds",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-49",
+      "note": "Rest between work sets, low volume and high intensity (Güray K-49: 2-3 minutes; the aim is mechanical tension, not metabolic stress). The session's rest timer counts up and shows the band (K-405); the timer in the background and the Live Activity are K-411."
+    },
+    {
+      "key": "rest_seconds_max",
+      "value": 180,
+      "unit": "seconds",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-49"
+    },
+    {
+      "key": "rir_choices",
+      "value": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "unit": "reps_in_reserve",
+      "tag": "urun",
+      "source": "arastirma/ham/B-antrenman.md#6.5",
+      "note": "The quick RIR picker (B 6.5: one tap per set): 0, 1, 2 and 3+. The last choice means 3 or more and is logged as 3; work sets aim at 0-1 (target_rir_max, G1 K-5), so anything past 3 says the same thing: further from failure than planned."
+    },
+    {
+      "key": "set_max_load_kg",
+      "value": 1000,
+      "unit": "kg",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewSet",
+      "note": "NewSet.loadKg maximum: a heavier set would be refused by the server and lost from the queue."
+    },
+    {
+      "key": "set_max_reps",
+      "value": 100,
+      "unit": "reps",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewSet",
+      "note": "NewSet.reps maximum. A set logged here has at least one rep: zero is not a set done."
+    }
+  ]
+}

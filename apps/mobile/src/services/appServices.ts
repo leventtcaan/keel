@@ -12,8 +12,10 @@ import { type SessionManager, type SessionStorage, createSessionManager, refresh
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
-import { type SqlDatabase, openRecordStore } from '@/sync/store';
+import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
+
+const WORKOUT_KINDS = ['workout', 'set', 'finish'];
 
 type Deps = {
   baseUrl: string;
@@ -47,6 +49,8 @@ export type AppServices = {
   consents: ConsentState;
   /** The program and the catalog, kept on the phone for offline training (K-405). */
   training: TrainingCache;
+  /** The phone's workouts, their sets and their finishes, sent or not (K-405): the session is built from them. */
+  workoutRecords(): Promise<LocalRecord[]>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
 };
@@ -118,6 +122,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
       await store.forget(HEALTH_KINDS).catch(reportError);
     },
     pendingCount: store.pendingCount,
+    workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
     signOut: async () => {
       const refreshToken = await session.refreshToken();
       // The phone forgets first, so the user is signed out at once even on a slow network. The records are cleared

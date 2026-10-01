@@ -35,6 +35,7 @@ const mockServices = {
   queue: { drain: async () => {} }, // Today reads Apple Health's weigh-ins first (K-402); none here
   // The Train tab's program and catalog (K-405); none yet, as for a new account.
   training: { read: async () => ({ program: { state: 'none' }, exercises: { state: 'none' }, kept: false }) },
+  workoutRecords: async () => [],
   report: () => {},
 };
 jest.mock('@/services/ServicesProvider', () => ({
