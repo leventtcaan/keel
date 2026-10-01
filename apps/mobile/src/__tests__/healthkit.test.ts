@@ -81,3 +81,39 @@ test('weights are read as kilograms over the days asked, each with its Health id
 test('where Apple Health is not available, reading weights refuses', async () => {
   await expect(healthKitAccess(() => kit(false), () => false).readWeights(new Date(), new Date())).rejects.toThrow();
 });
+
+test('daily steps and active energy are HealthKit sums per calendar day (sources not counted twice), from local midnight (K-404)', async () => {
+  const asked: unknown[] = [];
+  const fake = {
+    ...kit(),
+    queryStatisticsCollectionForQuantity: async (identifier: string, statistics: string[], anchor: Date, interval: unknown, options: unknown) => {
+      asked.push({ identifier, statistics, anchor, interval, options });
+      return identifier === 'HKQuantityTypeIdentifierStepCount'
+        ? [{ startDate: new Date('2026-09-30T00:00:00'), sumQuantity: { quantity: 9120, unit: 'count' }, sources: [] }]
+        : [{ startDate: new Date('2026-09-30T00:00:00'), sumQuantity: { quantity: 512.6, unit: 'kcal' }, sources: [] }];
+    },
+  };
+  const from = new Date('2026-09-03T18:00:00');
+  const to = new Date('2026-10-01T18:00:00');
+
+  const totals = await healthKitAccess(() => fake, () => false).readDailyTotals(from, to);
+
+  const midnight = new Date('2026-09-03T00:00:00');
+  expect(asked).toEqual([
+    { identifier: 'HKQuantityTypeIdentifierStepCount', statistics: ['cumulativeSum'], anchor: midnight, interval: { day: 1 },
+      options: { unit: 'count', filter: { date: { startDate: midnight, endDate: to } } } },
+    { identifier: 'HKQuantityTypeIdentifierActiveEnergyBurned', statistics: ['cumulativeSum'], anchor: midnight, interval: { day: 1 },
+      options: { unit: 'kcal', filter: { date: { startDate: midnight, endDate: to } } } },
+  ]);
+  expect(totals).toEqual([{ day: '2026-09-30', steps: 9120, activeEnergyKcal: 512.6 }]);
+});
+
+test('sleep: asleep (unspecified, core, deep, REM) is sleep; in bed and awake are not', async () => {
+  const fake = {
+    ...kit(),
+    queryCategorySamples: async () => [0, 1, 2, 3, 4, 5].map((value) => ({ value, startDate: new Date('2026-09-30T01:00:00Z'), endDate: new Date('2026-09-30T02:00:00Z') })),
+  };
+  const sleep = await healthKitAccess(() => fake, () => false).readSleep(new Date('2026-09-29T00:00:00Z'), new Date('2026-10-01T00:00:00Z'));
+  expect(sleep.map((s) => s.asleep)).toEqual([false, true, false, true, true, true]);
+  expect(sleep[0]).toEqual({ start: '2026-09-30T01:00:00.000Z', end: '2026-09-30T02:00:00.000Z', asleep: false });
+});
