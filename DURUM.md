@@ -70,7 +70,8 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (1 Eki gece — M4 Part 2, compact sonrası sürüyor)
 Part 2 sürüyor (`plan/oturum-promptlari/M4-part2-devam.md`). Birleşen: K-414 (#221, #222, #227), K-405 (#223, #224),
-K-406 (#226, #225). **K-417 #228** açık (auto-merge). Sırada K-415, sonra K-421, sonra Part 2 ÇIKIŞ.
+K-406 (#226, #225), K-417 (#228). **K-422 #231** (notlar, backend) açık. Sırada K-415 (mobil: geçmiş, PR, not girişi),
+sonra K-421, sonra Part 2 ÇIKIŞ.
 Levent'i bekleyen: K-308 cihaz adımları, sorular 33-43.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
@@ -304,7 +305,8 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 | K-405 (2-3/3) Antrenman sekmesi + seans ekranı (simülatörde uçtan uca, çevrimdışı) | ✅ birleşti; inceleme + test analizi + simülatör 13 bulgu; mutasyon 13/14 | #224 | `M4/K-405.md` |
 | K-406 özet (efor bazlı) + motor e1RM tek yuvarlama | ✅ #226 + #225 (motor tek yuvarlama) birleşti; inceleme: ağırlıklı vücut ağırlığında e1RM, telefon/motor 0,1 kg (motorda çift yuvarlama → #225), günü kalkan antrenmanın hedefi; mutasyon 13/13 + 2/2 + 4/4 | #226, #225 | `M4/K-406.md` |
 | (yol üstü, K-414) lb hedefi ızgaraya yapıştırılıyordu (#225'in CI'ını kıran özellik testi karşı örneği: 48,77 lb → orta nokta → 47,5) | ✅ birleşti; ortak vaka + Java RED/GREEN, TS eşi K-417'de | #227 | `M4/K-417.md` § motor kusuru |
-| K-417 ısınma hesaplayıcı (telefonda salon, seansta ısınma + taraf başına plaka) | PR açık, auto-merge; simülatör 3 kusur (kg salonda lb plaka, "+0 lb", ısınmanın antrenmanı başlatması → seans sayılır) + inceleme + test analizi düzeltildi; mutasyon 6/6 + 16/16 + 9/9 (1 eşdeğer) | #228 | `M4/K-417.md` |
+| K-417 ısınma hesaplayıcı (telefonda salon, seansta ısınma + taraf başına plaka) | ✅ birleşti; simülatör 3 kusur (kg salonda lb plaka, "+0 lb", ısınmanın antrenmanı başlatması → seans sayılır) + inceleme + test analizi düzeltildi; mutasyon 6/6 + 16/16 + 9/9 (1 eşdeğer) | #228 | `M4/K-417.md` |
+| **K-422** (K-415'ten bölündü) set ve seans notu: sözleşme + V21 + sınır yapılandırmadan | PR açık, auto-merge; saf kural testi mutasyon 5/5; DB testleri CI'da | #231 | (K-415 aktarımında) |
 | K-421 (K-414'ten bölündü) salon profili ekranı | backlog'da; K-415'ten sonra | — | |
 
 ## Session sonunda Levent'e sorulacaklar
