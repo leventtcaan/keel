@@ -45,4 +45,6 @@ test("the server's next target in the user's unit; none until there is one", () 
   expect(nextLine({ ...bench, nextLoadKg: 61.23, nextReps: 6 }, 'IMPERIAL', 'EXTERNAL')).toBe('Next 135 lb × 6');
   expect(nextLine({ ...bench, nextLoadKg: 10, nextReps: 8 }, 'METRIC', 'BODYWEIGHT_PLUS_EXTERNAL')).toBe('Next +10 kg × 8');
   expect(nextLine(bench, 'METRIC', 'EXTERNAL')).toBeNull();
+  // A bodyweight move has no weight to aim for: its reps.
+  expect(nextLine({ ...bench, nextLoadKg: 0, nextReps: 9 }, 'METRIC', 'BODYWEIGHT')).toBe('Next 9 reps');
 });

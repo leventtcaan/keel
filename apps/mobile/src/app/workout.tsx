@@ -43,15 +43,24 @@ export default function WorkoutScreen() {
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ row: string; text: string } | null>(null);
-  const saving = useRef(false); // two taps at once must not log the set twice
+  // Two taps in one frame, before `busy` disables the button, must not log the set twice.
+  const saving = useRef(false);
+  const [failed, setFailed] = useState(false);
 
-  const refresh = useCallback(() => workoutRecords().then(setRecords), [workoutRecords]);
+  const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
+  // A failed read back is not a failed save: the set is kept; the screen catches up at the next read.
+  const refresh = useCallback(() => workoutRecords().then(setRecords).catch(named), [workoutRecords, named]);
   useEffect(() => {
-    void Promise.all([training.read(api), workoutRecords()]).then(([read, kept]) => {
-      setData(read);
-      setRecords(kept);
-    });
-  }, [api, training, workoutRecords]);
+    void Promise.all([training.read(api), workoutRecords()])
+      .then(([read, kept]) => {
+        setData(read);
+        setRecords(kept);
+      })
+      .catch((error: unknown) => {
+        named(error);
+        setFailed(true);
+      });
+  }, [api, training, workoutRecords, named]);
 
   const active = records === null ? null : activeWorkout(records);
   const program = data?.program.state === 'ready' ? data.program.value : null;
@@ -90,6 +99,13 @@ export default function WorkoutScreen() {
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
   const said = problem !== null && problem.row === rowKey ? problem.text : null;
 
+  /** Keeps the workout on the phone with its first set. */
+  const start = async (programDayId: string): Promise<string> => {
+    const clientId = newClientId();
+    await queue.record({ kind: 'workout', body: { clientId, startedAt: new Date().toISOString(), programDayId } });
+    return clientId;
+  };
+
   const log = async () => {
     if (saving.current || day === null || move === undefined || row === null || plan === null) return;
     const parsed = parseEntry(entry.load, entry.reps, move, units, row.suggested.loadKg);
@@ -99,24 +115,25 @@ export default function WorkoutScreen() {
     }
     saving.current = true;
     setBusy(true);
+    let saved = false;
     try {
-      let workoutClientId = active?.clientId;
-      if (workoutClientId === undefined) {
-        workoutClientId = newClientId();
-        await queue.record({ kind: 'workout', body: { clientId: workoutClientId, startedAt: new Date().toISOString(), programDayId: day.id } });
-      }
+      // The workout this set belongs to: the one under way as last read, or — read again, as a set that failed after its
+      // workout was kept, or another screen, may have started one since — none yet, and this set starts it.
+      const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? (await start(day.id));
       await queue.record({ kind: 'set', workoutClientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir) });
+      saved = true;
+    } catch (error) {
+      named(error);
+      setProblem({ row: rowKey, text: t('workout.saveFailed') });
+    }
+    if (saved) {
       setRest(new Date().getTime());
       // The move picked is done: the next one with sets left comes up.
       if (plan.current === plan.rows.length - 1) setPicked(null);
       await refresh();
-    } catch (error) {
-      report({ name: error instanceof Error ? error.name : 'Unknown' });
-      setProblem({ row: rowKey, text: t('workout.saveFailed') });
-    } finally {
-      saving.current = false;
-      setBusy(false);
     }
+    saving.current = false;
+    setBusy(false);
   };
 
   const finish = async () => {
@@ -127,8 +144,8 @@ export default function WorkoutScreen() {
       await queue.record(finishRecord(active.clientId, newClientId(), new Date(), [...unclean]));
       router.back();
     } catch (error) {
-      report({ name: error instanceof Error ? error.name : 'Unknown' });
-      setProblem({ row: FINISH, text: t('workout.saveFailed') });
+      named(error);
+      setProblem({ row: FINISH, text: t('workout.finishFailed') });
     } finally {
       saving.current = false;
       setBusy(false);
@@ -154,6 +171,7 @@ export default function WorkoutScreen() {
           <Pressable
             key={`${p.exerciseId}-${index}`}
             accessibilityRole="button"
+            accessibilityState={{ selected: on }}
             onPress={() => setPicked(index)}
             style={[styles.move, on && { backgroundColor: color.surface }]}>
             <Text style={[styles.text, styles.grow, { color: status?.current === null ? color.muted : color.text }]}>
@@ -196,7 +214,13 @@ export default function WorkoutScreen() {
       </Card>
     );
 
-  const finishButton = day === null ? null : <Button label={t('workout.finish')} variant="ghost" onPress={onFinish} />;
+  const finishButton = day === null && active === null ? null : <Button label={t('workout.finish')} variant="ghost" onPress={onFinish} />;
+  // The program was made again (new days) or cannot be read: the workout under way can still be finished.
+  const dayGone =
+    active !== null && day === null && data !== null ? (
+      <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.dayGone')}</Text>
+    ) : null;
+  const loadFailed = failed ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.loadFailed')}</Text> : null;
   const form = (
     <>
       <FinishForm
@@ -222,7 +246,9 @@ export default function WorkoutScreen() {
       {list}
       {card}
       {rest !== null && <RestTimer since={rest} />}
+      {dayGone}
       {finishButton}
+      {finishProblem}
     </>
   );
 
@@ -232,10 +258,15 @@ export default function WorkoutScreen() {
         <View style={styles.cardHead}>
           <ScreenTitle>{day === null ? t('workout.title') : dayName(day)}</ScreenTitle>
           {day !== null && (
-            <Text style={[styles.small, { color: color.muted }]}>{t('workout.progress', { done: movesDone, count: day.exercises.length })}</Text>
+            <Text style={[styles.small, { color: color.muted }]}>
+              {day.exercises.length === 1
+                ? t('workout.progressOne', { done: movesDone })
+                : t('workout.progress', { done: movesDone, count: day.exercises.length })}
+            </Text>
           )}
         </View>
         {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
+        {loadFailed}
         {finishing ? form : session}
       </ScrollView>
     </SafeAreaView>

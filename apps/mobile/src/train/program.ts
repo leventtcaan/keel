@@ -49,6 +49,7 @@ export function repsLine(planned: Schemas['PlannedExercise']): string {
 /** The next session's target as the server set it; an added load (a weighted dip) with its plus. None until known. */
 export function nextLine(planned: Schemas['PlannedExercise'], units: UnitSystem, load: Schemas['Exercise']['load']): string | null {
   if (planned.nextLoadKg === undefined || planned.nextReps === undefined) return null;
+  if (load === 'BODYWEIGHT') return t('train.nextBodyweight', { reps: planned.nextReps }); // no weight to aim for
   const key = load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'train.nextAdded' : 'train.next';
   return t(key, { load: formatLoad(planned.nextLoadKg, units), reps: planned.nextReps });
 }

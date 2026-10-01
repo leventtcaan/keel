@@ -140,8 +140,17 @@ test("today's day starts a workout: the session opens on that day, and nothing i
   await fireEvent.press(await screen.findByText('Start workout'));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'b' } });
   expect(mockRecord).not.toHaveBeenCalled();
-  // Another day can be started too (a session moved to today).
-  expect(screen.getAllByText('Start').length).toBe(1);
+  // Another day can be started too (a session moved to today), named for a screen reader.
+  expect(screen.getByLabelText('Start Upper A')).toBeTruthy();
+});
+
+test('two quick taps on Start open the session once', async () => {
+  await show();
+  const start = await screen.findByText('Start workout');
+  // The screen has not come up yet (no focus change in between): the second tap is the same tap.
+  await fireEvent.press(start);
+  await fireEvent.press(start);
+  expect(mockPush).toHaveBeenCalledTimes(1);
 });
 
 test('a workout under way is continued, not started again', async () => {

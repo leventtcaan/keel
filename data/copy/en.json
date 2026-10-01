@@ -126,7 +126,9 @@
     "start": "Start workout",
     "startThis": "Start",
     "inProgress": "Workout in progress",
-    "continue": "Continue"
+    "continue": "Continue",
+    "nextBodyweight": "Next {reps} reps",
+    "startDay": "Start {day}"
   },
   "workout": {
     "title": "Workout",
@@ -153,7 +155,6 @@
       "LEFT": "left",
       "RIGHT": "right"
     },
-    "logged": "Set {number} logged",
     "invalid": "Check the weight and the reps.",
     "saveFailed": "That set couldn't be saved on the phone. Try again.",
     "rir": {
@@ -178,7 +179,11 @@
     "finishNow": "Finish",
     "keepGoing": "Keep going",
     "kept": "You're offline. Everything you log is saved on the phone and sent later.",
-    "unknownMove": "This exercise isn't known to this version of the app."
+    "unknownMove": "This exercise isn't known to this version of the app.",
+    "finishFailed": "The workout couldn't be finished on the phone. Try again.",
+    "dayGone": "This workout's day is no longer in your program. Finish it to start a new one.",
+    "loadFailed": "This workout couldn't be opened. Try again from the Train tab.",
+    "progressOne": "{done} of 1 exercise"
   },
   "food": {
     "budget": {

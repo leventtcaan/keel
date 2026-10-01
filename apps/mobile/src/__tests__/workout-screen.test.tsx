@@ -59,24 +59,31 @@ const lastWeek = () => [
 
 let mockRecords: LocalRecord[] = [];
 let mockData: TrainData;
-const mockRecord = jest.fn(async (outbound: Outbound) => {
+/** The phone's store as the queue writes it: the record kept, pending. */
+const keep = async (outbound: Outbound) => {
   const clientId = outbound.kind === 'finish' ? outbound.clientId : outbound.body.clientId;
   const parent = outbound.kind === 'set' || outbound.kind === 'finish' ? outbound.workoutClientId : null;
   mockRecords = [...mockRecords, { ...record(outbound.kind, clientId, outbound.body, parent), state: 'PENDING' }];
   return true;
-});
+};
+const mockRecord = jest.fn(keep);
+let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+const mockWorkoutRecords = jest.fn(async () => mockRecords);
 const mockServices = {
   api: {},
   training: { read: async () => mockData },
-  workoutRecords: async () => mockRecords,
+  workoutRecords: () => mockWorkoutRecords(),
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
   report: jest.fn(),
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockParams = {};
+  mockUnits = 'METRIC';
+  mockWorkoutRecords.mockImplementation(async () => mockRecords);
+  mockRecord.mockImplementation(keep);
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
 });
@@ -188,4 +195,94 @@ test('when the move picked is done, the next move with sets left comes up', asyn
   await fireEvent.press(await screen.findByText('Log set 2'));
   await fireEvent.press(await screen.findByText('Log set 3'));
   expect(await screen.findByText('Log set 1 · left')).toBeTruthy();
+});
+
+test('a set that cannot be saved says so; trying again keeps the one workout already started, not a second', async () => {
+  mockRecords = lastWeek();
+  mockParams = { day: 'day-a' };
+  let failSet = true;
+  mockRecord.mockImplementation(async (outbound: Outbound) => {
+    if (outbound.kind === 'set' && failSet) {
+      failSet = false;
+      throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+    }
+    return keep(outbound);
+  });
+  await show();
+  await fireEvent.press(await screen.findByText('Log set 1'));
+  expect(await screen.findByText("That set couldn't be saved on the phone. Try again.")).toBeTruthy();
+  await fireEvent.press(screen.getByText('Log set 1'));
+  const kinds = mockRecord.mock.calls.map(([o]) => o.kind);
+  expect(kinds.filter((k) => k === 'workout')).toHaveLength(1);
+  expect(await screen.findByText('Log set 2')).toBeTruthy();
+});
+
+test('a set saved but not read back is not called unsaved: no message, and no second set on the next tap', async () => {
+  await show();
+  mockWorkoutRecords.mockImplementationOnce(async () => {
+    throw Object.assign(new Error('read'), { name: 'ReadFailed' });
+  });
+  await fireEvent.press(await screen.findByText('Log set 1'));
+  expect(screen.queryByText("That set couldn't be saved on the phone. Try again.")).toBeNull();
+  expect(mockRecord.mock.calls.filter(([o]) => o.kind === 'set')).toHaveLength(1);
+});
+
+test('a workout whose day is gone from the program (made again) can still be finished, and says why there is nothing to log', async () => {
+  mockRecords = [record('workout', 'w9', { clientId: 'w9', startedAt: '2026-09-28T17:00:00Z', programDayId: 'gone' })];
+  await show();
+  expect(await screen.findByText("This workout's day is no longer in your program. Finish it to start a new one.")).toBeTruthy();
+  await fireEvent.press(screen.getByText('Finish workout'));
+  expect(mockRecord.mock.calls.map(([o]) => o)).toEqual([expect.objectContaining({ kind: 'finish', workoutClientId: 'w9' })]);
+  expect(mockBack).toHaveBeenCalled();
+});
+
+test('a finish that cannot be saved says so where the user is, and the screen stays', async () => {
+  mockRecord.mockImplementation(async () => {
+    throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+  });
+  await show(); // the open workout has no set yet: finishing asks nothing
+  await fireEvent.press(await screen.findByText('Finish workout'));
+  expect(await screen.findByText("The workout couldn't be finished on the phone. Try again.")).toBeTruthy();
+  expect(mockBack).not.toHaveBeenCalled();
+});
+
+test('two quick taps log one set and one workout', async () => {
+  mockRecords = lastWeek();
+  mockParams = { day: 'day-a' };
+  await show();
+  // The first save is still on its way when the second tap lands.
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  mockRecord.mockImplementationOnce(async (outbound: Outbound) => {
+    await gate;
+    return keep(outbound);
+  });
+  const log = await screen.findByText('Log set 1');
+  await fireEvent.press(log);
+  await fireEvent.press(log);
+  release();
+  expect(await screen.findByText('Log set 2')).toBeTruthy();
+  const kinds = mockRecord.mock.calls.map(([o]) => o.kind);
+  expect(kinds).toEqual(['workout', 'set']);
+});
+
+test("in lb, an untouched suggestion logs the server's kg; a typed one, what was typed", async () => {
+  mockUnits = 'IMPERIAL';
+  await show();
+  await fireEvent.press(await screen.findByText('Log set 1'));
+  expect(sets()[0].body).toMatchObject({ loadKg: 62.5 });
+  await fireEvent.changeText(await screen.findByLabelText('Weight (lb)'), '140');
+  await fireEvent.press(screen.getByText('Log set 2'));
+  expect(sets()[1].body).toMatchObject({ loadKg: 63.5 });
+});
+
+test('a move marked not clean and then clean again is sent as clean', async () => {
+  await show();
+  await fireEvent.press(await screen.findByText('Log set 1'));
+  await fireEvent.press(screen.getByText('Finish workout'));
+  await fireEvent.press(screen.getByLabelText('Bench press: Not clean'));
+  await fireEvent.press(screen.getByLabelText('Bench press: Clean'));
+  await fireEvent.press(screen.getByText('Finish'));
+  const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
+  expect(finish).toMatchObject({ body: { uncleanExerciseIds: [] } });
 });

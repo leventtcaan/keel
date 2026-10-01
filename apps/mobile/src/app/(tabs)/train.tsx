@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useCallback } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,8 +42,19 @@ export default function TrainScreen() {
   const today = program === null ? null : programToday(program, day);
   const active = data?.active ?? null;
 
-  // The session opens on the day; the workout is kept only once a set is logged (an empty workout is no session).
-  const start = (programDayId: string) => router.push({ pathname: '/workout', params: { day: programDayId } });
+  // The session opens on the day; the workout is kept only once a set is logged (an empty workout is no session). One
+  // screen per tap: a second tap before the screen is up must not stack a second session (K-405 review).
+  const opening = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      opening.current = false;
+    }, []),
+  );
+  const start = (programDayId: string) => {
+    if (opening.current) return;
+    opening.current = true;
+    router.push({ pathname: '/workout', params: { day: programDayId } });
+  };
   const underWay =
     active === null ? null : (
       <Card outline>
@@ -79,7 +90,13 @@ export default function TrainScreen() {
     const size = isToday ? 'md' : 'sm';
     const startButton =
       active === null ? (
-        <Button label={t(isToday ? 'train.start' : 'train.startThis')} variant={variant} size={size} onPress={() => start(programDay.id)} />
+        <Button
+          label={t(isToday ? 'train.start' : 'train.startThis')}
+          accessibilityLabel={t('train.startDay', { day: dayName(programDay) })}
+          variant={variant}
+          size={size}
+          onPress={() => start(programDay.id)}
+        />
       ) : null;
     return (
       <Card key={programDay.id} outline={isToday} testID={`day-${programDay.id}`}>
