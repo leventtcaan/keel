@@ -1327,6 +1327,25 @@ tasks:
       - "Birim dönüşümü ve yuvarlama tuzakları"
 
 # ───────────────────────────── M4 · Günlük akış ─────────────────────────────
+  - id: K-420
+    title: "decision: bu haftanın tutarlılığı ve 'on track' sayacı API'de"
+    milestone: M4
+    module: decision
+    type: feature
+    size: S
+    status: doing
+    depends_on: [K-111, K-220]
+    why: "K-401 tutarlılık sayısını ve dört bileşenini gösterir; motor hesaplıyor (K-111, K-220) ama sözleşmede uç yok. İstemci hesaplamaz (K-401 bölündü, M4 Part 1)"
+    acceptance:
+      - "GET /v1/consistency: bu hafta (Pazartesi–bugün, kullanıcının saat dilimi) antrenman, protein, adım, tartı için planlanan/yapılan; toplam ve yüzde (aşağı yuvarlanır)"
+      - "Bugün bitmedi: protein ve adım dünden geriye sayılır; antrenman ve tartı bugünü de sayar (yapılan); planlanan haftanın tamamı"
+      - "Sayaç: ilk karardan bu yana biten haftalar — on track / sayılan / güncel seri (K-111: sıfırlanmaz, 1 hafta af)"
+      - "HEALTH_DATA rızası ister; ilk karardan önce NOT_FOUND (plan yok)"
+    tests:
+      - "ConsistencyApiTests"
+    refs: ["arastirma/04-faz3-urun.md#7.3", "backend/src/main/java/app/keel/decision/WeekTallies.java"]
+    learn: ["Türetilmiş görünüm uç noktası", "Hafta sınırı ve saat dilimi"]
+
   - id: K-401
     title: "Bugün ekranı"
     milestone: M4
@@ -1334,7 +1353,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-307, K-212, K-111]
+    depends_on: [K-307, K-212, K-111, K-420]
     why: "En çok kullanılan ekran; günlük sayı + haftanın kararı + bugün yapılacaklar"
     acceptance:
       - "Tutarlılık sayısı ve dört bileşeni (antrenman, protein, adım, tartı)"
@@ -1703,7 +1722,7 @@ tasks:
     module: engine
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-224]
     why: "RFM ±5 puan hata LEA tabanını ~±100 kcal oynatıyor; Levent (c) seçti (ADR-028 #22)"
     acceptance:
@@ -1722,7 +1741,7 @@ tasks:
     module: privacy
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-204, K-214]
     why: "Şimdi yalnız gizleniyor; GDPR Md. 17(1)(b). Levent (a) seçti (ADR-028 #21)"
     acceptance:
