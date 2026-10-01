@@ -70,8 +70,8 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (1 Eki gece — M4 Part 2, compact sonrası sürüyor)
 Part 2 sürüyor (`plan/oturum-promptlari/M4-part2-devam.md`). Birleşen: K-414 (#221, #222, #227), K-405 (#223, #224),
-K-406 (#226, #225), K-417 (#228), K-422 (#231). **K-415 (1/2) #232** açık. Sırada K-415 (2/2) not girişi, sonra K-421,
-sonra Part 2 ÇIKIŞ.
+K-406 (#226, #225), K-417 (#228), K-422 (#231), K-415 (1/2) #232. **K-415 (2/2) #233** açık. Sırada **K-421** salon profili
+ekranı (#229), sonra Part 2 ÇIKIŞ.
 Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
@@ -307,7 +307,8 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 | (yol üstü, K-414) lb hedefi ızgaraya yapıştırılıyordu (#225'in CI'ını kıran özellik testi karşı örneği: 48,77 lb → orta nokta → 47,5) | ✅ birleşti; ortak vaka + Java RED/GREEN, TS eşi K-417'de | #227 | `M4/K-417.md` § motor kusuru |
 | K-417 ısınma hesaplayıcı (telefonda salon, seansta ısınma + taraf başına plaka) | ✅ birleşti; simülatör 3 kusur (kg salonda lb plaka, "+0 lb", ısınmanın antrenmanı başlatması → seans sayılır) + inceleme + test analizi düzeltildi; mutasyon 6/6 + 16/16 + 9/9 (1 eşdeğer) | #228 | `M4/K-417.md` |
 | **K-422** (K-415'ten bölündü) set ve seans notu: sözleşme + V21 + sınır yapılandırmadan | ✅ birleşti; inceleme: ikinci bitiş notu siliyordu (coalesce), NUL 500 → 400; saf mutasyon 5/5; DB testleri CI'da yeşil | #231 | (K-415 aktarımında) |
-| K-415 (1/2) hareket geçmişi + rekorlar (ADR-033) | PR açık, auto-merge; simülatör: 62,5/62,51 kg iki satır → görünen ağırlıkla kıyas; inceleme: pencere dışı yerel kayıt, K-33 gerilimi (soru 44); mutasyon 16/16 + 3/3 + 3/3 | #232 | `M4/K-415.md` |
+| K-415 (1/2) hareket geçmişi + rekorlar (ADR-033) | ✅ birleşti; simülatör: 62,5/62,51 kg iki satır → görünen ağırlıkla kıyas; inceleme: pencere dışı yerel kayıt, K-33 gerilimi (soru 44); mutasyon 16/16 + 3/3 + 3/3 | #232 | `M4/K-415.md` |
+| K-415 (2/2) set + seans notu girişi, geçmişte notlar | PR açık, auto-merge; inceleme: gönderilmemiş bitiş notu sunucu kopyası yüzünden atılıyordu → düzeltildi; mutasyon 8/8 + 1/1 + 2/2 | #233 | `M4/K-415.md` |
 | K-421 (K-414'ten bölündü) salon profili ekranı | backlog'da; K-415'ten sonra | — | |
 
 ## Session sonunda Levent'e sorulacaklar

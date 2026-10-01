@@ -3,6 +3,15 @@
 > Hafıza `DURUM.md › ## M4 ilerleme` ve `## ▶ DEVAM NOKTASI`. Ortak kurallar `plan/oturum-promptlari/M4.md` (harfiyen).
 > Session KAPANMAZ: Part 2 bitince Levent dönünce Part 2 aktarımı yapılır (`docs/aktarim/M4/README.md` 8-…).
 
+## Güncel (2 Eki gece yarısı) — önce bunu oku
+- Birleşti: #227 (lb hedef), #225, #228 K-417, #231 K-422 (notlar sunucu), #232 K-415 (1/2). Açık: **#233** K-415 (2/2) notlar.
+- Sırada **K-421** salon profili ekranı (issue #229, dal `mobile/229-gyms`): Ayarlar → Salonlar listesi → düzenleyici;
+  yazma çevrimiçi PUT/DELETE (kuyruk yok; kabul kriteri yalnız çevrimdışı okuma — `trainData` zaten kullanılan salonu tutuyor),
+  girişler kullanıcının biriminde → kg 2 ondalık (`parseLoadKg`), saf yardımcılar (liste ayrıştırma, dambıl aralığı → liste,
+  sınırlar sözleşmeden: plates ≤20, dumbbells ≤100, makine ≤100), makine/kablo hareketleri katalogdan + kendi adımı.
+  Bitmezse Part 3'e (M4-part3.md'ye yaz).
+- Sorular 38-44 DURUM'da. Simülatör yaması/fikstür sunucusu kalıbı aşağıda (sunucuda artık /v1/gyms ve GET /v1/workouts var).
+
 ## Durum (1 Eki gece)
 - ✅ K-414: #221 (salon API + `equipment`), #222 (`LoadSteps` yuvarlama, lb ölçeği, plaka/taraf). `docs/aktarim/M4/K-414.md`.
 - ✅ K-405: #223 (veri katmanı), #224 (Antrenman sekmesi + seans; simülatörde uçtan uca). `K-405.md`.
