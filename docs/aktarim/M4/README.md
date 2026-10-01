@@ -7,3 +7,4 @@
 1. K-231 rıza geri çekilince silme — olay, aynı transaction, ikinci geçiş, onaylı API, telefonda unutma
 2. K-230 LEA'da RFM'in temkinli ucu — belirsizliği güvenlik yönünde okumak
 3. K-420 tutarlılık API'si — türetilmiş görünüm, "bugün bitmedi", aşağı yuvarlama
+4. K-401 Bugün ekranı — parça başına durum, copyKey ile tek kart, gerekçe ve kaynak türü
