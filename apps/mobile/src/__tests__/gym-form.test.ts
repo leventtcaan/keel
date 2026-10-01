@@ -129,3 +129,31 @@ describe('a gym is edited in its own unit: what is on the rack, whatever the use
     expect(emptyForm('IMPERIAL').unit).toBe('IMPERIAL');
   });
 });
+
+describe('machines kept and dropped', () => {
+  const gym: Gym = {
+    id: 'm',
+    name: 'Club',
+    current: false,
+    platesKg: [],
+    dumbbellsKg: [],
+    machines: [
+      { exerciseId: 'leg_extension', stepKg: 5 },
+      { exerciseId: 'retired_move', stepKg: 7.5 },
+    ],
+  };
+
+  test('with the catalog read, a machine the catalog no longer has as one is left out: the server would refuse it, and it is not on screen', () => {
+    const built = buildGym(formOf(gym, 'METRIC'), new Set(['leg_extension']));
+    expect(built.kind === 'ok' && built.input.machines).toEqual([{ exerciseId: 'leg_extension', stepKg: 5 }]);
+  });
+
+  test('without the catalog, nothing is known to be gone: every stored step is kept', () => {
+    const built = buildGym(formOf(gym, 'METRIC'), null);
+    expect(built.kind === 'ok' && built.input.machines).toHaveLength(2);
+  });
+});
+
+test("a gym with no weights at all opens in the user's unit", () => {
+  expect(formOf({ id: 'e', name: 'Empty', current: false, platesKg: [], dumbbellsKg: [], machines: [] }, 'IMPERIAL').unit).toBe('IMPERIAL');
+});

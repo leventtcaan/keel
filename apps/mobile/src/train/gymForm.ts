@@ -90,8 +90,12 @@ export function formOf(gym: Schemas['Gym'], userUnits: UnitSystem): GymForm {
   };
 }
 
-/** The form as the server takes it: kg; an empty bar or stack step absent; a machine without its own step left out. */
-export function buildGym(form: GymForm): Built {
+/**
+ * The form as the server takes it: kg; an empty bar or stack step absent; a machine without its own step left out.
+ * `machinesKnown`: the catalog's machine and cable moves when it was read — a stored step for a move it no longer has as one
+ * is left out (the server would refuse the gym, and the step is not on screen to remove); null keeps every stored step.
+ */
+export function buildGym(form: GymForm, machinesKnown: Set<string> | null = null): Built {
   const units = form.unit;
   const name = form.name.trim();
   if (name === '') return { kind: 'problem', field: 'name' };
@@ -105,7 +109,7 @@ export function buildGym(form: GymForm): Built {
   if (stack === null) return { kind: 'problem', field: 'stackStep' };
   const machines: Schemas['GymMachine'][] = [];
   for (const [exerciseId, text] of Object.entries(form.machines)) {
-    if (text.trim() === '') continue;
+    if (text.trim() === '' || (machinesKnown !== null && !machinesKnown.has(exerciseId))) continue;
     const stepKg = weight(text, units);
     if (stepKg === null) return { kind: 'problem', field: 'machines' };
     machines.push({ exerciseId, stepKg });

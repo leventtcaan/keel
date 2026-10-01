@@ -49,9 +49,10 @@ const api = createApiClient({
   },
 });
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+let mockExercises: { state: 'ready'; value: Schemas['Exercise'][] } | { state: 'failed'; problem: 'NoConnection' };
 const mockServices = {
   api,
-  training: { read: async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: EXERCISES }, kept: false }) },
+  training: { read: async () => ({ program: { state: 'none' }, exercises: mockExercises, kept: false }) },
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
@@ -60,6 +61,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   calls = [];
   mockUnits = 'METRIC';
+  mockExercises = { state: 'ready', value: EXERCISES };
   mockParams = {};
   answer = (call) =>
     call.method === 'GET'
@@ -152,7 +154,7 @@ describe('a gym', () => {
     answer = (call) => (call.method === 'GET' ? json(GYMS) : json({ code: 'VALIDATION_FAILED' }, 400));
     await show('gym');
     await fireEvent.press(await screen.findByText('Save'));
-    expect(await screen.findByText("This gym wasn't saved: some of it is past what one gym can hold. Check the lists.")).toBeTruthy();
+    expect(await screen.findByText("This gym wasn't saved: something in it is past what the app takes. Check the name and the lists.")).toBeTruthy();
     answer = (call) => (call.method === 'GET' ? json(GYMS) : 'offline');
     await fireEvent.press(screen.getByText('Save'));
     expect(await screen.findByText("This gym couldn't be saved. Try again when you're online.")).toBeTruthy();
@@ -187,4 +189,53 @@ test('a lb user opens a kg gym: it reads in kg, as its plates are marked, and sa
   await fireEvent.press(screen.getByText('Save'));
   const { id: _, ...stored } = GYMS[1];
   expect(puts()[0].body).toEqual({ ...stored, dumbbellsKg: [12, 10] });
+});
+
+test('the gyms unread: no form to save over a gym it does not know (an empty one would replace it)', async () => {
+  mockParams = { id: 'g2' };
+  answer = () => 'offline';
+  await show('gym');
+  expect(await screen.findByText("Your gyms couldn't load. Try again when you're online.")).toBeTruthy();
+  expect(screen.queryByText('Save')).toBeNull();
+  expect(puts()).toEqual([]);
+});
+
+test('a delete the server does not take, or offline: said, and the screen stays', async () => {
+  mockParams = { id: 'g1' };
+  answer = (call) => (call.method === 'GET' ? json(GYMS) : json({ code: 'X' }, 500));
+  await show('gym');
+  await fireEvent.press(await screen.findByText('Delete this gym'));
+  expect(await screen.findByText("This gym couldn't be deleted. Try again when you're online.")).toBeTruthy();
+  answer = (call) => (call.method === 'GET' ? json(GYMS) : 'offline');
+  await fireEvent.press(screen.getByText('Delete this gym'));
+  expect(mockBack).not.toHaveBeenCalled();
+});
+
+test("a kg user's new gym switched to lb: 45 is a 45 lb bar", async () => {
+  mockParams = { id: 'new-gym-id' };
+  await show('gym');
+  await fireEvent.changeText(await screen.findByLabelText('Name'), 'Garage');
+  await fireEvent.press(screen.getByText('lb'));
+  await fireEvent.changeText(screen.getByLabelText('Bar (lb)'), '45');
+  await fireEvent.press(screen.getByText('Save'));
+  expect(puts()[0].body).toMatchObject({ barKg: 20.41 });
+});
+
+test('a gym holding a machine the catalog no longer has as one saves without it, untouched', async () => {
+  const withRetired = [{ ...GYMS[1], machines: [{ exerciseId: 'leg_extension', stepKg: 5 }, { exerciseId: 'retired_move', stepKg: 7.5 }] }];
+  answer = (call) => (call.method === 'GET' ? json(withRetired) : json({}));
+  mockParams = { id: 'g2' };
+  await show('gym');
+  await fireEvent.press(await screen.findByText('Save'));
+  expect(puts()[0].body).toMatchObject({ machines: [{ exerciseId: 'leg_extension', stepKg: 5 }] });
+});
+
+test('the catalog unread: nothing is known to be gone, every stored machine step is kept', async () => {
+  const withRetired = [{ ...GYMS[1], machines: [{ exerciseId: 'leg_extension', stepKg: 5 }, { exerciseId: 'retired_move', stepKg: 7.5 }] }];
+  answer = (call) => (call.method === 'GET' ? json(withRetired) : json({}));
+  mockExercises = { state: 'failed', problem: 'NoConnection' };
+  mockParams = { id: 'g2' };
+  await show('gym');
+  await fireEvent.press(await screen.findByText('Save'));
+  expect((puts()[0].body as { machines: unknown[] }).machines).toHaveLength(2);
 });
