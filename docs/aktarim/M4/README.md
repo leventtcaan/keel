@@ -13,4 +13,5 @@
 7. K-404 adım/uyku/aktif enerji — iki rıza, Health istatistiği, uyku birleşimi, değişen gün
 
 ## Aktarım sırası (Part 2)
-8. K-414 salon profili + yuvarlama — ekipman türü, advisory lock, ret istisnayla, DP, lb gürültü penceresi, plaka hesabı
+8. K-414 salon profili + yuvarlama — ekipman türü, advisory lock, ret istisnayla, DP, lb ölçeği, plaka hesabı
+9. K-405 seans ekranı — kayıt olarak bitiş, kayıtlardan türetilen seans, çevrimdışı kopya, ilk sette antrenman, tek dokunuş
