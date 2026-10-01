@@ -36,6 +36,68 @@
       "note": "Questions about your plan and this week's call arrive in M5."
     }
   },
+  "today": {
+    "consistency": {
+      "title": "Consistency this week",
+      "percent": "{percent} %",
+      "of": "{done} of {planned} planned actions",
+      "training": "Training",
+      "protein": "Protein",
+      "steps": "Steps",
+      "weighIns": "Weigh-ins",
+      "part": "{done}/{planned}",
+      "partSpoken": "{part}: {done} of {planned}",
+      "record": "{onTrack} of {counted} weeks on track",
+      "firstWeek": "Your number starts with your first weekly check-in."
+    },
+    "call": {
+      "eyebrow": "This week's call",
+      "confidence": {
+        "LOW": "Low confidence",
+        "MEDIUM": "Medium confidence",
+        "HIGH": "High confidence"
+      },
+      "why": "Why this call",
+      "hide": "Hide the reasons",
+      "source": {
+        "EXPERIENCE": "From coaching experience",
+        "LITERATURE": "From research",
+        "PRODUCT": "A rule of this app"
+      },
+      "nextReview": "Next review {date}",
+      "none": "Your first call comes after your first weekly check-in."
+    },
+    "list": {
+      "title": "Today",
+      "weighIn": {
+        "done": "Weigh-in done",
+        "todo": "Weigh-in",
+        "todoNote": "Morning, before food"
+      },
+      "training": {
+        "exercises": "{count} exercises",
+        "rest": "Rest day",
+        "restWeek": "A week off training",
+        "none": "No program yet"
+      },
+      "steps": {
+        "title": "Steps",
+        "target": "Target {steps}"
+      }
+    },
+    "chips": {
+      "why": "Why this call?",
+      "swap": "Swap an exercise",
+      "weighIn": "Why weigh in every morning?",
+      "start": "How does this work?"
+    },
+    "consent": {
+      "body": "Your number and this week's call need the health data consent.",
+      "open": "Open Settings"
+    },
+    "failed": "Couldn't load today. Check your connection.",
+    "retry": "Try again"
+  },
   "decision": {
     "no_decision_yet": {
       "label": "Wait",

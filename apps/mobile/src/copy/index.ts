@@ -22,3 +22,8 @@ export function t(key: string, vars: Record<string, string | number> = {}): stri
   }
   return template.replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name] ?? `{${name}}`));
 }
+
+/** Whether the copy has words under this key (a reason's words exist for some actions only, K-401). */
+export function has(key: string): boolean {
+  return lookup(en as Json, key.split('.')) !== undefined;
+}

@@ -5,7 +5,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { render } from '@testing-library/react-native';
 import { router as appRouter } from 'expo-router';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import type { ComponentType } from 'react';
@@ -24,8 +23,13 @@ let mockSignedIn = true;
 const mockServices = {
   signInWithApple: jest.fn(),
   appleAvailable: async () => false,
-  // What the settings screen reads on arrival (K-309).
-  api: { GET: async () => ({ data: [], response: new Response(null, { status: 200 }) }) },
+  // What the settings screen reads on arrival (K-309); Today's parts (K-401) are not there yet, as for a new account.
+  api: {
+    GET: async (path: string) =>
+      path === '/v1/consents'
+        ? { data: [], response: new Response(null, { status: 200 }) }
+        : { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) },
+  },
   health: { available: false },
   report: () => {},
 };
@@ -73,11 +77,14 @@ const tabScreens: Record<TabRoute['name'], ComponentType> = {
 
 test.each(TABS.map((tab) => tab.name))('the %s tab shows the coach entry', async (name) => {
   const Screen = tabScreens[name];
-  await render(
-    <ThemeProvider scheme="light">
-      <Screen />
-    </ThemeProvider>,
-  );
+  // Inside a navigator, as in the app: Today reads again each time it comes into view (useFocusEffect, K-401 review).
+  await renderRouter({
+    index: () => (
+      <ThemeProvider scheme="light">
+        <Screen />
+      </ThemeProvider>
+    ),
+  });
   expect(screen.getByRole('button', { name: t('coach.entry') })).toBeOnTheScreen();
   // The native tab bar overlays the screen; the bottom safe area keeps the coach bar above it.
   expect(screen.getByTestId('screen').props.edges).toMatchObject({ top: 'additive', bottom: 'additive' });
