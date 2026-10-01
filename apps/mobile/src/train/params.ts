@@ -14,4 +14,6 @@ export const workoutParams = {
   rirChoices: param<number[]>('rir_choices'),
   maxLoadKg: param<number>('set_max_load_kg'),
   maxReps: param<number>('set_max_reps'),
+  e1rmEpleyDivisor: param<number>('e1rm_epley_divisor'),
+  e1rmMaxRepsToFailure: param<number>('e1rm_max_reps_to_failure'),
 };

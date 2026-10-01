@@ -185,6 +185,26 @@
     "loadFailed": "This workout couldn't be opened. Try again from the Train tab.",
     "progressOne": "{done} of 1 exercise"
   },
+  "summary": {
+    "title": "Done",
+    "reached": "{reached} of {judged} exercises reached your target effort",
+    "noneJudged": "Log the reps left in the tank to see your effort here.",
+    "moreReps": {
+      "one": "Same weight, 1 more rep at RIR {rir}",
+      "other": "Same weight, {count} more reps at RIR {rir}"
+    },
+    "moreRepsBody": {
+      "one": "1 more rep at RIR {rir}",
+      "other": "{count} more reps at RIR {rir}"
+    },
+    "moreInTank": "Same weight and reps, {count} more in the tank",
+    "loadUp": "Up {load} from last time at RIR {rir}",
+    "loadUpNoRir": "Up {load} from last time",
+    "e1rmUp": "Estimated max up {load}",
+    "first": "First time logged",
+    "note": "RIR {rir}. Next time, aim for 0–{target}.",
+    "done": "Done"
+  },
   "food": {
     "budget": {
       "title": "Left today",

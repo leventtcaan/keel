@@ -43,6 +43,22 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#NewSet",
       "note": "NewSet.reps maximum. A set logged here has at least one rep: zero is not a set done."
+    },
+    {
+      "key": "e1rm_epley_divisor",
+      "value": 30,
+      "unit": "reps",
+      "tag": "literatur",
+      "source": "arastirma/ham/H3-bosluk-literatur.md#B15",
+      "note": "The same as training.yaml (the engine's, K-218): the session summary (K-406) shows the estimated max of a set the way the engine reads it. Epley: load x (1 + reps to failure / 30), reps to failure = reps + RIR. MobileParameterMirrorTests keeps the two equal."
+    },
+    {
+      "key": "e1rm_max_reps_to_failure",
+      "value": 10,
+      "unit": "reps",
+      "tag": "literatur",
+      "source": "arastirma/ham/H3-bosluk-literatur.md#B15",
+      "note": "The same as training.yaml: no estimate past 10 reps to failure (Mayhew 2008)."
     }
   ]
 }
