@@ -88,6 +88,12 @@ tasks.test {
     useJUnitPlatform {
         excludeTags("pending")
     }
+    // The database tests run only in CI (no Docker on the development Mac): a failure says expected and actual there,
+    // not just the line. Test data only — fixtures, never a user's.
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 tasks.register<Test>("pendingTest") {

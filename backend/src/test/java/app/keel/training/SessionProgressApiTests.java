@@ -67,6 +67,47 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void theAddedLoadIsWhatTheGymInUseCanMake() throws Exception {
+        // K-414: plates by 2.5 make +5 on the bar; dumbbells by 2 make 22 of 20 + 2.5; at the rack's heaviest, one more rep.
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "barKg", 20,
+                "platesKg", List.of(20, 10, 5, 2.5), "dumbbellsKg", List.of(18, 20, 22, 24), "machines", List.of()));
+        // The week before, then this week: both in the past, as a finish cannot end before its start (endedAt is now).
+        String workout = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 20, 12, "LEFT");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 20, 12, "RIGHT");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(65, 6));
+        assertThat(next(account, 3)).isEqualTo(target(22, 8));
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
+                "dumbbellsKg", List.of(10, 20), "machines", List.of()));
+        String nextWeek = start(account, MONDAY_EVENING);
+        sets(account, nextWeek, "one_arm_dumbbell_row", 3, 20, 12, "LEFT");
+        sets(account, nextWeek, "one_arm_dumbbell_row", 3, 20, 12, "RIGHT");
+        assertThat(finish(account, nextWeek, List.of())).hasStatusOk();
+        assertThat(next(account, 3)).isEqualTo(target(20, 13));
+    }
+
+    @Test
+    void aMachinesOwnStepIsTheOneTheLoadIsRoundedTo() throws Exception {
+        // The move's own machine in the gym's list (by the move's id), not the gym's stack step: 35 + 2.5 is 42 by 7s, 40 by 5s.
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "Pull", "weekday", "MONDAY", "exercises",
+                List.of(own("lat_pulldown", 8, 12))))))).hasStatusOk();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "platesKg", List.of(),
+                "dumbbellsKg", List.of(), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "lat_pulldown", "stepKg", 7))));
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "lat_pulldown", 3, 35, 12, "BOTH");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(42, 8));
+    }
+
+    @Test
     void addingRepsReadsTheSetsBackAndAnUnsetRirIsThePlannedOne() throws Exception {
         AccountId account = withAProgram();
         String workout = start(account, MONDAY_EVENING);
