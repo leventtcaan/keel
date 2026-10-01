@@ -39,10 +39,17 @@ function onLbGrid(kg: number): number | null {
   return Math.abs((grid / 100) * KG_PER_LB - kg) <= ON_GRID ? grid : null;
 }
 
-type Scale = { units(kg: number): number; kg(units: number): number };
-const KG: Scale = { units: hundredths, kg: (units) => units / 100 };
+const exactLb = (kg: number) => Math.round((kg / KG_PER_LB) * 100);
+
+/**
+ * `units` for a weight someone stored (a lb one goes back to its lb); `target` for the engine's, which no one entered in
+ * lb: snapped to the quarter pound, a target just past the middle of two loads would tie, and go to the lighter.
+ */
+type Scale = { units(kg: number): number; target(kg: number): number; kg(units: number): number };
+const KG: Scale = { units: hundredths, target: hundredths, kg: (units) => units / 100 };
 const LB: Scale = {
-  units: (kg) => onLbGrid(kg) ?? Math.round((kg / KG_PER_LB) * 100),
+  units: (kg) => onLbGrid(kg) ?? exactLb(kg),
+  target: exactLb,
   kg: (units) => round2((units / 100) * KG_PER_LB),
 };
 
@@ -107,7 +114,7 @@ export function round(equipment: Equipment, exerciseId: string, gym: GymWeights,
       break;
   }
   const last = scale.units(lastKg);
-  const target = scale.units(targetKg);
+  const target = scale.target(targetKg);
   const plates = gym.platesKg.map((kg) => scale.units(kg));
   let loads: number[];
   switch (equipment) {
