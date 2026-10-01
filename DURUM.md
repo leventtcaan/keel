@@ -6,7 +6,8 @@ guncelleme: 2026-10-01
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M3 · Mobil kabuk KAPANDI (1 Eki, kod)** — cihaz derlemesi + TestFlight hariç (ADR-030: M4 Part 1 başında Levent'le).
+**M4 Part 1 (Bugün ve ölçüm) BİTTİ (1 Eki)** — K-231, K-230, K-420, K-401, K-409, K-402, K-404 birleşti; K-308 cihaz adımı Levent'te.
+**M3 · Mobil kabuk KAPANDI (1 Eki, kod)** — cihaz derlemesi + TestFlight hariç.
 Aktarım bekliyor: M1 (akşam kısmı), M2, M3 (`docs/aktarim/M3/README.md` 1-15). Sıradaki koşu **M4 · Günlük akış**, dört
 part (`plan/oturum-promptlari/M4.md`, `M4-part1.md`). M0, M1, M2 kapandı.
 Çalışma modu değişti → **ADR-019:** teknik işte agent karar verir, uygular, PR'ı `--auto --squash` ile birleştirir
@@ -67,10 +68,10 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (1 Eki — M3 bitti)
-M3'ün bütün kodu birleşti (son: K-227 #211). Bu sohbet açık kalıyor: Levent dönünce **M3 aktarımı** (skill `aktarim`,
-`docs/aktarim/M3/README.md` sırası 1-15, temelden, basamak basamak, satır satır). Sonra yeni session: **M4 Part 1**
-(`plan/oturum-promptlari/M4-part1.md` — ilk iş K-308 cihaz adımları, Levent'in terminalinde). Açık PR yok, worktree yok.
+## ▶ DEVAM NOKTASI (1 Eki — M4 Part 1 bitti)
+Part 1'in bütün kodu birleşti (son: K-404 #220). Bu sohbet açık kalıyor: Levent dönünce **M4 Part 1 aktarımı** (skill
+`aktarim`, `docs/aktarim/M4/README.md` sırası 1-7). Sonra yeni session: **M4 Part 2** (`plan/oturum-promptlari/M4-part2.md`).
+Levent'i bekleyen: K-308 komutları (`docs/eas-derleme.md` sırası), sorular 33-37. Açık PR yok, worktree yok.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -237,7 +238,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-401, K-409, K-402, K-404 | sürüyor (1 Eki) |
+| 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
 | 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 | başlamadı |
 | 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | başlamadı |
 | 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
@@ -255,7 +256,40 @@ giriş var; `eas init` ve Apple adımları Levent'in terminalinde) — cevap bek
 | K-401 Bugün ekranı (tutarlılık, karar kartı + "Why this call", liste, çipler) | ✅ birleşti; simülatör: tekrar eden başlık bulundu; inceleme: yalnız açılışta okuyordu → odak + öne gelme; mutasyon 13/13 + 2/2 | #217 | `M4/K-401.md` |
 | K-409 kalan bütçe + Hedefler (Yemek sekmesi + Bugün satırı) | ✅ birleşti; inceleme: hiç yemek yokken "2300–2300" → tek sayı; mutasyon 10/10 + 1/1 | #218 | `M4/K-409.md` |
 | K-402 tartı girişi + Health'ten kilo (girişte rıza, çevrimdışı rıza bilgisi, U8 grafiği) | ✅ birleşti; inceleme 3 bulgu (rıza önbelleği her yolda, giriş çevrimdışı açılır, Bugün kuyruğu bekler); mutasyon 16/16 + 5/5 | #219 | `M4/K-402.md` |
-| K-404 adım/uyku/aktif enerji (iki rıza, değişen gün) | PR'da | — | `M4/K-404.md` |
+| K-404 adım/uyku/aktif enerji (iki rıza, değişen gün) | ✅ birleşti; inceleme: pencerenin en eski günü uykusuz gidip sunucudaki uykuyu siliyordu → düzeltildi; mutasyon 12/12 + 2/2 | #220 | `M4/K-404.md` |
+
+**Part 1 ÇIKIŞ (1 Eki):**
+- **Birleşen:** K-231 #212 (backend) + #214 (mobil) · K-230 #213 · K-420 #216 (K-401'den bölündü: `GET /v1/consistency`) ·
+  K-401 #217 · K-409 #218 · K-402 #219 · K-404 #220. Açık PR yok, açık worktree yok, `main` temiz. Aktarım dosyaları
+  `docs/aktarim/M4/` (README sırası 1-7), simülatör görüntüleri `docs/aktarim/M4/img/`.
+- **Çıkış kriterleri (`M4.md › Part'lar`), kanıtla:**
+  | Kriter | Durum | Kanıt |
+  |---|---|---|
+  | Cihazda development build + TestFlight (M3'ten açık) | ❌ açık | komutlar Levent'e verildi (bu oturumun başı); Levent'in terminalinde, cevap yok |
+  | Bugün ekranı gerçek veriyle | ✅ (fikstür sunucusuyla simülatörde) | K-401 #217, K-420 #216, `img/K-401-today.png`, `K-401-safety-why.png` |
+  | Tartı + adım/uyku Health'ten | ✅ kod + test; ❌ gerçek HealthKit okuması görülmedi (Expo Go'da yok) | K-402 #219, K-404 #220; cihazda K-308 sonrası |
+  | Geri çekilen rıza veriyi siler | ✅ | K-231 #212/#214 (CI'da DB testleri, `ConsentWithdrawalDeletionTests`) |
+  Kontrol çıktısı (`main`): mobil `npm run check` → 46 suite, **753/753**; backend saf testler (motor + karar +
+  mimari + sözleşme + göç) **757/757**; DB testleri CI'da yeşil (#220'ye kadar her PR).
+- **Kalan iş:** K-308 cihaz adımları (Levent). K-313 çizim bekliyor (ADR-030 #28). Dış antrenmanlar (soru 37).
+- **Part 2'nin bilmesi gerekenler:**
+  - **Okuma kalıbı:** sekmeler bağlı kalır → ekran verisi `useReadOnFocus(read)` ile (odak + öne gelme; `read` yalnız `api`'ye
+    bağlı olmalı, değişen servis fonksiyonları ref'ten okunur — `useToday`). Parça başına `Loaded<T>` (`src/today/today.ts`:
+    ready / none 404 / consent 403 / failed). Seans ekranı (K-405) aynı kalıpla.
+  - **Rıza:** sağlık kaydı girişi önce `services.consents.granted('HEALTH_DATA')` (çevrimdışında telefondaki bilgi; bilinmeyen =
+    verilmedi); izin verme/geri çekme her yolda `consents.remember`. Antrenman/set rızaya bağlı değil. K-407 (öğün) girişte
+    rıza ister (ADR-030 #25) — K-402'deki adımı örnek al (`src/app/weigh-in.tsx`).
+  - **Bugün okuması:** önce Health eşitlemesi, sonra `queue.drain()`, sonra sunucu → yeni kayıt "yapıldı" görünür.
+  - **Test kalıpları:** servis taklitleri **sabit nesne** olmalı (her çağrıda yeni nesne → sonsuz okuma/OOM); ekran
+    `useFocusEffect` kullanıyorsa test `expo-router`'ı taklit eder ya da `renderRouter` içinde çizer; tarih için yalnız
+    `Date` taklit edilir (`doNotFake` listesi, `today-screen.test.tsx`); `expo-crypto` jest'te boş → Node `randomUUID`.
+  - **Tipli rotalar:** yeni ekran dosyası eklenince `.expo/types/router.d.ts` yerelde eskir → kısa bir `expo start` yeniler
+    (gitignore'da; CI etkilenmez).
+  - **Simülatör:** giriş Expo Go'da yok → kök korumada **geçici, commit'lenmeyen** yama + `scratchpad`'te fikstür sunucusu
+    (`EXPO_PUBLIC_API_URL=http://127.0.0.1:8099`), sonra yedekten geri yükle; dokunuş `mcp__Claude_Code_iOS_Simulator__control`.
+  - **Mobil biçim:** prettier ayarı yok; `--single-quote --print-width 150 --bracket-same-line` çevredeki kodla aynı.
+  - **Backend:** `privacy.consent_withdrawal` (V19) ikinci geçiş; zamanlanmış süpürmeler `scheduled()` üstünde `@Transactional`.
+- **Yeni sorular:** 33-37 (DURUM listesi) + 35'e eklenen K1 notları.
 
 ## Session sonunda Levent'e sorulacaklar
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).

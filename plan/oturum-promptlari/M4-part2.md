@@ -8,8 +8,8 @@ M4 dört part hâlinde yapılıyor; bu PART 2. Ortak talimat plan/oturum-promptl
 uygula. Hafıza DURUM.md › "## M4 ilerleme"de; sohbete güvenme. Part'ı baştan sona uygularsın, aktarıma BAŞLAMAZSIN.
 
 Başta:
-0) Senkron: DURUM › M4 ilerleme › "Part 1 ÇIKIŞ" bloğu git ile doğru mu? K-401, K-402, K-404, K-409, K-230, K-231
-   birleşik mi? K-308 cihaz adımları bitti mi (bitmediyse komutları yeniden ver, DURUM'a yaz)? Yarım
+0) Senkron: DURUM › M4 ilerleme › "Part 1 ÇIKIŞ" bloğu git ile doğru mu? K-401, K-402, K-404, K-409, K-230, K-231, K-420
+   birleşik mi? Sorular 33-37'nin cevabı geldiyse ADR'ye işle. K-308 cihaz adımları bitti mi (bitmediyse komutları yeniden ver, DURUM'a yaz)? Yarım
    "M4-part1-devam.md" varsa önce onu uygula.
 0a) Disk: `df -h ~`.
 

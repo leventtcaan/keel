@@ -1352,7 +1352,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-307, K-212, K-111, K-420]
     why: "En çok kullanılan ekran; günlük sayı + haftanın kararı + bugün yapılacaklar"
     acceptance:
@@ -1373,7 +1373,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-304, K-403]
     why: "Günün tek zorunlu 10 saniyesi"
     acceptance:
@@ -1408,7 +1408,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-403, K-204]
     why: "Sıfır yüklü veri; adım düşüşü en yüksek öncelikli uyarı (Güray T-13)"
     acceptance:
@@ -1500,7 +1500,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-209, K-401]
     why: "Gün içi yönlendirmenin görünen yüzü"
     acceptance:

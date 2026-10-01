@@ -66,3 +66,10 @@
 - takıldım: mutasyonda DB testli filtre her mutantı "öldü" gösterdi (düzeltildi); DURUM'da eski blok içinde başlık eşleşmesi
 - sıradaki: bu sohbette M3 aktarımı (docs/aktarim/M3/README.md 1-15); sonra M4 Part 1 (K-308 cihaz adımları önce)
 - AI: bütün kod, test, ADR metni agent; ürün/sağlık kararları Levent (AskUserQuestion)
+
+## 2026-10-01 · M4 Part 1 (toplu mod)
+- yaptım: K-231 #212/#214 (rıza geri çekilince silme, aynı transaction, ikinci geçiş, onaylı API), K-230 #213, K-420 #216 (tutarlılık API'si, K-401'den bölündü), K-401 #217 (Bugün), K-409 #218 (kalan bütçe + Hedefler), K-402 #219 (tartı, girişte rıza, Health kilo), K-404 #220 (adım/uyku/aktif enerji)
+- karar: silme düz `@EventListener` ile geri çekmenin transaction'ında (atomik); K-401 bölündü; dış antrenmanlar aktif enerjiyle (soru 37)
+- takıldım: Docker yok → DB testleri CI'da (RED CI'da gösterildi); inceleme her görevde gerçek hata buldu (K-214'ten beri zamanlanmış silme geçişi transaction'sızdı; en eski günün uykusu silinecekti; Bugün eskiyordu)
+- sıradaki: Part 1 aktarımı (docs/aktarim/M4 1-7); Levent: K-308 komutları, sorular 33-37; sonra Part 2
+- AI: bütün kod, test, metin agent; ürün/veri soruları Levent'e (DURUM 33-37)
