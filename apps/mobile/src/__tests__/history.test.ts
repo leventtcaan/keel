@@ -100,7 +100,18 @@ describe('sessions: the server list joined with what the phone has not sent', ()
     expect(sessions.map((s) => s.note)).toEqual(['Knee fine today', 'Slept 5 hours']);
   });
 
-  test("a finish the server refused carries no note: it is not part of what was done", () => {
+  test("the server lists the workout, the phone's finish with its note is not sent yet: the phone's note shows", () => {
+    const [session] = sessionsOf(
+      [{ ...workout('w1', '2026-09-21T17:00:00Z', []), note: 'from an older finish' }],
+      [
+        record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-21T17:00:00Z' }, null, 'SYNCED'),
+        record('finish', 'f1', { endedAt: '2026-09-21T18:00:00Z', note: 'Slept 5 hours' }, 'w1', 'PENDING'),
+      ],
+    );
+    expect(session.note).toBe('Slept 5 hours');
+  });
+
+  test('a finish the server refused carries no note: it is not part of what was done', () => {
     const [session] = sessionsOf(
       [],
       [

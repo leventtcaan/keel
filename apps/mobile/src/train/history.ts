@@ -41,12 +41,12 @@ export function sessionsOf(server: Schemas['Workout'][] | null, records: LocalRe
     if (localDay(new Date((record.body as Schemas['NewWorkout']).startedAt)) < fromDay) continue;
     const found = byId.get(record.clientId);
     const finish = records.find((r) => r.kind === 'finish' && r.parentClientId === record.clientId && r.state !== 'REJECTED');
-    const note = (finish?.body as Schemas['WorkoutFinish'] | undefined)?.note;
-    const session = found ?? {
-      clientId: record.clientId,
-      startedAt: (record.body as Schemas['NewWorkout']).startedAt,
+    const phoneNote = (finish?.body as Schemas['WorkoutFinish'] | undefined)?.note;
+    // A finish not sent yet is newer than the server's copy (a later finish with a note replaces the earlier one, K-422).
+    const note = finish?.state === 'SYNCED' ? (found?.note ?? phoneNote) : (phoneNote ?? found?.note);
+    const session = {
+      ...(found ?? { clientId: record.clientId, startedAt: (record.body as Schemas['NewWorkout']).startedAt, sets: [] }),
       ...(note === undefined ? {} : { note }),
-      sets: [],
     };
     const known = new Set(session.sets.map((s) => s.clientId));
     byId.set(record.clientId, { ...session, sets: [...session.sets, ...setsOf(records, record.clientId).filter((s) => !known.has(s.clientId))] });
