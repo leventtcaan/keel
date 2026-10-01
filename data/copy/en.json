@@ -794,7 +794,7 @@
     "withdrawConfirm": {
       "HEALTH_DATA": {
         "title": "Withdraw the health data consent?",
-        "body": "Your health entries are deleted for good: weigh-ins, waist, photo checks, meals, your weekly calls and plan, and the foods you avoid. You can't undo this. Your training stays. Export your data first if you want a copy."
+        "body": "Your health entries are deleted for good: weigh-ins, waist, photo checks, steps and sleep, meals, your weekly calls and plan, and the foods you avoid. You can't undo this. Your training stays. Export your data first if you want a copy."
       },
       "APPLE_HEALTH": {
         "title": "Stop reading Apple Health?",
