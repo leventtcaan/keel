@@ -237,13 +237,36 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-401, K-409, K-402, K-404 | başlamadı |
+| 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-401, K-409, K-402, K-404 | sürüyor (1 Eki) |
 | 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 | başlamadı |
 | 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | başlamadı |
 | 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
 
+**Part 1 başı (1 Eki):** senkron tamam (M3 ÇIKIŞ git ile tutarlı: #211 birleşik, açık PR/worktree yok, `main` temiz).
+Disk 7,9 GB. Docker hâlâ açılmıyor → DB testleri CI'da. K-308 komutları Levent'e verildi (EAS'te `leventcan` hesabıyla
+giriş var; `eas init` ve Apple adımları Levent'in terminalinde) — cevap bekleniyor.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-231 rıza geri çekilince silme (backend: aynı transaction, onaylı API, ikinci geçiş, profil PUT #27) | ✅ birleşti; inceleme 4 bulgu (2 test onaysız geri çekiyordu, sayım, **zamanlanmış ikinci geçiş transaction'sız — K-214'ten beri hesap silmede de**, mobil uyum); CI'da RED önce | #212 | `M4/K-231.md` |
+| K-231 mobil (uyarı + önce dışa aktar + telefondaki sağlık kayıtlarını unutma) | PR'da (auto-merge); mutasyon 9/9; simülatörde görülemedi (sunucu yok) | #214 | `M4/K-231.md` |
+| K-230 LEA ağı RFM'in temkinli ucu (`rfm_energy_margin_pct` 5/6, `Snapshot.fatProxyEnergyPct`) | PR'da (auto-merge); inceleme ≥80 bulgu yok; mutasyon 10/10 | #213 | `M4/K-230.md` |
+
 ## Session sonunda Levent'e sorulacaklar
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
+33. **(K-231, veri — YENİ, M4 Part 1)** Apple Health rızası geri çekilince ne silinsin? Şimdi: Health'ten **okuma durur**,
+    sunucuda zaten tutulan tartı (`source=APPLE_HEALTH`) ve adım/uyku günleri **kalır** — bunlar sağlık verisi rızasıyla
+    (HEALTH_DATA) işleniyor; o rıza geri çekilince hepsi silinir. Seçenekler: (a) böyle kalsın (önerim: Apple Health rızası
+    "okuma izni", saklama dayanağı HEALTH_DATA); (b) Apple Health kaynaklı kayıtlar da silinsin (uyarıyla, onaylı).
+34. **(K-231, ürün/sağlık — YENİ)** Sağlık rızası geri çekilince kararlar silinir, ama antrenmanda açık bir "yükü tut"
+    (deload merdiveninin ilk basamağı, K-217) kalır; onu bitirecek karar artık gelmez (check-in rıza ister) → yük artışı
+    rıza yeniden verilene kadar donabilir. Seçenekler: (a) geri çekmede açık "tut" biter, antrenman normal ilerler
+    (önerim); (b) böyle kalsın (rıza dönünce merdiven kaldığı yerden sürer). Bilgi: hard stop geçmişi de kararlarla
+    silinir (hesap silmedeki gibi); rıza dönünce motor gözlemle başlar, düşük enerji görürse döngü sorusu yeniden gelir.
+35. **(K1 onayı — YENİ)** K-231 test **isteklerini** değiştirdi, iddiaları değil: `ConsentTests`, `ProfileApiTests`,
+    `ApplyDecisionApiTests`, `DecisionServiceTests` HEALTH_DATA'yı artık `?confirmDataDeletion=true` ile geri çekiyor;
+    mobilde `settings-screen` ve `onboarding-flow` düz DELETE yerine tek servisi (`withdrawHealthData`) bekliyor; K-309'un
+    "metin silme demiyor (silme K-231'de)" testi, beklediği K-231 testiyle değişti. (a) onay; (b) geri al.
 30. **(K-228 incelemesi, veri/hukuk — YENİ, Part 3)** Hard stop artık "CHANGE_PHASE → BULK + safety: true" olarak saklanıyor;
     ama `safety` işareti **yalnız** hard stop'ta çıkıyor → kaydı okuyan cevabı yine çıkarabilir (ADR-028 (b)'nin doğası).
     Seçenekler: (a) kabul (artık risk, ADR'ye yaz); (b) güvenlik ağının **tüm** kararları (hızlı kayıp, LEA daraltma) da
