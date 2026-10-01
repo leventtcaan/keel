@@ -23,7 +23,7 @@ function queue() {
   return { records, record: jest.fn(async (record: unknown) => (records.push(record), true)), drain: jest.fn(async () => {}) };
 }
 
-test("with both consents: each scale weigh-in recorded once, by its Health id, rounded to what the server keeps", async () => {
+test('with both consents: each scale weigh-in recorded once, by its Health id, rounded to what the server keeps', async () => {
   const h = health([SAMPLE]);
   const q = queue();
 
@@ -56,7 +56,10 @@ test('where Apple Health is not available, nothing is asked', async () => {
 
 test('a weight no body could have is left out, not sent to be refused', async () => {
   const q = queue();
-  const weights = [{ ...SAMPLE, id: 'A0000000-0000-4000-8000-000000000001', kg: 0 }, { ...SAMPLE, id: 'A0000000-0000-4000-8000-000000000002', kg: 900 }];
+  const weights = [
+    { ...SAMPLE, id: 'A0000000-0000-4000-8000-000000000001', kg: 0 },
+    { ...SAMPLE, id: 'A0000000-0000-4000-8000-000000000002', kg: 900 },
+  ];
   expect(await syncHealthWeights({ health: health(weights).access, queue: q, consented: async () => true, now: NOW })).toBe(0);
   expect(q.drain).not.toHaveBeenCalled();
 });

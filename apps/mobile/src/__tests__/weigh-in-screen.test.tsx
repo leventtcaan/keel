@@ -19,21 +19,39 @@ let mockAnswers: Record<string, Answer> = {};
 const mockBack = jest.fn();
 const mockServices = {
   api: {
-    GET: jest.fn(async (path: string, _init?: unknown) => mockAnswers[path] ?? { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) }),
+    GET: jest.fn(
+      async (path: string, _init?: unknown) =>
+        mockAnswers[path] ?? { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) },
+    ),
     PUT: jest.fn(async (_path: string, _init?: unknown) => ok({ status: 'GRANTED' })),
   },
   queue: { record: jest.fn(async (_record: unknown) => true) },
   consents: { granted: jest.fn(async (_kind: string) => mockGranted), remember: jest.fn(async (_kind: string, _status: string) => {}) },
   report: jest.fn(),
 };
+jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() } }));
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
 beforeAll(() => {
   jest.useFakeTimers({
     now: new Date('2026-10-01T05:30:00Z'),
-    doNotFake: ['hrtime', 'nextTick', 'performance', 'queueMicrotask', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback',
-      'cancelIdleCallback', 'setImmediate', 'clearImmediate', 'setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'],
+    doNotFake: [
+      'hrtime',
+      'nextTick',
+      'performance',
+      'queueMicrotask',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'requestIdleCallback',
+      'cancelIdleCallback',
+      'setImmediate',
+      'clearImmediate',
+      'setInterval',
+      'clearInterval',
+      'setTimeout',
+      'clearTimeout',
+    ],
   });
 });
 afterAll(() => jest.useRealTimers());

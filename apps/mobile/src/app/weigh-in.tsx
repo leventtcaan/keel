@@ -41,8 +41,11 @@ export default function WeighInScreen() {
   const [history, setHistory] = useState<{ weighIns: Schemas['WeighIn'][]; trend: Schemas['TrendPoint'][] } | null>(null);
   const saving = useRef(false); // two taps at once must not save twice
 
-  const today = localDay(new Date());
-  const from = localDay(new Date(Date.now() - (healthParams.chartDays - 1) * DAY_MS));
+  // The window is fixed when the screen opens: the chart's days and "the first 14 days" are counted from that moment.
+  const [{ now, today, from }] = useState(() => {
+    const opened = Date.now();
+    return { now: opened, today: localDay(new Date(opened)), from: localDay(new Date(opened - (healthParams.chartDays - 1) * DAY_MS)) };
+  });
 
   useEffect(() => {
     void consents.granted('HEALTH_DATA').then((granted) => setStep(granted ? 'entry' : 'consent'));
@@ -51,12 +54,10 @@ export default function WeighInScreen() {
   useEffect(() => {
     if (step !== 'entry') return;
     const range = { params: { query: { from, to: today } } };
-    void Promise.all([load(() => api.GET('/v1/weigh-ins', range)), load(() => api.GET('/v1/weight-trend', range))]).then(
-      ([weighIns, trend]) => {
-        // Offline or not there yet: no chart, the entry still works.
-        if (weighIns.state === 'ready' && trend.state === 'ready') setHistory({ weighIns: weighIns.value, trend: trend.value });
-      },
-    );
+    void Promise.all([load(() => api.GET('/v1/weigh-ins', range)), load(() => api.GET('/v1/weight-trend', range))]).then(([weighIns, trend]) => {
+      // Offline or not there yet: no chart, the entry still works.
+      if (weighIns.state === 'ready' && trend.state === 'ready') setHistory({ weighIns: weighIns.value, trend: trend.value });
+    });
   }, [api, step, from, today]);
 
   const allow = async () => {
@@ -97,7 +98,7 @@ export default function WeighInScreen() {
 
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
   const firstDay = history?.weighIns.reduce<string | null>((first, w) => (first === null || w.measuredAt < first ? w.measuredAt : first), null);
-  const early = firstDay != null && Date.now() - Date.parse(firstDay) < onboardingParams.noInterpretationDays * DAY_MS;
+  const early = firstDay != null && now - Date.parse(firstDay) < onboardingParams.noInterpretationDays * DAY_MS;
 
   const consentStep =
     step === 'consent' ? (

@@ -93,7 +93,8 @@ jest.mock('react-native/Libraries/AppState/AppState', () => ({
   },
 }));
 // One object for the life of the test, as the real services are built once per process: the screen depends on it.
-const mockServices = { api: { GET: mockGET }, report: () => {} };
+const mockSyncHealth = jest.fn(async () => 0);
+const mockServices = { api: { GET: mockGET }, syncHealth: mockSyncHealth, report: () => {} };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useUnits: () => 'METRIC',
@@ -341,6 +342,20 @@ test('the app back in front reads again: a new day, new logs (K-401 review)', as
   await act(async () => mockForeground('active'));
 
   expect(mockGET.mock.calls.length).toBeGreaterThan(calls);
+});
+
+test("Apple Health's new weigh-ins go in before Today reads; a failing Health read never blanks Today (K-402)", async () => {
+  let finish: (added: number) => void = () => {};
+  mockSyncHealth.mockImplementationOnce(() => new Promise<number>((resolve) => (finish = resolve)));
+  await show();
+  expect(mockGET).not.toHaveBeenCalled(); // Today waits for the weigh-ins Health brought
+
+  await act(async () => finish(1));
+  expect(mockGET).toHaveBeenCalled();
+
+  mockSyncHealth.mockRejectedValueOnce(new Error('HealthKit'));
+  await act(async () => mockRefocus());
+  expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
 });
 
 test('Settings is still one tap from Today', async () => {

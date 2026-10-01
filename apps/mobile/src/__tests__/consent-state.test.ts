@@ -47,8 +47,9 @@ test('a grant or a withdrawal made on the phone is remembered at once; forgettin
   expect(await state.granted('HEALTH_DATA')).toBe(false);
 });
 
-test('a server that refuses (not offline) is not taken for a yes either', async () => {
+test('a server that refuses (not offline) is not taken for a yes either, even with a yes kept from before', async () => {
   const kv = memoryKv();
+  kv.items.set('consent.HEALTH_DATA', 'GRANTED');
   const state = createConsentState({
     api: { GET: async () => ({ error: { code: 'INTERNAL' }, response: new Response(null, { status: 500 }) }) } as never,
     kv,

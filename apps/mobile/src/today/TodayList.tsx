@@ -1,7 +1,9 @@
+import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { BudgetLine } from '@/food/BudgetLine';
 import { t } from '@/copy';
@@ -29,7 +31,9 @@ type Props = {
 export function TodayList({ day, weighIns, program, targets, budget }: Props) {
   const { color } = useTheme();
   const units = useUnits();
-  const rows: { key: string; title: string; note?: string; line?: ReactNode }[] = [];
+  // Built outside the rows' JSX (the raw-text guard reads JSX attributes there).
+  const logWeight = <Button label={t('today.list.weighIn.log')} size="sm" onPress={() => router.push('/weigh-in')} />;
+  const rows: { key: string; title: string; note?: string; line?: ReactNode; action?: ReactNode }[] = [];
 
   if (weighIns.state === 'ready') {
     const latest = weighIns.value.at(-1);
@@ -39,6 +43,7 @@ export function TodayList({ day, weighIns, program, targets, budget }: Props) {
             key: 'weighIn',
             title: t('today.list.weighIn.todo'),
             note: t('today.list.weighIn.todoNote'),
+            action: logWeight,
           }
         : {
             key: 'weighIn',
@@ -87,6 +92,7 @@ export function TodayList({ day, weighIns, program, targets, budget }: Props) {
           <Text style={[styles.text, { color: color.text }]}>{row.title}</Text>
           {row.note !== undefined && <Text style={[styles.small, { color: color.muted }]}>{row.note}</Text>}
           {row.line}
+          {row.action}
         </View>
       ))}
     </Card>

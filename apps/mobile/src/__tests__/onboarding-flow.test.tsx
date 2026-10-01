@@ -67,6 +67,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     health: mockHealth,
     report: mockReport,
     withdrawHealthData: mockWithdrawHealthData,
+    syncHealth: async () => 0, // Today reads Apple Health's weigh-ins first (K-402); none here
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
   }),
 }));
