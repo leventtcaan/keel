@@ -192,7 +192,12 @@
     },
     "plates": "{plates} {unit} a side",
     "barOnly": "Just the bar",
-    "platesJoin": " + "
+    "platesJoin": " + ",
+    "note": {
+      "add": "Add a note",
+      "label": "Note on this set",
+      "session": "Note on this workout (optional)"
+    }
   },
   "summary": {
     "title": "Workout done",

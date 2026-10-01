@@ -76,7 +76,30 @@ function platesText(plates: number[], plateUnits: UnitSystem): string {
   return t('workout.plates', { plates: plates.map((kg) => formatPlate(kg, plateUnits)).join(t('workout.platesJoin')), unit });
 }
 
-/** A work set with the row's side and the RIR picked. */
-export function buildSet(clientId: string, move: Schemas['Exercise'], side: Schemas['Side'], entry: Entry, rir: number): Schemas['NewSet'] {
-  return { clientId, exerciseId: move.id, setType: 'WORKING', loadKg: entry.loadKg, reps: entry.reps, rir, side };
+/** A note as the server keeps it (K-422): the words without their outer spaces; only spaces is no note. */
+export function noteOf(text: string | undefined): string | null {
+  const words = text?.trim() ?? '';
+  return words === '' ? null : words;
+}
+
+/** A work set with the row's side, the RIR picked and its note, if any. */
+export function buildSet(
+  clientId: string,
+  move: Schemas['Exercise'],
+  side: Schemas['Side'],
+  entry: Entry,
+  rir: number,
+  note?: string,
+): Schemas['NewSet'] {
+  const words = noteOf(note);
+  return {
+    clientId,
+    exerciseId: move.id,
+    setType: 'WORKING',
+    loadKg: entry.loadKg,
+    reps: entry.reps,
+    rir,
+    side,
+    ...(words === null ? {} : { note: words }),
+  };
 }

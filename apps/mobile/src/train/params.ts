@@ -18,6 +18,7 @@ export const workoutParams = {
   e1rmMaxRepsToFailure: param<number>('e1rm_max_reps_to_failure'),
   targetRirMax: param<number>('target_rir_max'),
   historyDays: param<number>('history_days'),
+  noteMaxChars: param<number>('note_max_chars'),
   warmup: {
     first: {
       sets: param<number>('warmup_sets_first_move'),

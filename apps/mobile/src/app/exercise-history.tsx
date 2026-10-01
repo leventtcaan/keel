@@ -86,6 +86,7 @@ export default function ExerciseHistoryScreen() {
       : sessions.map((session) => (
           <Card key={session.clientId}>
             <Text style={[styles.label, { color: color.text }]}>{dayOf(session.startedAt)}</Text>
+            {session.note !== undefined && <Text style={[styles.small, styles.note, { color: color.textSecondary }]}>{session.note}</Text>}
             {session.sets.map((s) => {
               const done = setText(s, move, units);
               const line =
@@ -95,9 +96,10 @@ export default function ExerciseHistoryScreen() {
                     ? done
                     : t('summary.setRir', { set: done, rir: s.rir });
               return (
-                <Text key={s.clientId} style={[styles.small, { color: s.setType === 'WARM_UP' ? color.muted : color.textSecondary }]}>
-                  {line}
-                </Text>
+                <View key={s.clientId}>
+                  <Text style={[styles.small, { color: s.setType === 'WARM_UP' ? color.muted : color.textSecondary }]}>{line}</Text>
+                  {s.note !== undefined && <Text style={[styles.small, styles.note, { color: color.muted }]}>{s.note}</Text>}
+                </View>
               );
             })}
           </Card>
@@ -128,4 +130,5 @@ const styles = StyleSheet.create({
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
+  note: { fontStyle: 'italic' },
 });

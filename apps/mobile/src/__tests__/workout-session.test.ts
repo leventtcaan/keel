@@ -74,3 +74,9 @@ test("the set the queue sends: a working set with the row's side and the RIR pic
   });
   expect(buildSet('c2', row, 'LEFT', { loadKg: 20, reps: 12 }, 3)).toMatchObject({ side: 'LEFT', rir: 3 });
 });
+
+test('a set with a note keeps the words without their outer spaces; only spaces is no note (K-422)', () => {
+  expect(buildSet('c3', bench, 'BOTH', { loadKg: 60, reps: 8 }, 1, '  grip slipped \n')).toMatchObject({ note: 'grip slipped' });
+  expect(buildSet('c4', bench, 'BOTH', { loadKg: 60, reps: 8 }, 1, '   ')).not.toHaveProperty('note');
+  expect(buildSet('c5', bench, 'BOTH', { loadKg: 60, reps: 8 }, 1)).not.toHaveProperty('note');
+});

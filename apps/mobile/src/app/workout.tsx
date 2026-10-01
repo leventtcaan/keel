@@ -46,6 +46,7 @@ export default function WorkoutScreen() {
   const [rest, setRest] = useState<number | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
+  const [sessionNote, setSessionNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ row: string; text: string } | null>(null);
   // Two taps in one frame, before `busy` disables the button, must not log the set twice.
@@ -101,7 +102,7 @@ export default function WorkoutScreen() {
   // The fields hold the row under way: its suggestion until the user changes it. What was typed belongs to its row, so a
   // new row starts from its own suggestion, and a problem said about one row is gone at the next.
   const rowKey = `${selected}-${plan?.current ?? 'done'}`;
-  const [typed, setTyped] = useState<{ row: string; load: string; reps: string; rir: number } | null>(null);
+  const [typed, setTyped] = useState<{ row: string; load: string; reps: string; rir: number; note: string | null } | null>(null);
   const entry =
     typed !== null && typed.row === rowKey
       ? typed
@@ -110,6 +111,7 @@ export default function WorkoutScreen() {
           load: row === null || row.suggested.loadKg === null ? '' : weightInput(row.suggested.loadKg, units),
           reps: row === null ? '' : String(row.suggested.reps),
           rir: planned?.targetRir ?? 0,
+          note: null,
         };
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
   const said = problem !== null && problem.row === rowKey ? problem.text : null;
@@ -138,7 +140,7 @@ export default function WorkoutScreen() {
       // The warm-ups waiting go first, under their own ids: one already saved before a failure is not saved twice.
       for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
       setHeld([]);
-      await queue.record({ kind: 'set', workoutClientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir) });
+      await queue.record({ kind: 'set', workoutClientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir, entry.note ?? undefined) });
       saved = true;
     } catch (error) {
       named(error);
@@ -186,7 +188,7 @@ export default function WorkoutScreen() {
     saving.current = true;
     setBusy(true);
     try {
-      await queue.record(finishRecord(active.clientId, newClientId(), new Date(), [...unclean]));
+      await queue.record(finishRecord(active.clientId, newClientId(), new Date(), [...unclean], sessionNote));
       // What was done, against last time (K-406); a workout without a work set has nothing to show.
       if (worked.length > 0) router.replace({ pathname: '/workout-summary', params: { workout: active.clientId } });
       else router.back();
@@ -304,6 +306,8 @@ export default function WorkoutScreen() {
             return next;
           })
         }
+        note={sessionNote}
+        onNote={setSessionNote}
         onFinish={() => void finish()}
         onBack={() => setFinishing(false)}
       />

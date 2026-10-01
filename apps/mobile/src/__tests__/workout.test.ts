@@ -197,3 +197,10 @@ test("a finish names the moves whose form was not clean, once each, and carries 
     body: { endedAt: '2026-09-28T18:00:00.000Z', uncleanExerciseIds: ['bench_press', 'squat'] },
   });
 });
+
+test('a finish with a note carries it, without its outer spaces; only spaces is none (K-422)', () => {
+  const at = new Date('2026-09-28T18:00:00Z');
+  expect(finishRecord('w2', 'f1', at, [], ' Slept 5 hours ')).toMatchObject({ body: { note: 'Slept 5 hours' } });
+  const without = finishRecord('w2', 'f2', at, [], '  ');
+  expect(without.kind === 'finish' && without.body).not.toHaveProperty('note');
+});

@@ -14,7 +14,8 @@ import { setsOf } from './workout';
 type Schemas = components['schemas'];
 type NewSet = Schemas['NewSet'];
 
-export type Session = { clientId: string; startedAt: string; sets: NewSet[] };
+/** `note`: the session's, given at its finish (K-422). */
+export type Session = { clientId: string; startedAt: string; note?: string; sets: NewSet[] };
 export type PersonalRecord =
   | { kind: 'heaviest'; loadKg: number; reps: number; on: string }
   | { kind: 'estimatedMax'; kg: number; on: string }
@@ -28,13 +29,25 @@ export type PersonalRecord =
 export function sessionsOf(server: Schemas['Workout'][] | null, records: LocalRecord[], fromDay = ''): Session[] {
   const byId = new Map<string, Session>();
   for (const workout of server ?? []) {
-    byId.set(workout.clientId, { clientId: workout.clientId, startedAt: workout.startedAt, sets: workout.sets.map(({ id: _, ...set }) => set) });
+    byId.set(workout.clientId, {
+      clientId: workout.clientId,
+      startedAt: workout.startedAt,
+      ...(workout.note === undefined ? {} : { note: workout.note }),
+      sets: workout.sets.map(({ id: _, ...set }) => set),
+    });
   }
   for (const record of records) {
     if (record.kind !== 'workout' || record.state === 'REJECTED') continue;
     if (localDay(new Date((record.body as Schemas['NewWorkout']).startedAt)) < fromDay) continue;
     const found = byId.get(record.clientId);
-    const session = found ?? { clientId: record.clientId, startedAt: (record.body as Schemas['NewWorkout']).startedAt, sets: [] };
+    const finish = records.find((r) => r.kind === 'finish' && r.parentClientId === record.clientId && r.state !== 'REJECTED');
+    const note = (finish?.body as Schemas['WorkoutFinish'] | undefined)?.note;
+    const session = found ?? {
+      clientId: record.clientId,
+      startedAt: (record.body as Schemas['NewWorkout']).startedAt,
+      ...(note === undefined ? {} : { note }),
+      sets: [],
+    };
     const known = new Set(session.sets.map((s) => s.clientId));
     byId.set(record.clientId, { ...session, sets: [...session.sets, ...setsOf(records, record.clientId).filter((s) => !known.has(s.clientId))] });
   }

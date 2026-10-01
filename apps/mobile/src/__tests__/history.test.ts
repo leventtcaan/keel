@@ -89,6 +89,17 @@ describe('sessions: the server list joined with what the phone has not sent', ()
     expect(sessionsOf(null, [old, recent], '2025-10-02').map((s) => s.clientId)).toEqual(['w1']);
   });
 
+  test("a session's note: the server's, or the phone's finish not sent yet (K-422)", () => {
+    const sessions = sessionsOf(
+      [{ ...workout('w1', '2026-09-21T17:00:00Z', []), note: 'Slept 5 hours' }],
+      [
+        record('workout', 'w2', { clientId: 'w2', startedAt: '2026-09-28T17:00:00Z' }),
+        record('finish', 'f2', { endedAt: '2026-09-28T18:00:00Z', note: 'Knee fine today' }, 'w2'),
+      ],
+    );
+    expect(sessions.map((s) => s.note)).toEqual(['Knee fine today', 'Slept 5 hours']);
+  });
+
   test("a set the server has and the phone keeps too is the server's copy", () => {
     const sent = set('bench_press', 80, 8, 1);
     const [session] = sessionsOf(
