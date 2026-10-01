@@ -24,8 +24,13 @@ let mockSignedIn = true;
 const mockServices = {
   signInWithApple: jest.fn(),
   appleAvailable: async () => false,
-  // What the settings screen reads on arrival (K-309).
-  api: { GET: async () => ({ data: [], response: new Response(null, { status: 200 }) }) },
+  // What the settings screen reads on arrival (K-309); Today's parts (K-401) are not there yet, as for a new account.
+  api: {
+    GET: async (path: string) =>
+      path === '/v1/consents'
+        ? { data: [], response: new Response(null, { status: 200 }) }
+        : { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) },
+  },
   health: { available: false },
   report: () => {},
 };
