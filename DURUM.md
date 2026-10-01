@@ -252,7 +252,10 @@ giriş var; `eas init` ve Apple adımları Levent'in terminalinde) — cevap bek
 | K-231 mobil (uyarı + önce dışa aktar + telefondaki sağlık kayıtlarını unutma) | ✅ birleşti; mutasyon 9/9; simülatörde görülemedi (sunucu yok) | #214 | `M4/K-231.md` |
 | K-230 LEA ağı RFM'in temkinli ucu (`rfm_energy_margin_pct` 5/6, `Snapshot.fatProxyEnergyPct`) | ✅ birleşti; inceleme ≥80 bulgu yok; mutasyon 10/10 | #213 | `M4/K-230.md` |
 | **K-420** (K-401'den bölündü) `GET /v1/consistency` — bu hafta + dört bileşen + sayaç | ✅ birleşti; inceleme: `min()`+`single()` kararsız planda 500 → düzeltildi; mutasyon 7/7 | #216 | `M4/K-420.md` |
-| K-401 Bugün ekranı (tutarlılık, karar kartı + "Why this call", liste, çipler) | PR'da (auto-merge); simülatör: tekrar eden başlık bulundu; inceleme: yalnız açılışta okuyordu → odak + öne gelme; mutasyon 13/13 + 2/2 | #217 | `M4/K-401.md` |
+| K-401 Bugün ekranı (tutarlılık, karar kartı + "Why this call", liste, çipler) | ✅ birleşti; simülatör: tekrar eden başlık bulundu; inceleme: yalnız açılışta okuyordu → odak + öne gelme; mutasyon 13/13 + 2/2 | #217 | `M4/K-401.md` |
+| K-409 kalan bütçe + Hedefler (Yemek sekmesi + Bugün satırı) | ✅ birleşti; inceleme: hiç yemek yokken "2300–2300" → tek sayı; mutasyon 10/10 + 1/1 | #218 | `M4/K-409.md` |
+| K-402 tartı girişi + Health'ten kilo (girişte rıza, çevrimdışı rıza bilgisi, U8 grafiği) | ✅ birleşti; inceleme 3 bulgu (rıza önbelleği her yolda, giriş çevrimdışı açılır, Bugün kuyruğu bekler); mutasyon 16/16 + 5/5 | #219 | `M4/K-402.md` |
+| K-404 adım/uyku/aktif enerji (iki rıza, değişen gün) | PR'da | — | `M4/K-404.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
@@ -269,6 +272,17 @@ giriş var; `eas init` ve Apple adımları Levent'in terminalinde) — cevap bek
     `ApplyDecisionApiTests`, `DecisionServiceTests` HEALTH_DATA'yı artık `?confirmDataDeletion=true` ile geri çekiyor;
     mobilde `settings-screen` ve `onboarding-flow` düz DELETE yerine tek servisi (`withdrawHealthData`) bekliyor; K-309'un
     "metin silme demiyor (silme K-231'de)" testi, beklediği K-231 testiyle değişti. (a) onay; (b) geri al.
+    K-401/K-409/K-402 de test **fikstürlerini** değiştirdi (iddialar aynı): `navigation.test.tsx` sahte sunucusu yola göre
+    cevaplar, "her sekmede koç girişi" testi tek ekranlık gezgin içinde çizer; servis taklitleri `syncHealth`,
+    `queue.drain`, `consents` alır; K-409 `loadToday` testi bütçe ucunu da bekler. Aynı soru: (a) onay; (b) geri al.
+36. **(K-231, veri/hukuk — YENİ)** Sağlık verisi rıza metni (`consent.health_data.body`, sürüm `1-draft`) geri çekmeyi
+    "calls stop until you allow it again" diye anlatıyor; K-231'den beri geri çekme bağlı veriyi **siler** (Ayarlar uyarısı
+    bunu söylüyor). Rıza metni senin/hukukun (M8): (a) metne "geri çekince bu veriler silinir" eklensin (sürüm artar,
+    kullanıcılar yeniden onaylar — henüz kullanıcı yok, maliyet sıfır); (b) M8'deki hukuk gözden geçirmesine kalsın.
+37. **(K-404, ürün — YENİ)** Başka uygulamada kaydedilen antrenmanlar (koşu, bisiklet) Apple Health'te. Şimdi:
+    yaktıkları enerji **aktif enerji** olarak sunucuya gidiyor (enerji uygunluğu U13 bunu okur); ayrı seans olarak
+    gitmiyor (sözleşmede alan yok). Seçenekler: (a) böyle kalsın; (b) tutarlılıkta **antrenman** sayılsınlar (planlı
+    salon günlerine karşı) — sözleşme + backend işi, ayrı görev; (c) yalnız Antrenman geçmişinde görünsünler, sayılmasınlar.
 30. **(K-228 incelemesi, veri/hukuk — YENİ, Part 3)** Hard stop artık "CHANGE_PHASE → BULK + safety: true" olarak saklanıyor;
     ama `safety` işareti **yalnız** hard stop'ta çıkıyor → kaydı okuyan cevabı yine çıkarabilir (ADR-028 (b)'nin doğası).
     Seçenekler: (a) kabul (artık risk, ADR'ye yaz); (b) güvenlik ağının **tüm** kararları (hızlı kayıp, LEA daraltma) da
