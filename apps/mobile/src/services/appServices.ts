@@ -4,9 +4,10 @@
  * database, keychain, fetch — is passed in, so this runs in tests on node:sqlite and a fake server.
  */
 import { type ApiClient, createApiClient } from '@/api/client';
+import { withdrawConsent } from '@/consent/consents';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
-import { type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
+import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
 import { type SqlDatabase, openRecordStore } from '@/sync/store';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
@@ -34,6 +35,11 @@ export type AppServices = {
   pendingCount(): Promise<number>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
+  /**
+   * Withdraws the health data consent, confirming that the server deletes what it covered (K-231), then forgets the
+   * health entries on the phone too (ADR-030 #25). Throws by name when the server did not withdraw it; then nothing goes.
+   */
+  withdrawHealthData(): Promise<void>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
 };
@@ -88,6 +94,12 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
       // the phone forgets what it can — a token left in the keychain is refused at the next start, which clears it.
       await session.signOut().catch(reportError);
       await store.clear().catch(reportError);
+    },
+    withdrawHealthData: async () => {
+      await withdrawConsent(api, 'HEALTH_DATA', true);
+      // Withdrawn and deleted on the server. A local delete that fails is reported, not a failed withdrawal: while the
+      // consent stays withdrawn, whatever stays here is refused by the server (CONSENT_REQUIRED); it goes at sign-out.
+      await store.forget(HEALTH_KINDS).catch(reportError);
     },
     pendingCount: store.pendingCount,
     signOut: async () => {

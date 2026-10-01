@@ -29,9 +29,14 @@ export async function grantConsent(api: ApiClient, kind: Exclude<ConsentKind, 'T
   if (answer.data === undefined) throw named('ConsentRefused', `consent ${kind} not recorded: HTTP ${answer.response.status}`);
 }
 
-/** Takes the consent back; the features it covers stop at once (K-204). Throws like grantConsent. */
-export async function withdrawConsent(api: ApiClient, kind: ConsentKind): Promise<void> {
-  const answer = await reach(() => api.DELETE('/v1/consents/{kind}', { params: { path: { kind } } }));
+/**
+ * Takes the consent back; the features it covers stop at once (K-204). Withdrawing HEALTH_DATA also deletes, for good,
+ * the health data it covered (K-231), so the server takes it only with `confirmDataDeletion` — after the user was told
+ * (Settings asks first and offers the export). Throws like grantConsent.
+ */
+export async function withdrawConsent(api: ApiClient, kind: ConsentKind, confirmDataDeletion = false): Promise<void> {
+  const params = confirmDataDeletion ? { path: { kind }, query: { confirmDataDeletion } } : { path: { kind } };
+  const answer = await reach(() => api.DELETE('/v1/consents/{kind}', { params }));
   if (answer.data === undefined) throw named('ConsentRefused', `consent ${kind} not withdrawn: HTTP ${answer.response.status}`);
 }
 

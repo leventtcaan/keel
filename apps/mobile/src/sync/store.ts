@@ -142,6 +142,15 @@ export async function openRecordStore(db: SqlDatabase, now: () => Date = () => n
     all: async (): Promise<LocalRecord[]> =>
       (await db.getAllAsync<Row>(`SELECT ${COLUMNS} FROM records ORDER BY seq`, [])).map(toRecord),
 
+    /**
+     * The records of these kinds, in every state — waiting, refused, or the server's copy (K-231: withdrawing the health
+     * data consent leaves no health entry on the phone, ADR-030 #25).
+     */
+    forget: async (kinds: readonly string[]): Promise<void> => {
+      if (kinds.length === 0) return;
+      await db.runAsync(`DELETE FROM records WHERE kind IN (${kinds.map(() => '?').join(', ')})`, [...kinds]);
+    },
+
     /** Everything, for sign-out and account deletion: records on the phone belong to the account that made them. */
     clear: async (): Promise<void> => {
       await db.runAsync('DELETE FROM records', []);

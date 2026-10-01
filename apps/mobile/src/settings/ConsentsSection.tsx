@@ -27,11 +27,12 @@ const WORDS = { NoConnection: 'settings.consents.failed', HealthSheetFailed: 'se
 
 /**
  * Each consent: its state, the text it was given to (View), and Allow or Withdraw (ADR-007: separately, at any time).
- * Withdrawing asks first. Apple Health brings in health data, so it needs the health data consent, and HealthKit in the
+ * Withdrawing asks first; withdrawing the health data consent deletes the health entries for good (K-231), so its
+ * question says so and offers the export before. Apple Health brings in health data, so it needs the health data consent, and HealthKit in the
  * build. After every change the states are read again from the server, the truth.
  */
 export function ConsentsSection() {
-  const { api, health } = useAppServices();
+  const { api, health, withdrawHealthData, exportData } = useAppServices();
   const { color } = useTheme();
   const [states, setStates] = useState<Partial<Record<Kind, ConsentStatus>> | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -109,6 +110,18 @@ export function ConsentsSection() {
         disabled={busy}
       />
     ) : null;
+    // The health data consent's withdrawal deletes on the server and on the phone, through the one service that does both.
+    const withdraw = () => (kind === 'HEALTH_DATA' ? withdrawHealthData() : withdrawConsent(api, kind));
+    const exportFirst =
+      kind === 'HEALTH_DATA' ? (
+        <Button
+          label={t('settings.withdrawConfirm.exportFirst')}
+          variant="ghost"
+          size="sm"
+          onPress={() => void run(exportData, { NoConnection: 'settings.export.failed' })}
+          disabled={busy}
+        />
+      ) : undefined;
     const text = open === kind ? <Text style={[styles.text, { color: color.textSecondary }]}>{t(`${CONSENT_COPY[kind]}.body`)}</Text> : null;
     const confirm =
       asking === kind ? (
@@ -117,9 +130,10 @@ export function ConsentsSection() {
           body={t(`settings.withdrawConfirm.${kind}.body`)}
           confirmLabel={t('settings.withdrawConfirm.confirm')}
           keepLabel={t('settings.withdrawConfirm.keep')}
-          onConfirm={() => void change(kind, 'WITHDRAWN', () => withdrawConsent(api, kind))}
+          onConfirm={() => void change(kind, 'WITHDRAWN', withdraw)}
           onKeep={() => setAsking(null)}
           busy={busy}
+          aside={exportFirst}
         />
       ) : null;
     return (

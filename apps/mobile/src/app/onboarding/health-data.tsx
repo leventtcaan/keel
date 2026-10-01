@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { grantConsent, withdrawConsent } from '@/consent/consents';
+import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { StepFrame } from '@/onboarding/StepFrame';
@@ -20,7 +20,7 @@ import { tokens } from '@/theme/tokens';
  */
 export default function HealthDataStep() {
   const { draft, update } = useDraft();
-  const { api, report } = useAppServices();
+  const { api, report, withdrawHealthData } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -50,7 +50,9 @@ export default function HealthDataStep() {
   const allow = () => send(() => grantConsent(api, 'HEALTH_DATA'), () => update({ healthConsent: 'granted' }));
   const withdraw = () =>
     send(
-      () => withdrawConsent(api, 'HEALTH_DATA'),
+      // The same path as Settings (K-231): the server deletes what the consent covered — in onboarding nothing yet, the
+      // answers are sent at the end — and the phone forgets its health entries.
+      withdrawHealthData,
       () => update({ healthConsent: 'declined', weight: '', waist: '', avoid: '' }),
     );
   const decline = () => {

@@ -240,6 +240,50 @@ test('opening without a session drops a "done" left on the phone (a backup resto
   expect(kv.items.has('onboarded')).toBe(false);
 });
 
+describe('withdrawing the health data consent (K-231)', () => {
+  const WORKOUT = { kind: 'workout' as const, body: { clientId: '55555555-5555-4555-8555-555555555555', startedAt: '2026-09-30T18:00:00+03:00' } };
+  const MEAL = {
+    kind: 'meal' as const,
+    body: { clientId: '66666666-6666-4666-8666-666666666666', eatenAt: '2026-09-30T12:30:00+03:00', slot: 'LUNCH' as const, items: [] },
+  };
+
+  async function withEntries(status: number) {
+    const fake = server(status);
+    const { services } = await setup(fake);
+    await services.session.signIn(SESSION);
+    fake.goOffline(); // the entries wait on the phone
+    await services.queue.record(WEIGH);
+    await services.queue.record(MEAL);
+    await services.queue.record(WORKOUT);
+    fake.goOnline();
+    return { services, fake };
+  }
+
+  test('the server deletes, confirmed; then the health entries leave the phone too — training stays (ADR-030 #25)', async () => {
+    const { services, fake } = await withEntries(200);
+
+    await services.withdrawHealthData();
+
+    expect(fake.seen).toContainEqual(expect.objectContaining({ method: 'DELETE', path: '/v1/consents/HEALTH_DATA?confirmDataDeletion=true' }));
+    expect(await services.pendingCount()).toBe(1);
+  });
+
+  test('a refusal keeps every entry and throws by name', async () => {
+    const { services } = await withEntries(500);
+
+    await expect(services.withdrawHealthData()).rejects.toMatchObject({ name: 'ConsentRefused' });
+    expect(await services.pendingCount()).toBe(3);
+  });
+
+  test('offline, nothing is withdrawn and nothing forgotten', async () => {
+    const { services, fake } = await withEntries(200);
+    fake.goOffline();
+
+    await expect(services.withdrawHealthData()).rejects.toMatchObject({ name: 'NoConnection' });
+    expect(await services.pendingCount()).toBe(3);
+  });
+});
+
 describe('deleting the account (K-309, K-214)', () => {
   function accountServer(status: number) {
     const seen: string[] = [];
