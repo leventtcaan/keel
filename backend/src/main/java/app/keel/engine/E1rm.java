@@ -1,7 +1,6 @@
 package app.keel.engine;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Optional;
 
@@ -34,8 +33,9 @@ public final class E1rm {
         if (toFailure == 1) {
             return Optional.of(loadKg.setScale(1, RoundingMode.HALF_UP));
         }
-        BigDecimal factor = BigDecimal.ONE.add(BigDecimal.valueOf(toFailure)
-                .divide(BigDecimal.valueOf(parameters.wholeNumber(ParameterKey.E1RM_EPLEY_DIVISOR)), MathContext.DECIMAL64));
-        return Optional.of(loadKg.multiply(factor).setScale(1, RoundingMode.HALF_UP));
+        // load × (1 + t/d) as load × (d + t) / d, divided once to a tenth: an exact half goes up. Dividing t/d first, to
+        // 16 digits, turned 52.5 × 37/30 = 64.75 into 64.7499… and rounded it down (K-406 review).
+        int divisor = parameters.wholeNumber(ParameterKey.E1RM_EPLEY_DIVISOR);
+        return Optional.of(loadKg.multiply(BigDecimal.valueOf(divisor + toFailure)).divide(BigDecimal.valueOf(divisor), 1, RoundingMode.HALF_UP));
     }
 }
