@@ -298,6 +298,8 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
+| K-414 (1/2) salon profili API + katalogda `equipment` (ADR-032) | ✅ birleşti; inceleme: iki hesabın aynı id yarışı sahiplik kontrolünü atlıyordu → upsert'te koşul + atılan hata (rollback); sözleşme `barKg > 0`, 400/409 yazıldı; eşzamanlılık testleri; mutasyon 2/2 | #221 | `M4/K-414.md` |
+| K-414 (2/2) yuvarlama (`LoadSteps`, ortak vaka dosyası `contracts/fixtures/load-steps.json`) + plaka hesabı | dalda `training/111-load-rounding` (worktree `../keel-rounding`); mutasyon 13/13 (1 eşdeğer → kod sadeleşti); inceleme sürüyor | — | `M4/K-414.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
