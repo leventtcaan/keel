@@ -9,6 +9,7 @@ import { withdrawConsent } from '@/consent/consents';
 import { forgetSentActivityDays } from '@/health/activitySync';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
+import { forgetTraining } from '@/train/trainData';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
 import { type SqlDatabase, openRecordStore } from '@/sync/store';
@@ -75,6 +76,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     profile.forget().catch(reportError); // and so does "onboarding done"
     consents.forget().catch(reportError); // and what the phone knew of its consents
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
+    forgetTraining(kv).catch(reportError); // and the program kept for offline training (K-405)
   });
 
   return {

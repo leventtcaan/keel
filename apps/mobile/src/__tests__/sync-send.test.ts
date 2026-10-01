@@ -52,6 +52,17 @@ test('a set goes under its workout, by the workout server id', async () => {
   expect(fetch.mock.calls[0][0].url).toBe(`${BASE}/v1/workouts/wk-9/sets`);
 });
 
+test('a finish goes to its workout, by the workout server id, with the contract body only (K-405)', async () => {
+  const fetch = server(200, { id: 'srv-w', clientId: ID, startedAt: '2026-09-30T18:00:00+03:00', sets: [] });
+  const body = { endedAt: '2026-09-30T19:10:00+03:00', uncleanExerciseIds: ['bench_press'] };
+  const result = await send(fetch)({ kind: 'finish', clientId: 'local-finish', workoutClientId: ID, body }, 'srv-w');
+  const request = fetch.mock.calls[0][0];
+  expect(request.method).toBe('POST');
+  expect(request.url).toBe(`${BASE}/v1/workouts/srv-w/finish`);
+  expect(await request.json()).toEqual(body);
+  expect(result).toMatchObject({ status: 200, id: 'srv-w' });
+});
+
 test('a replay (200) is a success like the first store', async () => {
   const record = cases[0][0];
   const result = await send(server(200, { ...record.body, id: 'srv-1' }))(record, null);

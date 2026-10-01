@@ -4,7 +4,7 @@
  * stores once and answers the stored record (200). The server's answer replaces the local copy (server wins).
  * The store runs on real SQL here (node:sqlite, the same engine expo-sqlite wraps), not a mock.
  */
-import { NoAnswer, type Outbound, type SendResult, type SyncProblem, createSyncQueue } from '@/sync/queue';
+import { NoAnswer, type Outbound, type SendResult, type SyncProblem, createSyncQueue, recordClientId } from '@/sync/queue';
 import { openRecordStore } from '@/sync/store';
 
 import { nodeSqlite } from './support/nodeSqlite';
@@ -13,6 +13,7 @@ const W = '11111111-1111-4111-8111-111111111111';
 const S1 = '22222222-2222-4222-8222-222222222222';
 const S2 = '33333333-3333-4333-8333-333333333333';
 const WEIGH = '44444444-4444-4444-8444-444444444444';
+const F = '55555555-5555-4555-8555-555555555555';
 
 const weighIn = (clientId = WEIGH): Outbound => ({
   kind: 'weighIn',
@@ -25,6 +26,13 @@ const set = (clientId: string): Outbound => ({
   body: { clientId, exerciseId: 'back-squat', setType: 'WORKING', reps: 5, loadKg: 100 },
 });
 
+const finish: Outbound = {
+  kind: 'finish',
+  clientId: F,
+  workoutClientId: W,
+  body: { endedAt: '2026-09-30T19:10:00+03:00', uncleanExerciseIds: ['bench_press'] },
+};
+
 /** A server that keeps records by clientId like the real one (ADR-024): first 201, then 200 with the stored copy. */
 function fakeServer() {
   const stored = new Map<string, { id: string; body: unknown }>();
@@ -33,7 +41,7 @@ function fakeServer() {
   const calls: { kind: string; clientId: string; parentId?: string }[] = [];
   const send = jest.fn(async (record: Outbound, parentId: string | null): Promise<SendResult> => {
     if (offline) throw new NoAnswer();
-    const clientId = record.body.clientId;
+    const clientId = recordClientId(record);
     calls.push({ kind: record.kind, clientId, ...(parentId === null ? {} : { parentId }) });
     const forced = nextStatus.shift();
     if (forced !== undefined) return { status: forced, errorCode: 'X' };
@@ -97,7 +105,7 @@ test('a reply lost on the way back: the retry carries the same clientId and gets
   await recordOffline(weighIn());
   // The server stored it, but the answer never arrived:
   server.send.mockImplementationOnce(async (record) => {
-    server.stored.set(record.body.clientId, { id: 'srv-1', body: { ...record.body, id: 'srv-1' } });
+    server.stored.set(recordClientId(record), { id: 'srv-1', body: { ...record.body, id: 'srv-1' } });
     throw new NoAnswer();
   });
   await queue.drain();
@@ -191,6 +199,29 @@ test('a set whose workout was refused is refused too, without asking the server'
     ['set', 'REJECTED', 'PARENT_REJECTED'],
   ]);
   expect(server.calls).toHaveLength(1);
+});
+
+test('a workout finished offline is finished after its sets, on its server id (K-405)', async () => {
+  const { server, queue, recordOffline } = await setup();
+  await recordOffline(workout, set(S1), finish);
+  await queue.drain();
+  expect(server.calls).toEqual([
+    { kind: 'workout', clientId: W },
+    { kind: 'set', clientId: S1, parentId: 'srv-1' },
+    { kind: 'finish', clientId: F, parentId: 'srv-1' },
+  ]);
+});
+
+test('the finish of a refused workout is refused too, and cannot come before its workout', async () => {
+  const { store, server, queue, recordOffline } = await setup();
+  await expect(queue.record(finish)).rejects.toThrow(/before the record it belongs to/);
+  await recordOffline(workout, finish);
+  server.answerNext(400);
+  await queue.drain();
+  expect((await store.all()).map((r) => [r.kind, r.state, r.errorCode])).toEqual([
+    ['workout', 'REJECTED', 'X'],
+    ['finish', 'REJECTED', 'PARENT_REJECTED'],
+  ]);
 });
 
 test('a set cannot be recorded before its workout', async () => {

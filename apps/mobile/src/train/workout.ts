@@ -1,0 +1,89 @@
+/**
+ * The workout on the phone (K-405, B §6.5: one tap per set). Built from the phone's own records (K-304) — the workout,
+ * its sets and its finish are records like any other, so a workout started offline is found again after a restart, and
+ * last time's sets are there without the network. Nothing here decides a load: the server's next target (K-217) is the
+ * faint suggestion as it came; only what the user lifted in this session is carried to the next row.
+ */
+import type { components } from '@/api/schema';
+import type { Outbound } from '@/sync/queue';
+import type { LocalRecord } from '@/sync/store';
+
+type Schemas = components['schemas'];
+type NewSet = Schemas['NewSet'];
+
+export type ActiveWorkout = { clientId: string; startedAt: string; programDayId: string | null; sets: NewSet[] };
+
+export type SetRow = {
+  side: Schemas['Side'];
+  /** Shown faint; one tap logs it as it is. `loadKg` null: nothing to go on, the user types it. */
+  suggested: { loadKg: number | null; reps: number };
+  /** The same row last time (same side, same position), if there was one. */
+  last: NewSet | null;
+  done: NewSet | null;
+};
+
+/** `current`: the first row not done yet; null when every planned row is done. */
+export type ExercisePlan = { exerciseId: string; rows: SetRow[]; current: number | null };
+
+/** Records the server took or will take: a refused one is not part of what was done. */
+const kept = (record: LocalRecord) => record.state !== 'REJECTED';
+
+const setsOf = (records: LocalRecord[], workoutClientId: string) =>
+  records.filter((r) => r.kind === 'set' && r.parentClientId === workoutClientId && kept(r)).sort((a, b) => a.seq - b.seq).map((r) => r.body as NewSet);
+
+/** The newest workout without a finish, with its sets in the order they were done. */
+export function activeWorkout(records: LocalRecord[]): ActiveWorkout | null {
+  const finished = new Set(records.filter((r) => r.kind === 'finish').map((r) => r.parentClientId));
+  const open = records.filter((r) => r.kind === 'workout' && kept(r) && !finished.has(r.clientId)).sort((a, b) => b.seq - a.seq)[0];
+  if (open === undefined) return null;
+  const body = open.body as Schemas['NewWorkout'];
+  return { clientId: open.clientId, startedAt: body.startedAt, programDayId: body.programDayId ?? null, sets: setsOf(records, open.clientId) };
+}
+
+/** The working sets of a move in the newest other workout that has it. */
+export function lastTime(records: LocalRecord[], exerciseId: string, except: string): NewSet[] {
+  const workouts = records.filter((r) => r.kind === 'workout' && r.clientId !== except && kept(r)).sort((a, b) => b.seq - a.seq);
+  for (const workout of workouts) {
+    const sets = setsOf(records, workout.clientId).filter((s) => s.exerciseId === exerciseId && s.setType === 'WORKING');
+    if (sets.length > 0) return sets;
+  }
+  return [];
+}
+
+/**
+ * A planned move as rows: this week's sets (the server's count — fewer in a deload week, K-217), per side for a
+ * one-sided move (left, then right). A row suggests the load just lifted in this session, else the server's next load,
+ * else last time's; the server's next reps, else last time's, else the bottom of the range. A bodyweight move's load is
+ * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows.
+ */
+export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas['Exercise'] | undefined, last: NewSet[], done: NewSet[]): ExercisePlan {
+  const sides: Schemas['Side'][] = move?.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
+  const working = done.filter((s) => s.exerciseId === planned.exerciseId && s.setType === 'WORKING');
+  const ofSide = (list: NewSet[], side: Schemas['Side']) => list.filter((s) => (s.side ?? 'BOTH') === side);
+  const doneCount = Math.max(...sides.map((side) => ofSide(working, side).length));
+  const rows: SetRow[] = [];
+  for (let i = 0; i < Math.max(planned.sets, doneCount); i++) {
+    for (const side of sides) {
+      const mine = ofSide(working, side);
+      const lastRows = ofSide(last, side);
+      const lifted = mine[Math.min(i, mine.length) - 1]?.loadKg;
+      const lastLoad = lastRows[i]?.loadKg ?? lastRows.reduce<number | null>((top, s) => (top === null || s.loadKg > top ? s.loadKg : top), null);
+      rows.push({
+        side,
+        suggested: {
+          loadKg: move?.load === 'BODYWEIGHT' ? 0 : (lifted ?? planned.nextLoadKg ?? lastLoad),
+          reps: planned.nextReps ?? lastRows[i]?.reps ?? planned.reps.min,
+        },
+        last: lastRows[i] ?? null,
+        done: mine[i] ?? null,
+      });
+    }
+  }
+  const current = rows.findIndex((row) => row.done === null);
+  return { exerciseId: planned.exerciseId, rows, current: current < 0 ? null : current };
+}
+
+/** The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31). */
+export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[]): Outbound {
+  return { kind: 'finish', clientId, workoutClientId, body: { endedAt: at.toISOString(), uncleanExerciseIds: [...new Set(unclean)] } };
+}

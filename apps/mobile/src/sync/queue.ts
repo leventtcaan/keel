@@ -21,7 +21,16 @@ export type Outbound =
   | { kind: 'photoCheck'; body: Schemas['NewPhotoCheck'] }
   | { kind: 'meal'; body: Schemas['NewMeal'] }
   | { kind: 'workout'; body: Schemas['NewWorkout'] }
-  | { kind: 'set'; workoutClientId: string; body: Schemas['NewSet'] };
+  | { kind: 'set'; workoutClientId: string; body: Schemas['NewSet'] }
+  | { kind: 'finish'; clientId: string; workoutClientId: string; body: Schemas['WorkoutFinish'] };
+
+/**
+ * The id the phone keeps a record under. A finish (K-405) has its own: its body is the contract's Finish, which has no
+ * clientId — the server finds the workout by its id, and finishing again gives the same targets (K-217).
+ */
+export function recordClientId(record: Outbound): string {
+  return record.kind === 'finish' ? record.clientId : record.body.clientId;
+}
 
 /**
  * The kinds that are health data, kept on the server only with the HEALTH_DATA consent (ADR-007): withdrawing it
@@ -50,15 +59,16 @@ function passing(status: number): boolean {
   return status === 401 || status === 408 || status === 429 || status >= 500;
 }
 
+/** A set and a finish hang under their workout: sent after it, to its server id. */
 function parentOf(record: Outbound): string | null {
-  return record.kind === 'set' ? record.workoutClientId : null;
+  return record.kind === 'set' || record.kind === 'finish' ? record.workoutClientId : null;
 }
 
 function toOutbound(row: LocalRecord): Outbound {
   // The row was written from an Outbound by `record` below; kind, parent and body go back together.
-  return (row.kind === 'set'
-    ? { kind: 'set', workoutClientId: row.parentClientId, body: row.body }
-    : { kind: row.kind, body: row.body }) as Outbound;
+  if (row.kind === 'set') return { kind: 'set', workoutClientId: row.parentClientId, body: row.body } as Outbound;
+  if (row.kind === 'finish') return { kind: 'finish', clientId: row.clientId, workoutClientId: row.parentClientId, body: row.body } as Outbound;
+  return { kind: row.kind, body: row.body } as Outbound;
 }
 
 export type SyncQueue = ReturnType<typeof createSyncQueue>;
@@ -150,7 +160,7 @@ export function createSyncQueue({ store, send, report }: Options) {
         throw new Error(`${record.kind} recorded before the record it belongs to`);
       }
       const stored = await store.insert({
-        clientId: record.body.clientId,
+        clientId: recordClientId(record),
         kind: record.kind,
         parentClientId: parent,
         body: record.body,

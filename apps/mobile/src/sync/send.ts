@@ -37,6 +37,9 @@ function post(api: ApiClient, record: Outbound, parentServerId: string | null): 
     case 'set':
       if (parentServerId === null) throw new Error('a set is sent under its workout');
       return api.POST('/v1/workouts/{id}/sets', { params: { path: { id: parentServerId } }, body: record.body });
+    case 'finish':
+      if (parentServerId === null) throw new Error('a finish is sent for its workout');
+      return api.POST('/v1/workouts/{id}/finish', { params: { path: { id: parentServerId } }, body: record.body });
     default: {
       const unknown: never = record; // a kind stored by another app version
       throw new Error(`unknown record kind ${(unknown as { kind: string }).kind}`);
