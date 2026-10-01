@@ -11,22 +11,29 @@ import { budgetLine } from './budget';
 /** What is left of today's food, in words and ranges (K-409); the same line on Today and on the Food tab. */
 export function BudgetLine({ left }: { left: components['schemas']['Left'] }) {
   const { color } = useTheme();
+  // Nothing logged yet: what is left is the target itself, one number (K-409 review) — a range only for an estimate (U5).
+  const amount = (low: number, high: number, unit: string) =>
+    low === high ? (
+      <Text style={[styles.single, { color: color.text }]}>{t('food.budget.single', { value: low.toLocaleString('en-US'), unit })}</Text>
+    ) : (
+      <RangeText low={low} high={high} unit={unit} />
+    );
   const { kcal, protein } = budgetLine(left);
   const kcalUnit = t('food.budget.kcalUnit');
   const energy =
     kcal.kind === 'left' ? (
-      <RangeText low={kcal.low} high={kcal.high} unit={kcalUnit} />
+      amount(kcal.low, kcal.high, kcalUnit)
     ) : kcal.kind === 'over' ? (
       <View>
         <Text style={[styles.small, { color: color.muted }]}>{t('food.budget.over')}</Text>
-        <RangeText low={kcal.low} high={kcal.high} unit={kcalUnit} />
+        {amount(kcal.low, kcal.high, kcalUnit)}
       </View>
     ) : (
       <Text style={[styles.text, { color: color.text }]}>{t('food.budget.around')}</Text>
     );
   const proteinLine =
     protein.kind === 'left' ? (
-      <RangeText low={protein.low} high={protein.high} unit={t('food.budget.proteinUnit')} />
+      amount(protein.low, protein.high, t('food.budget.proteinUnit'))
     ) : (
       <Text style={[styles.small, { color: color.muted }]}>{t('food.budget.proteinDone')}</Text>
     );
@@ -42,4 +49,5 @@ const styles = StyleSheet.create({
   line: { gap: tokens.space.xs },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
+  single: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
 });

@@ -106,6 +106,7 @@
       "title": "Left today",
       "kcalUnit": "kcal",
       "proteinUnit": "g protein",
+      "single": "{value} {unit}",
       "over": "Past today's target by",
       "around": "About at today's target",
       "proteinDone": "Protein target reached",
@@ -119,8 +120,7 @@
       "fat": "Fat {g} g",
       "noSplit": "Carbs and fat: no split fits this target right now.",
       "steps": "{steps} steps a day",
-      "training": "{count} training sessions a week",
-      "none": "Your targets come with your first weekly check-in."
+      "training": "{count} training sessions a week"
     },
     "consent": "Your food budget and targets need the health data consent."
   },

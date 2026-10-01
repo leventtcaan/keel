@@ -89,6 +89,14 @@ test('what is left, as ranges (U5)', async () => {
   expect(screen.getByText(range(64, 80, t('food.budget.proteinUnit')))).toBeOnTheScreen();
 });
 
+test('nothing logged yet: what is left is the target itself, one number, not a range of two equal ends (K-409 review)', async () => {
+  mockAnswers['/v1/days/{day}/budget'] = ok({ ...BUDGET(2300, 2300), left: { kcal: { low: 2300, high: 2300 }, proteinG: { low: 160, high: 160 } } });
+  await show();
+  expect(screen.getByText(t('food.budget.single', { value: '2,300', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
+  expect(screen.getByText(t('food.budget.single', { value: '160', unit: t('food.budget.proteinUnit') }))).toBeOnTheScreen();
+  expect(screen.queryByText(range(2300, 2300, t('food.budget.kcalUnit')))).toBeNull();
+});
+
 test('past the target it says so plainly, by how much, and asks nothing back (U7)', async () => {
   mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(-400, -150));
   await show();
