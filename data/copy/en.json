@@ -83,6 +83,9 @@
       "steps": {
         "title": "Steps",
         "target": "Target {steps}"
+      },
+      "food": {
+        "title": "Food left today"
       }
     },
     "chips": {
@@ -97,6 +100,29 @@
     },
     "failed": "Couldn't load today. Check your connection.",
     "retry": "Try again"
+  },
+  "food": {
+    "budget": {
+      "title": "Left today",
+      "kcalUnit": "kcal",
+      "proteinUnit": "g protein",
+      "single": "{value} {unit}",
+      "over": "Past today's target by",
+      "around": "About at today's target",
+      "proteinDone": "Protein target reached",
+      "none": "Your food budget comes with your first calorie target."
+    },
+    "targets": {
+      "title": "Your targets",
+      "kcal": "{kcal} kcal a day",
+      "protein": "Protein {g} g",
+      "carbs": "Carbs {g} g",
+      "fat": "Fat {g} g",
+      "noSplit": "Carbs and fat: no split fits this target right now.",
+      "steps": "{steps} steps a day",
+      "training": "{count} training sessions a week"
+    },
+    "consent": "Your food budget and targets need the health data consent."
   },
   "decision": {
     "no_decision_yet": {

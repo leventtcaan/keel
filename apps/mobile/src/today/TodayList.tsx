@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Card } from '@/components/Card';
+import { BudgetLine } from '@/food/BudgetLine';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -16,17 +18,18 @@ type Props = {
   weighIns: Loaded<Schemas['WeighIn'][]>;
   program: Loaded<Schemas['Program']>;
   targets: Loaded<Schemas['Targets']>;
+  budget: Loaded<Schemas['DayBudget']>;
 };
 
 /**
- * Today's list (prototype 2.1): the weigh-in, today's session, the steps. Each row shows what is known and leaves out
- * what is not — a part behind the consent or not there yet is simply not a row. The food row is the remaining budget
- * (K-409); the step count arrives from Apple Health (K-404).
+ * Today's list (prototype 2.1): the weigh-in, today's session, the food left, the steps. Each row shows what is known and leaves out
+ * what is not — a part behind the consent or not there yet is simply not a row. The food row is what is left of the
+ * day's budget, as ranges (K-409); the step count arrives from Apple Health (K-404).
  */
-export function TodayList({ day, weighIns, program, targets }: Props) {
+export function TodayList({ day, weighIns, program, targets, budget }: Props) {
   const { color } = useTheme();
   const units = useUnits();
-  const rows: { key: string; title: string; note?: string }[] = [];
+  const rows: { key: string; title: string; note?: string; line?: ReactNode }[] = [];
 
   if (weighIns.state === 'ready') {
     const latest = weighIns.value.at(-1);
@@ -63,6 +66,9 @@ export function TodayList({ day, weighIns, program, targets }: Props) {
   } else if (program.state === 'none') {
     rows.push({ key: 'training', title: t('today.list.training.none') });
   }
+  if (budget.state === 'ready') {
+    rows.push({ key: 'food', title: t('today.list.food.title'), line: <BudgetLine left={budget.value.left} /> });
+  }
   if (targets.state === 'ready') {
     rows.push({
       key: 'steps',
@@ -80,6 +86,7 @@ export function TodayList({ day, weighIns, program, targets }: Props) {
         <View key={row.key} style={[styles.row, { borderTopColor: color.line }]}>
           <Text style={[styles.text, { color: color.text }]}>{row.title}</Text>
           {row.note !== undefined && <Text style={[styles.small, { color: color.muted }]}>{row.note}</Text>}
+          {row.line}
         </View>
       ))}
     </Card>

@@ -8,3 +8,4 @@
 2. K-230 LEA'da RFM'in temkinli ucu — belirsizliği güvenlik yönünde okumak
 3. K-420 tutarlılık API'si — türetilmiş görünüm, "bugün bitmedi", aşağı yuvarlama
 4. K-401 Bugün ekranı — parça başına durum, copyKey ile tek kart, gerekçe ve kaynak türü
+5. K-409 kalan bütçe + Hedefler — işaretten üç durum, yarım bölünme yok, ortak okuma kancası
