@@ -43,6 +43,23 @@ test('Epley as the engine reads it: none without RIR or past 10 reps to failure;
   expect(e1rm(100, 9, 2)).toBeNull();
 });
 
+test('Epley rounds once, half up to a tenth, exactly as the engine (the same vectors as E1rmTests)', () => {
+  // Ties a float rounds down: 30.75 × 38/30 = 38.95, 15.75 × 34/30 = 17.85, 2.25 × 38/30 = 2.85.
+  expect(e1rm(30.75, 6, 2)).toBe(39);
+  expect(e1rm(15.75, 3, 1)).toBe(17.9);
+  expect(e1rm(2.25, 7, 1)).toBe(2.9);
+  expect(e1rm(82.5, 5, 2)).toBe(101.8);
+  expect(e1rm(52.5, 5, 2)).toBe(64.8);
+});
+
+test('a weighted bodyweight move has no estimated max on the phone: its load is only what is added', () => {
+  // The engine adds the bodyweight (E1rm.java); the phone does not read it. +10 × 8 at RIR 2 against +10 × 7 at RIR 1:
+  // an estimate from the added 10 kg alone would say "up 0.6 kg". A heavier added weight still says so.
+  const DIP = move('dip', 'COMPOUND', 'BODYWEIGHT_PLUS_EXTERNAL');
+  expect(summaryOf([set('dip', 10, 8, 2)], { dip: [set('dip', 10, 7, 1)] }, [DIP]).moves[0].line).toBeNull();
+  expect(summaryOf([set('dip', 12.5, 6, 1)], { dip: [set('dip', 10, 6, 1)] }, [DIP]).moves[0].line).toBe('Up 2.5 kg from last time at RIR 1');
+});
+
 test('the same weight, more reps at the same RIR', () => {
   const [bench] = summaryOf([set('bench_press', 80, 9, 1), set('bench_press', 80, 8, 1)], { bench_press: [set('bench_press', 80, 8, 1)] }).moves;
   expect(bench.line).toBe('Same weight, 1 more rep at RIR 1');

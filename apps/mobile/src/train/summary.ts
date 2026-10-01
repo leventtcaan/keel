@@ -18,13 +18,22 @@ type NewSet = Schemas['NewSet'];
 export type MoveSummary = { exerciseId: string; sets: NewSet[]; line: string | null; note: string | null };
 export type Summary = { moves: MoveSummary[]; reached: number; judged: number };
 
-/** Epley, as the engine (E1rm.java): none without RIR, past the reps to failure it holds for, or without a load. */
+/**
+ * Epley, as the engine (E1rm.java): none without RIR, past the reps to failure it holds for, or without a load. Counted
+ * in whole hundredths and rounded once, half up to a tenth: load × (divisor + reps to failure) / divisor — a float lands
+ * on either side of a tie (30.75 × 38/30 = 38.95).
+ */
 export function e1rm(loadKg: number, reps: number, rir: number | undefined): number | null {
   if (rir === undefined || rir < 0 || reps < 1 || loadKg <= 0) return null;
   const toFailure = reps + rir;
   if (toFailure > workoutParams.e1rmMaxRepsToFailure) return null;
-  if (toFailure === 1) return Math.round(loadKg * 10) / 10;
-  return Math.round(loadKg * (1 + toFailure / workoutParams.e1rmEpleyDivisor) * 10) / 10;
+  const hundredths = Math.round(loadKg * 100);
+  if (toFailure === 1) return Math.floor((hundredths + 5) / 10) / 10;
+  const divisor = workoutParams.e1rmEpleyDivisor;
+  // tenths = hundredths × (divisor + t) / (10 × divisor), half up: floor((2n + d) / 2d) with d = 10 × divisor.
+  const n = hundredths * (divisor + toFailure);
+  const d = 10 * divisor;
+  return Math.floor((2 * n + d) / (2 * d)) / 10;
 }
 
 const top = (sets: NewSet[]) => Math.max(...sets.map((s) => s.loadKg));
@@ -32,12 +41,15 @@ const top = (sets: NewSet[]) => Math.max(...sets.map((s) => s.loadKg));
 const best = (sets: NewSet[], load: number) =>
   sets.filter((s) => s.loadKg === load).sort((a, b) => b.reps - a.reps || (a.rir ?? Infinity) - (b.rir ?? Infinity))[0];
 const bestE1rm = (sets: NewSet[]) => Math.max(-Infinity, ...sets.map((s) => e1rm(s.loadKg, s.reps, s.rir) ?? -Infinity));
-const plural = (key: string, count: number, vars: Record<string, string | number>) => t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
+const plural = (key: string, count: number, vars: Record<string, string | number>) =>
+  t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
 
 function line(today: NewSet[], last: NewSet[], move: Schemas['Exercise'], units: UnitSystem): string | null {
   if (last.length === 0) return t('summary.first');
-  // A bodyweight move's load is 0 (an added load is BODYWEIGHT_PLUS_EXTERNAL): never heavier, no estimated max.
+  // A bodyweight move's load is 0: never heavier. A weighted one's is only what is added: heavier is comparable, an
+  // estimated max is not (the engine adds the bodyweight; the phone does not read it).
   const loadTracked = move.kind === 'COMPOUND';
+  const estimable = loadTracked && move.load === 'EXTERNAL';
   const [todayTop, lastTop] = [top(today), top(last)];
   const [now, then] = [best(today, todayTop), best(last, lastTop)];
   if (loadTracked && todayTop > lastTop) {
@@ -50,7 +62,7 @@ function line(today: NewSet[], last: NewSet[], move: Schemas['Exercise'], units:
     }
     if (now.reps === then.reps && now.rir > then.rir) return t('summary.moreInTank', { count: now.rir - then.rir });
   }
-  if (loadTracked) {
+  if (estimable) {
     const gain = Math.round((bestE1rm(today) - bestE1rm(last)) * 10) / 10;
     if (Number.isFinite(gain) && gain > 0) return t('summary.e1rmUp', { load: formatLoad(gain, units) });
   }
