@@ -501,7 +501,11 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Store a gym under the id the phone made (created or replaced whole) */
+        /**
+         * Store a gym under the id the phone made (created or replaced whole)
+         * @description A new gym beyond 10 per account is 400 VALIDATION_FAILED (delete one first); an id that is another account's gym
+         *     is 409 CONFLICT. Either way nothing is changed.
+         */
         put: operations["putGym"];
         post?: never;
         delete: operations["deleteGym"];

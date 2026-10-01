@@ -639,6 +639,9 @@ paths:
       tags: [training]
       operationId: putGym
       summary: Store a gym under the id the phone made (created or replaced whole)
+      description: |
+        A new gym beyond 10 per account is 400 VALIDATION_FAILED (delete one first); an id that is another account's gym
+        is 409 CONFLICT. Either way nothing is changed.
       requestBody:
         required: true
         content:
@@ -1816,7 +1819,7 @@ components:
           type: boolean
         barKg:
           type: number
-          minimum: 0
+          exclusiveMinimum: 0
           maximum: 100
           description: The bar's weight; absent when the gym has no barbell.
         platesKg:
