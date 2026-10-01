@@ -1054,7 +1054,8 @@
     "backMark": "‹",
     "account": {
       "title": "Your account"
-    }
+    },
+    "gyms": "Gyms"
   },
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location."
@@ -1073,5 +1074,44 @@
     "open": "History",
     "openLabel": "{exercise}: history",
     "loadFailed": "This exercise's history couldn't load. Try again when you're online."
+  },
+  "gyms": {
+    "title": "Gyms",
+    "note": "Your next weights are rounded to what the gym you use can make; warm-ups and plates follow it too.",
+    "inUse": "In use",
+    "add": "Add a gym",
+    "loadFailed": "Your gyms couldn't load. Try again when you're online.",
+    "retry": "Try again",
+    "back": "Back"
+  },
+  "gym": {
+    "title": "Gym",
+    "name": "Name",
+    "bar": "Bar ({unit})",
+    "plates": "Plates ({unit}), separated by spaces",
+    "dumbbells": "Dumbbells ({unit}), separated by spaces",
+    "rack": {
+      "lightest": "Lightest",
+      "heaviest": "Heaviest",
+      "step": "Step",
+      "fill": "Fill the rack"
+    },
+    "stackStep": "Stack step ({unit})",
+    "machines": "Machines with their own step",
+    "machine": "{exercise}: its own step ({unit})",
+    "current": "Use this gym",
+    "save": "Save",
+    "delete": "Delete this gym",
+    "problem": {
+      "name": "Give the gym a name.",
+      "bar": "Write the bar's weight as a number.",
+      "plates": "Write each plate as a number, with spaces between.",
+      "dumbbells": "Write each dumbbell as a number, with spaces between.",
+      "stackStep": "Write the stack step as a number.",
+      "machines": "Write each machine's step as a number."
+    },
+    "refused": "This gym wasn't saved: some of it is past what one gym can hold. Check the lists.",
+    "saveFailed": "This gym couldn't be saved. Try again when you're online.",
+    "deleteFailed": "This gym couldn't be deleted. Try again when you're online."
   }
 }

@@ -72,6 +72,18 @@ const warnButtons = () =>
   });
 const row = (kind: 'HEALTH_DATA' | 'APPLE_HEALTH') => t(`settings.consents.${kind}`);
 
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({
+  ...jest.requireActual<object>('expo-router'),
+  router: { push: (...args: unknown[]) => mockPush(...args), back: jest.fn() },
+}));
+
+test("Gyms opens the user's gyms (K-421)", async () => {
+  await show();
+  await fireEvent.press(await screen.findByText('Gyms'));
+  expect(mockPush).toHaveBeenCalledWith('/gyms');
+});
+
 test('the sections are there, and nothing is in the warn colour until a destructive step asks', async () => {
   await show();
   expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
