@@ -5,6 +5,7 @@ kind: isolation
 muscles: [chest]
 alternatives: [pec_deck]
 load: external
+equipment: cable
 unilateral: false
 setup: [cable_height, handle]
 clips:

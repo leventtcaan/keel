@@ -5,6 +5,7 @@ kind: isolation
 muscles: [side_delts]
 alternatives: [lateral_raise]
 load: external
+equipment: cable
 unilateral: true
 setup: [cable_height, handle]
 clips:

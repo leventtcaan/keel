@@ -5,6 +5,7 @@ kind: isolation
 muscles: [calves]
 alternatives: [seated_calf_raise]
 load: external
+equipment: machine
 unilateral: false
 setup: [foot_position]
 clips:

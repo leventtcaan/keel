@@ -5,6 +5,7 @@ kind: compound
 muscles: [quads, glutes]
 alternatives: [hack_squat, leg_press]
 load: external
+equipment: barbell
 unilateral: false
 setup: [stance_width]
 clips:

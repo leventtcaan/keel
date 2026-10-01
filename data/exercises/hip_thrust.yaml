@@ -5,6 +5,7 @@ kind: compound
 muscles: [glutes, hamstrings]
 alternatives: []
 load: external
+equipment: barbell
 unilateral: false
 setup: [foot_position]
 clips:

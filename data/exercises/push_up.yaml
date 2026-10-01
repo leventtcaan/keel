@@ -5,6 +5,7 @@ kind: compound
 muscles: [chest, triceps, front_delts]
 alternatives: [bench_press, dip]
 load: bodyweight
+equipment: bodyweight
 unilateral: false
 setup: []
 clips:

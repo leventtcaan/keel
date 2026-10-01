@@ -67,6 +67,18 @@ keel:
     max-planned-sets: 20
     max-day-exercises: 20
     max-day-name: 60
+    # A gym (K-414, ADR-032; contract GymInput): a heavy rack goes to 100 kg dumbbells by 1-2.5 kg steps; 20 plate sizes
+    # cover kg and lb sets together; a gym or two per place the user trains.
+    gym:
+      max-name: 60
+      max-plates: 20
+      max-dumbbells: 100
+      max-machines: 100
+      max-bar-kg: 100
+      max-dumbbell-kg: 200
+      max-plate-kg: 100
+      max-step-kg: 100
+      gyms: 10
   # Food search and estimates (K-208): a page of results, a query of a few words, a meal's items, and no item over 5 kg.
   nutrition:
     default-search-results: 20

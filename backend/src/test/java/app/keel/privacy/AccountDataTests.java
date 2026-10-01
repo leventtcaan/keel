@@ -162,6 +162,8 @@ class AccountDataTests {
         assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("workouts")).hasSize(2);
         assertThat((Map<String, Object>) ((Map<String, Object>) sections.get("training")).get("program")).containsEntry("source", "GENERATED");
         assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("programChanges")).hasSize(1);
+        assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("training")).get("gyms")).singleElement()
+                .satisfies(gym -> assertThat(gym).containsEntry("name", "Downtown"));
         assertThat((List<?>) ((Map<String, Object>) sections.get("nutrition")).get("meals")).hasSize(1);
         Map<String, Object> decision = (Map<String, Object>) sections.get("decision");
         assertThat((Map<String, Object>) decision.get("plan")).containsEntry("phase", "CUT");

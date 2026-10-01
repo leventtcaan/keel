@@ -5,6 +5,7 @@ kind: isolation
 muscles: [hamstrings]
 alternatives: [seated_leg_curl]
 load: external
+equipment: machine
 unilateral: false
 setup: [ankle_pad]
 clips:

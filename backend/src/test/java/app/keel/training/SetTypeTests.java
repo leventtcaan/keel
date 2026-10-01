@@ -102,7 +102,9 @@ class SetTypeTests {
     }
 
     private static ExerciseCatalog.Exercise move(ExerciseCatalog.Load load, boolean unilateral) {
-        return new ExerciseCatalog.Exercise("move", ExerciseCatalog.Kind.COMPOUND, List.of("lats"), List.of(), load, unilateral, List.of(), null, false);
+        return new ExerciseCatalog.Exercise("move", ExerciseCatalog.Kind.COMPOUND, List.of("lats"), List.of(), load,
+                load == ExerciseCatalog.Load.EXTERNAL ? ExerciseCatalog.Equipment.CABLE : ExerciseCatalog.Equipment.BODYWEIGHT, unilateral, List.of(),
+                null, false);
     }
 
     private static BigDecimal kg(String value) {

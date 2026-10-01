@@ -5,6 +5,7 @@ kind: compound
 muscles: [chest, front_delts, triceps]
 alternatives: [machine_chest_press, dumbbell_bench_press]
 load: external
+equipment: dumbbell
 unilateral: false
 setup: [bench_angle]
 clips:

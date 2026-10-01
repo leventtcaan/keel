@@ -5,6 +5,7 @@ kind: compound
 muscles: [front_delts, side_delts, triceps]
 alternatives: [dumbbell_shoulder_press]
 load: external
+equipment: barbell
 unilateral: false
 setup: [grip_width]
 clips:

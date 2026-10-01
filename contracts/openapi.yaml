@@ -616,6 +616,55 @@ paths:
                 $ref: "#/components/schemas/Program"
         default:
           $ref: "#/components/responses/Error"
+  /v1/gyms:
+    get:
+      tags: [training]
+      operationId: listGyms
+      summary: The user's gyms and their equipment
+      responses:
+        "200":
+          description: Every gym (empty when none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gym"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/gyms/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: [training]
+      operationId: putGym
+      summary: Store a gym under the id the phone made (created or replaced whole)
+      description: |
+        A new gym beyond 10 per account is 400 VALIDATION_FAILED (delete one first); an id that is another account's gym
+        is 409 CONFLICT. Either way nothing is changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GymInput"
+      responses:
+        "200":
+          description: The stored gym
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gym"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [training]
+      operationId: deleteGym
+      responses:
+        "204":
+          description: Deleted (or there was none)
+        default:
+          $ref: "#/components/responses/Error"
   /v1/workouts:
     get:
       tags: [training]
@@ -1628,7 +1677,7 @@ components:
     # ── training ─────────────────────────────────────────────────────────────────────────────────────────────
     Exercise:
       type: object
-      required: [id, nameKey, kind, muscles, alternatives, load, unilateral, setupFields]
+      required: [id, nameKey, kind, muscles, alternatives, load, equipment, unilateral, setupFields]
       properties:
         id:
           type: string
@@ -1652,6 +1701,8 @@ components:
         load:
           type: string
           enum: [EXTERNAL, BODYWEIGHT, BODYWEIGHT_PLUS_EXTERNAL]
+        equipment:
+          $ref: "#/components/schemas/Equipment"
         unilateral:
           type: boolean
         setupFields:
@@ -1732,6 +1783,77 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlannedExercise"
+    Equipment:
+      type: string
+      description: |
+        What an exercise's load is made of, and so what loadKg means (ADR-032): BARBELL the bar with its plates (total);
+        DUMBBELL one dumbbell's weight; MACHINE and CABLE the stack's reading; PLATE_LOADED the plates loaded (not the
+        sled); BODYWEIGHT the added load (one plate or one dumbbell; see Exercise.load).
+      enum: [BARBELL, DUMBBELL, MACHINE, CABLE, PLATE_LOADED, BODYWEIGHT]
+    GymMachine:
+      type: object
+      description: A machine or cable exercise in this gym with its own stack step.
+      required: [exerciseId, stepKg]
+      properties:
+        exerciseId:
+          type: string
+        stepKg:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 100
+    GymInput:
+      type: object
+      description: |
+        A gym's equipment (K-414, ADR-032), in kg (ADR-029; the phone converts). The next session's load is rounded to
+        what the current gym can make. platesKg: the plate sizes, each assumed in enough pairs; dumbbellsKg: every
+        dumbbell on the rack (one dumbbell's weight); stackStepKg: the stack step of a machine or cable not listed in
+        machines. Loads at most 2 decimals; lists without repeats. current true makes it the gym in use (the others stop
+        being).
+      required: [name, current, platesKg, dumbbellsKg, machines]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        current:
+          type: boolean
+        barKg:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 100
+          description: The bar's weight; absent when the gym has no barbell.
+        platesKg:
+          type: array
+          maxItems: 20
+          items:
+            type: number
+            exclusiveMinimum: 0
+            maximum: 100
+        dumbbellsKg:
+          type: array
+          maxItems: 100
+          items:
+            type: number
+            exclusiveMinimum: 0
+            maximum: 200
+        stackStepKg:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 100
+        machines:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/GymMachine"
+    Gym:
+      allOf:
+        - $ref: "#/components/schemas/GymInput"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
     PlannedExercise:
       type: object
       required: [exerciseId, baseSets, sets, reps, targetRir]
@@ -1884,7 +2006,8 @@ components:
       description: |
         One set. exerciseId may differ from the plan (a swap, e.g. pull-ups for lat pulldown). A
         BODYWEIGHT_PLUS_EXTERNAL exercise logs the added load in loadKg (0 without); a BODYWEIGHT exercise always 0. The
-        engine adds the bodyweight. A set its exercise cannot have (see SetType, Side) is 400.
+        engine adds the bodyweight. What loadKg is otherwise follows the exercise's Equipment (a DUMBBELL move: one
+        dumbbell). A set its exercise cannot have (see SetType, Side) is 400.
       required: [clientId, exerciseId, setType, reps, loadKg]
       properties:
         clientId:

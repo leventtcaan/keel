@@ -5,6 +5,7 @@ kind: isolation
 muscles: [hamstrings]
 alternatives: [lying_leg_curl]
 load: external
+equipment: machine
 unilateral: false
 setup: [back_pad, thigh_pad, ankle_pad]
 clips:

@@ -5,6 +5,7 @@ kind: isolation
 muscles: [rear_delts]
 alternatives: [rear_delt_fly]
 load: external
+equipment: machine
 unilateral: false
 setup: [seat_height]
 clips:

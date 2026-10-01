@@ -5,6 +5,7 @@ kind: compound
 muscles: [upper_back, lats, biceps, erectors]
 alternatives: [barbell_row, chest_supported_row]
 load: external
+equipment: plate_loaded
 unilateral: false
 setup: [grip]
 clips:
