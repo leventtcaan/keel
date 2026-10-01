@@ -17,7 +17,8 @@ import { type Field, type GymForm, buildGym, emptyForm, formOf, rackOf } from '@
 import { exerciseName } from '@/train/program';
 
 type Schemas = components['schemas'];
-type Read = { exists: boolean; machines: Schemas['Exercise'][] } | 'failed';
+/** `known`: the catalog's machine moves when it was read; null when not (then no stored step is dropped). */
+type Read = { exists: boolean; machines: Schemas['Exercise'][]; known: Set<string> | null } | 'failed';
 
 /**
  * A gym's equipment (K-421, ADR-032): bar, plates, the dumbbell rack (filled from its lightest, heaviest and step), the
@@ -47,7 +48,7 @@ export default function GymScreen() {
         );
         // A new gym is the one in use when it is the first.
         const start = found === undefined ? { ...emptyForm(units), current: gyms.value.length === 0 } : formOf(found, units);
-        setRead({ exists: found !== undefined, machines });
+        setRead({ exists: found !== undefined, machines, known: data.exercises.state === 'ready' ? new Set(machines.map((m) => m.id)) : null });
         setForm(start);
       })
       .catch((error: unknown) => {
@@ -60,7 +61,7 @@ export default function GymScreen() {
 
   const save = async () => {
     if (form === null || busy) return;
-    const built = buildGym(form);
+    const built = buildGym(form, read !== null && read !== 'failed' ? read.known : null);
     if (built.kind === 'problem') {
       setProblem(built.field);
       return;
