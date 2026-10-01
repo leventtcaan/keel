@@ -49,6 +49,21 @@ test('offline: the kept copy, saying it is one', async () => {
   expect(read).toEqual({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: true });
 });
 
+test('one part from the kept copy (the server erred on it) marks the whole read as kept', async () => {
+  const kv = memoryKv();
+  await readTraining(online, kv);
+  const read = await readTraining(api((path) => (path === '/v1/program' ? json({ code: 'X' }, 500) : json(EXERCISES))), kv);
+  expect(read).toEqual({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: true });
+});
+
+test('a read started after a sign-out keeps its copy: the guard is per read, not for good', async () => {
+  const kv = memoryKv();
+  const cache = createTrainingCache(kv);
+  await cache.forget();
+  await cache.read(online);
+  expect((await cache.read(api(() => 'offline'))).kept).toBe(true);
+});
+
 test('offline with nothing kept: failed, no connection', async () => {
   const read = await readTraining(api(() => 'offline'), memoryKv());
   expect(read.program).toEqual({ state: 'failed', problem: 'NoConnection' });

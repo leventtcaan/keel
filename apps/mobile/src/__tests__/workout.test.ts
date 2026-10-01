@@ -53,6 +53,14 @@ describe('the workout under way', () => {
     expect(activeWorkout([workout('w1'), refused])?.clientId).toBe('w1');
   });
 
+  test('a workout started and finished offline (not sent yet) counts like a sent one', () => {
+    expect(activeWorkout([workout('w1', undefined, 'PENDING')])?.clientId).toBe('w1');
+    const pendingFinish = { ...finish('w1'), state: 'PENDING' as const };
+    expect(activeWorkout([workout('w1', undefined, 'PENDING'), pendingFinish])).toBeNull();
+    const records = [workout('w0', undefined, 'PENDING'), set('w0', 'a', 'bench_press', 57.5, 8, {}, 'PENDING'), workout('now')];
+    expect(lastTime(records, 'bench_press', 'now').map((s) => s.loadKg)).toEqual([57.5]);
+  });
+
   test('a refused set is not counted as done', () => {
     const records = [workout('w1'), set('w1', 's1', 'bench_press', 60, 8, {}, 'REJECTED')];
     expect(activeWorkout(records)?.sets).toEqual([]);
@@ -122,6 +130,16 @@ describe('a planned move as rows', () => {
       ['RIGHT', null],
     ]);
     expect(plan.current).toBe(1);
+  });
+
+  test("a one-sided move takes last time's load and reps from the same side", () => {
+    const last = [set('w1', 'l', 'one_arm_dumbbell_row', 20, 12, { side: 'LEFT' }), set('w1', 'r', 'one_arm_dumbbell_row', 22, 10, { side: 'RIGHT' })]
+      .map((r) => r.body as Schemas['NewSet']);
+    const plan = planExercise({ ...bench, exerciseId: 'one_arm_dumbbell_row', sets: 1 }, rowMove, last, []);
+    expect(plan.rows.map((r) => [r.side, r.suggested.loadKg, r.suggested.reps, r.last?.clientId])).toEqual([
+      ['LEFT', 20, 12, 'l'],
+      ['RIGHT', 22, 10, 'r'],
+    ]);
   });
 
   test('a bodyweight move has no load to suggest: always 0', () => {
