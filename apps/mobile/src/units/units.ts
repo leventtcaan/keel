@@ -12,6 +12,8 @@ export type UnitSystem = components['schemas']['Profile']['units'];
 
 // Exact by definition (the 1959 international yard and pound agreement), not tunable: ADR-029 §2.
 const KG_PER_LB = 0.45359237;
+/** lb plates come in quarters of a pound at the finest (ADR-032): four steps a pound. */
+const LB_PLATE_STEPS = 4;
 const CM_PER_IN = 2.54;
 const INCHES_PER_FOOT = 12;
 
@@ -77,6 +79,14 @@ export function parseWeightKg(text: string, system: UnitSystem): number | null {
 export function formatLoad(kg: number, system: UnitSystem): string {
   const value = trimmed(system === 'METRIC' ? kg : kg / KG_PER_LB, P.loadDecimals);
   return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value });
+}
+
+/**
+ * A plate as its size, the number alone: kg to the hundredth (1.25), lb on the quarter pound plates are made in — a
+ * 1.25 lb plate is stored as 0.57 kg, which is 1.26 lb.
+ */
+export function formatPlate(kg: number, system: UnitSystem): string {
+  return String(system === 'METRIC' ? roundTo(kg, P.storedKgDecimals) : Math.round((kg / KG_PER_LB) * LB_PLATE_STEPS) / LB_PLATE_STEPS);
 }
 
 /** Zero is a load: a bodyweight move logs 0 added. */

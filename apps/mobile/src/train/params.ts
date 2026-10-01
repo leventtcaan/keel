@@ -17,4 +17,18 @@ export const workoutParams = {
   e1rmEpleyDivisor: param<number>('e1rm_epley_divisor'),
   e1rmMaxRepsToFailure: param<number>('e1rm_max_reps_to_failure'),
   targetRirMax: param<number>('target_rir_max'),
+  warmup: {
+    first: {
+      sets: param<number>('warmup_sets_first_move'),
+      fractions: param<number[]>('warmup_fractions_first_move'),
+      reps: param<number[]>('warmup_reps_first_move'),
+    },
+    other: {
+      sets: param<number>('warmup_sets_other_move'),
+      fractions: param<number[]>('warmup_fractions_other_move'),
+      reps: param<number[]>('warmup_reps_other_move'),
+    },
+    roundKg: param<number>('warmup_round_kg'),
+    roundLb: param<number>('warmup_round_lb'),
+  },
 };

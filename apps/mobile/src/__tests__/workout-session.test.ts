@@ -17,6 +17,8 @@ test("a set in the user's unit: a load, an added load with its plus, or the body
   expect(setText({ loadKg: 61.23, reps: 8 }, bench, 'IMPERIAL')).toBe('135 lb × 8');
   expect(setText({ loadKg: 10, reps: 6 }, dip, 'METRIC')).toBe('+10 kg × 6');
   expect(setText({ loadKg: 0, reps: 15 }, pushUp, 'METRIC')).toBe('Bodyweight × 15');
+  // A weighted move done with nothing added (its warm-up, a set without the belt) is the body alone, not "+0 kg".
+  expect(setText({ loadKg: 0, reps: 5 }, dip, 'IMPERIAL')).toBe('Bodyweight × 5');
 });
 
 test('rest time as minutes and seconds', () => {

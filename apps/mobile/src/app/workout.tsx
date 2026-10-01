@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { components } from '@/api/schema';
+
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -16,9 +18,11 @@ import { FinishForm } from '@/train/FinishForm';
 import { RestTimer } from '@/train/RestTimer';
 import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
+import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
-import { buildSet, exerciseStatus, parseEntry } from '@/train/session';
+import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
 import type { TrainData } from '@/train/trainData';
+import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, finishRecord, lastTime, planExercise } from '@/train/workout';
 import { weightInput } from '@/units/units';
 
@@ -28,7 +32,8 @@ import { weightInput } from '@/units/units';
  * after each set (G1 K-49). Finishing asks whether each move's form was clean (G6 K-31). Every set and the finish are
  * records on the phone first (K-304): the session runs offline and is found again after a restart. Opened on a day, the
  * workout is kept only with its first set, and finishing before any set sends nothing: an empty workout is no session
- * (the server counts each workout as a session done, K-220).
+ * (the server counts each workout as a session done, K-220). Before a move's first work set, its warm-ups (K-417): three
+ * before the day's first move, one before the others, each one tap; with the gym in use known, the plates a side.
  */
 export default function WorkoutScreen() {
   const { api, training, workoutRecords, queue, report } = useAppServices();
@@ -68,6 +73,10 @@ export default function WorkoutScreen() {
   const dayId = active === null ? (opened ?? null) : active.programDayId;
   const day = program?.days.find((d) => d.id === dayId) ?? null;
   const done = active?.sets ?? [];
+  // Warm-ups done before the workout is kept wait here, ids and all, and go with its first work set: a workout with
+  // warm-ups alone is no session (K-220). Leaving before a work set leaves nothing behind.
+  const [held, setHeld] = useState<components['schemas']['NewSet'][]>([]);
+  const warmedUp = [...done, ...held];
   const moves = useMemo(() => new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m])), [data]);
   const plans: (ExercisePlan | null)[] =
     day === null || records === null
@@ -82,6 +91,12 @@ export default function WorkoutScreen() {
   const planned = day?.exercises[selected];
   const move = planned === undefined ? undefined : moves.get(planned.exerciseId);
   const row = plan === null || plan.current === null ? null : plan.rows[plan.current];
+  // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
+  const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
+  const warming =
+    move === undefined || plan === null || worked.includes(move.id)
+      ? []
+      : warmups(plan.rows[0]?.suggested.loadKg ?? null, move, worked.length === 0, data?.gym ?? null, units);
 
   // The fields hold the row under way: its suggestion until the user changes it. What was typed belongs to its row, so a
   // new row starts from its own suggestion, and a problem said about one row is gone at the next.
@@ -120,6 +135,9 @@ export default function WorkoutScreen() {
       // The workout this set belongs to: the one under way as last read, or — read again, as a set that failed after its
       // workout was kept, or another screen, may have started one since — none yet, and this set starts it.
       const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? (await start(day.id));
+      // The warm-ups waiting go first, under their own ids: one already saved before a failure is not saved twice.
+      for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
+      setHeld([]);
       await queue.record({ kind: 'set', workoutClientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir) });
       saved = true;
     } catch (error) {
@@ -132,6 +150,33 @@ export default function WorkoutScreen() {
       if (plan.current === plan.rows.length - 1) setPicked(null);
       await refresh();
     }
+    saving.current = false;
+    setBusy(false);
+  };
+
+  /**
+   * The next warm-up, one tap: the move's sets of it still missing (both sides of a one-sided move). No rest timer. Before
+   * the workout is kept, held on the screen for its first work set.
+   */
+  // A warm-up's problem is its move's: picking another move does not carry it.
+  const warmupKey = `warmup-${move?.id ?? ''}`;
+  const logWarmup = async () => {
+    if (saving.current || day === null || move === undefined) return;
+    const warmup = warming[warmupsDone(warmedUp, move)];
+    if (warmup === undefined) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      const sets = warmupSets(warmup, move, warmedUp).map((set) => ({ clientId: newClientId(), ...set }));
+      const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? null;
+      if (workoutClientId === null) setHeld((waiting) => [...waiting, ...sets]);
+      else for (const set of sets) await queue.record({ kind: 'set', workoutClientId, body: set });
+      setProblem((said) => (said?.row === warmupKey ? null : said));
+    } catch (error) {
+      named(error);
+      setProblem({ row: warmupKey, text: t('workout.saveFailed') });
+    }
+    await refresh();
     saving.current = false;
     setBusy(false);
   };
@@ -156,7 +201,6 @@ export default function WorkoutScreen() {
   const finishProblem = problem !== null && problem.row === FINISH ? <Text style={[styles.text, { color: color.text }]}>{problem.text}</Text> : null;
 
   const movesDone = plans.filter((p) => p !== null && p.rows.some((r) => r.done !== null)).length;
-  const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   const onFinish = () => {
     if (active === null) router.back();
@@ -199,6 +243,21 @@ export default function WorkoutScreen() {
         busy={busy}
       />
     );
+  const typedKg = row === null ? null : parseLoad(entry.load, units, row.suggested.loadKg);
+  const perSide = move === undefined || typedKg === null || entryBlock === null ? null : platesLine(move, typedKg, data?.gym);
+  const plates = perSide === null ? null : <Text style={[styles.small, { color: color.muted }]}>{perSide}</Text>;
+  const warmBlock =
+    move === undefined || warming.length === 0 ? null : (
+      <Warmups
+        move={move}
+        warmups={warming}
+        done={warmupsDone(warmedUp, move)}
+        gym={data?.gym}
+        onLog={() => void logWarmup()}
+        problem={problem !== null && problem.row === warmupKey ? problem.text : null}
+        busy={busy}
+      />
+    );
   const card =
     planned === undefined ? null : move === undefined || plan === null ? (
       <Card>
@@ -211,8 +270,10 @@ export default function WorkoutScreen() {
           <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(planned.exerciseId)}</Text>
           <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>
         </View>
+        {warmBlock}
         <SetTable plan={plan} move={move} />
         {entryBlock}
+        {plates}
       </Card>
     );
 

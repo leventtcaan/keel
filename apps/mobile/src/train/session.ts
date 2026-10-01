@@ -4,17 +4,19 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { type UnitSystem, formatLoad, parseLoadKg, weightInput } from '@/units/units';
+import { type UnitSystem, formatLoad, formatPlate, parseLoadKg, weightInput } from '@/units/units';
 
+import { type GymWeights, plateUnits, platesFor } from './loadSteps';
 import { workoutParams } from './params';
 import type { ExercisePlan } from './workout';
 
 type Schemas = components['schemas'];
 type Entry = { loadKg: number; reps: number };
 
-/** A load, an added load with its plus (a weighted dip), or the body alone. */
+/** A load, an added load with its plus (a weighted dip), or the body alone (a weighted move with nothing added too). */
 export function setText(set: Entry, move: Schemas['Exercise'], units: UnitSystem): string {
-  if (move.load === 'BODYWEIGHT') return t('workout.bodyweight', { reps: set.reps });
+  if (move.load === 'BODYWEIGHT' || (move.load === 'BODYWEIGHT_PLUS_EXTERNAL' && set.loadKg === 0))
+    return t('workout.bodyweight', { reps: set.reps });
   const key = move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.added' : 'workout.set';
   return t(key, { load: formatLoad(set.loadKg, units), reps: set.reps });
 }
@@ -46,10 +48,32 @@ export function parseEntry(
   const count = Number(reps.trim());
   if (reps.trim() === '' || !Number.isInteger(count) || count < 1 || count > workoutParams.maxReps) return null;
   if (move.load === 'BODYWEIGHT') return { loadKg: 0, reps: count };
-  if (suggestedKg !== null && load.trim() === weightInput(suggestedKg, units)) return { loadKg: suggestedKg, reps: count };
+  const kg = parseLoad(load, units, suggestedKg);
+  return kg === null ? null : { loadKg: kg, reps: count };
+}
+
+/** The load typed, in kg as parseEntry reads it (the suggestion's own kg when left as shown); null when it is no load. */
+export function parseLoad(load: string, units: UnitSystem, suggestedKg: number | null): number | null {
+  if (suggestedKg !== null && load.trim() === weightInput(suggestedKg, units)) return suggestedKg;
   const kg = parseLoadKg(load, units);
-  if (kg === null || kg < 0 || kg > workoutParams.maxLoadKg) return null;
-  return { loadKg: kg, reps: count };
+  return kg === null || kg < 0 || kg > workoutParams.maxLoadKg ? null : kg;
+}
+
+/** The plates a side for a load of an external-load move at the gym in use; null without a gym, or nothing to load. */
+export function platesLine(move: Schemas['Exercise'], loadKg: number, gym: GymWeights | undefined): string | null {
+  if (gym === undefined || move.load !== 'EXTERNAL') return null;
+  const plates = platesFor(move.equipment, loadKg, gym);
+  return plates === null ? null : platesText(plates, plateUnits(gym));
+}
+
+/**
+ * The plates on each side, heaviest first, in the unit they were made in (the gym's, which may not be the user's: they
+ * are what is on the rack), with it; none is the bar alone.
+ */
+function platesText(plates: number[], plateUnits: UnitSystem): string {
+  if (plates.length === 0) return t('workout.barOnly');
+  const unit = t(plateUnits === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
+  return t('workout.plates', { plates: plates.map((kg) => formatPlate(kg, plateUnits)).join(t('workout.platesJoin')), unit });
 }
 
 /** A work set with the row's side and the RIR picked. */

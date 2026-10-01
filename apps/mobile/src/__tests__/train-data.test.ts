@@ -134,3 +134,81 @@ test('a kept copy that cannot be read is no copy', async () => {
   );
   expect(read.program).toEqual({ state: 'failed', problem: 'NoConnection' });
 });
+
+describe('the gym in use (K-417): its weights kept on the phone, for the warm-ups and the plates offline', () => {
+  const GYMS = [
+    { id: 'g1', name: 'Home', current: false, platesKg: [10], dumbbellsKg: [], machines: [] },
+    {
+      id: 'g2',
+      name: 'Club',
+      current: true,
+      barKg: 20,
+      platesKg: [20, 10, 5],
+      dumbbellsKg: [10, 12],
+      stackStepKg: 5,
+      machines: [{ exerciseId: 'leg_extension', stepKg: 7 }],
+    },
+  ];
+  const withGyms = (gyms: unknown) => api((path) => (path === '/v1/program' ? json(PROGRAM) : path === '/v1/gyms' ? json(gyms) : json(EXERCISES)));
+  const WEIGHTS = { barKg: 20, platesKg: [20, 10, 5], dumbbellsKg: [10, 12], stackStepKg: 5, machineStepsKg: { leg_extension: 7 } };
+
+  test("online: the current gym's weights, machines by move; kept", async () => {
+    const kv = memoryKv();
+    expect((await readTraining(withGyms(GYMS), kv)).gym).toEqual(WEIGHTS);
+    expect(
+      (
+        await readTraining(
+          api(() => 'offline'),
+          kv,
+        )
+      ).gym,
+    ).toEqual(WEIGHTS);
+  });
+
+  test('a gym without a bar or a stack step has none', async () => {
+    const read = await readTraining(withGyms([{ ...GYMS[0], current: true }]), memoryKv());
+    expect(read.gym).toEqual({ barKg: null, platesKg: [10], dumbbellsKg: [], stackStepKg: null, machineStepsKg: {} });
+  });
+
+  test('no gym in use: none, and the kept one is forgotten', async () => {
+    const kv = memoryKv();
+    await readTraining(withGyms(GYMS), kv);
+    expect((await readTraining(withGyms([GYMS[0]]), kv)).gym).toBeUndefined();
+    expect(
+      (
+        await readTraining(
+          api(() => 'offline'),
+          kv,
+        )
+      ).gym,
+    ).toBeUndefined();
+  });
+
+  test('the gyms unread and nothing kept: no gym, and the program is not marked as a kept copy for it', async () => {
+    const read = await readTraining(
+      api((path) => (path === '/v1/gyms' ? json({ code: 'X' }, 500) : path === '/v1/program' ? json(PROGRAM) : json(EXERCISES))),
+      memoryKv(),
+    );
+    expect(read.gym).toBeUndefined();
+    expect(read.kept).toBe(false);
+  });
+
+  test('the gym from its kept copy with the program fresh: the gym is there, and the read is not a kept copy', async () => {
+    const kv = memoryKv();
+    await readTraining(withGyms(GYMS), kv);
+    const read = await readTraining(
+      api((path) => (path === '/v1/gyms' ? json({ code: 'X' }, 500) : path === '/v1/program' ? json(PROGRAM) : json(EXERCISES))),
+      kv,
+    );
+    expect(read.gym).toEqual(WEIGHTS);
+    expect(read.kept).toBe(false);
+  });
+
+  test('signing out forgets the gym too', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    await cache.read(withGyms(GYMS));
+    await cache.forget();
+    expect(kv.map.size).toBe(0);
+  });
+});

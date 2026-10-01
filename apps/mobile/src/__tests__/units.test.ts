@@ -6,6 +6,7 @@ import {
   defaultSystem,
   formatHeight,
   formatLoad,
+  formatPlate,
   formatWaist,
   formatWeight,
   heightCmFromImperial,
@@ -154,4 +155,12 @@ describe('the default before the user chooses', () => {
   ] as const)('%s → %s', (locale, system) => {
     expect(defaultSystem(locale)).toBe(system);
   });
+});
+
+test('a plate as its size, without the unit: kg to the hundredth, lb on the quarter pound it was entered on', () => {
+  expect(formatPlate(1.25, 'METRIC')).toBe('1.25');
+  expect(formatPlate(20, 'METRIC')).toBe('20');
+  expect(formatPlate(0.57, 'IMPERIAL')).toBe('1.25'); // a 1.25 lb plate, stored to the hundredth of a kg
+  expect(formatPlate(1.13, 'IMPERIAL')).toBe('2.5');
+  expect(formatPlate(20.41, 'IMPERIAL')).toBe('45');
 });
