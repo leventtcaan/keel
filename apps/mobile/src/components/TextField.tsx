@@ -35,7 +35,7 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, k
           keyboardType={keyboardType}
           maxLength={maxLength}
           multiline={multiline}
-          style={[styles.input, { color: color.text }]}
+          style={[styles.input, multiline && styles.multiline, { color: color.text }]}
         />
         {suffix !== undefined && <Text style={[styles.suffix, { color: color.muted }]}>{suffix}</Text>}
       </View>
@@ -55,6 +55,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.space.md,
   },
   input: { flex: 1, fontSize: tokens.type.number, paddingVertical: tokens.space.sm },
+  // Words, not a number: body size.
+  multiline: { fontSize: tokens.type.body },
   suffix: { fontSize: tokens.type.body },
   note: { fontSize: tokens.type.bodySmall },
 });
