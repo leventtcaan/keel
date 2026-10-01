@@ -39,6 +39,7 @@ test("a move's place: the sets planned, the set under way, or all done", () => {
   expect(exerciseStatus(plan(0))).toBe('3 sets');
   expect(exerciseStatus(plan(1))).toBe('Set 2 of 3');
   expect(exerciseStatus(plan(3))).toBe('All sets done');
+  expect(exerciseStatus(plan(0, 1))).toBe('1 set');
 });
 
 test("what the user typed, in kg as the server keeps it; a bodyweight move's load is always 0", () => {
@@ -50,6 +51,13 @@ test("what the user typed, in kg as the server keeps it; a bodyweight move's loa
   expect(parseEntry('60', '6.5', bench, 'METRIC')).toBeNull();
   expect(parseEntry('60', '101', bench, 'METRIC')).toBeNull();
   expect(parseEntry('1001', '6', bench, 'METRIC')).toBeNull();
+});
+
+test("an untouched suggestion is logged as the server's kg, not as its rounded lb read back", () => {
+  // 62.5 kg shows as 137.8 lb; 137.8 lb read back is 62.51 kg. Logged unchanged, the set is the 62.5 the server set.
+  expect(parseEntry('137.8', '6', bench, 'IMPERIAL', 62.5)).toEqual({ loadKg: 62.5, reps: 6 });
+  expect(parseEntry('140', '6', bench, 'IMPERIAL', 62.5)).toEqual({ loadKg: 63.5, reps: 6 });
+  expect(parseEntry('62.5', '6', bench, 'METRIC', 62.5)).toEqual({ loadKg: 62.5, reps: 6 });
 });
 
 test("the set the queue sends: a working set with the row's side and the RIR picked", () => {

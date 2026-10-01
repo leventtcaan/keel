@@ -17,7 +17,12 @@ type Schemas = components['schemas'];
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 const mockBack = jest.fn();
-jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() }, useRouter: () => ({ back: mockBack }) }));
+let mockParams: { day?: string } = {};
+jest.mock('expo-router', () => ({
+  router: { back: () => mockBack(), push: jest.fn() },
+  useRouter: () => ({ back: mockBack }),
+  useLocalSearchParams: () => mockParams,
+}));
 
 const EXERCISES = [
   { id: 'bench_press', load: 'EXTERNAL', unilateral: false },
@@ -71,6 +76,7 @@ jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServ
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockParams = {};
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
 });
@@ -151,4 +157,35 @@ test('offline, the screen says the sets are kept on the phone', async () => {
   mockData = { ...mockData, kept: true };
   await show();
   expect(await screen.findByText("You're offline. Everything you log is saved on the phone and sent later.")).toBeTruthy();
+});
+
+test('a workout opened from a day is kept on the phone only once its first set is logged — workout first, then the set', async () => {
+  mockRecords = lastWeek();
+  mockParams = { day: 'day-a' };
+  await show();
+  expect(await screen.findByText('Upper A')).toBeTruthy();
+  expect(mockRecord).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByText('Log set 1'));
+  const [workout, set] = mockRecord.mock.calls.map(([o]) => o);
+  expect(workout).toEqual({ kind: 'workout', body: { clientId: expect.any(String), startedAt: expect.any(String), programDayId: 'day-a' } });
+  expect(set).toMatchObject({ kind: 'set', workoutClientId: workout.kind === 'workout' ? workout.body.clientId : '' });
+  expect(await screen.findByText('Log set 2')).toBeTruthy();
+});
+
+test('finishing before any set closes the screen and sends nothing: an empty workout is no session', async () => {
+  mockRecords = lastWeek();
+  mockParams = { day: 'day-a' };
+  await show();
+  await fireEvent.press(await screen.findByText('Finish workout'));
+  expect(mockRecord).not.toHaveBeenCalled();
+  expect(mockBack).toHaveBeenCalled();
+});
+
+test('when the move picked is done, the next move with sets left comes up', async () => {
+  await show();
+  await fireEvent.press((await screen.findAllByText('Bench press'))[0]); // the list's, picked by the user
+  await fireEvent.press(screen.getByText('Log set 1'));
+  await fireEvent.press(await screen.findByText('Log set 2'));
+  await fireEvent.press(await screen.findByText('Log set 3'));
+  expect(await screen.findByText('Log set 1 · left')).toBeTruthy();
 });

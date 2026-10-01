@@ -165,6 +165,7 @@
       "time": "{minutes}:{seconds}"
     },
     "sets": "{count} sets",
+    "setsOne": "1 set",
     "setOf": "Set {number} of {count}",
     "allDone": "All sets done",
     "finish": "Finish workout",

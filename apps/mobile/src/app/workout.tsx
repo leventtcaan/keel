@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,10 +26,13 @@ import { weightInput } from '@/units/units';
  * The session (K-405, prototype 2.4, B §6.5): the day's moves; the move under way with its rows — the server's next
  * target faint (K-217), last time beside it — and one tap logs the row as suggested, with the RIR picked. A rest timer
  * after each set (G1 K-49). Finishing asks whether each move's form was clean (G6 K-31). Every set and the finish are
- * records on the phone first (K-304): the session runs offline and is found again after a restart.
+ * records on the phone first (K-304): the session runs offline and is found again after a restart. Opened on a day, the
+ * workout is kept only with its first set, and finishing before any set sends nothing: an empty workout is no session
+ * (the server counts each workout as a session done, K-220).
  */
 export default function WorkoutScreen() {
   const { api, training, workoutRecords, queue, report } = useAppServices();
+  const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
   const { color } = useTheme();
   const [data, setData] = useState<TrainData | null>(null);
@@ -52,14 +55,17 @@ export default function WorkoutScreen() {
 
   const active = records === null ? null : activeWorkout(records);
   const program = data?.program.state === 'ready' ? data.program.value : null;
-  const day = program?.days.find((d) => d.id === active?.programDayId) ?? null;
+  // The workout under way decides the day; otherwise the day the session was opened on, not kept until a set is logged.
+  const dayId = active === null ? (opened ?? null) : active.programDayId;
+  const day = program?.days.find((d) => d.id === dayId) ?? null;
+  const done = active?.sets ?? [];
   const moves = useMemo(() => new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m])), [data]);
   const plans: (ExercisePlan | null)[] =
-    day === null || active === null || records === null
+    day === null || records === null
       ? []
       : day.exercises.map((planned) => {
           const move = moves.get(planned.exerciseId);
-          return move === undefined ? null : planExercise(planned, move, lastTime(records, planned.exerciseId, active.clientId), active.sets);
+          return move === undefined ? null : planExercise(planned, move, lastTime(records, planned.exerciseId, active?.clientId ?? ''), done);
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
   const selected = picked ?? (firstOpen < 0 ? 0 : firstOpen);
@@ -85,8 +91,8 @@ export default function WorkoutScreen() {
   const said = problem !== null && problem.row === rowKey ? problem.text : null;
 
   const log = async () => {
-    if (saving.current || active === null || move === undefined || row === null || plan === null) return;
-    const parsed = parseEntry(entry.load, entry.reps, move, units);
+    if (saving.current || day === null || move === undefined || row === null || plan === null) return;
+    const parsed = parseEntry(entry.load, entry.reps, move, units, row.suggested.loadKg);
     if (parsed === null) {
       setProblem({ row: rowKey, text: t('workout.invalid') });
       return;
@@ -94,8 +100,15 @@ export default function WorkoutScreen() {
     saving.current = true;
     setBusy(true);
     try {
-      await queue.record({ kind: 'set', workoutClientId: active.clientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir) });
+      let workoutClientId = active?.clientId;
+      if (workoutClientId === undefined) {
+        workoutClientId = newClientId();
+        await queue.record({ kind: 'workout', body: { clientId: workoutClientId, startedAt: new Date().toISOString(), programDayId: day.id } });
+      }
+      await queue.record({ kind: 'set', workoutClientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir) });
       setRest(new Date().getTime());
+      // The move picked is done: the next one with sets left comes up.
+      if (plan.current === plan.rows.length - 1) setPicked(null);
       await refresh();
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -123,8 +136,14 @@ export default function WorkoutScreen() {
   };
   const finishProblem = problem !== null && problem.row === FINISH ? <Text style={[styles.text, { color: color.text }]}>{problem.text}</Text> : null;
 
-  const done = plans.filter((p) => p !== null && p.rows.some((r) => r.done !== null)).length;
-  const worked = active === null ? [] : [...new Set(active.sets.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
+  const movesDone = plans.filter((p) => p !== null && p.rows.some((r) => r.done !== null)).length;
+  const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
+  // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
+  const onFinish = () => {
+    if (active === null) router.back();
+    else if (worked.length === 0) void finish();
+    else setFinishing(true);
+  };
 
   const list = (
     <View style={styles.list}>
@@ -177,7 +196,7 @@ export default function WorkoutScreen() {
       </Card>
     );
 
-  const finishButton = active === null ? null : <Button label={t('workout.finish')} variant="ghost" onPress={() => setFinishing(true)} />;
+  const finishButton = day === null ? null : <Button label={t('workout.finish')} variant="ghost" onPress={onFinish} />;
   const form = (
     <>
       <FinishForm
@@ -212,7 +231,9 @@ export default function WorkoutScreen() {
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <View style={styles.cardHead}>
           <ScreenTitle>{day === null ? t('workout.title') : dayName(day)}</ScreenTitle>
-          {day !== null && <Text style={[styles.small, { color: color.muted }]}>{t('workout.progress', { done, count: day.exercises.length })}</Text>}
+          {day !== null && (
+            <Text style={[styles.small, { color: color.muted }]}>{t('workout.progress', { done: movesDone, count: day.exercises.length })}</Text>
+          )}
         </View>
         {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
         {finishing ? form : session}

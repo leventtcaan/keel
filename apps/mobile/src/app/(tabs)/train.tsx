@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,7 +10,6 @@ import { CoachEntry } from '@/components/CoachEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
-import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { programToday } from '@/today/today';
@@ -24,11 +23,11 @@ type Schemas = components['schemas'];
  * The Train tab (K-405, K-217): the program as the server set it this week. Above the days, the calls of the deload
  * ladder in force (a week off, a lighter week, the weights held); each day with its moves, this week's sets and the next
  * session's target; today's day marked, and started from here (any day can be). A workout under way is continued, not
- * started again. Offline, the copy kept on the phone, saying so (ADR-006); a workout starts as a record on the phone and
- * goes to the server when it can (K-304). Nothing is computed here: every number is the server's.
+ * started again. Offline, the copy kept on the phone, saying so (ADR-006). Nothing is computed here: every number is the
+ * server's.
  */
 export default function TrainScreen() {
-  const { api, training, workoutRecords, queue, report } = useAppServices();
+  const { api, training, workoutRecords } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
   const { day, data, reload } = useReadOnFocus(
@@ -37,25 +36,14 @@ export default function TrainScreen() {
       return { ...read, active: activeWorkout(records) };
     }, [api, training, workoutRecords]),
   );
-  const starting = useRef(false); // a double tap must not start two workouts
 
   const program = data?.program.state === 'ready' ? data.program.value : null;
   const moves = new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((move) => [move.id, move]));
   const today = program === null ? null : programToday(program, day);
   const active = data?.active ?? null;
 
-  const start = async (programDayId: string) => {
-    if (starting.current) return;
-    starting.current = true;
-    try {
-      await queue.record({ kind: 'workout', body: { clientId: newClientId(), startedAt: new Date().toISOString(), programDayId } });
-      router.push('/workout');
-    } catch (error) {
-      report({ name: error instanceof Error ? error.name : 'Unknown' });
-    } finally {
-      starting.current = false;
-    }
-  };
+  // The session opens on the day; the workout is kept only once a set is logged (an empty workout is no session).
+  const start = (programDayId: string) => router.push({ pathname: '/workout', params: { day: programDayId } });
   const underWay =
     active === null ? null : (
       <Card outline>
@@ -91,7 +79,7 @@ export default function TrainScreen() {
     const size = isToday ? 'md' : 'sm';
     const startButton =
       active === null ? (
-        <Button label={t(isToday ? 'train.start' : 'train.startThis')} variant={variant} size={size} onPress={() => void start(programDay.id)} />
+        <Button label={t(isToday ? 'train.start' : 'train.startThis')} variant={variant} size={size} onPress={() => start(programDay.id)} />
       ) : null;
     return (
       <Card key={programDay.id} outline={isToday} testID={`day-${programDay.id}`}>

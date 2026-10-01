@@ -4,7 +4,7 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { type UnitSystem, formatLoad, parseLoadKg } from '@/units/units';
+import { type UnitSystem, formatLoad, parseLoadKg, weightInput } from '@/units/units';
 
 import { workoutParams } from './params';
 import type { ExercisePlan } from './workout';
@@ -26,18 +26,27 @@ export function restText(seconds: number): string {
 /** The sets planned before any is done, the set under way, or all done. */
 export function exerciseStatus(plan: ExercisePlan): string {
   if (plan.current === null) return t('workout.allDone');
-  if (plan.current === 0) return t('workout.sets', { count: plan.rows.length });
+  if (plan.current === 0) return plan.rows.length === 1 ? t('workout.setsOne') : t('workout.sets', { count: plan.rows.length });
   return t('workout.setOf', { number: plan.current + 1, count: plan.rows.length });
 }
 
 /**
  * What the user typed, in kg at the server's precision; null when it is not a set the server would take (no load, a
- * part rep, nothing done, past the contract's ceilings). A bodyweight move's load is 0 whatever the field says.
+ * part rep, nothing done, past the contract's ceilings). A bodyweight move's load is 0 whatever the field says. A load
+ * left as suggested is the suggestion's kg: shown in lb it is rounded (62.5 kg is 137.8 lb), and read back it would be
+ * another load (62.51 kg) than the one the server set.
  */
-export function parseEntry(load: string, reps: string, move: Schemas['Exercise'], units: UnitSystem): Entry | null {
+export function parseEntry(
+  load: string,
+  reps: string,
+  move: Schemas['Exercise'],
+  units: UnitSystem,
+  suggestedKg: number | null = null,
+): Entry | null {
   const count = Number(reps.trim());
   if (reps.trim() === '' || !Number.isInteger(count) || count < 1 || count > workoutParams.maxReps) return null;
   if (move.load === 'BODYWEIGHT') return { loadKg: 0, reps: count };
+  if (suggestedKg !== null && load.trim() === weightInput(suggestedKg, units)) return { loadKg: suggestedKg, reps: count };
   const kg = parseLoadKg(load, units);
   if (kg === null || kg < 0 || kg > workoutParams.maxLoadKg) return null;
   return { loadKg: kg, reps: count };

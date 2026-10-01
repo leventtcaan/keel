@@ -135,14 +135,11 @@ test('a failed read says so once, and trying again reads again', async () => {
   expect(mockRead).toHaveBeenCalledTimes(2);
 });
 
-test("today's day starts a workout: it is recorded on the phone under that day, and the session opens", async () => {
+test("today's day starts a workout: the session opens on that day, and nothing is kept until a set is logged", async () => {
   await show();
   await fireEvent.press(await screen.findByText('Start workout'));
-  expect(mockRecord).toHaveBeenCalledWith({
-    kind: 'workout',
-    body: { clientId: 'new-workout', startedAt: expect.any(String), programDayId: 'b' },
-  });
-  expect(mockPush).toHaveBeenCalledWith('/workout');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'b' } });
+  expect(mockRecord).not.toHaveBeenCalled();
   // Another day can be started too (a session moved to today).
   expect(screen.getAllByText('Start').length).toBe(1);
 });
