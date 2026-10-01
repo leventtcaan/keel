@@ -1604,6 +1604,25 @@ tasks:
     refs: ["arastirma/ham/L3-ozellik-boslugu.md"]
     learn:
       - "Ayrık değerlere yuvarlama"
+  - id: K-421
+    title: "Salon profili ekranı (telefonda salon, bar, plaka, dambıl, makine)"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-414]
+    why: "K-414 salon verisini sunucuda tutup yuvarlamayı yapıyor ama telefonda girecek yer yok → yuvarlama hiç devreye girmez. K-414'ten bölündü (M4 Part 2, K-420 emsali)"
+    acceptance:
+      - "Ayarlardan salonlar: ekle, düzenle, sil, kullanılan salonu seç (birden çok salon); /v1/gyms, kimlik telefonda üretilir"
+      - "Bar, plaka değerleri, dambıl rafı (adımla doldurma kolaylığı: en hafif, en ağır, adım), yığın adımı, makine listesi (makine/kablo hareketi + kendi adımı)"
+      - "Kullanıcının biriminde girilir (lb plakalar lb ile), sunucuya kg 2 ondalık (ADR-029, ADR-032)"
+      - "Çevrimdışı: son okunan salonlar telefonda; ısınma (K-417) ve plaka hesabı onları kullanır"
+    tests:
+      - "GymScreenTests"
+    refs: ["plan/kararlar/ADR-032-salon-profili-ve-yuvarlama.md", "arastirma/ham/L3-ozellik-boslugu.md"]
+    learn: ["Liste düzenleme formu", "Birim dönüşümüyle giriş"]
+
   - id: K-415
     title: "Hareket geçmişi, PR listesi ve notlar"
     milestone: M4
