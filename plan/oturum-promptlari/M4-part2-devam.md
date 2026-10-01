@@ -1,4 +1,4 @@
-# M4 · Part 2 devamı (compact sonrası) — tam olarak nerede
+# M4 · Part 2 devamı (compact sonrası) — ✅ TAMAMLANDI (2 Eki; Part 2 ÇIKIŞ DURUM'da). Yalnız başvuru.
 
 > Hafıza `DURUM.md › ## M4 ilerleme` ve `## ▶ DEVAM NOKTASI`. Ortak kurallar `plan/oturum-promptlari/M4.md` (harfiyen).
 > Session KAPANMAZ: Part 2 bitince Levent dönünce Part 2 aktarımı yapılır (`docs/aktarim/M4/README.md` 8-…).

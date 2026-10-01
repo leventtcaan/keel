@@ -8,8 +8,10 @@ M4 dört part hâlinde yapılıyor; bu PART 3. Ortak talimat plan/oturum-promptl
 uygula. Hafıza DURUM.md › "## M4 ilerleme"de; sohbete güvenme. Part'ı baştan sona uygularsın, aktarıma BAŞLAMAZSIN.
 
 Başta:
-0) Senkron: DURUM › M4 ilerleme › "Part 2 ÇIKIŞ" git ile doğru mu? K-405, K-406, K-414, K-415, K-417 birleşik mi?
-   Yarım "M4-part2-devam.md" varsa önce onu uygula.
+0) Senkron: DURUM › M4 ilerleme › "Part 2 ÇIKIŞ" git ile doğru mu? K-405, K-406, K-414, K-415, K-417, K-421, K-422
+   birleşik mi, #235 (K-421 inceleme düzeltmeleri) birleşti mi? ÇIKIŞ'taki "Part 3'ün bilmesi gerekenler"i oku (yuvarlama
+   iki dilde + ortak vakalar, seans kayıt modeli, telefondaki kopyalar, notlar, auto-merge dersi). M4-part2-devam.md
+   tamamlandı (yalnız başvuru).
 0a) Disk: `df -h ~`.
 
 Kapsam, sırayla: K-407 öğün hızlı kayıt (metin, barkod — UPC-E sunucuda açılır —, "dünkü gibi"; ADR-030 #25: girişte

@@ -1425,7 +1425,7 @@ tasks:
     module: mobile
     type: feature
     size: L
-    status: todo
+    status: done
     depends_on: [K-210, K-304, K-301]
     why: "Set başına bir dokunuş; RIR hızlı seçim"
     acceptance:
@@ -1445,7 +1445,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-405, K-109, K-218]
     why: "Total volume ana metrik değil; efor artıranı ödüllendirmek"
     acceptance:
@@ -1592,7 +1592,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-210, K-109]
     why: "Motorun '+2,5 kg' kararı dambılları 2 kg atlayan salonda uygulanamaz (L3 Y7)"
     acceptance:
@@ -1610,7 +1610,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-414]
     why: "K-414 salon verisini sunucuda tutup yuvarlamayı yapıyor ama telefonda girecek yer yok → yuvarlama hiç devreye girmez. K-414'ten bölündü (M4 Part 2, K-420 emsali)"
     acceptance:
@@ -1629,7 +1629,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-210]
     why: "K-415'in notları sunucuda bir alan ister; mobil görevden bölündü (bir görev = bir modül; M4 Part 2, K-421 emsali). Masa bahsi (L3 §1 #8)"
     acceptance:
@@ -1648,7 +1648,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-405, K-218, K-422]
     why: "Masa bahsi (L3 §1)"
     acceptance:
@@ -1685,7 +1685,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-414]
     why: "Güray: hareket başına ≥1 ısınma, günün ilk hareketinde 3-4 (G1 K-17)"
     acceptance:

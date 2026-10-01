@@ -68,11 +68,10 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (1 Eki gece — M4 Part 2, compact sonrası sürüyor)
-Part 2 sürüyor (`plan/oturum-promptlari/M4-part2-devam.md`). Birleşen: K-414 (#221, #222, #227), K-405 (#223, #224),
-K-406 (#226, #225), K-417 (#228), K-422 (#231), K-415 (1/2) #232. **K-415 (2/2) #233** açık. Sırada **K-421** salon profili
-ekranı (#229), sonra Part 2 ÇIKIŞ.
-Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
+## ▶ DEVAM NOKTASI (2 Eki — M4 Part 2 bitti, aktarım bekliyor)
+Part 2 ÇIKIŞ yazıldı (aşağıda › M4 ilerleme). Açık: **#235** (K-421 inceleme düzeltmeleri, auto-merge). Levent dönünce Part 2
+aktarımı (`docs/aktarim/M4/` README 8-13: K-414, K-405, K-406, K-417, K-415 (+K-422), K-421). Sonra Part 3
+(`plan/oturum-promptlari/M4-part3.md`). Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -240,7 +239,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
-| 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 | sürüyor (1 Eki) |
+| 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 (+ K-421, K-422 bölündü) | ✅ bitti (2 Eki) — aktarım bekliyor |
 | 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | başlamadı |
 | 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
 
@@ -308,8 +307,46 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 | K-417 ısınma hesaplayıcı (telefonda salon, seansta ısınma + taraf başına plaka) | ✅ birleşti; simülatör 3 kusur (kg salonda lb plaka, "+0 lb", ısınmanın antrenmanı başlatması → seans sayılır) + inceleme + test analizi düzeltildi; mutasyon 6/6 + 16/16 + 9/9 (1 eşdeğer) | #228 | `M4/K-417.md` |
 | **K-422** (K-415'ten bölündü) set ve seans notu: sözleşme + V21 + sınır yapılandırmadan | ✅ birleşti; inceleme: ikinci bitiş notu siliyordu (coalesce), NUL 500 → 400; saf mutasyon 5/5; DB testleri CI'da yeşil | #231 | (K-415 aktarımında) |
 | K-415 (1/2) hareket geçmişi + rekorlar (ADR-033) | ✅ birleşti; simülatör: 62,5/62,51 kg iki satır → görünen ağırlıkla kıyas; inceleme: pencere dışı yerel kayıt, K-33 gerilimi (soru 44); mutasyon 16/16 + 3/3 + 3/3 | #232 | `M4/K-415.md` |
-| K-415 (2/2) set + seans notu girişi, geçmişte notlar | PR açık, auto-merge; inceleme: gönderilmemiş bitiş notu sunucu kopyası yüzünden atılıyordu → düzeltildi; mutasyon 8/8 + 1/1 + 2/2 | #233 | `M4/K-415.md` |
-| K-421 (K-414'ten bölündü) salon profili ekranı | backlog'da; K-415'ten sonra | — | |
+| K-415 (2/2) set + seans notu girişi, geçmişte notlar | ✅ birleşti; inceleme: gönderilmemiş bitiş notu sunucu kopyası yüzünden atılıyordu → düzeltildi; mutasyon 8/8 + 1/1 + 2/2 | #233 | `M4/K-415.md` |
+| K-421 (K-414'ten bölündü) salon profili ekranı | ✅ #234 birleşti; inceleme düzeltmeleri #234'ün auto-merge'ünden sonra geldi → **#235** (auto-merge); simülatör: lb kullanıcı kg salonu kaydedince bar 19,96 kg olurdu → salon kendi biriminde, kayıpsız gidiş-dönüş testi; mutasyon 14/14 + 5/5 | #234, #235 | `M4/K-421.md` |
+
+**Part 2 ÇIKIŞ (2 Eki):**
+- **Birleşen:** K-414 #221 + #222 (+ #227 lb hedefi ızgaraya yapıştırılmıyor) · K-405 #223 + #224 · K-406 #226 + #225 (motor
+  e1RM tek yuvarlama) · K-417 #228 · K-422 #231 (K-415'ten bölündü: not sözleşme + V21) · K-415 #232 (geçmiş + rekorlar) +
+  #233 (not girişi) · K-421 #234 (K-414'ten bölündü: salon ekranı) + **#235** (inceleme düzeltmeleri; açık, auto-merge —
+  Part 3 başında birleşmiş mi bak). Açık worktree yok. Aktarım dosyaları `docs/aktarim/M4/` (README 8-13), görseller `img/`.
+- **Çıkış kriterleri (`M4.md › Part'lar`):**
+  | Kriter | Durum | Kanıt |
+  |---|---|---|
+  | Seans baştan sona çevrimdışı kaydedilir | ✅ | K-405 #224 (kayıt kuyruğu, `finish` kaydı), simülatör uçtan uca (`img/K-405-*`), ısınma bekletme #228 |
+  | Özet efor bazlı | ✅ | K-406 #226 (`img/K-406-summary.png`), telefon = motor Epley (#225) |
+  | PR listesi | ✅ (soru 44 açık) | K-415 #232 (`img/K-415-history.png`) |
+  Kontrol çıktısı (`main`, 2 Eki): mobil `npm run check` **982/982** (#235 dalında 990/990); backend saf testler **937/937**,
+  DB testleri CI'da yeşil (#234'e kadar her PR).
+- **Kalan iş:** #235'in birleşmesi. K-308 cihaz adımları (Levent). Sorular 38-44 (Levent).
+- **Part 3'ün bilmesi gerekenler:**
+  - **Yuvarlama iki dilde:** `backend/.../training/LoadSteps.java` ↔ `apps/mobile/src/train/loadSteps.ts`, ortak vakalar
+    `contracts/fixtures/load-steps.json` (yeni vaka → iki dilde RED). lb salonu lb'de sayılır; motorun **hedefi** ızgaraya
+    yapıştırılmaz (#227). `unitsOf`/`plateUnits`: bir ağırlık listesinin girildiği birim.
+  - **Fiziksel nesne kendi biriminde:** plaka/bar/dambıl metni salonun biriminde (K-417 plaka satırı, K-421 düzenleyici);
+    yük kullanıcının biriminde. Kayıpsız gidiş-dönüş testi (`gym-form.test.ts`) kalıbı.
+  - **Seans kayıt modeli:** antrenman ilk **çalışma setinde** tutulur; ısınmalar o zamana kadar ekranda bekler (`held`,
+    `workout.tsx`) — yalnız ısınmalı antrenman seans sayılmasın diye (sunucu her antrenmanı sayıyor, soru 39). Set/finish
+    kayıtları `clientId` ile, store `INSERT OR IGNORE` (aynı kimlikle yeniden yazmak zararsız).
+  - **Telefondaki kopyalar** (`train/trainData.ts`): program, katalog, kullanılan salon, son `history_days` günün antrenmanları;
+    oturum kapanınca kuşak sayacıyla silinir. Geçmiş = sunucu listesi + gönderilmemiş yerel kayıtlar (pencereyle süzülür);
+    gönderilmemiş bitiş notu sunucu kopyasından üstün.
+  - **Notlar:** sunucu kuralı (`TrainingLimits.note/fits`: trim, boş = yok, 500 kod noktası, NUL → 400, sonraki notsuz bitiş
+    notu korur) = telefon `noteOf`. Not loglanmaz (V3), AI'a rızasız gitmez (V2).
+  - **Özet ekranı** bitişten `router.replace` ile açılır (geri tuşu seansa dönmez).
+  - **Süreç dersi:** auto-merge'ü inceleme bulguları işlenmeden açma — #234 düzeltmelerden önce birleşti (#235 ayrı PR).
+    PR'ı inceleme bitince aç ya da auto-merge'ü sonra aç.
+  - **Test tuzakları:** `copy-literals.test` JSX içindeki koşullu dizgileri ve TS generic'lerini (`<T>`) metin sanar → koşullu
+    parçaları sabite çıkar, generic'siz yaz. Parametre `source` bir başlığa çapa ister (`dosya#Başlık …`, tek kelime başlık
+    eşleşmez). `jest.mock` fabrikası dış değişken kullanamaz (`jest.requireActual`).
+  - **Simülatör:** derin bağlantı `exp://127.0.0.1:8081/--/<rota>?…` dişli simgesiyle uğraşmadan ekran açar; `CI=1` Metro
+    dosya izlemez → değişiklikten sonra Metro'yu yeniden başlat. Fikstür sunucusu scratchpad'te (gyms PUT/DELETE, workouts GET).
+- **Yeni sorular:** 38-44 (DURUM listesi).
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
