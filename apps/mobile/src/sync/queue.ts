@@ -23,6 +23,12 @@ export type Outbound =
   | { kind: 'workout'; body: Schemas['NewWorkout'] }
   | { kind: 'set'; workoutClientId: string; body: Schemas['NewSet'] };
 
+/**
+ * The kinds that are health data, kept on the server only with the HEALTH_DATA consent (ADR-007): withdrawing it
+ * deletes them there and here (K-231). A workout and its sets are training, not health data.
+ */
+export const HEALTH_KINDS = ['weighIn', 'waist', 'bodyLook', 'photoCheck', 'meal'] as const satisfies readonly Outbound['kind'][];
+
 /** The server's answer, reduced: 200/201 carry the stored record; an error carries the contract's code. */
 export type SendResult = { status: number; id?: string; body?: unknown; errorCode?: string };
 

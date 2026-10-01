@@ -60,6 +60,20 @@ test('clear removes every record (sign-out, account deletion)', async () => {
   expect(await store.all()).toEqual([]);
 });
 
+test('forget removes the records of the kinds given, in every state, and only those (K-231)', async () => {
+  const store = await openRecordStore(nodeSqlite());
+  const C = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  await store.insert({ clientId: A, kind: 'weighIn', parentClientId: null, body });
+  await store.insert({ clientId: B, kind: 'meal', parentClientId: null, body: { clientId: B } });
+  await store.insert({ clientId: C, kind: 'workout', parentClientId: null, body: { clientId: C } });
+  await store.markSynced(A, 'srv-1', { id: 'srv-1' });
+  await store.markRejected(B, 'CONSENT_REQUIRED');
+
+  await store.forget(['weighIn', 'meal']);
+
+  expect((await store.all()).map((record) => record.clientId)).toEqual([C]);
+});
+
 test('an unknown state cannot be written: the database refuses it', async () => {
   const db = nodeSqlite();
   await openRecordStore(db);

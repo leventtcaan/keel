@@ -31,6 +31,9 @@ const mockServices = {
   signOut: jest.fn(async () => {}),
   deleteAccount: jest.fn(async () => {}),
   exportData: jest.fn(async () => {}),
+  withdrawHealthData: jest.fn(async () => {
+    mockConsents.HEALTH_DATA = 'WITHDRAWN';
+  }),
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({
@@ -117,7 +120,9 @@ describe('consents', () => {
     expect(screen.getByText(t('settings.withdrawConfirm.HEALTH_DATA.body'))).toBeOnTheScreen();
     expect(warnButtons()).toEqual([button(t('settings.withdrawConfirm.confirm'))]); // the confirm, not "Keep it"
     await press(t('settings.withdrawConfirm.confirm'));
-    expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/consents/{kind}', { params: { path: { kind: 'HEALTH_DATA' } } });
+    // K-231: through the one path that confirms the deletion on the server and forgets the entries on the phone.
+    expect(mockServices.withdrawHealthData).toHaveBeenCalledTimes(1);
+    expect(mockServices.api.DELETE).not.toHaveBeenCalled();
     expect(screen.queryAllByText(t('settings.consents.allowed'))).toHaveLength(0);
     expect(warnButtons()).toEqual([]);
   });
@@ -193,6 +198,7 @@ describe('consents', () => {
     expect(screen.getByText(t('settings.withdrawConfirm.APPLE_HEALTH.body'))).toBeOnTheScreen();
     await press(t('settings.withdrawConfirm.confirm'));
     expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/consents/{kind}', { params: { path: { kind: 'APPLE_HEALTH' } } });
+    expect(mockServices.withdrawHealthData).not.toHaveBeenCalled();
   });
 
   test("Apple's sheet failing in Settings says so and records nothing", async () => {
@@ -204,12 +210,29 @@ describe('consents', () => {
     expect(mockServices.report).toHaveBeenCalledWith({ name: 'HealthSheetFailed' });
   });
 
-  test('the withdrawal text does not say the data is deleted: today it is only no longer kept (deletion is K-231)', () => {
-    expect(t('settings.withdrawConfirm.HEALTH_DATA.body')).not.toMatch(/delet|export/i);
+  test('the health data withdrawal says the entries are deleted for good, and offers the export first (K-231)', async () => {
+    expect(t('settings.withdrawConfirm.HEALTH_DATA.body')).toMatch(/delet/i);
+    expect(t('settings.withdrawConfirm.HEALTH_DATA.body')).toMatch(/undo/i);
+    await show();
+    await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
+
+    await press(t('settings.withdrawConfirm.exportFirst'));
+
+    expect(mockServices.exportData).toHaveBeenCalledTimes(1);
+    expect(mockServices.withdrawHealthData).not.toHaveBeenCalled();
+    expect(screen.getByText(t('settings.withdrawConfirm.HEALTH_DATA.body'))).toBeOnTheScreen(); // still asking
+    expect(warnButtons()).toEqual([button(t('settings.withdrawConfirm.confirm'))]);
+  });
+
+  test('Apple Health deletes nothing stored, so its question offers no export', async () => {
+    mockConsents.APPLE_HEALTH = 'GRANTED';
+    await show();
+    await press(`${t('settings.consents.withdraw')} ${row('APPLE_HEALTH')}`);
+    expect(screen.queryByRole('button', { name: t('settings.withdrawConfirm.exportFirst') })).toBeNull();
   });
 
   test('a change the server refuses says so and keeps the state shown', async () => {
-    mockServices.api.DELETE.mockResolvedValueOnce({ error: { code: 'X' }, response: new Response(null, { status: 500 }) } as never);
+    mockServices.withdrawHealthData.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'ConsentRefused' }));
     await show();
     await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
     await press(t('settings.withdrawConfirm.confirm'));

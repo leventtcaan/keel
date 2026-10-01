@@ -33,6 +33,10 @@ const mockConsentAnswer = async (_path: string, _init: unknown) =>
     : { error: { code: 'X' }, response: new Response(null, { status: mockConsentStatus }) };
 const mockApi = { PUT: jest.fn(mockConsentAnswer), DELETE: jest.fn(mockConsentAnswer) };
 const mockQueue = { record: jest.fn(async (_record: unknown) => true) };
+// Like the real service (K-231): a refusal throws by name; what went through leaves the phone's health entries behind.
+const mockWithdrawHealthData = jest.fn(async () => {
+  if (mockConsentStatus !== 200) throw Object.assign(new Error('x'), { name: 'ConsentRefused' });
+});
 const mockHealth = { available: false, requestRead: jest.fn(async () => {}) };
 const mockReport = jest.fn();
 const mockKeepOnPhone = jest.fn(async (system: 'METRIC' | 'IMPERIAL') => {
@@ -62,6 +66,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     queue: mockQueue,
     health: mockHealth,
     report: mockReport,
+    withdrawHealthData: mockWithdrawHealthData,
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
   }),
 }));
@@ -79,6 +84,7 @@ beforeEach(() => {
   mockApi.PUT.mockReset().mockImplementation(mockConsentAnswer);
   mockApi.DELETE.mockReset().mockImplementation(mockConsentAnswer);
   mockQueue.record.mockReset().mockResolvedValue(true);
+  mockWithdrawHealthData.mockClear();
   mockHealth.available = false;
   mockReport.mockClear();
   mockHealth.requestRead.mockReset().mockResolvedValue(undefined);
@@ -640,7 +646,8 @@ describe('review fixes (K-312)', () => {
     await press(t('onboarding.back'));
     expect(router.getPathname()).toBe('/onboarding/health-data');
     await press(t('onboarding.healthData.withdraw'));
-    expect(mockApi.DELETE).toHaveBeenCalledWith('/v1/consents/{kind}', { params: { path: { kind: 'HEALTH_DATA' } } });
+    // K-231: the one path that confirms the deletion on the server and forgets the phone's health entries.
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
     expect(router.getPathname()).toBe('/onboarding/about');
     expect(screen.queryByLabelText(t('onboarding.about.weight'))).toBeNull();
     await press(t('onboarding.back'));
