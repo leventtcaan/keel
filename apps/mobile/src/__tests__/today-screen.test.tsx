@@ -67,9 +67,30 @@ const mockGET = jest.fn(async (path: string, _init?: unknown) => {
   return answer;
 });
 const mockPush = jest.fn();
+// The screen reads on focus, as on expo-router: the effect runs when the screen comes into view, and again each time.
+let mockRefocus: () => void = () => {};
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
   useRouter: () => ({ push: mockPush }),
+  useFocusEffect: (effect: () => void) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    React.useEffect(() => {
+      mockRefocus = effect;
+      effect();
+    }, [effect]);
+  },
+}));
+// The app coming back to the front (AppState), captured so a test can send it.
+let mockForeground: (state: string) => void = () => {};
+jest.mock('react-native/Libraries/AppState/AppState', () => ({
+  __esModule: true,
+  default: {
+    addEventListener: (_type: string, listener: (state: string) => void) => {
+      mockForeground = listener;
+      return { remove: () => {} };
+    },
+    currentState: 'active',
+  },
 }));
 // One object for the life of the test, as the real services are built once per process: the screen depends on it.
 const mockServices = { api: { GET: mockGET }, report: () => {} };
@@ -279,6 +300,28 @@ test("the coach's chips come from the day; one opens the coach", async () => {
   expect(screen.getByRole('button', { name: t('today.chips.swap') })).toBeOnTheScreen();
   await press(t('today.chips.why'));
   expect(mockPush).toHaveBeenCalledWith('/coach');
+});
+
+test('back on Today after giving the consent in Settings, it reads again and shows the number (K-401 review)', async () => {
+  mockAnswers['/v1/consistency'] = refused(403, 'CONSENT_REQUIRED');
+  await show();
+  expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
+  mockAnswers['/v1/consistency'] = ok(CONSISTENCY);
+
+  await act(async () => mockRefocus());
+
+  expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
+});
+
+test('the app back in front reads again: a new day, new logs (K-401 review)', async () => {
+  await show();
+  const calls = mockGET.mock.calls.length;
+  await act(async () => mockForeground('background'));
+  expect(mockGET.mock.calls.length).toBe(calls);
+
+  await act(async () => mockForeground('active'));
+
+  expect(mockGET.mock.calls.length).toBeGreaterThan(calls);
 });
 
 test('Settings is still one tap from Today', async () => {
