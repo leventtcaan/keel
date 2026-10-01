@@ -100,6 +100,17 @@ describe('sessions: the server list joined with what the phone has not sent', ()
     expect(sessions.map((s) => s.note)).toEqual(['Knee fine today', 'Slept 5 hours']);
   });
 
+  test("a finish the server refused carries no note: it is not part of what was done", () => {
+    const [session] = sessionsOf(
+      [],
+      [
+        record('workout', 'w2', { clientId: 'w2', startedAt: '2026-09-28T17:00:00Z' }),
+        record('finish', 'f2', { endedAt: '2026-09-28T18:00:00Z', note: 'refused' }, 'w2', 'REJECTED'),
+      ],
+    );
+    expect(session.note).toBeUndefined();
+  });
+
   test("a set the server has and the phone keeps too is the server's copy", () => {
     const sent = set('bench_press', 80, 8, 1);
     const [session] = sessionsOf(
