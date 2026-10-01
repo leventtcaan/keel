@@ -18,9 +18,10 @@ type Schemas = components['schemas'];
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 let mockParams: { day?: string } = {};
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack(), push: jest.fn(), replace: (...args: unknown[]) => mockReplace(...args) },
+  router: { back: () => mockBack(), push: (...args: unknown[]) => mockPush(...args), replace: (...args: unknown[]) => mockReplace(...args) },
   useRouter: () => ({ back: mockBack }),
   useLocalSearchParams: () => mockParams,
 }));
@@ -120,6 +121,12 @@ test('one tap logs the set as suggested, with the target RIR, under the workout;
   expect(await screen.findByText('Log set 2')).toBeTruthy();
   expect(screen.getByText('Rest · 2:00–3:00')).toBeTruthy();
   expect(screen.getByText('Set 2 of 3')).toBeTruthy();
+});
+
+test('the move under way opens its history and records (K-415)', async () => {
+  await show();
+  await fireEvent.press(await screen.findByLabelText('Bench press: history'));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise-history', params: { exercise: 'bench_press' } });
 });
 
 test('what is typed and the RIR picked are what is logged; 3+ is logged as 3', async () => {

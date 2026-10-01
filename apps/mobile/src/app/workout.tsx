@@ -270,6 +270,12 @@ export default function WorkoutScreen() {
           <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(planned.exerciseId)}</Text>
           <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(planned.exerciseId) })}
+          onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: planned.exerciseId } })}>
+          <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
+        </Pressable>
         {warmBlock}
         <SetTable plan={plan} move={move} />
         {entryBlock}

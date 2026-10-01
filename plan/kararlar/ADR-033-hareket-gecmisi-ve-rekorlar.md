@@ -8,7 +8,7 @@ rekoru yok, tekrar/efor rekoru var (G6 K-33); ana metrik efor, hacim değil (B �
 (ADR-006); notlar sunucuda K-422 ile (#231). Bugün telefonun yerel kayıtları yalnız o telefonda yapılanları tutuyor;
 sunucu `GET /v1/workouts?from&to` (en çok `keel.api.max-range-days` = 400 gün) her şeyi veriyor.
 
-## Karar
+## Karar · geçmişin kaynağı, rekor türleri, notlar
 1. **Geçmişin kaynağı:** sunucunun antrenman listesi, son `history_days` gün (`data/parameters/workout.json`), telefonda
    kopyası tutulur (çevrimdışı; K-405 kalıbı) + telefonda henüz gönderilmemiş kayıtlar. İkisi `clientId` ile birleşir:
    aynı antrenman bir kez, setleri `clientId` birleşimi. Bir telefonun kendi kayıtları tek kaynak **değildir** (yeni

@@ -1053,5 +1053,19 @@
   },
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location."
+  },
+  "history": {
+    "records": "Records",
+    "heaviest": "Heaviest · {set}",
+    "estimatedMax": "Estimated max · {load}",
+    "repsAt": "Most reps at {load} · {reps}",
+    "mostReps": "Most reps · {reps}",
+    "sessions": "History",
+    "warmUp": "{set} · warm-up",
+    "empty": "Nothing logged for this exercise yet.",
+    "phoneOnly": "Showing what's on this phone. The rest shows when you're online.",
+    "done": "Done",
+    "open": "History",
+    "openLabel": "{exercise}: history"
   }
 }
