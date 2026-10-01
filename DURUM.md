@@ -69,7 +69,7 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
 ## ▶ DEVAM NOKTASI (2 Eki — M4 Part 2 bitti, aktarım bekliyor)
-Part 2 ÇIKIŞ yazıldı (aşağıda › M4 ilerleme). Açık: **#235** (K-421 inceleme düzeltmeleri, auto-merge). Levent dönünce Part 2
+Part 2 ÇIKIŞ yazıldı (aşağıda › M4 ilerleme). Açık PR yok. Levent dönünce Part 2
 aktarımı (`docs/aktarim/M4/` README 8-13: K-414, K-405, K-406, K-417, K-415 (+K-422), K-421). Sonra Part 3
 (`plan/oturum-promptlari/M4-part3.md`). Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
 
@@ -308,22 +308,22 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 | **K-422** (K-415'ten bölündü) set ve seans notu: sözleşme + V21 + sınır yapılandırmadan | ✅ birleşti; inceleme: ikinci bitiş notu siliyordu (coalesce), NUL 500 → 400; saf mutasyon 5/5; DB testleri CI'da yeşil | #231 | (K-415 aktarımında) |
 | K-415 (1/2) hareket geçmişi + rekorlar (ADR-033) | ✅ birleşti; simülatör: 62,5/62,51 kg iki satır → görünen ağırlıkla kıyas; inceleme: pencere dışı yerel kayıt, K-33 gerilimi (soru 44); mutasyon 16/16 + 3/3 + 3/3 | #232 | `M4/K-415.md` |
 | K-415 (2/2) set + seans notu girişi, geçmişte notlar | ✅ birleşti; inceleme: gönderilmemiş bitiş notu sunucu kopyası yüzünden atılıyordu → düzeltildi; mutasyon 8/8 + 1/1 + 2/2 | #233 | `M4/K-415.md` |
-| K-421 (K-414'ten bölündü) salon profili ekranı | ✅ #234 birleşti; inceleme düzeltmeleri #234'ün auto-merge'ünden sonra geldi → **#235** (auto-merge); simülatör: lb kullanıcı kg salonu kaydedince bar 19,96 kg olurdu → salon kendi biriminde, kayıpsız gidiş-dönüş testi; mutasyon 14/14 + 5/5 | #234, #235 | `M4/K-421.md` |
+| K-421 (K-414'ten bölündü) salon profili ekranı | ✅ #234 birleşti; inceleme düzeltmeleri #234'ün auto-merge'ünden sonra geldi → #235 birleşti; simülatör: lb kullanıcı kg salonu kaydedince bar 19,96 kg olurdu → salon kendi biriminde, kayıpsız gidiş-dönüş testi; mutasyon 14/14 + 5/5 | #234, #235 | `M4/K-421.md` |
 
 **Part 2 ÇIKIŞ (2 Eki):**
 - **Birleşen:** K-414 #221 + #222 (+ #227 lb hedefi ızgaraya yapıştırılmıyor) · K-405 #223 + #224 · K-406 #226 + #225 (motor
   e1RM tek yuvarlama) · K-417 #228 · K-422 #231 (K-415'ten bölündü: not sözleşme + V21) · K-415 #232 (geçmiş + rekorlar) +
-  #233 (not girişi) · K-421 #234 (K-414'ten bölündü: salon ekranı) + **#235** (inceleme düzeltmeleri; açık, auto-merge —
-  Part 3 başında birleşmiş mi bak). Açık worktree yok. Aktarım dosyaları `docs/aktarim/M4/` (README 8-13), görseller `img/`.
+  #233 (not girişi) · K-421 #234 (K-414'ten bölündü: salon ekranı) + #235 (inceleme düzeltmeleri). Açık PR yok, açık worktree yok.
+  Aktarım dosyaları `docs/aktarim/M4/` (README 8-13), görseller `img/`.
 - **Çıkış kriterleri (`M4.md › Part'lar`):**
   | Kriter | Durum | Kanıt |
   |---|---|---|
   | Seans baştan sona çevrimdışı kaydedilir | ✅ | K-405 #224 (kayıt kuyruğu, `finish` kaydı), simülatör uçtan uca (`img/K-405-*`), ısınma bekletme #228 |
   | Özet efor bazlı | ✅ | K-406 #226 (`img/K-406-summary.png`), telefon = motor Epley (#225) |
   | PR listesi | ✅ (soru 44 açık) | K-415 #232 (`img/K-415-history.png`) |
-  Kontrol çıktısı (`main`, 2 Eki): mobil `npm run check` **982/982** (#235 dalında 990/990); backend saf testler **937/937**,
+  Kontrol çıktısı (`main`, 2 Eki): mobil `npm run check` **990/990** (61 suite); backend saf testler **937/937**,
   DB testleri CI'da yeşil (#234'e kadar her PR).
-- **Kalan iş:** #235'in birleşmesi. K-308 cihaz adımları (Levent). Sorular 38-44 (Levent).
+- **Kalan iş:** K-308 cihaz adımları (Levent). Sorular 38-44 (Levent).
 - **Part 3'ün bilmesi gerekenler:**
   - **Yuvarlama iki dilde:** `backend/.../training/LoadSteps.java` ↔ `apps/mobile/src/train/loadSteps.ts`, ortak vakalar
     `contracts/fixtures/load-steps.json` (yeni vaka → iki dilde RED). lb salonu lb'de sayılır; motorun **hedefi** ızgaraya

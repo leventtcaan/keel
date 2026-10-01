@@ -9,7 +9,7 @@ uygula. Hafıza DURUM.md › "## M4 ilerleme"de; sohbete güvenme. Part'ı başt
 
 Başta:
 0) Senkron: DURUM › M4 ilerleme › "Part 2 ÇIKIŞ" git ile doğru mu? K-405, K-406, K-414, K-415, K-417, K-421, K-422
-   birleşik mi, #235 (K-421 inceleme düzeltmeleri) birleşti mi? ÇIKIŞ'taki "Part 3'ün bilmesi gerekenler"i oku (yuvarlama
+   birleşik mi? ÇIKIŞ'taki "Part 3'ün bilmesi gerekenler"i oku (yuvarlama
    iki dilde + ortak vakalar, seans kayıt modeli, telefondaki kopyalar, notlar, auto-merge dersi). M4-part2-devam.md
    tamamlandı (yalnız başvuru).
 0a) Disk: `df -h ~`.
