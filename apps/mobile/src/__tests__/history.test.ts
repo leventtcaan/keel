@@ -163,6 +163,15 @@ describe('records', () => {
     ]);
   });
 
+  test('two loads the user sees as one weight are one: 62.5 and 62.51 kg are both 137.8 lb; the first time holds it', () => {
+    const lb = (kg: number) => Math.round((kg / 0.45359237) * 10) / 10;
+    const sessions = sessionsWith([set('bench_press', 62.5, 6, 1)], [set('bench_press', 62.51, 6, 1)]);
+    expect(recordsOf(BENCH, sessions, lb).filter((r) => r.kind !== 'estimatedMax')).toEqual([
+      { kind: 'heaviest', loadKg: 62.5, reps: 6, on: '2026-09-10T17:00:00Z' },
+      { kind: 'repsAt', loadKg: 62.5, reps: 6, on: '2026-09-10T17:00:00Z' },
+    ]);
+  });
+
   test('no work sets, no records', () => {
     expect(recordsOf(BENCH, sessionsWith([set('bench_press', 40, 10, undefined, 'WARM_UP')]))).toEqual([]);
   });

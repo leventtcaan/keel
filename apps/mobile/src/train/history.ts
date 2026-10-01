@@ -47,9 +47,10 @@ export function historyOf(sessions: Session[], exerciseId: string): Session[] {
  * The move's records from its work sets (ADR-033 §3): a compound move with an external load its heaviest, its highest
  * estimated max and its most reps at each weight; an isolation move only the most reps at each weight (G6 K-33: no weight
  * tracking); a bodyweight move its most reps; a weighted one its heaviest added and its most reps with the body alone. A
- * tie keeps the first time it was done. No volume record (B §6.4).
+ * tie keeps the first time it was done. Weights are compared as `shown` (the user's unit, as the screen writes them). No
+ * volume record (B §6.4).
  */
-export function recordsOf(move: Schemas['Exercise'], sessions: Session[]): PersonalRecord[] {
+export function recordsOf(move: Schemas['Exercise'], sessions: Session[], shown: (kg: number) => number = (kg) => kg): PersonalRecord[] {
   // Oldest first, so the first set to reach a value holds its record.
   const worked: Done[] = [...sessions]
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
@@ -58,10 +59,16 @@ export function recordsOf(move: Schemas['Exercise'], sessions: Session[]): Perso
     );
   if (move.load === 'BODYWEIGHT') return mostReps(worked);
   if (move.load === 'BODYWEIGHT_PLUS_EXTERNAL') {
-    return [...heaviest(worked.filter((d) => d.set.loadKg > 0)), ...mostReps(worked.filter((d) => d.set.loadKg === 0))];
+    return [
+      ...heaviest(
+        worked.filter((d) => d.set.loadKg > 0),
+        shown,
+      ),
+      ...mostReps(worked.filter((d) => d.set.loadKg === 0)),
+    ];
   }
-  if (move.kind === 'ISOLATION') return repsAt(worked);
-  return [...heaviest(worked), ...estimatedMax(worked), ...repsAt(worked)];
+  if (move.kind === 'ISOLATION') return repsAt(worked, shown);
+  return [...heaviest(worked, shown), ...estimatedMax(worked), ...repsAt(worked, shown)];
 }
 
 /** A work set and the day of its session. */
@@ -74,8 +81,12 @@ function first(done: Done[], better: (a: Done, b: Done) => boolean): Done | null
   return found;
 }
 
-function heaviest(done: Done[]): PersonalRecord[] {
-  const top = first(done, (a, b) => a.set.loadKg > b.set.loadKg || (a.set.loadKg === b.set.loadKg && a.set.reps > b.set.reps));
+/** Weights compare as the user sees them (`shown`): 62.5 and 62.51 kg are one weight in lb, 137.8. */
+function heaviest(done: Done[], shown: (kg: number) => number): PersonalRecord[] {
+  const top = first(done, (a, b) => {
+    const [x, y] = [shown(a.set.loadKg), shown(b.set.loadKg)];
+    return x > y || (x === y && a.set.reps > b.set.reps);
+  });
   return top === null ? [] : [{ kind: 'heaviest', loadKg: top.set.loadKg, reps: top.set.reps, on: top.on }];
 }
 
@@ -85,14 +96,14 @@ function mostReps(done: Done[]): PersonalRecord[] {
 }
 
 /** The most reps at each weight, heaviest weight first. */
-function repsAt(done: Done[]): PersonalRecord[] {
-  const loads = [...new Set(done.map((d) => d.set.loadKg))].sort((a, b) => b - a);
-  return loads.flatMap((loadKg) => {
+function repsAt(done: Done[], shown: (kg: number) => number): PersonalRecord[] {
+  const weights = [...new Set(done.map((d) => shown(d.set.loadKg)))].sort((a, b) => b - a);
+  return weights.flatMap((weight) => {
     const top = first(
-      done.filter((d) => d.set.loadKg === loadKg),
+      done.filter((d) => shown(d.set.loadKg) === weight),
       (a, b) => a.set.reps > b.set.reps,
     );
-    return top === null ? [] : [{ kind: 'repsAt' as const, loadKg, reps: top.set.reps, on: top.on }];
+    return top === null ? [] : [{ kind: 'repsAt' as const, loadKg: top.set.loadKg, reps: top.set.reps, on: top.on }];
   });
 }
 

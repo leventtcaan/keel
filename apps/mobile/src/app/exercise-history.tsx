@@ -17,7 +17,7 @@ import { type PersonalRecord, historyOf, recordsOf, sessionsOf } from '@/train/h
 import { exerciseName, shortDate } from '@/train/program';
 import { setText } from '@/train/session';
 import type { TrainData } from '@/train/trainData';
-import { type UnitSystem, formatLoad } from '@/units/units';
+import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
 type Schemas = components['schemas'];
 
@@ -57,7 +57,7 @@ export default function ExerciseHistoryScreen() {
   const move = read?.data.exercises.state === 'ready' ? read.data.exercises.value.find((m) => m.id === exercise) : undefined;
   const server = read?.history.state === 'ready' ? read.history.value : null;
   const sessions = read === null ? [] : historyOf(sessionsOf(server, read.records), exercise);
-  const records = move === undefined ? [] : recordsOf(move, sessions);
+  const records = move === undefined ? [] : recordsOf(move, sessions, (kg) => loadValue(kg, units));
 
   const phoneOnly = read !== null && server === null ? <Text style={[styles.small, { color: color.muted }]}>{t('history.phoneOnly')}</Text> : null;
   const empty =
