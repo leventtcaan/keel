@@ -171,7 +171,7 @@ class ConsentTests {
     void everyGrantAndWithdrawalIsKept() throws Exception {
         AccountId account = TestSessions.newAccount();
         put(account, "HEALTH_DATA", Map.of("textVersion", CURRENT));
-        mvc.delete().uri("/v1/consents/HEALTH_DATA").header("Authorization", bearer(account)).exchange();
+        mvc.delete().uri("/v1/consents/HEALTH_DATA?confirmDataDeletion=true").header("Authorization", bearer(account)).exchange();
         put(account, "HEALTH_DATA", Map.of("textVersion", CURRENT));
 
         assertThat(jdbc.sql("select action from consent.consent_event where account_id = :account order by occurred_at, id")
