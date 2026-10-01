@@ -1333,7 +1333,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-111, K-220]
     why: "K-401 tutarlılık sayısını ve dört bileşenini gösterir; motor hesaplıyor (K-111, K-220) ama sözleşmede uç yok. İstemci hesaplamaz (K-401 bölündü, M4 Part 1)"
     acceptance:
@@ -1352,7 +1352,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-307, K-212, K-111, K-420]
     why: "En çok kullanılan ekran; günlük sayı + haftanın kararı + bugün yapılacaklar"
     acceptance:
@@ -1741,7 +1741,7 @@ tasks:
     module: privacy
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-204, K-214]
     why: "Şimdi yalnız gizleniyor; GDPR Md. 17(1)(b). Levent (a) seçti (ADR-028 #21)"
     acceptance:

@@ -249,8 +249,10 @@ giriş var; `eas init` ve Apple adımları Levent'in terminalinde) — cevap bek
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-231 rıza geri çekilince silme (backend: aynı transaction, onaylı API, ikinci geçiş, profil PUT #27) | ✅ birleşti; inceleme 4 bulgu (2 test onaysız geri çekiyordu, sayım, **zamanlanmış ikinci geçiş transaction'sız — K-214'ten beri hesap silmede de**, mobil uyum); CI'da RED önce | #212 | `M4/K-231.md` |
-| K-231 mobil (uyarı + önce dışa aktar + telefondaki sağlık kayıtlarını unutma) | PR'da (auto-merge); mutasyon 9/9; simülatörde görülemedi (sunucu yok) | #214 | `M4/K-231.md` |
-| K-230 LEA ağı RFM'in temkinli ucu (`rfm_energy_margin_pct` 5/6, `Snapshot.fatProxyEnergyPct`) | PR'da (auto-merge); inceleme ≥80 bulgu yok; mutasyon 10/10 | #213 | `M4/K-230.md` |
+| K-231 mobil (uyarı + önce dışa aktar + telefondaki sağlık kayıtlarını unutma) | ✅ birleşti; mutasyon 9/9; simülatörde görülemedi (sunucu yok) | #214 | `M4/K-231.md` |
+| K-230 LEA ağı RFM'in temkinli ucu (`rfm_energy_margin_pct` 5/6, `Snapshot.fatProxyEnergyPct`) | ✅ birleşti; inceleme ≥80 bulgu yok; mutasyon 10/10 | #213 | `M4/K-230.md` |
+| **K-420** (K-401'den bölündü) `GET /v1/consistency` — bu hafta + dört bileşen + sayaç | ✅ birleşti; inceleme: `min()`+`single()` kararsız planda 500 → düzeltildi; mutasyon 7/7 | #216 | `M4/K-420.md` |
+| K-401 Bugün ekranı (tutarlılık, karar kartı + "Why this call", liste, çipler) | PR'da (auto-merge); simülatör: tekrar eden başlık bulundu; inceleme: yalnız açılışta okuyordu → odak + öne gelme; mutasyon 13/13 + 2/2 | #217 | `M4/K-401.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
