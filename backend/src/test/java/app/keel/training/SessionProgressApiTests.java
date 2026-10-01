@@ -72,7 +72,8 @@ class SessionProgressApiTests {
         AccountId account = withAProgram();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "barKg", 20,
                 "platesKg", List.of(20, 10, 5, 2.5), "dumbbellsKg", List.of(18, 20, 22, 24), "machines", List.of()));
-        String workout = start(account, MONDAY_EVENING);
+        // The week before, then this week: both in the past, as a finish cannot end before its start (endedAt is now).
+        String workout = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         sets(account, workout, "one_arm_dumbbell_row", 3, 20, 12, "LEFT");
         sets(account, workout, "one_arm_dumbbell_row", 3, 20, 12, "RIGHT");
@@ -83,7 +84,7 @@ class SessionProgressApiTests {
         assertThat(next(account, 3)).isEqualTo(target(22, 8));
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
                 "dumbbellsKg", List.of(10, 20), "machines", List.of()));
-        String nextWeek = start(account, MONDAY_EVENING.plus(java.time.Duration.ofDays(7)));
+        String nextWeek = start(account, MONDAY_EVENING);
         sets(account, nextWeek, "one_arm_dumbbell_row", 3, 20, 12, "LEFT");
         sets(account, nextWeek, "one_arm_dumbbell_row", 3, 20, 12, "RIGHT");
         assertThat(finish(account, nextWeek, List.of())).hasStatusOk();
