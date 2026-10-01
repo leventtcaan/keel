@@ -24,10 +24,10 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
       async (day: string) => {
         const { syncHealth: sync, queue: waiting, report: tell } = latest.current;
         const named = (error: unknown) => tell({ name: error instanceof Error ? error.name : 'Unknown' });
-        await sync().catch(named);
+        const health = await sync().catch(named);
         // What waits on the phone goes first (a weigh-in just saved), so the server's list shows it (K-402 review).
         await waiting.drain().catch(named);
-        return loadToday(api, day);
+        return { ...(await loadToday(api, day)), stepsToday: health?.stepsToday ?? null };
       },
       [api],
     ),

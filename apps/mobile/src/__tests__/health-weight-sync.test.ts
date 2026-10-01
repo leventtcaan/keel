@@ -15,6 +15,8 @@ function health(weights: HealthWeight[], available = true) {
     available,
     requestRead: async () => {},
     readWeights: async (from, to) => (asked.push({ from, to }), weights),
+    readDailyTotals: async () => [],
+    readSleep: async () => [],
   };
   return { access, asked };
 }

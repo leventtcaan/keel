@@ -18,10 +18,7 @@ describe('sleepMinutesByDay', () => {
   });
 
   test('a watch and a phone recording the same night count it once', () => {
-    const minutes = sleepMinutesByDay([
-      night('2026-09-29T23:00:00', '2026-09-30T06:00:00'),
-      night('2026-09-29T23:30:00', '2026-09-30T06:30:00'),
-    ]);
+    const minutes = sleepMinutesByDay([night('2026-09-29T23:00:00', '2026-09-30T06:00:00'), night('2026-09-29T23:30:00', '2026-09-30T06:30:00')]);
     expect(Object.values(minutes)).toEqual([450]);
   });
 
@@ -57,7 +54,12 @@ function memoryKv() {
 }
 function api() {
   const sent: unknown[] = [];
-  return { sent, PUT: jest.fn(async (_path: string, init: { body: unknown }) => (sent.push(init.body), { data: init.body, response: new Response(null, { status: 200 }) })) };
+  return {
+    sent,
+    PUT: jest.fn(
+      async (_path: string, init: { body: unknown }) => (sent.push(init.body), { data: init.body, response: new Response(null, { status: 200 }) }),
+    ),
+  };
 }
 
 const NOW = new Date('2026-10-01T18:00:00');
@@ -97,7 +99,22 @@ test('a day already sent with the same values is not sent again; a changed one i
 test('a day the server did not take is sent again next time', async () => {
   const kv = memoryKv();
   const failing = { PUT: jest.fn(async () => Promise.reject(new TypeError('offline'))) };
-  await syncActivityDays({ health: health([{ day: TODAY, steps: 100 }], []).access, api: failing as never, kv, consented: async () => true, now: NOW });
+  await syncActivityDays({
+    health: health([{ day: TODAY, steps: 100 }], []).access,
+    api: failing as never,
+    kv,
+    consented: async () => true,
+    now: NOW,
+  });
+  const a = api();
+  await syncActivityDays({ health: health([{ day: TODAY, steps: 100 }], []).access, api: a as never, kv, consented: async () => true, now: NOW });
+  expect(a.PUT).toHaveBeenCalledTimes(1);
+});
+
+test('a day the server refused is not taken for sent either', async () => {
+  const kv = memoryKv();
+  const refusing = { PUT: jest.fn(async () => ({ error: { code: 'CONSENT_REQUIRED' }, response: new Response(null, { status: 403 }) })) };
+  await syncActivityDays({ health: health([{ day: TODAY, steps: 100 }], []).access, api: refusing as never, kv, consented: async () => true, now: NOW });
   const a = api();
   await syncActivityDays({ health: health([{ day: TODAY, steps: 100 }], []).access, api: a as never, kv, consented: async () => true, now: NOW });
   expect(a.PUT).toHaveBeenCalledTimes(1);
@@ -106,7 +123,9 @@ test('a day the server did not take is sent again next time', async () => {
 test('without both consents (or once either is withdrawn): nothing read, nothing sent', async () => {
   const h = health([{ day: TODAY, steps: 100 }], []);
   const a = api();
-  expect(await syncActivityDays({ health: h.access, api: a as never, kv: memoryKv(), consented: async () => false, now: NOW })).toEqual({ stepsToday: null });
+  expect(await syncActivityDays({ health: h.access, api: a as never, kv: memoryKv(), consented: async () => false, now: NOW })).toEqual({
+    stepsToday: null,
+  });
   expect(h.asked).toEqual([]);
   expect(a.PUT).not.toHaveBeenCalled();
 });

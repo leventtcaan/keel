@@ -14,6 +14,7 @@ import { Share } from 'react-native';
 import { apiBaseUrl } from '@/api/config';
 import type { HealthAccess } from '@/health/health';
 import { healthKitAccess } from '@/health/healthKit';
+import { syncActivityDays } from '@/health/activitySync';
 import { syncHealthWeights } from '@/health/weightSync';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
@@ -28,8 +29,11 @@ export type PhoneServices = AppServices & {
   signInWithApple(): Promise<SignInResult>;
   appleAvailable(): Promise<boolean>;
   health: HealthAccess;
-  /** Reads Apple Health's new scale weigh-ins into the queue, with both consents (K-402); how many were new. */
-  syncHealth(): Promise<number>;
+  /**
+   * Reads Apple Health with both consents: new scale weigh-ins into the queue (K-402), steps, sleep and active energy to
+   * the server (K-404). How many weigh-ins were new, and today's steps as Health counts them.
+   */
+  syncHealth(): Promise<{ weighIns: number; stepsToday: number | null }>;
   /** The account's data as a JSON file, handed to the share sheet (K-309). */
   exportData(): Promise<void>;
 };
@@ -55,17 +59,18 @@ async function build(): Promise<PhoneServices> {
   const health = healthKitAccess(); // not available in Expo Go (no native module)
   return {
     ...services,
-    signInWithApple: () =>
-      signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session }),
+    signInWithApple: () => signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session }),
     appleAvailable: () => AppleAuthentication.isAvailableAsync(),
     health,
-    syncHealth: () =>
-      syncHealthWeights({
-        health,
-        queue: services.queue,
-        consented: async () => (await services.consents.granted('HEALTH_DATA')) && (await services.consents.granted('APPLE_HEALTH')),
-        now: new Date(),
-      }),
+    syncHealth: async () => {
+      // Both consents, asked once for the two reads (K-402, K-404).
+      const both = (await services.consents.granted('HEALTH_DATA')) && (await services.consents.granted('APPLE_HEALTH'));
+      const consented = async () => both;
+      const now = new Date();
+      const weighIns = await syncHealthWeights({ health, queue: services.queue, consented, now });
+      const { stepsToday } = await syncActivityDays({ health, api: services.api, kv: Storage, consented, now });
+      return { weighIns, stepsToday };
+    },
     exportData: () =>
       exportAccount({
         api: services.api,

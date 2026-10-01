@@ -25,6 +25,8 @@ export const READ_TYPES = [
 ] as const;
 
 type Sample = { uuid: string; startDate: Date; quantity: number };
+type Statistics = { startDate?: Date; sumQuantity?: { quantity: number } };
+type StatisticsOptions = { unit: string; filter: { date: { startDate: Date; endDate: Date } } };
 type Kit = {
   isHealthDataAvailable(): boolean;
   requestAuthorization(request: { toRead: readonly string[] }): Promise<boolean>;
@@ -33,7 +35,27 @@ type Kit = {
     identifier: string,
     options: { limit: number; unit: string; filter: { date: { startDate: Date; endDate: Date } } },
   ): Promise<readonly Sample[]>;
+  // HKStatisticsCollectionQuery: one sum per interval from the anchor; Health merges overlapping sources itself.
+  queryStatisticsCollectionForQuantity(
+    identifier: string,
+    statistics: readonly string[],
+    anchorDate: Date,
+    intervalComponents: { day: number },
+    options: StatisticsOptions,
+  ): Promise<readonly Statistics[]>;
+  queryCategorySamples(
+    identifier: string,
+    options: { limit: number; filter: { date: { startDate: Date; endDate: Date } } },
+  ): Promise<readonly { value: number; startDate: Date; endDate: Date }[]>;
 };
+
+// HKCategoryValueSleepAnalysis (the installed library's CategoryValueSleepAnalysis): in bed 0, awake 2; asleep is
+// unspecified 1, core 3, deep 4, REM 5.
+const ASLEEP = new Set([1, 3, 4, 5]);
+
+/** The phone's calendar day of a moment, as the API writes a day. */
+const dayOf = (moment: Date) =>
+  `${moment.getFullYear()}-${String(moment.getMonth() + 1).padStart(2, '0')}-${String(moment.getDate()).padStart(2, '0')}`;
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const loadLibrary = () => require('@kingstinct/react-native-healthkit') as Kit;
@@ -61,6 +83,41 @@ export function healthKitAccess(load: () => unknown = loadLibrary, inExpoGo: () 
         filter: { date: { startDate: from, endDate: to } },
       });
       return samples.map((sample) => ({ id: sample.uuid, at: sample.startDate.toISOString(), kg: sample.quantity }));
+    },
+    // Steps and active energy as Health's daily sums, days from the phone's local midnight (K-404).
+    readDailyTotals: async (from, to) => {
+      const midnight = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+      const sums = (identifier: string, unit: string) =>
+        kit.queryStatisticsCollectionForQuantity(
+          identifier,
+          ['cumulativeSum'],
+          midnight,
+          { day: 1 },
+          {
+            unit,
+            filter: { date: { startDate: midnight, endDate: to } },
+          },
+        );
+      const steps = await sums('HKQuantityTypeIdentifierStepCount', 'count');
+      const energy = await sums('HKQuantityTypeIdentifierActiveEnergyBurned', 'kcal');
+      const days = new Map<string, { day: string; steps?: number; activeEnergyKcal?: number }>();
+      const add = (rows: readonly Statistics[], field: 'steps' | 'activeEnergyKcal') => {
+        for (const row of rows) {
+          if (row.startDate === undefined || row.sumQuantity === undefined) continue;
+          const day = dayOf(row.startDate);
+          days.set(day, { ...(days.get(day) ?? { day }), [field]: row.sumQuantity.quantity });
+        }
+      };
+      add(steps, 'steps');
+      add(energy, 'activeEnergyKcal');
+      return [...days.values()];
+    },
+    readSleep: async (from, to) => {
+      const samples = await kit.queryCategorySamples('HKCategoryTypeIdentifierSleepAnalysis', {
+        limit: 0,
+        filter: { date: { startDate: from, endDate: to } },
+      });
+      return samples.map((s) => ({ start: s.startDate.toISOString(), end: s.endDate.toISOString(), asleep: ASLEEP.has(s.value) }));
     },
   };
 }
