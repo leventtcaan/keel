@@ -7,6 +7,7 @@
  * dynamic programming. Comments on the why live with the backend's (LoadSteps.java); this follows it line for line.
  */
 import type { components } from '@/api/schema';
+import type { UnitSystem } from '@/units/units';
 
 type Equipment = components['schemas']['Equipment'];
 
@@ -156,12 +157,17 @@ export function platesPerSide(totalKg: number, baseKg: number, platesKg: number[
   const best = fewest(plates, side);
   if (best[side] === Infinity) return null;
   const found: number[] = [];
-  for (let left = side; left > 0; ) {
+  for (let left = side; left > 0;) {
     const i = plates.findIndex((plate) => plate <= left && best[left - plate] === best[left] - 1);
     found.push(heaviestFirst[i]);
     left -= plates[i];
   }
   return found;
+}
+
+/** The unit the gym's plates were entered in, as they read on the rack (a 20 kg plate is no 44 lb plate). */
+export function plateUnits(gym: GymWeights): UnitSystem {
+  return scaleOf([...(gym.barKg === null ? [] : [gym.barKg]), ...gym.platesKg]) === LB ? 'IMPERIAL' : 'METRIC';
 }
 
 /**

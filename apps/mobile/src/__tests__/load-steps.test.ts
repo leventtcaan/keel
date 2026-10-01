@@ -7,7 +7,15 @@ import path from 'node:path';
 
 import { type GymWeights, platesFor, platesPerSide, round } from '@/train/loadSteps';
 
-type Case = { case: string; equipment: string; exerciseId: string; gym: Partial<GymWeights> & { machines: Record<string, number> }; lastKg: number; targetKg: number; expect: number | string };
+type Case = {
+  case: string;
+  equipment: string;
+  exerciseId: string;
+  gym: Partial<GymWeights> & { machines: Record<string, number> };
+  lastKg: number;
+  targetKg: number;
+  expect: number | string;
+};
 type PlateCase = { case: string; baseKg: number; platesKg: number[]; totalKg: number; expect: number[] | null };
 
 const fixture = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../../contracts/fixtures/load-steps.json'), 'utf8')) as {

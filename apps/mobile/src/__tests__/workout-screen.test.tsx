@@ -289,7 +289,7 @@ test('a move marked not clean and then clean again is sent as clean', async () =
   expect(finish).toMatchObject({ body: { uncleanExerciseIds: [] } });
 });
 
-describe('warm-ups (K-417, G1 K-17): three before the day\'s first move, one before the others; easy, no RIR', () => {
+describe("warm-ups (K-417, G1 K-17): three before the day's first move, one before the others; easy, no RIR", () => {
   const GYM = { barKg: 20, platesKg: [20, 10, 5, 2.5, 1.25], dumbbellsKg: [], stackStepKg: null, machineStepsKg: {} };
   const BARBELL = EXERCISES.map((m) => ({ ...m, equipment: m.id === 'bench_press' ? 'BARBELL' : 'DUMBBELL' })) as Schemas['Exercise'][];
 
@@ -301,7 +301,11 @@ describe('warm-ups (K-417, G1 K-17): three before the day\'s first move, one bef
     expect(screen.getByText('52.5 kg × 3')).toBeTruthy();
     await fireEvent.press(screen.getByText('Log warm-up 1'));
     expect(sets()).toEqual([
-      { kind: 'set', workoutClientId: 'w1', body: { clientId: expect.any(String), exerciseId: 'bench_press', setType: 'WARM_UP', loadKg: 32.5, reps: 8 } },
+      {
+        kind: 'set',
+        workoutClientId: 'w1',
+        body: { clientId: expect.any(String), exerciseId: 'bench_press', setType: 'WARM_UP', loadKg: 32.5, reps: 8 },
+      },
     ]);
     expect(await screen.findByText('Log warm-up 2')).toBeTruthy();
     expect(screen.getByText('Done')).toBeTruthy();
@@ -315,7 +319,11 @@ describe('warm-ups (K-417, G1 K-17): three before the day\'s first move, one bef
     await fireEvent.press(await screen.findByText('Log warm-up 1'));
     const [workout, set] = mockRecord.mock.calls.map(([o]) => o);
     expect(workout.kind).toBe('workout');
-    expect(set).toMatchObject({ kind: 'set', workoutClientId: workout.kind === 'workout' ? workout.body.clientId : '', body: { setType: 'WARM_UP' } });
+    expect(set).toMatchObject({
+      kind: 'set',
+      workoutClientId: workout.kind === 'workout' ? workout.body.clientId : '',
+      body: { setType: 'WARM_UP' },
+    });
   });
 
   test('gone once the move has a work set; the next move gets one, both sides of a one-sided move with one tap', async () => {
@@ -361,16 +369,23 @@ describe('warm-ups (K-417, G1 K-17): three before the day\'s first move, one bef
     expect(screen.queryByText("That set couldn't be saved on the phone. Try again.")).toBeNull();
   });
 
-  test("with the gym in use: loads its bar and plates make, and the plates a side for each and for the set under way", async () => {
+  test('with the gym in use: loads its bar and plates make, and the plates a side for each and for the set under way', async () => {
     mockData = { ...mockData, exercises: { state: 'ready', value: BARBELL }, gym: GYM };
     await show();
     expect(await screen.findByText('30 kg × 8')).toBeTruthy();
-    expect(screen.getByText('5 a side')).toBeTruthy();
+    expect(screen.getByText('5 kg a side')).toBeTruthy();
     expect(screen.getByText('42.5 kg × 5')).toBeTruthy();
-    expect(screen.getByText('10 + 1.25 a side')).toBeTruthy();
-    expect(screen.getByText('20 + 1.25 a side')).toBeTruthy(); // 62.5 kg, the set under way
+    expect(screen.getByText('10 + 1.25 kg a side')).toBeTruthy();
+    expect(screen.getByText('20 + 1.25 kg a side')).toBeTruthy(); // 62.5 kg, the set under way
     await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '20');
     expect(screen.getByText('Just the bar')).toBeTruthy();
+  });
+
+  test("in lb at a kg gym, the load is in lb and the plates are the gym's, in kg: what is on the rack", async () => {
+    mockUnits = 'IMPERIAL';
+    mockData = { ...mockData, exercises: { state: 'ready', value: BARBELL }, gym: GYM };
+    await show();
+    expect(await screen.findByText('20 + 1.25 kg a side')).toBeTruthy(); // 137.8 lb, the 62.5 kg under way
   });
 
   test('in lb, the plates are said in lb', async () => {
@@ -379,6 +394,6 @@ describe('warm-ups (K-417, G1 K-17): three before the day\'s first move, one bef
     mockData = { ...mockData, exercises: { state: 'ready', value: BARBELL }, gym: LB_GYM };
     await show();
     await fireEvent.changeText(await screen.findByLabelText('Weight (lb)'), '135');
-    expect(screen.getByText('45 a side')).toBeTruthy();
+    expect(screen.getByText('45 lb a side')).toBeTruthy();
   });
 });

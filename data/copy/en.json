@@ -190,7 +190,7 @@
       "log": "Log warm-up {number}",
       "done": "Done"
     },
-    "plates": "{plates} a side",
+    "plates": "{plates} {unit} a side",
     "barOnly": "Just the bar"
   },
   "summary": {

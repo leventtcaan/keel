@@ -17,9 +17,8 @@ import { RestTimer } from '@/train/RestTimer';
 import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
 import { Warmups } from '@/train/Warmups';
-import { platesFor } from '@/train/loadSteps';
 import { dayName, exerciseName } from '@/train/program';
-import { buildSet, exerciseStatus, parseEntry, parseLoad, platesText } from '@/train/session';
+import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
 import type { TrainData } from '@/train/trainData';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, finishRecord, lastTime, planExercise } from '@/train/workout';
@@ -231,9 +230,8 @@ export default function WorkoutScreen() {
       />
     );
   const typedKg = row === null ? null : parseLoad(entry.load, units, row.suggested.loadKg);
-  const perSide =
-    move === undefined || move.load !== 'EXTERNAL' || typedKg === null || data?.gym === undefined ? null : platesFor(move.equipment, typedKg, data.gym);
-  const plates = perSide === null || entryBlock === null ? null : <Text style={[styles.small, { color: color.muted }]}>{platesText(perSide, units)}</Text>;
+  const perSide = move === undefined || typedKg === null || entryBlock === null ? null : platesLine(move, typedKg, data?.gym);
+  const plates = perSide === null ? null : <Text style={[styles.small, { color: color.muted }]}>{perSide}</Text>;
   const warmBlock =
     move === undefined || warming.length === 0 ? null : (
       <Warmups

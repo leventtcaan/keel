@@ -7,8 +7,8 @@ import { useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-import { type GymWeights, platesFor } from './loadSteps';
-import { platesText, setText } from './session';
+import type { GymWeights } from './loadSteps';
+import { platesLine, setText } from './session';
 import type { Warmup } from './warmup';
 
 type Props = {
@@ -30,9 +30,9 @@ export function Warmups({ move, warmups, done, gym, onLog, problem, busy }: Prop
   const { color } = useTheme();
   const units = useUnits();
   const rows = warmups.map((warmup, index) => {
-    const plates = gym === undefined || move.load !== 'EXTERNAL' ? null : platesFor(move.equipment, warmup.loadKg, gym);
+    const plates = platesLine(move, warmup.loadKg, gym);
     const mark = index < done ? <Text style={[styles.small, { color: color.accent }]}>{t('workout.warmup.done')}</Text> : null;
-    const side = plates === null ? null : <Text style={[styles.small, { color: color.muted }]}>{platesText(plates, units)}</Text>;
+    const side = plates === null ? null : <Text style={[styles.small, { color: color.muted }]}>{plates}</Text>;
     return (
       <View key={index} style={styles.row}>
         <Text style={[styles.text, styles.grow, { color: index < done ? color.muted : color.text }]}>{setText(warmup, move, units)}</Text>
@@ -41,7 +41,8 @@ export function Warmups({ move, warmups, done, gym, onLog, problem, busy }: Prop
       </View>
     );
   });
-  const next = done < warmups.length ? <Button label={t('workout.warmup.log', { number: done + 1 })} variant="ghost" onPress={onLog} disabled={busy} /> : null;
+  const next =
+    done < warmups.length ? <Button label={t('workout.warmup.log', { number: done + 1 })} variant="ghost" onPress={onLog} disabled={busy} /> : null;
   const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{problem}</Text>;
   return (
     <View style={styles.block}>

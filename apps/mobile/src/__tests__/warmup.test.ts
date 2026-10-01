@@ -32,7 +32,7 @@ test("rounded to the gym's dumbbells", () => {
   expect(warmups(15, CURL, false, GYM, 'METRIC')).toEqual([{ loadKg: 8, reps: 5 }]);
 });
 
-test("never below the bar; two warm-ups that round to the same load are one", () => {
+test('never below the bar; two warm-ups that round to the same load are one', () => {
   expect(warmups(30, BENCH, true, GYM, 'METRIC')).toEqual([
     { loadKg: 20, reps: 8 },
     { loadKg: 25, reps: 3 },

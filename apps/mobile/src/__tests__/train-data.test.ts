@@ -149,14 +149,20 @@ describe('the gym in use (K-417): its weights kept on the phone, for the warm-up
       machines: [{ exerciseId: 'leg_extension', stepKg: 7 }],
     },
   ];
-  const withGyms = (gyms: unknown) =>
-    api((path) => (path === '/v1/program' ? json(PROGRAM) : path === '/v1/gyms' ? json(gyms) : json(EXERCISES)));
+  const withGyms = (gyms: unknown) => api((path) => (path === '/v1/program' ? json(PROGRAM) : path === '/v1/gyms' ? json(gyms) : json(EXERCISES)));
   const WEIGHTS = { barKg: 20, platesKg: [20, 10, 5], dumbbellsKg: [10, 12], stackStepKg: 5, machineStepsKg: { leg_extension: 7 } };
 
   test("online: the current gym's weights, machines by move; kept", async () => {
     const kv = memoryKv();
     expect((await readTraining(withGyms(GYMS), kv)).gym).toEqual(WEIGHTS);
-    expect((await readTraining(api(() => 'offline'), kv)).gym).toEqual(WEIGHTS);
+    expect(
+      (
+        await readTraining(
+          api(() => 'offline'),
+          kv,
+        )
+      ).gym,
+    ).toEqual(WEIGHTS);
   });
 
   test('a gym without a bar or a stack step has none', async () => {
@@ -168,7 +174,14 @@ describe('the gym in use (K-417): its weights kept on the phone, for the warm-up
     const kv = memoryKv();
     await readTraining(withGyms(GYMS), kv);
     expect((await readTraining(withGyms([GYMS[0]]), kv)).gym).toBeUndefined();
-    expect((await readTraining(api(() => 'offline'), kv)).gym).toBeUndefined();
+    expect(
+      (
+        await readTraining(
+          api(() => 'offline'),
+          kv,
+        )
+      ).gym,
+    ).toBeUndefined();
   });
 
   test('the gyms unread and nothing kept: no gym, and the program is not marked as a kept copy for it', async () => {
@@ -180,7 +193,7 @@ describe('the gym in use (K-417): its weights kept on the phone, for the warm-up
     expect(read.kept).toBe(false);
   });
 
-  test("the gym from its kept copy with the program fresh: the gym is there, and the read is not a kept copy", async () => {
+  test('the gym from its kept copy with the program fresh: the gym is there, and the read is not a kept copy', async () => {
     const kv = memoryKv();
     await readTraining(withGyms(GYMS), kv);
     const read = await readTraining(
