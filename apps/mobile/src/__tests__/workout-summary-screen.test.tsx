@@ -78,3 +78,13 @@ test('the moves that reached the target effort, what improved, and a note where 
   await fireEvent.press(screen.getByText('Done'));
   expect(mockBack).toHaveBeenCalled();
 });
+
+test('one move judged reads as one exercise', async () => {
+  RECORDS.splice(RECORDS.findIndex((r) => r.clientId === 'c'), 1); // the raise was not done
+  await render(
+    <ThemeProvider>
+      <WorkoutSummaryScreen />
+    </ThemeProvider>,
+  );
+  expect(await screen.findByText('1 of 1 exercise reached your target effort')).toBeTruthy();
+});

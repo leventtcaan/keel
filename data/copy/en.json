@@ -204,7 +204,8 @@
     "first": "First time logged",
     "note": "RIR {rir}. Next time, aim for 0–{target}.",
     "done": "Done",
-    "setRir": "{set} · RIR {rir}"
+    "setRir": "{set} · RIR {rir}",
+    "reachedOne": "{reached} of 1 exercise reached your target effort"
   },
   "food": {
     "budget": {

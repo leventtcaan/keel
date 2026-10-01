@@ -48,7 +48,11 @@ export default function WorkoutSummaryScreen() {
     summary === null ? null : (
       <View style={[styles.header, { backgroundColor: color.decisionBackground }]}>
         <Text style={[styles.headline, { color: color.decisionText }]}>
-          {summary.judged === 0 ? t('summary.noneJudged') : t('summary.reached', { reached: summary.reached, judged: summary.judged })}
+          {summary.judged === 0
+            ? t('summary.noneJudged')
+            : summary.judged === 1
+              ? t('summary.reachedOne', { reached: summary.reached })
+              : t('summary.reached', { reached: summary.reached, judged: summary.judged })}
         </Text>
       </View>
     );
