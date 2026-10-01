@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
-import type { components } from "@/api/schema";
-import { Button } from "@/components/Button";
-import { Card } from "@/components/Card";
-import { DecisionBlock } from "@/components/DecisionBlock";
-import { t } from "@/copy";
-import { useTheme } from "@/theme/theme";
-import { tokens } from "@/theme/tokens";
+import type { components } from '@/api/schema';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { DecisionBlock } from '@/components/DecisionBlock';
+import { t } from '@/copy';
+import { useTheme } from '@/theme/theme';
+import { tokens } from '@/theme/tokens';
 
-import { labelKey, reasonLines } from "./today";
+import { labelKey, reasonLines } from './today';
 
-type Decision = components["schemas"]["Decision"];
+type Decision = components['schemas']['Decision'];
 
 // "Mon, Oct 5": the review day as a date only, in English like every word of the app.
-const REVIEW_DAY = new Intl.DateTimeFormat("en-US", {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-  timeZone: "UTC",
+const REVIEW_DAY = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
 });
 
 /**
@@ -32,12 +32,8 @@ export function CallCard({ decision }: { decision: Decision | null }) {
   if (decision === null) {
     return (
       <Card>
-        <Text style={[styles.label, { color: color.muted }]}>
-          {t("today.call.eyebrow")}
-        </Text>
-        <Text style={[styles.text, { color: color.textSecondary }]}>
-          {t("today.call.none")}
-        </Text>
+        <Text style={[styles.label, { color: color.muted }]}>{t('today.call.eyebrow')}</Text>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t('today.call.none')}</Text>
       </Card>
     );
   }
@@ -48,45 +44,26 @@ export function CallCard({ decision }: { decision: Decision | null }) {
         <View key={i} style={styles.reason}>
           {/* The leading reason is the call itself: its words are the block's title already. */}
           {line.titleKey !== null && line.titleKey !== titleKey && (
-            <Text style={[styles.text, { color: color.decisionText }]}>
-              {t(line.titleKey)}
-            </Text>
+            <Text style={[styles.text, { color: color.decisionText }]}>{t(line.titleKey)}</Text>
           )}
-          <Text style={[styles.small, { color: color.decisionMuted }]}>
-            {t(`today.call.source.${line.tag}`)}
-          </Text>
+          <Text style={[styles.small, { color: color.decisionMuted }]}>{t(`today.call.source.${line.tag}`)}</Text>
         </View>
       ))}
       <Text style={[styles.small, { color: color.decisionMuted }]}>
-        {t("today.call.nextReview", {
+        {t('today.call.nextReview', {
           date: REVIEW_DAY.format(new Date(`${decision.nextReview}T00:00:00Z`)),
         })}
       </Text>
     </View>
   ) : null;
   return (
-    <DecisionBlock
-      testID="call"
-      eyebrow={t(labelKey(decision.copyKey))}
-      title={t(titleKey)}
-    >
+    <DecisionBlock testID="call" eyebrow={t(labelKey(decision.copyKey))} title={t(titleKey)}>
       <View style={styles.row}>
-        <Text style={[styles.small, { color: color.decisionMuted }]}>
-          {t("today.call.eyebrow")}
-        </Text>
-        <Text style={[styles.small, { color: color.decisionMuted }]}>
-          {t(`today.call.confidence.${decision.confidence}`)}
-        </Text>
+        <Text style={[styles.small, { color: color.decisionMuted }]}>{t('today.call.eyebrow')}</Text>
+        <Text style={[styles.small, { color: color.decisionMuted }]}>{t(`today.call.confidence.${decision.confidence}`)}</Text>
       </View>
-      <Text style={[styles.text, { color: color.decisionTextSecondary }]}>
-        {t(`${decision.copyKey}.body`)}
-      </Text>
-      <Button
-        label={open ? t("today.call.hide") : t("today.call.why")}
-        variant="ghost"
-        size="sm"
-        onPress={() => setOpen(!open)}
-      />
+      <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t(`${decision.copyKey}.body`)}</Text>
+      <Button label={open ? t('today.call.hide') : t('today.call.why')} variant="ghost" size="sm" onPress={() => setOpen(!open)} />
       {reasons}
     </DecisionBlock>
   );
@@ -97,8 +74,8 @@ const styles = StyleSheet.create({
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: tokens.space.sm,
   },
   reasons: { gap: tokens.space.sm },
