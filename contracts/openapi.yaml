@@ -1969,6 +1969,12 @@ components:
           uniqueItems: true
           items:
             type: string
+        note:
+          type: string
+          maxLength: 500
+          description: |
+            The user's own words (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500 characters
+            is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
     Workout:
       type: object
       required: [id, clientId, startedAt, sets]
@@ -1987,6 +1993,9 @@ components:
         programDayId:
           type: string
           format: uuid
+        note:
+          type: string
+          description: The session's note, given at the finish (WorkoutFinish.note).
         sets:
           type: array
           items:
@@ -2032,6 +2041,12 @@ components:
           description: Reps left in the tank; absent when not given.
         side:
           $ref: "#/components/schemas/Side"
+        note:
+          type: string
+          maxLength: 500
+          description: |
+            The user's own words on this set (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500
+            characters is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
     LoggedSet:
       allOf:
         - $ref: "#/components/schemas/NewSet"

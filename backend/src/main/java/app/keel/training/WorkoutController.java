@@ -38,7 +38,19 @@ class WorkoutController {
 
     /** What a set and a program can be (K-210, K-211, K-218, keel.training); load to 2 decimals, the column's. */
     @ConfigurationProperties("keel.training")
-    record TrainingLimits(BigDecimal maxLoadKg, int maxReps, int maxRir, int maxPlannedSets, int maxDayExercises, int maxDayName) {
+    record TrainingLimits(BigDecimal maxLoadKg, int maxReps, int maxRir, int maxPlannedSets, int maxDayExercises, int maxDayName,
+            int maxNote) {
+
+        /** A note as kept: the user's words without their outer spaces; none when there are no words (K-422). */
+        static String note(String text) {
+            return text == null || text.isBlank() ? null : text.strip();
+        }
+
+        /** A note within the limit, in characters as the user counts them (an emoji is one). */
+        boolean fits(String text) {
+            String kept = note(text);
+            return kept == null || kept.codePointCount(0, kept.length()) <= maxNote;
+        }
 
         boolean reps(Integer reps) {
             return reps != null && reps >= 0 && reps <= maxReps;
@@ -69,25 +81,26 @@ class WorkoutController {
     }
 
     /** {@code uncleanExerciseIds}: the moves whose form was not clean (G6 K-31) — their load and reps are held (K-217). */
-    record Finish(Instant endedAt, List<String> uncleanExerciseIds) {
+    record Finish(Instant endedAt, List<String> uncleanExerciseIds, String note) {
     }
 
     record NewSet(UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
-            Side side) {
+            Side side, String note) {
     }
 
     /** Contract Workout. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, List<LoggedSet> sets) {
+    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<LoggedSet> sets) {
     }
 
     /** Contract LoggedSet. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps,
-            Integer rir, Side side) {
+            Integer rir, Side side, String note) {
 
         static LoggedSet of(WorkoutStore.LoggedSet set) {
-            return new LoggedSet(set.id(), set.clientId(), set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side());
+            return new LoggedSet(set.id(), set.clientId(), set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(),
+                    set.note());
         }
     }
 
@@ -138,13 +151,13 @@ class WorkoutController {
     @PostMapping("/v1/workouts/{id}/finish")
     Workout finish(AccountId account, @PathVariable UUID id, @RequestBody Finish finish) {
         WorkoutStore.Workout workout = owned(account, id);
-        require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()));
+        require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()) && limits.fits(finish.note()));
         List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
         // No contains(null): an immutable list (the default here) throws on it.
         require(unclean.stream().allMatch(exercise -> exercise != null && catalog.find(exercise).isPresent())
                 && Set.copyOf(unclean).size() == unclean.size());
         // Kept with the next session's load and reps of the day's planned moves (K-217).
-        progress.finish(account, workout, finish.endedAt(), Set.copyOf(unclean));
+        progress.finish(account, workout, finish.endedAt(), TrainingLimits.note(finish.note()), Set.copyOf(unclean));
         return read(owned(account, id));
     }
 
@@ -152,10 +165,10 @@ class WorkoutController {
     ResponseEntity<LoggedSet> log(AccountId account, @PathVariable UUID id, @RequestBody NewSet set) {
         owned(account, id);
         require(set.clientId() != null && catalog.find(set.exerciseId()).isPresent() && set.setType() != null
-                && limits.load(set.loadKg()) && limits.reps(set.reps()) && limits.rir(set.rir()));
+                && limits.load(set.loadKg()) && limits.reps(set.reps()) && limits.rir(set.rir()) && limits.fits(set.note()));
         require(SetRules.accepts(catalog.find(set.exerciseId()).orElseThrow(), set.setType(), set.loadKg(), set.rir(), set.side()));
         WorkoutStore.Stored<WorkoutStore.LoggedSet> stored = store.log(account, id, new WorkoutStore.LoggedSet(null, set.clientId(),
-                set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), id));
+                set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), TrainingLimits.note(set.note()), id));
         if (!stored.record().workoutId().equals(id)) {
             // The clientId is already a set of another workout: not a replay of this one (ADR-024 §11).
             throw new ApiException(ErrorCode.CONFLICT);
@@ -177,7 +190,7 @@ class WorkoutController {
     }
 
     private Workout read(WorkoutStore.Workout workout) {
-        return new Workout(workout.id(), workout.clientId(), workout.startedAt(), workout.endedAt(), workout.programDayId(),
+        return new Workout(workout.id(), workout.clientId(), workout.startedAt(), workout.endedAt(), workout.programDayId(), workout.note(),
                 store.sets(workout.id()).stream().map(LoggedSet::of).toList());
     }
 

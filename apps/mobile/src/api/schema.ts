@@ -1303,6 +1303,11 @@ export interface components {
             /** Format: date-time */
             endedAt: string;
             uncleanExerciseIds?: string[];
+            /**
+             * @description The user's own words (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500 characters
+             *     is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
+             */
+            note?: string;
         };
         Workout: {
             /** Format: uuid */
@@ -1314,6 +1319,8 @@ export interface components {
             endedAt?: string;
             /** Format: uuid */
             programDayId?: string;
+            /** @description The session's note, given at the finish (WorkoutFinish.note). */
+            note?: string;
             sets: components["schemas"]["LoggedSet"][];
         };
         /**
@@ -1343,6 +1350,11 @@ export interface components {
             /** @description Reps left in the tank; absent when not given. */
             rir?: number;
             side?: components["schemas"]["Side"];
+            /**
+             * @description The user's own words on this set (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500
+             *     characters is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
+             */
+            note?: string;
         };
         LoggedSet: components["schemas"]["NewSet"] & {
             /** Format: uuid */

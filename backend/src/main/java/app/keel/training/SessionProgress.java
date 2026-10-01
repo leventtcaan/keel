@@ -61,8 +61,8 @@ class SessionProgress {
 
     /** Finishes the workout and sets the targets it gives, together: a finish is kept with its targets or not at all. */
     @Transactional
-    void finish(AccountId account, WorkoutStore.Workout workout, Instant endedAt, Set<String> uncleanExerciseIds) {
-        workouts.finish(account, workout.id(), endedAt);
+    void finish(AccountId account, WorkoutStore.Workout workout, Instant endedAt, String note, Set<String> uncleanExerciseIds) {
+        workouts.finish(account, workout.id(), endedAt, note);
         if (workout.programDayId() == null) {
             return;
         }
