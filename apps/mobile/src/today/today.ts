@@ -22,6 +22,8 @@ export type TodayData = {
   targets: Loaded<Schemas['Targets']>;
   /** What is left of today's food (K-409). */
   budget: Loaded<Schemas['DayBudget']>;
+  /** Today's steps as Apple Health counts them, read on the phone (K-404); null when Health was not read. */
+  stepsToday?: number | null;
 };
 
 type Answer<T> = { data?: T; error?: { code?: string }; response: Response };

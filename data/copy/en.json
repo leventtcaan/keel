@@ -83,7 +83,8 @@
       },
       "steps": {
         "title": "Steps",
-        "target": "Target {steps}"
+        "target": "Target {steps}",
+        "count": "{steps} of {target}"
       },
       "food": {
         "title": "Food left today"

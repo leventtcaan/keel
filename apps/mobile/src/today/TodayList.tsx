@@ -21,6 +21,7 @@ type Props = {
   program: Loaded<Schemas['Program']>;
   targets: Loaded<Schemas['Targets']>;
   budget: Loaded<Schemas['DayBudget']>;
+  stepsToday?: number | null;
 };
 
 /**
@@ -28,7 +29,7 @@ type Props = {
  * what is not — a part behind the consent or not there yet is simply not a row. The food row is what is left of the
  * day's budget, as ranges (K-409); the step count arrives from Apple Health (K-404).
  */
-export function TodayList({ day, weighIns, program, targets, budget }: Props) {
+export function TodayList({ day, weighIns, program, targets, budget, stepsToday }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   // Built outside the rows' JSX (the raw-text guard reads JSX attributes there).
@@ -80,12 +81,15 @@ export function TodayList({ day, weighIns, program, targets, budget }: Props) {
     rows.push({ key: 'food', title: t('today.list.food.title'), line: <BudgetLine left={budget.value.left} /> });
   }
   if (targets.state === 'ready') {
+    const target = targets.value.stepsPerDay.toLocaleString('en-US');
     rows.push({
       key: 'steps',
       title: t('today.list.steps.title'),
-      note: t('today.list.steps.target', {
-        steps: targets.value.stepsPerDay.toLocaleString('en-US'),
-      }),
+      // Today's count from Apple Health when it was read (K-404); the target alone otherwise.
+      note:
+        stepsToday == null
+          ? t('today.list.steps.target', { steps: target })
+          : t('today.list.steps.count', { steps: stepsToday.toLocaleString('en-US'), target }),
     });
   }
   if (rows.length === 0) return null;

@@ -15,6 +15,14 @@
       "tag": "literatur",
       "source": "arastirma/ham/J1-cinsiyet.md#D1",
       "note": "The weigh-in screen's chart (K-402): the longest decision window (women, 28 days, decision_window_days in windows.yaml), so the weeks a call is made on are always in sight."
+    },
+    {
+      "key": "health_activity_read_days",
+      "value": 28,
+      "unit": "days",
+      "tag": "literatur",
+      "source": "arastirma/ham/J1-cinsiyet.md#D1",
+      "note": "How far back each Apple Health read looks for steps, sleep and active energy (K-404): the longest decision window (women, 28 days, decision_window_days), since a week's step days are judged in it (K-220). A day already sent with the same values is not sent again."
     }
   ]
 }

@@ -6,6 +6,7 @@
 import { type ApiClient, createApiClient } from '@/api/client';
 import { type ConsentState, createConsentState } from '@/consent/consentState';
 import { withdrawConsent } from '@/consent/consents';
+import { forgetSentActivityDays } from '@/health/activitySync';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
@@ -73,6 +74,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     units.forget().catch(reportError); // the preference belongs to the account too
     profile.forget().catch(reportError); // and so does "onboarding done"
     consents.forget().catch(reportError); // and what the phone knew of its consents
+    forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
   });
 
   return {
@@ -104,6 +106,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     withdrawHealthData: async () => {
       await withdrawConsent(api, 'HEALTH_DATA', true);
       await consents.remember('HEALTH_DATA', 'WITHDRAWN').catch(reportError);
+      await forgetSentActivityDays(kv).catch(reportError); // the server deleted them: sent again once allowed again
       // Withdrawn and deleted on the server. A local delete that fails is reported, not a failed withdrawal: while the
       // consent stays withdrawn, whatever stays here is refused by the server (CONSENT_REQUIRED); it goes at sign-out.
       await store.forget(HEALTH_KINDS).catch(reportError);

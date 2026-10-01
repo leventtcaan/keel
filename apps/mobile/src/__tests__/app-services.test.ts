@@ -27,7 +27,12 @@ function server(status = 201) {
   let offline = false;
   const fetch = jest.fn(async (request: Request) => {
     if (offline) throw new TypeError('Network request failed');
-    seen.push({ method: request.method, path: request.url.slice(BASE.length), auth: request.headers.get('Authorization'), body: await request.text() });
+    seen.push({
+      method: request.method,
+      path: request.url.slice(BASE.length),
+      auth: request.headers.get('Authorization'),
+      body: await request.text(),
+    });
     return new Response(JSON.stringify({ ...WEIGH.body, id: 'srv-1' }), { status, headers: { 'Content-Type': 'application/json' } });
   });
   return { fetch, seen, goOffline: () => (offline = true), goOnline: () => (offline = false) };
@@ -87,9 +92,7 @@ test('sign-out forgets the session and the records on the phone, and ends the se
   await services.queue.drain();
   fake.goOnline();
   await services.signOut();
-  expect(fake.seen).toEqual([
-    expect.objectContaining({ method: 'POST', path: '/v1/auth/sign-out', body: JSON.stringify({ refreshToken: 'r1' }) }),
-  ]);
+  expect(fake.seen).toEqual([expect.objectContaining({ method: 'POST', path: '/v1/auth/sign-out', body: JSON.stringify({ refreshToken: 'r1' }) })]);
   expect(await services.session.accessToken()).toBeNull();
   expect(await services.pendingCount()).toBe(0);
 });
@@ -193,10 +196,29 @@ test("signing in brings the account's own unit choice to the phone", async () =>
   const kv = memoryKv();
   const fetch = jest.fn(async (request: Request) =>
     request.url.endsWith('/v1/profile')
-      ? new Response(JSON.stringify({ goal: 'LOSE_FAT', sex: 'MALE', heightCm: 178, birthYear: 1994, programChoice: 'BUILD_ONE_FOR_ME', schedule: { trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'America/New_York' }, units: 'METRIC' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      ? new Response(
+          JSON.stringify({
+            goal: 'LOSE_FAT',
+            sex: 'MALE',
+            heightCm: 178,
+            birthYear: 1994,
+            programChoice: 'BUILD_ONE_FOR_ME',
+            schedule: { trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'America/New_York' },
+            units: 'METRIC',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
       : new Response(null, { status: 204 }),
   );
-  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US' });
+  const services = await createAppServices({
+    baseUrl: BASE,
+    storage: memoryStorage(),
+    db: nodeSqlite(),
+    fetch,
+    report: () => {},
+    kv,
+    locale: 'en-US',
+  });
   expect(services.units.current()).toBe('IMPERIAL'); // the region's guess
   await services.session.signIn(SESSION);
   await settle();
@@ -206,8 +228,18 @@ test("signing in brings the account's own unit choice to the phone", async () =>
 
 test('signing in asks, with the same single read, whether onboarding is done (K-306)', async () => {
   const kv = memoryKv();
-  const fetch = jest.fn(async () => new Response(JSON.stringify({ code: 'NOT_FOUND', message: 'x' }), { status: 404, headers: { 'Content-Type': 'application/json' } }));
-  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US' });
+  const fetch = jest.fn(
+    async () => new Response(JSON.stringify({ code: 'NOT_FOUND', message: 'x' }), { status: 404, headers: { 'Content-Type': 'application/json' } }),
+  );
+  const services = await createAppServices({
+    baseUrl: BASE,
+    storage: memoryStorage(),
+    db: nodeSqlite(),
+    fetch,
+    report: () => {},
+    kv,
+    locale: 'en-US',
+  });
   expect(services.profile.current()).toBe('unknown');
   await services.session.signIn(SESSION);
   await settle();
@@ -219,10 +251,29 @@ test('signing out forgets whether onboarding was done: the next account is asked
   const kv = memoryKv();
   const fetch = jest.fn(async (request: Request) =>
     request.url.endsWith('/v1/profile')
-      ? new Response(JSON.stringify({ goal: 'LOSE_FAT', sex: 'MALE', heightCm: 178, birthYear: 1994, programChoice: 'BUILD_ONE_FOR_ME', schedule: { trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'America/New_York' }, units: 'METRIC' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      ? new Response(
+          JSON.stringify({
+            goal: 'LOSE_FAT',
+            sex: 'MALE',
+            heightCm: 178,
+            birthYear: 1994,
+            programChoice: 'BUILD_ONE_FOR_ME',
+            schedule: { trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'America/New_York' },
+            units: 'METRIC',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
       : new Response(null, { status: 204 }),
   );
-  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US' });
+  const services = await createAppServices({
+    baseUrl: BASE,
+    storage: memoryStorage(),
+    db: nodeSqlite(),
+    fetch,
+    report: () => {},
+    kv,
+    locale: 'en-US',
+  });
   await services.session.signIn(SESSION);
   await settle();
   expect(services.profile.current()).toBe('done');
@@ -235,7 +286,15 @@ test('signing out forgets whether onboarding was done: the next account is asked
 test('opening without a session drops a "done" left on the phone (a backup restored to a new phone)', async () => {
   const kv = memoryKv();
   kv.items.set('onboarded', 'done');
-  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv, locale: 'en-US' });
+  const services = await createAppServices({
+    baseUrl: BASE,
+    storage: memoryStorage(),
+    db: nodeSqlite(),
+    fetch: server().fetch,
+    report: () => {},
+    kv,
+    locale: 'en-US',
+  });
   expect(services.profile.current()).toBe('unknown');
   expect(kv.items.has('onboarded')).toBe(false);
 });
@@ -268,6 +327,16 @@ describe('withdrawing the health data consent (K-231)', () => {
     expect(await services.pendingCount()).toBe(1);
   });
 
+  test('the activity days sent are forgotten with it: the server deleted them, so they go again once allowed again (K-404)', async () => {
+    const kv = memoryKv();
+    kv.items.set('health.activityDaysSent', '{"2026-09-30":"x"}');
+    const fake = server(200);
+    const { services } = await setup(fake, memoryStorage(), kv);
+    await services.session.signIn(SESSION);
+    await services.withdrawHealthData();
+    expect(kv.items.has('health.activityDaysSent')).toBe(false);
+  });
+
   test('the phone remembers it at once: offline, the health data consent reads as withdrawn (K-402)', async () => {
     const { services, fake } = await withEntries(200);
     await services.consents.remember('HEALTH_DATA', 'GRANTED');
@@ -290,6 +359,16 @@ describe('withdrawing the health data consent (K-231)', () => {
     await expect(services.withdrawHealthData()).rejects.toMatchObject({ name: 'NoConnection' });
     expect(await services.pendingCount()).toBe(3);
   });
+});
+
+test('the activity days sent go with the session at sign-out (K-404)', async () => {
+  const kv = memoryKv();
+  kv.items.set('health.activityDaysSent', '{"2026-09-30":"x"}');
+  const { services } = await setup(server(), memoryStorage(), kv);
+  await services.session.signIn(SESSION);
+  await services.signOut();
+  await settle();
+  expect(kv.items.has('health.activityDaysSent')).toBe(false);
 });
 
 test('what the phone knows of the consents goes with the session at sign-out (K-402)', async () => {
@@ -315,7 +394,15 @@ describe('deleting the account (K-309, K-214)', () => {
 
   test('the server deletes (202): the phone forgets the session and the records, and asks nothing more of the server', async () => {
     const fake = accountServer(202);
-    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: fake.fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
+    const services = await createAppServices({
+      baseUrl: BASE,
+      storage: memoryStorage(),
+      db: nodeSqlite(),
+      fetch: fake.fetch,
+      report: () => {},
+      kv: memoryKv(),
+      locale: 'en-US',
+    });
     await services.session.signIn(SESSION);
     await settle();
     await services.queue.record(WEIGH);
@@ -331,7 +418,15 @@ describe('deleting the account (K-309, K-214)', () => {
     const fetch = jest.fn(async () => {
       throw new TypeError('Network request failed');
     });
-    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
+    const services = await createAppServices({
+      baseUrl: BASE,
+      storage: memoryStorage(),
+      db: nodeSqlite(),
+      fetch,
+      report: () => {},
+      kv: memoryKv(),
+      locale: 'en-US',
+    });
     await services.session.signIn(SESSION);
     await services.queue.record(WEIGH);
     await expect(services.deleteAccount()).rejects.toMatchObject({ name: 'NoConnection' });
@@ -341,7 +436,15 @@ describe('deleting the account (K-309, K-214)', () => {
 
   test('deleted: the settings kept for the account go too (units, "onboarding done")', async () => {
     const kv = memoryKv();
-    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: accountServer(202).fetch, report: () => {}, kv, locale: 'en-US' });
+    const services = await createAppServices({
+      baseUrl: BASE,
+      storage: memoryStorage(),
+      db: nodeSqlite(),
+      fetch: accountServer(202).fetch,
+      report: () => {},
+      kv,
+      locale: 'en-US',
+    });
     await services.session.signIn(SESSION);
     kv.items.set('onboarded', 'done');
     await services.units.keepOnPhone('METRIC');
@@ -357,7 +460,15 @@ describe('deleting the account (K-309, K-214)', () => {
       throw Object.assign(new Error('keychain locked'), { name: 'KeychainError' });
     };
     const problems: string[] = [];
-    const services = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: accountServer(202).fetch, report: (p) => problems.push(p.name), kv: memoryKv(), locale: 'en-US' });
+    const services = await createAppServices({
+      baseUrl: BASE,
+      storage,
+      db: nodeSqlite(),
+      fetch: accountServer(202).fetch,
+      report: (p) => problems.push(p.name),
+      kv: memoryKv(),
+      locale: 'en-US',
+    });
     await services.session.signIn(SESSION);
     await services.queue.record(WEIGH);
     await services.deleteAccount(); // the account is gone; a local hiccup is not a failed deletion
@@ -366,10 +477,21 @@ describe('deleting the account (K-309, K-214)', () => {
     expect(problems).toContain('KeychainError');
   });
 
-  test.each([500, 400, 409])('a refused deletion (%i) keeps the session: nothing is forgotten on the phone, the error says why by name', async (status) => {
-    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: accountServer(status).fetch, report: () => {}, kv: memoryKv(), locale: 'en-US' });
-    await services.session.signIn(SESSION);
-    await expect(services.deleteAccount()).rejects.toMatchObject({ name: 'DeletionFailed' });
-    expect(await services.session.isSignedIn()).toBe(true);
-  });
+  test.each([500, 400, 409])(
+    'a refused deletion (%i) keeps the session: nothing is forgotten on the phone, the error says why by name',
+    async (status) => {
+      const services = await createAppServices({
+        baseUrl: BASE,
+        storage: memoryStorage(),
+        db: nodeSqlite(),
+        fetch: accountServer(status).fetch,
+        report: () => {},
+        kv: memoryKv(),
+        locale: 'en-US',
+      });
+      await services.session.signIn(SESSION);
+      await expect(services.deleteAccount()).rejects.toMatchObject({ name: 'DeletionFailed' });
+      expect(await services.session.isSignedIn()).toBe(true);
+    },
+  );
 });

@@ -378,6 +378,12 @@ test.each([
   expect(mockPush).toHaveBeenCalledWith('/weigh-in');
 });
 
+test("today's steps from Apple Health, against the target (K-404)", async () => {
+  mockSyncHealth.mockResolvedValueOnce({ weighIns: 0, stepsToday: 6240 } as never);
+  await show();
+  expect(screen.getByText(t('today.list.steps.count', { steps: '6,240', target: '8,000' }))).toBeOnTheScreen();
+});
+
 test('Settings is still one tap from Today', async () => {
   await show();
   await press(t('settings.entry'));

@@ -24,7 +24,7 @@ export default function TodayScreen() {
   const { color } = useTheme();
   const { day, data, reload } = useToday();
 
-  const parts = data === null ? [] : Object.values(data);
+  const parts = data === null ? [] : [data.consistency, data.decision, data.program, data.weighIns, data.targets, data.budget];
   const needsConsent = data !== null && (data.consistency.state === 'consent' || data.decision.state === 'consent');
   const failed = parts.some((part) => part.state === 'failed');
 
@@ -49,7 +49,9 @@ export default function TodayScreen() {
       <CallCard decision={data.decision.state === 'ready' ? data.decision.value : null} />
     );
   const list =
-    data === null ? null : <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} />;
+    data === null ? null : (
+      <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
+    );
   const coachChips = data === null ? null : <CoachChips keys={chips(data, day)} />;
 
   return (
