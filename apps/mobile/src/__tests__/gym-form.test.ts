@@ -27,7 +27,7 @@ test("a rack from its lightest, heaviest and step, written back as a list in the
   expect(rackOf('', '10', '2')).toBeNull();
 });
 
-test('a stored gym as the form shows it: lb weights on the quarter pound they were entered on', () => {
+test('a stored gym as the form shows it: in its own unit, lb weights on the quarter pound they were entered on', () => {
   const gym: Gym = {
     id: 'g1',
     name: 'Club',
@@ -38,7 +38,8 @@ test('a stored gym as the form shows it: lb weights on the quarter pound they we
     stackStepKg: 4.54,
     machines: [{ exerciseId: 'leg_extension', stepKg: 2.27 }],
   };
-  expect(formOf(gym, 'IMPERIAL')).toEqual({
+  expect(formOf(gym, 'METRIC')).toEqual({
+    unit: 'IMPERIAL',
     name: 'Club',
     current: true,
     bar: '45',
@@ -47,7 +48,7 @@ test('a stored gym as the form shows it: lb weights on the quarter pound they we
     stackStep: '10',
     machines: { leg_extension: '5' },
   });
-  expect(formOf({ ...gym, barKg: undefined, stackStepKg: undefined, machines: [] }, 'IMPERIAL')).toMatchObject({
+  expect(formOf({ ...gym, barKg: undefined, stackStepKg: undefined, machines: [] }, 'METRIC')).toMatchObject({
     bar: '',
     stackStep: '',
     machines: {},
@@ -56,7 +57,7 @@ test('a stored gym as the form shows it: lb weights on the quarter pound they we
 
 test('the form as the server takes it: kg, empty fields absent, a machine without a step left out', () => {
   const form = {
-    ...emptyForm(),
+    ...emptyForm('METRIC'),
     name: ' Home ',
     bar: '20',
     plates: '20 10 5',
@@ -64,7 +65,7 @@ test('the form as the server takes it: kg, empty fields absent, a machine withou
     stackStep: '',
     machines: { leg_extension: '7.5', cable_row: '' },
   };
-  expect(buildGym(form, 'METRIC')).toEqual({
+  expect(buildGym(form)).toEqual({
     kind: 'ok',
     input: {
       name: 'Home',
@@ -78,10 +79,53 @@ test('the form as the server takes it: kg, empty fields absent, a machine withou
 });
 
 test('what is not a weight is caught by its field; a gym needs a name', () => {
-  expect(buildGym({ ...emptyForm(), name: '  ' }, 'METRIC')).toEqual({ kind: 'problem', field: 'name' });
-  expect(buildGym({ ...emptyForm(), name: 'Home', bar: 'x' }, 'METRIC')).toEqual({ kind: 'problem', field: 'bar' });
-  expect(buildGym({ ...emptyForm(), name: 'Home', plates: '20 x' }, 'METRIC')).toEqual({ kind: 'problem', field: 'plates' });
-  expect(buildGym({ ...emptyForm(), name: 'Home', dumbbells: '0' }, 'METRIC')).toEqual({ kind: 'problem', field: 'dumbbells' });
-  expect(buildGym({ ...emptyForm(), name: 'Home', stackStep: '-5' }, 'METRIC')).toEqual({ kind: 'problem', field: 'stackStep' });
-  expect(buildGym({ ...emptyForm(), name: 'Home', machines: { leg_extension: 'x' } }, 'METRIC')).toEqual({ kind: 'problem', field: 'machines' });
+  expect(buildGym({ ...emptyForm('METRIC'), name: '  ' })).toEqual({ kind: 'problem', field: 'name' });
+  expect(buildGym({ ...emptyForm('METRIC'), name: 'Home', bar: 'x' })).toEqual({ kind: 'problem', field: 'bar' });
+  expect(buildGym({ ...emptyForm('METRIC'), name: 'Home', plates: '20 x' })).toEqual({ kind: 'problem', field: 'plates' });
+  expect(buildGym({ ...emptyForm('METRIC'), name: 'Home', dumbbells: '0' })).toEqual({ kind: 'problem', field: 'dumbbells' });
+  expect(buildGym({ ...emptyForm('METRIC'), name: 'Home', stackStep: '-5' })).toEqual({ kind: 'problem', field: 'stackStep' });
+  expect(buildGym({ ...emptyForm('METRIC'), name: 'Home', machines: { leg_extension: 'x' } })).toEqual({ kind: 'problem', field: 'machines' });
+});
+
+describe('a gym is edited in its own unit: what is on the rack, whatever the user reads loads in', () => {
+  const KG_GYM: Gym = {
+    id: 'g',
+    name: 'Club',
+    current: true,
+    barKg: 20,
+    platesKg: [20, 10, 5, 2.5, 1.25],
+    dumbbellsKg: [12, 10],
+    stackStepKg: 5,
+    machines: [{ exerciseId: 'leg_extension', stepKg: 7.5 }],
+  };
+  const LB_GYM: Gym = {
+    id: 'h',
+    name: 'Garage',
+    current: false,
+    barKg: 20.41,
+    platesKg: [20.41, 11.34, 1.13],
+    dumbbellsKg: [6.8, 2.27],
+    machines: [],
+  };
+  const DUMBBELLS_IN_LB: Gym = { id: 'd', name: 'Rack', current: false, platesKg: [], dumbbellsKg: [4.54, 2.27], machines: [] };
+
+  test('a kg gym for a lb user is shown in kg', () => {
+    expect(formOf(KG_GYM, 'IMPERIAL')).toMatchObject({ unit: 'METRIC', bar: '20', plates: '20 10 5 2.5 1.25' });
+    expect(formOf(DUMBBELLS_IN_LB, 'METRIC')).toMatchObject({ unit: 'IMPERIAL', dumbbells: '10 5' });
+  });
+
+  test.each([
+    ['a kg gym', KG_GYM],
+    ['a lb gym', LB_GYM],
+    ['a lb rack alone', DUMBBELLS_IN_LB],
+  ])('%s saved untouched is the gym it was, for either user', (_name, gym) => {
+    const { id: _, ...stored } = gym;
+    for (const units of ['METRIC', 'IMPERIAL'] as const) {
+      expect(buildGym(formOf(gym, units))).toEqual({ kind: 'ok', input: stored });
+    }
+  });
+
+  test("a new gym starts in the user's unit", () => {
+    expect(emptyForm('IMPERIAL').unit).toBe('IMPERIAL');
+  });
 });

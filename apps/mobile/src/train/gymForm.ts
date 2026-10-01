@@ -7,8 +7,12 @@
 import type { components } from '@/api/schema';
 import { type UnitSystem, formatPlate, parseLoadKg } from '@/units/units';
 
+import { unitsOf } from './loadSteps';
+
 type Schemas = components['schemas'];
+/** `unit`: the gym's own — what its plates and dumbbells say, which may not be the user's (a lb user at a kg gym). */
 export type GymForm = {
+  unit: UnitSystem;
   name: string;
   current: boolean;
   bar: string;
@@ -20,7 +24,16 @@ export type GymForm = {
 export type Field = 'name' | 'bar' | 'plates' | 'dumbbells' | 'stackStep' | 'machines';
 export type Built = { kind: 'ok'; input: Schemas['GymInput'] } | { kind: 'problem'; field: Field };
 
-export const emptyForm = (): GymForm => ({ name: '', current: false, bar: '', plates: '', dumbbells: '', stackStep: '', machines: {} });
+export const emptyForm = (unit: UnitSystem): GymForm => ({
+  unit,
+  name: '',
+  current: false,
+  bar: '',
+  plates: '',
+  dumbbells: '',
+  stackStep: '',
+  machines: {},
+});
 
 /** One weight in kg as stored, or null when the text is not a weight above zero. */
 function weight(text: string, units: UnitSystem): number | null {
@@ -55,11 +68,18 @@ export function rackOf(lightest: string, heaviest: string, step: string): string
   return rack.join(' ');
 }
 
-/** A stored gym as the form shows it: each weight in the user's unit, lb ones on the quarter pound they were made in. */
-export function formOf(gym: Schemas['Gym'], units: UnitSystem): GymForm {
+/**
+ * A stored gym as the form shows it, in its own unit (lb ones on the quarter pound they were made in): saved untouched,
+ * it is the gym it was. Shown in the user's unit instead, a 20 kg bar would read 44 lb and be saved as 19.96 kg.
+ */
+export function formOf(gym: Schemas['Gym'], userUnits: UnitSystem): GymForm {
+  const stored = [...(gym.barKg === undefined ? [] : [gym.barKg]), ...gym.platesKg, ...gym.dumbbellsKg];
+  const steps = [...(gym.stackStepKg === undefined ? [] : [gym.stackStepKg]), ...gym.machines.map((m) => m.stepKg)];
+  const units = unitsOf([...stored, ...steps]) ?? userUnits;
   const one = (kg: number | undefined) => (kg === undefined ? '' : formatPlate(kg, units));
   const list = (kgs: number[]) => kgs.map((kg) => formatPlate(kg, units)).join(' ');
   return {
+    unit: units,
     name: gym.name,
     current: gym.current,
     bar: one(gym.barKg),
@@ -71,7 +91,8 @@ export function formOf(gym: Schemas['Gym'], units: UnitSystem): GymForm {
 }
 
 /** The form as the server takes it: kg; an empty bar or stack step absent; a machine without its own step left out. */
-export function buildGym(form: GymForm, units: UnitSystem): Built {
+export function buildGym(form: GymForm): Built {
+  const units = form.unit;
   const name = form.name.trim();
   if (name === '') return { kind: 'problem', field: 'name' };
   const bar = form.bar.trim() === '' ? undefined : weight(form.bar, units);

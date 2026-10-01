@@ -29,7 +29,6 @@ export default function GymScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const units = useUnits();
   const { color } = useTheme();
-  const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
   const [read, setRead] = useState<Read | null>(null);
   const [form, setForm] = useState<GymForm | null>(null);
   const [rack, setRack] = useState({ lightest: '', heaviest: '', step: '' });
@@ -47,7 +46,7 @@ export default function GymScreen() {
           (m) => m.equipment === 'MACHINE' || m.equipment === 'CABLE',
         );
         // A new gym is the one in use when it is the first.
-        const start = found === undefined ? { ...emptyForm(), current: gyms.value.length === 0 } : formOf(found, units);
+        const start = found === undefined ? { ...emptyForm(units), current: gyms.value.length === 0 } : formOf(found, units);
         setRead({ exists: found !== undefined, machines });
         setForm(start);
       })
@@ -61,7 +60,7 @@ export default function GymScreen() {
 
   const save = async () => {
     if (form === null || busy) return;
-    const built = buildGym(form, units);
+    const built = buildGym(form);
     if (built.kind === 'problem') {
       setProblem(built.field);
       return;
@@ -95,6 +94,7 @@ export default function GymScreen() {
     }
   };
 
+  const unit = t(form?.unit === 'IMPERIAL' ? 'units.lbUnit' : 'units.kgUnit');
   const problemOf = (field: Field) => (problem === field ? t(`gym.problem.${field}`) : null);
   const failed = read === 'failed' ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('gyms.loadFailed')}</Text> : null;
   const fillRack = () => {
@@ -127,6 +127,11 @@ export default function GymScreen() {
       <>
         <TextField label={t('gym.name')} value={form.name} onChangeText={(name) => change({ name })} problem={problemOf('name')} />
         <Chip label={t('gym.current')} selected={form.current} onPress={() => change({ current: !form.current })} />
+        <Text style={[styles.small, { color: color.muted }]}>{t('gym.unitNote')}</Text>
+        <View style={styles.units}>
+          <Chip label={t('units.kgUnit')} selected={form.unit === 'METRIC'} onPress={() => change({ unit: 'METRIC' })} />
+          <Chip label={t('units.lbUnit')} selected={form.unit === 'IMPERIAL'} onPress={() => change({ unit: 'IMPERIAL' })} />
+        </View>
         <TextField
           label={t('gym.bar', { unit })}
           value={form.bar}
@@ -139,12 +144,14 @@ export default function GymScreen() {
           value={form.plates}
           onChangeText={(plates) => change({ plates })}
           problem={problemOf('plates')}
+          multiline
         />
         <TextField
           label={t('gym.dumbbells', { unit })}
           value={form.dumbbells}
           onChangeText={(dumbbells) => change({ dumbbells })}
           problem={problemOf('dumbbells')}
+          multiline
         />
         <View style={styles.rack}>
           <TextField
@@ -195,6 +202,8 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   block: { gap: tokens.space.sm },
   rack: { flexDirection: 'row', gap: tokens.space.sm },
+  units: { flexDirection: 'row', gap: tokens.space.sm },
+  small: { fontSize: tokens.type.bodySmall },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
 });

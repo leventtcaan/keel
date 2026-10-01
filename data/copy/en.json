@@ -1112,6 +1112,7 @@
     },
     "refused": "This gym wasn't saved: some of it is past what one gym can hold. Check the lists.",
     "saveFailed": "This gym couldn't be saved. Try again when you're online.",
-    "deleteFailed": "This gym couldn't be deleted. Try again when you're online."
+    "deleteFailed": "This gym couldn't be deleted. Try again when you're online.",
+    "unitNote": "The gym's weights, as its plates and dumbbells are marked:"
   }
 }

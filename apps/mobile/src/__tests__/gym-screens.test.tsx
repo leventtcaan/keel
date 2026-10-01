@@ -177,3 +177,14 @@ describe('a gym', () => {
     expect(puts()[0].body).toMatchObject({ current: true });
   });
 });
+
+test('a lb user opens a kg gym: it reads in kg, as its plates are marked, and saved untouched it stays the same gym', async () => {
+  mockUnits = 'IMPERIAL';
+  mockParams = { id: 'g2' };
+  await show('gym');
+  expect(await screen.findByDisplayValue('20 10 5 2.5 1.25')).toBeTruthy();
+  expect(screen.getByLabelText('Plates (kg), separated by spaces')).toBeTruthy();
+  await fireEvent.press(screen.getByText('Save'));
+  const { id: _, ...stored } = GYMS[1];
+  expect(puts()[0].body).toEqual({ ...stored, dumbbellsKg: [12, 10] });
+});

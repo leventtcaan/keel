@@ -167,7 +167,13 @@ export function platesPerSide(totalKg: number, baseKg: number, platesKg: number[
 
 /** The unit the gym's plates were entered in, as they read on the rack (a 20 kg plate is no 44 lb plate). */
 export function plateUnits(gym: GymWeights): UnitSystem {
-  return scaleOf([...(gym.barKg === null ? [] : [gym.barKg]), ...gym.platesKg]) === LB ? 'IMPERIAL' : 'METRIC';
+  return unitsOf([...(gym.barKg === null ? [] : [gym.barKg]), ...gym.platesKg]) ?? 'METRIC';
+}
+
+/** The unit stored weights were entered in (lb when they sit on the lb grid and are no kg weights); null for none. */
+export function unitsOf(weightsKg: number[]): UnitSystem | null {
+  if (weightsKg.length === 0) return null;
+  return scaleOf(weightsKg) === LB ? 'IMPERIAL' : 'METRIC';
 }
 
 /**
