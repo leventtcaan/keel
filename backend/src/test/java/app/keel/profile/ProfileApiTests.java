@@ -19,6 +19,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import tools.jackson.databind.json.JsonMapper;
@@ -43,6 +44,9 @@ class ProfileApiTests {
 
     @Autowired
     Profiles profiles;
+
+    @Autowired
+    JdbcClient jdbc;
 
     static Map<String, Object> onboarding() {
         Map<String, Object> profile = new HashMap<>(Map.of(
@@ -192,9 +196,58 @@ class ProfileApiTests {
         AccountId account = consenting();
         put(account, onboarding());
         assertThat((Map<String, Object>) read(get(account)).get("food")).containsEntry("avoid", List.of("mushrooms"));
-        mvc.delete().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account)).exchange();
+        mvc.delete().uri("/v1/consents/HEALTH_DATA?confirmDataDeletion=true").header("Authorization", TestSessions.bearer(context, account))
+                .exchange();
 
         assertThat((Map<String, Object>) read(get(account)).get("food")).doesNotContainKey("avoid").containsEntry("budgetNote", "student budget");
+    }
+
+    @Test
+    void withoutTheConsentAPutLeavesTheStoredFoodsToAvoidAlone() throws Exception {
+        // ADR-030 #27: settings PUT the whole profile; a user whose consent is not in force cannot see the list, so a PUT
+        // without it is not a wish to empty it. Here the consent was given to a text since revised: closed, not withdrawn.
+        AccountId account = consenting();
+        put(account, onboarding());
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :account, 'HEALTH_DATA', 'GRANTED', '0-revised', now() + interval '1 second')""")
+                .param("account", account.value()).update();
+        Map<String, Object> noList = onboarding();
+        noList.put("food", Map.of("budgetNote", "student budget"));
+        Map<String, Object> emptyList = onboarding();
+        emptyList.put("food", Map.of("avoid", List.of(), "budgetNote", "student budget"));
+        Map<String, Object> noFood = onboarding();
+        noFood.remove("food");
+
+        assertThat(put(account, noList)).hasStatusOk();
+        assertThat(put(account, emptyList)).hasStatusOk();
+        assertThat(put(account, noFood)).hasStatusOk();
+
+        assertThat(mvc.put().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"1-draft\"}").exchange()).hasStatusOk();
+        assertThat((Map<String, Object>) read(get(account)).get("food")).containsEntry("avoid", List.of("mushrooms"));
+    }
+
+    @Test
+    void withTheConsentAPutReplacesTheListAndAWithdrawalDeletesIt() throws Exception {
+        AccountId account = consenting();
+        put(account, onboarding());
+        Map<String, Object> emptyList = onboarding();
+        emptyList.put("food", Map.of("avoid", List.of(), "budgetNote", "student budget"));
+        assertThat(put(account, emptyList)).hasStatusOk();
+        assertThat((Map<String, Object>) read(get(account)).get("food")).containsEntry("avoid", List.of());
+
+        put(account, onboarding());
+        assertThat(mvc.delete().uri("/v1/consents/HEALTH_DATA?confirmDataDeletion=true").header("Authorization", TestSessions.bearer(context, account))
+                .exchange()).hasStatusOk();
+        consentAgain(account);
+
+        assertThat((Map<String, Object>) read(get(account)).get("food")).doesNotContainKey("avoid");
+    }
+
+    private void consentAgain(AccountId account) {
+        assertThat(mvc.put().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"1-draft\"}").exchange()).hasStatusOk();
     }
 
     private AccountId consenting() {

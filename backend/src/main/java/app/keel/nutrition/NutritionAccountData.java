@@ -1,9 +1,12 @@
 package app.keel.nutrition;
 
 import app.keel.shared.AccountDataExport;
+import app.keel.consent.ConsentKind;
+import app.keel.consent.ConsentWithdrawn;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
 import java.util.Map;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -22,9 +25,21 @@ class NutritionAccountData implements AccountDataExport {
 
     @ApplicationModuleListener
     void on(AccountDeletionRequested deletion) {
+        delete(deletion.account());
+    }
+
+    /** Meals are health data (K-231): in the withdrawal's transaction. */
+    @EventListener
+    void on(ConsentWithdrawn withdrawn) {
+        if (withdrawn.kind() == ConsentKind.HEALTH_DATA) {
+            delete(withdrawn.account());
+        }
+    }
+
+    private void delete(AccountId account) {
         // Items go with their meal (on delete cascade); by account too, as for sets.
-        jdbc.sql("delete from nutrition.meal_item where account_id = :account").param("account", deletion.account().value()).update();
-        jdbc.sql("delete from nutrition.meal where account_id = :account").param("account", deletion.account().value()).update();
+        jdbc.sql("delete from nutrition.meal_item where account_id = :account").param("account", account.value()).update();
+        jdbc.sql("delete from nutrition.meal where account_id = :account").param("account", account.value()).update();
     }
 
     @Override

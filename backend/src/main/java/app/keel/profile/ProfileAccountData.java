@@ -1,9 +1,12 @@
 package app.keel.profile;
 
 import app.keel.shared.AccountDataExport;
+import app.keel.consent.ConsentKind;
+import app.keel.consent.ConsentWithdrawn;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
 import java.util.Map;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -26,6 +29,15 @@ class ProfileAccountData implements AccountDataExport {
     @ApplicationModuleListener
     void on(AccountDeletionRequested deletion) {
         jdbc.sql("delete from profile.profile where account_id = :account").param("account", deletion.account().value()).update();
+    }
+
+    /** Of the profile only the foods to avoid are health data (ADR-027 #14, K-231): in the withdrawal's transaction. */
+    @EventListener
+    void on(ConsentWithdrawn withdrawn) {
+        if (withdrawn.kind() == ConsentKind.HEALTH_DATA) {
+            jdbc.sql("update profile.profile set food_avoid = null where account_id = :account").param("account", withdrawn.account().value())
+                    .update();
+        }
     }
 
     @Override

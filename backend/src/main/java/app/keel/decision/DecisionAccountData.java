@@ -1,10 +1,13 @@
 package app.keel.decision;
 
 import app.keel.shared.AccountDataExport;
+import app.keel.consent.ConsentKind;
+import app.keel.consent.ConsentWithdrawn;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -26,8 +29,24 @@ class DecisionAccountData implements AccountDataExport {
 
     @ApplicationModuleListener
     void on(AccountDeletionRequested deletion) {
-        jdbc.sql("delete from decision.weekly_call where account_id = :account").param("account", deletion.account().value()).update();
-        jdbc.sql("delete from decision.plan where account_id = :account").param("account", deletion.account().value()).update();
+        delete(deletion.account());
+    }
+
+    /**
+     * Every call holds the Snapshot it was made from and the plan its targets (K-231): health data, in the withdrawal's
+     * transaction. A safety hold goes with the calls it was read from, as on account deletion; the engine starts again
+     * from no data (its own observation and questions).
+     */
+    @EventListener
+    void on(ConsentWithdrawn withdrawn) {
+        if (withdrawn.kind() == ConsentKind.HEALTH_DATA) {
+            delete(withdrawn.account());
+        }
+    }
+
+    private void delete(AccountId account) {
+        jdbc.sql("delete from decision.weekly_call where account_id = :account").param("account", account.value()).update();
+        jdbc.sql("delete from decision.plan where account_id = :account").param("account", account.value()).update();
     }
 
     @Override
