@@ -371,6 +371,17 @@ test('the activity days sent go with the session at sign-out (K-404)', async () 
   expect(kv.items.has('health.activityDaysSent')).toBe(false);
 });
 
+test('the program and the catalog kept for offline training go with the session at sign-out (K-405)', async () => {
+  const kv = memoryKv();
+  kv.items.set('train.program', '{"id":"p1"}');
+  kv.items.set('train.exercises', '[]');
+  const { services } = await setup(server(), memoryStorage(), kv);
+  await services.session.signIn(SESSION);
+  await services.signOut();
+  await settle();
+  expect(kv.items.has('train.program') || kv.items.has('train.exercises')).toBe(false);
+});
+
 test('what the phone knows of the consents goes with the session at sign-out (K-402)', async () => {
   const { services, fake } = await setup();
   await services.session.signIn(SESSION);

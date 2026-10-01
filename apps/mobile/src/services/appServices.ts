@@ -9,6 +9,7 @@ import { withdrawConsent } from '@/consent/consents';
 import { forgetSentActivityDays } from '@/health/activitySync';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
+import { type TrainingCache, createTrainingCache } from '@/train/trainData';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
 import { type SqlDatabase, openRecordStore } from '@/sync/store';
@@ -44,6 +45,8 @@ export type AppServices = {
   withdrawHealthData(): Promise<void>;
   /** Whether a consent is given, as the phone knows it — kept for offline health entries (K-402, ADR-030 #25). */
   consents: ConsentState;
+  /** The program and the catalog, kept on the phone for offline training (K-405). */
+  training: TrainingCache;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
 };
@@ -56,6 +59,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
   const units = await createUnitsPreference({ kv, api, locale });
   const profile = await createProfileStatus({ kv, api, units });
   const consents = createConsentState({ api, kv });
+  const training = createTrainingCache(kv);
   // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
   if (!(await session.isSignedIn())) await profile.forget();
 
@@ -75,6 +79,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     profile.forget().catch(reportError); // and so does "onboarding done"
     consents.forget().catch(reportError); // and what the phone knew of its consents
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
+    training.forget().catch(reportError); // and the program kept for offline training (K-405)
   });
 
   return {
@@ -84,6 +89,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     units,
     profile,
     consents,
+    training,
     report,
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
