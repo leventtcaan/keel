@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
@@ -24,6 +25,7 @@ export default function SettingsScreen() {
         </Pressable>
         <ScreenTitle>{t('settings.title')}</ScreenTitle>
         <UnitsSection />
+        <Button label={t('settings.gyms')} variant="ghost" onPress={() => router.push('/gyms')} />
         <ConsentsSection />
         <AccountSection />
       </ScrollView>
