@@ -116,6 +116,15 @@ test('pending records are counted, so a sign-out can warn before they are droppe
   expect(await services.pendingCount()).toBe(1);
 });
 
+test("the workout's records are read from the phone, sent or not, and only those (K-405)", async () => {
+  const { services, fake } = await setup();
+  await services.session.signIn(SESSION);
+  fake.goOffline();
+  await services.queue.record(WEIGH);
+  await services.queue.record({ kind: 'workout', body: { clientId: '66666666-6666-4666-8666-666666666666', startedAt: '2026-09-30T18:00:00+03:00' } });
+  expect((await services.workoutRecords()).map((r) => [r.kind, r.state])).toEqual([['workout', 'PENDING']]);
+});
+
 test('the phone forgets before the server answers: signed out at once, even on a slow network', async () => {
   // Every call waits for its own answer, by address; signing in also reads the profile (the unit choice, K-310).
   const waiting = new Map<string, (response: Response) => void>();

@@ -103,6 +103,88 @@
     "failed": "Couldn't load today. Check your connection.",
     "retry": "Try again"
   },
+  "train": {
+    "kept": "You're offline. This is your program as it was last loaded.",
+    "failed": "Your program couldn't load.",
+    "retry": "Try again",
+    "none": "No program yet.",
+    "status": {
+      "restWeek": "A week off training, until {date}.",
+      "restWeekNote": "Rest is the plan this week. Your program picks up after it.",
+      "deload": "A lighter week, until {date}: fewer sets, the same weights.",
+      "held": "Weights held since {date}: reach the top of the range before adding weight."
+    },
+    "today": "Today",
+    "sets": {
+      "one": "1 set",
+      "other": "{count} sets",
+      "lighter": "{sets} of {base} sets"
+    },
+    "reps": "{min}–{max} reps",
+    "next": "Next {load} × {reps}",
+    "nextAdded": "Next +{load} × {reps}",
+    "start": "Start workout",
+    "startThis": "Start",
+    "inProgress": "Workout in progress",
+    "continue": "Continue",
+    "nextBodyweight": "Next {reps} reps",
+    "startDay": "Start {day}"
+  },
+  "workout": {
+    "title": "Workout",
+    "progress": "{done} of {count} exercises",
+    "targetRir": "Target RIR 0–{max}",
+    "head": {
+      "set": "#",
+      "today": "Today",
+      "last": "Last time"
+    },
+    "side": {
+      "LEFT": "L",
+      "RIGHT": "R"
+    },
+    "set": "{load} × {reps}",
+    "bodyweight": "Bodyweight × {reps}",
+    "added": "+{load} × {reps}",
+    "loadLabel": "Weight ({unit})",
+    "addedLabel": "Added weight ({unit})",
+    "repsLabel": "Reps",
+    "log": "Log set {number}",
+    "logSide": "Log set {number} · {side}",
+    "sideName": {
+      "LEFT": "left",
+      "RIGHT": "right"
+    },
+    "invalid": "Check the weight and the reps.",
+    "saveFailed": "That set couldn't be saved on the phone. Try again.",
+    "rir": {
+      "label": "Set {number} · reps left in the tank",
+      "more": "3+"
+    },
+    "rest": {
+      "label": "Rest · {min}–{max}",
+      "time": "{minutes}:{seconds}"
+    },
+    "sets": "{count} sets",
+    "setsOne": "1 set",
+    "setOf": "Set {number} of {count}",
+    "allDone": "All sets done",
+    "finish": "Finish workout",
+    "form": {
+      "title": "How was your form?",
+      "note": "A move whose form wasn't clean keeps its weight and reps next time, until it is.",
+      "clean": "Clean",
+      "unclean": "Not clean"
+    },
+    "finishNow": "Finish",
+    "keepGoing": "Keep going",
+    "kept": "You're offline. Everything you log is saved on the phone and sent later.",
+    "unknownMove": "This exercise isn't known to this version of the app.",
+    "finishFailed": "The workout couldn't be finished on the phone. Try again.",
+    "dayGone": "This workout's day is no longer in your program. Finish it to start a new one.",
+    "loadFailed": "This workout couldn't be opened. Try again from the Train tab.",
+    "progressOne": "{done} of 1 exercise"
+  },
   "food": {
     "budget": {
       "title": "Left today",
