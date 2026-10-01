@@ -24,9 +24,15 @@ export const READ_TYPES = [
   'HKWorkoutTypeIdentifier',
 ] as const;
 
+type Sample = { uuid: string; startDate: Date; quantity: number };
 type Kit = {
   isHealthDataAvailable(): boolean;
   requestAuthorization(request: { toRead: readonly string[] }): Promise<boolean>;
+  // The installed 16.x signature (lib/typescript/healthkit.d.ts): limit 0 is "all"; the unit converts on the device.
+  queryQuantitySamples(
+    identifier: string,
+    options: { limit: number; unit: string; filter: { date: { startDate: Date; endDate: Date } } },
+  ): Promise<readonly Sample[]>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -46,6 +52,15 @@ export function healthKitAccess(load: () => unknown = loadLibrary, inExpoGo: () 
     // Apple shows its sheet once; later calls resolve at once with the user's earlier choice (which the app cannot read).
     requestRead: async () => {
       await kit.requestAuthorization({ toRead: READ_TYPES });
+    },
+    // Scale weigh-ins as kilograms, whatever unit the scale wrote; each with its Health id (K-402: the clientId).
+    readWeights: async (from, to) => {
+      const samples = await kit.queryQuantitySamples('HKQuantityTypeIdentifierBodyMass', {
+        limit: 0,
+        unit: 'kg',
+        filter: { date: { startDate: from, endDate: to } },
+      });
+      return samples.map((sample) => ({ id: sample.uuid, at: sample.startDate.toISOString(), kg: sample.quantity }));
     },
   };
 }

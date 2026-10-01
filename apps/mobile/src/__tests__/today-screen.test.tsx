@@ -270,6 +270,13 @@ test("today's list: what is left of the day's food, as ranges (K-409)", async ()
   expect(screen.getByText(`${t('format.range', { low: 780, high: 950 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
 });
 
+test('no weigh-in yet today: the row opens the weigh-in (K-402)', async () => {
+  mockAnswers['/v1/weigh-ins'] = ok([]);
+  await show();
+  await press(t('today.list.weighIn.log'));
+  expect(mockPush).toHaveBeenCalledWith('/weigh-in');
+});
+
 test('before anything is there: each part says what comes, and the others still show', async () => {
   mockAnswers = {
     '/v1/weigh-ins': ok([]),

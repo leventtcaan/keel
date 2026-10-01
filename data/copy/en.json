@@ -72,7 +72,8 @@
       "weighIn": {
         "done": "Weigh-in done",
         "todo": "Weigh-in",
-        "todoNote": "Morning, before food"
+        "todoNote": "Morning, before food",
+        "log": "Log weight"
       },
       "training": {
         "exercises": "{count} exercises",

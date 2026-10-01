@@ -35,6 +35,9 @@ const P = {
  * Half away from zero at `decimals`. The nudge by one part in 2^52 undoes binary representation: 1.005 is stored as
  * 1.00499999…, and plain Math.round(100.4999…) would give 1.00.
  */
+/** The kilograms the server keeps (K-402: Apple Health's weights are rounded to it before they are sent). */
+export const storedKgDecimals = P.storedKgDecimals;
+
 export function roundTo(value: number, decimals: number): number {
   const factor = 10 ** decimals;
   return (Math.sign(value) * Math.round(Math.abs(value) * factor * (1 + Number.EPSILON))) / factor;

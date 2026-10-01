@@ -4,6 +4,7 @@
  * database, keychain, fetch — is passed in, so this runs in tests on node:sqlite and a fake server.
  */
 import { type ApiClient, createApiClient } from '@/api/client';
+import { type ConsentState, createConsentState } from '@/consent/consentState';
 import { withdrawConsent } from '@/consent/consents';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
@@ -40,6 +41,8 @@ export type AppServices = {
    * health entries on the phone too (ADR-030 #25). Throws by name when the server did not withdraw it; then nothing goes.
    */
   withdrawHealthData(): Promise<void>;
+  /** Whether a consent is given, as the phone knows it — kept for offline health entries (K-402, ADR-030 #25). */
+  consents: ConsentState;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
 };
@@ -51,6 +54,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
   const profile = await createProfileStatus({ kv, api, units });
+  const consents = createConsentState({ api, kv });
   // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
   if (!(await session.isSignedIn())) await profile.forget();
 
@@ -68,6 +72,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     store.clear().catch(reportError);
     units.forget().catch(reportError); // the preference belongs to the account too
     profile.forget().catch(reportError); // and so does "onboarding done"
+    consents.forget().catch(reportError); // and what the phone knew of its consents
   });
 
   return {
@@ -76,6 +81,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     queue,
     units,
     profile,
+    consents,
     report,
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
@@ -97,6 +103,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     },
     withdrawHealthData: async () => {
       await withdrawConsent(api, 'HEALTH_DATA', true);
+      await consents.remember('HEALTH_DATA', 'WITHDRAWN').catch(reportError);
       // Withdrawn and deleted on the server. A local delete that fails is reported, not a failed withdrawal: while the
       // consent stays withdrawn, whatever stays here is refused by the server (CONSENT_REQUIRED); it goes at sign-out.
       await store.forget(HEALTH_KINDS).catch(reportError);

@@ -57,3 +57,27 @@ test('a sheet that fails reaches the caller (onboarding and Settings word it)', 
   const failing = { ...kit(), requestAuthorization: async () => Promise.reject(new Error('denied')) };
   await expect(healthKitAccess(() => failing, () => false).requestRead()).rejects.toThrow('denied');
 });
+
+test('weights are read as kilograms over the days asked, each with its Health id and time (K-402)', async () => {
+  const asked: unknown[] = [];
+  const fake = {
+    ...kit(),
+    queryQuantitySamples: async (identifier: string, options: unknown) => {
+      asked.push({ identifier, options });
+      return [{ uuid: 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F', startDate: new Date('2026-10-01T05:12:00Z'), quantity: 81.4, unit: 'kg' }];
+    },
+  };
+  const from = new Date('2026-09-24T09:00:00Z');
+  const to = new Date('2026-10-01T09:00:00Z');
+
+  const weights = await healthKitAccess(() => fake, () => false).readWeights(from, to);
+
+  expect(asked).toEqual([
+    { identifier: 'HKQuantityTypeIdentifierBodyMass', options: { limit: 0, unit: 'kg', filter: { date: { startDate: from, endDate: to } } } },
+  ]);
+  expect(weights).toEqual([{ id: 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F', at: '2026-10-01T05:12:00.000Z', kg: 81.4 }]);
+});
+
+test('where Apple Health is not available, reading weights refuses', async () => {
+  await expect(healthKitAccess(() => kit(false), () => false).readWeights(new Date(), new Date())).rejects.toThrow();
+});
