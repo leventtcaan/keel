@@ -22,7 +22,7 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
  */
 export default function AppleHealthStep() {
   const { draft } = useDraft();
-  const { api, health, queue, profile, units, report } = useAppServices();
+  const { api, health, queue, profile, units, report, consents } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -37,11 +37,10 @@ export default function AppleHealthStep() {
   async function connect(): Promise<boolean> {
     try {
       await connectAppleHealth(api, health);
+      await consents.remember('APPLE_HEALTH', 'GRANTED').catch(() => undefined); // the phone knows at once (K-402)
       return true;
     } catch (error) {
-      const key = { HealthSheetFailed: 'onboarding.appleHealth.sheetFailed', NoConnection: 'onboarding.appleHealth.failed' }[
-        nameOf(error)
-      ];
+      const key = { HealthSheetFailed: 'onboarding.appleHealth.sheetFailed', NoConnection: 'onboarding.appleHealth.failed' }[nameOf(error)];
       fail(error, key ?? 'onboarding.serverError');
       return false;
     }
@@ -71,11 +70,7 @@ export default function AppleHealthStep() {
   }
 
   const offered = health.available && draft.healthConsent === 'granted';
-  const note = !health.available
-    ? t('onboarding.appleHealth.unavailable')
-    : offered
-      ? null
-      : t('onboarding.appleHealth.needsConsent');
+  const note = !health.available ? t('onboarding.appleHealth.unavailable') : offered ? null : t('onboarding.appleHealth.needsConsent');
   // Built outside the JSX below, like the other conditional parts (the raw-text guard reads JSX children).
   const choices = offered ? (
     <>

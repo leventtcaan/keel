@@ -32,7 +32,8 @@ const mockConsentAnswer = async (_path: string, _init: unknown) =>
     ? { data: { status: 'GRANTED' }, response: new Response(null, { status: 200 }) }
     : { error: { code: 'X' }, response: new Response(null, { status: mockConsentStatus }) };
 const mockApi = { PUT: jest.fn(mockConsentAnswer), DELETE: jest.fn(mockConsentAnswer) };
-const mockQueue = { record: jest.fn(async (_record: unknown) => true) };
+const mockQueue = { record: jest.fn(async (_record: unknown) => true), drain: jest.fn(async () => {}) };
+const mockConsents = { remember: jest.fn(async (_kind: string, _status: string) => {}) };
 // Like the real service (K-231): a refusal throws by name; what went through leaves the phone's health entries behind.
 const mockWithdrawHealthData = jest.fn(async () => {
   if (mockConsentStatus !== 200) throw Object.assign(new Error('x'), { name: 'ConsentRefused' });
@@ -67,6 +68,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     health: mockHealth,
     report: mockReport,
     withdrawHealthData: mockWithdrawHealthData,
+    consents: mockConsents,
     syncHealth: async () => 0, // Today reads Apple Health's weigh-ins first (K-402); none here
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
   }),
@@ -86,6 +88,7 @@ beforeEach(() => {
   mockApi.DELETE.mockReset().mockImplementation(mockConsentAnswer);
   mockQueue.record.mockReset().mockResolvedValue(true);
   mockWithdrawHealthData.mockClear();
+  mockConsents.remember.mockClear();
   mockHealth.available = false;
   mockReport.mockClear();
   mockHealth.requestRead.mockReset().mockResolvedValue(undefined);
@@ -205,7 +208,7 @@ describe('the walk through', () => {
     expect(screen.getByRole('radio', { name: new RegExp(`^${t('onboarding.goal.build_muscle.title')}`) })).toBeChecked();
   });
 
-  test('the whole walk sends one profile, with the user\'s answers', async () => {
+  test("the whole walk sends one profile, with the user's answers", async () => {
     const router = await open();
     await choose(t('onboarding.goal.decide_for_me.title'));
     await press(t('onboarding.continue'));
@@ -428,18 +431,16 @@ describe('activity: the four NASEM levels, each with a day to recognise (ADR-027
   test('four choices, each with its example', async () => {
     await walkTo('activity');
     for (const level of ['INACTIVE', 'LOW_ACTIVE', 'ACTIVE', 'VERY_ACTIVE']) {
-      expect(screen.getByRole('radio', { name: `${t(`onboarding.activity.${level}.title`)}, ${t(`onboarding.activity.${level}.body`)}` })).toBeOnTheScreen();
+      expect(
+        screen.getByRole('radio', { name: `${t(`onboarding.activity.${level}.title`)}, ${t(`onboarding.activity.${level}.body`)}` }),
+      ).toBeOnTheScreen();
     }
     expect(screen.getAllByRole('radio')).toHaveLength(4);
   });
 });
 
 /** Answers every step before `step`, the shortest way (the health consent declined unless `allow`), and stops on it. */
-async function walkTo(
-  step: 'schedule' | 'healthData' | 'about' | 'activity' | 'appleHealth',
-  eachStep: () => void = () => {},
-  allow = false,
-) {
+async function walkTo(step: 'schedule' | 'healthData' | 'about' | 'activity' | 'appleHealth', eachStep: () => void = () => {}, allow = false) {
   const router = await open();
   eachStep();
   await choose(t('onboarding.goal.lose_fat.title'));
@@ -590,6 +591,9 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
     await press(t('onboarding.appleHealth.connect'));
     // Apple's sheet first: if it fails, no consent is left recorded for a connection that never happened.
     expect(order).toEqual(['sheet', 'consent APPLE_HEALTH', 'profile']);
+    // The phone knows both at once (K-402 review): a weigh-in offline right after onboarding still finds them.
+    expect(mockConsents.remember).toHaveBeenCalledWith('HEALTH_DATA', 'GRANTED');
+    expect(mockConsents.remember).toHaveBeenCalledWith('APPLE_HEALTH', 'GRANTED');
   });
 
   test('"Not now" records nothing and finishes', async () => {
@@ -602,7 +606,7 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
     expect(mockProfile.save).toHaveBeenCalledTimes(1);
   });
 
-  test('a connection that fails says so and does not finish: the choice is the user\'s to make again', async () => {
+  test("a connection that fails says so and does not finish: the choice is the user's to make again", async () => {
     mockHealth.available = true;
     await walkTo('appleHealth', () => {}, true);
     mockConsentStatus = 503;
@@ -700,7 +704,7 @@ describe('review fixes (K-312)', () => {
     expect(screen.getByText(t('onboarding.appleHealth.needsConsent'))).toBeOnTheScreen();
   });
 
-  test("Apple's sheet failing says so, records no consent, and \"Not now\" still finishes cleanly", async () => {
+  test('Apple\'s sheet failing says so, records no consent, and "Not now" still finishes cleanly', async () => {
     mockHealth.available = true;
     await walkTo('appleHealth', () => {}, true);
     mockApi.PUT.mockClear();

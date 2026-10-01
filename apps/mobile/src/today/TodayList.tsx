@@ -52,6 +52,11 @@ export function TodayList({ day, weighIns, program, targets, budget }: Props) {
           },
     );
   }
+  if (weighIns.state === 'failed' || weighIns.state === 'consent') {
+    // Offline, or without the consent: the weigh-in still opens — it saves on the phone first, and asks for the
+    // consent itself (K-402 review).
+    rows.push({ key: 'weighIn', title: t('today.list.weighIn.todo'), note: t('today.list.weighIn.todoNote'), action: logWeight });
+  }
   if (program.state === 'ready') {
     const today = programToday(program.value, day);
     rows.push(

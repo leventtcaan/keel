@@ -23,9 +23,9 @@ export function WeightChart({ from, to, weighIns, trend }: Props) {
   const start = Date.parse(`${from}T00:00:00Z`);
   const span = Math.max(DAY_MS, Date.parse(`${to}T00:00:00Z`) - start);
   const all = [...weighIns.map((w) => w.kg), ...trend.map((p) => p.kg)];
-  const low = Math.min(...all);
-  const high = Math.max(...all);
-  const range = Math.max(high - low, 0.5); // a flat week still draws in the middle, not on an edge
+  const range = Math.max(Math.max(...all) - Math.min(...all), 0.5);
+  // A flat stretch (less than the least range) draws in the middle, not on the bottom edge (K-402 review).
+  const low = Math.min(...all) - (range - (Math.max(...all) - Math.min(...all))) / 2;
   const x = (ms: number) => `${Math.min(100, Math.max(0, ((ms - start) / span) * 100))}%` as const;
   const y = (kg: number) => (HEIGHT - TREND_DOT) * (1 - (kg - low) / range);
 

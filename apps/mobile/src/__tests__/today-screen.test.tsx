@@ -94,7 +94,8 @@ jest.mock('react-native/Libraries/AppState/AppState', () => ({
 }));
 // One object for the life of the test, as the real services are built once per process: the screen depends on it.
 const mockSyncHealth = jest.fn(async () => 0);
-const mockServices = { api: { GET: mockGET }, syncHealth: mockSyncHealth, report: () => {} };
+const mockDrain = jest.fn(async () => {});
+const mockServices = { api: { GET: mockGET }, syncHealth: mockSyncHealth, queue: { drain: mockDrain }, report: () => {} };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useUnits: () => 'METRIC',
@@ -356,6 +357,25 @@ test("Apple Health's new weigh-ins go in before Today reads; a failing Health re
   mockSyncHealth.mockRejectedValueOnce(new Error('HealthKit'));
   await act(async () => mockRefocus());
   expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
+});
+
+test('what waits on the phone is sent before Today reads: a weigh-in just saved shows as done (K-402 review)', async () => {
+  let sent: () => void = () => {};
+  mockDrain.mockImplementationOnce(() => new Promise<void>((resolve) => (sent = resolve)));
+  await show();
+  expect(mockGET).not.toHaveBeenCalled();
+  await act(async () => sent());
+  expect(mockGET).toHaveBeenCalled();
+});
+
+test.each([
+  ['offline', 'offline'],
+  ['without the consent', 'consent'],
+] as const)('%s, the weigh-in can still be opened (it asks for the consent itself; K-402 review)', async (_label, state) => {
+  mockAnswers['/v1/weigh-ins'] = state === 'offline' ? 'offline' : refused(403, 'CONSENT_REQUIRED');
+  await show();
+  await press(t('today.list.weighIn.log'));
+  expect(mockPush).toHaveBeenCalledWith('/weigh-in');
 });
 
 test('Settings is still one tap from Today', async () => {

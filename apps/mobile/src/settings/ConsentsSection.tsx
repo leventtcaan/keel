@@ -2,14 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import {
-  CONSENT_COPY,
-  type ConsentStatus,
-  connectAppleHealth,
-  grantConsent,
-  loadConsents,
-  withdrawConsent,
-} from '@/consent/consents';
+import { CONSENT_COPY, type ConsentStatus, connectAppleHealth, grantConsent, loadConsents, withdrawConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -32,7 +25,7 @@ const WORDS = { NoConnection: 'settings.consents.failed', HealthSheetFailed: 'se
  * build. After every change the states are read again from the server, the truth.
  */
 export function ConsentsSection() {
-  const { api, health, withdrawHealthData, exportData } = useAppServices();
+  const { api, health, consents, withdrawHealthData, exportData } = useAppServices();
   const { color } = useTheme();
   const [states, setStates] = useState<Partial<Record<Kind, ConsentStatus>> | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -60,14 +53,14 @@ export function ConsentsSection() {
   const change = async (kind: Kind, to: ConsentStatus, action: () => Promise<void>) => {
     setAsking(null);
     if (!(await run(action, WORDS))) return;
+    // The phone knows at once (K-402 review): offline, nothing is read or kept on a consent just withdrawn.
+    await consents.remember(kind, to).catch(() => undefined);
     setStates((current) => ({ ...current, [kind]: to }));
     await load();
   };
 
   if (states === null) {
-    const retry = loadFailed ? (
-      <Button label={t('settings.consents.retry')} variant="ghost" size="sm" onPress={() => void load()} />
-    ) : null;
+    const retry = loadFailed ? <Button label={t('settings.consents.retry')} variant="ghost" size="sm" onPress={() => void load()} /> : null;
     return (
       <Section title={t('settings.consents.title')}>
         {loadFailed && <Text style={[styles.text, { color: color.text }]}>{t('settings.consents.loadFailed')}</Text>}
@@ -89,8 +82,7 @@ export function ConsentsSection() {
             ? t('settings.consents.needsHealthConsent')
             : null
         : null;
-    const allow = () =>
-      change(kind, 'GRANTED', () => (kind === 'APPLE_HEALTH' ? connectAppleHealth(api, health) : grantConsent(api, kind)));
+    const allow = () => change(kind, 'GRANTED', () => (kind === 'APPLE_HEALTH' ? connectAppleHealth(api, health) : grantConsent(api, kind)));
     const toggle = granted ? (
       <Button
         label={t('settings.consents.withdraw')}
@@ -141,9 +133,7 @@ export function ConsentsSection() {
         <View style={styles.head}>
           <View style={styles.name}>
             <Text style={[styles.text, { color: color.text }]}>{name}</Text>
-            <Text style={[styles.small, { color: color.muted }]}>
-              {granted ? t('settings.consents.allowed') : t('settings.consents.notAllowed')}
-            </Text>
+            <Text style={[styles.small, { color: color.muted }]}>{granted ? t('settings.consents.allowed') : t('settings.consents.notAllowed')}</Text>
           </View>
           <Button
             label={open === kind ? t('settings.consents.hide') : t('settings.consents.view')}
