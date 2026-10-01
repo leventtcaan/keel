@@ -10,12 +10,13 @@ import java.util.Optional;
  *
  * <ul>
  *   <li><b>From waist and height</b>: Relative Fat Mass = rfm_intercept − rfm_height_to_waist × height / waist +
- *       rfm_female_offset for a woman (Woolcott &amp; Bergman 2018 against DXA; H8 A1). A point estimate: the phase gate,
- *       the fat floor and the size of the low-energy floor read it. Under essential fat's low end (rfm_plausible_min, J1
+ *       rfm_female_offset for a woman (Woolcott &amp; Bergman 2018 against DXA; H8 A1). A point estimate: the phase gate
+ *       and the fat floor read it. Under essential fat's low end (rfm_plausible_min, J1
  *       B2) the waist was typed wrong and there is no estimate.</li>
  *   <li><b>From the reference look</b> the user picks: look_level_first + look_level_step × (level − 1) (Ö-4).</li>
  *   <li>Both: the lower and the higher are kept; each rule reads the one cautious for it (ADR-027 #11, H8 C) — the
- *       bulk gates the higher, the cut gate and the safety net the lower.</li>
+ *       bulk gates the higher, the cut gate and the fat floor the lower.</li>
+ *   <li>The low-energy rule reads the waist's estimate at the cautious end of its band ({@link #forEnergy}, K-230).</li>
  * </ul>
  */
 public final class FatEstimate {
@@ -56,6 +57,18 @@ public final class FatEstimate {
             return Optional.of(new Estimate(fromLook.get().min(fromWaist.get()), fromLook.get().max(fromWaist.get())));
         }
         return fromLook.or(() -> fromWaist).map(one -> new Estimate(one, one));
+    }
+
+    /**
+     * The end of the estimate the low-energy rule reads (K-230, ADR-028 #22): the waist's RFM at the cautious end of its
+     * band — rfm_energy_margin_pct lower (H8 A3), never under essential fat (rfm_plausible_min_pct) — or the look,
+     * whichever is lower. Less fat is the cautious end here: more fat-free mass, less energy available, a higher floor.
+     * Never above {@link Estimate#lowerPct()}.
+     */
+    public static Optional<BigDecimal> forEnergy(Optional<BigDecimal> fromLook, Optional<BigDecimal> fromWaist, Parameters parameters) {
+        Optional<BigDecimal> cautiousWaist = fromWaist.map(rfm -> rfm.subtract(number(ParameterKey.RFM_ENERGY_MARGIN_PCT, parameters))
+                .max(number(ParameterKey.RFM_PLAUSIBLE_MIN_PCT, parameters)));
+        return of(fromLook, cautiousWaist).map(Estimate::lowerPct);
     }
 
     public static int levels(Parameters parameters) {

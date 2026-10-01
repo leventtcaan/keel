@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
+import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -56,6 +59,51 @@ class FatEstimateTests {
         assertThat(FatEstimate.of(Optional.empty(), Optional.of(twentyFour))).contains(new FatEstimate.Estimate(twentyFour, twentyFour));
         assertThat(FatEstimate.of(Optional.of(twenty), Optional.empty())).contains(new FatEstimate.Estimate(twenty, twenty));
         assertThat(FatEstimate.of(Optional.empty(), Optional.empty())).isEmpty();
+    }
+
+    @Test
+    void theLowEnergyRuleReadsTheWaistsEstimateAtItsCautiousEnd() {
+        // K-230, ADR-028 #22 (c): RFM's 90 % band is about ± 5 points for men and ± 6 for women (H8 A3). Less fat is the
+        // cautious end for energy availability — more fat-free mass, a higher floor. 24 → 19; 34.75 → 28.75.
+        assertThat(FatEstimate.forEnergy(Optional.empty(), Optional.of(new BigDecimal("24")), MALE))
+                .hasValueSatisfying(pct -> assertThat(pct).isEqualByComparingTo("19"));
+        assertThat(FatEstimate.forEnergy(Optional.empty(), Optional.of(new BigDecimal("34.75")), FEMALE))
+                .hasValueSatisfying(pct -> assertThat(pct).isEqualByComparingTo("28.75"));
+    }
+
+    @Test
+    void theLookStandsAsItIsAndOfTheTwoTheCautiousIsRead() {
+        // The look has no measured band (Ö-4); with the waist too, the lower of the look and the waist's cautious end
+        // (ADR-027 #11: "the cautious one").
+        BigDecimal look = new BigDecimal("20");
+        assertThat(FatEstimate.forEnergy(Optional.of(look), Optional.empty(), MALE)).hasValueSatisfying(pct -> assertThat(pct).isEqualByComparingTo("20"));
+        assertThat(FatEstimate.forEnergy(Optional.of(look), Optional.of(new BigDecimal("24")), MALE))
+                .hasValueSatisfying(pct -> assertThat(pct).isEqualByComparingTo("19"));
+        assertThat(FatEstimate.forEnergy(Optional.of(new BigDecimal("15")), Optional.of(new BigDecimal("24")), MALE))
+                .hasValueSatisfying(pct -> assertThat(pct).isEqualByComparingTo("15"));
+        assertThat(FatEstimate.forEnergy(Optional.empty(), Optional.empty(), MALE)).isEmpty();
+    }
+
+    @Test
+    void theCautiousEndStopsAtEssentialFat() {
+        // No body is under essential fat's low end (J1 B2: men 2, women 10): 5 − 5 = 0 reads 2, 13 − 6 = 7 reads 10.
+        assertThat(FatEstimate.forEnergy(Optional.empty(), Optional.of(new BigDecimal("5")), MALE))
+                .hasValueSatisfying(pct -> assertThat(pct).isEqualByComparingTo("2"));
+        assertThat(FatEstimate.forEnergy(Optional.empty(), Optional.of(new BigDecimal("13")), FEMALE))
+                .hasValueSatisfying(pct -> assertThat(pct).isEqualByComparingTo("10"));
+    }
+
+    @Property
+    boolean theEnergyEndIsBetweenEssentialFatAndTheLowerEstimate(@ForAll Sex sex, @ForAll @IntRange(min = 0, max = 600) int tenthsOverTheMin,
+            @ForAll @IntRange(min = 0, max = 7) int lookLevel) {
+        Parameters p = parameters(sex);
+        BigDecimal min = BigDecimal.valueOf(p.number(ParameterKey.RFM_PLAUSIBLE_MIN_PCT));
+        Optional<BigDecimal> waist = Optional.of(min.add(BigDecimal.valueOf(tenthsOverTheMin, 1)));
+        Optional<BigDecimal> look = lookLevel == 0 ? Optional.empty() : Optional.of(FatEstimate.fromLook(lookLevel, p));
+
+        BigDecimal energy = FatEstimate.forEnergy(look, waist, p).orElseThrow();
+
+        return energy.compareTo(min) >= 0 && energy.compareTo(FatEstimate.of(look, waist).orElseThrow().lowerPct()) <= 0;
     }
 
     @Test

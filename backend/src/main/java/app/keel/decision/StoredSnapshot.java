@@ -20,11 +20,12 @@ import java.util.Optional;
  * not reported, and the "resolved" answer after a hard stop likewise (K-229). Plain records, so the stored JSON is the
  * engine's input and nothing else. {@code fatProxyHighPct} null: a call kept before there were two estimates (K-224
  * review), made on its one. {@code safetyHold} null: a call kept before K-229, made without a hold. {@code miniCutUntil}
- * null: not on a mini cut, or a call kept before K-227.
+ * null: not on a mini cut, or a call kept before K-227. {@code fatProxyEnergyPct} null: no estimate, or a call kept before
+ * K-230, made with the lower for the low-energy rule too.
  */
 record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, List<Weight> weights, BigDecimal fatProxyPct,
         Energy energy, Answered checkIn, Body profile, boolean observingMaintenance, LocalDate phaseStart, Training training,
-        BigDecimal fatProxyHighPct, Boolean safetyHold, LocalDate miniCutUntil) {
+        BigDecimal fatProxyHighPct, Boolean safetyHold, LocalDate miniCutUntil, BigDecimal fatProxyEnergyPct) {
 
     record Weight(LocalDate date, BigDecimal kg) {
     }
@@ -56,7 +57,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 snapshot.observingMaintenance(), snapshot.phaseStart(),
                 snapshot.training().map(training -> new Training(training.stalledSessions(), training.weeksLoadHeld(), training.monthsStalled(),
                         training.restedLastWeek(), training.loadsBelowLastWeek(), training.weeksPlanMissed())).orElse(null),
-                snapshot.fatProxyHighPct().orElse(null), snapshot.safetyHold(), snapshot.miniCutUntil().orElse(null));
+                snapshot.fatProxyHighPct().orElse(null), snapshot.safetyHold(), snapshot.miniCutUntil().orElse(null),
+                snapshot.fatProxyEnergyPct().orElse(null));
     }
 
     /** The Snapshot again; the cycle answer as not reported (never kept). */
@@ -74,6 +76,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 // A call kept before there were two estimates read its one for every rule.
                 Optional.ofNullable(fatProxyHighPct).or(() -> Optional.ofNullable(fatProxyPct)),
                 // Kept since K-229; a call kept before it was made without a hold. The answer that ends one is never kept.
-                Boolean.TRUE.equals(safetyHold), false, Optional.ofNullable(miniCutUntil));
+                Boolean.TRUE.equals(safetyHold), false, Optional.ofNullable(miniCutUntil),
+                // Kept since K-230; a call kept before it read the lower for the low-energy rule too.
+                Optional.ofNullable(fatProxyEnergyPct).or(() -> Optional.ofNullable(fatProxyPct)));
     }
 }

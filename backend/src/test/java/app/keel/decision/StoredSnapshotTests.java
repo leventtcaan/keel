@@ -89,6 +89,17 @@ class StoredSnapshotTests {
     }
 
     @Test
+    void theLowEnergyEndComesBackAndACallKeptBeforeItReadsTheLower() throws Exception {
+        // K-230: the call is made again the same only with the end the low-energy rule read.
+        Snapshot three = full(false).withFatProxy(new BigDecimal("15"), new BigDecimal("32.2"), new BigDecimal("10"));
+        assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(three)), StoredSnapshot.class).toSnapshot()).isEqualTo(three);
+
+        String before = JSON.writeValueAsString(StoredSnapshot.of(full(false))).replaceAll(",\"fatProxyEnergyPct\":[^,}]*", "");
+        assertThat(before).doesNotContain("fatProxyEnergyPct");
+        assertThat(JSON.readValue(before, StoredSnapshot.class).toSnapshot()).isEqualTo(full(false));
+    }
+
+    @Test
     void anEmptyOptionalStaysEmpty() throws Exception {
         // One weigh-in and nothing optional: every Optional comes back empty, not as a default.
         Snapshot bare = new Snapshot(TODAY, Sex.FEMALE, Phase.BULK, TODAY.minusDays(14),

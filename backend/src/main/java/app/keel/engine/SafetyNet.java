@@ -211,11 +211,12 @@ public final class SafetyNet {
                         .setScale(0, RoundingMode.FLOOR).intValueExact() + 1 + budget.exerciseKcalPerDay().orElse(0)));
     }
 
-    // Fat-free mass = trend weight × (1 − fat estimate). U4: used inside the engine only.
+    // Fat-free mass = trend weight × (1 − fat estimate), at the estimate's low-energy end (K-230: the waist's band read
+    // cautiously). U4: used inside the engine only.
     private static Optional<BigDecimal> fatFreeMassKg(Snapshot snapshot, Parameters parameters) {
         Optional<BigDecimal> weight = WeightTrend.at(snapshot.weights(), snapshot.today(),
                 parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS));
-        return weight.flatMap(kg -> snapshot.fatProxyPct().map(fatPct ->
+        return weight.flatMap(kg -> snapshot.fatProxyEnergyPct().map(fatPct ->
                 kg.multiply(BigDecimal.ONE.subtract(fatPct.divide(HUNDRED, MathContext.DECIMAL64)))));
     }
 

@@ -418,6 +418,36 @@ class SafetyNetTests {
     }
 
     @Test
+    void theEnergyLineAndItsFloorReadTheCautiousEndOfTheEstimate() {
+        // K-230 (ADR-028 #22): the waist's 25 % read 5 points lower for energy → 81 kg at 20 % is 64.8 kg fat-free;
+        // 25 × 64.8 = 1620 → 1621 + 400 = 2021 (not 1919 at 25 %).
+        Snapshot cautious = fueled(Sex.MALE, "81.0", "25", 2500, 400).withFatProxy(new BigDecimal("25"), new BigDecimal("25"), new BigDecimal("20"));
+        assertThat(SafetyNet.leaFloorKcal(cautious, MALE)).contains(2021);
+        // 1600 kcal: 1600 / 60.75 ≈ 26.3 at 25 %, over the men's line of 25; 1600 / 64.8 ≈ 24.7 at 20 %, under it.
+        assertThat(SafetyNet.energyAvailability(fueled(Sex.MALE, "81.0", "25", 1600, 0), MALE)).isNotEqualTo(Optional.of(EnergyAvailability.LOW));
+        assertThat(SafetyNet.energyAvailability(fueled(Sex.MALE, "81.0", "25", 1600, 0)
+                .withFatProxy(new BigDecimal("25"), new BigDecimal("25"), new BigDecimal("20")), MALE)).contains(EnergyAvailability.LOW);
+    }
+
+    @Test
+    void theFatFloorStillReadsThePointEstimate() {
+        // ADR-028 #22: L-4 (and the phase gate) stay on the point estimate. 9 % is over the men's floor of 8 even when the
+        // energy end reads 4; 75 kg at 3000 kcal is far from low energy either way.
+        assertThat(SafetyNet.check(fueled(Sex.MALE, "75.0", "9", 3000, 0)
+                .withFatProxy(new BigDecimal("9"), new BigDecimal("9"), new BigDecimal("4")), MALE)).isEmpty();
+    }
+
+    @Property
+    boolean theCautiousEndNeverLowersTheFloor(@ForAll("bodyweights") BigDecimal kg, @ForAll @IntRange(min = 10, max = 40) int fatPct,
+            @ForAll @IntRange(min = 0, max = 8) int pointsLower) {
+        BigDecimal fat = BigDecimal.valueOf(fatPct);
+        Snapshot point = fueled(Sex.MALE, kg.toPlainString(), fat.toPlainString(), 2000, 300);
+        Snapshot cautious = point.withFatProxy(fat, fat, fat.subtract(BigDecimal.valueOf(pointsLower)));
+
+        return SafetyNet.leaFloorKcal(cautious, MALE).orElseThrow() >= SafetyNet.leaFloorKcal(point, MALE).orElseThrow();
+    }
+
+    @Test
     void underTheFatFloorWithLowEnergyTheIncreaseComesFirst() {
         // K-223 review: the leaner, higher-risk woman must not lose the low-energy increase to a phase change that moves
         // no calorie (ChangePhase waits for K-222). 55 kg at 17.9 %, 1400 kcal, 300 exercise: EA ≈ 24 < 30.
