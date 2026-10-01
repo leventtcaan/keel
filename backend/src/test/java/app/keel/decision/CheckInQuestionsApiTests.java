@@ -183,6 +183,23 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void theLowEnergyRuleKeepsTheWaistsCautiousEnd() throws Exception {
+        // K-230: the same man; for energy availability the waist's 24 % is read 5 points lower (19), under the look's 20.
+        AccountId account = ready();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        waist(account, today, 90.0);
+        assertThat(send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", today.toString(), "level", 3))
+                .getResponse().getStatus()).isLessThan(300);
+
+        answer(account, List.of());
+
+        StoredSnapshot kept = JSON.readValue(jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a")
+                .param("a", account.value()).query(String.class).single(), StoredSnapshot.class);
+        assertThat(kept.fatProxyPct()).as("the phase gate and L-4 keep the point").isEqualByComparingTo("20");
+        assertThat(kept.fatProxyEnergyPct()).isEqualByComparingTo("19");
+    }
+
+    @Test
     void aWaistTypedWrongLeavesTheLookAlone() throws Exception {
         // K-224 review: 9 typed for 90 is RFM −336 % — no body — so the engine reads the look only, not a fat-free mass
         // larger than the man.

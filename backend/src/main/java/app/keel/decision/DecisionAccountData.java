@@ -50,6 +50,7 @@ class DecisionAccountData implements AccountDataExport {
             Map<String, Object> snapshot = json.convertValue(call.snapshot(), Map.class);
             snapshot.remove("fatProxyPct");
             snapshot.remove("fatProxyHighPct");
+            snapshot.remove("fatProxyEnergyPct");
             entry.put("snapshot", snapshot);
             return entry;
         }).toList());

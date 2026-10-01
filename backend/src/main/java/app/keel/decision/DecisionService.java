@@ -95,7 +95,12 @@ class DecisionService {
 
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
-            List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate, boolean safetyHold) {
+            List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate, Optional<BigDecimal> fatForEnergy,
+            boolean safetyHold) {
+    }
+
+    /** The fat estimate's inputs: the latest look and the waist's RFM (K-224). */
+    private record FatInputs(Optional<BigDecimal> fromLook, Optional<BigDecimal> fromWaist) {
     }
 
     /** This week's check-in and its questions (K-213): only what the engine would wait for, within the budget. */
@@ -194,16 +199,18 @@ class DecisionService {
         CheckIn.Waist waist = WaistTrend.direction(measurements.waists(account,
                 today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
-        return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights,
-                dataSays, fatEstimate(account, profile, today, p), SafetyHolds.from(calls.outcomes(account)));
+        FatInputs fat = fatInputs(account, profile, today, p);
+        return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights, dataSays,
+                FatEstimate.of(fat.fromLook(), fat.fromWaist()), FatEstimate.forEnergy(fat.fromLook(), fat.fromWaist(), p),
+                SafetyHolds.from(calls.outcomes(account)));
     }
 
     /**
      * The engine's internal fat estimate (K-224, ADR-027 #11; U4: it leaves the engine as nothing but its decisions): the
-     * latest look picked and the latest waist day in the evaluation window, both kept as the lower and the higher (H8 C); a
-     * waist no body could have gives none (H8 A4).
+     * latest look picked and the latest waist day in the evaluation window, both kept as the lower and the higher (H8 C),
+     * and for the low-energy rule the waist's band read cautiously (K-230); a waist no body could have gives none (H8 A4).
      */
-    private Optional<FatEstimate.Estimate> fatEstimate(AccountId account, ProfileFacts profile, LocalDate today, Parameters p) {
+    private FatInputs fatInputs(AccountId account, ProfileFacts profile, LocalDate today, Parameters p) {
         LocalDate from = today.minusDays(p.wholeNumber(ParameterKey.EVALUATION_WINDOW_DAYS) - 1L);
         Optional<BigDecimal> fromLook = measurements.latestLookLevel(account, from, today)
                 .filter(level -> level <= FatEstimate.levels(p)).map(level -> FatEstimate.fromLook(level, p));
@@ -213,7 +220,7 @@ class DecisionService {
             BigDecimal cm = onLastDay.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(onLastDay.size()), MathContext.DECIMAL64);
             return FatEstimate.rfm(profile.heightCm(), cm, p);
         });
-        return FatEstimate.of(fromLook, fromWaist);
+        return new FatInputs(fromLook, fromWaist);
     }
 
     /** One call a week (K-212): the same rule for offering the check-in and for taking its answers. */
@@ -253,7 +260,8 @@ class DecisionService {
         return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()),
                 week.fatEstimate().map(FatEstimate.Estimate::lowerPct), Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown),
                 menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training,
-                week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.safetyHold(), cycleResolved, Optional.ofNullable(plan.miniCutUntil()));
+                week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.safetyHold(), cycleResolved, Optional.ofNullable(plan.miniCutUntil()),
+                week.fatForEnergy());
     }
 
     /**

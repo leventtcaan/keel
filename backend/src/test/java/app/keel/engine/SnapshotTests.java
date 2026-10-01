@@ -68,6 +68,19 @@ class SnapshotTests {
     }
 
     @Test
+    void theEnergyEndOfTheFatEstimateIsNeverAboveTheLowerAndIsTheLowerUnlessGiven() {
+        // K-230: the low-energy rule reads its own end of the estimate; without one, the lower as before.
+        Snapshot base = new Snapshot(MONDAY, Sex.MALE, Phase.CUT, MONDAY, NO_WEIGHINS);
+
+        assertThatThrownBy(() -> base.withFatProxy(new BigDecimal("15"), new BigDecimal("20"), new BigDecimal("16")))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(base.withFatProxy(new BigDecimal("15"), new BigDecimal("20"), new BigDecimal("10")).fatProxyEnergyPct()).contains(new BigDecimal("10"));
+        assertThat(base.withFatProxy(new BigDecimal("15"), new BigDecimal("20")).fatProxyEnergyPct()).contains(new BigDecimal("15"));
+        assertThat(base.withFatProxyPct(new BigDecimal("18")).fatProxyEnergyPct()).contains(new BigDecimal("18"));
+        assertThat(base.fatProxyEnergyPct()).isEmpty();
+    }
+
+    @Test
     void withersAddAnInputAndKeepTheRest() {
         Snapshot base = new Snapshot(MONDAY, Sex.FEMALE, Phase.CUT, MONDAY, NO_WEIGHINS);
         EnergyBudget budget = new EnergyBudget(1800, 300);

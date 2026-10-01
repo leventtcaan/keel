@@ -57,6 +57,12 @@ parameters:
     tag: literatur
     source: "arastirma/ham/J1-cinsiyet.md#B2"
     note: "YALNIZ İÇ DEĞİŞKEN (U4). Esansiyel yağın alt ucu (ACE: erkek %2-5, kadın %10-13). RFM bunun altındaysa bel yanlış girilmiştir (90 yerine 9, inç cm diye): tahmin yok sayılır, kırpılmaz — sıfırın altı bir yağ 'yağsız kütle > kilo' der ve LEA tabanını uydurur (K-224 review)."
+  - key: rfm_energy_margin_pct
+    by_sex: {male: 5, female: 6}
+    unit: percent_internal_only
+    tag: literatur
+    source: "arastirma/ham/H8-yag-tahmini.md#A3"
+    note: "YALNIZ İÇ DEĞİŞKEN (U4). TÜRETİLMİŞ (H8 A3): Woolcott & Bergman 2018'in kesinliği IQR erkek 4,2, kadın 4,9 puan → σ ≈ 3,1 / 3,6 → %90 bant ≈ ±5 / ±6 puan. LEA ağı ve tabanı RFM'i bu kadar düşük okur (daha az yağ → daha çok yağsız kütle → daha yüksek taban; Levent (c), ADR-028 #22, K-230); en az rfm_plausible_min_pct. Faz kapısı ve L-4 nokta tahminle kalır."
   - key: look_level_first_pct
     by_sex: {male: 10, female: 20}
     unit: percent_internal_only
