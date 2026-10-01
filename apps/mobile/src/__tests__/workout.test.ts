@@ -43,6 +43,16 @@ describe('the workout under way', () => {
     expect(activeWorkout([])).toBeNull();
   });
 
+  test('only the newest workout can be under way: an older one left open does not come back when the newest is finished', () => {
+    expect(activeWorkout([workout('old'), workout('new'), set('new', 's1', 'bench_press', 60, 8), finish('new')])).toBeNull();
+    expect(activeWorkout([workout('old'), workout('new', undefined, 'REJECTED')])).toBeNull();
+  });
+
+  test('a finish the server refused leaves the workout under way, so it can be finished again', () => {
+    const refused = { ...finish('w1'), state: 'REJECTED' as const };
+    expect(activeWorkout([workout('w1'), refused])?.clientId).toBe('w1');
+  });
+
   test('a refused set is not counted as done', () => {
     const records = [workout('w1'), set('w1', 's1', 'bench_press', 60, 8, {}, 'REJECTED')];
     expect(activeWorkout(records)?.sets).toEqual([]);

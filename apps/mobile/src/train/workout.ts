@@ -31,11 +31,15 @@ const kept = (record: LocalRecord) => record.state !== 'REJECTED';
 const setsOf = (records: LocalRecord[], workoutClientId: string) =>
   records.filter((r) => r.kind === 'set' && r.parentClientId === workoutClientId && kept(r)).sort((a, b) => a.seq - b.seq).map((r) => r.body as NewSet);
 
-/** The newest workout without a finish, with its sets in the order they were done. */
+/**
+ * The newest workout, while it has no finish, with its sets in the order they were done. Only the newest: an older one
+ * left open (a double tap on Start) does not come back once the newest is finished or refused (K-405 review). A finish the server
+ * refused does not count, so the workout can be finished again.
+ */
 export function activeWorkout(records: LocalRecord[]): ActiveWorkout | null {
-  const finished = new Set(records.filter((r) => r.kind === 'finish').map((r) => r.parentClientId));
-  const open = records.filter((r) => r.kind === 'workout' && kept(r) && !finished.has(r.clientId)).sort((a, b) => b.seq - a.seq)[0];
-  if (open === undefined) return null;
+  const finished = new Set(records.filter((r) => r.kind === 'finish' && kept(r)).map((r) => r.parentClientId));
+  const open = records.filter((r) => r.kind === 'workout').sort((a, b) => b.seq - a.seq)[0];
+  if (open === undefined || !kept(open) || finished.has(open.clientId)) return null;
   const body = open.body as Schemas['NewWorkout'];
   return { clientId: open.clientId, startedAt: body.startedAt, programDayId: body.programDayId ?? null, sets: setsOf(records, open.clientId) };
 }
@@ -54,10 +58,11 @@ export function lastTime(records: LocalRecord[], exerciseId: string, except: str
  * A planned move as rows: this week's sets (the server's count — fewer in a deload week, K-217), per side for a
  * one-sided move (left, then right). A row suggests the load just lifted in this session, else the server's next load,
  * else last time's; the server's next reps, else last time's, else the bottom of the range. A bodyweight move's load is
- * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows.
+ * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows. The move
+ * is required: without the catalog the sides and the load model are unknown, and a guess is a set the server refuses.
  */
-export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas['Exercise'] | undefined, last: NewSet[], done: NewSet[]): ExercisePlan {
-  const sides: Schemas['Side'][] = move?.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
+export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas['Exercise'], last: NewSet[], done: NewSet[]): ExercisePlan {
+  const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
   const working = done.filter((s) => s.exerciseId === planned.exerciseId && s.setType === 'WORKING');
   const ofSide = (list: NewSet[], side: Schemas['Side']) => list.filter((s) => (s.side ?? 'BOTH') === side);
   const doneCount = Math.max(...sides.map((side) => ofSide(working, side).length));
@@ -71,7 +76,7 @@ export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas[
       rows.push({
         side,
         suggested: {
-          loadKg: move?.load === 'BODYWEIGHT' ? 0 : (lifted ?? planned.nextLoadKg ?? lastLoad),
+          loadKg: move.load === 'BODYWEIGHT' ? 0 : (lifted ?? planned.nextLoadKg ?? lastLoad),
           reps: planned.nextReps ?? lastRows[i]?.reps ?? planned.reps.min,
         },
         last: lastRows[i] ?? null,

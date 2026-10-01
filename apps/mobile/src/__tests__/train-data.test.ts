@@ -3,7 +3,7 @@
  * phone so a workout starts and runs offline. A kept copy says it is one; the server's "none" (404) forgets it.
  */
 import { createApiClient } from '@/api/client';
-import { forgetTraining, readTraining } from '@/train/trainData';
+import { createTrainingCache } from '@/train/trainData';
 import type { KeyValue } from '@/units/preference';
 
 const BASE = 'https://api.example.test';
@@ -33,6 +33,7 @@ function api(answer: (path: string) => Response | 'offline') {
 }
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const online = api((path) => (path === '/v1/program' ? json(PROGRAM) : json(EXERCISES)));
+const readTraining = (client: ReturnType<typeof api>, kv: KeyValue) => createTrainingCache(kv).read(client);
 
 test('read online: the server answer, and a copy kept', async () => {
   const kv = memoryKv();
@@ -64,7 +65,35 @@ test('no program on the server (404) forgets the kept one', async () => {
 
 test('signing out forgets both', async () => {
   const kv = memoryKv();
-  await readTraining(online, kv);
-  await forgetTraining(kv);
+  const cache = createTrainingCache(kv);
+  await cache.read(online);
+  await cache.forget();
   expect(kv.map.size).toBe(0);
+});
+
+test('a read still on its way when the user signs out keeps nothing: the program was the last account\'s', async () => {
+  const kv = memoryKv();
+  const cache = createTrainingCache(kv);
+  let answer: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => (answer = resolve));
+  const slow = createApiClient({
+    baseUrl: BASE,
+    accessToken: async () => 'tok',
+    fetch: async (request: Request) => {
+      await gate;
+      return new URL(request.url).pathname === '/v1/program' ? json(PROGRAM) : json(EXERCISES);
+    },
+  });
+  const reading = cache.read(slow);
+  await cache.forget();
+  answer();
+  await reading;
+  expect(kv.map.size).toBe(0);
+});
+
+test('a kept copy that cannot be read is no copy', async () => {
+  const kv = memoryKv();
+  kv.map.set('train.program', '{not json');
+  const read = await readTraining(api(() => 'offline'), kv);
+  expect(read.program).toEqual({ state: 'failed', problem: 'NoConnection' });
 });

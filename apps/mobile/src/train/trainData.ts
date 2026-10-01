@@ -21,30 +21,46 @@ export type TrainData = {
 const PROGRAM = 'train.program';
 const EXERCISES = 'train.exercises';
 
-/** The server's answer kept; a failure answered from the kept copy; "none" forgets it. */
-async function withCopy<T>(kv: KeyValue, key: string, read: Loaded<T>): Promise<{ read: Loaded<T>; kept: boolean }> {
-  if (read.state === 'ready') {
-    await kv.setItemAsync(key, JSON.stringify(read.value));
-    return { read, kept: false };
-  }
-  if (read.state === 'none') {
-    await kv.removeItemAsync(key);
-    return { read, kept: false };
-  }
-  if (read.state !== 'failed') return { read, kept: false };
-  const copy = await kv.getItemAsync(key);
-  return copy === null ? { read, kept: false } : { read: { state: 'ready', value: JSON.parse(copy) as T }, kept: true };
-}
+export type TrainingCache = ReturnType<typeof createTrainingCache>;
 
-export async function readTraining(api: ApiClient, kv: KeyValue): Promise<TrainData> {
-  const [program, exercises] = await Promise.all([
-    load(() => api.GET('/v1/program')).then((read) => withCopy(kv, PROGRAM, read)),
-    load(() => api.GET('/v1/exercises')).then((read) => withCopy(kv, EXERCISES, read)),
-  ]);
-  return { program: program.read, exercises: exercises.read, kept: program.kept || exercises.kept };
-}
+/**
+ * The reads and the kept copies. A sign-out bumps the generation: a read still on its way then keeps nothing — the
+ * program it brings is the last account's (the same guard as the unit preference's, K-310).
+ */
+export function createTrainingCache(kv: KeyValue) {
+  let generation = 0;
 
-/** The kept copies belong to the account: they go at sign-out. */
-export async function forgetTraining(kv: KeyValue): Promise<void> {
-  await Promise.all([kv.removeItemAsync(PROGRAM), kv.removeItemAsync(EXERCISES)]);
+  /** The server's answer kept; a failure answered from the kept copy; "none" forgets it. */
+  async function withCopy<T>(key: string, read: Loaded<T>, startedIn: number): Promise<{ read: Loaded<T>; kept: boolean }> {
+    if (read.state === 'ready' || read.state === 'none') {
+      if (startedIn === generation) {
+        await (read.state === 'ready' ? kv.setItemAsync(key, JSON.stringify(read.value)) : kv.removeItemAsync(key));
+      }
+      return { read, kept: false };
+    }
+    if (read.state !== 'failed') return { read, kept: false };
+    const copy = await kv.getItemAsync(key);
+    if (copy === null) return { read, kept: false };
+    try {
+      return { read: { state: 'ready', value: JSON.parse(copy) as T }, kept: true };
+    } catch {
+      return { read, kept: false }; // a copy that cannot be read is no copy
+    }
+  }
+
+  return {
+    async read(api: ApiClient): Promise<TrainData> {
+      const startedIn = generation;
+      const [program, exercises] = await Promise.all([
+        load(() => api.GET('/v1/program')).then((read) => withCopy(PROGRAM, read, startedIn)),
+        load(() => api.GET('/v1/exercises')).then((read) => withCopy(EXERCISES, read, startedIn)),
+      ]);
+      return { program: program.read, exercises: exercises.read, kept: program.kept || exercises.kept };
+    },
+    /** The kept copies belong to the account: they go at sign-out. */
+    async forget(): Promise<void> {
+      generation += 1;
+      await Promise.all([kv.removeItemAsync(PROGRAM), kv.removeItemAsync(EXERCISES)]);
+    },
+  };
 }
