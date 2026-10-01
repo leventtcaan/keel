@@ -20,6 +20,8 @@ test("a rack from its lightest, heaviest and step, written back as a list in the
   expect(rackOf('2', '10', '2')).toBe('2 4 6 8 10');
   expect(rackOf('5', '25', '5')).toBe('5 10 15 20 25');
   expect(rackOf('2', '9', '2.5')).toBe('2 4.5 7');
+  // Counted in hundredths: by floats, 1 + 0.1 + 0.1 is 1.2000000000000002, and 1.5 is never reached.
+  expect(rackOf('1', '1.5', '0.1')).toBe('1 1.1 1.2 1.3 1.4 1.5');
   expect(rackOf('10', '2', '2')).toBeNull();
   expect(rackOf('2', '10', '0')).toBeNull();
   expect(rackOf('', '10', '2')).toBeNull();
