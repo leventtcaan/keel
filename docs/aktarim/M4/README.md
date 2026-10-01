@@ -15,3 +15,4 @@
 ## Aktarım sırası (Part 2)
 8. K-414 salon profili + yuvarlama — ekipman türü, advisory lock, ret istisnayla, DP, lb ölçeği, plaka hesabı
 9. K-405 seans ekranı — kayıt olarak bitiş, kayıtlardan türetilen seans, çevrimdışı kopya, ilk sette antrenman, tek dokunuş
+10. K-406 efor özeti — en iyi set, kıyas sırası, izolasyon/vücut ağırlığı, telefon=motor Epley, ayna testi

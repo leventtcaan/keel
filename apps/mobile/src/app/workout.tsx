@@ -142,7 +142,9 @@ export default function WorkoutScreen() {
     setBusy(true);
     try {
       await queue.record(finishRecord(active.clientId, newClientId(), new Date(), [...unclean]));
-      router.back();
+      // What was done, against last time (K-406); a workout without a work set has nothing to show.
+      if (worked.length > 0) router.replace({ pathname: '/workout-summary', params: { workout: active.clientId } });
+      else router.back();
     } catch (error) {
       named(error);
       setProblem({ row: FINISH, text: t('workout.finishFailed') });

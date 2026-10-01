@@ -59,11 +59,20 @@ final class LoadSteps {
             return new Scale(entered && all.stream().allMatch(kg -> onLbGrid(kg).isPresent()));
         }
 
+        /** A weight the gym or the app stored: a lb one goes back to the lb it was entered as. */
         long units(BigDecimal kg) {
             if (!lb) {
                 return hundredths(kg);
             }
-            return onLbGrid(kg).orElseGet(() -> kg.divide(KG_PER_LB, 2, RoundingMode.HALF_UP).unscaledValue().longValueExact());
+            return onLbGrid(kg).orElseGet(() -> exactLb(kg));
+        }
+
+        /**
+         * The engine's target, which no one entered in lb: converted as it is. Snapped to the quarter pound, a target a
+         * hundredth of a kg past the middle of two loads would land on the middle, and the tie would go to the lighter.
+         */
+        long target(BigDecimal kg) {
+            return lb ? exactLb(kg) : hundredths(kg);
         }
 
         BigDecimal kg(long units) {
@@ -88,7 +97,7 @@ final class LoadSteps {
             case BODYWEIGHT -> Scale.of(Stream.concat(gym.platesKg().stream(), gym.dumbbellsKg().stream()));
         };
         long last = scale.units(lastKg);
-        long target = scale.units(targetKg);
+        long target = scale.target(targetKg);
         List<Long> loads = switch (equipment) {
             case DUMBBELL -> gym.dumbbellsKg().stream().map(scale::units).toList();
             case MACHINE, CABLE -> stepKg == null ? List.of() : stack(scale.units(stepKg), target);
@@ -191,6 +200,10 @@ final class LoadSteps {
                 .longValueExact() * LB_GRID;
         BigDecimal exact = BigDecimal.valueOf(grid, 2).multiply(KG_PER_LB);
         return exact.subtract(kg).abs().compareTo(ON_GRID) <= 0 ? Optional.of(grid) : Optional.empty();
+    }
+
+    private static long exactLb(BigDecimal kg) {
+        return kg.divide(KG_PER_LB, 2, RoundingMode.HALF_UP).unscaledValue().longValueExact();
     }
 
     private static long hundredths(BigDecimal kg) {

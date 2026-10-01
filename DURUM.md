@@ -68,10 +68,11 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (1 Eki — M4 Part 1 bitti)
-Part 1'in bütün kodu birleşti (son: K-404 #220). Bu sohbet açık kalıyor: Levent dönünce **M4 Part 1 aktarımı** (skill
-`aktarim`, `docs/aktarim/M4/README.md` sırası 1-7). Sonra yeni session: **M4 Part 2** (`plan/oturum-promptlari/M4-part2.md`).
-Levent'i bekleyen: K-308 komutları (`docs/eas-derleme.md` sırası), sorular 33-37. Açık PR yok, worktree yok.
+## ▶ DEVAM NOKTASI (1 Eki gece — M4 Part 2 yarıda, compact öncesi)
+Part 2 sürüyor; ayrıntı ve sıradaki komutlar `plan/oturum-promptlari/M4-part2-devam.md`. Birleşen: K-414 (#221, #222), K-405
+(#223, #224). K-406 #226 birleşti. Açık PR: **#225** motor e1RM tek yuvarlama (CI kırmızı — `main`'deki lb özellik testi
+karşı örnek buldu, motor değişikliğiyle ilgisiz; önce bu çözülecek). Dal `mobile/114-warmup` (K-417 yarım, itildi).
+Levent'i bekleyen: K-308 cihaz adımları, sorular 33-42.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -301,10 +302,30 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 | K-414 (1/2) salon profili API + katalogda `equipment` (ADR-032) | ✅ birleşti; inceleme: iki hesabın aynı id yarışı sahiplik kontrolünü atlıyordu → upsert'te koşul + atılan hata (rollback); sözleşme `barKg > 0`, 400/409 yazıldı; eşzamanlılık testleri; mutasyon 2/2 | #221 | `M4/K-414.md` |
 | K-414 (2/2) yuvarlama (`LoadSteps`, ortak vakalar `contracts/fixtures/load-steps.json`) + plaka hesabı | ✅ birleşti; inceleme 2 tur + test analizi: lb'de ceza/pencere yetmedi → lb salonu lb'de sayılır; deload tutarken fazla tekrar da tutulur; CI'da tam hata çıktısı (build.gradle.kts); mutasyon 29/29 | #222 | `M4/K-414.md` |
 | K-405 (1/3) veri katmanı: kuyrukta `finish`, program/katalog çevrimdışı kopyası, saf seans mantığı | ✅ birleşti; mutasyon 18/18 | #223 | `M4/K-405.md` |
-| K-405 (2-3/3) Antrenman sekmesi + seans ekranı (simülatörde uçtan uca, çevrimdışı) | PR açık (auto-merge); inceleme + test analizi + simülatör 13 bulgu düzeltildi; mutasyon 13/14 | #224 | `M4/K-405.md` |
-| K-406 özet (efor bazlı) | dalda `mobile/52-workout-summary` (saf modül + ayna testi yazıldı; ekran sırada) | — | |
+| K-405 (2-3/3) Antrenman sekmesi + seans ekranı (simülatörde uçtan uca, çevrimdışı) | ✅ birleşti; inceleme + test analizi + simülatör 13 bulgu; mutasyon 13/14 | #224 | `M4/K-405.md` |
+| K-406 özet (efor bazlı) + motor e1RM tek yuvarlama | ✅ #226 birleşti; #225 (motor) CI kırmızı — lb özellik testi karşı örneği; inceleme: ağırlıklı vücut ağırlığında e1RM, telefon/motor 0,1 kg (motorda çift yuvarlama → #225), günü kalkan özet; mutasyon 19/19 | #226, #225 | `M4/K-406.md` |
+| K-417 ısınma hesaplayıcı | dalda `mobile/114-warmup` (WIP ffb7a28): TS `loadSteps.ts` 40 ortak vakayı geçiyor, `warmup.ts` + parametreler (TÜRETİLMİŞ, soru 40); kalan: telefonda salon önbelleği, seansta ısınma satırları + plaka/taraf, simülatör, inceleme | — | |
+| K-421 (K-414'ten bölündü) salon profili ekranı | backlog'da; K-415'ten sonra | — | |
 
 ## Session sonunda Levent'e sorulacaklar
+38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
+    Seyrek raflı salonda sıçrama büyük olabilir (dambıllar 10 → 20 kg: +2,5 hedefi 20 olur, +%100). Kaynaklı bir sıçrama sınırı
+    yok. Seçenekler: (a) böyle kalsın; (b) en yakın ağır yük motor adımının 2 katından uzaksa tekrar artışına çevrilsin
+    (TÜRETİLMİŞ sınır); (c) başka bir sınır (söyle). ADR-032 madde 5.
+39. **(K-405 → K-220, ürün/veri — YENİ)** Sunucu **setsiz** antrenmanı da "yapılan seans" sayıyor (`TrainingLog.workoutStarts`:
+    tutarlılık + motorun uyum okuması). Telefon artık setsiz antrenman üretmiyor (kayıt ilk sette). Sunucu da yalnız çalışma
+    seti olan antrenmanı saysın mı? (a) evet (önerim; `ConsistencyApiTests` fikstürüne bir set eklenir — K1 onayı); (b) kalsın.
+40. **(K-417, sağlık/ürün — YENİ)** Isınma merdiveni TÜRETİLMİŞ: kaynak yalnız sayıyı veriyor (G1 K-17: hareket başına ≥1, günün
+    ilk hareketinde 3–4; tükenişe yaklaşmaz). Şimdi: ilk hareket 3 set — iş yükünün %50 × 8, %70 × 5, %85 × 3; diğerleri 1 set
+    %60 × 5; vücut ağırlığında tek kolay set; salon yoksa 2,5 kg / 5 lb'ye yuvarlanır (`data/parameters/workout.json`, `urun`).
+    (a) onay; (b) başka yüzde/tekrar (söyle).
+41. **(K-405, ürün — YENİ)** Mola haftasında (restUntil) Antrenman sekmesi yine "Start" gösteriyor (not: "Rest is the plan this
+    week"). (a) böyle kalsın (kullanıcı karar verir); (b) mola haftasında Start gizlensin; (c) Start dursun, basınca bir uyarı.
+42. **(K1 onayı — YENİ, Part 2)** İddia değişmeden fikstür değişti: `SetTypeTests` hareketi ekipmanıyla kurar; `AccountFixture`
+    bir salon ekler (her tabloda satır olsun diye); `navigation.test.tsx` servislere `training` ve `workoutRecords` verir.
+    İddia eklendi (değişmedi): `AccountDataTests` dışa aktarmada salonu, `WorkoutLogTests` `equipment`'ı da bekler. **Bir beklenti
+    değişti:** `workout-screen.test.tsx` "setli bitişte ekran kapanır" → "özet açılır" (K-406 davranışı bilerek değiştirdi;
+    setsiz bitişte ekran hâlâ kapanır). (a) onay; (b) geri al.
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
 33. **(K-231, veri — YENİ, M4 Part 1)** Apple Health rızası geri çekilince ne silinsin? Şimdi: Health'ten **okuma durur**,
     sunucuda zaten tutulan tartı (`source=APPLE_HEALTH`) ve adım/uyku günleri **kalır** — bunlar sağlık verisi rızasıyla

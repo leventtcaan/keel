@@ -28,7 +28,8 @@ export type ExercisePlan = { exerciseId: string; rows: SetRow[]; current: number
 /** Records the server took or will take: a refused one is not part of what was done. */
 const kept = (record: LocalRecord) => record.state !== 'REJECTED';
 
-const setsOf = (records: LocalRecord[], workoutClientId: string) =>
+/** A workout's sets as kept on the phone, in the order they were done (a refused one is not part of it). */
+export const setsOf = (records: LocalRecord[], workoutClientId: string) =>
   records
     .filter((r) => r.kind === 'set' && r.parentClientId === workoutClientId && kept(r))
     .sort((a, b) => a.seq - b.seq)
@@ -45,6 +46,12 @@ export function activeWorkout(records: LocalRecord[]): ActiveWorkout | null {
   if (open === undefined || !kept(open) || finished.has(open.clientId)) return null;
   const body = open.body as Schemas['NewWorkout'];
   return { clientId: open.clientId, startedAt: body.startedAt, programDayId: body.programDayId ?? null, sets: setsOf(records, open.clientId) };
+}
+
+/** A workout as the phone keeps it, by its clientId (its program day), or null. */
+export function workoutOf(records: LocalRecord[], clientId: string): Schemas['NewWorkout'] | null {
+  const found = records.find((r) => r.kind === 'workout' && r.clientId === clientId);
+  return found === undefined ? null : (found.body as Schemas['NewWorkout']);
 }
 
 /** The working sets of a move in the newest other workout that has it. */

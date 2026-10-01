@@ -430,6 +430,23 @@
       "expect": 100.92
     },
     {
+      "case": "lb plates with 1.25s: a target of 48.77 lb (22.12 kg) is nearer 50 lb than 47.5 lb; snapped to the quarter pound it would tie",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41,
+          0.57
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 20.41,
+      "targetKg": 22.12,
+      "expect": 22.68
+    },
+    {
       "case": "a lb stack: 90 lb + 2.5 kg is 100 lb on a 10 lb step",
       "equipment": "MACHINE",
       "exerciseId": "leg_extension",

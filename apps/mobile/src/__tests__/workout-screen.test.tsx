@@ -17,9 +17,10 @@ type Schemas = components['schemas'];
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
 let mockParams: { day?: string } = {};
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack(), push: jest.fn() },
+  router: { back: () => mockBack(), push: jest.fn(), replace: (...args: unknown[]) => mockReplace(...args) },
   useRouter: () => ({ back: mockBack }),
   useLocalSearchParams: () => mockParams,
 }));
@@ -148,7 +149,7 @@ test('another move can be picked; a one-sided move is logged side by side', asyn
   expect(await screen.findByText('Log set 1 · right')).toBeTruthy();
 });
 
-test("finishing asks about each move's form; a move marked not clean is sent, and the screen closes", async () => {
+test("finishing asks about each move's form; a move marked not clean is sent, and the summary opens", async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
   await fireEvent.press(screen.getByText('Finish workout'));
@@ -157,7 +158,8 @@ test("finishing asks about each move's form; a move marked not clean is sent, an
   await fireEvent.press(screen.getByText('Finish'));
   const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
   expect(finish).toMatchObject({ kind: 'finish', workoutClientId: 'w1', body: { uncleanExerciseIds: ['bench_press'] } });
-  expect(mockBack).toHaveBeenCalled();
+  // The summary of what was done takes the session's place (K-406).
+  expect(mockReplace).toHaveBeenCalledWith({ pathname: '/workout-summary', params: { workout: 'w1' } });
 });
 
 test('offline, the screen says the sets are kept on the phone', async () => {
