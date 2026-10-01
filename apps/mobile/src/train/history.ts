@@ -6,6 +6,7 @@
  */
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
+import { localDay } from '@/today/today';
 
 import { e1rm } from './summary';
 import { setsOf } from './workout';
@@ -20,14 +21,18 @@ export type PersonalRecord =
   | { kind: 'repsAt'; loadKg: number; reps: number; on: string }
   | { kind: 'mostReps'; reps: number; on: string };
 
-/** Every workout once, newest first: the server's, with the phone's own sets joined in; the phone's not yet sent. */
-export function sessionsOf(server: Schemas['Workout'][] | null, records: LocalRecord[]): Session[] {
+/**
+ * Every workout once, newest first: the server's, with the phone's own sets joined in; the phone's not yet sent. The
+ * phone's own from before `fromDay` (the window the server was asked for) are left out: a new phone would not have them.
+ */
+export function sessionsOf(server: Schemas['Workout'][] | null, records: LocalRecord[], fromDay = ''): Session[] {
   const byId = new Map<string, Session>();
   for (const workout of server ?? []) {
     byId.set(workout.clientId, { clientId: workout.clientId, startedAt: workout.startedAt, sets: workout.sets.map(({ id: _, ...set }) => set) });
   }
   for (const record of records) {
     if (record.kind !== 'workout' || record.state === 'REJECTED') continue;
+    if (localDay(new Date((record.body as Schemas['NewWorkout']).startedAt)) < fromDay) continue;
     const found = byId.get(record.clientId);
     const session = found ?? { clientId: record.clientId, startedAt: (record.body as Schemas['NewWorkout']).startedAt, sets: [] };
     const known = new Set(session.sets.map((s) => s.clientId));

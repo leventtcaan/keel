@@ -83,6 +83,24 @@ describe('sessions: the server list joined with what the phone has not sent', ()
     expect(sessionsOf([], [record('workout', 'w9', { clientId: 'w9', startedAt: '2026-09-21T17:00:00Z' }, null, 'REJECTED')])).toEqual([]);
   });
 
+  test("the phone's own workouts older than the window are not part of it: a new phone would not have them either", () => {
+    const old = record('workout', 'w0', { clientId: 'w0', startedAt: '2025-03-01T17:00:00Z' }, null, 'SYNCED');
+    const recent = record('workout', 'w1', { clientId: 'w1', startedAt: '2025-10-02T08:00:00Z' }, null, 'SYNCED');
+    expect(sessionsOf(null, [old, recent], '2025-10-02').map((s) => s.clientId)).toEqual(['w1']);
+  });
+
+  test("a set the server has and the phone keeps too is the server's copy", () => {
+    const sent = set('bench_press', 80, 8, 1);
+    const [session] = sessionsOf(
+      [workout('w1', '2026-09-21T17:00:00Z', [sent])],
+      [
+        record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-21T17:00:00Z' }, null, 'SYNCED'),
+        record('set', sent.clientId, { ...sent, reps: 7 }, 'w1', 'SYNCED'),
+      ],
+    );
+    expect(session.sets.map((s) => s.reps)).toEqual([8]);
+  });
+
   test("without the server's list (offline, nothing kept), the phone's own workouts", () => {
     const sessions = sessionsOf(null, [
       record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-21T17:00:00Z' }, null, 'SYNCED'),
@@ -170,6 +188,21 @@ describe('records', () => {
       { kind: 'heaviest', loadKg: 62.5, reps: 6, on: '2026-09-10T17:00:00Z' },
       { kind: 'repsAt', loadKg: 62.5, reps: 6, on: '2026-09-10T17:00:00Z' },
     ]);
+  });
+
+  test('the same top weight for more reps later: the heaviest is the later, fuller set', () => {
+    expect(recordsOf(BENCH, sessionsWith([set('bench_press', 85, 4)], [set('bench_press', 85, 5)]))[0]).toEqual({
+      kind: 'heaviest',
+      loadKg: 85,
+      reps: 5,
+      on: '2026-09-11T17:00:00Z',
+    });
+  });
+
+  test('an estimated max reached again later keeps the first day', () => {
+    // 80 × 8 at RIR 1 and 80 × 9 at RIR 0 are both 104.
+    const records = recordsOf(BENCH, sessionsWith([set('bench_press', 80, 8, 1)], [set('bench_press', 80, 9, 0)]));
+    expect(records.find((r) => r.kind === 'estimatedMax')).toEqual({ kind: 'estimatedMax', kg: 104, on: '2026-09-10T17:00:00Z' });
   });
 
   test('no work sets, no records', () => {

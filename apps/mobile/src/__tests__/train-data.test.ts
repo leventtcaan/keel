@@ -247,3 +247,23 @@ describe("the workouts behind a move's history (K-415): the server's last year, 
     expect(kv.map.size).toBe(0);
   });
 });
+
+test("a history read still on its way when the user signs out keeps nothing: the workouts were the last account's", async () => {
+  const kv = memoryKv();
+  const cache = createTrainingCache(kv);
+  let answer: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => (answer = resolve));
+  const slow = createApiClient({
+    baseUrl: BASE,
+    accessToken: async () => 'tok',
+    fetch: async () => {
+      await gate;
+      return json([{ id: 'srv-1', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [] }]);
+    },
+  });
+  const reading = cache.history(slow, new Date(2026, 9, 1, 9));
+  await cache.forget();
+  answer();
+  await reading;
+  expect(kv.map.size).toBe(0);
+});

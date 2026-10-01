@@ -47,6 +47,11 @@ function gymInUse(read: Loaded<Schemas['Gym'][]>): Loaded<GymWeights> {
 
 export type TrainingCache = ReturnType<typeof createTrainingCache>;
 
+/** The first day of a move's history: history_days days, today included (ADR-033). */
+export function historyFrom(now: Date): string {
+  return localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (workoutParams.historyDays - 1)));
+}
+
 /**
  * The reads and the kept copies. A sign-out bumps the generation: a read still on its way then keeps nothing — the
  * program it brings is the last account's (the same guard as the unit preference's, K-310).
@@ -91,8 +96,7 @@ export function createTrainingCache(kv: KeyValue) {
     /** The workouts behind a move's history (K-415, ADR-033). */
     async history(api: ApiClient, now: Date): Promise<Loaded<Schemas['Workout'][]>> {
       const startedIn = generation;
-      const to = localDay(now);
-      const from = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (workoutParams.historyDays - 1)));
+      const [from, to] = [historyFrom(now), localDay(now)];
       const read = await load(() => api.GET('/v1/workouts', { params: { query: { from, to } } }));
       return (await withCopy(HISTORY, read, startedIn)).read;
     },

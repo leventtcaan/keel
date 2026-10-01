@@ -1066,6 +1066,7 @@
     "phoneOnly": "Showing what's on this phone. The rest shows when you're online.",
     "done": "Done",
     "open": "History",
-    "openLabel": "{exercise}: history"
+    "openLabel": "{exercise}: history",
+    "loadFailed": "This exercise's history couldn't load. Try again when you're online."
   }
 }

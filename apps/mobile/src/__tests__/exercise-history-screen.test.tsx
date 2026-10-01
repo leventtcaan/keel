@@ -42,16 +42,21 @@ const WORKOUTS: Schemas['Workout'][] = [
 
 let mockHistory: Loaded<Schemas['Workout'][]>;
 let mockRecords: LocalRecord[] = [];
-const mockData: TrainData = { program: { state: 'none' }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
+let mockData: TrainData;
 const mockServices = {
   api: {},
-  training: { read: async () => mockData, history: async () => mockHistory },
+  training: { read: async () => mockData, history: jest.fn(async () => mockHistory) },
   workoutRecords: async () => mockRecords,
   report: jest.fn(),
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
 beforeEach(() => {
+  jest.clearAllMocks();
+  mockServices.training.history.mockImplementation(async () => mockHistory);
+  mockUnits = 'METRIC';
+  mockData = { program: { state: 'none' }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockParams = { exercise: 'bench_press' };
   mockHistory = { state: 'ready', value: WORKOUTS };
   mockRecords = [];
@@ -137,4 +142,63 @@ test('back closes it', async () => {
   await show();
   await fireEvent.press(await screen.findByText('Done'));
   expect(mockBack).toHaveBeenCalled();
+});
+
+test('in lb, two loads written alike are one weight: one "137.8 lb" row', async () => {
+  mockUnits = 'IMPERIAL';
+  mockHistory = {
+    state: 'ready',
+    value: [
+      { id: 'a', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [set('s1', 'bench_press', 62.5, 6, 1)] },
+      { id: 'b', clientId: 'w2', startedAt: '2026-09-28T17:00:00Z', sets: [set('s2', 'bench_press', 62.51, 6, 1)] },
+    ],
+  };
+  await show();
+  expect(await screen.findAllByText('Most reps at 137.8 lb · 6')).toHaveLength(1);
+});
+
+test("the exercises unread (offline, nothing kept): the screen says it couldn't load, not an empty history", async () => {
+  mockData = { program: { state: 'none' }, exercises: { state: 'failed', problem: 'NoConnection' }, kept: false };
+  await show();
+  expect(await screen.findByText("This exercise's history couldn't load. Try again when you're online.")).toBeTruthy();
+  expect(screen.queryByText('History')).toBeNull();
+});
+
+test('a read that throws is reported by its name only, and the screen stays', async () => {
+  mockServices.training.history.mockImplementation(async () => {
+    throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+  });
+  await show();
+  expect(await screen.findByText('Done')).toBeTruthy();
+  await screen.findByText('Done');
+  expect(mockServices.report).toHaveBeenCalledWith({ name: 'StoreFailed' });
+});
+
+test("the phone's own workouts from before the window are not counted: a new phone would not show them", async () => {
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w0',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w0', startedAt: '2020-01-06T17:00:00Z' },
+      state: 'SYNCED',
+      serverId: 'x',
+      serverBody: null,
+      errorCode: null,
+    },
+    {
+      seq: 2,
+      clientId: 's0',
+      kind: 'set',
+      parentClientId: 'w0',
+      body: { clientId: 's0', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 140, reps: 1, rir: 0 },
+      state: 'SYNCED',
+      serverId: 'y',
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  await show();
+  expect(await screen.findByText('Heaviest · 85 kg × 4')).toBeTruthy();
 });

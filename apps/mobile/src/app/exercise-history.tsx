@@ -16,7 +16,7 @@ import { type Loaded, localDay } from '@/today/today';
 import { type PersonalRecord, historyOf, recordsOf, sessionsOf } from '@/train/history';
 import { exerciseName, shortDate } from '@/train/program';
 import { setText } from '@/train/session';
-import type { TrainData } from '@/train/trainData';
+import { type TrainData, historyFrom } from '@/train/trainData';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
 type Schemas = components['schemas'];
@@ -46,22 +46,28 @@ export default function ExerciseHistoryScreen() {
   const { exercise } = useLocalSearchParams<{ exercise: string }>();
   const units = useUnits();
   const { color } = useTheme();
-  const [read, setRead] = useState<{ data: TrainData; history: Loaded<Schemas['Workout'][]>; records: LocalRecord[] } | null>(null);
+  const [read, setRead] = useState<{ data: TrainData; history: Loaded<Schemas['Workout'][]>; records: LocalRecord[]; from: string } | null>(null);
 
   useEffect(() => {
-    void Promise.all([training.read(api), training.history(api, new Date()), workoutRecords()])
-      .then(([data, history, records]) => setRead({ data, history, records }))
+    const now = new Date();
+    void Promise.all([training.read(api), training.history(api, now), workoutRecords()])
+      .then(([data, history, records]) => setRead({ data, history, records, from: historyFrom(now) }))
       .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
   }, [api, training, workoutRecords, report]);
 
   const move = read?.data.exercises.state === 'ready' ? read.data.exercises.value.find((m) => m.id === exercise) : undefined;
   const server = read?.history.state === 'ready' ? read.history.value : null;
-  const sessions = read === null ? [] : historyOf(sessionsOf(server, read.records), exercise);
+  // Without the catalog the move's sets cannot be written (its load model): no history rather than an empty one.
+  const sessions = read === null || move === undefined ? [] : historyOf(sessionsOf(server, read.records, read.from), exercise);
   const records = move === undefined ? [] : recordsOf(move, sessions, (kg) => loadValue(kg, units));
 
   const phoneOnly = read !== null && server === null ? <Text style={[styles.small, { color: color.muted }]}>{t('history.phoneOnly')}</Text> : null;
+  const unread =
+    read !== null && move === undefined ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('history.loadFailed')}</Text> : null;
   const empty =
-    read !== null && sessions.length === 0 ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('history.empty')}</Text> : null;
+    read !== null && move !== undefined && sessions.length === 0 ? (
+      <Text style={[styles.text, { color: color.textSecondary }]}>{t('history.empty')}</Text>
+    ) : null;
   const recordCard =
     move === undefined || records.length === 0 ? null : (
       <Card>
@@ -106,6 +112,7 @@ export default function ExerciseHistoryScreen() {
         {sessions.length > 0 && <Text style={[styles.heading, { color: color.text }]}>{t('history.sessions')}</Text>}
         {sessionCards}
         {empty}
+        {unread}
         <Button label={t('history.done')} variant="ghost" onPress={() => router.back()} />
       </ScrollView>
     </SafeAreaView>
