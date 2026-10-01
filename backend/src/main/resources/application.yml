@@ -67,6 +67,8 @@ keel:
     max-planned-sets: 20
     max-day-exercises: 20
     max-day-name: 60
+    # A note on a set or a session (K-422): a few sentences ("left shoulder pinched on the last rep"), not a diary.
+    max-note: 500
     # A gym (K-414, ADR-032; contract GymInput): a heavy rack goes to 100 kg dumbbells by 1-2.5 kg steps; 20 plate sizes
     # cover kg and lb sets together; a gym or two per place the user trains.
     gym:
