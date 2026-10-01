@@ -31,6 +31,7 @@ const mockServices = {
   signOut: jest.fn(async () => {}),
   deleteAccount: jest.fn(async () => {}),
   exportData: jest.fn(async () => {}),
+  consents: { remember: jest.fn(async (_kind: string, _status: string) => {}) },
   withdrawHealthData: jest.fn(async () => {
     mockConsents.HEALTH_DATA = 'WITHDRAWN';
   }),
@@ -144,6 +145,7 @@ describe('consents', () => {
       body: { textVersion: t('consent.health_data.version') },
     });
     expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
+    expect(mockServices.consents.remember).toHaveBeenCalledWith('HEALTH_DATA', 'GRANTED');
   });
 
   test("Allow on Apple Health shows Apple's sheet first, then records the consent", async () => {
@@ -199,6 +201,8 @@ describe('consents', () => {
     await press(t('settings.withdrawConfirm.confirm'));
     expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/consents/{kind}', { params: { path: { kind: 'APPLE_HEALTH' } } });
     expect(mockServices.withdrawHealthData).not.toHaveBeenCalled();
+    // The phone knows at once: offline, Apple Health is not read on an old yes (K-402 review).
+    expect(mockServices.consents.remember).toHaveBeenCalledWith('APPLE_HEALTH', 'WITHDRAWN');
   });
 
   test("Apple's sheet failing in Settings says so and records nothing", async () => {

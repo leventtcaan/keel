@@ -72,7 +72,8 @@
       "weighIn": {
         "done": "Weigh-in done",
         "todo": "Weigh-in",
-        "todoNote": "Morning, before food"
+        "todoNote": "Morning, before food",
+        "log": "Log weight"
       },
       "training": {
         "exercises": "{count} exercises",
@@ -123,6 +124,24 @@
       "training": "{count} training sessions a week"
     },
     "consent": "Your food budget and targets need the health data consent."
+  },
+  "weighIn": {
+    "title": "Weigh-in",
+    "label": "Weight ({unit})",
+    "note": "Morning, after the bathroom, before food. The trend matters, not one morning.",
+    "save": "Save",
+    "invalid": "That doesn't look like a weight. Check the number.",
+    "saveFailed": "Couldn't save it on this phone. Try again.",
+    "consent": {
+      "allow": "Allow and continue",
+      "notNow": "Not now",
+      "failed": "Couldn't record your choice. Check your connection and try again."
+    },
+    "chart": {
+      "title": "Last four weeks",
+      "spoken": "Weigh-ins faint, the 7-day trend in bold"
+    },
+    "earlyNote": "Two weeks of weigh-ins before the trend says much. Keep weighing; the line fills in."
   },
   "decision": {
     "no_decision_yet": {

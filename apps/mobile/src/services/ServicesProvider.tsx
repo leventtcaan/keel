@@ -14,6 +14,7 @@ import { Share } from 'react-native';
 import { apiBaseUrl } from '@/api/config';
 import type { HealthAccess } from '@/health/health';
 import { healthKitAccess } from '@/health/healthKit';
+import { syncHealthWeights } from '@/health/weightSync';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
@@ -27,6 +28,8 @@ export type PhoneServices = AppServices & {
   signInWithApple(): Promise<SignInResult>;
   appleAvailable(): Promise<boolean>;
   health: HealthAccess;
+  /** Reads Apple Health's new scale weigh-ins into the queue, with both consents (K-402); how many were new. */
+  syncHealth(): Promise<number>;
   /** The account's data as a JSON file, handed to the share sheet (K-309). */
   exportData(): Promise<void>;
 };
@@ -49,12 +52,20 @@ async function build(): Promise<PhoneServices> {
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);
   startAutoSync(services.queue.drainInBackground, deviceTriggers);
+  const health = healthKitAccess(); // not available in Expo Go (no native module)
   return {
     ...services,
     signInWithApple: () =>
       signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session }),
     appleAvailable: () => AppleAuthentication.isAvailableAsync(),
-    health: healthKitAccess(), // not available in Expo Go (no native module)
+    health,
+    syncHealth: () =>
+      syncHealthWeights({
+        health,
+        queue: services.queue,
+        consented: async () => (await services.consents.granted('HEALTH_DATA')) && (await services.consents.granted('APPLE_HEALTH')),
+        now: new Date(),
+      }),
     exportData: () =>
       exportAccount({
         api: services.api,

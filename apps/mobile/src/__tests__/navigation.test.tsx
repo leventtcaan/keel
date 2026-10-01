@@ -31,6 +31,8 @@ const mockServices = {
         : { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) },
   },
   health: { available: false },
+  syncHealth: async () => 0,
+  queue: { drain: async () => {} }, // Today reads Apple Health's weigh-ins first (K-402); none here
   report: () => {},
 };
 jest.mock('@/services/ServicesProvider', () => ({

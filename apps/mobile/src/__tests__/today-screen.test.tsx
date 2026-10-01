@@ -93,7 +93,9 @@ jest.mock('react-native/Libraries/AppState/AppState', () => ({
   },
 }));
 // One object for the life of the test, as the real services are built once per process: the screen depends on it.
-const mockServices = { api: { GET: mockGET }, report: () => {} };
+const mockSyncHealth = jest.fn(async () => 0);
+const mockDrain = jest.fn(async () => {});
+const mockServices = { api: { GET: mockGET }, syncHealth: mockSyncHealth, queue: { drain: mockDrain }, report: () => {} };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useUnits: () => 'METRIC',
@@ -270,6 +272,13 @@ test("today's list: what is left of the day's food, as ranges (K-409)", async ()
   expect(screen.getByText(`${t('format.range', { low: 780, high: 950 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
 });
 
+test('no weigh-in yet today: the row opens the weigh-in (K-402)', async () => {
+  mockAnswers['/v1/weigh-ins'] = ok([]);
+  await show();
+  await press(t('today.list.weighIn.log'));
+  expect(mockPush).toHaveBeenCalledWith('/weigh-in');
+});
+
 test('before anything is there: each part says what comes, and the others still show', async () => {
   mockAnswers = {
     '/v1/weigh-ins': ok([]),
@@ -334,6 +343,39 @@ test('the app back in front reads again: a new day, new logs (K-401 review)', as
   await act(async () => mockForeground('active'));
 
   expect(mockGET.mock.calls.length).toBeGreaterThan(calls);
+});
+
+test("Apple Health's new weigh-ins go in before Today reads; a failing Health read never blanks Today (K-402)", async () => {
+  let finish: (added: number) => void = () => {};
+  mockSyncHealth.mockImplementationOnce(() => new Promise<number>((resolve) => (finish = resolve)));
+  await show();
+  expect(mockGET).not.toHaveBeenCalled(); // Today waits for the weigh-ins Health brought
+
+  await act(async () => finish(1));
+  expect(mockGET).toHaveBeenCalled();
+
+  mockSyncHealth.mockRejectedValueOnce(new Error('HealthKit'));
+  await act(async () => mockRefocus());
+  expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
+});
+
+test('what waits on the phone is sent before Today reads: a weigh-in just saved shows as done (K-402 review)', async () => {
+  let sent: () => void = () => {};
+  mockDrain.mockImplementationOnce(() => new Promise<void>((resolve) => (sent = resolve)));
+  await show();
+  expect(mockGET).not.toHaveBeenCalled();
+  await act(async () => sent());
+  expect(mockGET).toHaveBeenCalled();
+});
+
+test.each([
+  ['offline', 'offline'],
+  ['without the consent', 'consent'],
+] as const)('%s, the weigh-in can still be opened (it asks for the consent itself; K-402 review)', async (_label, state) => {
+  mockAnswers['/v1/weigh-ins'] = state === 'offline' ? 'offline' : refused(403, 'CONSENT_REQUIRED');
+  await show();
+  await press(t('today.list.weighIn.log'));
+  expect(mockPush).toHaveBeenCalledWith('/weigh-in');
 });
 
 test('Settings is still one tap from Today', async () => {

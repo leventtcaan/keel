@@ -268,6 +268,14 @@ describe('withdrawing the health data consent (K-231)', () => {
     expect(await services.pendingCount()).toBe(1);
   });
 
+  test('the phone remembers it at once: offline, the health data consent reads as withdrawn (K-402)', async () => {
+    const { services, fake } = await withEntries(200);
+    await services.consents.remember('HEALTH_DATA', 'GRANTED');
+    await services.withdrawHealthData();
+    fake.goOffline();
+    expect(await services.consents.granted('HEALTH_DATA')).toBe(false);
+  });
+
   test('a refusal keeps every entry and throws by name', async () => {
     const { services } = await withEntries(500);
 
@@ -282,6 +290,16 @@ describe('withdrawing the health data consent (K-231)', () => {
     await expect(services.withdrawHealthData()).rejects.toMatchObject({ name: 'NoConnection' });
     expect(await services.pendingCount()).toBe(3);
   });
+});
+
+test('what the phone knows of the consents goes with the session at sign-out (K-402)', async () => {
+  const { services, fake } = await setup();
+  await services.session.signIn(SESSION);
+  await services.consents.remember('HEALTH_DATA', 'GRANTED');
+  await services.signOut();
+  await settle();
+  fake.goOffline();
+  expect(await services.consents.granted('HEALTH_DATA')).toBe(false);
 });
 
 describe('deleting the account (K-309, K-214)', () => {

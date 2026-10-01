@@ -20,7 +20,7 @@ import { tokens } from '@/theme/tokens';
  */
 export default function HealthDataStep() {
   const { draft, update } = useDraft();
-  const { api, report, withdrawHealthData } = useAppServices();
+  const { api, report, withdrawHealthData, consents } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -47,7 +47,14 @@ export default function HealthDataStep() {
     }
   }
 
-  const allow = () => send(() => grantConsent(api, 'HEALTH_DATA'), () => update({ healthConsent: 'granted' }));
+  const allow = () =>
+    send(
+      async () => {
+        await grantConsent(api, 'HEALTH_DATA');
+        await consents.remember('HEALTH_DATA', 'GRANTED').catch(() => undefined); // the phone knows at once (K-402)
+      },
+      () => update({ healthConsent: 'granted' }),
+    );
   const withdraw = () =>
     send(
       // The same path as Settings (K-231): the server deletes what the consent covered — in onboarding nothing yet, the

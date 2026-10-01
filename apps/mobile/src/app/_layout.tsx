@@ -36,6 +36,7 @@ function AppStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'needed'}>
         <Stack.Screen name="onboarding" />
