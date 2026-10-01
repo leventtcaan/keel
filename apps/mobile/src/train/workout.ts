@@ -29,7 +29,10 @@ export type ExercisePlan = { exerciseId: string; rows: SetRow[]; current: number
 const kept = (record: LocalRecord) => record.state !== 'REJECTED';
 
 const setsOf = (records: LocalRecord[], workoutClientId: string) =>
-  records.filter((r) => r.kind === 'set' && r.parentClientId === workoutClientId && kept(r)).sort((a, b) => a.seq - b.seq).map((r) => r.body as NewSet);
+  records
+    .filter((r) => r.kind === 'set' && r.parentClientId === workoutClientId && kept(r))
+    .sort((a, b) => a.seq - b.seq)
+    .map((r) => r.body as NewSet);
 
 /**
  * The newest workout, while it has no finish, with its sets in the order they were done. Only the newest: an older one

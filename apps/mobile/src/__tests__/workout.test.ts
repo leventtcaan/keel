@@ -10,14 +10,27 @@ import { activeWorkout, finishRecord, lastTime, planExercise } from '@/train/wor
 type Schemas = components['schemas'];
 
 let seq = 0;
-function row(kind: string, clientId: string, body: unknown, parentClientId: string | null = null, state: LocalRecord['state'] = 'SYNCED'): LocalRecord {
+function row(
+  kind: string,
+  clientId: string,
+  body: unknown,
+  parentClientId: string | null = null,
+  state: LocalRecord['state'] = 'SYNCED',
+): LocalRecord {
   seq += 1;
   return { seq, clientId, kind, parentClientId, body, state, serverId: null, serverBody: null, errorCode: null };
 }
 const workout = (clientId: string, programDayId?: string, state: LocalRecord['state'] = 'SYNCED') =>
   row('workout', clientId, { clientId, startedAt: '2026-09-28T17:00:00Z', ...(programDayId ? { programDayId } : {}) }, null, state);
-const set = (workoutId: string, clientId: string, exerciseId: string, loadKg: number, reps: number, extra: Partial<Schemas['NewSet']> = {}, state: LocalRecord['state'] = 'SYNCED') =>
-  row('set', clientId, { clientId, exerciseId, setType: 'WORKING', loadKg, reps, ...extra }, workoutId, state);
+const set = (
+  workoutId: string,
+  clientId: string,
+  exerciseId: string,
+  loadKg: number,
+  reps: number,
+  extra: Partial<Schemas['NewSet']> = {},
+  state: LocalRecord['state'] = 'SYNCED',
+) => row('set', clientId, { clientId, exerciseId, setType: 'WORKING', loadKg, reps, ...extra }, workoutId, state);
 const finish = (workoutId: string) => row('finish', `f-${workoutId}`, { endedAt: '2026-09-28T18:00:00Z' }, workoutId);
 
 const bench: Schemas['PlannedExercise'] = { exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
@@ -27,8 +40,14 @@ const pushUp = { id: 'push_up', unilateral: false, load: 'BODYWEIGHT' } as Schem
 
 describe('the workout under way', () => {
   test('is the newest one not finished, with its sets in the order they were done', () => {
-    const records = [workout('w1'), set('w1', 's1', 'squat', 100, 5), finish('w1'), workout('w2', 'day-a'), set('w2', 's2', 'bench_press', 60, 8),
-      set('w2', 's3', 'bench_press', 60, 7, {}, 'PENDING')];
+    const records = [
+      workout('w1'),
+      set('w1', 's1', 'squat', 100, 5),
+      finish('w1'),
+      workout('w2', 'day-a'),
+      set('w2', 's2', 'bench_press', 60, 8),
+      set('w2', 's3', 'bench_press', 60, 7, {}, 'PENDING'),
+    ];
     expect(activeWorkout(records)).toEqual({
       clientId: 'w2',
       startedAt: '2026-09-28T17:00:00Z',
@@ -69,10 +88,25 @@ describe('the workout under way', () => {
 
 describe('last time', () => {
   test('is the working sets of the newest other workout with that move', () => {
-    const records = [workout('w1'), set('w1', 'a', 'bench_press', 55, 8), finish('w1'), workout('w2'), set('w2', 'b', 'bench_press', 57.5, 8),
-      set('w2', 'c', 'bench_press', 40, 10, { setType: 'WARM_UP' }), set('w2', 'd', 'bench_press', 57.5, 7), finish('w2'), workout('w3'),
-      set('w3', 'e', 'squat', 100, 5), finish('w3'), workout('now'), set('now', 'f', 'bench_press', 60, 8)];
-    expect(lastTime(records, 'bench_press', 'now').map((s) => [s.loadKg, s.reps])).toEqual([[57.5, 8], [57.5, 7]]);
+    const records = [
+      workout('w1'),
+      set('w1', 'a', 'bench_press', 55, 8),
+      finish('w1'),
+      workout('w2'),
+      set('w2', 'b', 'bench_press', 57.5, 8),
+      set('w2', 'c', 'bench_press', 40, 10, { setType: 'WARM_UP' }),
+      set('w2', 'd', 'bench_press', 57.5, 7),
+      finish('w2'),
+      workout('w3'),
+      set('w3', 'e', 'squat', 100, 5),
+      finish('w3'),
+      workout('now'),
+      set('now', 'f', 'bench_press', 60, 8),
+    ];
+    expect(lastTime(records, 'bench_press', 'now').map((s) => [s.loadKg, s.reps])).toEqual([
+      [57.5, 8],
+      [57.5, 7],
+    ]);
   });
 
   test('is empty for a move never done', () => {
@@ -133,8 +167,10 @@ describe('a planned move as rows', () => {
   });
 
   test("a one-sided move takes last time's load and reps from the same side", () => {
-    const last = [set('w1', 'l', 'one_arm_dumbbell_row', 20, 12, { side: 'LEFT' }), set('w1', 'r', 'one_arm_dumbbell_row', 22, 10, { side: 'RIGHT' })]
-      .map((r) => r.body as Schemas['NewSet']);
+    const last = [
+      set('w1', 'l', 'one_arm_dumbbell_row', 20, 12, { side: 'LEFT' }),
+      set('w1', 'r', 'one_arm_dumbbell_row', 22, 10, { side: 'RIGHT' }),
+    ].map((r) => r.body as Schemas['NewSet']);
     const plan = planExercise({ ...bench, exerciseId: 'one_arm_dumbbell_row', sets: 1 }, rowMove, last, []);
     expect(plan.rows.map((r) => [r.side, r.suggested.loadKg, r.suggested.reps, r.last?.clientId])).toEqual([
       ['LEFT', 20, 12, 'l'],

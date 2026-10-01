@@ -45,14 +45,20 @@ test('read online: the server answer, and a copy kept', async () => {
 test('offline: the kept copy, saying it is one', async () => {
   const kv = memoryKv();
   await readTraining(online, kv);
-  const read = await readTraining(api(() => 'offline'), kv);
+  const read = await readTraining(
+    api(() => 'offline'),
+    kv,
+  );
   expect(read).toEqual({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: true });
 });
 
 test('one part from the kept copy (the server erred on it) marks the whole read as kept', async () => {
   const kv = memoryKv();
   await readTraining(online, kv);
-  const read = await readTraining(api((path) => (path === '/v1/program' ? json({ code: 'X' }, 500) : json(EXERCISES))), kv);
+  const read = await readTraining(
+    api((path) => (path === '/v1/program' ? json({ code: 'X' }, 500) : json(EXERCISES))),
+    kv,
+  );
   expect(read).toEqual({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: true });
 });
 
@@ -65,7 +71,10 @@ test('a read started after a sign-out keeps its copy: the guard is per read, not
 });
 
 test('offline with nothing kept: failed, no connection', async () => {
-  const read = await readTraining(api(() => 'offline'), memoryKv());
+  const read = await readTraining(
+    api(() => 'offline'),
+    memoryKv(),
+  );
   expect(read.program).toEqual({ state: 'failed', problem: 'NoConnection' });
   expect(read.kept).toBe(false);
 });
@@ -73,9 +82,19 @@ test('offline with nothing kept: failed, no connection', async () => {
 test('no program on the server (404) forgets the kept one', async () => {
   const kv = memoryKv();
   await readTraining(online, kv);
-  const read = await readTraining(api((path) => (path === '/v1/program' ? json({ code: 'NOT_FOUND' }, 404) : json(EXERCISES))), kv);
+  const read = await readTraining(
+    api((path) => (path === '/v1/program' ? json({ code: 'NOT_FOUND' }, 404) : json(EXERCISES))),
+    kv,
+  );
   expect(read.program).toEqual({ state: 'none' });
-  expect((await readTraining(api(() => 'offline'), kv)).program).toEqual({ state: 'failed', problem: 'NoConnection' });
+  expect(
+    (
+      await readTraining(
+        api(() => 'offline'),
+        kv,
+      )
+    ).program,
+  ).toEqual({ state: 'failed', problem: 'NoConnection' });
 });
 
 test('signing out forgets both', async () => {
@@ -86,7 +105,7 @@ test('signing out forgets both', async () => {
   expect(kv.map.size).toBe(0);
 });
 
-test('a read still on its way when the user signs out keeps nothing: the program was the last account\'s', async () => {
+test("a read still on its way when the user signs out keeps nothing: the program was the last account's", async () => {
   const kv = memoryKv();
   const cache = createTrainingCache(kv);
   let answer: () => void = () => undefined;
@@ -109,6 +128,9 @@ test('a read still on its way when the user signs out keeps nothing: the program
 test('a kept copy that cannot be read is no copy', async () => {
   const kv = memoryKv();
   kv.map.set('train.program', '{not json');
-  const read = await readTraining(api(() => 'offline'), kv);
+  const read = await readTraining(
+    api(() => 'offline'),
+    kv,
+  );
   expect(read.program).toEqual({ state: 'failed', problem: 'NoConnection' });
 });
