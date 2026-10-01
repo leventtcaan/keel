@@ -63,6 +63,17 @@ class E1rmTests {
         assertThat(E1rm.estimate(new BigDecimal("91.5"), 2, 1, P)).contains(new BigDecimal("100.7"));
     }
 
+    @Test
+    void roundsOnceSoAnExactHalfGoesUp() {
+        // The exact value of a tie, rounded once: 52.5 × 37/30 = 64.75, not 64.7499… cut to 16 digits first. The same
+        // vectors are the phone's (workout-summary.test.ts): the summary and the engine say one estimated max (K-406).
+        assertThat(E1rm.estimate(new BigDecimal("52.5"), 5, 2, P)).contains(new BigDecimal("64.8"));
+        assertThat(E1rm.estimate(new BigDecimal("82.5"), 5, 2, P)).contains(new BigDecimal("101.8"));
+        assertThat(E1rm.estimate(new BigDecimal("30.75"), 6, 2, P)).contains(new BigDecimal("39.0"));
+        assertThat(E1rm.estimate(new BigDecimal("15.75"), 3, 1, P)).contains(new BigDecimal("17.9"));
+        assertThat(E1rm.estimate(new BigDecimal("2.25"), 7, 1, P)).contains(new BigDecimal("2.9"));
+    }
+
     @Property
     void neverUnderTheLoadAndNeverDownWithMoreReps(@ForAll @BigRange(min = "1", max = "500") @Scale(2) BigDecimal load,
             @ForAll @IntRange(min = 1, max = 10) int reps, @ForAll @IntRange(min = 0, max = 9) int rir) {
