@@ -111,6 +111,17 @@ describe('sessions: the server list joined with what the phone has not sent', ()
     expect(session.note).toBe('Slept 5 hours');
   });
 
+  test("a finish already sent: the server's note is the one (it may have been replaced since)", () => {
+    const [session] = sessionsOf(
+      [{ ...workout('w1', '2026-09-21T17:00:00Z', []), note: 'Slept 6 hours' }],
+      [
+        record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-21T17:00:00Z' }, null, 'SYNCED'),
+        record('finish', 'f1', { endedAt: '2026-09-21T18:00:00Z', note: 'Slept 5 hours' }, 'w1', 'SYNCED'),
+      ],
+    );
+    expect(session.note).toBe('Slept 6 hours');
+  });
+
   test('a finish the server refused carries no note: it is not part of what was done', () => {
     const [session] = sessionsOf(
       [],
