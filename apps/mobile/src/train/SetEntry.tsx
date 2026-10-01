@@ -12,7 +12,8 @@ import { tokens } from '@/theme/tokens';
 import { workoutParams } from './params';
 
 type Schemas = components['schemas'];
-export type Entry = { load: string; reps: string; rir: number };
+/** `note` null: the note field is closed (one tap stays one tap); a string, open with what is typed. */
+export type Entry = { load: string; reps: string; rir: number; note: string | null };
 
 type Props = {
   move: Schemas['Exercise'];
@@ -51,6 +52,19 @@ export function SetEntry({ move, index, side, entry, onChange, onLog, problem, b
   const last = workoutParams.rirChoices.length - 1;
   const label = side === 'BOTH' ? t('workout.log', { number }) : t('workout.logSide', { number, side: t(`workout.sideName.${side}`) });
   const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{problem}</Text>;
+  // Closed until asked for: one tap stays one tap.
+  const noteField =
+    entry.note === null ? (
+      <Button label={t('workout.note.add')} variant="ghost" size="sm" onPress={() => onChange({ note: '' })} />
+    ) : (
+      <TextField
+        label={t('workout.note.label')}
+        value={entry.note}
+        onChangeText={(text) => onChange({ note: text })}
+        maxLength={workoutParams.noteMaxChars}
+        multiline
+      />
+    );
   return (
     <View style={styles.entry}>
       <View style={styles.fields}>
@@ -71,6 +85,7 @@ export function SetEntry({ move, index, side, entry, onChange, onLog, problem, b
           <Chip key={rir} label={i === last ? t('workout.rir.more') : String(rir)} selected={entry.rir === rir} onPress={() => onChange({ rir })} />
         ))}
       </View>
+      {noteField}
       {said}
       <Button label={label} onPress={onLog} disabled={busy} />
     </View>

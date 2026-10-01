@@ -138,6 +138,27 @@ test('what is typed and the RIR picked are what is logged; 3+ is logged as 3', a
   expect(sets()[0].body).toMatchObject({ loadKg: 60, reps: 5, rir: 3 });
 });
 
+test('a note goes with the set it was written for, and the next set starts without one (K-422)', async () => {
+  await show();
+  expect(screen.queryByLabelText('Note on this set')).toBeNull(); // closed: one tap stays one tap
+  await fireEvent.press(await screen.findByText('Add a note'));
+  await fireEvent.changeText(screen.getByLabelText('Note on this set'), 'Left shoulder pinched');
+  await fireEvent.press(screen.getByText('Log set 1'));
+  expect(sets()[0].body).toMatchObject({ note: 'Left shoulder pinched' });
+  await fireEvent.press(await screen.findByText('Log set 2'));
+  expect(sets()[1].body).not.toHaveProperty('note');
+});
+
+test('the session note is asked at the finish, and goes with it (K-422)', async () => {
+  await show();
+  await fireEvent.press(await screen.findByText('Log set 1'));
+  await fireEvent.press(await screen.findByText('Finish workout'));
+  await fireEvent.changeText(await screen.findByLabelText('Note on this workout (optional)'), 'Slept 5 hours');
+  await fireEvent.press(screen.getByText('Finish'));
+  const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
+  expect(finish?.kind === 'finish' && finish.body).toMatchObject({ note: 'Slept 5 hours' });
+});
+
 test('a set the server would refuse is not logged, and the screen says what to check', async () => {
   await show();
   await fireEvent.changeText(await screen.findByLabelText('Reps'), '0');

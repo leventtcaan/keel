@@ -8,6 +8,8 @@ import type { components } from '@/api/schema';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 
+import { noteOf } from './session';
+
 type Schemas = components['schemas'];
 type NewSet = Schemas['NewSet'];
 
@@ -99,6 +101,8 @@ export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas[
 }
 
 /** The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31). */
-export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[]): Outbound {
-  return { kind: 'finish', clientId, workoutClientId, body: { endedAt: at.toISOString(), uncleanExerciseIds: [...new Set(unclean)] } };
+export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string): Outbound {
+  const words = noteOf(note);
+  const body = { endedAt: at.toISOString(), uncleanExerciseIds: [...new Set(unclean)], ...(words === null ? {} : { note: words }) };
+  return { kind: 'finish', clientId, workoutClientId, body };
 }

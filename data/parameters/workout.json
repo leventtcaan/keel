@@ -151,6 +151,14 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md#Karar",
       "note": "How far back a move's history and records reach (ADR-033 §1): a year of training; the server answers at most 400 days (keel.api.max-range-days)."
+    },
+    {
+      "key": "note_max_chars",
+      "value": 500,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewSet",
+      "note": "A note on a set or a session (K-422): the contract's maxLength, the server's keel.training.max-note."
     }
   ]
 }

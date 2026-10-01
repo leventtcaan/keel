@@ -2,10 +2,12 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
+import { workoutParams } from './params';
 import { exerciseName } from './program';
 
 type Props = {
@@ -13,6 +15,9 @@ type Props = {
   moves: string[];
   unclean: Set<string>;
   onMark: (exerciseId: string, clean: boolean) => void;
+  /** The session's note (K-422), optional. */
+  note: string;
+  onNote: (text: string) => void;
   onFinish: () => void;
   onBack: () => void;
   busy: boolean;
@@ -22,7 +27,7 @@ type Props = {
  * Before the workout ends: was each move's form clean? A move that was not keeps its weight and reps next time (G6 K-31,
  * K-217). Clean is the default: the question is asked, never assumed against the user.
  */
-export function FinishForm({ moves, unclean, onMark, onFinish, onBack, busy }: Props) {
+export function FinishForm({ moves, unclean, onMark, note, onNote, onFinish, onBack, busy }: Props) {
   const { color } = useTheme();
   return (
     <View style={styles.form}>
@@ -45,6 +50,7 @@ export function FinishForm({ moves, unclean, onMark, onFinish, onBack, busy }: P
           />
         </View>
       ))}
+      <TextField label={t('workout.note.session')} value={note} onChangeText={onNote} maxLength={workoutParams.noteMaxChars} multiline />
       <Button label={t('workout.finishNow')} onPress={onFinish} disabled={busy} />
       <Button label={t('workout.keepGoing')} variant="ghost" onPress={onBack} disabled={busy} />
     </View>

@@ -202,3 +202,21 @@ test("the phone's own workouts from before the window are not counted: a new pho
   await show();
   expect(await screen.findByText('Heaviest · 85 kg × 4')).toBeTruthy();
 });
+
+test("a set's note and the session's note are shown with them", async () => {
+  mockHistory = {
+    state: 'ready',
+    value: [
+      {
+        id: 'a',
+        clientId: 'w1',
+        startedAt: '2026-09-21T17:00:00Z',
+        note: 'Slept 5 hours',
+        sets: [{ ...set('s1', 'bench_press', 80, 8, 1), note: 'grip slipped' }],
+      },
+    ],
+  };
+  await show();
+  expect(await screen.findByText('Slept 5 hours')).toBeTruthy();
+  expect(screen.getByText('grip slipped')).toBeTruthy();
+});

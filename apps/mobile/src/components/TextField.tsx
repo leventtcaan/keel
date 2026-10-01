@@ -15,10 +15,12 @@ type Props = {
   problem?: string | null;
   keyboardType?: TextInputProps['keyboardType'];
   maxLength?: number;
+  /** A few sentences rather than a short answer (a note). */
+  multiline?: boolean;
 };
 
-/** A labelled field for a short answer: a number, a year, a time. */
-export function TextField({ label, value, onChangeText, suffix, hint, problem, keyboardType, maxLength }: Props) {
+/** A labelled field for a short answer: a number, a year, a time — or, multiline, a note. */
+export function TextField({ label, value, onChangeText, suffix, hint, problem, keyboardType, maxLength, multiline = false }: Props) {
   const { color } = useTheme();
   const note = problem ?? hint;
   return (
@@ -32,13 +34,12 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, k
           onChangeText={onChangeText}
           keyboardType={keyboardType}
           maxLength={maxLength}
-          style={[styles.input, { color: color.text }]}
+          multiline={multiline}
+          style={[styles.input, multiline && styles.multiline, { color: color.text }]}
         />
         {suffix !== undefined && <Text style={[styles.suffix, { color: color.muted }]}>{suffix}</Text>}
       </View>
-      {note !== undefined && note !== null && (
-        <Text style={[styles.note, { color: problem ? color.text : color.muted }]}>{note}</Text>
-      )}
+      {note !== undefined && note !== null && <Text style={[styles.note, { color: problem ? color.text : color.muted }]}>{note}</Text>}
     </View>
   );
 }
@@ -54,6 +55,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.space.md,
   },
   input: { flex: 1, fontSize: tokens.type.number, paddingVertical: tokens.space.sm },
+  // Words, not a number: body size.
+  multiline: { fontSize: tokens.type.body },
   suffix: { fontSize: tokens.type.body },
   note: { fontSize: tokens.type.bodySmall },
 });
