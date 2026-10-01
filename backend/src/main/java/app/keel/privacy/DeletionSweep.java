@@ -41,7 +41,10 @@ class DeletionSweep {
                 .param("account", account.value()).param("at", clock.instant().atOffset(ZoneOffset.UTC)).update();
     }
 
+    // Transactional here, not only on sweep(): the scheduler calls this method through the proxy, and sweep() called from
+    // inside the bean skips its own annotation. Without a transaction the modules' listeners would not run (K-231 review).
     @Scheduled(initialDelayString = "${keel.privacy.sweep-every}", fixedDelayString = "${keel.privacy.sweep-every}")
+    @Transactional
     void scheduled() {
         sweep(clock.instant());
     }
