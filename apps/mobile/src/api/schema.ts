@@ -474,6 +474,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/gyms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The user's gyms and their equipment */
+        get: operations["listGyms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/gyms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Store a gym under the id the phone made (created or replaced whole) */
+        put: operations["putGym"];
+        post?: never;
+        delete: operations["deleteGym"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workouts": {
         parameters: {
             query?: never;
@@ -1124,6 +1160,7 @@ export interface components {
             alternatives: string[];
             /** @enum {string} */
             load: "EXTERNAL" | "BODYWEIGHT" | "BODYWEIGHT_PLUS_EXTERNAL";
+            equipment: components["schemas"]["Equipment"];
             unilateral: boolean;
             /**
              * @description What the user sets on the machine and keeps on the phone (seat, pad, grip; ADR-017). Labels:
@@ -1175,6 +1212,39 @@ export interface components {
             name?: string;
             weekday?: components["schemas"]["Weekday"];
             exercises: components["schemas"]["PlannedExercise"][];
+        };
+        /**
+         * @description What an exercise's load is made of, and so what loadKg means (ADR-032): BARBELL the bar with its plates (total);
+         *     DUMBBELL one dumbbell's weight; MACHINE and CABLE the stack's reading; PLATE_LOADED the plates loaded (not the
+         *     sled); BODYWEIGHT the added load (one plate or one dumbbell; see Exercise.load).
+         * @enum {string}
+         */
+        Equipment: "BARBELL" | "DUMBBELL" | "MACHINE" | "CABLE" | "PLATE_LOADED" | "BODYWEIGHT";
+        /** @description A machine or cable exercise in this gym with its own stack step. */
+        GymMachine: {
+            exerciseId: string;
+            stepKg: number;
+        };
+        /**
+         * @description A gym's equipment (K-414, ADR-032), in kg (ADR-029; the phone converts). The next session's load is rounded to
+         *     what the current gym can make. platesKg: the plate sizes, each assumed in enough pairs; dumbbellsKg: every
+         *     dumbbell on the rack (one dumbbell's weight); stackStepKg: the stack step of a machine or cable not listed in
+         *     machines. Loads at most 2 decimals; lists without repeats. current true makes it the gym in use (the others stop
+         *     being).
+         */
+        GymInput: {
+            name: string;
+            current: boolean;
+            /** @description The bar's weight; absent when the gym has no barbell. */
+            barKg?: number;
+            platesKg: number[];
+            dumbbellsKg: number[];
+            stackStepKg?: number;
+            machines: components["schemas"]["GymMachine"][];
+        };
+        Gym: components["schemas"]["GymInput"] & {
+            /** Format: uuid */
+            id: string;
         };
         PlannedExercise: {
             exerciseId: string;
@@ -1256,7 +1326,8 @@ export interface components {
         /**
          * @description One set. exerciseId may differ from the plan (a swap, e.g. pull-ups for lat pulldown). A
          *     BODYWEIGHT_PLUS_EXTERNAL exercise logs the added load in loadKg (0 without); a BODYWEIGHT exercise always 0. The
-         *     engine adds the bodyweight. A set its exercise cannot have (see SetType, Side) is 400.
+         *     engine adds the bodyweight. What loadKg is otherwise follows the exercise's Equipment (a DUMBBELL move: one
+         *     dumbbell). A set its exercise cannot have (see SetType, Side) is 400.
          */
         NewSet: {
             clientId: components["schemas"]["ClientId"];
@@ -2323,6 +2394,75 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Program"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listGyms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every gym (empty when none) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gym"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    putGym: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GymInput"];
+            };
+        };
+        responses: {
+            /** @description The stored gym */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gym"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteGym: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (or there was none) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };
