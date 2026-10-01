@@ -148,8 +148,9 @@ class CallStore {
 
     /** The day the account's first call was made, where the consistency record begins (K-420). */
     Optional<LocalDate> firstMadeOn(AccountId account) {
-        return Optional.ofNullable(jdbc.sql("select min(made_on) from decision.weekly_call where account_id = :account")
-                .param("account", account.value()).query(LocalDate.class).single());
+        // Not min(): an aggregate answers one row even with no call, and single() refuses its null (K-420 review).
+        return jdbc.sql("select made_on from decision.weekly_call where account_id = :account order by made_on limit 1")
+                .param("account", account.value()).query(LocalDate.class).optional();
     }
 
     /** Every call of the account (the export, K-214). */

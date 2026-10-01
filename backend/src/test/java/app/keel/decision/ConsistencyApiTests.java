@@ -69,6 +69,20 @@ class ConsistencyApiTests {
     }
 
     @Test
+    void aPlanWithoutACallCountsFromThePlansPhase() throws Exception {
+        // K-420 review: no call yet (a plan set some other way) — the record begins where the phase began, not a 500.
+        AccountId account = consenting();
+        LocalDate began = LocalDate.now(ISTANBUL).minusDays(30);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+
+        Map<String, Object> consistency = read(get(account));
+
+        assertThat((Map<String, Object>) consistency.get("record")).containsEntry("countedWeeks", 4).containsEntry("onTrackWeeks", 0);
+    }
+
+    @Test
     void beforeTheFirstCallNothingIsPlannedYet() {
         AccountId account = consenting();
 
