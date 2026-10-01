@@ -97,8 +97,8 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     },
     withdrawHealthData: async () => {
       await withdrawConsent(api, 'HEALTH_DATA', true);
-      // Withdrawn and deleted on the server. A local delete that fails is reported, not a failed withdrawal: whatever
-      // stays here is refused by the server (CONSENT_REQUIRED) and goes at sign-out.
+      // Withdrawn and deleted on the server. A local delete that fails is reported, not a failed withdrawal: while the
+      // consent stays withdrawn, whatever stays here is refused by the server (CONSENT_REQUIRED); it goes at sign-out.
       await store.forget(HEALTH_KINDS).catch(reportError);
     },
     pendingCount: store.pendingCount,
