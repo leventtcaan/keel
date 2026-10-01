@@ -80,7 +80,10 @@ test('the moves that reached the target effort, what improved, and a note where 
 });
 
 test('one move judged reads as one exercise', async () => {
-  RECORDS.splice(RECORDS.findIndex((r) => r.clientId === 'c'), 1); // the raise was not done
+  RECORDS.splice(
+    RECORDS.findIndex((r) => r.clientId === 'c'),
+    1,
+  ); // the raise was not done
   await render(
     <ThemeProvider>
       <WorkoutSummaryScreen />

@@ -33,7 +33,10 @@ class MobileParameterMirrorTests {
         });
         Map<String, Object> phone = values(".json", file -> JsonMapper.builder().build().readValue(Files.readString(file), Map.class));
 
-        assertThat(phone).as("the e1RM parameters the summary reads (K-406)").containsKeys("e1rm_epley_divisor", "e1rm_max_reps_to_failure");
+        assertThat(phone).as("the e1RM parameters the summary reads (K-406)").containsKeys("e1rm_epley_divisor", "e1rm_max_reps_to_failure",
+                "target_rir_max");
+        // Both sides: a key gone from the engine would leave nothing compared, and the test green for nothing.
+        assertThat(engine).containsKeys("e1rm_epley_divisor", "e1rm_max_reps_to_failure", "target_rir_max");
         phone.forEach((key, value) -> {
             if (engine.containsKey(key)) {
                 assertThat(new BigDecimal(value.toString())).as(key).isEqualByComparingTo(new BigDecimal(engine.get(key).toString()));

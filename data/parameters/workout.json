@@ -59,6 +59,14 @@
       "tag": "literatur",
       "source": "arastirma/ham/H3-bosluk-literatur.md#B15",
       "note": "The same as training.yaml: no estimate past 10 reps to failure (Mayhew 2008)."
+    },
+    {
+      "key": "target_rir_max",
+      "value": 1,
+      "unit": "reps_in_reserve",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-5",
+      "note": "The same as training.yaml: work sets end at RIR 0-1. The summary judges the effort against the planned RIR, and against this when the plan has none (a day gone from the program). MobileParameterMirrorTests keeps it equal."
     }
   ]
 }

@@ -84,7 +84,8 @@ export function summarize(
   const summaries = ids.map((exerciseId) => {
     const sets = working.filter((s) => s.exerciseId === exerciseId);
     const move = moves.get(exerciseId);
-    const target = planned.find((p) => p.exerciseId === exerciseId)?.targetRir;
+    // The planned RIR; a move outside the plan (a day gone from the program, a swap) is judged by the engine's.
+    const target = planned.find((p) => p.exerciseId === exerciseId)?.targetRir ?? workoutParams.targetRirMax;
     const rirs = sets.flatMap((s) => (s.rir === undefined ? [] : [s.rir]));
     let note: string | null = null;
     if (target !== undefined && rirs.length > 0) {

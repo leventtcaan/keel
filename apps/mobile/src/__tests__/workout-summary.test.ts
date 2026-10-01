@@ -52,6 +52,34 @@ test('Epley rounds once, half up to a tenth, exactly as the engine (the same vec
   expect(e1rm(52.5, 5, 2)).toBe(64.8);
 });
 
+test('no estimated max on one side (no RIR, or past 10 reps to failure): nothing is claimed', () => {
+  expect(summaryOf([set('bench_press', 80, 8, 1)], { bench_press: [set('bench_press', 85, 6)] }).moves[0].line).toBeNull();
+  expect(summaryOf([set('bench_press', 80, 8, 1)], { bench_press: [set('bench_press', 85, 12, 0)] }).moves[0].line).toBeNull();
+  expect(summaryOf([set('bench_press', 80, 8)], { bench_press: [set('bench_press', 85, 6, 1)] }).moves[0].line).toBeNull();
+  expect(e1rm(82.55, 1, 0)).toBe(82.6);
+});
+
+test('the best set of a weight is the hardest of the same reps: a back-off set at more RIR claims nothing', () => {
+  // An isolation move (no estimated max to muddy it): 12 at RIR 0 matched last time; the 12 at RIR 2 is not "2 more in the tank".
+  const raise = summaryOf([set('lateral_raise', 12.5, 12, 2), set('lateral_raise', 12.5, 12, 0)], {
+    lateral_raise: [set('lateral_raise', 12.5, 12, 0)],
+  });
+  expect(raise.moves[0].line).toBeNull();
+});
+
+test('in lb, the lines say lb: a heavier weight and a higher estimated max', () => {
+  const imperial = (today: NewSet[], last: NewSet[]) =>
+    summarize(today, () => last, new Map([[BENCH.id, BENCH]]), [planned('bench_press')], 'IMPERIAL').moves[0].line;
+  // 185 lb and 180 lb as the app stores them.
+  expect(imperial([set('bench_press', 83.91, 6, 1)], [set('bench_press', 81.65, 6, 1)])).toBe('Up 5 lb from last time at RIR 1');
+  expect(imperial([set('bench_press', 80, 10, 0)], [set('bench_press', 82.5, 6, 1)])).toBe('Estimated max up 10.8 lb');
+});
+
+test("without the plan (the day left the program), the target is the engine's: the effort is still judged", () => {
+  const summary = summarize([set('bench_press', 80, 8, 1)], () => [], new Map([[BENCH.id, BENCH]]), [], 'METRIC');
+  expect(summary).toMatchObject({ reached: 1, judged: 1 });
+});
+
 test('a weighted bodyweight move has no estimated max on the phone: its load is only what is added', () => {
   // The engine adds the bodyweight (E1rm.java); the phone does not read it. +10 × 8 at RIR 2 against +10 × 7 at RIR 1:
   // an estimate from the added 10 kg alone would say "up 0.6 kg". A heavier added weight still says so.
