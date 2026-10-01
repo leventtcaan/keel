@@ -239,7 +239,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
-| 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 | başlamadı |
+| 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 | sürüyor (1 Eki) |
 | 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | başlamadı |
 | 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
 
@@ -290,6 +290,14 @@ giriş var; `eas init` ve Apple adımları Levent'in terminalinde) — cevap bek
   - **Mobil biçim:** prettier ayarı yok; `--single-quote --print-width 150 --bracket-same-line` çevredeki kodla aynı.
   - **Backend:** `privacy.consent_withdrawal` (V19) ikinci geçiş; zamanlanmış süpürmeler `scheduled()` üstünde `@Transactional`.
 - **Yeni sorular:** 33-37 (DURUM listesi) + 35'e eklenen K1 notları.
+
+**Part 2 başı (1 Eki):** senkron tamam — Part 1 ÇIKIŞ git ile tutarlı (#212-#220 birleşik, açık PR/worktree yok,
+`main` temiz, `M4-part1-devam.md` yok). Sorular 33-37 cevapsız (ADR yok). K-308 yapılmadı (`app.json`'da `projectId` yok) →
+komutlar Part 2 sonunda yeniden verilir. Disk 3,9 GB → npm/pip/uv önbelleği + Levent'in onayıyla iPhone SE simülatörü
+silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" dedi). Dependabot: yalnız bilinen #2.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
 
 ## Session sonunda Levent'e sorulacaklar
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
