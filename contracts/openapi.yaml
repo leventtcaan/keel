@@ -1973,8 +1973,9 @@ components:
           type: string
           maxLength: 500
           description: |
-            The user's own words (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500 characters
-            is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
+            The session's note in the user's own words (K-422). Kept without outer spaces; only spaces is no note (absent).
+            Over 500 characters, or a NUL character, is VALIDATION_FAILED, never cut. A later finish without a note keeps
+            the one given; with one, replaces it. Never logged; not sent to an AI without its consent (V2).
     Workout:
       type: object
       required: [id, clientId, startedAt, sets]
@@ -2046,7 +2047,8 @@ components:
           maxLength: 500
           description: |
             The user's own words on this set (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500
-            characters is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
+            characters, or a NUL character, is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its
+            consent (V2).
     LoggedSet:
       allOf:
         - $ref: "#/components/schemas/NewSet"

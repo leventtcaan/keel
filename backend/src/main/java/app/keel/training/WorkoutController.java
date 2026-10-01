@@ -46,10 +46,13 @@ class WorkoutController {
             return text == null || text.isBlank() ? null : text.strip();
         }
 
-        /** A note within the limit, in characters as the user counts them (an emoji is one). */
+        /**
+         * A note within the limit, in characters as the user counts them (an emoji is one), and one the database can keep:
+         * PostgreSQL text holds no NUL, which stored would be a 500 the phone's queue sends again forever.
+         */
         boolean fits(String text) {
             String kept = note(text);
-            return kept == null || kept.codePointCount(0, kept.length()) <= maxNote;
+            return kept == null || kept.codePointCount(0, kept.length()) <= maxNote && kept.indexOf('\u0000') < 0;
         }
 
         boolean reps(Integer reps) {

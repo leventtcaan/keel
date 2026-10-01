@@ -27,4 +27,10 @@ class WorkoutNoteRulesTests {
         // A character outside the basic plane is one character to the user, two chars to Java.
         assertThat(LIMITS.fits("abcd💪")).isTrue();
     }
+
+    @Test
+    void aNoteWithANulCharacterDoesNotFitTheDatabaseCannotKeepIt() {
+        // PostgreSQL text holds no 0x00: stored, it would be a 500, and the phone's queue would send the set again forever.
+        assertThat(LIMITS.fits("ab\u0000c")).isFalse();
+    }
 }

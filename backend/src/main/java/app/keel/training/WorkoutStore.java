@@ -64,8 +64,9 @@ class WorkoutStore {
                 .param("account", account.value()).query((row, n) -> workout(row)).list();
     }
 
+    /** A finish without a note keeps the one given before (a replay, a corrected end time); one with a note replaces it. */
     void finish(AccountId account, UUID id, Instant endedAt, String note) {
-        jdbc.sql("update training.workout set ended_at = :at, note = :note where id = :id and account_id = :account")
+        jdbc.sql("update training.workout set ended_at = :at, note = coalesce(:note, note) where id = :id and account_id = :account")
                 .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("note", note).param("id", id).param("account", account.value()).update();
     }
 

@@ -1304,8 +1304,9 @@ export interface components {
             endedAt: string;
             uncleanExerciseIds?: string[];
             /**
-             * @description The user's own words (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500 characters
-             *     is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
+             * @description The session's note in the user's own words (K-422). Kept without outer spaces; only spaces is no note (absent).
+             *     Over 500 characters, or a NUL character, is VALIDATION_FAILED, never cut. A later finish without a note keeps
+             *     the one given; with one, replaces it. Never logged; not sent to an AI without its consent (V2).
              */
             note?: string;
         };
@@ -1352,7 +1353,8 @@ export interface components {
             side?: components["schemas"]["Side"];
             /**
              * @description The user's own words on this set (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500
-             *     characters is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its consent (V2).
+             *     characters, or a NUL character, is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its
+             *     consent (V2).
              */
             note?: string;
         };

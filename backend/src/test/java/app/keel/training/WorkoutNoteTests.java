@@ -88,9 +88,22 @@ class WorkoutNoteTests {
         MvcTestResult tooLong = post(account, "/v1/workouts/" + workout + "/sets", set("x".repeat(maxNote + 1)));
         assertThat(tooLong).hasStatus(400);
         assertThat(map(tooLong)).containsEntry("code", "VALIDATION_FAILED");
+        assertThat((List<?>) map(get(account, "/v1/workouts/" + workout)).get("sets")).hasSize(1);
         assertThat(post(account, "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-09-30T16:32:00Z", "note", "x".repeat(maxNote + 1))))
                 .hasStatus(400);
         assertThat(map(get(account, "/v1/workouts/" + workout))).doesNotContainKey("endedAt");
+    }
+
+    @Test
+    void aLaterFinishWithoutANoteKeepsTheNoteAndOneWithANoteReplacesIt() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account);
+        post(account, "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-09-30T16:32:00Z", "note", "Slept 5 hours"));
+
+        assertThat(post(account, "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-09-30T16:40:00Z"))).hasStatusOk();
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("note", "Slept 5 hours");
+        post(account, "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-09-30T16:40:00Z", "note", "Slept 6 hours"));
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("note", "Slept 6 hours");
     }
 
     @Test
