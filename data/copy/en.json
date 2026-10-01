@@ -186,7 +186,7 @@
     "progressOne": "{done} of 1 exercise"
   },
   "summary": {
-    "title": "Done",
+    "title": "Workout done",
     "reached": "{reached} of {judged} exercises reached your target effort",
     "noneJudged": "Log the reps left in the tank to see your effort here.",
     "moreReps": {
@@ -203,7 +203,8 @@
     "e1rmUp": "Estimated max up {load}",
     "first": "First time logged",
     "note": "RIR {rir}. Next time, aim for 0–{target}.",
-    "done": "Done"
+    "done": "Done",
+    "setRir": "{set} · RIR {rir}"
   },
   "food": {
     "budget": {

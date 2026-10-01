@@ -36,7 +36,8 @@ const plural = (key: string, count: number, vars: Record<string, string | number
 
 function line(today: NewSet[], last: NewSet[], move: Schemas['Exercise'], units: UnitSystem): string | null {
   if (last.length === 0) return t('summary.first');
-  const loadTracked = move.kind === 'COMPOUND' && move.load !== 'BODYWEIGHT';
+  // A bodyweight move's load is 0 (an added load is BODYWEIGHT_PLUS_EXTERNAL): never heavier, no estimated max.
+  const loadTracked = move.kind === 'COMPOUND';
   const [todayTop, lastTop] = [top(today), top(last)];
   const [now, then] = [best(today, todayTop), best(last, lastTop)];
   if (loadTracked && todayTop > lastTop) {

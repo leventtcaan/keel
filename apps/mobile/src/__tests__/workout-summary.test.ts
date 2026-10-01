@@ -28,9 +28,15 @@ const planned = (exerciseId: string, targetRir = 1) =>
   ({ exerciseId, baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir }) as Schemas['PlannedExercise'];
 
 const summaryOf = (today: NewSet[], last: Record<string, NewSet[]>, moves = [BENCH, RAISE, PUSH_UP]) =>
-  summarize(today, (id) => last[id] ?? [], new Map(moves.map((m) => [m.id, m])), [planned('bench_press'), planned('lateral_raise'), planned('push_up')], 'METRIC');
+  summarize(
+    today,
+    (id) => last[id] ?? [],
+    new Map(moves.map((m) => [m.id, m])),
+    [planned('bench_press'), planned('lateral_raise'), planned('push_up')],
+    'METRIC',
+  );
 
-test("Epley as the engine reads it: none without RIR or past 10 reps to failure; one rep to failure is the load", () => {
+test('Epley as the engine reads it: none without RIR or past 10 reps to failure; one rep to failure is the load', () => {
   expect(e1rm(100, 5, 1)).toBe(120);
   expect(e1rm(100, 1, 0)).toBe(100);
   expect(e1rm(100, 5, undefined)).toBeNull();
@@ -40,6 +46,12 @@ test("Epley as the engine reads it: none without RIR or past 10 reps to failure;
 test('the same weight, more reps at the same RIR', () => {
   const [bench] = summaryOf([set('bench_press', 80, 9, 1), set('bench_press', 80, 8, 1)], { bench_press: [set('bench_press', 80, 8, 1)] }).moves;
   expect(bench.line).toBe('Same weight, 1 more rep at RIR 1');
+});
+
+test('more reps at a different RIR is not the same effort: the estimated max says it instead', () => {
+  // 80 × 9 at RIR 1 (e1RM 106.7) against 80 × 8 at RIR 0 (101.3): not "1 more rep at the same RIR".
+  const [bench] = summaryOf([set('bench_press', 80, 9, 1)], { bench_press: [set('bench_press', 80, 8, 0)] }).moves;
+  expect(bench.line).toBe('Estimated max up 5.4 kg');
 });
 
 test('the same weight and reps, more in the tank', () => {
@@ -78,11 +90,18 @@ test('a move done for the first time says so; a move with nothing better says no
 });
 
 test('the target effort: moves whose every work set had RIR at or under the target; past it, a note for next time', () => {
-  const summary = summaryOf([set('bench_press', 80, 8, 1), set('bench_press', 80, 8, 2), set('lateral_raise', 12.5, 12, 0), set('push_up', 0, 20)], {});
+  const summary = summaryOf(
+    [set('bench_press', 80, 8, 1), set('bench_press', 80, 8, 2), set('lateral_raise', 12.5, 12, 0), set('push_up', 0, 20)],
+    {},
+  );
   expect(summary.reached).toBe(1);
   expect(summary.judged).toBe(2); // push-ups without RIR are not judged
   expect(summary.moves[0].note).toBe('RIR 2. Next time, aim for 0–1.');
   expect(summary.moves[1].note).toBeNull();
+});
+
+test('a work set right at the target RIR reached it', () => {
+  expect(summaryOf([set('bench_press', 80, 8, 1)], {}).reached).toBe(1);
 });
 
 test('warm-ups are not part of it, and only moves done today are listed', () => {
