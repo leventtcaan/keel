@@ -103,6 +103,27 @@
     "failed": "Couldn't load today. Check your connection.",
     "retry": "Try again"
   },
+  "train": {
+    "kept": "You're offline. This is your program as it was last loaded.",
+    "failed": "Your program couldn't load.",
+    "retry": "Try again",
+    "none": "No program yet.",
+    "status": {
+      "restWeek": "A week off training, until {date}.",
+      "restWeekNote": "Rest is the plan this week. Your program picks up after it.",
+      "deload": "A lighter week, until {date}: fewer sets, the same weights.",
+      "held": "Weights held since {date}: reach the top of the range before adding weight."
+    },
+    "today": "Today",
+    "sets": {
+      "one": "1 set",
+      "other": "{count} sets",
+      "lighter": "{sets} of {base} sets"
+    },
+    "reps": "{min}–{max} reps",
+    "next": "Next {load} × {reps}",
+    "nextAdded": "Next +{load} × {reps}"
+  },
   "food": {
     "budget": {
       "title": "Left today",
