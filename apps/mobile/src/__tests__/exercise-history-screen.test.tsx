@@ -72,6 +72,7 @@ test('the records first: heaviest, estimated max, most reps at each weight, each
   expect(screen.getByText('Most reps at 85 kg · 4')).toBeTruthy();
   expect(screen.getByText('Most reps at 80 kg · 8')).toBeTruthy();
   expect(screen.getAllByText('Sep 28').length).toBeGreaterThan(0);
+  expect(screen.queryByText("Showing what's on this phone. The rest shows when you're online.")).toBeNull();
 });
 
 test('then each session, newest first, every set as it was done — a warm-up marked as one', async () => {

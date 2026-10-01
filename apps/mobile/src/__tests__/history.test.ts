@@ -70,9 +70,17 @@ describe('sessions: the server list joined with what the phone has not sent', ()
     const refused = set('bench_press', 85, 8, 1);
     const [session] = sessionsOf(
       [workout('w1', '2026-09-21T17:00:00Z', [both])],
-      [record('set', both.clientId, both, 'w1', 'SYNCED'), record('set', refused.clientId, refused, 'w1', 'REJECTED')],
+      [
+        record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-21T17:00:00Z' }, null, 'SYNCED'),
+        record('set', both.clientId, both, 'w1', 'SYNCED'),
+        record('set', refused.clientId, refused, 'w1', 'REJECTED'),
+      ],
     );
     expect(session.sets).toHaveLength(1);
+  });
+
+  test('a workout the server refused is no session', () => {
+    expect(sessionsOf([], [record('workout', 'w9', { clientId: 'w9', startedAt: '2026-09-21T17:00:00Z' }, null, 'REJECTED')])).toEqual([]);
   });
 
   test("without the server's list (offline, nothing kept), the phone's own workouts", () => {
