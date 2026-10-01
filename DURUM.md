@@ -299,7 +299,10 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-414 (1/2) salon profili API + katalogda `equipment` (ADR-032) | ✅ birleşti; inceleme: iki hesabın aynı id yarışı sahiplik kontrolünü atlıyordu → upsert'te koşul + atılan hata (rollback); sözleşme `barKg > 0`, 400/409 yazıldı; eşzamanlılık testleri; mutasyon 2/2 | #221 | `M4/K-414.md` |
-| K-414 (2/2) yuvarlama (`LoadSteps`, ortak vaka dosyası `contracts/fixtures/load-steps.json`) + plaka hesabı | dalda `training/111-load-rounding` (worktree `../keel-rounding`); mutasyon 13/13 (1 eşdeğer → kod sadeleşti); inceleme sürüyor | — | `M4/K-414.md` |
+| K-414 (2/2) yuvarlama (`LoadSteps`, ortak vakalar `contracts/fixtures/load-steps.json`) + plaka hesabı | PR açık, CI'da (auto-merge); inceleme 2 tur: lb'de parça cezası/pencere yetmedi → lb salonu lb'de sayılır; deload tut fazla tekrarı da tutar; mutasyon 29/29 | #222 | `M4/K-414.md` |
+| K-405 (1/3) veri katmanı: kuyrukta `finish`, program/katalog çevrimdışı kopyası, saf seans mantığı | ✅ birleşti; inceleme: eski açık antrenman geri geliyordu, katalog yokken taraf/yük tahmini, çıkış yarışı; test analizi 4 boşluk; mutasyon 18/18 | #223 | `M4/K-405.md` |
+| K-405 (2/3) Antrenman sekmesi: program görünümü (deload/restUntil/loadHeldSince/nextLoadKg/nextReps) | dalda `mobile/51-train-tab`, check yeşil | — | `M4/K-405.md` |
+| K-405 (3/3) seans ekranı (set gir, RIR, dinlenme, bitir + temiz olmayan form) | başlamadı | — | |
 
 ## Session sonunda Levent'e sorulacaklar
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
