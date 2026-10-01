@@ -1,0 +1,63 @@
+/**
+ * The warm-up calculator (K-417): Güray G1 K-17 — at least one warm-up before each move, 3–4 before the day's first,
+ * never near failure. The ramp (how heavy, how many reps) is the app's (no source gives one; data/parameters/workout.json,
+ * awaiting Levent): rounded to what the gym in use can make, else to the parameter's step.
+ */
+import type { components } from '@/api/schema';
+import type { GymWeights } from '@/train/loadSteps';
+import { warmups } from '@/train/warmup';
+
+type Schemas = components['schemas'];
+const move = (id: string, equipment: Schemas['Equipment'], load: Schemas['Exercise']['load'] = 'EXTERNAL') =>
+  ({ id, equipment, load, kind: 'COMPOUND', unilateral: false }) as Schemas['Exercise'];
+const BENCH = move('bench_press', 'BARBELL');
+const CURL = move('dumbbell_curl', 'DUMBBELL');
+const PUSH_UP = move('push_up', 'BODYWEIGHT', 'BODYWEIGHT');
+const GYM: GymWeights = { barKg: 20, platesKg: [20, 10, 5, 2.5, 1.25], dumbbellsKg: [4, 6, 8, 10, 12, 14, 16], stackStepKg: 5, machineStepsKg: {} };
+
+test("the day's first move: three, lighter to heavier, fewer reps as they climb, each a load the gym makes", () => {
+  expect(warmups(100, BENCH, true, GYM, 'METRIC')).toEqual([
+    { loadKg: 50, reps: 8 },
+    { loadKg: 70, reps: 5 },
+    { loadKg: 85, reps: 3 },
+  ]);
+});
+
+test('any other move: one', () => {
+  expect(warmups(100, BENCH, false, GYM, 'METRIC')).toEqual([{ loadKg: 60, reps: 5 }]);
+});
+
+test("rounded to the gym's dumbbells", () => {
+  // 60 % of 15 is 9: the 8 and the 10 are as near; a tie goes to the lighter.
+  expect(warmups(15, CURL, false, GYM, 'METRIC')).toEqual([{ loadKg: 8, reps: 5 }]);
+});
+
+test("never below the bar; two warm-ups that round to the same load are one", () => {
+  expect(warmups(30, BENCH, true, GYM, 'METRIC')).toEqual([
+    { loadKg: 20, reps: 8 },
+    { loadKg: 25, reps: 3 },
+  ]);
+});
+
+test("without a gym, the parameter's step in the user's unit", () => {
+  expect(warmups(100, BENCH, false, null, 'METRIC')).toEqual([{ loadKg: 60, reps: 5 }]);
+  expect(warmups(83.3, BENCH, false, null, 'METRIC')).toEqual([{ loadKg: 50, reps: 5 }]);
+  // 60 % of 135 lb is 81 lb → 80 lb, stored as the app stores a typed lb load.
+  expect(warmups(61.23, BENCH, false, null, 'IMPERIAL')).toEqual([{ loadKg: 36.29, reps: 5 }]);
+});
+
+test('a bodyweight move warms up with the body alone; no work load known, no warm-up', () => {
+  expect(warmups(0, PUSH_UP, false, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 5 }]);
+  expect(warmups(0, PUSH_UP, true, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 8 }]);
+  expect(warmups(null, BENCH, true, GYM, 'METRIC')).toEqual([]);
+});
+
+test('the ramp has a load and a rep count for each warm-up the source asks for (G1 K-17: 3 first, 1 other)', () => {
+  const { workoutParams } = jest.requireActual<typeof import('@/train/params')>('@/train/params');
+  expect(workoutParams.warmup.first.fractions).toHaveLength(workoutParams.warmup.first.sets);
+  expect(workoutParams.warmup.first.reps).toHaveLength(workoutParams.warmup.first.sets);
+  expect(workoutParams.warmup.other.fractions).toHaveLength(workoutParams.warmup.other.sets);
+  expect(workoutParams.warmup.other.reps).toHaveLength(workoutParams.warmup.other.sets);
+  expect(workoutParams.warmup.first.sets).toBeGreaterThanOrEqual(3);
+  expect(workoutParams.warmup.other.sets).toBeGreaterThanOrEqual(1);
+});

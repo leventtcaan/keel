@@ -67,6 +67,82 @@
       "tag": "tecrube",
       "source": "arastirma/ham/guray/G1-antrenman.md#K-5",
       "note": "The same as training.yaml: work sets end at RIR 0-1. The summary judges the effort against the planned RIR, and against this when the plan has none (a day gone from the program). MobileParameterMirrorTests keeps it equal."
+    },
+    {
+      "key": "warmup_sets_first_move",
+      "value": 3,
+      "unit": "sets",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-17",
+      "note": "The day's first move: 3-4 warm-ups (K-17); the low end, so the warm-up never tires."
+    },
+    {
+      "key": "warmup_sets_other_move",
+      "value": 1,
+      "unit": "sets",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-17",
+      "note": "Every other move: at least one warm-up (K-17)."
+    },
+    {
+      "key": "warmup_fractions_first_move",
+      "value": [
+        0.5,
+        0.7,
+        0.85
+      ],
+      "unit": "ratio_of_work_load",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
+      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+    },
+    {
+      "key": "warmup_reps_first_move",
+      "value": [
+        8,
+        5,
+        3
+      ],
+      "unit": "reps",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
+      "note": "Fewer reps as the load climbs: ready, not tired (K-17). TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+    },
+    {
+      "key": "warmup_fractions_other_move",
+      "value": [
+        0.6
+      ],
+      "unit": "ratio_of_work_load",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
+      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+    },
+    {
+      "key": "warmup_reps_other_move",
+      "value": [
+        5
+      ],
+      "unit": "reps",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
+      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+    },
+    {
+      "key": "warmup_round_kg",
+      "value": 2.5,
+      "unit": "kg",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
+      "note": "Without a gym on the phone (K-421), warm-up loads round to this step: a pair of the smallest common kg plates. The gym's own weights come first (ADR-032)."
+    },
+    {
+      "key": "warmup_round_lb",
+      "value": 5,
+      "unit": "lb",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
+      "note": "The same in lb: a pair of 2.5 lb plates."
     }
   ]
 }
