@@ -873,6 +873,25 @@ paths:
                 $ref: "#/components/schemas/Targets"
         default:
           $ref: "#/components/responses/Error"
+  /v1/consistency:
+    get:
+      tags: [decision]
+      operationId: getConsistency
+      summary: This week's consistency, its four kinds of action, and the weeks on track
+      description: |
+        The Today screen's number (K-420, K-111, U15): this week, Monday to today on the user's calendar, counted from
+        the logs. Today is not over, so a protein or step day is judged from yesterday back; a session or a weigh-in done
+        today is done. The record counts the weeks over since the first call and is never reset (U7). Health data
+        (weigh-ins, protein): CONSENT_REQUIRED without the consent. NOT_FOUND before the first call (nothing planned yet).
+      responses:
+        "200":
+          description: This week and the record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consistency"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/targets:
     get:
       tags: [decision]
@@ -1972,6 +1991,59 @@ components:
             $ref: "#/components/schemas/Answer"
 
     # ── decision (the engine's Decision, field for field — ContractTests) ────────────────────────────────────
+    Consistency:
+      type: object
+      required: [weekOf, training, protein, steps, weighIns, planned, done, record]
+      properties:
+        weekOf:
+          type: string
+          format: date
+          description: The Monday this week began.
+        training:
+          $ref: "#/components/schemas/ActionCount"
+        protein:
+          $ref: "#/components/schemas/ActionCount"
+        steps:
+          $ref: "#/components/schemas/ActionCount"
+        weighIns:
+          $ref: "#/components/schemas/ActionCount"
+        planned:
+          type: integer
+          minimum: 0
+        done:
+          type: integer
+          minimum: 0
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: done over planned, rounded down; absent while nothing is planned.
+        record:
+          type: object
+          required: [onTrackWeeks, countedWeeks, currentRun]
+          description: Weeks over since the first call; a week is on track at on_track_min_ratio (K-111). Never reset.
+          properties:
+            onTrackWeeks:
+              type: integer
+              minimum: 0
+            countedWeeks:
+              type: integer
+              minimum: 0
+            currentRun:
+              type: integer
+              minimum: 0
+              description: On-track weeks in a row; one missed week is forgiven, two in a row end the run.
+    ActionCount:
+      type: object
+      description: One kind of planned action this week; done is counted up to planned.
+      required: [planned, done]
+      properties:
+        planned:
+          type: integer
+          minimum: 0
+        done:
+          type: integer
+          minimum: 0
     Decision:
       type: object
       required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, application]

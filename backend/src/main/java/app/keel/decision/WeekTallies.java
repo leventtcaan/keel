@@ -5,14 +5,17 @@ import app.keel.engine.Consistency;
 import app.keel.engine.WeekTally;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * The weeks' consistency from the logs (K-220, ADR-020 L-6: the spine's adherence is the K-111 ratio — counted, not
@@ -84,5 +87,35 @@ final class WeekTallies {
             return new WeekTally(week, new ActionTally(plan.trainingDaysPerWeek(), workouts), new ActionTally(protein.size(), proteinDone),
                     new ActionTally(steps.size(), stepsDone), new ActionTally(plan.weighInsPerWeek(), weighed));
         }).toList();
+    }
+
+    /**
+     * This week so far, Monday to today (K-420: the Today screen's number). Today is not over: a protein or step day is
+     * judged once it is, so those count up to yesterday; a session or a weigh-in done today is done. Training and
+     * weigh-ins are planned for the whole week, as in a week over.
+     */
+    static WeekTally thisWeek(LocalDate today, Logs logs, Plan plan) {
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON));
+        Logs judged = new Logs(logs.workoutDays().stream().filter(day -> !day.isAfter(today)).toList(),
+                logs.weighInDays().stream().filter(day -> !day.isAfter(today)).collect(Collectors.toSet()),
+                before(logs.protein(), today), before(logs.steps(), today));
+        return of(List.of(monday), judged, plan).getFirst();
+    }
+
+    /**
+     * The weeks over by today since the first call (K-420: the record, never reset, U7) — from the first week that starts
+     * on or after it, as for the window (a week the plan did not ask whole is not counted).
+     */
+    static List<LocalDate> since(LocalDate firstCall, LocalDate today) {
+        return weeks(today, (int) ChronoUnit.DAYS.between(firstCall, today), firstCall);
+    }
+
+    /** The week's done over planned in whole percent, rounded down so it never claims more; none with nothing planned. */
+    static OptionalInt percent(WeekTally week) {
+        return week.planned() == 0 ? OptionalInt.empty() : OptionalInt.of(week.done() * 100 / week.planned());
+    }
+
+    private static <T> Map<LocalDate, T> before(Map<LocalDate, T> days, LocalDate today) {
+        return days.entrySet().stream().filter(day -> day.getKey().isBefore(today)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

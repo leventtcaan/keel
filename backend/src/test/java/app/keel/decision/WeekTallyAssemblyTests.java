@@ -142,4 +142,58 @@ class WeekTallyAssemblyTests {
         assertThat(Consistency.windowRatio(WeekTallies.of(List.of(MON_28_SEP), logs, PLAN)))
                 .hasValueSatisfying(ratio -> assertThat(ratio).isEqualByComparingTo(new BigDecimal("0.875")));
     }
+
+    @Test
+    void thisWeekCountsTrainingAndWeighInsToTodayAndProteinAndStepsToYesterday() {
+        // K-420: Thursday 1 Oct, the week of Monday 28 Sep. Today is not over: a protein or step day is judged once it is;
+        // a session or a weigh-in done today is done. Planned training and weigh-ins are the whole week's.
+        LocalDate thursday = LocalDate.of(2026, 10, 1);
+        WeekTallies.Logs logs = new WeekTallies.Logs(
+                List.of(MON_28_SEP.minusDays(1), MON_28_SEP, MON_28_SEP.plusDays(2), thursday),
+                Set.of(MON_28_SEP, MON_28_SEP.plusDays(1), thursday),
+                Map.of(MON_28_SEP, new WeekTallies.ProteinLogged(150, 170), MON_28_SEP.plusDays(1), new WeekTallies.ProteinLogged(100, 120),
+                        thursday, new WeekTallies.ProteinLogged(200, 220)),
+                Map.of(MON_28_SEP.plusDays(2), 8000, thursday, 9000));
+
+        WeekTally week = WeekTallies.thisWeek(thursday, logs, PLAN);
+
+        assertThat(week.weekStart()).isEqualTo(MON_28_SEP);
+        assertThat(week.training()).as("Sunday's session is last week's").isEqualTo(new ActionTally(3, 3));
+        assertThat(week.weighIns()).isEqualTo(new ActionTally(4, 3));
+        assertThat(week.protein()).as("Monday and Tuesday judged, today not yet").isEqualTo(new ActionTally(2, 1));
+        assertThat(week.steps()).as("Wednesday judged, today not yet").isEqualTo(new ActionTally(1, 1));
+    }
+
+    @Test
+    void onAMondayThisWeekHasOnlyTodaysSessionAndWeighInToCount() {
+        WeekTallies.Logs logs = new WeekTallies.Logs(List.of(MON_28_SEP), Set.of(MON_28_SEP), Map.of(MON_28_SEP, new WeekTallies.ProteinLogged(200, 220)),
+                Map.of(MON_28_SEP, 9000));
+
+        WeekTally week = WeekTallies.thisWeek(MON_28_SEP, logs, PLAN);
+
+        assertThat(week).isEqualTo(new WeekTally(MON_28_SEP, new ActionTally(3, 1), new ActionTally(0, 0), new ActionTally(0, 0), new ActionTally(4, 1)));
+    }
+
+    @Test
+    void theRecordCountsTheWeeksOverSinceTheFirstCall() {
+        // First call Monday 14 Sep, today Thursday 1 Oct: 14 and 21 Sep are over; this week is not.
+        assertThat(WeekTallies.since(LocalDate.of(2026, 9, 14), LocalDate.of(2026, 10, 1)))
+                .containsExactly(LocalDate.of(2026, 9, 14), LocalDate.of(2026, 9, 21));
+        // A first call on Wednesday 16 Sep: its week was not asked whole (U7), the record begins on 21 Sep.
+        assertThat(WeekTallies.since(LocalDate.of(2026, 9, 16), LocalDate.of(2026, 10, 1))).containsExactly(LocalDate.of(2026, 9, 21));
+        // Sunday 27 Sep: the week of 21 Sep ends today, not over yet.
+        assertThat(WeekTallies.since(LocalDate.of(2026, 9, 14), LocalDate.of(2026, 9, 27))).containsExactly(LocalDate.of(2026, 9, 14));
+        assertThat(WeekTallies.since(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 1))).isEmpty();
+    }
+
+    @Test
+    void thePercentIsRoundedDownSoItNeverClaimsMore() {
+        // 16 of 19 is 84.2 → 84; 8 of 9 is 88.9 → 88, not 89 (U7's other side: no flattering).
+        assertThat(WeekTallies.percent(new WeekTally(MON_28_SEP, new ActionTally(3, 2), new ActionTally(4, 3), new ActionTally(5, 5),
+                new ActionTally(7, 6)))).hasValue(84);
+        assertThat(WeekTallies.percent(new WeekTally(MON_28_SEP, new ActionTally(3, 3), new ActionTally(2, 1), new ActionTally(0, 0),
+                new ActionTally(4, 4)))).hasValue(88);
+        assertThat(WeekTallies.percent(new WeekTally(MON_28_SEP, new ActionTally(0, 0), new ActionTally(0, 0), new ActionTally(0, 0),
+                new ActionTally(0, 0)))).as("nothing planned has no percent").isEmpty();
+    }
 }

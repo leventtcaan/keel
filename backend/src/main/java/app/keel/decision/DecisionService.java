@@ -411,6 +411,20 @@ class DecisionService {
         return last.isBefore(today) ? today : last;
     }
 
+    /**
+     * This week's consistency and the record since the first call (K-420): health data (weigh-ins, protein), so with the
+     * consent; NOT_FOUND before the first call, when nothing is planned yet.
+     */
+    @Transactional(readOnly = true)
+    WeekLogs.Now consistency(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        CallStore.Plan plan = calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        Week week = week(account);
+        LocalDate firstCall = calls.firstMadeOn(account).orElse(plan.phaseStart());
+        return logs.consistency(account, week.profile(), week.today(), plan, firstCall, bodyweight(account, week), week.body().ageYears(),
+                week.parameters());
+    }
+
     /** The targets the user follows today; NOT_FOUND before the first estimate. */
     @Transactional(readOnly = true)
     PlanTargets targets(AccountId account) {

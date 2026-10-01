@@ -1,5 +1,7 @@
 package app.keel.decision;
 
+import app.keel.engine.ActionTally;
+import app.keel.engine.WeekTally;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
@@ -78,6 +80,30 @@ class DecisionController {
     @PostMapping("/v1/decisions/{id}/undo")
     PlanTargets undo(AccountId account, @PathVariable UUID id) {
         return decisions.undo(account, id);
+    }
+
+    /** Contract Consistency (K-420): this week's four kinds of planned action, and the weeks on track. */
+    @GetMapping("/v1/consistency")
+    Map<String, Object> consistency(AccountId account) {
+        WeekLogs.Now now = decisions.consistency(account);
+        WeekTally week = now.week();
+        Map<String, Object> view = new LinkedHashMap<>();
+        view.put("weekOf", week.weekStart());
+        view.put("training", count(week.training()));
+        view.put("protein", count(week.protein()));
+        view.put("steps", count(week.steps()));
+        view.put("weighIns", count(week.weighIns()));
+        view.put("planned", week.planned());
+        view.put("done", week.done());
+        WeekTallies.percent(week).ifPresent(percent -> view.put("percent", percent));
+        view.put("record", Map.of("onTrackWeeks", now.record().onTrackWeeks(), "countedWeeks", now.record().countedWeeks(),
+                "currentRun", now.record().currentRun()));
+        return view;
+    }
+
+    // Done counted up to the plan, as the week's total (K-111).
+    private static Map<String, Integer> count(ActionTally tally) {
+        return Map.of("planned", tally.planned(), "done", tally.counted());
     }
 
     @GetMapping("/v1/targets")
