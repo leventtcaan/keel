@@ -71,13 +71,7 @@ class GymController {
                 gym.platesKg().stream().sorted(Comparator.reverseOrder()).toList(), gym.dumbbellsKg().stream().sorted().toList(),
                 gym.stackStepKg(), gym.machines().stream().sorted(Comparator.comparing(GymMachine::exerciseId))
                         .collect(Collectors.toMap(GymMachine::exerciseId, GymMachine::stepKg, (a, b) -> a, java.util.LinkedHashMap::new)));
-        switch (store.put(account, stored, limits.gyms())) {
-            case STORED -> {
-            }
-            case TOO_MANY -> throw new ApiException(ErrorCode.VALIDATION_FAILED);
-            case NOT_YOURS -> throw new ApiException(ErrorCode.CONFLICT);
-        }
-        return store.all(account).stream().filter(it -> it.id().equals(id)).findFirst().map(Gym::of).orElseThrow();
+        return Gym.of(store.put(account, stored, limits.gyms()));
     }
 
     @DeleteMapping("/v1/gyms/{id}")

@@ -40,6 +40,12 @@ class GymRulesTests {
     }
 
     @Test
+    void whetherTheGymIsInUseIsSaid() {
+        assertThat(valid(gym -> new GymController.GymInput(gym.name(), null, gym.barKg(), gym.platesKg(), gym.dumbbellsKg(), gym.stackStepKg(),
+                gym.machines()))).isFalse();
+    }
+
+    @Test
     void theNameIsThereAndShort() {
         assertThat(valid(gym -> with(gym, null, gym.barKg(), gym.platesKg(), gym.dumbbellsKg(), gym.machines()))).isFalse();
         assertThat(valid(gym -> with(gym, "  ", gym.barKg(), gym.platesKg(), gym.dumbbellsKg(), gym.machines()))).isFalse();
