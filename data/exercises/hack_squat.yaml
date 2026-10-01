@@ -5,6 +5,7 @@ kind: compound
 muscles: [quads, glutes]
 alternatives: [squat, leg_press]
 load: external
+equipment: plate_loaded
 unilateral: false
 setup: [back_pad, foot_position]
 clips:

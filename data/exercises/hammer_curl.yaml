@@ -5,6 +5,7 @@ kind: isolation
 muscles: [forearms]
 alternatives: [reverse_curl]
 load: external
+equipment: dumbbell
 unilateral: false
 setup: []
 clips:

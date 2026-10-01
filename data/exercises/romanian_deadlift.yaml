@@ -5,6 +5,7 @@ kind: compound
 muscles: [hamstrings, glutes, erectors]
 alternatives: []
 load: external
+equipment: barbell
 unilateral: false
 setup: [grip_width, stance_width]
 clips:

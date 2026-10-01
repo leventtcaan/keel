@@ -5,6 +5,7 @@ kind: isolation
 muscles: [rear_delts]
 alternatives: [reverse_pec_deck]
 load: external
+equipment: dumbbell
 unilateral: false
 setup: [bench_angle]
 clips:

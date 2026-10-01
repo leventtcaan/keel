@@ -5,6 +5,7 @@ kind: compound
 muscles: [lats, biceps]
 alternatives: [lat_pulldown, pull_up]
 load: external
+equipment: cable
 unilateral: false
 setup: [thigh_pad, handle]
 clips:

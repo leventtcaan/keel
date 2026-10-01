@@ -216,10 +216,37 @@ class ExerciseCatalogTests {
         assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml", badLoad), MUSCLES));
     }
 
-    /** A move that is valid in every field but the one a test changes (K-219: setup, two clips, review). */
+    @Test
+    void everyMoveSaysWhatItsLoadIsMadeOf() throws IOException {
+        // ADR-032: the gym's bar, plates, dumbbells or stack a load is rounded to depends on it.
+        ExerciseCatalog catalog = ExerciseCatalog.of(repository(), vocabulary());
+
+        assertThat(Map.of("bench_press", ExerciseCatalog.Equipment.BARBELL, "dumbbell_curl", ExerciseCatalog.Equipment.DUMBBELL,
+                "leg_extension", ExerciseCatalog.Equipment.MACHINE, "lat_pulldown", ExerciseCatalog.Equipment.CABLE,
+                "leg_press", ExerciseCatalog.Equipment.PLATE_LOADED, "dip", ExerciseCatalog.Equipment.BODYWEIGHT))
+                .allSatisfy((id, equipment) -> assertThat(catalog.find(id)).as(id).hasValueSatisfying(move -> assertThat(move.equipment()).isEqualTo(equipment)));
+        // A bodyweight move's load is the body's (plus what is added); any other move's is all external.
+        assertThat(catalog.all()).allSatisfy(move -> assertThat(move.equipment() == ExerciseCatalog.Equipment.BODYWEIGHT)
+                .as(move.id()).isEqualTo(move.load() != ExerciseCatalog.Load.EXTERNAL));
+    }
+
+    @Test
+    void aMissingOrUnknownEquipmentOrOneThatContradictsTheLoadIsRefused() {
+        Map<String, Object> squat = move("squat", "compound", List.of("quads"), List.of());
+
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", with(squat, "equipment", "dumbbell")), MUSCLES).find("squat"))
+                .hasValueSatisfying(move -> assertThat(move.equipment()).isEqualTo(ExerciseCatalog.Equipment.DUMBBELL));
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml", with(squat, "equipment", null)), MUSCLES));
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml", with(squat, "equipment", "kettlebell")), MUSCLES));
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml", with(squat, "equipment", "bodyweight")), MUSCLES));
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(with(squat, "load", "bodyweight"), "equipment", "barbell")), MUSCLES));
+    }
+
+    /** A move that is valid in every field but the one a test changes (K-219: setup, two clips, review; ADR-032: equipment). */
     static Map<String, Object> move(String id, String kind, List<String> muscles, List<String> alternatives) {
-        return Map.of("id", id, "kind", kind, "muscles", muscles, "alternatives", alternatives, "load", "external", "unilateral", false,
-                "setup", List.of("foot_position"), "clips", clips(id), "review", "pending");
+        return Map.of("id", id, "kind", kind, "muscles", muscles, "alternatives", alternatives, "load", "external", "equipment", "barbell",
+                "unilateral", false, "setup", List.of("foot_position"), "clips", clips(id), "review", "pending");
     }
 
     static Map<String, Object> clips(String id) {

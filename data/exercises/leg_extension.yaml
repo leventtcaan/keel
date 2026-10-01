@@ -5,6 +5,7 @@ kind: isolation
 muscles: [quads]
 alternatives: []
 load: external
+equipment: machine
 unilateral: false
 setup: [back_pad, ankle_pad]
 clips:

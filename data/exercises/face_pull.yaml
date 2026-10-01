@@ -5,6 +5,7 @@ kind: isolation
 muscles: [rear_delts, upper_back]
 alternatives: [rear_delt_fly]
 load: external
+equipment: cable
 unilateral: false
 setup: [cable_height, handle]
 clips:

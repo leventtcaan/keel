@@ -5,6 +5,7 @@ kind: isolation
 muscles: [forearms]
 alternatives: [hammer_curl]
 load: external
+equipment: barbell
 unilateral: false
 setup: [grip_width]
 clips:

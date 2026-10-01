@@ -24,6 +24,13 @@ public final class ExerciseCatalog {
 
     public enum Region { UPPER, LOWER }
 
+    /**
+     * What the load is made of (ADR-032), and so what {@code loadKg} means: a bar with pairs of plates (the total), one
+     * dumbbell (its own weight), a machine's or a cable's stack (the reading), plates on a sled (the plates, not the sled),
+     * or the body (the added load — one plate or one dumbbell).
+     */
+    public enum Equipment { BARBELL, DUMBBELL, MACHINE, CABLE, PLATE_LOADED, BODYWEIGHT }
+
     /** The two demonstration clips, paths inside the app's assets (ADR-017). */
     public record Clips(String firstRep, String lastRep) {
     }
@@ -33,8 +40,8 @@ public final class ExerciseCatalog {
      * its two demonstrations; {@code reviewed}: they passed docs/hareket-cekim-kontrol-listesi.md — until then the app
      * is not given them.
      */
-    public record Exercise(String id, Kind kind, List<String> muscles, List<String> alternatives, Load load, boolean unilateral,
-            List<String> setup, Clips clips, boolean reviewed) {
+    public record Exercise(String id, Kind kind, List<String> muscles, List<String> alternatives, Load load, Equipment equipment,
+            boolean unilateral, List<String> setup, Clips clips, boolean reviewed) {
 
         /** The name's key in data/copy/en.json. */
         public String nameKey() {
@@ -52,7 +59,7 @@ public final class ExerciseCatalog {
 
     /** The catalog from its files (file name → parsed YAML); IllegalArgumentException naming the first problem. */
     // Every field a move file may have; anything else is a typo that would silently drop data (K-210 review).
-    private static final Set<String> FIELDS = Set.of("id", "kind", "muscles", "alternatives", "load", "unilateral", "setup", "clips", "review");
+    private static final Set<String> FIELDS = Set.of("id", "kind", "muscles", "alternatives", "load", "equipment", "unilateral", "setup", "clips", "review");
 
     /** The region a muscle belongs to (data/muscles.yaml); the load step depends on it (K-217). */
     public Region region(String muscle) {
@@ -97,9 +104,13 @@ public final class ExerciseCatalog {
             boolean reviewed = reviewed(file, move.get("review"));
             require(!alternatives.contains(id), file + ": a move is not its own alternative");
             require(move.get("unilateral") instanceof Boolean, file + ": unilateral is true or false");
+            Load load = value(Load.class, move.get("load"), file);
+            Equipment equipment = value(Equipment.class, move.get("equipment"), file);
+            // The body carries a bodyweight move's load; any other move's load is all on the equipment.
+            require((equipment == Equipment.BODYWEIGHT) == (load != Load.EXTERNAL), file + ": equipment bodyweight goes with a bodyweight load");
             moves.add(new Exercise(id, value(Kind.class, move.get("kind"), file), muscles.stream().map(String.class::cast).toList(),
                     List.copyOf(alternatives),
-                    value(Load.class, move.get("load"), file), (Boolean) move.get("unilateral"), List.copyOf(setup), clips, reviewed));
+                    load, equipment, (Boolean) move.get("unilateral"), List.copyOf(setup), clips, reviewed));
         });
         Map<String, Exercise> byId = moves.stream().sorted(Comparator.comparing(Exercise::id))
                 .collect(Collectors.toMap(Exercise::id, Function.identity(), (a, b) -> a, java.util.LinkedHashMap::new));

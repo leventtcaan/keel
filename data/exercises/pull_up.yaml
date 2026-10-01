@@ -5,6 +5,7 @@ kind: compound
 muscles: [lats, biceps]
 alternatives: [lat_pulldown, close_grip_lat_pulldown]
 load: bodyweight_plus_external
+equipment: bodyweight
 unilateral: false
 setup: [grip_width]
 clips:

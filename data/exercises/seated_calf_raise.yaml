@@ -5,6 +5,7 @@ kind: isolation
 muscles: [calves]
 alternatives: [standing_calf_raise]
 load: external
+equipment: plate_loaded
 unilateral: false
 setup: [thigh_pad]
 clips:

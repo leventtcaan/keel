@@ -5,6 +5,7 @@ kind: isolation
 muscles: [triceps]
 alternatives: [overhead_triceps_extension]
 load: external
+equipment: cable
 unilateral: false
 setup: [cable_height, handle]
 clips:
