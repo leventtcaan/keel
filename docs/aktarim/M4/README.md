@@ -9,3 +9,4 @@
 3. K-420 tutarlılık API'si — türetilmiş görünüm, "bugün bitmedi", aşağı yuvarlama
 4. K-401 Bugün ekranı — parça başına durum, copyKey ile tek kart, gerekçe ve kaynak türü
 5. K-409 kalan bütçe + Hedefler — işaretten üç durum, yarım bölünme yok, ortak okuma kancası
+6. K-402 tartı + Health kilo — girişte rıza, çevrimdışı rıza bilgisi, örnek kimliği = clientId, U8 grafiği
