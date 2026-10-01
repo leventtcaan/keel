@@ -1623,6 +1623,25 @@ tasks:
     refs: ["plan/kararlar/ADR-032-salon-profili-ve-yuvarlama.md", "arastirma/ham/L3-ozellik-boslugu.md"]
     learn: ["Liste düzenleme formu", "Birim dönüşümüyle giriş"]
 
+  - id: K-422
+    title: "Set ve seans notu (sözleşme + saklama)"
+    milestone: M4
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-210]
+    why: "K-415'in notları sunucuda bir alan ister; mobil görevden bölündü (bir görev = bir modül; M4 Part 2, K-421 emsali). Masa bahsi (L3 §1 #8)"
+    acceptance:
+      - "Sözleşme: NewSet ve LoggedSet `note`, WorkoutFinish ve Workout `note` (isteğe bağlı, uzunluk sınırı yapılandırmadan)"
+      - "Göç: training.workout_set.note, training.workout.note; boş metin saklanmaz (yok sayılır)"
+      - "Not dışa aktarmada var, hesap silmede gider (mevcut tablolar); sınırı aşan not 400 VALIDATION_FAILED"
+      - "Not loglanmaz (serbest metin sağlık bilgisi içerebilir, V3); LLM'e gitmesi ayrı rıza ister (V2, M5)"
+    tests:
+      - "WorkoutNoteTests"
+    refs: ["arastirma/ham/L3-ozellik-boslugu.md"]
+    learn: ["Geriye uyumlu sözleşme genişletme", "Serbest metin ve log hijyeni"]
+
   - id: K-415
     title: "Hareket geçmişi, PR listesi ve notlar"
     milestone: M4
@@ -1630,7 +1649,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-405, K-218]
+    depends_on: [K-405, K-218, K-422]
     why: "Masa bahsi (L3 §1)"
     acceptance:
       - "Hareket bazında geçmiş ve PR listesi"
