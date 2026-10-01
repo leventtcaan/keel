@@ -70,9 +70,9 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 
 ## ▶ DEVAM NOKTASI (1 Eki gece — M4 Part 2, compact sonrası sürüyor)
 Part 2 sürüyor (`plan/oturum-promptlari/M4-part2-devam.md`). Birleşen: K-414 (#221, #222, #227), K-405 (#223, #224),
-K-406 (#226, #225), K-417 (#228). **K-422 #231** (notlar, backend) açık. Sırada K-415 (mobil: geçmiş, PR, not girişi),
-sonra K-421, sonra Part 2 ÇIKIŞ.
-Levent'i bekleyen: K-308 cihaz adımları, sorular 33-43.
+K-406 (#226, #225), K-417 (#228), K-422 (#231). **K-415 (1/2) #232** açık. Sırada K-415 (2/2) not girişi, sonra K-421,
+sonra Part 2 ÇIKIŞ.
+Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -306,7 +306,8 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 | K-406 özet (efor bazlı) + motor e1RM tek yuvarlama | ✅ #226 + #225 (motor tek yuvarlama) birleşti; inceleme: ağırlıklı vücut ağırlığında e1RM, telefon/motor 0,1 kg (motorda çift yuvarlama → #225), günü kalkan antrenmanın hedefi; mutasyon 13/13 + 2/2 + 4/4 | #226, #225 | `M4/K-406.md` |
 | (yol üstü, K-414) lb hedefi ızgaraya yapıştırılıyordu (#225'in CI'ını kıran özellik testi karşı örneği: 48,77 lb → orta nokta → 47,5) | ✅ birleşti; ortak vaka + Java RED/GREEN, TS eşi K-417'de | #227 | `M4/K-417.md` § motor kusuru |
 | K-417 ısınma hesaplayıcı (telefonda salon, seansta ısınma + taraf başına plaka) | ✅ birleşti; simülatör 3 kusur (kg salonda lb plaka, "+0 lb", ısınmanın antrenmanı başlatması → seans sayılır) + inceleme + test analizi düzeltildi; mutasyon 6/6 + 16/16 + 9/9 (1 eşdeğer) | #228 | `M4/K-417.md` |
-| **K-422** (K-415'ten bölündü) set ve seans notu: sözleşme + V21 + sınır yapılandırmadan | PR açık, auto-merge; saf kural testi mutasyon 5/5; DB testleri CI'da | #231 | (K-415 aktarımında) |
+| **K-422** (K-415'ten bölündü) set ve seans notu: sözleşme + V21 + sınır yapılandırmadan | ✅ birleşti; inceleme: ikinci bitiş notu siliyordu (coalesce), NUL 500 → 400; saf mutasyon 5/5; DB testleri CI'da yeşil | #231 | (K-415 aktarımında) |
+| K-415 (1/2) hareket geçmişi + rekorlar (ADR-033) | PR açık, auto-merge; simülatör: 62,5/62,51 kg iki satır → görünen ağırlıkla kıyas; inceleme: pencere dışı yerel kayıt, K-33 gerilimi (soru 44); mutasyon 16/16 + 3/3 + 3/3 | #232 | `M4/K-415.md` |
 | K-421 (K-414'ten bölündü) salon profili ekranı | backlog'da; K-415'ten sonra | — | |
 
 ## Session sonunda Levent'e sorulacaklar
@@ -331,6 +332,10 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
 43. **(K-417, sağlık/ürün — YENİ)** G1 K-17 "her harekete en az bir ısınma" diyor. Ama iş yükünden hafif bir yük salonda yoksa
     (ör. 4 kg curl, en hafif dambıl 4 kg) şimdi **ısınma gösterilmiyor**. (a) böyle kalsın (önerim: daha hafif yük yok); (b) iş
     yüküyle az tekrarlı bir ısınma seti önerilsin.
+44. **(K-415 + K-406, ürün/kaynak — YENİ)** G6 K-33'ün metni: izole hareketlerde "kilo/tekrar takibi ve progresif overload
+    aranmaz" (bir tekrar fazlası için form bozulur). Görev kartı ise "izolasyonda yük PR'ı yok, **tekrar/efor PR'ı var**"
+    diyor; K-406 özeti de izolasyonda "Same weight, 2 more reps" yazıyor. Şimdi kart uygulanıyor (ADR-033). (a) böyle kalsın
+    (kart); (b) izolasyonda ne rekor ne kıyas (K-33 metni) — rekor listesi ve özet satırı izolasyonda boş kalır.
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
 33. **(K-231, veri — YENİ, M4 Part 1)** Apple Health rızası geri çekilince ne silinsin? Şimdi: Health'ten **okuma durur**,
     sunucuda zaten tutulan tartı (`source=APPLE_HEALTH`) ve adım/uyku günleri **kalır** — bunlar sağlık verisi rızasıyla

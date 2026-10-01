@@ -17,3 +17,4 @@
 9. K-405 seans ekranı — kayıt olarak bitiş, kayıtlardan türetilen seans, çevrimdışı kopya, ilk sette antrenman, tek dokunuş
 10. K-406 efor özeti — en iyi set, kıyas sırası, izolasyon/vücut ağırlığı, telefon=motor Epley, ayna testi
 11. K-417 ısınma — kaynaklı sayı + ürün merdiveni, ortak yuvarlama (#227 hedef ızgarası), bekleyen ısınma, tek taraf, salonun biriminde plaka
+12. K-415 geçmiş + rekorlar (+ K-422 not sunucusu) — sunucu + yerel birleşim, pencere, türetilmiş rekor, görünen ağırlık, NUL/coalesce
