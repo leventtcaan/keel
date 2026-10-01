@@ -46,6 +46,28 @@ test("without a gym, the parameter's step in the user's unit", () => {
   expect(warmups(61.23, BENCH, false, null, 'IMPERIAL')).toEqual([{ loadKg: 36.29, reps: 5 }]);
 });
 
+test("a gym that says nothing about the move's equipment: the parameter's step, as without a gym", () => {
+  expect(warmups(100, move('leg_extension', 'MACHINE'), false, { ...GYM, stackStepKg: null }, 'METRIC')).toEqual([{ loadKg: 60, reps: 5 }]);
+  expect(warmups(100, BENCH, false, { ...GYM, barKg: null }, 'METRIC')).toEqual([{ loadKg: 60, reps: 5 }]);
+});
+
+test('without a gym the bar is unknown: the ramp is not held above one', () => {
+  expect(warmups(30, BENCH, true, null, 'METRIC')).toEqual([
+    { loadKg: 15, reps: 8 },
+    { loadKg: 20, reps: 5 },
+    { loadKg: 25, reps: 3 },
+  ]);
+});
+
+test('no lighter load than the work load in the gym: no warm-up (soru 43 — G1 K-17 asks for one)', () => {
+  // 60 % of 4 kg is 2.4: the rack's lightest dumbbell is the 4.
+  expect(warmups(4, CURL, false, GYM, 'METRIC')).toEqual([]);
+});
+
+test('a weighted bodyweight move warms up with the body alone even before its added load is known', () => {
+  expect(warmups(null, move('dip', 'BODYWEIGHT', 'BODYWEIGHT_PLUS_EXTERNAL'), false, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 5 }]);
+});
+
 test('a bodyweight move warms up with the body alone; no work load known, no warm-up', () => {
   expect(warmups(0, PUSH_UP, false, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 5 }]);
   expect(warmups(0, PUSH_UP, true, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 8 }]);

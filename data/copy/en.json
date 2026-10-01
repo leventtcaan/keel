@@ -191,7 +191,8 @@
       "done": "Done"
     },
     "plates": "{plates} {unit} a side",
-    "barOnly": "Just the bar"
+    "barOnly": "Just the bar",
+    "platesJoin": " + "
   },
   "summary": {
     "title": "Workout done",

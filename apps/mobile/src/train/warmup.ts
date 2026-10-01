@@ -3,7 +3,8 @@
  * warm-ups never come near failure. How heavy and how many reps: no source gives a ramp (L3 §1.1 #3: a presentation
  * rule, a parameter with its note), so it is the app's, in data/parameters/workout.json, until Levent confirms it.
  * Each load is one the gym in use makes (ADR-032, the same rounding as the server's); without a gym on the phone, the
- * parameter's step in the user's unit. Lighter than the work load, never below the bar, no two the same.
+ * parameter's step in the user's unit. Lighter than the work load, no two the same; with the gym known, never below its
+ * bar (without one the bar is unknown). A work load with nothing lighter in the gym has no warm-up (soru 43).
  */
 import type { components } from '@/api/schema';
 import type { UnitSystem } from '@/units/units';
@@ -29,10 +30,11 @@ function nearest(targetKg: number, move: Schemas['Exercise'], gym: GymWeights | 
 }
 
 export function warmups(workKg: number | null, move: Schemas['Exercise'], first: boolean, gym: GymWeights | null, units: UnitSystem): Warmup[] {
-  if (workKg === null) return [];
   const ramp = first ? workoutParams.warmup.first : workoutParams.warmup.other;
-  // A bodyweight move warms up with the body alone: one easy set, nothing added (no lighter load to climb from).
+  // A bodyweight move warms up with the body alone: one easy set, nothing added (no lighter load to climb from), whether
+  // or not its added load is known yet.
   if (move.load !== 'EXTERNAL') return [{ loadKg: 0, reps: ramp.reps[0] }];
+  if (workKg === null) return [];
   const found: Warmup[] = [];
   ramp.fractions.forEach((fraction, i) => {
     const loadKg = nearest(workKg * fraction, move, gym, units);

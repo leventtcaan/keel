@@ -312,18 +312,55 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     expect(screen.queryByText(/^Rest/)).toBeNull(); // the rest timer is the work sets'
   });
 
-  test('a warm-up starts the workout when none is kept yet', async () => {
+  test('before the first work set, warm-ups wait on the phone: an empty workout is no session (K-220)', async () => {
     mockRecords = lastWeek();
     mockParams = { day: 'day-a' };
     await show();
     await fireEvent.press(await screen.findByText('Log warm-up 1'));
-    const [workout, set] = mockRecord.mock.calls.map(([o]) => o);
-    expect(workout.kind).toBe('workout');
-    expect(set).toMatchObject({
-      kind: 'set',
-      workoutClientId: workout.kind === 'workout' ? workout.body.clientId : '',
-      body: { setType: 'WARM_UP' },
+    expect(await screen.findByText('Log warm-up 2')).toBeTruthy();
+    expect(mockRecord).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByText('Finish workout'));
+    expect(mockRecord).not.toHaveBeenCalled();
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('the first work set keeps the workout, then the warm-ups done before it, then itself', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    await show();
+    await fireEvent.press(await screen.findByText('Log warm-up 1'));
+    await fireEvent.press(await screen.findByText('Log warm-up 2'));
+    await fireEvent.press(screen.getByText('Log set 1'));
+    expect(await screen.findByText('Log set 2')).toBeTruthy();
+    const sent = mockRecord.mock.calls.map(([o]) => o);
+    expect(sent.map((o) => (o.kind === 'set' ? o.body.setType : o.kind))).toEqual(['workout', 'WARM_UP', 'WARM_UP', 'WORKING']);
+    const workout = sent[0].kind === 'workout' ? sent[0].body.clientId : '';
+    expect(sent.slice(1).every((o) => o.kind === 'set' && o.workoutClientId === workout)).toBe(true);
+    expect(sent[1].kind === 'set' && sent[1].body).toMatchObject({ loadKg: 32.5, reps: 8 });
+  });
+
+  test('waiting warm-ups that fail to save with the first work set are saved once each on the next tap, not twice', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    let warmups = 0;
+    mockRecord.mockImplementation(async (outbound: Outbound) => {
+      // The phone's store keeps one record per clientId (INSERT OR IGNORE): the same record made twice is one.
+      if (outbound.kind !== 'finish' && mockRecords.some((r) => r.clientId === outbound.body.clientId)) return false;
+      if (outbound.kind === 'set' && outbound.body.setType === 'WARM_UP' && ++warmups === 2) {
+        throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+      }
+      return keep(outbound);
     });
+    await show();
+    await fireEvent.press(await screen.findByText('Log warm-up 1'));
+    await fireEvent.press(await screen.findByText('Log warm-up 2'));
+    await fireEvent.press(screen.getByText('Log set 1'));
+    expect(await screen.findByText("That set couldn't be saved on the phone. Try again.")).toBeTruthy();
+    await fireEvent.press(screen.getByText('Log set 1'));
+    expect(await screen.findByText('Log set 2')).toBeTruthy();
+    const kept = mockRecords.filter((r) => r.kind === 'set').map((r) => (r.body as Schemas['NewSet']).setType);
+    expect(kept).toEqual(['WORKING', 'WARM_UP', 'WARM_UP', 'WORKING']); // last week's, then today's
+    expect(mockRecords.filter((r) => r.kind === 'workout' && r.state === 'PENDING')).toHaveLength(1);
   });
 
   test('gone once the move has a work set; the next move gets one, both sides of a one-sided move with one tap', async () => {
@@ -366,6 +403,40 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     await fireEvent.press(screen.getByText('Log warm-up 1'));
     expect(sets().map((o) => o.body.side)).toEqual(['LEFT', 'RIGHT', 'RIGHT']);
     expect(await screen.findByText('Done')).toBeTruthy();
+    expect(screen.queryByText("That set couldn't be saved on the phone. Try again.")).toBeNull();
+  });
+
+  test('two quick taps log one warm-up', async () => {
+    await show();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    mockRecord.mockImplementationOnce(async (outbound: Outbound) => {
+      await gate;
+      return keep(outbound);
+    });
+    const log = await screen.findByText('Log warm-up 1');
+    await fireEvent.press(log);
+    await fireEvent.press(log);
+    release();
+    expect(await screen.findByText('Log warm-up 2')).toBeTruthy();
+    expect(sets()).toHaveLength(1);
+  });
+
+  test('a warm-up that cannot be saved is said on its move, not on the next one picked', async () => {
+    // The row has warm-ups of its own too (a load known from last time).
+    mockRecords = [
+      ...lastWeek(),
+      record('set', 's9', { clientId: 's9', exerciseId: 'one_arm_dumbbell_row', setType: 'WORKING', loadKg: 20, reps: 10, side: 'LEFT' }, 'w0'),
+      record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' }),
+    ];
+    mockRecord.mockImplementationOnce(async () => {
+      throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+    });
+    await show();
+    await fireEvent.press(await screen.findByText('Log warm-up 1'));
+    expect(await screen.findByText("That set couldn't be saved on the phone. Try again.")).toBeTruthy();
+    await fireEvent.press(screen.getAllByText('One-arm dumbbell row')[0]);
+    expect(await screen.findByText('Log warm-up 1')).toBeTruthy();
     expect(screen.queryByText("That set couldn't be saved on the phone. Try again.")).toBeNull();
   });
 

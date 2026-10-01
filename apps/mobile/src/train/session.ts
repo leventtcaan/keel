@@ -73,7 +73,7 @@ export function platesLine(move: Schemas['Exercise'], loadKg: number, gym: GymWe
 function platesText(plates: number[], plateUnits: UnitSystem): string {
   if (plates.length === 0) return t('workout.barOnly');
   const unit = t(plateUnits === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
-  return t('workout.plates', { plates: plates.map((kg) => formatPlate(kg, plateUnits)).join(' + '), unit });
+  return t('workout.plates', { plates: plates.map((kg) => formatPlate(kg, plateUnits)).join(t('workout.platesJoin')), unit });
 }
 
 /** A work set with the row's side and the RIR picked. */

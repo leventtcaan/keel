@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { components } from '@/api/schema';
+
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -71,6 +73,10 @@ export default function WorkoutScreen() {
   const dayId = active === null ? (opened ?? null) : active.programDayId;
   const day = program?.days.find((d) => d.id === dayId) ?? null;
   const done = active?.sets ?? [];
+  // Warm-ups done before the workout is kept wait here, ids and all, and go with its first work set: a workout with
+  // warm-ups alone is no session (K-220). Leaving before a work set leaves nothing behind.
+  const [held, setHeld] = useState<components['schemas']['NewSet'][]>([]);
+  const warmedUp = [...done, ...held];
   const moves = useMemo(() => new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m])), [data]);
   const plans: (ExercisePlan | null)[] =
     day === null || records === null
@@ -129,6 +135,9 @@ export default function WorkoutScreen() {
       // The workout this set belongs to: the one under way as last read, or — read again, as a set that failed after its
       // workout was kept, or another screen, may have started one since — none yet, and this set starts it.
       const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? (await start(day.id));
+      // The warm-ups waiting go first, under their own ids: one already saved before a failure is not saved twice.
+      for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
+      setHeld([]);
       await queue.record({ kind: 'set', workoutClientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir) });
       saved = true;
     } catch (error) {
@@ -145,22 +154,27 @@ export default function WorkoutScreen() {
     setBusy(false);
   };
 
-  /** The next warm-up, one tap: the move's sets of it still missing (both sides of a one-sided move). No rest timer. */
+  /**
+   * The next warm-up, one tap: the move's sets of it still missing (both sides of a one-sided move). No rest timer. Before
+   * the workout is kept, held on the screen for its first work set.
+   */
+  // A warm-up's problem is its move's: picking another move does not carry it.
+  const warmupKey = `warmup-${move?.id ?? ''}`;
   const logWarmup = async () => {
     if (saving.current || day === null || move === undefined) return;
-    const warmup = warming[warmupsDone(done, move)];
+    const warmup = warming[warmupsDone(warmedUp, move)];
     if (warmup === undefined) return;
     saving.current = true;
     setBusy(true);
     try {
-      const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? (await start(day.id));
-      for (const set of warmupSets(warmup, move, done)) {
-        await queue.record({ kind: 'set', workoutClientId, body: { clientId: newClientId(), ...set } });
-      }
-      setProblem((said) => (said?.row === WARMUP ? null : said));
+      const sets = warmupSets(warmup, move, warmedUp).map((set) => ({ clientId: newClientId(), ...set }));
+      const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? null;
+      if (workoutClientId === null) setHeld((waiting) => [...waiting, ...sets]);
+      else for (const set of sets) await queue.record({ kind: 'set', workoutClientId, body: set });
+      setProblem((said) => (said?.row === warmupKey ? null : said));
     } catch (error) {
       named(error);
-      setProblem({ row: WARMUP, text: t('workout.saveFailed') });
+      setProblem({ row: warmupKey, text: t('workout.saveFailed') });
     }
     await refresh();
     saving.current = false;
@@ -237,10 +251,10 @@ export default function WorkoutScreen() {
       <Warmups
         move={move}
         warmups={warming}
-        done={warmupsDone(done, move)}
+        done={warmupsDone(warmedUp, move)}
         gym={data?.gym}
         onLog={() => void logWarmup()}
-        problem={problem !== null && problem.row === WARMUP ? problem.text : null}
+        problem={problem !== null && problem.row === warmupKey ? problem.text : null}
         busy={busy}
       />
     );
@@ -322,9 +336,8 @@ export default function WorkoutScreen() {
   );
 }
 
-/** The finish's and the warm-ups' own keys for a problem: not a row of any move. */
+/** The finish's own key for a problem: not a row of any move. */
 const FINISH = 'finish';
-const WARMUP = 'warmup';
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },

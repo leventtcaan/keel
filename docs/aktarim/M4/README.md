@@ -16,3 +16,4 @@
 8. K-414 salon profili + yuvarlama — ekipman türü, advisory lock, ret istisnayla, DP, lb ölçeği, plaka hesabı
 9. K-405 seans ekranı — kayıt olarak bitiş, kayıtlardan türetilen seans, çevrimdışı kopya, ilk sette antrenman, tek dokunuş
 10. K-406 efor özeti — en iyi set, kıyas sırası, izolasyon/vücut ağırlığı, telefon=motor Epley, ayna testi
+11. K-417 ısınma — kaynaklı sayı + ürün merdiveni, ortak yuvarlama (#227 hedef ızgarası), bekleyen ısınma, tek taraf, salonun biriminde plaka
