@@ -37,3 +37,4 @@
 | [ADR-030](kararlar/ADR-030-m3-sonu-cevaplari.md) | M3 sonu: sorular 25-32 (girişte rıza, görünüş adımı gizli, mini cut açığı ve adımsızlık, safety işareti artık risk), K-308 M4 başında | KABUL |
 | [ADR-031](kararlar/ADR-031-healthkit-kutuphanesi.md) | Apple Health: @kingstinct/react-native-healthkit, HealthAccess arayüzünün arkasında, yalnız okuma, izin metni en.json'dan | KABUL |
 | [ADR-032](kararlar/ADR-032-salon-profili-ve-yuvarlama.md) | Salon profili, ekipman türü (dambıl = tek ağırlık), artış seans sonunda mümkün en yakın yüke yuvarlanır, plaka DP | KABUL |
+| [ADR-033](kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md) | Geçmiş sunucudan (+ gönderilmemiş yerel kayıtlar), rekor yalnız çalışma setinden, izolasyonda yük rekoru yok, hacim rekoru yok | KABUL |
