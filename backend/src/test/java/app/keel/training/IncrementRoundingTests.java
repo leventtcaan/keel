@@ -60,6 +60,15 @@ class IncrementRoundingTests {
     }
 
     @Test
+    void theRepPastTheRangeIsHeldLikeAnAddedLoadWhileTheDeloadLadderHoldsTheLoad() {
+        // The extra rep stands in for the load the gym cannot add (K-414): a hold (K-110 first rung) holds it too — the
+        // top of the range, as for any added load (K-217).
+        NextTargets.Target noHeavier = NextTargets.after(ROW_AT_TOP, ADD_LOAD, false, 3, rounded(new LoadSteps.Rounding.NoHeavier())).orElseThrow();
+        assertThat(NextTargets.shown(noHeavier, new BigDecimal("20"), EIGHT_TO_TWELVE, true)).isEqualTo(new NextTargets.Target(new BigDecimal("20"), 12));
+        assertThat(NextTargets.shown(noHeavier, new BigDecimal("20"), EIGHT_TO_TWELVE, false)).isEqualTo(noHeavier);
+    }
+
+    @Test
     void theRoundingIsAskedAboutTheEnginesLoad() {
         List<BigDecimal> asked = new java.util.ArrayList<>();
         NextTargets.after(ROW_AT_TOP, ADD_LOAD, false, 3, target -> {

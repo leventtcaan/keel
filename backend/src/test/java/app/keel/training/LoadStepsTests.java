@@ -104,6 +104,31 @@ class LoadStepsTests {
         });
     }
 
+    @Property(tries = 200)
+    void withKgPlatesTheRoundedBarbellLoadIsTheNearestAndATieGoesToTheLighter(@ForAll("kgPlateSets") List<Integer> plateHundredths,
+            @ForAll @IntRange(min = 0, max = 40) int pairsOfFive, @ForAll @IntRange(min = 1, max = 1000) int stepHundredths) {
+        // kg plates are exact in hundredths: no two stored loads are one real load, so nearest decides alone.
+        List<BigDecimal> plates = plateHundredths.stream().map(LoadStepsTests::hundredths).toList();
+        int bar = 2000;
+        int last = bar + 1000 * pairsOfFive;
+        int target = last + stepHundredths;
+        LoadSteps.Rounding rounding = LoadSteps.round(ExerciseCatalog.Equipment.BARBELL, "bench_press", gymWith(hundredths(bar), plates, List.of()),
+                hundredths(last), hundredths(target));
+
+        int heaviest = plateHundredths.stream().mapToInt(Integer::intValue).max().orElseThrow();
+        int bound = (target - bar) / 2 + heaviest + 1;
+        int best = -1;
+        for (int side = 0; side <= bound; side++) {
+            int load = bar + 2 * side;
+            if (load > last && fewestByBruteForce(side, plateHundredths) >= 0
+                    && (best < 0 || Math.abs(load - target) < Math.abs(best - target))) {
+                best = load;
+            }
+        }
+        int nearest = best;
+        assertThat(rounding).isInstanceOfSatisfying(LoadSteps.Rounding.To.class, to -> assertThat(to.kg()).isEqualByComparingTo(hundredths(nearest)));
+    }
+
     @Property
     void thePlatesPerSideMakeTheTotalWithTheFewestPlates(@ForAll("plateSets") List<Integer> plateHundredths,
             @ForAll @IntRange(min = 0, max = 4000) int perSideHundredths) {
@@ -135,6 +160,11 @@ class LoadStepsTests {
     Arbitrary<List<Integer>> plateSets() {
         // Plate sizes in hundredths of a kg, kg sets and lb sets stored in kg alike.
         return Arbitraries.of(125, 250, 500, 1000, 1500, 2000, 2500, 113, 227, 454, 1134, 2041, 50, 25).list().ofMinSize(1).ofMaxSize(5).uniqueElements();
+    }
+
+    @Provide
+    Arbitrary<List<Integer>> kgPlateSets() {
+        return Arbitraries.of(50, 125, 250, 500, 1000, 1500, 2000, 2500).list().ofMinSize(1).ofMaxSize(5).uniqueElements();
     }
 
     /** The fewest plates that make the amount (unbounded pairs), -1 when none do: a plain search, no shortcut. */

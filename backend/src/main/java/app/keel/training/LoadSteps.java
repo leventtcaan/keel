@@ -31,9 +31,15 @@ final class LoadSteps {
         }
     }
 
-    /** A load the gym can make, in hundredths, and the pieces it is made of (plates on the load, or one dumbbell). */
-    private record Candidate(long load, int pieces) {
+    /**
+     * A load the gym can make, in hundredths; the pieces it is made of (plates on the load, or one dumbbell); and how
+     * many of them may be off by half a hundredth (none when every weight is an exact kg value).
+     */
+    private record Candidate(long load, int pieces, int fuzz) {
     }
+
+    /** Every kg plate and dumbbell is a multiple of 0.05 kg; a weight that is not was entered in lb and rounded. */
+    private static final long EXACT_KG = 5;
 
     private static final int UNREACHABLE = Integer.MAX_VALUE;
 
@@ -42,31 +48,45 @@ final class LoadSteps {
 
     /**
      * The nearest load the gym makes to {@code targetKg} that is heavier than {@code lastKg}; a tie goes to the lighter.
-     * Each piece of a load counts half a hundredth against it: a plate entered in lb is stored to the nearest hundredth of
-     * a kg, so 135 lb + a 2.5 lb pair and 135 lb made of smaller plates differ by a few hundredths that are only rounding —
-     * the load with fewer pieces is the one meant (K-414).
+     * A plate entered in lb is stored to the nearest hundredth of a kg, so one real load can be stored as several loads
+     * a few hundredths apart — 230 lb as 45 + 45 + 2.5 a side, or as nine 10s and a 2.5 (K-414 review). Each such piece
+     * is off by at most half a hundredth, so loads closer than half their pieces together can be one load: among those,
+     * the one with the fewest pieces is the one meant. Weights in kg are exact (multiples of 0.05 kg): for them the rule
+     * never comes into play, and nearest alone decides.
      */
     static Rounding round(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal lastKg, BigDecimal targetKg) {
         long last = hundredths(lastKg);
         long target = hundredths(targetKg);
         List<Candidate> candidates = switch (equipment) {
-            case DUMBBELL -> gym.dumbbellsKg().stream().map(kg -> new Candidate(hundredths(kg), 1)).toList();
+            case DUMBBELL -> gym.dumbbellsKg().stream().map(kg -> new Candidate(hundredths(kg), 1, 0)).toList();
             case MACHINE, CABLE -> stack(Optional.ofNullable(gym.machineStepsKg().get(exerciseId)).orElse(gym.stackStepKg()), target);
             case BARBELL -> gym.barKg() == null ? List.of() : plates(hundredths(gym.barKg()), 2, gym.platesKg(), target);
             case PLATE_LOADED -> plates(0, 2, gym.platesKg(), target);
             case BODYWEIGHT -> {
                 List<Candidate> added = new ArrayList<>(plates(0, 1, gym.platesKg(), target));
-                gym.dumbbellsKg().forEach(kg -> added.add(new Candidate(hundredths(kg), 1)));
+                gym.dumbbellsKg().forEach(kg -> added.add(new Candidate(hundredths(kg), 1, exact(kg) ? 0 : 1)));
                 yield added;
             }
         };
         if (candidates.isEmpty()) {
             return new Rounding.Unknown();
         }
-        return candidates.stream().filter(candidate -> candidate.load() > last)
-                .min(Comparator.comparingLong((Candidate candidate) -> 2 * Math.abs(candidate.load() - target) + candidate.pieces())
-                        .thenComparingLong(Candidate::load))
+        List<Candidate> heavier = candidates.stream().filter(candidate -> candidate.load() > last).toList();
+        Comparator<Candidate> nearest = Comparator.comparingLong((Candidate candidate) -> Math.abs(candidate.load() - target))
+                .thenComparingLong(Candidate::load);
+        return heavier.stream().min(nearest)
+                .flatMap(best -> heavier.stream().filter(candidate -> sameLoad(candidate, best))
+                        .min(Comparator.comparingInt(Candidate::pieces).thenComparing(nearest)))
                 .<Rounding>map(candidate -> new Rounding.To(kg(candidate.load()))).orElse(new Rounding.NoHeavier());
+    }
+
+    /** Whether two stored loads can be one real load: apart by no more than half a hundredth for each inexact piece. */
+    private static boolean sameLoad(Candidate a, Candidate b) {
+        return 2 * Math.abs(a.load() - b.load()) <= a.fuzz() + b.fuzz();
+    }
+
+    private static boolean exact(BigDecimal kg) {
+        return hundredths(kg) % EXACT_KG == 0;
     }
 
     /**
@@ -106,7 +126,7 @@ final class LoadSteps {
         }
         long step = hundredths(stepKg);
         long below = target / step * step;
-        return List.of(new Candidate(below, 1), new Candidate(below >= target ? below : below + step, 1));
+        return List.of(new Candidate(below, 1, 0), new Candidate(below >= target ? below : below + step, 1, 0));
     }
 
     /**
@@ -121,10 +141,12 @@ final class LoadSteps {
         long heaviest = plates[plates.length - 1];
         int ceiling = Math.toIntExact(Math.max(0, target - base) / perLoad + 1 + heaviest);
         int[] fewest = fewest(plates, ceiling);
+        boolean inexact = platesKg.stream().anyMatch(kg -> !exact(kg));
         List<Candidate> loads = new ArrayList<>();
         for (int side = 0; side <= ceiling; side++) {
             if (fewest[side] != UNREACHABLE) {
-                loads.add(new Candidate(base + (long) perLoad * side, perLoad * fewest[side]));
+                int pieces = perLoad * fewest[side];
+                loads.add(new Candidate(base + (long) perLoad * side, pieces, inexact ? pieces : 0));
             }
         }
         return loads;

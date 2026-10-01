@@ -27,10 +27,16 @@ yüklendiğini bilmiyor (`load` yalnız harici / vücut ağırlığı / ikisi) v
 3. **Yuvarlama yeri:** seans bitince (`SessionProgress`), o anki `current` salonla. Motorun `AddLoad` yükü salonda
    mümkün yüklerden **son yükten ağır olanlar** arasında hedefe en yakına yuvarlanır (eşitlikte hafif olan). Daha ağır
    mümkün yük yoksa (dambıl listesinin sonu) hedef **aynı yük, en zayıf set + 1 tekrar** — aralığın üstüne çıkabilir
-   (kartın "tekrar artışına çevrilir"i). Salon yoksa ya da hareketin ekipmanı için veri yoksa motorun adımı olduğu gibi
+   (kartın "tekrar artışına çevrilir"i); deload "tut" sürerken bu fazla tekrar da tutulur (aralığın tepesi, K-217 gibi).
+   Salon yoksa ya da hareketin ekipmanı için veri yoksa motorun adımı olduğu gibi
    (bugünkü davranış).
 4. **Hesap tam sayı ile:** yükler 0,01 kg birimine çevrilir (ADR-029 hassasiyeti), plaka toplamları dinamik
-   programlama ile; kayan nokta yok. Plaka hesaplayıcı: taraf başına **en az plaka** (eşitlikte ağır plakalar önce).
+   programlama ile; kayan nokta yok. **lb plakalar:** kg'ye 0,01'e yuvarlanmış saklanır (10 lb = 4,54) → aynı gerçek yük
+   (230 lb) birkaç saklı değer olarak çıkar (45+45+2,5 ya da dokuz 10'luk + 2,5). Her yuvarlanmış parça en fazla ½ yüzdelik
+   saptığı için: önce hedefe en yakın aday, sonra ona ½·(tam olmayan parça sayıları toplamı) yüzdelikten yakın adaylar
+   "aynı yük" sayılır ve içlerinden **en az parçalı** seçilir. 0,05 kg'ın katı olan değerler tam kabul edilir (kg
+   plakaları, dambılları) → kg salonunda kural devreye girmez, "en yakın, eşitlikte hafif" tek başına karar verir
+   (inceleme bulgusu: doğrusal parça cezası lb'de yetmiyor, kg'de eşitliği bozuyordu). Plaka hesaplayıcı: taraf başına **en az plaka** (eşitlikte ağır plakalar önce).
    Telefon (K-417) aynı algoritmayı TypeScript'te uygular; iki tarafın testi aynı vaka dosyasını okur
    (`contracts/fixtures/load-steps.json`).
 5. **Büyük sıçrama** (ör. dambıl listesi 10 → 20 kg): kart "mümkün en yakın" diyor; kaynaklı bir sıçrama sınırı yok →

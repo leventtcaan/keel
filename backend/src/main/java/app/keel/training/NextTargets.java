@@ -70,10 +70,12 @@ final class NextTargets {
 
     /**
      * The target as shown today: a load added while the deload ladder now holds the load is the last load at the top of
-     * the range — the hold may have begun after the target was set (K-217 review).
+     * the range — the hold may have begun after the target was set (K-217 review). So is a rep past the top, which stands
+     * in for a load the gym could not add (K-414 review).
      */
     static Target shown(Target stored, BigDecimal lastLoadKg, RepRange range, boolean holdInForce) {
-        return holdInForce && stored.loadKg().compareTo(lastLoadKg) > 0 ? new Target(lastLoadKg, range.max()) : stored;
+        boolean progressed = stored.loadKg().compareTo(lastLoadKg) > 0 || stored.reps() > range.max();
+        return holdInForce && progressed ? new Target(lastLoadKg, range.max()) : stored;
     }
 
     /** A one-sided move's target: the side that did less decides (each side is its own set, SetRules). */

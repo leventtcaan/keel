@@ -11,3 +11,6 @@
 5. K-409 kalan bütçe + Hedefler — işaretten üç durum, yarım bölünme yok, ortak okuma kancası
 6. K-402 tartı + Health kilo — girişte rıza, çevrimdışı rıza bilgisi, örnek kimliği = clientId, U8 grafiği
 7. K-404 adım/uyku/aktif enerji — iki rıza, Health istatistiği, uyku birleşimi, değişen gün
+
+## Aktarım sırası (Part 2)
+8. K-414 salon profili + yuvarlama — ekipman türü, advisory lock, ret istisnayla, DP, lb gürültü penceresi, plaka hesabı

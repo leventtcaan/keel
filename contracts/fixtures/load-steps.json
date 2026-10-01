@@ -1,51 +1,498 @@
 {
-  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest the gym can make that is heavier than the last (a tie goes to the lighter); NO_HEAVIER when the gym has nothing heavier; UNKNOWN when the gym says nothing about this equipment. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made.",
+  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest the gym can make that is heavier than the last (a tie goes to the lighter; among stored loads that can be one real load \u2014 plates entered in lb, each rounded to a hundredth of a kg \u2014 the fewest pieces); NO_HEAVIER when the gym has nothing heavier; UNKNOWN when the gym says nothing about this equipment. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made.",
   "round": [
-    { "case": "dumbbells by 2 kg: +2.5 becomes the 22", "equipment": "DUMBBELL", "exerciseId": "dumbbell_curl",
-      "gym": { "platesKg": [], "dumbbellsKg": [16, 18, 20, 22, 24, 26], "machines": {} }, "lastKg": 20, "targetKg": 22.5, "expect": 22 },
-    { "case": "the rack has the exact target", "equipment": "DUMBBELL", "exerciseId": "dumbbell_curl",
-      "gym": { "platesKg": [], "dumbbellsKg": [20, 22.5, 25], "machines": {} }, "lastKg": 20, "targetKg": 22.5, "expect": 22.5 },
-    { "case": "a tie goes to the lighter", "equipment": "DUMBBELL", "exerciseId": "dumbbell_curl",
-      "gym": { "platesKg": [], "dumbbellsKg": [20, 21, 24], "machines": {} }, "lastKg": 20, "targetKg": 22.5, "expect": 21 },
-    { "case": "the heaviest dumbbell already: nothing heavier", "equipment": "DUMBBELL", "exerciseId": "dumbbell_curl",
-      "gym": { "platesKg": [], "dumbbellsKg": [26, 28, 30], "machines": {} }, "lastKg": 30, "targetKg": 32.5, "expect": "NO_HEAVIER" },
-    { "case": "no dumbbells listed: unknown", "equipment": "DUMBBELL", "exerciseId": "dumbbell_curl",
-      "gym": { "platesKg": [20], "dumbbellsKg": [], "machines": {} }, "lastKg": 20, "targetKg": 22.5, "expect": "UNKNOWN" },
-    { "case": "a bar with 1.25s makes +2.5", "equipment": "BARBELL", "exerciseId": "bench_press",
-      "gym": { "barKg": 20, "platesKg": [20, 10, 5, 2.5, 1.25], "dumbbellsKg": [], "machines": {} }, "lastKg": 60, "targetKg": 62.5, "expect": 62.5 },
-    { "case": "the smallest plate is 2.5: +2.5 becomes +5", "equipment": "BARBELL", "exerciseId": "bench_press",
-      "gym": { "barKg": 20, "platesKg": [20, 10, 5, 2.5], "dumbbellsKg": [], "machines": {} }, "lastKg": 60, "targetKg": 62.5, "expect": 65 },
-    { "case": "15s and 10s only: the next total is 70", "equipment": "BARBELL", "exerciseId": "squat",
-      "gym": { "barKg": 20, "platesKg": [15, 10], "dumbbellsKg": [], "machines": {} }, "lastKg": 60, "targetKg": 65, "expect": 70 },
-    { "case": "no bar: unknown", "equipment": "BARBELL", "exerciseId": "bench_press",
-      "gym": { "platesKg": [20, 10], "dumbbellsKg": [], "machines": {} }, "lastKg": 60, "targetKg": 62.5, "expect": "UNKNOWN" },
-    { "case": "a bar and no plates: unknown", "equipment": "BARBELL", "exerciseId": "bench_press",
-      "gym": { "barKg": 20, "platesKg": [], "dumbbellsKg": [], "machines": {} }, "lastKg": 60, "targetKg": 62.5, "expect": "UNKNOWN" },
-    { "case": "a machine's own step wins over the stack step", "equipment": "MACHINE", "exerciseId": "pec_deck",
-      "gym": { "platesKg": [], "dumbbellsKg": [], "stackStepKg": 5, "machines": { "pec_deck": 7 } }, "lastKg": 35, "targetKg": 37.5, "expect": 42 },
-    { "case": "a cable without its own step uses the stack step", "equipment": "CABLE", "exerciseId": "lat_pulldown",
-      "gym": { "platesKg": [], "dumbbellsKg": [], "stackStepKg": 5, "machines": { "pec_deck": 7 } }, "lastKg": 50, "targetKg": 52.5, "expect": 55 },
-    { "case": "a stack by 2.5 makes the target", "equipment": "MACHINE", "exerciseId": "leg_extension",
-      "gym": { "platesKg": [], "dumbbellsKg": [], "stackStepKg": 2.5, "machines": {} }, "lastKg": 40, "targetKg": 42.5, "expect": 42.5 },
-    { "case": "no step for a machine: unknown", "equipment": "MACHINE", "exerciseId": "leg_extension",
-      "gym": { "platesKg": [20], "dumbbellsKg": [], "machines": {} }, "lastKg": 40, "targetKg": 42.5, "expect": "UNKNOWN" },
-    { "case": "a sled takes plates in pairs", "equipment": "PLATE_LOADED", "exerciseId": "leg_press",
-      "gym": { "platesKg": [20, 10, 5], "dumbbellsKg": [], "machines": {} }, "lastKg": 100, "targetKg": 105, "expect": 110 },
-    { "case": "a dip belt takes one plate", "equipment": "BODYWEIGHT", "exerciseId": "dip",
-      "gym": { "platesKg": [20, 10, 5, 2.5, 1.25], "dumbbellsKg": [], "machines": {} }, "lastKg": 10, "targetKg": 12.5, "expect": 12.5 },
-    { "case": "or one dumbbell", "equipment": "BODYWEIGHT", "exerciseId": "pull_up",
-      "gym": { "platesKg": [], "dumbbellsKg": [8, 10, 12, 14], "machines": {} }, "lastKg": 10, "targetKg": 12.5, "expect": 12 },
-    { "case": "lb plates stored in kg (135 lb to 140 lb)", "equipment": "BARBELL", "exerciseId": "bench_press",
-      "gym": { "barKg": 20.41, "platesKg": [20.41, 11.34, 4.54, 2.27, 1.13], "dumbbellsKg": [], "machines": {} }, "lastKg": 61.23, "targetKg": 63.73, "expect": 63.49 }
+    {
+      "case": "dumbbells by 2 kg: +2.5 becomes the 22",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          16,
+          18,
+          20,
+          22,
+          24,
+          26
+        ],
+        "machines": {}
+      },
+      "lastKg": 20,
+      "targetKg": 22.5,
+      "expect": 22
+    },
+    {
+      "case": "the rack has the exact target",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          20,
+          22.5,
+          25
+        ],
+        "machines": {}
+      },
+      "lastKg": 20,
+      "targetKg": 22.5,
+      "expect": 22.5
+    },
+    {
+      "case": "a tie goes to the lighter",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          20,
+          21,
+          24
+        ],
+        "machines": {}
+      },
+      "lastKg": 20,
+      "targetKg": 22.5,
+      "expect": 21
+    },
+    {
+      "case": "the heaviest dumbbell already: nothing heavier",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          26,
+          28,
+          30
+        ],
+        "machines": {}
+      },
+      "lastKg": 30,
+      "targetKg": 32.5,
+      "expect": "NO_HEAVIER"
+    },
+    {
+      "case": "no dumbbells listed: unknown",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [
+          20
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 20,
+      "targetKg": 22.5,
+      "expect": "UNKNOWN"
+    },
+    {
+      "case": "a bar with 1.25s makes +2.5",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 60,
+      "targetKg": 62.5,
+      "expect": 62.5
+    },
+    {
+      "case": "the smallest plate is 2.5: +2.5 becomes +5",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 60,
+      "targetKg": 62.5,
+      "expect": 65
+    },
+    {
+      "case": "15s and 10s only: the next total is 70",
+      "equipment": "BARBELL",
+      "exerciseId": "squat",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          15,
+          10
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 60,
+      "targetKg": 65,
+      "expect": 70
+    },
+    {
+      "case": "no bar: unknown",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "platesKg": [
+          20,
+          10
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 60,
+      "targetKg": 62.5,
+      "expect": "UNKNOWN"
+    },
+    {
+      "case": "a bar and no plates: unknown",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 60,
+      "targetKg": 62.5,
+      "expect": "UNKNOWN"
+    },
+    {
+      "case": "a machine's own step wins over the stack step",
+      "equipment": "MACHINE",
+      "exerciseId": "pec_deck",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "stackStepKg": 5,
+        "machines": {
+          "pec_deck": 7
+        }
+      },
+      "lastKg": 35,
+      "targetKg": 37.5,
+      "expect": 42
+    },
+    {
+      "case": "a cable without its own step uses the stack step",
+      "equipment": "CABLE",
+      "exerciseId": "lat_pulldown",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "stackStepKg": 5,
+        "machines": {
+          "pec_deck": 7
+        }
+      },
+      "lastKg": 50,
+      "targetKg": 52.5,
+      "expect": 55
+    },
+    {
+      "case": "a stack by 2.5 makes the target",
+      "equipment": "MACHINE",
+      "exerciseId": "leg_extension",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "stackStepKg": 2.5,
+        "machines": {}
+      },
+      "lastKg": 40,
+      "targetKg": 42.5,
+      "expect": 42.5
+    },
+    {
+      "case": "no step for a machine: unknown",
+      "equipment": "MACHINE",
+      "exerciseId": "leg_extension",
+      "gym": {
+        "platesKg": [
+          20
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 40,
+      "targetKg": 42.5,
+      "expect": "UNKNOWN"
+    },
+    {
+      "case": "a sled takes plates in pairs",
+      "equipment": "PLATE_LOADED",
+      "exerciseId": "leg_press",
+      "gym": {
+        "platesKg": [
+          20,
+          10,
+          5
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 100,
+      "targetKg": 105,
+      "expect": 110
+    },
+    {
+      "case": "a dip belt takes one plate",
+      "equipment": "BODYWEIGHT",
+      "exerciseId": "dip",
+      "gym": {
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "expect": 12.5
+    },
+    {
+      "case": "or one dumbbell",
+      "equipment": "BODYWEIGHT",
+      "exerciseId": "pull_up",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          8,
+          10,
+          12,
+          14
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "expect": 12
+    },
+    {
+      "case": "lb plates stored in kg (135 lb to 140 lb)",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41,
+          11.34,
+          4.54,
+          2.27,
+          1.13
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 61.23,
+      "targetKg": 63.73,
+      "expect": 63.49
+    },
+    {
+      "case": "lb plates: 225 lb + 2.5 kg is 230 lb as 45+45+2.5, not nine 10s",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41,
+          11.34,
+          4.54,
+          2.27,
+          1.13
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 102.05,
+      "targetKg": 104.55,
+      "expect": 104.31
+    },
+    {
+      "case": "lb plates with 35s: 135 lb + 2.5 kg is 45+2.5",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41,
+          15.88,
+          11.34,
+          4.54,
+          2.27,
+          1.13
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 61.23,
+      "targetKg": 63.73,
+      "expect": 63.49
+    },
+    {
+      "case": "lb plates: 135 lb + 5 kg is 45+5",
+      "equipment": "BARBELL",
+      "exerciseId": "squat",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41,
+          11.34,
+          4.54,
+          2.27,
+          1.13
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 61.23,
+      "targetKg": 66.23,
+      "expect": 65.77
+    },
+    {
+      "case": "kg plates are exact: a tie goes to the lighter, however many plates",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          0.5
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 97,
+      "targetKg": 99.5,
+      "expect": 99
+    }
   ],
   "platesPerSide": [
-    { "case": "fewest plates, heavier first on a tie", "baseKg": 20, "platesKg": [25, 20, 15, 10, 5, 2.5, 1.25], "totalKg": 100, "expect": [25, 15] },
-    { "case": "two 10s where 15 first would fail", "baseKg": 20, "platesKg": [15, 10], "totalKg": 60, "expect": [10, 10] },
-    { "case": "a total no pair of plates makes", "baseKg": 20, "platesKg": [20, 10], "totalKg": 65, "expect": null },
-    { "case": "the bar alone", "baseKg": 20, "platesKg": [20, 10], "totalKg": 20, "expect": [] },
-    { "case": "less than the bar", "baseKg": 20, "platesKg": [20, 10], "totalKg": 15, "expect": null },
-    { "case": "an odd hundredth cannot split in two", "baseKg": 20, "platesKg": [0.01], "totalKg": 20.01, "expect": null },
-    { "case": "a sled: no bar", "baseKg": 0, "platesKg": [20, 10, 5], "totalKg": 110, "expect": [20, 20, 10, 5] },
-    { "case": "lb plates stored in kg (135 lb)", "baseKg": 20.41, "platesKg": [20.41, 11.34, 4.54, 2.27, 1.13], "totalKg": 61.23, "expect": [20.41] }
+    {
+      "case": "fewest plates, heavier first on a tie",
+      "baseKg": 20,
+      "platesKg": [
+        25,
+        20,
+        15,
+        10,
+        5,
+        2.5,
+        1.25
+      ],
+      "totalKg": 100,
+      "expect": [
+        25,
+        15
+      ]
+    },
+    {
+      "case": "two 10s where 15 first would fail",
+      "baseKg": 20,
+      "platesKg": [
+        15,
+        10
+      ],
+      "totalKg": 60,
+      "expect": [
+        10,
+        10
+      ]
+    },
+    {
+      "case": "a total no pair of plates makes",
+      "baseKg": 20,
+      "platesKg": [
+        20,
+        10
+      ],
+      "totalKg": 65,
+      "expect": null
+    },
+    {
+      "case": "the bar alone",
+      "baseKg": 20,
+      "platesKg": [
+        20,
+        10
+      ],
+      "totalKg": 20,
+      "expect": []
+    },
+    {
+      "case": "less than the bar",
+      "baseKg": 20,
+      "platesKg": [
+        20,
+        10
+      ],
+      "totalKg": 15,
+      "expect": null
+    },
+    {
+      "case": "an odd hundredth cannot split in two",
+      "baseKg": 20,
+      "platesKg": [
+        0.01
+      ],
+      "totalKg": 20.01,
+      "expect": null
+    },
+    {
+      "case": "a sled: no bar",
+      "baseKg": 0,
+      "platesKg": [
+        20,
+        10,
+        5
+      ],
+      "totalKg": 110,
+      "expect": [
+        20,
+        20,
+        10,
+        5
+      ]
+    },
+    {
+      "case": "lb plates stored in kg (135 lb)",
+      "baseKg": 20.41,
+      "platesKg": [
+        20.41,
+        11.34,
+        4.54,
+        2.27,
+        1.13
+      ],
+      "totalKg": 61.23,
+      "expect": [
+        20.41
+      ]
+    }
   ]
 }
