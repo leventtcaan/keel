@@ -77,9 +77,16 @@ class ConsistencyApiTests {
                 insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
                 values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
 
+        // The Monday weeks from the phase's start that are over by today — worked out here, not by the code: 3 or 4.
+        int over = 0;
+        for (LocalDate day = began; day.plusDays(6).isBefore(LocalDate.now(ISTANBUL)); day = day.plusDays(1)) {
+            over += day.getDayOfWeek() == DayOfWeek.MONDAY ? 1 : 0;
+        }
+
         Map<String, Object> consistency = read(get(account));
 
-        assertThat((Map<String, Object>) consistency.get("record")).containsEntry("countedWeeks", 4).containsEntry("onTrackWeeks", 0);
+        // Nothing logged in them: every week counted (two sessions asked), none on track (U7: counted, never reset).
+        assertThat((Map<String, Object>) consistency.get("record")).containsEntry("countedWeeks", over).containsEntry("onTrackWeeks", 0);
     }
 
     @Test
