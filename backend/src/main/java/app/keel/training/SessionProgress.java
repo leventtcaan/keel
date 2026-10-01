@@ -20,13 +20,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * After a workout of a program day is finished, each planned exercise gets the next session's target (K-217): the
- * engine's double progression on the day's work sets (K-109) and the technique answer (G6 K-31). Load is added only when
+ * engine's double progression on the day's work sets (K-109) and the technique answer (G6 K-31); an added load as the gym
+ * in use when the workout is finished can make it (K-414, ADR-032). Load is added only when
  * this week's planned sets (fewer in a lighter week) were all done at the top; a one-sided move follows its weaker side.
  * The target keeps the load it came from, so a hold of the deload ladder (K-110) is applied when the program is read,
  * whenever the hold began.
@@ -44,9 +46,11 @@ class SessionProgress {
     private final ExerciseCatalog catalog;
     private final ParameterSet parameters;
     private final Profiles profiles;
+    private final GymStore gyms;
 
     SessionProgress(ProgramStore programs, WorkoutStore workouts, TrainingCalls calls, ExerciseCatalog catalog, ParameterSet parameters,
-            Profiles profiles) {
+            Profiles profiles, GymStore gyms) {
+        this.gyms = gyms;
         this.programs = programs;
         this.workouts = workouts;
         this.calls = calls;
@@ -68,6 +72,7 @@ class SessionProgress {
                     Parameters p = parameters.forSex(profile.map(facts -> Sex.valueOf(facts.sex().name())).orElse(Sex.MALE));
                     ZoneId zone = profile.map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
                     LocalDate on = workout.startedAt().atZone(zone).toLocalDate();
+                    Optional<GymStore.Gym> gym = gyms.current(account);
                     Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(calls.changes(account), TrainingChanges.Kind.LIGHTER_WEEK, on);
                     Map<String, List<TrainingLog.WorkSet>> worked = workouts.sets(workout.id()).stream()
                             .filter(set -> set.setType() == SetType.WORKING)
@@ -84,7 +89,9 @@ class SessionProgress {
                                     .collect(Collectors.groupingBy(set -> String.valueOf(set.side()))).values().stream()
                                     .flatMap(sets -> NextTargets.session(kind, region, range, sets, planned.targetRir(),
                                                     !uncleanExerciseIds.contains(planned.exerciseId())).stream())
-                                    .flatMap(session -> next(session, p, thisWeeksSets).stream())
+                                    .flatMap(session -> next(session, p, thisWeeksSets, load -> gym
+                                            .map(inUse -> LoadSteps.round(exercise.equipment(), exercise.id(), inUse, session.loadKg(), load))
+                                            .orElse(new LoadSteps.Rounding.Unknown())).stream())
                                     .toList();
                             NextTargets.weaker(sides.stream().map(Next::target).toList())
                                     .flatMap(target -> sides.stream().filter(side -> side.target().equals(target)).findFirst())
@@ -95,8 +102,9 @@ class SessionProgress {
                 });
     }
 
-    private static Optional<Next> next(LiftSession session, Parameters parameters, int thisWeeksSets) {
-        return NextTargets.after(session, Progression.next(session, parameters), false, thisWeeksSets)
+    private static Optional<Next> next(LiftSession session, Parameters parameters, int thisWeeksSets,
+            Function<BigDecimal, LoadSteps.Rounding> rounding) {
+        return NextTargets.after(session, Progression.next(session, parameters), false, thisWeeksSets, rounding)
                 .map(target -> new Next(target, session.loadKg()));
     }
 }
