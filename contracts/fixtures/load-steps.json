@@ -1,5 +1,5 @@
 {
-  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest the gym can make that is heavier than the last (a tie goes to the lighter; among stored loads that can be one real load \u2014 plates entered in lb, each rounded to a hundredth of a kg \u2014 the fewest pieces); NO_HEAVIER when the gym has nothing heavier; UNKNOWN when the gym says nothing about this equipment. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made.",
+  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest load the gym can make that is heavier than the last; a tie goes to the lighter; NO_HEAVIER when the gym has nothing heavier (only a finite list can end: dumbbells, or a bodyweight move's dumbbells without plates); UNKNOWN when the gym says nothing about this equipment. A gym whose weights were entered in lb (each on the quarter-pound grid, at least one not a multiple of 0.05 kg) is counted in hundredths of a lb, and a load goes back to kg as the app converts a typed lb load (round(lb x 0.45359237, 2)): 140 lb is 63.5, whatever plates make it. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made.",
   "round": [
     {
       "case": "dumbbells by 2 kg: +2.5 becomes the 22",
@@ -306,10 +306,10 @@
       },
       "lastKg": 61.23,
       "targetKg": 63.73,
-      "expect": 63.49
+      "expect": 63.5
     },
     {
-      "case": "lb plates: 225 lb + 2.5 kg is 230 lb as 45+45+2.5, not nine 10s",
+      "case": "lb plates: 225 lb + 2.5 kg is 230 lb",
       "equipment": "BARBELL",
       "exerciseId": "bench_press",
       "gym": {
@@ -326,10 +326,10 @@
       },
       "lastKg": 102.05,
       "targetKg": 104.55,
-      "expect": 104.31
+      "expect": 104.33
     },
     {
-      "case": "lb plates with 35s: 135 lb + 2.5 kg is 45+2.5",
+      "case": "lb plates with 35s: 135 lb + 2.5 kg is 140 lb",
       "equipment": "BARBELL",
       "exerciseId": "bench_press",
       "gym": {
@@ -347,10 +347,10 @@
       },
       "lastKg": 61.23,
       "targetKg": 63.73,
-      "expect": 63.49
+      "expect": 63.5
     },
     {
-      "case": "lb plates: 135 lb + 5 kg is 45+5",
+      "case": "lb plates: 135 lb + 5 kg is 145 lb",
       "equipment": "BARBELL",
       "exerciseId": "squat",
       "gym": {
@@ -390,6 +390,160 @@
       "lastKg": 97,
       "targetKg": 99.5,
       "expect": 99
+    },
+    {
+      "case": "lb 45s and 10s: 65 lb as typed (29.48) is not heavier than 65 lb as two 10s; + 2.5 kg is 85 lb",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41,
+          4.54
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 29.48,
+      "targetKg": 31.98,
+      "expect": 38.56
+    },
+    {
+      "case": "lb plates with 1.25s: 212.5 lb + 5 kg is 222.5 lb, not 225 lb",
+      "equipment": "BARBELL",
+      "exerciseId": "squat",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41,
+          11.34,
+          4.54,
+          2.27,
+          1.13,
+          0.57
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 96.39,
+      "targetKg": 101.39,
+      "expect": 100.92
+    },
+    {
+      "case": "a lb stack: 90 lb + 2.5 kg is 100 lb on a 10 lb step",
+      "equipment": "MACHINE",
+      "exerciseId": "leg_extension",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "stackStepKg": 4.54,
+        "machines": {}
+      },
+      "lastKg": 40.82,
+      "targetKg": 43.32,
+      "expect": 45.36
+    },
+    {
+      "case": "a bodyweight move with dumbbells only, at the heaviest: nothing heavier",
+      "equipment": "BODYWEIGHT",
+      "exerciseId": "dip",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          8,
+          10
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "expect": "NO_HEAVIER"
+    },
+    {
+      "case": "a bodyweight move in a gym with neither plates nor dumbbells: unknown",
+      "equipment": "BODYWEIGHT",
+      "exerciseId": "dip",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "stackStepKg": 5,
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "expect": "UNKNOWN"
+    },
+    {
+      "case": "a sled without plates: unknown",
+      "equipment": "PLATE_LOADED",
+      "exerciseId": "leg_press",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          20
+        ],
+        "machines": {}
+      },
+      "lastKg": 100,
+      "targetKg": 105,
+      "expect": "UNKNOWN"
+    },
+    {
+      "case": "a cable with no step of its own and no stack step: unknown",
+      "equipment": "CABLE",
+      "exerciseId": "lat_pulldown",
+      "gym": {
+        "platesKg": [
+          20
+        ],
+        "dumbbellsKg": [],
+        "machines": {
+          "pec_deck": 7
+        }
+      },
+      "lastKg": 50,
+      "targetKg": 52.5,
+      "expect": "UNKNOWN"
+    },
+    {
+      "case": "plates and dumbbells for a bodyweight move: the dumbbell when it is nearer",
+      "equipment": "BODYWEIGHT",
+      "exerciseId": "dip",
+      "gym": {
+        "platesKg": [
+          20,
+          10,
+          5
+        ],
+        "dumbbellsKg": [
+          12,
+          14
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "expect": 12
+    },
+    {
+      "case": "plates and dumbbells for a bodyweight move: the plates when they make the target",
+      "equipment": "BODYWEIGHT",
+      "exerciseId": "dip",
+      "gym": {
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5
+        ],
+        "dumbbellsKg": [
+          12
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "expect": 12.5
     }
   ],
   "platesPerSide": [
@@ -492,6 +646,23 @@
       "totalKg": 61.23,
       "expect": [
         20.41
+      ]
+    },
+    {
+      "case": "lb plates: 230 lb as the app stores it",
+      "baseKg": 20.41,
+      "platesKg": [
+        20.41,
+        11.34,
+        4.54,
+        2.27,
+        1.13
+      ],
+      "totalKg": 104.33,
+      "expect": [
+        20.41,
+        20.41,
+        1.13
       ]
     }
   ]

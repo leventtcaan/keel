@@ -30,15 +30,16 @@ yüklendiğini bilmiyor (`load` yalnız harici / vücut ağırlığı / ikisi) v
    (kartın "tekrar artışına çevrilir"i); deload "tut" sürerken bu fazla tekrar da tutulur (aralığın tepesi, K-217 gibi).
    Salon yoksa ya da hareketin ekipmanı için veri yoksa motorun adımı olduğu gibi
    (bugünkü davranış).
-4. **Hesap tam sayı ile:** yükler 0,01 kg birimine çevrilir (ADR-029 hassasiyeti), plaka toplamları dinamik
-   programlama ile; kayan nokta yok. **lb plakalar:** kg'ye 0,01'e yuvarlanmış saklanır (10 lb = 4,54) → aynı gerçek yük
-   (230 lb) birkaç saklı değer olarak çıkar (45+45+2,5 ya da dokuz 10'luk + 2,5). Her yuvarlanmış parça en fazla ½ yüzdelik
-   saptığı için: önce hedefe en yakın aday, sonra ona ½·(tam olmayan parça sayıları toplamı) yüzdelikten yakın adaylar
-   "aynı yük" sayılır ve içlerinden **en az parçalı** seçilir. 0,05 kg'ın katı olan değerler tam kabul edilir (kg
-   plakaları, dambılları) → kg salonunda kural devreye girmez, "en yakın, eşitlikte hafif" tek başına karar verir
-   (inceleme bulgusu: doğrusal parça cezası lb'de yetmiyor, kg'de eşitliği bozuyordu). Plaka hesaplayıcı: taraf başına **en az plaka** (eşitlikte ağır plakalar önce).
-   Telefon (K-417) aynı algoritmayı TypeScript'te uygular; iki tarafın testi aynı vaka dosyasını okur
-   (`contracts/fixtures/load-steps.json`).
+4. **Hesap tam sayı ile, salonun biriminde:** yükler yüzdelik birime çevrilir; plaka toplamları dinamik programlama ile;
+   kayan nokta yok. Salonun ağırlıkları **lb ile girilmişse** (hepsi çeyrek lb ızgarasında ±0,01 kg, en az biri 0,05 kg'ın
+   katı değil) hesap **lb yüzdeliklerinde** yapılır ve sonuç kg'ye uygulamanın yazılan lb yükünü çevirdiği gibi döner
+   (`round(lb × 0,45359237, 2)`, ADR-029 tek yuvarlama noktası): 140 lb hangi plakalarla yapılırsa yapılsın 63,5. Neden:
+   lb plaka tek tek kg'ye yuvarlanınca (10 lb = 4,54) toplamları uygulamanın aynı yük için sakladığından sapar (65 lb:
+   yazılan 29,48, iki 10'luk 29,49) → kg'de sayınca aynı yük "daha ağır" sayılıyor, aynı gerçek yükün birçok saklı
+   değeri çıkıyordu (inceleme: iki deneme — doğrusal parça cezası ve gürültü penceresi — ikisi de yetmedi, özellik testleri
+   karşı örnek buldu). Plaka hesaplayıcı: taraf başına **en az plaka** (eşitlikte ağır plakalar önce), plakalar salonda
+   saklandığı kg değeriyle. Telefon (K-417) aynı algoritmayı TypeScript'te uygular; iki tarafın testi aynı vaka dosyasını
+   okur (`contracts/fixtures/load-steps.json`).
 5. **Büyük sıçrama** (ör. dambıl listesi 10 → 20 kg): kart "mümkün en yakın" diyor; kaynaklı bir sıçrama sınırı yok →
    şimdilik en yakın mümkün yük alınır. Sınır konup konmayacağı sağlık/ürün kararı → DURUM soru 38.
 
@@ -69,4 +70,4 @@ Orta: göç + sözleşme alanı; yuvarlama tek sınıf (`LoadSteps`).
 `TrainingAccountData`), `data/exercises/*.yaml`, `contracts/openapi.yaml`, V20 göçü, `apps/mobile` (K-417, K-405).
 
 ## Doğrulama
-`IncrementRoundingTests`, `LoadStepsTests` (vaka dosyası + özellik testleri), `GymApiTests` (CI), `ExerciseCatalogTests`.
+`IncrementRoundingTests`, `LoadStepsTests` (vaka dosyası + kg ve lb özellik testleri), `GymApiTests` (CI), `ExerciseCatalogTests`.

@@ -129,6 +129,34 @@ class LoadStepsTests {
         assertThat(rounding).isInstanceOfSatisfying(LoadSteps.Rounding.To.class, to -> assertThat(to.kg()).isEqualByComparingTo(hundredths(nearest)));
     }
 
+    @Property(tries = 200)
+    void withLbPlatesTheRoundedLoadIsTheNearestRealLoadHeavierThanTheLastAsTheAppStoresIt(@ForAll("lbPlateSets") List<Integer> plateLbHundredths,
+            @ForAll @IntRange(min = 0, max = 60) int fivesOverTheBar, @ForAll @IntRange(min = 1, max = 1000) int stepHundredths) {
+        // The app turns a typed lb load into kg once, from the total (ADR-029); the gym's plates were turned one by one.
+        // The rounding must see 65 lb typed and 65 lb as two 10s as one load, and answer as the app would store it.
+        int bar = 4500;
+        int lastLb = bar + 500 * fivesOverTheBar;
+        BigDecimal lastKg = lbToKg(lastLb);
+        BigDecimal targetKg = lastKg.add(hundredths(stepHundredths));
+        List<BigDecimal> plates = plateLbHundredths.stream().map(LoadStepsTests::lbToKg).toList();
+
+        LoadSteps.Rounding rounding = LoadSteps.round(ExerciseCatalog.Equipment.BARBELL, "bench_press", gymWith(lbToKg(bar), plates, List.of()),
+                lastKg, targetKg);
+
+        double targetLb = targetKg.doubleValue() / 0.45359237 * 100;
+        int heaviest = plateLbHundredths.stream().mapToInt(Integer::intValue).max().orElseThrow();
+        int best = -1;
+        for (int side = 0; side <= (int) ((targetLb - bar) / 2) + heaviest + 1; side++) {
+            int load = bar + 2 * side;
+            if (load > lastLb && fewestByBruteForce(side, plateLbHundredths) >= 0
+                    && (best < 0 || Math.abs(load - Math.round(targetLb)) < Math.abs(best - Math.round(targetLb)))) {
+                best = load;
+            }
+        }
+        BigDecimal expected = lbToKg(best);
+        assertThat(rounding).isInstanceOfSatisfying(LoadSteps.Rounding.To.class, to -> assertThat(to.kg()).isEqualByComparingTo(expected));
+    }
+
     @Property
     void thePlatesPerSideMakeTheTotalWithTheFewestPlates(@ForAll("plateSets") List<Integer> plateHundredths,
             @ForAll @IntRange(min = 0, max = 4000) int perSideHundredths) {
@@ -160,6 +188,17 @@ class LoadStepsTests {
     Arbitrary<List<Integer>> plateSets() {
         // Plate sizes in hundredths of a kg, kg sets and lb sets stored in kg alike.
         return Arbitraries.of(125, 250, 500, 1000, 1500, 2000, 2500, 113, 227, 454, 1134, 2041, 50, 25).list().ofMinSize(1).ofMaxSize(5).uniqueElements();
+    }
+
+    @Provide
+    Arbitrary<List<Integer>> lbPlateSets() {
+        // Plate sizes in hundredths of a lb: a US gym's 45s down to 1.25s.
+        return Arbitraries.of(4500, 3500, 2500, 1000, 500, 250, 125).list().ofMinSize(1).ofMaxSize(5).uniqueElements().filter(set -> set.contains(4500));
+    }
+
+    /** A lb load as the app stores it: once, from the total, to the hundredth of a kg (ADR-029). */
+    private static BigDecimal lbToKg(int lbHundredths) {
+        return BigDecimal.valueOf(lbHundredths, 2).multiply(new BigDecimal("0.45359237")).setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     @Provide

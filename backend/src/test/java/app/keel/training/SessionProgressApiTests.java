@@ -91,6 +91,22 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void aMachinesOwnStepIsTheOneTheLoadIsRoundedTo() throws Exception {
+        // The move's own machine in the gym's list (by the move's id), not the gym's stack step: 35 + 2.5 is 42 by 7s, 40 by 5s.
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "Pull", "weekday", "MONDAY", "exercises",
+                List.of(own("lat_pulldown", 8, 12))))))).hasStatusOk();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "platesKg", List.of(),
+                "dumbbellsKg", List.of(), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "lat_pulldown", "stepKg", 7))));
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "lat_pulldown", 3, 35, 12, "BOTH");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(42, 8));
+    }
+
+    @Test
     void addingRepsReadsTheSetsBackAndAnUnsetRirIsThePlannedOne() throws Exception {
         AccountId account = withAProgram();
         String workout = start(account, MONDAY_EVENING);
