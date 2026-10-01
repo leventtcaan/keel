@@ -1,9 +1,12 @@
 package app.keel.decision;
 
+import app.keel.engine.Consistency;
+import app.keel.engine.ConsistencyRecord;
 import app.keel.engine.MacroTargets;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
 import app.keel.engine.Sex;
+import app.keel.engine.WeekTally;
 import app.keel.engine.WeighIn;
 import app.keel.measurement.Measurements;
 import app.keel.nutrition.MealTotals;
@@ -13,6 +16,7 @@ import app.keel.training.TrainingLog;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -53,20 +57,39 @@ class WeekLogs {
         if (weeks.isEmpty()) {
             return Optional.empty();
         }
-        LocalDate from = weeks.getFirst();
-        LocalDate to = weeks.getLast().plusWeeks(1).minusDays(1);
+        WeekTallies.Logs logs = logs(account, profile, weeks.getFirst(), weeks.getLast().plusWeeks(1).minusDays(1), bodyweight);
+        return WeekTallies.adherence(weeks, logs, asked(account, profile, plan, bodyweight, ageYears, parameters));
+    }
+
+    /** This week so far and the record since the first call (K-420), from the same logs and plan as the adherence. */
+    record Now(WeekTally week, ConsistencyRecord record) {
+    }
+
+    Now consistency(AccountId account, ProfileFacts profile, LocalDate today, CallStore.Plan plan, LocalDate firstCall,
+            Optional<BigDecimal> bodyweight, int ageYears, Parameters parameters) {
+        List<LocalDate> over = WeekTallies.since(firstCall, today);
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON));
+        WeekTallies.Logs logs = logs(account, profile, over.isEmpty() ? monday : over.getFirst(), today, bodyweight);
+        WeekTallies.Plan asked = asked(account, profile, plan, bodyweight, ageYears, parameters);
+        return new Now(WeekTallies.thisWeek(today, logs, asked), Consistency.record(WeekTallies.of(over, logs, asked), parameters));
+    }
+
+    // The modules' logs from one day to another, on the user's calendar. Protein is judged only against a bodyweight.
+    private WeekTallies.Logs logs(AccountId account, ProfileFacts profile, LocalDate from, LocalDate to, Optional<BigDecimal> bodyweight) {
         ZoneId zone = profile.timeZone();
         List<LocalDate> workoutDays = training.workoutStarts(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant())
                 .stream().map(started -> started.atZone(zone).toLocalDate()).toList();
         Map<LocalDate, WeekTallies.ProteinLogged> protein = bodyweight.isEmpty() ? Map.of() : meals.proteinByDay(account, from, to).entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, day -> new WeekTallies.ProteinLogged(day.getValue().lowG(), day.getValue().highG())));
-        WeekTallies.Logs logs = new WeekTallies.Logs(workoutDays,
-                measurements.dailyWeights(account, from, to).stream().map(WeighIn::date).collect(Collectors.toSet()), protein,
-                measurements.stepsByDay(account, from, to));
+        return new WeekTallies.Logs(workoutDays, measurements.dailyWeights(account, from, to).stream().map(WeighIn::date).collect(Collectors.toSet()),
+                protein, measurements.stepsByDay(account, from, to));
+    }
+
+    private WeekTallies.Plan asked(AccountId account, ProfileFacts profile, CallStore.Plan plan, Optional<BigDecimal> bodyweight, int ageYears,
+            Parameters parameters) {
         int proteinG = bodyweight.map(kg -> MacroTargets.proteinG(kg, Sex.valueOf(profile.sex().name()), ageYears, parameters)).orElse(0);
-        WeekTallies.Plan asked = new WeekTallies.Plan(profile.trainingDays().size(), parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK), proteinG,
-                stepTargets(account, plan, zone, parameters));
-        return WeekTallies.adherence(weeks, logs, asked);
+        return new WeekTallies.Plan(profile.trainingDays().size(), parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK), proteinG,
+                stepTargets(account, plan, profile.timeZone(), parameters));
     }
 
     /**

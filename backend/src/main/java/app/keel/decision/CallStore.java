@@ -146,6 +146,12 @@ class CallStore {
                 .orElseGet(() -> calls("account_id = :account", Map.of("account", account.value()), limit));
     }
 
+    /** The day the account's first call was made, where the consistency record begins (K-420). */
+    Optional<LocalDate> firstMadeOn(AccountId account) {
+        return Optional.ofNullable(jdbc.sql("select min(made_on) from decision.weekly_call where account_id = :account")
+                .param("account", account.value()).query(LocalDate.class).single());
+    }
+
     /** Every call of the account (the export, K-214). */
     List<Call> all(AccountId account) {
         return calls("account_id = :account", Map.of("account", account.value()), Integer.MAX_VALUE);

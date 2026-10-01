@@ -728,6 +728,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/consistency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This week's consistency, its four kinds of action, and the weeks on track
+         * @description The Today screen's number (K-420, K-111, U15): this week, Monday to today on the user's calendar, counted from
+         *     the logs. Today is not over, so a protein or step day is judged from yesterday back; a session or a weigh-in done
+         *     today is done. The record counts the weeks over since the first call and is never reset (U7). Health data
+         *     (weigh-ins, protein): CONSENT_REQUIRED without the consent. NOT_FOUND before the first call (nothing planned yet).
+         */
+        get: operations["getConsistency"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/targets": {
         parameters: {
             query?: never;
@@ -1290,6 +1313,33 @@ export interface components {
              */
             weekOf: string;
             answers: components["schemas"]["Answer"][];
+        };
+        Consistency: {
+            /**
+             * Format: date
+             * @description The Monday this week began.
+             */
+            weekOf: string;
+            training: components["schemas"]["ActionCount"];
+            protein: components["schemas"]["ActionCount"];
+            steps: components["schemas"]["ActionCount"];
+            weighIns: components["schemas"]["ActionCount"];
+            planned: number;
+            done: number;
+            /** @description done over planned, rounded down; absent while nothing is planned. */
+            percent?: number;
+            /** @description Weeks over since the first call; a week is on track at on_track_min_ratio (K-111). Never reset. */
+            record: {
+                onTrackWeeks: number;
+                countedWeeks: number;
+                /** @description On-track weeks in a row; one missed week is forgiven, two in a row end the run. */
+                currentRun: number;
+            };
+        };
+        /** @description One kind of planned action this week; done is counted up to planned. */
+        ActionCount: {
+            planned: number;
+            done: number;
         };
         Decision: {
             /** Format: uuid */
@@ -2569,6 +2619,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Targets"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getConsistency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description This week and the record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Consistency"];
                 };
             };
             default: components["responses"]["Error"];
