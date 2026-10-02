@@ -545,6 +545,55 @@ paths:
                 $ref: "#/components/schemas/DayBudget"
         default:
           $ref: "#/components/responses/Error"
+  /v1/recipes:
+    get:
+      tags: [nutrition]
+      operationId: listRecipes
+      summary: The user's recipes, by name, each with its ranges per portion as the database gives them now (ADR-034)
+      description: Health data, as meals are (HEALTH_DATA consent; deleted when it is withdrawn).
+      responses:
+        "200":
+          description: Every recipe of the user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recipe"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [nutrition]
+      operationId: saveRecipe
+      summary: Keep a recipe — entered once, logged by the portion (K-413)
+      description: |
+        Only the ingredients are kept, never a number: the ranges are estimated again from the database whenever the
+        recipe is read or logged (U1). A meal logs a recipe as one item, foodId "recipe:<id>", unit "portion".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewRecipe"
+      responses:
+        "201":
+          $ref: "#/components/responses/RecipeSaved"
+        "200":
+          $ref: "#/components/responses/RecipeSaved"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/recipes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    delete:
+      tags: [nutrition]
+      operationId: deleteRecipe
+      summary: Forget a recipe; meals that logged it keep what they logged
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Error"
 
   # ── training (K-210, K-211, K-218, K-219) ──────────────────────────────────────────────────────────────────
   /v1/exercises:
@@ -1076,6 +1125,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/PhotoCheck"
+    RecipeSaved:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Recipe"
     MealCreated:
       description: Stored (201), or already stored with this clientId (200)
       content:
@@ -1565,6 +1620,9 @@ components:
       properties:
         foodId:
           type: string
+          description: |
+            A food of the database, or one of the user's recipes as "recipe:<id>" (ADR-034) — then the unit is "portion"
+            and the quantity is the portions eaten. A recipe's ingredients are database foods only.
         amount:
           $ref: "#/components/schemas/Amount"
     EstimatedItem:
@@ -1632,6 +1690,8 @@ components:
           $ref: "#/components/schemas/MealSlot"
         items:
           type: array
+          minItems: 1
+          maxItems: 50
           items:
             $ref: "#/components/schemas/ItemRequest"
         repeatOf:
@@ -1659,6 +1719,49 @@ components:
           $ref: "#/components/schemas/KcalRange"
         proteinG:
           $ref: "#/components/schemas/GramRange"
+    NewRecipe:
+      type: object
+      required: [clientId, name, portions, items]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Trimmed; at most 80 code points.
+        portions:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: How many portions the whole recipe makes.
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          description: The ingredients, as a meal's items (database foods only; ≤ 5000 g each).
+          items:
+            $ref: "#/components/schemas/ItemRequest"
+    Recipe:
+      type: object
+      required: [id, clientId, name, portions, items, perPortion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        name:
+          type: string
+        portions:
+          type: integer
+        items:
+          type: array
+          description: The ingredients as the database matches them now.
+          items:
+            $ref: "#/components/schemas/EstimatedItem"
+        perPortion:
+          $ref: "#/components/schemas/Nutrients"
     DayBudget:
       type: object
       required: [day, targetKcal, eaten, left]

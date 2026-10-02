@@ -60,6 +60,22 @@ final class FoodRanges {
         }), parameters);
     }
 
+    /**
+     * A recipe's share (ADR-034): `eaten` portions out of the `portions` it makes, of the whole recipe's ranges. The low end
+     * is rounded down and the high end up, so a share never claims more certainty than the whole (U5).
+     */
+    static Nutrients share(Nutrients whole, BigDecimal eaten, int portions) {
+        return new Nutrients(share(whole.kcal(), eaten, portions), share(whole.proteinG(), eaten, portions), share(whole.carbsG(), eaten, portions),
+                share(whole.fatG(), eaten, portions));
+    }
+
+    private static Range share(Range whole, BigDecimal eaten, int portions) {
+        BigDecimal of = BigDecimal.valueOf(portions);
+        BigDecimal low = BigDecimal.valueOf(whole.low()).multiply(eaten).divide(of, 0, RoundingMode.FLOOR);
+        BigDecimal high = BigDecimal.valueOf(whole.high()).multiply(eaten).divide(of, 0, RoundingMode.CEILING);
+        return new Range(low.intValueExact(), high.intValueExact());
+    }
+
     /** A meal: the sum of its items' lows and of their highs. */
     static Nutrients total(List<Nutrients> items) {
         return new Nutrients(sum(items.stream().map(Nutrients::kcal).toList()), sum(items.stream().map(Nutrients::proteinG).toList()),

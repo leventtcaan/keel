@@ -422,6 +422,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/recipes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The user's recipes, by name, each with its ranges per portion as the database gives them now (ADR-034)
+         * @description Health data, as meals are (HEALTH_DATA consent; deleted when it is withdrawn).
+         */
+        get: operations["listRecipes"];
+        put?: never;
+        /**
+         * Keep a recipe — entered once, logged by the portion (K-413)
+         * @description Only the ingredients are kept, never a number: the ranges are estimated again from the database whenever the
+         *     recipe is read or logged (U1). A meal logs a recipe as one item, foodId "recipe:<id>", unit "portion".
+         */
+        post: operations["saveRecipe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recipes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Forget a recipe; meals that logged it keep what they logged */
+        delete: operations["deleteRecipe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exercises": {
         parameters: {
             query?: never;
@@ -1096,6 +1140,10 @@ export interface components {
             items: components["schemas"]["ItemRequest"][];
         };
         ItemRequest: {
+            /**
+             * @description A food of the database, or one of the user's recipes as "recipe:<id>" (ADR-034) — then the unit is "portion"
+             *     and the quantity is the portions eaten. A recipe's ingredients are database foods only.
+             */
             foodId: string;
             amount: components["schemas"]["Amount"];
         };
@@ -1141,6 +1189,25 @@ export interface components {
             items: components["schemas"]["EstimatedItem"][];
             kcal: components["schemas"]["KcalRange"];
             proteinG: components["schemas"]["GramRange"];
+        };
+        NewRecipe: {
+            clientId: components["schemas"]["ClientId"];
+            /** @description Trimmed; at most 80 code points. */
+            name: string;
+            /** @description How many portions the whole recipe makes. */
+            portions: number;
+            /** @description The ingredients, as a meal's items (database foods only; ≤ 5000 g each). */
+            items: components["schemas"]["ItemRequest"][];
+        };
+        Recipe: {
+            /** Format: uuid */
+            id: string;
+            clientId: components["schemas"]["ClientId"];
+            name: string;
+            portions: number;
+            /** @description The ingredients as the database matches them now. */
+            items: components["schemas"]["EstimatedItem"][];
+            perPortion: components["schemas"]["Nutrients"];
         };
         DayBudget: {
             /** Format: date */
@@ -1663,6 +1730,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["PhotoCheck"];
+            };
+        };
+        /** @description Stored (201), or already stored with this clientId (200) */
+        RecipeSaved: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Recipe"];
             };
         };
         /** @description Stored (201), or already stored with this clientId (200) */
@@ -2320,6 +2396,66 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DayBudget"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listRecipes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every recipe of the user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipe"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    saveRecipe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewRecipe"];
+            };
+        };
+        responses: {
+            200: components["responses"]["RecipeSaved"];
+            201: components["responses"]["RecipeSaved"];
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteRecipe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };
