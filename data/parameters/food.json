@@ -3,10 +3,22 @@
     {
       "key": "meal_slot_starts",
       "value": [
-        { "slot": "BREAKFAST", "fromHour": 4 },
-        { "slot": "LUNCH", "fromHour": 11 },
-        { "slot": "DINNER", "fromHour": 16 },
-        { "slot": "SNACK", "fromHour": 22 }
+        {
+          "slot": "BREAKFAST",
+          "fromHour": 4
+        },
+        {
+          "slot": "LUNCH",
+          "fromHour": 11
+        },
+        {
+          "slot": "DINNER",
+          "fromHour": 16
+        },
+        {
+          "slot": "SNACK",
+          "fromHour": 22
+        }
       ],
       "unit": "hour_of_day",
       "tag": "urun",
@@ -30,6 +42,14 @@
       "note": "FoodSearch.q maxLength."
     },
     {
+      "key": "food_search_results",
+      "value": 20,
+      "unit": "foods",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#FoodSearch",
+      "note": "FoodSearch.limit: the contract's default, sent as it is (the generated type asks for it). Best matches come first; a longer list is scrolled past, not read."
+    },
+    {
       "key": "meal_amount_max_g",
       "value": 5000,
       "unit": "g",
@@ -44,6 +64,22 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#Amount",
       "note": "Amount.quantity: at most 2 decimals."
+    },
+    {
+      "key": "meal_items_max",
+      "value": 50,
+      "unit": "items",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#FoodEstimateRequest",
+      "note": "FoodEstimateRequest.items maxItems; the server checks a logged meal's items the same way (K-407 review: a larger meal was queued, refused and lost)."
+    },
+    {
+      "key": "meal_amount_max_chars",
+      "value": 8,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#Amount",
+      "note": "The amount field's length: room for the largest amount the contract takes with its 2 decimals (5000.00), and a little more for typing."
     }
   ]
 }

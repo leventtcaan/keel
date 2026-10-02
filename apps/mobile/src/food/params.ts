@@ -14,6 +14,9 @@ export const foodParams = {
   slotStarts: param<{ slot: components['schemas']['MealSlot']; fromHour: number }[]>('meal_slot_starts'),
   searchMinChars: param<number>('food_search_min_chars'),
   searchMaxChars: param<number>('food_search_max_chars'),
+  searchResults: param<number>('food_search_results'),
   amountMaxG: param<number>('meal_amount_max_g'),
   amountDecimals: param<number>('meal_amount_decimals'),
+  itemsMax: param<number>('meal_items_max'),
+  amountMaxChars: param<number>('meal_amount_max_chars'),
 };

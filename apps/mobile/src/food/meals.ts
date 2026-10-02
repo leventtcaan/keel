@@ -15,9 +15,7 @@ type Schemas = components['schemas'];
 type Meal = Schemas['Meal'];
 type MealSlot = Schemas['MealSlot'];
 
-export type DayMeal =
-  | { kind: 'sent'; meal: Meal }
-  | { kind: 'waiting'; clientId: string; eatenAt: string; slot: MealSlot; repeatOf?: string };
+export type DayMeal = { kind: 'sent'; meal: Meal } | { kind: 'waiting'; clientId: string; eatenAt: string; slot: MealSlot; repeatOf?: string };
 
 const eatenAt = (row: DayMeal) => (row.kind === 'sent' ? row.meal.eatenAt : row.eatenAt);
 
