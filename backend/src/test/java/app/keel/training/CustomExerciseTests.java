@@ -144,6 +144,42 @@ class CustomExerciseTests {
     }
 
     @Test
+    void aFinishMayCallTheUsersOwnMoveUncleanAndThePlannedMovesStillGetTheirTargets() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        String id = (String) map(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Landmine press", "COMPOUND", "EXTERNAL",
+                "BARBELL", true))).get("id");
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", day("bench_press")));
+        String dayId = (String) ((List<Map<String, Object>>) program.get("days")).getFirst().get("id");
+        MvcTestResult started = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-09-30T15:40:00Z",
+                "programDayId", dayId));
+        String workout = (String) map(started).get("id");
+        send(account, "POST", "/v1/workouts/" + workout + "/sets", set("bench_press", 60, null));
+        send(account, "POST", "/v1/workouts/" + workout + "/sets", set(id, 40, null));
+
+        MvcTestResult finished = send(account, "POST", "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-09-30T16:30:00Z",
+                "uncleanExerciseIds", List.of(id)));
+
+        assertThat(finished).as("review: a custom move in the unclean list failed the whole finish").hasStatusOk();
+        List<Map<String, Object>> planned = (List<Map<String, Object>>) ((List<Map<String, Object>>) map(send(account, "GET", "/v1/program", null))
+                .get("days")).getFirst().get("exercises");
+        assertThat(planned).singleElement().satisfies(bench -> assertThat(bench).containsKeys("nextLoadKg", "nextReps"));
+        assertThat(send(TestSessions.newAccount(), "POST", "/v1/workouts/" + start(account) + "/finish", Map.of("endedAt", "2026-09-30T16:30:00Z")))
+                .as("not that account's workout").hasStatus(404);
+    }
+
+    @Test
+    void anotherUsersMoveInTheUncleanListIsRefused() throws Exception {
+        AccountId owner = TestSessions.newAccount();
+        String id = (String) map(send(owner, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Landmine press", "COMPOUND", "EXTERNAL",
+                "BARBELL", true))).get("id");
+        AccountId other = TestSessions.newAccount();
+        String workout = start(other);
+
+        assertThat(send(other, "POST", "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-09-30T16:30:00Z", "uncleanExerciseIds", List.of(id))))
+                .hasStatus(400);
+    }
+
+    @Test
     void aProgramIsMadeOfCatalogMovesOnly() throws Exception {
         AccountId account = TestSessions.newAccount();
         String id = (String) map(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Landmine press", "COMPOUND", "EXTERNAL",
