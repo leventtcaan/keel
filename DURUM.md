@@ -478,6 +478,7 @@ DURUM ile birlikte commitlendi.
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
+| K-429 rıza metni `2-draft` (geri çekince antrenman hariç silinir; telefon eski rızayı `OUTDATED` okur, geri çekilebilir; çevrimdışı kopya sürümlü; 26 test isteği tek sabite) | ✅ birleşti; CI'da RED önce; inceleme: metin antrenmanın silineceğini vaat ediyordu, eski rızalı kullanıcı Withdraw'ı kaybediyordu, çevrimdışı eski "evet" geçiyordu → düzeltildi; mutasyon 9/9 | #270 | `M5/ADR-037-isleri.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
