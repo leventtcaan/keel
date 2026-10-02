@@ -281,3 +281,26 @@ describe('review', () => {
     expect(screen.getByText(t('meal.edit.gone'))).toBeOnTheScreen();
   });
 });
+
+describe('a meal with a recipe in it (K-423)', () => {
+  const RECIPE_MEAL: Schemas['Meal'] = {
+    ...MEAL,
+    items: [{ foodId: 'recipe:r1', name: 'Lentil soup', amount: { quantity: 1, unit: 'portion', certainty: 'ESTIMATED' }, kcal: R(250, 300), proteinG: R(14, 17) }],
+  };
+
+  test('the recipe since deleted: the item says so; nothing is saved and the logged meal is not deleted', async () => {
+    mockGET.mockImplementation(async (path: string) => (path === '/v1/recipes' ? ok([]) : ok([RECIPE_MEAL])));
+    mockEstimate = async () => ({ error: { code: 'VALIDATION_FAILED', message: 'x' }, response: new Response(null, { status: 400 }) });
+    await render(
+      <ThemeProvider>
+        <MealScreen />
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    await act(async () => {});
+    expect(screen.getByText(t('meal.item.recipeGone'))).toBeTruthy();
+    expect(screen.queryByText(t('meal.edit.notChecked'))).toBeNull(); // the item's own reason, not "check your connection"
+    expect(screen.getByRole('button', { name: t('meal.save') }).props.accessibilityState.disabled).toBe(true);
+    expect(mockDELETE).not.toHaveBeenCalled();
+  });
+});
