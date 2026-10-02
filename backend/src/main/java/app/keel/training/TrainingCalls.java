@@ -1,8 +1,12 @@
 package app.keel.training;
 
+import app.keel.profile.ProfileFacts;
+import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -18,10 +22,14 @@ public class TrainingCalls {
 
     private final JdbcClient jdbc;
     private final ProgramStore programs;
+    private final Profiles profiles;
+    private final Clock clock;
 
-    TrainingCalls(JdbcClient jdbc, ProgramStore programs) {
+    TrainingCalls(JdbcClient jdbc, ProgramStore programs, Profiles profiles, Clock clock) {
         this.jdbc = jdbc;
         this.programs = programs;
+        this.profiles = profiles;
+        this.clock = clock;
     }
 
     /** First rung: no load is added from {@code from} until the next rung. */
@@ -49,6 +57,21 @@ public class TrainingCalls {
                 .param("account", account.value()).param("call", callId).update();
         jdbc.sql("update training.program_change set ends_on = null, ended_by = null where account_id = :account and ended_by = :call")
                 .param("account", account.value()).param("call", callId).update();
+    }
+
+    /**
+     * The hold in force ends today, on the user's calendar, with no call to end it (K-428, ADR-037 #34): the calls it
+     * came from are gone (the health data consent was withdrawn), and none would come to take the ladder's next rung.
+     * The change stays as a record, closed the day before today (or before it began, as {@link TrainingChanges#holdClosedOn});
+     * the lighter and rest weeks end on their own. Harmless twice.
+     */
+    @Transactional
+    public void endHold(AccountId account) {
+        LocalDate today = LocalDate.now(clock.withZone(profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC)));
+        jdbc.sql("""
+                update training.program_change set ends_on = greatest(:dayBefore, starts_on - 1)
+                where account_id = :account and kind = 'HOLD_LOAD' and ends_on is null""")
+                .param("account", account.value()).param("dayBefore", today.minusDays(1)).update();
     }
 
     /** Every change of the account, oldest first. */

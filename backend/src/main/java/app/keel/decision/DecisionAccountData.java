@@ -5,6 +5,7 @@ import app.keel.consent.ConsentKind;
 import app.keel.consent.ConsentWithdrawn;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
+import app.keel.training.TrainingCalls;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.context.event.EventListener;
@@ -20,11 +21,13 @@ class DecisionAccountData implements AccountDataExport {
     private final JdbcClient jdbc;
     private final CallStore calls;
     private final JsonMapper json;
+    private final TrainingCalls training;
 
-    DecisionAccountData(JdbcClient jdbc, CallStore calls, JsonMapper json) {
+    DecisionAccountData(JdbcClient jdbc, CallStore calls, JsonMapper json, TrainingCalls training) {
         this.jdbc = jdbc;
         this.calls = calls;
         this.json = json;
+        this.training = training;
     }
 
     @ApplicationModuleListener
@@ -35,12 +38,14 @@ class DecisionAccountData implements AccountDataExport {
     /**
      * Every call holds the Snapshot it was made from and the plan its targets (K-231): health data, in the withdrawal's
      * transaction. A safety hold goes with the calls it was read from, as on account deletion; the engine starts again
-     * from no data (its own observation and questions).
+     * from no data (its own observation and questions). A load the calls held on the program is no longer held: no call
+     * is left to end it (K-428, ADR-037 #34); the rest of the program is training data and stays (ADR-007).
      */
     @EventListener
     void on(ConsentWithdrawn withdrawn) {
         if (withdrawn.kind() == ConsentKind.HEALTH_DATA) {
             delete(withdrawn.account());
+            training.endHold(withdrawn.account());
         }
     }
 
