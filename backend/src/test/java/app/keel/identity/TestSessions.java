@@ -20,8 +20,10 @@ public final class TestSessions {
     }
 
     public static String bearer(ApplicationContext context, AccountId account) {
+        // No conflict target: two threads making the same account at once (a concurrency test) collide on apple_subject
+        // too, and Postgres raises a unique violation on any index that is not the ON CONFLICT target.
         context.getBean(JdbcClient.class).sql("""
-                insert into identity.account (id, apple_subject, created_at) values (:id, :subject, now()) on conflict (id) do nothing""")
+                insert into identity.account (id, apple_subject, created_at) values (:id, :subject, now()) on conflict do nothing""")
                 .param("id", account.value()).param("subject", "test." + account.value()).update();
         return "Bearer " + context.getBean(SessionTokens.class).issue(account).token();
     }
