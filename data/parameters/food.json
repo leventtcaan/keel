@@ -104,6 +104,22 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#BarcodeLookup",
       "note": "The typed barcode field's length: the longest GTIN (14 digits) and a little room for stray spaces, which are trimmed."
+    },
+    {
+      "key": "recipe_name_max_chars",
+      "value": 80,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewRecipe",
+      "note": "A recipe's name, trimmed, in code points (NewRecipe.name, ADR-034): the phone stops at the server's limit."
+    },
+    {
+      "key": "recipe_portions_max",
+      "value": 50,
+      "unit": "count",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewRecipe",
+      "note": "How many portions a recipe can make (NewRecipe.portions, 1..50, a whole number)."
     }
   ]
 }
