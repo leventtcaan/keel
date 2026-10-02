@@ -58,13 +58,13 @@
   },
   "prompt": {
     "steps_dropped": {
-      "title": "Your steps fell this week.",
+      "title": "Your steps fell last week.",
       "body": "Steps are the quiet half of what you burn: a drop can cost more than any slowdown in your metabolism. Was it a busy week?",
       "choice": { "busy": "Yes, life got in the way", "less": "Just moved less" },
       "reply": { "less": "Aim for your step target again: a walk after training covers much of it, and it moves more than you'd think." }
     },
     "sessions_missed": {
-      "title": "Two sessions slipped by.",
+      "title": "A few sessions slipped by.",
       "body": "It happens. What helps most is a fixed time you don't negotiate with.",
       "choice": { "fixed_time": "Set a fixed time", "life": "Life got in the way", "not_now": "Not now" },
       "reply": { "not_now": "Fine. Your next session is on the plan as usual; nothing to make up." }

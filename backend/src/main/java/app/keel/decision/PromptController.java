@@ -99,8 +99,8 @@ class PromptController {
         Optional<CallStore.Plan> plan = calls.plan(account);
         // From the Monday of the week before last: the two calendar weeks the steps and the loads compare.
         LocalDate weekBefore = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON)).minusWeeks(2);
-        // The training days are asked for from when the profile last set them, or the program was made, whichever is later.
-        LocalDate since = Stream.of(profiles.savedAt(account).map(at -> at.atZone(zone).toLocalDate()), statuses.programSince(account, zone))
+        // The training days are asked for from when the profile set them, or the program was made, whichever is later.
+        LocalDate since = Stream.of(profiles.trainingDaysSince(account).map(at -> at.atZone(zone).toLocalDate()), statuses.programSince(account, zone))
                 .flatMap(Optional::stream).max(Comparator.naturalOrder()).orElse(today);
         LocalDate from = since.isBefore(weekBefore) ? since : weekBefore;
         TrainingStatusReader.Breaks breaks = statuses.breaks(account, from, today);
@@ -128,13 +128,22 @@ class PromptController {
     @Transactional
     Reply answer(AccountId account, @PathVariable String rule, @RequestBody Answer answer) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        RuleId id = new RuleId(rule);
+        RuleId id = ruleId(rule);
         List<String> choices = Prompts.choices(id).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
         if (answer.choice() == null || !choices.contains(answer.choice()) || !isDay(answer.key())) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
         String kept = answers.answer(account, rule, answer.key(), answer.choice(), clock.instant());
         return new Reply(Prompts.reply(id, kept).map(CopyKey::value).orElse(null));
+    }
+
+    /** A name that is no rule's at all is a request to refuse (400), not a failure (500). */
+    private static RuleId ruleId(String name) {
+        try {
+            return new RuleId(name);
+        } catch (IllegalArgumentException notARule) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
     }
 
     private static boolean isDay(String key) {

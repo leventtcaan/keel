@@ -23,8 +23,8 @@ public class Profiles {
                 ZoneId.of(profile.schedule().timeZone()), Set.copyOf(profile.schedule().trainingDays())));
     }
 
-    /** When the profile was last saved: its training days are asked for from then on, at the latest (K-512). */
-    public Optional<Instant> savedAt(AccountId account) {
-        return store.savedAt(account);
+    /** When the training days were last set: they are asked for from then on, at the earliest (K-512). */
+    public Optional<Instant> trainingDaysSince(AccountId account) {
+        return store.trainingDaysSince(account);
     }
 }

@@ -3,6 +3,9 @@ package app.keel.decision;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.consent.ConsentTextVersions;
+import app.keel.engine.CheckIn;
+import app.keel.engine.Phase;
+import app.keel.engine.Sex;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
@@ -175,8 +178,11 @@ class PromptsApiTests {
         jdbc.sql("""
                 insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision,
                     application, applied_at, plan_before, plan_after)
-                values (:id, :a, :client, :week, :made, now() - interval '1 day', 'test', '{}', '{}', 'APPLIED', now() - interval '1 day',
-                    cast(:before as jsonb), cast(:after as jsonb))""").param("id", UUID.randomUUID()).param("a", account.value())
+                values (:id, :a, :client, :week, :made, now() - interval '1 day', 'test', cast(:snapshot as jsonb), '{}', 'APPLIED',
+                    now() - interval '1 day', cast(:before as jsonb), cast(:after as jsonb))""").param("id", UUID.randomUUID()).param("a", account.value())
+                .param("snapshot", JSON.writeValueAsString(new StoredSnapshot(today.minusDays(1), Sex.MALE, Phase.CUT, cutBegan, List.of(), null, null,
+                        new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, CheckIn.Waist.UNKNOWN,
+                                null, CheckIn.Appetite.UNKNOWN), null, true, cutBegan, null, null, false, null, null, null)))
                 .param("client", UUID.randomUUID()).param("week", today.minusDays(1)).param("made", today.minusDays(1))
                 .param("before", watched).param("after", deficit).update();
 
