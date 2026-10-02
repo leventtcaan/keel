@@ -75,7 +75,10 @@ class StateStore {
         for (State state : all(account)) {
             LocalDate first = state.startsOn().isBefore(from) ? from : state.startsOn();
             LocalDate last = state.endsOn().filter(end -> end.isBefore(to)).orElse(to);
-            first.datesUntil(last.plusDays(1)).forEach(days::add);
+            // A state over before the range, or begun after it (a time zone moved west), has no day in it.
+            if (!first.isAfter(last)) {
+                first.datesUntil(last.plusDays(1)).forEach(days::add);
+            }
         }
         return days;
     }

@@ -55,8 +55,10 @@ class CheckInPartsTests {
         // a question the app just showed must not come back as 400 (K-213 review). What the data says (look, waist) is
         // never an answer. The cycle question too (V4, K-222): the band can leave "low" between asking and answering; whose
         // answer it is, Answers decides (a woman's). Appetite since K-227 (the mini cut): only the user can say it.
+        // Whether a declared state is still so since K-516 (K1 note to Levent: the list grows by the question it adds).
         assertThat(java.util.Arrays.stream(Answers.Kind.values()).filter(CheckInQuestions::answerable))
-                .containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY, Answers.Kind.APPETITE, Answers.Kind.CYCLE_STOPPED);
+                .containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY, Answers.Kind.APPETITE, Answers.Kind.CYCLE_STOPPED,
+                        Answers.Kind.STATE_STILL);
     }
 
     @Test
