@@ -52,3 +52,5 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Git guard table tests (ADR-019)
         run: python3 tools/test_git_guard.py
+      - name: Clip tool tests (K-419; the real cut runs where ffmpeg is installed)
+        run: python3 tools/test_clip.py
