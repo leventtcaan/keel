@@ -96,3 +96,15 @@ test('a move not in the catalog on this phone says so', async () => {
   await show();
   expect(await screen.findByText(t('demo.unknown'))).toBeOnTheScreen();
 });
+
+test("the user's own move: its name and the tips for its kind; no muscles were asked of it, none said", async () => {
+  mockOwn = [
+    { id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] },
+  ];
+  mockParams = { exercise: 'custom:1' };
+  await show();
+  expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
+  expect(screen.getByText(t('demo.tip.lastRep'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('demo.muscles'))).toBeNull();
+  expect(screen.queryByText(t('demo.unknown'))).toBeNull();
+});
