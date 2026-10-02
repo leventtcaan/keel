@@ -39,3 +39,16 @@ Düşük: yalnız `healthKit.ts` ve `app.config.ts` değişir; ekranlar ve testl
 `healthkit.test.ts` (yüklenemezse kullanılamaz, okuma listesi, dışlamalar, hata iletimi) · `app-config.test.ts` (izin
 metni en.json'dan, yazma yok, arka plan yok) · `npx expo config --type prebuild` çıktısı · cihazda/simülatörde izin
 diyaloğu ve bir okuma: K-308 development build'i ile (K-403 kartının test satırı orada kanıtlanır).
+
+## Ek (2 Eki, K-412) — yazma
+1. Yazma ayrı bir port: `HealthWriteAccess` (`src/health/health.ts`), cihazda `healthKitWrite()`; okuma arayüzüne
+   eklenmedi (okumayı kullanan ekranlar yazmayı görmez, taklitleri değişmez).
+2. **İki ayrı anahtar**, telefonda (kv), hesaba ait: bitmiş seans → antrenman (`traditionalStrengthTraining`), elle
+   girilen tartı → `BodyMass` (`HKWasUserEntered`). Kapalı başlar; açınca iOS'un **yazma** sayfası (`toShare`) sorulur;
+   iOS izin vermezse anahtar kapalı kalır. Her yazmada izin yeniden okunur (yazma durumu, okumanın aksine, söylenir:
+   `authorizationStatusFor` = 2); izin yoksa yazma çağrısı yapılmaz (ADR-018 › Doğrulama).
+3. Yazılan her örnek `HKExternalUUID = "keel:" + clientId` ile işaretlenir; K-402'nin Health okuması işaretli örneği
+   atlar → elle girilen tartı Health'ten ikinci kez gelmez (paket kimliğinden bağımsız).
+4. Enerji toplamı yazılmaz: uygulama ölçmüyor, tahmini sayı U1'e aykırı.
+5. Çıkış anahtarları unutur; Health'e yazılmış olan kullanıcınındır, silinmez.
+6. iOS yazma metni `en.json › permissions.healthWrite` (`NSHealthUpdateUsageDescription`).
