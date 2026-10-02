@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -87,8 +88,9 @@ class WorkoutController {
     record Finish(Instant endedAt, List<String> uncleanExerciseIds, String note) {
     }
 
+    /** {@code supersetId}: the superset the set belongs to, made by the phone (K-424, ADR-035). */
     record NewSet(UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
-            Side side, String note) {
+            Side side, String note, UUID supersetId) {
     }
 
     /** Contract Workout. */
@@ -99,11 +101,11 @@ class WorkoutController {
     /** Contract LoggedSet. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps,
-            Integer rir, Side side, String note) {
+            Integer rir, Side side, String note, UUID supersetId) {
 
         static LoggedSet of(WorkoutStore.LoggedSet set) {
             return new LoggedSet(set.id(), set.clientId(), set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(),
-                    set.note());
+                    set.note(), set.supersetId());
         }
     }
 
@@ -113,10 +115,12 @@ class WorkoutController {
     private final TrainingLimits limits;
     private final ApiLimits api;
     private final SessionProgress progress;
+    private final CustomExerciseStore customs;
 
     WorkoutController(ExerciseCatalog catalog, WorkoutStore store, Profiles profiles, TrainingLimits limits, ApiLimits api,
-            SessionProgress progress) {
+            SessionProgress progress, CustomExerciseStore customs) {
         this.progress = progress;
+        this.customs = customs;
         this.catalog = catalog;
         this.store = store;
         this.profiles = profiles;
@@ -157,7 +161,8 @@ class WorkoutController {
         require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()) && limits.fits(finish.note()));
         List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
         // No contains(null): an immutable list (the default here) throws on it.
-        require(unclean.stream().allMatch(exercise -> exercise != null && catalog.find(exercise).isPresent())
+        // A catalog move, or one of the user's own (K-424): an off-program move is accepted and has no target to hold.
+        require(unclean.stream().allMatch(exercise -> exercise != null && (catalog.find(exercise).isPresent() || customs.find(account, exercise).isPresent()))
                 && Set.copyOf(unclean).size() == unclean.size());
         // Kept with the next session's load and reps of the day's planned moves (K-217).
         progress.finish(account, workout, finish.endedAt(), TrainingLimits.note(finish.note()), Set.copyOf(unclean));
@@ -167,11 +172,15 @@ class WorkoutController {
     @PostMapping("/v1/workouts/{id}/sets")
     ResponseEntity<LoggedSet> log(AccountId account, @PathVariable UUID id, @RequestBody NewSet set) {
         owned(account, id);
-        require(set.clientId() != null && catalog.find(set.exerciseId()).isPresent() && set.setType() != null
+        // A catalog move, or one of the user's own (K-424): the same set rules either way.
+        Optional<ExerciseCatalog.Exercise> move = set.exerciseId() == null ? Optional.empty()
+                : catalog.find(set.exerciseId()).or(() -> customs.find(account, set.exerciseId()).map(CustomExerciseStore.CustomExercise::asExercise));
+        require(set.clientId() != null && move.isPresent() && set.setType() != null
                 && limits.load(set.loadKg()) && limits.reps(set.reps()) && limits.rir(set.rir()) && limits.fits(set.note()));
-        require(SetRules.accepts(catalog.find(set.exerciseId()).orElseThrow(), set.setType(), set.loadKg(), set.rir(), set.side()));
+        require(SetRules.accepts(move.orElseThrow(), set.setType(), set.loadKg(), set.rir(), set.side()));
         WorkoutStore.Stored<WorkoutStore.LoggedSet> stored = store.log(account, id, new WorkoutStore.LoggedSet(null, set.clientId(),
-                set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), TrainingLimits.note(set.note()), id));
+                set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), TrainingLimits.note(set.note()), id,
+                set.supersetId()));
         if (!stored.record().workoutId().equals(id)) {
             // The clientId is already a set of another workout: not a replay of this one (ADR-024 §11).
             throw new ApiException(ErrorCode.CONFLICT);

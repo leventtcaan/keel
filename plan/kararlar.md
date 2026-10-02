@@ -39,3 +39,4 @@
 | [ADR-032](kararlar/ADR-032-salon-profili-ve-yuvarlama.md) | Salon profili, ekipman türü (dambıl = tek ağırlık), artış seans sonunda mümkün en yakın yüke yuvarlanır, plaka DP | KABUL |
 | [ADR-033](kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md) | Geçmiş sunucudan (+ gönderilmemiş yerel kayıtlar), rekor yalnız çalışma setinden, izolasyonda yük rekoru yok, hacim rekoru yok | KABUL |
 | [ADR-034](kararlar/ADR-034-tarif-hafizasi.md) | Tarif = malzemeler + porsiyon; sayı her seferinde veritabanından; öğünde `recipe:<id>` tek kalem, porsiyonla ölçeklenir; sağlık verisi | KABUL |
+| [ADR-035](kararlar/ADR-035-superset-ve-kendi-hareket.md) | Süperset = setin üstünde `supersetId`; kullanıcının hareketi sınıflamasıyla (`custom:<id>`), programa girmez, silinmez | KABUL |

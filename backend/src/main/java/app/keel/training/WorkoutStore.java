@@ -23,7 +23,7 @@ class WorkoutStore {
     }
 
     record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps, Integer rir, Side side,
-            String note, UUID workoutId) {
+            String note, UUID workoutId, UUID supersetId) {
     }
 
     record Stored<T>(T record, boolean created) {
@@ -72,13 +72,15 @@ class WorkoutStore {
 
     Stored<LoggedSet> log(AccountId account, UUID workout, LoggedSet set) {
         int created = jdbc.sql("""
-                insert into training.workout_set (id, workout_id, account_id, client_id, exercise_id, set_type, load_kg, reps, rir, side, note)
-                values (:id, :workout, :account, :client, :exercise, :type, :load, :reps, :rir, :side, :note)
+                insert into training.workout_set (id, workout_id, account_id, client_id, exercise_id, set_type, load_kg, reps, rir, side, note,
+                superset_id)
+                values (:id, :workout, :account, :client, :exercise, :type, :load, :reps, :rir, :side, :note, :superset)
                 on conflict (account_id, client_id) do nothing""")
                 .param("id", UUID.randomUUID()).param("workout", workout).param("account", account.value())
                 .param("client", set.clientId()).param("exercise", set.exerciseId()).param("type", set.setType().name())
                 .param("load", set.loadKg()).param("reps", set.reps()).param("rir", set.rir())
-                .param("side", set.side() == null ? null : set.side().name()).param("note", set.note()).update();
+                .param("side", set.side() == null ? null : set.side().name()).param("note", set.note())
+                .param("superset", set.supersetId()).update();
         return new Stored<>(jdbc.sql("select * from training.workout_set where account_id = :account and client_id = :client")
                 .param("account", account.value()).param("client", set.clientId()).query((row, n) -> loggedSet(row)).single(),
                 created == 1);
@@ -106,6 +108,6 @@ class WorkoutStore {
         return new LoggedSet(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class), row.getString("exercise_id"),
                 SetType.valueOf(row.getString("set_type")), Decimals.plain(row.getBigDecimal("load_kg")), row.getInt("reps"),
                 row.getObject("rir", Integer.class), side == null ? null : Side.valueOf(side), row.getString("note"),
-                row.getObject("workout_id", UUID.class));
+                row.getObject("workout_id", UUID.class), row.getObject("superset_id", UUID.class));
     }
 }

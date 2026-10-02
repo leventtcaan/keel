@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Training's part of the user's data (K-214): every workout with its sets, the program (K-211) and its calls (K-217),
- * the gyms (K-414).
+ * the gyms (K-414), the user's own moves (K-424).
  */
 @Component
 class TrainingAccountData implements AccountDataExport {
@@ -21,8 +21,10 @@ class TrainingAccountData implements AccountDataExport {
 
     private final TrainingCalls calls;
     private final GymStore gyms;
+    private final CustomExerciseStore customs;
 
-    TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs, TrainingCalls calls, GymStore gyms) {
+    TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs, TrainingCalls calls, GymStore gyms, CustomExerciseStore customs) {
+        this.customs = customs;
         this.calls = calls;
         this.gyms = gyms;
         this.jdbc = jdbc;
@@ -37,7 +39,8 @@ class TrainingAccountData implements AccountDataExport {
         jdbc.sql("delete from training.workout where account_id = :account").param("account", deletion.account().value()).update();
         // The program's days and moves go with it (on delete cascade); by account too, as for sets.
         // A gym's weights and machines go with it (on delete cascade); by account too.
-        for (String table : new String[] {"program_change", "planned_exercise", "program_day", "program", "gym_weight", "gym_machine", "gym"}) {
+        for (String table : new String[] {"program_change", "planned_exercise", "program_day", "program", "gym_weight", "gym_machine", "gym",
+            "custom_exercise"}) {
             jdbc.sql("delete from training." + table + " where account_id = :account").param("account", deletion.account().value()).update();
         }
     }
@@ -55,6 +58,7 @@ class TrainingAccountData implements AccountDataExport {
         programs.current(account).ifPresent(program -> training.put("program", program));
         training.put("programChanges", calls.changes(account));
         training.put("gyms", gyms.all(account));
+        training.put("customExercises", customs.all(account));
         return training;
     }
 }
