@@ -67,6 +67,11 @@ export async function createReminders({ kv, access, now, report, muted = async (
     listeners.forEach((listener) => listener());
   }
 
+  // Bumped by a sign-out. The chain runs in order, so a step queued before the sign-out's clearing runs before it and is
+  // cleared; what can still land late is what waits outside the chain (iOS's sheet in turnOn) and a step's own `become`
+  // after a sign-out reset the settings mid-step (the same guard as the session's, K-311).
+  let generation = 0;
+
   // Every change waits for the one before it: a step's failure is reported and does not stop the next.
   let chain: Promise<void> = Promise.resolve();
   function inTurn(step: () => Promise<void>): Promise<void> {
@@ -105,28 +110,35 @@ export async function createReminders({ kv, access, now, report, muted = async (
 
     /** Asks iOS; allowed, they are on and scheduled. Refused, they stay off. The answer is returned for the screen. */
     turnOn: async (): Promise<NotificationPermission> => {
+      const startedIn = generation;
       const answer = await access.request();
-      if (answer.granted) {
-        await kv.setItemAsync(KEY.enabled, ON);
-        become({ ...settings, enabled: true });
-      }
-      await inTurn(reschedule);
+      await inTurn(async () => {
+        if (answer.granted && startedIn === generation) {
+          await kv.setItemAsync(KEY.enabled, ON);
+          if (startedIn === generation) become({ ...settings, enabled: true });
+        }
+        await reschedule();
+      });
       return answer;
     },
 
-    turnOff: async (): Promise<void> => {
-      await kv.removeItemAsync(KEY.enabled);
-      become({ ...settings, enabled: false });
-      await inTurn(reschedule);
-    },
+    turnOff: (): Promise<void> =>
+      inTurn(async () => {
+        await kv.removeItemAsync(KEY.enabled);
+        become({ ...settings, enabled: false });
+        await reschedule();
+      }),
 
     /** The user's own routine sentence, the training reminder's words (I1 C3); blank removes it. */
-    setCue: async (text: string): Promise<void> => {
+    setCue: (text: string): Promise<void> => {
+      const startedIn = generation;
       const cue = Array.from(text.trim()).slice(0, P.cueMaxChars).join('').trim();
-      if (cue === '') await kv.removeItemAsync(KEY.cue);
-      else await kv.setItemAsync(KEY.cue, cue);
-      become({ ...settings, cue });
-      await inTurn(reschedule);
+      return inTurn(async () => {
+        if (cue === '') await kv.removeItemAsync(KEY.cue);
+        else await kv.setItemAsync(KEY.cue, cue);
+        if (startedIn === generation) become({ ...settings, cue });
+        await reschedule();
+      });
     },
 
     /** The schedule the server holds, kept whenever the profile is read or saved (training days, time, check-in day). */
@@ -145,6 +157,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
 
     /** Sign-out: nothing stays scheduled or kept for the next account — after any change still on its way. */
     forget: (): Promise<void> => {
+      generation += 1;
       become({ enabled: false, cue: '' });
       return inTurn(async () => {
         await Promise.all(Object.values(KEY).map((key) => kv.removeItemAsync(key)));
@@ -152,4 +165,23 @@ export async function createReminders({ kv, access, now, report, muted = async (
       });
     },
   };
+}
+
+/**
+ * The opens that count (K-410): at start and each time the app comes to the front, while someone is signed in — so the
+ * quiet spell starts again from the last real use, however long iOS keeps the app in memory. A keychain that cannot say
+ * whether anyone is signed in skips that one. Answers the function that stops listening.
+ */
+export function trackOpens(
+  opened: () => Promise<void>,
+  isSignedIn: () => Promise<boolean>,
+  foreground: (listener: () => void) => () => void,
+): () => void {
+  const open = () =>
+    void isSignedIn()
+      .then((signedIn) => (signedIn ? opened() : undefined))
+      .catch(() => undefined);
+  const stop = foreground(open);
+  open();
+  return stop;
 }

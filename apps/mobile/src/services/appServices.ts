@@ -87,7 +87,10 @@ export async function createAppServices({
   const consents = createConsentState({ api, kv });
   const training = createTrainingCache(kv);
   // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
-  if (!(await session.isSignedIn())) await profile.forget();
+  if (!(await session.isSignedIn())) {
+    await profile.forget();
+    await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
+  }
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
   // deleted: the phone cannot tell which) — the records go with it: they belong to the account that made them, and

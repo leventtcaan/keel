@@ -176,3 +176,52 @@ test('a failed save tells no connection from a refusal, by name', async () => {
   const refused = await setup({ profile: null, failPut: 400 });
   await expect(refused.status.save(PROFILE)).rejects.toMatchObject({ name: 'ProfileSaveFailed' });
 });
+
+describe('the profile handed on, for the reminders (K-410)', () => {
+  async function withListener(kv = memoryKv(), profile: Profile | null = PROFILE) {
+    const server = profileServer(profile);
+    const api = createApiClient({ baseUrl: BASE, accessToken: async () => 'tok', fetch: server.fetch });
+    const units = await createUnitsPreference({ kv, api, locale: 'en-US' });
+    const onProfile = jest.fn(async (_profile: Profile) => {});
+    const status = await createProfileStatus({ kv, api, units, onProfile });
+    return { status, server, onProfile };
+  }
+
+  test('after a read and after a save, the profile the server holds', async () => {
+    const { status, onProfile } = await withListener();
+    await status.refresh();
+    expect(onProfile).toHaveBeenLastCalledWith(expect.objectContaining({ schedule: PROFILE.schedule }));
+    await status.save(PROFILE);
+    expect(onProfile).toHaveBeenCalledTimes(2);
+  });
+
+  test('not for a read still on its way when the user signs out', async () => {
+    const { status, server, onProfile } = await withListener();
+    server.holdNextGet();
+    const reading = status.refresh();
+    await new Promise((r) => setTimeout(r, 0));
+    await status.forget();
+    server.release();
+    await reading;
+    expect(onProfile).not.toHaveBeenCalled();
+  });
+
+  test('not when the sign-out lands while "done" is being written', async () => {
+    const kv = memoryKv();
+    let release = () => {};
+    const set = kv.setItemAsync;
+    kv.setItemAsync = async (key: string, value: string) => {
+      if (key === 'onboarded') await new Promise<void>((resolve) => (release = resolve));
+      return set(key, value);
+    };
+    const { status, onProfile } = await withListener(kv);
+    const reading = status.refresh();
+    await new Promise((r) => setTimeout(r, 10)); // the answer came; "done" is being written
+    await status.forget();
+    release();
+    await reading;
+    expect(onProfile).not.toHaveBeenCalled();
+    expect(status.current()).toBe('unknown');
+    expect(kv.items.has('onboarded')).toBe(false); // the next start must not open the next account on the tabs
+  });
+});

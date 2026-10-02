@@ -17,6 +17,7 @@ import { healthKitAccess } from '@/health/healthKit';
 import { syncActivityDays } from '@/health/activitySync';
 import { syncHealthWeights } from '@/health/weightSync';
 import { deviceNotifications } from '@/notifications/deviceNotifications';
+import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
@@ -58,15 +59,11 @@ async function build(): Promise<PhoneServices> {
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);
   startAutoSync(services.queue.drainInBackground, deviceTriggers);
-  // Each time the app comes to the front the quiet spell starts again, and iOS's answer is read afresh (K-410). The
-  // reminders report their own failures; a keychain that cannot say whether anyone is signed in skips this one.
-  const opened = () =>
-    void services.session
-      .isSignedIn()
-      .then((signedIn) => (signedIn ? services.reminders.opened() : undefined))
-      .catch(() => undefined);
-  opened();
-  AppState.addEventListener('change', (state) => state === 'active' && opened()); // for the app's life, like the sync triggers
+  // The quiet spell starts again from each open, and iOS's answer is read afresh (K-410); for the app's life.
+  trackOpens(services.reminders.opened, services.session.isSignedIn, (listener) => {
+    const subscription = AppState.addEventListener('change', (state) => state === 'active' && listener());
+    return () => subscription.remove();
+  });
   const health = healthKitAccess(); // not available in Expo Go (no native module)
   return {
     ...services,

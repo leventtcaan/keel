@@ -4,7 +4,7 @@
  */
 import type { Reminder, Schedule } from '@/notifications/plan';
 import { notificationParams as P } from '@/notifications/params';
-import { type NotificationAccess, type NotificationPermission, createReminders } from '@/notifications/reminders';
+import { type NotificationAccess, type NotificationPermission, createReminders, trackOpens } from '@/notifications/reminders';
 
 const schedule: Schedule = { trainingDays: ['MONDAY'], usualTrainingTime: '18:00', checkInDay: 'MONDAY', timeZone: 'Europe/Istanbul' };
 const now = new Date(2026, 9, 2, 12, 0);
@@ -215,4 +215,118 @@ test('a kept schedule that is not one (an older app wrote it) counts as none', a
   const { reminders, device } = await make(kv);
   await reminders.opened();
   expect(kinds(device.scheduled)).toEqual(['quiet']);
+});
+
+test("a sign-out while iOS's sheet is open: the answer that comes after does not turn them on for the next account", async () => {
+  const device = fakeDevice({ granted: false, canAskAgain: true });
+  let allow = () => {};
+  device.access.request = () =>
+    new Promise((resolve) => {
+      allow = () => {
+        device.permission = { granted: true, canAskAgain: false };
+        resolve(device.permission);
+      };
+    });
+  const { reminders, kv } = await make(memoryKv(), device);
+  const asking = reminders.turnOn();
+  await reminders.forget();
+  allow();
+  await asking;
+  expect(reminders.current().enabled).toBe(false);
+  expect(kv.items.has('reminders.enabled')).toBe(false);
+  await reminders.keepSchedule(schedule); // the next account's profile
+  expect(device.scheduled).toEqual([]);
+});
+
+test("a sign-out while the sentence is being kept: the old account's words do not come back", async () => {
+  const kv = memoryKv();
+  let release = () => {};
+  const set = kv.setItemAsync;
+  kv.setItemAsync = async (key: string, value: string) => {
+    if (key === 'reminders.cue') await new Promise<void>((resolve) => (release = resolve));
+    return set(key, value);
+  };
+  const { reminders } = await make(kv);
+  const saving = reminders.setCue('Old account words');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const forgetting = reminders.forget();
+  release();
+  await Promise.all([saving, forgetting]);
+  expect(reminders.current().cue).toBe('');
+  expect(kv.items.has('reminders.cue')).toBe(false);
+});
+
+test('a state declared while they are scheduled clears them; lifted, they come back', async () => {
+  let declared = false;
+  const device = fakeDevice();
+  const reminders = await createReminders({ kv: memoryKv(), access: device.access, now: () => now, report: jest.fn(), muted: async () => declared });
+  await reminders.keepSchedule(schedule);
+  await reminders.opened();
+  await reminders.turnOn();
+  expect(kinds(device.scheduled)).toEqual(['training', 'check_in', 'quiet']);
+  declared = true;
+  await reminders.opened();
+  expect(device.scheduled).toEqual([]);
+  declared = false;
+  await reminders.opened();
+  expect(kinds(device.scheduled)).toEqual(['training', 'check_in', 'quiet']);
+});
+
+describe('opens are tracked (trackOpens)', () => {
+  function foreground() {
+    let listener = () => {};
+    return { trigger: (l: () => void) => ((listener = l), () => (listener = () => {})), come: () => listener() };
+  }
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  test('at start and each time the app comes to the front, signed in', async () => {
+    const opened = jest.fn(async () => {});
+    const front = foreground();
+    trackOpens(opened, async () => true, front.trigger);
+    await settle();
+    expect(opened).toHaveBeenCalledTimes(1);
+    front.come();
+    await settle();
+    expect(opened).toHaveBeenCalledTimes(2);
+  });
+
+  test('signed out, or the keychain cannot say: no open is counted', async () => {
+    const opened = jest.fn(async () => {});
+    const front = foreground();
+    trackOpens(opened, async () => false, front.trigger);
+    front.come();
+    trackOpens(opened, async () => Promise.reject(new Error('locked')), foreground().trigger);
+    await settle();
+    expect(opened).not.toHaveBeenCalled();
+  });
+
+  test('stopping stops it', async () => {
+    const opened = jest.fn(async () => {});
+    const front = foreground();
+    const stop = trackOpens(opened, async () => true, front.trigger);
+    await settle();
+    stop();
+    front.come();
+    await settle();
+    expect(opened).toHaveBeenCalledTimes(1);
+  });
+});
+
+test('a sign-out while "on" is being kept: the next account does not find them on', async () => {
+  const kv = memoryKv();
+  let release = () => {};
+  const set = kv.setItemAsync;
+  kv.setItemAsync = async (key: string, value: string) => {
+    if (key === 'reminders.enabled') await new Promise<void>((resolve) => (release = resolve));
+    return set(key, value);
+  };
+  const { reminders, device } = await make(kv);
+  const turning = reminders.turnOn();
+  await new Promise((resolve) => setTimeout(resolve, 0)); // iOS allowed; "on" is being written
+  const forgetting = reminders.forget();
+  release();
+  await Promise.all([turning, forgetting]);
+  expect(reminders.current().enabled).toBe(false);
+  await reminders.keepSchedule(schedule); // the next account's profile
+  expect(device.scheduled).toEqual([]);
 });

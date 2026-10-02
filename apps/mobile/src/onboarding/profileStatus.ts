@@ -69,6 +69,11 @@ export async function createProfileStatus({ kv, api, units, onProfile }: Options
   async function markDone(startedIn: number, profile: Profile) {
     if (startedIn !== generation) return;
     await kv.setItemAsync(KEY, DONE);
+    if (startedIn !== generation) {
+      // Signed out while "done" was written: the write landed after the sign-out's removal, so it goes again.
+      await kv.removeItemAsync(KEY);
+      return;
+    }
     become('done');
     // Not waited for: routing on "done" must not hang on the phone's notification centre (the reminders report their own
     // failures, K-410).

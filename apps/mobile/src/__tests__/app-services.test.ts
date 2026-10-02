@@ -549,7 +549,7 @@ describe('the reminders (K-410)', () => {
       replace: async (reminders: { kind: string }[]) => void scheduled.push(reminders),
       clear: async () => void scheduled.push([]),
     };
-    return { notifications, now: () => scheduled[scheduled.length - 1] ?? [] };
+    return { notifications, latest: () => scheduled[scheduled.length - 1] ?? [] };
   }
 
   test("the profile read at sign-in brings the account's schedule: turned on, its training day is scheduled", async () => {
@@ -558,11 +558,11 @@ describe('the reminders (K-410)', () => {
       baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: profileServer(), report: () => {}, kv: memoryKv(), locale: 'en-US', notifications: device.notifications,
     });
     await services.reminders.turnOn();
-    expect(device.now().map((r) => r.kind)).toEqual([]);
+    expect(device.latest().map((r) => r.kind)).toEqual([]);
     await services.session.signIn(SESSION);
     await settle();
     await services.reminders.opened();
-    expect(device.now().map((r) => r.kind)).toEqual(['training', 'check_in', 'quiet']);
+    expect(device.latest().map((r) => r.kind)).toEqual(['training', 'check_in', 'quiet']);
   });
 
   test('the profile saved at the end of onboarding brings it too', async () => {
@@ -573,7 +573,7 @@ describe('the reminders (K-410)', () => {
     await services.reminders.turnOn();
     await services.profile.save(PROFILE as Parameters<typeof services.profile.save>[0]);
     await settle();
-    expect(device.now().map((r) => r.kind)).toContain('training');
+    expect(device.latest().map((r) => r.kind)).toContain('training');
   });
 
   test('a sign-out leaves nothing scheduled and nothing kept for the next account', async () => {
@@ -588,7 +588,20 @@ describe('the reminders (K-410)', () => {
     await services.reminders.turnOn();
     await services.signOut();
     await settle();
-    expect(device.now()).toEqual([]);
+    expect(device.latest()).toEqual([]);
+    expect([...kv.items.keys()].filter((key) => key.startsWith('reminders.'))).toEqual([]);
+  });
+
+  test('opening without a session drops reminders left on the phone (a backup restored to a new phone)', async () => {
+    const device = phone();
+    const kv = memoryKv();
+    kv.items.set('reminders.enabled', 'on');
+    kv.items.set('reminders.cue', 'Someone else\'s words');
+    const services = await createAppServices({
+      baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: profileServer(), report: () => {}, kv, locale: 'en-US', notifications: device.notifications,
+    });
+    await settle();
+    expect(services.reminders.current()).toEqual({ enabled: false, cue: '' });
     expect([...kv.items.keys()].filter((key) => key.startsWith('reminders.'))).toEqual([]);
   });
 });
