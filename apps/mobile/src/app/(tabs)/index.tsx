@@ -57,7 +57,7 @@ export default function TodayScreen() {
   // The check-in waits for an answer before this week's call (K-501); not read, nothing offered — the call card says enough.
   const checkIn = data?.checkIn?.state === 'ready' ? <CheckInCard checkIn={data.checkIn.value} /> : null;
   // The coach's own question (K-520): read on each focus, so an answered one is gone and the next comes.
-  const prompt = data?.prompts?.state === 'ready' ? <PromptCard prompts={data.prompts.value} /> : null;
+  const prompt = data?.prompts?.state === 'ready' ? <PromptCard read={data.prompts} /> : null;
   const list =
     data === null ? null : (
       <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />

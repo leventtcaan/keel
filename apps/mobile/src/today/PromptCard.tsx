@@ -18,13 +18,14 @@ const idOf = (prompt: Prompt) => `${prompt.rule}/${prompt.key}`;
  * answer is sent once; its reply takes the answers' place, or the screen it leads to opens. Not sent: said once, the
  * answers stay. Questions that could not be read show nothing: they are the coach's, not a part of the week.
  */
-export function PromptCard({ prompts }: { prompts: Prompt[] }) {
+export function PromptCard({ read }: { read: { state: 'ready'; value: Prompt[] } }) {
   const { api, report } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
-  // What happened to a question shown here: answered (with its reply, if any) or not sent.
-  const [outcome, setOutcome] = useState<{ id: string; reply: string | null } | { id: string; failed: true } | null>(null);
-  const prompt = prompts[0];
+  // What happened to a question shown here: answered (with its reply, if any), or not sent — the latter only for the read
+  // it was shown in: a new read of Today is a new try (K-520 review).
+  const [outcome, setOutcome] = useState<{ id: string; reply: string | null } | { id: string; failed: string; read: object } | null>(null);
+  const prompt = read.value[0];
   if (prompt === undefined) return null;
   const id = idOf(prompt);
   const here = outcome?.id === id ? outcome : null;
@@ -38,15 +39,17 @@ export function PromptCard({ prompts }: { prompts: Prompt[] }) {
       const destination = leadsTo(prompt, choice);
       if (destination !== null) router.push(destination);
     } catch (error) {
-      report({ name: nameOf(error) });
-      setOutcome({ id, failed: true });
+      const name = nameOf(error);
+      report({ name });
+      // No connection is the user's to fix; a refusal is ours (as the state screen, K-518).
+      setOutcome({ id, failed: name === 'NoConnection' ? 'today.prompt.failed' : 'today.prompt.refused', read });
     } finally {
       setBusy(false);
     }
   }
 
   const reply = here !== null && 'reply' in here ? here.reply : null;
-  const failed = here !== null && 'failed' in here;
+  const failed = here !== null && 'failed' in here && here.read === read ? here.failed : null;
   return (
     <Card>
       <Text style={[styles.title, { color: color.text }]}>{t(`${prompt.copyKey}.title`)}</Text>
@@ -60,7 +63,7 @@ export function PromptCard({ prompts }: { prompts: Prompt[] }) {
           ))}
         </View>
       )}
-      {failed ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('today.prompt.failed')}</Text> : null}
+      {failed !== null ? <Text style={[styles.text, { color: color.textSecondary }]}>{t(failed)}</Text> : null}
     </Card>
   );
 }

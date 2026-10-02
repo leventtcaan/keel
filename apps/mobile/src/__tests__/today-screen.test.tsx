@@ -593,6 +593,33 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  test('refused by the server: said so, not "check your connection"', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    mockPost = refused(500, 'INTERNAL');
+    await show();
+    await press(t('prompt.steps_dropped.choice.less'));
+    expect(screen.getByText(t('today.prompt.refused'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.prompt.failed'))).toBeNull();
+  });
+
+  test('a note that it was not sent goes once Today reads again', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    mockPost = 'offline';
+    await show();
+    await press(t('prompt.steps_dropped.choice.less'));
+    expect(screen.getByText(t('today.prompt.failed'))).toBeOnTheScreen();
+    await act(async () => mockRefocus());
+    expect(screen.queryByText(t('today.prompt.failed'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('prompt.steps_dropped.choice.less') })).toBeOnTheScreen();
+  });
+
+  test('an answer that leads elsewhere leaves no question behind', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    await show();
+    await press(t('prompt.steps_dropped.choice.busy'));
+    expect(screen.queryByText(t('prompt.steps_dropped.title'))).toBeNull();
+  });
+
   test('no questions, or none could be read: nothing is shown and nothing said failed', async () => {
     mockAnswers['/v1/prompts'] = ok([]);
     await show();
