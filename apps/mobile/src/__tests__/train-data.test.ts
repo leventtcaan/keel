@@ -390,3 +390,24 @@ describe('the setup kept on the phone: the edges (K-418 review)', () => {
     expect(kv.map.size).toBe(0);
   });
 });
+
+describe('the program handed on, for the reminders (ADR-037 › 51b)', () => {
+  test('read: the program; none on the server: null; offline (a kept copy): nothing new to say', async () => {
+    const heard: unknown[] = [];
+    const cache = createTrainingCache(memoryKv(), (program) => void heard.push(program));
+    const resting = { ...PROGRAM, restUntil: '2026-10-05' };
+    await cache.read(api((path) => (path === '/v1/program' ? json(resting) : json(EXERCISES))));
+    await cache.read(api((path) => (path === '/v1/program' ? json({ code: 'NOT_FOUND' }, 404) : json(EXERCISES))));
+    await cache.read(api(() => 'offline'));
+    expect(heard).toEqual([resting, null]);
+  });
+
+  test('a read that started for the account that left says nothing', async () => {
+    const heard: unknown[] = [];
+    const cache = createTrainingCache(memoryKv(), (program) => void heard.push(program));
+    const reading = cache.read(online);
+    await cache.forget();
+    await reading;
+    expect(heard).toEqual([]);
+  });
+});

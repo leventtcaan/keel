@@ -76,7 +76,11 @@ export function historyFrom(now: Date): string {
  * The reads and the kept copies. A sign-out bumps the generation: a read still on its way then keeps nothing — the
  * program it brings is the last account's (the same guard as the unit preference's, K-310).
  */
-export function createTrainingCache(kv: KeyValue) {
+/**
+ * `onProgram`: the program as the server answered it (null: none), for whoever must follow it — the reminders' week off
+ * (ADR-037 › 51b). Not called for a kept copy (nothing new) nor for a read that began for the account that left.
+ */
+export function createTrainingCache(kv: KeyValue, onProgram?: (program: Schemas['Program'] | null) => void) {
   let generation = 0;
 
   /** The server's answer kept; a failure answered from the kept copy; "none" forgets it. */
@@ -112,7 +116,10 @@ export function createTrainingCache(kv: KeyValue) {
     async read(api: ApiClient): Promise<TrainData> {
       const startedIn = generation;
       const [program, exercises, gym] = await Promise.all([
-        load(() => api.GET('/v1/program')).then((read) => withCopy(PROGRAM, read, startedIn)),
+        load(() => api.GET('/v1/program')).then((read) => {
+          if (startedIn === generation && (read.state === 'ready' || read.state === 'none')) onProgram?.(read.state === 'ready' ? read.value : null);
+          return withCopy(PROGRAM, read, startedIn);
+        }),
         load(() => api.GET('/v1/exercises')).then((read) => withCopy(EXERCISES, read, startedIn)),
         load(() => api.GET('/v1/gyms')).then((read) => withCopy(GYM, gymInUse(read), startedIn)),
       ]);

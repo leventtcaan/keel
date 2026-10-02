@@ -37,7 +37,13 @@ type Options = {
   muted?: () => Promise<boolean>;
 };
 
-const KEY = { enabled: 'reminders.enabled', cue: 'reminders.cue', schedule: 'reminders.schedule', lastOpened: 'reminders.lastOpened' };
+const KEY = {
+  enabled: 'reminders.enabled',
+  cue: 'reminders.cue',
+  schedule: 'reminders.schedule',
+  lastOpened: 'reminders.lastOpened',
+  restUntil: 'reminders.restUntil',
+};
 const ON = 'on';
 
 /** A schedule kept by an earlier run; anything that is not one counts as none. */
@@ -98,6 +104,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
       lastOpened: dateOf(await kv.getItemAsync(KEY.lastOpened)),
       now: now(),
       muted: false,
+      restUntil: await kv.getItemAsync(KEY.restUntil),
     });
     await access.replace(plan);
   }
@@ -160,6 +167,17 @@ export async function createReminders({ kv, access, now, report, muted = async (
     keepSchedule: (schedule: Schedule): Promise<void> =>
       inTurn(async () => {
         await kv.setItemAsync(KEY.schedule, JSON.stringify(schedule));
+        await reschedule();
+      }),
+
+    /**
+     * A week off as the program has it (Program.restUntil, ADR-037 › 51b), kept whenever the program is read — on Today and
+     * on the Train tab. Training reminders stop until it ends; null, none.
+     */
+    keepRestUntil: (day: string | null): Promise<void> =>
+      inTurn(async () => {
+        if (day === null) await kv.removeItemAsync(KEY.restUntil);
+        else await kv.setItemAsync(KEY.restUntil, day);
         await reschedule();
       }),
 

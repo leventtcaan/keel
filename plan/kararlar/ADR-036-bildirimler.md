@@ -41,4 +41,6 @@
   temizliği ona dokunmaz (önek). İzni kendisi istemez (`AlertAccess`'te `request` yok): iOS izni Ayarlar'dan verilmişse
   çalışır, seans ortasında iOS sayfası çıkmaz. Uygulama öndeyken iOS göstermez (ön plan işleyicisi yok); ekrandaki sayaç
   zaten oradadır. Live Activity K-426'ya bölündü (cihaz derlemesi + App Group).
-- Mola haftası (`restUntil`) antrenman hatırlatmasını henüz susturmuyor (soru 51).
+- Mola haftası (ADR-037 › 51b, K-435): `restUntil` sürerken haftalık antrenman hatırlatması kurulmaz (haftalık tetikleyici bir
+  haftayı atlayamaz); molanın ardından `rest_resume_weeks` haftanın antrenman günleri **tarihli** kurulur → uygulama açılmasa
+  da döner, sonraki açılış haftalığa çevirir. Mola günü programı okuyan iki yerden gelir (Bugün, Antrenman kopyası).

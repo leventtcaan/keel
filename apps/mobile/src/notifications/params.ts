@@ -13,4 +13,5 @@ export const notificationParams = {
   checkInTime: param<string>('check_in_reminder_time'),
   quietDays: param<number>('quiet_days'),
   cueMaxChars: param<number>('cue_max_chars'),
+  restResumeWeeks: param<number>('rest_resume_weeks'),
 };

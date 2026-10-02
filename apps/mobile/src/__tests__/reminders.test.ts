@@ -376,3 +376,25 @@ describe("the user's own changes fail visibly; the phone's scheduling does not",
     expect(kinds(device.scheduled)).toContain('training');
   });
 });
+
+describe('a week off (ADR-037 › 51b)', () => {
+  test('kept: no weekly training reminder while it is on; the check-in stays; over, weekly again', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(schedule);
+    await reminders.turnOn();
+    await reminders.keepRestUntil('2026-10-05');
+    expect(device.scheduled.filter((r) => r.kind === 'training' && 'weekday' in r.when)).toEqual([]);
+    expect(kinds(device.scheduled)).toContain('check_in');
+    await reminders.keepRestUntil(null);
+    expect(device.scheduled.filter((r) => r.kind === 'training' && 'weekday' in r.when)).toHaveLength(1);
+  });
+
+  test('kept across a start, and forgotten at sign-out', async () => {
+    const kv = memoryKv();
+    const { reminders } = await make(kv);
+    await reminders.keepRestUntil('2026-10-05');
+    expect(kv.items.get('reminders.restUntil')).toBe('2026-10-05');
+    await reminders.forget();
+    expect(kv.items.has('reminders.restUntil')).toBe(false);
+  });
+});
