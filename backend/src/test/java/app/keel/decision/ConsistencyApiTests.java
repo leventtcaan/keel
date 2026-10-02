@@ -152,7 +152,8 @@ class ConsistencyApiTests {
         MvcTestResult started = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
                 Instant.now().minusSeconds(1).toString()));
         if (setType != null) {
-            send(account, "POST", "/v1/workouts/" + read(started).get("id") + "/sets", Map.of("clientId", UUID.randomUUID(),
+            String id = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
+            send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(),
                     "exerciseId", "bench_press", "setType", setType, "loadKg", 60, "reps", 8, "rir", 2));
         }
     }
