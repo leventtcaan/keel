@@ -1192,6 +1192,11 @@
       },
       "action": "Sounds good"
     },
+    "reminders": {
+      "title": "Reminders, if you want them",
+      "on": "Reminders are on. You can change them in Settings at any time.",
+      "refused": "Notifications are off for keel in iOS. You can turn them on later in Settings."
+    },
     "appleHealth": {
       "connect": "Connect",
       "notNow": "Not now, I'll type it",

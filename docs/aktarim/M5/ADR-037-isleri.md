@@ -23,3 +23,19 @@ eski rızayı nasıl listelediği sabitlendi. Mutasyon 9/9.
 1. Rıza neden bir metnin sürümüne verilir, "evet/hayır" olarak saklanmaz?
 2. Eski metne rıza vermiş kullanıcı neden "Allow" ile birlikte "Withdraw" görür?
 3. Telefon çevrimdışıyken eski bir "evet"i nasıl yeni metne verilmemiş sayar?
+
+## K-434 · Hatırlatmalar onboarding'de, bir kez, açıklamasıyla (ADR-037 › 51) — PR aşağıda
+| # | Basamak | Proje yeri |
+|---|---|---|
+| 1 | Karar (ADR-037 #51, agent): rutin cümlesi antrenman saatinin sorulduğu akışta kurulur (I1 C3); iOS izni bağlamıyla sorulur, sayfası bir kez çıkar | `RemindersOffer.tsx` |
+| 2 | **Ayrı ekran değil:** K-306'nın kabulü "görünüş (K-313) ve AI rızası (K-511) eklenince de ≤12 ekran" (I1 F1) — ayrı adım 13 yapardı, test (`onboarding-draft.test`) yakaladı. Teklif "What to expect" ekranında: haftanın ritmi orada anlatılıyor; "Sounds good" = "Şimdi değil" (hiçbir şey sormaz, saklamaz) | `expectations.tsx` |
+| 3 | "Turn on": önce cümle (`setCue`), sonra Ayarlar'la **aynı servis** (`reminders.turnOn`) → iOS sayfası; cevap ekranda (açık / iOS'ta kapalı → Ayarlar yolu) | `reminders.ts` |
+| 4 | Hatırlatmalar onboarding'i hiç bekletmez: hata adıyla raporlanır (V3: cümle mesajda olabilir), ekranda söylenir | `RemindersOffer.tsx` |
+| 5 | Profil henüz kaydedilmeden açılması zararsız: `reschedule` takvimsiz plan kurar, profil kaydı `keepSchedule` ile yeniden kurar | `reminders.ts` (`keepSchedule`) |
+
+K1: akış testinin yürüyüşü değişmedi (yeni adım yok); `walkTo`'ya yalnız "expectations'ta dur" eklendi. Mutasyon 7/7.
+
+### Soru bankası
+1. Hatırlatma teklifi neden ayrı bir onboarding ekranı olmadı?
+2. iOS izin sayfası neden açıklamadan **sonra** çıkıyor?
+3. Profil kaydedilmeden hatırlatmaları açmak neden bir sorun değil?

@@ -8,6 +8,7 @@ import { router as appRouter } from 'expo-router';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { t } from '@/copy';
+import { notificationParams } from '@/notifications/params';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
@@ -39,6 +40,8 @@ const mockWithdrawHealthData = jest.fn(async () => {
   if (mockConsentStatus !== 200) throw Object.assign(new Error('x'), { name: 'ConsentRefused' });
 });
 const mockHealth = { available: false, requestRead: jest.fn(async () => {}) };
+const mockTurnOn = jest.fn(async () => ({ granted: true, canAskAgain: false }));
+const mockSetCue = jest.fn(async (_cue: string) => {});
 const mockReport = jest.fn();
 const mockKeepOnPhone = jest.fn(async (system: 'METRIC' | 'IMPERIAL') => {
   mockUnits = system;
@@ -71,7 +74,8 @@ jest.mock('@/services/ServicesProvider', () => ({
     consents: mockConsents,
     syncHealth: async () => 0, // Today reads Apple Health's weigh-ins first (K-402); none here
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
-    reminders: { era: () => 0, keepRestUntil: async () => {} }, // Today hands on the program's week off (ADR-037 › 51b)
+    // Today hands on the program's week off (ADR-037 › 51b); What to expect offers to turn them on (K-434).
+    reminders: { era: () => 0, keepRestUntil: async () => {}, turnOn: mockTurnOn, setCue: mockSetCue },
   }),
 }));
 
@@ -95,6 +99,8 @@ beforeEach(() => {
   mockHealth.requestRead.mockReset().mockResolvedValue(undefined);
   mockProfile.refresh.mockReset().mockResolvedValue(undefined);
   mockKeepOnPhone.mockClear();
+  mockTurnOn.mockReset().mockResolvedValue({ granted: true, canAskAgain: false });
+  mockSetCue.mockReset().mockResolvedValue(undefined);
 });
 
 /** The rendered router is itself awaitable, so it is wrapped: returned bare from an async function it would be awaited. */
@@ -441,7 +447,11 @@ describe('activity: the four NASEM levels, each with a day to recognise (ADR-027
 });
 
 /** Answers every step before `step`, the shortest way (the health consent declined unless `allow`), and stops on it. */
-async function walkTo(step: 'schedule' | 'healthData' | 'about' | 'activity' | 'appleHealth', eachStep: () => void = () => {}, allow = false) {
+async function walkTo(
+  step: 'schedule' | 'healthData' | 'about' | 'activity' | 'expectations' | 'appleHealth',
+  eachStep: () => void = () => {},
+  allow = false,
+) {
   const router = await open();
   eachStep();
   await choose(t('onboarding.goal.lose_fat.title'));
@@ -475,9 +485,76 @@ async function walkTo(step: 'schedule' | 'healthData' | 'about' | 'activity' | '
   }
   await press(t('onboarding.continue')); // photos
   eachStep();
+  if (step === 'expectations') return router;
   await press(t('onboarding.expectations.action'));
   return router;
 }
+
+describe('reminders, offered once in onboarding with what they are (K-434, ADR-037 #51)', () => {
+  const cueField = () => screen.getByLabelText(t('settings.reminders.cue.label'));
+
+  test('What to expect says the three kinds and asks for the user\'s own words; going on asks nothing, turns nothing on', async () => {
+    const router = await walkTo('expectations');
+    expect(router.getPathname()).toBe('/onboarding/expectations');
+    expect(screen.getByText(t('settings.reminders.what', { minutes: notificationParams.trainingLeadMinutes }))).toBeOnTheScreen();
+    await fireEvent.changeText(cueField(), 'After work, straight to the gym');
+    await press(t('onboarding.expectations.action'));
+    expect(router.getPathname()).toBe('/onboarding/apple-health');
+    expect(mockTurnOn).not.toHaveBeenCalled();
+    expect(mockSetCue).not.toHaveBeenCalled();
+  });
+
+  test('"Turn on" keeps the sentence, then asks iOS through the same service as Settings; on, it says so', async () => {
+    await walkTo('expectations');
+    await fireEvent.changeText(cueField(), 'After work, straight to the gym');
+    await press(t('settings.reminders.turnOn'));
+    expect(mockSetCue).toHaveBeenCalledWith('After work, straight to the gym');
+    expect(mockTurnOn).toHaveBeenCalledTimes(1);
+    expect(mockSetCue.mock.invocationCallOrder[0]).toBeLessThan(mockTurnOn.mock.invocationCallOrder[0]);
+    expect(screen.getByText(t('onboarding.reminders.on'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('settings.reminders.turnOn') })).toBeNull();
+    await press(t('onboarding.expectations.action'));
+    expect(mockTurnOn).toHaveBeenCalledTimes(1);
+  });
+
+  test('without a sentence none is kept; iOS saying no is said, with the way back in Settings', async () => {
+    mockTurnOn.mockResolvedValue({ granted: false, canAskAgain: false });
+    await walkTo('expectations');
+    await press(t('settings.reminders.turnOn'));
+    expect(mockSetCue).not.toHaveBeenCalled();
+    expect(screen.getByText(t('onboarding.reminders.refused'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('onboarding.reminders.on'))).toBeNull();
+  });
+
+  test('a second tap while iOS asks turns on once, and the button is off', async () => {
+    let answer: (value: { granted: boolean; canAskAgain: boolean }) => void = () => {};
+    mockTurnOn.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
+    await walkTo('expectations');
+    const button = screen.getByRole('button', { name: t('settings.reminders.turnOn') });
+    const overlapNote = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await act(async () => {
+        void fireEvent.press(button);
+        void fireEvent.press(button);
+      });
+    } finally {
+      overlapNote.mockRestore();
+    }
+    expect(mockTurnOn).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: t('settings.reminders.turnOn') })).toBeDisabled();
+    await act(async () => answer({ granted: true, canAskAgain: false }));
+  });
+
+  test('reminders that could not be kept say so and never hold onboarding up', async () => {
+    mockTurnOn.mockRejectedValue(Object.assign(new Error('kv failed'), { name: 'KvFailed' }));
+    const router = await walkTo('expectations');
+    await press(t('settings.reminders.turnOn'));
+    expect(mockReport).toHaveBeenCalledWith({ name: 'KvFailed' });
+    expect(screen.getByText(t('settings.reminders.failed'))).toBeOnTheScreen();
+    await press(t('onboarding.expectations.action'));
+    expect(router.getPathname()).toBe('/onboarding/apple-health');
+  });
+});
 
 describe('the health data consent (K-312, ADR-007)', () => {
   test('its own step, with the consent text; "Allow" records the version shown, then moves on', async () => {
