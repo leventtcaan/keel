@@ -1734,7 +1734,10 @@ export interface components {
          */
         DecisionBasis: {
             phase: components["schemas"]["Phase"];
-            /** @description The decision window's weeks with a weigh-in on or after the plan began, oldest first. */
+            /**
+             * @description The decision window's weeks, oldest first — only when the call read the window (the weekly spine ran); empty for
+             *     a call that stopped before it (not enough data yet, a safety stop, a declared week, a gate).
+             */
             weeks: {
                 /**
                  * Format: date
@@ -1744,9 +1747,9 @@ export interface components {
                 /** @description The mean of the week's weigh-ins. */
                 kg: number;
             }[];
-            /** @description From the first week to the latest, per week; negative is down. Absent with fewer than two weeks. */
+            /** @description From the window's first week to its latest, per week; negative is down. Absent when the window was not read. */
             changeKgPerWeek?: number;
-            /** @description The share of the planned actions done, as the call counted it. */
+            /** @description The share of the planned actions done, as the call counted it (the counts behind it are not kept). */
             adherence?: number;
             /** @description The check-in answers given; one left open is absent. */
             answers: {

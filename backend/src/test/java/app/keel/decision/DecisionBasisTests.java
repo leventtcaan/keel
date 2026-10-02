@@ -24,8 +24,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * What a call read, as the rows "Why this call" shows (K-519, Ö-25, U3's "which data"): from the call's own stored
- * snapshot — the decision window's weekly means and the change between them, the adherence, the answers given, where
- * training stands, the target, a state declared. Nothing the call did not read; never a fat number (U4).
+ * snapshot — the decision window's weekly means and the change between them (only when the call read the window), the
+ * adherence, the answers given, where training stands, a state declared. Nothing the call did not read; never a fat
+ * number (U4).
  */
 class DecisionBasisTests {
 
@@ -45,29 +46,25 @@ class DecisionBasisTests {
     }
 
     @Test
-    void aWeekWithNoWeighInIsNoRowAndTheChangeSpansTheWeeksThatHaveOne() {
-        DecisionBasis basis = DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("82.0", null, "81.0")), MALE);
-
-        assertThat(basis.weeks()).extracting(DecisionBasis.WeekMean::ends).containsExactly(TODAY.minusDays(14), TODAY);
-        assertThat(basis.changeKgPerWeek()).isEqualByComparingTo("-0.5");
+    void aCallThatWaitedForMoreDataReadNoWindowSoShowsNone() {
+        // A week with no weigh-in (data_insufficient), and a plan too young for a full window (window_not_full): the call
+        // said "not yet" before any weekly mean was taken — none is its data (U3).
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("82.0", null, "81.0")), MALE).weeks()).isEmpty();
+        DecisionBasis young = DecisionBasis.of(snapshot(TODAY.minusDays(10), weeks("90.0", "82.0", "81.0")), MALE);
+        assertThat(young.weeks()).isEmpty();
+        assertThat(young.changeKgPerWeek()).isNull();
     }
 
     @Test
-    void weighInsFromBeforeThePlanBeganAreNotItsData() {
-        // The plan began ten days ago: the week ending two weeks ago is the old plan's, and of last week only four days count.
-        List<StoredSnapshot.Weight> weights = weeks("90.0", "82.0", "81.0");
-        DecisionBasis basis = DecisionBasis.of(snapshot(TODAY.minusDays(10), weights), MALE);
-
-        assertThat(basis.weeks()).extracting(DecisionBasis.WeekMean::ends).containsExactly(TODAY.minusDays(7), TODAY);
-        assertThat(basis.changeKgPerWeek()).isEqualByComparingTo("-1.0");
-    }
-
-    @Test
-    void oneWeekHasNoChangeToShow() {
-        DecisionBasis basis = DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks(null, null, "81.0")), MALE);
-
-        assertThat(basis.weeks()).hasSize(1);
-        assertThat(basis.changeKgPerWeek()).isNull();
+    void aSafetyStopOrADeclaredWeekReadNoWindowEither() {
+        // Losing over 1.5% a week stops before the spine (SafetyNet): its own rate is the reason, not the window's.
+        DecisionBasis tooFast = DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("86.0", "84.0", "82.0")), MALE);
+        assertThat(tooFast.weeks()).isEmpty();
+        assertThat(tooFast.changeKgPerWeek()).isNull();
+        StoredSnapshot base = snapshot(TODAY.minusDays(60), weeks("82.0", "81.5", "81.0"));
+        StoredSnapshot declared = new StoredSnapshot(base.today(), base.sex(), base.phase(), base.planStart(), base.weights(), null, null,
+                base.checkIn(), base.profile(), false, base.phaseStart(), null, null, false, null, null, DeclaredContext.SICK);
+        assertThat(DecisionBasis.of(declared, MALE).weeks()).isEmpty();
     }
 
     @Test

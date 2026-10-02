@@ -4,24 +4,24 @@ import app.keel.engine.CheckIn;
 import app.keel.engine.DeclaredContext;
 import app.keel.engine.Parameters;
 import app.keel.engine.Phase;
-import app.keel.engine.WeighIn;
+import app.keel.engine.DecisionPipeline;
 import app.keel.engine.WeeklySpine;
-import app.keel.engine.WeightSeries;
+import app.keel.engine.Snapshot;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
  * What a call read, as the rows "Why this call" shows (K-519, Ö-25, U3's "which data"): from the call's own stored
- * snapshot, nothing else — the decision window's weekly means and the change per week between the first and the latest
- * of them, the adherence counted, the check-in answers given (one left open is no row), where training stood, a state
- * declared that week. The target is not a row here: it is the plan's (/v1/targets), a single number by exception (U5). Weigh-ins from before the plan began are not its data. The fat estimates the
- * engine read are never here (U4); nor the cycle answer, which is never kept (ADR-020 L-1).
+ * snapshot, nothing else — the decision window's weekly means and the change per week from the first to the latest, when
+ * the call read the window; the adherence ratio counted (the counts behind it are not kept); the check-in answers given
+ * (one left open is no row); where training stood; a state declared that week. The target is not a row here: it is the
+ * plan's (/v1/targets), a single number by exception (U5). The fat estimates the engine read are never here (U4); nor
+ * the cycle answer, which is never kept (ADR-020 L-1).
  *
- * @param changeKgPerWeek between the first and the latest week with a weigh-in, per week; none with fewer than two
+ * @param changeKgPerWeek from the window's first week to its latest, per week; none when the window was not read
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWeek, BigDecimal adherence, Answers answers,
@@ -36,10 +36,13 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
     }
 
     static DecisionBasis of(StoredSnapshot snapshot, Parameters parameters) {
-        WeightSeries planned = new WeightSeries(snapshot.weights().stream().filter(weight -> !weight.date().isBefore(snapshot.planStart()))
-                .map(weight -> new WeighIn(weight.date(), weight.kg())).toList());
-        List<WeekMean> weeks = WeeklySpine.windowMeans(planned, snapshot.today(), parameters).stream()
-                .flatMap(week -> week.kg().map(kg -> new WeekMean(week.ends(), kg)).stream()).toList();
+        Snapshot read = snapshot.toSnapshot();
+        // A call that stopped before the weekly spine (not enough data yet, a safety stop, a declared week, a gate) read no
+        // weekly mean: none is shown as its data. One that read it found a weigh-in in every week (DataSufficiency).
+        List<WeekMean> weeks = DecisionPipeline.windowRead(read, parameters)
+                ? WeeklySpine.windowMeans(read.weights(), read.today(), parameters).stream()
+                        .map(week -> new WeekMean(week.ends(), week.kg().orElseThrow())).toList()
+                : List.of();
         StoredSnapshot.Answered answered = snapshot.checkIn();
         return new DecisionBasis(snapshot.phase(), weeks, change(weeks), answered.adherence(),
                 new Answers(given(answered.look(), CheckIn.Look.UNKNOWN), given(answered.training(), CheckIn.Training.UNKNOWN),
@@ -48,13 +51,12 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
                 snapshot.training(), snapshot.context());
     }
 
-    // Kilograms a week from the first week with a weigh-in to the latest, over the weeks between their ends.
+    // Kilograms a week from the window's first week to its latest.
     private static BigDecimal change(List<WeekMean> weeks) {
-        if (weeks.size() < 2) {
+        if (weeks.isEmpty()) {
             return null;
         }
-        long weeksApart = ChronoUnit.WEEKS.between(weeks.getFirst().ends(), weeks.getLast().ends());
-        return weeks.getLast().kg().subtract(weeks.getFirst().kg()).divide(BigDecimal.valueOf(weeksApart), MathContext.DECIMAL64);
+        return weeks.getLast().kg().subtract(weeks.getFirst().kg()).divide(BigDecimal.valueOf(weeks.size() - 1L), MathContext.DECIMAL64);
     }
 
     private static <T> T given(T answer, T open) {
