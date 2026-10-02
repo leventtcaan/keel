@@ -163,7 +163,11 @@
     },
     "rest": {
       "label": "Rest · {min}–{max}",
-      "time": "{minutes}:{seconds}"
+      "time": "{minutes}:{seconds}",
+      "alert": {
+        "title": "Rest's up",
+        "body": "{min} of rest. Next set when you're ready."
+      }
     },
     "sets": "{count} sets",
     "setsOne": "1 set",

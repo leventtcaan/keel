@@ -23,6 +23,9 @@ export type NotificationAccess = {
   /** Everything this app scheduled is replaced by these. */
   replace(reminders: Reminder[]): Promise<void>;
   clear(): Promise<void>;
+  /** One notification at a moment, under an id of the caller's (the rest timer's, K-411); the same id replaces it. */
+  alertAt(id: string, at: Date, title: string, body: string): Promise<void>;
+  cancel(id: string): Promise<void>;
 };
 
 export type ReminderSettings = { enabled: boolean; cue: string };
