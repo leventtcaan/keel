@@ -1666,7 +1666,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-210, K-219]
     why: "K-416 sunucuda iki alan ister; mobil görevden bölündü (bir görev = bir modül; L3 §7 #17 'mobile + training · L (bölünür)', K-422 emsali). Masa bahsi (L3 §1 #7, #10)"
     acceptance:

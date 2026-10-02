@@ -23,3 +23,4 @@
 ## Aktarım sırası (Part 3)
 14. K-407 öğün hızlı kayıt — sunucu + yerel birleşim, dünkü gibi (`repeatOf`), boş başlayan miktar, aralık kartı + adlı soru, sil-sonra-kaydet düzeltme, barkod
 15. K-413 tarif hafızası — sayı saklanmaz, `recipe:<id>` tek kalem, dışa yuvarlanan pay, düşen malzeme yalnız kendi tarifini işaretler
+16. K-424 süperset + kullanıcının hareketi (sunucu) — setin üstünde kimlik, motorun sorduğu sınıflama, program katalogdan
