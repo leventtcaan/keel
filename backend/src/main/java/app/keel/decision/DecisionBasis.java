@@ -17,15 +17,15 @@ import java.util.List;
 /**
  * What a call read, as the rows "Why this call" shows (K-519, Ö-25, U3's "which data"): from the call's own stored
  * snapshot, nothing else — the decision window's weekly means and the change per week between the first and the latest
- * of them, the adherence counted, the check-in answers given (one left open is no row), where training stood, the
- * target, a state declared that week. Weigh-ins from before the plan began are not its data. The fat estimates the
+ * of them, the adherence counted, the check-in answers given (one left open is no row), where training stood, a state
+ * declared that week. The target is not a row here: it is the plan's (/v1/targets), a single number by exception (U5). Weigh-ins from before the plan began are not its data. The fat estimates the
  * engine read are never here (U4); nor the cycle answer, which is never kept (ADR-020 L-1).
  *
  * @param changeKgPerWeek between the first and the latest week with a weigh-in, per week; none with fewer than two
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWeek, BigDecimal adherence, Answers answers,
-        StoredSnapshot.Training training, Integer targetKcal, DeclaredContext pausedBy) {
+        StoredSnapshot.Training training, DeclaredContext pausedBy) {
 
     record WeekMean(LocalDate ends, BigDecimal kg) {
     }
@@ -45,7 +45,7 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
                 new Answers(given(answered.look(), CheckIn.Look.UNKNOWN), given(answered.training(), CheckIn.Training.UNKNOWN),
                         given(answered.recovery(), CheckIn.Recovery.UNKNOWN), given(answered.waist(), CheckIn.Waist.UNKNOWN),
                         given(answered.appetite(), CheckIn.Appetite.UNKNOWN)),
-                snapshot.training(), snapshot.energy() == null ? null : snapshot.energy().targetKcal(), snapshot.context());
+                snapshot.training(), snapshot.context());
     }
 
     // Kilograms a week from the first week with a weigh-in to the latest, over the weeks between their ends.

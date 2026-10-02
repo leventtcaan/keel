@@ -1072,6 +1072,25 @@ paths:
                 $ref: "#/components/schemas/Decision"
         default:
           $ref: "#/components/responses/Error"
+  /v1/decisions/{id}/basis:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [decision]
+      operationId: getDecisionBasis
+      description: |
+        What the call read, as the rows "Why this call" shows (K-519, Ö-25): from the call's own stored snapshot, nothing
+        else. Never a fat estimate (U4), never the cycle answer (never kept). Health data: CONSENT_REQUIRED without the
+        HEALTH_DATA consent, as every /v1/decisions route; NOT_FOUND for a call that is not the user's.
+      responses:
+        "200":
+          description: The call's basis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionBasis"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/decisions/{id}/apply:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2590,6 +2609,75 @@ components:
             does not give away the answer that led to it (K-228, ADR-028 #24, GDPR Art. 9). It cannot be undone.
         application:
           $ref: "#/components/schemas/Application"
+    DecisionBasis:
+      type: object
+      description: |
+        The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
+        not read is absent.
+      required: [phase, weeks, answers]
+      properties:
+        phase:
+          $ref: "#/components/schemas/Phase"
+        weeks:
+          type: array
+          description: The decision window's weeks with a weigh-in on or after the plan began, oldest first.
+          items:
+            type: object
+            required: [ends, kg]
+            properties:
+              ends:
+                type: string
+                format: date
+                description: The week's last day.
+              kg:
+                type: number
+                description: The mean of the week's weigh-ins.
+        changeKgPerWeek:
+          type: number
+          description: From the first week to the latest, per week; negative is down. Absent with fewer than two weeks.
+        adherence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: The share of the planned actions done, as the call counted it.
+        answers:
+          type: object
+          description: The check-in answers given; one left open is absent.
+          properties:
+            look:
+              type: string
+              enum: [BETTER, SAME, WORSE]
+            training:
+              type: string
+              enum: [IMPROVING, STABLE, DECLINING]
+            recovery:
+              type: string
+              enum: [GOOD, POOR]
+            waist:
+              type: string
+              enum: [DOWN, FLAT, UP]
+            appetite:
+              type: string
+              enum: [NORMAL, GONE]
+        training:
+          type: object
+          description: Where the most-stalled compound lift stood (K-110).
+          required: [stalledSessions, weeksLoadHeld, monthsStalled, restedLastWeek, loadsBelowLastWeek, weeksPlanMissed]
+          properties:
+            stalledSessions:
+              type: integer
+            weeksLoadHeld:
+              type: integer
+            monthsStalled:
+              type: integer
+            restedLastWeek:
+              type: boolean
+            loadsBelowLastWeek:
+              type: boolean
+            weeksPlanMissed:
+              type: integer
+        pausedBy:
+          $ref: "#/components/schemas/StateKind"
     Application:
       type: object
       description: |

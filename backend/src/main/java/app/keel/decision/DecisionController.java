@@ -72,6 +72,12 @@ class DecisionController {
         return view(decisions.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
     }
 
+    /** Contract DecisionBasis (K-519): the rows "Why this call" shows — health data, behind the consent like the call. */
+    @GetMapping("/v1/decisions/{id}/basis")
+    DecisionBasis basis(AccountId account, @PathVariable UUID id) {
+        return decisions.basis(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
     @PostMapping("/v1/decisions/{id}/apply")
     PlanTargets apply(AccountId account, @PathVariable UUID id) {
         return decisions.apply(account, id);

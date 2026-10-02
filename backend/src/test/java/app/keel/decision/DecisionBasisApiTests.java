@@ -1,0 +1,124 @@
+package app.keel.decision;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import app.keel.consent.ConsentTextVersions;
+import app.keel.identity.TestSessions;
+import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.shared.AccountId;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import tools.jackson.databind.json.JsonMapper;
+
+/** The basis of a call over the API (K-519): from the call's own stored snapshot, behind the consent, the user's own only. */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import(PostgresTestConfiguration.class)
+class DecisionBasisApiTests {
+
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    @Autowired
+    MockMvcTester mvc;
+
+    @Autowired
+    ApplicationContext context;
+
+    @Autowired
+    JdbcClient jdbc;
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theRowsOfACallAreItsOwnWindowAndAnswers() throws Exception {
+        AccountId account = onACut();
+        Map<String, Object> call = checkIn(account);
+
+        MvcTestResult result = send(account, "GET", "/v1/decisions/" + call.get("id") + "/basis");
+
+        assertThat(result).hasStatusOk();
+        String body = result.getResponse().getContentAsString();
+        Map<String, Object> basis = JSON.readValue(body, Map.class);
+        assertThat(basis).containsEntry("phase", "CUT");
+        assertThat((List<Map<String, Object>>) basis.get("weeks")).isNotEmpty().allSatisfy(week -> assertThat(week).containsKeys("ends", "kg"));
+        assertThat((Map<String, Object>) basis.get("answers")).containsEntry("training", "STABLE");
+        // Never a fat estimate (U4), never the cycle answer (not kept).
+        assertThat(body.toLowerCase()).doesNotContain("fat").doesNotContain("cycle").doesNotContain("menstrual");
+    }
+
+    @Test
+    void anotherUsersCallOrNoneIsNotFound() throws Exception {
+        AccountId owner = onACut();
+        Map<String, Object> call = checkIn(owner);
+        AccountId other = onACut();
+
+        assertThat(send(other, "GET", "/v1/decisions/" + call.get("id") + "/basis")).hasStatus(404);
+        assertThat(send(owner, "GET", "/v1/decisions/" + UUID.randomUUID() + "/basis")).hasStatus(404);
+    }
+
+    @Test
+    void itIsHealthDataSoItNeedsTheConsent() {
+        AccountId account = TestSessions.newAccount();
+        assertThat(send(account, "GET", "/v1/decisions/" + UUID.randomUUID() + "/basis")).hasStatus(403).bodyJson()
+                .extractingPath("$.code").isEqualTo("CONSENT_REQUIRED");
+    }
+
+    /** A man on UTC on a cut begun two months ago, weighed every morning for the last four weeks. */
+    private AccountId onACut() {
+        AccountId account = TestSessions.newAccount();
+        assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
+        assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")))).hasStatusOk();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", today.minusDays(60)).update();
+        for (int day = 28; day >= 1; day--) {
+            assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
+                    today.minusDays(day).atTime(LocalTime.of(7, 0)).toInstant(ZoneOffset.UTC).toString(), "kg", 82.0 - day * 0.05,
+                    "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
+        }
+        return account;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> checkIn(AccountId account) throws Exception {
+        MvcTestResult result = send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(),
+                "weekOf", CheckInWeek.weekOf(LocalDate.now(ZoneOffset.UTC), DayOfWeek.MONDAY).toString(),
+                "answers", List.of(Map.of("kind", "TRAINING", "choice", "STABLE"))));
+        assertThat(result).hasStatusOk();
+        return JSON.readValue(result.getResponse().getContentAsString(), Map.class);
+    }
+
+    private MvcTestResult send(AccountId account, String method, String uri) {
+        return send(account, method, uri, null);
+    }
+
+    private MvcTestResult send(AccountId account, String method, String uri, Object body) {
+        var request = switch (method) {
+            case "GET" -> mvc.get();
+            case "PUT" -> mvc.put();
+            default -> mvc.post();
+        };
+        request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));
+        if (body != null) {
+            request = request.contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(body));
+        }
+        return request.exchange();
+    }
+}

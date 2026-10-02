@@ -85,7 +85,7 @@ class DecisionBasisTests {
     }
 
     @Test
-    void whereTrainingStandsTheTargetAndAStateDeclared() {
+    void whereTrainingStandsAndAStateDeclared() {
         StoredSnapshot base = snapshot(TODAY.minusDays(60), weeks("82.0", "81.5", "81.0"));
         StoredSnapshot.Training training = new StoredSnapshot.Training(3, 1, 0, false, true, 0);
         StoredSnapshot read = new StoredSnapshot(base.today(), base.sex(), base.phase(), base.planStart(), base.weights(), new BigDecimal("18"),
@@ -95,21 +95,19 @@ class DecisionBasisTests {
         DecisionBasis basis = DecisionBasis.of(read, MALE);
 
         assertThat(basis.training()).isEqualTo(training);
-        assertThat(basis.targetKcal()).isEqualTo(2300);
         assertThat(basis.pausedBy()).isEqualTo(DeclaredContext.BUSY);
         // The estimates the engine read stay out (U4): no field carries them, nothing written says "fat".
         assertThat(JsonMapper.builder().build().writeValueAsString(basis).toLowerCase()).doesNotContain("fat").doesNotContain("18");
     }
 
     @Test
-    void aCallWithNoAnswersTrainingOrTargetHasNoneOfThoseRows() {
+    void aCallWithNoAnswersOrTrainingHasNoneOfThoseRows() {
         DecisionBasis basis = DecisionBasis.of(snapshot(TODAY.minusDays(60), List.of()), MALE);
 
         assertThat(basis.weeks()).isEmpty();
         assertThat(basis.changeKgPerWeek()).isNull();
         assertThat(basis.adherence()).isNull();
         assertThat(basis.training()).isNull();
-        assertThat(basis.targetKcal()).isNull();
         assertThat(basis.pausedBy()).isNull();
     }
 
