@@ -4,7 +4,6 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
-import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -15,6 +14,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Loaded, load, localDay } from '@/today/today';
 import { type Entry, SetEntry } from '@/train/SetEntry';
+import { SetLine } from '@/train/SetLine';
 import { exerciseName, shortDate } from '@/train/program';
 import { buildSet, parseEntry, setText } from '@/train/session';
 import { weightInput } from '@/units/units';
@@ -45,6 +45,9 @@ export default function WorkoutEditScreen() {
   const [problem, setProblem] = useState<Problem>(null);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false); // two taps at once must not delete or add twice
+  // One clientId per set being added, kept until it is stored: tried again after a lost answer, the server keeps one
+  // (ADR-024), not two.
+  const adding = useRef<string | null>(null);
 
   const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
   const read = useCallback(() => load(() => api.GET('/v1/workouts/{id}', { params: { path: { id: workout } } })).then(setSession), [api, workout]);
@@ -56,7 +59,9 @@ export default function WorkoutEditScreen() {
       .catch(named);
   }, [api, training, read, named]);
 
-  const sets = session?.state === 'ready' ? session.value.sets : [];
+  // A session under way is changed in the session itself: edited here, the phone's session and the server's would split.
+  const underWay = session?.state === 'ready' && session.value.endedAt === undefined;
+  const sets = session?.state === 'ready' && !underWay ? session.value.sets : [];
   // The session's moves, in the order first done; a move the catalog no longer has cannot be written (its load model).
   const order = [...new Set(sets.map((s) => s.exerciseId))].filter((id) => moves.has(id));
   const chosen = picked !== null && order.includes(picked) ? picked : (order[0] ?? null);
@@ -108,9 +113,11 @@ export default function WorkoutEditScreen() {
     setBusy(true);
     setProblem(null);
     try {
-      const body = buildSet(newClientId(), move, rowSide, parsed, entry.rir, entry.note ?? undefined);
+      adding.current ??= newClientId();
+      const body = buildSet(adding.current, move, rowSide, parsed, entry.rir, entry.note ?? undefined);
       const { response } = await api.POST('/v1/workouts/{id}/sets', { params: { path: { id: session.value.id } }, body });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      adding.current = null;
       setTyped(null);
       await read();
     } catch (error) {
@@ -157,6 +164,7 @@ export default function WorkoutEditScreen() {
                 problem={problem !== null && problem.at === s.id ? problem.text : null}
                 set={s}
                 onAsk={setConfirming}
+                onKeep={() => setConfirming(null)}
                 onDelete={removeSet}
               />
             );
@@ -169,7 +177,7 @@ export default function WorkoutEditScreen() {
     move?.unilateral === true
       ? SIDES.map((s) => <Chip key={s} label={t(`workout.sideName.${s}`)} selected={side === s} onPress={() => setSide(s)} />)
       : null;
-  const adding =
+  const addForm =
     move === undefined ? null : (
       <Card>
         <Text style={[styles.heading, { color: color.text }]}>{t('sessionEdit.add')}</Text>
@@ -193,9 +201,13 @@ export default function WorkoutEditScreen() {
     );
 
   const when =
-    session?.state === 'ready' ? (
+    session?.state === 'ready' && !underWay ? (
       <Text style={[styles.small, { color: color.muted }]}>{shortDate(localDay(new Date(session.value.startedAt)))}</Text>
     ) : null;
+
+  const underWayNote = underWay ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('sessionEdit.underWay')}</Text> : null;
+  // The next targets were set at the finish (K-217) and an edit does not move them: said, not left to be found out.
+  const targetsNote = sets.length > 0 ? <Text style={[styles.small, { color: color.muted }]}>{t('sessionEdit.targetsNote')}</Text> : null;
 
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
@@ -203,46 +215,12 @@ export default function WorkoutEditScreen() {
         <ScreenTitle>{t('sessionEdit.title')}</ScreenTitle>
         {when}
         {unreadable}
+        {underWayNote}
         {groups}
-        {adding}
+        {addForm}
+        {targetsNote}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-/** A set of the session: its line, and its delete — asked once more (ADR-016: warn only to confirm). */
-function SetLine(props: {
-  set: Schemas['LoggedSet'];
-  line: string;
-  asking: boolean;
-  busy: boolean;
-  problem: string | null;
-  onAsk: (id: string) => void;
-  onDelete: (set: Schemas['LoggedSet']) => void;
-}) {
-  const { color } = useTheme();
-  const { set, line, asking, busy, problem, onAsk, onDelete } = props;
-  const action = asking ? (
-    <Button label={t('sessionEdit.confirmDelete')} variant="warn" size="sm" onPress={() => onDelete(set)} disabled={busy} />
-  ) : (
-    <Button
-      label={t('sessionEdit.delete')}
-      accessibilityLabel={t('sessionEdit.deleteSpoken', { set: line })}
-      variant="ghost"
-      size="sm"
-      onPress={() => onAsk(set.id)}
-      disabled={busy}
-    />
-  );
-  const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{problem}</Text>;
-  return (
-    <View style={styles.set}>
-      <View style={styles.row}>
-        <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{line}</Text>
-        {action}
-      </View>
-      {said}
-    </View>
   );
 }
 

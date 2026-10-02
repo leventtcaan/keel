@@ -47,9 +47,16 @@ const WORKOUTS: Schemas['Workout'][] = [
     id: 'a',
     clientId: 'w1',
     startedAt: '2026-09-21T17:00:00Z',
+    endedAt: '2026-09-21T18:00:00Z',
     sets: [set('s1', 'bench_press', 40, 10, undefined, 'WARM_UP'), set('s2', 'bench_press', 80, 8, 1)],
   },
-  { id: 'b', clientId: 'w2', startedAt: '2026-09-28T17:00:00Z', sets: [set('s3', 'bench_press', 85, 4, 2), set('s4', 'lateral_raise', 12.5, 12, 1)] },
+  {
+    id: 'b',
+    clientId: 'w2',
+    startedAt: '2026-09-28T17:00:00Z',
+    endedAt: '2026-09-28T18:00:00Z',
+    sets: [set('s3', 'bench_press', 85, 4, 2), set('s4', 'lateral_raise', 12.5, 12, 1)],
+  },
 ];
 
 let mockHistory: Loaded<Schemas['Workout'][]>;
@@ -239,6 +246,13 @@ describe('editing a past session (K-416)', () => {
     await screen.findAllByText(/^Sep (21|28)$/);
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('sessionEdit.openSpoken', { day: 'Sep 28' }) })));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout-edit', params: { workout: 'b' } });
+  });
+
+  test('a session still under way has no edit: it is edited in the session itself (review)', async () => {
+    mockHistory = { state: 'ready', value: [WORKOUTS[0], { ...WORKOUTS[1], endedAt: undefined }] };
+    await show();
+    await screen.findAllByText(/^Sep (21|28)$/);
+    expect(screen.queryByRole('button', { name: t('sessionEdit.openSpoken', { day: 'Sep 28' }) })).toBeNull();
   });
 
   test('a session only on the phone (not sent yet) has no edit: the server does not have it', async () => {

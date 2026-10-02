@@ -66,13 +66,15 @@ const mockServices = {
   forgetRecord: mockForget,
   report: jest.fn(),
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockWorkout = async () => ok(WORKOUT);
   mockDelete = async () => ({ response: new Response(null, { status: 204 }) });
   mockPost = async () => ok({}, 201);
+  mockUnits = 'METRIC';
 });
 
 async function show() {
@@ -204,4 +206,47 @@ test('offline: a past session cannot be edited, and it says why', async () => {
   await show();
   expect(screen.getByText(t('sessionEdit.needsConnection'))).toBeOnTheScreen();
   expect(screen.queryAllByRole('button', { name: /^Delete / })).toHaveLength(0);
+});
+
+describe('review', () => {
+  test('a session still under way is not edited here: it says so, with nothing to change', async () => {
+    mockWorkout = async () => ok({ ...WORKOUT, endedAt: undefined });
+    await show();
+    expect(screen.getByText(t('sessionEdit.underWay'))).toBeOnTheScreen();
+    expect(screen.queryAllByRole('button', { name: /^Delete / })).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: t('workout.log', { number: 2 }) })).toBeNull();
+  });
+
+  test('an add tried again after its answer was lost goes with the same clientId (the server keeps one, ADR-024)', async () => {
+    mockPost = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 2 }) })));
+    mockPost = async () => ok({}, 201);
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 2 }) })));
+    const [first, second] = mockPOST.mock.calls.map(([, init]) => (init as { body: { clientId: string } }).body.clientId);
+    expect(second).toBe(first);
+  });
+
+  test('asked to delete, the spot the delete was in keeps it: a second tap there does not delete', async () => {
+    await show();
+    await act(async () => fireEvent.press(screen.getAllByRole('button', { name: /^Delete / })[1]));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('sessionEdit.keep') })));
+    expect(mockDELETE).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('button', { name: /^Delete / })).toHaveLength(3);
+  });
+
+  test('in pounds, an untouched suggestion is saved as the kg it came from (62.5 kg shows as 137.8 lb)', async () => {
+    mockUnits = 'IMPERIAL';
+    mockWorkout = async () => ok({ ...WORKOUT, sets: [set('s1', 'bench_press', 'WORKING', 62.5, 8)] });
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 2 }) })));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/workouts/{id}/sets', expect.objectContaining({ body: expect.objectContaining({ loadKg: 62.5 }) }));
+  });
+
+  test("it says the next session's targets stay as the finish set them", async () => {
+    await show();
+    expect(screen.getByText(t('sessionEdit.targetsNote'))).toBeOnTheScreen();
+  });
 });

@@ -14,8 +14,11 @@ import { setsOf } from './workout';
 type Schemas = components['schemas'];
 type NewSet = Schemas['NewSet'];
 
-/** `note`: the session's, given at its finish (K-422). `serverId`: the server's workout, once it has it (editable, K-416). */
-export type Session = { clientId: string; serverId?: string; startedAt: string; note?: string; sets: NewSet[] };
+/**
+ * `note`: the session's, given at its finish (K-422). `serverId`: the server's workout, once it has it; `endedAt`: when the
+ * server has it finished — only then is it a past session to edit (K-416).
+ */
+export type Session = { clientId: string; serverId?: string; endedAt?: string; startedAt: string; note?: string; sets: NewSet[] };
 export type PersonalRecord =
   | { kind: 'heaviest'; loadKg: number; reps: number; on: string }
   | { kind: 'estimatedMax'; kg: number; on: string }
@@ -32,6 +35,7 @@ export function sessionsOf(server: Schemas['Workout'][] | null, records: LocalRe
     byId.set(workout.clientId, {
       clientId: workout.clientId,
       serverId: workout.id,
+      ...(workout.endedAt === undefined ? {} : { endedAt: workout.endedAt }),
       startedAt: workout.startedAt,
       ...(workout.note === undefined ? {} : { note: workout.note }),
       sets: workout.sets.map(({ id: _, ...set }) => set),

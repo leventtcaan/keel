@@ -83,9 +83,10 @@ export default function ExerciseHistoryScreen() {
         ))}
       </Card>
     );
-  // Only a session the server has can be edited (it is no longer in the phone's queue); one not sent yet cannot.
+  // Only a past session the server has can be edited: one not sent yet is not there; one under way is changed in the
+  // session itself (an edit here would split the phone's session from the server's — review).
   const editLink = (session: Session) =>
-    session.serverId === undefined ? null : (
+    session.serverId === undefined || session.endedAt === undefined ? null : (
       <Button
         label={t('sessionEdit.open')}
         accessibilityLabel={t('sessionEdit.openSpoken', { day: dayOf(session.startedAt) })}
