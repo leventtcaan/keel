@@ -68,10 +68,9 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (2 Eki — M4 Part 2 bitti, aktarım bekliyor)
-Part 2 ÇIKIŞ yazıldı (aşağıda › M4 ilerleme). Açık PR yok. Levent dönünce Part 2
-aktarımı (`docs/aktarim/M4/` README 8-13: K-414, K-405, K-406, K-417, K-415 (+K-422), K-421). Sonra Part 3
-(`plan/oturum-promptlari/M4-part3.md`). Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
+## ▶ DEVAM NOKTASI (2 Eki — M4 Part 3 sürüyor)
+Part 3 başladı (aşağıda › M4 ilerleme › Part 3 tablosu). Part 2 aktarımı hâlâ bekliyor (`docs/aktarim/M4/` README 8-13).
+Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -240,7 +239,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 |---|---|---|
 | 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
 | 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 (+ K-421, K-422 bölündü) | ✅ bitti (2 Eki) — aktarım bekliyor |
-| 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | başlamadı |
+| 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | sürüyor (2 Eki) |
 | 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
 
 **Part 1 başı (1 Eki):** senkron tamam (M3 ÇIKIŞ git ile tutarlı: #211 birleşik, açık PR/worktree yok, `main` temiz).
@@ -347,6 +346,18 @@ silindi → 4,5 GB (eşik 5 GB; Part 2'de native derleme yok, Levent "devam" ded
   - **Simülatör:** derin bağlantı `exp://127.0.0.1:8081/--/<rota>?…` dişli simgesiyle uğraşmadan ekran açar; `CI=1` Metro
     dosya izlemez → değişiklikten sonra Metro'yu yeniden başlat. Fikstür sunucusu scratchpad'te (gyms PUT/DELETE, workouts GET).
 - **Yeni sorular:** 38-44 (DURUM listesi).
+
+**Part 3 başı (2 Eki):** senkron tamam — Part 2 ÇIKIŞ git ile tutarlı (#221-#235 birleşik, açık PR/worktree yok, `main`
+temiz). Bağımlılıklar `done` (K-209, K-304, K-208, K-405, K-219). Disk 5,7 GB. Dependabot: yalnız bilinen #2. Simülatör:
+iPhone 16 Pro Max, Expo Go + geçici kök yaması + `scratchpad/fixture.js` (öğün uç noktaları: meals GET/POST/DELETE, foods
+search, barcode-lookup, food-estimates). Ders: `data/` JSON'u değişince Metro'yu `--clear` ile, Expo Go'yu `simctl terminate`
+ile yeniden başlat (eski paket kalıyor). K-418 kartındaki "bağımlılık Levent onayıyla" notu ADR-019'dan eski — K5'e göre
+agent karar verir, PR'da gerekçe.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-407 (1/3) Yemek sekmesinde günün öğünleri + "dünkü gibi" tek dokunuş (`repeatOf`, kuyruk, girişte rıza) | ✅ birleşti; simülatör: FDC adları virgüllü ("Oats, rolled") → her kalem ayrı satır; inceleme: ikinci dokunuş aynı öğünü iki kez kaydediyordu (ref + okuma başına gizleme), rızasızken sessizdi, okunamayan liste "boş" deniyordu; mutasyon 24/24 + 10/10 | #236 | `M4/K-407.md` |
+| K-407 (2/3) öğün ekranı: arama, miktar (boş başlar), birim/tartıldı, aralık kartı + adlı tek soru, kayıt | inceleme sürüyor; simülatör: Türkçe klavye "Chıcken" yaptı → arama alanında büyük harf/otomatik düzeltme kapalı, klavye tuşu arar | — | `M4/K-407.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
