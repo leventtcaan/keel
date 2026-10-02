@@ -57,16 +57,20 @@ export async function connectAppleHealth(api: ApiClient, health: HealthAccess): 
 export type ConsentStatus = components['schemas']['Consent']['status'];
 
 /**
- * Each consent's state, from the server. Throws like the others. A grant to a text other than the one the phone shows
- * now (K-429: the text was revised) is not given: the server's gate refuses it too, so the user is asked again, to the
- * text shown now — for that text, never asked.
+ * A consent as the phone reads it: the server's status — or OUTDATED, a grant to a text other than the one the phone
+ * shows now (K-429: the text was revised). OUTDATED is not given: the server's gate refuses it too, so the user is asked
+ * again, to the text shown now. It can still be withdrawn as it stands (GDPR Art. 7(3)): no yes to a new text first.
  */
-export async function loadConsents(api: ApiClient): Promise<Partial<Record<ConsentKind, ConsentStatus>>> {
+export type PhoneConsentStatus = ConsentStatus | 'OUTDATED';
+
+/** Each consent's state, from the server. Throws like the others. */
+export async function loadConsents(api: ApiClient): Promise<Partial<Record<ConsentKind, PhoneConsentStatus>>> {
   const answer = await reach(() => api.GET('/v1/consents'));
   if (answer.data === undefined) throw named('ConsentRefused', `consents not read: HTTP ${answer.response.status}`);
-  return Object.fromEntries(answer.data.map((consent) => [consent.kind, revised(consent) ? 'NEVER_ASKED' : consent.status]));
+  return Object.fromEntries(answer.data.map((consent) => [consent.kind, revised(consent) ? 'OUTDATED' : consent.status]));
 }
 
+/** A grant to another text. The server always says which text (not null in its store); one that does not is taken as it is. */
 function revised(consent: components['schemas']['Consent']): boolean {
   return consent.status === 'GRANTED' && consent.textVersion !== undefined && consent.textVersion !== consentVersion(consent.kind);
 }

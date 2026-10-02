@@ -695,7 +695,7 @@
     "health_data": {
       "version": "2-draft",
       "title": "Your health data, for your coaching",
-      "body": "Your weight, waist, sleep, check-in answers and food and training logs are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time. You can also withdraw this consent in Settings: if you do, this data is deleted for good, and the calls stop until you allow it again."
+      "body": "Your weight, waist, sleep, check-in answers and food and training logs are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time. You can also withdraw this consent in Settings: everything above except your training log is then deleted for good, with your past calls and the foods you avoid, and the calls stop until you allow it again."
     },
     "apple_health": {
       "version": "1-draft",
@@ -1267,6 +1267,7 @@
       "APPLE_HEALTH": "Apple Health",
       "allowed": "Allowed",
       "notAllowed": "Not allowed",
+    "outdated": "The text has changed since you allowed this. Allow it again to go on.",
       "view": "View",
       "hide": "Hide",
       "allow": "Allow",

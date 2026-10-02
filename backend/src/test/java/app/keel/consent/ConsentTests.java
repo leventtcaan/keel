@@ -95,12 +95,15 @@ class ConsentTests {
     }
 
     @Test
-    void aYesToTheHealthTextFromBeforeItSaidWithdrawingDeletesIsAskedAgain() {
+    void aYesToTheHealthTextFromBeforeItSaidWithdrawingDeletesIsAskedAgain() throws Exception {
         // K-429 (ADR-037 #36): 2-draft says a withdrawal deletes the data it covers; a yes to 1-draft is not a yes to that.
         AccountId account = TestSessions.newAccount();
         insert(account, "HEALTH_DATA", "1-draft", null, null);
 
         assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isFalse();
+        // The list says what was given to which text: the phone reads a grant to a text it no longer shows as not given.
+        assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
+                .satisfies(c -> assertThat(c).containsEntry("status", "GRANTED").containsEntry("textVersion", "1-draft"));
         assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "1-draft"))).hasStatus(400);
         assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();

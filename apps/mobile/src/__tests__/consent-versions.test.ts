@@ -32,6 +32,8 @@ test.each(['HEALTH_DATA', 'APPLE_HEALTH', 'THIRD_PARTY_AI'] as const)('%s: the t
 test('the health data text says a withdrawal deletes the data it covers (K-429, ADR-037 #36)', () => {
   // K-231: withdrawing deletes for good; the text the consent is given to must say so, not only that the calls stop.
   expect(t('consent.health_data.body')).toMatch(/withdraw[^.]*delet/i);
+  // Training is not deleted (ADR-007, ConsentWithdrawalDeletionTests): the text must not promise it is.
+  expect(t('consent.health_data.body')).toMatch(/withdraw[^.]*except your training/i);
   expect(consentVersion('HEALTH_DATA')).not.toBe('1-draft');
 });
 

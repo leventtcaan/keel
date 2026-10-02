@@ -2,7 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { CONSENT_COPY, type ConsentStatus, connectAppleHealth, grantConsent, loadConsents, withdrawConsent } from '@/consent/consents';
+import {
+  CONSENT_COPY,
+  type ConsentStatus,
+  connectAppleHealth,
+  grantConsent,
+  loadConsents,
+  type PhoneConsentStatus,
+  withdrawConsent,
+} from '@/consent/consents';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -27,7 +35,7 @@ const WORDS = { NoConnection: 'settings.consents.failed', HealthSheetFailed: 'se
 export function ConsentsSection() {
   const { api, health, consents, withdrawHealthData, exportData } = useAppServices();
   const { color } = useTheme();
-  const [states, setStates] = useState<Partial<Record<Kind, ConsentStatus>> | null>(null);
+  const [states, setStates] = useState<Partial<Record<Kind, PhoneConsentStatus>> | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [open, setOpen] = useState<Kind | null>(null);
   const [asking, setAsking] = useState<Kind | null>(null);
@@ -73,6 +81,8 @@ export function ConsentsSection() {
   const rows = KINDS.map((kind) => {
     const name = t(`settings.consents.${kind}`);
     const granted = states[kind] === 'GRANTED';
+    // Given to a text since revised (K-429): not given, and both ways open — allow the text shown now, or withdraw.
+    const outdated = states[kind] === 'OUTDATED';
     // Apple Health: only with the health data consent, and where HealthKit is in the build.
     const blocked =
       kind === 'APPLE_HEALTH' && !granted
@@ -83,7 +93,7 @@ export function ConsentsSection() {
             : null
         : null;
     const allow = () => change(kind, 'GRANTED', () => (kind === 'APPLE_HEALTH' ? connectAppleHealth(api, health) : grantConsent(api, kind)));
-    const toggle = granted ? (
+    const withdrawButton = (
       <Button
         label={t('settings.consents.withdraw')}
         accessibilityLabel={`${t('settings.consents.withdraw')} ${name}`}
@@ -92,16 +102,29 @@ export function ConsentsSection() {
         onPress={() => setAsking(kind)}
         disabled={busy}
       />
-    ) : blocked === null ? (
-      <Button
-        label={t('settings.consents.allow')}
-        accessibilityLabel={`${t('settings.consents.allow')} ${name}`}
-        variant="ghost"
-        size="sm"
-        onPress={() => void allow()}
-        disabled={busy}
-      />
-    ) : null;
+    );
+    const allowButton =
+      blocked === null ? (
+        <Button
+          label={t('settings.consents.allow')}
+          accessibilityLabel={`${t('settings.consents.allow')} ${name}`}
+          variant="ghost"
+          size="sm"
+          onPress={() => void allow()}
+          disabled={busy}
+        />
+      ) : null;
+    const toggle = granted ? (
+      withdrawButton
+    ) : outdated ? (
+      <>
+        {withdrawButton}
+        {allowButton}
+      </>
+    ) : (
+      allowButton
+    );
+    const status = granted ? 'settings.consents.allowed' : outdated ? 'settings.consents.outdated' : 'settings.consents.notAllowed';
     // The health data consent's withdrawal deletes on the server and on the phone, through the one service that does both.
     const withdraw = () => (kind === 'HEALTH_DATA' ? withdrawHealthData() : withdrawConsent(api, kind));
     const exportFirst =
@@ -133,7 +156,7 @@ export function ConsentsSection() {
         <View style={styles.head}>
           <View style={styles.name}>
             <Text style={[styles.text, { color: color.text }]}>{name}</Text>
-            <Text style={[styles.small, { color: color.muted }]}>{granted ? t('settings.consents.allowed') : t('settings.consents.notAllowed')}</Text>
+            <Text style={[styles.small, { color: color.muted }]}>{t(status)}</Text>
           </View>
           <Button
             label={open === kind ? t('settings.consents.hide') : t('settings.consents.view')}
