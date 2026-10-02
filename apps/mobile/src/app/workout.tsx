@@ -254,6 +254,7 @@ export default function WorkoutScreen() {
           </Pressable>
         ))}
         {addNote}
+        <Button label={t('workout.add.close')} variant="ghost" size="sm" onPress={() => setAdding(null)} />
       </View>
     );
 

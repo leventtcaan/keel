@@ -548,4 +548,14 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'zzz');
     expect(screen.getByText(t('workout.add.none'))).toBeOnTheScreen();
   });
+
+  test('the panel closes without adding anything', async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.add.close') }));
+    expect(screen.queryByLabelText(t('workout.add.search'))).toBeNull();
+    expect(screen.queryByText(latName)).toBeNull();
+    expect(screen.getByRole('button', { name: t('workout.add.open') })).toBeOnTheScreen();
+  });
 });

@@ -202,6 +202,7 @@
       "open": "Add a move",
       "search": "Find a move",
       "pick": "Add {name}",
+      "close": "Close",
       "none": "No move by that name in the catalog. Try other words."
     }
   },
