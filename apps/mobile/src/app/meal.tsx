@@ -38,7 +38,7 @@ type Found =
   | { state: 'barcodeFailed' };
 
 const SLOTS: Schemas['MealSlot'][] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
-const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch' } as const;
+const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch', recipeGone: 'meal.item.recipeGone' } as const;
 
 /**
  * Logging a meal (K-407): the slot, foods found by name in the database (ADR-008), an amount for each — nothing filled
@@ -88,9 +88,9 @@ export default function MealScreen() {
       .then((granted) => setStep(granted ? 'entry' : 'consent'));
   }, [consents]);
 
-  // Recipes by their item id, for the portion ceiling. A recipe in a meal opened to correct, before any search, is not
-  // known here: its ceiling is left to the server (as a serving whose grams are not known).
-  const knownRecipes: KnownRecipes = new Map((recipes ?? []).map((recipe) => [recipeItemId(recipe), recipe]));
+  // Recipes by their item id, for the portion ceiling and a recipe gone since; undefined until read (left to the server).
+  // A meal opened to correct reads them at once when it holds a recipe (below).
+  const knownRecipes: KnownRecipes | undefined = recipes === null ? undefined : new Map(recipes.map((recipe) => [recipeItemId(recipe), recipe]));
   const readRecipes = async (): Promise<Schemas['Recipe'][]> => {
     if (recipes !== null) return recipes;
     const answer = await load(() => api.GET('/v1/recipes')).catch(() => null);
@@ -111,6 +111,12 @@ export default function MealScreen() {
       setItems(draft.items);
       setSlot(draft.slot);
       setOriginal({ state: 'ready', meal });
+      // A recipe in it: its ceiling, or that it is gone, is known before any search (K-423 review).
+      if (draft.items.some((item) => item.unit === PORTION)) {
+        void load(() => api.GET('/v1/recipes'))
+          .then((read) => live && read.state === 'ready' && setRecipes(read.value))
+          .catch(() => undefined);
+      }
     });
     return () => {
       live = false;
@@ -323,11 +329,12 @@ export default function MealScreen() {
         {items.map((item, index) => {
           const itemIssue = itemProblem(item, known, knownRecipes);
           const portions = item.unit === PORTION;
+          const ceiling = knownRecipes?.get(item.foodId)?.portions ?? 0;
           const issueText =
             itemIssue === null || itemIssue === 'missing'
               ? null
               : itemIssue === 'tooMuch' && portions
-                ? t('meal.item.tooManyPortions', { portions: knownRecipes.get(item.foodId)?.portions ?? 0 })
+                ? t(`meal.item.tooManyPortions.${ceiling === 1 ? 'one' : 'other'}`, { portions: ceiling })
                 : t(PROBLEM_KEYS[itemIssue]);
           return (
             <View key={`${item.foodId}-${index}`} style={styles.item}>
@@ -438,7 +445,9 @@ function RecipeHits({ hits, onAdd }: { hits: RecipeMatch[]; onAdd: (recipe: Sche
             onPress={() => onAdd(recipe)}
             style={[styles.result, { borderColor: color.line }]}>
             <Text style={[styles.text, { color: color.text }]}>{recipe.name}</Text>
-            <Text style={[styles.small, { color: color.muted }]}>{t('meal.recipes.makes', { portions: recipe.portions })}</Text>
+            <Text style={[styles.small, { color: color.muted }]}>
+              {t(`meal.recipes.makes.${recipe.portions === 1 ? 'one' : 'other'}`, { portions: recipe.portions })}
+            </Text>
           </Pressable>
         ) : (
           <Text key={recipe.id} style={[styles.small, styles.result, { color: color.text, borderColor: color.line }]}>

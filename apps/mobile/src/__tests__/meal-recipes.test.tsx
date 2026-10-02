@@ -114,7 +114,7 @@ test('at most the whole recipe: more portions than it makes is refused before it
   await searchFor('rice');
   await fireEvent.press(screen.getByRole('button', { name: t('meal.recipes.add', { name: SOUP.name }) }));
   await fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: SOUP.name })), '5');
-  expect(screen.getByText(t('meal.item.tooManyPortions', { portions: 4 }))).toBeTruthy();
+  expect(screen.getByText(t('meal.item.tooManyPortions.other', { portions: 4 }))).toBeTruthy();
   expect(screen.getByRole('button', { name: t('meal.save') }).props.accessibilityState.disabled).toBe(true);
 });
 
@@ -171,4 +171,14 @@ test('a recipe found is something found: no "nothing found" when only a recipe m
   await searchFor('soup');
   expect(screen.getByRole('button', { name: t('meal.recipes.add', { name: SOUP.name }) })).toBeTruthy();
   expect(screen.queryByText(t('meal.search.none'))).toBeNull();
+});
+
+test('one portion is said as one ("Makes 1 portion"), not "1 portions"', async () => {
+  mockRecipes = async () => ok([{ ...SOUP, portions: 1 }]);
+  await show();
+  await searchFor('soup');
+  expect(screen.getByText(t('meal.recipes.makes.one'))).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: t('meal.recipes.add', { name: SOUP.name }) }));
+  await fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: SOUP.name })), '2');
+  expect(screen.getByText(t('meal.item.tooManyPortions.one'))).toBeTruthy();
 });

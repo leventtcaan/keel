@@ -14,7 +14,7 @@ type Schemas = components['schemas'];
 /** `units`: the food's servings, then grams. `quantity`: as typed. */
 export type DraftItem = { foodId: string; name: string; units: string[]; quantity: string; unit: string; weighed: boolean };
 export type Draft = { slot: Schemas['MealSlot']; items: DraftItem[] };
-export type ItemProblem = 'missing' | 'invalid' | 'tooMuch';
+export type ItemProblem = 'missing' | 'invalid' | 'tooMuch' | 'recipeGone';
 /** The foods the phone was given, by id, from the search or a barcode answer: their servings' grams. */
 export type KnownFoods = Map<string, Schemas['Food']>;
 
@@ -41,15 +41,20 @@ export function addRecipe(items: DraftItem[], recipe: Schemas['Recipe']): DraftI
 
 /**
  * Why the server would refuse this item's amount, or null. A serving whose grams are not known is left to the server.
- * A recipe: at most the whole recipe (ADR-034 #6) — a recipe the phone does not know (a meal opened to correct) is left
- * to the server.
+ * A recipe: at most the whole recipe (ADR-034 #6). `recipes` is the user's recipes once read; until then (undefined) a
+ * recipe is left to the server. Read and not there — deleted since, or an ingredient dropped — it cannot be estimated:
+ * `recipeGone`, so the item says why rather than the whole meal blaming the connection (K-423 review).
  */
-export function itemProblem(item: DraftItem, known: KnownFoods, recipes: KnownRecipes = new Map()): ItemProblem | null {
+export function itemProblem(item: DraftItem, known: KnownFoods, recipes?: KnownRecipes): ItemProblem | null {
+  if (isRecipe(item) && recipes !== undefined) {
+    const recipe = recipes.get(item.foodId);
+    if (recipe === undefined || (recipe.unavailable ?? []).length > 0 || recipe.perPortion === undefined) return 'recipeGone';
+  }
   if (item.quantity.trim() === '') return 'missing';
   const quantity = parseQuantity(item.quantity);
   if (quantity === null) return 'invalid';
   if (isRecipe(item)) {
-    const recipe = recipes.get(item.foodId);
+    const recipe = recipes?.get(item.foodId);
     return recipe !== undefined && quantity > recipe.portions ? 'tooMuch' : null;
   }
   const amount = { quantity, unit: item.unit };
@@ -59,7 +64,7 @@ export function itemProblem(item: DraftItem, known: KnownFoods, recipes: KnownRe
 }
 
 /** The contract's items, or null while there are none, more than the server takes, or any amount it would refuse. */
-export function requestsOf(items: DraftItem[], known: KnownFoods, recipes: KnownRecipes = new Map()): Schemas['ItemRequest'][] | null {
+export function requestsOf(items: DraftItem[], known: KnownFoods, recipes?: KnownRecipes): Schemas['ItemRequest'][] | null {
   if (items.length === 0 || items.length > foodParams.itemsMax || items.some((item) => itemProblem(item, known, recipes) !== null)) return null;
   return items.map((item) => ({
     foodId: item.foodId,

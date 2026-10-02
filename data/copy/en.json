@@ -368,7 +368,10 @@
     "recipes": {
       "heading": "Your recipes",
       "add": "Add {name}, a recipe",
-      "makes": "Makes {portions} portions",
+      "makes": {
+        "one": "Makes 1 portion",
+        "other": "Makes {portions} portions"
+      },
       "unavailable": "{name}: an ingredient is no longer in the food database. Enter the recipe again to use it."
     },
     "item": {
@@ -381,7 +384,11 @@
       "removeSpoken": "Remove {name}",
       "invalid": "That doesn't look like an amount. Check the number.",
       "tooMuch": "That's more than one item can be. Check the amount.",
-      "tooManyPortions": "At most the whole recipe: {portions} portions.",
+      "tooManyPortions": {
+        "one": "At most the whole recipe: 1 portion.",
+        "other": "At most the whole recipe: {portions} portions."
+      },
+      "recipeGone": "This recipe is gone or can no longer be estimated. Remove it to save the meal.",
       "portions": "portions"
     },
     "estimate": {

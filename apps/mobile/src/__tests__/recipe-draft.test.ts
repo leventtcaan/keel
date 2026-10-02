@@ -60,3 +60,19 @@ test('found by name, whatever the case; one the database can no longer estimate 
   expect(recipeMatches([soup, stew], 'stew')).toEqual([{ recipe: stew, available: false }]);
   expect(recipeMatches([soup, stew], ' ')).toEqual([]);
 });
+
+test("found the same on a Turkish iPhone: I/ı and İ/i fold alike, whatever the device's locale", () => {
+  const iced = { ...soup, name: 'Iced oatmeal' };
+  const icli = { ...soup, id: 'x', name: 'İçli köfte' };
+  expect(recipeMatches([iced, icli], 'iced').map((m) => m.recipe.name)).toEqual(['Iced oatmeal']);
+  expect(recipeMatches([iced, icli], 'ıced').map((m) => m.recipe.name)).toEqual(['Iced oatmeal']);
+  expect(recipeMatches([iced, icli], 'içli').map((m) => m.recipe.name)).toEqual(['İçli köfte']);
+  expect(recipeMatches([iced, icli], 'IÇLI').map((m) => m.recipe.name)).toEqual(['İçli köfte']);
+});
+
+test('a recipe in a meal that the user no longer has (deleted, or an ingredient dropped): its own problem, once recipes are known', () => {
+  const item = { foodId: `recipe:${stew.id}`, name: 'Bean stew', units: ['portion'], quantity: '1', unit: 'portion', weighed: false };
+  expect(itemProblem(item, new Map())).toBeNull(); // recipes not read yet: left to the server
+  expect(itemProblem(item, new Map(), new Map())).toBe('recipeGone'); // read, and not there
+  expect(itemProblem(item, new Map(), new Map([[`recipe:${stew.id}`, stew]]))).toBe('recipeGone'); // there, unavailable
+});

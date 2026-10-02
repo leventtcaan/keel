@@ -31,3 +31,4 @@
 19. K-410 bildirimler — yalnız yerel, saf plan, hepsini yeniden kuran tek zincir, kuşak sayacı, iOS izni ve Ayarlar yolu
 20. K-411 dinlenme arka planda — zaman damgalı sayaç, tek yerel uyarı, tüketicinin portu (sorusuz), süperset turu, Live Activity bölünmesi
 21. K-412 Apple Health'e yazma — ayrı port, iki anahtar, yazma izni okunur, işaretle çift kaydı önleme, enerji yazılmaz
+22. K-423 tarifler telefonda — tek kalem porsiyon, tembel okuma, yerelden bağımsız eşleşme, düşmüş tarif, liste + giriş
