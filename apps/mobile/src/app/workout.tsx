@@ -42,7 +42,7 @@ import { weightInput } from '@/units/units';
  * before the day's first move, one before the others, each one tap; with the gym in use known, the plates a side.
  */
 export default function WorkoutScreen() {
-  const { api, training, workoutRecords, queue, report, restAlert } = useAppServices();
+  const { api, training, workoutRecords, queue, report, restAlert, healthWriting } = useAppServices();
   const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
   const { color } = useTheme();
@@ -254,10 +254,14 @@ export default function WorkoutScreen() {
     saving.current = true;
     setBusy(true);
     try {
-      await queue.record(finishRecord(active.clientId, newClientId(), new Date(), [...unclean], sessionNote));
+      const end = new Date();
+      await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote));
       // What was done, against last time (K-406); a workout without a work set has nothing to show.
-      if (worked.length > 0) router.replace({ pathname: '/workout-summary', params: { workout: active.clientId } });
-      else router.back();
+      if (worked.length > 0) {
+        // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
+        void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end });
+        router.replace({ pathname: '/workout-summary', params: { workout: active.clientId } });
+      } else router.back();
     } catch (error) {
       named(error);
       setProblem({ row: FINISH, text: t('workout.finishFailed') });

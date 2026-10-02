@@ -13,7 +13,7 @@ import { AppState, Share } from 'react-native';
 
 import { apiBaseUrl } from '@/api/config';
 import type { HealthAccess } from '@/health/health';
-import { healthKitAccess } from '@/health/healthKit';
+import { healthKitAccess, healthKitWrite } from '@/health/healthKit';
 import { syncActivityDays } from '@/health/activitySync';
 import { syncHealthWeights } from '@/health/weightSync';
 import { deviceAlerts, deviceNotifications } from '@/notifications/deviceNotifications';
@@ -56,6 +56,7 @@ async function build(): Promise<PhoneServices> {
     locale: Intl.DateTimeFormat().resolvedOptions().locale,
     notifications: deviceNotifications(), // local only: no push token, nothing to a server (K-410)
     alerts: deviceAlerts(), // the rest timer's (K-411)
+    healthWrite: healthKitWrite(), // not available in Expo Go (no native module)
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);

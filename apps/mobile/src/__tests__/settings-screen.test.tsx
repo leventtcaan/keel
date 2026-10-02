@@ -12,6 +12,7 @@ import { palettes } from '@/theme/tokens';
 type Status = 'GRANTED' | 'WITHDRAWN' | 'NEVER_ASKED';
 let mockConsents: Record<string, Status> = {};
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+const mockHealthWriteOff = { workouts: false, weighIns: false };
 const mockRemindersOff = { enabled: false, cue: '' }; // one object: useSyncExternalStore compares by identity
 const ok = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
 const mockServices = {
@@ -42,7 +43,8 @@ const mockServices = {
     current: () => mockRemindersOff,
     subscribe: () => () => {},
     permission: jest.fn(async () => ({ granted: false, canAskAgain: true })),
-  },
+  },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
+  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,

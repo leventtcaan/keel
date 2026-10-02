@@ -28,6 +28,8 @@ const mockServices = {
   queue: { record: jest.fn(async (_record: unknown) => true) },
   consents: { granted: jest.fn(async (_kind: string) => mockGranted), remember: jest.fn(async (_kind: string, _status: string) => {}) },
   report: jest.fn(),
+  // Apple Health writing (K-412): the switch decides inside; the screen only says a weigh-in was typed.
+  healthWriting: { weighInSaved: jest.fn(async (_weighIn: unknown) => {}) },
 };
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() } }));
@@ -165,4 +167,27 @@ test('after 14 days of weigh-ins, no early note', async () => {
   };
   await show();
   expect(screen.queryByText(t('weighIn.earlyNote'))).toBeNull();
+});
+
+test('a weigh-in typed and kept is handed on for Apple Health, as kept (K-412)', async () => {
+  await show();
+  await type('82,4');
+  await press(t('weighIn.save'));
+  const [{ body }] = mockServices.queue.record.mock.calls[0] as [{ body: { clientId: string; measuredAt: string; kg: number } }];
+  expect(mockServices.healthWriting.weighInSaved).toHaveBeenCalledWith({ id: body.clientId, kg: 82.4, at: new Date(body.measuredAt) });
+});
+
+test('nothing kept, nothing handed on', async () => {
+  await show();
+  await type('abc');
+  await press(t('weighIn.save'));
+  expect(mockServices.healthWriting.weighInSaved).not.toHaveBeenCalled();
+});
+
+test('a weigh-in the phone could not keep is not handed on', async () => {
+  mockServices.queue.record.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
+  await show();
+  await type('82,4');
+  await press(t('weighIn.save'));
+  expect(mockServices.healthWriting.weighInSaved).not.toHaveBeenCalled();
 });

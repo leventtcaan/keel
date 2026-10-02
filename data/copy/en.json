@@ -1191,6 +1191,21 @@
         "saveLabel": "Save your routine"
       }
     },
+    "healthWrite": {
+      "title": "Add to Apple Health",
+      "note": "Nothing is added until you turn it on. What's added stays in Apple Health, yours to keep or delete there.",
+      "workouts": "Finished workouts",
+      "workoutsHint": "So your Fitness rings count them.",
+      "weighIns": "Weigh-ins you type",
+      "turnOn": "Turn on",
+      "turnOff": "Turn off",
+      "turnOnLabel": "Add {what} to Apple Health",
+      "turnOffLabel": "Stop adding {what} to Apple Health",
+      "on": "On",
+      "refused": "Apple Health didn't allow it. You can allow it in the Health app.",
+      "unavailable": "Adding to Apple Health works in the app's device build.",
+      "failed": "Couldn't change this. Try again."
+    },
     "consents": {
       "title": "Your data and consents",
       "HEALTH_DATA": "Health data",
@@ -1250,6 +1265,7 @@
   },
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
+    "healthWrite": "keel adds to Apple Health only what you turn on in Settings: the workouts you finish, the weigh-ins you type. It writes nothing else.",
     "camera": "To read the barcode on a food pack. Nothing is recorded or kept."
   },
   "history": {

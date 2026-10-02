@@ -31,7 +31,7 @@ const DAY_MS = 24 * 3600 * 1000;
  * trend (U8).
  */
 export default function WeighInScreen() {
-  const { api, queue, consents, report } = useAppServices();
+  const { api, queue, consents, report, healthWriting } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
@@ -85,7 +85,10 @@ export default function WeighInScreen() {
     saving.current = true;
     setBusy(true);
     try {
-      await queue.record({ kind: 'weighIn', body: { clientId: newClientId(), measuredAt: new Date().toISOString(), kg, source: 'MANUAL' } });
+      const weighIn = { clientId: newClientId(), measuredAt: new Date().toISOString(), kg, source: 'MANUAL' as const };
+      await queue.record({ kind: 'weighIn', body: weighIn });
+      // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
+      void healthWriting.weighInSaved({ id: weighIn.clientId, kg, at: new Date(weighIn.measuredAt) });
       router.back();
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
