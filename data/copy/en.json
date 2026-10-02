@@ -86,6 +86,10 @@
     }
   },
   "today": {
+    "prompt": {
+      "failed": "Couldn't send that. Check your connection and try again.",
+      "refused": "Something went wrong on our side. Try again in a moment."
+    },
     "checkIn": {
       "title": "This week's check-in",
       "questions": "{count} short questions, then your call.",

@@ -239,6 +239,33 @@ class PromptsTests {
         assertThat(Prompts.today(all, MALE)).isEmpty();
     }
 
+    // ── words ───────────────────────────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void everyQuestionItsAnswersAndTheirRepliesHaveWords() {
+        // The phone builds its keys from these (K-520 review): a choice or reply added here without words would show a key.
+        for (RuleId rule : List.of(Prompts.STEPS_DROPPED, Prompts.SESSIONS_MISSED, Prompts.LOADS_DROPPED, Prompts.HUNGER_FIRST_DAYS)) {
+            Map<String, Object> words = EngineFixtures.copyGroup(new CopyKey("prompt." + rule.value()));
+            assertThat(words).as(rule.value()).containsKeys("title", "body");
+            Map<String, Object> choices = (Map<String, Object>) words.get("choice");
+            for (String choice : Prompts.choices(rule).orElseThrow()) {
+                assertThat(choices).as(rule.value()).containsKey(choice.toLowerCase(java.util.Locale.ROOT));
+                Prompts.reply(rule, choice).ifPresent(reply -> assertThat(EngineFixtures.copyTree()).as(reply.value())
+                        .satisfies(tree -> assertThat(text(tree, reply.value())).isNotBlank()));
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String text(Map<String, Object> tree, String key) {
+        Object node = tree;
+        for (String part : key.split("\\.")) {
+            node = node instanceof Map<?, ?> map ? ((Map<String, Object>) map).get(part) : null;
+        }
+        return node instanceof String words ? words : null;
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
 
     /** Wednesday 7 Oct, on a cut, training Mondays and Thursdays since long ago, a session today: nothing to ask. */

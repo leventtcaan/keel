@@ -96,8 +96,14 @@ jest.mock('react-native/Libraries/AppState/AppState', () => ({
 const mockSyncHealth = jest.fn(async () => 0);
 const mockDrain = jest.fn(async () => {});
 const mockKeepRestUntil = jest.fn(async (_day: string | null, _era?: number) => {});
+// An answer to one of the coach's questions (K-520): what the server says back.
+let mockPost: Answer | 'offline' = { data: {}, response: new Response(null, { status: 200 }) } as Answer;
+const mockPOST = jest.fn(async (_path: string, _init?: unknown) => {
+  if (mockPost === 'offline') throw new TypeError('Network request failed');
+  return mockPost;
+});
 const mockServices = {
-  api: { GET: mockGET },
+  api: { GET: mockGET, POST: mockPOST },
   syncHealth: mockSyncHealth,
   queue: { drain: mockDrain },
   report: () => {},
@@ -137,6 +143,7 @@ afterAll(() => jest.useRealTimers());
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPost = ok({});
   mockAnswers = {
     '/v1/consistency': ok(CONSISTENCY),
     '/v1/decisions/current': ok(decision('decision.continue.toward_goal')),
@@ -511,5 +518,114 @@ describe('state mode on Today (K-518, ADR-038)', () => {
     mockAnswers['/v1/consistency'] = ok({ ...CONSISTENCY, paused: true });
     await show();
     expect(screen.getByText(t('today.consistency.paused'))).toBeOnTheScreen();
+  });
+});
+
+describe("the coach's own questions (K-520, ADR-039)", () => {
+  const STEPS: Schemas['Prompt'] = {
+    rule: 'steps_dropped',
+    key: '2026-09-21',
+    copyKey: 'prompt.steps_dropped',
+    choices: ['BUSY', 'LESS'],
+    source: { reference: 'arastirma/ham/guray/G5-surec-supplement.md#T-13', tag: 'EXPERIENCE' },
+  };
+  const MISSED: Schemas['Prompt'] = {
+    rule: 'sessions_missed',
+    key: '2026-09-24',
+    copyKey: 'prompt.sessions_missed',
+    choices: ['FIXED_TIME', 'LIFE', 'NOT_NOW'],
+    source: { reference: 'arastirma/ham/guray/G5-surec-supplement.md#T-4', tag: 'EXPERIENCE' },
+  };
+
+  test('one question at a time, in its own words, with its answers', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS, MISSED]);
+    await show();
+    expect(screen.getByText(t('prompt.steps_dropped.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('prompt.steps_dropped.body'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('prompt.steps_dropped.choice.busy') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('prompt.steps_dropped.choice.less') })).toBeOnTheScreen();
+    // U9: the second waits for the first to be answered.
+    expect(screen.queryByText(t('prompt.sessions_missed.title'))).toBeNull();
+  });
+
+  test('an answer goes to the server once, for that occurrence; its reply is shown in place of the answers', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    mockPost = ok({ replyCopyKey: 'prompt.steps_dropped.reply.less' });
+    await show();
+    await press(t('prompt.steps_dropped.choice.less'));
+    expect(mockPOST).toHaveBeenCalledTimes(1);
+    expect(mockPOST).toHaveBeenCalledWith('/v1/prompts/{rule}/answers', {
+      params: { path: { rule: 'steps_dropped' } },
+      body: { key: '2026-09-21', choice: 'LESS' },
+    });
+    expect(screen.getByText(t('prompt.steps_dropped.reply.less'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('prompt.steps_dropped.choice.less') })).toBeNull();
+  });
+
+  test('life got in the way: answered, then the state screen (K-518)', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    await show();
+    await press(t('prompt.steps_dropped.choice.busy'));
+    expect(mockPOST).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/state');
+  });
+
+  test('a fixed time: answered, then the reminders in Settings; life: the state screen', async () => {
+    mockAnswers['/v1/prompts'] = ok([MISSED]);
+    await show();
+    await press(t('prompt.sessions_missed.choice.fixed_time'));
+    expect(mockPush).toHaveBeenCalledWith('/settings');
+
+    mockPush.mockClear();
+    mockAnswers['/v1/prompts'] = ok([{ ...MISSED, key: '2026-09-28' }]);
+    await act(async () => mockRefocus());
+    await press(t('prompt.sessions_missed.choice.life'));
+    expect(mockPush).toHaveBeenCalledWith('/state');
+  });
+
+  test('not sent: said once, the answers stay to try again, and nowhere is opened', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    mockPost = 'offline';
+    await show();
+    await press(t('prompt.steps_dropped.choice.busy'));
+    expect(screen.getByText(t('today.prompt.failed'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('prompt.steps_dropped.choice.busy') })).toBeOnTheScreen();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  test('refused by the server: said so, not "check your connection"', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    mockPost = refused(500, 'INTERNAL');
+    await show();
+    await press(t('prompt.steps_dropped.choice.less'));
+    expect(screen.getByText(t('today.prompt.refused'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.prompt.failed'))).toBeNull();
+  });
+
+  test('a note that it was not sent goes once Today reads again', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    mockPost = 'offline';
+    await show();
+    await press(t('prompt.steps_dropped.choice.less'));
+    expect(screen.getByText(t('today.prompt.failed'))).toBeOnTheScreen();
+    await act(async () => mockRefocus());
+    expect(screen.queryByText(t('today.prompt.failed'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('prompt.steps_dropped.choice.less') })).toBeOnTheScreen();
+  });
+
+  test('an answer that leads elsewhere leaves no question behind', async () => {
+    mockAnswers['/v1/prompts'] = ok([STEPS]);
+    await show();
+    await press(t('prompt.steps_dropped.choice.busy'));
+    expect(screen.queryByText(t('prompt.steps_dropped.title'))).toBeNull();
+  });
+
+  test('no questions, or none could be read: nothing is shown and nothing said failed', async () => {
+    mockAnswers['/v1/prompts'] = ok([]);
+    await show();
+    expect(screen.queryByText(t('today.failed'))).toBeNull();
+    mockAnswers['/v1/prompts'] = 'offline';
+    await act(async () => mockRefocus());
+    expect(screen.queryByText(t('prompt.steps_dropped.title'))).toBeNull();
   });
 });
