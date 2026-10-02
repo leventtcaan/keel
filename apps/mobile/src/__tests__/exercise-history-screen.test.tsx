@@ -10,7 +10,7 @@ import ExerciseHistoryScreen from '@/app/exercise-history';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import type { Loaded } from '@/today/today';
-import type { TrainData } from '@/train/trainData';
+import type { Move, TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
@@ -62,9 +62,10 @@ const WORKOUTS: Schemas['Workout'][] = [
 let mockHistory: Loaded<Schemas['Workout'][]>;
 let mockRecords: LocalRecord[] = [];
 let mockData: TrainData;
+let mockOwn: Move[] = [];
 const mockServices = {
   api: {},
-  training: { read: async () => mockData, history: jest.fn(async () => mockHistory) },
+  training: { read: async () => mockData, own: async () => mockOwn, history: jest.fn(async () => mockHistory) },
   workoutRecords: async () => mockRecords,
   report: jest.fn(),
 };
@@ -79,6 +80,7 @@ beforeEach(() => {
   mockParams = { exercise: 'bench_press' };
   mockHistory = { state: 'ready', value: WORKOUTS };
   mockRecords = [];
+  mockOwn = [];
 });
 
 const show = () =>
@@ -293,4 +295,12 @@ describe('editing a past session (K-416)', () => {
     await act(async () => mockFocus?.());
     expect(mockServices.training.history.mock.calls.length).toBeGreaterThan(reads);
   });
+});
+
+test("the user's own move's history under the name they gave", async () => {
+  mockOwn = [{ id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] }];
+  mockParams = { exercise: 'custom:1' };
+  mockHistory = { state: 'ready', value: [] };
+  await show();
+  expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
 });

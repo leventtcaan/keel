@@ -267,3 +267,42 @@ test("a history read still on its way when the user signs out keeps nothing: the
   await reading;
   expect(kv.map.size).toBe(0);
 });
+
+describe("the user's own moves (K-416, ADR-035)", () => {
+  const OWN = [{ id: 'custom:1', clientId: 'c1', name: 'Landmine press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: true }];
+  const AS_MOVE = {
+    id: 'custom:1',
+    nameKey: '',
+    name: 'Landmine press',
+    kind: 'COMPOUND',
+    muscles: [],
+    alternatives: [],
+    load: 'EXTERNAL',
+    equipment: 'BARBELL',
+    unilateral: true,
+    setupFields: [],
+  };
+  const owning = api((path) => (path === '/v1/custom-exercises' ? json(OWN) : json(EXERCISES)));
+
+  test('read as moves like the catalog’s, with their own names; kept for offline', async () => {
+    const kv = memoryKv();
+    expect(await createTrainingCache(kv).own(owning)).toEqual([AS_MOVE]);
+    expect(
+      await createTrainingCache(kv).own(
+        api(() => 'offline'),
+      ),
+    ).toEqual([AS_MOVE]);
+  });
+
+  test('unread and nothing kept: none', async () => {
+    expect(await createTrainingCache(memoryKv()).own(api(() => 'offline'))).toEqual([]);
+  });
+
+  test('signing out forgets them', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    await cache.own(owning);
+    await cache.forget();
+    expect(kv.map.size).toBe(0);
+  });
+});

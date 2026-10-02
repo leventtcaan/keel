@@ -9,7 +9,7 @@ import type { components } from '@/api/schema';
 import WorkoutSummaryScreen from '@/app/workout-summary';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
-import type { TrainData } from '@/train/trainData';
+import type { Move, TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
@@ -61,7 +61,8 @@ const RECORDS = [
   row('finish', 'f1', { endedAt: '2026-09-28T18:00:00Z' }, 'w1'),
 ];
 const mockData: TrainData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
-const mockServices = { api: {}, training: { read: async () => mockData }, workoutRecords: async () => RECORDS, report: jest.fn() };
+let mockOwn: Move[] = [];
+const mockServices = { api: {}, training: { read: async () => mockData, own: async () => mockOwn }, workoutRecords: async () => RECORDS, report: jest.fn() };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
 test('the moves that reached the target effort, what improved, and a note where the effort was short', async () => {
@@ -90,4 +91,16 @@ test('one move judged reads as one exercise', async () => {
     </ThemeProvider>,
   );
   expect(await screen.findByText('1 of 1 exercise reached your target effort')).toBeTruthy();
+});
+
+test("the user's own move by the name they gave", async () => {
+  mockOwn = [{ id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] }];
+  RECORDS.splice(RECORDS.length - 1, 0, set('w1', 'x', 'custom:1', 30, 10, 1));
+  await render(
+    <ThemeProvider>
+      <WorkoutSummaryScreen />
+    </ThemeProvider>,
+  );
+  expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
+  expect(screen.queryByText('custom:1')).toBeNull();
 });

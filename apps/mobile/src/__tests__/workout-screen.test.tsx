@@ -13,7 +13,7 @@ import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import { workoutParams } from '@/train/params';
-import type { TrainData } from '@/train/trainData';
+import type { Move, TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
@@ -63,6 +63,7 @@ const lastWeek = () => [
 
 let mockRecords: LocalRecord[] = [];
 let mockData: TrainData;
+let mockOwn: Move[] = [];
 /** The phone's store as the queue writes it: the record kept, pending. */
 const keep = async (outbound: Outbound) => {
   const clientId = outbound.kind === 'finish' ? outbound.clientId : outbound.body.clientId;
@@ -75,7 +76,7 @@ let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 const mockWorkoutRecords = jest.fn(async () => mockRecords);
 const mockServices = {
   api: {},
-  training: { read: async () => mockData },
+  training: { read: async () => mockData, own: async () => mockOwn },
   workoutRecords: () => mockWorkoutRecords(),
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
   report: jest.fn(),
@@ -89,6 +90,7 @@ beforeEach(() => {
   mockWorkoutRecords.mockImplementation(async () => mockRecords);
   mockRecord.mockImplementation(keep);
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
+  mockOwn = [];
   mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
 });
 
@@ -608,5 +610,25 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     expect(screen.queryByLabelText(t('workout.add.search'))).toBeNull();
     expect(screen.queryByText(latName)).toBeNull();
     expect(screen.getByRole('button', { name: t('workout.add.open') })).toBeOnTheScreen();
+  });
+});
+
+describe("the user's own move (K-416, ADR-035)", () => {
+  const LANDMINE: Move = { id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] };
+
+  test('found by the name they gave, added, and logged under its id; its name in the list, on the card and at the finish', async () => {
+    mockOwn = [LANDMINE];
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'landmine');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: 'Landmine press' }) }));
+    expect(screen.getAllByText('Landmine press').length).toBeGreaterThan(1);
+    expect(screen.queryByText('custom:1')).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '30');
+    await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'custom:1', loadKg: 30, reps: 10 });
+    await fireEvent.press(await screen.findByText(t('workout.finish')));
+    expect(await screen.findByLabelText(`Landmine press: ${t('workout.form.clean')}`)).toBeOnTheScreen();
   });
 });

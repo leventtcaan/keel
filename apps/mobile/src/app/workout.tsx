@@ -24,7 +24,7 @@ import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
 import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
-import type { TrainData } from '@/train/trainData';
+import { type Move, type TrainData, movesOf } from '@/train/trainData';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise } from '@/train/workout';
 import { weightInput } from '@/units/units';
@@ -44,6 +44,7 @@ export default function WorkoutScreen() {
   const units = useUnits();
   const { color } = useTheme();
   const [data, setData] = useState<TrainData | null>(null);
+  const [own, setOwn] = useState<Move[]>([]);
   const [records, setRecords] = useState<LocalRecord[] | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [rest, setRest] = useState<number | null>(null);
@@ -62,9 +63,10 @@ export default function WorkoutScreen() {
   // A failed read back is not a failed save: the set is kept; the screen catches up at the next read.
   const refresh = useCallback(() => workoutRecords().then(setRecords).catch(named), [workoutRecords, named]);
   useEffect(() => {
-    void Promise.all([training.read(api), workoutRecords()])
-      .then(([read, kept]) => {
+    void Promise.all([training.read(api), training.own(api), workoutRecords()])
+      .then(([read, mine, kept]) => {
         setData(read);
+        setOwn(mine);
         setRecords(kept);
       })
       .catch((error: unknown) => {
@@ -83,7 +85,7 @@ export default function WorkoutScreen() {
   // warm-ups alone is no session (K-220). Leaving before a work set leaves nothing behind.
   const [held, setHeld] = useState<components['schemas']['NewSet'][]>([]);
   const warmedUp = [...done, ...held];
-  const moves = useMemo(() => new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m])), [data]);
+  const moves = useMemo(() => movesOf(data, own), [data, own]);
   // The session's moves (K-416): the day's plan, then the moves done in this session outside it (a swap, an extra; read
   // back from the sets), then the ones added on this screen in the order they were added — a first set does not move
   // one ahead of the others.
@@ -253,10 +255,10 @@ export default function WorkoutScreen() {
           <Pressable
             key={m.id}
             accessibilityRole="button"
-            accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id) })}
+            accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id, moves) })}
             onPress={() => addMove(m.id)}
             style={styles.move}>
-            <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id)}</Text>
+            <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id, moves)}</Text>
           </Pressable>
         ))}
         {addNote}
@@ -277,7 +279,7 @@ export default function WorkoutScreen() {
             onPress={() => setPicked(p.exerciseId)}
             style={[styles.move, on && { backgroundColor: color.surface }]}>
             <Text style={[styles.text, styles.grow, { color: status?.current === null ? color.muted : color.text }]}>
-              {exerciseName(p.exerciseId)}
+              {exerciseName(p.exerciseId, moves)}
             </Text>
             <Text style={[styles.small, { color: on ? color.accent : color.muted }]}>{status === null ? '' : exerciseStatus(status)}</Text>
           </Pressable>
@@ -320,18 +322,18 @@ export default function WorkoutScreen() {
   const card =
     moveId === undefined ? null : move === undefined || plan === null ? (
       <Card>
-        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(moveId)}</Text>
+        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(moveId, moves)}</Text>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.unknownMove')}</Text>
       </Card>
     ) : (
       <Card>
         <View style={styles.cardHead}>
-          <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(moveId)}</Text>
+          <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(moveId, moves)}</Text>
           {targetLine}
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId) })}
+          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId, moves) })}
           onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}>
           <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
         </Pressable>
@@ -353,6 +355,7 @@ export default function WorkoutScreen() {
     <>
       <FinishForm
         moves={worked}
+        named={moves}
         unclean={unclean}
         busy={busy}
         onMark={(id, clean) =>

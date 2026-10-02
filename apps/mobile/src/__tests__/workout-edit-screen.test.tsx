@@ -10,6 +10,7 @@ import WorkoutEditScreen from '@/app/workout-edit';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import type { Move } from '@/train/trainData';
 import { weightInput } from '@/units/units';
 
 type Schemas = components['schemas'];
@@ -62,10 +63,14 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof im
 jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() }, useLocalSearchParams: () => ({ workout: 'w1' }) }));
 const mockServices = {
   api: { GET: mockGET, DELETE: mockDELETE, POST: mockPOST },
-  training: { read: async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: CATALOG }, kept: false }) },
+  training: {
+    read: async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: CATALOG }, kept: false }),
+    own: async () => mockOwn,
+  },
   forgetRecord: mockForget,
   report: jest.fn(),
 };
+let mockOwn: Move[] = [];
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
@@ -75,6 +80,7 @@ beforeEach(() => {
   mockDelete = async () => ({ response: new Response(null, { status: 204 }) });
   mockPost = async () => ok({}, 201);
   mockUnits = 'METRIC';
+  mockOwn = [];
 });
 
 async function show() {
@@ -249,4 +255,13 @@ describe('review', () => {
     await show();
     expect(screen.getByText(t('sessionEdit.targetsNote'))).toBeOnTheScreen();
   });
+});
+
+test("the user's own move is in the session by the name they gave, its sets there to change", async () => {
+  mockOwn = [{ id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] }];
+  mockWorkout = async () => ok({ ...WORKOUT, sets: [...WORKOUT.sets, set('s3', 'custom:1', 'WORKING', 30, 10)] });
+  await show();
+  expect(screen.getAllByText('Landmine press').length).toBeGreaterThan(0);
+  expect(screen.queryByText('custom:1')).toBeNull();
+  expect(screen.getAllByRole('button', { name: /^Delete / })).toHaveLength(4);
 });

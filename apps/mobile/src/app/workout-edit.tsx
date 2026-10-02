@@ -16,6 +16,7 @@ import { type Loaded, load, localDay } from '@/today/today';
 import { type Entry, SetEntry } from '@/train/SetEntry';
 import { SetLine } from '@/train/SetLine';
 import { exerciseName, shortDate } from '@/train/program';
+import { type Move, movesOf } from '@/train/trainData';
 import { buildSet, parseEntry, setText } from '@/train/session';
 import { weightInput } from '@/units/units';
 
@@ -36,7 +37,7 @@ export default function WorkoutEditScreen() {
   const units = useUnits();
   const { color } = useTheme();
   const [session, setSession] = useState<Loaded<Schemas['Workout']> | null>(null);
-  const [moves, setMoves] = useState<Map<string, Schemas['Exercise']>>(() => new Map());
+  const [moves, setMoves] = useState<Map<string, Move>>(() => new Map());
   const [confirming, setConfirming] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [side, setSide] = useState<Schemas['Side']>('LEFT');
@@ -53,9 +54,8 @@ export default function WorkoutEditScreen() {
   const read = useCallback(() => load(() => api.GET('/v1/workouts/{id}', { params: { path: { id: workout } } })).then(setSession), [api, workout]);
   useEffect(() => {
     void read();
-    void training
-      .read(api)
-      .then((data) => setMoves(new Map((data.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m]))))
+    void Promise.all([training.read(api), training.own(api)])
+      .then(([data, own]) => setMoves(movesOf(data, own)))
       .catch(named);
   }, [api, training, read, named]);
 
@@ -143,7 +143,7 @@ export default function WorkoutEditScreen() {
     const each = moves.get(id) as Schemas['Exercise'];
     return (
       <Card key={id}>
-        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(id)}</Text>
+        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(id, moves)}</Text>
         {sets
           .filter((s) => s.exerciseId === id)
           .map((s) => {
@@ -183,7 +183,7 @@ export default function WorkoutEditScreen() {
         <Text style={[styles.heading, { color: color.text }]}>{t('sessionEdit.add')}</Text>
         <View style={styles.chips}>
           {order.map((id) => (
-            <Chip key={id} label={exerciseName(id)} selected={id === chosen} onPress={() => setPicked(id)} />
+            <Chip key={id} label={exerciseName(id, moves)} selected={id === chosen} onPress={() => setPicked(id)} />
           ))}
         </View>
         <View style={styles.chips}>{sideChips}</View>

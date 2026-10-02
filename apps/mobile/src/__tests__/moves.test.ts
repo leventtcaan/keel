@@ -42,3 +42,8 @@ test('nothing typed, or spaces only, finds nothing', () => {
 test('the moves left out (already in the session) are not offered', () => {
   expect(ids(findMoves('row', CATALOG, new Set(['barbell_row'])))).toEqual(['one_arm_dumbbell_row']);
 });
+
+test("the user's own moves are found by the name they gave", () => {
+  const own = { ...move('custom:1'), nameKey: '', name: 'Landmine press' };
+  expect(ids(findMoves('landmine', [...CATALOG, own]))).toEqual(['custom:1']);
+});
