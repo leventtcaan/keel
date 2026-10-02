@@ -8,6 +8,7 @@ import app.keel.engine.Phase;
 import app.keel.engine.SafetyHold;
 import app.keel.engine.Sex;
 import app.keel.engine.WeeklySpine;
+import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,10 +66,10 @@ final class CheckInQuestions {
 
     /**
      * Whether an answer of this kind is taken: a question the engine can wait for, asked this week or not — the cycle
-     * question, whose answer is a woman's (Answers), and appetite (K-227).
+     * question, whose answer is a woman's (Answers), appetite (K-227), and whether a declared state is still so (K-516).
      */
     static boolean answerable(Answers.Kind kind) {
-        return kind == Answers.Kind.CYCLE_STOPPED || kind == Answers.Kind.APPETITE || Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
+        return kind == Answers.Kind.CYCLE_STOPPED || kind == Answers.Kind.APPETITE || kind == Answers.Kind.STATE_STILL || Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
     }
 
     /** Whether the cycle question is asked (V4, ADR-020 L-1): a woman whose plan is in the low energy band. */
@@ -97,6 +98,16 @@ final class CheckInQuestions {
         return reachable.stream().map(engine).anyMatch(CheckInQuestions::waitsForTheCycle);
     }
 
+    /**
+     * Whether the check-in asks if the declared state is still so (K-516, ADR-038 #5): one is in force today, and each of
+     * the last {@code weeks} weeks (this one included, Monday to Sunday) has a declared day.
+     */
+    static boolean asksWhetherStillSo(boolean inForceToday, java.util.Set<LocalDate> declaredDays, LocalDate today, int weeks) {
+        LocalDate monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        return inForceToday && java.util.stream.IntStream.range(0, weeks).mapToObj(monday::minusWeeks)
+                .allMatch(week -> week.datesUntil(week.plusWeeks(1)).anyMatch(declaredDays::contains));
+    }
+
     static boolean anomaly(CheckIn dataSays, Phase phase) {
         boolean waistAgainst = phase == Phase.CUT ? dataSays.waist() == CheckIn.Waist.UP : dataSays.waist() == CheckIn.Waist.DOWN;
         return dataSays.look() == CheckIn.Look.WORSE || waistAgainst;
@@ -114,6 +125,7 @@ final class CheckInQuestions {
             case RECOVERY -> CheckIn.Recovery.values();
             case CYCLE_STOPPED -> Answers.Cycle.values();
             case APPETITE -> CheckIn.Appetite.values();
+            case STATE_STILL -> Answers.StillSo.values();
             default -> throw new IllegalArgumentException(kind + " is not a question the engine waits for");
         };
         return Arrays.stream(values).map(Enum::name).filter(name -> !name.equals("UNKNOWN")).toList();

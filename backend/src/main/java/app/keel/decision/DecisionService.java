@@ -131,6 +131,13 @@ class DecisionService {
             asked.add(Answers.Kind.CYCLE_STOPPED);
         }
         asked.addAll(spine);
+        // The third paused week running (K-516, ADR-038 #5): once, inside the budget.
+        int weekBudget = budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase()));
+        if (spine.size() < weekBudget && CheckInQuestions.asksWhetherStillSo(states.current(account, week.today()).isPresent(),
+                states.days(account, week.today().minusWeeks(budget.stillAfterPausedWeeks()), week.today()), week.today(),
+                budget.stillAfterPausedWeeks())) {
+            asked.add(Answers.Kind.STATE_STILL);
+        }
         return new CheckInView(week.weekOf(), asked.stream().map(CheckInQuestions::describe).toList(), false);
     }
 
@@ -167,6 +174,10 @@ class DecisionService {
             }
             return estimated;
         }).orElseGet(() -> calls.start(account, firstPlan(week)));
+        // Not still so (K-516): the state ends yesterday; this week, declared, still waits.
+        if (answers.stateOver()) {
+            states.end(account, week.today());
+        }
         CheckIn dataSays = dataSays(account, week, plan);
         // Appetite is the user's answer (K-227): no data says it.
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),

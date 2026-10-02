@@ -21,3 +21,9 @@ parameters:
     unit: count_per_week
     tag: urun
     source: "arastirma/ham/I2-etkilesim-modeli.md#G2"
+  - key: state_still_after_paused_weeks
+    value: 3
+    unit: count_weeks
+    tag: urun
+    source: "arastirma/ham/L3-ozellik-boslugu.md#4.2"
+    note: "Durum modu (K-516, ADR-038 #5): bu kadar ardışık duraklayan haftadan sonra check-in tek bir neden-gösteren soru sorar ('hâlâ sürüyor mu?'). Kötüye kullanım sınırı: kararı ertelemek kullanıcının hakkı, değiştirmek değil (U2). Soru bütçesinin içinde."

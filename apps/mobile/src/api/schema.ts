@@ -717,8 +717,10 @@ export interface paths {
          *     were asked, so a question shown is never refused —, APPETITE (NORMAL/GONE: asked on a long bulk when GONE would
          *     change the call, inside the week's budget; a gone appetite is the mini cut's reason) and CYCLE_STOPPED (YES/NO)
          *     from a woman: asked in the low energy band or when the call would wait for it after a hard stop, never kept, a
-         *     man's is VALIDATION_FAILED. Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from the
-         *     data, the rest are read with their own questions later.
+         *     man's is VALIDATION_FAILED. STATE_STILL (YES/NO, K-516): asked once a state has been declared on a day of each of the
+         *     last state_still_after_paused_weeks weeks and is in force today; NO ends it yesterday (this week, declared, still
+         *     waits). Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from the data, the rest are read
+         *     with their own questions later.
          */
         post: operations["answerCheckIn"];
         delete?: never;
@@ -1525,7 +1527,7 @@ export interface components {
          *     week's consistency, counted from the logs (ADR-020 L-6).
          * @enum {string}
          */
-        QuestionKind: "TRAINING" | "RECOVERY" | "SLEEP_QUALITY" | "ENERGY" | "LOOK" | "WAIST" | "APPETITE" | "CYCLE_STOPPED";
+        QuestionKind: "TRAINING" | "RECOVERY" | "SLEEP_QUALITY" | "ENERGY" | "LOOK" | "WAIST" | "APPETITE" | "CYCLE_STOPPED" | "STATE_STILL";
         Question: {
             kind: components["schemas"]["QuestionKind"];
             /** @enum {string} */
