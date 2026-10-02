@@ -1,5 +1,8 @@
 # M4 · Part 3 — devam (compact sonrası)
 
+> **BİTTİ (2 Eki gece):** aşağıdaki adımların hepsi uygulandı; Part 3 ÇIKIŞ `DURUM.md › ## M4 ilerleme`'de. Bu dosya
+> yalnız tarihçe — Part 4 bunu yarım iş sayıp uygulamaz.
+
 > Hafıza DURUM.md › M4 ilerleme › Part 3 tablosu + ▶ DEVAM NOKTASI. Sohbete güvenme; git ile doğrula.
 
 ## Neredeyiz (2 Eki akşam)

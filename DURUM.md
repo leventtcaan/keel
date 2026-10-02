@@ -68,11 +68,9 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (2 Eki akşam — M4 Part 3 yarıda, compact)
-**Önce oku:** `plan/oturum-promptlari/M4-part3-devam.md` (tam olarak nerede, sıradaki adımlar, dersler).
-Birleşen: K-407, K-413, K-424, K-416 1/3 + 2/3 + 2b (#236-#241, #244-#247). PR: K-416 3/3 (#248). Sıradaki: K-418
-(yer tutucu, kas haritası kütüphanesi soru 49), K-419 eksik listesi, Part 3 ÇIKIŞ.
-Part 2 aktarımı da bekliyor. Levent'i bekleyen: K-308 cihaz adımları, sorular 33-48.
+## ▶ DEVAM NOKTASI (2 Eki gece — M4 Part 3 bitti)
+Part 3 ÇIKIŞ yazıldı (`## M4 ilerleme`). Sıradaki: Levent dönünce **Part 2 + Part 3 aktarımı** (`docs/aktarim/M4/`, README
+8-18); sonra Part 4 (`plan/oturum-promptlari/M4-part4.md`). Levent'i bekleyen: K-308 cihaz adımları, K-419 çekim, sorular 33-49.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -241,7 +239,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 |---|---|---|
 | 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
 | 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 (+ K-421, K-422 bölündü) | ✅ bitti (2 Eki) — aktarım bekliyor |
-| 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | sürüyor (2 Eki) — K-407, K-413 bitti |
+| 3 · Öğün ve hareket | K-407, K-413, K-424, K-416, K-418 (+ K-419 Levent) | ✅ bitti (2 Eki) — aktarım bekliyor; klipler Levent'te |
 | 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
 
 **Part 1 başı (1 Eki):** senkron tamam (M3 ÇIKIŞ git ile tutarlı: #211 birleşik, açık PR/worktree yok, `main` temiz).
@@ -369,7 +367,37 @@ agent karar verir, PR'da gerekçe.
 | K-416 (1/3) geçmiş seansı düzenle: sil (onaylı) + unutulan seti ekle (çevrimiçi), silinen setin telefondaki kopyası unutulur, geçmiş odakta yeniden okunur | ✅ birleşti; simülatör: boş alanlar görünmüyordu → son setten öneri; RIR eksikti; inceleme: süren seansta da düzenleme vardı, yeniden denemede yeni clientId (çift set), çift dokunuş onaylı silmeyi geçiyordu; hedefler değişmez → soru 48; mutasyon 11/11 + 2/2 + 7/7 | #245 | `M4/K-416.md` |
 | K-416 (2/3) seansa plan dışı hareket ekle (katalogda ad/takma ad, `extraPlan`, boş sayı alanında soluk "–", Kapat) | ✅ birleşti; inceleme: eklenen harekette her setten sonra kart atlıyordu, liste sırası değişince seçim kayıyordu (seçim artık kimlikle), "4 of 3" → plan sayılır; sağ taraf boşsa bu turdaki sol set önerilir; mutasyon 17/17 | #246 | `M4/K-416.md` |
 | K-416 (2b) kendi hareketi telefonda: çevrimdışı kopya (`training.own`, `saved`), adı her ekranda, seanstan oluşturma (önce eşleşmeler — katalog + kendi; motorun soruları, hiçbiri varsayılmaz) | ✅ birleşti; simülatör: form + eklenen hareket; inceleme: kaydedilen hareket kopyaya yazılmıyordu → `saved()`; aynı clientId korunur (sunucunun cevabı gösterilir); mutasyon 33/33 | #247 | `M4/K-416.md` |
-| K-416 (3/3) süperset: setin kimliği, eş sırada, dinlenme tur sonunda; geçmişte "Superset with"; K-416 aktarım dosyası | 🔄 PR, oto-birleşme; simülatör: bench → row; inceleme: çözülen grup yeniden açılınca dönüyordu → grup hareketin son setinden; tur sırası; eşler birleşir; mutasyon 25/26 (1 eşdeğer) | #248 | `M4/K-416.md` |
+| K-416 (3/3) süperset: setin kimliği, eş sırada, dinlenme tur sonunda; geçmişte "Superset with"; K-416 aktarım dosyası | ✅ birleşti; simülatör: bench → row; inceleme: çözülen grup yeniden açılınca dönüyordu → grup hareketin son setinden; tur sırası; eşler birleşir; mutasyon 25/26 (1 eşdeğer) | #248 | `M4/K-416.md` |
+| K-418 hareket ekranı: kurulum (telefonda, önce), klip yer tutucusu, Güray ipuçları harekete göre (sırtta son-tekrar yok), kas haritası (`react-native-body-highlighter`, temadan renk) | ✅ birleşti; simülatör: kart içindeki boş alan görünmüyordu → kart dışı; inceleme: sırtta çelişen ipuçları, kendi hareketine klip vaadi, `defaultFill` etkisizdi (çizimin gömülü grisi), `as Slug` yazım hatası gizliyordu; mutasyon 14/14 + 9/9 + 6/6 | #250, #251 | `M4/K-418.md` |
+| K-419 (teknik kısım) klip kesim betiği `tools/clip.py` (3-5 sn, sessiz, dikey 960, faststart, bütçe) + `missing` listesi; CI'da | ✅ birleşti; 40/40 hareket eksik (80 klip) — çekim + denetim Levent'in | #249 | `M4/K-418.md` |
+
+**Part 3 ÇIKIŞ (2 Eki):**
+- **Birleşen:** K-407 #236 + #237 + #240 + #241 (+ #238 test yardımcısı) · K-413 #239 · K-424 #244 · K-416 #245 + #246 + #247 +
+  #248 · K-418 #250 + #251 · K-419'un teknik kısmı (kesim betiği) #249. Açık PR yok, açık worktree yok (`../keel-main` kalıcı).
+  Aktarım dosyaları `docs/aktarim/M4/` (README 14-18), görseller `img/`.
+- **Çıkış kriterleri (`M4.md › Part'lar`):**
+  | Kriter | Durum | Kanıt |
+  |---|---|---|
+  | Öğün metin/barkod/"dünkü gibi" ile ~10 sn | ✅ (süre ölçümü cihazda yapılmadı) | K-407 dört PR; "dünkü gibi" tek dokunuş, barkod `expo-camera`, aralık kartı + adlı tek soru (`img/K-407-*`) |
+  | Hareket kartı kendi klipten | ⏸ klip yok | K-418 ekranı hazır (kurulum, ipuçları, kas haritası; `img/K-418-*`); 80 klibin 80'i eksik (`python3 tools/clip.py missing`), oynatma K-425 |
+  Kontrol çıktısı (`main`, 2 Eki): mobil jest **1225/1225** (`--maxWorkers=3`; varsayılan işçiyle iki ağır öğün testi ilgisiz bir
+  CPU yükünde 5 sn'yi aştı → ayrı görev önerildi), typecheck + lint temiz; backend saf testler 942/942, DB testleri CI'da yeşil.
+- **Kalan iş:** K-419 çekim + denetim (Levent; betik hazır). K-423 tarifler telefonda (Part 4'te zaman kalırsa). K-425 klip
+  oynatma (klip gelince). K-308 cihaz adımları (Levent). Sorular 38-49.
+- **Part 4'ün bilmesi gerekenler:**
+  - **Kendi hareketi** (`custom:<uuid>`): telefonda `training.own`/`saved` (çevrimdışı kopya), `Move` = katalog hareketi + `name`;
+    adı her yerde `exerciseName(id, moves)` — yeni bir ekran hareket adı gösterecekse `movesOf(data, own)` haritasını geçir.
+  - **Süperset**: yalnız setin `supersetId`'si; grup = hareketin son iş setindeki kimlik (`supersetsInForce`), tur sırası turu
+    başlatan; dinlenme turun sonunda (K-411 dinlenme sayacı bunu bilmeli: süpersette sayaç yalnız tur bitince başlar).
+  - **Seçili hareket kimlikle** (`picked: string`), konumla değil.
+  - **Kurulum** (`training.setup`, `train.setup`) telefonda, çıkışta silinir.
+  - **Bağımlılıklar:** `react-native-svg` 15.15.4 + `react-native-body-highlighter` 3.2.0 (Expo Go'da çalışıyor).
+  - **Test/araç tuzakları:** yerel `.expo/types/router.d.ts` yeni rota eklenince eskir → silinir (CI'da yok); simülatörün yazma
+    aracı karakter kaçırabiliyor, klavye Türkçe ("i" → "ı"); kartın içindeki boş alan görünmüyor (alan rengi = kart rengi) →
+    form kart dışında; `screen.unmount()` RNTL v14'te `await` ister.
+  - **Dependabot:** #3 `node-forge` ≤1.4.0 (yüksek) — `@expo/cli`'nin geliştirme bağımlılığı, yaması yok (`fix: null`),
+    uygulama paketine girmiyor; #2 bilinen. Expo yükseltmesinde ikisine de bak.
+- **Yeni sorular:** 45-49.
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
@@ -410,6 +438,10 @@ agent karar verir, PR'da gerekçe.
     ama **sonraki seansın hedefi** (K-217, bitişte hesaplanır) **değişmez**. Örnek: "12 tekrar yazdım, 10'du" → yük artışı
     yürürlükte kalır. Şimdi: ekranda "buradaki değişiklik sonraki hedefleri değiştirmez" yazıyor. (a) böyle kalsın;
     (b) programın son bitmiş seansı düzenlenince hedefler yeniden hesaplansın (training görevi, backend).
+49. **(K-418, ürün — YENİ)** Kas haritası çizimi kütüphanenin varsayılanı olan **erkek figürü** (`react-native-body-highlighter`
+    `gender` male/female). (a) böyle kalsın (tek figür, anatomi aynı); (b) profildeki cinsiyete göre figür (profil okuması
+    ekrana eklenir). Ayrıca K-418 kartındaki "bağımlılık Levent onayıyla" notu ADR-019'dan eski; K5'e göre eklendi
+    (aşağıda "Eklenen bağımlılıklar"), itirazın varsa söyle.
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
 33. **(K-231, veri — YENİ, M4 Part 1)** Apple Health rızası geri çekilince ne silinsin? Şimdi: Health'ten **okuma durur**,
     sunucuda zaten tutulan tartı (`source=APPLE_HEALTH`) ve adım/uyku günleri **kalır** — bunlar sağlık verisi rızasıyla
@@ -538,6 +570,9 @@ agent karar verir, PR'da gerekçe.
   `spring-modulith-starter-test`, `snakeyaml` (Boot BOM sürümü; ParameterProvenanceTests için)
 - Mobil: Expo SDK 57 varsayılan şablonunun paketleri + geliştirme: `eslint`, `eslint-config-expo`, `jest`, `jest-expo`,
   `@types/jest`, `@types/node` (hepsi `npx expo install` ile SDK uyumlu)
+- Mobil (M4 Part 3, K5 gerekçesi PR'larda): `expo-camera` ~57.0.6 (K-407 barkod; mikrofonsuz), `react-native-svg` 15.15.4
+  (`npx expo install`, SDK 57) + `react-native-body-highlighter` 3.2.0 (K-418 kas haritası; MIT; L1 §4; tek svg kopyası).
+  `expo-video` henüz yok: ilk klip denetimden geçince (K-425).
 
 ## Açık sorular (Levent'e)
 1. **Dil modeli sağlayıcısı** (29 Eyl'de açıklandı): M5'te üç sağlayıcı kendi değerlendirme setimizle ölçülüp seçilecek

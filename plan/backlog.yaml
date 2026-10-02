@@ -1704,7 +1704,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-405, K-424]
     why: "Masa bahsi (L3 §1)"
     acceptance:
@@ -1740,7 +1740,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-219, K-405]
     why: "ADR-017: ilk tekrar / son tekrar klipleri, ipuçları, kurulum kartı, kas haritası"
     acceptance:
@@ -1772,6 +1772,24 @@ tasks:
     refs: ["docs/hareket-cekim-kontrol-listesi.md", "plan/kararlar/ADR-017-hareket-gosterimi.md"]
     learn:
       - "Video üretim hattı (ffmpeg)"
+
+  - id: K-425
+    title: "Hareket kliplerini oynat (ilk tekrar / son tekrar yan yana)"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-418, K-419]
+    why: "K-418 hareket ekranını klipsiz kurdu (hiçbir klip denetimden geçmedi); denetimden geçen ilk klip gelince oynatma eklenir (ADR-017). K-418'den bölündü"
+    acceptance:
+      - "`expo-video` (`npx expo install`, K5 gerekçesi PR'da): katalogda `clips` gelen harekette iki klip yan yana, döngü, sessiz, internetsiz (uygulamaya gömülü)"
+      - "Klibi olmayan hareket bugünkü gibi 'henüz çekilmedi' der; kendi hareketine klip vaat edilmez"
+      - "Toplam boyut bütçesi (ADR-017 ~19 MB) bir testle korunur"
+    tests:
+      - "ExerciseScreenTests (klipli hareket)"
+    refs: ["plan/kararlar/ADR-017-hareket-gosterimi.md", "tools/clip.py"]
+    learn: ["Video oynatma", "Varlık paketleme (asset bundling)"]
 
   - id: K-313
     title: "Onboarding: referans görünüş adımı"
