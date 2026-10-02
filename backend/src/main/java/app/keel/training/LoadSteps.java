@@ -22,7 +22,10 @@ import java.util.stream.Stream;
  */
 final class LoadSteps {
 
-    /** What the gym makes of the engine's load: a load, nothing heavier than the last, or no word on this equipment. */
+    /**
+     * What the gym makes of the engine's load: a load, nothing heavier than the last (or none near enough, K-430), or no
+     * word on this equipment.
+     */
     sealed interface Rounding {
         record To(BigDecimal kg) implements Rounding {
         }
@@ -88,6 +91,17 @@ final class LoadSteps {
      * NoHeavier only where the gym's weights end (a dumbbell rack); Unknown when the gym says nothing about this equipment.
      */
     static Rounding round(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal lastKg, BigDecimal targetKg) {
+        return round(equipment, exerciseId, gym, lastKg, targetKg, null);
+    }
+
+    /**
+     * As {@link #round(ExerciseCatalog.Equipment, String, GymStore.Gym, BigDecimal, BigDecimal)}, and the nearest heavier
+     * load is taken only within {@code maxJump} of the engine's steps (target − last) over the last (K-430, ADR-037 #38):
+     * further — a sparse rack, 10 kg dumbbells then 20 — it is NoHeavier, so the load stays and the reps go up.
+     * {@code maxJump} null: no limit.
+     */
+    static Rounding round(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal lastKg, BigDecimal targetKg,
+            BigDecimal maxJump) {
         BigDecimal stepKg = Optional.ofNullable(gym.machineStepsKg().get(exerciseId)).orElse(gym.stackStepKg());
         Scale scale = switch (equipment) {
             case DUMBBELL -> Scale.of(gym.dumbbellsKg().stream());
@@ -114,6 +128,8 @@ final class LoadSteps {
         }
         return loads.stream().filter(load -> load > last)
                 .min(Comparator.comparingLong((Long load) -> Math.abs(load - target)).thenComparingLong(load -> load))
+                .filter(load -> maxJump == null || target <= last
+                        || BigDecimal.valueOf(load - last).compareTo(maxJump.multiply(BigDecimal.valueOf(target - last))) <= 0)
                 .<Rounding>map(load -> new Rounding.To(scale.kg(load))).orElse(new Rounding.NoHeavier());
     }
 

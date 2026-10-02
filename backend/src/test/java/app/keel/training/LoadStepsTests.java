@@ -37,8 +37,12 @@ class LoadStepsTests {
         List<Map<String, Object>> cases = (List<Map<String, Object>>) fixture().get("round");
         assertThat(cases).isNotEmpty();
         return cases.stream().map(c -> DynamicTest.dynamicTest((String) c.get("case"), () -> {
-            LoadSteps.Rounding rounding = LoadSteps.round(ExerciseCatalog.Equipment.valueOf((String) c.get("equipment")), (String) c.get("exerciseId"),
-                    gym((Map<String, Object>) c.get("gym")), kg(c.get("lastKg")), kg(c.get("targetKg")));
+            ExerciseCatalog.Equipment equipment = ExerciseCatalog.Equipment.valueOf((String) c.get("equipment"));
+            String exerciseId = (String) c.get("exerciseId");
+            GymStore.Gym gym = gym((Map<String, Object>) c.get("gym"));
+            LoadSteps.Rounding rounding = c.get("maxJump") == null
+                    ? LoadSteps.round(equipment, exerciseId, gym, kg(c.get("lastKg")), kg(c.get("targetKg")))
+                    : LoadSteps.round(equipment, exerciseId, gym, kg(c.get("lastKg")), kg(c.get("targetKg")), kg(c.get("maxJump")));
             Object expected = c.get("expect");
             switch (String.valueOf(expected)) {
                 case "NO_HEAVIER" -> assertThat(rounding).isEqualTo(new LoadSteps.Rounding.NoHeavier());

@@ -92,6 +92,22 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void aRackWhoseNextDumbbellIsTooFarKeepsTheLoadAndAddsARep() throws Exception {
+        // K-430 (ADR-037 #38): 10 kg then 20 is four of the engine's 2.5 kg steps, past load_jump_max_steps (2): the load
+        // stays and the reps go one past the weakest set, as when nothing heavier is in the gym.
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
+                "dumbbellsKg", List.of(10, 20), "machines", List.of()));
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "LEFT");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "RIGHT");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 3)).isEqualTo(target(10, 13));
+    }
+
+    @Test
     void aMachinesOwnStepIsTheOneTheLoadIsRoundedTo() throws Exception {
         // The move's own machine in the gym's list (by the move's id), not the gym's stack step: 35 + 2.5 is 42 by 7s, 40 by 5s.
         AccountId account = withAProgram();

@@ -35,6 +35,8 @@ public enum Unit {
     WINDOWS("windows", Kind.WHOLE, Bound.POSITIVE),
     // Total over resting expenditure (PAL); a person always spends at least their resting energy, so never under 1.
     ACTIVITY_FACTOR("activity_factor", Kind.FRACTION, Bound.AT_LEAST_ONE),
+    // How many of the engine's load steps a gym's next load may be over the last (K-430); at least one step.
+    LOAD_STEPS("load_steps", Kind.FRACTION, Bound.AT_LEAST_ONE),
     DAYS("days", Kind.WHOLE, Bound.POSITIVE),
     WEEKS("weeks", Kind.WHOLE, Bound.POSITIVE),
     MONTHS("months", Kind.WHOLE, Bound.POSITIVE),

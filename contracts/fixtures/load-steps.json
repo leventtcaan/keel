@@ -1,5 +1,5 @@
 {
-  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest load the gym can make that is heavier than the last; a tie goes to the lighter; NO_HEAVIER when the gym has nothing heavier (only a finite list can end: dumbbells, or a bodyweight move's dumbbells without plates); UNKNOWN when the gym says nothing about this equipment. A gym whose weights were entered in lb (each on the quarter-pound grid, at least one not a multiple of 0.05 kg) is counted in hundredths of a lb, and a load goes back to kg as the app converts a typed lb load (round(lb x 0.45359237, 2)): 140 lb is 63.5, whatever plates make it. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made.",
+  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest load the gym can make that is heavier than the last; a tie goes to the lighter; NO_HEAVIER when the gym has nothing heavier (only a finite list can end: dumbbells, or a bodyweight move's dumbbells without plates); UNKNOWN when the gym says nothing about this equipment. A gym whose weights were entered in lb (each on the quarter-pound grid, at least one not a multiple of 0.05 kg) is counted in hundredths of a lb, and a load goes back to kg as the app converts a typed lb load (round(lb x 0.45359237, 2)): 140 lb is 63.5, whatever plates make it. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made. maxJump (K-430, ADR-037 #38), when given: the nearest heavier load is taken only within that many of the engine's steps (target - last) over the last; further, NO_HEAVIER — the load stays and the reps go up. Without it (a warm-up), no limit.",
   "round": [
     {
       "case": "dumbbells by 2 kg: +2.5 becomes the 22",
@@ -561,6 +561,91 @@
       "lastKg": 10,
       "targetKg": 12.5,
       "expect": 12.5
+    },
+    {
+      "case": "a sparse rack: 10 -> 20 is four engine steps, the load stays (ADR-037 #38)",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          20
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "maxJump": 2,
+      "expect": "NO_HEAVIER"
+    },
+    {
+      "case": "the same rack without a limit: the nearest heavier, however far",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          20
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "expect": 20
+    },
+    {
+      "case": "exactly two engine steps over the last is still taken",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          15
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "maxJump": 2,
+      "expect": 15
+    },
+    {
+      "case": "within two engine steps the nearest is taken",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          14,
+          20
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "maxJump": 2,
+      "expect": 14
+    },
+    {
+      "case": "a bar with only 10 kg plates: +20 for a +2.5 step, the load stays",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          10
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 60,
+      "targetKg": 62.5,
+      "maxJump": 2,
+      "expect": "NO_HEAVIER"
     }
   ],
   "platesPerSide": [
