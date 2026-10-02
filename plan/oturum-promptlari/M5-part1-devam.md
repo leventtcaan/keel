@@ -4,8 +4,19 @@
 
 ## Yarım işler (sırayla) — güncel: 3 Eki, ikinci oturum sonu
 1. ✅ K-518 #284, K-512 #283 + #285, K-519 #286, K-520 #287 birleşti.
-2. **K-513 kısım 1 #289** (`../keel-513`, dal `engine/119-first-weeks`): motor `FirstWeeks` + ADR-040 (main'de). İnceleme ajanı
-   çalışıyordu — sonucu yoksa yeniden incelet (code-reviewer). Bulgular TDD ile, sonra `gh pr merge 289 --auto --squash`.
+2. **K-513 kısım 1 #289** (`../keel-513`, dal `engine/119-first-weeks`, auto-merge KAPALI): inceleme 5 bulgu — **önce bunlar**, TDD ile:
+   (1) **risk penceresi kaydı:** sinyaller biten takvim haftasından, kapı içinde bulunulan kullanıcı haftası (5-8) → 4-7. haftaların
+   davranışı okunuyor, 8. haftanınki hiç. Düzeltme: sinyalleri **biten kullanıcı haftasından** (kişinin 7 günlük bloğu) oku; risk,
+   biten hafta 5-8 iken (yani 6-9. haftalarda) okunur; akış 8. haftadan sonra da 1 hafta yalnız risk için açık. Affedilen hafta takvim
+   haftasıyla sayılıyor → bu sinyali de kişinin haftasına uyarla ya da ADR'ye uyumsuzluğu yaz. ADR-040 #1/#3 ve yaml notlarını güncelle.
+   (3) **affedilen hafta motorda hesaplansın:** `Consistency`'ye saf yardımcı (ör. `ConsistencyRecord.forgivenWeekUsed` ya da
+   `FirstWeeks.Facts` `List<WeekTally>` alsın); ilk sayılan hafta kaçtıysa "affedilen" değil (koşu yok) — testle tanımla; duraklayan
+   hafta atlanır. Facts'te konumsal int/bool kalabalığını azalt.
+   (2) **5. hafta metni** herkese "eşiği geçtin" diyor (I1 F2'de koşullu: 12'de 9) → koşulsuz bir cümleye çevir ya da seans sayısına
+   bağla. (4) **antrenmansız kullanıcıya** H2/H6 antrenman metni + "muscle can start to show" vaadi → `trainingPlanned` yoksa içerik
+   varyantı/yok; H6 "may"; "6. haftadan önce muscle yok" testi (H4'ün "not muscle yet" olumsuzu ADR'de izinli say). Metinler soru 65.
+   (5) ADR-040'da `EightWeeks` → `FirstWeeks`; backlog K-513 `tests:` → `FirstWeeksTests`.
+   Sonra yeniden incelet, `gh pr merge 289 --auto --squash`.
 3. **K-513 kısım 2** (sunucu, decision modülü): `GET /v1/first-weeks` → `{week, contentKey?, risk: [rule]}` (8. haftadan sonra 404);
    Facts: hesabın açılış günü (identity `account.created_at` — kimlik modülünden public okuyucu gerekir), biten takvim haftasının seans
    sayısı (`TrainingLog.workoutStarts`), antrenman planlı mı (profil günleri), affedilen hafta (Consistency kaydı: son sayılan hafta
