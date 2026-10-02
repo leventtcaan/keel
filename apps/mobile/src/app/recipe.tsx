@@ -97,10 +97,16 @@ export default function RecipeScreen() {
     setProblem(null);
     try {
       const { data, error, response } = await api.POST('/v1/recipes', { body: recipe });
-      if (data !== undefined) return router.back();
+      if (data !== undefined) {
+        // 200: this clientId was saved before (an answer lost) and the server answers what it kept, not this body
+        // (ADR-024). Changed since, the change is not in it: say so rather than go back as if it were (K-423 review).
+        if (response.status === 200 && !sameRecipe(data, recipe)) return setProblem(t('recipe.savedEarlier'));
+        return router.back();
+      }
       report({ name: error?.code ?? `HTTP ${response.status}` });
       if (response.status === 403 && error?.code === 'CONSENT_REQUIRED') setStep('consent');
-      else setProblem(t('recipe.refused'));
+      // The server's fault is not the user's; a refusal can be an amount or the recipe limit (one code for both).
+      else setProblem(t(response.status >= 500 ? 'settings.serverError' : 'recipe.refused'));
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
       setProblem(t('recipe.needsConnection'));
@@ -163,6 +169,16 @@ export default function RecipeScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+/** Whether the recipe the server kept is the one just sent: name, portions, and each ingredient's amount. */
+function sameRecipe(kept: Schemas['Recipe'], sent: Schemas['NewRecipe']): boolean {
+  const ingredients = (items: { foodId: string; amount: { quantity: number; unit: string } }[]) =>
+    items
+      .map((item) => `${item.foodId} ${item.amount.quantity} ${item.amount.unit}`)
+      .sort()
+      .join('|');
+  return kept.name === sent.name && kept.portions === sent.portions && ingredients(kept.items) === ingredients(sent.items);
 }
 
 function EstimateTitle() {

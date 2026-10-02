@@ -281,8 +281,6 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
   part: { gap: tokens.space.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
-  item: { gap: tokens.space.sm },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
-  name: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   text: { fontSize: tokens.type.body },
 });

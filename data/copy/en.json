@@ -386,8 +386,8 @@
     },
     "save": "Save recipe",
     "needsConnection": "Saving a recipe needs a connection. Try again when you're online.",
-    "refused": "That recipe couldn't be saved. Check the ingredients' amounts.",
-    "full": "You have as many recipes as can be kept. Delete one to add another."
+    "refused": "That recipe couldn't be saved. Check the ingredients' amounts — or, with many recipes kept, delete one you don't use.",
+    "savedEarlier": "An earlier save of this recipe went through, so your changes since weren't kept. Delete it from your recipes and enter it again."
   },
   "meal": {
     "title": "Log a meal",

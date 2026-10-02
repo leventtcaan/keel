@@ -80,6 +80,7 @@ test('without the health data consent: the consent first, then the entry', async
 
 test('saved with a part missing: each missing part is said, nothing is sent', async () => {
   await show();
+  expect(screen.queryByText(t('recipe.missing.name'))).toBeNull(); // not while typing: once a save was asked for
   await press(t('recipe.save'));
   expect(screen.getByText(t('recipe.missing.name'))).toBeTruthy();
   expect(screen.getByText(t('recipe.missing.portions', { max: foodParams.recipePortionsMax }))).toBeTruthy();
@@ -107,7 +108,8 @@ test('offline: it says so and stays; saved again, under the same clientId (never
   await press(t('recipe.save'));
   expect(screen.getByText(t('recipe.needsConnection'))).toBeTruthy();
   expect(mockBack).not.toHaveBeenCalled();
-  mockSave = async (body) => ok({ ...body, id: 'r1', items: [] }, 200);
+  // The server answers what it kept under this clientId — the same recipe here.
+  mockSave = async (body) => ok({ ...body, id: 'r1', items: body.items.map((item) => ({ ...item, name: LENTILS.name, kcal: R(1, 2), proteinG: R(0, 1) })) }, 200);
   await press(t('recipe.save'));
   const [first, second] = saves();
   expect(second.clientId).toBe(first.clientId);
@@ -127,4 +129,65 @@ test('no recipe inside a recipe: the ingredient search never asks for the user\'
   await fill();
   expect(mockGET).not.toHaveBeenCalled();
   expect(screen.queryByText(t('meal.recipes.heading'))).toBeNull();
+});
+
+test('an earlier save went through though its answer was lost, and the recipe was changed since: it says so, and stays', async () => {
+  // The server keeps the first save under this clientId and answers it again (ADR-024): the change is not in it.
+  let stored: Schemas['NewRecipe'] | null = null;
+  mockSave = async (body) => {
+    if (stored === null) {
+      stored = body;
+      throw new TypeError('Network request failed'); // kept on the server, the answer lost
+    }
+    return ok({ ...stored, id: 'r1', items: [] }, 200);
+  };
+  await show();
+  await fill();
+  await press(t('recipe.save'));
+  await fireEvent.changeText(screen.getByLabelText(t('recipe.portions')), '6');
+  await press(t('recipe.save'));
+  expect(screen.getByText(t('recipe.savedEarlier'))).toBeTruthy();
+  expect(mockBack).not.toHaveBeenCalled();
+});
+
+test('a server failure is not called the user\'s mistake', async () => {
+  mockSave = async () => refused(500, 'INTERNAL');
+  await show();
+  await fill();
+  await press(t('recipe.save'));
+  expect(screen.getByText(t('settings.serverError'))).toBeTruthy();
+  expect(screen.queryByText(t('recipe.refused'))).toBeNull();
+});
+
+test('consent withdrawn meanwhile (403): the consent step; allowed, the entry is back as it was, saved under the same clientId', async () => {
+  let first = true;
+  mockSave = async (body) => {
+    if (first) {
+      first = false;
+      return refused(403, 'CONSENT_REQUIRED');
+    }
+    return ok({ ...body, id: 'r1', items: [] }, 201);
+  };
+  await show();
+  await fill();
+  await press(t('recipe.save'));
+  expect(screen.getByText(t('consent.health_data.title'))).toBeTruthy();
+  await press(t('meal.consent.allow'));
+  expect(screen.getByLabelText(t('recipe.name')).props.value).toBe(' Lentil soup ');
+  await press(t('recipe.save'));
+  const [a, b] = saves();
+  expect(b.clientId).toBe(a.clientId);
+  expect(mockBack).toHaveBeenCalled();
+});
+
+test('two taps at once save once', async () => {
+  let answer: (a: Answer) => void = () => {};
+  mockSave = () => new Promise((resolve) => (answer = resolve));
+  await show();
+  await fill();
+  const button = screen.getByRole('button', { name: t('recipe.save') });
+  // In the same frame: the second tap comes before the screen re-renders the button as busy.
+  await Promise.all([fireEvent.press(button), fireEvent.press(button)]);
+  await act(async () => answer(ok({ id: 'r1' }, 201)));
+  expect(saves()).toHaveLength(1);
 });

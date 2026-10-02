@@ -3,7 +3,7 @@
  * whose ingredient the database dropped is marked — it can still be deleted. Deleting asks first (meals that logged it
  * keep what they logged). Read again whenever the screen comes into view (back from a new recipe).
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import RecipesScreen from '@/app/recipes';
 import type { components } from '@/api/schema';
@@ -134,4 +134,22 @@ test('a way back to the Food tab (the stack has no header)', async () => {
   await show();
   await fireEvent.press(screen.getByRole('button', { name: t('recipes.back') }));
   expect(mockBack).toHaveBeenCalled();
+});
+
+test('already gone on the server (404) counts as deleted', async () => {
+  mockDELETE.mockResolvedValueOnce(refused(404, 'NOT_FOUND'));
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: t('recipes.deleteSpoken', { name: SOUP.name }) }));
+  mockList = async () => ok([STEW]);
+  await fireEvent.press(screen.getByRole('button', { name: t('recipes.confirm') }));
+  await act(async () => {});
+  expect(screen.queryByText(t('recipes.deleteFailed'))).toBeNull();
+  expect(screen.queryByText(SOUP.name)).toBeNull();
+});
+
+test('the question to delete sits with the recipe it is about (a long list never hides it below the fold)', async () => {
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: t('recipes.deleteSpoken', { name: SOUP.name }) }));
+  const row = screen.getByTestId(`recipe-${SOUP.id}`);
+  expect(within(row).getByText(t('recipes.confirmTitle', { name: SOUP.name }))).toBeTruthy();
 });

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -41,7 +41,8 @@ export default function RecipesScreen() {
     try {
       const { response } = await api.DELETE('/v1/recipes/{id}', { params: { path: { id: recipe.id } } });
       // Already gone counts as deleted.
-      if (!response.ok && response.status !== 404) throw Object.assign(new Error(`delete failed with HTTP ${response.status}`), { name: 'DeleteFailed' });
+      if (!response.ok && response.status !== 404)
+        throw Object.assign(new Error(`delete failed with HTTP ${response.status}`), { name: 'DeleteFailed' });
       setAsking(null);
       reload();
     } catch (error) {
@@ -66,7 +67,26 @@ export default function RecipesScreen() {
         <Button label={t('recipes.retry')} variant="ghost" size="sm" onPress={reload} />
       </>
     ) : (
-      <RecipeList recipes={data.state === 'ready' ? data.value : []} onDelete={setAsking} busy={busy} />
+      <RecipeList
+        recipes={data.state === 'ready' ? data.value : []}
+        onDelete={setAsking}
+        busy={busy}
+        // The question sits with the recipe it is about: an inline step at the end of a long list would be off-screen.
+        asking={
+          asking === null ? null : (
+            <Confirm
+              title={t('recipes.confirmTitle', { name: asking.name })}
+              body={t('recipes.confirmBody')}
+              confirmLabel={t('recipes.confirm')}
+              keepLabel={t('recipes.keep')}
+              onConfirm={() => void remove(asking)}
+              onKeep={() => setAsking(null)}
+              busy={busy}
+            />
+          )
+        }
+        askingId={asking?.id ?? null}
+      />
     );
 
   return (
@@ -78,46 +98,40 @@ export default function RecipesScreen() {
         <ScreenTitle>{t('recipes.title')}</ScreenTitle>
         {body}
         {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
-        {asking !== null && (
-          <Confirm
-            title={t('recipes.confirmTitle', { name: asking.name })}
-            body={t('recipes.confirmBody')}
-            confirmLabel={t('recipes.confirm')}
-            keepLabel={t('recipes.keep')}
-            onConfirm={() => void remove(asking)}
-            onKeep={() => setAsking(null)}
-            busy={busy}
-          />
-        )}
         <Button label={t('recipes.new')} onPress={() => router.push('/recipe')} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function RecipeList({ recipes, onDelete, busy }: { recipes: Recipe[]; onDelete: (recipe: Recipe) => void; busy: boolean }) {
+type ListProps = { recipes: Recipe[]; onDelete: (recipe: Recipe) => void; busy: boolean; asking: ReactNode; askingId: string | null };
+
+function RecipeList({ recipes, onDelete, busy, asking, askingId }: ListProps) {
   const { color } = useTheme();
   if (recipes.length === 0) return <Text style={[styles.text, { color: color.muted }]}>{t('recipes.none')}</Text>;
   return (
     <View>
       {recipes.map((recipe) => (
-        <View key={recipe.id} style={[styles.row, { borderColor: color.line }]}>
-          <View style={styles.words}>
-            <Text style={[styles.name, { color: color.text }]}>{recipe.name}</Text>
-            <Text style={[styles.small, { color: color.muted }]}>
-              {t(`recipes.makes.${recipe.portions === 1 ? 'one' : 'other'}`, { portions: recipe.portions })}
-            </Text>
-            <PortionLine recipe={recipe} />
+        <View key={recipe.id} testID={`recipe-${recipe.id}`}>
+          <View style={[styles.row, { borderColor: color.line }]}>
+            <View style={styles.words}>
+              <Text style={[styles.name, { color: color.text }]}>{recipe.name}</Text>
+              <Text style={[styles.small, { color: color.muted }]}>
+                {t(`recipes.makes.${recipe.portions === 1 ? 'one' : 'other'}`, { portions: recipe.portions })}
+              </Text>
+              <PortionLine recipe={recipe} />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('recipes.deleteSpoken', { name: recipe.name })}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
+              onPress={() => onDelete(recipe)}
+              hitSlop={tokens.space.sm}>
+              <Text style={[styles.small, { color: color.text }]}>{t('recipes.delete')}</Text>
+            </Pressable>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('recipes.deleteSpoken', { name: recipe.name })}
-            accessibilityState={{ disabled: busy }}
-            disabled={busy}
-            onPress={() => onDelete(recipe)}
-            hitSlop={tokens.space.sm}>
-            <Text style={[styles.small, { color: color.text }]}>{t('recipes.delete')}</Text>
-          </Pressable>
+          {askingId === recipe.id && asking}
         </View>
       ))}
     </View>
