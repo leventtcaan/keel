@@ -161,7 +161,8 @@ class WorkoutController {
         require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()) && limits.fits(finish.note()));
         List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
         // No contains(null): an immutable list (the default here) throws on it.
-        require(unclean.stream().allMatch(exercise -> exercise != null && catalog.find(exercise).isPresent())
+        // A catalog move, or one of the user's own (K-424): an off-program move is accepted and has no target to hold.
+        require(unclean.stream().allMatch(exercise -> exercise != null && (catalog.find(exercise).isPresent() || customs.find(account, exercise).isPresent()))
                 && Set.copyOf(unclean).size() == unclean.size());
         // Kept with the next session's load and reps of the day's planned moves (K-217).
         progress.finish(account, workout, finish.endedAt(), TrainingLimits.note(finish.note()), Set.copyOf(unclean));

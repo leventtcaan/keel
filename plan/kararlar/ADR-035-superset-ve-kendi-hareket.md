@@ -17,7 +17,8 @@ ekipman ve tek taraf katalogdan gelir (`SetRules`, `TrainingLog`). Program yaln�
    anar, yalnız sahibi. Set kuralları katalog hareketindeki gibi uygulanır (`SetRules`).
 3. **Program katalogdan kalır:** üretici ve kullanıcının programı kendi hareketi almaz (ilerleme kuralları, alternatifler
    ve ısınma kaynaklı katalog verisine dayanır). Kendi hareketi seansta eklenen ya da değiştirilen hareket olarak yaşar;
-   motorun haftalık okumaları program hareketleriyle sınırlı olduğundan onu görmez.
+   motorun haftalık okumaları program hareketleriyle sınırlı olduğundan onu görmez. Bitişte "form temiz değildi"
+   listesinde kabul edilir, etkisi yoktur (tutulacak hedefi yok; inceleme: reddedilen bitiş kuyrukta kalırdı).
 4. **Silme ve düzenleme yok (sürüm 1):** setler hareketi anıyor; silmek geçmişi adsız bırakırdı. Yanlış ad: yeni hareket.
    Kullanıcı başına en çok 100 (`keel.training.custom-exercise.max-count`), ad en çok 60 kod noktası.
 5. **Antrenman verisi:** rıza istemez (ADR-026: antrenman V3'ün sağlık listesinde değil), dışa aktarımda var, hesap

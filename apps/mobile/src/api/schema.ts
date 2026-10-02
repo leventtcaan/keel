@@ -573,7 +573,7 @@ export interface paths {
          * Keep a move the catalog does not have
          * @description The engine needs what the catalog says of a move, so the user answers it (L3 §1 #10): compound or isolation, the
          *     load model, the equipment, one side at a time or not. A set names it by its id ("custom:<uuid>"); only its owner
-         *     can. Not in programs (those are made of catalog moves). At most 100 a user (keel.training.max-custom-exercises).
+         *     can. Not in programs (those are made of catalog moves). At most 100 a user (keel.training.custom-exercise.max-count).
          */
         post: operations["saveCustomExercise"];
         delete?: never;
@@ -1394,8 +1394,8 @@ export interface components {
         };
         /**
          * @description Finishing a workout of a program day sets each planned move's next load and reps (K-217, double progression).
-         *     The moves whose form was not clean keep their load and reps (G6 K-31); each id once, from the catalog, else
-         *     VALIDATION_FAILED.
+         *     The moves whose form was not clean keep their load and reps (G6 K-31); each id once, from the catalog or one of
+         *     the user's own moves (K-424: accepted, no target to hold), else VALIDATION_FAILED.
          */
         WorkoutFinish: {
             /** Format: date-time */
