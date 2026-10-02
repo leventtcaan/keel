@@ -86,6 +86,9 @@
     }
   },
   "today": {
+    "prompt": {
+      "failed": "Couldn't send that. Check your connection and try again."
+    },
     "checkIn": {
       "title": "This week's check-in",
       "questions": "{count} short questions, then your call.",
