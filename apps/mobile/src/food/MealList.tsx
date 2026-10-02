@@ -34,13 +34,16 @@ function MealRow({ slot, names, kcal }: { slot: string; names: string[]; kcal: s
   );
 }
 
-/** Today's meals (K-407): each with its range (U5); one not sent yet has no range to show — the server estimates it. */
-export function MealList({ meals }: { meals: DayMeal[] }) {
+/**
+ * Today's meals (K-407): each with its range (U5); one not sent yet has no range to show — the server estimates it.
+ * `complete`: the server's list was read; only then can it say nothing is logged.
+ */
+export function MealList({ meals, complete }: { meals: DayMeal[]; complete: boolean }) {
   const { color } = useTheme();
   return (
     <Card testID="meals">
       <Text style={[styles.label, { color: color.muted }]}>{t('food.meals.title')}</Text>
-      {meals.length === 0 && <Text style={[styles.text, { color: color.textSecondary }]}>{t('food.meals.none')}</Text>}
+      {meals.length === 0 && complete && <Text style={[styles.text, { color: color.textSecondary }]}>{t('food.meals.none')}</Text>}
       {meals.map((row) =>
         row.kind === 'sent' ? (
           <MealRow key={row.meal.clientId} slot={t(`food.slot.${row.meal.slot}`)} names={itemNames(row.meal)} kcal={kcalRange(row.meal)} />

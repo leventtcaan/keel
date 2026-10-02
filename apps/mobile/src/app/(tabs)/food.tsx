@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,28 +28,38 @@ export default function FoodScreen() {
   const { queue, consents, report } = useAppServices();
   const { data, reload } = useFoodDay();
   const [repeating, setRepeating] = useState(false);
-  const [repeatFailed, setRepeatFailed] = useState(false);
+  const [repeatProblem, setRepeatProblem] = useState<string | null>(null);
+  // Offers logged since the last read: hidden until the read that shows their meal lands, so a second tap on a slow
+  // network cannot log the same meal twice (each tap is a new clientId, which the server cannot tell apart).
+  const [repeated, setRepeated] = useState<ReadonlySet<string>>(new Set());
+  const busy = useRef(false); // two presses in the same moment must not log twice
+  useEffect(() => setRepeated(new Set()), [data]);
 
   const repeat = async (meal: components['schemas']['Meal']) => {
-    if (repeating) return;
+    if (busy.current) return;
+    busy.current = true;
     setRepeating(true);
-    setRepeatFailed(false);
+    setRepeatProblem(null);
     try {
       // The consent as the phone knows it: withdrawn in Settings since this list was read, nothing is kept.
       if (await consents.granted('HEALTH_DATA')) {
         await queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt: new Date().toISOString(), slot: meal.slot, repeatOf: meal.id } });
+        setRepeated((before) => new Set(before).add(meal.id));
+      } else {
+        setRepeatProblem(t('food.repeat.noConsent'));
       }
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
-      setRepeatFailed(true);
+      setRepeatProblem(t('food.repeat.failed'));
     } finally {
+      busy.current = false;
       setRepeating(false);
       reload();
     }
   };
 
   const needsConsent = data !== null && (data.budget.state === 'consent' || data.targets.state === 'consent' || data.meals === null);
-  const failed = data !== null && (data.budget.state === 'failed' || data.targets.state === 'failed');
+  const failed = data !== null && (data.budget.state === 'failed' || data.targets.state === 'failed' || (data.meals !== null && !data.mealsRead));
   const budget =
     data === null || needsConsent ? null : data.budget.state === 'ready' ? (
       <Card testID="budget">
@@ -72,14 +82,11 @@ export default function FoodScreen() {
     </View>
   ) : null;
   const targets = data !== null && data.targets.state === 'ready' ? <TargetsCard targets={data.targets.value} /> : null;
-  const meals = data !== null && data.meals !== null ? <MealList meals={data.meals} /> : null;
+  const meals = data !== null && data.meals !== null ? <MealList meals={data.meals} complete={data.mealsRead} /> : null;
+  const offered = data === null ? [] : data.offers.filter((meal) => !repeated.has(meal.id));
   const offers =
-    data !== null && data.offers.length > 0 ? (
-      <View style={styles.note}>
-        <RepeatOffers offers={data.offers} busy={repeating} onRepeat={(meal) => void repeat(meal)} />
-        {repeatFailed && <Text style={[styles.text, { color: color.text }]}>{t('food.repeat.failed')}</Text>}
-      </View>
-    ) : null;
+    offered.length > 0 ? <RepeatOffers offers={offered} busy={repeating} onRepeat={(meal) => void repeat(meal)} /> : null;
+  const repeatNote = repeatProblem !== null ? <Text style={[styles.text, { color: color.text }]}>{repeatProblem}</Text> : null;
 
   return (
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the coach bar sits above it.
@@ -91,6 +98,7 @@ export default function FoodScreen() {
         {budget}
         {meals}
         {offers}
+        {repeatNote}
         {targets}
       </ScrollView>
       <View style={styles.coach}>

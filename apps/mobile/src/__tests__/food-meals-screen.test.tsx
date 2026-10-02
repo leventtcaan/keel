@@ -51,12 +51,14 @@ jest.mock('expo-router', () => ({
     React.useEffect(effect, [effect]);
   },
 }));
+const mockGrantedCheck = jest.fn(async (_kind: string) => mockGranted);
+const mockReport = jest.fn();
 const mockServices = {
   api: { GET: mockGET },
   queue: { record: mockRecord, drain: mockDrain },
   mealRecords: async () => mockRecords,
-  consents: { granted: async () => mockGranted },
-  report: () => {},
+  consents: { granted: mockGrantedCheck },
+  report: mockReport,
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
@@ -148,6 +150,7 @@ test("same as yesterday: yesterday's meal for a slot today has nothing in, one t
 
   const readsBefore = mockGET.mock.calls.length;
   await act(async () => fireEvent.press(lunch));
+  expect(mockGrantedCheck).toHaveBeenCalledWith('HEALTH_DATA');
   expect(mockRecord).toHaveBeenCalledTimes(1);
   expect(mockRecord).toHaveBeenCalledWith({
     kind: 'meal',
@@ -156,12 +159,78 @@ test("same as yesterday: yesterday's meal for a slot today has nothing in, one t
   expect(mockGET.mock.calls.length).toBeGreaterThan(readsBefore); // read again, so the meal shows
 });
 
-test('without the consent on the phone a repeat is not kept (ADR-030 #25)', async () => {
+test('without the consent on the phone a repeat is not kept (ADR-030 #25), and it says why (review)', async () => {
   mockGranted = false;
   await show();
   const lunch = screen.getByRole('button', { name: t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' }) });
   await act(async () => fireEvent.press(lunch));
   expect(mockRecord).not.toHaveBeenCalled();
+  expect(screen.getByText(t('food.repeat.noConsent'))).toBeOnTheScreen();
+});
+
+test('a repeat tapped twice before the list is read again is logged once (review)', async () => {
+  await show();
+  const name = t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' });
+  // The next read waits: the offer just tapped must not stay tappable meanwhile.
+  let release = () => {};
+  mockDrain.mockImplementationOnce(() => new Promise<void>((resolve) => (release = resolve)));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name })));
+  const again = screen.queryByRole('button', { name });
+  if (again !== null) await act(async () => fireEvent.press(again));
+  expect(mockRecord).toHaveBeenCalledTimes(1);
+  await act(async () => release());
+});
+
+test('two presses in the same moment log once (review)', async () => {
+  await show();
+  const lunch = screen.getByRole('button', { name: t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' }) });
+  await act(async () => {
+    fireEvent.press(lunch);
+    fireEvent.press(lunch);
+  });
+  expect(mockRecord).toHaveBeenCalledTimes(1);
+});
+
+test('a repeat the phone could not save says so, by name only in the report (V3), and can be tried again', async () => {
+  const failure = new Error('INSERT meal Rice, Chicken failed');
+  failure.name = 'SQLiteError';
+  mockRecord.mockRejectedValueOnce(failure);
+  await show();
+  const name = t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' });
+  await act(async () => fireEvent.press(screen.getByRole('button', { name })));
+  expect(screen.getByText(t('food.repeat.failed'))).toBeOnTheScreen();
+  expect(mockReport).toHaveBeenCalledWith({ name: 'SQLiteError' });
+  await act(async () => fireEvent.press(screen.getByRole('button', { name })));
+  expect(mockRecord).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText(t('food.repeat.failed'))).toBeNull();
+});
+
+test("today's list not read (a server error): no offers, no \"nothing logged\", and the way to try again (review)", async () => {
+  mockAnswers['/v1/days/{day}/budget'] = ok({
+    day: '2026-09-29',
+    targetKcal: 2300,
+    eaten: { kcal: { low: 0, high: 0 }, proteinG: { low: 0, high: 0 }, carbsG: { low: 0, high: 0 }, fatG: { low: 0, high: 0 } },
+    left: { kcal: { low: 2300, high: 2300 }, proteinG: { low: 160, high: 160 } },
+  });
+  mockMealsByDay['2026-09-29'] = refused(500, 'INTERNAL');
+  await show();
+  expect(screen.queryByText(t('food.meals.none'))).toBeNull();
+  expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
+  expect(screen.getByText(t('today.failed'))).toBeOnTheScreen();
+});
+
+test('the consent the meals list asks for is enough to show the way to Settings', async () => {
+  mockMealsByDay['2026-09-29'] = refused(403, 'CONSENT_REQUIRED');
+  await show();
+  expect(screen.getByText(t('food.consent'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('food.meals.title'))).toBeNull();
+});
+
+test("what waits on the phone failing to go does not blank the tab; it is reported by name", async () => {
+  mockDrain.mockRejectedValueOnce(new TypeError('x'));
+  await show();
+  expect(screen.getByText('Oats, rolled')).toBeOnTheScreen();
+  expect(mockReport).toHaveBeenCalledWith({ name: 'TypeError' });
 });
 
 test('without the health data consent on the server: no meals and no offers, only the way to Settings', async () => {

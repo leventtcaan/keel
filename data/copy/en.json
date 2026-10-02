@@ -257,7 +257,8 @@
     "repeat": {
       "title": "Same as yesterday",
       "spoken": "Log {slot} again: {items}",
-      "failed": "Couldn't log it. Try again."
+      "failed": "Couldn't log it. Try again.",
+      "noConsent": "Logging food needs the health data consent. Check your connection, or allow it in Settings."
     }
   },
   "weighIn": {

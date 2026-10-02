@@ -14,6 +14,8 @@ export type FoodDay = {
   targets: Loaded<Schemas['Targets']>;
   /** Today's meals; null behind the health data consent (the server said so). */
   meals: DayMeal[] | null;
+  /** Whether the server's list was read: if not, the meals are only the phone's, and "nothing logged" cannot be said. */
+  mealsRead: boolean;
   /** "Same as yesterday", for the slots today has nothing in; empty when yesterday's list could not be read. */
   offers: Schemas['Meal'][];
 };
@@ -44,10 +46,12 @@ export function useFoodDay(): { day: string; data: FoodDay | null; reload: () =>
             return [];
           }),
         ]);
-        if (today.state === 'consent') return { budget, targets, meals: null, offers: [] };
-        const meals = dayMeals(today.state === 'ready' ? today.value : null, local, day);
-        const offers = today.state === 'ready' && yesterday.state === 'ready' ? repeatOffers(yesterday.value, meals) : [];
-        return { budget, targets, meals, offers };
+        if (today.state === 'consent') return { budget, targets, meals: null, mealsRead: false, offers: [] };
+        const mealsRead = today.state === 'ready';
+        const meals = dayMeals(mealsRead ? today.value : null, local, day);
+        // Without today's list a slot already logged could be offered again.
+        const offers = mealsRead && yesterday.state === 'ready' ? repeatOffers(yesterday.value, meals) : [];
+        return { budget, targets, meals, mealsRead, offers };
       },
       [api],
     ),
