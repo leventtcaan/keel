@@ -13,7 +13,7 @@ const schedule: Schedule = {
   timeZone: 'Europe/Istanbul',
 };
 const now = new Date(2026, 9, 2, 12, 0); // a Friday, local time
-const base: PlanInput = { schedule, cue: null, lastOpened: now, now, muted: false };
+const base: PlanInput = { schedule, cue: null, lastOpened: now, now, muted: false, restUntil: null };
 
 test('a training day gets one reminder, the lead before the usual time, on the phone\'s calendar (1 = Sunday)', () => {
   const training = planReminders(base).filter((r) => r.kind === 'training');
@@ -84,4 +84,54 @@ test('three kinds and never more than one a day plus two: the week\'s count stay
   expect(new Set(plan.map((r) => r.kind))).toEqual(new Set(['training', 'check_in', 'quiet']));
   expect(plan).toHaveLength(9);
   expect(new Set(plan.map((r) => r.id)).size).toBe(9);
+});
+
+describe('a week off (ADR-037 › 51b): no training reminder until it ends; after it, they come back by date', () => {
+  // now: Friday 2 Oct 2026, 12:00. Training days Monday and Thursday at 18:00 → reminders at 17:30.
+  const off = (restUntil: string) => planReminders({ ...base, restUntil });
+
+  test('no weekly training reminder while the week off is on', () => {
+    expect(off('2026-10-05').filter((r) => r.kind === 'training' && 'weekday' in r.when)).toEqual([]);
+  });
+
+  test('the training days after it, by date, for the weeks the parameter gives — the first the day after it ends', () => {
+    const dated = off('2026-10-05').filter((r) => r.kind === 'training');
+    expect(P.restResumeWeeks).toBe(2);
+    expect(dated.map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 8, 17, 30) }, // Thursday 8 Oct
+      { at: new Date(2026, 9, 12, 17, 30) }, // Monday 12 Oct
+      { at: new Date(2026, 9, 15, 17, 30) }, // Thursday 15 Oct
+      { at: new Date(2026, 9, 19, 17, 30) }, // Monday 19 Oct: the 14th day after it
+    ]);
+    expect(new Set(dated.map((r) => r.id)).size).toBe(dated.length);
+  });
+
+  test('a lead that crosses midnight takes the evening before — still after the week off', () => {
+    const early = planReminders({ ...base, schedule: { ...schedule, trainingDays: ['MONDAY'], usualTrainingTime: '00:10' }, restUntil: '2026-10-05' });
+    expect(early.filter((r) => r.kind === 'training').map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 11, 23, 40) }, // Sunday evening before Monday 12 Oct
+      { at: new Date(2026, 9, 18, 23, 40) }, // and before Monday 19 Oct
+    ]);
+  });
+
+  test('the check-in and the quiet message do not change', () => {
+    expect(off('2026-10-05').filter((r) => r.kind !== 'training')).toEqual(planReminders(base).filter((r) => r.kind !== 'training'));
+  });
+
+  test('a week off already over: weekly as before', () => {
+    expect(off('2026-10-01')).toEqual(planReminders(base));
+  });
+
+  test('a reminder that would fall before now (the lead crossing back into tonight, already past) is not set', () => {
+    const late = new Date(2026, 9, 2, 23, 50); // Friday, its last day, late
+    const saturdayEarly = { ...schedule, trainingDays: ['SATURDAY' as const], usualTrainingTime: '00:10' };
+    const plan = planReminders({ ...base, now: late, lastOpened: late, schedule: saturdayEarly, restUntil: '2026-10-02' });
+    expect(plan.filter((r) => r.kind === 'training').map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 9, 23, 40) }, // not Friday 23:40 (past); the next Saturday's
+    ]);
+  });
+
+  test('today is its last day: still off today', () => {
+    expect(off('2026-10-02').filter((r) => r.kind === 'training' && 'weekday' in r.when)).toEqual([]);
+  });
 });

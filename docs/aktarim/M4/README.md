@@ -32,3 +32,4 @@
 20. K-411 dinlenme arka planda — zaman damgalı sayaç, tek yerel uyarı, tüketicinin portu (sorusuz), süperset turu, Live Activity bölünmesi
 21. K-412 Apple Health'e yazma — ayrı port, iki anahtar, yazma izni okunur, işaretle çift kaydı önleme, enerji yazılmaz
 22. K-423 tarifler telefonda — tek kalem porsiyon, tembel okuma, yerelden bağımsız eşleşme, düşmüş tarif, liste + giriş
+23. ADR-037 işleri — K-435 mola haftası (tarihli dönüş, okuma başında kuşak), K-433 figür, K-434 onboarding hatırlatma adımı, K-429 rıza metni

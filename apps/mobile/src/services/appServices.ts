@@ -100,7 +100,8 @@ export async function createAppServices({
   const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
   const profile = await createProfileStatus({ kv, api, units, onProfile: (read) => reminders.keepSchedule(read.schedule) });
   const consents = createConsentState({ api, kv });
-  const training = createTrainingCache(kv);
+  // The program's week off reaches the reminders whenever the program is read (ADR-037 › 51b); they report their own failures.
+  const training = createTrainingCache(kv, (program) => void reminders.keepRestUntil(program?.restUntil ?? null));
   // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
   if (!(await session.isSignedIn())) {
     await profile.forget();

@@ -26,6 +26,8 @@ export type PlanInput = {
   now: Date;
   /** A declared state (sick, exams — K-516) silences every slot. */
   muted: boolean;
+  /** A week off in force (Program.restUntil, a calendar day): no training reminder until it ends (ADR-037 › 51b). */
+  restUntil: string | null;
 };
 
 const WEEKDAYS: Schedule['checkInDay'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -45,7 +47,11 @@ function weeklyAt(day: Schedule['checkInDay'], minuteOfDay: number, earlier = 0)
   return { weekday: Math.floor(ofWeek / MINUTES_A_DAY) + 1, hour: Math.floor(inDay / 60), minute: inDay % 60 };
 }
 
-export function planReminders({ schedule, cue, lastOpened, now, muted }: PlanInput): Reminder[] {
+/** The phone's calendar day of a moment, as the API writes a day. */
+const dayOf = (moment: Date) =>
+  `${moment.getFullYear()}-${String(moment.getMonth() + 1).padStart(2, '0')}-${String(moment.getDate()).padStart(2, '0')}`;
+
+export function planReminders({ schedule, cue, lastOpened, now, muted, restUntil }: PlanInput): Reminder[] {
   if (muted) return [];
   const plan: Reminder[] = [];
 
@@ -53,9 +59,22 @@ export function planReminders({ schedule, cue, lastOpened, now, muted }: PlanInp
     const usual = minutesOf(schedule.usualTrainingTime);
     const title = t('reminders.training.title', { minutes: P.trainingLeadMinutes });
     const body = cue?.trim() || t('reminders.training.body');
-    // In the week's order, so the plan reads Monday first whatever order the profile lists them in.
-    for (const day of WEEKDAYS.filter((d) => schedule.trainingDays.includes(d))) {
-      plan.push({ id: `training-${day}`, kind: 'training', when: weeklyAt(day, usual, P.trainingLeadMinutes), title, body });
+    if (restUntil === null || restUntil < dayOf(now)) {
+      // In the week's order, so the plan reads Monday first whatever order the profile lists them in.
+      for (const day of WEEKDAYS.filter((d) => schedule.trainingDays.includes(d))) {
+        plan.push({ id: `training-${day}`, kind: 'training', when: weeklyAt(day, usual, P.trainingLeadMinutes), title, body });
+      }
+    } else {
+      // A week off (ADR-037 › 51b): nothing until it ends — a weekly reminder cannot skip a week — then the training days of
+      // the weeks after it, by date, so they come back with no open needed; the next open turns them weekly again.
+      const [year, month, date] = restUntil.split('-').map(Number);
+      for (let after = 1; after <= P.restResumeWeeks * 7; after++) {
+        const day = new Date(year, month - 1, date + after);
+        if (!schedule.trainingDays.includes(WEEKDAYS[day.getDay()])) continue;
+        // Minutes past midnight, the lead taken off: a negative count is the evening before (Date carries it over).
+        const at = new Date(year, month - 1, date + after, 0, usual - P.trainingLeadMinutes);
+        if (at > now) plan.push({ id: `training-${dayOf(day)}`, kind: 'training', when: { at }, title, body });
+      }
     }
   }
 

@@ -14,20 +14,25 @@ import { useReadOnFocus } from './useReadOnFocus';
  * start a new read each render.
  */
 export function useToday(): { day: string; data: TodayData | null; reload: () => void } {
-  const { api, syncHealth, queue, report } = useAppServices();
-  const latest = useRef({ syncHealth, queue, report });
+  const { api, syncHealth, queue, report, reminders } = useAppServices();
+  const latest = useRef({ syncHealth, queue, report, reminders });
   useEffect(() => {
-    latest.current = { syncHealth, queue, report };
+    latest.current = { syncHealth, queue, report, reminders };
   });
   return useReadOnFocus(
     useCallback(
       async (day: string) => {
-        const { syncHealth: sync, queue: waiting, report: tell } = latest.current;
+        const { syncHealth: sync, queue: waiting, report: tell, reminders: remind } = latest.current;
+        const era = remind.era(); // a sign-out during this read must not hand its week off to the next account
         const named = (error: unknown) => tell({ name: error instanceof Error ? error.name : 'Unknown' });
         const health = await sync().catch(named);
         // What waits on the phone goes first (a weigh-in just saved), so the server's list shows it (K-402 review).
         await waiting.drain().catch(named);
-        return { ...(await loadToday(api, day)), stepsToday: health?.stepsToday ?? null };
+        const today = await loadToday(api, day);
+        // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
+        const { program } = today;
+        if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
+        return { ...today, stepsToday: health?.stepsToday ?? null };
       },
       [api],
     ),

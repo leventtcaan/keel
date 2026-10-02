@@ -31,6 +31,14 @@
       "tag": "urun",
       "source": "arastirma/ham/I1-onboarding-aliskanlik.md#C3",
       "note": "The user's own routine sentence ('After work, straight to the gym') is the training reminder's body: a lock-screen line, so short."
+    },
+    {
+      "key": "rest_resume_weeks",
+      "value": 2,
+      "unit": "weeks",
+      "tag": "urun",
+      "source": "arastirma/04-faz3-urun.md#7.4",
+      "note": "During a week off (Program.restUntil) training reminders stop (ADR-037 #51b); the training days of this many weeks after it are scheduled by date, so they come back without the app being opened. The next open turns them weekly again."
     }
   ]
 }
