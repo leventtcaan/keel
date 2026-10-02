@@ -20,6 +20,7 @@ import { ThemeProvider } from '@/theme/theme';
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 // The services need a phone (SQLite, keychain); the session state is what navigation reads from them (K-305).
 let mockSignedIn = true;
+const mockHealthWriteOff = { workouts: false, weighIns: false };
 const mockRemindersOff = { enabled: false, cue: '' };
 const mockServices = {
   signInWithApple: jest.fn(),
@@ -40,7 +41,8 @@ const mockServices = {
   mealRecords: async () => [],
   report: () => {},
   // The settings screen's reminders (K-410): off, as for a new account. One settings object (useSyncExternalStore).
-  reminders: { current: () => mockRemindersOff, subscribe: () => () => {}, permission: async () => ({ granted: false, canAskAgain: true }) },
+  reminders: { current: () => mockRemindersOff, subscribe: () => () => {}, permission: async () => ({ granted: false, canAskAgain: true }) },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
+  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {} },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,

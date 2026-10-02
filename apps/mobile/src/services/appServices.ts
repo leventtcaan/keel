@@ -7,6 +7,8 @@ import { type ApiClient, createApiClient } from '@/api/client';
 import { type ConsentState, createConsentState } from '@/consent/consentState';
 import { withdrawConsent } from '@/consent/consents';
 import { forgetSentActivityDays } from '@/health/activitySync';
+import { type HealthWriteAccess, healthWriteUnavailable } from '@/health/health';
+import { type HealthWriting, createHealthWriting } from '@/health/healthWrite';
 import { notificationsUnavailable } from '@/notifications/notificationAccess';
 import { type NotificationAccess, type Reminders, createReminders } from '@/notifications/reminders';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
@@ -34,6 +36,8 @@ type Deps = {
   notifications?: NotificationAccess;
   /** One alert at a moment (the rest timer's, K-411); none where there are none (tests). */
   alerts?: AlertAccess;
+  /** Writing to Apple Health (K-412); none where there is none (Expo Go, tests). */
+  healthWrite?: HealthWriteAccess;
   now?: () => Date;
 };
 
@@ -69,6 +73,8 @@ export type AppServices = {
   reminders: Reminders;
   /** The rest timer's voice in the background (K-411). */
   restAlert: RestAlert;
+  /** The two switches that write to Apple Health: finished sessions, weigh-ins typed in (K-412). */
+  healthWriting: HealthWriting;
 };
 
 export async function createAppServices({
@@ -81,6 +87,7 @@ export async function createAppServices({
   locale,
   notifications = notificationsUnavailable,
   alerts = alertsUnavailable,
+  healthWrite = healthWriteUnavailable,
   now = () => new Date(),
 }: Deps): Promise<AppServices> {
   const session = createSessionManager({ storage, refresh: refreshWithServer({ baseUrl, fetch }) });
@@ -90,6 +97,7 @@ export async function createAppServices({
   const units = await createUnitsPreference({ kv, api, locale });
   const reminders = await createReminders({ kv, access: notifications, now, report });
   const restAlert = createRestAlert({ access: alerts, report });
+  const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
   const profile = await createProfileStatus({ kv, api, units, onProfile: (read) => reminders.keepSchedule(read.schedule) });
   const consents = createConsentState({ api, kv });
   const training = createTrainingCache(kv);
@@ -118,6 +126,7 @@ export async function createAppServices({
     training.forget().catch(reportError); // and the program kept for offline training (K-405)
     reminders.forget().catch(reportError); // and the reminders: nothing scheduled for an account that left (K-410)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
+    healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
   });
 
   return {
@@ -131,6 +140,7 @@ export async function createAppServices({
     report,
     reminders,
     restAlert,
+    healthWriting,
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
      * answer on its tokens are refused, so the phone only forgets: the session, and with it the records and settings

@@ -8,8 +8,8 @@
  */
 import { isRunningInExpoGo } from 'expo';
 
-import type { HealthAccess } from './health';
-import { healthUnavailable } from './health';
+import type { HealthAccess, HealthWriteAccess } from './health';
+import { healthUnavailable, healthWriteUnavailable } from './health';
 
 /**
  * What is read: exactly the list the consent text names (en.json › consent.apple_health; ADR-018 §2) — steps, sleep,
@@ -24,7 +24,7 @@ export const READ_TYPES = [
   'HKWorkoutTypeIdentifier',
 ] as const;
 
-type Sample = { uuid: string; startDate: Date; quantity: number };
+type Sample = { uuid: string; startDate: Date; quantity: number; metadata?: { HKExternalUUID?: unknown } };
 type Statistics = { startDate?: Date; sumQuantity?: { quantity: number } };
 type StatisticsOptions = { unit: string; filter: { date: { startDate: Date; endDate: Date } } };
 type Kit = {
@@ -48,6 +48,42 @@ type Kit = {
     options: { limit: number; filter: { date: { startDate: Date; endDate: Date } } },
   ): Promise<readonly { value: number; startDate: Date; endDate: Date }[]>;
 };
+
+// Writing (K-412), the installed 16.x signatures (lib/typescript/healthkit.ios.d.ts): the write permission is asked with
+// `toShare`; its status, unlike reading's, is told (AuthorizationStatus: 0 not determined, 1 denied, 2 authorized).
+type WriteKit = {
+  isHealthDataAvailable(): boolean;
+  requestAuthorization(request: { toShare: readonly string[] }): Promise<boolean>;
+  authorizationStatusFor(type: string): number;
+  saveWorkoutSample(
+    activityType: number,
+    quantities: readonly unknown[],
+    start: Date,
+    end: Date,
+    totals: undefined,
+    metadata: { HKExternalUUID: string },
+  ): Promise<unknown>;
+  saveQuantitySample(
+    identifier: string,
+    unit: string,
+    value: number,
+    start: Date,
+    end: Date,
+    metadata: { HKExternalUUID: string; HKWasUserEntered: boolean },
+  ): Promise<unknown>;
+};
+
+/** What is written, and nothing else (ADR-018 §1): a session as a workout, a weigh-in as body mass. */
+export const WRITE_TYPES = { workout: 'HKWorkoutTypeIdentifier', weight: 'HKQuantityTypeIdentifierBodyMass' } as const;
+const SHARING_AUTHORIZED = 2;
+// HKWorkoutActivityType.traditionalStrengthTraining in the installed library's WorkoutActivityType (generated enum).
+const STRENGTH_TRAINING = 50;
+/**
+ * The app's mark on what it writes (HKExternalUUID = "keel:" + the record's clientId): reading Health back (K-402) skips
+ * it, so a weigh-in typed here never returns as a scale's — whatever the build's bundle id.
+ */
+const MARK = 'keel:';
+const isOwn = (sample: Sample) => typeof sample.metadata?.HKExternalUUID === 'string' && sample.metadata.HKExternalUUID.startsWith(MARK);
 
 // HKCategoryValueSleepAnalysis (the installed library's CategoryValueSleepAnalysis): in bed 0, awake 2; asleep is
 // unspecified 1, core 3, deep 4, REM 5.
@@ -82,7 +118,7 @@ export function healthKitAccess(load: () => unknown = loadLibrary, inExpoGo: () 
         unit: 'kg',
         filter: { date: { startDate: from, endDate: to } },
       });
-      return samples.map((sample) => ({ id: sample.uuid, at: sample.startDate.toISOString(), kg: sample.quantity }));
+      return samples.filter((sample) => !isOwn(sample)).map((sample) => ({ id: sample.uuid, at: sample.startDate.toISOString(), kg: sample.quantity }));
     },
     // Steps and active energy as Health's daily sums, days from the phone's local midnight (K-404).
     readDailyTotals: async (from, to) => {
@@ -118,6 +154,32 @@ export function healthKitAccess(load: () => unknown = loadLibrary, inExpoGo: () 
         filter: { date: { startDate: from, endDate: to } },
       });
       return samples.map((s) => ({ start: s.startDate.toISOString(), end: s.endDate.toISOString(), asleep: ASLEEP.has(s.value) }));
+    },
+  };
+}
+
+/** Writing to Apple Health (K-412), loaded as reading is: never in Expo Go, not where the module or the store is missing. */
+export function healthKitWrite(load: () => unknown = loadLibrary, inExpoGo: () => boolean = isRunningInExpoGo): HealthWriteAccess {
+  if (inExpoGo()) return healthWriteUnavailable;
+  let kit: WriteKit;
+  try {
+    kit = load() as WriteKit;
+    if (!kit.isHealthDataAvailable()) return healthWriteUnavailable;
+  } catch {
+    return healthWriteUnavailable;
+  }
+  return {
+    available: true,
+    requestWrite: async () => {
+      await kit.requestAuthorization({ toShare: [WRITE_TYPES.workout, WRITE_TYPES.weight] });
+    },
+    canWrite: (kind) => kit.authorizationStatusFor(WRITE_TYPES[kind]) === SHARING_AUTHORIZED,
+    // No energy total: the app does not measure it, and a guessed number would be one more made-up figure (U1).
+    writeWorkout: async ({ id, start, end }) => {
+      await kit.saveWorkoutSample(STRENGTH_TRAINING, [], start, end, undefined, { HKExternalUUID: `${MARK}${id}` });
+    },
+    writeWeight: async ({ id, kg, at }) => {
+      await kit.saveQuantitySample(WRITE_TYPES.weight, 'kg', kg, at, at, { HKExternalUUID: `${MARK}${id}`, HKWasUserEntered: true });
     },
   };
 }

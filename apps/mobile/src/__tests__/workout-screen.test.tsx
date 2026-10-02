@@ -84,6 +84,8 @@ const mockServices = {
   report: jest.fn(),
   // The rest timer's voice in the background (K-411).
   restAlert: { start: jest.fn(async (_since: number) => {}), stop: jest.fn(async () => {}) },
+  // Apple Health writing (K-412): the switch decides inside; the screen only says a session finished.
+  healthWriting: { workoutFinished: jest.fn(async (_workout: unknown) => {}) },
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
@@ -987,5 +989,28 @@ describe('the rest in the background (K-411)', () => {
     expect(mockServices.restAlert.stop.mock.calls.length).toBeGreaterThan(stopsBefore);
     expect(mockServices.restAlert.start).toHaveBeenCalledTimes(1); // and no new one mid-round
     expect(screen.queryByText(/^Rest ·/)).toBeNull(); // and the screen's timer of the last round goes with it
+  });
+});
+
+describe('the finished session to Apple Health (K-412)', () => {
+  test('finished with work in it: one workout, from its start to the finish, under its own id', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText('Log set 1'));
+    await fireEvent.press(screen.getByText('Finish workout'));
+    const before = Date.now();
+    await fireEvent.press(screen.getByText('Finish'));
+    expect(mockServices.healthWriting.workoutFinished).toHaveBeenCalledTimes(1);
+    const [workout] = mockServices.healthWriting.workoutFinished.mock.calls[0] as unknown as [{ id: string; start: Date; end: Date }];
+    expect(workout.id).toBe('w1');
+    expect(workout.start).toEqual(new Date('2026-09-28T17:00:00Z'));
+    expect(workout.end.getTime()).toBeGreaterThanOrEqual(before);
+    const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
+    expect(finish?.kind === 'finish' && finish.body.endedAt).toBe(workout.end.toISOString()); // the same moment as the finish
+  });
+
+  test('finished before any set: nothing to write', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText('Finish workout'));
+    expect(mockServices.healthWriting.workoutFinished).not.toHaveBeenCalled();
   });
 });

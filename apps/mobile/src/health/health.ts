@@ -40,3 +40,32 @@ export const healthUnavailable: HealthAccess = {
     throw new Error('Apple Health is not available in this build');
   },
 };
+
+/** What is written to Apple Health (K-412): a finished session, and a weigh-in typed in — each by its own switch. */
+export type HealthWriteKind = 'workout' | 'weight';
+
+/** Writing to Apple Health (K-412, ADR-018 §1): asked apart from reading, and only after the user turns a switch on. */
+export type HealthWriteAccess = {
+  available: boolean;
+  /** Shows Apple's sheet for what the app writes (workouts, weight). Resolves when the sheet closes. */
+  requestWrite(): Promise<void>;
+  /** Whether iOS allows writing this kind — unlike reading, iOS tells. */
+  canWrite(kind: HealthWriteKind): boolean;
+  writeWorkout(workout: { id: string; start: Date; end: Date }): Promise<void>;
+  writeWeight(weighIn: { id: string; kg: number; at: Date }): Promise<void>;
+};
+
+/** Where Apple Health cannot be written (Expo Go, an iPad, tests). */
+export const healthWriteUnavailable: HealthWriteAccess = {
+  available: false,
+  requestWrite: async () => {
+    throw new Error('Apple Health is not available in this build');
+  },
+  canWrite: () => false,
+  writeWorkout: async () => {
+    throw new Error('Apple Health is not available in this build');
+  },
+  writeWeight: async () => {
+    throw new Error('Apple Health is not available in this build');
+  },
+};

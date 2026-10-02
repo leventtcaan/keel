@@ -622,3 +622,24 @@ test("a sign-out takes a rest alert away: no voice for the account that left (K-
   await settle();
   expect(cancelled).toEqual(['rest']);
 });
+
+test('a sign-out forgets the Apple Health switches (K-412)', async () => {
+  const kv = memoryKv();
+  const healthWrite = {
+    available: true,
+    requestWrite: async () => {},
+    canWrite: () => true,
+    writeWorkout: async () => {},
+    writeWeight: async () => {},
+  };
+  const services = await createAppServices({
+    baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv, locale: 'en-US', healthWrite,
+  });
+  await services.session.signIn(SESSION);
+  await services.healthWriting.turnOn('workouts');
+  expect(services.healthWriting.current().workouts).toBe(true);
+  await services.signOut();
+  await settle();
+  expect(services.healthWriting.current()).toEqual({ workouts: false, weighIns: false });
+  expect([...kv.items.keys()].filter((key) => key.startsWith('healthWrite.'))).toEqual([]);
+});

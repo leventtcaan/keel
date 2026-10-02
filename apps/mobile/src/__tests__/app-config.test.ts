@@ -1,6 +1,6 @@
 /**
  * The native configuration (K-403, ADR-031): the HealthKit permission text iOS shows comes from data/copy/en.json like
- * every other text (K2), the app asks to read only (no write permission until K-412), and no background delivery yet.
+ * every other text (K2) — reading and, since K-412, writing (asked only from Settings' switches) — and no background delivery yet.
  */
 import appConfig from '../../app.config';
 import base from '../../app.json';
@@ -15,11 +15,11 @@ test('the HealthKit plugin is there once, with its options', () => {
   expect(Array.isArray(healthKit[0])).toBe(true);
 });
 
-test("iOS's permission text is the copy file's; reading only, no background delivery", () => {
+test("iOS's permission texts are the copy file's, for reading and for writing (K-412); no background delivery", () => {
   const options = (healthKit[0] as [string, Record<string, unknown>])[1];
   expect(options).toEqual({
     NSHealthShareUsageDescription: t('permissions.healthRead'),
-    NSHealthUpdateUsageDescription: false,
+    NSHealthUpdateUsageDescription: t('permissions.healthWrite'),
     background: false,
   });
 });
