@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -52,6 +53,16 @@ class PromptsTests {
         // The week before at the target was on it; the last week at the target is not under it.
         assertThat(Prompts.today(facts().steps(weeks(TARGET, TARGET - 1)).build(), MALE)).hasSize(1);
         assertThat(Prompts.today(facts().steps(weeks(TARGET + 1, TARGET)).build(), MALE)).isEmpty();
+    }
+
+    @Test
+    void eachWeekIsJudgedAgainstTheTargetItHad() {
+        // The target rose from 7,000 to 9,000 on Monday 5 Oct (a call applied): both weeks were on their own 7,000.
+        Function<LocalDate, Integer> raisedThisWeek = day -> day.isBefore(LocalDate.of(2026, 10, 5)) ? TARGET : 9000;
+        assertThat(Prompts.today(facts().steps(weeks(9500, 8000)).stepTarget(raisedThisWeek).build(), MALE)).isEmpty();
+        // Raised on Monday 28 Sep: the week before on its 7,000, the last one under its 9,000 — a drop.
+        Function<LocalDate, Integer> raisedLastWeek = day -> day.isBefore(LAST_MONDAY) ? TARGET : 9000;
+        assertThat(Prompts.today(facts().steps(weeks(7500, 8000)).stepTarget(raisedLastWeek).build(), MALE)).hasSize(1);
     }
 
     @Test
@@ -239,6 +250,7 @@ class PromptsTests {
         private LocalDate today = WEDNESDAY;
         private Optional<Phase> phase = Optional.of(Phase.CUT);
         private Map<LocalDate, Integer> steps = Map.of();
+        private Function<LocalDate, Integer> stepTarget = day -> TARGET;
         private LocalDate trainingDaysSince = LocalDate.of(2026, 1, 5);
         private List<LocalDate> sessions = List.of(WEDNESDAY);
         private final Set<LocalDate> paused = new HashSet<>();
@@ -264,6 +276,11 @@ class PromptsTests {
 
         FactsBuilder steps(Map<LocalDate, Integer> days) {
             steps = days;
+            return this;
+        }
+
+        FactsBuilder stepTarget(Function<LocalDate, Integer> onDay) {
+            stepTarget = onDay;
             return this;
         }
 
@@ -303,7 +320,7 @@ class PromptsTests {
         }
 
         Prompts.Facts build() {
-            return new Prompts.Facts(today, phase, steps, TARGET, List.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), trainingDaysSince, sessions,
+            return new Prompts.Facts(today, phase, steps, stepTarget, List.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), trainingDaysSince, sessions,
                     Set.copyOf(paused), Set.copyOf(lighter), loadsDropped, deficitBegan, declaredNow);
         }
     }

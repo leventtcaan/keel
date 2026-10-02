@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * The coach's own questions between the weekly calls (K-512, ADR-039): Güray's triggers (G5 §2), asked in the app — never
@@ -39,6 +40,7 @@ public final class Prompts {
      *
      * @param phase the plan's direction; none before the first call
      * @param steps the step count of each day that has one
+     * @param stepTarget the plan's step target on each day: a week is judged against the target it had (K-220 review)
      * @param trainingDaysSince the day the program began asking for these training days
      * @param sessionDays the days a session was done (a set past the warm-ups, K-431)
      * @param pausedDays the days nothing was asked: a state declared (ADR-038), a week off the ladder gave
@@ -48,7 +50,8 @@ public final class Prompts {
      *     maintenance estimate (K-114) that comes before it
      * @param declaredNow a state is in force today
      */
-    public record Facts(LocalDate today, Optional<Phase> phase, Map<LocalDate, Integer> steps, int stepTarget, List<DayOfWeek> trainingDays,
+    public record Facts(LocalDate today, Optional<Phase> phase, Map<LocalDate, Integer> steps, Function<LocalDate, Integer> stepTarget,
+            List<DayOfWeek> trainingDays,
             LocalDate trainingDaysSince, List<LocalDate> sessionDays, Set<LocalDate> pausedDays, Set<LocalDate> lighterDays,
             boolean loadsDroppedLastWeek, Optional<LocalDate> deficitBegan, boolean declaredNow) {
     }
@@ -85,7 +88,7 @@ public final class Prompts {
         int enough = parameters.wholeNumber(ParameterKey.MIN_LOGGED_DAYS_PER_WEEK);
         OptionalDouble last = average(facts, lastWeek, enough);
         OptionalDouble before = average(facts, lastWeek.minusWeeks(1), enough);
-        return last.isPresent() && before.isPresent() && last.getAsDouble() < facts.stepTarget() && before.getAsDouble() >= facts.stepTarget();
+        return last.isPresent() && before.isPresent() && last.getAsDouble() < facts.stepTarget().apply(facts.today()) && before.getAsDouble() >= facts.stepTarget().apply(facts.today());
     }
 
     /** The average of the week from {@code monday}, if at least {@code enough} of its days not paused have a count. */
