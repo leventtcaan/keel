@@ -21,7 +21,11 @@ final class DeficitStart {
      * applied call to say when.
      */
     static Optional<LocalDate> of(CallStore.Plan plan, List<CallStore.PlanStep> steps) {
-        return Optional.empty();
+        if (plan.phase() != Phase.CUT || plan.observingMaintenance()) {
+            return Optional.empty();
+        }
+        return steps.stream().filter(step -> into(step.before(), step.after()) && step.after().phaseStart().equals(plan.phaseStart()))
+                .reduce((earlier, later) -> later).map(step -> step.after().planStart());
     }
 
     /** A call that turned a plan with no deficit — watched, or building — into a cut under maintenance. */

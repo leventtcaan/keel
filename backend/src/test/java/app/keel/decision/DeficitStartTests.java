@@ -42,6 +42,13 @@ class DeficitStartTests {
     }
 
     @Test
+    void watchedAgainThereIsNoDeficitUntilTheNextCall() {
+        CallStore.Plan first = under(LocalDate.of(2026, 9, 15), 2300);
+        CallStore.Plan watchedAgain = new CallStore.Plan(Phase.CUT, CUT_BEGAN, LocalDate.of(2026, 10, 1), 2500, true, null);
+        assertThat(DeficitStart.of(watchedAgain, List.of(step(1, WATCHED, first), step(2, first, watchedAgain)))).isEmpty();
+    }
+
+    @Test
     void aMiniCutBeginsItsDeficitOnItsFirstDay() {
         LocalDate start = LocalDate.of(2026, 11, 2);
         CallStore.Plan building = new CallStore.Plan(Phase.BULK, CUT_BEGAN, CUT_BEGAN, 3000, false, null);
@@ -59,9 +66,10 @@ class DeficitStartTests {
     }
 
     @Test
-    void buildingHasNoDeficit() {
+    void buildingHasNoDeficitWhateverCameBefore() {
+        CallStore.Plan first = under(LocalDate.of(2026, 9, 15), 2300);
         CallStore.Plan building = new CallStore.Plan(Phase.BULK, CUT_BEGAN, CUT_BEGAN, 3000, false, null);
-        assertThat(DeficitStart.of(building, List.of(step(1, WATCHED, building)))).isEmpty();
+        assertThat(DeficitStart.of(building, List.of(step(1, WATCHED, first), step(2, first, building)))).isEmpty();
     }
 
     private static CallStore.Plan under(LocalDate planStart, int kcal) {
