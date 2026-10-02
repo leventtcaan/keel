@@ -727,6 +727,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The state the user declared, in force today (K-516, ADR-038)
+         * @description What life brought, declared by the user — never asked for (U9). NOT_FOUND when none is in force today. Sickness and
+         *     pain are health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as every /v1/decisions route; CONFLICT
+         *     without a profile (no calendar to read today on).
+         */
+        get: operations["getState"];
+        /**
+         * Declare a state from today
+         * @description From today on the user's calendar, until `until` (included) or until they are back. A state in force ends
+         *     yesterday; one begun today is replaced whole. `until` before today, or more than max-range-days on, is
+         *     VALIDATION_FAILED. While a week holds a declared day the week is paused — neither on track nor missed — and the
+         *     week's call waits (NO_DECISION_YET); safety calls never wait (ADR-038).
+         */
+        put: operations["declareState"];
+        post?: never;
+        /**
+         * Back — the state in force ends yesterday
+         * @description A state begun today is taken back. Nothing in force is nothing to do (204 all the same).
+         */
+        delete: operations["endState"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions": {
         parameters: {
             query?: never;
@@ -1521,6 +1554,29 @@ export interface components {
              */
             weekOf: string;
             answers: components["schemas"]["Answer"][];
+        };
+        /**
+         * @description What life brought (L3 §4.2). Words in en.json › state.kind.<kind lowercased>.
+         * @enum {string}
+         */
+        StateKind: "TRAVELING" | "SICK" | "PAIN" | "BUSY" | "NEW_GYM";
+        DeclaredState: {
+            kind: components["schemas"]["StateKind"];
+            /**
+             * Format: date
+             * @description Its first day, on the user's calendar.
+             */
+            since: string;
+            /**
+             * Format: date
+             * @description Its last day, when the user gave one; absent until they are back.
+             */
+            until?: string;
+        };
+        NewDeclaredState: {
+            kind: components["schemas"]["StateKind"];
+            /** Format: date */
+            until?: string;
         };
         Consistency: {
             /**
@@ -2899,6 +2955,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Decision"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state in force */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclaredState"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    declareState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewDeclaredState"];
+            };
+        };
+        responses: {
+            /** @description The state declared */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclaredState"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    endState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Back */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };
