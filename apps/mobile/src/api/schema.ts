@@ -864,6 +864,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/decisions/{id}/basis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * @description What the call read, as the rows "Why this call" shows (K-519, Ö-25): from the call's own stored snapshot, nothing
+         *     else. Never a fat estimate (U4), never the cycle answer (never kept). Health data: CONSENT_REQUIRED without the
+         *     HEALTH_DATA consent, as every /v1/decisions route; NOT_FOUND for a call that is not the user's.
+         */
+        get: operations["getDecisionBasis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions/{id}/apply": {
         parameters: {
             query?: never;
@@ -1704,6 +1727,53 @@ export interface components {
              */
             safety?: boolean;
             application: components["schemas"]["Application"];
+        };
+        /**
+         * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
+         *     not read is absent.
+         */
+        DecisionBasis: {
+            phase: components["schemas"]["Phase"];
+            /**
+             * @description The decision window's weeks, oldest first — only when the call read the window (the weekly spine ran); empty for
+             *     a call that stopped before it (not enough data yet, a safety stop, a declared week, a gate).
+             */
+            weeks: {
+                /**
+                 * Format: date
+                 * @description The week's last day.
+                 */
+                ends: string;
+                /** @description The mean of the week's weigh-ins. */
+                kg: number;
+            }[];
+            /** @description From the window's first week to its latest, per week; negative is down. Absent when the window was not read. */
+            changeKgPerWeek?: number;
+            /** @description The share of the planned actions done, as the call counted it (the counts behind it are not kept). */
+            adherence?: number;
+            /** @description The check-in answers given; one left open is absent. */
+            answers: {
+                /** @enum {string} */
+                look?: "BETTER" | "SAME" | "WORSE";
+                /** @enum {string} */
+                training?: "IMPROVING" | "STABLE" | "DECLINING";
+                /** @enum {string} */
+                recovery?: "GOOD" | "POOR";
+                /** @enum {string} */
+                waist?: "DOWN" | "FLAT" | "UP";
+                /** @enum {string} */
+                appetite?: "NORMAL" | "GONE";
+            };
+            /** @description Where the most-stalled compound lift stood (K-110). */
+            training?: {
+                stalledSessions: number;
+                weeksLoadHeld: number;
+                monthsStalled: number;
+                restedLastWeek: boolean;
+                loadsBelowLastWeek: boolean;
+                weeksPlanMissed: number;
+            };
+            pausedBy?: components["schemas"]["StateKind"];
         };
         /**
          * @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,
@@ -3217,6 +3287,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Decision"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getDecisionBasis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The call's basis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionBasis"];
                 };
             };
             default: components["responses"]["Error"];

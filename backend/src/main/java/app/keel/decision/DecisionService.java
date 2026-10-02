@@ -501,6 +501,11 @@ class DecisionService {
         return calls.byId(account, id);
     }
 
+    /** What the call read, from its own stored snapshot (K-519): read with the parameters for the sex it was made for. */
+    Optional<DecisionBasis> basis(AccountId account, UUID id) {
+        return find(account, id).map(call -> DecisionBasis.of(call.snapshot(), parameters.forSex(call.snapshot().sex())));
+    }
+
     List<CallStore.Call> page(AccountId account, Optional<UUID> before, int limit) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         Optional<CallStore.Call> cursor = before.map(id -> calls.byId(account, id).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED)));

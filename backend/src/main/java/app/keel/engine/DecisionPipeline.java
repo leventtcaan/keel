@@ -48,31 +48,48 @@ public final class DecisionPipeline {
             return safety.get();
         }
         // After a hard stop, no call opens a deficit again before the cycle question is answered (K-229).
-        return SafetyHold.check(afterTheSafetyNet(snapshot, parameters), snapshot);
+        return SafetyHold.check(afterTheSafetyNet(snapshot, parameters).decision(), snapshot);
     }
 
-    private static Decision afterTheSafetyNet(Snapshot snapshot, Parameters parameters) {
+    /**
+     * Whether the call for this Snapshot read the decision window — the weekly spine ran (K-519): a call that stopped
+     * before it (not enough data yet, a safety stop, a declared week, a gate) read no weekly mean, so none is shown as its
+     * data. The same flow as {@link #decide}, not a copy of its conditions.
+     */
+    public static boolean windowRead(Snapshot snapshot, Parameters parameters) {
+        return SafetyNet.check(snapshot, parameters).isEmpty() && afterTheSafetyNet(snapshot, parameters).windowRead();
+    }
+
+    /** A call, and whether the weekly spine read the window to make it. */
+    private record Outcome(Decision decision, boolean windowRead) {
+
+        static Outcome before(Decision decision) {
+            return new Outcome(decision, false);
+        }
+    }
+
+    private static Outcome afterTheSafetyNet(Snapshot snapshot, Parameters parameters) {
         Optional<Decision> miniCutOver = MiniCutGate.over(snapshot, parameters);
         if (miniCutOver.isPresent()) {
-            return miniCutOver.get();
+            return Outcome.before(miniCutOver.get());
         }
         // A week the user declared disturbed waits, training going wrong included: a sick week's missed sessions are no
         // overtraining (K-516, ADR-038).
         Optional<Decision> declared = StateMode.check(snapshot);
         if (declared.isPresent()) {
-            return declared.get();
+            return Outcome.before(declared.get());
         }
         Optional<Decision> ladder = snapshot.training().flatMap(status -> DeloadLadder.check(status, snapshot, parameters));
         if (ladder.isPresent() && trainingGoingWrong(ladder.get())) {
-            return ladder.get();
+            return Outcome.before(ladder.get());
         }
         Optional<Decision> notYet = InitialTarget.observing(snapshot, parameters).or(() -> DataSufficiency.check(snapshot, parameters));
         if (notYet.isPresent()) {
-            return ladder.orElse(low(notYet.get()));
+            return Outcome.before(ladder.orElse(low(notYet.get())));
         }
         Optional<Decision> direction = PhaseGate.check(snapshot, parameters).or(() -> MiniCutGate.check(snapshot, parameters));
         if (direction.isPresent()) {
-            return direction.get();
+            return Outcome.before(direction.get());
         }
         Decision weekly = switch (WeeklySpine.evaluate(snapshot, parameters)) {
             case SpineResult.Decided(Decision decided) -> decided;
@@ -80,9 +97,9 @@ public final class DecisionPipeline {
         };
         boolean quiet = weekly.action() instanceof Action.Continue || weekly.action() instanceof Action.NoDecisionYet;
         if (quiet && ladder.isPresent()) {
-            return ladder.get();
+            return new Outcome(ladder.get(), true);
         }
-        return withDensity(weekly, snapshot, parameters);
+        return new Outcome(withDensity(weekly, snapshot, parameters), true);
     }
 
     private static boolean trainingGoingWrong(Decision ladder) {

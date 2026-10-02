@@ -151,6 +151,26 @@ public final class WeeklySpine {
         return Optional.empty();
     }
 
+    /** A week of the decision window: its last day, and the mean of its weigh-ins — none without one. */
+    public record WeekMean(LocalDate ends, Optional<BigDecimal> kg) {
+    }
+
+    /**
+     * The decision window's weeks, oldest first, the latest ending on {@code today} (21 days → 3 weeks for men, 28 → 4 for
+     * women; J1 D1): what the spine reads, and what "Why this call" shows (K-519).
+     */
+    public static List<WeekMean> windowMeans(WeightSeries weights, LocalDate today, Parameters parameters) {
+        int weekCount = parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) / DAYS_PER_WEEK;
+        List<WeekMean> weeks = new ArrayList<>();
+        for (int week = weekCount - 1; week >= 0; week--) {
+            LocalDate weekEnd = today.minusDays((long) week * DAYS_PER_WEEK);
+            List<WeighIn> weighIns = weights.between(weekEnd.minusDays(DAYS_PER_WEEK - 1L), weekEnd);
+            weeks.add(new WeekMean(weekEnd, weighIns.isEmpty() ? Optional.empty() : Optional.of(weighIns.stream().map(WeighIn::kg)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(weighIns.size()), MathContext.DECIMAL64))));
+        }
+        return List.copyOf(weeks);
+    }
+
     /**
      * The decision window's weekly means, oldest first (21 days → 3 weeks for men, 28 → 4 for women; J1 D1). The window
      * lies inside the current plan and every week has weigh-ins (DataSufficiency ran first), so the previous plan's
@@ -160,12 +180,8 @@ public final class WeeklySpine {
     private record Window(List<BigDecimal> weeks, BigDecimal margin, boolean cut) {
 
         static Window of(Snapshot snapshot, Parameters parameters) {
-            int weekCount = parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) / DAYS_PER_WEEK;
-            List<BigDecimal> means = new ArrayList<>();
-            for (int week = weekCount - 1; week >= 0; week--) {
-                LocalDate weekEnd = snapshot.today().minusDays((long) week * DAYS_PER_WEEK);
-                means.add(mean(snapshot.weights().between(weekEnd.minusDays(DAYS_PER_WEEK - 1L), weekEnd)));
-            }
+            List<BigDecimal> means = windowMeans(snapshot.weights(), snapshot.today(), parameters).stream()
+                    .map(week -> week.kg().orElseThrow(() -> new IllegalStateException("A week of the window has no weigh-in"))).toList();
             return new Window(means, line(ParameterKey.FLAT_MARGIN_KG, parameters), snapshot.phase() == Phase.CUT);
         }
 
@@ -223,11 +239,6 @@ public final class WeeklySpine {
                 flat++;
             }
             return flat;
-        }
-
-        private static BigDecimal mean(List<WeighIn> weighIns) {
-            BigDecimal sum = weighIns.stream().map(WeighIn::kg).reduce(BigDecimal.ZERO, BigDecimal::add);
-            return sum.divide(BigDecimal.valueOf(weighIns.size()), MathContext.DECIMAL64);
         }
     }
 
