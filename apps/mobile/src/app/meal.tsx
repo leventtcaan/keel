@@ -46,9 +46,16 @@ export default function MealScreen() {
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false); // two taps at once must not log twice
+  // Each search answer belongs to the search that asked: a late one (slow network) never replaces a newer list, and none
+  // comes back once a food was picked.
+  const searchSeq = useRef(0);
 
   useEffect(() => {
-    void consents.granted('HEALTH_DATA').then((granted) => setStep(granted ? 'entry' : 'consent'));
+    // Not known (a failing keychain) is not given: the consent step, never an endless wait.
+    void consents
+      .granted('HEALTH_DATA')
+      .catch(() => false)
+      .then((granted) => setStep(granted ? 'entry' : 'consent'));
   }, [consents]);
 
   const requests = requestsOf(items, known);
@@ -85,14 +92,18 @@ export default function MealScreen() {
   const search = async () => {
     const q = query.trim();
     if (q.length < foodParams.searchMinChars) {
+      searchSeq.current++;
       setFound({ state: 'tooShort' });
       return;
     }
+    const mine = ++searchSeq.current;
     const answer = await load(() => api.POST('/v1/foods/search', { body: { q, limit: foodParams.searchResults } }));
+    if (mine !== searchSeq.current) return;
     setFound(answer.state === 'ready' ? { state: 'found', foods: answer.value } : { state: 'failed' });
   };
 
   const add = (food: Schemas['Food']) => {
+    searchSeq.current++;
     setItems((before) => addFood(before, food));
     setKnown((before) => new Map(before).set(food.id, food));
     setFound({ state: 'idle' });
@@ -119,15 +130,18 @@ export default function MealScreen() {
     }
   };
 
-  const foundNote =
-    found.state === 'tooShort'
-      ? t('meal.search.tooShort')
+  // A full meal takes no more: the server would refuse it, and the queue would lose it.
+  const full = items.length >= foodParams.itemsMax;
+  const results = found.state === 'found' && !full ? found.foods : [];
+  const foundNote = full
+    ? t('meal.full', { max: foodParams.itemsMax })
+    : found.state === 'tooShort'
+      ? t('meal.search.tooShort', { min: foodParams.searchMinChars })
       : found.state === 'failed'
         ? t('meal.search.failed')
         : found.state === 'found' && found.foods.length === 0
           ? t('meal.search.none')
           : null;
-  const results = found.state === 'found' ? found.foods : [];
   // Named: with several items the question says which one it is about.
   const asked = shown?.question;
   const askedName = shown?.items.find((item) => item.foodId === asked?.foodId)?.name;
@@ -167,7 +181,7 @@ export default function MealScreen() {
                 onChangeText={(quantity) => change(index, { quantity })}
                 problem={itemIssue === null || itemIssue === 'missing' ? null : t(PROBLEM_KEYS[itemIssue])}
                 keyboardType="decimal-pad"
-                maxLength={8}
+                maxLength={foodParams.amountMaxChars}
               />
               <View style={styles.chips}>
                 {item.units.map((unit) => {

@@ -273,7 +273,7 @@
       "label": "Find a food",
       "go": "Search",
       "add": "Add {name}",
-      "tooShort": "Type at least two letters.",
+      "tooShort": "Type at least {min} letters.",
       "none": "Nothing found. Try other words.",
       "failed": "Searching needs a connection. Try again."
     },
@@ -293,7 +293,8 @@
       "question": "{name}: {question}"
     },
     "save": "Log it",
-    "saveFailed": "Couldn't save it on this phone. Try again."
+    "saveFailed": "Couldn't save it on this phone. Try again.",
+    "full": "A meal holds up to {max} items. Log the rest as another meal."
   },
   "weighIn": {
     "title": "Weigh-in",

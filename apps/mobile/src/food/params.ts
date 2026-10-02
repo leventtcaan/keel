@@ -17,4 +17,6 @@ export const foodParams = {
   searchResults: param<number>('food_search_results'),
   amountMaxG: param<number>('meal_amount_max_g'),
   amountDecimals: param<number>('meal_amount_decimals'),
+  itemsMax: param<number>('meal_items_max'),
+  amountMaxChars: param<number>('meal_amount_max_chars'),
 };

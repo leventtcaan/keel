@@ -43,12 +43,14 @@ const estimateOf = (request: Schemas['FoodEstimateRequest']): Schemas['FoodEstim
 });
 
 let mockGranted = true;
-let mockSearch: () => Promise<Answer> = async () => ok([RICE, CHICKEN]);
-const mockPOST = jest.fn(async (path: string, init: { body: never }) => {
-  if (path === '/v1/foods/search') return mockSearch();
-  if (path === '/v1/food-estimates') return ok(estimateOf(init.body));
+let mockSearch: (q: string) => Promise<Answer> = async () => ok([RICE, CHICKEN]);
+let mockEstimate: (request: Schemas['FoodEstimateRequest']) => Promise<Answer> = async (request) => ok(estimateOf(request));
+const post = async (path: string, init: { body: never }) => {
+  if (path === '/v1/foods/search') return mockSearch((init.body as { q: string }).q);
+  if (path === '/v1/food-estimates') return mockEstimate(init.body);
   return refused(404, 'NOT_FOUND');
-});
+};
+const mockPOST = jest.fn(post);
 const mockPUT = jest.fn(async (_path: string, _init: unknown) => ok({ kind: 'HEALTH_DATA', status: 'GRANTED' }));
 const mockRecord = jest.fn(async (_record: unknown) => true);
 const mockRemember = jest.fn(async () => {});
@@ -59,7 +61,7 @@ const mockServices = {
   api: { POST: mockPOST, PUT: mockPUT, GET: jest.fn(), DELETE: jest.fn() },
   queue: { record: mockRecord },
   consents: { granted: async () => mockGranted, remember: mockRemember },
-  report: () => {},
+  report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
@@ -88,9 +90,19 @@ afterAll(() => jest.useRealTimers());
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPOST.mockImplementation(post);
+  mockPUT.mockImplementation(async () => ok({ kind: 'HEALTH_DATA', status: 'GRANTED' }));
   mockGranted = true;
   mockSearch = async () => ok([RICE, CHICKEN]);
+  mockEstimate = async (request) => ok(estimateOf(request));
 });
+
+/** A promise and the hand that settles it, for answers that arrive in an order the test chooses. */
+function held<T>() {
+  let release: (value: T) => void = () => {};
+  const promise = new Promise<T>((resolve) => (release = resolve));
+  return { promise, release };
+}
 
 async function show() {
   await render(
@@ -160,7 +172,7 @@ describe('finding a food', () => {
     await show();
     await search('r');
     expect(mockPOST).not.toHaveBeenCalled();
-    expect(screen.getByText(t('meal.search.tooShort'))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.search.tooShort', { min: 2 }))).toBeOnTheScreen();
   });
 
   test('nothing found says so; no connection says so', async () => {
@@ -294,5 +306,163 @@ describe('saving', () => {
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
     expect(screen.getByText(t('meal.saveFailed'))).toBeOnTheScreen();
     expect(mockBack).not.toHaveBeenCalled();
+  });
+});
+
+describe('review: answers in their order, guards, failures', () => {
+  test('a search answer that arrives after a newer search is dropped', async () => {
+    const egg = held<Answer>();
+    mockSearch = (q) => (q === 'rice' ? egg.promise : Promise.resolve(ok([CHICKEN])));
+    await show();
+    await search('rice');
+    await search('chicken');
+    await act(async () => egg.release(ok([RICE])));
+    expect(screen.queryByRole('button', { name: t('meal.search.add', { name: RICE.name }) })).toBeNull();
+    expect(screen.getByRole('button', { name: t('meal.search.add', { name: CHICKEN.name }) })).toBeOnTheScreen();
+  });
+
+  test('a search answer that arrives after a food was added does not bring the list back', async () => {
+    const late = held<Answer>();
+    await show();
+    await search('chicken');
+    mockSearch = () => late.promise;
+    await search('rice');
+    await add(CHICKEN);
+    await act(async () => late.release(ok([RICE])));
+    expect(screen.queryByRole('button', { name: t('meal.search.add', { name: RICE.name }) })).toBeNull();
+  });
+
+  test('the estimate card goes as soon as an amount changes, until the new one comes', async () => {
+    await show();
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '1');
+    expect(screen.getByTestId('estimate')).toBeOnTheScreen();
+    const next = held<Answer>();
+    mockEstimate = () => next.promise;
+    await amount(RICE, '2');
+    expect(screen.queryByTestId('estimate')).toBeNull();
+    await amount(RICE, '');
+    expect(screen.queryByTestId('estimate')).toBeNull();
+  });
+
+  test('estimate answers out of order: only the one for the current amounts is shown', async () => {
+    const first = held<Answer>();
+    const second = held<Answer>();
+    const queue = [first, second];
+    mockEstimate = () => (queue.shift() as typeof first).promise;
+    await show();
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '1');
+    await amount(RICE, '2');
+    const answer = (low: number, high: number): Answer => ok({ items: [], kcal: R(low, high), proteinG: R(1, 2) });
+    await act(async () => second.release(answer(500, 600)));
+    await act(async () => first.release(answer(100, 200)));
+    expect(screen.getByText(kcal(500, 600))).toBeOnTheScreen();
+    expect(screen.queryByText(kcal(100, 200))).toBeNull();
+  });
+
+  test('two presses of save in the same moment log once, and go back once', async () => {
+    const stored = held<boolean>();
+    mockRecord.mockImplementationOnce(() => stored.promise);
+    await show();
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '1');
+    const press = (screen.getByRole('button', { name: t('meal.save') }).props as { onClick: (event: object) => void }).onClick;
+    await act(async () => {
+      press({ nativeEvent: {} });
+      press({ nativeEvent: {} });
+    });
+    await act(async () => stored.release(true));
+    expect(mockRecord).toHaveBeenCalledTimes(1);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('after a save the phone could not do, saving again works', async () => {
+    mockRecord.mockRejectedValueOnce(new Error('disk'));
+    await show();
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '1');
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(mockRecord).toHaveBeenCalledTimes(2);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([
+    ['refused', async () => refused(500, 'INTERNAL')],
+    [
+      'unreachable',
+      async () => {
+        throw new TypeError('Network request failed');
+      },
+    ],
+  ])('the consent %s: it says so, nothing is remembered, nothing can be typed; reported by name only', async (_, answer) => {
+    mockGranted = false;
+    mockPUT.mockImplementation(answer as never);
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.consent.allow') })));
+    expect(screen.getByText(t('meal.consent.failed'))).toBeOnTheScreen();
+    expect(mockRemember).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText(t('meal.search.label'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('meal.consent.allow') })).toBeEnabled();
+    for (const [problem] of mockServices.report.mock.calls) expect(Object.keys(problem as object)).toEqual(['name']);
+  });
+
+  test("the consent can't be read: the consent step, not an endless wait", async () => {
+    const granted = mockServices.consents.granted;
+    mockServices.consents.granted = async () => {
+      throw new Error('keychain');
+    };
+    try {
+      await show();
+      expect(screen.getByRole('button', { name: t('meal.consent.allow') })).toBeOnTheScreen();
+    } finally {
+      mockServices.consents.granted = granted;
+    }
+  });
+
+  test('the question names the item it is about, among several; an unknown question shows nothing', async () => {
+    await show();
+    await search('rice');
+    await add(RICE);
+    await search('chicken');
+    await add(CHICKEN);
+    await amount(RICE, '1');
+    await amount(CHICKEN, '150');
+    expect(screen.getByText(t('meal.estimate.question', { name: CHICKEN.name, question: t('foodEstimate.question.grams') }))).toBeOnTheScreen();
+
+    mockEstimate = async (request) => ok({ ...estimateOf(request), question: { foodId: CHICKEN.id, copyKey: 'foodEstimate.question.nope' } });
+    await amount(CHICKEN, '160');
+    expect(screen.getByTestId('estimate')).toBeOnTheScreen();
+    expect(screen.queryByText(/Weighing/)).toBeNull();
+  });
+
+  test('the same food twice: each item is its own, removed and changed by its place', async () => {
+    await show();
+    await search('rice');
+    await add(RICE);
+    await search('rice');
+    await add(RICE);
+    const fields = () => screen.getAllByLabelText(t('meal.item.amount', { name: RICE.name }));
+    await act(async () => fireEvent.changeText(fields()[0], '1'));
+    await act(async () => fireEvent.changeText(fields()[1], '2'));
+    await act(async () => fireEvent.press(screen.getAllByRole('button', { name: t('meal.item.removeSpoken', { name: RICE.name }) })[1]));
+    expect(fields().map((field) => field.props.value)).toEqual(['1']);
+  });
+
+  test('at most the items the server takes: the meal is full, and says so (review: a larger one was lost)', async () => {
+    mockSearch = async () => ok([RICE]);
+    await show();
+    for (let i = 0; i < 50; i++) {
+      await search('rice');
+      await add(RICE);
+    }
+    await search('rice');
+    expect(screen.queryByRole('button', { name: t('meal.search.add', { name: RICE.name }) })).toBeNull();
+    expect(screen.getByText(t('meal.full', { max: 50 }))).toBeOnTheScreen();
   });
 });

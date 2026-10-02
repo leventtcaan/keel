@@ -79,6 +79,22 @@ describe('requestsOf', () => {
     ]);
   });
 
+  test('nothing for more items than the server takes (FoodEstimateRequest maxItems: 50)', () => {
+    const ok: DraftItem = { foodId: 'fdc-4', name: 'Chicken', units: ['g'], quantity: '1', unit: 'g', weighed: false };
+    expect(
+      requestsOf(
+        Array.from({ length: 50 }, () => ok),
+        new Map(),
+      ),
+    ).toHaveLength(50);
+    expect(
+      requestsOf(
+        Array.from({ length: 51 }, () => ok),
+        new Map(),
+      ),
+    ).toBeNull();
+  });
+
   test('nothing while an amount is missing or wrong, and nothing for no items', () => {
     const ok: DraftItem = { foodId: 'fdc-4', name: 'Chicken', units: ['g'], quantity: '150', unit: 'g', weighed: false };
     expect(requestsOf([ok, { ...ok, quantity: '' }], new Map())).toBeNull();

@@ -37,9 +37,9 @@ export function itemProblem(item: DraftItem, known: KnownFoods): ItemProblem | n
   return grams !== null && grams > foodParams.amountMaxG ? 'tooMuch' : null;
 }
 
-/** The contract's items, or null while there are none or any amount is not one the server takes. */
+/** The contract's items, or null while there are none, more than the server takes, or any amount it would refuse. */
 export function requestsOf(items: DraftItem[], known: KnownFoods): Schemas['ItemRequest'][] | null {
-  if (items.length === 0 || items.some((item) => itemProblem(item, known) !== null)) return null;
+  if (items.length === 0 || items.length > foodParams.itemsMax || items.some((item) => itemProblem(item, known) !== null)) return null;
   return items.map((item) => ({
     foodId: item.foodId,
     amount: { quantity: parseQuantity(item.quantity) as number, unit: item.unit, certainty: item.weighed ? 'WEIGHED' : 'ESTIMATED' },

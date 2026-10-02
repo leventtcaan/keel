@@ -20,7 +20,9 @@ export function EstimateCard({ estimate, question }: { estimate: components['sch
       {estimate.items.map((item, index) => (
         <View key={`${item.foodId}-${index}`} style={styles.row}>
           <Text style={[styles.text, styles.name, { color: color.text }]}>{item.name}</Text>
-          <Text style={[styles.text, { color: color.text }]}>{`${t('format.range', { low: item.kcal.low, high: item.kcal.high })} ${kcalUnit}`}</Text>
+          <Text
+            accessibilityLabel={`${t('format.rangeSpoken', { low: item.kcal.low, high: item.kcal.high })} ${kcalUnit}`}
+            style={[styles.text, { color: color.text }]}>{`${t('format.range', { low: item.kcal.low, high: item.kcal.high })} ${kcalUnit}`}</Text>
         </View>
       ))}
       <RangeText low={estimate.kcal.low} high={estimate.kcal.high} unit={kcalUnit} />
