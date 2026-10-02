@@ -103,6 +103,7 @@ export default function FoodScreen() {
         {consent}
         {budget}
         {!needsConsent && data !== null && <Button label={t('food.log')} onPress={() => router.push('/meal')} />}
+        <Button label={t('food.recipes')} variant="ghost" size="sm" onPress={() => router.push('/recipes')} />
         {meals}
         {offers}
         {repeatNote}

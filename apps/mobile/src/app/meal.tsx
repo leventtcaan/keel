@@ -1,21 +1,20 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ScreenTitle } from '@/components/ScreenTitle';
-import { TextField } from '@/components/TextField';
 import { grantConsent } from '@/consent/consents';
 import { has, t } from '@/copy';
-import { BarcodeScanner } from '@/food/BarcodeScanner';
 import { EstimateCard } from '@/food/EstimateCard';
-import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, itemProblem, recipeItemId, requestsOf } from '@/food/draft';
+import { FoodPicker } from '@/food/FoodPicker';
+import { ItemRows } from '@/food/ItemRows';
+import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, recipeItemId, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
 import { foodParams } from '@/food/params';
-import { type RecipeMatch, recipeMatches } from '@/food/recipes';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
@@ -26,19 +25,8 @@ type Schemas = components['schemas'];
 type Step = 'checking' | 'consent' | 'entry';
 /** A meal being corrected: read from the server's day, or not there, or not readable (offline). */
 type Original = { state: 'loading' } | { state: 'gone' } | { state: 'unreachable' } | { state: 'ready'; meal: Schemas['Meal'] };
-type Found =
-  | { state: 'idle' }
-  | { state: 'tooShort' }
-  | { state: 'failed' }
-  | { state: 'found'; foods: Schemas['Food'][] }
-  // A barcode not in the database (FDC is mostly US products, ADR-008), or not looked up.
-  | { state: 'notInDatabase' }
-  // A number the server refuses as a barcode (a wrong check digit, 400): the digits, not the connection.
-  | { state: 'badNumber' }
-  | { state: 'barcodeFailed' };
 
 const SLOTS: Schemas['MealSlot'][] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
-const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch', recipeGone: 'meal.item.recipeGone' } as const;
 
 /**
  * Logging a meal (K-407): the slot, foods found by name in the database (ADR-008), an amount for each — nothing filled
@@ -62,23 +50,16 @@ export default function MealScreen() {
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [slot, setSlot] = useState<Schemas['MealSlot']>(() => defaultSlot(new Date()));
-  const [query, setQuery] = useState('');
-  const [found, setFound] = useState<Found>({ state: 'idle' });
   const [items, setItems] = useState<DraftItem[]>([]);
   const [known, setKnown] = useState<KnownFoods>(() => new Map());
   // The user's recipes (K-423), read at the first search (no search, no request); unreadable (offline) is none this
   // time — the foods alone are offered, and the next search asks again.
   const [recipes, setRecipes] = useState<Schemas['Recipe'][] | null>(null);
-  const [recipeHits, setRecipeHits] = useState<RecipeMatch[]>([]);
   // The estimate for a set of items (by key); `value` null: the server did not take them, or could not be asked.
   const [estimate, setEstimate] = useState<{ key: string; value: Schemas['FoodEstimate'] | null } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [scanning, setScanning] = useState(false);
   const saving = useRef(false); // two taps at once must not log twice
-  // Each search answer belongs to the search that asked: a late one (slow network) never replaces a newer list, and none
-  // comes back once a food was picked.
-  const searchSeq = useRef(0);
 
   useEffect(() => {
     // Not known (a failing keychain) is not given: the consent step, never an endless wait.
@@ -177,53 +158,10 @@ export default function MealScreen() {
     }
   };
 
-  const search = async () => {
-    const q = query.trim();
-    if (q.length < foodParams.searchMinChars) {
-      searchSeq.current++;
-      setRecipeHits([]);
-      setFound({ state: 'tooShort' });
-      return;
-    }
-    const mine = ++searchSeq.current;
-    const [own, answer] = await Promise.all([
-      readRecipes(),
-      load(() => api.POST('/v1/foods/search', { body: { q, limit: foodParams.searchResults } })),
-    ]);
-    if (mine !== searchSeq.current) return;
-    setRecipeHits(recipeMatches(own, q));
-    setFound(answer.state === 'ready' ? { state: 'found', foods: answer.value } : { state: 'failed' });
-  };
-
-  const addOwnRecipe = (recipe: Schemas['Recipe']) => {
-    searchSeq.current++;
-    setItems((before) => addRecipe(before, recipe));
-    setRecipeHits([]);
-    setFound({ state: 'idle' });
-    setQuery('');
-  };
+  const addOwnRecipe = (recipe: Schemas['Recipe']) => setItems((before) => addRecipe(before, recipe));
   const add = (food: Schemas['Food']) => {
-    searchSeq.current++;
-    setRecipeHits([]);
     setItems((before) => addFood(before, food));
     setKnown((before) => new Map(before).set(food.id, food));
-    setFound({ state: 'idle' });
-    setQuery('');
-  };
-  /** A code from the reader, looked up as scanned (a UPC-E is expanded by the server, K-208). */
-  const lookUpBarcode = async (gtin: string) => {
-    setScanning(false);
-    const mine = ++searchSeq.current;
-    let found: Found | Schemas['Food'];
-    try {
-      const { data, response } = await api.POST('/v1/foods/barcode-lookup', { body: { gtin } });
-      found = data ?? { state: response.status === 404 ? 'notInDatabase' : response.status === 400 ? 'badNumber' : 'barcodeFailed' };
-    } catch {
-      found = { state: 'barcodeFailed' };
-    }
-    if (mine !== searchSeq.current) return;
-    if ('id' in found) add(found);
-    else setFound(found);
   };
   const change = (index: number, part: Partial<DraftItem>) => {
     setItems((before) => before.map((item, i) => (i === index ? { ...item, ...part } : item)));
@@ -266,22 +204,6 @@ export default function MealScreen() {
 
   // A full meal takes no more: the server would refuse it, and the queue would lose it.
   const full = items.length >= foodParams.itemsMax;
-  const results = found.state === 'found' && !full ? found.foods : [];
-  const foundNote = full
-    ? t('meal.full', { max: foodParams.itemsMax })
-    : found.state === 'tooShort'
-      ? t('meal.search.tooShort', { min: foodParams.searchMinChars })
-      : found.state === 'failed'
-        ? t('meal.search.failed')
-        : found.state === 'notInDatabase'
-          ? t('meal.barcode.notFound')
-          : found.state === 'badNumber'
-            ? t('meal.barcode.badNumber')
-            : found.state === 'barcodeFailed'
-              ? t('meal.barcode.failed')
-              : found.state === 'found' && found.foods.length === 0 && recipeHits.length === 0
-                ? t('meal.search.none')
-                : null;
   // Named: with several items the question says which one it is about.
   const asked = shown?.question;
   const askedName = shown?.items.find((item) => item.foodId === asked?.foodId)?.name;
@@ -290,8 +212,6 @@ export default function MealScreen() {
       ? t('meal.estimate.question', { name: askedName, question: t(asked.copyKey) })
       : null;
 
-  // A full meal takes no more, from a barcode either.
-  const scanButton = full ? null : <Button label={t('meal.barcode.scan')} variant="ghost" size="sm" onPress={() => setScanning(true)} />;
 
   const consentStep =
     step === 'consent' ? (
@@ -326,88 +246,15 @@ export default function MealScreen() {
           ))}
         </View>
 
-        {items.map((item, index) => {
-          const itemIssue = itemProblem(item, known, knownRecipes);
-          const portions = item.unit === PORTION;
-          const ceiling = knownRecipes?.get(item.foodId)?.portions ?? 0;
-          const issueText =
-            itemIssue === null || itemIssue === 'missing'
-              ? null
-              : itemIssue === 'tooMuch' && portions
-                ? t(`meal.item.tooManyPortions.${ceiling === 1 ? 'one' : 'other'}`, { portions: ceiling })
-                : t(PROBLEM_KEYS[itemIssue]);
-          return (
-            <View key={`${item.foodId}-${index}`} style={styles.item}>
-              <Text style={[styles.name, { color: color.text }]}>{item.name}</Text>
-              <TextField
-                label={t('meal.item.amount', { name: item.name })}
-                value={item.quantity}
-                onChangeText={(quantity) => change(index, { quantity })}
-                problem={issueText}
-                keyboardType="decimal-pad"
-                maxLength={foodParams.amountMaxChars}
-              />
-              <View style={styles.chips}>
-                {/* Another unit empties the amount: the number meant the old one ("1" cup is not 1 g); nothing is converted for the user. */}
-                {item.units.map((unit) => {
-                  const label = unit === 'g' ? t('meal.item.grams') : unit === PORTION ? t('meal.item.portions') : unit;
-                  return (
-                    <Chip
-                      key={unit}
-                      label={label}
-                      accessibilityLabel={t('meal.item.unitSpoken', { name: item.name, unit: label })}
-                      selected={item.unit === unit}
-                      onPress={() => change(index, unit === item.unit ? {} : { unit, quantity: '' })}
-                    />
-                  );
-                })}
-                {/* A portion is never weighed: the recipe's whole weight is not known (ADR-034). */}
-                {!portions && (
-                  <Chip
-                    label={t('meal.item.weighed')}
-                    accessibilityLabel={t('meal.item.weighedSpoken', { name: item.name })}
-                    selected={item.weighed}
-                    onPress={() => change(index, { weighed: !item.weighed })}
-                  />
-                )}
-              </View>
-              <Button
-                label={t('meal.item.remove')}
-                accessibilityLabel={t('meal.item.removeSpoken', { name: item.name })}
-                variant="ghost"
-                size="sm"
-                onPress={() => setItems((before) => before.filter((_, i) => i !== index))}
-              />
-            </View>
-          );
-        })}
+        <ItemRows
+          items={items}
+          known={known}
+          recipes={knownRecipes}
+          onChange={change}
+          onRemove={(index) => setItems((before) => before.filter((_, i) => i !== index))}
+        />
 
-        <View style={styles.search}>
-          <TextField
-            label={t('meal.search.label')}
-            value={query}
-            onChangeText={setQuery}
-            onSearch={() => void search()}
-            hint={foundNote ?? undefined}
-            maxLength={foodParams.searchMaxChars}
-          />
-          <View style={styles.chips}>
-            <Button label={t('meal.search.go')} variant="ghost" size="sm" onPress={() => void search()} />
-            {scanButton}
-          </View>
-          {recipeHits.length > 0 && !full && <RecipeHits hits={recipeHits} onAdd={addOwnRecipe} />}
-          {results.map((food) => (
-            <Pressable
-              key={food.id}
-              accessibilityRole="button"
-              accessibilityLabel={t('meal.search.add', { name: food.name })}
-              onPress={() => add(food)}
-              style={[styles.result, { borderColor: color.line }]}>
-              <Text style={[styles.text, { color: color.text }]}>{food.name}</Text>
-              {food.brand !== undefined && <Text style={[styles.small, { color: color.muted }]}>{food.brand}</Text>}
-            </Pressable>
-          ))}
-        </View>
+        <FoodPicker full={full} onFood={add} recipes={readRecipes} onRecipe={addOwnRecipe} />
 
         {shown !== null && <EstimateCard estimate={shown} question={question} />}
         {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
@@ -424,38 +271,8 @@ export default function MealScreen() {
         {consentStep}
         {originalNote}
         {entry}
-        {scanning && <BarcodeScanner onCode={(gtin) => void lookUpBarcode(gtin)} onClose={() => setScanning(false)} />}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-/** The user's recipes a search found (K-423): addable ones as buttons, one the database can no longer estimate marked. */
-function RecipeHits({ hits, onAdd }: { hits: RecipeMatch[]; onAdd: (recipe: Schemas['Recipe']) => void }) {
-  const { color } = useTheme();
-  return (
-    <View style={styles.search}>
-      <Text style={[styles.small, { color: color.muted }]}>{t('meal.recipes.heading')}</Text>
-      {hits.map(({ recipe, available }) =>
-        available ? (
-          <Pressable
-            key={recipe.id}
-            accessibilityRole="button"
-            accessibilityLabel={t('meal.recipes.add', { name: recipe.name })}
-            onPress={() => onAdd(recipe)}
-            style={[styles.result, { borderColor: color.line }]}>
-            <Text style={[styles.text, { color: color.text }]}>{recipe.name}</Text>
-            <Text style={[styles.small, { color: color.muted }]}>
-              {t(`meal.recipes.makes.${recipe.portions === 1 ? 'one' : 'other'}`, { portions: recipe.portions })}
-            </Text>
-          </Pressable>
-        ) : (
-          <Text key={recipe.id} style={[styles.small, styles.result, { color: color.text, borderColor: color.line }]}>
-            {t('meal.recipes.unavailable', { name: recipe.name })}
-          </Text>
-        ),
-      )}
-    </View>
   );
 }
 
@@ -464,11 +281,6 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
   part: { gap: tokens.space.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
-  item: { gap: tokens.space.sm },
-  search: { gap: tokens.space.sm },
-  result: { paddingVertical: tokens.space.sm, borderBottomWidth: tokens.border.hairline },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
-  name: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   text: { fontSize: tokens.type.body },
-  small: { fontSize: tokens.type.bodySmall },
 });

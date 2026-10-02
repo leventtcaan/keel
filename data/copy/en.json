@@ -309,6 +309,7 @@
   },
   "food": {
     "log": "Log a meal",
+    "recipes": "Your recipes",
     "budget": {
       "title": "Left today",
       "kcalUnit": "kcal",
@@ -348,6 +349,45 @@
       "failed": "Couldn't log it. Try again.",
       "noConsent": "Logging food needs the health data consent. Check your connection, or allow it in Settings."
     }
+  },
+  "recipes": {
+    "back": "Back",
+    "title": "Recipes",
+    "new": "New recipe",
+    "none": "No recipes yet. Enter one once, then log it by the portion.",
+    "makes": {
+      "one": "Makes 1 portion",
+      "other": "Makes {portions} portions"
+    },
+    "perPortion": "Each portion {low}–{high} kcal",
+    "unavailable": "An ingredient is no longer in the food database. Delete this one and enter it again.",
+    "delete": "Delete",
+    "deleteSpoken": "Delete {name}",
+    "confirmTitle": "Delete {name}?",
+    "confirmBody": "Meals that logged it keep what they logged.",
+    "confirm": "Delete",
+    "keep": "Keep it",
+    "failed": "Couldn't load your recipes. Check your connection.",
+    "deleteFailed": "Couldn't delete it. Check your connection and try again.",
+    "retry": "Try again",
+    "consent": "Recipes are health data: they need the health data consent.",
+    "openSettings": "Open Settings"
+  },
+  "recipe": {
+    "title": "New recipe",
+    "name": "Name",
+    "portions": "How many portions it makes",
+    "ingredients": "Ingredients",
+    "estimate": "The whole recipe",
+    "missing": {
+      "name": "Give it a name.",
+      "portions": "Portions: a whole number from 1 to {max}.",
+      "items": "Add at least one ingredient, each with its amount."
+    },
+    "save": "Save recipe",
+    "needsConnection": "Saving a recipe needs a connection. Try again when you're online.",
+    "refused": "That recipe couldn't be saved. Check the ingredients' amounts — or, with many recipes kept, delete one you don't use.",
+    "savedEarlier": "An earlier save of this recipe went through, so your changes since weren't kept. Delete it from your recipes and enter it again."
   },
   "meal": {
     "title": "Log a meal",
