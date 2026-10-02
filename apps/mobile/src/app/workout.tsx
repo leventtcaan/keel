@@ -244,11 +244,16 @@ export default function WorkoutScreen() {
     setAdding(null);
     setCreating(null);
   };
-  // Saved online (ADR-035): the kept copy read again so the move is there offline later; one not read back yet is added.
+  // Saved online (ADR-035): kept on the phone from the server's answer at once, so it is there offline later; then the
+  // own moves read again.
   const saveOwn = async (body: components['schemas']['NewCustomExercise']): Promise<SaveOutcome> => {
     try {
-      const { data: kept } = await api.POST('/v1/custom-exercises', { body });
-      if (kept === undefined) return 'refused';
+      const { data: kept, error } = await api.POST('/v1/custom-exercises', { body });
+      if (kept === undefined) {
+        report({ name: error?.code ?? 'Unknown' }); // the limit or a rule: the code only, never the name typed
+        return 'refused';
+      }
+      await training.saved(kept);
       const mine = await training.own(api);
       setOwn(mine.some((m) => m.id === kept.id) ? mine : [...mine, ownMove(kept)]);
       addMove(kept.id);
@@ -271,7 +276,7 @@ export default function WorkoutScreen() {
     day === null ? null : creating !== null ? (
       <OwnMoveForm
         name={creating}
-        catalog={data?.exercises.state === 'ready' ? data.exercises.value.filter((m) => !inSession.has(m.id)) : []}
+        catalog={[...moves.values()].filter((m) => !inSession.has(m.id))}
         onPick={addMove}
         onSave={saveOwn}
         onBack={() => setCreating(null)}

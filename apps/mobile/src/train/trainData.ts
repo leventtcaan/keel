@@ -125,6 +125,19 @@ export function createTrainingCache(kv: KeyValue) {
       const read = await load(() => api.GET('/v1/custom-exercises')).then((answer) => withCopy(OWN, answer, startedIn));
       return read.read.state === 'ready' ? read.read.value.map(ownMove) : [];
     },
+    /** A move just saved (K-416): kept at once from the server's answer, so the next read offline has it. */
+    async saved(move: Schemas['CustomExercise']): Promise<void> {
+      const startedIn = generation;
+      const copy = await kv.getItemAsync(OWN);
+      let kept: Schemas['CustomExercise'][] = [];
+      try {
+        kept = copy === null ? [] : (JSON.parse(copy) as Schemas['CustomExercise'][]);
+      } catch {
+        kept = []; // a copy that cannot be read is no copy
+      }
+      if (startedIn !== generation) return; // signed out meanwhile: the move was the last account's
+      await kv.setItemAsync(OWN, JSON.stringify([...kept.filter((m) => m.id !== move.id), move]));
+    },
     /** The kept copies belong to the account: they go at sign-out. */
     async forget(): Promise<void> {
       generation += 1;

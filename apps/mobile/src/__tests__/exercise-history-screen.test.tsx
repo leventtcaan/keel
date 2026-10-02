@@ -300,7 +300,12 @@ describe('editing a past session (K-416)', () => {
 test("the user's own move's history under the name they gave", async () => {
   mockOwn = [{ id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] }];
   mockParams = { exercise: 'custom:1' };
-  mockHistory = { state: 'ready', value: [] };
+  mockHistory = {
+    state: 'ready',
+    value: [{ id: 'c', clientId: 'w5', startedAt: '2026-09-29T17:00:00Z', endedAt: '2026-09-29T18:00:00Z', sets: [set('s9', 'custom:1', 30, 10, 1)] }],
+  };
   await show();
   expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
+  expect(screen.getByText('30 kg × 10 · RIR 1')).toBeOnTheScreen();
+  expect(screen.queryByText(t('history.loadFailed'))).toBeNull();
 });

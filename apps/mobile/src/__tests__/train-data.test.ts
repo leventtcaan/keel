@@ -294,6 +294,15 @@ describe("the user's own moves (K-416, ADR-035)", () => {
     ).toEqual([AS_MOVE]);
   });
 
+  test('a move just saved is kept at once: the next read offline has it, though the read after saving failed', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    await cache.own(api(() => json([])));
+    await cache.saved(OWN[0] as never);
+    await cache.saved(OWN[0] as never); // twice is once
+    expect(await cache.own(api(() => 'offline'))).toEqual([AS_MOVE]);
+  });
+
   test('unread and nothing kept: none', async () => {
     expect(await createTrainingCache(memoryKv()).own(api(() => 'offline'))).toEqual([]);
   });
@@ -305,4 +314,24 @@ describe("the user's own moves (K-416, ADR-035)", () => {
     await cache.forget();
     expect(kv.map.size).toBe(0);
   });
+});
+
+test("an own-moves read still on its way when the user signs out keeps nothing: the names were the last account's", async () => {
+  const kv = memoryKv();
+  const cache = createTrainingCache(kv);
+  let answer: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => (answer = resolve));
+  const slow = createApiClient({
+    baseUrl: BASE,
+    accessToken: async () => 'tok',
+    fetch: async () => {
+      await gate;
+      return json([{ id: 'custom:1', clientId: 'c1', name: 'Landmine press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false }]);
+    },
+  });
+  const reading = cache.own(slow);
+  await cache.forget();
+  answer();
+  await reading;
+  expect(kv.map.size).toBe(0);
 });

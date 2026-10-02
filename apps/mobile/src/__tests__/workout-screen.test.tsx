@@ -4,7 +4,7 @@
  * timer after each set (G1 K-49: 2-3 min). Finishing asks whether each move's form was clean (G6 K-31). Everything goes
  * through the phone's queue (K-304), so it all works offline.
  */
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -78,7 +78,7 @@ let mockSave: (body: unknown) => Promise<{ data?: unknown; error?: unknown; resp
 const mockPOST = jest.fn(async (_path: string, init: { body: unknown }) => mockSave(init.body));
 const mockServices = {
   api: { POST: mockPOST },
-  training: { read: async () => mockData, own: async () => mockOwn },
+  training: { read: async () => mockData, own: async () => mockOwn, saved: jest.fn(async () => {}) },
   workoutRecords: () => mockWorkoutRecords(),
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
   report: jest.fn(),
@@ -718,6 +718,26 @@ describe("creating the user's own move (K-416, ADR-035): the catalog's matches f
     expect(a).toBe(b);
   });
 
+  test('the name as corrected in the form is the one saved', async () => {
+    await show();
+    await openCreate('Landmin');
+    await fireEvent.changeText(screen.getByLabelText(t('ownMove.name')), 'Landmine press');
+    await answerAll();
+    await fireEvent.press(screen.getByRole('button', { name: t('ownMove.save') }));
+    expect(mockPOST.mock.calls[0][1].body).toMatchObject({ name: 'Landmine press' });
+  });
+
+  test("the user's own moves are offered too, so the same move is not made twice; moves in the session are not", async () => {
+    mockOwn = [{ ...ownMove({ id: 'custom:1', clientId: 'c1', name: 'Landmine press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false }) }];
+    await show();
+    await openCreate('Landmine');
+    expect(screen.getByRole('button', { name: t('workout.add.pick', { name: 'Landmine press' }) })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('ownMove.back') }));
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'Bench');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.add.create', { name: 'Bench' }) }));
+    expect(screen.queryByRole('button', { name: t('workout.add.pick', { name: 'Bench press' }) })).toBeNull();
+  });
+
   test('nothing typed, nothing to create', async () => {
     await show();
     await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
@@ -732,6 +752,21 @@ describe("creating the user's own move (K-416, ADR-035): the catalog's matches f
     await fireEvent.press(screen.getByRole('button', { name: t('ownMove.save') }));
     expect(await screen.findAllByText('Landmine press')).not.toHaveLength(0);
     expect(screen.queryByText('custom:9')).toBeNull();
+    // Kept on the phone from the server's answer, for the next screen offline.
+    expect(mockServices.training.saved).toHaveBeenCalledWith(expect.objectContaining({ id: 'custom:9', name: 'Landmine press' }));
+  });
+
+  test('two taps on Save in one frame send it once', async () => {
+    await show();
+    await openCreate('Landmine press');
+    await answerAll();
+    // The handler itself, twice in one step, before a render could disable the button.
+    const press = (screen.getByRole('button', { name: t('ownMove.save') }).props as { onClick: (event: object) => void }).onClick;
+    await act(async () => {
+      press({ nativeEvent: {} });
+      press({ nativeEvent: {} });
+    });
+    expect(mockPOST).toHaveBeenCalledTimes(1);
   });
 
   test('refused by the server: said, nothing added', async () => {

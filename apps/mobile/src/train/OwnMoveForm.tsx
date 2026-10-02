@@ -22,7 +22,7 @@ export type SaveOutcome = 'saved' | 'offline' | 'refused';
 type Props = {
   /** What was typed in the search: the name to start from. */
   name: string;
-  /** The catalog's moves not in the session yet: the matches offered before anything is created. */
+  /** The catalog's moves and the user's own, not in the session yet: the matches offered before anything is made again. */
   catalog: Move[];
   onPick: (exerciseId: string) => void;
   onSave: (body: Schemas['NewCustomExercise']) => Promise<SaveOutcome>;
@@ -33,9 +33,10 @@ const KINDS: Schemas['NewCustomExercise']['kind'][] = ['COMPOUND', 'ISOLATION'];
 const EQUIPMENT: Schemas['Equipment'][] = ['BARBELL', 'DUMBBELL', 'MACHINE', 'CABLE', 'PLATE_LOADED', 'BODYWEIGHT'];
 
 /**
- * A move the catalog does not have (K-416, ADR-035): the catalog's matches for the name first — a move already there is
- * picked, not made again — then the engine's questions, each answered by the user (U1). Saved on the server, online:
- * one clientId until it is kept, so a second try after a lost answer is the same move (ADR-024).
+ * A move the catalog does not have (K-416, ADR-035): the matches for the name first — a move already there (the catalog's,
+ * or one the user made) is picked, not made again: own moves cannot be deleted — then the engine's questions, each answered by the user (U1). Saved on the server, online:
+ * one clientId until it is kept, so a second try after a lost answer is the same move (ADR-024) — the answers changed in
+ * between, the server's first one stands, and the phone shows what the server answered.
  */
 export function OwnMoveForm({ name: typed, catalog, onPick, onSave, onBack }: Props) {
   const { color } = useTheme();
@@ -43,15 +44,20 @@ export function OwnMoveForm({ name: typed, catalog, onPick, onSave, onBack }: Pr
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const clientId = useRef<string | null>(null);
+  // Two taps in one frame, before `busy` disables the button, send it once.
+  const saving = useRef(false);
   const body = ownMoveBody(answers, '');
   const similar = findMoves(answers.name, catalog);
+  const named = new Map(catalog.map((m) => [m.id, m]));
   const set = (change: Partial<OwnAnswers>) => setAnswers((before) => ({ ...before, ...change }));
 
   const save = async () => {
-    if (body === null || busy) return;
+    if (body === null || saving.current) return;
+    saving.current = true;
     setBusy(true);
     const id = (clientId.current ??= newClientId());
     const outcome = await onSave({ ...body, clientId: id });
+    saving.current = false;
     setBusy(false);
     setProblem(outcome === 'saved' ? null : t(`ownMove.${outcome}`));
   };
@@ -85,10 +91,10 @@ export function OwnMoveForm({ name: typed, catalog, onPick, onSave, onBack }: Pr
         <Pressable
           key={m.id}
           accessibilityRole="button"
-          accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id) })}
+          accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id, named) })}
           onPress={() => onPick(m.id)}
           style={styles.match}>
-          <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id)}</Text>
+          <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id, named)}</Text>
         </Pressable>
       ))}
       {question(
