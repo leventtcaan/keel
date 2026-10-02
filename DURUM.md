@@ -240,7 +240,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 | 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
 | 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 (+ K-421, K-422 bölündü) | ✅ bitti (2 Eki) — aktarım bekliyor |
 | 3 · Öğün ve hareket | K-407, K-413, K-424, K-416, K-418 (+ K-419 Levent) | ✅ bitti (2 Eki) — aktarım bekliyor; klipler Levent'te |
-| 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
+| 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | sürüyor (2 Eki) |
 
 **Part 1 başı (1 Eki):** senkron tamam (M3 ÇIKIŞ git ile tutarlı: #211 birleşik, açık PR/worktree yok, `main` temiz).
 Disk 7,9 GB. Docker hâlâ açılmıyor → DB testleri CI'da. K-308 komutları Levent'e verildi (EAS'te `leventcan` hesabıyla
@@ -398,6 +398,16 @@ agent karar verir, PR'da gerekçe.
   - **Dependabot:** #3 `node-forge` ≤1.4.0 (yüksek) — `@expo/cli`'nin geliştirme bağımlılığı, yaması yok (`fix: null`),
     uygulama paketine girmiyor; #2 bilinen. Expo yükseltmesinde ikisine de bak.
 - **Yeni sorular:** 45-49.
+
+**Part 4 başı (2 Eki):** senkron tamam — Part 3 ÇIKIŞ git ile tutarlı (#236-#251 birleşik, açık PR yok, `../keel-main`
+kalıcı worktree temiz, `M4-part4-devam.md` yok). Bağımlılıklar `done` (K-307, K-405, K-404). Disk 7,9 GB. Dependabot: #2, #3
+bilinen. K-308 hâlâ `doing` (cihaz derlemesi yok) → K-411'in Live Activity kısmı ve K-412'nin gerçek yazması cihazda
+görülemez; kod + test + Expo Go'da yetenek "kullanılamaz" yolu. Ana checkout birleşmiş `mobile/115-muscle-map` dalındaydı →
+`origin/main`'den yeni dal. Not: DEVAM NOKTASI "önce Part 2 + 3 aktarımı" diyordu; Levent Part 4'ü başlattı (aktarımlar bekliyor).
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-410 (1/2) üç slot: saf plan, servis (sıralı yeniden kurma, kapalı başlar, çıkışta silinir), `expo-notifications` yalnız yerel, `reminder:` öneki (ADR-036) | inceleniyor | — | `M4/K-410.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
