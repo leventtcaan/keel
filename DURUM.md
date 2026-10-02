@@ -479,6 +479,10 @@ DURUM ile birlikte commitlendi.
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-429 rıza metni `2-draft` (geri çekince antrenman hariç silinir; telefon eski rızayı `OUTDATED` okur, geri çekilebilir; çevrimdışı kopya sürümlü; 26 test isteği tek sabite) | ✅ birleşti; CI'da RED önce; inceleme: metin antrenmanın silineceğini vaat ediyordu, eski rızalı kullanıcı Withdraw'ı kaybediyordu, çevrimdışı eski "evet" geçiyordu → düzeltildi; mutasyon 9/9 | #270 | `M5/ADR-037-isleri.md` |
+| K-428 geri çekmede açık "yükü tut" biter (`TrainingCalls.endHold`, decision'ın geri çekme dinleyicisinden, aynı transaction) | ✅ birleşti; CI'da RED önce; code-reviewer ≥80 yok; test analizi birleşmeden sonra geldi (süreç kayması: auto-merge incelemeden önce açıldı) → boşluklar #275'te | #271 | `M5/ADR-037-isleri.md` |
+| K-431 yalnız ısınma dışı setli antrenman seans sayılır (`TrainingLog.workoutStarts`; tutarlılık, uyum, kaçan plan haftası) | ✅ birleşti (#272: WORKING); #275: sözlüğe göre FAILURE/DROP da çalışma seti → `<> 'WARM_UP'` + `weeksPlanMissed` testleri | #272, #275 | `M5/ADR-037-isleri.md` |
+| K-434 hatırlatma teklifi onboarding'de — **ayrı ekran değil**, "What to expect"te (≤12 ekran, I1 F1; K-306 kabulü) | ✅ auto-merge; inceleme: iOS kesin ret → ölü düğme, kaybolan cümle, yeniden açılınca tekrar teklif → düzeltildi; mutasyon 7/7 + 7/7 | #274 | `M5/ADR-037-isleri.md` |
+| K-430 sıçrama sınırı (`load_jump_max_steps` 2, `urun`; Java + TS + ortak vakalar; `SessionProgress` bağlı) | 🔄 inceleme; CI'da RED önce (API: 20×8 → 10×13); mutasyon 6/6 | #273 | `M5/ADR-037-isleri.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
