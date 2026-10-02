@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { TextField } from '@/components/TextField';
 import { grantConsent } from '@/consent/consents';
 import { has, t } from '@/copy';
 import { EstimateCard } from '@/food/EstimateCard';
-import { type DraftItem, type KnownFoods, addFood, itemProblem, requestsOf } from '@/food/draft';
+import { type DraftItem, type KnownFoods, addFood, draftOf, itemProblem, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
 import { foodParams } from '@/food/params';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -22,6 +22,8 @@ import { load } from '@/today/today';
 
 type Schemas = components['schemas'];
 type Step = 'checking' | 'consent' | 'entry';
+/** A meal being corrected: read from the server's day, or not there, or not readable (offline). */
+type Original = { state: 'loading' } | { state: 'gone' } | { state: 'unreachable' } | { state: 'ready'; meal: Schemas['Meal'] };
 type Found = { state: 'idle' } | { state: 'tooShort' } | { state: 'failed' } | { state: 'found'; foods: Schemas['Food'][] };
 
 const SLOTS: Schemas['MealSlot'][] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
@@ -32,9 +34,17 @@ const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch
  * in for the user (I2 A4) — and, once every amount is given, the server's estimate as ranges with its one question
  * (U1, U5). Saved on the phone first and sent when it can be (K-304); the estimate is only a look, the server estimates
  * again when the meal arrives. Health data: the consent first, and nothing typed is kept without it (ADR-030 #25).
+ *
+ * `?edit=<id>&day=<day>` corrects a logged meal (first class: I2 A0, one log in five was corrected). The contract has no
+ * update: saving deletes the old one on the server first, then saves the new one on the phone with the same time — a
+ * failure in between never leaves two (a lost one can be saved again from this screen: the delete then finds nothing).
+ * The delete needs the server; offline it says so and changes nothing.
  */
 export default function MealScreen() {
   const { api, queue, consents, report } = useAppServices();
+  const { edit, day } = useLocalSearchParams<{ edit?: string; day?: string }>();
+  const [original, setOriginal] = useState<Original | null>(edit === undefined ? null : { state: 'loading' });
+  const [confirming, setConfirming] = useState(false);
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [slot, setSlot] = useState<Schemas['MealSlot']>(() => defaultSlot(new Date()));
@@ -57,6 +67,34 @@ export default function MealScreen() {
       .catch(() => false)
       .then((granted) => setStep(granted ? 'entry' : 'consent'));
   }, [consents]);
+
+  useEffect(() => {
+    if (step !== 'entry' || edit === undefined || day === undefined) return;
+    let live = true;
+    void load(() => api.GET('/v1/meals', { params: { query: { day } } })).then((answer) => {
+      if (!live) return;
+      if (answer.state !== 'ready') return setOriginal({ state: 'unreachable' });
+      const meal = answer.value.find((m) => m.id === edit);
+      if (meal === undefined) return setOriginal({ state: 'gone' });
+      const draft = draftOf(meal);
+      setItems(draft.items);
+      setSlot(draft.slot);
+      setOriginal({ state: 'ready', meal });
+    });
+    return () => {
+      live = false;
+    };
+  }, [api, step, edit, day]);
+
+  /** The meal being corrected deleted on the server; already gone counts as deleted. False: not done (offline, an error). */
+  const removeOriginal = async (id: string): Promise<boolean> => {
+    try {
+      const { response } = await api.DELETE('/v1/meals/{id}', { params: { path: { id } } });
+      return response.ok || response.status === 404;
+    } catch {
+      return false;
+    }
+  };
 
   const requests = requestsOf(items, known);
   const key = requests === null ? null : JSON.stringify(requests);
@@ -115,15 +153,33 @@ export default function MealScreen() {
   };
 
   const save = async () => {
-    if (saving.current || requests === null) return;
+    if (saving.current || requests === null || (original !== null && original.state !== 'ready')) return;
     saving.current = true;
     setBusy(true);
     try {
-      await queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt: new Date().toISOString(), slot, items: requests } });
+      const eatenAt = original === null ? new Date().toISOString() : original.meal.eatenAt;
+      if (original !== null && !(await removeOriginal(original.meal.id))) {
+        setProblem(t('meal.edit.needsConnection'));
+        return;
+      }
+      await queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt, slot, items: requests } });
       router.back();
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
       setProblem(t('meal.saveFailed'));
+    } finally {
+      saving.current = false;
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (saving.current || original === null || original.state !== 'ready') return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      if (await removeOriginal(original.meal.id)) router.back();
+      else setProblem(t('meal.edit.needsConnection'));
     } finally {
       saving.current = false;
       setBusy(false);
@@ -161,8 +217,21 @@ export default function MealScreen() {
       </View>
     ) : null;
 
+  // A meal to correct that is not there, or not readable: nothing to change, nothing to save.
+  const originalNote =
+    step === 'entry' && original !== null && (original.state === 'gone' || original.state === 'unreachable') ? (
+      <Text style={[styles.text, { color: color.text }]}>{t(original.state === 'gone' ? 'meal.edit.gone' : 'meal.edit.needsConnection')}</Text>
+    ) : null;
+  const deleting =
+    original !== null && original.state === 'ready' ? (
+      confirming ? (
+        <Button label={t('meal.edit.confirmDelete')} variant="warn" onPress={() => void remove()} disabled={busy} />
+      ) : (
+        <Button label={t('meal.edit.delete')} variant="ghost" onPress={() => setConfirming(true)} disabled={busy} />
+      )
+    ) : null;
   const entry =
-    step === 'entry' ? (
+    step === 'entry' && (original === null || original.state === 'ready') ? (
       <View style={styles.part}>
         <View style={styles.chips}>
           {SLOTS.map((option) => (
@@ -184,6 +253,7 @@ export default function MealScreen() {
                 maxLength={foodParams.amountMaxChars}
               />
               <View style={styles.chips}>
+                {/* Another unit empties the amount: the number meant the old one ("1" cup is not 1 g); nothing is converted for the user. */}
                 {item.units.map((unit) => {
                   const label = unit === 'g' ? t('meal.item.grams') : unit;
                   return (
@@ -192,7 +262,7 @@ export default function MealScreen() {
                       label={label}
                       accessibilityLabel={t('meal.item.unitSpoken', { name: item.name, unit: label })}
                       selected={item.unit === unit}
-                      onPress={() => change(index, { unit })}
+                      onPress={() => change(index, unit === item.unit ? {} : { unit, quantity: '' })}
                     />
                   );
                 })}
@@ -240,14 +310,16 @@ export default function MealScreen() {
         {shown !== null && <EstimateCard estimate={shown} question={question} />}
         {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
         <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null} />
+        {deleting}
       </View>
     ) : null;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <ScreenTitle>{t('meal.title')}</ScreenTitle>
+        <ScreenTitle>{t(original === null ? 'meal.title' : 'meal.editTitle')}</ScreenTitle>
         {consentStep}
+        {originalNote}
         {entry}
       </ScrollView>
     </SafeAreaView>
