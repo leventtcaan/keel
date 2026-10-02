@@ -738,7 +738,7 @@ paths:
       description: |
         The engine needs what the catalog says of a move, so the user answers it (L3 §1 #10): compound or isolation, the
         load model, the equipment, one side at a time or not. A set names it by its id ("custom:<uuid>"); only its owner
-        can. Not in programs (those are made of catalog moves). At most 100 a user (keel.training.max-custom-exercises).
+        can. Not in programs (those are made of catalog moves). At most 100 a user (keel.training.custom-exercise.max-count).
       requestBody:
         required: true
         content:

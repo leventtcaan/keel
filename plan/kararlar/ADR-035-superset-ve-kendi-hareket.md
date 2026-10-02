@@ -19,7 +19,7 @@ ekipman ve tek taraf katalogdan gelir (`SetRules`, `TrainingLog`). Program yaln�
    ve ısınma kaynaklı katalog verisine dayanır). Kendi hareketi seansta eklenen ya da değiştirilen hareket olarak yaşar;
    motorun haftalık okumaları program hareketleriyle sınırlı olduğundan onu görmez.
 4. **Silme ve düzenleme yok (sürüm 1):** setler hareketi anıyor; silmek geçmişi adsız bırakırdı. Yanlış ad: yeni hareket.
-   Kullanıcı başına en çok 100 (`keel.training.max-custom-exercises`), ad en çok 60 kod noktası.
+   Kullanıcı başına en çok 100 (`keel.training.custom-exercise.max-count`), ad en çok 60 kod noktası.
 5. **Antrenman verisi:** rıza istemez (ADR-026: antrenman V3'ün sağlık listesinde değil), dışa aktarımda var, hesap
    silinince gider.
 

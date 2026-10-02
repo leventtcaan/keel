@@ -43,10 +43,10 @@ class CustomExerciseTests {
     @Autowired
     JdbcClient jdbc;
 
-    @Value("${keel.training.max-custom-name}")
+    @Value("${keel.training.custom-exercise.max-name}")
     int maxName;
 
-    @Value("${keel.training.max-custom-exercises}")
+    @Value("${keel.training.custom-exercise.max-count}")
     int maxMoves;
 
     @Test
@@ -120,6 +120,10 @@ class CustomExerciseTests {
             assertThat(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), name, "COMPOUND", "EXTERNAL", "BARBELL", true)))
                     .as(name.length() + " characters").hasStatus(400);
         }
+        assertThat(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Pull-up", "COMPOUND", "BODYWEIGHT", "BARBELL", false)))
+                .as("a bodyweight load on a barbell (the catalog's own rule)").hasStatus(400);
+        assertThat(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Push-up", "COMPOUND", "EXTERNAL", "BODYWEIGHT", false)))
+                .as("bodyweight equipment with an external load").hasStatus(400);
         assertThat(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "x".repeat(maxName), "COMPOUND", "EXTERNAL", "BARBELL",
                 true))).hasStatus(201);
     }
