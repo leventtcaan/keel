@@ -42,7 +42,7 @@ import { weightInput } from '@/units/units';
  * before the day's first move, one before the others, each one tap; with the gym in use known, the plates a side.
  */
 export default function WorkoutScreen() {
-  const { api, training, workoutRecords, queue, report } = useAppServices();
+  const { api, training, workoutRecords, queue, report, restAlert } = useAppServices();
   const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
   const { color } = useTheme();
@@ -51,6 +51,11 @@ export default function WorkoutScreen() {
   const [records, setRecords] = useState<LocalRecord[] | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [rest, setRest] = useState<number | null>(null);
+  // The rest's voice in the background (K-411): set when a rest starts, moved by the next, gone when the session is left.
+  useEffect(() => {
+    if (rest !== null) void restAlert.start(rest);
+  }, [rest, restAlert]);
+  useEffect(() => () => void restAlert.stop(), [restAlert]);
   const [finishing, setFinishing] = useState(false);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
   const [sessionNote, setSessionNote] = useState('');

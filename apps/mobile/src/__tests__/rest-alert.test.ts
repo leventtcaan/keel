@@ -4,18 +4,14 @@
  * (it is never asked for mid-set); a new set moves it, the end of the session takes it away.
  */
 import { t } from '@/copy';
-import type { NotificationAccess } from '@/notifications/reminders';
-import { createRestAlert } from '@/train/restAlert';
+import { type AlertAccess, createRestAlert } from '@/train/restAlert';
 import { workoutParams } from '@/train/params';
 import { restText } from '@/train/session';
 
 function phone(granted = true) {
   const alerts = new Map<string, { at: Date; title: string; body: string }>();
-  const access: NotificationAccess = {
+  const access: AlertAccess = {
     permission: async () => ({ granted, canAskAgain: !granted }),
-    request: jest.fn(async () => ({ granted, canAskAgain: false })),
-    replace: async () => {},
-    clear: async () => {},
     alertAt: async (id, at, title, body) => void alerts.set(id, { at, title, body }),
     cancel: async (id) => void alerts.delete(id),
   };
@@ -52,11 +48,10 @@ test('stopping takes it away', async () => {
   expect(alerts.size).toBe(0);
 });
 
-test('iOS has not allowed notifications: nothing is set, and iOS is not asked mid-set', async () => {
+test('iOS has not allowed notifications: nothing is set (and AlertAccess has no way to ask mid-set)', async () => {
   const { access, alerts } = phone(false);
   await createRestAlert({ access, report: jest.fn() }).start(since);
   expect(alerts.size).toBe(0);
-  expect(access.request).not.toHaveBeenCalled();
 });
 
 test('a phone that fails is reported by name; the set is not held up', async () => {

@@ -82,6 +82,8 @@ const mockServices = {
   workoutRecords: () => mockWorkoutRecords(),
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
   report: jest.fn(),
+  // The rest timer's voice in the background (K-411).
+  restAlert: { start: jest.fn(async (_since: number) => {}), stop: jest.fn(async () => {}) },
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
@@ -932,5 +934,51 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     expect(sets().at(-1)?.body.supersetId).toBeUndefined();
     expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
     expect(screen.queryByText(t('superset.with', { names: rowName }))).toBeNull();
+  });
+});
+
+describe('the rest in the background (K-411)', () => {
+  test('a work set starts the rest and its alert, from the moment it was logged; the next set moves it', async () => {
+    await show();
+    const before = Date.now();
+    await fireEvent.press(await screen.findByText('Log set 1'));
+    await screen.findByText('Log set 2');
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(1);
+    const [since] = mockServices.restAlert.start.mock.calls[0];
+    expect(since).toBeGreaterThanOrEqual(before);
+    expect(since).toBeLessThanOrEqual(Date.now());
+    await fireEvent.press(screen.getByText('Log set 2'));
+    await screen.findByText('Log set 3');
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(2);
+  });
+
+  test('leaving the session takes the alert away', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText('Log set 1'));
+    await screen.findByText('Log set 2');
+    expect(mockServices.restAlert.stop).not.toHaveBeenCalled();
+    await screen.unmount();
+    expect(mockServices.restAlert.stop).toHaveBeenCalled();
+  });
+
+  test('a superset: no alert between partners, one when the round is done', async () => {
+    const rowName = t('exercises.one_arm_dumbbell_row.name');
+    const typeAndLog = async (button: string) => {
+      await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '20');
+      await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
+      await fireEvent.press(screen.getByText(button));
+    };
+    const rowSide = (side: 'LEFT' | 'RIGHT') => t('workout.logSide', { number: 1, side: t(`workout.sideName.${side}`) });
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: rowName }) }));
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(rowSide('LEFT'));
+    await typeAndLog(rowSide('LEFT'));
+    await screen.findByText(rowSide('RIGHT'));
+    expect(mockServices.restAlert.start).not.toHaveBeenCalled();
+    await typeAndLog(rowSide('RIGHT'));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(1);
   });
 });

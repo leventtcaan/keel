@@ -5,7 +5,7 @@
  */
 import * as Notifications from 'expo-notifications';
 
-import { deviceNotifications } from '@/notifications/deviceNotifications';
+import { deviceAlerts, deviceNotifications } from '@/notifications/deviceNotifications';
 import type { Reminder } from '@/notifications/plan';
 
 jest.mock('expo-notifications', () => ({
@@ -58,4 +58,19 @@ test("clearing removes the reminders and nothing else (the rest timer's stays, K
   await deviceNotifications().clear();
   expect(N.cancelScheduledNotificationAsync.mock.calls).toEqual([['reminder:check-in'], ['reminder:quiet']]);
   expect(N.cancelAllScheduledNotificationsAsync).not.toHaveBeenCalled();
+});
+
+describe('one alert at a moment, under its own id (the rest timer, K-411)', () => {
+  test('set once at the moment, under the id as given — not a reminder id — and cancelled by it', async () => {
+    const at = new Date(2026, 9, 2, 18, 2);
+    await deviceAlerts().alertAt('rest', at, 'R', 'B');
+    expect(N.scheduleNotificationAsync).toHaveBeenCalledWith({ identifier: 'rest', content: { title: 'R', body: 'B' }, trigger: { type: 'date', date: at } });
+    await deviceAlerts().cancel('rest');
+    expect(N.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rest');
+  });
+
+  test("its permission is iOS's answer, as the reminders read it", async () => {
+    N.getPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: false, status: 'granted', expires: 'never' } as never);
+    expect(await deviceAlerts().permission()).toEqual({ granted: true, canAskAgain: false });
+  });
 });

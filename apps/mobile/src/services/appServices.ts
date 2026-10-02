@@ -11,6 +11,7 @@ import { notificationsUnavailable } from '@/notifications/notificationAccess';
 import { type NotificationAccess, type Reminders, createReminders } from '@/notifications/reminders';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
+import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
@@ -31,6 +32,8 @@ type Deps = {
   locale: string;
   /** The phone's notifications (K-410); none where there are none (tests). */
   notifications?: NotificationAccess;
+  /** One alert at a moment (the rest timer's, K-411); none where there are none (tests). */
+  alerts?: AlertAccess;
   now?: () => Date;
 };
 
@@ -64,6 +67,8 @@ export type AppServices = {
   report(problem: SyncProblem): void;
   /** The three reminder slots, scheduled on the phone (K-410). */
   reminders: Reminders;
+  /** The rest timer's voice in the background (K-411). */
+  restAlert: RestAlert;
 };
 
 export async function createAppServices({
@@ -75,6 +80,7 @@ export async function createAppServices({
   kv,
   locale,
   notifications = notificationsUnavailable,
+  alerts = alertsUnavailable,
   now = () => new Date(),
 }: Deps): Promise<AppServices> {
   const session = createSessionManager({ storage, refresh: refreshWithServer({ baseUrl, fetch }) });
@@ -83,6 +89,7 @@ export async function createAppServices({
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
   const reminders = await createReminders({ kv, access: notifications, now, report });
+  const restAlert = createRestAlert({ access: alerts, report });
   const profile = await createProfileStatus({ kv, api, units, onProfile: (read) => reminders.keepSchedule(read.schedule) });
   const consents = createConsentState({ api, kv });
   const training = createTrainingCache(kv);
@@ -110,6 +117,7 @@ export async function createAppServices({
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
     training.forget().catch(reportError); // and the program kept for offline training (K-405)
     reminders.forget().catch(reportError); // and the reminders: nothing scheduled for an account that left (K-410)
+    void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
   });
 
   return {
@@ -122,6 +130,7 @@ export async function createAppServices({
     training,
     report,
     reminders,
+    restAlert,
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
      * answer on its tokens are refused, so the phone only forgets: the session, and with it the records and settings

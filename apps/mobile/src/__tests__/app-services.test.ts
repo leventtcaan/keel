@@ -605,3 +605,20 @@ describe('the reminders (K-410)', () => {
     expect([...kv.items.keys()].filter((key) => key.startsWith('reminders.'))).toEqual([]);
   });
 });
+
+test("a sign-out takes a rest alert away: no voice for the account that left (K-411)", async () => {
+  const cancelled: string[] = [];
+  const alerts = {
+    permission: async () => ({ granted: true, canAskAgain: false }),
+    alertAt: async () => {},
+    cancel: async (id: string) => void cancelled.push(id),
+  };
+  const services = await createAppServices({
+    baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv: memoryKv(), locale: 'en-US', alerts,
+  });
+  await services.session.signIn(SESSION);
+  await services.restAlert.start(Date.now());
+  await services.signOut();
+  await settle();
+  expect(cancelled).toEqual(['rest']);
+});
