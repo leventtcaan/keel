@@ -2,7 +2,7 @@
  * A move's screen (K-418, ADR-017): the setup first — seat, pad, grip, kept on this phone —, then the demo clips (not
  * filmed yet: said so, nothing in their place), Güray's tips for the move, and the muscles it works.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
 import ExerciseScreen from '@/app/exercise';
@@ -18,8 +18,8 @@ type Schemas = components['schemas'];
 let mockParams: { exercise?: string } = {};
 // The drawing itself is the library's (SVG); what the screen hands it is what is tested.
 type BodyData = ReadonlyArray<{ slug?: string; color?: string }>;
-const mockBody = jest.fn((_props: { side?: string; data: BodyData }) => null);
-jest.mock('react-native-body-highlighter', () => ({ __esModule: true, default: (props: { side?: string; data: BodyData }) => mockBody(props) }));
+const mockBody = jest.fn((_props: { side?: string; data: BodyData; gender?: string }) => null);
+jest.mock('react-native-body-highlighter', () => ({ __esModule: true, default: (props: { side?: string; data: BodyData; gender?: string }) => mockBody(props) }));
 jest.mock('expo-router', () => ({ router: { back: jest.fn() }, useLocalSearchParams: () => mockParams }));
 
 const move = (id: string, extra: Partial<Schemas['Exercise']>): Schemas['Exercise'] => ({
@@ -51,6 +51,8 @@ const mockServices = {
     saveSetup: (id: string, values: Record<string, string>) => mockSave(id, values),
   },
   report: jest.fn(),
+  // The figure drawn for the muscle map, from the profile's sex (ADR-037 › 49).
+  bodyFigure: jest.fn(async () => 'male' as 'male' | 'female'),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
@@ -181,4 +183,29 @@ test('every catalog muscle has an area on the drawing', () => {
   // And every area named is one the drawing has: a typo would leave a muscle silently uncoloured.
   const drawing = new Set(drawingAreas());
   expect(Object.values(workoutParams.muscleMapAreas).flat().filter((area) => !drawing.has(area))).toEqual([]);
+});
+
+describe('the figure follows the profile (ADR-037 › 49)', () => {
+  test("the profile's sex: a female figure, every one of its areas coloured", async () => {
+    mockServices.bodyFigure.mockResolvedValueOnce('female');
+    await show();
+    await screen.findByText(t('demo.tip.tempo'));
+    await act(async () => {});
+    const last = mockBody.mock.calls.at(-1)?.[0];
+    expect(last?.gender).toBe('female');
+    expect(new Set((last?.data ?? []).map((d) => d.slug))).toEqual(new Set(drawingAreas('female')));
+  });
+
+  test('not known (offline, never read): the figure drawn until now', async () => {
+    mockServices.bodyFigure.mockRejectedValueOnce(new Error('kv'));
+    await show();
+    await screen.findByText(t('demo.tip.tempo'));
+    await act(async () => {});
+    expect(mockBody.mock.calls.at(-1)?.[0].gender).toBe('male');
+  });
+
+  test('every area named for a muscle is on the female drawing too', () => {
+    const drawing = new Set(drawingAreas('female'));
+    expect(Object.values(workoutParams.muscleMapAreas).flat().filter((area) => !drawing.has(area))).toEqual([]);
+  });
 });

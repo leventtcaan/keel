@@ -5,6 +5,8 @@
  * move that signal does not come, so it is not said.
  */
 import { bodyBack } from 'react-native-body-highlighter/dist/assets/bodyBack';
+import { bodyFemaleBack } from 'react-native-body-highlighter/dist/assets/bodyFemaleBack';
+import { bodyFemaleFront } from 'react-native-body-highlighter/dist/assets/bodyFemaleFront';
 import { bodyFront } from 'react-native-body-highlighter/dist/assets/bodyFront';
 
 import type { components } from '@/api/schema';
@@ -26,10 +28,14 @@ export function mapAreas(move: Schemas['Exercise']): string[] {
   return [...new Set(move.muscles.flatMap((muscle) => workoutParams.muscleMapAreas[muscle] ?? []))];
 }
 
+/** The muscle map's figure: the profile's sex (ADR-037 › 49); the library draws both. */
+export type Figure = 'male' | 'female';
+
 /**
- * Every area of the muscle map's drawing (front and back, head and hands too), from the library's own drawing: each is
- * given a colour from the theme, as one left out keeps the drawing's built-in grey (dark on dark).
+ * Every area of the muscle map's drawing (front and back, head and hands too), from the library's own drawing of the
+ * figure: each is given a colour from the theme, as one left out keeps the drawing's built-in grey (dark on dark).
  */
-export function drawingAreas(): string[] {
-  return [...new Set([...bodyFront, ...bodyBack].flatMap((part) => (part.slug === undefined ? [] : [part.slug])))];
+export function drawingAreas(figure: Figure = 'male'): string[] {
+  const parts = figure === 'female' ? [...bodyFemaleFront, ...bodyFemaleBack] : [...bodyFront, ...bodyBack];
+  return [...new Set(parts.flatMap((part) => (part.slug === undefined ? [] : [part.slug])))];
 }
