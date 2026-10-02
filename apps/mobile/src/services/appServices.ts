@@ -13,6 +13,7 @@ import { notificationsUnavailable } from '@/notifications/notificationAccess';
 import { type NotificationAccess, type Reminders, createReminders } from '@/notifications/reminders';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
+import { type StateService, createStateService } from '@/state/stateService';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
@@ -80,6 +81,8 @@ export type AppServices = {
   restAlert: RestAlert;
   /** The two switches that write to Apple Health: finished sessions, weigh-ins typed in (K-412). */
   healthWriting: HealthWriting;
+  /** What the user declared (K-518): kept on the phone for the reminders. */
+  state: StateService;
 };
 
 export async function createAppServices({
@@ -101,7 +104,10 @@ export async function createAppServices({
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
-  const reminders = await createReminders({ kv, access: notifications, now, report });
+  // A state the user declared quiets the reminders while it is in force (K-518, ADR-036 #7); each change plans again.
+  const state = createStateService({ api, kv, now, onChange: () => void reminders.refresh() });
+  const reminders = await createReminders({ kv, access: notifications, now, report, muted: () => state.inForce(),
+    mutedUntil: () => state.until() });
   const restAlert = createRestAlert({ access: alerts, report });
   const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
   const profile = await createProfileStatus({
@@ -141,6 +147,7 @@ export async function createAppServices({
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
     training.forget().catch(reportError); // and the program kept for offline training (K-405)
     reminders.forget().catch(reportError); // and the reminders: nothing scheduled for an account that left (K-410)
+    state.forget().catch(reportError); // and a state declared: sickness and pain are health data (K-518)
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
@@ -156,6 +163,7 @@ export async function createAppServices({
     training,
     report,
     reminders,
+    state,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     healthWriting,
@@ -181,6 +189,8 @@ export async function createAppServices({
       await withdrawConsent(api, 'HEALTH_DATA', true);
       await consents.remember('HEALTH_DATA', 'WITHDRAWN').catch(reportError);
       await forgetSentActivityDays(kv).catch(reportError); // the server deleted them: sent again once allowed again
+      // A state declared went with them on the server (ADR-038): the reminders plan without it.
+      await state.forget().then(() => reminders.refresh()).catch(reportError);
       // Withdrawn and deleted on the server. A local delete that fails is reported, not a failed withdrawal: while the
       // consent stays withdrawn, whatever stays here is refused by the server (CONSENT_REQUIRED); it goes at sign-out.
       await store.forget(HEALTH_KINDS).catch(reportError);

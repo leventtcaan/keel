@@ -35,6 +35,8 @@ type Options = {
   report: (problem: { name: string }) => void;
   /** A declared state silences the reminders (K-516 plugs it in; until then nothing is declared). */
   muted?: () => Promise<boolean>;
+  /** Its last day, if it has one (K-518): the slots after it are planned by date, so they return with no open needed. */
+  mutedUntil?: () => Promise<string | null>;
 };
 
 const KEY = {
@@ -64,7 +66,7 @@ function dateOf(kept: string | null): Date | null {
 
 export type Reminders = Awaited<ReturnType<typeof createReminders>>;
 
-export async function createReminders({ kv, access, now, report, muted = async () => false }: Options) {
+export async function createReminders({ kv, access, now, report, muted = async () => false, mutedUntil = async () => null }: Options) {
   let settings: ReminderSettings = { enabled: (await kv.getItemAsync(KEY.enabled)) === ON, cue: (await kv.getItemAsync(KEY.cue)) ?? '' };
   const listeners = new Set<() => void>();
 
@@ -94,7 +96,10 @@ export async function createReminders({ kv, access, now, report, muted = async (
 
   /** What should be scheduled now, from what is kept — read inside the turn, so the plan is never older than a change. */
   async function reschedule(): Promise<void> {
-    if (!settings.enabled || !(await access.permission()).granted || (await muted())) {
+    const silenced = settings.enabled && (await muted());
+    const until = silenced ? await mutedUntil() : null;
+    // A state with no last day says nothing of when to come back: nothing is planned until it ends.
+    if (!settings.enabled || !(await access.permission()).granted || (silenced && until === null)) {
       await access.clear();
       return;
     }
@@ -103,7 +108,8 @@ export async function createReminders({ kv, access, now, report, muted = async (
       cue: settings.cue,
       lastOpened: dateOf(await kv.getItemAsync(KEY.lastOpened)),
       now: now(),
-      muted: false,
+      muted: silenced,
+      mutedUntil: until,
       restUntil: await kv.getItemAsync(KEY.restUntil),
     });
     await access.replace(plan);
@@ -191,6 +197,9 @@ export async function createReminders({ kv, access, now, report, muted = async (
         else await kv.setItemAsync(KEY.restUntil, day);
         await reschedule();
       }),
+
+    /** Something the plan reads changed outside this service — a state declared or ended (K-518): plan again. */
+    refresh: (): Promise<void> => inTurn(() => reschedule()),
 
     /** The app came to the front: the quiet spell starts again from now. */
     opened: (): Promise<void> =>

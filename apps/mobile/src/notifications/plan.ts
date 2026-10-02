@@ -26,6 +26,11 @@ export type PlanInput = {
   now: Date;
   /** A declared state (sick, exams — K-516) silences every slot. */
   muted: boolean;
+  /**
+   * Its last day, when it has one (K-518): nothing until it ends, then the training days and the check-in mornings of the
+   * weeks after it by date, so they come back with no open needed — as after a week off. Null: until the user is back.
+   */
+  mutedUntil: string | null;
   /** A week off in force (Program.restUntil, a calendar day): no training reminder until it ends (ADR-037 › 51b). */
   restUntil: string | null;
 };
@@ -51,36 +56,51 @@ function weeklyAt(day: Schedule['checkInDay'], minuteOfDay: number, earlier = 0)
 const dayOf = (moment: Date) =>
   `${moment.getFullYear()}-${String(moment.getMonth() + 1).padStart(2, '0')}-${String(moment.getDate()).padStart(2, '0')}`;
 
-export function planReminders({ schedule, cue, lastOpened, now, muted, restUntil }: PlanInput): Reminder[] {
-  if (muted) return [];
+/** The days after a calendar day, for the weeks the reminders come back by date (rest_resume_weeks). */
+function daysAfter(day: string): Date[] {
+  const [year, month, date] = day.split('-').map(Number);
+  return Array.from({ length: P.restResumeWeeks * 7 }, (_, i) => new Date(year, month - 1, date + i + 1));
+}
+
+export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUntil, restUntil }: PlanInput): Reminder[] {
+  if (muted && mutedUntil === null) return [];
   const plan: Reminder[] = [];
+  // A state with a last day still on (K-518): every slot waits for it to end.
+  const until = muted && mutedUntil !== null && mutedUntil >= dayOf(now) ? mutedUntil : null;
+  // Training waits for the later of a week off and a state.
+  const offUntil = [restUntil, until].filter((day): day is string => day !== null && day >= dayOf(now)).sort().at(-1) ?? null;
 
   if (schedule?.usualTrainingTime !== undefined) {
     const usual = minutesOf(schedule.usualTrainingTime);
     const title = t('reminders.training.title', { minutes: P.trainingLeadMinutes });
     const body = cue?.trim() || t('reminders.training.body');
-    if (restUntil === null || restUntil < dayOf(now)) {
+    if (offUntil === null) {
       // In the week's order, so the plan reads Monday first whatever order the profile lists them in.
       for (const day of WEEKDAYS.filter((d) => schedule.trainingDays.includes(d))) {
         plan.push({ id: `training-${day}`, kind: 'training', when: weeklyAt(day, usual, P.trainingLeadMinutes), title, body });
       }
     } else {
-      // A week off (ADR-037 › 51b): nothing until it ends — a weekly reminder cannot skip a week — then the training days of
-      // the weeks after it, by date, so they come back with no open needed; the next open turns them weekly again.
-      const [year, month, date] = restUntil.split('-').map(Number);
-      for (let after = 1; after <= P.restResumeWeeks * 7; after++) {
-        const day = new Date(year, month - 1, date + after);
+      // A week off (ADR-037 › 51b) or a state (K-518): nothing until it ends — a weekly reminder cannot skip a week — then
+      // the training days of the weeks after it, by date, so they come back with no open needed; the next open turns them
+      // weekly again.
+      for (const day of daysAfter(offUntil)) {
         if (!schedule.trainingDays.includes(WEEKDAYS[day.getDay()])) continue;
         // Minutes past midnight, the lead taken off: a negative count is the evening before (Date carries it over).
-        const at = new Date(year, month - 1, date + after, 0, usual - P.trainingLeadMinutes);
+        const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, usual - P.trainingLeadMinutes);
         if (at > now) plan.push({ id: `training-${dayOf(day)}`, kind: 'training', when: { at }, title, body });
       }
     }
   }
 
-  if (schedule !== null) {
+  if (schedule !== null && until === null) {
     const when = weeklyAt(schedule.checkInDay, minutesOf(P.checkInTime));
     plan.push({ id: 'check-in', kind: 'check_in', when, title: t('reminders.checkIn.title'), body: t('reminders.checkIn.body') });
+  } else if (schedule !== null && until !== null) {
+    // The check-in mornings after a state, by date (K-518).
+    for (const day of daysAfter(until).filter((d) => WEEKDAYS[d.getDay()] === schedule.checkInDay)) {
+      const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutesOf(P.checkInTime));
+      plan.push({ id: `check-in-${dayOf(day)}`, kind: 'check_in', when: { at }, title: t('reminders.checkIn.title'), body: t('reminders.checkIn.body') });
+    }
   }
 
   if (lastOpened !== null) {
@@ -88,7 +108,10 @@ export function planReminders({ schedule, cue, lastOpened, now, muted, restUntil
     const at = new Date(lastOpened);
     at.setDate(at.getDate() + P.quietDays);
     // Already past: this spell's message was due (and went, if it could). One per spell — the next open starts another.
-    if (at > now) plan.push({ id: 'quiet', kind: 'quiet', when: { at }, title: t('reminders.quiet.title'), body: t('reminders.quiet.body') });
+    // Not inside a state still on: the user said why the app is quiet (K-518).
+    if (at > now && (until === null || dayOf(at) > until)) {
+      plan.push({ id: 'quiet', kind: 'quiet', when: { at }, title: t('reminders.quiet.title'), body: t('reminders.quiet.body') });
+    }
   }
 
   return plan;

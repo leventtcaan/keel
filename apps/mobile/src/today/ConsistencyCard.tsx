@@ -33,10 +33,13 @@ export function ConsistencyCard({ consistency }: { consistency: Consistency | nu
         })}
       </Text>
     );
+  // A state declared this week (K-516): the week counts neither way, the record leaves it out (U7).
+  const paused = consistency.paused ? <Text style={[styles.small, { color: color.muted }]}>{t('today.consistency.paused')}</Text> : null;
   return (
     <Card testID="consistency">
       <Text style={[styles.label, { color: color.muted }]}>{t('today.consistency.title')}</Text>
       {percent}
+      {paused}
       <Text style={[styles.text, { color: color.textSecondary }]}>
         {t('today.consistency.of', {
           done: consistency.done,

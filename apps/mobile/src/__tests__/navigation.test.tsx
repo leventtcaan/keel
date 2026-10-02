@@ -49,6 +49,7 @@ const mockServices = {
     era: () => 0,
   },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
   healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
+  state: { keep: async () => {} }, // Today keeps the state it read, for the reminders (K-518)
 };
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,
@@ -185,7 +186,7 @@ test('Settings opens from Today, over the tabs (K-309, prototype 5.2)', async ()
   expect(router.getPathname()).toBe('/');
 });
 
-test.each(['/check-in'])('signed out, %s is not reachable (K-501)', async (url) => {
+test.each(['/check-in', '/state'])('signed out, %s is not reachable (K-501, K-518)', async (url) => {
   mockSignedIn = false;
   const router = renderRouter(APP, { initialUrl: url });
   await router;

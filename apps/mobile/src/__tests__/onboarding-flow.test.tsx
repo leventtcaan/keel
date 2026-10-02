@@ -84,6 +84,7 @@ jest.mock('@/services/ServicesProvider', () => ({
       current: () => mockReminderSettings,
       subscribe: () => () => {},
     },
+    state: { keep: async () => {} }, // Today keeps the state it read, for the reminders (K-518)
   }),
 }));
 

@@ -13,7 +13,7 @@ const schedule: Schedule = {
   timeZone: 'Europe/Istanbul',
 };
 const now = new Date(2026, 9, 2, 12, 0); // a Friday, local time
-const base: PlanInput = { schedule, cue: null, lastOpened: now, now, muted: false, restUntil: null };
+const base: PlanInput = { schedule, cue: null, lastOpened: now, now, muted: false, mutedUntil: null, restUntil: null };
 
 test('a training day gets one reminder, the lead before the usual time, on the phone\'s calendar (1 = Sunday)', () => {
   const training = planReminders(base).filter((r) => r.kind === 'training');
@@ -133,5 +133,45 @@ describe('a week off (ADR-037 › 51b): no training reminder until it ends; afte
 
   test('today is its last day: still off today', () => {
     expect(off('2026-10-02').filter((r) => r.kind === 'training' && 'weekday' in r.when)).toEqual([]);
+  });
+});
+
+describe('a state with a last day (K-518, ADR-038): nothing until it ends, then by date — no open needed', () => {
+  // now: Friday 2 Oct 2026, 12:00. Training Monday and Thursday at 18:00, check-in Monday 09:00. Sick until Tue 6 Oct.
+  const quiet = (mutedUntil: string, extra: Partial<PlanInput> = {}) => planReminders({ ...base, muted: true, mutedUntil, ...extra });
+
+  test('nothing weekly while it lasts', () => {
+    expect(quiet('2026-10-06').filter((r) => 'weekday' in r.when)).toEqual([]);
+  });
+
+  test('the training days after it, by date, as after a week off', () => {
+    expect(quiet('2026-10-06').filter((r) => r.kind === 'training').map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 8, 17, 30) }, // Thursday 8 Oct
+      { at: new Date(2026, 9, 12, 17, 30) },
+      { at: new Date(2026, 9, 15, 17, 30) },
+      { at: new Date(2026, 9, 19, 17, 30) }, // the 13th day after it
+    ]);
+  });
+
+  test('the check-in mornings after it, by date: Monday 5 Oct is inside it, Monday 12 Oct is the first', () => {
+    expect(quiet('2026-10-06').filter((r) => r.kind === 'check_in').map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 12, 9, 0) },
+      { at: new Date(2026, 9, 19, 9, 0) },
+    ]);
+  });
+
+  test('the quiet message only if it falls after it', () => {
+    // Opened Friday 2 Oct: due Friday 9 Oct — after a state ending 6 Oct, inside one ending 10 Oct.
+    expect(quiet('2026-10-06').filter((r) => r.kind === 'quiet').map((r) => r.when)).toEqual([{ at: new Date(2026, 9, 9, 12, 0) }]);
+    expect(quiet('2026-10-10').filter((r) => r.kind === 'quiet')).toEqual([]);
+  });
+
+  test('without a last day: nothing at all, as before', () => {
+    expect(planReminders({ ...base, muted: true })).toEqual([]);
+  });
+
+  test('a week off ending later than the state: the training days come back after the later of the two', () => {
+    const dated = quiet('2026-10-06', { restUntil: '2026-10-09' }).filter((r) => r.kind === 'training');
+    expect(dated[0].when).toEqual({ at: new Date(2026, 9, 12, 17, 30) });
   });
 });

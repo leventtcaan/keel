@@ -4,6 +4,7 @@
  */
 import { createAppServices } from '@/services/appServices';
 import type { StoredSession } from '@/session/session';
+import { localDay } from '@/today/today';
 
 import { nodeSqlite } from './support/nodeSqlite';
 
@@ -210,6 +211,41 @@ test('the unit choice goes with the session: forgotten at sign-out', async () =>
   expect(services.units.current()).toBe('IMPERIAL');
 });
 
+test('a declared state goes with the session: forgotten at sign-out (K-518)', async () => {
+  const kv = memoryKv();
+  const { services } = await setup(server(404), memoryStorage(), kv);
+  await services.session.signIn(SESSION);
+  await services.state.keep({ state: 'ready', value: { kind: 'SICK', since: '2026-10-07' } });
+  await services.signOut();
+  await settle();
+  expect(await services.state.inForce()).toBe(false);
+  expect(kv.items.has('state.current')).toBe(false);
+});
+
+test('a state in force quiets the reminders (ADR-036 #7): they plan again as it begins and ends (K-518)', async () => {
+  const scheduled: string[][] = [];
+  const notifications = {
+    permission: async () => ({ granted: true, canAskAgain: true }),
+    request: async () => ({ granted: true, canAskAgain: true }),
+    replace: async (reminders: { id: string }[]) => void scheduled.push(reminders.map((r) => r.id)),
+    clear: async () => void scheduled.push([]),
+  };
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch, report: () => {},
+    kv: memoryKv(), locale: 'en-US', notifications });
+  await services.session.signIn(SESSION);
+  await services.reminders.keepSchedule({ trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'UTC' } as never);
+  await services.reminders.turnOn();
+  expect(scheduled.at(-1)?.length).toBeGreaterThan(0);
+
+  await services.state.keep({ state: 'ready', value: { kind: 'SICK', since: '2026-10-07' } });
+  await settle();
+  expect(scheduled.at(-1)).toEqual([]);
+
+  await services.state.keep({ state: 'none' });
+  await settle();
+  expect(scheduled.at(-1)?.length).toBeGreaterThan(0);
+});
+
 test("signing in brings the account's own unit choice to the phone", async () => {
   const kv = memoryKv();
   const fetch = jest.fn(async (request: Request) =>
@@ -353,6 +389,59 @@ describe('withdrawing the health data consent (K-231)', () => {
     await services.session.signIn(SESSION);
     await services.withdrawHealthData();
     expect(kv.items.has('health.activityDaysSent')).toBe(false);
+  });
+
+  test('a declared state goes with it: sickness and pain are health data, deleted on the server (K-518)', async () => {
+    const { services } = await withEntries(200);
+    await services.state.keep({ state: 'ready', value: { kind: 'PAIN', since: '2026-10-07' } });
+    await services.withdrawHealthData();
+    expect(await services.state.inForce()).toBe(false);
+  });
+
+  test('and the reminders it quieted come back at once (K-518)', async () => {
+    const scheduled: string[][] = [];
+    const notifications = {
+      permission: async () => ({ granted: true, canAskAgain: true }),
+      request: async () => ({ granted: true, canAskAgain: true }),
+      replace: async (reminders: { id: string }[]) => void scheduled.push(reminders.map((r) => r.id)),
+      clear: async () => void scheduled.push([]),
+    };
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(200).fetch, report: () => {},
+      kv: memoryKv(), locale: 'en-US', notifications });
+    await services.session.signIn(SESSION);
+    await settle(); // the profile read at sign-in keeps its own schedule first
+    await services.reminders.keepSchedule({ trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'UTC' } as never);
+    await services.reminders.turnOn();
+    await services.state.keep({ state: 'ready', value: { kind: 'SICK', since: '2026-10-07' } });
+    await settle();
+    expect(scheduled.at(-1)).toEqual([]);
+
+    await services.withdrawHealthData();
+    await settle();
+
+    expect(scheduled.at(-1)?.length).toBeGreaterThan(0);
+  });
+
+  test('a state with a last day: the reminders after it are planned by date, no open needed (K-518)', async () => {
+    const scheduled: { id: string; when: object }[][] = [];
+    const notifications = {
+      permission: async () => ({ granted: true, canAskAgain: true }),
+      request: async () => ({ granted: true, canAskAgain: true }),
+      replace: async (reminders: { id: string; when: object }[]) => void scheduled.push(reminders),
+      clear: async () => void scheduled.push([]),
+    };
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(200).fetch, report: () => {},
+      kv: memoryKv(), locale: 'en-US', notifications });
+    await services.session.signIn(SESSION);
+    await settle(); // the profile read at sign-in keeps its own schedule first
+    await services.reminders.keepSchedule({ trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'UTC' } as never);
+    await services.reminders.turnOn();
+    const inThreeDays = localDay(new Date(Date.now() + 3 * 86_400_000)); // the services read the real clock
+    await services.state.keep({ state: 'ready', value: { kind: 'TRAVELING', since: localDay(new Date()), until: inThreeDays } });
+    await settle();
+
+    expect(scheduled.at(-1)?.length).toBeGreaterThan(0);
+    expect(scheduled.at(-1)?.every((reminder) => 'at' in reminder.when)).toBe(true);
   });
 
   test('the phone remembers it at once: offline, the health data consent reads as withdrawn (K-402)', async () => {

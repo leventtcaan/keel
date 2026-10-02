@@ -1,0 +1,12 @@
+{
+  "parameters": [
+    {
+      "key": "state_until_choices_days",
+      "value": [3, 7, 14],
+      "unit": "days",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#4.1",
+      "note": "State mode (K-518, ADR-038): the lengths offered besides 'until I'm back', counted with today. Runna's holiday mode takes 3-21 days and 'not feeling 100%' 3-14 (L3 §4.1); a product choice inside those, not a rule of the engine."
+    }
+  ]
+}

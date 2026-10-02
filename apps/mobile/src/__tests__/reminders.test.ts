@@ -272,6 +272,16 @@ test('a state declared while they are scheduled clears them; lifted, they come b
   expect(kinds(device.scheduled)).toEqual(['training', 'check_in', 'quiet']);
 });
 
+test('a state with a last day plans the slots after it by date, with no open needed (K-518)', async () => {
+  const device = fakeDevice();
+  const reminders = await createReminders({ kv: memoryKv(), access: device.access, now: () => now, report: jest.fn(), muted: async () => true,
+    mutedUntil: async () => '2026-10-06' });
+  await reminders.keepSchedule(schedule);
+  await reminders.turnOn();
+  expect(device.scheduled.length).toBeGreaterThan(0);
+  expect(device.scheduled.every((r) => 'at' in r.when)).toBe(true);
+});
+
 describe('opens are tracked (trackOpens)', () => {
   function foreground() {
     let listener = () => {};
