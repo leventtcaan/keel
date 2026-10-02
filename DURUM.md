@@ -364,7 +364,7 @@ agent karar verir, PR'da gerekçe.
 | K-413 tarif hafızası (ADR-034, V22, `/v1/recipes`, öğünde `recipe:<id>` porsiyonla) | ✅ birleşti; CI'da RED önce (iki tur); inceleme: düşen tek malzeme bütün listeyi 400 yapıyordu, porsiyon taşması, sınırsız tarif; saf `RecipeShareTests` | #239 | `M4/K-413.md` |
 | K-416 bölündü → **K-424** (training: `supersetId`, kullanıcının hareketi) + K-416 (mobil); K-413'ün telefon kısmı → **K-423** | backlog'a yazıldı | — | — |
 | K-424 süperset (`supersetId`) + kullanıcının hareketi (`/v1/custom-exercises`, `custom:<id>`, sınıflama kullanıcıya sorulur; ADR-035, V23) | ✅ birleşti; CI'da RED önce; inceleme: sözleşme metni düzenlenince tipler eski kaldı (mobil CI kırmızı), kendi hareketi "temiz değil" denince bitiş tümüyle reddediliyordu → kabul, etkisiz | #244 | `M4/K-424.md` |
-| K-416 (1/3) geçmiş seansı düzenle: sil (onaylı) + unutulan seti ekle (çevrimiçi), silinen setin telefondaki kopyası unutulur, geçmiş odakta yeniden okunur | inceleme sürüyor; simülatör: boş alanlar kartta görünmüyordu → son çalışma setinden öneri; RIR eksikti; mutasyon 11/11 + 2/2 | — | `M4/K-416.md` |
+| K-416 (1/3) geçmiş seansı düzenle: sil (onaylı) + unutulan seti ekle (çevrimiçi), silinen setin telefondaki kopyası unutulur, geçmiş odakta yeniden okunur | PR açık (auto-merge); simülatör: boş alanlar görünmüyordu → son setten öneri; RIR eksikti; inceleme: süren seansta da düzenleme vardı, yeniden denemede yeni clientId (çift set), çift dokunuş onaylı silmeyi geçiyordu; hedefler değişmez → soru 48; mutasyon 11/11 + 2/2 + 7/7 | #245 | `M4/K-416.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
@@ -401,6 +401,10 @@ agent karar verir, PR'da gerekçe.
 47. **(K-413, ürün/U5 — YENİ)** Tarifin porsiyonu kesin pay sayılıyor (4 porsiyonun 1'i = tam ¼; aralık yalnız malzemeden).
     Gerçekte tabaklar eşit değil. (a) böyle kalsın; (b) porsiyon payına da belirsizlik eklensin (ör. ±%15 — kaynak gerekir);
     (c) ileride pişmiş toplam ağırlık + tartılan porsiyon (ADR-034 alternatifi).
+48. **(K-416, ürün — YENİ)** Geçmiş seans düzenlenince rekorlar ve tahmini max yeniden hesaplanır (setlerden türetiliyor),
+    ama **sonraki seansın hedefi** (K-217, bitişte hesaplanır) **değişmez**. Örnek: "12 tekrar yazdım, 10'du" → yük artışı
+    yürürlükte kalır. Şimdi: ekranda "buradaki değişiklik sonraki hedefleri değiştirmez" yazıyor. (a) böyle kalsın;
+    (b) programın son bitmiş seansı düzenlenince hedefler yeniden hesaplansın (training görevi, backend).
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
 33. **(K-231, veri — YENİ, M4 Part 1)** Apple Health rızası geri çekilince ne silinsin? Şimdi: Health'ten **okuma durur**,
     sunucuda zaten tutulan tartı (`source=APPLE_HEALTH`) ve adım/uyku günleri **kalır** — bunlar sağlık verisi rızasıyla
