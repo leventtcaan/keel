@@ -12,9 +12,10 @@ import { grantConsent } from '@/consent/consents';
 import { has, t } from '@/copy';
 import { BarcodeScanner } from '@/food/BarcodeScanner';
 import { EstimateCard } from '@/food/EstimateCard';
-import { type DraftItem, type KnownFoods, addFood, draftOf, itemProblem, requestsOf } from '@/food/draft';
+import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, itemProblem, recipeItemId, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
 import { foodParams } from '@/food/params';
+import { type RecipeMatch, recipeMatches } from '@/food/recipes';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
@@ -65,6 +66,10 @@ export default function MealScreen() {
   const [found, setFound] = useState<Found>({ state: 'idle' });
   const [items, setItems] = useState<DraftItem[]>([]);
   const [known, setKnown] = useState<KnownFoods>(() => new Map());
+  // The user's recipes (K-423), read at the first search (no search, no request); unreadable (offline) is none this
+  // time — the foods alone are offered, and the next search asks again.
+  const [recipes, setRecipes] = useState<Schemas['Recipe'][] | null>(null);
+  const [recipeHits, setRecipeHits] = useState<RecipeMatch[]>([]);
   // The estimate for a set of items (by key); `value` null: the server did not take them, or could not be asked.
   const [estimate, setEstimate] = useState<{ key: string; value: Schemas['FoodEstimate'] | null } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -82,6 +87,17 @@ export default function MealScreen() {
       .catch(() => false)
       .then((granted) => setStep(granted ? 'entry' : 'consent'));
   }, [consents]);
+
+  // Recipes by their item id, for the portion ceiling. A recipe in a meal opened to correct, before any search, is not
+  // known here: its ceiling is left to the server (as a serving whose grams are not known).
+  const knownRecipes: KnownRecipes = new Map((recipes ?? []).map((recipe) => [recipeItemId(recipe), recipe]));
+  const readRecipes = async (): Promise<Schemas['Recipe'][]> => {
+    if (recipes !== null) return recipes;
+    const answer = await load(() => api.GET('/v1/recipes')).catch(() => null);
+    if (answer === null || answer.state !== 'ready') return [];
+    setRecipes(answer.value);
+    return answer.value;
+  };
 
   useEffect(() => {
     if (step !== 'entry' || edit === undefined || day === undefined) return;
@@ -119,7 +135,7 @@ export default function MealScreen() {
     return done;
   };
 
-  const requests = requestsOf(items, known);
+  const requests = requestsOf(items, known, knownRecipes);
   const key = requests === null ? null : JSON.stringify(requests);
 
   // The estimate follows the items; an answer for items since changed is dropped (the key is checked when shown).
@@ -159,17 +175,30 @@ export default function MealScreen() {
     const q = query.trim();
     if (q.length < foodParams.searchMinChars) {
       searchSeq.current++;
+      setRecipeHits([]);
       setFound({ state: 'tooShort' });
       return;
     }
     const mine = ++searchSeq.current;
-    const answer = await load(() => api.POST('/v1/foods/search', { body: { q, limit: foodParams.searchResults } }));
+    const [own, answer] = await Promise.all([
+      readRecipes(),
+      load(() => api.POST('/v1/foods/search', { body: { q, limit: foodParams.searchResults } })),
+    ]);
     if (mine !== searchSeq.current) return;
+    setRecipeHits(recipeMatches(own, q));
     setFound(answer.state === 'ready' ? { state: 'found', foods: answer.value } : { state: 'failed' });
   };
 
+  const addOwnRecipe = (recipe: Schemas['Recipe']) => {
+    searchSeq.current++;
+    setItems((before) => addRecipe(before, recipe));
+    setRecipeHits([]);
+    setFound({ state: 'idle' });
+    setQuery('');
+  };
   const add = (food: Schemas['Food']) => {
     searchSeq.current++;
+    setRecipeHits([]);
     setItems((before) => addFood(before, food));
     setKnown((before) => new Map(before).set(food.id, food));
     setFound({ state: 'idle' });
@@ -244,7 +273,7 @@ export default function MealScreen() {
             ? t('meal.barcode.badNumber')
             : found.state === 'barcodeFailed'
               ? t('meal.barcode.failed')
-              : found.state === 'found' && found.foods.length === 0
+              : found.state === 'found' && found.foods.length === 0 && recipeHits.length === 0
                 ? t('meal.search.none')
                 : null;
   // Named: with several items the question says which one it is about.
@@ -292,7 +321,14 @@ export default function MealScreen() {
         </View>
 
         {items.map((item, index) => {
-          const itemIssue = itemProblem(item, known);
+          const itemIssue = itemProblem(item, known, knownRecipes);
+          const portions = item.unit === PORTION;
+          const issueText =
+            itemIssue === null || itemIssue === 'missing'
+              ? null
+              : itemIssue === 'tooMuch' && portions
+                ? t('meal.item.tooManyPortions', { portions: knownRecipes.get(item.foodId)?.portions ?? 0 })
+                : t(PROBLEM_KEYS[itemIssue]);
           return (
             <View key={`${item.foodId}-${index}`} style={styles.item}>
               <Text style={[styles.name, { color: color.text }]}>{item.name}</Text>
@@ -300,14 +336,14 @@ export default function MealScreen() {
                 label={t('meal.item.amount', { name: item.name })}
                 value={item.quantity}
                 onChangeText={(quantity) => change(index, { quantity })}
-                problem={itemIssue === null || itemIssue === 'missing' ? null : t(PROBLEM_KEYS[itemIssue])}
+                problem={issueText}
                 keyboardType="decimal-pad"
                 maxLength={foodParams.amountMaxChars}
               />
               <View style={styles.chips}>
                 {/* Another unit empties the amount: the number meant the old one ("1" cup is not 1 g); nothing is converted for the user. */}
                 {item.units.map((unit) => {
-                  const label = unit === 'g' ? t('meal.item.grams') : unit;
+                  const label = unit === 'g' ? t('meal.item.grams') : unit === PORTION ? t('meal.item.portions') : unit;
                   return (
                     <Chip
                       key={unit}
@@ -318,12 +354,15 @@ export default function MealScreen() {
                     />
                   );
                 })}
-                <Chip
-                  label={t('meal.item.weighed')}
-                  accessibilityLabel={t('meal.item.weighedSpoken', { name: item.name })}
-                  selected={item.weighed}
-                  onPress={() => change(index, { weighed: !item.weighed })}
-                />
+                {/* A portion is never weighed: the recipe's whole weight is not known (ADR-034). */}
+                {!portions && (
+                  <Chip
+                    label={t('meal.item.weighed')}
+                    accessibilityLabel={t('meal.item.weighedSpoken', { name: item.name })}
+                    selected={item.weighed}
+                    onPress={() => change(index, { weighed: !item.weighed })}
+                  />
+                )}
               </View>
               <Button
                 label={t('meal.item.remove')}
@@ -349,6 +388,7 @@ export default function MealScreen() {
             <Button label={t('meal.search.go')} variant="ghost" size="sm" onPress={() => void search()} />
             {scanButton}
           </View>
+          {recipeHits.length > 0 && !full && <RecipeHits hits={recipeHits} onAdd={addOwnRecipe} />}
           {results.map((food) => (
             <Pressable
               key={food.id}
@@ -380,6 +420,33 @@ export default function MealScreen() {
         {scanning && <BarcodeScanner onCode={(gtin) => void lookUpBarcode(gtin)} onClose={() => setScanning(false)} />}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/** The user's recipes a search found (K-423): addable ones as buttons, one the database can no longer estimate marked. */
+function RecipeHits({ hits, onAdd }: { hits: RecipeMatch[]; onAdd: (recipe: Schemas['Recipe']) => void }) {
+  const { color } = useTheme();
+  return (
+    <View style={styles.search}>
+      <Text style={[styles.small, { color: color.muted }]}>{t('meal.recipes.heading')}</Text>
+      {hits.map(({ recipe, available }) =>
+        available ? (
+          <Pressable
+            key={recipe.id}
+            accessibilityRole="button"
+            accessibilityLabel={t('meal.recipes.add', { name: recipe.name })}
+            onPress={() => onAdd(recipe)}
+            style={[styles.result, { borderColor: color.line }]}>
+            <Text style={[styles.text, { color: color.text }]}>{recipe.name}</Text>
+            <Text style={[styles.small, { color: color.muted }]}>{t('meal.recipes.makes', { portions: recipe.portions })}</Text>
+          </Pressable>
+        ) : (
+          <Text key={recipe.id} style={[styles.small, styles.result, { color: color.text, borderColor: color.line }]}>
+            {t('meal.recipes.unavailable', { name: recipe.name })}
+          </Text>
+        ),
+      )}
+    </View>
   );
 }
 

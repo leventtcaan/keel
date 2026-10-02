@@ -365,6 +365,12 @@
       "none": "Nothing found. Try other words.",
       "failed": "Searching needs a connection. Try again."
     },
+    "recipes": {
+      "heading": "Your recipes",
+      "add": "Add {name}, a recipe",
+      "makes": "Makes {portions} portions",
+      "unavailable": "{name}: an ingredient is no longer in the food database. Enter the recipe again to use it."
+    },
     "item": {
       "amount": "Amount of {name}",
       "grams": "g",
@@ -374,7 +380,9 @@
       "remove": "Remove",
       "removeSpoken": "Remove {name}",
       "invalid": "That doesn't look like an amount. Check the number.",
-      "tooMuch": "That's more than one item can be. Check the amount."
+      "tooMuch": "That's more than one item can be. Check the amount.",
+      "tooManyPortions": "At most the whole recipe: {portions} portions.",
+      "portions": "portions"
     },
     "estimate": {
       "title": "Estimate",
