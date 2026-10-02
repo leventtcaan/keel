@@ -235,6 +235,18 @@ describe('the amounts and the estimate', () => {
     expect(estimates().at(-1)?.[1]).toEqual({ body: { items: [{ foodId: 'fdc-3', amount: { quantity: 200, unit: 'g', certainty: 'ESTIMATED' } }] } });
   });
 
+  test('another unit empties the amount: "1" of a cup is not 1 g (simulator: it became 15 g)', async () => {
+    await show();
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '1');
+    await act(async () =>
+      fireEvent.press(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: RICE.name, unit: t('meal.item.grams') }) })),
+    );
+    expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('');
+    expect(screen.queryByTestId('estimate')).toBeNull();
+  });
+
   test('more than the contract takes is named, and nothing is estimated or saved', async () => {
     await show();
     await search('rice');

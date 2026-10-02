@@ -151,6 +151,11 @@ export async function openRecordStore(db: SqlDatabase, now: () => Date = () => n
       await db.runAsync(`DELETE FROM records WHERE kind IN (${kinds.map(() => '?').join(', ')})`, [...kinds]);
     },
 
+    /** One record, whatever its state: the server no longer has it (deleted there), so the phone's copy goes too. */
+    forgetClient: async (clientId: string): Promise<void> => {
+      await db.runAsync('DELETE FROM records WHERE client_id = ?', [clientId]);
+    },
+
     /** Everything, for sign-out and account deletion: records on the phone belong to the account that made them. */
     clear: async (): Promise<void> => {
       await db.runAsync('DELETE FROM records', []);

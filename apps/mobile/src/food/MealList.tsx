@@ -36,9 +36,10 @@ function MealRow({ slot, names, kcal }: { slot: string; names: string[]; kcal: s
 
 /**
  * Today's meals (K-407): each with its range (U5); one not sent yet has no range to show — the server estimates it.
- * `complete`: the server's list was read; only then can it say nothing is logged.
+ * `complete`: the server's list was read; only then can it say nothing is logged. A logged meal opens its correction
+ * (`onOpen`); one not sent yet cannot — the server does not have it to replace.
  */
-export function MealList({ meals, complete }: { meals: DayMeal[]; complete: boolean }) {
+export function MealList({ meals, complete, onOpen }: { meals: DayMeal[]; complete: boolean; onOpen: (meal: Meal) => void }) {
   const { color } = useTheme();
   return (
     <Card testID="meals">
@@ -46,7 +47,17 @@ export function MealList({ meals, complete }: { meals: DayMeal[]; complete: bool
       {meals.length === 0 && complete && <Text style={[styles.text, { color: color.textSecondary }]}>{t('food.meals.none')}</Text>}
       {meals.map((row) =>
         row.kind === 'sent' ? (
-          <MealRow key={row.meal.clientId} slot={t(`food.slot.${row.meal.slot}`)} names={itemNames(row.meal)} kcal={kcalRange(row.meal)} />
+          <Pressable
+            key={row.meal.clientId}
+            accessibilityRole="button"
+            accessibilityLabel={t('food.meals.correct', {
+              slot: t(`food.slot.${row.meal.slot}`),
+              items: spokenItems(row.meal),
+              kcal: kcalRange(row.meal),
+            })}
+            onPress={() => onOpen(row.meal)}>
+            <MealRow slot={t(`food.slot.${row.meal.slot}`)} names={itemNames(row.meal)} kcal={kcalRange(row.meal)} />
+          </Pressable>
         ) : (
           <MealRow key={row.clientId} slot={t(`food.slot.${row.slot}`)} names={[t('food.meals.waiting')]} kcal="" />
         ),

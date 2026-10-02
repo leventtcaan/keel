@@ -247,7 +247,8 @@
     "meals": {
       "title": "Today's meals",
       "none": "Nothing logged today.",
-      "waiting": "Not sent yet"
+      "waiting": "Not sent yet",
+      "correct": "Correct {slot}: {items}, {kcal}"
     },
     "slot": {
       "BREAKFAST": "Breakfast",
@@ -264,6 +265,7 @@
   },
   "meal": {
     "title": "Log a meal",
+    "editTitle": "Correct a meal",
     "consent": {
       "allow": "Allow and continue",
       "notNow": "Not now",
@@ -294,7 +296,14 @@
     },
     "save": "Log it",
     "saveFailed": "Couldn't save it on this phone. Try again.",
-    "full": "A meal holds up to {max} items. Log the rest as another meal."
+    "full": "A meal holds up to {max} items. Log the rest as another meal.",
+    "edit": {
+      "delete": "Delete this meal",
+      "confirmDelete": "Delete it",
+      "needsConnection": "Changing a meal needs a connection. Try again when you're online.",
+      "gone": "This meal is no longer there.",
+      "notChecked": "The server hasn't checked these amounts yet. Check them, or try again when you're online."
+    }
   },
   "weighIn": {
     "title": "Weigh-in",

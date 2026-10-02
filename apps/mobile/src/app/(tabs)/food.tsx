@@ -26,7 +26,7 @@ import { tokens } from '@/theme/tokens';
 export default function FoodScreen() {
   const { color } = useTheme();
   const { queue, consents, report } = useAppServices();
-  const { data, reload } = useFoodDay();
+  const { day, data, reload } = useFoodDay();
   const [repeating, setRepeating] = useState(false);
   const [repeatProblem, setRepeatProblem] = useState<string | null>(null);
   // Offers logged since this read: hidden until the next read lands (it shows their meal), so a second tap on a slow
@@ -86,7 +86,10 @@ export default function FoodScreen() {
     </View>
   ) : null;
   const targets = data !== null && data.targets.state === 'ready' ? <TargetsCard targets={data.targets.value} /> : null;
-  const meals = data !== null && data.meals !== null ? <MealList meals={data.meals} complete={data.mealsRead} /> : null;
+  const meals =
+    data !== null && data.meals !== null ? (
+      <MealList meals={data.meals} complete={data.mealsRead} onOpen={(meal) => router.push({ pathname: '/meal', params: { edit: meal.id, day } })} />
+    ) : null;
   const offered = data === null ? [] : data.offers.filter((meal) => !hidden.has(meal.id));
   const offers = offered.length > 0 ? <RepeatOffers offers={offered} busy={repeating} onRepeat={(meal) => void repeat(meal)} /> : null;
   const repeatNote = repeatProblem !== null ? <Text style={[styles.text, { color: color.text }]}>{repeatProblem}</Text> : null;

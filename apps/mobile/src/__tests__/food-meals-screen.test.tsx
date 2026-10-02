@@ -281,3 +281,25 @@ test('a meal is logged from here: the way to the meal screen', async () => {
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.log') })));
   expect(mockPush).toHaveBeenCalledWith('/meal');
 });
+
+test("a logged meal is one tap from its correction; one not sent yet is not (the server doesn't have it)", async () => {
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'meal',
+      parentClientId: null,
+      body: { clientId: 'w1', eatenAt: at(11), slot: 'SNACK', items: [{ foodId: 'f', amount: { quantity: 1, unit: 'g' } }] },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  await show();
+  // Spoken with what is in it and its range (review: the label had dropped both).
+  const spoken = t('food.meals.correct', { slot: t('food.slot.BREAKFAST'), items: 'Oats, rolled; Milk, whole', kcal: range(380, 450) });
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: spoken })));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/meal', params: { edit: 'm1', day: '2026-09-29' } });
+  expect(screen.queryByRole('button', { name: /^Correct Snack/ })).toBeNull();
+});
