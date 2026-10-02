@@ -106,7 +106,8 @@ export async function createAppServices({
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   // A state the user declared quiets the reminders while it is in force (K-518, ADR-036 #7); each change plans again.
   const state = createStateService({ api, kv, now, onChange: () => void reminders.refresh() });
-  const reminders = await createReminders({ kv, access: notifications, now, report, muted: () => state.inForce() });
+  const reminders = await createReminders({ kv, access: notifications, now, report, muted: () => state.inForce(),
+    mutedUntil: () => state.until() });
   const restAlert = createRestAlert({ access: alerts, report });
   const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
   const profile = await createProfileStatus({

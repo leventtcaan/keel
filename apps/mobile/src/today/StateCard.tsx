@@ -16,32 +16,42 @@ type Props = { state: Loaded<components['schemas']['DeclaredState']> | undefined
 
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
 
+/** Which state a read showed: a note said for one is not shown under another. */
+function identityOf(state: Props['state']): string | null {
+  if (state?.state === 'ready') return `${state.value.kind}@${state.value.since}`;
+  return state?.state === 'none' ? 'none' : null;
+}
+
 /**
  * State mode on Today (K-518, ADR-038): a state in force says the week is paused, since when, and offers "I'm back";
  * none, one quiet way to say life got in the way (U9: declared, never asked). Back, a welcome with nothing to make up
- * (U7, I1 C6). A state that could not be read offers nothing: Today says it failed once, above.
+ * (U7, I1 C6) — kept while Today reads no state, gone once another one is read. A state that could not be read shows
+ * nothing: it is a way in, not a part of the week, and the next read of Today tries again.
  */
 export function StateCard({ state, onChanged }: Props) {
   const { state: declared, report } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
-  const [said, setSaid] = useState<string | null>(null);
+  // A note and the state it belongs to: after "I'm back", none; after a failure, the state still in force.
+  const [said, setSaid] = useState<{ identity: string | null; key: string } | null>(null);
+  const identity = identityOf(state);
 
   async function back() {
     setBusy(true);
     try {
       await declared.back();
-      setSaid('today.state.welcomeBack');
+      setSaid({ identity: 'none', key: 'today.state.welcomeBack' });
       onChanged();
     } catch (error) {
       report({ name: nameOf(error) });
-      setSaid('today.state.failed');
+      setSaid({ identity, key: 'today.state.failed' });
     } finally {
       setBusy(false);
     }
   }
 
-  const note = said === null ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{t(said)}</Text>;
+  const note =
+    said === null || said.identity !== identity ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{t(said.key)}</Text>;
   if (state?.state === 'ready') {
     const kind = t(`state.kind.${state.value.kind.toLowerCase()}.name`);
     return (

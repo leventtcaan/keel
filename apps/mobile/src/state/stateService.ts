@@ -58,12 +58,17 @@ export function createStateService({ api, kv, now, onChange }: Options) {
     onChange();
   }
 
+  async function current(): Promise<DeclaredState | null> {
+    const state = await kept();
+    return state !== null && (state.until === undefined || state.until >= localDay(now())) ? state : null;
+  }
+
   return {
     /** A state in force today, as last known on the phone: none past its last day. */
-    inForce: async (): Promise<boolean> => {
-      const state = await kept();
-      return state !== null && (state.until === undefined || state.until >= localDay(now()));
-    },
+    inForce: async (): Promise<boolean> => (await current()) !== null,
+
+    /** The last day of the state in force, if it has one — the reminders come back after it by date (K-518). */
+    until: async (): Promise<string | null> => (await current())?.until ?? null,
 
     /** What a read of the server said (Today reads it): a state, or none; a read that failed says nothing new. */
     keep: async (loaded: Loaded<DeclaredState>): Promise<void> => {
