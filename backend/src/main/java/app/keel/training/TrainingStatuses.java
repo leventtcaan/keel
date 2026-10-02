@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -91,6 +92,11 @@ final class TrainingStatuses {
      */
     static int weeksPlanMissed(List<LocalDate> workoutDays, List<TrainingChanges.Change> changes, int plannedPerWeek, LocalDate today,
             LocalDate since) {
+        return weeksPlanMissed(workoutDays, changes, Set.of(), plannedPerWeek, today, since);
+    }
+
+    static int weeksPlanMissed(List<LocalDate> workoutDays, List<TrainingChanges.Change> changes, Set<LocalDate> pausedDays, int plannedPerWeek,
+            LocalDate today, LocalDate since) {
         Optional<LocalDate> firstWorkout = workoutDays.stream().min(Comparator.naturalOrder());
         if (plannedPerWeek == 0 || firstWorkout.isEmpty()) {
             return 0;
@@ -103,7 +109,9 @@ final class TrainingStatuses {
             LocalDate sunday = week.plusDays(DAYS_PER_WEEK - 1L);
             boolean rested = changes.stream().anyMatch(change -> change.kind() == TrainingChanges.Kind.REST_WEEK
                     && !change.startsOn().isAfter(sunday) && (change.endsOn() == null || !change.endsOn().isBefore(monday)));
-            if (rested) {
+            // A week with a day the user declared (K-516, ADR-038) is paused, as a week off is.
+            boolean paused = pausedDays.stream().anyMatch(day -> !day.isBefore(monday) && !day.isAfter(sunday));
+            if (rested || paused) {
                 continue;
             }
             long days = workoutDays.stream().filter(day -> !day.isBefore(monday) && !day.isAfter(sunday)).distinct().count();
@@ -118,6 +126,11 @@ final class TrainingStatuses {
     /** The status of the most-stalled compound lift, with the ladder's changes and the plan kept. */
     static TrainingStatus of(Map<String, List<Session>> compoundLifts, List<TrainingChanges.Change> changes, List<LocalDate> workoutDays,
             int plannedPerWeek, LocalDate today, DayOfWeek checkInDay, LocalDate since) {
+        return of(compoundLifts, changes, workoutDays, Set.of(), plannedPerWeek, today, checkInDay, since);
+    }
+
+    static TrainingStatus of(Map<String, List<Session>> compoundLifts, List<TrainingChanges.Change> changes, List<LocalDate> workoutDays,
+            Set<LocalDate> pausedDays, int plannedPerWeek, LocalDate today, DayOfWeek checkInDay, LocalDate since) {
         // The most stalled; on a tie the longer stall, then the one going backwards, then by name: the same lift whatever the order.
         List<Session> worst = compoundLifts.entrySet().stream()
                 .max(Comparator.<Map.Entry<String, List<Session>>>comparingInt(lift -> stalledSessions(lift.getValue()))
@@ -126,7 +139,7 @@ final class TrainingStatuses {
                         .thenComparing(Map.Entry::getKey, Comparator.reverseOrder()))
                 .map(Map.Entry::getValue).orElse(List.of());
         return new TrainingStatus(stalledSessions(worst), weeksLoadHeld(changes, today, checkInDay), monthsStalled(worst, today), restedLastWeek(changes, today),
-                loadsBelowLastWeek(worst, today), weeksPlanMissed(workoutDays, changes, plannedPerWeek, today, since));
+                loadsBelowLastWeek(worst, today), weeksPlanMissed(workoutDays, changes, pausedDays, plannedPerWeek, today, since));
     }
 
     private static boolean wentUp(Session before, Session after) {

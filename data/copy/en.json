@@ -491,6 +491,10 @@
         "title": "Not yet. More weigh-ins first.",
         "body": "One morning is mostly water. A few regular mornings show the trend, and the trend is what the call is made on."
       },
+      "declared_context": {
+        "title": "This week is paused.",
+        "body": "You told us life got in the way. A week like this moves the scale with water and salt, so nothing is read into it, and nothing is held against you. The call comes once a regular week is back."
+      },
       "window_not_full": {
         "title": "Not yet. Your plan needs its full window.",
         "body": "Keep going as planned. Judging it early would read water and daily swings as progress or as a stall."

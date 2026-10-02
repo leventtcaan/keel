@@ -147,6 +147,38 @@ class StateModeTests {
             pool.shutdown();
             assertThat(states(account)).as("round " + round).hasSize(1);
         }
+    @SuppressWarnings("unchecked")
+    void aDeclaredWeeksCheckInAsksNothingAndItsCallWaitsSayingWhy() throws Exception {
+        // ADR-038: the week the user declared is not read; the reason is shown (U3).
+        AccountId account = ready();
+        send(account, "PUT", Map.of("kind", "SICK"));
+        String weekOf = CheckInWeek.weekOf(today(), java.time.DayOfWeek.MONDAY).toString();
+
+        assertThat(read(mvc.get().uri("/v1/check-ins/current").header("Authorization", TestSessions.bearer(context, account)).exchange()))
+                .containsEntry("questions", List.of());
+        Map<String, Object> call = read(mvc.post().uri("/v1/check-ins/current/answers").header("Authorization", TestSessions.bearer(context, account))
+                .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("clientId", java.util.UUID.randomUUID(),
+                        "weekOf", weekOf, "answers", List.of()))).exchange());
+
+        assertThat((Map<String, Object>) call.get("action")).containsEntry("type", "NO_DECISION_YET");
+        assertThat((List<Map<String, Object>>) call.get("reasons")).extracting(reason -> reason.get("rule")).containsExactly("declared_context");
+        assertThat(call).containsEntry("copyKey", "decision.no_decision_yet.declared_context");
+    }
+
+    @Test
+    void aWeekWithADeclaredDayIsPausedOnTheConsistency() throws Exception {
+        AccountId account = ready();
+        String weekOf = CheckInWeek.weekOf(today(), java.time.DayOfWeek.MONDAY).toString();
+        assertThat(mvc.post().uri("/v1/check-ins/current/answers").header("Authorization", TestSessions.bearer(context, account))
+                .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("clientId", java.util.UUID.randomUUID(),
+                        "weekOf", weekOf, "answers", List.of()))).exchange()).hasStatusOk();
+        assertThat(read(mvc.get().uri("/v1/consistency").header("Authorization", TestSessions.bearer(context, account)).exchange()))
+                .doesNotContainKey("paused");
+
+        send(account, "PUT", Map.of("kind", "BUSY"));
+
+        assertThat(read(mvc.get().uri("/v1/consistency").header("Authorization", TestSessions.bearer(context, account)).exchange()))
+                .containsEntry("paused", true);
     }
 
     /** A user in Kiritimati, with the consent and a profile. */

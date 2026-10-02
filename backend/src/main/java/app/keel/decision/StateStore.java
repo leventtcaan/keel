@@ -5,8 +5,10 @@ import app.keel.shared.AccountId;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -65,6 +67,28 @@ class StateStore {
                 update decision.declared_state set ends_on = :yesterday
                 where account_id = :account and (ends_on is null or ends_on >= :today)""")
                 .param("account", account.value()).param("today", today).param("yesterday", today.minusDays(1)).update();
+    }
+
+    /** The days from {@code from} to {@code to} (both included) a state was in force on. */
+    Set<LocalDate> days(AccountId account, LocalDate from, LocalDate to) {
+        Set<LocalDate> days = new HashSet<>();
+        for (State state : all(account)) {
+            LocalDate first = state.startsOn().isBefore(from) ? from : state.startsOn();
+            LocalDate last = state.endsOn().filter(end -> end.isBefore(to)).orElse(to);
+            first.datesUntil(last.plusDays(1)).forEach(days::add);
+        }
+        return days;
+    }
+
+    /** Every day up to {@code to} a state was in force on. */
+    Set<LocalDate> daysUpTo(AccountId account, LocalDate to) {
+        return all(account).stream().map(State::startsOn).min(LocalDate::compareTo).map(first -> days(account, first, to)).orElse(Set.of());
+    }
+
+    /** The state of the latest day from {@code from} to {@code to} a state was in force on, if any. */
+    Optional<DeclaredContext> latest(AccountId account, LocalDate from, LocalDate to) {
+        return all(account).stream().filter(state -> !state.startsOn().isAfter(to) && state.endsOn().map(end -> !end.isBefore(from)).orElse(true))
+                .reduce((older, newer) -> newer).map(State::kind);
     }
 
     /** Every state, oldest first (the export; the weeks it paused). */

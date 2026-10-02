@@ -96,6 +96,9 @@ class DecisionController {
         view.put("planned", week.planned());
         view.put("done", week.done());
         WeekTallies.percent(week).ifPresent(percent -> view.put("percent", percent));
+        if (week.paused()) {
+            view.put("paused", true); // a state declared this week (K-516): neither on track nor missed
+        }
         view.put("record", Map.of("onTrackWeeks", now.record().onTrackWeeks(), "countedWeeks", now.record().countedWeeks(),
                 "currentRun", now.record().currentRun()));
         return view;

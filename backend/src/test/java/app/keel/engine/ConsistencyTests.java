@@ -248,6 +248,47 @@ class ConsistencyTests {
                 "Asia/Kathmandu", "Australia/Lord_Howe", "UTC").map(ZoneId::of);
     }
 
+    // ── paused weeks (K-516, ADR-038) ───────────────────────────────────────────────────────────────────────
+
+    @Test
+    void aPausedWeekIsNeitherOnTrackNorMissedAndTheForgivenessStays() {
+        // on, paused (nothing done: sick), miss, on → the pause is not the miss that ends the run; the lone miss is forgiven.
+        List<WeekTally> weeks = List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 0).asPaused(),
+                training(MONDAY.plusWeeks(2), 10, 2), training(MONDAY.plusWeeks(3), 10, 9));
+
+        ConsistencyRecord record = Consistency.record(weeks, P);
+
+        assertThat(record.countedWeeks()).isEqualTo(3);
+        assertThat(record.onTrackWeeks()).isEqualTo(2);
+        assertThat(record.currentRun()).isEqualTo(2);
+    }
+
+    @Test
+    void aPauseBetweenTwoMissesDoesNotForgiveTheSecond() {
+        // The pause is left out, not a week on track: the misses either side of it are two in a row.
+        List<WeekTally> weeks = List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 2),
+                training(MONDAY.plusWeeks(2), 10, 0).asPaused(), training(MONDAY.plusWeeks(3), 10, 1));
+
+        assertThat(Consistency.record(weeks, P).currentRun()).isZero();
+    }
+
+    @Test
+    void aPausedWeekIsLeftOutOfTheWindowsAdherence() {
+        // A sick week's 0 of 10 does not drag the spine's adherence: 9 of 10 over the window, not 9 of 20.
+        List<WeekTally> window = List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 0).asPaused());
+
+        assertThat(Consistency.windowRatio(window)).hasValueSatisfying(ratio -> assertThat(ratio).isEqualByComparingTo("0.9"));
+        assertThat(Consistency.windowRatio(List.of(training(MONDAY, 10, 0).asPaused()))).isEmpty();
+    }
+
+    @Test
+    void aPausedWeekOnTrackIsNotCountedEither() {
+        // Paused is paused: a week declared busy that went well neither adds to the count nor to the run.
+        List<WeekTally> weeks = List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 10).asPaused());
+
+        assertThat(Consistency.record(weeks, P)).isEqualTo(new ConsistencyRecord(1, 1, 1));
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
 
     /** A week where only training was planned: enough to exercise the counter. */

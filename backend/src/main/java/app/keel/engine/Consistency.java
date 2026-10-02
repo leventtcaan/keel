@@ -34,14 +34,16 @@ public final class Consistency {
 
     /**
      * Adherence over a decision window (ADR-020 L-6: the spine's adherence is this ratio): everything done over
-     * everything planned in those weeks, each kind capped at its plan. Empty when nothing was planned.
+     * everything planned in those weeks, each kind capped at its plan; a paused week (K-516) left out. Empty when nothing
+     * was planned.
      */
     public static Optional<BigDecimal> windowRatio(List<WeekTally> weeks) {
-        int planned = weeks.stream().mapToInt(WeekTally::planned).sum();
+        List<WeekTally> counted = weeks.stream().filter(week -> !week.paused()).toList();
+        int planned = counted.stream().mapToInt(WeekTally::planned).sum();
         if (planned == 0) {
             return Optional.empty();
         }
-        int done = weeks.stream().mapToInt(WeekTally::done).sum();
+        int done = counted.stream().mapToInt(WeekTally::done).sum();
         return Optional.of(BigDecimal.valueOf(done).divide(BigDecimal.valueOf(planned), MathContext.DECIMAL64));
     }
 
@@ -65,8 +67,8 @@ public final class Consistency {
         int run = 0;
         int missesInARow = 0;
         for (WeekTally week : weeks) {
-            if (week.planned() == 0) {
-                continue; // nothing planned: neither a success nor a miss
+            if (week.planned() == 0 || week.paused()) {
+                continue; // nothing planned, or paused by a declared state (K-516): neither a success nor a miss
             }
             counted++;
             if (weekRatio(week).compareTo(onTrackLine) >= 0) {

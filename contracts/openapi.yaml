@@ -2437,6 +2437,11 @@ components:
           minimum: 0
           maximum: 100
           description: done over planned, rounded down; absent while nothing is planned.
+        paused:
+          type: boolean
+          description: |
+            Present (true) when a state was declared on a day of this week (K-516, ADR-038): the week is neither on track
+            nor missed, and the record leaves it out.
         record:
           type: object
           required: [onTrackWeeks, countedWeeks, currentRun]

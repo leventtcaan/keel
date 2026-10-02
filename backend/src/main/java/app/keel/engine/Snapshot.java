@@ -35,12 +35,14 @@ import java.util.Objects;
  * @param fatProxyEnergyPct the end of the fat estimate the low-energy rule reads (K-230, ADR-028 #22): the waist's
  *     estimate at the cautious end of its band, or the look, whichever is lower — never above fatProxyPct, present exactly
  *     when it is; fatProxyPct itself unless given. U4 as fatProxyPct
+ * @param context a state the user declared on a day of this check-in week (K-516, ADR-038). Health data like the cycle
+ *     answer: hidden from toString
  */
 public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights,
         Optional<BigDecimal> fatProxyPct, Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn,
         Optional<Profile> profile, boolean observingMaintenance,
         LocalDate phaseStart, Optional<TrainingStatus> training, Optional<BigDecimal> fatProxyHighPct, boolean safetyHold,
-        boolean cycleResolved, Optional<LocalDate> miniCutUntil, Optional<BigDecimal> fatProxyEnergyPct) {
+        boolean cycleResolved, Optional<LocalDate> miniCutUntil, Optional<BigDecimal> fatProxyEnergyPct, Optional<DeclaredContext> context) {
 
     public Snapshot {
         Objects.requireNonNull(today, "today");
@@ -57,6 +59,7 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         Objects.requireNonNull(fatProxyHighPct, "fatProxyHighPct");
         Objects.requireNonNull(miniCutUntil, "miniCutUntil");
         Objects.requireNonNull(fatProxyEnergyPct, "fatProxyEnergyPct");
+        Objects.requireNonNull(context, "context");
         if (fatProxyPct.isPresent() != fatProxyHighPct.isPresent()) {
             throw new IllegalArgumentException("A fat estimate has a lower and a higher value, or neither");
         }
@@ -89,7 +92,17 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
         return "Snapshot[today=" + today + ", sex=" + sex + ", phase=" + phase + ", planStart=" + planStart
                 + ", weights=" + weights.weighIns().size() + " weigh-ins, fatProxyPct=" + (fatProxyPct.isPresent() ? "<hidden>" : "none")
                 + ", energy=" + energy.map(Object::toString).orElse("none") + ", menstrualLossReported=<hidden>, safetyHold=" + safetyHold
-                + ", cycleResolved=<hidden>, miniCutUntil=" + miniCutUntil.map(Object::toString).orElse("none") + ", checkIn=" + checkIn + "]";
+                + ", cycleResolved=<hidden>, miniCutUntil=" + miniCutUntil.map(Object::toString).orElse("none") + ", checkIn=" + checkIn
+                + ", context=" + (context.isPresent() ? "<hidden>" : "none") + "]";
+    }
+
+    /** Every input but a declared state (none). */
+    public Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, WeightSeries weights, Optional<BigDecimal> fatProxyPct,
+            Optional<EnergyBudget> energy, boolean menstrualLossReported, CheckIn checkIn, Optional<Profile> profile, boolean observingMaintenance,
+            LocalDate phaseStart, Optional<TrainingStatus> training, Optional<BigDecimal> fatProxyHighPct, boolean safetyHold, boolean cycleResolved,
+            Optional<LocalDate> miniCutUntil, Optional<BigDecimal> fatProxyEnergyPct) {
+        this(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart,
+                training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, Optional.empty());
     }
 
     /** A Snapshot without a body-fat estimate (none measured yet). */
@@ -149,54 +162,61 @@ public record Snapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStar
     /** With the end the low-energy rule reads (K-230): the waist's estimate at the cautious end of its band. */
     public Snapshot withFatProxy(BigDecimal lowerPct, BigDecimal higherPct, BigDecimal energyPct) {
         return new Snapshot(today, sex, phase, planStart, weights, Optional.of(lowerPct), energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training, Optional.of(higherPct), safetyHold, cycleResolved, miniCutUntil, Optional.of(energyPct));
+                observingMaintenance, phaseStart, training, Optional.of(higherPct), safetyHold, cycleResolved, miniCutUntil, Optional.of(energyPct), context);
     }
 
     public Snapshot withEnergy(EnergyBudget budget) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, Optional.of(budget), menstrualLossReported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     public Snapshot withMenstrualLossReported(boolean reported) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, reported, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     public Snapshot withCheckIn(CheckIn answers) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, answers, profile, observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     public Snapshot withProfile(Profile facts) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, Optional.of(facts), observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     public Snapshot withObservingMaintenance(boolean observing) {
-        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile, observing, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     public Snapshot withPhaseStart(LocalDate day) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, day, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+                observingMaintenance, day, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     public Snapshot withTraining(TrainingStatus status) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, Optional.of(status), fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+                observingMaintenance, phaseStart, Optional.of(status), fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     /** After a hard stop, until a deficit is opened again (K-229). */
     public Snapshot withSafetyHold(boolean held) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training, fatProxyHighPct, held, cycleResolved, miniCutUntil, fatProxyEnergyPct);
+                observingMaintenance, phaseStart, training, fatProxyHighPct, held, cycleResolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     /** This week's answer to the cycle question is "not stopped" (K-229; never kept). */
     public Snapshot withCycleResolved(boolean resolved) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, resolved, miniCutUntil, fatProxyEnergyPct);
+                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, resolved, miniCutUntil, fatProxyEnergyPct, context);
     }
 
     /** On a mini cut that ends on this day (K-227). */
     public Snapshot withMiniCutUntil(LocalDate day) {
         return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
-                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, Optional.of(day), fatProxyEnergyPct);
+                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, Optional.of(day), fatProxyEnergyPct, context);
+    }
+
+    /** A state the user declared on a day of this check-in week (K-516). */
+    public Snapshot withContext(DeclaredContext declared) {
+        return new Snapshot(today, sex, phase, planStart, weights, fatProxyPct, energy, menstrualLossReported, checkIn, profile,
+                observingMaintenance, phaseStart, training, fatProxyHighPct, safetyHold, cycleResolved, miniCutUntil, fatProxyEnergyPct,
+                Optional.of(declared));
     }
 }

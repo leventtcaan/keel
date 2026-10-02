@@ -218,6 +218,45 @@ class DecisionPipelineTests {
                 });
     }
 
+    // ── state mode (K-516, ADR-038) ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void aDeclaredStateMakesTheWeeksCallWaitAndSaysWhy() {
+        // A flat cut would step the calories down; a week the user declared disturbed is not read (H1: water, sodium).
+        for (DeclaredContext context : DeclaredContext.values()) {
+            Decision decision = DecisionPipeline.decide(user(Phase.CUT, weekly("80.0", "80.0", "80.0")).withContext(context), MALE);
+
+            assertThat(decision.action()).as(context.name()).isEqualTo(new Action.NoDecisionYet());
+            assertThat(decision.reasons()).extracting(Reason::rule).containsExactly(new RuleId("declared_context"));
+            assertThat(decision.reasons().getFirst().source()).isEqualTo(new Source("arastirma/ham/H1-olcum.md#3.4", SourceTag.LITERATURE));
+            assertThat(decision.confidence()).isEqualTo(Confidence.LOW);
+            assertThat(decision.copyKey()).isEqualTo(new CopyKey("decision.no_decision_yet.declared_context"));
+            assertThat(decision.nextReview()).isEqualTo(TODAY.plusDays(7));
+        }
+    }
+
+    @Test
+    void noDeclaredStateQuietsTheSafetyNet() {
+        // U13: losing too fast is answered whatever the week was.
+        Snapshot snapshot = user(Phase.CUT, weekly("70.9", "70.9", "70.0")).withContext(DeclaredContext.SICK);
+
+        assertThat(DecisionPipeline.decide(snapshot, MALE).action()).isInstanceOf(Action.IncreaseCalories.class);
+    }
+
+    @Test
+    void sessionsMissedWhileDeclaredAreNoWeekOff() {
+        // A sick week's missed sessions are not overtraining (G7 K-70): the call waits instead.
+        Snapshot snapshot = user(Phase.CUT, weekly("80.0", "80.0", "80.0")).withTraining(PLAN_MISSED).withContext(DeclaredContext.SICK);
+
+        assertThat(DecisionPipeline.decide(snapshot, MALE).action()).isEqualTo(new Action.NoDecisionYet());
+    }
+
+    @Test
+    void theDeclaredStateIsHealthDataAndNeverPrinted() {
+        assertThat(user(Phase.CUT, weekly("80.0")).withContext(DeclaredContext.SICK).toString()).doesNotContain("SICK").contains("context=<hidden>");
+        assertThat(user(Phase.CUT, weekly("80.0")).toString()).contains("context=none");
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
 
     /** A man on a plan that started with the first weigh-in of {@code weights}, on the plan, with a target and a profile. */

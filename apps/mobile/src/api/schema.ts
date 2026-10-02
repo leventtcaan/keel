@@ -1598,6 +1598,11 @@ export interface components {
             done: number;
             /** @description done over planned, rounded down; absent while nothing is planned. */
             percent?: number;
+            /**
+             * @description Present (true) when a state was declared on a day of this week (K-516, ADR-038): the week is neither on track
+             *     nor missed, and the record leaves it out.
+             */
+            paused?: boolean;
             /** @description Weeks over since the first call; a week is on track at on_track_min_ratio (K-111). Never reset. */
             record: {
                 onTrackWeeks: number;
