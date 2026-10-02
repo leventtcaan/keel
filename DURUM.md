@@ -457,6 +457,8 @@ görülemez; kod + test + Expo Go'da yetenek "kullanılamaz" yolu. Ana checkout 
 - **Yeni sorular:** 50-54 (aşağıda). Hepsi (33-54) bu oturumun sonunda AskUserQuestion ile soruluyor.
 
 ## Session sonunda Levent'e sorulacaklar
+**33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
+olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
     Seyrek raflı salonda sıçrama büyük olabilir (dambıllar 10 → 20 kg: +2,5 hedefi 20 olur, +%100). Kaynaklı bir sıçrama sınırı
     yok. Seçenekler: (a) böyle kalsın; (b) en yakın ağır yük motor adımının 2 katından uzaksa tekrar artışına çevrilsin

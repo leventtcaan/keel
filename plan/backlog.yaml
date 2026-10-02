@@ -1809,6 +1809,135 @@ tasks:
     refs: ["arastirma/ham/L3-ozellik-boslugu.md", "plan/kararlar/ADR-036-bildirimler.md"]
     learn: ["Live Activities", "Widget extension", "App Groups"]
 
+  - id: K-428
+    title: "Sağlık rızası geri çekilince açık 'yükü tut' biter"
+    milestone: M4
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-231, K-217]
+    why: "ADR-037 #34: geri çekmede kararlar silinir, deload merdiveninin ilk basamağını bitirecek karar gelmez → yük artışı donardı"
+    acceptance:
+      - "HEALTH_DATA geri çekilince programdaki açık `loadHeldSince` temizlenir (aynı transaction, K-231 dinleyicisi gibi)"
+      - "Sonraki bitişte hedef normal ilerler; rıza dönünce merdiven baştan (gözlemle) başlar"
+    tests:
+      - "ConsentWithdrawalDeletionTests (yükü tut biter)"
+    refs: ["plan/kararlar/ADR-037-m4-sonu-cevaplari.md"]
+    learn: ["Modüller arası olay"]
+  - id: K-429
+    title: "Sağlık verisi rıza metni: geri çekince silinir (sürüm 2-draft)"
+    milestone: M4
+    module: mobile
+    type: chore
+    size: S
+    status: todo
+    depends_on: [K-231]
+    why: "ADR-037 #36: K-231'den beri geri çekme bağlı veriyi siler; rıza metni hâlâ 'çağrılar durur' diyordu"
+    acceptance:
+      - "`consent.health_data.body` geri çekmenin bağlı veriyi sildiğini söyler; sürüm `2-draft` (telefon ve sunucu aynı)"
+      - "Eski sürümle verilmiş rıza yeniden onay ister (sunucunun mevcut sürüm kuralı)"
+    tests:
+      - "consent-versions.test.ts, yasaklı ifade taraması"
+    refs: ["plan/kararlar/ADR-037-m4-sonu-cevaplari.md", "plan/kararlar/ADR-028-m3-basi-cevaplari.md"]
+    learn: ["Rıza sürümleme"]
+  - id: K-430
+    title: "Yuvarlamada büyük sıçrama: yük tutulur, tekrar artar"
+    milestone: M4
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-414]
+    why: "ADR-037 #38: seyrek raflı salonda en yakın ağır yük +%100 olabiliyordu (dambıl 10 → 20)"
+    acceptance:
+      - "En yakın ağır yük motor adımının 2 katından uzaksa yük son yükte kalır, hedef tekrar artar (parametre, `urun`, TÜRETİLMİŞ)"
+      - "Java `LoadSteps` ve TS `loadSteps.ts` aynı; ortak vakalar `contracts/fixtures/load-steps.json`"
+    tests:
+      - "LoadStepsTests + load-steps.test.ts (ortak vakalar)"
+    refs: ["plan/kararlar/ADR-032-salon-profili-ve-yuvarlama.md", "plan/kararlar/ADR-037-m4-sonu-cevaplari.md"]
+    learn: ["İki dilde aynı kural"]
+  - id: K-431
+    title: "Yalnız çalışma seti olan antrenman seans sayılır"
+    milestone: M4
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-420, K-220]
+    why: "ADR-037 #39: sunucu setsiz antrenmanı da yapılan seans sayıyordu (tutarlılık + uyum)"
+    acceptance:
+      - "`TrainingLog.workoutStarts` (ve tutarlılık) yalnız en az bir WORKING seti olan antrenmanı sayar"
+      - "ConsistencyApiTests fikstürüne set eklenmesi K1 onaylı (ADR-037 #39)"
+    tests:
+      - "ConsistencyApiTests, uyum okuması testleri"
+    refs: ["plan/kararlar/ADR-037-m4-sonu-cevaplari.md"]
+    learn: ["Sayım tanımı"]
+  - id: K-432
+    title: "Son bitmiş seans düzenlenince sonraki hedefler yeniden hesaplanır"
+    milestone: M4
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-416, K-217]
+    why: "ADR-037 #48 (agent): düzenleme veriyi düzeltir, U2 — yanlış veriden türemiş hedef kalmaz"
+    acceptance:
+      - "Programın o gününün son bitmiş seansında set silinir/eklenirse sonraki hedef (yük/tekrar, tut, deload) o seanstan yeniden türetilir"
+      - "Daha eski seansın düzenlenmesi hedefi değiştirmez; telefondaki 'değiştirmez' notu yalnız o durumda"
+    tests:
+      - "WorkoutEditTests (hedef yeniden hesap / eski seans)"
+    refs: ["plan/kararlar/ADR-037-m4-sonu-cevaplari.md"]
+    learn: ["Türetilmiş durum"]
+  - id: K-433
+    title: "Kas haritası profildeki cinsiyete göre figür"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-418]
+    why: "ADR-037 #49"
+    acceptance:
+      - "`react-native-body-highlighter` `gender` profildeki cinsiyetten; profil okunamazsa bugünkü figür"
+      - "Bölge eşlemesi iki figürde de geçerli (her ad çizimde var)"
+    tests:
+      - "exercise-screen.test.tsx (iki figür)"
+    refs: ["plan/kararlar/ADR-037-m4-sonu-cevaplari.md"]
+    learn: ["Profil verisini ekrana taşımak"]
+  - id: K-434
+    title: "Onboarding sonunda hatırlatma adımı"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-410, K-306]
+    why: "ADR-037 #51 (agent): I1 C3 — rutin cümlesi onboarding'de kurulur; antrenman saati orada soruluyor"
+    acceptance:
+      - "Onboarding'in son adımı: üç türün açıklaması, kendi cümlesi (isteğe bağlı), 'Aç' (iOS izni) / 'Şimdi değil'"
+      - "Seçim Ayarlar › Reminders ile aynı servisten; 'Şimdi değil' hiçbir şey sormaz"
+    tests:
+      - "onboarding-flow.test.tsx (hatırlatma adımı)"
+    refs: ["plan/kararlar/ADR-037-m4-sonu-cevaplari.md", "plan/kararlar/ADR-036-bildirimler.md"]
+    learn: ["İzin isteme anı"]
+  - id: K-435
+    title: "Mola haftasında antrenman hatırlatması susar"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-410, K-405]
+    why: "ADR-037 #51b: mola planın parçası; antrenman çağrısı onunla çelişir"
+    acceptance:
+      - "Program `restUntil` ileride iken o tarihe kadar antrenman hatırlatması yok; sonra kendiliğinden döner (uygulama açılmasa da)"
+      - "Check-in ve sessizlik mesajı etkilenmez"
+    tests:
+      - "reminder-plan.test.ts (mola haftası)"
+    refs: ["plan/kararlar/ADR-037-m4-sonu-cevaplari.md"]
+    learn: ["Tarihli tetikleyiciler"]
+
   - id: K-313
     title: "Onboarding: referans görünüş adımı"
     milestone: M4
