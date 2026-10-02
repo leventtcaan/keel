@@ -91,6 +91,7 @@ export function buildSet(
   entry: Entry,
   rir: number,
   note?: string,
+  supersetId?: string,
 ): Schemas['NewSet'] {
   const words = noteOf(note);
   return {
@@ -102,5 +103,6 @@ export function buildSet(
     rir,
     side,
     ...(words === null ? {} : { note: words }),
+    ...(supersetId === undefined ? {} : { supersetId }),
   };
 }

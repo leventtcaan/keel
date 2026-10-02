@@ -6,6 +6,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
 import WorkoutSummaryScreen from '@/app/workout-summary';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
@@ -62,7 +63,13 @@ const RECORDS = [
 ];
 const mockData: TrainData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
 let mockOwn: Move[] = [];
-const mockServices = { api: {}, training: { read: async () => mockData, own: async () => mockOwn }, workoutRecords: async () => RECORDS, report: jest.fn() };
+let mockRecords: LocalRecord[] | null = null; // a test's own records; null: the shared ones
+const mockServices = {
+  api: {},
+  training: { read: async () => mockData, own: async () => mockOwn },
+  workoutRecords: async () => mockRecords ?? RECORDS,
+  report: jest.fn(),
+};
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
 test('the moves that reached the target effort, what improved, and a note where the effort was short', async () => {
@@ -94,8 +101,8 @@ test('one move judged reads as one exercise', async () => {
 });
 
 test("the user's own move by the name they gave", async () => {
+  mockRecords = [...RECORDS.slice(0, -1), set('w1', 'x', 'custom:1', 30, 10, 1), ...RECORDS.slice(-1)];
   mockOwn = [{ id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] }];
-  RECORDS.splice(RECORDS.length - 1, 0, set('w1', 'x', 'custom:1', 30, 10, 1));
   await render(
     <ThemeProvider>
       <WorkoutSummaryScreen />
@@ -103,4 +110,16 @@ test("the user's own move by the name they gave", async () => {
   );
   expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
   expect(screen.queryByText('custom:1')).toBeNull();
+});
+
+test('a superset reads as one: each move says its partner', async () => {
+  const grouped = (r: LocalRecord) => ({ ...r, body: { ...(r.body as object), supersetId: 'g1' } });
+  mockRecords = [...RECORDS.slice(0, -1).map((r) => (r.clientId === 'b' ? grouped(r) : r)), grouped(set('w1', 'y', 'lateral_raise', 12.5, 12, 1)), ...RECORDS.slice(-1)];
+  await render(
+    <ThemeProvider>
+      <WorkoutSummaryScreen />
+    </ThemeProvider>,
+  );
+  expect(await screen.findByText(t('superset.with', { names: t('exercises.lateral_raise.name') }))).toBeOnTheScreen();
+  expect(screen.getByText(t('superset.with', { names: 'Bench press' }))).toBeOnTheScreen();
 });

@@ -15,7 +15,9 @@ import { tokens } from '@/theme/tokens';
 import { type Loaded, load, localDay } from '@/today/today';
 import { type Entry, SetEntry } from '@/train/SetEntry';
 import { SetLine } from '@/train/SetLine';
+import { SupersetLine } from '@/train/SupersetLink';
 import { exerciseName, shortDate } from '@/train/program';
+import { supersetPartners } from '@/train/superset';
 import { type Move, movesOf } from '@/train/trainData';
 import { buildSet, parseEntry, setText } from '@/train/session';
 import { weightInput } from '@/units/units';
@@ -64,6 +66,7 @@ export default function WorkoutEditScreen() {
   const sets = session?.state === 'ready' && !underWay ? session.value.sets : [];
   // The session's moves, in the order first done; a move the catalog no longer has cannot be written (its load model).
   const order = [...new Set(sets.map((s) => s.exerciseId))].filter((id) => moves.has(id));
+  const partners = supersetPartners(sets);
   const chosen = picked !== null && order.includes(picked) ? picked : (order[0] ?? null);
   const move = chosen === null ? undefined : moves.get(chosen);
   const rowSide: Schemas['Side'] = move?.unilateral === true ? side : 'BOTH';
@@ -144,6 +147,7 @@ export default function WorkoutEditScreen() {
     return (
       <Card key={id}>
         <Text style={[styles.heading, { color: color.text }]}>{exerciseName(id, moves)}</Text>
+        <SupersetLine partners={partners.get(id)} moves={moves} />
         {sets
           .filter((s) => s.exerciseId === id)
           .map((s) => {

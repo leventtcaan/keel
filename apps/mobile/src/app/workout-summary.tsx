@@ -11,7 +11,9 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { SupersetLine } from '@/train/SupersetLink';
 import { exerciseName } from '@/train/program';
+import { supersetPartners } from '@/train/superset';
 import { setText } from '@/train/session';
 import { type Summary, summarize } from '@/train/summary';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
@@ -36,11 +38,13 @@ export default function WorkoutSummaryScreen() {
   }, [api, training, workoutRecords, report]);
 
   let summary: Summary | null = null;
+  let partners = new Map<string, string[]>();
   const moves = movesOf(read?.data ?? null, read?.own ?? []);
   if (read !== null) {
     const program = read.data.program.state === 'ready' ? read.data.program.value : null;
     const dayId = workoutOf(read.records, workout)?.programDayId;
     const planned = program?.days.find((d) => d.id === dayId)?.exercises ?? [];
+    partners = supersetPartners(setsOf(read.records, workout));
     summary = summarize(setsOf(read.records, workout), (id) => lastTime(read.records, id, workout), moves, planned, units);
   }
 
@@ -61,6 +65,7 @@ export default function WorkoutSummaryScreen() {
     return (
       <Card key={done.exerciseId}>
         <Text style={[styles.heading, { color: color.text }]}>{exerciseName(done.exerciseId, moves)}</Text>
+        <SupersetLine partners={partners.get(done.exerciseId)} moves={moves} />
         {done.line !== null && <Text style={[styles.text, { color: color.accent }]}>{done.line}</Text>}
         {move !== undefined &&
           done.sets.map((s) => (

@@ -208,6 +208,15 @@
       "none": "No move by that name in the catalog. Try other words."
     }
   },
+  "superset": {
+    "link": "Superset with…",
+    "pick": "Superset with {name}",
+    "with": "Superset with {names}",
+    "separator": ", ",
+    "unlink": "Not a superset",
+    "choose": "Back to back with which move?",
+    "close": "Cancel"
+  },
   "ownMove": {
     "title": "Your own move",
     "similar": "Is it one of these?",
