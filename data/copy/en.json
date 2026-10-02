@@ -168,6 +168,7 @@
     "sets": "{count} sets",
     "setsOne": "1 set",
     "setOf": "Set {number} of {count}",
+    "setNumber": "Set {number}",
     "allDone": "All sets done",
     "finish": "Finish workout",
     "form": {
@@ -197,6 +198,13 @@
       "add": "Add a note",
       "label": "Note on this set",
       "session": "Note on this workout (optional)"
+    },
+    "add": {
+      "open": "Add a move",
+      "search": "Find a move",
+      "pick": "Add {name}",
+      "close": "Close",
+      "none": "No move by that name in the catalog. Try other words."
     }
   },
   "summary": {

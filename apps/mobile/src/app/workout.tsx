@@ -8,6 +8,7 @@ import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
@@ -20,10 +21,12 @@ import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
 import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
+import { findMoves } from '@/train/moves';
+import { workoutParams } from '@/train/params';
 import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
 import type { TrainData } from '@/train/trainData';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
-import { type ExercisePlan, activeWorkout, finishRecord, lastTime, planExercise } from '@/train/workout';
+import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise } from '@/train/workout';
 import { weightInput } from '@/units/units';
 
 /**
@@ -42,7 +45,7 @@ export default function WorkoutScreen() {
   const { color } = useTheme();
   const [data, setData] = useState<TrainData | null>(null);
   const [records, setRecords] = useState<LocalRecord[] | null>(null);
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
   const [rest, setRest] = useState<number | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
@@ -52,6 +55,8 @@ export default function WorkoutScreen() {
   // Two taps in one frame, before `busy` disables the button, must not log the set twice.
   const saving = useRef(false);
   const [failed, setFailed] = useState(false);
+  // The "Add a move" search: null while closed, what is typed while open.
+  const [adding, setAdding] = useState<string | null>(null);
 
   const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
   // A failed read back is not a failed save: the set is kept; the screen catches up at the next read.
@@ -79,18 +84,33 @@ export default function WorkoutScreen() {
   const [held, setHeld] = useState<components['schemas']['NewSet'][]>([]);
   const warmedUp = [...done, ...held];
   const moves = useMemo(() => new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m])), [data]);
+  // The session's moves (K-416): the day's plan, then the moves done in this session outside it (a swap, an extra; read
+  // back from the sets), then the ones added on this screen in the order they were added — a first set does not move
+  // one ahead of the others.
+  const [added, setAdded] = useState<string[]>([]);
+  const planIds = day?.exercises.map((p) => p.exerciseId) ?? [];
+  const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
+    (id) => !planIds.includes(id) && moves.has(id),
+  );
+  const entries: { exerciseId: string; planned?: components['schemas']['PlannedExercise'] }[] =
+    day === null ? [] : [...day.exercises.map((p) => ({ exerciseId: p.exerciseId, planned: p })), ...extraIds.map((exerciseId) => ({ exerciseId }))];
   const plans: (ExercisePlan | null)[] =
-    day === null || records === null
+    records === null
       ? []
-      : day.exercises.map((planned) => {
-          const move = moves.get(planned.exerciseId);
-          return move === undefined ? null : planExercise(planned, move, lastTime(records, planned.exerciseId, active?.clientId ?? ''), done);
+      : entries.map(({ exerciseId, planned }) => {
+          const move = moves.get(exerciseId);
+          const last = lastTime(records, exerciseId, active?.clientId ?? '');
+          return move === undefined ? null : planned === undefined ? extraPlan(move, last, done) : planExercise(planned, move, last, done);
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
-  const selected = picked ?? (firstOpen < 0 ? 0 : firstOpen);
+  // The move picked, by its id: the list can grow or change order under it.
+  const pickedAt = entries.findIndex((e) => e.exerciseId === picked);
+  const selected = pickedAt >= 0 ? pickedAt : firstOpen < 0 ? 0 : firstOpen;
   const plan = plans[selected] ?? null;
-  const planned = day?.exercises[selected];
-  const move = planned === undefined ? undefined : moves.get(planned.exerciseId);
+  const entry_ = entries[selected];
+  const planned = entry_?.planned;
+  const moveId = entry_?.exerciseId;
+  const move = moveId === undefined ? undefined : moves.get(moveId);
   const row = plan === null || plan.current === null ? null : plan.rows[plan.current];
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
   const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
@@ -101,7 +121,7 @@ export default function WorkoutScreen() {
 
   // The fields hold the row under way: its suggestion until the user changes it. What was typed belongs to its row, so a
   // new row starts from its own suggestion, and a problem said about one row is gone at the next.
-  const rowKey = `${selected}-${plan?.current ?? 'done'}`;
+  const rowKey = `${moveId ?? ''}-${plan?.current ?? 'done'}`;
   const [typed, setTyped] = useState<{ row: string; load: string; reps: string; rir: number; note: string | null } | null>(null);
   const entry =
     typed !== null && typed.row === rowKey
@@ -109,8 +129,9 @@ export default function WorkoutScreen() {
       : {
           row: rowKey,
           load: row === null || row.suggested.loadKg === null ? '' : weightInput(row.suggested.loadKg, units),
-          reps: row === null ? '' : String(row.suggested.reps),
-          rir: planned?.targetRir ?? 0,
+          reps: row === null || row.suggested.reps === null ? '' : String(row.suggested.reps),
+          // A move outside the plan has no target of its own: the work sets' aim (G1 K-5, target_rir_max).
+          rir: planned?.targetRir ?? workoutParams.targetRirMax,
           note: null,
         };
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
@@ -148,8 +169,8 @@ export default function WorkoutScreen() {
     }
     if (saved) {
       setRest(new Date().getTime());
-      // The move picked is done: the next one with sets left comes up.
-      if (plan.current === plan.rows.length - 1) setPicked(null);
+      // The move picked is done: the next one with sets left comes up. A move outside the plan is never done (no count).
+      if (planned !== undefined && plan.current === plan.rows.length - 1) setPicked(null);
       await refresh();
     }
     saving.current = false;
@@ -202,7 +223,8 @@ export default function WorkoutScreen() {
   };
   const finishProblem = problem !== null && problem.row === FINISH ? <Text style={[styles.text, { color: color.text }]}>{problem.text}</Text> : null;
 
-  const movesDone = plans.filter((p) => p !== null && p.rows.some((r) => r.done !== null)).length;
+  // Progress is the plan's: a move outside it is not one of the day's count.
+  const movesDone = plans.filter((p, i) => entries[i]?.planned !== undefined && p !== null && p.rows.some((r) => r.done !== null)).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   const onFinish = () => {
     if (active === null) router.back();
@@ -210,9 +232,41 @@ export default function WorkoutScreen() {
     else setFinishing(true);
   };
 
+  // Adding a move outside the plan (K-416): found in the catalog by name or alias, on the phone (offline too).
+  const addMove = (id: string) => {
+    setAdded((before) => (before.includes(id) ? before : [...before, id]));
+    setPicked(id);
+    setAdding(null);
+  };
+  const found = adding === null ? [] : findMoves(adding, [...moves.values()], new Set(entries.map((e) => e.exerciseId)));
+  const addNote =
+    adding !== null && adding.trim() !== '' && found.length === 0 ? (
+      <Text style={[styles.small, { color: color.muted }]}>{t('workout.add.none')}</Text>
+    ) : null;
+  const addPanel =
+    day === null ? null : adding === null ? (
+      <Button label={t('workout.add.open')} variant="ghost" size="sm" onPress={() => setAdding('')} />
+    ) : (
+      <View style={styles.list}>
+        <TextField label={t('workout.add.search')} value={adding} onChangeText={setAdding} onSearch={() => undefined} /* live search: the key only closes the keyboard */ />
+        {found.map((m) => (
+          <Pressable
+            key={m.id}
+            accessibilityRole="button"
+            accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id) })}
+            onPress={() => addMove(m.id)}
+            style={styles.move}>
+            <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id)}</Text>
+          </Pressable>
+        ))}
+        {addNote}
+        <Button label={t('workout.add.close')} variant="ghost" size="sm" onPress={() => setAdding(null)} />
+      </View>
+    );
+
   const list = (
     <View style={styles.list}>
-      {day?.exercises.map((p, index) => {
+      {entries.map((p, index) => {
         const status = plans[index];
         const on = index === selected;
         return (
@@ -220,7 +274,7 @@ export default function WorkoutScreen() {
             key={`${p.exerciseId}-${index}`}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
-            onPress={() => setPicked(index)}
+            onPress={() => setPicked(p.exerciseId)}
             style={[styles.move, on && { backgroundColor: color.surface }]}>
             <Text style={[styles.text, styles.grow, { color: status?.current === null ? color.muted : color.text }]}>
               {exerciseName(p.exerciseId)}
@@ -260,22 +314,25 @@ export default function WorkoutScreen() {
         busy={busy}
       />
     );
+  // A move outside the plan has no target RIR line: there is no plan to aim at.
+  const targetLine =
+    planned === undefined ? null : <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>;
   const card =
-    planned === undefined ? null : move === undefined || plan === null ? (
+    moveId === undefined ? null : move === undefined || plan === null ? (
       <Card>
-        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(planned.exerciseId)}</Text>
+        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(moveId)}</Text>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.unknownMove')}</Text>
       </Card>
     ) : (
       <Card>
         <View style={styles.cardHead}>
-          <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(planned.exerciseId)}</Text>
-          <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>
+          <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(moveId)}</Text>
+          {targetLine}
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(planned.exerciseId) })}
-          onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: planned.exerciseId } })}>
+          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId) })}
+          onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}>
           <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
         </Pressable>
         {warmBlock}
@@ -317,6 +374,7 @@ export default function WorkoutScreen() {
   const session = (
     <>
       {list}
+      {addPanel}
       {card}
       {rest !== null && <RestTimer since={rest} />}
       {dayGone}

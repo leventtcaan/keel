@@ -19,6 +19,7 @@ export const workoutParams = {
   targetRirMax: param<number>('target_rir_max'),
   historyDays: param<number>('history_days'),
   noteMaxChars: param<number>('note_max_chars'),
+  moveSearchResults: param<number>('move_search_results'),
   warmup: {
     first: {
       sets: param<number>('warmup_sets_first_move'),

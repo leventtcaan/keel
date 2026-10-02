@@ -25,9 +25,10 @@ export function restText(seconds: number): string {
   return t('workout.rest.time', { minutes: Math.floor(seconds / 60), seconds: String(seconds % 60).padStart(2, '0') });
 }
 
-/** The sets planned before any is done, the set under way, or all done. */
+/** The sets planned before any is done, the set under way, or all done; a move outside the plan has no count to say. */
 export function exerciseStatus(plan: ExercisePlan): string {
   if (plan.current === null) return t('workout.allDone');
+  if (plan.open === true) return t('workout.setNumber', { number: plan.current + 1 });
   if (plan.current === 0) return plan.rows.length === 1 ? t('workout.setsOne') : t('workout.sets', { count: plan.rows.length });
   return t('workout.setOf', { number: plan.current + 1, count: plan.rows.length });
 }
