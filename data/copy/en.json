@@ -168,6 +168,7 @@
     "sets": "{count} sets",
     "setsOne": "1 set",
     "setOf": "Set {number} of {count}",
+    "setNumber": "Set {number}",
     "allDone": "All sets done",
     "finish": "Finish workout",
     "form": {

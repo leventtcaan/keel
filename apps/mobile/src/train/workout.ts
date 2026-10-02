@@ -27,8 +27,11 @@ export type SetRow = {
   done: NewSet | null;
 };
 
-/** `current`: the first row not done yet; null when every planned row is done. */
-export type ExercisePlan = { exerciseId: string; rows: SetRow[]; current: number | null };
+/**
+ * `current`: the first row not done yet; null when every planned row is done. `open`: a move outside the plan — its rows
+ * end in one open row, there is no count to reach (K-416).
+ */
+export type ExercisePlan = { exerciseId: string; rows: SetRow[]; current: number | null; open?: true };
 
 /** Records the server took or will take: a refused one is not part of what was done. */
 const kept = (record: LocalRecord) => record.state !== 'REJECTED';
@@ -105,9 +108,10 @@ export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas[
 
 /**
  * A move added to the session outside the plan (K-416): the work sets done, then one open row — as many as the user
- * does, there is no planned count. The open row suggests the load just lifted in this session, else last time's at that
- * row, else last time's heaviest; the reps likewise; never done before, nothing (the user types it). A bodyweight move's
- * load is 0, a one-sided move has a row a side, as for a planned move.
+ * does, there is no planned count. The open row suggests the load just lifted on its side in this session, else last
+ * time's at that row, else last time's heaviest on that side, else the set just done on the other side (the right after
+ * the left); the reps likewise; never done before, nothing (the user types it). A bodyweight move's load is 0, a one-sided
+ * move has a row a side, as for a planned move.
  */
 export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSet[]): ExercisePlan {
   const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
@@ -123,7 +127,7 @@ export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSe
       const mine = ofSide(working, side);
       const lastRows = ofSide(last, side);
       const heaviest = lastRows.reduce<NewSet | null>((top, s) => (top === null || s.loadKg > top.loadKg ? s : top), null);
-      const from = mine[Math.min(i, mine.length) - 1] ?? lastRows[i] ?? heaviest;
+      const from = mine[Math.min(i, mine.length) - 1] ?? lastRows[i] ?? heaviest ?? working.at(-1);
       rows.push({
         side,
         suggested: { loadKg: move.load === 'BODYWEIGHT' ? 0 : (from?.loadKg ?? null), reps: from?.reps ?? null },
@@ -133,7 +137,7 @@ export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSe
     }
   }
   const current = rows.findIndex((row) => row.done === null);
-  return { exerciseId: move.id, rows, current: current < 0 ? null : current };
+  return { exerciseId: move.id, rows, current: current < 0 ? null : current, open: true };
 }
 
 /** The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31). */

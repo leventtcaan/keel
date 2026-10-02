@@ -250,4 +250,36 @@ describe('a move added to the session, outside the plan (K-416)', () => {
   test("other moves' sets are not its", () => {
     expect(extraPlan(benchMove, [], [done('squat', 100, 5)]).rows).toHaveLength(1);
   });
+
+  test("this session's set comes before last time's at the same row; last time's row is shown beside it", () => {
+    const last = [done('bench_press', 50, 10), done('bench_press', 50, 10), done('bench_press', 50, 10)];
+    const plan = extraPlan(benchMove, last, [done('bench_press', 60, 8)]);
+    expect(plan.rows[1].suggested).toEqual({ loadKg: 60, reps: 8 });
+    expect(plan.rows[1].last).toEqual(last[1]);
+  });
+
+  test("past last time's rows on a side, that side's heaviest last time; never done on it, the other side's set just done", () => {
+    const last = [done('one_arm_dumbbell_row', 30, 8, 'RIGHT')];
+    const uneven = extraPlan(rowMove, last, [done('one_arm_dumbbell_row', 32, 8, 'LEFT'), done('one_arm_dumbbell_row', 34, 8, 'LEFT')]);
+    expect(uneven.rows[3]).toMatchObject({ side: 'RIGHT', suggested: { loadKg: 30, reps: 8 } });
+    expect(extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT')]).rows[1].suggested).toEqual({ loadKg: 20, reps: 10 });
+  });
+
+  test('both sides done: a new round opens, left first', () => {
+    const plan = extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT'), done('one_arm_dumbbell_row', 20, 10, 'RIGHT')]);
+    expect(plan.rows.map((r) => [r.side, r.done === null])).toEqual([
+      ['LEFT', false],
+      ['RIGHT', false],
+      ['LEFT', true],
+      ['RIGHT', true],
+    ]);
+    expect(plan.current).toBe(2);
+  });
+
+  test('a warm-up is not a work row, nor what the open row suggests', () => {
+    const warmup = { ...done('bench_press', 20, 5), setType: 'WARM_UP' } as Schemas['NewSet'];
+    const plan = extraPlan(benchMove, [], [warmup]);
+    expect(plan.rows).toHaveLength(1);
+    expect(plan.rows[0]).toMatchObject({ done: null, suggested: { loadKg: null, reps: null } });
+  });
 });

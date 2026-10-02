@@ -45,7 +45,7 @@ export default function WorkoutScreen() {
   const { color } = useTheme();
   const [data, setData] = useState<TrainData | null>(null);
   const [records, setRecords] = useState<LocalRecord[] | null>(null);
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
   const [rest, setRest] = useState<number | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
@@ -85,10 +85,13 @@ export default function WorkoutScreen() {
   const warmedUp = [...done, ...held];
   const moves = useMemo(() => new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m])), [data]);
   // The session's moves (K-416): the day's plan, then the moves done in this session outside it (a swap, an extra; read
-  // back from the sets), then the ones just added, not yet done (kept on the screen until their first set).
+  // back from the sets), then the ones added on this screen in the order they were added — a first set does not move
+  // one ahead of the others.
   const [added, setAdded] = useState<string[]>([]);
   const planIds = day?.exercises.map((p) => p.exerciseId) ?? [];
-  const extraIds = [...new Set([...done.map((s) => s.exerciseId), ...added])].filter((id) => !planIds.includes(id) && moves.has(id));
+  const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
+    (id) => !planIds.includes(id) && moves.has(id),
+  );
   const entries: { exerciseId: string; planned?: components['schemas']['PlannedExercise'] }[] =
     day === null ? [] : [...day.exercises.map((p) => ({ exerciseId: p.exerciseId, planned: p })), ...extraIds.map((exerciseId) => ({ exerciseId }))];
   const plans: (ExercisePlan | null)[] =
@@ -100,7 +103,9 @@ export default function WorkoutScreen() {
           return move === undefined ? null : planned === undefined ? extraPlan(move, last, done) : planExercise(planned, move, last, done);
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
-  const selected = picked ?? (firstOpen < 0 ? 0 : firstOpen);
+  // The move picked, by its id: the list can grow or change order under it.
+  const pickedAt = entries.findIndex((e) => e.exerciseId === picked);
+  const selected = pickedAt >= 0 ? pickedAt : firstOpen < 0 ? 0 : firstOpen;
   const plan = plans[selected] ?? null;
   const entry_ = entries[selected];
   const planned = entry_?.planned;
@@ -116,7 +121,7 @@ export default function WorkoutScreen() {
 
   // The fields hold the row under way: its suggestion until the user changes it. What was typed belongs to its row, so a
   // new row starts from its own suggestion, and a problem said about one row is gone at the next.
-  const rowKey = `${selected}-${plan?.current ?? 'done'}`;
+  const rowKey = `${moveId ?? ''}-${plan?.current ?? 'done'}`;
   const [typed, setTyped] = useState<{ row: string; load: string; reps: string; rir: number; note: string | null } | null>(null);
   const entry =
     typed !== null && typed.row === rowKey
@@ -164,8 +169,8 @@ export default function WorkoutScreen() {
     }
     if (saved) {
       setRest(new Date().getTime());
-      // The move picked is done: the next one with sets left comes up.
-      if (plan.current === plan.rows.length - 1) setPicked(null);
+      // The move picked is done: the next one with sets left comes up. A move outside the plan is never done (no count).
+      if (planned !== undefined && plan.current === plan.rows.length - 1) setPicked(null);
       await refresh();
     }
     saving.current = false;
@@ -218,7 +223,8 @@ export default function WorkoutScreen() {
   };
   const finishProblem = problem !== null && problem.row === FINISH ? <Text style={[styles.text, { color: color.text }]}>{problem.text}</Text> : null;
 
-  const movesDone = plans.filter((p) => p !== null && p.rows.some((r) => r.done !== null)).length;
+  // Progress is the plan's: a move outside it is not one of the day's count.
+  const movesDone = plans.filter((p, i) => entries[i]?.planned !== undefined && p !== null && p.rows.some((r) => r.done !== null)).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   const onFinish = () => {
     if (active === null) router.back();
@@ -229,7 +235,7 @@ export default function WorkoutScreen() {
   // Adding a move outside the plan (K-416): found in the catalog by name or alias, on the phone (offline too).
   const addMove = (id: string) => {
     setAdded((before) => (before.includes(id) ? before : [...before, id]));
-    setPicked(entries.length); // the new move is the last entry
+    setPicked(id);
     setAdding(null);
   };
   const found = adding === null ? [] : findMoves(adding, [...moves.values()], new Set(entries.map((e) => e.exerciseId)));
@@ -268,7 +274,7 @@ export default function WorkoutScreen() {
             key={`${p.exerciseId}-${index}`}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
-            onPress={() => setPicked(index)}
+            onPress={() => setPicked(p.exerciseId)}
             style={[styles.move, on && { backgroundColor: color.surface }]}>
             <Text style={[styles.text, styles.grow, { color: status?.current === null ? color.muted : color.text }]}>
               {exerciseName(p.exerciseId)}
