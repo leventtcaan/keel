@@ -175,6 +175,22 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#NewCustomExercise",
       "note": "The name of the user's own move (K-416, ADR-035): the contract's maxLength, the server's keel.training.custom-exercise.max-name."
+    },
+    {
+      "key": "back_muscles",
+      "value": ["lats", "upper_back"],
+      "unit": "muscles",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-56",
+      "note": "A move working these is a back move (K-418 tips): full range everywhere (K-50) except the back, where partial reps at the end of a set are fine (K-56)."
+    },
+    {
+      "key": "setup_value_max_chars",
+      "value": 40,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-38",
+      "note": "One setup note (seat, pad, grip) kept on the phone (K-418, ADR-017): the same machine set the same way (K-38) needs a short mark like 'seat 4, pin 3'."
     }
   ]
 }

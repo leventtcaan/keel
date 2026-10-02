@@ -46,6 +46,7 @@ const EXERCISES = 'train.exercises';
 const GYM = 'train.gym';
 const HISTORY = 'train.history';
 const OWN = 'train.own';
+const SETUP = 'train.setup';
 
 /** The gym marked current, as weights to round to: "none" when no gym is in use (its kept copy goes). */
 function gymInUse(read: Loaded<Schemas['Gym'][]>): Loaded<GymWeights> {
@@ -96,6 +97,17 @@ export function createTrainingCache(kv: KeyValue) {
     }
   }
 
+  /** Every move's setup, by move id; a copy that cannot be read is none. */
+  async function setups(): Promise<Record<string, Record<string, string>>> {
+    const copy = await kv.getItemAsync(SETUP);
+    if (copy === null) return {};
+    try {
+      return JSON.parse(copy) as Record<string, Record<string, string>>;
+    } catch {
+      return {};
+    }
+  }
+
   return {
     async read(api: ApiClient): Promise<TrainData> {
       const startedIn = generation;
@@ -138,10 +150,25 @@ export function createTrainingCache(kv: KeyValue) {
       if (startedIn !== generation) return; // signed out meanwhile: the move was the last account's
       await kv.setItemAsync(OWN, JSON.stringify([...kept.filter((m) => m.id !== move.id), move]));
     },
+    /** The user's setup of a move — seat, pad, grip — kept on the phone only (K-418, ADR-017); none yet: empty. */
+    async setup(exerciseId: string): Promise<Record<string, string>> {
+      return (await setups())[exerciseId] ?? {};
+    },
+    async saveSetup(exerciseId: string, values: Record<string, string>): Promise<void> {
+      const startedIn = generation;
+      const kept = Object.fromEntries(
+        Object.entries(values)
+          .map(([field, value]) => [field, value.trim()])
+          .filter(([, value]) => value !== ''),
+      );
+      const all = await setups();
+      if (startedIn !== generation) return; // signed out meanwhile: the setup was the last account's
+      await kv.setItemAsync(SETUP, JSON.stringify({ ...all, [exerciseId]: kept }));
+    },
     /** The kept copies belong to the account: they go at sign-out. */
     async forget(): Promise<void> {
       generation += 1;
-      await Promise.all([PROGRAM, EXERCISES, GYM, HISTORY, OWN].map((key) => kv.removeItemAsync(key)));
+      await Promise.all([PROGRAM, EXERCISES, GYM, HISTORY, OWN, SETUP].map((key) => kv.removeItemAsync(key)));
     },
   };
 }
