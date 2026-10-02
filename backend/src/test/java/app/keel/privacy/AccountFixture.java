@@ -75,7 +75,10 @@ final class AccountFixture {
         MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-09-30T15:00:00Z"));
         String id = (String) JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id");
         send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
-                "setType", "WORKING", "loadKg", 80, "reps", 8, "rir", 1));
+                "setType", "WORKING", "loadKg", 80, "reps", 8, "rir", 1, "supersetId", UUID.randomUUID()));
+        // A move of the user's own (K-424): training data, kept with the account.
+        send(account, "POST", "/v1/custom-exercises", Map.of("clientId", UUID.randomUUID(), "name", "Landmine press", "kind", "COMPOUND",
+                "load", "EXTERNAL", "equipment", "BARBELL", "unilateral", true));
         return account;
     }
 

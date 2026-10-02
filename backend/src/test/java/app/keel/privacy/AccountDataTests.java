@@ -164,6 +164,8 @@ class AccountDataTests {
         assertThat((List<?>) ((Map<String, Object>) sections.get("training")).get("programChanges")).hasSize(1);
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("training")).get("gyms")).singleElement()
                 .satisfies(gym -> assertThat(gym).containsEntry("name", "Downtown"));
+        assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("training")).get("customExercises")).singleElement()
+                .satisfies(move -> assertThat(move).containsEntry("name", "Landmine press"));
         assertThat((List<?>) ((Map<String, Object>) sections.get("nutrition")).get("meals")).hasSize(1);
         // The recipe as it was entered (K-413): its ingredients, no number (ADR-034).
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("nutrition")).get("recipes")).singleElement()

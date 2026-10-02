@@ -715,6 +715,43 @@ paths:
           description: Deleted (or there was none)
         default:
           $ref: "#/components/responses/Error"
+  /v1/custom-exercises:
+    get:
+      tags: [training]
+      operationId: listCustomExercises
+      summary: The user's own moves, by name (K-424, ADR-035)
+      responses:
+        "200":
+          description: Every move of the user's own
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomExercise"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [training]
+      operationId: saveCustomExercise
+      summary: Keep a move the catalog does not have
+      description: |
+        The engine needs what the catalog says of a move, so the user answers it (L3 §1 #10): compound or isolation, the
+        load model, the equipment, one side at a time or not. A set names it by its id ("custom:<uuid>"); only its owner
+        can. Not in programs (those are made of catalog moves). At most 100 a user (keel.training.max-custom-exercises).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewCustomExercise"
+      responses:
+        "201":
+          $ref: "#/components/responses/CustomExerciseSaved"
+        "200":
+          $ref: "#/components/responses/CustomExerciseSaved"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/workouts:
     get:
       tags: [training]
@@ -1126,6 +1163,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/PhotoCheck"
+    CustomExerciseSaved:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CustomExercise"
     RecipeSaved:
       description: Stored (201), or already stored with this clientId (200)
       content:
@@ -2155,6 +2198,12 @@ components:
           description: Reps left in the tank; absent when not given.
         side:
           $ref: "#/components/schemas/Side"
+        supersetId:
+          type: string
+          format: uuid
+          description: |
+            The superset the set belongs to (K-424, ADR-035): the sets of moves done back to back carry the same id, made by
+            the phone. Absent for a set on its own.
         note:
           type: string
           maxLength: 500
@@ -2162,6 +2211,36 @@ components:
             The user's own words on this set (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500
             characters, or a NUL character, is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its
             consent (V2).
+    NewCustomExercise:
+      type: object
+      required: [clientId, name, kind, load, equipment, unilateral]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+          description: Trimmed; at most 60 code points, no NUL.
+        kind:
+          type: string
+          enum: [COMPOUND, ISOLATION]
+        load:
+          type: string
+          enum: [EXTERNAL, BODYWEIGHT, BODYWEIGHT_PLUS_EXTERNAL]
+        equipment:
+          $ref: "#/components/schemas/Equipment"
+        unilateral:
+          type: boolean
+    CustomExercise:
+      allOf:
+        - $ref: "#/components/schemas/NewCustomExercise"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              description: '"custom:<uuid>": what a set names it by.'
     LoggedSet:
       allOf:
         - $ref: "#/components/schemas/NewSet"

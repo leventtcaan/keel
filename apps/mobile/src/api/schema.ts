@@ -559,6 +559,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/custom-exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The user's own moves, by name (K-424, ADR-035) */
+        get: operations["listCustomExercises"];
+        put?: never;
+        /**
+         * Keep a move the catalog does not have
+         * @description The engine needs what the catalog says of a move, so the user answers it (L3 §1 #10): compound or isolation, the
+         *     load model, the equipment, one side at a time or not. A set names it by its id ("custom:<uuid>"); only its owner
+         *     can. Not in programs (those are made of catalog moves). At most 100 a user (keel.training.max-custom-exercises).
+         */
+        post: operations["saveCustomExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workouts": {
         parameters: {
             query?: never;
@@ -1427,11 +1450,32 @@ export interface components {
             rir?: number;
             side?: components["schemas"]["Side"];
             /**
+             * Format: uuid
+             * @description The superset the set belongs to (K-424, ADR-035): the sets of moves done back to back carry the same id, made by
+             *     the phone. Absent for a set on its own.
+             */
+            supersetId?: string;
+            /**
              * @description The user's own words on this set (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500
              *     characters, or a NUL character, is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its
              *     consent (V2).
              */
             note?: string;
+        };
+        NewCustomExercise: {
+            clientId: components["schemas"]["ClientId"];
+            /** @description Trimmed; at most 60 code points, no NUL. */
+            name: string;
+            /** @enum {string} */
+            kind: "COMPOUND" | "ISOLATION";
+            /** @enum {string} */
+            load: "EXTERNAL" | "BODYWEIGHT" | "BODYWEIGHT_PLUS_EXTERNAL";
+            equipment: components["schemas"]["Equipment"];
+            unilateral: boolean;
+        };
+        CustomExercise: components["schemas"]["NewCustomExercise"] & {
+            /** @description "custom:<uuid>": what a set names it by. */
+            id: string;
         };
         LoggedSet: components["schemas"]["NewSet"] & {
             /** Format: uuid */
@@ -1738,6 +1782,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["PhotoCheck"];
+            };
+        };
+        /** @description Stored (201), or already stored with this clientId (200) */
+        CustomExerciseSaved: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["CustomExercise"];
             };
         };
         /** @description Stored (201), or already stored with this clientId (200) */
@@ -2626,6 +2679,45 @@ export interface operations {
                 };
                 content?: never;
             };
+            default: components["responses"]["Error"];
+        };
+    };
+    listCustomExercises: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every move of the user's own */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomExercise"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    saveCustomExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewCustomExercise"];
+            };
+        };
+        responses: {
+            200: components["responses"]["CustomExerciseSaved"];
+            201: components["responses"]["CustomExerciseSaved"];
             default: components["responses"]["Error"];
         };
     };
