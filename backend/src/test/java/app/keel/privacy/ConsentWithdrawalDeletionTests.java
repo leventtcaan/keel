@@ -9,6 +9,7 @@ import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -89,12 +90,28 @@ class ConsentWithdrawalDeletionTests {
         // first rung; the load would stay held for good. The hold ends with the withdrawal; the ladder starts again from
         // its own observation once the consent is given again.
         AccountId account = fixture().withDataEverywhere();
+        AccountId bystander = fixture().withDataEverywhere();
         assertThat(program(account)).containsKey("loadHeldSince");
 
         assertThat(withdraw(account, "HEALTH_DATA", true)).hasStatusOk();
 
         assertThat(program(account)).doesNotContainKey("loadHeldSince");
+        assertThat(program(bystander)).as("another account's hold").containsKey("loadHeldSince");
         assertThat(fixture().rowsOf(account).get("training.program_change")).as("training stays (ADR-007): the hold ends, its record stays").isOne();
+    }
+
+    @Test
+    void aHoldDatedAfterTheUsersTodayEndsBeforeItBeginsAndTheWithdrawalGoesThrough() throws Exception {
+        // A time zone moved west can leave a hold that begins after the user's today; ending it the day before today would
+        // break ends_on >= starts_on - 1 and refuse the withdrawal itself (GDPR Art. 7(3)). It ends the day before it begins.
+        AccountId account = fixture().withDataEverywhere();
+        LocalDate later = LocalDate.now(java.time.ZoneOffset.UTC).plusDays(2);
+        context.getBean(app.keel.training.TrainingCalls.class).holdLoad(account, UUID.randomUUID(), later);
+
+        assertThat(withdraw(account, "HEALTH_DATA", true)).hasStatusOk();
+
+        assertThat(jdbc.sql("select ends_on from training.program_change where account_id = :a and starts_on = :later")
+                .param("a", account.value()).param("later", later).query(LocalDate.class).single()).isEqualTo(later.minusDays(1));
     }
 
     @Test
@@ -117,6 +134,7 @@ class ConsentWithdrawalDeletionTests {
         Map<String, Integer> before = fixture().rowsOf(account);
 
         assertThat(withdraw(account, "APPLE_HEALTH", false)).hasStatusOk().bodyJson().extractingPath("$.status").isEqualTo("WITHDRAWN");
+        assertThat(program(account)).as("the calls are still there, and so is the hold they made (K-428)").containsKey("loadHeldSince");
 
         Map<String, Integer> after = fixture().rowsOf(account);
         assertThat(after).as("only the withdrawal itself is new").containsEntry("consent.consent_event", before.get("consent.consent_event") + 1);

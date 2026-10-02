@@ -84,6 +84,16 @@ class ConsistencyApiTests {
     }
 
     @Test
+    void aWorkoutOfSetsToFailureIsASessionDone() throws Exception {
+        // A working set is any set that is not a warm-up, close to failure (docs/sozluk.md): a set taken to failure is
+        // one, logged as FAILURE (K-218). Push-ups to failure are a session done.
+        AccountId account = afterTheFirstCall();
+        workout(account, "FAILURE");
+
+        assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 2, "done", 1));
+    }
+
+    @Test
     void aPlanWithoutACallCountsFromThePlansPhase() throws Exception {
         // K-420 review: no call yet (a plan set some other way) — the record begins where the phase began, not a 500.
         AccountId account = consenting();
@@ -154,8 +164,13 @@ class ConsistencyApiTests {
                 Instant.now().minusSeconds(1).toString()));
         if (setType != null) {
             String id = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
-            send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(),
-                    "exerciseId", "bench_press", "setType", setType, "loadKg", 60, "reps", 8, "rir", 2));
+            // A set to failure has no reps in reserve to give (K-218): none is sent.
+            Map<String, Object> set = new java.util.HashMap<>(Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
+                    "setType", setType, "loadKg", 60, "reps", 8));
+            if (!"FAILURE".equals(setType)) {
+                set.put("rir", 2);
+            }
+            send(account, "POST", "/v1/workouts/" + id + "/sets", set);
         }
     }
 
