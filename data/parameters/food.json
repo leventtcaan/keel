@@ -1,0 +1,49 @@
+{
+  "parameters": [
+    {
+      "key": "meal_slot_starts",
+      "value": [
+        { "slot": "BREAKFAST", "fromHour": 4 },
+        { "slot": "LUNCH", "fromHour": 11 },
+        { "slot": "DINNER", "fromHour": 16 },
+        { "slot": "SNACK", "fromHour": 22 }
+      ],
+      "unit": "hour_of_day",
+      "tag": "urun",
+      "source": "arastirma/ham/I2-etkilesim-modeli.md#G1",
+      "note": "The meal slot a new meal starts on, from the phone's clock (K-407): an active, low-cost entry is pre-filled (I2 G1, layer A), and the slot is one tap to change. Each slot runs from its hour to the next one's; before the first hour it is the last slot (a late snack)."
+    },
+    {
+      "key": "food_search_min_chars",
+      "value": 2,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#FoodSearch",
+      "note": "FoodSearch.q minLength: a shorter search is refused by the server, so the phone does not send it."
+    },
+    {
+      "key": "food_search_max_chars",
+      "value": 100,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#FoodSearch",
+      "note": "FoodSearch.q maxLength."
+    },
+    {
+      "key": "meal_amount_max_g",
+      "value": 5000,
+      "unit": "g",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#Amount",
+      "note": "Amount: the amount an item makes is at most 5000 g; a larger one would be refused by the server and the meal lost from the queue."
+    },
+    {
+      "key": "meal_amount_decimals",
+      "value": 2,
+      "unit": "decimals",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#Amount",
+      "note": "Amount.quantity: at most 2 decimals."
+    }
+  ]
+}

@@ -36,6 +36,7 @@ const mockServices = {
   // The Train tab's program and catalog (K-405); none yet, as for a new account.
   training: { read: async () => ({ program: { state: 'none' }, exercises: { state: 'none' }, kept: false }) },
   workoutRecords: async () => [],
+  mealRecords: async () => [],
   report: () => {},
 };
 jest.mock('@/services/ServicesProvider', () => ({

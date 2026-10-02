@@ -49,7 +49,7 @@ export function roundTo(value: number, decimals: number): number {
  * A plain decimal number as a person types it: digits with at most one separator, a point or a comma (the iOS number
  * pad types "," where the region writes decimals that way). No thousands separators, signs or exponents.
  */
-function parseNumber(text: string): number | null {
+export function parseNumber(text: string): number | null {
   const typed = text.trim();
   return /^(\d+([.,]\d+)?|[.,]\d+)$/.test(typed) ? Number(typed.replace(',', '.')) : null;
 }

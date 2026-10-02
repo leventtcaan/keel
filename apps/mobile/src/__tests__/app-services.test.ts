@@ -125,6 +125,15 @@ test("the workout's records are read from the phone, sent or not, and only those
   expect((await services.workoutRecords()).map((r) => [r.kind, r.state])).toEqual([['workout', 'PENDING']]);
 });
 
+test("the phone's meals, and only those, for the Food tab's list (K-407)", async () => {
+  const { services, fake } = await setup();
+  await services.session.signIn(SESSION);
+  fake.goOffline();
+  await services.queue.record(WEIGH);
+  await services.queue.record({ kind: 'meal', body: { clientId: '77777777-7777-4777-8777-777777777777', eatenAt: '2026-09-30T13:00:00+03:00', slot: 'LUNCH', repeatOf: '88888888-8888-4888-8888-888888888888' } });
+  expect((await services.mealRecords()).map((r) => [r.kind, r.state])).toEqual([['meal', 'PENDING']]);
+});
+
 test('the phone forgets before the server answers: signed out at once, even on a slow network', async () => {
   // Every call waits for its own answer, by address; signing in also reads the profile (the unit choice, K-310).
   const waiting = new Map<string, (response: Response) => void>();
