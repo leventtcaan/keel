@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.Set;
 
 /**
  * The coach's own questions between the weekly calls (K-512, ADR-039): Güray's triggers (G5 §2), asked in the app — never
@@ -31,32 +32,22 @@ public final class Prompts {
     public record Prompt(RuleId rule, Source source, String key, CopyKey copyKey, List<String> choices) {
     }
     /**
-     * What the questions read, on the user's calendar: the step count of each day, the plan's step target, the program's
-     * training days, the days a session was done (a set past the warm-ups, K-431), the lifts' loads against last week
-     * (G7 K-73), the first day of a cut, a state declared this week.
+     * What the questions read, on the user's calendar.
+     *
+     * @param phase the plan's direction; none before the first call
+     * @param steps the step count of each day that has one
+     * @param trainingDaysSince the day the program began asking for these training days
+     * @param sessionDays the days a session was done (a set past the warm-ups, K-431)
+     * @param pausedDays the days nothing was asked: a state declared (ADR-038), a week off the ladder gave
+     * @param lighterDays the days the ladder lowered the work on purpose (a lighter week)
+     * @param loadsDroppedLastWeek the calendar week just over lifted less than the one before (G7 K-73's reading)
+     * @param deficitBegan the first day of this cut's deficit: its first target under maintenance — not the watch at the
+     *     maintenance estimate (K-114) that comes before it
+     * @param declaredNow a state is in force today
      */
-    public record Facts(LocalDate today, Map<LocalDate, Integer> steps, int stepTarget, List<DayOfWeek> trainingDays, List<LocalDate> sessionDays,
-            boolean loadsBelowLastWeek, Optional<LocalDate> cutBegan, boolean declaredState) {
-
-        public Facts withSteps(Map<LocalDate, Integer> days) {
-            return new Facts(today, days, stepTarget, trainingDays, sessionDays, loadsBelowLastWeek, cutBegan, declaredState);
-        }
-
-        public Facts withSessions(List<LocalDate> days) {
-            return new Facts(today, steps, stepTarget, trainingDays, days, loadsBelowLastWeek, cutBegan, declaredState);
-        }
-
-        public Facts withLoadsBelowLastWeek(boolean below) {
-            return new Facts(today, steps, stepTarget, trainingDays, sessionDays, below, cutBegan, declaredState);
-        }
-
-        public Facts withCutBegan(LocalDate day) {
-            return new Facts(today, steps, stepTarget, trainingDays, sessionDays, loadsBelowLastWeek, Optional.of(day), declaredState);
-        }
-
-        public Facts declared() {
-            return new Facts(today, steps, stepTarget, trainingDays, sessionDays, loadsBelowLastWeek, cutBegan, true);
-        }
+    public record Facts(LocalDate today, Optional<Phase> phase, Map<LocalDate, Integer> steps, int stepTarget, List<DayOfWeek> trainingDays,
+            LocalDate trainingDaysSince, List<LocalDate> sessionDays, Set<LocalDate> pausedDays, Set<LocalDate> lighterDays,
+            boolean loadsDroppedLastWeek, Optional<LocalDate> deficitBegan, boolean declaredNow) {
     }
 
     private Prompts() {
@@ -64,7 +55,7 @@ public final class Prompts {
 
     /** Today's questions, most pressing first. */
     public static List<Prompt> today(Facts facts, Parameters parameters) {
-        if (facts.declaredState()) {
+        if (facts.declaredNow()) {
             return List.of();
         }
         List<Prompt> prompts = new ArrayList<>();
@@ -73,10 +64,10 @@ public final class Prompts {
             prompts.add(prompt(STEPS_DROPPED, STEPS, week, "BUSY", "LESS"));
         }
         firstMissed(facts, parameters).ifPresent(day -> prompts.add(prompt(SESSIONS_MISSED, SESSIONS, day.toString(), "FIXED_TIME", "LIFE", "NOT_NOW")));
-        if (facts.loadsBelowLastWeek()) {
+        if (facts.loadsDroppedLastWeek()) {
             prompts.add(prompt(LOADS_DROPPED, LOADS, week, "OK"));
         }
-        facts.cutBegan().filter(began -> !facts.today().isBefore(began)
+        facts.deficitBegan().filter(began -> !facts.today().isBefore(began)
                         && facts.today().isBefore(began.plusDays(parameters.wholeNumber(ParameterKey.HUNGER_QUESTION_DAYS))))
                 .ifPresent(began -> prompts.add(prompt(HUNGER_FIRST_DAYS, HUNGER, began.toString(), "HUNGRY", "NOT_HUNGRY")));
         return List.copyOf(prompts);
