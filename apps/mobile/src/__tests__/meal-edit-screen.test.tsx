@@ -33,24 +33,29 @@ const MEAL: Schemas['Meal'] = {
 
 const calls: string[] = [];
 let mockDelete: () => Promise<Answer> = async () => ({ response: new Response(null, { status: 204 }) });
+const mockPUT = jest.fn(async (_path: string, _init?: unknown) => ok({ kind: 'HEALTH_DATA', status: 'GRANTED' }));
 const mockGET = jest.fn(async (_path: string, _init?: unknown) => ok([MEAL]));
 const mockDELETE = jest.fn(async (path: string, _init?: unknown) => {
   calls.push(path);
   return mockDelete();
 });
-const mockPOST = jest.fn(async (_path: string, _init?: unknown) => ok({ items: [], kcal: R(1, 2), proteinG: R(0, 1) }));
+let mockEstimate: () => Promise<Answer> = async () => ok({ items: [], kcal: R(1, 2), proteinG: R(0, 1) });
+const mockPOST = jest.fn(async (_path: string, _init?: unknown) => mockEstimate());
+const mockForget = jest.fn(async (_clientId: string) => {});
 const mockRecord = jest.fn(async (_record: unknown) => {
   calls.push('record');
   return true;
 });
 const mockBack = jest.fn();
 let mockParams: Record<string, string> = { edit: 'm1', day: '2026-09-29' };
+let mockGranted = true;
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() }, useLocalSearchParams: () => mockParams }));
 const mockServices = {
-  api: { GET: mockGET, POST: mockPOST, PUT: jest.fn(), DELETE: mockDELETE },
+  api: { GET: mockGET, POST: mockPOST, PUT: mockPUT, DELETE: mockDELETE },
   queue: { record: mockRecord },
-  consents: { granted: async () => true, remember: jest.fn() },
+  forgetRecord: mockForget,
+  consents: { granted: async () => mockGranted, remember: jest.fn() },
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
@@ -60,7 +65,24 @@ beforeEach(() => {
   calls.length = 0;
   mockDelete = async () => ({ response: new Response(null, { status: 204 }) });
   mockParams = { edit: 'm1', day: '2026-09-29' };
+  mockGranted = true;
+  mockEstimate = async () => ok({ items: [], kcal: R(1, 2), proteinG: R(0, 1) });
+  mockGET.mockImplementation(async () => ok([MEAL]));
+  mockPUT.mockImplementation(async () => ok({ kind: 'HEALTH_DATA', status: 'GRANTED' }));
 });
+
+function held<T>() {
+  let release: (value: T) => void = () => {};
+  const promise = new Promise<T>((resolve) => (release = resolve));
+  return { promise, release };
+}
+const pressTwice = async (name: string) => {
+  const press = (screen.getByRole('button', { name }).props as { onClick: (event: object) => void }).onClick;
+  await act(async () => {
+    press({ nativeEvent: {} });
+    press({ nativeEvent: {} });
+  });
+};
 
 async function show() {
   await render(
@@ -164,4 +186,98 @@ test('a new meal has no delete', async () => {
   await show();
   expect(screen.queryByRole('button', { name: t('meal.edit.delete') })).toBeNull();
   expect(mockGET).not.toHaveBeenCalled();
+});
+
+describe('review', () => {
+  test('a serving amount the server would refuse deletes nothing: saving waits for the server to take these amounts', async () => {
+    mockEstimate = async () => refused(400, 'VALIDATION_FAILED'); // 100 cups of milk: past 5000 g, the phone does not know a cup's grams here
+    await show();
+    await act(async () => fireEvent.changeText(amountField('Milk, whole'), '100'));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(mockDELETE).not.toHaveBeenCalled();
+    expect(mockRecord).not.toHaveBeenCalled();
+    expect(screen.getByText(t('meal.edit.notChecked'))).toBeOnTheScreen();
+  });
+
+  test('a delete whose answer was lost, but which the server did: the day read again shows it gone, so the correction is saved', async () => {
+    mockDelete = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await show();
+    mockGET.mockImplementation(async () => ok([]));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(mockRecord).toHaveBeenCalledTimes(1);
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  test("the phone's copy of the replaced or deleted meal is forgotten, so it does not come back offline", async () => {
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(mockForget).toHaveBeenCalledWith('c1');
+
+    jest.clearAllMocks();
+    await show();
+    await act(async () => fireEvent.press(screen.getAllByRole('button', { name: t('meal.edit.delete') })[0]));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.confirmDelete') })));
+    expect(mockForget).toHaveBeenCalledWith('c1');
+  });
+
+  test('the delete done but the phone could not save: it says so and stays; saving again saves it, with the same time and amounts', async () => {
+    mockRecord.mockImplementationOnce(async () => {
+      calls.push('record');
+      throw new Error('disk');
+    });
+    await show();
+    await act(async () => fireEvent.changeText(amountField('Oats, rolled'), '60'));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(screen.getByText(t('meal.saveFailed'))).toBeOnTheScreen();
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(amountField('Oats, rolled').props.value).toBe('60');
+
+    mockDelete = async () => refused(404, 'NOT_FOUND');
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(calls).toEqual(['/v1/meals/{id}', 'record', '/v1/meals/{id}', 'record']);
+    expect(mockRecord).toHaveBeenLastCalledWith(expect.objectContaining({ body: expect.objectContaining({ eatenAt: EATEN_AT }) }));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('save pressed twice while the delete is on its way: one delete, one meal', async () => {
+    const answer = held<Answer>();
+    mockDelete = () => answer.promise;
+    await show();
+    await pressTwice(t('meal.save'));
+    await act(async () => answer.release({ response: new Response(null, { status: 204 }) }));
+    expect(mockDELETE).toHaveBeenCalledTimes(1);
+    expect(mockRecord).toHaveBeenCalledTimes(1);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('"delete it" pressed twice: one delete', async () => {
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.delete') })));
+    await pressTwice(t('meal.edit.confirmDelete'));
+    expect(mockDELETE).toHaveBeenCalledTimes(1);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('the consent comes before the meal is read; once given, the meal opens', async () => {
+    mockGranted = false;
+    await show();
+    expect(mockGET).not.toHaveBeenCalled();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.consent.allow') })));
+    expect(amountField('Oats, rolled').props.value).toBe('80');
+  });
+
+  test('while the meal is read: no save, no delete', async () => {
+    mockGET.mockImplementation(() => new Promise(() => {}));
+    await show();
+    expect(screen.queryByRole('button', { name: t('meal.save') })).toBeNull();
+    expect(screen.queryByRole('button', { name: t('meal.edit.delete') })).toBeNull();
+  });
+
+  test('a correction link without its day says the meal is not there, not an endless wait', async () => {
+    mockParams = { edit: 'm1' };
+    await show();
+    expect(screen.getByText(t('meal.edit.gone'))).toBeOnTheScreen();
+  });
 });

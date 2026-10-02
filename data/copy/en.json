@@ -248,7 +248,7 @@
       "title": "Today's meals",
       "none": "Nothing logged today.",
       "waiting": "Not sent yet",
-      "correct": "Correct {slot}"
+      "correct": "Correct {slot}: {items}, {kcal}"
     },
     "slot": {
       "BREAKFAST": "Breakfast",
@@ -301,7 +301,8 @@
       "delete": "Delete this meal",
       "confirmDelete": "Delete it",
       "needsConnection": "Changing a meal needs a connection. Try again when you're online.",
-      "gone": "This meal is no longer there."
+      "gone": "This meal is no longer there.",
+      "notChecked": "The server hasn't checked these amounts yet. Check them, or try again when you're online."
     }
   },
   "weighIn": {

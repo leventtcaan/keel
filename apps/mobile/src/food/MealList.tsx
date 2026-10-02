@@ -50,7 +50,11 @@ export function MealList({ meals, complete, onOpen }: { meals: DayMeal[]; comple
           <Pressable
             key={row.meal.clientId}
             accessibilityRole="button"
-            accessibilityLabel={t('food.meals.correct', { slot: t(`food.slot.${row.meal.slot}`) })}
+            accessibilityLabel={t('food.meals.correct', {
+              slot: t(`food.slot.${row.meal.slot}`),
+              items: spokenItems(row.meal),
+              kcal: kcalRange(row.meal),
+            })}
             onPress={() => onOpen(row.meal)}>
             <MealRow slot={t(`food.slot.${row.meal.slot}`)} names={itemNames(row.meal)} kcal={kcalRange(row.meal)} />
           </Pressable>

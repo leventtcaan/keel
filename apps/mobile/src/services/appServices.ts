@@ -53,6 +53,8 @@ export type AppServices = {
   workoutRecords(): Promise<LocalRecord[]>;
   /** The phone's meals, sent or not (K-407): today's list shows a meal saved offline at once. */
   mealRecords(): Promise<LocalRecord[]>;
+  /** Forgets the phone's copy of a record the server no longer has (a meal corrected or deleted, K-407). */
+  forgetRecord(clientId: string): Promise<void>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
 };
@@ -126,6 +128,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     pendingCount: store.pendingCount,
     workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
     mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
+    forgetRecord: store.forgetClient,
     signOut: async () => {
       const refreshToken = await session.refreshToken();
       // The phone forgets first, so the user is signed out at once even on a slow network. The records are cleared

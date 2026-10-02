@@ -74,6 +74,17 @@ test('forget removes the records of the kinds given, in every state, and only th
   expect((await store.all()).map((record) => record.clientId)).toEqual([C]);
 });
 
+test('forgetClient removes that one record, whatever its state, and no other (K-407: a meal deleted on the server)', async () => {
+  const store = await openRecordStore(nodeSqlite());
+  await store.insert({ clientId: A, kind: 'meal', parentClientId: null, body: { clientId: A } });
+  await store.insert({ clientId: B, kind: 'meal', parentClientId: null, body: { clientId: B } });
+  await store.markSynced(A, 'srv-1', { id: 'srv-1' });
+
+  await store.forgetClient(A);
+
+  expect((await store.all()).map((record) => record.clientId)).toEqual([B]);
+});
+
 test('an unknown state cannot be written: the database refuses it', async () => {
   const db = nodeSqlite();
   await openRecordStore(db);

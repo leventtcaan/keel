@@ -41,9 +41,12 @@ const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch
  * The delete needs the server; offline it says so and changes nothing.
  */
 export default function MealScreen() {
-  const { api, queue, consents, report } = useAppServices();
+  const { api, queue, consents, forgetRecord, report } = useAppServices();
   const { edit, day } = useLocalSearchParams<{ edit?: string; day?: string }>();
-  const [original, setOriginal] = useState<Original | null>(edit === undefined ? null : { state: 'loading' });
+  // A correction link without its day has nothing to find the meal in: not there, rather than an endless wait.
+  const [original, setOriginal] = useState<Original | null>(() =>
+    edit === undefined ? null : day === undefined ? { state: 'gone' } : { state: 'loading' },
+  );
   const [confirming, setConfirming] = useState(false);
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
@@ -52,7 +55,8 @@ export default function MealScreen() {
   const [found, setFound] = useState<Found>({ state: 'idle' });
   const [items, setItems] = useState<DraftItem[]>([]);
   const [known, setKnown] = useState<KnownFoods>(() => new Map());
-  const [estimate, setEstimate] = useState<{ key: string; value: Schemas['FoodEstimate'] } | null>(null);
+  // The estimate for a set of items (by key); `value` null: the server did not take them, or could not be asked.
+  const [estimate, setEstimate] = useState<{ key: string; value: Schemas['FoodEstimate'] | null } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false); // two taps at once must not log twice
@@ -86,14 +90,22 @@ export default function MealScreen() {
     };
   }, [api, step, edit, day]);
 
-  /** The meal being corrected deleted on the server; already gone counts as deleted. False: not done (offline, an error). */
-  const removeOriginal = async (id: string): Promise<boolean> => {
+  /**
+   * The meal being corrected deleted on the server, and the phone's copy of it forgotten (else it would come back on the
+   * Food tab offline). Already gone counts as deleted. A delete with no answer may have been done (the answer lost): the
+   * day is read again to know. False: not done, or not known (offline, an error).
+   */
+  const removeOriginal = async (meal: Schemas['Meal']): Promise<boolean> => {
+    let done: boolean;
     try {
-      const { response } = await api.DELETE('/v1/meals/{id}', { params: { path: { id } } });
-      return response.ok || response.status === 404;
+      const { response } = await api.DELETE('/v1/meals/{id}', { params: { path: { id: meal.id } } });
+      done = response.ok || response.status === 404;
     } catch {
-      return false;
+      const listed = day === undefined ? null : await load(() => api.GET('/v1/meals', { params: { query: { day } } }));
+      done = listed !== null && listed.state === 'ready' && !listed.value.some((m) => m.id === meal.id);
     }
+    if (done) await forgetRecord(meal.clientId).catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
+    return done;
   };
 
   const requests = requestsOf(items, known);
@@ -104,13 +116,18 @@ export default function MealScreen() {
     if (key === null) return;
     let live = true;
     void load(() => api.POST('/v1/food-estimates', { body: { items: JSON.parse(key) as Schemas['ItemRequest'][] } })).then((answer) => {
-      if (live && answer.state === 'ready') setEstimate({ key, value: answer.value });
+      if (live) setEstimate({ key, value: answer.state === 'ready' ? answer.value : null });
     });
     return () => {
       live = false;
     };
   }, [api, key]);
   const shown = estimate !== null && estimate.key === key ? estimate.value : null;
+  // Correcting deletes the logged meal first: only once the server has taken these very items (the estimate runs the
+  // same checks as the log), so a refused correction can never cost the meal it replaces (review: a serving's grams
+  // are not known here, and 100 cups slipped through).
+  const unchecked = original !== null && estimate !== null && estimate.key === key && estimate.value === null;
+  const checked = original === null || shown !== null;
 
   const allow = async () => {
     setBusy(true);
@@ -153,12 +170,12 @@ export default function MealScreen() {
   };
 
   const save = async () => {
-    if (saving.current || requests === null || (original !== null && original.state !== 'ready')) return;
+    if (saving.current || requests === null || !checked || (original !== null && original.state !== 'ready')) return;
     saving.current = true;
     setBusy(true);
     try {
       const eatenAt = original === null ? new Date().toISOString() : original.meal.eatenAt;
-      if (original !== null && !(await removeOriginal(original.meal.id))) {
+      if (original !== null && !(await removeOriginal(original.meal))) {
         setProblem(t('meal.edit.needsConnection'));
         return;
       }
@@ -178,7 +195,7 @@ export default function MealScreen() {
     saving.current = true;
     setBusy(true);
     try {
-      if (await removeOriginal(original.meal.id)) router.back();
+      if (await removeOriginal(original.meal)) router.back();
       else setProblem(t('meal.edit.needsConnection'));
     } finally {
       saving.current = false;
@@ -309,7 +326,8 @@ export default function MealScreen() {
 
         {shown !== null && <EstimateCard estimate={shown} question={question} />}
         {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
-        <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null} />
+        {unchecked && <Text style={[styles.text, { color: color.text }]}>{t('meal.edit.notChecked')}</Text>}
+        <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
         {deleting}
       </View>
     ) : null;

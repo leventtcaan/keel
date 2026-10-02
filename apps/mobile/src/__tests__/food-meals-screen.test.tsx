@@ -297,7 +297,9 @@ test("a logged meal is one tap from its correction; one not sent yet is not (the
     },
   ];
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.meals.correct', { slot: t('food.slot.BREAKFAST') }) })));
+  // Spoken with what is in it and its range (review: the label had dropped both).
+  const spoken = t('food.meals.correct', { slot: t('food.slot.BREAKFAST'), items: 'Oats, rolled; Milk, whole', kcal: range(380, 450) });
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: spoken })));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/meal', params: { edit: 'm1', day: '2026-09-29' } });
-  expect(screen.queryByRole('button', { name: t('food.meals.correct', { slot: t('food.slot.SNACK') }) })).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Correct Snack/ })).toBeNull();
 });
