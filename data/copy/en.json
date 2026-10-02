@@ -242,7 +242,24 @@
       "steps": "{steps} steps a day",
       "training": "{count} training sessions a week"
     },
-    "consent": "Your food budget and targets need the health data consent."
+    "consent": "Your food budget and targets need the health data consent.",
+    "meals": {
+      "title": "Today's meals",
+      "none": "Nothing logged today.",
+      "waiting": "Not sent yet"
+    },
+    "slot": {
+      "BREAKFAST": "Breakfast",
+      "LUNCH": "Lunch",
+      "DINNER": "Dinner",
+      "SNACK": "Snack"
+    },
+    "repeat": {
+      "title": "Same as yesterday",
+      "spoken": "Log {slot} again: {items}",
+      "failed": "Couldn't log it. Try again.",
+      "noConsent": "Logging food needs the health data consent. Check your connection, or allow it in Settings."
+    }
   },
   "weighIn": {
     "title": "Weigh-in",

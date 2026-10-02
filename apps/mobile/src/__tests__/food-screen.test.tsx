@@ -37,7 +37,13 @@ jest.mock('expo-router', () => ({
     React.useEffect(effect, [effect]);
   },
 }));
-const mockServices = { api: { GET: mockGET }, report: () => {} };
+const mockServices = {
+  api: { GET: mockGET },
+  queue: { drain: async () => {}, record: async () => true },
+  mealRecords: async () => [],
+  consents: { granted: async () => true },
+  report: () => {},
+};
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
 beforeAll(() => {

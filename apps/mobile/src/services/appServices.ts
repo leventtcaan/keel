@@ -51,6 +51,8 @@ export type AppServices = {
   training: TrainingCache;
   /** The phone's workouts, their sets and their finishes, sent or not (K-405): the session is built from them. */
   workoutRecords(): Promise<LocalRecord[]>;
+  /** The phone's meals, sent or not (K-407): today's list shows a meal saved offline at once. */
+  mealRecords(): Promise<LocalRecord[]>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
 };
@@ -123,6 +125,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     },
     pendingCount: store.pendingCount,
     workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
+    mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
     signOut: async () => {
       const refreshToken = await session.refreshToken();
       // The phone forgets first, so the user is signed out at once even on a slow network. The records are cleared
