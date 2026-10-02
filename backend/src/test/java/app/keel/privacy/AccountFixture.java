@@ -2,6 +2,7 @@ package app.keel.privacy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
@@ -46,7 +47,7 @@ final class AccountFixture {
                 insert into identity.refresh_token (id, account_id, family_id, token_hash, expires_at, created_at)
                 values (gen_random_uuid(), :account, gen_random_uuid(), :hash, now() + interval '1 day', now())""")
                 .param("account", account.value()).param("hash", UUID.randomUUID().toString()).update();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC"),

@@ -2,6 +2,7 @@ package app.keel.nutrition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
@@ -203,7 +204,7 @@ class MealLogTests {
 
     private AccountId consenting() {
         AccountId account = TestSessions.newAccount();
-        assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"))).hasStatusOk();
+        assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         return account;
     }
 

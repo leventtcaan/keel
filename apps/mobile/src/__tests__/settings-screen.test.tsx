@@ -11,15 +11,20 @@ import { palettes } from '@/theme/tokens';
 
 type Status = 'GRANTED' | 'WITHDRAWN' | 'NEVER_ASKED';
 let mockConsents: Record<string, Status> = {};
+let mockVersions: Record<string, string> = {}; // the text a grant was given to, where a test says
+
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 const mockHealthWriteOff = { workouts: false, weighIns: false };
 const mockRemindersOff = { enabled: false, cue: '' }; // one object: useSyncExternalStore compares by identity
 const ok = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
 const mockServices = {
   api: {
-    GET: jest.fn(async (_path: string) => ok(Object.entries(mockConsents).map(([kind, status]) => ({ kind, status })))),
+    GET: jest.fn(async (_path: string) =>
+      ok(Object.entries(mockConsents).map(([kind, status]) => ({ kind, status, ...(mockVersions[kind] === undefined ? {} : { textVersion: mockVersions[kind] }) }))),
+    ),
     PUT: jest.fn(async (_path: string, init: { params: { path: { kind: string } } }) => {
       mockConsents[init.params.path.kind] = 'GRANTED';
+      delete mockVersions[init.params.path.kind];
       return ok({ status: 'GRANTED' });
     }),
     DELETE: jest.fn(async (_path: string, init: { params: { path: { kind: string } } }) => {
@@ -53,6 +58,7 @@ jest.mock('@/services/ServicesProvider', () => ({
 
 beforeEach(() => {
   mockConsents = { HEALTH_DATA: 'GRANTED', APPLE_HEALTH: 'NEVER_ASKED', THIRD_PARTY_AI: 'NEVER_ASKED' };
+  mockVersions = {};
   mockUnits = 'METRIC';
   jest.clearAllMocks();
   mockServices.health.available = true;
@@ -167,6 +173,23 @@ describe('consents', () => {
     });
     expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
     expect(mockServices.consents.remember).toHaveBeenCalledWith('HEALTH_DATA', 'GRANTED');
+  });
+
+  test('a consent given to a text since revised (K-429): not allowed, and both ways are open — the new text, or withdrawing', async () => {
+    mockVersions.HEALTH_DATA = '1-draft';
+    await show();
+    expect(screen.getByText(t('settings.consents.outdated'))).toBeOnTheScreen();
+    expect(screen.queryAllByText(t('settings.consents.allowed'))).toHaveLength(0);
+    // Withdrawing needs no yes to the new text first (GDPR Art. 7(3)): it asks, then deletes as any withdrawal does.
+    await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
+    expect(screen.getByText(t('settings.withdrawConfirm.HEALTH_DATA.body'))).toBeOnTheScreen();
+    await press(t('settings.withdrawConfirm.keep'));
+    await press(`${t('settings.consents.allow')} ${row('HEALTH_DATA')}`);
+    expect(mockServices.api.PUT).toHaveBeenCalledWith('/v1/consents/{kind}', {
+      params: { path: { kind: 'HEALTH_DATA' } },
+      body: { textVersion: t('consent.health_data.version') },
+    });
+    expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
   });
 
   test("Allow on Apple Health shows Apple's sheet first, then records the consent", async () => {

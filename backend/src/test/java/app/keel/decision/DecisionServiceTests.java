@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.DecisionPipeline;
 import app.keel.engine.ParameterSet;
 import app.keel.identity.TestSessions;
@@ -100,7 +101,7 @@ class DecisionServiceTests {
         assertThat(answer(noConsent, UUID.randomUUID(), thisWeek(), List.of())).hasStatus(403);
 
         AccountId noProfile = TestSessions.newAccount();
-        send(noProfile, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(noProfile, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         assertThat(answer(noProfile, UUID.randomUUID(), thisWeek(), List.of())).as("no profile yet").hasStatus(409);
 
         // DECIDE_FOR_ME (ADR-027 #17, K-222): the phase gate on the fat estimate; without one, a cut (G4 K-4).
@@ -143,7 +144,7 @@ class DecisionServiceTests {
         // Born this year: age 0, which the engine's Profile refuses (K-212 review). The profile API refuses it since K-225
         // (adults only), so it is written into the table: the check-in still must not 500 on a body it cannot read.
         AccountId baby = TestSessions.newAccount();
-        send(baby, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(baby, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(baby, "PUT", "/v1/profile", profile("LOSE_FAT", "MALE", 1996, "UTC", null));
         jdbc.sql("update profile.profile set birth_year = :year where account_id = :a").param("year", LocalDate.now(ZoneOffset.UTC).getYear())
                 .param("a", baby.value()).update();
@@ -164,7 +165,7 @@ class DecisionServiceTests {
     @Test
     void theDirectionTheSexAndTheBodyComeFromTheProfile() throws Exception {
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", profile("BUILD_MUSCLE", "FEMALE", 1990, "UTC", "ACTIVE"));
         weighIn(account, java.time.Instant.now().minusSeconds(3 * 86400), 60.2);
         weighIn(account, java.time.Instant.now().minusSeconds(3600), 61.0);
@@ -221,7 +222,7 @@ class DecisionServiceTests {
                 ? "Etc/GMT+12" : "Etc/GMT-14";
         LocalDate theirs = LocalDate.ofInstant(now, java.time.ZoneId.of(zone));
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         Map<String, Object> profile = new java.util.HashMap<>(profile("LOSE_FAT", "MALE", 1996, zone, null));
         profile.put("schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", theirs.getDayOfWeek().name(), "timeZone", zone));
         send(account, "PUT", "/v1/profile", profile);
@@ -320,7 +321,7 @@ class DecisionServiceTests {
 
     private AccountId ready(String goal) {
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", profile(goal, "MALE", 1996, "UTC", null));
         weighIn(account, java.time.Instant.now().minusSeconds(3600), 82.4);
         return account;

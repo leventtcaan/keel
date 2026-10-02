@@ -2,6 +2,7 @@
  * Whether a consent is given, as the phone knows it (K-402, ADR-030 #25): asked of the server, and kept on the phone so a
  * health entry made offline can still check it. Unknown is "not given": nothing health is kept on a guess.
  */
+import { consentVersion } from '@/consent/consents';
 import { createConsentState } from '@/consent/consentState';
 
 function memoryKv() {
@@ -55,4 +56,46 @@ test('a server that refuses (not offline) is not taken for a yes either, even wi
     kv,
   });
   expect(await state.granted('HEALTH_DATA')).toBe(false);
+});
+
+test('a grant to a text the phone no longer shows is not given: the user is asked again, to the text shown now (K-429)', async () => {
+  const kv = memoryKv();
+  const older = {
+    data: [
+      { kind: 'HEALTH_DATA', status: 'GRANTED', textVersion: '1-draft' },
+      { kind: 'APPLE_HEALTH', status: 'GRANTED', textVersion: consentVersion('APPLE_HEALTH') },
+    ],
+    response: new Response(null, { status: 200 }),
+  };
+  const state = createConsentState({ api: { GET: async () => older } as never, kv });
+  expect(await state.granted('HEALTH_DATA')).toBe(false);
+  // Each kind against its own text: Apple Health's is current.
+  expect(await state.granted('APPLE_HEALTH')).toBe(true);
+  // Offline afterwards: what was kept is "not given" too, not the old yes.
+  const offline = createConsentState({ api: { GET: async () => Promise.reject(new TypeError('offline')) } as never, kv });
+  expect(await offline.granted('HEALTH_DATA')).toBe(false);
+  expect(await offline.granted('APPLE_HEALTH')).toBe(true);
+});
+
+test('a grant to the text shown now is given, online and offline', async () => {
+  const kv = memoryKv();
+  const current = {
+    data: [{ kind: 'HEALTH_DATA', status: 'GRANTED', textVersion: consentVersion('HEALTH_DATA') }],
+    response: new Response(null, { status: 200 }),
+  };
+  expect(await createConsentState({ api: { GET: async () => current } as never, kv }).granted('HEALTH_DATA')).toBe(true);
+  const offline = createConsentState({ api: { GET: async () => Promise.reject(new TypeError('offline')) } as never, kv });
+  expect(await offline.granted('HEALTH_DATA')).toBe(true);
+});
+
+test('a yes the phone kept before the text was revised is not taken offline (K-429): it was a yes to the old text', async () => {
+  const kv = memoryKv();
+  kv.items.set('consent.HEALTH_DATA', 'GRANTED'); // as the build before K-429 kept it
+  const offline = createConsentState({ api: { GET: async () => Promise.reject(new TypeError('offline')) } as never, kv });
+  expect(await offline.granted('HEALTH_DATA')).toBe(false);
+  kv.items.set('consent.HEALTH_DATA', 'GRANTED@1-draft'); // kept with its text, by a build that showed the older one
+  expect(await offline.granted('HEALTH_DATA')).toBe(false);
+  // What this build keeps names the text it shows, so the next revision reads it as a yes to an older text.
+  await offline.remember('HEALTH_DATA', 'GRANTED');
+  expect(kv.items.get('consent.HEALTH_DATA')).toBe(`GRANTED@${consentVersion('HEALTH_DATA')}`);
 });

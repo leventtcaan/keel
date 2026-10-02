@@ -2,6 +2,7 @@ package app.keel.privacy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
@@ -138,7 +139,7 @@ class AccountDataTests {
         send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", "1926-09-30T05:00:00Z", "kg", 82.4,
                 "source", "MANUAL"));
         send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "1926-09-30T15:00:00Z"));
-        send(account, "PUT", "/v1/consents/THIRD_PARTY_AI", Map.of("textVersion", "1-draft", "provider", "Example AI",
+        send(account, "PUT", "/v1/consents/THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI",
                 "dataTypes", List.of("meal photo", "meal note")));
         AccountId bystander = accountWithDataEverywhere();
         // What only the bystander has: none of it may appear in the user's export.

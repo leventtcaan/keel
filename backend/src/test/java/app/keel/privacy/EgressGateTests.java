@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.keel.consent.ConsentGate;
 import app.keel.consent.ConsentKind;
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
@@ -51,8 +52,8 @@ class EgressGateTests {
         AccountId account = TestSessions.newAccount();
         jdbc.sql("""
                 insert into consent.consent_event (id, account_id, kind, action, text_version, provider, data_types, occurred_at)
-                values (gen_random_uuid(), :account, 'THIRD_PARTY_AI', 'GRANTED', '1-draft', 'Example AI', :types, now())""")
-                .param("account", account.value()).param("types", new String[] {"meal photo", "meal note"}).update();
+                values (gen_random_uuid(), :account, 'THIRD_PARTY_AI', 'GRANTED', :version, 'Example AI', :types, now())""")
+                .param("account", account.value()).param("version", ConsentTextVersions.THIRD_PARTY_AI).param("types", new String[] {"meal photo", "meal note"}).update();
         assertThat(consents.granted(account, ConsentKind.THIRD_PARTY_AI)).isTrue();
 
         assertThat(egress.send(account, EgressGate.Destination.THIRD_PARTY_AI, () -> "reply")).isEqualTo("reply");
