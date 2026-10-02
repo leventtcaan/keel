@@ -38,11 +38,16 @@ public class TrainingLog {
         this.catalog = catalog;
     }
 
-    /** When each workout started in [from, to), oldest first: the sessions done that consistency counts (K-220). */
+    /**
+     * When each workout started in [from, to), oldest first: the sessions done that consistency counts (K-220). A
+     * session done has a working set (K-431, ADR-037 #39): a workout opened and left, or only warmed up in, is not one.
+     */
     public List<Instant> workoutStarts(AccountId account, Instant from, Instant to) {
         return jdbc.sql("""
-                select started_at from training.workout where account_id = :account and started_at >= :from and started_at < :to
-                order by started_at""")
+                select w.started_at from training.workout w
+                where w.account_id = :account and w.started_at >= :from and w.started_at < :to
+                  and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type = 'WORKING')
+                order by w.started_at""")
                 .param("account", account.value()).param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
                 .query((row, n) -> row.getObject("started_at", OffsetDateTime.class).toInstant()).list();
     }

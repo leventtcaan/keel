@@ -70,7 +70,11 @@ class AdherenceApiTests {
         }
         LocalDate first = weeks.getFirst();
         // Monday 01:30 in Istanbul is Sunday 22:30 UTC: the first week's session on the user's calendar, none in UTC's.
-        post(account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", at(first, 1).plusSeconds(1800).toString()));
+        MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
+                at(first, 1).plusSeconds(1800).toString()));
+        // A session done is one with a working set (K-431).
+        post(account, "/v1/workouts/" + JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id") + "/sets",
+                Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press", "setType", "WORKING", "loadKg", 60, "reps", 8, "rir", 2));
         // A day with sleep but no steps is not a step day; a day of 8000 steps is one, done (target 7000).
         send(account, "PUT", "/v1/activity-days", Map.of("day", first.plusDays(1).toString(), "sleepMinutes", 420));
         send(account, "PUT", "/v1/activity-days", Map.of("day", first.plusDays(2).toString(), "steps", 8000));

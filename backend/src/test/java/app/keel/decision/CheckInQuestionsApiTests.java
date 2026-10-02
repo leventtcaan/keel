@@ -152,8 +152,12 @@ class CheckInQuestionsApiTests {
         // planned. One workout in the window's first week: (1 + 4 × weeks) done of 5 × weeks planned.
         AccountId account = losingButLookingWorse();
         List<LocalDate> weeks = WeekTallies.weeks(LocalDate.now(ZoneOffset.UTC), 21);
-        assertThat(send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
-                weeks.getFirst().atTime(10, 0).toInstant(ZoneOffset.UTC).toString())).getResponse().getStatus()).isLessThan(300);
+        MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
+                weeks.getFirst().atTime(10, 0).toInstant(ZoneOffset.UTC).toString()));
+        assertThat(workout.getResponse().getStatus()).isLessThan(300);
+        // A session done is one with a working set (K-431).
+        assertThat(send(account, "POST", "/v1/workouts/" + map(workout).get("id") + "/sets", Map.of("clientId", UUID.randomUUID(),
+                "exerciseId", "bench_press", "setType", "WORKING", "loadKg", 60, "reps", 8, "rir", 2)).getResponse().getStatus()).isLessThan(300);
 
         answer(account, List.of(Map.of("kind", "TRAINING", "choice", "STABLE"), Map.of("kind", "RECOVERY", "choice", "GOOD")));
 
