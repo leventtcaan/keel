@@ -2221,7 +2221,7 @@ tasks:
     module: engine
     type: feature
     size: L
-    status: in_progress
+    status: doing
     depends_on: [K-111, K-512]
     why: "'Ürünün en yüksek değerli tek davranışı olabilir' (Ö-20) — görevi yoktu (L3 P3)"
     acceptance:
