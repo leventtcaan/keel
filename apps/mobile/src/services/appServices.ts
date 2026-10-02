@@ -120,6 +120,7 @@ export async function createAppServices({
   if (!(await session.isSignedIn())) {
     await profile.forget();
     await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
+    await kv.removeItemAsync(FIGURE); // and the profile's sex (ADR-037 › 49)
   }
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account

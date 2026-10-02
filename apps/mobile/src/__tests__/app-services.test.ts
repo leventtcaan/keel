@@ -672,3 +672,11 @@ test("the profile's sex is kept for the muscle map's figure, and forgotten at si
   await settle();
   expect(await services.bodyFigure()).toBe('male');
 });
+
+test("opening without a session drops the profile's sex left on the phone (a backup restored to a new phone)", async () => {
+  const kv = memoryKv();
+  kv.items.set('profile.figure', 'female');
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv, locale: 'en-US' });
+  expect(kv.items.has('profile.figure')).toBe(false);
+  expect(await services.bodyFigure()).toBe('male');
+});
