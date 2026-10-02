@@ -5,7 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
-import { activeWorkout, finishRecord, lastTime, planExercise } from '@/train/workout';
+import { activeWorkout, extraPlan, finishRecord, lastTime, planExercise } from '@/train/workout';
 
 type Schemas = components['schemas'];
 
@@ -203,4 +203,51 @@ test('a finish with a note carries it, without its outer spaces; only spaces is 
   expect(finishRecord('w2', 'f1', at, [], ' Slept 5 hours ')).toMatchObject({ body: { note: 'Slept 5 hours' } });
   const without = finishRecord('w2', 'f2', at, [], '  ');
   expect(without.kind === 'finish' && without.body).not.toHaveProperty('note');
+});
+
+describe('a move added to the session, outside the plan (K-416)', () => {
+  const done = (exerciseId: string, loadKg: number, reps: number, side?: Schemas['Side']) =>
+    ({
+      clientId: `d-${loadKg}-${reps}-${side ?? ''}`,
+      exerciseId,
+      setType: 'WORKING',
+      loadKg,
+      reps,
+      rir: 1,
+      ...(side ? { side } : {}),
+    }) as Schemas['NewSet'];
+
+  test('the sets done, then one open row: as many as the user does, never a planned count', () => {
+    const plan = extraPlan(benchMove, [], [done('bench_press', 60, 8), done('bench_press', 60, 7)]);
+    expect(plan.rows.map((r) => r.done?.reps ?? null)).toEqual([8, 7, null]);
+    expect(plan.current).toBe(2);
+  });
+
+  test("the open row suggests the load just lifted in this session, else last time's at that row, else last time's heaviest", () => {
+    expect(extraPlan(benchMove, [], [done('bench_press', 60, 8)]).rows[1].suggested).toEqual({ loadKg: 60, reps: 8 });
+    const last = [done('bench_press', 55, 10), done('bench_press', 57.5, 8)];
+    expect(extraPlan(benchMove, last, []).rows[0].suggested).toEqual({ loadKg: 55, reps: 10 });
+    expect(extraPlan(benchMove, last, [done('bench_press', 55, 10), done('bench_press', 57.5, 8)]).rows[2].suggested).toEqual({
+      loadKg: 57.5,
+      reps: 8,
+    });
+  });
+
+  test('never done before: nothing to suggest, the user types it — no reps made up', () => {
+    expect(extraPlan(benchMove, [], []).rows[0].suggested).toEqual({ loadKg: null, reps: null });
+  });
+
+  test('a bodyweight move suggests no load; a one-sided move has a row a side', () => {
+    expect(extraPlan(pushUp, [], []).rows[0].suggested.loadKg).toBe(0);
+    const plan = extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT')]);
+    expect(plan.rows.map((r) => [r.side, r.done?.reps ?? null])).toEqual([
+      ['LEFT', 10],
+      ['RIGHT', null],
+    ]);
+    expect(plan.current).toBe(1);
+  });
+
+  test("other moves' sets are not its", () => {
+    expect(extraPlan(benchMove, [], [done('squat', 100, 5)]).rows).toHaveLength(1);
+  });
 });

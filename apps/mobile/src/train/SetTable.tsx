@@ -31,7 +31,8 @@ export function SetTable({ plan, move }: { plan: ExercisePlan; move: Schemas['Ex
       {plan.rows.map((row, index) => {
         const number = Math.floor(index / sides) + 1;
         const label = row.side === 'BOTH' ? String(number) : `${number}${t(`workout.side.${row.side}`)}`;
-        const today = row.done ?? (row.suggested.loadKg === null ? null : { loadKg: row.suggested.loadKg, reps: row.suggested.reps });
+        const { loadKg, reps } = row.suggested;
+        const today = row.done ?? (loadKg === null || reps === null ? null : { loadKg, reps });
         return (
           <View
             key={`${row.side}-${index}`}

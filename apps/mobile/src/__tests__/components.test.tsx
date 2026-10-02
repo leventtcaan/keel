@@ -12,6 +12,7 @@ import { DecisionBlock } from '@/components/DecisionBlock';
 import { ProgressBar } from '@/components/ProgressBar';
 import { RangeText } from '@/components/RangeText';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { TextField } from '@/components/TextField';
 import { ThemeProvider } from '@/theme/theme';
 import { type ColorScheme, palettes, tokens } from '@/theme/tokens';
 
@@ -202,5 +203,25 @@ describe('ProgressBar value', () => {
     await renderIn('light', <ProgressBar value={value} label="Protein" />);
     expect(screen.getByRole('progressbar', { name: 'Protein' })).toHaveAccessibilityValue({ min: 0, max: 100, now });
     expect(screen.getByTestId('progress-fill')).toHaveStyle({ width: `${now}%` });
+  });
+});
+
+describe('TextField (K-416)', () => {
+  test('an empty number field shows a faint dash, as an empty table cell does: on a card it would not show at all (simulator)', async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <TextField label="Reps" value="" onChangeText={() => {}} keyboardType="number-pad" />
+      </ThemeProvider>,
+    );
+    expect(screen.getByLabelText('Reps').props).toMatchObject({ placeholder: '–', placeholderTextColor: palettes.light.muted });
+  });
+
+  test('a field for words has no dash', async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <TextField label="Note" value="" onChangeText={() => {}} multiline />
+      </ThemeProvider>,
+    );
+    expect(screen.getByLabelText('Note').props.placeholder).toBeUndefined();
   });
 });

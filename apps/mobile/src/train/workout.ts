@@ -17,8 +17,11 @@ export type ActiveWorkout = { clientId: string; startedAt: string; programDayId:
 
 export type SetRow = {
   side: Schemas['Side'];
-  /** Shown faint; one tap logs it as it is. `loadKg` null: nothing to go on, the user types it. */
-  suggested: { loadKg: number | null; reps: number };
+  /**
+   * Shown faint; one tap logs it as it is. `loadKg` null: nothing to go on, the user types it; `reps` null likewise (a
+   * move added to the session that was never done before: no range to start from — none is made up, K-416).
+   */
+  suggested: { loadKg: number | null; reps: number | null };
   /** The same row last time (same side, same position), if there was one. */
   last: NewSet | null;
   done: NewSet | null;
@@ -98,6 +101,39 @@ export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas[
   }
   const current = rows.findIndex((row) => row.done === null);
   return { exerciseId: planned.exerciseId, rows, current: current < 0 ? null : current };
+}
+
+/**
+ * A move added to the session outside the plan (K-416): the work sets done, then one open row — as many as the user
+ * does, there is no planned count. The open row suggests the load just lifted in this session, else last time's at that
+ * row, else last time's heaviest; the reps likewise; never done before, nothing (the user types it). A bodyweight move's
+ * load is 0, a one-sided move has a row a side, as for a planned move.
+ */
+export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSet[]): ExercisePlan {
+  const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
+  const working = done.filter((s) => s.exerciseId === move.id && s.setType === 'WORKING');
+  const ofSide = (list: NewSet[], side: Schemas['Side']) => list.filter((s) => (s.side ?? 'BOTH') === side);
+  const counts = sides.map((side) => ofSide(working, side).length);
+  const doneCount = Math.max(...counts);
+  // A round with a side still to do is the open one; with every side done, a new round opens.
+  const rounds = counts.every((count) => count === doneCount) ? doneCount + 1 : doneCount;
+  const rows: SetRow[] = [];
+  for (let i = 0; i < rounds; i++) {
+    for (const side of sides) {
+      const mine = ofSide(working, side);
+      const lastRows = ofSide(last, side);
+      const heaviest = lastRows.reduce<NewSet | null>((top, s) => (top === null || s.loadKg > top.loadKg ? s : top), null);
+      const from = mine[Math.min(i, mine.length) - 1] ?? lastRows[i] ?? heaviest;
+      rows.push({
+        side,
+        suggested: { loadKg: move.load === 'BODYWEIGHT' ? 0 : (from?.loadKg ?? null), reps: from?.reps ?? null },
+        last: lastRows[i] ?? null,
+        done: mine[i] ?? null,
+      });
+    }
+  }
+  const current = rows.findIndex((row) => row.done === null);
+  return { exerciseId: move.id, rows, current: current < 0 ? null : current };
 }
 
 /** The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31). */

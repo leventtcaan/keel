@@ -3,6 +3,10 @@ import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-na
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
+/** What an empty number field shows, faint: the empty table cell's dash (prototype `.fv.ghost`). */
+const EMPTY = '–';
+const NUMERIC: TextInputProps['keyboardType'][] = ['number-pad', 'decimal-pad', 'numeric'];
+
 type Props = {
   /** Already translated; also what a screen reader calls the field. */
   label: string;
@@ -37,6 +41,8 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, k
           keyboardType={keyboardType}
           maxLength={maxLength}
           multiline={multiline}
+          // On a card (surface on surface) an empty field would not show at all (K-416, simulator).
+          {...(NUMERIC.includes(keyboardType) ? { placeholder: EMPTY, placeholderTextColor: color.muted } : {})}
           {...(onSearch === undefined ? {} : { autoCapitalize: 'none', autoCorrect: false, returnKeyType: 'search', onSubmitEditing: onSearch })}
           style={[styles.input, multiline && styles.multiline, { color: color.text }]}
         />

@@ -7,10 +7,12 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
 import WorkoutScreen from '@/app/workout';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
+import { workoutParams } from '@/train/params';
 import type { TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -494,5 +496,56 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     await show();
     await fireEvent.changeText(await screen.findByLabelText('Weight (lb)'), '135');
     expect(screen.getByText('45 lb a side')).toBeTruthy();
+  });
+});
+
+describe('a move added to the session, outside the plan (K-416)', () => {
+  const LAT = { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+  beforeEach(() => {
+    mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
+  });
+  const latName = t('exercises.lat_pulldown.name');
+
+  test('found by name in the catalog, added with one tap, logged like any move — with no reps made up', async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: latName }) }));
+    expect(screen.getAllByText(latName).length).toBeGreaterThan(1); // in the list and as the card's title
+    expect(screen.getByLabelText(t('workout.repsLabel')).props.value).toBe('');
+    await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '50');
+    await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
+    await fireEvent.press(screen.getByText('Log set 1'));
+    expect(sets().at(-1)).toEqual({
+      kind: 'set',
+      workoutClientId: 'w1',
+      body: {
+        clientId: expect.any(String),
+        exerciseId: 'lat_pulldown',
+        setType: 'WORKING',
+        loadKg: 50,
+        reps: 10,
+        rir: workoutParams.targetRirMax,
+        side: 'BOTH',
+      },
+    });
+  });
+
+  test("a move done in this session outside the plan is in the session's list when it is opened again", async () => {
+    mockRecords = [
+      ...mockRecords,
+      record('set', 'x1', { clientId: 'x1', exerciseId: 'lat_pulldown', setType: 'WORKING', loadKg: 50, reps: 10, rir: 1 }, 'w1'),
+    ];
+    await show();
+    expect((await screen.findAllByText(latName)).length).toBeGreaterThan(0);
+  });
+
+  test("the plan's own moves are not offered again; a name not in the catalog says so", async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'bench');
+    expect(screen.queryByRole('button', { name: t('workout.add.pick', { name: 'Bench press' }) })).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'zzz');
+    expect(screen.getByText(t('workout.add.none'))).toBeOnTheScreen();
   });
 });
