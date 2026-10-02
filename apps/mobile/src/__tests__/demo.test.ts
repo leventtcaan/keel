@@ -5,7 +5,7 @@
  * signal that does not come on an isolation move, so it is not said there.
  */
 import type { components } from '@/api/schema';
-import { tipsFor } from '@/train/demo';
+import { mapAreas, tipsFor } from '@/train/demo';
 
 type Schemas = components['schemas'];
 const move = (kind: 'COMPOUND' | 'ISOLATION', muscles: string[]) => ({ id: 'm', kind, muscles }) as unknown as Schemas['Exercise'];
@@ -21,4 +21,10 @@ test('a back move: full range until the reps slow, then partial reps — the set
 
 test('an isolation move: no last-rep signal to watch for', () => {
   expect(tipsFor(move('ISOLATION', ['side_delts']))).toEqual(['demo.tip.fullRange', 'demo.tip.tempo']);
+});
+
+test("the muscle map's areas of a move: each muscle's, once; a muscle the drawing has no area for adds none", () => {
+  expect(mapAreas(move('COMPOUND', ['chest', 'front_delts', 'triceps']))).toEqual(['chest', 'deltoids', 'triceps']);
+  expect(mapAreas(move('COMPOUND', ['lats', 'upper_back', 'biceps', 'rear_delts']))).toEqual(['upper-back', 'trapezius', 'biceps', 'deltoids']);
+  expect(mapAreas(move('COMPOUND', ['tongue']))).toEqual([]);
 });

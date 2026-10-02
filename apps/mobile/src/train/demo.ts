@@ -17,3 +17,8 @@ export function tipsFor(move: Schemas['Exercise']): string[] {
   const lastRep = move.kind !== 'ISOLATION' && !back;
   return [back ? 'demo.tip.backRange' : 'demo.tip.fullRange', 'demo.tip.tempo', ...(lastRep ? ['demo.tip.lastRep'] : [])];
 }
+
+/** The muscle map's areas of a move (the drawing's names, muscle_map_areas), each once, in the move's order. */
+export function mapAreas(move: Schemas['Exercise']): string[] {
+  return [...new Set(move.muscles.flatMap((muscle) => workoutParams.muscleMapAreas[muscle] ?? []))];
+}

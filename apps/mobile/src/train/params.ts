@@ -23,6 +23,7 @@ export const workoutParams = {
   ownMoveNameMaxChars: param<number>('own_move_name_max_chars'),
   backMuscles: param<string[]>('back_muscles'),
   setupValueMaxChars: param<number>('setup_value_max_chars'),
+  muscleMapAreas: param<Record<string, string[]>>('muscle_map_areas'),
   warmup: {
     first: {
       sets: param<number>('warmup_sets_first_move'),

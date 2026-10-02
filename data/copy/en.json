@@ -225,6 +225,7 @@
     },
     "muscles": "Works",
     "separator": ", ",
+    "mapLabel": "Muscle map: {muscles}",
     "muscle": {
       "biceps": "Biceps",
       "calves": "Calves",

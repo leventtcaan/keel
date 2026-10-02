@@ -14,6 +14,9 @@ import type { Move, TrainData } from '@/train/trainData';
 type Schemas = components['schemas'];
 
 let mockParams: { exercise?: string } = {};
+// The drawing itself is the library's (SVG); what the screen hands it is what is tested.
+const mockBody = jest.fn((_props: { side?: string; data: ReadonlyArray<{ slug?: string }> }) => null);
+jest.mock('react-native-body-highlighter', () => ({ __esModule: true, default: (props: { side?: string; data: ReadonlyArray<{ slug?: string }> }) => mockBody(props) }));
 jest.mock('expo-router', () => ({ router: { back: jest.fn() }, useLocalSearchParams: () => mockParams }));
 
 const move = (id: string, extra: Partial<Schemas['Exercise']>): Schemas['Exercise'] => ({
@@ -150,4 +153,21 @@ test('every muscle the catalog may name has its words; the back muscles are musc
   expect(muscles.length).toBeGreaterThan(0);
   expect(muscles.filter((m) => t(`demo.muscle.${m}`).startsWith('[missing'))).toEqual([]);
   expect(workoutParams.backMuscles.filter((m) => !muscles.includes(m))).toEqual([]);
+});
+
+test('the muscle map: front and back, the move\'s areas marked; a move with no muscles has none', async () => {
+  await show();
+  await screen.findByText(t('demo.tip.tempo'));
+  const sides = mockBody.mock.calls.map(([props]) => props.side);
+  expect(new Set(sides)).toEqual(new Set(['front', 'back']));
+  expect(mockBody.mock.calls.at(-1)?.[0].data.map((d) => d.slug)).toEqual(['quadriceps', 'gluteal']);
+  expect(screen.getByLabelText(t('demo.mapLabel', { muscles: `${t('demo.muscle.quads')}, ${t('demo.muscle.glutes')}` }))).toBeOnTheScreen();
+});
+
+test('every catalog muscle has an area on the drawing', () => {
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs');
+  const path = jest.requireActual<typeof import('node:path')>('node:path');
+  const text = fs.readFileSync(path.join(__dirname, '../../../../data/muscles.yaml'), 'utf8');
+  const muscles = [...text.matchAll(/^ {2}([a-z_]+):/gm)].map((m) => m[1]);
+  expect(muscles.filter((m) => (workoutParams.muscleMapAreas[m] ?? []).length === 0)).toEqual([]);
 });
