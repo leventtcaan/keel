@@ -71,7 +71,7 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
 
-**ADR-037 işleri (Part 4 sonu, cevaplardan):** K-435 mola haftası susar #268 ✅ · K-433 figür cinsiyete göre #269 (auto-merge) ·
+**ADR-037 işleri (Part 4 sonu, cevaplardan):** K-435 mola haftası susar #268 ✅ · K-433 figür cinsiyete göre #269 ✅ ·
 M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sabite), K-428, K-430, K-431, K-432 (backend),
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 

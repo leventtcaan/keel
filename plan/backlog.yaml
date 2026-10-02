@@ -1895,7 +1895,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-418]
     why: "ADR-037 #49"
     acceptance:
