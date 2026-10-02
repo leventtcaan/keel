@@ -762,6 +762,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The coach's own questions today, not answered yet (K-512, ADR-039)
+         * @description Güray's triggers (G5 §2) read from the user's logs, asked in the app — never pushed (ADR-036): steps under the
+         *     target after a week on it (T-13), the planned sessions missed in a row (T-4), the loads below last week's (T-5), a
+         *     cut's first days (T-2). Most pressing first; none in a week with a declared state (ADR-038). Each once per
+         *     occurrence (`key`). Words: `copyKey`.title/.body, choices `copyKey`.choice.<choice lowercased>. Health data:
+         *     CONSENT_REQUIRED without the HEALTH_DATA consent; CONFLICT without a profile.
+         */
+        get: operations["getPrompts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompts/{rule}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer one of the coach's questions
+         * @description Kept once per question and occurrence — the same answer again gets the same reply, a different one changes
+         *     nothing. It never changes a call (U1, U2). A rule that is no question, a choice it does not have, or a key that
+         *     is no day is VALIDATION_FAILED. Some answers get words back (`replyCopyKey`); the others take the user somewhere
+         *     on the phone.
+         */
+        post: operations["answerPrompt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions": {
         parameters: {
             query?: never;
@@ -1562,6 +1609,27 @@ export interface components {
              */
             weekOf: string;
             answers: components["schemas"]["Answer"][];
+        };
+        Prompt: {
+            /** @enum {string} */
+            rule: "steps_dropped" | "sessions_missed" | "loads_dropped" | "hunger_first_days";
+            /**
+             * Format: date
+             * @description The occurrence it is asked for (its week's Monday, the first missed day, the cut's first day).
+             */
+            key: string;
+            copyKey: string;
+            choices: string[];
+            source: components["schemas"]["Source"];
+        };
+        PromptAnswer: {
+            /** Format: date */
+            key: string;
+            choice: string;
+        };
+        PromptReply: {
+            /** @description The words the answer gets back, when it gets any. */
+            replyCopyKey?: string;
         };
         /**
          * @description What life brought (L3 §4.2). Words in en.json › state.kind.<kind lowercased>.
@@ -3033,6 +3101,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getPrompts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's questions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Prompt"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    answerPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromptAnswer"];
+            };
+        };
+        responses: {
+            /** @description The answer kept */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromptReply"];
+                };
             };
             default: components["responses"]["Error"];
         };
