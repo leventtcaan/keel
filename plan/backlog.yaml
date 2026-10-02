@@ -1815,7 +1815,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-231, K-217]
     why: "ADR-037 #34: geri çekmede kararlar silinir, deload merdiveninin ilk basamağını bitirecek karar gelmez → yük artışı donardı"
     acceptance:
@@ -1831,7 +1831,7 @@ tasks:
     module: mobile
     type: chore
     size: S
-    status: todo
+    status: done
     depends_on: [K-231]
     why: "ADR-037 #36: K-231'den beri geri çekme bağlı veriyi siler; rıza metni hâlâ 'çağrılar durur' diyordu"
     acceptance:
@@ -1847,7 +1847,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-414]
     why: "ADR-037 #38: seyrek raflı salonda en yakın ağır yük +%100 olabiliyordu (dambıl 10 → 20)"
     acceptance:
@@ -1863,7 +1863,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-420, K-220]
     why: "ADR-037 #39: sunucu setsiz antrenmanı da yapılan seans sayıyordu (tutarlılık + uyum)"
     acceptance:
@@ -1879,7 +1879,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-416, K-217]
     why: "ADR-037 #48 (agent): düzenleme veriyi düzeltir, U2 — yanlış veriden türemiş hedef kalmaz"
     acceptance:
@@ -1911,7 +1911,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-410, K-306]
     why: "ADR-037 #51 (agent): I1 C3 — rutin cümlesi onboarding'de kurulur; antrenman saati orada soruluyor"
     acceptance:
@@ -2004,7 +2004,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-213, K-401]
     why: "Haftada ≤2 soru (U9)"
     acceptance:
@@ -2282,7 +2282,7 @@ tasks:
     module: engine
     type: feature
     size: L
-    status: todo
+    status: doing
     depends_on: [K-112, K-111]
     why: "Hayat araya girer: beyan edilen durum yeni veridir (U2), sayaç sıfırlanmaz (U7) (L3 Y2)"
     acceptance:
@@ -2291,13 +2291,32 @@ tasks:
       - "7+ gün sessizlikten sonra suçlamasız dönüş ve 1 hafta yeniden baseline"
       - "Dönüş yükü ve minimum doz kuralları kaynaklı (U14) — kaynak yoksa o alt madde bekler"
       - "3. ardışık paused haftada tek neden-gösteren soru"
-      - "Başlamadan önce ikiye bölünür (motor / mobil)"
+      - "Bölündü (2 Eki): bu kart motor + sunucu (ADR-038: `/v1/state`, V25, `declared_context`, duraklayan hafta, STATE_STILL); mobil → K-518"
     tests:
       - "StateModeTests"
-    refs: ["arastirma/ham/L3-ozellik-boslugu.md"]
+    refs: ["arastirma/ham/L3-ozellik-boslugu.md", "plan/kararlar/ADR-038-durum-modu.md"]
     learn:
       - "Bağlam modelleme"
       - "Kötüye kullanım tasarımı"
+  - id: K-518
+    title: "Durum modu telefonda: beyan, susan hatırlatmalar, suçlamasız dönüş"
+    milestone: M5
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-516, K-410]
+    why: "K-516'dan bölündü (ADR-038 #8): beyan kullanıcıdan gelir (U9), hatırlatmalar durur (ADR-036 #7)"
+    acceptance:
+      - "Bugün'den beyan: beş durum, isteğe bağlı bitiş günü; yürürlükteki durum ve 'döndüm' (DELETE)"
+      - "Durum sürerken üç hatırlatma da temizlenir (`createReminders({ muted })`); bitince geri kurulur"
+      - "Karar `declared_context` iken kart nedenini söyler; dönüşte suçlamasız karşılama (U7, I1 C6)"
+      - "Duraklayan hafta tutarlılık kartında 'paused' (sayı sıfırlanmaz)"
+    tests:
+      - "state-screen.test.tsx, reminders (muted)"
+    refs: ["plan/kararlar/ADR-038-durum-modu.md", "plan/kararlar/ADR-036-bildirimler.md"]
+    learn:
+      - "Bağlam beyanı"
   - id: K-517
     title: "Haftalık kısa koç notu"
     milestone: M5
