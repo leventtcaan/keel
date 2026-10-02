@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +30,12 @@ class ProfileStore {
     Optional<ProfileController.Profile> find(AccountId account) {
         return jdbc.sql("select * from profile.profile where account_id = :account").param("account", account.value())
                 .query((row, n) -> read(row)).optional();
+    }
+
+    /** When the profile was last saved. */
+    Optional<Instant> savedAt(AccountId account) {
+        return jdbc.sql("select updated_at from profile.profile where account_id = :account").param("account", account.value())
+                .query((row, n) -> row.getObject("updated_at", OffsetDateTime.class).toInstant()).optional();
     }
 
     void save(AccountId account, ProfileController.Profile profile) {

@@ -2,11 +2,11 @@ package app.keel.decision;
 
 import app.keel.consent.ConsentGate;
 import app.keel.consent.ConsentKind;
+import app.keel.engine.Consistency;
 import app.keel.engine.CopyKey;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
-import app.keel.engine.Phase;
 import app.keel.engine.Prompts;
 import app.keel.engine.RuleId;
 import app.keel.engine.Sex;
@@ -22,12 +22,18 @@ import app.keel.training.TrainingLog;
 import app.keel.training.TrainingStatusReader;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -63,11 +69,12 @@ class PromptController {
     private final TrainingStatusReader statuses;
     private final StateStore states;
     private final PromptStore answers;
+    private final WeekLogs weeks;
     private final ParameterSet parameters;
     private final Clock clock;
 
     PromptController(ConsentGate consent, Profiles profiles, CallStore calls, Measurements measurements, TrainingLog training,
-            TrainingStatusReader statuses, StateStore states, PromptStore answers, ParameterSet parameters, Clock clock) {
+            TrainingStatusReader statuses, StateStore states, PromptStore answers, WeekLogs weeks, ParameterSet parameters, Clock clock) {
         this.consent = consent;
         this.profiles = profiles;
         this.calls = calls;
@@ -76,6 +83,7 @@ class PromptController {
         this.statuses = statuses;
         this.states = states;
         this.answers = answers;
+        this.weeks = weeks;
         this.parameters = parameters;
         this.clock = clock;
     }
@@ -89,16 +97,27 @@ class PromptController {
         LocalDate today = LocalDate.now(clock.withZone(zone));
         Parameters p = parameters.forSex(Sex.valueOf(profile.sex().name()));
         Optional<CallStore.Plan> plan = calls.plan(account);
-        int weeksLooked = p.wholeNumber(ParameterKey.MISSED_SESSIONS_IN_A_ROW);
-        List<LocalDate> sessions = training.workoutStarts(account, today.minusWeeks(weeksLooked).atStartOfDay(zone).toInstant(),
-                today.plusDays(1).atStartOfDay(zone).toInstant()).stream().map(started -> started.atZone(zone).toLocalDate()).toList();
-        boolean loadsBelow = statuses.status(account, today, zone, profile.checkInDay()).map(TrainingStatus::loadsBelowLastWeek).orElse(false);
-        // A cut's first days: the day its phase began (a plan only exists from the first call on).
-        Optional<LocalDate> cutBegan = plan.filter(current -> current.phase() == Phase.CUT).map(CallStore.Plan::phaseStart);
-        int stepTarget = plan.map(current -> PlanChange.steps(current, p))
-                .orElseGet(() -> p.wholeNumber(ParameterKey.STEPS_TARGET_START));
-        Prompts.Facts facts = new Prompts.Facts(today, measurements.stepsByDay(account, today.minusWeeks(2), today.minusDays(1)), stepTarget,
-                List.copyOf(profile.trainingDays()), sessions, loadsBelow, cutBegan, states.current(account, today).isPresent());
+        // From the Monday of the week before last: the two calendar weeks the steps and the loads compare.
+        LocalDate weekBefore = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON)).minusWeeks(2);
+        // The training days are asked for from when the profile last set them, or the program was made, whichever is later.
+        LocalDate since = Stream.of(profiles.savedAt(account).map(at -> at.atZone(zone).toLocalDate()), statuses.programSince(account, zone))
+                .flatMap(Optional::stream).max(Comparator.naturalOrder()).orElse(today);
+        LocalDate from = since.isBefore(weekBefore) ? since : weekBefore;
+        TrainingStatusReader.Breaks breaks = statuses.breaks(account, from, today);
+        Set<LocalDate> paused = new HashSet<>(states.days(account, from, today));
+        paused.addAll(breaks.rest());
+        // Every session: the miss counts from the last one, however long ago (a few hundred timestamps a year at most).
+        List<LocalDate> sessions = training.workoutStarts(account, Instant.EPOCH, today.plusDays(1).atStartOfDay(zone).toInstant()).stream()
+                .map(started -> started.atZone(zone).toLocalDate()).toList();
+        // The loads of the calendar week just over against the week before: read as of its Sunday.
+        boolean loadsDropped = statuses.status(account, weekBefore.plusWeeks(2).minusDays(1), zone, profile.checkInDay())
+                .map(TrainingStatus::loadsBelowLastWeek).orElse(false);
+        // Each day's step target as it was (K-220 review): a raised target does not make the weeks before a drop.
+        Function<LocalDate, Integer> stepTarget = plan.map(current -> weeks.stepTargets(account, current, zone, p))
+                .orElseGet(() -> day -> p.wholeNumber(ParameterKey.STEPS_TARGET_START));
+        Prompts.Facts facts = new Prompts.Facts(today, plan.map(CallStore.Plan::phase), measurements.stepsByDay(account, weekBefore, today.minusDays(1)),
+                stepTarget, List.copyOf(profile.trainingDays()), since, sessions, Set.copyOf(paused), breaks.lighter(), loadsDropped,
+                plan.flatMap(current -> DeficitStart.of(current, calls.planSteps(account))), states.current(account, today).isPresent());
         Set<String> answered = answers.answered(account);
         return Prompts.today(facts, p).stream().filter(prompt -> !answered.contains(prompt.rule().value() + "/" + prompt.key()))
                 .map(prompt -> new PromptView(prompt.rule().value(), prompt.key(), prompt.copyKey().value(), prompt.choices(), prompt.source()))

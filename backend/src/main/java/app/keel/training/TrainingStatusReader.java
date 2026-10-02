@@ -6,6 +6,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,32 @@ public class TrainingStatusReader {
         this.log = log;
         this.calls = calls;
         this.catalog = catalog;
+    }
+
+    /** The days the ladder set the work down on purpose (K-512, ADR-039): a week off, a lighter week. */
+    public record Breaks(Set<LocalDate> rest, Set<LocalDate> lighter) {
+    }
+
+    /** The ladder's weeks off and lighter weeks on the days from {@code from} to {@code to} (both included). */
+    public Breaks breaks(AccountId account, LocalDate from, LocalDate to) {
+        Set<LocalDate> rest = new HashSet<>();
+        Set<LocalDate> lighter = new HashSet<>();
+        for (TrainingChanges.Change change : calls.changes(account)) {
+            if (change.kind() == TrainingChanges.Kind.HOLD_LOAD) {
+                continue;
+            }
+            LocalDate first = change.startsOn().isBefore(from) ? from : change.startsOn();
+            LocalDate last = change.endsOn() == null || change.endsOn().isAfter(to) ? to : change.endsOn();
+            if (!first.isAfter(last)) {
+                first.datesUntil(last.plusDays(1)).forEach(change.kind() == TrainingChanges.Kind.REST_WEEK ? rest::add : lighter::add);
+            }
+        }
+        return new Breaks(Set.copyOf(rest), Set.copyOf(lighter));
+    }
+
+    /** The day the account's program was made (or last replaced), on the user's calendar. */
+    public Optional<LocalDate> programSince(AccountId account, ZoneId zone) {
+        return programs.createdAt(account).map(made -> made.atZone(zone).toLocalDate());
     }
 
     /** {@code checkInDay} counts the weeks the load has been held in check-in weeks. */
