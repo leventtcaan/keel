@@ -13,6 +13,13 @@ Başta:
    gerekenler"i oku. DURUM'a "## M5 ilerleme" bölümünü aç (M4'teki tablo biçimi).
 0a) Disk: `df -h ~`. Levent'in cevapladığı sorular ADR'ye işlendi mi (M4 sonu)?
 
+Önce — M4 sonu cevaplarından kalan işler (ADR-037, kartlar backlog'da; DURUM › M4 ilerleme › "ADR-037 işleri"):
+  K-429 rıza metni + sürüm `2-draft` (telefon + sunucu; 13 backend test dosyasındaki 26 sabit `1-draft` rıza isteği tek bir
+  test sabitine bağlanır — istek değişir, iddia değil; CI'da izle) · K-428 geri çekmede açık "yükü tut" biter · K-431 yalnız
+  setli antrenman sayılır (ConsistencyApiTests fikstürüne set — ADR-037 #39 K1 onaylı) · K-430 sıçrama sınırı → tekrar
+  (Java + TS + ortak vakalar) · K-432 son seans düzenlenince hedef yeniden · K-434 onboarding hatırlatma adımı (akış
+  testinin adım yürüyüşü iki yerde değişir: yeni adım — davranışı bilerek değiştirir, Levent'e K1 notu).
+
 Kapsam, sırayla — hepsi LLM'siz, deterministik:
 1) K-516 durum modu: önce ikiye böl (engine + mobile, backlog'a yaz). Motor: Traveling/Sick/Pain/Busy/New gym →
    NO_DECISION_YET (context), af haftası yanmaz, "paused" sayaç, 7+ gün sonra suçlamasız dönüş + 1 hafta yeniden
