@@ -8,7 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -29,7 +28,6 @@ public final class Prompts {
     private static final Source SESSIONS = new Source("arastirma/ham/guray/G5-surec-supplement.md#T-4", SourceTag.EXPERIENCE);
     private static final Source LOADS = new Source("arastirma/ham/guray/G5-surec-supplement.md#T-5", SourceTag.EXPERIENCE);
     private static final Source HUNGER = new Source("arastirma/ham/guray/G5-surec-supplement.md#T-2", SourceTag.EXPERIENCE);
-    private static final int DAYS_PER_WEEK = 7;
 
     /** One question: its rule and source (U14), the occurrence it is for, its words, its answers. */
     public record Prompt(RuleId rule, Source source, String key, CopyKey copyKey, List<String> choices) {
@@ -66,7 +64,7 @@ public final class Prompts {
         }
         List<Prompt> prompts = new ArrayList<>();
         // The calendar week just over: a week is judged once it is over, and a question about it keeps its key all week.
-        LocalDate lastWeek = facts.today().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
+        LocalDate lastWeek = facts.today().with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON)).minusWeeks(1);
         if (stepsDropped(facts, lastWeek, parameters)) {
             prompts.add(prompt(STEPS_DROPPED, STEPS, lastWeek.toString(), "BUSY", "LESS"));
         }
@@ -81,21 +79,30 @@ public final class Prompts {
     }
 
     /**
-     * T-13: the last calendar week's average under the target after the week before was on it — paused days not counted,
-     * each week with enough days left (min_logged_days_per_week), or nothing is said.
+     * T-13: the last calendar week under its step target after the week before was on its own — each against the target
+     * of the days it counted (K-220 review: raising it would otherwise call the weeks before a miss); paused days not
+     * counted; each week with enough days left (min_logged_days_per_week), or nothing is said.
      */
     private static boolean stepsDropped(Facts facts, LocalDate lastWeek, Parameters parameters) {
         int enough = parameters.wholeNumber(ParameterKey.MIN_LOGGED_DAYS_PER_WEEK);
-        OptionalDouble last = average(facts, lastWeek, enough);
-        OptionalDouble before = average(facts, lastWeek.minusWeeks(1), enough);
-        return last.isPresent() && before.isPresent() && last.getAsDouble() < facts.stepTarget().apply(facts.today()) && before.getAsDouble() >= facts.stepTarget().apply(facts.today());
+        Optional<Boolean> lastUnder = under(facts, lastWeek, enough);
+        Optional<Boolean> beforeUnder = under(facts, lastWeek.minusWeeks(1), enough);
+        return lastUnder.orElse(false) && beforeUnder.map(under -> !under).orElse(false);
     }
 
-    /** The average of the week from {@code monday}, if at least {@code enough} of its days not paused have a count. */
-    private static OptionalDouble average(Facts facts, LocalDate monday, int enough) {
-        List<Integer> counts = monday.datesUntil(monday.plusWeeks(1)).filter(day -> !facts.pausedDays().contains(day))
-                .map(facts.steps()::get).filter(steps -> steps != null).toList();
-        return counts.size() < enough ? OptionalDouble.empty() : counts.stream().mapToInt(Integer::intValue).average();
+    /**
+     * Whether the week from {@code monday} averaged under the target of its counted days; none when fewer than
+     * {@code enough} of its days not paused have a count.
+     */
+    private static Optional<Boolean> under(Facts facts, LocalDate monday, int enough) {
+        List<LocalDate> counted = monday.datesUntil(monday.plusWeeks(1))
+                .filter(day -> !facts.pausedDays().contains(day) && facts.steps().containsKey(day)).toList();
+        if (counted.size() < enough) {
+            return Optional.empty();
+        }
+        long steps = counted.stream().mapToLong(facts.steps()::get).sum();
+        long target = counted.stream().mapToLong(day -> facts.stepTarget().apply(day)).sum();
+        return Optional.of(steps < target);
     }
 
     /**
