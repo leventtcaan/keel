@@ -455,6 +455,12 @@ describe("this week's check-in (K-501)", () => {
     expect(screen.getByText(t('today.checkIn.none'))).toBeOnTheScreen();
   });
 
+  test('a check-in that could not be read says so, with a way to read again', async () => {
+    mockAnswers['/v1/check-ins/current'] = 'offline';
+    await show();
+    expect(screen.getByText(t('today.failed'))).toBeOnTheScreen();
+  });
+
   test("answered: no card — the week's call is the call card's", async () => {
     mockAnswers['/v1/check-ins/current'] = checkIn(true, []);
     await show();

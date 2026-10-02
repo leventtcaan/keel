@@ -52,7 +52,7 @@ export function loadCheckIn(api: ApiClient): Promise<Loaded<CheckIn>> {
 }
 
 /** Why a send did not give a call, by name only (V3, V4: never what was answered). */
-export type SendProblem = 'NoConnection' | 'Moved' | 'ServerError';
+export type SendProblem = 'NoConnection' | 'Moved' | 'Consent' | 'ServerError';
 
 /** Sends the answers; the week's call, or why not. A 409 is the week having moved, or its call already made. */
 export async function sendAnswers(api: ApiClient, body: Schemas['CheckInAnswers']): Promise<{ call: Schemas['Decision'] } | { problem: SendProblem }> {
@@ -63,5 +63,7 @@ export async function sendAnswers(api: ApiClient, body: Schemas['CheckInAnswers'
     return { problem: 'NoConnection' };
   }
   if (answer.data !== undefined) return { call: answer.data };
-  return { problem: answer.response.status === 409 ? 'Moved' : 'ServerError' };
+  if (answer.response.status === 409) return { problem: 'Moved' };
+  // The consent withdrawn on another device since the questions were read.
+  return { problem: answer.response.status === 403 && answer.error?.code === 'CONSENT_REQUIRED' ? 'Consent' : 'ServerError' };
 }

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -28,6 +28,7 @@ import type { Loaded } from '@/today/today';
 const SAID: Record<SendProblem, string> = {
   NoConnection: 'checkIn.screen.sendFailed',
   Moved: 'checkIn.screen.moved',
+  Consent: 'today.consent.body',
   ServerError: 'checkIn.screen.serverError',
 };
 
@@ -49,6 +50,15 @@ export default function CheckInScreen() {
   const [clientId] = useState(newClientId);
   // A ref, not state: two taps in the same moment both see state from before either ran, a ref they share.
   const sending = useRef(false);
+  // Left while the answers were on their way (the system's swipe back): their arrival closes nothing — Today reads the
+  // call on its own focus.
+  const here = useRef(true);
+  useEffect(
+    () => () => {
+      here.current = false;
+    },
+    [],
+  );
 
   // Read on arrival and again on asking (a retry, the week moved); an answer landing after the screen left is dropped.
   const [reads, setReads] = useState(0);
@@ -59,6 +69,8 @@ export default function CheckInScreen() {
       if (!live) return;
       setCheckIn(found);
       setPicks({});
+      // Read again after the week moved: if its call is made, that is all there is to say.
+      if (found.state === 'ready' && found.value.answered) setProblem(null);
     });
     return () => {
       live = false;
@@ -74,7 +86,7 @@ export default function CheckInScreen() {
     try {
       const result = await sendAnswers(api, { clientId, weekOf: current.weekOf, answers });
       if ('call' in result) {
-        router.back();
+        if (here.current) router.back();
         return;
       }
       report({ name: result.problem });
@@ -90,6 +102,9 @@ export default function CheckInScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <Pressable accessibilityRole="button" accessibilityLabel={t('checkIn.screen.back')} onPress={() => router.back()} hitSlop={tokens.space.md}>
+          <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t('checkIn.screen.back')}`}</Text>
+        </Pressable>
         <ScreenTitle>{t('checkIn.screen.title')}</ScreenTitle>
         <Body
           checkIn={checkIn}
@@ -208,4 +223,5 @@ const styles = StyleSheet.create({
   question: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.md, gap: tokens.space.sm },
   answers: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   footer: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg },
+  back: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
 });

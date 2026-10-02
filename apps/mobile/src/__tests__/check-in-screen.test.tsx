@@ -206,3 +206,40 @@ test('two taps on send while it is on its way send once', async () => {
   expect(mockPOST).toHaveBeenCalledTimes(1);
   await act(async () => answer(ok(CALL)));
 });
+
+test('a way back to Today, on every state of the screen', async () => {
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: true, questions: [] });
+  await show();
+  await press(t('checkIn.screen.back'));
+  expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('the screen left while the answers are on their way: nothing is closed when they arrive', async () => {
+  let answer: (a: Answer) => void = () => {};
+  mockSend = () => new Promise((resolve) => (answer = resolve));
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [] });
+  await show();
+  await fireEvent.press(sendButton());
+  await screen.unmount();
+  await act(async () => answer(ok(CALL)));
+  expect(mockBack).not.toHaveBeenCalled();
+});
+
+test('the consent withdrawn meanwhile (403 on the send): said as the consent, not as a fault', async () => {
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [] });
+  mockSend = async () => refused(403, 'CONSENT_REQUIRED');
+  await show();
+  await press(t('checkIn.screen.send'));
+  expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('checkIn.screen.serverError'))).toBeNull();
+});
+
+test('the week moved and its call is already made: the screen says only that the call is in', async () => {
+  let reads = 0;
+  mockCheckIn = async () => (++reads === 1 ? ok({ weekOf: '2026-10-05', answered: false, questions: [] }) : ok({ weekOf: '2026-10-05', answered: true, questions: [] }));
+  mockSend = async () => refused(409, 'CONFLICT');
+  await show();
+  await press(t('checkIn.screen.send'));
+  expect(screen.getByText(t('checkIn.screen.answered'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('checkIn.screen.moved'))).toBeNull();
+});

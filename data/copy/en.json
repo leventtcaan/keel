@@ -41,7 +41,7 @@
       "title": "This week's check-in",
       "questions": "{count} short questions, then your call.",
       "one": "One short question, then your call.",
-      "none": "Nothing to ask this week: your call is one tap away.",
+      "none": "Nothing to ask this week: your call is ready to make.",
       "open": "Check in"
     },
     "consistency": {
@@ -988,6 +988,7 @@
       "moved": "Your check-in week has changed. Here it is again.",
       "failed": "Couldn't load this week's check-in. Check your connection.",
       "retry": "Try again",
+      "back": "Today",
       "scaleSpoken": "{n} of 10",
       "centimetres": "Centimetres",
       "inches": "Inches"
