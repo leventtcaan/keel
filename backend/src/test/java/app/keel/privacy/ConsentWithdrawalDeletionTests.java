@@ -83,6 +83,20 @@ class ConsentWithdrawalDeletionTests {
     }
 
     @Test
+    void withdrawingTheHealthDataConsentEndsAHeldLoadSoTheTrainingGoesOn() throws Exception {
+        // K-428 (ADR-037 #34): the calls are deleted with the consent, so no call would come to end the deload ladder's
+        // first rung; the load would stay held for good. The hold ends with the withdrawal; the ladder starts again from
+        // its own observation once the consent is given again.
+        AccountId account = fixture().withDataEverywhere();
+        assertThat(program(account)).containsKey("loadHeldSince");
+
+        assertThat(withdraw(account, "HEALTH_DATA", true)).hasStatusOk();
+
+        assertThat(program(account)).doesNotContainKey("loadHeldSince");
+        assertThat(fixture().rowsOf(account).get("training.program_change")).as("training stays (ADR-007): the hold ends, its record stays").isOne();
+    }
+
+    @Test
     void theApiAsksForTheDeletionToBeConfirmed() throws Exception {
         AccountId account = fixture().withDataEverywhere();
         Map<String, Integer> before = fixture().rowsOf(account);
@@ -197,6 +211,13 @@ class ConsentWithdrawalDeletionTests {
     private MvcTestResult withdraw(AccountId account, String kind, boolean confirm) {
         return mvc.delete().uri("/v1/consents/" + kind + "?confirmDataDeletion=" + confirm).header("Authorization", fixture().bearer(account))
                 .exchange();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> program(AccountId account) throws Exception {
+        MvcTestResult result = mvc.get().uri("/v1/program").header("Authorization", fixture().bearer(account)).exchange();
+        assertThat(result).hasStatusOk();
+        return AccountFixture.JSON.readValue(result.getResponse().getContentAsString(), Map.class);
     }
 
     private void insertWeighIn(AccountId account) {
