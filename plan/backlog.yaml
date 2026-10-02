@@ -1927,7 +1927,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-410, K-405]
     why: "ADR-037 #51b: mola planın parçası; antrenman çağrısı onunla çelişir"
     acceptance:

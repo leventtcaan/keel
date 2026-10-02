@@ -73,3 +73,10 @@
 - takıldım: Docker yok → DB testleri CI'da (RED CI'da gösterildi); inceleme her görevde gerçek hata buldu (K-214'ten beri zamanlanmış silme geçişi transaction'sızdı; en eski günün uykusu silinecekti; Bugün eskiyordu)
 - sıradaki: Part 1 aktarımı (docs/aktarim/M4 1-7); Levent: K-308 komutları, sorular 33-37; sonra Part 2
 - AI: bütün kod, test, metin agent; ürün/veri soruları Levent'e (DURUM 33-37)
+
+## 2026-10-02 · M4 Part 4 (toplu mod)
+- yaptım: K-410 #253/#254 (bildirimler: yalnız yerel, saf plan, tek zincir, kuşak), K-411 #256 (dinlenme arka planda; Live Activity → K-426), K-412 #257 (Health'e yazma, tür başına izin, `keel:` işareti), K-423 #258/#259 (tarifler telefonda, `FoodPicker`/`ItemRows`), K-435 #268, K-433 #269; M4 çıkış kontrolü; M5 dört part prompt'u
+- karar: ADR-036 (bildirimler), ADR-037 (33-54 cevapları; 48 ve 51 bana bırakıldı: düzenleme hedefi yeniler, onboarding'de hatırlatma adımı); ADR-031 Ek (yazma)
+- takıldım: simülatörün yazma aracı karakter düşürüyor; çalışan simülatör diski ~4 GB tüketti (shutdown ile döndü); renk bekçisi `#51b` yorumunu hex sandı
+- sıradaki: Levent dönünce Part 4 aktarımı (README 19-23; Part 2-3: 8-18); sonra M5 Part 1 (önce ADR-037 backend işleri + K-429, K-434)
+- AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion, 23 soru)

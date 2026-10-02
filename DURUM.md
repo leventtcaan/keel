@@ -71,10 +71,14 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
 
+**ADR-037 işleri (Part 4 sonu, cevaplardan):** K-435 mola haftası susar #268 ✅ · K-433 figür cinsiyete göre #269 (auto-merge) ·
+M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sabite), K-428, K-430, K-431, K-432 (backend),
+K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
+
 ## ▶ DEVAM NOKTASI (2 Eki akşam — M4 Part 4 bitti)
-Part 4 ÇIKIŞ yazıldı. Sıradaki: Levent'in soru cevapları (33-54) → ADR; sonra Levent dönünce **Part 4 aktarımı**
-(`docs/aktarim/M4/` README 19-22); Part 2-3 aktarımları da bekliyor (README 8-18). Sonra M5 Part 1
-(`plan/oturum-promptlari/M5-part1.md`).
+Part 4 ÇIKIŞ yazıldı; sorular 33-54 cevaplandı → ADR-037. Sıradaki: Levent dönünce **Part 4 aktarımı** (`docs/aktarim/M4/`
+README 19-23); Part 2-3 aktarımları da bekliyor (README 8-18). Sonra M5 Part 1 (`plan/oturum-promptlari/M5-part1.md`, önce
+ADR-037'nin kalan işleri).
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
