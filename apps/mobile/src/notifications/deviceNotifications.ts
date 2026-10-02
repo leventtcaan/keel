@@ -6,6 +6,8 @@
 import * as Notifications from 'expo-notifications';
 
 import type { Reminder } from './plan';
+import type { AlertAccess } from '@/train/restAlert';
+
 import type { NotificationAccess, NotificationPermission } from './reminders';
 
 /** The reminders' own identifiers: clearing them leaves every other notification (the rest timer's, K-411) alone. */
@@ -44,5 +46,16 @@ export function deviceNotifications(): NotificationAccess {
       }
     },
     clear: clearReminders,
+  };
+}
+
+/** One notification at a moment under the caller's id — the rest timer's (K-411); not a reminder, so never cleared with them. */
+export function deviceAlerts(): AlertAccess {
+  return {
+    permission: async () => answer(await Notifications.getPermissionsAsync()),
+    alertAt: async (id, at, title, body) => {
+      await Notifications.scheduleNotificationAsync({ identifier: id, content: { title, body }, trigger: triggerOf({ at }) });
+    },
+    cancel: (id) => Notifications.cancelScheduledNotificationAsync(id),
   };
 }

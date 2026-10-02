@@ -16,7 +16,7 @@ import type { HealthAccess } from '@/health/health';
 import { healthKitAccess } from '@/health/healthKit';
 import { syncActivityDays } from '@/health/activitySync';
 import { syncHealthWeights } from '@/health/weightSync';
-import { deviceNotifications } from '@/notifications/deviceNotifications';
+import { deviceAlerts, deviceNotifications } from '@/notifications/deviceNotifications';
 import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
@@ -55,6 +55,7 @@ async function build(): Promise<PhoneServices> {
     kv: Storage,
     locale: Intl.DateTimeFormat().resolvedOptions().locale,
     notifications: deviceNotifications(), // local only: no push token, nothing to a server (K-410)
+    alerts: deviceAlerts(), // the rest timer's (K-411)
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);
