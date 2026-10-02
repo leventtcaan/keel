@@ -42,6 +42,7 @@ const mockWithdrawHealthData = jest.fn(async () => {
 const mockHealth = { available: false, requestRead: jest.fn(async () => {}) };
 const mockTurnOn = jest.fn(async () => ({ granted: true, canAskAgain: false }));
 const mockSetCue = jest.fn(async (_cue: string) => {});
+let mockReminderSettings = { enabled: false, cue: '' }; // one object per test: useSyncExternalStore compares by identity
 const mockReport = jest.fn();
 const mockKeepOnPhone = jest.fn(async (system: 'METRIC' | 'IMPERIAL') => {
   mockUnits = system;
@@ -75,7 +76,14 @@ jest.mock('@/services/ServicesProvider', () => ({
     syncHealth: async () => 0, // Today reads Apple Health's weigh-ins first (K-402); none here
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
     // Today hands on the program's week off (ADR-037 › 51b); What to expect offers to turn them on (K-434).
-    reminders: { era: () => 0, keepRestUntil: async () => {}, turnOn: mockTurnOn, setCue: mockSetCue },
+    reminders: {
+      era: () => 0,
+      keepRestUntil: async () => {},
+      turnOn: mockTurnOn,
+      setCue: mockSetCue,
+      current: () => mockReminderSettings,
+      subscribe: () => () => {},
+    },
   }),
 }));
 
@@ -101,6 +109,7 @@ beforeEach(() => {
   mockKeepOnPhone.mockClear();
   mockTurnOn.mockReset().mockResolvedValue({ granted: true, canAskAgain: false });
   mockSetCue.mockReset().mockResolvedValue(undefined);
+  mockReminderSettings = { enabled: false, cue: '' };
 });
 
 /** The rendered router is itself awaitable, so it is wrapped: returned bare from an async function it would be awaited. */
@@ -517,13 +526,46 @@ describe('reminders, offered once in onboarding with what they are (K-434, ADR-0
     expect(mockTurnOn).toHaveBeenCalledTimes(1);
   });
 
-  test('without a sentence none is kept; iOS saying no is said, with the way back in Settings', async () => {
+  test('without a sentence none is kept; iOS saying no for good is said, with the way to iOS Settings, and no button that does nothing', async () => {
     mockTurnOn.mockResolvedValue({ granted: false, canAskAgain: false });
     await walkTo('expectations');
     await press(t('settings.reminders.turnOn'));
     expect(mockSetCue).not.toHaveBeenCalled();
     expect(screen.getByText(t('onboarding.reminders.refused'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('settings.reminders.openSettings') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('settings.reminders.turnOn') })).toBeNull();
     expect(screen.queryByText(t('onboarding.reminders.on'))).toBeNull();
+  });
+
+  test('iOS not deciding yet (its sheet can still show): nothing is said off, and the button stays', async () => {
+    mockTurnOn.mockResolvedValue({ granted: false, canAskAgain: true });
+    await walkTo('expectations');
+    await press(t('settings.reminders.turnOn'));
+    expect(screen.queryByText(t('onboarding.reminders.refused'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('settings.reminders.turnOn') })).toBeEnabled();
+  });
+
+  test('a sentence typed but not turned on says it is kept only with the reminders', async () => {
+    await walkTo('expectations');
+    expect(screen.queryByText(t('onboarding.reminders.cueKeptOnlyOn'))).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText(t('settings.reminders.cue.label')), 'After work');
+    expect(screen.getByText(t('onboarding.reminders.cueKeptOnlyOn'))).toBeOnTheScreen();
+  });
+
+  test('reminders already on (the step opened again): said so, not offered again', async () => {
+    mockReminderSettings = { enabled: true, cue: '' };
+    await walkTo('expectations');
+    expect(screen.getByText(t('onboarding.reminders.on'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('settings.reminders.turnOn') })).toBeNull();
+  });
+
+  test('a sentence that could not be kept: iOS is not asked, and it is said', async () => {
+    mockSetCue.mockRejectedValue(Object.assign(new Error('kv failed'), { name: 'KvFailed' }));
+    await walkTo('expectations');
+    await fireEvent.changeText(screen.getByLabelText(t('settings.reminders.cue.label')), 'After work');
+    await press(t('settings.reminders.turnOn'));
+    expect(mockTurnOn).not.toHaveBeenCalled();
+    expect(screen.getByText(t('settings.reminders.failed'))).toBeOnTheScreen();
   });
 
   test('a second tap while iOS asks turns on once, and the button is off', async () => {

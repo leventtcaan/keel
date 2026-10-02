@@ -1195,7 +1195,8 @@
     "reminders": {
       "title": "Reminders, if you want them",
       "on": "Reminders are on. You can change them in Settings at any time.",
-      "refused": "Notifications are off for keel in iOS. You can turn them on later in Settings."
+      "refused": "Notifications are off for keel in iOS. Only iOS Settings can turn them on now.",
+      "cueKeptOnlyOn": "Kept only if you turn reminders on."
     },
     "appleHealth": {
       "connect": "Connect",

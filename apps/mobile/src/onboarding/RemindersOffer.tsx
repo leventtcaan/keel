@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useRef, useState, useSyncExternalStore } from 'react';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -11,6 +11,7 @@ import { tokens } from '@/theme/tokens';
 
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
 
+/** What came of "Turn on": on; iOS saying no for good (only iOS Settings can allow them now); or not kept. */
 type Outcome = 'on' | 'refused' | 'failed';
 const SAID: Record<Outcome, string> = { on: 'onboarding.reminders.on', refused: 'onboarding.reminders.refused', failed: 'settings.reminders.failed' };
 
@@ -19,10 +20,14 @@ const SAID: Record<Outcome, string> = { on: 'onboarding.reminders.on', refused: 
  * sheet shows once), and the user's own routine sentence — set where the rhythm of the week is told (I1 C3, F1 step
  * 10). On What to expect, not a screen of its own: the walk stays within 12 screens with the look and the AI consent
  * still to come (I1 F1). "Turn on" keeps the sentence and asks iOS through the same service as Settings; going on
- * without it asks nothing and keeps nothing. Nothing here holds onboarding up: a failure is said and reported.
+ * without it asks nothing and keeps nothing — a sentence typed says so. Reminders already on (the step opened again)
+ * are said, not offered. iOS saying no for good leaves the way to iOS Settings, never a button that does nothing; iOS
+ * not deciding yet (its sheet can still show) leaves the button. Nothing here holds onboarding up: a failure is said
+ * and reported.
  */
 export function RemindersOffer() {
   const { reminders, report } = useAppServices();
+  const settings = useSyncExternalStore(reminders.subscribe, reminders.current);
   const { color } = useTheme();
   const [cue, setCue] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,7 +42,7 @@ export function RemindersOffer() {
     try {
       if (cue.trim() !== '') await reminders.setCue(cue);
       const answer = await reminders.turnOn();
-      setOutcome(answer.granted ? 'on' : 'refused');
+      setOutcome(answer.granted ? 'on' : answer.canAskAgain ? null : 'refused');
     } catch (error) {
       report({ name: nameOf(error) });
       setOutcome('failed');
@@ -47,9 +52,13 @@ export function RemindersOffer() {
     }
   }
 
-  const said = outcome === null ? null : <Text style={[styles.text, { color: color.text }]}>{t(SAID[outcome])}</Text>;
+  const shown: Outcome | null = settings.enabled ? 'on' : outcome;
+  const said = shown === null ? null : <Text style={[styles.text, { color: color.text }]}>{t(SAID[shown])}</Text>;
+  const keptOnlyOn = cue.trim() === '' ? null : <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.reminders.cueKeptOnlyOn')}</Text>;
   const offer =
-    outcome === 'on' ? null : (
+    shown === 'on' ? null : shown === 'refused' ? (
+      <Button label={t('settings.reminders.openSettings')} variant="ghost" onPress={() => void Linking.openSettings()} />
+    ) : (
       <>
         <TextField
           label={t('settings.reminders.cue.label')}
@@ -58,6 +67,7 @@ export function RemindersOffer() {
           hint={t('settings.reminders.cue.hint')}
           maxLength={P.cueMaxChars}
         />
+        {keptOnlyOn}
         <Button label={t('settings.reminders.turnOn')} variant="ghost" onPress={() => void turnOn()} disabled={busy} />
       </>
     );
@@ -67,8 +77,8 @@ export function RemindersOffer() {
         {t('onboarding.reminders.title')}
       </Text>
       <Text style={[styles.note, { color: color.muted }]}>{t('settings.reminders.what', { minutes: P.trainingLeadMinutes })}</Text>
-      {offer}
       {said}
+      {offer}
     </View>
   );
 }

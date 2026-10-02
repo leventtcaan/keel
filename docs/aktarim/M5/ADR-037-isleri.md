@@ -33,7 +33,10 @@ eski rızayı nasıl listelediği sabitlendi. Mutasyon 9/9.
 | 4 | Hatırlatmalar onboarding'i hiç bekletmez: hata adıyla raporlanır (V3: cümle mesajda olabilir), ekranda söylenir | `RemindersOffer.tsx` |
 | 5 | Profil henüz kaydedilmeden açılması zararsız: `reschedule` takvimsiz plan kurar, profil kaydı `keepSchedule` ile yeniden kurar | `reminders.ts` (`keepSchedule`) |
 
-K1: akış testinin yürüyüşü değişmedi (yeni adım yok); `walkTo`'ya yalnız "expectations'ta dur" eklendi. Mutasyon 7/7.
+K1: akış testinin yürüyüşü değişmedi (yeni adım yok); `walkTo`'ya yalnız "expectations'ta dur" eklendi.
+İnceleme: code-reviewer — iOS kesin "hayır" deyince düğme kalıyor ve hiçbir şey yapmıyordu → iOS Ayarları yolu (Ayarlar'daki
+gibi), "henüz karar vermedi" ayrı; yazılan cümle "Sounds good"da sessizce kayboluyordu → "yalnız açarsan saklanır" notu; adıma
+geri gelince açık hatırlatmalar yeniden teklif ediliyordu → servisin durumundan başlar. Mutasyon 7/7 + 7/7.
 
 ### Soru bankası
 1. Hatırlatma teklifi neden ayrı bir onboarding ekranı olmadı?
