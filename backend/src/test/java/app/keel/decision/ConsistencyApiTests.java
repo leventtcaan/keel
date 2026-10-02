@@ -51,7 +51,7 @@ class ConsistencyApiTests {
         LocalDate today = LocalDate.now(ISTANBUL);
         AccountId account = afterTheFirstCall();
         // Today: a session and a weigh-in (done today), and a step count (today is not over: not judged yet).
-        send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", Instant.now().minusSeconds(1).toString()));
+        workout(account, "WORKING");
         send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", Instant.now().minusSeconds(1).toString(),
                 "kg", 82.0, "source", "MANUAL"));
         send(account, "PUT", "/v1/activity-days", Map.of("day", today.toString(), "steps", 12000));
@@ -66,6 +66,20 @@ class ConsistencyApiTests {
         assertThat(consistency).containsKeys("planned", "percent");
         // The first call is this week: no week is over since, nothing counted yet.
         assertThat(consistency.get("record")).isEqualTo(Map.of("onTrackWeeks", 0, "countedWeeks", 0, "currentRun", 0));
+    }
+
+    @Test
+    void onlyAWorkoutWithAWorkingSetIsASessionDone() throws Exception {
+        // K-431 (ADR-037 #39): a workout opened and left, or only warmed up in, is not a session done.
+        AccountId account = afterTheFirstCall();
+        workout(account, null);
+        workout(account, "WARM_UP");
+
+        assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 2, "done", 0));
+
+        workout(account, "WORKING");
+
+        assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 2, "done", 1));
     }
 
     @Test
@@ -133,10 +147,21 @@ class ConsistencyApiTests {
         return JSON.readValue(result.getResponse().getContentAsString(), Map.class);
     }
 
-    private void send(AccountId account, String method, String uri, Object body) {
+    /** A workout started a second ago, with one set of this type — or none. */
+    private void workout(AccountId account, String setType) throws Exception {
+        MvcTestResult started = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
+                Instant.now().minusSeconds(1).toString()));
+        if (setType != null) {
+            send(account, "POST", "/v1/workouts/" + read(started).get("id") + "/sets", Map.of("clientId", UUID.randomUUID(),
+                    "exerciseId", "bench_press", "setType", setType, "loadKg", 60, "reps", 8, "rir", 2));
+        }
+    }
+
+    private MvcTestResult send(AccountId account, String method, String uri, Object body) {
         var request = "PUT".equals(method) ? mvc.put() : mvc.post();
         MvcTestResult result = request.uri(uri).header("Authorization", TestSessions.bearer(context, account))
                 .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(body)).exchange();
         assertThat(result.getResponse().getStatus()).as(method + " " + uri).isLessThan(300);
+        return result;
     }
 }
