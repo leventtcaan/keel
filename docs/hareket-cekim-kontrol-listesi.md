@@ -25,3 +25,8 @@
 ## Kayıt
 `review: {date: "YYYY-AA-GG", by: levent, checklist: pass, notes: "..."}` — tarih **tırnak içinde** (tırnaksız YAML tarihi
 gevşek okunur: 2026-02-30 → 2 Mart; uygulama tırnaksızı reddeder). Çekilmemiş hareket: `review: pending`.
+
+## Kesim ve eksik listesi (K-419)
+- Kes: `python3 tools/clip.py cut <ham.mov> <hareket> <first|last> --start 12.4 --end 16.1` — 3-5 sn, sessiz, dikey 960 px,
+  H.264, hızlı başlar; YAML'daki yola yazar, ~240 KB bütçeyi aşarsa söyler.
+- Ne kaldı: `python3 tools/clip.py missing` — çekilmemiş klipler ve denetimi geçmemiş hareketler.
