@@ -6,6 +6,8 @@ guncelleme: 2026-10-01
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M4 KAPANDI (2 Eki, kod)** — Part 4: K-410 bildirimler, K-411 dinlenme arka planda, K-412 Health'e yazma, K-423 tarifler
+telefonda. Cihaz adımları (K-308) ve klipler (K-419) Levent'te. Sıradaki koşu **M5** (`plan/oturum-promptlari/M5.md`).
 **M4 Part 1 (Bugün ve ölçüm) BİTTİ (1 Eki)** — K-231, K-230, K-420, K-401, K-409, K-402, K-404 birleşti; K-308 cihaz adımı Levent'te.
 **M3 · Mobil kabuk KAPANDI (1 Eki, kod)** — cihaz derlemesi + TestFlight hariç.
 Aktarım bekliyor: M1 (akşam kısmı), M2, M3 (`docs/aktarim/M3/README.md` 1-15). Sıradaki koşu **M4 · Günlük akış**, dört
@@ -68,9 +70,6 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (2 Eki gece — M4 Part 3 bitti)
-Part 3 ÇIKIŞ yazıldı (`## M4 ilerleme`). Sıradaki: Levent dönünce **Part 2 + Part 3 aktarımı** (`docs/aktarim/M4/`, README
-8-18); sonra Part 4 (`plan/oturum-promptlari/M4-part4.md`). Levent'i bekleyen: K-308 cihaz adımları, K-419 çekim, sorular 33-49.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -240,7 +239,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 | 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
 | 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 (+ K-421, K-422 bölündü) | ✅ bitti (2 Eki) — aktarım bekliyor |
 | 3 · Öğün ve hareket | K-407, K-413, K-424, K-416, K-418 (+ K-419 Levent) | ✅ bitti (2 Eki) — aktarım bekliyor; klipler Levent'te |
-| 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | sürüyor (2 Eki) |
+| 4 · Native ve teslim | K-410, K-411, K-412 (+ K-423) · M4 çıkışı · M5 prompt'ları | ✅ bitti (2 Eki) — aktarım bekliyor; K-426 Live Activity cihazla |
 
 **Part 1 başı (1 Eki):** senkron tamam (M3 ÇIKIŞ git ile tutarlı: #211 birleşik, açık PR/worktree yok, `main` temiz).
 Disk 7,9 GB. Docker hâlâ açılmıyor → DB testleri CI'da. K-308 komutları Levent'e verildi (EAS'te `leventcan` hesabıyla
@@ -411,8 +410,51 @@ görülemez; kod + test + Expo Go'da yetenek "kullanılamaz" yolu. Ana checkout 
 | K-410 (2/2) Ayarlar › Reminders (önce açıklama, iOS izni, Ayarlar yolu, kendi cümlesi); simülatörde izin + gerçek bildirim görüldü | ✅ birleşti; inceleme: izin yalnız açılışta okunuyordu (iOS Ayarları'ndan dönüş), kapat/kaydet hatası yutuluyordu → düzeltildi; mutasyon 12/12 | #254 | `M4/K-410.md` |
 | K-411 dinlenme arka planda (yerel "Rest's up" bandın alt ucunda; `AlertAccess` sorusuz port; süperset turu) — **Live Activity → K-426** (cihaz derlemesi + App Group) | ✅ birleşti; simülatörde arka planda bildirim geldi; inceleme: süperset 2. turunda önceki turun uyarısı çalıyordu → düzeltildi; mutasyon 11/11 + 4/4 | #256 | `M4/K-411.md` |
 | K-412 Apple Health'e yazma (ayrı port, iki anahtar, tür başına izin, `keel:` işareti + sync kimliği, 240 dk sınırı, "On" yalnız iOS izinliyken) | ✅ birleşti; Expo Go'da "cihaz derlemesinde" yolu görüldü, gerçek yazma K-308 sonrası; inceleme 5 bulgu düzeltildi; mutasyon 21/21 | #257 | `M4/K-412.md` |
-| K-423 (1/2) tarif öğün aramasında, porsiyonla tek kalem, tembel okuma, Türkçe katlama, düzeltmede `recipeGone` | PR; simülatör: "Nothing found" kusuru bulundu → düzeltildi; inceleme 3 bulgu + test boşluğu düzeltildi; mutasyon 15/15 | #258 | `M4/K-423.md` |
-| K-423 (2/2) tarif listesi + giriş (öğünün kalem akışı `FoodPicker`/`ItemRows`'a çıkarıldı), onaylı silme, geri dönüş | inceleniyor (dal `mobile/243-recipes-screens`); simülatör: geri dönüşü yoktu → eklendi | — | `M4/K-423.md` |
+| K-423 (1/2) tarif öğün aramasında, porsiyonla tek kalem, tembel okuma, Türkçe katlama, düzeltmede `recipeGone` | ✅ birleşti; simülatör: "Nothing found" kusuru bulundu → düzeltildi; inceleme 3 bulgu + test boşluğu düzeltildi; mutasyon 15/15 | #258 | `M4/K-423.md` |
+| K-423 (2/2) tarif listesi + giriş (öğünün kalem akışı `FoodPicker`/`ItemRows`'a çıkarıldı), onaylı silme, geri dönüş | ✅ birleşti; simülatör: geri dönüşü yoktu → eklendi; inceleme 3 bulgu (sınır/5xx metni, kaybolan cevaptan sonra değişiklik, silme sorusu ekran dışında) + 3 test boşluğu; mutasyon 19/20 (+1 eşdeğer) | #259 | `M4/K-423.md` |
+
+**Part 4 ÇIKIŞ = M4 ÇIKIŞ (2 Eki):**
+- **Birleşen:** K-410 #253 + #254 · K-411 #256 (Live Activity → **K-426**, cihaz derlemesi + App Group) · K-412 #257 · K-423 #258 +
+  #259 (zaman kaldı, eklendi). Açık PR yok; worktree yalnız kalıcı `../keel-main`. Ana checkout `origin/main`'de (ayrık HEAD).
+  Aktarım `docs/aktarim/M4/` README 19-22 (K-410, K-411, K-412, K-423), görseller `img/K-41*`, `img/K-423-*`.
+- **M4 çıkış kriterleri** (`yol-haritasi › M4`), kanıtla:
+  | Kriter | Durum | Kanıt |
+  |---|---|---|
+  | Bugün ekranı · tutarlılık sayısı · kalan bütçe | ✅ | K-401 #217, K-420 #216, K-409 #218 |
+  | Tartı · HealthKit (adım, uyku, kilo) | ✅ kod + test; ❌ cihazda görülmedi | K-402 #219, K-404 #220; K-308 bekliyor |
+  | Antrenman seansı ve özeti · PR/geçmiş/süperset · salon profili | ✅ | K-405, K-406, K-415, K-416, K-424, K-414, K-421, K-417 (Part 2-3) |
+  | Öğün kaydı: metin, barkod | ✅ | K-407 (4 PR) |
+  | Öğün fotoğrafı → aralık + gram sorusu | ↪ M5 | K-408 planda M5 (AI rızası K-511, backend K-514) |
+  | Hareket gösterimi (kendi çekimler, ilk/son tekrar) | ⏸ ekran hazır, **klip yok** | K-418 #250/#251; `tools/clip.py missing` → "40 of 40 moves left"; K-419 Levent, K-425 oynatma |
+  | Bildirimler | ✅ (simülatörde izin + gerçek bildirim) | K-410 #253/#254, `img/K-410-quiet-banner.png` |
+  | Dinlenme sayacı | ✅ (arka planda bildirim simülatörde) · Live Activity ❌ → K-426 | K-411 #256, `img/K-411-rest-banner.png` |
+  | Health'e yazma | ✅ kod + test; ❌ cihazda görülmedi | K-412 #257 |
+  | Tarif hafızası | ✅ (sunucu + telefon) | K-413 #239, K-423 #258/#259 |
+  | (M3'ten) cihazda development build + TestFlight | ❌ açık | K-308 Levent'in terminalinde |
+  | Hedef: günün ~40 saniyesi | ❌ ölçülmedi | cihazda ölçülecek (K-308 sonrası) |
+  Kontrol çıktısı (`main` 2c4c81c, 2 Eki): mobil `npm run check` → **85 suite, 1361/1361**, typecheck temiz, lint 0 hata
+  (1 uyarı: `exercise-screen.test.tsx` `ReadonlyArray`, Part 3'ten); backend bu part'ta değişmedi, CI'da yeşil (#259'a kadar
+  her PR üç kontrolle).
+- **Kalan iş (M4'ten devreden):** K-308 cihaz adımları (Levent) → onunla görülecekler: HealthKit okuma/yazma, Live Activity
+  (K-426), ~40 sn ölçümü. K-419 klip çekimi (Levent) → K-425. K-313 çizimler gelince. Backend küçük iş: tarif sınırı (100)
+  ayrı hata kodu taşısın (şimdi düz 400; telefon metni ikisini birlikte anıyor) — kart açılacak.
+- **M5'in bilmesi gerekenler:**
+  - **Bildirimler** (`apps/mobile/src/notifications/`): yalnız yerel; `reminder:` önekli hatırlatmalar tek zincirde "hepsini
+    yeniden kur"; `muted` kancası K-516 için hazır (`createReminders({ muted })`). Dinlenme uyarısı ayrı kimlik (`rest`),
+    `AlertAccess` sorusuz port. Yeni bildirim türü eklenmez (ADR-036); K-512 tetikleyicileri uygulama içi soru.
+  - **Health yazma** (`health/healthWrite.ts`): iki anahtar, tür başına izin, `keel:` işareti + sync kimliği, `shown()`.
+  - **Öğün akışı** ortak: `food/FoodPicker.tsx` (arama + barkod + isteğe bağlı tarifler), `food/ItemRows.tsx`; K-408 (fotoğraf)
+    aynı kalem akışına bağlanır.
+  - **Simülatör:** yazma aracı karakter düşürüyor (pano `simctl pbcopy` da güvenilmez) → ekleme akışlarını testle kanıtla;
+    çalışan simülatör diski ~4 GB tüketiyor → iş bitince `xcrun simctl shutdown all`. Geçici kök koruma yaması yalnız
+    korumaları değiştirir — geri alırken eski yedeği kopyalama (yeni rotaları siler), tersine çevir.
+  - **Görseller** `sips -Z 1000` ile küçültülür (bir ekran görüntüsü 4 MB'tı).
+- **Yeni sorular:** 50-54 (aşağıda). Hepsi (33-54) bu oturumun sonunda AskUserQuestion ile soruluyor.
+
+## ▶ DEVAM NOKTASI (2 Eki akşam — M4 Part 4 bitti)
+Part 4 ÇIKIŞ yazıldı. Sıradaki: Levent'in soru cevapları (33-54) → ADR; sonra Levent dönünce **Part 4 aktarımı**
+(`docs/aktarim/M4/` README 19-22); Part 2-3 aktarımları da bekliyor (README 8-18). Sonra M5 Part 1
+(`plan/oturum-promptlari/M5-part1.md`).
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").

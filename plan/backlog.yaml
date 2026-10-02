@@ -1518,7 +1518,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-307]
     why: "Tasarımı hazırdı (04 §7.4), görevi yoktu (L3 P3)"
     acceptance:
@@ -1538,7 +1538,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-405]
     why: "Masa bahsi: uygulama arka plandayken sayaç çalışmıyordu (L3)"
     acceptance:
@@ -1556,7 +1556,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-404]
     why: "Fitness halkaları ancak böyle kredi alır (ADR-018)"
     acceptance:
@@ -1685,7 +1685,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-413, K-407]
     why: "K-413 tarif hafızasını sunucuya koydu (ADR-034); kullanıcıya telefondan ulaşması gerekir. Mobil kısım bölündü (bir görev = bir modül)"
     acceptance:
