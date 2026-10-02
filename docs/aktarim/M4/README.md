@@ -19,3 +19,6 @@
 11. K-417 ısınma — kaynaklı sayı + ürün merdiveni, ortak yuvarlama (#227 hedef ızgarası), bekleyen ısınma, tek taraf, salonun biriminde plaka
 12. K-415 geçmiş + rekorlar (+ K-422 not sunucusu) — sunucu + yerel birleşim, pencere, türetilmiş rekor, görünen ağırlık, NUL/coalesce
 13. K-421 salon profili ekranı — kendi biriminde düzenleme, kayıpsız gidiş-dönüş, tek kaynak sınırlar, emekli makine
+
+## Aktarım sırası (Part 3)
+14. K-407 öğün hızlı kayıt — sunucu + yerel birleşim, dünkü gibi (`repeatOf`), boş başlayan miktar, aralık kartı + adlı soru, sil-sonra-kaydet düzeltme, barkod

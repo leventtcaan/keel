@@ -24,6 +24,16 @@ test("iOS's permission text is the copy file's; reading only, no background deli
   });
 });
 
+test('the camera is for barcodes only (K-407): its permission text from the copy file, no microphone on either platform', () => {
+  const camera = (config.plugins as Plugin[]).filter((p) => (Array.isArray(p) ? p[0] : p) === 'expo-camera');
+  expect(camera).toEqual([
+    [
+      'expo-camera',
+      { cameraPermission: t('permissions.camera'), microphonePermission: false, recordAudioAndroid: false, barcodeScannerEnabled: true },
+    ],
+  ]);
+});
+
 test('everything else in app.json is kept', () => {
   expect(config.name).toBe(base.expo.name);
   expect(config.ios?.usesAppleSignIn).toBe(true);
@@ -44,7 +54,7 @@ describe('builds (K-308)', () => {
     }
   };
 
-  test('the bundle id is configuration, not code: the temporary one by default, the environment\'s when set', () => {
+  test("the bundle id is configuration, not code: the temporary one by default, the environment's when set", () => {
     expect(withEnv({ KEEL_IOS_BUNDLE_ID: undefined }).ios?.bundleIdentifier).toBe('dev.leventtcaan.keel');
     expect(withEnv({ KEEL_IOS_BUNDLE_ID: 'com.example.keel' }).ios?.bundleIdentifier).toBe('com.example.keel');
   });
@@ -63,7 +73,10 @@ describe('builds (K-308)', () => {
 describe('eas.json (K-308)', () => {
   const eas = require('../../eas.json') as {
     cli: { version: string; appVersionSource: string };
-    build: Record<string, { developmentClient?: boolean; distribution?: string; ios?: { simulator?: boolean }; extends?: string; autoIncrement?: boolean }>;
+    build: Record<
+      string,
+      { developmentClient?: boolean; distribution?: string; ios?: { simulator?: boolean }; extends?: string; autoIncrement?: boolean }
+    >;
     submit: Record<string, unknown>;
   };
 

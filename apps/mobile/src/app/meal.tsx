@@ -10,6 +10,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { grantConsent } from '@/consent/consents';
 import { has, t } from '@/copy';
+import { BarcodeScanner } from '@/food/BarcodeScanner';
 import { EstimateCard } from '@/food/EstimateCard';
 import { type DraftItem, type KnownFoods, addFood, draftOf, itemProblem, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
@@ -24,7 +25,16 @@ type Schemas = components['schemas'];
 type Step = 'checking' | 'consent' | 'entry';
 /** A meal being corrected: read from the server's day, or not there, or not readable (offline). */
 type Original = { state: 'loading' } | { state: 'gone' } | { state: 'unreachable' } | { state: 'ready'; meal: Schemas['Meal'] };
-type Found = { state: 'idle' } | { state: 'tooShort' } | { state: 'failed' } | { state: 'found'; foods: Schemas['Food'][] };
+type Found =
+  | { state: 'idle' }
+  | { state: 'tooShort' }
+  | { state: 'failed' }
+  | { state: 'found'; foods: Schemas['Food'][] }
+  // A barcode not in the database (FDC is mostly US products, ADR-008), or not looked up.
+  | { state: 'notInDatabase' }
+  // A number the server refuses as a barcode (a wrong check digit, 400): the digits, not the connection.
+  | { state: 'badNumber' }
+  | { state: 'barcodeFailed' };
 
 const SLOTS: Schemas['MealSlot'][] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
 const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch' } as const;
@@ -59,6 +69,7 @@ export default function MealScreen() {
   const [estimate, setEstimate] = useState<{ key: string; value: Schemas['FoodEstimate'] | null } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const saving = useRef(false); // two taps at once must not log twice
   // Each search answer belongs to the search that asked: a late one (slow network) never replaces a newer list, and none
   // comes back once a food was picked.
@@ -164,6 +175,21 @@ export default function MealScreen() {
     setFound({ state: 'idle' });
     setQuery('');
   };
+  /** A code from the reader, looked up as scanned (a UPC-E is expanded by the server, K-208). */
+  const lookUpBarcode = async (gtin: string) => {
+    setScanning(false);
+    const mine = ++searchSeq.current;
+    let found: Found | Schemas['Food'];
+    try {
+      const { data, response } = await api.POST('/v1/foods/barcode-lookup', { body: { gtin } });
+      found = data ?? { state: response.status === 404 ? 'notInDatabase' : response.status === 400 ? 'badNumber' : 'barcodeFailed' };
+    } catch {
+      found = { state: 'barcodeFailed' };
+    }
+    if (mine !== searchSeq.current) return;
+    if ('id' in found) add(found);
+    else setFound(found);
+  };
   const change = (index: number, part: Partial<DraftItem>) => {
     setItems((before) => before.map((item, i) => (i === index ? { ...item, ...part } : item)));
     setProblem(null);
@@ -212,9 +238,15 @@ export default function MealScreen() {
       ? t('meal.search.tooShort', { min: foodParams.searchMinChars })
       : found.state === 'failed'
         ? t('meal.search.failed')
-        : found.state === 'found' && found.foods.length === 0
-          ? t('meal.search.none')
-          : null;
+        : found.state === 'notInDatabase'
+          ? t('meal.barcode.notFound')
+          : found.state === 'badNumber'
+            ? t('meal.barcode.badNumber')
+            : found.state === 'barcodeFailed'
+              ? t('meal.barcode.failed')
+              : found.state === 'found' && found.foods.length === 0
+                ? t('meal.search.none')
+                : null;
   // Named: with several items the question says which one it is about.
   const asked = shown?.question;
   const askedName = shown?.items.find((item) => item.foodId === asked?.foodId)?.name;
@@ -222,6 +254,9 @@ export default function MealScreen() {
     asked !== undefined && askedName !== undefined && has(asked.copyKey)
       ? t('meal.estimate.question', { name: askedName, question: t(asked.copyKey) })
       : null;
+
+  // A full meal takes no more, from a barcode either.
+  const scanButton = full ? null : <Button label={t('meal.barcode.scan')} variant="ghost" size="sm" onPress={() => setScanning(true)} />;
 
   const consentStep =
     step === 'consent' ? (
@@ -310,7 +345,10 @@ export default function MealScreen() {
             hint={foundNote ?? undefined}
             maxLength={foodParams.searchMaxChars}
           />
-          <Button label={t('meal.search.go')} variant="ghost" size="sm" onPress={() => void search()} />
+          <View style={styles.chips}>
+            <Button label={t('meal.search.go')} variant="ghost" size="sm" onPress={() => void search()} />
+            {scanButton}
+          </View>
           {results.map((food) => (
             <Pressable
               key={food.id}
@@ -339,6 +377,7 @@ export default function MealScreen() {
         {consentStep}
         {originalNote}
         {entry}
+        {scanning && <BarcodeScanner onCode={(gtin) => void lookUpBarcode(gtin)} onClose={() => setScanning(false)} />}
       </ScrollView>
     </SafeAreaView>
   );
