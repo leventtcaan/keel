@@ -104,6 +104,8 @@ class ContractTests {
         assertThat(list(map(schemas.get("ActivityLevel")).get("enum"))).containsExactlyElementsOf(names(ActivityLevel.values()));
         // What a move's load is made of (ADR-032): the app rounds and computes plates by it.
         assertThat(list(map(schemas.get("Equipment")).get("enum"))).containsExactlyElementsOf(names(app.keel.training.ExerciseCatalog.Equipment.values()));
+        // What life brought (K-516): the states the server keeps, as the engine reads them.
+        assertThat(list(map(schemas.get("StateKind")).get("enum"))).containsExactlyElementsOf(names(app.keel.engine.DeclaredContext.values()));
     }
 
     @Test

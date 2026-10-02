@@ -1,5 +1,6 @@
 package app.keel.decision;
 
+import app.keel.engine.DeclaredContext;
 import app.keel.shared.AccountId;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,11 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 class StateStore {
 
-    /** The five states (L3 §4.2). */
-    enum Kind { TRAVELING, SICK, PAIN, BUSY, NEW_GYM }
-
     /** {@code endsOn} empty: until the user is back. */
-    record State(Kind kind, LocalDate startsOn, Optional<LocalDate> endsOn) {
+    record State(DeclaredContext kind, LocalDate startsOn, Optional<LocalDate> endsOn) {
 
         boolean inForceOn(LocalDate day) {
             return !day.isBefore(startsOn) && endsOn.map(last -> !day.isAfter(last)).orElse(true);
@@ -45,7 +43,7 @@ class StateStore {
      * the same day is not a day of each).
      */
     @Transactional
-    State declare(AccountId account, Kind kind, LocalDate today, Optional<LocalDate> until, Instant now) {
+    State declare(AccountId account, DeclaredContext kind, LocalDate today, Optional<LocalDate> until, Instant now) {
         end(account, today);
         jdbc.sql("""
                 insert into decision.declared_state (id, account_id, kind, starts_on, ends_on, created_at)
@@ -58,6 +56,9 @@ class StateStore {
     /** "I'm back": what is in force today or later ends yesterday; begun today, it is taken back. Harmless with none. */
     @Transactional
     void end(AccountId account, LocalDate today) {
+        // One change of the account's states at a time (a double tap, two devices): a declaration waits for the one
+        // before it and takes over, so at most one stays open.
+        jdbc.sql("select 1 from pg_advisory_xact_lock(:key)").param("key", lockKey(account)).query(Integer.class).single();
         jdbc.sql("delete from decision.declared_state where account_id = :account and starts_on >= :today")
                 .param("account", account.value()).param("today", today).update();
         jdbc.sql("""
@@ -70,8 +71,12 @@ class StateStore {
     List<State> all(AccountId account) {
         return jdbc.sql("select kind, starts_on, ends_on from decision.declared_state where account_id = :account order by starts_on, created_at")
                 .param("account", account.value())
-                .query((row, n) -> new State(Kind.valueOf(row.getString("kind")), row.getObject("starts_on", LocalDate.class),
+                .query((row, n) -> new State(DeclaredContext.valueOf(row.getString("kind")), row.getObject("starts_on", LocalDate.class),
                         Optional.ofNullable(row.getObject("ends_on", LocalDate.class))))
                 .list();
+    }
+
+    private static long lockKey(AccountId account) {
+        return account.value().getMostSignificantBits() ^ account.value().getLeastSignificantBits();
     }
 }

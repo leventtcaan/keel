@@ -177,6 +177,9 @@ class AccountDataTests {
             assertThat(call).containsKeys("weekOf", "action", "snapshot");
             assertThat((List<?>) ((Map<String, Object>) call.get("snapshot")).get("weights")).isNotEmpty();
         });
+        // The state the fixture declared (K-516): sickness is health data, and the user's own (GDPR Art. 15, 20).
+        assertThat((List<Map<String, Object>>) decision.get("declaredStates")).singleElement()
+                .satisfies(state -> assertThat(state).containsEntry("kind", "SICK").containsKey("since").doesNotContainKey("until"));
         // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
         assertThat(body).doesNotContainIgnoringCase("fatProxy");
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.

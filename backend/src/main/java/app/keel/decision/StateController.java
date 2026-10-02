@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import app.keel.consent.ConsentGate;
 import app.keel.consent.ConsentKind;
+import app.keel.engine.DeclaredContext;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
@@ -33,7 +34,7 @@ class StateController {
 
     /** Contract DeclaredState. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record DeclaredState(StateStore.Kind kind, LocalDate since, LocalDate until) {
+    record DeclaredState(DeclaredContext kind, LocalDate since, LocalDate until) {
 
         static DeclaredState of(StateStore.State state) {
             return new DeclaredState(state.kind(), state.startsOn(), state.endsOn().orElse(null));
@@ -64,7 +65,7 @@ class StateController {
     DeclaredState declare(AccountId account, @RequestBody NewState declared) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         LocalDate today = today(account);
-        StateStore.Kind kind = Arrays.stream(StateStore.Kind.values()).filter(k -> k.name().equals(declared.kind())).findFirst()
+        DeclaredContext kind = Arrays.stream(DeclaredContext.values()).filter(known -> known.name().equals(declared.kind())).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
         if (declared.until() != null && !api.range(today, declared.until())) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);

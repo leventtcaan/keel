@@ -135,6 +135,20 @@ class StateModeTests {
         assertThat(send(account, "PUT", Map.of("kind", "SICK"))).hasStatus(409);
     }
 
+    @Test
+    void twoStatesDeclaredAtOnceLeaveOneOpen() throws Exception {
+        // A double tap, or two devices: the second waits for the first, then takes over the open one (ADR-038 #2).
+        for (int round = 0; round < 5; round++) {
+            AccountId account = ready();
+            var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+            var first = pool.submit(() -> send(account, "PUT", Map.of("kind", "SICK")).getResponse().getStatus());
+            var second = pool.submit(() -> send(account, "PUT", Map.of("kind", "BUSY")).getResponse().getStatus());
+            assertThat(List.of(first.get(), second.get())).as("round " + round).containsOnly(200);
+            pool.shutdown();
+            assertThat(states(account)).as("round " + round).hasSize(1);
+        }
+    }
+
     /** A user in Kiritimati, with the consent and a profile. */
     private AccountId ready() {
         AccountId account = TestSessions.newAccount();
