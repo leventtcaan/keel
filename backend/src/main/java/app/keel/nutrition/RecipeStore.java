@@ -65,6 +65,10 @@ class RecipeStore {
         return recipes("r.account_id = :account", Map.of("account", account.value()));
     }
 
+    int count(AccountId account) {
+        return jdbc.sql("select count(*) from nutrition.recipe where account_id = :account").param("account", account.value()).query(Integer.class).single();
+    }
+
     boolean delete(AccountId account, UUID id) {
         return jdbc.sql("delete from nutrition.recipe where id = :id and account_id = :account").param("id", id).param("account", account.value())
                 .update() == 1;

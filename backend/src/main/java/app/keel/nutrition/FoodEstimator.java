@@ -111,11 +111,13 @@ class FoodEstimator {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
         Amount amount = item.amount();
-        require(amount.quantity() != null && amount.quantity().signum() > 0 && amount.quantity().stripTrailingZeros().scale() <= QUANTITY_DECIMALS
-                && amount.quantity().compareTo(BigDecimal.valueOf(limits.maxPortions())) <= 0 && amount.unit() != null
-                && PORTION.equalsIgnoreCase(amount.unit().strip()));
         // Another user's recipe is refused like a food that is not there: whether it exists is not told.
         RecipeStore.Recipe recipe = recipes.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
+        // At most the whole recipe: its ingredients are each within the limits, so an item never outgrows them (review: 50
+        // portions of a one-portion pot of oil, a dozen times, overflowed the meal's total).
+        require(amount.quantity() != null && amount.quantity().signum() > 0 && amount.quantity().stripTrailingZeros().scale() <= QUANTITY_DECIMALS
+                && amount.quantity().compareTo(BigDecimal.valueOf(recipe.portions())) <= 0 && amount.unit() != null
+                && PORTION.equalsIgnoreCase(amount.unit().strip()));
         FoodRanges.Nutrients share = FoodRanges.share(ingredients(account, recipe.items()).total(), amount.quantity(), recipe.portions());
         return new EstimatedItem(item.foodId(), recipe.name(), amount, share.kcal(), share.proteinG(), share.carbsG(), share.fatG());
     }

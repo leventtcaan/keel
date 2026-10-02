@@ -22,7 +22,12 @@ girilir, porsiyonla tekrar kullanılır; kalori veritabanından, aralıkla (U1, 
 5. **Sağlık verisi sayılır:** öğün kayıtları gibi `HEALTH_DATA` rızası ister, rıza geri çekilince ve hesap silinince
    silinir, dışa aktarımda yer alır. Gerekçe: tarif kullanıcının ne yediğini anlatır; tutucu sınıflama, gevşetmek
    sıkılaştırmaktan kolaydır. (Soru 45: Levent "tarif sağlık verisi değil" derse rıza şartı kalkar.)
-6. **Sözleşme:** `GET /v1/recipes` (ada göre), `POST /v1/recipes` (`NewRecipe`, `clientId` ile 201/200 — ADR-024),
+6. **Veritabanından düşen malzeme** (FDC yeni sürümde bir yiyeceği siliyor): tarif listesi yine okunur; o tarif
+   `unavailable` ile işaretlenir, porsiyon aralığı verilmez, öğüne eklenemez, silinebilir (inceleme: tek bir düşen
+   yiyecek bütün listeyi 400 yapıyordu). Bir öğünde tarif en fazla **tarifin tamamı** (porsiyon ≤ verim): malzemeler
+   zaten sınırlı, kalem onları aşamaz (inceleme: aşırı porsiyon toplamı taşırıyordu). Kullanıcı başına en çok 100 tarif
+   (`keel.nutrition.max-recipes`; liste her okumada yeniden tahmin edilir).
+7. **Sözleşme:** `GET /v1/recipes` (ada göre), `POST /v1/recipes` (`NewRecipe`, `clientId` ile 201/200 — ADR-024),
    `DELETE /v1/recipes/{id}`. `Recipe` porsiyon başına aralıkları taşır (`perPortion: Nutrients`). Düzenleme yok: sil ve
    yeniden gir (sürüm 1; kullanım görülünce `PUT`). Aynı değişiklikte `NewMeal.items`'a sunucunun zaten uyguladığı
    `minItems: 1, maxItems: 50` yazılır (K-407 incelemesi).

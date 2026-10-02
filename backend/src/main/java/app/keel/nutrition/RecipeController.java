@@ -5,7 +5,9 @@ import app.keel.consent.ConsentKind;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,8 +32,13 @@ class RecipeController {
     record NewRecipe(UUID clientId, String name, Integer portions, List<FoodEstimator.ItemRequest> items) {
     }
 
-    /** Contract Recipe. */
-    record Recipe(UUID id, UUID clientId, String name, int portions, List<FoodEstimator.EstimatedItem> items, FoodRanges.Nutrients perPortion) {
+    /**
+     * Contract Recipe. `unavailable`: ingredients the database can no longer estimate (a food dropped by an FDC release);
+     * then there is no perPortion, and the recipe cannot be logged until it is entered again.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record Recipe(UUID id, UUID clientId, String name, int portions, List<FoodEstimator.EstimatedItem> items, FoodRanges.Nutrients perPortion,
+            List<String> unavailable) {
     }
 
     private final RecipeStore store;
@@ -60,6 +67,7 @@ class RecipeController {
         }
         // The same checks as a meal's items (foods there, amounts the server takes), and no recipe in a recipe.
         estimator.ingredients(account, recipe.items());
+        require(store.count(account) < limits.maxRecipes());
         RecipeStore.Stored stored = store.save(account, recipe.clientId(), name, recipe.portions(), recipe.items());
         return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(view(account, stored.recipe()));
     }
@@ -80,10 +88,25 @@ class RecipeController {
         }
     }
 
+    /**
+     * Each ingredient on its own: one the database can no longer estimate marks its recipe, never the whole list (review:
+     * one food dropped by an FDC release made every recipe, and its own deletion, unreachable).
+     */
     private Recipe view(AccountId account, RecipeStore.Recipe recipe) {
-        FoodEstimator.Estimate whole = estimator.ingredients(account, recipe.items());
-        return new Recipe(recipe.id(), recipe.clientId(), recipe.name(), recipe.portions(), whole.items(),
-                FoodRanges.share(whole.total(), BigDecimal.ONE, recipe.portions()));
+        List<FoodEstimator.EstimatedItem> items = new ArrayList<>();
+        List<String> unavailable = new ArrayList<>();
+        for (FoodEstimator.ItemRequest item : recipe.items()) {
+            try {
+                items.addAll(estimator.ingredients(account, List.of(item)).items());
+            } catch (ApiException gone) {
+                unavailable.add(item.foodId());
+            }
+        }
+        FoodRanges.Nutrients perPortion = unavailable.isEmpty()
+                ? FoodRanges.share(FoodRanges.total(items.stream().map(FoodEstimator.EstimatedItem::nutrients).toList()), BigDecimal.ONE, recipe.portions())
+                : null;
+        return new Recipe(recipe.id(), recipe.clientId(), recipe.name(), recipe.portions(), List.copyOf(items), perPortion,
+                unavailable.isEmpty() ? null : List.copyOf(unavailable));
     }
 
     private static void require(boolean valid) {

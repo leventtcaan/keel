@@ -438,7 +438,8 @@ export interface paths {
         /**
          * Keep a recipe — entered once, logged by the portion (K-413)
          * @description Only the ingredients are kept, never a number: the ranges are estimated again from the database whenever the
-         *     recipe is read or logged (U1). A meal logs a recipe as one item, foodId "recipe:<id>", unit "portion".
+         *     recipe is read or logged (U1). A meal logs a recipe as one item, foodId "recipe:<id>", unit "portion". At most
+         *     100 recipes a user (keel.nutrition.max-recipes): past that, VALIDATION_FAILED.
          */
         post: operations["saveRecipe"];
         delete?: never;
@@ -1142,7 +1143,8 @@ export interface components {
         ItemRequest: {
             /**
              * @description A food of the database, or one of the user's recipes as "recipe:<id>" (ADR-034) — then the unit is "portion"
-             *     and the quantity is the portions eaten. A recipe's ingredients are database foods only.
+             *     and the quantity is the portions eaten, at most the portions the recipe makes. A recipe's ingredients are
+             *     database foods only.
              */
             foodId: string;
             amount: components["schemas"]["Amount"];
@@ -1205,9 +1207,15 @@ export interface components {
             clientId: components["schemas"]["ClientId"];
             name: string;
             portions: number;
-            /** @description The ingredients as the database matches them now. */
+            /** @description The ingredients as the database matches them now (those it still can). */
             items: components["schemas"]["EstimatedItem"][];
-            perPortion: components["schemas"]["Nutrients"];
+            /** @description Absent when an ingredient is unavailable. */
+            perPortion?: components["schemas"]["Nutrients"];
+            /**
+             * @description Ingredients the database can no longer estimate (a food a later FDC release dropped), by foodId. The recipe
+             *     cannot be logged until it is entered again; it can be deleted.
+             */
+            unavailable?: string[];
         };
         DayBudget: {
             /** Format: date */

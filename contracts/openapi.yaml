@@ -568,7 +568,8 @@ paths:
       summary: Keep a recipe — entered once, logged by the portion (K-413)
       description: |
         Only the ingredients are kept, never a number: the ranges are estimated again from the database whenever the
-        recipe is read or logged (U1). A meal logs a recipe as one item, foodId "recipe:<id>", unit "portion".
+        recipe is read or logged (U1). A meal logs a recipe as one item, foodId "recipe:<id>", unit "portion". At most
+        100 recipes a user (keel.nutrition.max-recipes): past that, VALIDATION_FAILED.
       requestBody:
         required: true
         content:
@@ -1622,7 +1623,8 @@ components:
           type: string
           description: |
             A food of the database, or one of the user's recipes as "recipe:<id>" (ADR-034) — then the unit is "portion"
-            and the quantity is the portions eaten. A recipe's ingredients are database foods only.
+            and the quantity is the portions eaten, at most the portions the recipe makes. A recipe's ingredients are
+            database foods only.
         amount:
           $ref: "#/components/schemas/Amount"
     EstimatedItem:
@@ -1744,7 +1746,7 @@ components:
             $ref: "#/components/schemas/ItemRequest"
     Recipe:
       type: object
-      required: [id, clientId, name, portions, items, perPortion]
+      required: [id, clientId, name, portions, items]
       properties:
         id:
           type: string
@@ -1757,11 +1759,19 @@ components:
           type: integer
         items:
           type: array
-          description: The ingredients as the database matches them now.
+          description: The ingredients as the database matches them now (those it still can).
           items:
             $ref: "#/components/schemas/EstimatedItem"
         perPortion:
           $ref: "#/components/schemas/Nutrients"
+          description: Absent when an ingredient is unavailable.
+        unavailable:
+          type: array
+          description: |
+            Ingredients the database can no longer estimate (a food a later FDC release dropped), by foodId. The recipe
+            cannot be logged until it is entered again; it can be deleted.
+          items:
+            type: string
     DayBudget:
       type: object
       required: [day, targetKcal, eaten, left]
