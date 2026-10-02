@@ -8,15 +8,18 @@ import type { components } from '@/api/schema';
 import ExerciseScreen from '@/app/exercise';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { drawingAreas } from '@/train/demo';
 import { workoutParams } from '@/train/params';
+import { palettes } from '@/theme/tokens';
 import type { Move, TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
 let mockParams: { exercise?: string } = {};
 // The drawing itself is the library's (SVG); what the screen hands it is what is tested.
-const mockBody = jest.fn((_props: { side?: string; data: ReadonlyArray<{ slug?: string }> }) => null);
-jest.mock('react-native-body-highlighter', () => ({ __esModule: true, default: (props: { side?: string; data: ReadonlyArray<{ slug?: string }> }) => mockBody(props) }));
+type BodyData = ReadonlyArray<{ slug?: string; color?: string }>;
+const mockBody = jest.fn((_props: { side?: string; data: BodyData }) => null);
+jest.mock('react-native-body-highlighter', () => ({ __esModule: true, default: (props: { side?: string; data: BodyData }) => mockBody(props) }));
 jest.mock('expo-router', () => ({ router: { back: jest.fn() }, useLocalSearchParams: () => mockParams }));
 
 const move = (id: string, extra: Partial<Schemas['Exercise']>): Schemas['Exercise'] => ({
@@ -160,7 +163,12 @@ test('the muscle map: front and back, the move\'s areas marked; a move with no m
   await screen.findByText(t('demo.tip.tempo'));
   const sides = mockBody.mock.calls.map(([props]) => props.side);
   expect(new Set(sides)).toEqual(new Set(['front', 'back']));
-  expect(mockBody.mock.calls.at(-1)?.[0].data.map((d) => d.slug)).toEqual(['quadriceps', 'gluteal']);
+  // Every area of the drawing is coloured from the theme (the drawing's own grey is not): the move's in the accent.
+  const data = mockBody.mock.calls.at(-1)?.[0].data ?? [];
+  const accent = palettes.light.accent;
+  expect(data.filter((d) => d.color === accent).map((d) => d.slug)).toEqual(['quadriceps', 'gluteal']);
+  expect(data.filter((d) => d.color !== accent).every((d) => d.color === palettes.light.track)).toBe(true);
+  expect(data.map((d) => d.slug)).toEqual(expect.arrayContaining(['head', 'chest', 'upper-back']));
   expect(screen.getByLabelText(t('demo.mapLabel', { muscles: `${t('demo.muscle.quads')}, ${t('demo.muscle.glutes')}` }))).toBeOnTheScreen();
 });
 
@@ -170,4 +178,7 @@ test('every catalog muscle has an area on the drawing', () => {
   const text = fs.readFileSync(path.join(__dirname, '../../../../data/muscles.yaml'), 'utf8');
   const muscles = [...text.matchAll(/^ {2}([a-z_]+):/gm)].map((m) => m[1]);
   expect(muscles.filter((m) => (workoutParams.muscleMapAreas[m] ?? []).length === 0)).toEqual([]);
+  // And every area named is one the drawing has: a typo would leave a muscle silently uncoloured.
+  const drawing = new Set(drawingAreas());
+  expect(Object.values(workoutParams.muscleMapAreas).flat().filter((area) => !drawing.has(area))).toEqual([]);
 });

@@ -12,7 +12,7 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { mapAreas, tipsFor } from '@/train/demo';
+import { drawingAreas, mapAreas, tipsFor } from '@/train/demo';
 import { workoutParams } from '@/train/params';
 import { exerciseName } from '@/train/program';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
@@ -76,14 +76,22 @@ export default function ExerciseScreen() {
         {saved && <Text style={[styles.small, { color: color.muted }]}>{t('demo.saved')}</Text>}
       </View>
     );
-  // The muscle map (ADR-017; react-native-body-highlighter, MIT): front and back, the move's areas in the accent colour.
+  // The muscle map (ADR-017; react-native-body-highlighter, MIT): front and back, the move's areas in the accent colour
+  // and every other area in the theme's track colour (the drawing's own grey does not follow the theme).
   const muscleWords = move === undefined ? '' : move.muscles.map((m) => t(`demo.muscle.${m}`)).join(t('demo.separator'));
-  const areas = move === undefined ? [] : mapAreas(move).map((slug) => ({ slug: slug as Slug, intensity: 1 }));
+  const marked = move === undefined ? [] : mapAreas(move);
+  const areas =
+    marked.length === 0
+      ? []
+      : [...marked, ...drawingAreas().filter((slug) => !marked.includes(slug))].map((slug) => ({
+          slug: slug as Slug, // the areas named in muscle_map_areas are checked against the drawing (exercise-screen.test)
+          color: marked.includes(slug) ? color.accent : color.track,
+        }));
   const muscleMap =
     areas.length === 0 ? null : (
       <View style={styles.map} accessible accessibilityLabel={t('demo.mapLabel', { muscles: muscleWords })}>
         {SIDES.map((side) => (
-          <Body key={side} data={areas} side={side} scale={MAP_SCALE} colors={[color.accent]} defaultFill={color.surface} border="none" />
+          <Body key={side} data={areas} side={side} scale={MAP_SCALE} border="none" />
         ))}
       </View>
     );

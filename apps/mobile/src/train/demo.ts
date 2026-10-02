@@ -4,6 +4,9 @@
  * lift with intent, no tempo in seconds (K-45). The last rep slowing down on its own ends the set (K-8) — on an isolation
  * move that signal does not come, so it is not said.
  */
+import { bodyBack } from 'react-native-body-highlighter/dist/assets/bodyBack';
+import { bodyFront } from 'react-native-body-highlighter/dist/assets/bodyFront';
+
 import type { components } from '@/api/schema';
 
 import { workoutParams } from './params';
@@ -21,4 +24,12 @@ export function tipsFor(move: Schemas['Exercise']): string[] {
 /** The muscle map's areas of a move (the drawing's names, muscle_map_areas), each once, in the move's order. */
 export function mapAreas(move: Schemas['Exercise']): string[] {
   return [...new Set(move.muscles.flatMap((muscle) => workoutParams.muscleMapAreas[muscle] ?? []))];
+}
+
+/**
+ * Every area of the muscle map's drawing (front and back, head and hands too), from the library's own drawing: each is
+ * given a colour from the theme, as one left out keeps the drawing's built-in grey (dark on dark).
+ */
+export function drawingAreas(): string[] {
+  return [...new Set([...bodyFront, ...bodyBack].flatMap((part) => (part.slug === undefined ? [] : [part.slug])))];
 }
