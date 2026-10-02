@@ -80,6 +80,22 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#Amount",
       "note": "The amount field's length: room for the largest amount the contract takes with its 2 decimals (5000.00), and a little more for typing."
+    },
+    {
+      "key": "barcode_min_digits",
+      "value": 8,
+      "unit": "digits",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#BarcodeLookup",
+      "note": "BarcodeLookup.gtin pattern ^[0-9]{8,14}$: EAN-8 and UPC-E have 8 digits (a UPC-E is expanded by the server, K-208)."
+    },
+    {
+      "key": "barcode_max_digits",
+      "value": 14,
+      "unit": "digits",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#BarcodeLookup",
+      "note": "GTIN-14, the longest the contract takes."
     }
   ]
 }

@@ -23,5 +23,10 @@ export default ({ config }: ConfigContext): ExpoConfig =>
         '@kingstinct/react-native-healthkit',
         { NSHealthShareUsageDescription: en.permissions.healthRead, NSHealthUpdateUsageDescription: false, background: false },
       ],
+      // Barcodes only (K-407): no microphone on either platform.
+      [
+        'expo-camera',
+        { cameraPermission: en.permissions.camera, microphonePermission: false, recordAudioAndroid: false, barcodeScannerEnabled: true },
+      ],
     ],
   }) as ExpoConfig;

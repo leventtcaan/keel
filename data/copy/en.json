@@ -303,6 +303,17 @@
       "needsConnection": "Changing a meal needs a connection. Try again when you're online.",
       "gone": "This meal is no longer there.",
       "notChecked": "The server hasn't checked these amounts yet. Check them, or try again when you're online."
+    },
+    "barcode": {
+      "scan": "Scan a barcode",
+      "title": "Scan a barcode",
+      "denied": "Camera access is off. Allow it in Settings, or type the number.",
+      "type": "Or type the number",
+      "lookUp": "Look up",
+      "invalid": "A barcode is {min} to {max} digits.",
+      "close": "Close",
+      "notFound": "That product isn't in the food database yet. Find it by name.",
+      "failed": "Couldn't look that barcode up. Check your connection, or find it by name."
     }
   },
   "weighIn": {
@@ -1119,7 +1130,8 @@
     "gyms": "Gyms"
   },
   "permissions": {
-    "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location."
+    "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
+    "camera": "To read the barcode on a food pack. Nothing is recorded or kept."
   },
   "history": {
     "records": "Records",
