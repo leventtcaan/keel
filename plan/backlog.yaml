@@ -2228,7 +2228,7 @@ tasks:
       - "H1-H8 içerikleri kullanıcının kendi haftasından tetiklenir (H4 nöral açıklama, H6 'kas' dili ilk kez)"
       - "Risk skoru girdileri (af haftası kullanımı artışı, kayıt düşüşü) parametreden ve kaynaklı"
       - "Risk yüksekken soru bütçesi ≤5 (U9)"
-      - "Başlamadan önce ikiye bölünür (motor / mobil)"
+      - "Bölündü (3 Eki): bu kart motor + sunucu (hafta içeriği anahtarı, risk sinyalleri, /v1 okuması); telefon K-521"
     tests:
       - "EightWeekFlowTests"
       - "RiskScoreTests"
@@ -2352,6 +2352,23 @@ tasks:
     refs: ["arastirma/ham/guray/G5-surec-supplement.md"]
     learn:
       - "Olay tabanlı arayüz"
+  - id: K-521
+    title: "İlk 8 hafta ve 5. hafta riski telefonda"
+    milestone: M5
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-513]
+    why: "K-513'ten bölündü: haftanın içeriği (H1 sessiz, H4 nöral açıklama, H6 ilk kez 'kas') ve risk varsa tek insan tonu mesaj Bugün'de"
+    acceptance:
+      - "Bugün'de sunucunun söylediği haftanın içeriği; H1'de yorum yok (I1 F2)"
+      - "Risk varsa tek mesaj, suçlamasız (U7); uygulama açılmaması sinyali telefondan (açılışlar yalnız telefonda, K-410)"
+    tests:
+      - "today-screen.test.tsx (8 hafta)"
+    refs: ["arastirma/04-faz3-urun.md#7.5", "arastirma/ham/I1-onboarding-aliskanlik.md"]
+    learn:
+      - "Öncü gösterge"
   - id: K-517
     title: "Haftalık kısa koç notu"
     milestone: M5
