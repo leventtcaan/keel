@@ -154,6 +154,121 @@ class RecipeTests {
     }
 
     @Test
+    void anIngredientGoneFromTheDatabaseBreaksOnlyItsRecipe() throws Exception {
+        jdbc.sql("insert into nutrition.food (id, name, source, kcal, protein_g, carbs_g, fat_g) values ('fdc:test-gone', 'Old lentils', 'SR_LEGACY', 116, 9, 20, 0.4) on conflict (id) do nothing")
+                .update();
+        AccountId account = consenting();
+        Map<String, Object> soup = Map.of("clientId", UUID.randomUUID(), "name", "Lentil soup", "portions", 4, "items", List.of(
+                Map.of("foodId", "fdc:test-gone", "amount", Map.of("quantity", 300, "unit", "g")),
+                Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 100, "unit", "g"))));
+        String id = (String) map(send(account, "POST", "/v1/recipes", soup)).get("id");
+        send(account, "POST", "/v1/recipes", recipe(UUID.randomUUID(), "Chili", 4));
+        // An FDC release no longer has it (FdcImporter deletes what a new release drops).
+        jdbc.sql("delete from nutrition.food where id = 'fdc:test-gone'").update();
+
+        MvcTestResult listed = send(account, "GET", "/v1/recipes", null);
+        assertThat(listed).hasStatusOk();
+        List<Map<String, Object>> recipes = list(listed);
+        assertThat(recipes).extracting(recipe -> recipe.get("name")).containsExactly("Chili", "Lentil soup");
+        assertThat(recipes.get(0)).containsKey("perPortion").doesNotContainKey("unavailable");
+        assertThat(recipes.get(1)).doesNotContainKey("perPortion").containsEntry("unavailable", List.of("fdc:test-gone"));
+        assertThat(send(account, "POST", "/v1/recipes", soup)).as("a replay answers what was stored").hasStatusOk();
+        assertThat(send(account, "POST", "/v1/food-estimates", Map.of("items", List.of(
+                Map.of("foodId", "recipe:" + id, "amount", Map.of("quantity", 1, "unit", "portion")))))).as("logging it").hasStatus(400);
+        assertThat(send(account, "DELETE", "/v1/recipes/" + id, null)).as("it can still be deleted").hasStatus(204);
+    }
+
+    @Test
+    void aMealTakesAtMostTheWholeRecipeAndPortionsAsTheContractSays() throws Exception {
+        AccountId account = consenting();
+        String id = (String) map(send(account, "POST", "/v1/recipes", recipe(UUID.randomUUID(), "Chili", 4))).get("id");
+        for (Object quantity : List.of(0, -1, 0.005, 4.01, 5)) {
+            assertThat(send(account, "POST", "/v1/food-estimates", Map.of("items", List.of(
+                    Map.of("foodId", "recipe:" + id, "amount", Map.of("quantity", quantity, "unit", "portion")))))).as("quantity " + quantity).hasStatus(400);
+        }
+        assertThat(send(account, "POST", "/v1/food-estimates", Map.of("items", List.of(
+                Map.of("foodId", "recipe:" + id, "amount", Map.of("quantity", 1, "unit", "g")))))).as("a recipe in grams").hasStatus(400);
+        assertThat(send(account, "POST", "/v1/food-estimates", Map.of("items", List.of(
+                Map.of("foodId", "recipe:" + id, "amount", Map.of("quantity", 4, "unit", " Portion ")))))).as("the whole pot, the unit as typed").hasStatusOk();
+    }
+
+    @Test
+    void aMealOfARecipeAndAFoodTotalsBothAndAsksOnlyAboutTheFood() throws Exception {
+        AccountId account = consenting();
+        String id = (String) map(send(account, "POST", "/v1/recipes", recipe(UUID.randomUUID(), "Chili", 4))).get("id");
+
+        Map<String, Object> estimate = map(send(account, "POST", "/v1/food-estimates", Map.of("items", List.of(
+                Map.of("foodId", "recipe:" + id, "amount", Map.of("quantity", 2, "unit", "portion")),
+                Map.of("foodId", "fdc:1897574", "amount", Map.of("quantity", 300, "unit", "g"))))));
+
+        List<Map<String, Object>> items = (List<Map<String, Object>>) estimate.get("items");
+        Map<String, Integer> first = (Map<String, Integer>) items.get(0).get("kcal");
+        Map<String, Integer> second = (Map<String, Integer>) items.get(1).get("kcal");
+        assertThat(estimate.get("kcal")).isEqualTo(Map.of("low", first.get("low") + second.get("low"), "high", first.get("high") + second.get("high")));
+        assertThat(estimate).containsEntry("question", Map.of("foodId", "fdc:1897574", "copyKey", "foodEstimate.question.grams"));
+    }
+
+    @Test
+    void aRepeatedMealKeepsItsRecipeItemAfterTheRecipeIsGone() throws Exception {
+        AccountId account = consenting();
+        String id = (String) map(send(account, "POST", "/v1/recipes", recipe(UUID.randomUUID(), "Chili", 4))).get("id");
+        Map<String, Object> dinner = map(send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-29T19:00:00Z",
+                "slot", "DINNER", "items", List.of(Map.of("foodId", "recipe:" + id, "amount", Map.of("quantity", 1, "unit", "portion"))))));
+        send(account, "DELETE", "/v1/recipes/" + id, null);
+
+        MvcTestResult again = send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-30T19:00:00Z",
+                "slot", "DINNER", "repeatOf", dinner.get("id")));
+
+        assertThat(again).hasStatus(201);
+        assertThat(map(again).get("kcal")).isEqualTo(dinner.get("kcal"));
+        assertThat(jdbc.sql("select count(*) from nutrition.recipe_item where recipe_id = :id").param("id", UUID.fromString(id)).query(Integer.class)
+                .single()).as("its ingredients went with it").isZero();
+    }
+
+    @Test
+    void namesAndRequiredFields() throws Exception {
+        AccountId account = consenting();
+        Map<String, Object> chicken = Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 100, "unit", "g"));
+        Map<String, Object> trimmed = map(send(account, "POST", "/v1/recipes",
+                Map.of("clientId", UUID.randomUUID(), "name", "  Chili  ", "portions", 4, "items", List.of(chicken))));
+        assertThat(trimmed).containsEntry("name", "Chili");
+        assertThat(send(account, "POST", "/v1/recipes", Map.of("clientId", UUID.randomUUID(), "name", "\uD83C\uDF5C".repeat(80), "portions", 4,
+                "items", List.of(chicken)))).as("80 code points").hasStatus(201);
+        Map<String, Object> base = Map.of("clientId", UUID.randomUUID(), "name", "Chili", "portions", 4, "items", List.of(chicken));
+        for (String missing : List.of("clientId", "name", "portions", "items")) {
+            Map<String, Object> wrong = new java.util.HashMap<>(base);
+            wrong.remove(missing);
+            assertThat(send(account, "POST", "/v1/recipes", wrong)).as("no " + missing).hasStatus(400);
+        }
+        assertThat(send(account, "POST", "/v1/recipes", Map.of("clientId", UUID.randomUUID(), "name", "Chi\u0000li", "portions", 4,
+                "items", List.of(chicken)))).as("a NUL").hasStatus(400);
+    }
+
+    @Test
+    void aReplayWithAnotherBodyAnswersTheFirst() throws Exception {
+        AccountId account = consenting();
+        UUID clientId = UUID.randomUUID();
+        send(account, "POST", "/v1/recipes", recipe(clientId, "Chili", 4));
+
+        MvcTestResult again = send(account, "POST", "/v1/recipes", recipe(clientId, "Lentil soup", 6));
+
+        assertThat(again).hasStatusOk();
+        assertThat(map(again)).containsEntry("name", "Chili").containsEntry("portions", 4);
+    }
+
+    @Test
+    void thereIsALimitToHowManyRecipesAUserKeeps() throws Exception {
+        AccountId account = consenting();
+        int max = context.getBean(FoodController.NutritionLimits.class).maxRecipes();
+        for (int i = 0; i < max; i++) {
+            jdbc.sql("insert into nutrition.recipe (id, account_id, client_id, name, portions, created_at) values (gen_random_uuid(), :account, gen_random_uuid(), :name, 1, now())")
+                    .param("account", account.value()).param("name", "Recipe " + i).update();
+        }
+
+        assertThat(send(account, "POST", "/v1/recipes", recipe(UUID.randomUUID(), "One more", 4))).hasStatus(400);
+    }
+
+    @Test
     void recipesAreHealthDataAndNeedTheConsent() {
         AccountId account = TestSessions.newAccount();
 

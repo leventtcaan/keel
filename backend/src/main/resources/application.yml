@@ -91,6 +91,8 @@ keel:
     # A recipe (K-413, ADR-034): the portions it makes, and a meal's portions of it, at most 50; its name at most 80.
     max-portions: 50
     max-recipe-name: 80
+    # Recipes a user keeps: each is estimated again whenever the list is read (ADR-034).
+    max-recipes: 100
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:
