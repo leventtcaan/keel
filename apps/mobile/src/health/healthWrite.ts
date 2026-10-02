@@ -7,6 +7,7 @@
  * A write that fails is reported by name and goes no further: the session and the weigh-in are kept either way. The
  * switches live on the phone (kv) and belong to the account: a sign-out forgets them.
  */
+import { workoutParams } from '@/train/params';
 import type { KeyValue } from '@/units/preference';
 
 import type { HealthWriteAccess, HealthWriteKind } from './health';
@@ -54,7 +55,7 @@ export async function createHealthWriting({ kv, access, report }: Options) {
     /** Asks iOS's write sheet; on only if iOS then allows this kind. Whether it is on now. */
     turnOn: async (which: Switch): Promise<boolean> => {
       if (!access.available) return false;
-      await access.requestWrite();
+      await access.requestWrite(KIND[which]);
       if (!access.canWrite(KIND[which])) return false;
       await kv.setItemAsync(KEY[which], ON);
       become({ ...settings, [which]: true });
@@ -66,9 +67,22 @@ export async function createHealthWriting({ kv, access, report }: Options) {
       become({ ...settings, [which]: false });
     },
 
-    /** A session finished with work in it: one workout, its start to its finish. */
+    /**
+     * What the switch shows: on only while iOS still allows it — taken back in the Health app, "refused", never an "On"
+     * that writes nothing (K-412 review).
+     */
+    shown: (which: Switch): 'off' | 'on' | 'refused' => (!settings[which] ? 'off' : allowed(which) ? 'on' : 'refused'),
+
+    /**
+     * A session finished with work in it: one workout, its start to its finish. Sets carry no times, so the finish is the
+     * only end known: a session left open far longer than any session is not written (Health would keep a made-up length).
+     */
     workoutFinished: async (workout: { id: string; start: Date; end: Date }): Promise<void> => {
       if (!allowed('workouts')) return;
+      if (workout.end.getTime() - workout.start.getTime() > workoutParams.healthWorkoutMaxMinutes * 60_000) {
+        report({ name: 'WorkoutTooLongForHealth' });
+        return;
+      }
       await access.writeWorkout(workout).catch(reportError);
     },
 

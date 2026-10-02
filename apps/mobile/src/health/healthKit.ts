@@ -61,7 +61,7 @@ type WriteKit = {
     start: Date,
     end: Date,
     totals: undefined,
-    metadata: { HKExternalUUID: string },
+    metadata: Mark,
   ): Promise<unknown>;
   saveQuantitySample(
     identifier: string,
@@ -69,9 +69,10 @@ type WriteKit = {
     value: number,
     start: Date,
     end: Date,
-    metadata: { HKExternalUUID: string; HKWasUserEntered: boolean },
+    metadata: Mark & { HKWasUserEntered: boolean },
   ): Promise<unknown>;
 };
+type Mark = { HKExternalUUID: string; HKSyncIdentifier: string; HKSyncVersion: number };
 
 /** What is written, and nothing else (ADR-018 §1): a session as a workout, a weigh-in as body mass. */
 export const WRITE_TYPES = { workout: 'HKWorkoutTypeIdentifier', weight: 'HKQuantityTypeIdentifierBodyMass' } as const;
@@ -83,6 +84,11 @@ const STRENGTH_TRAINING = 50;
  * it, so a weigh-in typed here never returns as a scale's — whatever the build's bundle id.
  */
 const MARK = 'keel:';
+/**
+ * The mark on a written sample: ours (read back, skipped), and one per record — HealthKit keeps a single sample per sync
+ * identifier, so a finish refused and done again never adds a second workout (K-412 review).
+ */
+const markOf = (id: string): Mark => ({ HKExternalUUID: `${MARK}${id}`, HKSyncIdentifier: `${MARK}${id}`, HKSyncVersion: 1 });
 const isOwn = (sample: Sample) => typeof sample.metadata?.HKExternalUUID === 'string' && sample.metadata.HKExternalUUID.startsWith(MARK);
 
 // HKCategoryValueSleepAnalysis (the installed library's CategoryValueSleepAnalysis): in bed 0, awake 2; asleep is
@@ -170,16 +176,16 @@ export function healthKitWrite(load: () => unknown = loadLibrary, inExpoGo: () =
   }
   return {
     available: true,
-    requestWrite: async () => {
-      await kit.requestAuthorization({ toShare: [WRITE_TYPES.workout, WRITE_TYPES.weight] });
+    requestWrite: async (kind) => {
+      await kit.requestAuthorization({ toShare: [WRITE_TYPES[kind]] });
     },
     canWrite: (kind) => kit.authorizationStatusFor(WRITE_TYPES[kind]) === SHARING_AUTHORIZED,
     // No energy total: the app does not measure it, and a guessed number would be one more made-up figure (U1).
     writeWorkout: async ({ id, start, end }) => {
-      await kit.saveWorkoutSample(STRENGTH_TRAINING, [], start, end, undefined, { HKExternalUUID: `${MARK}${id}` });
+      await kit.saveWorkoutSample(STRENGTH_TRAINING, [], start, end, undefined, markOf(id));
     },
     writeWeight: async ({ id, kg, at }) => {
-      await kit.saveQuantitySample(WRITE_TYPES.weight, 'kg', kg, at, at, { HKExternalUUID: `${MARK}${id}`, HKWasUserEntered: true });
+      await kit.saveQuantitySample(WRITE_TYPES.weight, 'kg', kg, at, at, { ...markOf(id), HKWasUserEntered: true });
     },
   };
 }

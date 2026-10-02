@@ -183,3 +183,11 @@ test('nothing kept, nothing handed on', async () => {
   await press(t('weighIn.save'));
   expect(mockServices.healthWriting.weighInSaved).not.toHaveBeenCalled();
 });
+
+test('a weigh-in the phone could not keep is not handed on', async () => {
+  mockServices.queue.record.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
+  await show();
+  await type('82,4');
+  await press(t('weighIn.save'));
+  expect(mockServices.healthWriting.weighInSaved).not.toHaveBeenCalled();
+});

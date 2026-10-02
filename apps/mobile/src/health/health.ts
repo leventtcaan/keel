@@ -47,8 +47,11 @@ export type HealthWriteKind = 'workout' | 'weight';
 /** Writing to Apple Health (K-412, ADR-018 §1): asked apart from reading, and only after the user turns a switch on. */
 export type HealthWriteAccess = {
   available: boolean;
-  /** Shows Apple's sheet for what the app writes (workouts, weight). Resolves when the sheet closes. */
-  requestWrite(): Promise<void>;
+  /**
+   * Shows Apple's sheet for this one kind. One at a time: iOS asks about a type once, so asking for both when the user
+   * turned on one would make a "no" to the other final before it was ever wanted.
+   */
+  requestWrite(kind: HealthWriteKind): Promise<void>;
   /** Whether iOS allows writing this kind — unlike reading, iOS tells. */
   canWrite(kind: HealthWriteKind): boolean;
   writeWorkout(workout: { id: string; start: Date; end: Date }): Promise<void>;

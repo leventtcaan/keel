@@ -1265,7 +1265,7 @@
   },
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
-    "healthWrite": "keel adds the workouts you finish and, if you turn it on, the weigh-ins you type to Apple Health. It writes nothing else.",
+    "healthWrite": "keel adds to Apple Health only what you turn on in Settings: the workouts you finish, the weigh-ins you type. It writes nothing else.",
     "camera": "To read the barcode on a food pack. Nothing is recorded or kept."
   },
   "history": {

@@ -52,3 +52,8 @@ diyaloğu ve bir okuma: K-308 development build'i ile (K-403 kartının test sat
 4. Enerji toplamı yazılmaz: uygulama ölçmüyor, tahmini sayı U1'e aykırı.
 5. Çıkış anahtarları unutur; Health'e yazılmış olan kullanıcınındır, silinmez.
 6. iOS yazma metni `en.json › permissions.healthWrite` (`NSHealthUpdateUsageDescription`).
+7. İnceleme (K-412): izin **tür başına** sorulur (`requestWrite(kind)`): iki türü birden sormak, istenmeyen türe verilen
+   "hayır"ı kalıcı yapıyordu (iOS aynı türü bir daha sormaz). Örnekler `HKSyncIdentifier` + `HKSyncVersion` taşır →
+   reddedilip yeniden yapılan bitiş Health'e ikinci antrenman eklemez. `health_workout_max_minutes`'tan uzun açık kalan
+   seans yazılmaz (bitiş tek bilinen uç; günlerce açık kalan seans uydurma süre olur, U1). Ayarlar "On"u yalnız iOS
+   hâlâ izin veriyorsa gösterir, değilse nereden izin verileceğini söyler; öne gelince yeniden bakar.

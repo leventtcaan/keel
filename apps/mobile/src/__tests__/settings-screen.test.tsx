@@ -44,7 +44,7 @@ const mockServices = {
     subscribe: () => () => {},
     permission: jest.fn(async () => ({ granted: false, canAskAgain: true })),
   },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
-  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {} },
+  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,

@@ -42,7 +42,7 @@ const mockServices = {
   report: () => {},
   // The settings screen's reminders (K-410): off, as for a new account. One settings object (useSyncExternalStore).
   reminders: { current: () => mockRemindersOff, subscribe: () => () => {}, permission: async () => ({ granted: false, canAskAgain: true }) },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
-  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {} },
+  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,

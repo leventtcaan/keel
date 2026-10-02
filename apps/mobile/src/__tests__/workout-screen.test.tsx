@@ -1008,6 +1008,18 @@ describe('the finished session to Apple Health (K-412)', () => {
     expect(finish?.kind === 'finish' && finish.body.endedAt).toBe(workout.end.toISOString()); // the same moment as the finish
   });
 
+  test('a finish the phone could not keep: nothing to write', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText('Log set 1'));
+    await fireEvent.press(screen.getByText('Finish workout'));
+    mockRecord.mockImplementation(async (outbound: Outbound) => {
+      if (outbound.kind === 'finish') throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+      return keep(outbound);
+    });
+    await fireEvent.press(screen.getByText('Finish'));
+    expect(mockServices.healthWriting.workoutFinished).not.toHaveBeenCalled();
+  });
+
   test('finished before any set: nothing to write', async () => {
     await show();
     await fireEvent.press(await screen.findByText('Finish workout'));

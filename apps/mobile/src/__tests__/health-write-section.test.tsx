@@ -12,11 +12,13 @@ import { ThemeProvider } from '@/theme/theme';
 
 let mockSettings: HealthWriteSettings = { workouts: false, weighIns: false };
 let mockAllowed = true;
+let mockRevoked = false; // taken back in the Health app since it was turned on
 const mockListeners = new Set<() => void>();
 const mockServices = {
   health: { available: true },
   healthWriting: {
     current: () => mockSettings,
+    shown: (which: keyof HealthWriteSettings) => (!mockSettings[which] ? 'off' : mockRevoked ? 'refused' : 'on'),
     subscribe: (listener: () => void) => (mockListeners.add(listener), () => mockListeners.delete(listener)),
     turnOn: jest.fn(async (which: keyof HealthWriteSettings) => {
       if (mockAllowed) {
@@ -33,11 +35,23 @@ const mockServices = {
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
+let mockForeground: (state: string) => void = () => {};
+jest.mock('react-native/Libraries/AppState/AppState', () => ({
+  __esModule: true,
+  default: {
+    addEventListener: (_type: string, listener: (state: string) => void) => {
+      mockForeground = listener;
+      return { remove: () => {} };
+    },
+    currentState: 'active',
+  },
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockSettings = { workouts: false, weighIns: false };
   mockAllowed = true;
+  mockRevoked = false;
   mockServices.health.available = true;
   mockListeners.clear();
 });
@@ -94,4 +108,15 @@ test('a failure is worded and reported by name only', async () => {
   await press(t('settings.healthWrite.turnOnLabel', { what: workouts }));
   expect(screen.getByText(t('settings.healthWrite.failed'))).toBeTruthy();
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'HealthSheetFailed' });
+});
+
+test('on, but taken back in the Health app: not "On" — where to allow it, and a way to turn it off; seen again on return', async () => {
+  mockSettings = { workouts: true, weighIns: false };
+  await show();
+  expect(screen.getByText(t('settings.healthWrite.on'))).toBeTruthy();
+  mockRevoked = true;
+  await act(async () => mockForeground('active'));
+  expect(screen.queryByText(t('settings.healthWrite.on'))).toBeNull();
+  expect(screen.getByText(t('settings.healthWrite.refused'))).toBeTruthy();
+  expect(screen.getByRole('button', { name: t('settings.healthWrite.turnOffLabel', { what: workouts }) })).toBeTruthy();
 });

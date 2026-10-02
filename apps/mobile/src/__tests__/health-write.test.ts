@@ -5,6 +5,7 @@
  */
 import { healthKitAccess, healthKitWrite } from '@/health/healthKit';
 import { createHealthWriting } from '@/health/healthWrite';
+import { workoutParams } from '@/train/params';
 
 const STRENGTH = 50; // HKWorkoutActivityType.traditionalStrengthTraining, the installed library's WorkoutActivityType
 const AUTHORIZED = 2; // AuthorizationStatus.sharingAuthorized
@@ -45,11 +46,13 @@ describe('the phone (healthKitWrite)', () => {
     ).toBe(false);
   });
 
-  test("iOS's sheet asks to write exactly two things — workouts and weight — and to read nothing more", async () => {
+  test("iOS's sheet asks for the one type being turned on — a 'no' to the other is never given before it is asked", async () => {
     const fake = kit();
-    await access(fake).requestWrite();
+    await access(fake).requestWrite('workout');
+    await access(fake).requestWrite('weight');
     expect(fake.calls).toEqual([
-      { name: 'requestAuthorization', args: [{ toShare: ['HKWorkoutTypeIdentifier', 'HKQuantityTypeIdentifierBodyMass'] }] },
+      { name: 'requestAuthorization', args: [{ toShare: ['HKWorkoutTypeIdentifier'] }] },
+      { name: 'requestAuthorization', args: [{ toShare: ['HKQuantityTypeIdentifierBodyMass'] }] },
     ]);
   });
 
@@ -57,6 +60,7 @@ describe('the phone (healthKitWrite)', () => {
     const fake = kit({ HKWorkoutTypeIdentifier: AUTHORIZED, HKQuantityTypeIdentifierBodyMass: 1 });
     expect(access(fake).canWrite('workout')).toBe(true);
     expect(access(fake).canWrite('weight')).toBe(false);
+    expect(access(kit()).canWrite('workout')).toBe(false); // not asked yet (0) is not allowed
   });
 
   test('a workout: strength training from start to end, marked as the app\'s', async () => {
@@ -64,7 +68,9 @@ describe('the phone (healthKitWrite)', () => {
     const start = new Date('2026-10-02T17:00:00Z');
     const end = new Date('2026-10-02T18:05:00Z');
     await access(fake).writeWorkout({ id: 'w-1', start, end });
-    expect(fake.calls).toEqual([{ name: 'saveWorkoutSample', args: [STRENGTH, [], start, end, undefined, { HKExternalUUID: 'keel:w-1' }] }]);
+    // The sync identifier makes HealthKit keep one sample per record: a finish done again never adds a second workout.
+    const mark = { HKExternalUUID: 'keel:w-1', HKSyncIdentifier: 'keel:w-1', HKSyncVersion: 1 };
+    expect(fake.calls).toEqual([{ name: 'saveWorkoutSample', args: [STRENGTH, [], start, end, undefined, mark] }]);
   });
 
   test('a weigh-in: kilograms at its moment, entered by hand, marked as the app\'s', async () => {
@@ -72,7 +78,10 @@ describe('the phone (healthKitWrite)', () => {
     const at = new Date('2026-10-02T07:00:00Z');
     await access(fake).writeWeight({ id: 'wi-1', kg: 81.4, at });
     expect(fake.calls).toEqual([
-      { name: 'saveQuantitySample', args: ['HKQuantityTypeIdentifierBodyMass', 'kg', 81.4, at, at, { HKExternalUUID: 'keel:wi-1', HKWasUserEntered: true }] },
+      {
+        name: 'saveQuantitySample',
+        args: ['HKQuantityTypeIdentifierBodyMass', 'kg', 81.4, at, at, { HKExternalUUID: 'keel:wi-1', HKSyncIdentifier: 'keel:wi-1', HKSyncVersion: 1, HKWasUserEntered: true }],
+      },
     ]);
   });
 
@@ -99,7 +108,7 @@ describe('the switches (createHealthWriting)', () => {
     const written: { kind: string; value: unknown }[] = [];
     const access = {
       available,
-      requestWrite: jest.fn(async () => {}),
+      requestWrite: jest.fn(async (_kind: 'workout' | 'weight') => {}),
       canWrite: (kind: 'workout' | 'weight') => allowed[kind],
       writeWorkout: jest.fn(async (value: unknown) => void written.push({ kind: 'workout', value })),
       writeWeight: jest.fn(async (value: unknown) => void written.push({ kind: 'weight', value })),
@@ -122,7 +131,10 @@ describe('the switches (createHealthWriting)', () => {
     const { access, written } = phone();
     const writing = await createHealthWriting({ kv: memoryKv(), access, report: jest.fn() });
     expect(await writing.turnOn('workouts')).toBe(true);
-    expect(access.requestWrite).toHaveBeenCalledTimes(1);
+    expect(access.requestWrite.mock.calls).toEqual([['workout']]);
+    await writing.turnOn('weighIns');
+    expect(access.requestWrite.mock.calls).toEqual([['workout'], ['weight']]);
+    await writing.turnOff('weighIns');
     await writing.workoutFinished(workout);
     await writing.weighInSaved(weighIn);
     expect(written).toEqual([{ kind: 'workout', value: workout }]);
@@ -187,5 +199,29 @@ describe('the switches (createHealthWriting)', () => {
     await writing.forget();
     expect(writing.current()).toEqual({ workouts: false, weighIns: false });
     expect([...kv.items.keys()]).toEqual([]);
+  });
+
+  test('a session open far longer than any session (left unfinished for days) is not written: Health would keep a made-up length', async () => {
+    const { access } = phone();
+    const report = jest.fn();
+    const writing = await createHealthWriting({ kv: memoryKv(), access, report });
+    await writing.turnOn('workouts');
+    const hours = (n: number) => n * 3_600_000;
+    const longest = workoutParams.healthWorkoutMaxMinutes * 60_000;
+    await writing.workoutFinished({ ...workout, end: new Date(workout.start.getTime() + longest) });
+    expect(access.writeWorkout).toHaveBeenCalledTimes(1);
+    await writing.workoutFinished({ ...workout, end: new Date(workout.start.getTime() + longest + hours(1)) });
+    expect(access.writeWorkout).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledWith({ name: 'WorkoutTooLongForHealth' });
+  });
+
+  test('what the switch shows: on only while iOS still allows it; turned on but taken back in Health, refused', async () => {
+    const { access, allowed } = phone();
+    const writing = await createHealthWriting({ kv: memoryKv(), access, report: jest.fn() });
+    expect(writing.shown('workouts')).toBe('off');
+    await writing.turnOn('workouts');
+    expect(writing.shown('workouts')).toBe('on');
+    allowed.workout = false;
+    expect(writing.shown('workouts')).toBe('refused');
   });
 });

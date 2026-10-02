@@ -1,5 +1,5 @@
-import { useState, useSyncExternalStore } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';
+import { AppState, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
@@ -28,6 +28,13 @@ export function HealthWriteSection() {
   const { color } = useTheme();
   const { busy, problem, run } = useAction();
   const [refused, setRefused] = useState(false);
+  // iOS's answer can change in the Health app: what each switch shows is read again when the app comes to the front.
+  const [, recheck] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => state === 'active' && recheck());
+    return () => subscription.remove();
+  }, []);
+  void settings; // re-rendered on every switch change; `shown` reads the switch and iOS together
 
   const turnOn = (which: Switch) =>
     void run(async () => setRefused(!(await healthWriting.turnOn(which))), {}, 'settings.healthWrite.failed');
@@ -52,17 +59,36 @@ export function HealthWriteSection() {
     <Section title={t('settings.healthWrite.title')}>
       <Text style={[styles.note, { color: color.muted }]}>{t('settings.healthWrite.note')}</Text>
       {ROWS.map((row) => (
-        <WriteRow key={row.which} {...row} on={settings[row.which]} busy={busy} onTurnOn={() => turnOn(row.which)} onTurnOff={() => turnOff(row.which)} />
+        <WriteRow
+          key={row.which}
+          {...row}
+          shown={healthWriting.shown(row.which)}
+          busy={busy}
+          onTurnOn={() => turnOn(row.which)}
+          onTurnOff={() => turnOff(row.which)}
+        />
       ))}
-      {refused && <Text style={[styles.note, { color: color.text }]}>{t('settings.healthWrite.refused')}</Text>}
+      {(refused || ROWS.some((row) => healthWriting.shown(row.which) === 'refused')) && (
+        <Text style={[styles.note, { color: color.text }]}>{t('settings.healthWrite.refused')}</Text>
+      )}
       {problem !== null && <Text style={[styles.note, { color: color.text }]}>{problem}</Text>}
     </Section>
   );
 }
 
-type RowProps = { labelKey: string; hintKey?: string; on: boolean; busy: boolean; onTurnOn: () => void; onTurnOff: () => void };
+type RowProps = {
+  labelKey: string;
+  hintKey?: string;
+  shown: 'off' | 'on' | 'refused';
+  busy: boolean;
+  onTurnOn: () => void;
+  onTurnOff: () => void;
+};
 
-function WriteRow({ labelKey, hintKey, on, busy, onTurnOn, onTurnOff }: RowProps) {
+/** Off: "Turn on". On: "On" and "Turn off". On but refused by iOS since: no "On", and "Turn off" to clear it. */
+function WriteRow({ labelKey, hintKey, shown, busy, onTurnOn, onTurnOff }: RowProps) {
+  const on = shown === 'on';
+  const off = shown === 'off';
   const { color } = useTheme();
   const what = t(labelKey);
   return (
@@ -72,7 +98,7 @@ function WriteRow({ labelKey, hintKey, on, busy, onTurnOn, onTurnOff }: RowProps
         {hintKey !== undefined && <Text style={[styles.note, { color: color.muted }]}>{t(hintKey)}</Text>}
         {on && <Text style={[styles.note, { color: color.muted }]}>{t('settings.healthWrite.on')}</Text>}
       </View>
-      {on ? <OffButton what={what} busy={busy} onPress={onTurnOff} /> : <OnButton what={what} busy={busy} onPress={onTurnOn} />}
+      {off ? <OnButton what={what} busy={busy} onPress={onTurnOn} /> : <OffButton what={what} busy={busy} onPress={onTurnOff} />}
     </View>
   );
 }
