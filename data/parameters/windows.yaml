@@ -70,3 +70,15 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G5-surec-supplement.md#T-2"
     note: "Proaktif soru (K-512): bir açık (cut) planın ilk bu kadar günü açlık sorulur; 'hiç aç değilim' başarı sayılmaz — açlık tipik olarak 3-4. günde ve ilk ağır bacak antrenmanından sonra gelir (Güray). Güray'ın agresif protokolünden; ılımlı açıkta da erken iyilik hâli geçicidir."
+  - key: first_weeks
+    value: 8
+    unit: weeks
+    tag: urun
+    source: "arastirma/04-faz3-urun.md#7.5"
+    note: "İlk 8 hafta akışı (K-513, ADR-040): H1-H8, kişinin kendi haftası, hesabın açıldığı günden. 8 hafta alışkanlık kurmaz (Lally) — bir sonraki bloğa devrettirir."
+  - key: first_weeks_risk_from
+    value: 5
+    unit: weeks
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-63"
+    note: "5. haftadan akışın sonuna risk okunur (K-513, ADR-040): G2 K-63 kritik uyum penceresi 5.-8. hafta; I1 F2 risk skoru 5. haftada devreye girer."

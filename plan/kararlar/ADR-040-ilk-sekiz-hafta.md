@@ -10,14 +10,14 @@ dosya. Kaynak 5. haftanın sinyallerini sayar ama birleştirme ağırlığı ver
 ## Karar
 1. **Hafta sayımı:** hesabın açıldığı gün, kullanıcının takviminde, 1. haftanın ilk günüdür. Hafta = açılıştan bu yana geçen gün / 7 + 1;
    1-8 dışı: akış yok. Takvim haftası değil, kişinin kendi haftası ("kullanıcının kendi haftasından", K-513 kabulü).
-2. **İçerik anahtarı** motorda saf fonksiyon: `EightWeeks.of(week)` → `firstWeeks.week<N>` (metinler `en.json`). H1'de içerik yok
+2. **İçerik anahtarı** motorda saf fonksiyon: `EightWeeks.of(week)` → `first_weeks.week<N>` (metinler `en.json`). H1'de içerik yok
    (I1 F2: "yorum yok, skor yok").
-3. **Risk (I1 F2, G2 K-63):** 5-8. haftalarda, **biten 7 günün** sinyalleri:
+3. **Risk (I1 F2, G2 K-63):** 5-8. haftalarda, **biten takvim haftasının** (Pzt-Paz; tetikleyiciler ve Consistency ile aynı hafta) sinyalleri:
    - seans yok (ısınma dışı setli antrenman, K-431);
    - affedilen hafta kullanıldı (Consistency'nin tek affettiği hafta, 04 §7.3; I1 F5: "af kullanımı öncü gösterge");
-   - kayıt düştü: biten 7 günde kayıtlı gün `min_logged_days_per_week`'in (H1 §3.4) altına indi, önceki 7 gün o eşikteydi — yeni eşik yok;
+   - kayıt düştü: biten haftada öğün kaydı olan gün `min_logged_days_per_week`'in altına indi, önceki hafta o eşikteydi — yeni eşik yok;
    - **uygulama açılmaması** sunucuda bilinmez (açılış yalnız telefonda, K-410) → K-521.
-   **Birleştirme: herhangi biri = risk.** Ağırlık yok: kaynak ağırlık vermiyor, uydurulmaz (U14). Beyanlı/duraklayan gün sinyal sayılmaz (ADR-038).
+   **Birleştirme: herhangi biri = risk.** Ağırlık yok: kaynak ağırlık vermiyor, uydurulmaz (U14). Biten hafta duraklamışsa (beyan, ADR-038) sinyal yok.
 4. **Risk varken soru bütçesi** haftanın anomali bütçesi (`question_budget_per_week_anomaly`, 5; U9). Mesaj: tek, insan tonunda,
    suçlamasız (U7) — telefonda (K-521).
 5. API: `GET /v1/first-weeks` → `{week, contentKey?, risk}`; 8. haftadan sonra 404 (akış bitti).
