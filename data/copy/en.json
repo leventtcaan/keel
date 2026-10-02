@@ -1150,6 +1150,17 @@
     "openLabel": "{exercise}: history",
     "loadFailed": "This exercise's history couldn't load. Try again when you're online."
   },
+  "sessionEdit": {
+    "title": "Edit session",
+    "deleteSpoken": "Delete {set}",
+    "delete": "Delete",
+    "confirmDelete": "Yes, delete it",
+    "add": "Add a set",
+    "needsConnection": "Editing a past session needs a connection. Try again when you're online.",
+    "gone": "This session is no longer there.",
+    "open": "Edit this session",
+    "openSpoken": "Edit the session of {day}"
+  },
   "gyms": {
     "title": "Gyms",
     "note": "Your next weights are rounded to what the gym you use can make; warm-ups and plates follow it too.",

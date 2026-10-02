@@ -2,9 +2,10 @@
  * A move's history screen (K-415, ADR-033): its records on top, then every session that has it, newest first, each set as
  * it was done. Read from the server's list, kept on the phone, joined with what the phone has not sent yet.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
 import ExerciseHistoryScreen from '@/app/exercise-history';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
@@ -15,7 +16,18 @@ type Schemas = components['schemas'];
 
 let mockParams: { exercise?: string } = {};
 const mockBack = jest.fn();
-jest.mock('expo-router', () => ({ router: { back: () => mockBack() }, useLocalSearchParams: () => mockParams }));
+const mockPush = jest.fn();
+let mockFocus: (() => void) | null = null;
+jest.mock('expo-router', () => ({
+  router: { back: () => mockBack(), push: (to: unknown) => mockPush(to) },
+  useLocalSearchParams: () => mockParams,
+  // Read on focus: coming back from editing a session reads again (K-416).
+  useFocusEffect: (effect: () => void) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    mockFocus = effect;
+    React.useEffect(effect, [effect]);
+  },
+}));
 
 const EXERCISES = [
   { id: 'bench_press', kind: 'COMPOUND', load: 'EXTERNAL', unilateral: false },
@@ -219,4 +231,52 @@ test("a set's note and the session's note are shown with them", async () => {
   await show();
   expect(await screen.findByText('Slept 5 hours')).toBeTruthy();
   expect(screen.getByText('grip slipped')).toBeTruthy();
+});
+
+describe('editing a past session (K-416)', () => {
+  test("a session the server has opens its edit; the edit is the server's workout", async () => {
+    await show();
+    await screen.findAllByText(/^Sep (21|28)$/);
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('sessionEdit.openSpoken', { day: 'Sep 28' }) })));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout-edit', params: { workout: 'b' } });
+  });
+
+  test('a session only on the phone (not sent yet) has no edit: the server does not have it', async () => {
+    mockHistory = { state: 'ready', value: [] };
+    mockRecords = [
+      {
+        seq: 1,
+        clientId: 'w9',
+        kind: 'workout',
+        parentClientId: null,
+        body: { clientId: 'w9', startedAt: new Date().toISOString() },
+        state: 'PENDING',
+        serverId: null,
+        serverBody: null,
+        errorCode: null,
+      },
+      {
+        seq: 2,
+        clientId: 's9',
+        kind: 'set',
+        parentClientId: 'w9',
+        body: { clientId: 's9', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 80, reps: 8, rir: 1 },
+        state: 'PENDING',
+        serverId: null,
+        serverBody: null,
+        errorCode: null,
+      },
+    ];
+    await show();
+    expect(await screen.findByText('80 kg × 8 · RIR 1')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Edit the session/ })).toBeNull();
+  });
+
+  test('coming back to the screen reads the history again, so an edit shows at once', async () => {
+    await show();
+    await screen.findAllByText(/^Sep (21|28)$/);
+    const reads = mockServices.training.history.mock.calls.length;
+    await act(async () => mockFocus?.());
+    expect(mockServices.training.history.mock.calls.length).toBeGreaterThan(reads);
+  });
 });
