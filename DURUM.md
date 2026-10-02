@@ -1,11 +1,12 @@
 ---
-guncelleme: 2026-10-01
+guncelleme: 2026-10-02
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M5 Part 1 (Motor ve check-in) BAŞLADI (2 Eki)** — önce ADR-037 işleri, sonra K-516, K-512, K-513, K-501, K-502.
 **M4 KAPANDI (2 Eki, kod)** — Part 4: K-410 bildirimler, K-411 dinlenme arka planda, K-412 Health'e yazma, K-423 tarifler
 telefonda. Cihaz adımları (K-308) ve klipler (K-419) Levent'te. Sıradaki koşu **M5** (`plan/oturum-promptlari/M5.md`).
 **M4 Part 1 (Bugün ve ölçüm) BİTTİ (1 Eki)** — K-231, K-230, K-420, K-401, K-409, K-402, K-404 birleşti; K-308 cihaz adımı Levent'te.
@@ -75,10 +76,9 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sabite), K-428, K-430, K-431, K-432 (backend),
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
-## ▶ DEVAM NOKTASI (2 Eki akşam — M4 Part 4 bitti)
-Part 4 ÇIKIŞ yazıldı; sorular 33-54 cevaplandı → ADR-037. Sıradaki: Levent dönünce **Part 4 aktarımı** (`docs/aktarim/M4/`
-README 19-23); Part 2-3 aktarımları da bekliyor (README 8-18). Sonra M5 Part 1 (`plan/oturum-promptlari/M5-part1.md`, önce
-ADR-037'nin kalan işleri).
+## ▶ DEVAM NOKTASI (2 Eki — M5 Part 1 sürüyor)
+Toplu mod: `plan/oturum-promptlari/M5-part1.md`. Hafıza `## M5 ilerleme` tablosunda. Aktarım bekliyor: M4 Part 2-4
+(`docs/aktarim/M4/` README 8-23) ve bitince M5 Part 1 (`docs/aktarim/M5/`).
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -459,6 +459,25 @@ görülemez; kod + test + Expo Go'da yetenek "kullanılamaz" yolu. Ana checkout 
     korumaları değiştirir — geri alırken eski yedeği kopyalama (yeni rotaları siler), tersine çevir.
   - **Görseller** `sips -Z 1000` ile küçültülür (bir ekran görüntüsü 4 MB'tı).
 - **Yeni sorular:** 50-54 (aşağıda). Hepsi (33-54) bu oturumun sonunda AskUserQuestion ile soruluyor.
+
+## M5 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` … `M5-part4.md`.
+
+| Part | Görevler | Durum |
+|---|---|---|
+| 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ▶ sürüyor (2 Eki) |
+| 2 · Koç altyapısı | K-503, K-505, K-506, K-504, K-508 | bekliyor |
+| 3 · Koç yüzü + sağlayıcı | K-509, K-507, K-517, K-511 | bekliyor |
+| 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | bekliyor |
+
+**Part 1 başı (2 Eki):** senkron tamam — M4 ÇIKIŞ git ile tutarlı (K-410 #253/#254, K-411 #256, K-412 #257, K-423 #258/#259,
+K-435 #268, K-433 #269 birleşik; açık PR yok; worktree yalnız kalıcı `../keel-main`; `M5-part*-devam.md` yok). 33-54 → ADR-037
+işlenmiş. Bağımlılıklar `done` (K-502 ← K-501, K-513 ← K-512 bu part içinde). Disk 5,6 GB. Dependabot: #2, #3 bilinen.
+`../keel-main`'de commitlenmemiş `plan/github-ids.yaml` (K-433 hash'i, önceki oturumun `sync_backlog --apply` artığı) →
+DURUM ile birlikte commitlendi.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
 
 ## Session sonunda Levent'e sorulacaklar
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
