@@ -147,6 +147,9 @@ class StateModeTests {
             pool.shutdown();
             assertThat(states(account)).as("round " + round).hasSize(1);
         }
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void aDeclaredWeeksCheckInAsksNothingAndItsCallWaitsSayingWhy() throws Exception {
         // ADR-038: the week the user declared is not read; the reason is shown (U3).
