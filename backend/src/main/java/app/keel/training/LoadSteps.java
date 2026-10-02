@@ -128,7 +128,7 @@ final class LoadSteps {
         }
         return loads.stream().filter(load -> load > last)
                 .min(Comparator.comparingLong((Long load) -> Math.abs(load - target)).thenComparingLong(load -> load))
-                .filter(load -> maxJump == null || target <= last
+                .filter(load -> maxJump == null
                         || BigDecimal.valueOf(load - last).compareTo(maxJump.multiply(BigDecimal.valueOf(target - last))) <= 0)
                 .<Rounding>map(load -> new Rounding.To(scale.kg(load))).orElse(new Rounding.NoHeavier());
     }

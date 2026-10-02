@@ -646,6 +646,23 @@
       "targetKg": 62.5,
       "maxJump": 2,
       "expect": "NO_HEAVIER"
+    },
+    {
+      "case": "measured from the last load, not the target: 16 is six over 10 (past two steps of 2.5), though 3.5 over the target",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          16
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "maxJump": 2,
+      "expect": "NO_HEAVIER"
     }
   ],
   "platesPerSide": [

@@ -144,7 +144,7 @@ export function round(equipment: Equipment, exerciseId: string, gym: GymWeights,
     const [d, bestD] = [Math.abs(load - target), Math.abs(best - target)];
     return d < bestD || (d === bestD && load < best) ? load : best;
   });
-  if (maxJump !== undefined && target > last && nearest - last > maxJump * (target - last)) return { kind: 'noHeavier' };
+  if (maxJump !== undefined && nearest - last > maxJump * (target - last)) return { kind: 'noHeavier' };
   return { kind: 'to', kg: scale.kg(nearest) };
 }
 
