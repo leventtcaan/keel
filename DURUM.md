@@ -77,8 +77,7 @@ M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sa
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
 ## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 sürüyor, compact öncesi durdu)
-Devam: `plan/oturum-promptlari/M5-part1-devam.md` (yarım işler sırayla: K-518 #284 RED commit'i → düzelt; K-512 #283 yeniden tasarım
-+ kısım 2; K-430 #273 Levent'te). Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
+Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki sürdü: K-518 #284 ✅; K-512 #283 auto-merge, #285 inceleme; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
 #279/#282 K-516. Aktarım bekliyor: M4 Part 2-4 + M5 Part 1 (`docs/aktarim/M5/`). Sorular 55-62.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
@@ -489,10 +488,10 @@ DURUM ile birlikte commitlendi.
 | K-432 hedefin geldiği seans düzenlenince hedef yeniden (hareket başına; V24 `unclean_exercise_ids`, `clearNext`, `Workout.setsNextTargets` + telefon notu) | ✅ birleşti; CI'da RED önce (5); inceleme: bayrak `setNext`'ten dardı, telefon notu yanlış kalacaktı, kural hareket başına → ADR notu + testler; mutasyon 3/3 + 1/1 | #277 | `M5/ADR-037-isleri.md` |
 | K-516 (1/3) durum modu: `/v1/state`, V25 `decision.declared_state`, rıza + silme + dışa aktarma, hesap kilidi (ADR-038) | ✅ birleşti; CI'da RED önce (25); inceleme: göç sırası (#277 bekledi), eşzamanlı beyan, enum sözleşme testi, dışa aktarma iddiası → düzeltildi | #279 | (K-516 sonunda) |
 | K-516 (2-3/3) motor: `declared_context` (güvenlik önce), duraklayan hafta (tutarlılık + uyum + kaçan plan haftası), 3. haftada `STATE_STILL` | ✅ auto-merge; inceleme: `StateStore.days` pencereden önce biten durumu ters okuyordu (ilk durum bitince her check-in 500) → CI'da RED önce, düzeltildi; döngü sorusu beyanlı haftada sabitlendi; mutasyon 6/6 + 4/4 + 3/3 | #282 | `M5/K-516.md` |
-| K-518 durum modu telefonda (servis + kv, `muted`, Bugün kartı, beyan ekranı, `state.json`) | 🔄 inceleme: tarihli durum bitince hatırlatmalar uygulama açılmadan dönmüyordu, Bugün notu çelişiyordu, geri çekmede yeniden plan testsiz → `plan.ts` `mutedUntil` yeşil; servis/kart düzeltmeleri yarım (RED commit'li) | #284 | `M5/K-518.md` |
+| K-518 durum modu telefonda (servis + kv, `muted`, Bugün kartı, beyan ekranı, `state.json`) | ✅ birleşti; inceleme: tarihli durum bitince hatırlatmalar uygulama açılmadan dönmüyordu → `mutedUntil` ile tarihle plan; Bugün notu başka duruma yapışıyordu → kimlik (tür+başlangıç); geri çekmede yeniden plan testli (fikstür yarışı bulundu: girişteki profil okuması); mutasyon 15/15 + 7/7 | #284 | `M5/K-518.md` |
 | K-516 PR'ları | ✅ #279 + #282 birleşti | | |
-| K-512 (1/2) motor `Prompts` (T-13, T-4, T-5, T-2; ADR-039) | 🔄 inceleme: dinlenme haftasında T-4, bulk'ta T-5, kayan anahtar, Pazartesi'de çift soru, beyanlı günler, açık başlangıcı tanımı → yeniden tasarım (devam dosyası) | #283 | |
-| K-512 (2/2) `/v1/prompts` + V26 + `PromptStore` | 🔄 dalda (`engine/118-triggers-api`), PR yok; motor yeniden tasarımına uyacak | — | |
+| K-512 (1/2) motor `Prompts` (T-13, T-4, T-5, T-2; ADR-039) | 🔄 auto-merge; yeniden tasarım: takvim haftaları, duraklayan günler (beyan + mola), T-5 yalnız CUT, kararlı anahtar, açığın ilk günü; 2. inceleme: adım hedefi gün gün (K-220 dersi) → RED önce; mutasyon 19/19 + 6/6 | #283 | |
+| K-512 (2/2) `/v1/prompts` + V26 + `PromptStore` + `DeficitStart` + modül API'leri (`Profiles.savedAt`, `TrainingStatusReader.breaks/programSince`, `CallStore.planSteps`) | 🔄 PR açık, inceleme sürüyor; #283'e yığılı; DB testlerinin RED'i CI'da görülmedi (iki commit birlikte itildi — süreç kayması); `DeficitStart` mutasyon 6/7 (+1 eşdeğer) | #285 | |
 
 ## Session sonunda Levent'e sorulacaklar
 **M5 Part 1 (yeni, 55-59):**
