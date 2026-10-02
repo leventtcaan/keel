@@ -718,6 +718,22 @@ describe("creating the user's own move (K-416, ADR-035): the catalog's matches f
     expect(a).toBe(b);
   });
 
+  test('nothing typed, nothing to create', async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    expect(screen.queryByRole('button', { name: /^Create / })).toBeNull();
+  });
+
+  test('saved, but the read of the own moves after it does not have it yet: added by its name all the same', async () => {
+    mockSave = async (body) => ({ data: saved(body as { clientId: string; name: string }), response: new Response(null, { status: 201 }) });
+    await show();
+    await openCreate('Landmine press');
+    await answerAll();
+    await fireEvent.press(screen.getByRole('button', { name: t('ownMove.save') }));
+    expect(await screen.findAllByText('Landmine press')).not.toHaveLength(0);
+    expect(screen.queryByText('custom:9')).toBeNull();
+  });
+
   test('refused by the server: said, nothing added', async () => {
     mockSave = async () => ({ error: { code: 'VALIDATION_FAILED' }, response: new Response(null, { status: 400 }) });
     await show();
