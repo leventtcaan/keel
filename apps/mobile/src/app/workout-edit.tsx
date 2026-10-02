@@ -210,8 +210,11 @@ export default function WorkoutEditScreen() {
     ) : null;
 
   const underWayNote = underWay ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('sessionEdit.underWay')}</Text> : null;
-  // The next targets were set at the finish (K-217) and an edit does not move them: said, not left to be found out.
-  const targetsNote = sets.length > 0 ? <Text style={[styles.small, { color: color.muted }]}>{t('sessionEdit.targetsNote')}</Text> : null;
+  // Whether an edit here moves the next session's targets, as the server says (K-432): it does for the session a target
+  // of its day came from; any other session's were set by a newer one, or it is off the program. Said, not found out.
+  const editMovesTargets = session?.state === 'ready' && session.value.setsNextTargets === true;
+  const targetsNote =
+    sets.length > 0 ? <Text style={[styles.small, { color: color.muted }]}>{t(editMovesTargets ? 'sessionEdit.targetsMove' : 'sessionEdit.targetsNote')}</Text> : null;
 
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>

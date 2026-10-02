@@ -185,6 +185,16 @@ test('Settings opens from Today, over the tabs (K-309, prototype 5.2)', async ()
   expect(router.getPathname()).toBe('/');
 });
 
+test.each(['/check-in'])('signed out, %s is not reachable (K-501)', async (url) => {
+  mockSignedIn = false;
+  const router = renderRouter(APP, { initialUrl: url });
+  await router;
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/sign-in');
+});
+
 test('signed out, Settings is not reachable', async () => {
   mockSignedIn = false;
   const router = renderRouter(APP, { initialUrl: '/settings' });

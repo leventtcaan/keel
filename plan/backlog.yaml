@@ -2023,7 +2023,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-501, K-212]
+    depends_on: [K-501, K-212, K-519]
     why: "Tezin ekrandaki hali"
     acceptance:
       - "CONTINUE / değişiklik / NO_DECISION_YET varyantları"
@@ -2317,6 +2317,41 @@ tasks:
     refs: ["plan/kararlar/ADR-038-durum-modu.md", "plan/kararlar/ADR-036-bildirimler.md"]
     learn:
       - "Bağlam beyanı"
+  - id: K-519
+    title: "Kararın dayanağı: kararın okuduğu veri satırları (sunucu)"
+    milestone: M5
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-212]
+    why: "K-502'den bölündü: gerekçe sayfasının 'The data' satırları kararın kendi anlık görüntüsünden gelmeli (Ö-25, U3 'hangi veri' yarısı)"
+    acceptance:
+      - "Kararın saklı anlık görüntüsünden: pencerenin trend kilosu (başı → sonu), haftalık hız, uyum (yapılan / planlanan), check-in cevapları, antrenman durumu"
+      - "Sayı uydurulmaz: kararın okumadığı veri satır olmaz; yağ yüzdesi asla (U4)"
+      - "Sözleşmede tipli; DB testi"
+    tests:
+      - "DecisionBasisTests"
+    refs: ["arastirma/04-faz3-urun.md#Ö-25", "prototip/keel-prototype.html"]
+    learn:
+      - "Açıklanabilirlik"
+  - id: K-520
+    title: "Proaktif tetikleyici soruları telefonda"
+    milestone: M5
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-512]
+    why: "K-512'den bölündü: tetikleyiciler bildirim değil, Bugün'de uygulama içi soru (ADR-036)"
+    acceptance:
+      - "Bugün'de sunucunun tetiklediği sorular; cevap sunucuya; cevabın söylediği metin (ör. açlık 3-4. günde gelir)"
+      - "Durum beyanına giden seçenek durum ekranını açar (K-518)"
+    tests:
+      - "today-screen.test.tsx (tetikleyiciler)"
+    refs: ["arastirma/ham/guray/G5-surec-supplement.md"]
+    learn:
+      - "Olay tabanlı arayüz"
   - id: K-517
     title: "Haftalık kısa koç notu"
     milestone: M5

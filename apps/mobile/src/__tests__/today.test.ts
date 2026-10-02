@@ -94,7 +94,8 @@ describe('loadToday', () => {
     });
     expect(GET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-10-01' } } });
     expect(GET.mock.calls.map(([path]) => path).sort()).toEqual(
-      ['/v1/consistency', '/v1/days/{day}/budget', '/v1/decisions/current', '/v1/program', '/v1/targets', '/v1/weigh-ins'].sort(),
+      // K-501 adds the check-in (K1 note to Levent: the list grows by the part the task adds).
+      ['/v1/check-ins/current', '/v1/consistency', '/v1/days/{day}/budget', '/v1/decisions/current', '/v1/program', '/v1/targets', '/v1/weigh-ins'].sort(),
     );
   });
 });

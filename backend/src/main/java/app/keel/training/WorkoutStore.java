@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -18,8 +19,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 class WorkoutStore {
 
-    /** {@code note}s are the user's own words (K-422): kept and handed back, never logged (V3). */
-    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note) {
+    /**
+     * {@code note}s are the user's own words (K-422): kept and handed back, never logged (V3). {@code uncleanExerciseIds}:
+     * the finish's answer on form (G6 K-31), kept so a target derived again after an edit holds them as the finish did
+     * (K-432).
+     */
+    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<String> uncleanExerciseIds) {
     }
 
     record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps, Integer rir, Side side,
@@ -64,10 +69,16 @@ class WorkoutStore {
                 .param("account", account.value()).query((row, n) -> workout(row)).list();
     }
 
-    /** A finish without a note keeps the one given before (a replay, a corrected end time); one with a note replaces it. */
-    void finish(AccountId account, UUID id, Instant endedAt, String note) {
-        jdbc.sql("update training.workout set ended_at = :at, note = coalesce(:note, note) where id = :id and account_id = :account")
-                .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("note", note).param("id", id).param("account", account.value()).update();
+    /**
+     * A finish without a note keeps the one given before (a replay, a corrected end time); one with a note replaces it.
+     * The answer on form is the latest finish's.
+     */
+    void finish(AccountId account, UUID id, Instant endedAt, String note, Set<String> uncleanExerciseIds) {
+        jdbc.sql("""
+                update training.workout set ended_at = :at, note = coalesce(:note, note), unclean_exercise_ids = :unclean
+                where id = :id and account_id = :account""")
+                .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("note", note).param("unclean", uncleanExerciseIds.stream().sorted().toArray(String[]::new))
+                .param("id", id).param("account", account.value()).update();
     }
 
     Stored<LoggedSet> log(AccountId account, UUID workout, LoggedSet set) {
@@ -100,7 +111,7 @@ class WorkoutStore {
         OffsetDateTime ended = row.getObject("ended_at", OffsetDateTime.class);
         return new Workout(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
                 row.getObject("started_at", OffsetDateTime.class).toInstant(), ended == null ? null : ended.toInstant(),
-                row.getObject("program_day_id", UUID.class), row.getString("note"));
+                row.getObject("program_day_id", UUID.class), row.getString("note"), List.of((String[]) row.getArray("unclean_exercise_ids").getArray()));
     }
 
     private static LoggedSet loggedSet(ResultSet row) throws SQLException {

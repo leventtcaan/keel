@@ -142,6 +142,38 @@ class ProgramStore {
                 .param("from", from.atOffset(ZoneOffset.UTC)).update();
     }
 
+    /**
+     * The target that came from the session started at {@code from} is gone: none of its sets of the move are left (K-432).
+     * A target from another session stays.
+     */
+    void clearNext(AccountId account, UUID plannedId, Instant from) {
+        jdbc.sql("""
+                update training.planned_exercise set next_load_kg = null, next_reps = null, last_load_kg = null, next_from = null
+                where account_id = :account and id = :id and next_from = :from""")
+                .param("account", account.value()).param("id", plannedId).param("from", from.atOffset(ZoneOffset.UTC)).update();
+    }
+
+    /**
+     * Where each planned move of each day has its target from (K-432): the start of the session it came from, or none —
+     * one read for a whole list of workouts.
+     */
+    Map<UUID, List<Optional<Instant>>> targetSources(AccountId account) {
+        Map<UUID, List<Optional<Instant>>> sources = new LinkedHashMap<>();
+        jdbc.sql("select day_id, next_from from training.planned_exercise where account_id = :account").param("account", account.value())
+                .query((row, n) -> Map.entry(row.getObject("day_id", UUID.class),
+                        Optional.ofNullable(row.getObject("next_from", OffsetDateTime.class)).map(OffsetDateTime::toInstant)))
+                .list().forEach(move -> sources.computeIfAbsent(move.getKey(), day -> new java.util.ArrayList<>()).add(move.getValue()));
+        return sources;
+    }
+
+    /**
+     * Whether an edit of a session started at {@code startedAt} on that day can move a target: as setNext decides — a move
+     * with no target yet, or one from this session or an older one.
+     */
+    static boolean movesATarget(List<Optional<Instant>> daySources, Instant startedAt) {
+        return daySources.stream().anyMatch(from -> from.isEmpty() || !from.get().isAfter(startedAt));
+    }
+
     private static BigDecimal plain(BigDecimal kg) {
         return kg == null ? null : Decimals.plain(kg);
     }

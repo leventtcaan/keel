@@ -42,3 +42,22 @@ geri gelince açık hatırlatmalar yeniden teklif ediliyordu → servisin durumu
 1. Hatırlatma teklifi neden ayrı bir onboarding ekranı olmadı?
 2. iOS izin sayfası neden açıklamadan **sonra** çıkıyor?
 3. Profil kaydedilmeden hatırlatmaları açmak neden bir sorun değil?
+
+## K-432 · Hedefin geldiği seans düzenlenince hedef yeniden türetilir (ADR-037 › 48) — #277
+| # | Basamak | Proje yeri |
+|---|---|---|
+| 1 | **Türetilmiş durum:** sonraki hedef (yük/tekrar) bir seansın setlerinden türer ve `planned_exercise`'a "nereden" (`next_from` = seansın başı) ile yazılır | `SessionProgress`, `ProgramStore.setNext` |
+| 2 | Bitmiş bir program seansına set eklenir/silinirse aynı türetme, seansın **şimdiki** setleriyle yeniden koşar — aynı transaction'da | `WorkoutController.log/deleteSet` (`@Transactional`), `SessionProgress.edited` |
+| 3 | **Hareket başına:** `setNext` yalnız `next_from <= seansın başı` iken yazar → daha yeni seansın hedefi ezilmez; yeni seans bir hareketi atladıysa o hareketin hedefi eski seanstandır ve eski seansın düzeltmesi onu düzeltir | `ProgramStore.setNext`, ADR-037 uygulama notu |
+| 4 | Kaynağı kalmayan hedef (hareketin tüm setleri silindi) silinir — silinmiş veriden hedef kalmaz | `ProgramStore.clearNext` |
+| 5 | Bitişteki "form temiz değil" cevabı artık saklanır (V24): yeniden türetmede tutulan hareket tutulmaya devam eder | `V24__training_unclean_moves.sql`, `WorkoutStore.finish` |
+| 6 | Telefon notu sunucunun söylediğine bağlı: `setsNextTargets` (bu seansın düzenlemesi bir hedefi oynatabilir mi — `setNext`'in koşuluyla aynı) | `Workout.setsNextTargets`, `workout-edit.tsx` |
+
+RED: testler önce CI'da (5 kırmızı). İnceleme: code-reviewer — bayrak `setNext`'ten dar tanımlanmıştı (hedefsiz harekete set eklemek
+de hedef koyar), telefon notu birleşince yanlış olacaktı (kabulün ikinci maddesi aynı PR'a alındı), kural kartta "son seans"
+diyordu ama hareket başına uygulanıyor → ADR notu + test. Mutasyon 3/3 (saf `movesATarget`) + 1/1 (mobil not); DB yolları CI'da RED önce.
+
+### Soru bankası
+1. "Türetilmiş durum" nedir; hedef neden setlerden her seferinde hesaplanmıyor da saklanıyor?
+2. Eski bir seansı düzenlemek neden yeni seansın hedefini bozamıyor?
+3. "Form temiz değil" cevabını saklamasaydık düzenleme neyi yanlış yapardı?

@@ -37,6 +37,13 @@
     }
   },
   "today": {
+    "checkIn": {
+      "title": "This week's check-in",
+      "questions": "{count} short questions, then your call.",
+      "one": "One short question, then your call.",
+      "none": "Nothing to ask this week: your call is ready to make.",
+      "open": "Check in"
+    },
     "consistency": {
       "title": "Consistency this week",
       "percent": "{percent} %",
@@ -970,6 +977,22 @@
     }
   },
   "checkIn": {
+    "screen": {
+      "title": "This week's check-in",
+      "intro": "Only what your logs don't already say. Each question says why it's asked.",
+      "none": "Nothing to ask this week: your logs say enough.",
+      "answered": "This week's call is in. It's on Today.",
+      "send": "Get this week's call",
+      "sendFailed": "Couldn't send your answers. Check your connection and try again.",
+      "serverError": "Something went wrong on our side. Try again in a moment.",
+      "moved": "Your check-in week has changed. Here it is again.",
+      "failed": "Couldn't load this week's check-in. Check your connection.",
+      "retry": "Try again",
+      "back": "Today",
+      "scaleSpoken": "{n} of 10",
+      "centimetres": "Centimetres",
+      "inches": "Inches"
+    },
     "question": {
       "training": "How did training go this week?",
       "recovery": "How are you recovering between sessions?",
@@ -1357,7 +1380,8 @@
     "openSpoken": "Edit the session of {day}",
     "underWay": "This session is still under way: change it in the session itself.",
     "keep": "Keep it",
-    "targetsNote": "Changes here don't move your next session's targets: those were set when you finished."
+    "targetsNote": "Changes here don't move your next session's targets: a later session set them.",
+    "targetsMove": "Changes here update your next session's targets, from what this session now holds."
   },
   "gyms": {
     "title": "Gyms",

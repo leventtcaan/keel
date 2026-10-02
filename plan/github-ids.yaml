@@ -695,7 +695,7 @@ tasks:
     project_fields_synced: true
     url: https://github.com/leventtcaan/keel/issues/56
   K-502:
-    hash: c01a63aee7623031
+    hash: 0a3fb3343ff7d33f
     issue: 57
     item: PVTI_lAHOCKkQ2c4BlAgHzg9UdpQ
     project_fields_synced: true
@@ -796,6 +796,18 @@ tasks:
     item: PVTI_lAHOCKkQ2c4BlAgHzg-Nlk8
     project_fields_synced: true
     url: https://github.com/leventtcaan/keel/issues/278
+  K-519:
+    hash: 533bf4d0de3b9957
+    issue: 280
+    item: PVTI_lAHOCKkQ2c4BlAgHzg-NwCc
+    project_fields_synced: true
+    url: https://github.com/leventtcaan/keel/issues/280
+  K-520:
+    hash: ab63dc23a5fc350f
+    issue: 281
+    item: PVTI_lAHOCKkQ2c4BlAgHzg-NwRM
+    project_fields_synced: true
+    url: https://github.com/leventtcaan/keel/issues/281
   K-601:
     hash: 4fbdb214830e010e
     issue: 66

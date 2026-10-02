@@ -213,6 +213,166 @@ class SessionProgressApiTests {
         assertThat(planned(account, 0)).doesNotContainKeys("nextLoadKg", "nextReps");
     }
 
+    @Test
+    void aSetDeletedFromTheLastFinishedSessionTakesTheTargetFromWhatIsLeft() throws Exception {
+        // K-432 (ADR-037 #48): a set logged by mistake and deleted is data corrected (U2); the target is derived again —
+        // two of three planned sets at the top repeat the load at the top of the range.
+        AccountId account = withAProgram();
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + workout + "/sets/" + setIds(account, workout).getFirst(), null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(target(60, 10));
+    }
+
+    @Test
+    void aForgottenSetAddedToTheLastFinishedSessionCountsForTheTarget() throws Exception {
+        AccountId account = withAProgram();
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "bench_press", 2, 60, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+        assertThat(next(account, 0)).isEqualTo(target(60, 10));
+
+        set(account, workout, "bench_press", 60, 10, 1, "BOTH");
+
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+    }
+
+    @Test
+    void everySetOfAMoveDeletedFromTheSessionItsTargetCameFromLeavesNoTarget() throws Exception {
+        // The target came from sets that are gone: none is left standing on deleted data.
+        AccountId account = withAProgram();
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        sets(account, workout, "squat", 3, 100, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        for (String set : setIds(account, workout).subList(0, 3)) {
+            assertThat(send("DELETE", account, "/v1/workouts/" + workout + "/sets/" + set, null)).hasStatus(204);
+        }
+
+        assertThat(planned(account, 0)).doesNotContainKeys("nextLoadKg", "nextReps");
+        assertThat(next(account, 1)).isEqualTo(target(new BigDecimal("100").add(step(ParameterKey.LOAD_INCREMENT_LOWER_KG)), 6));
+    }
+
+    @Test
+    void editingAnOlderSessionLeavesTheTargetTheNewerOneSet() throws Exception {
+        AccountId account = withAProgram();
+        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        String newer = start(account, MONDAY_EVENING);
+        sets(account, newer, "bench_press", 2, 62.5, 8, "BOTH");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+        List<Object> set = next(account, 0);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + older + "/sets/" + setIds(account, older).getFirst(), null)).hasStatus(204);
+        set(account, older, "bench_press", 70, 12, 1, "BOTH");
+
+        assertThat(next(account, 0)).isEqualTo(set);
+    }
+
+    @Test
+    void aMoveWhoseFormWasNotCleanStaysHeldWhenItsSessionIsEdited() throws Exception {
+        // The finish's answer is kept with the workout (G6 K-31): derived again, the held move is still held.
+        AccountId account = withAProgram();
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        sets(account, workout, "squat", 3, 100, 10, "BOTH");
+        assertThat(finish(account, workout, List.of("bench_press"))).hasStatusOk();
+        List<Object> held = next(account, 0);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + workout + "/sets/" + setIds(account, workout).getLast(), null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(held);
+        assertThat(next(account, 1)).as("squat, two of three sets left").isEqualTo(target(100, 10));
+    }
+
+    @Test
+    void aSessionSaysWhetherItsEditsMoveTheTargets() throws Exception {
+        AccountId account = withAProgram();
+        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        // The newer session sets every move's target: none is left for an edit of the older one to move.
+        String newer = start(account, MONDAY_EVENING);
+        sets(account, newer, "bench_press", 3, 60, 10, "BOTH");
+        sets(account, newer, "squat", 3, 100, 10, "BOTH");
+        sets(account, newer, "one_arm_dumbbell_row", 3, 20, 10, "LEFT");
+        sets(account, newer, "one_arm_dumbbell_row", 3, 20, 10, "RIGHT");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+        String unfinished = start(account, MONDAY_EVENING.plus(java.time.Duration.ofHours(1)));
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + newer, null))).containsEntry("setsNextTargets", true);
+        assertThat(map(send("GET", account, "/v1/workouts/" + older, null))).containsEntry("setsNextTargets", false);
+        assertThat(map(send("GET", account, "/v1/workouts/" + unfinished, null))).doesNotContainKey("setsNextTargets");
+    }
+
+    @Test
+    void anOlderSessionStillATargetsSourceMovesItWhenEdited() throws Exception {
+        // Per move (K-432 review): the newer session has no bench, so bench's target is still the older session's —
+        // correcting that session's bench corrects the target; squat's came from the newer one and stays.
+        AccountId account = withAProgram();
+        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        String newer = start(account, MONDAY_EVENING);
+        sets(account, newer, "squat", 3, 100, 10, "BOTH");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+        List<Object> squat = next(account, 1);
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + older, null))).containsEntry("setsNextTargets", true);
+        assertThat(send("DELETE", account, "/v1/workouts/" + older + "/sets/" + setIds(account, older).getFirst(), null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(target(60, 10));
+        assertThat(next(account, 1)).isEqualTo(squat);
+    }
+
+    @Test
+    void aSessionWhoseMoveHasNoTargetYetSetsOneWhenTheMoveIsAdded() throws Exception {
+        // The forgotten bench of the last session: no target came from it, yet adding the sets makes one — so it says so.
+        AccountId account = withAProgram();
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "squat", 3, 100, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout, null))).containsEntry("setsNextTargets", true);
+
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+    }
+
+    @Test
+    void theListSaysItForEachSession() throws Exception {
+        AccountId account = withAProgram();
+        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        String newer = start(account, MONDAY_EVENING);
+        for (String move : List.of("bench_press", "squat", "one_arm_dumbbell_row")) {
+            sets(account, newer, move, 3, 20, 10, "one_arm_dumbbell_row".equals(move) ? "LEFT" : "BOTH");
+        }
+        set(account, newer, "one_arm_dumbbell_row", 20, 10, 1, "RIGHT");
+        set(account, newer, "one_arm_dumbbell_row", 20, 10, 1, "RIGHT");
+        set(account, newer, "one_arm_dumbbell_row", 20, 10, 1, "RIGHT");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+
+        Map<String, Object> listed = ((List<Map<String, Object>>) JSON.readValue(send("GET", account,
+                "/v1/workouts?from=2026-09-01&to=2026-09-30", null).getResponse().getContentAsString(), List.class)).stream()
+                .collect(java.util.stream.Collectors.toMap(w -> (String) w.get("id"), w -> w.get("setsNextTargets")));
+
+        assertThat(listed).containsEntry(newer, true).containsEntry(older, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> setIds(AccountId account, String workout) throws Exception {
+        return ((List<Map<String, Object>>) map(send("GET", account, "/v1/workouts/" + workout, null)).get("sets")).stream()
+                .map(set -> (String) set.get("id")).toList();
+    }
+
     private AccountId withAProgram() {
         AccountId account = TestSessions.newAccount();
         send("PUT", account, "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
@@ -287,6 +447,7 @@ class SessionProgressApiTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };
         request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));

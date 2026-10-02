@@ -9,6 +9,7 @@ import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { CallCard } from '@/today/CallCard';
+import { CheckInCard } from '@/today/CheckInCard';
 import { CoachChips } from '@/today/CoachChips';
 import { ConsistencyCard } from '@/today/ConsistencyCard';
 import { TodayList } from '@/today/TodayList';
@@ -24,7 +25,8 @@ export default function TodayScreen() {
   const { color } = useTheme();
   const { day, data, reload } = useToday();
 
-  const parts = data === null ? [] : [data.consistency, data.decision, data.program, data.weighIns, data.targets, data.budget];
+  const parts =
+    data === null ? [] : [data.consistency, data.decision, data.program, data.weighIns, data.targets, data.budget, ...(data.checkIn ? [data.checkIn] : [])];
   const needsConsent = data !== null && (data.consistency.state === 'consent' || data.decision.state === 'consent');
   const failed = parts.some((part) => part.state === 'failed');
 
@@ -48,6 +50,8 @@ export default function TodayScreen() {
     data === null || (data.decision.state !== 'ready' && data.decision.state !== 'none') ? null : (
       <CallCard decision={data.decision.state === 'ready' ? data.decision.value : null} />
     );
+  // The check-in waits for an answer before this week's call (K-501); not read, nothing offered — the call card says enough.
+  const checkIn = data?.checkIn?.state === 'ready' ? <CheckInCard checkIn={data.checkIn.value} /> : null;
   const list =
     data === null ? null : (
       <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
@@ -65,6 +69,7 @@ export default function TodayScreen() {
         {problem}
         {consent}
         {consistency}
+        {checkIn}
         {call}
         {list}
         {coachChips}
