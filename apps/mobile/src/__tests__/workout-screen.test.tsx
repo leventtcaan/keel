@@ -779,3 +779,68 @@ describe("creating the user's own move (K-416, ADR-035): the catalog's matches f
     expect(screen.getByText(t('ownMove.title'))).toBeOnTheScreen();
   });
 });
+
+describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the rest after the round', () => {
+  const rowName = t('exercises.one_arm_dumbbell_row.name');
+  const link = async () => {
+    await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: rowName }) }));
+  };
+  const typeAndLog = async (button: string) => {
+    await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '20');
+    await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
+    await fireEvent.press(screen.getByText(button));
+  };
+  const rowSide = (side: 'LEFT' | 'RIGHT', number = 1) => t('workout.logSide', { number, side: t(`workout.sideName.${side}`) });
+
+  test("linked, a set of one carries the superset's id and brings up the other — no rest until the round is done", async () => {
+    await show();
+    await link();
+    expect(screen.getByText(t('superset.with', { names: rowName }))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    expect(await screen.findByText(rowSide('LEFT'))).toBeOnTheScreen();
+    expect(screen.queryByText(/^Rest ·/)).toBeNull();
+    await typeAndLog(rowSide('LEFT'));
+    expect(await screen.findByText(rowSide('RIGHT'))).toBeOnTheScreen(); // both sides before the partner
+    await typeAndLog(rowSide('RIGHT'));
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen(); // the bench again
+    expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
+    const ids = sets().map((s) => s.body.supersetId);
+    expect(ids[0]).toEqual(expect.any(String));
+    expect(new Set(ids)).toEqual(new Set([ids[0]]));
+    expect(sets().map((s) => s.body.exerciseId)).toEqual(['bench_press', 'one_arm_dumbbell_row', 'one_arm_dumbbell_row']);
+  });
+
+  test('opened again, the superset is read back from the sets: its line, and the next set under the same id', async () => {
+    mockRecords = [
+      ...mockRecords,
+      record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 8, rir: 1, supersetId: 'g1' }, 'w1'),
+      record('set', 'r1', { clientId: 'r1', exerciseId: 'one_arm_dumbbell_row', setType: 'WORKING', loadKg: 20, reps: 10, rir: 1, side: 'LEFT', supersetId: 'g1' }, 'w1'),
+      record('set', 'r2', { clientId: 'r2', exerciseId: 'one_arm_dumbbell_row', setType: 'WORKING', loadKg: 20, reps: 10, rir: 1, side: 'RIGHT', supersetId: 'g1' }, 'w1'),
+    ];
+    await show();
+    expect(await screen.findByText(t('superset.with', { names: rowName }))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+    expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'bench_press', supersetId: 'g1' });
+  });
+
+  test('picking a partner says what it is for, and can be left without linking', async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+    expect(screen.getByText(t('superset.choose'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.close') }));
+    expect(screen.queryByRole('button', { name: t('superset.pick', { name: rowName }) })).toBeNull();
+    expect(screen.getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
+  });
+
+  test('unlinked, the next set is no superset; the partner is offered only while neither is in one', async () => {
+    await show();
+    await link();
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.unlink') }));
+    expect(screen.getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    expect(sets().at(-1)?.body.supersetId).toBeUndefined();
+    expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
+    expect(screen.queryByText(t('superset.with', { names: rowName }))).toBeNull();
+  });
+});

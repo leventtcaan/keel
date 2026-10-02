@@ -277,3 +277,11 @@ test('a forgotten set is added to the user\'s own move under its id', async () =
     body: expect.objectContaining({ exerciseId: 'custom:1', loadKg: 30, reps: 10 }),
   });
 });
+
+test('a superset in the session: each move says its partner', async () => {
+  mockWorkout = async () =>
+    ok({ ...WORKOUT, sets: WORKOUT.sets.map((s) => (s.setType === 'WORKING' ? { ...s, supersetId: 'g1' } : s)) });
+  await show();
+  expect(screen.getByText(t('superset.with', { names: squatName }))).toBeOnTheScreen();
+  expect(screen.getByText(t('superset.with', { names: benchName }))).toBeOnTheScreen();
+});

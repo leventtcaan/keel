@@ -6,6 +6,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
 import WorkoutSummaryScreen from '@/app/workout-summary';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
@@ -103,4 +104,19 @@ test("the user's own move by the name they gave", async () => {
   );
   expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
   expect(screen.queryByText('custom:1')).toBeNull();
+});
+
+test('a superset reads as one: each move says its partner', async () => {
+  const at = RECORDS.findIndex((r) => r.clientId === 'b');
+  RECORDS.splice(at, 1, { ...RECORDS[at], body: { ...(RECORDS[at].body as object), supersetId: 'g1' } });
+  RECORDS.splice(RECORDS.length - 1, 0, set('w1', 'y', 'lateral_raise', 12.5, 12, 1));
+  const y = RECORDS.findIndex((r) => r.clientId === 'y');
+  RECORDS[y] = { ...RECORDS[y], body: { ...(RECORDS[y].body as object), supersetId: 'g1' } };
+  await render(
+    <ThemeProvider>
+      <WorkoutSummaryScreen />
+    </ThemeProvider>,
+  );
+  expect(await screen.findByText(t('superset.with', { names: t('exercises.lateral_raise.name') }))).toBeOnTheScreen();
+  expect(screen.getByText(t('superset.with', { names: 'Bench press' }))).toBeOnTheScreen();
 });

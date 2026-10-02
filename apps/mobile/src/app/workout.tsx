@@ -17,6 +17,8 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { FinishForm } from '@/train/FinishForm';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
+import { SupersetLink } from '@/train/SupersetLink';
+import { nextInGroup, supersetsOf } from '@/train/superset';
 import { RestTimer } from '@/train/RestTimer';
 import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
@@ -59,6 +61,9 @@ export default function WorkoutScreen() {
   const [failed, setFailed] = useState(false);
   // The "Add a move" search: null while closed, what is typed while open.
   const [adding, setAdding] = useState<string | null>(null);
+  // Supersets (K-416, ADR-035): the ones read back from the sets, those made here before a set (by id), those undone.
+  const [formed, setFormed] = useState<Map<string, string[]>>(() => new Map());
+  const [unlinked, setUnlinked] = useState<string[]>([]);
   // Creating the user's own move from the search (K-416): the name it started from, null while not creating.
   const [creating, setCreating] = useState<string | null>(null);
 
@@ -117,6 +122,10 @@ export default function WorkoutScreen() {
   const moveId = entry_?.exerciseId;
   const move = moveId === undefined ? undefined : moves.get(moveId);
   const row = plan === null || plan.current === null ? null : plan.rows[plan.current];
+  // A superset is two moves or more; one made here keeps its moves before any of them has a set.
+  const groups = [...new Map([...supersetsOf(done), ...formed]).entries()].filter(([id, members]) => members.length > 1 && !unlinked.includes(id));
+  const groupOf = (id: string | undefined) => groups.find(([, members]) => id !== undefined && members.includes(id));
+  const group = groupOf(moveId);
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
   const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
   const warming =
@@ -166,16 +175,26 @@ export default function WorkoutScreen() {
       // The warm-ups waiting go first, under their own ids: one already saved before a failure is not saved twice.
       for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
       setHeld([]);
-      await queue.record({ kind: 'set', workoutClientId, body: buildSet(newClientId(), move, row.side, parsed, entry.rir, entry.note ?? undefined) });
+      const body = buildSet(newClientId(), move, row.side, parsed, entry.rir, entry.note ?? undefined, group?.[0]);
+      await queue.record({ kind: 'set', workoutClientId, body });
       saved = true;
     } catch (error) {
       named(error);
       setProblem({ row: rowKey, text: t('workout.saveFailed') });
     }
     if (saved) {
-      setRest(new Date().getTime());
-      // The move picked is done: the next one with sets left comes up. A move outside the plan is never done (no count).
-      if (planned !== undefined && plan.current === plan.rows.length - 1) setPicked(null);
+      if (group === undefined) {
+        setRest(new Date().getTime());
+        // The move picked is done: the next one with sets left comes up. A move outside the plan is never done (no count).
+        if (planned !== undefined && plan.current === plan.rows.length - 1) setPicked(null);
+      } else if (row.side !== 'LEFT') {
+        // In a superset the partner comes next (a one-sided move's right side first); the rest comes after the round.
+        const left = (id: string) =>
+          id === move.id ? plan.open === true || (plan.current ?? 0) < plan.rows.length - 1 : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
+        const { next, roundDone } = nextInGroup(group[1], move.id, left);
+        if (roundDone) setRest(new Date().getTime());
+        setPicked(next);
+      }
       await refresh();
     }
     saving.current = false;
@@ -337,6 +356,21 @@ export default function WorkoutScreen() {
         busy={busy}
       />
     );
+  const linkWith = (partner: string) => {
+    if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [moveId, partner]]]));
+  };
+  const unlink = () => {
+    if (group !== undefined) setUnlinked((before) => [...before, group[0]]);
+  };
+  const supersetBlock =
+    moveId === undefined ? null : (
+      <SupersetLink
+        partners={(group?.[1] ?? []).filter((id) => id !== moveId).map((id) => exerciseName(id, moves))}
+        candidates={entries.filter((e) => e.exerciseId !== moveId && groupOf(e.exerciseId) === undefined).map((e) => ({ id: e.exerciseId, name: exerciseName(e.exerciseId, moves) }))}
+        onLink={linkWith}
+        onUnlink={unlink}
+      />
+    );
   const typedKg = row === null ? null : parseLoad(entry.load, units, row.suggested.loadKg);
   const perSide = move === undefined || typedKg === null || entryBlock === null ? null : platesLine(move, typedKg, data?.gym);
   const plates = perSide === null ? null : <Text style={[styles.small, { color: color.muted }]}>{perSide}</Text>;
@@ -373,6 +407,7 @@ export default function WorkoutScreen() {
           onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}>
           <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
         </Pressable>
+        {supersetBlock}
         {warmBlock}
         <SetTable plan={plan} move={move} />
         {entryBlock}
