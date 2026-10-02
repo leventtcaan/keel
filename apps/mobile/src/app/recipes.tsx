@@ -72,6 +72,9 @@ export default function RecipesScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
+        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={tokens.space.md}>
+          <Text style={[styles.text, { color: color.text }]}>{t('recipes.back')}</Text>
+        </Pressable>
         <ScreenTitle>{t('recipes.title')}</ScreenTitle>
         {body}
         {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
@@ -101,7 +104,9 @@ function RecipeList({ recipes, onDelete, busy }: { recipes: Recipe[]; onDelete: 
         <View key={recipe.id} style={[styles.row, { borderColor: color.line }]}>
           <View style={styles.words}>
             <Text style={[styles.name, { color: color.text }]}>{recipe.name}</Text>
-            <Text style={[styles.small, { color: color.muted }]}>{t('recipes.makes', { portions: recipe.portions })}</Text>
+            <Text style={[styles.small, { color: color.muted }]}>
+              {t(`recipes.makes.${recipe.portions === 1 ? 'one' : 'other'}`, { portions: recipe.portions })}
+            </Text>
             <PortionLine recipe={recipe} />
           </View>
           <Pressable

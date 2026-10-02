@@ -351,10 +351,14 @@
     }
   },
   "recipes": {
+    "back": "Back",
     "title": "Recipes",
     "new": "New recipe",
     "none": "No recipes yet. Enter one once, then log it by the portion.",
-    "makes": "Makes {portions} portions",
+    "makes": {
+      "one": "Makes 1 portion",
+      "other": "Makes {portions} portions"
+    },
     "perPortion": "Each portion {low}–{high} kcal",
     "unavailable": "An ingredient is no longer in the food database. Delete this one and enter it again.",
     "delete": "Delete",

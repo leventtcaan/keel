@@ -23,11 +23,12 @@ const SOUP: Recipe = {
   items: [],
   perPortion: { kcal: R(250, 300), proteinG: R(14, 17), carbsG: R(35, 42), fatG: R(5, 8) },
 };
-const STEW: Recipe = { ...SOUP, id: '33333333-3333-4333-8333-333333333333', name: 'Bean stew', unavailable: ['fdc-9'], perPortion: undefined };
+const STEW: Recipe = { ...SOUP, id: '33333333-3333-4333-8333-333333333333', name: 'Bean stew', portions: 1, unavailable: ['fdc-9'], perPortion: undefined };
 
 let mockList: () => Promise<Answer> = async () => ok([SOUP, STEW]);
 const mockDELETE = jest.fn(async (_path: string, _init: unknown) => ok(undefined, 204));
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 let mockRefocus: () => void = () => {};
 const mockServices = {
   api: { GET: jest.fn(async (_path: string) => mockList()), DELETE: mockDELETE },
@@ -35,7 +36,7 @@ const mockServices = {
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 jest.mock('expo-router', () => ({
-  router: { push: (...args: unknown[]) => mockPush(...args), back: jest.fn() },
+  router: { push: (...args: unknown[]) => mockPush(...args), back: () => mockBack() },
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
     React.useEffect(() => {
@@ -62,7 +63,8 @@ async function show() {
 test('each recipe with its portions and the range per portion; one the database can no longer estimate, marked', async () => {
   await show();
   expect(screen.getByText(SOUP.name)).toBeTruthy();
-  expect(screen.getByText(t('recipes.makes', { portions: 4 }))).toBeTruthy();
+  expect(screen.getByText(t('recipes.makes.other', { portions: 4 }))).toBeTruthy();
+  expect(screen.getByText(t('recipes.makes.one'))).toBeTruthy();
   expect(screen.getByText(t('recipes.perPortion', { low: 250, high: 300 }))).toBeTruthy();
   expect(screen.getByText(STEW.name)).toBeTruthy();
   expect(screen.getByText(t('recipes.unavailable'))).toBeTruthy();
@@ -126,4 +128,10 @@ test('read again when the screen comes back into view (a recipe just entered)', 
   mockList = async () => ok([SOUP]);
   await act(async () => mockRefocus());
   expect(screen.getByText(SOUP.name)).toBeTruthy();
+});
+
+test('a way back to the Food tab (the stack has no header)', async () => {
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: t('recipes.back') }));
+  expect(mockBack).toHaveBeenCalled();
 });
