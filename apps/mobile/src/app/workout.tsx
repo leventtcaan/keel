@@ -18,7 +18,7 @@ import { tokens } from '@/theme/tokens';
 import { FinishForm } from '@/train/FinishForm';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { SupersetLink } from '@/train/SupersetLink';
-import { nextInGroup, supersetsOf } from '@/train/superset';
+import { nextInGroup, supersetsInForce } from '@/train/superset';
 import { RestTimer } from '@/train/RestTimer';
 import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
@@ -122,8 +122,15 @@ export default function WorkoutScreen() {
   const moveId = entry_?.exerciseId;
   const move = moveId === undefined ? undefined : moves.get(moveId);
   const row = plan === null || plan.current === null ? null : plan.rows[plan.current];
-  // A superset is two moves or more; one made here keeps its moves before any of them has a set.
-  const groups = [...new Map([...supersetsOf(done), ...formed]).entries()].filter(([id, members]) => members.length > 1 && !unlinked.includes(id));
+  // A superset is two moves or more, in the order its round was started: those whose last work set carries its id, then
+  // the ones linked here with no set in it yet. Unlinked, the next set has no id and the move is out, opened again too.
+  const inForce = supersetsInForce(done.filter((s) => s.setType === 'WORKING'));
+  const groups = [...new Set([...inForce.keys(), ...formed.keys()])]
+    .map((id): [string, string[]] => {
+      const started = inForce.get(id) ?? [];
+      return [id, [...started, ...(formed.get(id) ?? []).filter((m) => !started.includes(m))]];
+    })
+    .filter(([id, members]) => members.length > 1 && !unlinked.includes(id));
   const groupOf = (id: string | undefined) => groups.find(([, members]) => id !== undefined && members.includes(id));
   const group = groupOf(moveId);
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.

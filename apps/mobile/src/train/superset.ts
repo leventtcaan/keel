@@ -16,12 +16,27 @@ export function supersetsOf(sets: Grouped[]): Map<string, string[]> {
   return groups;
 }
 
+/**
+ * The supersets still going in a session: a move is in one while its last set carries the id — the first set after it
+ * was unlinked has none, so opened again the session does not link it back (no record of the unlinking is needed).
+ */
+export function supersetsInForce(sets: Grouped[]): Map<string, string[]> {
+  const last = new Map(sets.map((s) => [s.exerciseId, s.supersetId]));
+  const groups = new Map<string, string[]>();
+  for (const [id, moves] of supersetsOf(sets)) {
+    const still = moves.filter((move) => last.get(move) === id);
+    if (still.length > 0) groups.set(id, still);
+  }
+  return groups;
+}
+
 /** Each move's partners: the other moves its sets share an id with. A group of one move is none. */
 export function supersetPartners(sets: Grouped[]): Map<string, string[]> {
   const partners = new Map<string, string[]>();
   for (const moves of supersetsOf(sets).values()) {
     if (moves.length < 2) continue;
-    for (const id of moves) partners.set(id, moves.filter((other) => other !== id));
+    // A move in two supersets (unlinked, then linked with another) keeps both partners.
+    for (const id of moves) partners.set(id, [...new Set([...(partners.get(id) ?? []), ...moves.filter((other) => other !== id)])]);
   }
   return partners;
 }

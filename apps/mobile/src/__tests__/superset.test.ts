@@ -2,7 +2,7 @@
  * Supersets (K-416, ADR-035): a superset is an id on its sets, no record of its own — the groups are read back from the
  * sets. Logging one move's set brings up the next move of the group with sets left; the round ends at the last one.
  */
-import { nextInGroup, supersetPartners, supersetsOf } from '@/train/superset';
+import { nextInGroup, supersetPartners, supersetsInForce, supersetsOf } from '@/train/superset';
 
 const set = (exerciseId: string, supersetId?: string) => ({ exerciseId, ...(supersetId === undefined ? {} : { supersetId }) });
 
@@ -44,4 +44,19 @@ describe('the next move after a set', () => {
     expect(nextInGroup(group, 'barbell_row', open(['barbell_row']))).toEqual({ next: 'barbell_row', roundDone: true });
     expect(nextInGroup(group, 'barbell_row', open([]))).toEqual({ next: null, roundDone: true });
   });
+});
+
+test("in force: a move stays in its superset while its last set carries the id — a set after unlinking takes it out", () => {
+  const sets = [set('bench_press', 'g1'), set('barbell_row', 'g1'), set('bench_press'), set('curl', 'g2'), set('pushdown', 'g2')];
+  expect(supersetsInForce(sets)).toEqual(
+    new Map([
+      ['g1', ['barbell_row']],
+      ['g2', ['curl', 'pushdown']],
+    ]),
+  );
+});
+
+test('a move in two supersets (unlinked, then linked with another) has both partners in the history', () => {
+  const partners = supersetPartners([set('bench_press', 'g1'), set('barbell_row', 'g1'), set('bench_press', 'g2'), set('curl', 'g2')]);
+  expect(partners.get('bench_press')).toEqual(['barbell_row', 'curl']);
 });

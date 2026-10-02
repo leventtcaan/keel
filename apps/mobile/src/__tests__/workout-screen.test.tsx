@@ -802,6 +802,7 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     expect(screen.queryByText(/^Rest ·/)).toBeNull();
     await typeAndLog(rowSide('LEFT'));
     expect(await screen.findByText(rowSide('RIGHT'))).toBeOnTheScreen(); // both sides before the partner
+    expect(screen.queryByText(/^Rest ·/)).toBeNull(); // no rest between the sides
     await typeAndLog(rowSide('RIGHT'));
     expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen(); // the bench again
     expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
@@ -839,12 +840,84 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     await show();
     await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
     expect(screen.getByText(t('superset.choose'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('superset.pick', { name: 'Bench press' }) })).toBeNull(); // not with itself
     await fireEvent.press(screen.getByRole('button', { name: t('superset.close') }));
     expect(screen.queryByRole('button', { name: t('superset.pick', { name: rowName }) })).toBeNull();
     expect(screen.getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
   });
 
-  test('unlinked, the next set is no superset; the partner is offered only while neither is in one', async () => {
+  const groupSet = (clientId: string, exerciseId: string, supersetId: string | undefined, side?: 'LEFT' | 'RIGHT') =>
+    record(
+      'set',
+      clientId,
+      { clientId, exerciseId, setType: 'WORKING', loadKg: 20, reps: 10, rir: 1, ...(side ? { side } : {}), ...(supersetId ? { supersetId } : {}) },
+      'w1',
+    );
+
+  test("the round is the order it was started in, not linked in: the row first, the rest after the bench", async () => {
+    await show();
+    await link(); // linked on the bench's card
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${rowName}`) }));
+    await typeAndLog(rowSide('LEFT'));
+    await typeAndLog(rowSide('RIGHT'));
+    expect(await screen.findByText(t('workout.log', { number: 1 }))).toBeOnTheScreen(); // the bench
+    expect(screen.queryByText(/^Rest ·/)).toBeNull(); // mid-round
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    expect(await screen.findByText(/^Rest ·/)).toBeOnTheScreen();
+  });
+
+  test('the partner done: the rest after each set, the same move again; done too, the next move of the day', async () => {
+    const RAISE = { id: 'lateral_raise', nameKey: 'exercises.lateral_raise.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    const three = { ...DAY, exercises: [...DAY.exercises, { exerciseId: 'lateral_raise', baseSets: 2, sets: 2, reps: { min: 10, max: 15 }, targetRir: 1 }] };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [three] } }, exercises: { state: 'ready', value: [...EXERCISES, RAISE] } };
+    mockRecords = [
+      ...mockRecords,
+      groupSet('b1', 'bench_press', 'g1'),
+      ...['r1', 'r2'].flatMap((id) => [groupSet(`${id}L`, 'one_arm_dumbbell_row', 'g1', 'LEFT'), groupSet(`${id}R`, 'one_arm_dumbbell_row', 'g1', 'RIGHT')]),
+    ];
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 2 })));
+    expect(await screen.findByText(t('workout.log', { number: 3 }))).toBeOnTheScreen();
+    expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
+    expect(sets().at(-1)?.body.supersetId).toBe('g1');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 3 })));
+    expect(await screen.findByText(t('workout.log', { number: 1 }))).toBeOnTheScreen(); // the raise
+    expect(screen.getAllByText(t('exercises.lateral_raise.name')).length).toBeGreaterThan(1);
+  });
+
+  test('a move outside the plan in a superset, its partner done: it stays, with the rest', async () => {
+    const LAT = { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
+    mockRecords = [...mockRecords, ...['b1', 'b2', 'b3'].map((id) => groupSet(id, 'bench_press', 'g1')), groupSet('l1', 'lat_pulldown', 'g1')];
+    await show();
+    await fireEvent.press((await screen.findAllByText(t('exercises.lat_pulldown.name')))[0]);
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+    expect(await screen.findByText(t('workout.log', { number: 3 }))).toBeOnTheScreen();
+    expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
+  });
+
+  test('read back with one move done only, or unlinked and a set done since: no superset, opened again too', async () => {
+    mockRecords = [...mockRecords, groupSet('b1', 'bench_press', 'g1')];
+    await show();
+    expect(await screen.findByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
+    expect(screen.queryByText(t('superset.with', { names: rowName }))).toBeNull();
+  });
+
+  test('unlinked after sets, a set done since: opened again, it stays unlinked', async () => {
+    mockRecords = [
+      ...mockRecords,
+      groupSet('b1', 'bench_press', 'g1'),
+      groupSet('r1L', 'one_arm_dumbbell_row', 'g1', 'LEFT'),
+      groupSet('r1R', 'one_arm_dumbbell_row', 'g1', 'RIGHT'),
+      groupSet('b2', 'bench_press', undefined),
+    ];
+    await show();
+    expect(await screen.findByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 3 })));
+    expect(sets().at(-1)?.body.supersetId).toBeUndefined();
+  });
+
+  test('unlinked, the next set is no superset, with the rest; the link is offered again', async () => {
     await show();
     await link();
     await fireEvent.press(screen.getByRole('button', { name: t('superset.unlink') }));
