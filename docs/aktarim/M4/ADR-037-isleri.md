@@ -19,3 +19,13 @@ yorumdaki `#51b`'yi hex renk sandı → `ADR-037 › 51b`. Mutasyon 13/13 + 3/3.
 1. Mola haftasında neden haftalık hatırlatmayı "bir hafta atla" diye kuramıyoruz?
 2. Uygulama hiç açılmazsa mola bitince hatırlatmalar nasıl geri geliyor?
 3. Kuşak sayacını neden okumanın başında alıyoruz, çağrı anında değil?
+
+## K-433 · Kas haritası profildeki cinsiyete göre (ADR-037 › 49)
+| # | Basamak | Proje yeri |
+|---|---|---|
+| 1 | Kütüphane iki figürü de çiziyor (`gender`); bölge adları ikisinde aynı (23) — renk eşlemesi değişmez | `demo.ts` (`drawingAreas(figure)`) |
+| 2 | Cinsiyet profil okunduğunda telefonda tutulur, çıkışta ve oturumsuz açılışta (geri yüklenen yedek) silinir; bilinmiyorsa bugünkü figür | `appServices.ts` (`FIGURE`, `bodyFigure`) |
+| 3 | Hareket ekranı figürü bir kez okur; geç cevap ekrandan çıkınca düşer | `exercise.tsx` |
+
+İnceleme: code-reviewer — oturumsuz açılışta cinsiyet telefonda kalıyordu (yedekten yeni telefona) → silinir; test. Mutasyon 4/6
+(+2 eşdeğer: iki çizimin bölge adları aynı).
