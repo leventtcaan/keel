@@ -71,6 +71,11 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
 
+## ▶ DEVAM NOKTASI (2 Eki akşam — M4 Part 4 bitti)
+Part 4 ÇIKIŞ yazıldı. Sıradaki: Levent'in soru cevapları (33-54) → ADR; sonra Levent dönünce **Part 4 aktarımı**
+(`docs/aktarim/M4/` README 19-22); Part 2-3 aktarımları da bekliyor (README 8-18). Sonra M5 Part 1
+(`plan/oturum-promptlari/M5-part1.md`).
+
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
 
@@ -450,11 +455,6 @@ görülemez; kod + test + Expo Go'da yetenek "kullanılamaz" yolu. Ana checkout 
     korumaları değiştirir — geri alırken eski yedeği kopyalama (yeni rotaları siler), tersine çevir.
   - **Görseller** `sips -Z 1000` ile küçültülür (bir ekran görüntüsü 4 MB'tı).
 - **Yeni sorular:** 50-54 (aşağıda). Hepsi (33-54) bu oturumun sonunda AskUserQuestion ile soruluyor.
-
-## ▶ DEVAM NOKTASI (2 Eki akşam — M4 Part 4 bitti)
-Part 4 ÇIKIŞ yazıldı. Sıradaki: Levent'in soru cevapları (33-54) → ADR; sonra Levent dönünce **Part 4 aktarımı**
-(`docs/aktarim/M4/` README 19-22); Part 2-3 aktarımları da bekliyor (README 8-18). Sonra M5 Part 1
-(`plan/oturum-promptlari/M5-part1.md`).
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
