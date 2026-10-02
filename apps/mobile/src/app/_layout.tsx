@@ -41,6 +41,7 @@ function AppStack() {
         <Stack.Screen name="workout" />
         <Stack.Screen name="workout-summary" />
         <Stack.Screen name="exercise-history" />
+        <Stack.Screen name="workout-edit" />
         <Stack.Screen name="gyms" />
         <Stack.Screen name="gym" />
       </Stack.Protected>

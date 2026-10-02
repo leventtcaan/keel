@@ -4,7 +4,9 @@
  * only; an isolation move has no weight record, only the most reps at each weight (G6 K-33); no volume record (B §6.4).
  */
 import type { components } from '@/api/schema';
-import type { LocalRecord } from '@/sync/store';
+import { type LocalRecord, openRecordStore } from '@/sync/store';
+
+import { nodeSqlite } from './support/nodeSqlite';
 import { historyOf, recordsOf, sessionsOf } from '@/train/history';
 
 type Schemas = components['schemas'];
@@ -63,6 +65,24 @@ describe('sessions: the server list joined with what the phone has not sent', ()
     );
     expect(sessions.map((s) => s.clientId)).toEqual(['w3', 'w2', 'w1']);
     expect(sessions[1].sets.map((s) => s.reps)).toEqual([7]);
+  });
+
+  test("a set deleted on the server comes back from the phone's own copy until that copy is forgotten — why an edit forgets it (K-416)", async () => {
+    const store = await openRecordStore(nodeSqlite());
+    const kept = set('bench_press', 80, 8, 1);
+    const deleted = set('bench_press', 80, 12, 1);
+    await store.insert({ clientId: 'w1', kind: 'workout', parentClientId: null, body: { clientId: 'w1', startedAt: '2026-09-21T17:00:00Z' } });
+    await store.markSynced('w1', 'srv-w1', {});
+    for (const s of [kept, deleted]) {
+      await store.insert({ clientId: s.clientId, kind: 'set', parentClientId: 'w1', body: s });
+      await store.markSynced(s.clientId, `srv-${s.clientId}`, {});
+    }
+    // The server's copy after the edit: the 12-rep set is gone.
+    const server = [{ ...workout('w1', '2026-09-21T17:00:00Z', [kept]), endedAt: '2026-09-21T18:00:00Z' }];
+
+    expect(sessionsOf(server, await store.all())[0].sets.map((s) => s.reps)).toEqual([8, 12]);
+    await store.forgetClient(deleted.clientId);
+    expect(sessionsOf(server, await store.all())[0].sets.map((s) => s.reps)).toEqual([8]);
   });
 
   test('a set both sent and kept on the phone is one set; a refused record is not part of it', () => {

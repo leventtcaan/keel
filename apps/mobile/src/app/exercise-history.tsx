@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,7 +13,7 @@ import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Loaded, localDay } from '@/today/today';
-import { type PersonalRecord, historyOf, recordsOf, sessionsOf } from '@/train/history';
+import { type PersonalRecord, type Session, historyOf, recordsOf, sessionsOf } from '@/train/history';
 import { exerciseName, shortDate } from '@/train/program';
 import { setText } from '@/train/session';
 import { type TrainData, historyFrom } from '@/train/trainData';
@@ -48,12 +48,15 @@ export default function ExerciseHistoryScreen() {
   const { color } = useTheme();
   const [read, setRead] = useState<{ data: TrainData; history: Loaded<Schemas['Workout'][]>; records: LocalRecord[]; from: string } | null>(null);
 
-  useEffect(() => {
-    const now = new Date();
-    void Promise.all([training.read(api), training.history(api, now), workoutRecords()])
-      .then(([data, history, records]) => setRead({ data, history, records, from: historyFrom(now) }))
-      .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
-  }, [api, training, workoutRecords, report]);
+  // Read whenever the screen comes into view: coming back from editing a session (K-416) shows the edit at once.
+  useFocusEffect(
+    useCallback(() => {
+      const now = new Date();
+      void Promise.all([training.read(api), training.history(api, now), workoutRecords()])
+        .then(([data, history, records]) => setRead({ data, history, records, from: historyFrom(now) }))
+        .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
+    }, [api, training, workoutRecords, report]),
+  );
 
   const move = read?.data.exercises.state === 'ready' ? read.data.exercises.value.find((m) => m.id === exercise) : undefined;
   const server = read?.history.state === 'ready' ? read.history.value : null;
@@ -80,12 +83,27 @@ export default function ExerciseHistoryScreen() {
         ))}
       </Card>
     );
+  // Only a past session the server has can be edited: one not sent yet is not there; one under way is changed in the
+  // session itself (an edit here would split the phone's session from the server's — review).
+  const editLink = (session: Session) =>
+    session.serverId === undefined || session.endedAt === undefined ? null : (
+      <Button
+        label={t('sessionEdit.open')}
+        accessibilityLabel={t('sessionEdit.openSpoken', { day: dayOf(session.startedAt) })}
+        variant="ghost"
+        size="sm"
+        onPress={() => router.push({ pathname: '/workout-edit', params: { workout: session.serverId } })}
+      />
+    );
   const sessionCards =
     move === undefined
       ? null
       : sessions.map((session) => (
           <Card key={session.clientId}>
-            <Text style={[styles.label, { color: color.text }]}>{dayOf(session.startedAt)}</Text>
+            <View style={styles.row}>
+              <Text style={[styles.label, styles.grow, { color: color.text }]}>{dayOf(session.startedAt)}</Text>
+              {editLink(session)}
+            </View>
             {session.note !== undefined && <Text style={[styles.small, styles.note, { color: color.textSecondary }]}>{session.note}</Text>}
             {session.sets.map((s) => {
               const done = setText(s, move, units);
