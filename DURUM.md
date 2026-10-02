@@ -77,7 +77,7 @@ M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sa
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
 ## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 sürüyor, compact öncesi durdu)
-Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki sürdü: K-518 #284 ✅; K-512 #283 auto-merge, #285 inceleme; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
+Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki sürdü: K-518 #284 ✅, K-512 #283 + #285 ✅, K-519 #286 auto-merge, K-520 #287 inceleme; sırada K-513 (böl), K-502; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
 #279/#282 K-516. Aktarım bekliyor: M4 Part 2-4 + M5 Part 1 (`docs/aktarim/M5/`). Sorular 55-62.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
@@ -490,8 +490,10 @@ DURUM ile birlikte commitlendi.
 | K-516 (2-3/3) motor: `declared_context` (güvenlik önce), duraklayan hafta (tutarlılık + uyum + kaçan plan haftası), 3. haftada `STATE_STILL` | ✅ auto-merge; inceleme: `StateStore.days` pencereden önce biten durumu ters okuyordu (ilk durum bitince her check-in 500) → CI'da RED önce, düzeltildi; döngü sorusu beyanlı haftada sabitlendi; mutasyon 6/6 + 4/4 + 3/3 | #282 | `M5/K-516.md` |
 | K-518 durum modu telefonda (servis + kv, `muted`, Bugün kartı, beyan ekranı, `state.json`) | ✅ birleşti; inceleme: tarihli durum bitince hatırlatmalar uygulama açılmadan dönmüyordu → `mutedUntil` ile tarihle plan; Bugün notu başka duruma yapışıyordu → kimlik (tür+başlangıç); geri çekmede yeniden plan testli (fikstür yarışı bulundu: girişteki profil okuması); mutasyon 15/15 + 7/7 | #284 | `M5/K-518.md` |
 | K-516 PR'ları | ✅ #279 + #282 birleşti | | |
-| K-512 (1/2) motor `Prompts` (T-13, T-4, T-5, T-2; ADR-039) | 🔄 auto-merge; yeniden tasarım: takvim haftaları, duraklayan günler (beyan + mola), T-5 yalnız CUT, kararlı anahtar, açığın ilk günü; 2. inceleme: adım hedefi gün gün (K-220 dersi) → RED önce; mutasyon 19/19 + 6/6 | #283 | |
-| K-512 (2/2) `/v1/prompts` + V26 + `PromptStore` + `DeficitStart` + modül API'leri (`Profiles.savedAt`, `TrainingStatusReader.breaks/programSince`, `CallStore.planSteps`) | 🔄 PR açık, inceleme sürüyor; #283'e yığılı; DB testlerinin RED'i CI'da görülmedi (iki commit birlikte itildi — süreç kayması); `DeficitStart` mutasyon 6/7 (+1 eşdeğer) | #285 | |
+| K-512 (1/2) motor `Prompts` (T-13, T-4, T-5, T-2; ADR-039) | ✅ birleşti; yeniden tasarım: takvim haftaları, duraklayan günler (beyan + mola), T-5 yalnız CUT, kararlı anahtar, açığın ilk günü; 2. inceleme: adım hedefi gün gün (K-220 dersi) → RED önce; mutasyon 19/19 + 6/6 | #283 | `M5/K-512.md` |
+| K-512 (2/2) `/v1/prompts` + V26 cevaplar + V27 `training_days_since` + `DeficitStart` + modül API'leri | ✅ birleşti; inceleme: birim değişimi seans sayacını sıfırlıyordu → V27; bozuk kural 500 → 400; metin "this week"/"Two" → "last week"/"A few"; bağlantılar testsizdi → mola haftası, açlık, yük (geçen pazar) testleri; CI'da RED önce | #285 | `M5/K-512.md` |
+| K-519 kararın dayanağı (`GET /v1/decisions/{id}/basis`, `DecisionBasis`, `WeeklySpine.windowMeans`, `DecisionPipeline.windowRead`) | 🔄 auto-merge; inceleme: pencereyi okumamış karara hafta/hız gösteriyordu → `windowRead`; hedef kalori sözleşme testine takıldı (U5) → alan çıkarıldı; uyum yalnız oran (sayılar saklanmıyor) → soru 63; mutasyon 8/8 + 6/6 | #286 | `M5/K-519.md` |
+| K-520 tetikleyici soruları Bugün'de (tek soru, bir kez cevap, yanıt ya da yön) | 🔄 inceleme sürüyor; RED önce; 1462/1462; mutasyon 10/10 | #287 | `M5/K-520.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **M5 Part 1 (yeni, 55-59):**
@@ -518,6 +520,11 @@ DURUM ile birlikte commitlendi.
     Yarım haftadan az beyan da duraklatsın mı? (ADR-038 #4)
 62. **(K-516, ürün)** `STATE_STILL` 3. duraklayan haftadan sonra **her hafta** soruluyor (YES denince bir hafta sonra yine).
     "Tek soru" bir kez mi demek, haftada bir mi?
+63. **(K-519, ürün/veri)** K-519 kabulü "uyum (yapılan / planlanan)" diyor; ama kararın anlık görüntüsü yalnız **oranı** saklıyor (sayılar
+    değil). Şimdi gerekçe sayfası oranı gösterir (ör. %80), eski kararlar için sayı uydurulmaz. Sayılar gerekirse yeni kararların anlık
+    görüntüsüne eklenir (göç değil, JSON alanı; eski kararlar oranla kalır). (a) oran yeter; (b) yeni kararlarda sayıları da sakla.
+64. **(K-512, ürün)** Kaçan seans kuralı **profilin** antrenman günlerine bakıyor (`trainingDays`). Kullanıcının kendi programı (`PUT
+    /v1/program`) başka hafta günlerine konmuşsa soru o günler üzerinden sorulmaz. Programın günleri mi esas alınsın? (inceleme notu, <80)
 
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
 olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
