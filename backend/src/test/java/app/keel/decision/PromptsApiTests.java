@@ -7,6 +7,7 @@ import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
@@ -86,6 +87,7 @@ class PromptsApiTests {
         assertThat(answer(account, "no_such_rule", lastMonday().toString(), "OK")).hasStatus(400);
         assertThat(answer(account, "loads_dropped", lastMonday().toString(), "LESS")).hasStatus(400);
         assertThat(answer(account, "loads_dropped", "not-a-day", "OK")).hasStatus(400);
+        assertThat(answer(account, "Steps-Dropped", lastMonday().toString(), "LESS")).as("not a rule's name at all").hasStatus(400);
     }
 
     @Test
@@ -120,11 +122,85 @@ class PromptsApiTests {
         assertThat(list(account)).isEmpty();
 
         // Set long ago: the 14 days between the session and today hold two Mondays, missed.
-        jdbc.sql("update profile.profile set updated_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+        trainingDaysSetLongAgo(account);
         LocalDate firstMissed = trained.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
 
         assertThat(list(account)).singleElement().satisfies(prompt -> assertThat(prompt).containsEntry("rule", "sessions_missed")
                 .containsEntry("key", firstMissed.toString()));
+    }
+
+    @Test
+    void onlyANewSetOfTrainingDaysStartsTheCountAgain() throws Exception {
+        AccountId account = ready();
+        session(account, LocalDate.now(ZoneOffset.UTC).minusDays(15));
+        trainingDaysSetLongAgo(account);
+        // The units switched (the phone saves the whole profile): the same days, the same miss.
+        assertThat(send(account, "PUT", "/v1/profile", profile("IMPERIAL", List.of("MONDAY")))).hasStatusOk();
+        assertThat(list(account)).extracting(prompt -> prompt.get("rule")).containsExactly("sessions_missed");
+        // New days: they are asked for from today.
+        assertThat(send(account, "PUT", "/v1/profile", profile("IMPERIAL", List.of("MONDAY", "THURSDAY")))).hasStatusOk();
+        assertThat(list(account)).isEmpty();
+        // The same days in another order are the same days.
+        trainingDaysSetLongAgo(account);
+        assertThat(send(account, "PUT", "/v1/profile", profile("IMPERIAL", List.of("THURSDAY", "MONDAY")))).hasStatusOk();
+        assertThat(list(account)).extracting(prompt -> prompt.get("rule")).containsExactly("sessions_missed");
+    }
+
+    @Test
+    void theLaddersWeekOffIsNoMiss() throws Exception {
+        AccountId account = ready();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        session(account, today.minusDays(15));
+        trainingDaysSetLongAgo(account);
+        jdbc.sql("""
+                insert into training.program_change (id, account_id, call_id, kind, starts_on, ends_on)
+                values (:id, :a, :call, 'REST_WEEK', :from, :to)""").param("id", UUID.randomUUID()).param("a", account.value())
+                .param("call", UUID.randomUUID()).param("from", today.minusDays(14)).param("to", today.minusDays(1)).update();
+
+        assertThat(list(account)).isEmpty();
+    }
+
+    @Test
+    void theDeficitsFirstDaysAskAboutHungerFromTheCallThatBeganIt() throws Exception {
+        AccountId account = ready();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate cutBegan = today.minusDays(10);
+        // Watched at maintenance for ten days; yesterday's call set the first target under it.
+        String watched = plan(cutBegan, cutBegan, 2600, true);
+        String deficit = plan(cutBegan, today.minusDays(1), 2300, false);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :start, 2300, false)""").param("a", account.value()).param("began", cutBegan)
+                .param("start", today.minusDays(1)).update();
+        jdbc.sql("""
+                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision,
+                    application, applied_at, plan_before, plan_after)
+                values (:id, :a, :client, :week, :made, now() - interval '1 day', 'test', '{}', '{}', 'APPLIED', now() - interval '1 day',
+                    cast(:before as jsonb), cast(:after as jsonb))""").param("id", UUID.randomUUID()).param("a", account.value())
+                .param("client", UUID.randomUUID()).param("week", today.minusDays(1)).param("made", today.minusDays(1))
+                .param("before", watched).param("after", deficit).update();
+
+        assertThat(list(account)).singleElement().satisfies(prompt -> assertThat(prompt).containsEntry("rule", "hunger_first_days")
+                .containsEntry("key", today.minusDays(1).toString()));
+    }
+
+    @Test
+    void theLoadsCompareTheTwoCalendarWeeksJustOverOnACut() throws Exception {
+        AccountId account = ready();
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, true)""").param("a", account.value())
+                .param("began", LocalDate.now(ZoneOffset.UTC).minusDays(60)).update();
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", List.of(Map.of("name", "Full body", "weekday", "MONDAY", "exercises",
+                List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
+        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+        // The week before last at 80 kg, last week at 70; today 90 — read as of today the drop would not show.
+        session(account, lastMonday().minusDays(5), 80);
+        session(account, lastMonday().plusDays(2), 70);
+        session(account, LocalDate.now(ZoneOffset.UTC), 90);
+
+        assertThat(list(account)).singleElement().satisfies(prompt -> assertThat(prompt).containsEntry("rule", "loads_dropped")
+                .containsEntry("key", lastMonday().toString()));
     }
 
     @Test
@@ -138,10 +214,13 @@ class PromptsApiTests {
     private AccountId ready() {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
-        assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
-                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
-                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")))).hasStatusOk();
+        assertThat(send(account, "PUT", "/v1/profile", profile("METRIC", List.of("MONDAY")))).hasStatusOk();
         return account;
+    }
+
+    private static Map<String, Object> profile(String units, List<String> trainingDays) {
+        return Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996, "programChoice", "BUILD_ONE_FOR_ME", "units", units,
+                "schedule", Map.of("trainingDays", trainingDays, "checkInDay", "MONDAY", "timeZone", "UTC"));
     }
 
     /** The calendar week before last on 9,000 steps a day, the last one on 4,000: under the starting target (7,000). */
@@ -157,15 +236,31 @@ class PromptsApiTests {
         return LocalDate.now(ZoneOffset.UTC).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
     }
 
-    /** A session done on that day at noon: a workout with a working set (K-431). */
-    @SuppressWarnings("unchecked")
+    /** A session done on that day: a workout with a working set (K-431) — at noon, or a minute ago when that is today. */
     private void session(AccountId account, LocalDate day) throws Exception {
-        MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
-                day.atTime(12, 0).toInstant(ZoneOffset.UTC).toString()));
+        session(account, day, 60);
+    }
+
+    private void session(AccountId account, LocalDate day, double benchKg) throws Exception {
+        Instant noon = day.atTime(12, 0).toInstant(ZoneOffset.UTC);
+        Instant started = noon.isAfter(Instant.now()) ? Instant.now().minusSeconds(60) : noon;
+        MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", started.toString()));
         assertThat(workout.getResponse().getStatus()).isLessThan(300);
         Object id = JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id");
         assertThat(send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
-                "setType", "WORKING", "loadKg", 60, "reps", 8, "rir", 2)).getResponse().getStatus()).isLessThan(300);
+                "setType", "WORKING", "loadKg", benchKg, "reps", 8, "rir", 2)).getResponse().getStatus()).isLessThan(300);
+    }
+
+    /** The profile's training days as if set 60 days ago. */
+    private void trainingDaysSetLongAgo(AccountId account) {
+        jdbc.sql("update profile.profile set updated_at = now() - interval '60 days', training_days_since = now() - interval '60 days' where account_id = :a")
+                .param("a", account.value()).update();
+    }
+
+    /** A plan as an applied call keeps it (CallStore.Plan). */
+    private static String plan(LocalDate phaseStart, LocalDate planStart, int kcal, boolean watched) {
+        return JSON.writeValueAsString(Map.of("phase", "CUT", "phaseStart", phaseStart.toString(), "planStart", planStart.toString(),
+                "targetKcal", kcal, "observingMaintenance", watched));
     }
 
     @SuppressWarnings("unchecked")

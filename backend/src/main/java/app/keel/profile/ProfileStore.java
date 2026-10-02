@@ -43,15 +43,16 @@ class ProfileStore {
         ProfileController.Food food = profile.food();
         jdbc.sql("""
                 insert into profile.profile (account_id, goal, sex, height_cm, birth_year, activity_level, program_choice, units,
-                    training_days, usual_training_time, sessions_last_month, check_in_day, time_zone, food_avoid, budget_note, updated_at)
+                    training_days, usual_training_time, sessions_last_month, check_in_day, time_zone, food_avoid, budget_note, updated_at,
+                    training_days_since)
                 values (:account, :goal, :sex, :height, :born, :activity, :program, :units, :days, :time, :sessions, :checkIn, :zone,
-                    :avoid, :budget, :now)
+                    :avoid, :budget, :now, :now)
                 on conflict (account_id) do update set goal = excluded.goal, sex = excluded.sex, height_cm = excluded.height_cm,
                     birth_year = excluded.birth_year, activity_level = excluded.activity_level, program_choice = excluded.program_choice,
                     units = excluded.units, training_days = excluded.training_days, usual_training_time = excluded.usual_training_time,
                     sessions_last_month = excluded.sessions_last_month, check_in_day = excluded.check_in_day,
                     time_zone = excluded.time_zone, food_avoid = excluded.food_avoid, budget_note = excluded.budget_note,
-                    updated_at = excluded.updated_at""")
+                    updated_at = excluded.updated_at, training_days_since = excluded.training_days_since""")
                 .param("account", account.value()).param("goal", profile.goal().name()).param("sex", profile.sex().name())
                 .param("height", profile.heightCm()).param("born", profile.birthYear())
                 .param("activity", profile.activityLevel() == null ? null : profile.activityLevel().name())
