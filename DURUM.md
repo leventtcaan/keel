@@ -513,7 +513,7 @@ DURUM ile birlikte commitlendi.
     uygulanmıyor.
 61. **(K-516, ürün)** Bir hafta "herhangi bir günü" beyanlıysa duraklıyor (eşik yok; kötüye kullanıma sınır 3. haftanın sorusu).
     Yarım haftadan az beyan da duraklatsın mı? (ADR-038 #4)
-62. **(K-516, ürün)** `STATE_STILL` 3. duraklayan haftadan sonra **her hafta** soruluyor (YES dense bir hafta sonra yine).
+62. **(K-516, ürün)** `STATE_STILL` 3. duraklayan haftadan sonra **her hafta** soruluyor (YES denince bir hafta sonra yine).
     "Tek soru" bir kez mi demek, haftada bir mi?
 
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
