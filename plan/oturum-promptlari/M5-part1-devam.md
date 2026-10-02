@@ -2,34 +2,20 @@
 
 > Önce oku: `M5.md` (ortak), `M5-part1.md`, `DURUM.md › ## M5 ilerleme` + `## ▶ DEVAM NOKTASI`. Git ile doğrula.
 
-## Yarım işler (sırayla)
-1. **K-518 (#284, dal `mobile/278-state-mode`, worktree `../keel-518`)** — son commit RED: 4 test kırmızı (bilerek).
-   Yapılacak (inceleme bulguları):
-   - `reminders.ts`: `createReminders` seçeneğine `mutedUntil?: () => Promise<string | null>`; `reschedule`: `silenced = await muted()`,
-     `until = silenced ? await mutedUntil() : null`; `!enabled || !granted || (silenced && until === null)` → clear; değilse
-     `planReminders({..., muted: silenced, mutedUntil: until})`. (`plan.ts` zaten hazır ve yeşil: `mutedUntil`, `daysAfter`.)
-   - `stateService.ts`: `until(): Promise<string|null>` — yürürlükteki durumun son günü, yoksa/geçmişse null.
-   - `appServices.ts`: `mutedUntil: () => state.until()`.
-   - `StateCard.tsx`: not (`said`) hangi duruma söylendiyse ona ait: `{identity, key}` tut; kimlik = `ready` ise `kind+since`, değilse
-     `none`; "I'm back" sonrası kimlik `none` → hoş geldin kalır; başka bir duruma geçince not gizlenir. Yanıltıcı yorumu düzelt
-     ("Today says it failed once, above" — `data.state` `parts`'ta yok).
-   - Sonra: `npm run check`, mutasyon (yeni dallar), aktarım dosyası (`docs/aktarim/M5/K-518.md` › inceleme satırı), PR gövdesi
-     (REST PATCH, `gh pr edit` GraphQL hatası verir), `gh pr merge 284 --auto --squash`.
-   - Worktree'de jest için: `ln -s ../../../keel/apps/mobile/node_modules apps/mobile/node_modules` (commit'ten önce sil!).
-2. **K-512 (#283 motor, dal `engine/118-triggers`, `../keel-512`; kısım 2 dal `engine/118-triggers-api`, `../keel-512b`, PR yok)**.
-   #283 incelemesi ciddi kusurlar buldu → `Prompts` yeniden tasarlanacak (ADR-039'a not düş):
-   - `Facts`'e: `phase`, `trainingDaysSince` (program değişikliği), `pausedDays` (beyanlı günler + mola haftası günleri),
-     `deficitBegan` (açığın ilk günü — gözlemdeki bakım tahmini değil; tanımı ADR-039'a yaz), `declaredNow`.
-   - T-4: planlı günler son seanstan **sonra**, `trainingDaysSince`'ten itibaren, bugünden önce, duraklayan günler hariç; anahtar = son
-     seanstan sonraki ilk planlı gün (sapma boyunca sabit). Hiç seans yoksa sessiz.
-   - T-13: **takvim haftaları** (geçen Pzt-Paz vs önceki) — bir düşüş bir kez; duraklayan günler sayılmaz.
-   - T-5: yalnız `phase == CUT` (bulk'ta motor FIX_RECOVERY diyor, çelişmesin).
-   - T-2: `deficitBegan` ile.
-   - Eksik testler: mola haftası, faz, anahtar kararlılığı, Pazartesi sınırı, bugün planlı gün, beyan bitince, gün değişikliği.
-   - Sonra #283'ü güncelle (RED yerelde önce), kısım 2'yi (`../keel-512b`: V26 `decision.prompt_answer`, `PromptStore`,
-     `PromptController` `/v1/prompts`, sözleşme, metinler `prompt.*`, `AccountFixture` cevabı, `PromptsApiTests`) yeni Facts'e
-     uyarla ve #283 birleşince main'e yeniden tabanla, CI'da RED göster (test commit'i önce), PR aç.
-3. **K-430 (#273)** Levent bekliyor (soru 55) — dokunma.
+## Yarım işler (sırayla) — güncel: 3 Eki, ikinci oturum
+1. ✅ K-518 #284, ✅ K-512 #283 + #285 birleşti.
+2. **K-519 #286** (`../keel-519`, auto-merge açık) ve **K-520 #287** (`../keel-520`, auto-merge açık): CI yeşil olunca GitHub birleştirir.
+   `get_status`/`gh pr view` ile doğrula; kırmızıysa düzelt. Birleşince worktree'leri kaldır (`git worktree remove`; squash'lı yerel dal
+   `branch -d` ile silinmez — `-D` hook'ta yasak, yerel dalı bırak).
+3. **K-513** (motor + sunucu; telefon K-521, backlog'da bölündü): ADR-040 yazılacak. Taslak karar:
+   - Hafta sayımı: kullanıcının ilk planının günü (decision.plan `plan_start` değil — ilk kararın `firstMadeOn` ya da profil ilk kaydı;
+     karar ver, ADR'ye yaz). H1-H8 içerik anahtarı motorda saf fonksiyon (`EightWeeks`), metinler `en.json`.
+   - 5. hafta riski (I1 F2): sinyaller kaynaklı — bu hafta 0 seans, af haftası kullanımı (Consistency'nin affettiği hafta), kayıt
+     tutarlılığı düşüşü; **uygulama açılmaması sunucuda yok** (açılış yalnız telefonda) → K-521'e. Birleştirme: **herhangi biri = risk**
+     (ağırlık yok → kaynaksız ağırlık uydurma yok). "Düşüş" eşiği kaynakta yok → `urun` parametresi + Levent'e soru.
+   - Riskte soru bütçesi ≤5 (U9): `QuestionBudget`'a bağla.
+4. **K-502** (karar kartı varyantları + gerekçe sayfası; K-519'un `/v1/decisions/{id}/basis`'ini kullanır; prototip 3.2-3.5).
+5. K-430 #273 Levent'te (soru 55) — dokunma.
 
 ## Sonra (part kapsamı)
 K-520 (tetikleyici soruları telefonda) · K-513 (önce böl: motor + K-521 mobil; ilk 8 hafta + 5. hafta risk — risk ağırlıkları kaynakta
