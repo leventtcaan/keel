@@ -56,3 +56,16 @@ test('a server that refuses (not offline) is not taken for a yes either, even wi
   });
   expect(await state.granted('HEALTH_DATA')).toBe(false);
 });
+
+test('a grant to a text the phone no longer shows is not given: the user is asked again, to the text shown now (K-429)', async () => {
+  const kv = memoryKv();
+  const older = {
+    data: [{ kind: 'HEALTH_DATA', status: 'GRANTED', textVersion: '1-draft' }],
+    response: new Response(null, { status: 200 }),
+  };
+  const state = createConsentState({ api: { GET: async () => older } as never, kv });
+  expect(await state.granted('HEALTH_DATA')).toBe(false);
+  // Offline afterwards: what was kept is "not given" too, not the old yes.
+  const offline = createConsentState({ api: { GET: async () => Promise.reject(new TypeError('offline')) } as never, kv });
+  expect(await offline.granted('HEALTH_DATA')).toBe(false);
+});

@@ -2,6 +2,7 @@ package app.keel.measurement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.shared.AccountId;
 import java.util.List;
@@ -27,7 +28,7 @@ final class MeasurementTestSupport {
 
     AccountId consentingAccount() {
         AccountId account = TestSessions.newAccount();
-        assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"))).hasStatusOk();
+        assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC", "schedule", Map.of("trainingDays", List.of("MONDAY"),
                         "checkInDay", "MONDAY", "timeZone", "Europe/Istanbul")))).hasStatusOk();

@@ -39,7 +39,6 @@ import tools.jackson.databind.json.JsonMapper;
 class ConsentTests {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final String CURRENT = "1-draft";
 
     @Autowired
     MockMvcTester mvc;
@@ -74,10 +73,10 @@ class ConsentTests {
     void consentIsGivenToTheCurrentVersionOfItsText() throws Exception {
         AccountId account = TestSessions.newAccount();
 
-        MvcTestResult result = put(account, "HEALTH_DATA", Map.of("textVersion", CURRENT));
+        MvcTestResult result = put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
 
         assertThat(result).hasStatusOk();
-        assertThat(read(result)).containsEntry("status", "GRANTED").containsEntry("textVersion", CURRENT).containsKey("grantedAt");
+        assertThat(read(result)).containsEntry("status", "GRANTED").containsEntry("textVersion", ConsentTextVersions.HEALTH_DATA).containsKey("grantedAt");
         assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
         assertThat(gate.granted(account, ConsentKind.APPLE_HEALTH)).isFalse();
     }
@@ -89,14 +88,33 @@ class ConsentTests {
     }
 
     @Test
+    void theTestsGiveConsentsToTheVersionsTheServerTakes() {
+        assertThat(properties.versions()).containsEntry(ConsentKind.HEALTH_DATA, ConsentTextVersions.HEALTH_DATA)
+                .containsEntry(ConsentKind.APPLE_HEALTH, ConsentTextVersions.APPLE_HEALTH)
+                .containsEntry(ConsentKind.THIRD_PARTY_AI, ConsentTextVersions.THIRD_PARTY_AI);
+    }
+
+    @Test
+    void aYesToTheHealthTextFromBeforeItSaidWithdrawingDeletesIsAskedAgain() {
+        // K-429 (ADR-037 #36): 2-draft says a withdrawal deletes the data it covers; a yes to 1-draft is not a yes to that.
+        AccountId account = TestSessions.newAccount();
+        insert(account, "HEALTH_DATA", "1-draft", null, null);
+
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isFalse();
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "1-draft"))).hasStatus(400);
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
+    }
+
+    @Test
     void thirdPartyAiNamesTheProviderAndTheData() throws Exception {
         AccountId account = TestSessions.newAccount();
-        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", CURRENT))).hasStatus(400);
-        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", CURRENT, "provider", "Example AI", "dataTypes", List.of())))
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI))).hasStatus(400);
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI", "dataTypes", List.of())))
                 .hasStatus(400);
 
         MvcTestResult result = put(account, "THIRD_PARTY_AI",
-                Map.of("textVersion", CURRENT, "provider", "Example AI", "dataTypes", List.of("meal photo", "meal note")));
+                Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI", "dataTypes", List.of("meal photo", "meal note")));
 
         assertThat(read(result)).containsEntry("status", "GRANTED").containsEntry("provider", "Example AI")
                 .containsEntry("dataTypes", List.of("meal photo", "meal note"));
@@ -107,9 +125,9 @@ class ConsentTests {
         // Apple 5.1.2(i), V2: consent is to a named provider and named data. Another name, or other data, is not it.
         AccountId account = TestSessions.newAccount();
 
-        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", CURRENT, "provider", "Other AI",
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Other AI",
                 "dataTypes", List.of("meal photo", "meal note")))).hasStatus(400);
-        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", CURRENT, "provider", "Example AI",
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI",
                 "dataTypes", List.of("meal photo", "meal note", "weight")))).hasStatus(400);
     }
 
@@ -119,7 +137,7 @@ class ConsentTests {
         AccountId oldText = TestSessions.newAccount();
         AccountId oldProvider = TestSessions.newAccount();
         insert(oldText, "HEALTH_DATA", "0-old", null, null);
-        insert(oldProvider, "THIRD_PARTY_AI", CURRENT, "Former AI", new String[] {"meal photo", "meal note"});
+        insert(oldProvider, "THIRD_PARTY_AI", ConsentTextVersions.THIRD_PARTY_AI, "Former AI", new String[] {"meal photo", "meal note"});
 
         assertThat(gate.granted(oldText, ConsentKind.HEALTH_DATA)).isFalse();
         assertThat(gate.granted(oldProvider, ConsentKind.THIRD_PARTY_AI)).isFalse();
@@ -133,21 +151,21 @@ class ConsentTests {
                 insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
                 values (gen_random_uuid(), :account, 'HEALTH_DATA', 'GRANTED', :version, now()),
                        (gen_random_uuid(), :account, 'HEALTH_DATA', 'WITHDRAWN', :version, now() - interval '1 hour')""")
-                .param("account", account.value()).param("version", CURRENT).update();
+                .param("account", account.value()).param("version", ConsentTextVersions.HEALTH_DATA).update();
 
         assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isFalse();
     }
 
     @Test
     void onlyTheAiConsentNamesAProvider() {
-        assertThat(put(TestSessions.newAccount(), "HEALTH_DATA", Map.of("textVersion", CURRENT, "provider", "Example AI")))
+        assertThat(put(TestSessions.newAccount(), "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA, "provider", "Example AI")))
                 .hasStatus(400);
     }
 
     @Test
     void withdrawingStopsTheFeatureAtOnceAndTellsTheModules() throws Exception {
         AccountId account = TestSessions.newAccount();
-        put(account, "APPLE_HEALTH", Map.of("textVersion", CURRENT));
+        put(account, "APPLE_HEALTH", Map.of("textVersion", ConsentTextVersions.APPLE_HEALTH));
 
         MvcTestResult result = mvc.delete().uri("/v1/consents/APPLE_HEALTH").header("Authorization", bearer(account)).exchange();
 
@@ -170,9 +188,9 @@ class ConsentTests {
     @Test
     void everyGrantAndWithdrawalIsKept() throws Exception {
         AccountId account = TestSessions.newAccount();
-        put(account, "HEALTH_DATA", Map.of("textVersion", CURRENT));
+        put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         mvc.delete().uri("/v1/consents/HEALTH_DATA?confirmDataDeletion=true").header("Authorization", bearer(account)).exchange();
-        put(account, "HEALTH_DATA", Map.of("textVersion", CURRENT));
+        put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
 
         assertThat(jdbc.sql("select action from consent.consent_event where account_id = :account order by occurred_at, id")
                 .param("account", account.value()).query(String.class).list()).containsExactly("GRANTED", "WITHDRAWN", "GRANTED");
@@ -182,14 +200,14 @@ class ConsentTests {
     @Test
     void oneAccountsConsentIsNotAnothers() {
         AccountId one = TestSessions.newAccount();
-        put(one, "HEALTH_DATA", Map.of("textVersion", CURRENT));
+        put(one, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
 
         assertThat(gate.granted(TestSessions.newAccount(), ConsentKind.HEALTH_DATA)).isFalse();
     }
 
     @Test
     void anUnknownKindIsAValidationError() {
-        assertThat(put(TestSessions.newAccount(), "LOCATION", Map.of("textVersion", CURRENT))).hasStatus(400);
+        assertThat(put(TestSessions.newAccount(), "LOCATION", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatus(400);
     }
 
     @Test

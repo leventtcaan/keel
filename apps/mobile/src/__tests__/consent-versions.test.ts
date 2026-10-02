@@ -8,6 +8,7 @@ import * as path from 'path';
 
 import { createApiClient } from '@/api/client';
 import { consentVersion, grantConsent, withdrawConsent } from '@/consent/consents';
+import { t } from '@/copy';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const BASE = 'https://api.example.test';
@@ -26,6 +27,12 @@ function serverVersions(): Record<string, string> {
 
 test.each(['HEALTH_DATA', 'APPLE_HEALTH', 'THIRD_PARTY_AI'] as const)('%s: the text the phone shows is the version the server accepts', (kind) => {
   expect(consentVersion(kind)).toBe(serverVersions()[kind]);
+});
+
+test('the health data text says a withdrawal deletes the data it covers (K-429, ADR-037 #36)', () => {
+  // K-231: withdrawing deletes for good; the text the consent is given to must say so, not only that the calls stop.
+  expect(t('consent.health_data.body')).toMatch(/withdraw[^.]*delet/i);
+  expect(consentVersion('HEALTH_DATA')).not.toBe('1-draft');
 });
 
 function server(status = 200) {

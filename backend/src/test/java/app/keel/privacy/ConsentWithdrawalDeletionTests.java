@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.consent.ConsentGate;
 import app.keel.consent.ConsentKind;
+import app.keel.consent.ConsentTextVersions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.time.Duration;
@@ -98,7 +99,7 @@ class ConsentWithdrawalDeletionTests {
     @Test
     void theOtherConsentsCoverNoStoredDataAndDeleteNothing() throws Exception {
         AccountId account = fixture().withDataEverywhere();
-        fixture().send(account, "PUT", "/v1/consents/APPLE_HEALTH", Map.of("textVersion", "1-draft"));
+        fixture().send(account, "PUT", "/v1/consents/APPLE_HEALTH", Map.of("textVersion", ConsentTextVersions.APPLE_HEALTH));
         Map<String, Integer> before = fixture().rowsOf(account);
 
         assertThat(withdraw(account, "APPLE_HEALTH", false)).hasStatusOk().bodyJson().extractingPath("$.status").isEqualTo("WITHDRAWN");
@@ -172,7 +173,7 @@ class ConsentWithdrawalDeletionTests {
     void theSecondPassSparesWhatWasWrittenUnderAConsentGivenAgain() throws Exception {
         AccountId account = fixture().withDataEverywhere();
         assertThat(withdraw(account, "HEALTH_DATA", true)).hasStatusOk();
-        fixture().send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        fixture().send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         fixture().send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", "2026-10-01T05:00:00Z",
                 "kg", 81.9, "source", "MANUAL"));
 

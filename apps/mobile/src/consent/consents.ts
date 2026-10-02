@@ -56,11 +56,19 @@ export async function connectAppleHealth(api: ApiClient, health: HealthAccess): 
 
 export type ConsentStatus = components['schemas']['Consent']['status'];
 
-/** Each consent's state, from the server. Throws like the others. */
+/**
+ * Each consent's state, from the server. Throws like the others. A grant to a text other than the one the phone shows
+ * now (K-429: the text was revised) is not given: the server's gate refuses it too, so the user is asked again, to the
+ * text shown now — for that text, never asked.
+ */
 export async function loadConsents(api: ApiClient): Promise<Partial<Record<ConsentKind, ConsentStatus>>> {
   const answer = await reach(() => api.GET('/v1/consents'));
   if (answer.data === undefined) throw named('ConsentRefused', `consents not read: HTTP ${answer.response.status}`);
-  return Object.fromEntries(answer.data.map((consent) => [consent.kind, consent.status]));
+  return Object.fromEntries(answer.data.map((consent) => [consent.kind, revised(consent) ? 'NEVER_ASKED' : consent.status]));
+}
+
+function revised(consent: components['schemas']['Consent']): boolean {
+  return consent.status === 'GRANTED' && consent.textVersion !== undefined && consent.textVersion !== consentVersion(consent.kind);
 }
 
 /** By name, so a screen tells no connection from a server that answered no (V3: never the message). */

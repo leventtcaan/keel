@@ -2,6 +2,7 @@ package app.keel.training;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.TrainingStatus;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
@@ -90,7 +91,7 @@ class TrainingStatusApiTests {
         // End to end (K-110 first rung): plateau_sessions stalled sessions of bench in the set log → the week's call is
         // STOP_LOAD_INCREASE, and the Snapshot kept with it holds where training stood.
         AccountId account = withAProgramMadeDaysAgo(40);
-        send("PUT", account, "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send("PUT", account, "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         for (int daysAgo : new int[] {29, 22, 15, 8, 1}) {
             workout(account, daysAgo, "bench_press", 80, 8);
         }

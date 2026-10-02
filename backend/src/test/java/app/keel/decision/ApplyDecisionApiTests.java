@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.Action;
 import app.keel.engine.Confidence;
 import app.keel.engine.CopyKey;
@@ -498,7 +499,7 @@ class ApplyDecisionApiTests {
 
     private AccountId ready(Instant weighedAt) {
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));

@@ -2,6 +2,7 @@ package app.keel.profile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
@@ -224,7 +225,7 @@ class ProfileApiTests {
         assertThat(put(account, noFood)).hasStatusOk();
 
         assertThat(mvc.put().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account))
-                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"1-draft\"}").exchange()).hasStatusOk();
+                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"" + ConsentTextVersions.HEALTH_DATA + "\"}").exchange()).hasStatusOk();
         assertThat((Map<String, Object>) read(get(account)).get("food")).containsEntry("avoid", List.of("mushrooms"));
     }
 
@@ -247,13 +248,13 @@ class ProfileApiTests {
 
     private void consentAgain(AccountId account) {
         assertThat(mvc.put().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account))
-                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"1-draft\"}").exchange()).hasStatusOk();
+                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"" + ConsentTextVersions.HEALTH_DATA + "\"}").exchange()).hasStatusOk();
     }
 
     private AccountId consenting() {
         AccountId account = TestSessions.newAccount();
         assertThat(mvc.put().uri("/v1/consents/HEALTH_DATA").header("Authorization", TestSessions.bearer(context, account))
-                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"1-draft\"}").exchange()).hasStatusOk();
+                .contentType(MediaType.APPLICATION_JSON).content("{\"textVersion\":\"" + ConsentTextVersions.HEALTH_DATA + "\"}").exchange()).hasStatusOk();
         return account;
     }
 

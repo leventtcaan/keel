@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.InitialTarget;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Profile;
@@ -271,7 +272,7 @@ class CheckInQuestionsApiTests {
         // K-222 review: with the last weigh-in older than the evaluation window, the maintenance estimate comes from that
         // last known weight — not "no estimate, the cut target stays".
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
@@ -389,7 +390,7 @@ class CheckInQuestionsApiTests {
     void theCheckInIsHealthDataAndNeedsAProfile() {
         assertThat(send(TestSessions.newAccount(), "GET", "/v1/check-ins/current", null)).hasStatus(403);
         AccountId noProfile = TestSessions.newAccount();
-        send(noProfile, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(noProfile, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         assertThat(send(noProfile, "GET", "/v1/check-ins/current", null)).hasStatus(409);
     }
 
@@ -445,7 +446,7 @@ class CheckInQuestionsApiTests {
      */
     private AccountId womanHeldAfterAHardStop() {
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
@@ -488,7 +489,7 @@ class CheckInQuestionsApiTests {
     /** A woman of 60 kg who picked look 3 (30 %), on a 1200 kcal cut: energy availability in the low band. */
     private AccountId womanOnALowPlan() {
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
@@ -509,7 +510,7 @@ class CheckInQuestionsApiTests {
 
     private AccountId ready(boolean oneWeighIn) {
         AccountId account = TestSessions.newAccount();
-        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", "1-draft"));
+        send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", profile(DayOfWeek.MONDAY));
         if (oneWeighIn) {
             weighIn(account, Instant.now().minusSeconds(3600), 82.4);
