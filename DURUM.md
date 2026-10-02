@@ -486,9 +486,9 @@ DURUM ile birlikte commitlendi.
 | K-431 takip: FAILURE/DROP da çalışma seti (sözlük) + K-428/K-431 kenar testleri | ✅ birleşti; CI'da RED önce | #275 | `M5/ADR-037-isleri.md` |
 | K-501 pazartesi check-in (sunucu güdümlü sorular, tek clientId, V4: cevaplar yalnız ekranda; Bugün'de kart) | ✅ birleşti; inceleme: rota korumasızdı, ekrandan çıkınca `back()` başka ekranı kapatabiliyordu, geri düğmesi yoktu → düzeltildi; mutasyon 13/13 + 5/5; simülatör K-502 ile birlikte | #276 | `M5/K-501.md` |
 | K-432 hedefin geldiği seans düzenlenince hedef yeniden (hareket başına; V24 `unclean_exercise_ids`, `clearNext`, `Workout.setsNextTargets` + telefon notu) | ✅ birleşti; CI'da RED önce (5); inceleme: bayrak `setNext`'ten dardı, telefon notu yanlış kalacaktı, kural hareket başına → ADR notu + testler; mutasyon 3/3 + 1/1 | #277 | `M5/ADR-037-isleri.md` |
-| K-516 (1/3) durum modu: `/v1/state`, V25 `decision.declared_state`, rıza + silme + dışa aktarma, hesap kilidi (ADR-038) | ✅ auto-merge; CI'da RED önce (25); inceleme: göç sırası (#277 bekledi), eşzamanlı beyan, enum sözleşme testi, dışa aktarma iddiası → düzeltildi | #279 | (K-516 sonunda) |
-| K-516 (2/3) motor: `declared_context` (güvenlik önce), duraklayan hafta (tutarlılık + uyum + kaçan plan haftası), Snapshot/StoredSnapshot bağlamı | 🔄 yerelde hazır (`../keel-516b`, kısım 1'e yığılı); saf testler + mutasyon 6/6 + 3/3 | — | |
-| K-516 (3/3) 3. ardışık duraklayan haftada tek soru (`STATE_STILL`) | ⏳ | — | |
+| K-516 (1/3) durum modu: `/v1/state`, V25 `decision.declared_state`, rıza + silme + dışa aktarma, hesap kilidi (ADR-038) | ✅ birleşti; CI'da RED önce (25); inceleme: göç sırası (#277 bekledi), eşzamanlı beyan, enum sözleşme testi, dışa aktarma iddiası → düzeltildi | #279 | (K-516 sonunda) |
+| K-516 (2-3/3) motor: `declared_context` (güvenlik önce), duraklayan hafta (tutarlılık + uyum + kaçan plan haftası), 3. haftada `STATE_STILL` | ✅ auto-merge; inceleme: `StateStore.days` pencereden önce biten durumu ters okuyordu (ilk durum bitince her check-in 500) → CI'da RED önce, düzeltildi; döngü sorusu beyanlı haftada sabitlendi; mutasyon 6/6 + 4/4 + 3/3 | #282 | `M5/K-516.md` |
+| K-518 durum modu telefonda (servis + kv, `muted`, Bugün kartı, beyan ekranı, `state.json`) | 🔄 yerelde hazır (`../keel-518`, #282'ye yığılı); 1444/1444; mutasyon 15/15 | — | `M5/K-518.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **M5 Part 1 (yeni, 55-59):**
@@ -505,7 +505,16 @@ DURUM ile birlikte commitlendi.
     ama ilk cümledeki sınıflama kalsın mı? (metin hâlâ `-draft`)
 58. **(K-434, bilgi)** Hatırlatma teklifi ayrı ekran değil "What to expect"te: K-306'nın ≤12 ekran kabulü (görünüş + AI rızası
     gelince) ayrı adımla 13 olurdu. ADR-037 #51'in "onboarding sonunda bir adım" ifadesinden bu sapma uygun mu?
-59. **(K1, K-501)** `today.test.ts` Bugün'ün okuduğu uç noktaların listesi check-in ile büyüdü (iddia genişledi, eskisi silinmedi). Onay?
+59. **(K1, K-501/K-518/K-516)** Sabitleyen listeler bilerek genişledi (iddia genişledi, eskisi silinmedi): `today.test.ts` Bugün'ün
+    okuduğu uç noktalar (+ check-in, + state); `CheckInPartsTests` alınan cevap türleri (+ `STATE_STILL`). Onay?
+60. **(K-516, sağlık/U14)** Durum modunun iki alt maddesi kaynak bekliyor: (a) **dönüş yükü** — hastalık/moladan dönüşte ilk seans
+    önceki yükün ne kadar altında (G7 K-72 "yavaş yavaş" diyor, sayı yok); (b) **yoğun hafta minimum dozu** — koruma için kas başına
+    kaç set (G1 K-11 "alt sınır 4", koruma sayısı yok). Güray'a sorulabilir mi, ya da literatür taraması isteyelim mi? O zamana kadar
+    uygulanmıyor.
+61. **(K-516, ürün)** Bir hafta "herhangi bir günü" beyanlıysa duraklıyor (eşik yok; kötüye kullanıma sınır 3. haftanın sorusu).
+    Yarım haftadan az beyan da duraklatsın mı? (ADR-038 #4)
+62. **(K-516, ürün)** `STATE_STILL` 3. duraklayan haftadan sonra **her hafta** soruluyor (YES dense bir hafta sonra yine).
+    "Tek soru" bir kez mi demek, haftada bir mi?
 
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
 olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
