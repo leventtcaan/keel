@@ -410,8 +410,9 @@ görülemez; kod + test + Expo Go'da yetenek "kullanılamaz" yolu. Ana checkout 
 | K-410 (1/2) üç slot: saf plan, servis (sıralı yeniden kurma, kapalı başlar, çıkışta silinir), `expo-notifications` yalnız yerel, `reminder:` öneki (ADR-036) | ✅ birleşti; inceleme: iOS sayfası açıkken çıkış "açık"ı sonraki hesaba geçiriyordu (kuşak), "done" yazılırken çıkış eski programı + `onboarded`'ı bırakıyordu (K-306'dan beri) → düzeltildi; `trackOpens` testli; mutasyon 38/38 (+1 eşdeğer) | #253 | `M4/K-410.md` |
 | K-410 (2/2) Ayarlar › Reminders (önce açıklama, iOS izni, Ayarlar yolu, kendi cümlesi); simülatörde izin + gerçek bildirim görüldü | ✅ birleşti; inceleme: izin yalnız açılışta okunuyordu (iOS Ayarları'ndan dönüş), kapat/kaydet hatası yutuluyordu → düzeltildi; mutasyon 12/12 | #254 | `M4/K-410.md` |
 | K-411 dinlenme arka planda (yerel "Rest's up" bandın alt ucunda; `AlertAccess` sorusuz port; süperset turu) — **Live Activity → K-426** (cihaz derlemesi + App Group) | ✅ birleşti; simülatörde arka planda bildirim geldi; inceleme: süperset 2. turunda önceki turun uyarısı çalıyordu → düzeltildi; mutasyon 11/11 + 4/4 | #256 | `M4/K-411.md` |
-| K-412 Apple Health'e yazma (ayrı port, iki anahtar, tür başına izin, `keel:` işareti + sync kimliği, 240 dk sınırı, "On" yalnız iOS izinliyken) | PR; Expo Go'da "cihaz derlemesinde" yolu görüldü, gerçek yazma K-308 sonrası; inceleme 5 bulgu düzeltildi; mutasyon 21/21 | #257 | `M4/K-412.md` |
-| K-423 tarifler telefonda | sürüyor (dal `mobile/243-recipes`) | — | — |
+| K-412 Apple Health'e yazma (ayrı port, iki anahtar, tür başına izin, `keel:` işareti + sync kimliği, 240 dk sınırı, "On" yalnız iOS izinliyken) | ✅ birleşti; Expo Go'da "cihaz derlemesinde" yolu görüldü, gerçek yazma K-308 sonrası; inceleme 5 bulgu düzeltildi; mutasyon 21/21 | #257 | `M4/K-412.md` |
+| K-423 (1/2) tarif öğün aramasında, porsiyonla tek kalem, tembel okuma, Türkçe katlama, düzeltmede `recipeGone` | PR; simülatör: "Nothing found" kusuru bulundu → düzeltildi; inceleme 3 bulgu + test boşluğu düzeltildi; mutasyon 15/15 | #258 | `M4/K-423.md` |
+| K-423 (2/2) tarif listesi + giriş (öğünün kalem akışı `FoodPicker`/`ItemRows`'a çıkarıldı), onaylı silme, geri dönüş | inceleniyor (dal `mobile/243-recipes-screens`); simülatör: geri dönüşü yoktu → eklendi | — | `M4/K-423.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
@@ -456,6 +457,21 @@ görülemez; kod + test + Expo Go'da yetenek "kullanılamaz" yolu. Ana checkout 
     `gender` male/female). (a) böyle kalsın (tek figür, anatomi aynı); (b) profildeki cinsiyete göre figür (profil okuması
     ekrana eklenir). Ayrıca K-418 kartındaki "bağımlılık Levent onayıyla" notu ADR-019'dan eski; K5'e göre eklendi
     (aşağıda "Eklenen bağımlılıklar"), itirazın varsa söyle.
+50. **(K-410, ürün — YENİ, Part 4)** Check-in hatırlatması check-in gününün **09:00**'unda (`notifications.json`
+    `check_in_reminder_time`, `urun`): kaynak (I1 F4) yalnız "Pazartesi sabah" diyor, saat yok. (a) 09:00; (b) başka saat.
+51. **(K-410, ürün — YENİ)** Hatırlatmalar yalnız Ayarlar'dan açılıyor (kapalı başlar; iOS izni orada sorulur). Çoğu kullanıcı
+    hiç açmayabilir. (a) böyle kalsın; (b) onboarding sonunda bir adım ("Hatırlatmalar? Aç / Şimdi değil"); (c) Bugün'de bir
+    kez gösterilen kart. Ayrıca mola haftasında (`restUntil`) antrenman hatırlatması susturulsun mu? (evet/hayır)
+52. **(K-411, ürün — YENİ)** Dinlenme bildirimi ("Rest's up", 2:00'de) üç hatırlatma türünden sayılmadı (kullanıcının başlattığı
+    sayaç; ADR-036 Sonuçlar) ve yalnız bildirim izni varsa çalışıyor (izin Ayarlar'dan). Günün son setinden sonra da geliyor
+    (ekrandaki sayaç gibi). (a) böyle; (b) son setten sonra uyarı yok; (c) dinlenme uyarısı Ayarlar'da ayrı anahtar.
+53. **(K1 onayı — YENİ, Part 4)** Bir beklenti değişti: `app-config.test.ts` yazma izni metnini "K-412'ye kadar" `false`
+    bekliyordu → artık `en.json › permissions.healthWrite` (K-412'nin amacı). Fikstür eklemeleri (iddia aynı):
+    `settings-screen`, `navigation` (`reminders`, `healthWriting`), `workout-screen` (`restAlert`, `healthWriting`),
+    `weigh-in-screen` (`healthWriting`). (a) onay; (b) geri al.
+54. **(K-412, ürün/U1 — YENİ)** Health'e yazılan antrenman **enerji (kcal) içermiyor**: uygulama ölçmüyor, tahmini sayı U1'e
+    aykırı. Fitness halkalarına katkısı (Move/Exercise) cihazda görülecek [doğrulanmadı]. (a) böyle kalsın; (b) kaynaklı bir
+    MET formülüyle tahmini enerji yazılsın (tek sayı ister — U5 ile gerilim, senin kararın).
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
 33. **(K-231, veri — YENİ, M4 Part 1)** Apple Health rızası geri çekilince ne silinsin? Şimdi: Health'ten **okuma durur**,
     sunucuda zaten tutulan tartı (`source=APPLE_HEALTH`) ve adım/uyku günleri **kalır** — bunlar sağlık verisi rızasıyla
