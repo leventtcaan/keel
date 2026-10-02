@@ -103,6 +103,8 @@ const mockServices = {
   report: () => {},
   // The reminders follow the program's week off (ADR-037 › 51b).
   reminders: { keepRestUntil: mockKeepRestUntil, era: () => 0 },
+  // The state read is kept on the phone for the reminders (K-518).
+  state: { keep: jest.fn(async (_loaded: unknown) => {}), back: jest.fn(async () => {}) },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
@@ -465,5 +467,34 @@ describe("this week's check-in (K-501)", () => {
     mockAnswers['/v1/check-ins/current'] = checkIn(true, []);
     await show();
     expect(screen.queryByText(t('today.checkIn.title'))).toBeNull();
+  });
+});
+
+describe('state mode on Today (K-518, ADR-038)', () => {
+  test('a state in force: the week is paused, since when, and "I\'m back" ends it', async () => {
+    mockAnswers['/v1/state'] = ok({ kind: 'SICK', since: '2026-09-28' });
+    await show();
+    expect(screen.getByText(t('today.state.paused', { state: t('state.kind.sick.name'), since: 'Mon, Sep 28' }))).toBeOnTheScreen();
+    await press(t('today.state.back'));
+    expect(mockServices.state.back).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('today.state.welcomeBack'))).toBeOnTheScreen();
+  });
+
+  test('no state: one quiet way to say life got in the way', async () => {
+    await show();
+    await press(t('today.state.declare'));
+    expect(mockPush).toHaveBeenCalledWith('/state');
+  });
+
+  test("what the server said is kept on the phone, so the reminders know (ADR-036 #7)", async () => {
+    mockAnswers['/v1/state'] = ok({ kind: 'BUSY', since: '2026-09-28' });
+    await show();
+    expect(mockServices.state.keep).toHaveBeenCalledWith({ state: 'ready', value: { kind: 'BUSY', since: '2026-09-28' } });
+  });
+
+  test('a paused week says so on the number: it counts neither way', async () => {
+    mockAnswers['/v1/consistency'] = ok({ ...CONSISTENCY, paused: true });
+    await show();
+    expect(screen.getByText(t('today.consistency.paused'))).toBeOnTheScreen();
   });
 });

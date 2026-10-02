@@ -192,6 +192,9 @@ export async function createReminders({ kv, access, now, report, muted = async (
         await reschedule();
       }),
 
+    /** Something the plan reads changed outside this service — a state declared or ended (K-518): plan again. */
+    refresh: (): Promise<void> => inTurn(() => reschedule()),
+
     /** The app came to the front: the quiet spell starts again from now. */
     opened: (): Promise<void> =>
       inTurn(async () => {
