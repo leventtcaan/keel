@@ -25,3 +25,4 @@
 15. K-413 tarif hafızası — sayı saklanmaz, `recipe:<id>` tek kalem, dışa yuvarlanan pay, düşen malzeme yalnız kendi tarifini işaretler
 16. K-424 süperset + kullanıcının hareketi (sunucu) — setin üstünde kimlik, motorun sorduğu sınıflama, program katalogdan
 17. K-416 geçmiş düzenleme + plan dışı hareket + kendi hareketi + süperset (mobil) — çevrimiçi düzenleme, açık satır ve uydurmayan öneri, seçim kimlikle, önce eşleşmeler, tek clientId, setlerden türeyen grup, turun sonunda dinlenme
+18. K-418 hareket ekranı (+ K-419 klip hattı) — kurulum önce ve telefonda, söyleyen yer tutucu, kaynaklı ve harekete göre ipucu, ffmpeg kesim betiği

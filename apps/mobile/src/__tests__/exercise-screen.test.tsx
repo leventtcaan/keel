@@ -8,6 +8,7 @@ import type { components } from '@/api/schema';
 import ExerciseScreen from '@/app/exercise';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { workoutParams } from '@/train/params';
 import type { Move, TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -107,4 +108,46 @@ test("the user's own move: its name and the tips for its kind; no muscles were a
   expect(screen.getByText(t('demo.tip.lastRep'))).toBeOnTheScreen();
   expect(screen.queryByText(t('demo.muscles'))).toBeNull();
   expect(screen.queryByText(t('demo.unknown'))).toBeNull();
+});
+
+test('one field changed of a saved setup: the others are kept; "Saved." goes at the next change', async () => {
+  mockSetups = { leg_press: { seat_height: '4', foot_position: 'high' } };
+  await show();
+  await fireEvent.changeText(await screen.findByLabelText(t('exerciseSetup.foot_position.label')), 'low');
+  await fireEvent.press(screen.getByRole('button', { name: t('demo.save') }));
+  expect(mockSave).toHaveBeenCalledWith('leg_press', { seat_height: '4', foot_position: 'low' });
+  expect(await screen.findByText(t('demo.saved'))).toBeOnTheScreen();
+  await fireEvent.changeText(seat(), '5');
+  expect(screen.queryByText(t('demo.saved'))).toBeNull();
+});
+
+test('a save that fails says nothing of being saved, and is reported', async () => {
+  mockSave.mockImplementationOnce(async () => {
+    throw new Error('disk');
+  });
+  await show();
+  await fireEvent.changeText(await screen.findByLabelText(t('exerciseSetup.seat_height.label')), '4');
+  await fireEvent.press(screen.getByRole('button', { name: t('demo.save') }));
+  expect(mockServices.report).toHaveBeenCalledWith({ name: 'Error' });
+  expect(screen.queryByText(t('demo.saved'))).toBeNull();
+});
+
+test('a back move and an own move: no clips promised to an own move, none filmed for it', async () => {
+  mockOwn = [
+    { id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] },
+  ];
+  mockParams = { exercise: 'custom:1' };
+  await show();
+  expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
+  expect(screen.queryByText(t('demo.clipsPending'))).toBeNull();
+});
+
+test('every muscle the catalog may name has its words; the back muscles are muscles of the catalog', () => {
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs');
+  const path = jest.requireActual<typeof import('node:path')>('node:path');
+  const text = fs.readFileSync(path.join(__dirname, '../../../../data/muscles.yaml'), 'utf8');
+  const muscles = [...text.matchAll(/^ {2}([a-z_]+):/gm)].map((m) => m[1]);
+  expect(muscles.length).toBeGreaterThan(0);
+  expect(muscles.filter((m) => t(`demo.muscle.${m}`).startsWith('[missing'))).toEqual([]);
+  expect(workoutParams.backMuscles.filter((m) => !muscles.includes(m))).toEqual([]);
 });

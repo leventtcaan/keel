@@ -355,3 +355,38 @@ describe('the setup kept on the phone (K-418, ADR-017)', () => {
     expect(await cache.setup('leg_press')).toEqual({ foot_position: 'high' });
   });
 });
+
+describe('the setup kept on the phone: the edges (K-418 review)', () => {
+  test('nothing saved yet: none, not a failure', async () => {
+    expect(await createTrainingCache(memoryKv()).setup('leg_press')).toEqual({});
+  });
+
+  test('saved again, a field emptied is gone: the save replaces the move\'s setup', async () => {
+    const cache = createTrainingCache(memoryKv());
+    await cache.saveSetup('leg_press', { seat_height: '4', foot_position: 'high' });
+    await cache.saveSetup('leg_press', { seat_height: '4', foot_position: '' });
+    expect(await cache.setup('leg_press')).toEqual({ seat_height: '4' });
+  });
+
+  test('a kept setup that cannot be read is none, and a save writes over it', async () => {
+    const kv = memoryKv();
+    kv.map.set('train.setup', '{not json');
+    const cache = createTrainingCache(kv);
+    expect(await cache.setup('leg_press')).toEqual({});
+    await cache.saveSetup('leg_press', { seat_height: '4' });
+    expect(await cache.setup('leg_press')).toEqual({ seat_height: '4' });
+  });
+
+  test("a save still on its way when the user signs out keeps nothing: the setup was the last account's", async () => {
+    const kv = memoryKv();
+    let answer: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (answer = resolve));
+    const slow = { ...kv, getItemAsync: async (key: string) => (await gate, kv.getItemAsync(key)) };
+    const cache = createTrainingCache(slow);
+    const saving = cache.saveSetup('leg_press', { seat_height: '4' });
+    await cache.forget();
+    answer();
+    await saving;
+    expect(kv.map.size).toBe(0);
+  });
+});

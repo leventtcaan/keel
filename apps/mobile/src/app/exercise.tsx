@@ -71,12 +71,17 @@ export default function ExerciseScreen() {
         {saved && <Text style={[styles.small, { color: color.muted }]}>{t('demo.saved')}</Text>}
       </View>
     );
+  // Clips are filmed for the catalog's moves (ADR-017): an own move gets none, so none is promised to it.
+  const clipsPending =
+    move === undefined || move.name !== undefined || move.clips !== undefined ? null : (
+      <Card>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t('demo.clipsPending')}</Text>
+      </Card>
+    );
   const about =
     move === undefined ? null : (
       <>
-        <Card>
-          <Text style={[styles.text, { color: color.textSecondary }]}>{t('demo.clipsPending')}</Text>
-        </Card>
+        {clipsPending}
         <Text style={[styles.heading, { color: color.text }]}>{t('demo.tips')}</Text>
         {tipsFor(move).map((key) => (
           <Text key={key} style={[styles.text, { color: color.text }]}>
