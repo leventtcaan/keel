@@ -255,6 +255,20 @@ describe('review', () => {
     await show();
     expect(screen.getByText(t('sessionEdit.targetsNote'))).toBeOnTheScreen();
   });
+
+  test("the session a target came from (K-432): it says an edit here moves the next session's targets", async () => {
+    mockWorkout = async () => ok({ ...WORKOUT, setsNextTargets: true });
+    await show();
+    expect(screen.getByText(t('sessionEdit.targetsMove'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('sessionEdit.targetsNote'))).toBeNull();
+  });
+
+  test('a session whose targets a newer one set: it says an edit here does not move them', async () => {
+    mockWorkout = async () => ok({ ...WORKOUT, setsNextTargets: false });
+    await show();
+    expect(screen.getByText(t('sessionEdit.targetsNote'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('sessionEdit.targetsMove'))).toBeNull();
+  });
 });
 
 test("the user's own move is in the session by the name they gave, its sets there to change", async () => {

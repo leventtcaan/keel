@@ -62,7 +62,22 @@ class SessionProgress {
     /** Finishes the workout and sets the targets it gives, together: a finish is kept with its targets or not at all. */
     @Transactional
     void finish(AccountId account, WorkoutStore.Workout workout, Instant endedAt, String note, Set<String> uncleanExerciseIds) {
-        workouts.finish(account, workout.id(), endedAt, note);
+        workouts.finish(account, workout.id(), endedAt, note, uncleanExerciseIds);
+        retarget(account, workout, Set.copyOf(uncleanExerciseIds));
+    }
+
+    /**
+     * A finished session's sets were edited (K-432, ADR-037 #48: data corrected, U2): its targets are derived again from
+     * what it holds now, with the finish's answer on form. A target a newer session set stays (setNext keeps the newest);
+     * one this session set for a move none of whose sets are left is gone. A session under way waits for its finish.
+     */
+    void edited(AccountId account, WorkoutStore.Workout workout) {
+        if (workout.endedAt() != null) {
+            retarget(account, workout, Set.copyOf(workout.uncleanExerciseIds()));
+        }
+    }
+
+    private void retarget(AccountId account, WorkoutStore.Workout workout, Set<String> uncleanExerciseIds) {
         if (workout.programDayId() == null) {
             return;
         }
@@ -95,8 +110,8 @@ class SessionProgress {
                                     .toList();
                             NextTargets.weaker(sides.stream().map(Next::target).toList())
                                     .flatMap(target -> sides.stream().filter(side -> side.target().equals(target)).findFirst())
-                                    .ifPresent(side -> programs.setNext(account, planned.id(), side.target().loadKg(), side.target().reps(), side.fromKg(),
-                                            workout.startedAt()));
+                                    .ifPresentOrElse(side -> programs.setNext(account, planned.id(), side.target().loadKg(), side.target().reps(),
+                                            side.fromKg(), workout.startedAt()), () -> programs.clearNext(account, planned.id(), workout.startedAt()));
                         });
                     }
                 });

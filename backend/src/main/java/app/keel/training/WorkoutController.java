@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -93,9 +95,13 @@ class WorkoutController {
             Side side, String note, UUID supersetId) {
     }
 
-    /** Contract Workout. */
+    /**
+     * Contract Workout. {@code setsNextTargets}, on a finished session of the program: whether an edit of its sets can
+     * move a target of its day — one that came from it or an older session, or a move with none yet (K-432).
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<LoggedSet> sets) {
+    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<LoggedSet> sets,
+            Boolean setsNextTargets) {
     }
 
     /** Contract LoggedSet. */
@@ -116,9 +122,11 @@ class WorkoutController {
     private final ApiLimits api;
     private final SessionProgress progress;
     private final CustomExerciseStore customs;
+    private final ProgramStore programs;
 
     WorkoutController(ExerciseCatalog catalog, WorkoutStore store, Profiles profiles, TrainingLimits limits, ApiLimits api,
-            SessionProgress progress, CustomExerciseStore customs) {
+            SessionProgress progress, CustomExerciseStore customs, ProgramStore programs) {
+        this.programs = programs;
         this.progress = progress;
         this.customs = customs;
         this.catalog = catalog;
@@ -139,20 +147,21 @@ class WorkoutController {
     ResponseEntity<Workout> start(AccountId account, @RequestBody NewWorkout workout) {
         require(workout.clientId() != null && api.moment(workout.startedAt()));
         WorkoutStore.Stored<WorkoutStore.Workout> stored = store.start(account, workout.clientId(), workout.startedAt(), workout.programDayId());
-        return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(read(stored.record()));
+        return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(read(account, stored.record()));
     }
 
     @GetMapping("/v1/workouts")
     List<Workout> list(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         require(api.range(from, to));
         ZoneId zone = profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
+        Map<UUID, List<Optional<Instant>>> targetSources = programs.targetSources(account);
         return store.between(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant())
-                .stream().map(this::read).toList();
+                .stream().map(workout -> read(workout, targetSources)).toList();
     }
 
     @GetMapping("/v1/workouts/{id}")
     Workout get(AccountId account, @PathVariable UUID id) {
-        return read(owned(account, id));
+        return read(account, owned(account, id));
     }
 
     @PostMapping("/v1/workouts/{id}/finish")
@@ -166,12 +175,14 @@ class WorkoutController {
                 && Set.copyOf(unclean).size() == unclean.size());
         // Kept with the next session's load and reps of the day's planned moves (K-217).
         progress.finish(account, workout, finish.endedAt(), TrainingLimits.note(finish.note()), Set.copyOf(unclean));
-        return read(owned(account, id));
+        return read(account, owned(account, id));
     }
 
+    /** A set of a finished session (one forgotten, K-416) derives its targets again, in the same transaction (K-432). */
     @PostMapping("/v1/workouts/{id}/sets")
+    @Transactional
     ResponseEntity<LoggedSet> log(AccountId account, @PathVariable UUID id, @RequestBody NewSet set) {
-        owned(account, id);
+        WorkoutStore.Workout workout = owned(account, id);
         // A catalog move, or one of the user's own (K-424): the same set rules either way.
         Optional<ExerciseCatalog.Exercise> move = set.exerciseId() == null ? Optional.empty()
                 : catalog.find(set.exerciseId()).or(() -> customs.find(account, set.exerciseId()).map(CustomExerciseStore.CustomExercise::asExercise));
@@ -185,25 +196,37 @@ class WorkoutController {
             // The clientId is already a set of another workout: not a replay of this one (ADR-024 §11).
             throw new ApiException(ErrorCode.CONFLICT);
         }
+        if (stored.created()) {
+            progress.edited(account, workout);
+        }
         return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(LoggedSet.of(stored.record()));
     }
 
+    /** A set deleted from a finished session derives its targets again, in the same transaction (K-432). */
     @DeleteMapping("/v1/workouts/{id}/sets/{setId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
     void deleteSet(AccountId account, @PathVariable UUID id, @PathVariable UUID setId) {
-        owned(account, id);
+        WorkoutStore.Workout workout = owned(account, id);
         if (!store.deleteSet(account, id, setId)) {
             throw new ApiException(ErrorCode.NOT_FOUND);
         }
+        progress.edited(account, workout);
     }
 
     private WorkoutStore.Workout owned(AccountId account, UUID id) {
         return store.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
-    private Workout read(WorkoutStore.Workout workout) {
+    private Workout read(AccountId account, WorkoutStore.Workout workout) {
+        return read(workout, programs.targetSources(account));
+    }
+
+    private Workout read(WorkoutStore.Workout workout, Map<UUID, List<Optional<Instant>>> targetSources) {
+        Boolean setsNextTargets = workout.endedAt() == null || workout.programDayId() == null ? null
+                : ProgramStore.movesATarget(targetSources.getOrDefault(workout.programDayId(), List.of()), workout.startedAt());
         return new Workout(workout.id(), workout.clientId(), workout.startedAt(), workout.endedAt(), workout.programDayId(), workout.note(),
-                store.sets(workout.id()).stream().map(LoggedSet::of).toList());
+                store.sets(workout.id()).stream().map(LoggedSet::of).toList(), setsNextTargets);
     }
 
     private static void require(boolean valid) {
