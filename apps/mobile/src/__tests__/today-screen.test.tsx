@@ -95,14 +95,14 @@ jest.mock('react-native/Libraries/AppState/AppState', () => ({
 // One object for the life of the test, as the real services are built once per process: the screen depends on it.
 const mockSyncHealth = jest.fn(async () => 0);
 const mockDrain = jest.fn(async () => {});
-const mockKeepRestUntil = jest.fn(async (_day: string | null) => {});
+const mockKeepRestUntil = jest.fn(async (_day: string | null, _era?: number) => {});
 const mockServices = {
   api: { GET: mockGET },
   syncHealth: mockSyncHealth,
   queue: { drain: mockDrain },
   report: () => {},
   // The reminders follow the program's week off (ADR-037 › 51b).
-  reminders: { keepRestUntil: mockKeepRestUntil },
+  reminders: { keepRestUntil: mockKeepRestUntil, era: () => 0 },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
@@ -402,19 +402,19 @@ describe("the program's week off reaches the reminders (ADR-037 › 51b)", () =>
   test('a week off in the program: its last day; none: null; unread: nothing said', async () => {
     mockAnswers['/v1/program'] = ok({ ...PROGRAM, restUntil: '2026-10-04' });
     await show();
-    expect(mockKeepRestUntil).toHaveBeenLastCalledWith('2026-10-04');
+    expect(mockKeepRestUntil).toHaveBeenLastCalledWith('2026-10-04', 0);
     await screen.unmount();
 
     jest.clearAllMocks();
     mockAnswers['/v1/program'] = ok(PROGRAM);
     await show();
-    expect(mockKeepRestUntil).toHaveBeenLastCalledWith(null);
+    expect(mockKeepRestUntil).toHaveBeenLastCalledWith(null, 0);
     await screen.unmount();
 
     jest.clearAllMocks();
     delete mockAnswers['/v1/program']; // no program on the server (404): none
     await show();
-    expect(mockKeepRestUntil).toHaveBeenLastCalledWith(null);
+    expect(mockKeepRestUntil).toHaveBeenLastCalledWith(null, 0);
     await screen.unmount();
 
     jest.clearAllMocks();

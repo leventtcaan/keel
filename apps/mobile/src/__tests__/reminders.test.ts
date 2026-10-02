@@ -398,3 +398,25 @@ describe('a week off (ADR-037 › 51b)', () => {
     expect(kv.items.has('reminders.restUntil')).toBe(false);
   });
 });
+
+test("a week off read for the account that left (the read began before the sign-out) is not kept for the next one", async () => {
+  const kv = memoryKv();
+  const { reminders } = await make(kv);
+  const era = reminders.era(); // Today's read begins
+  await reminders.forget(); // sign-out while it reads
+  await reminders.keepRestUntil('2026-10-05', era); // the read ends
+  expect(kv.items.has('reminders.restUntil')).toBe(false);
+  await reminders.keepRestUntil('2026-10-05', reminders.era()); // a read of the new account
+  expect(kv.items.get('reminders.restUntil')).toBe('2026-10-05');
+});
+
+test('the same week off read again changes nothing: no rebuild of the reminders', async () => {
+  const { reminders, device } = await make();
+  await reminders.keepSchedule(schedule);
+  await reminders.turnOn();
+  await reminders.keepRestUntil('2026-10-05');
+  const before = device.replaced;
+  await reminders.keepRestUntil('2026-10-05');
+  await reminders.keepRestUntil('2026-10-05');
+  expect(device.replaced).toBe(before);
+});

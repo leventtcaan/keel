@@ -23,6 +23,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
     useCallback(
       async (day: string) => {
         const { syncHealth: sync, queue: waiting, report: tell, reminders: remind } = latest.current;
+        const era = remind.era(); // a sign-out during this read must not hand its week off to the next account
         const named = (error: unknown) => tell({ name: error instanceof Error ? error.name : 'Unknown' });
         const health = await sync().catch(named);
         // What waits on the phone goes first (a weigh-in just saved), so the server's list shows it (K-402 review).
@@ -30,7 +31,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         const today = await loadToday(api, day);
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
         const { program } = today;
-        if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null);
+        if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
         return { ...today, stepsToday: health?.stepsToday ?? null };
       },
       [api],

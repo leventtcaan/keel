@@ -71,6 +71,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     consents: mockConsents,
     syncHealth: async () => 0, // Today reads Apple Health's weigh-ins first (K-402); none here
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
+    reminders: { era: () => 0, keepRestUntil: async () => {} }, // Today hands on the program's week off (ADR-037 › 51b)
   }),
 }));
 

@@ -174,8 +174,19 @@ export async function createReminders({ kv, access, now, report, muted = async (
      * A week off as the program has it (Program.restUntil, ADR-037 › 51b), kept whenever the program is read — on Today and
      * on the Train tab. Training reminders stop until it ends; null, none.
      */
-    keepRestUntil: (day: string | null): Promise<void> =>
+    /** The account's era: taken when a read begins, so what it brings back is dropped if the account left meanwhile. */
+    era: (): number => generation,
+
+    /**
+     * A week off as the program has it (Program.restUntil, ADR-037 › 51b), kept whenever the program is read — on Today,
+     * and wherever the training copy is read (the Train tab, the session, a move's screens). Training reminders stop
+     * until it ends; null, none. `era`: when the read began — a read that began for the account that left is dropped.
+     * The same day again changes nothing (no rebuild).
+     */
+    keepRestUntil: (day: string | null, era: number = generation): Promise<void> =>
       inTurn(async () => {
+        if (era !== generation) return;
+        if ((await kv.getItemAsync(KEY.restUntil)) === day) return;
         if (day === null) await kv.removeItemAsync(KEY.restUntil);
         else await kv.setItemAsync(KEY.restUntil, day);
         await reschedule();

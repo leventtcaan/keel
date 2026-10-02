@@ -46,6 +46,7 @@ const mockServices = {
     subscribe: () => () => {},
     permission: async () => ({ granted: false, canAskAgain: true }),
     keepRestUntil: async () => {}, // Today hands on the program's week off (ADR-037 › 51b)
+    era: () => 0,
   },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
   healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
 };
