@@ -199,13 +199,22 @@ export default function WorkoutScreen() {
         setRest(new Date().getTime());
         // The move picked is done: the next one with sets left comes up. A move outside the plan is never done (no count).
         if (planned !== undefined && plan.current === plan.rows.length - 1) setPicked(null);
-      } else if (row.side !== 'LEFT') {
+      } else {
         // In a superset the partner comes next (a one-sided move's right side first); the rest comes after the round.
-        const left = (id: string) =>
-          id === move.id ? plan.open === true || (plan.current ?? 0) < plan.rows.length - 1 : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
-        const { next, roundDone } = nextInGroup(group[1], move.id, left);
+        let roundDone = false;
+        if (row.side !== 'LEFT') {
+          const left = (id: string) =>
+            id === move.id ? plan.open === true || (plan.current ?? 0) < plan.rows.length - 1 : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
+          const found = nextInGroup(group[1], move.id, left);
+          roundDone = found.roundDone;
+          setPicked(found.next);
+        }
         if (roundDone) setRest(new Date().getTime());
-        setPicked(next);
+        else {
+          // A set inside a round ends the last round's rest: its timer goes, and its alert must not sound mid-round (K-411).
+          setRest(null);
+          void restAlert.stop();
+        }
       }
       await refresh();
     }

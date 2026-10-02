@@ -980,5 +980,12 @@ describe('the rest in the background (K-411)', () => {
     await typeAndLog(rowSide('RIGHT'));
     await screen.findByText(t('workout.log', { number: 2 }));
     expect(mockServices.restAlert.start).toHaveBeenCalledTimes(1);
+    // Round 2 begins: its first set ends the rest, so the last round's alert must not sound mid-round.
+    const stopsBefore = mockServices.restAlert.stop.mock.calls.length;
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+    await screen.findByText(t('workout.logSide', { number: 2, side: t('workout.sideName.LEFT') }));
+    expect(mockServices.restAlert.stop.mock.calls.length).toBeGreaterThan(stopsBefore);
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(1); // and no new one mid-round
+    expect(screen.queryByText(/^Rest ·/)).toBeNull(); // and the screen's timer of the last round goes with it
   });
 });

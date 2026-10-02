@@ -69,3 +69,15 @@ test('its id is not a reminder\'s: rebuilding the reminders never takes the rest
   await createRestAlert({ access, report: jest.fn() }).start(since);
   expect([...alerts.keys()].every((id) => !id.startsWith('reminder:'))).toBe(true);
 });
+
+test('stopped while a start is still asking iOS: the late start sets nothing', async () => {
+  const { access, alerts } = phone();
+  let answer = () => {};
+  access.permission = () => new Promise((resolve) => (answer = () => resolve({ granted: true, canAskAgain: false })));
+  const rest = createRestAlert({ access, report: jest.fn() });
+  const starting = rest.start(since);
+  await rest.stop();
+  answer();
+  await starting;
+  expect(alerts.size).toBe(0);
+});

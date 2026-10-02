@@ -42,11 +42,14 @@ export type RestAlert = ReturnType<typeof createRestAlert>;
 
 export function createRestAlert({ access, report }: Options) {
   const reportError = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
+  // Bumped by every start and stop: a start still asking iOS when a newer start or a stop came must set nothing.
+  let generation = 0;
   return {
     /** A rest began at `since` (ms): "rest's up" at the band's lower end, replacing any rest alert before it. */
     start: async (since: number): Promise<void> => {
+      const mine = ++generation;
       try {
-        if (!(await access.permission()).granted) return;
+        if (!(await access.permission()).granted || mine !== generation) return;
         const at = new Date(since + workoutParams.restSecondsMin * 1000);
         const min = restText(workoutParams.restSecondsMin);
         await access.alertAt(ID, at, t('workout.rest.alert.title'), t('workout.rest.alert.body', { min }));
@@ -56,6 +59,7 @@ export function createRestAlert({ access, report }: Options) {
     },
     /** The session ended or was left: no voice for a rest that is over. */
     stop: async (): Promise<void> => {
+      generation += 1;
       await access.cancel(ID).catch(reportError);
     },
   };
