@@ -14,6 +14,7 @@ import { type NotificationAccess, type Reminders, createReminders } from '@/noti
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
+import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
@@ -21,6 +22,8 @@ import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/stor
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
 
 const WORKOUT_KINDS = ['workout', 'set', 'finish'];
+/** The profile's sex, kept for the muscle map's figure (ADR-037 › 49): it belongs to the account. */
+const FIGURE = 'profile.figure';
 
 type Deps = {
   baseUrl: string;
@@ -69,6 +72,8 @@ export type AppServices = {
   forgetRecord(clientId: string): Promise<void>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
+  /** The muscle map's figure: the profile's sex as last read (ADR-037 › 49); not known, the one drawn until now. */
+  bodyFigure(): Promise<Figure>;
   /** The three reminder slots, scheduled on the phone (K-410). */
   reminders: Reminders;
   /** The rest timer's voice in the background (K-411). */
@@ -95,10 +100,19 @@ export async function createAppServices({
   const store = await openRecordStore(db);
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
+  const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   const reminders = await createReminders({ kv, access: notifications, now, report });
   const restAlert = createRestAlert({ access: alerts, report });
   const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
-  const profile = await createProfileStatus({ kv, api, units, onProfile: (read) => reminders.keepSchedule(read.schedule) });
+  const profile = await createProfileStatus({
+    kv,
+    api,
+    units,
+    onProfile: async (read) => {
+      await kv.setItemAsync(FIGURE, read.sex === 'FEMALE' ? 'female' : 'male').catch(reportName);
+      await reminders.keepSchedule(read.schedule);
+    },
+  });
   const consents = createConsentState({ api, kv });
   // The program's week off reaches the reminders whenever the program is read (ADR-037 › 51b); they report their own failures.
   const training = createTrainingCache(kv, (program) => void reminders.keepRestUntil(program?.restUntil ?? null));
@@ -126,6 +140,7 @@ export async function createAppServices({
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
     training.forget().catch(reportError); // and the program kept for offline training (K-405)
     reminders.forget().catch(reportError); // and the reminders: nothing scheduled for an account that left (K-410)
+    kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
   });
@@ -140,6 +155,7 @@ export async function createAppServices({
     training,
     report,
     reminders,
+    bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     healthWriting,
     /**

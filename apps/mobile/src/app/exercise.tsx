@@ -12,7 +12,7 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { drawingAreas, mapAreas, tipsFor } from '@/train/demo';
+import { type Figure, drawingAreas, mapAreas, tipsFor } from '@/train/demo';
 import { workoutParams } from '@/train/params';
 import { exerciseName } from '@/train/program';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
@@ -28,11 +28,23 @@ const SIDES = ['front', 'back'] as const;
 const MAP_SCALE = 0.75;
 
 export default function ExerciseScreen() {
-  const { api, training, report } = useAppServices();
+  const { api, training, report, bodyFigure } = useAppServices();
   const { exercise } = useLocalSearchParams<{ exercise: string }>();
   const { color } = useTheme();
   const [read, setRead] = useState<{ data: TrainData; own: Move[]; setup: Record<string, string> } | null>(null);
   const [typed, setTyped] = useState<Record<string, string> | null>(null);
+  // The figure the profile gives (ADR-037 › 49); not known, the one drawn until now.
+  const [figure, setFigure] = useState<Figure>('male');
+  useEffect(() => {
+    let live = true;
+    bodyFigure().then(
+      (kept) => live && setFigure(kept),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [bodyFigure]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -83,7 +95,7 @@ export default function ExerciseScreen() {
   const areas =
     marked.length === 0
       ? []
-      : [...marked, ...drawingAreas().filter((slug) => !marked.includes(slug))].map((slug) => ({
+      : [...marked, ...drawingAreas(figure).filter((slug) => !marked.includes(slug))].map((slug) => ({
           slug: slug as Slug, // the areas named in muscle_map_areas are checked against the drawing (exercise-screen.test)
           color: marked.includes(slug) ? color.accent : color.track,
         }));
@@ -91,7 +103,7 @@ export default function ExerciseScreen() {
     areas.length === 0 ? null : (
       <View style={styles.map} accessible accessibilityLabel={t('demo.mapLabel', { muscles: muscleWords })}>
         {SIDES.map((side) => (
-          <Body key={side} data={areas} side={side} scale={MAP_SCALE} border="none" />
+          <Body key={side} data={areas} side={side} gender={figure} scale={MAP_SCALE} border="none" />
         ))}
       </View>
     );

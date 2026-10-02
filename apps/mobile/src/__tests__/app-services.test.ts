@@ -643,3 +643,32 @@ test('a sign-out forgets the Apple Health switches (K-412)', async () => {
   expect(services.healthWriting.current()).toEqual({ workouts: false, weighIns: false });
   expect([...kv.items.keys()].filter((key) => key.startsWith('healthWrite.'))).toEqual([]);
 });
+
+test("the profile's sex is kept for the muscle map's figure, and forgotten at sign-out (ADR-037 › 49)", async () => {
+  const kv = memoryKv();
+  const fetch = jest.fn(async (request: Request) =>
+    request.url.endsWith('/v1/profile')
+      ? new Response(
+          JSON.stringify({
+            goal: 'LOSE_FAT',
+            sex: 'FEMALE',
+            heightCm: 165,
+            birthYear: 1996,
+            programChoice: 'BUILD_ONE_FOR_ME',
+            schedule: { trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'Europe/Istanbul' },
+            units: 'METRIC',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
+      : new Response(null, { status: 204 }),
+  );
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US' });
+  expect(await services.bodyFigure()).toBe('male'); // not known yet: the figure drawn until now
+  await services.session.signIn(SESSION);
+  await settle();
+  await settle();
+  expect(await services.bodyFigure()).toBe('female');
+  await services.signOut();
+  await settle();
+  expect(await services.bodyFigure()).toBe('male');
+});
