@@ -24,6 +24,8 @@ export type TodayData = {
   budget: Loaded<Schemas['DayBudget']>;
   /** Today's steps as Apple Health counts them, read on the phone (K-404); null when Health was not read. */
   stepsToday?: number | null;
+  /** This week's check-in (K-501): offered on Today until it is answered. */
+  checkIn?: Loaded<Schemas['CheckIn']>;
 };
 
 type Answer<T> = { data?: T; error?: { code?: string }; response: Response };
@@ -43,15 +45,16 @@ export async function load<T>(request: () => Promise<Answer<T>>): Promise<Loaded
 
 /** Every part at once; `day` is today on the phone's calendar (YYYY-MM-DD). */
 export async function loadToday(api: ApiClient, day: string): Promise<TodayData> {
-  const [consistency, decision, program, weighIns, targets, budget] = await Promise.all([
+  const [consistency, decision, program, weighIns, targets, budget, checkIn] = await Promise.all([
     load(() => api.GET('/v1/consistency')),
     load(() => api.GET('/v1/decisions/current')),
     load(() => api.GET('/v1/program')),
     load(() => api.GET('/v1/weigh-ins', { params: { query: { from: day, to: day } } })),
     load(() => api.GET('/v1/targets')),
     load(() => api.GET('/v1/days/{day}/budget', { params: { path: { day } } })),
+    load(() => api.GET('/v1/check-ins/current')),
   ]);
-  return { consistency, decision, program, weighIns, targets, budget };
+  return { consistency, decision, program, weighIns, targets, budget, checkIn };
 }
 
 /** Today on the phone's calendar, as the API writes a day. */

@@ -47,6 +47,7 @@ function AppStack() {
         <Stack.Screen name="workout-edit" />
         <Stack.Screen name="gyms" />
         <Stack.Screen name="gym" />
+        <Stack.Screen name="check-in" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'needed'}>
         <Stack.Screen name="onboarding" />

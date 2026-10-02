@@ -423,3 +423,47 @@ describe("the program's week off reaches the reminders (ADR-037 › 51b)", () =>
     expect(mockKeepRestUntil).not.toHaveBeenCalled();
   });
 });
+
+describe("this week's check-in (K-501)", () => {
+  const question = (kind: Schemas['QuestionKind']): Schemas['Question'] => ({
+    kind,
+    format: 'CHOICE',
+    choices: ['GOOD', 'POOR'],
+    copyKey: `checkIn.question.${kind.toLowerCase()}`,
+    reasonCopyKey: `checkIn.reason.${kind.toLowerCase()}`,
+  });
+  const checkIn = (answered: boolean, questions: Schemas['Question'][]) => ok({ weekOf: '2026-09-28', answered, questions });
+
+  test('not answered yet: a card that says how much it asks, and opens the check-in', async () => {
+    mockAnswers['/v1/check-ins/current'] = checkIn(false, [question('TRAINING'), question('RECOVERY')]);
+    await show();
+    expect(screen.getByText(t('today.checkIn.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('today.checkIn.questions', { count: 2 }))).toBeOnTheScreen();
+    await press(t('today.checkIn.open'));
+    expect(mockPush).toHaveBeenCalledWith('/check-in');
+  });
+
+  test('one question: said as one', async () => {
+    mockAnswers['/v1/check-ins/current'] = checkIn(false, [question('TRAINING')]);
+    await show();
+    expect(screen.getByText(t('today.checkIn.one'))).toBeOnTheScreen();
+  });
+
+  test('nothing to ask: the call is one tap away', async () => {
+    mockAnswers['/v1/check-ins/current'] = checkIn(false, []);
+    await show();
+    expect(screen.getByText(t('today.checkIn.none'))).toBeOnTheScreen();
+  });
+
+  test('a check-in that could not be read says so, with a way to read again', async () => {
+    mockAnswers['/v1/check-ins/current'] = 'offline';
+    await show();
+    expect(screen.getByText(t('today.failed'))).toBeOnTheScreen();
+  });
+
+  test("answered: no card — the week's call is the call card's", async () => {
+    mockAnswers['/v1/check-ins/current'] = checkIn(true, []);
+    await show();
+    expect(screen.queryByText(t('today.checkIn.title'))).toBeNull();
+  });
+});
