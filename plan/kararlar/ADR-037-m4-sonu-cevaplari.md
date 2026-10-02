@@ -33,6 +33,11 @@ rekorlar, tutarlılık sayımı, öğün ve tarif, hatırlatmalar, Health'e yazm
 | 53 | K1: Part 4 app-config beklentisi + fikstürler | **Onay** | Değişiklik yok |
 | 54 | Health'e enerji | **(a)** Yazılmaz (U1) | Değişiklik yok |
 
+## Uygulama notu (K-432, 2 Eki)
+#48 **hareket başına** uygulandı: bir hareketin hedefi hangi seanstan geldiyse o seansın düzenlenmesi o hedefi yeniden türetir
+(`setNext` en yeni kaynağı korur). "Son seans" çoğu zaman aynı şeydir; fark: yeni seans bir hareketi atladıysa o hareketin hedefi
+hâlâ eski seanstandır ve eski seansın düzeltmesi onu düzeltir (U2: hedef geldiği veriye bağlı). Kaynağı kalmayan hedef silinir.
+
 ## Sonuç
 İş doğuran cevaplar backlog'da: K-428 (34), K-429 (36), K-430 (38), K-431 (39), K-432 (48), K-433 (49), K-434 (51), K-435 (51b).
 Mobil olanlar M4 kapanışında, backend olanlar M5 Part 1'in başında yapılır (DURUM). Açık soru kalmadı; açık kalan: K-308
