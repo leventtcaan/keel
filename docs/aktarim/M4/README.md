@@ -26,3 +26,6 @@
 16. K-424 süperset + kullanıcının hareketi (sunucu) — setin üstünde kimlik, motorun sorduğu sınıflama, program katalogdan
 17. K-416 geçmiş düzenleme + plan dışı hareket + kendi hareketi + süperset (mobil) — çevrimiçi düzenleme, açık satır ve uydurmayan öneri, seçim kimlikle, önce eşleşmeler, tek clientId, setlerden türeyen grup, turun sonunda dinlenme
 18. K-418 hareket ekranı (+ K-419 klip hattı) — kurulum önce ve telefonda, söyleyen yer tutucu, kaynaklı ve harekete göre ipucu, ffmpeg kesim betiği
+
+## Aktarım sırası (Part 4)
+19. K-410 bildirimler — yalnız yerel, saf plan, hepsini yeniden kuran tek zincir, kuşak sayacı, iOS izni ve Ayarlar yolu

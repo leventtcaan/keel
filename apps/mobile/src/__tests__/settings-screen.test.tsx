@@ -12,6 +12,7 @@ import { palettes } from '@/theme/tokens';
 type Status = 'GRANTED' | 'WITHDRAWN' | 'NEVER_ASKED';
 let mockConsents: Record<string, Status> = {};
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+const mockRemindersOff = { enabled: false, cue: '' }; // one object: useSyncExternalStore compares by identity
 const ok = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
 const mockServices = {
   api: {
@@ -36,6 +37,12 @@ const mockServices = {
     mockConsents.HEALTH_DATA = 'WITHDRAWN';
   }),
   report: jest.fn(),
+  // The reminders section (K-410) sits on this screen; its own behaviour is reminders-section.test.tsx.
+  reminders: {
+    current: () => mockRemindersOff,
+    subscribe: () => () => {},
+    permission: jest.fn(async () => ({ granted: false, canAskAgain: true })),
+  },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,

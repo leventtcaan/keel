@@ -1170,6 +1170,23 @@
       "note": "Your history stays as logged; everything shows in the units you pick.",
       "failed": "Couldn't change units. Check your connection and try again."
     },
+    "reminders": {
+      "title": "Reminders",
+      "what": "Three kinds, never more: {minutes} minutes before your usual training time, in your own words; your weekly check-in morning; and one note if a week goes by without the app. They're set on this phone and nothing is sent anywhere.",
+      "turnOn": "Turn on reminders",
+      "turnOff": "Turn off",
+      "turnOffLabel": "Turn off reminders",
+      "on": "On",
+      "blocked": "Notifications for keel are off in iOS Settings.",
+      "openSettings": "Open iOS Settings",
+      "failed": "Couldn't change reminders. Try again.",
+      "cue": {
+        "label": "Your routine, in your words",
+        "hint": "The training reminder says this. For example: After work, straight to the gym.",
+        "save": "Save",
+        "saveLabel": "Save your routine"
+      }
+    },
     "consents": {
       "title": "Your data and consents",
       "HEALTH_DATA": "Health data",
