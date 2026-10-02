@@ -484,8 +484,11 @@ DURUM ile birlikte commitlendi.
 | K-434 hatırlatma teklifi onboarding'de — **ayrı ekran değil**, "What to expect"te (≤12 ekran, I1 F1; K-306 kabulü) | ✅ auto-merge; inceleme: iOS kesin ret → ölü düğme, kaybolan cümle, yeniden açılınca tekrar teklif → düzeltildi; mutasyon 7/7 + 7/7 | #274 | `M5/ADR-037-isleri.md` |
 | K-430 sıçrama sınırı (`load_jump_max_steps` 2, `urun`; Java + TS + ortak vakalar; `SessionProgress` bağlı) | ⏸ **Levent bekliyor (soru 55)**: kural makine yığınlarını da kapsıyor → K-414 testi kırmızı (42×8 → 35×13, K1) ve tutma sonsuz/tekrar sınırsız; PR açık, auto-merge kapalı; mutasyon 6/6 | #273 | `M5/ADR-037-isleri.md` |
 | K-431 takip: FAILURE/DROP da çalışma seti (sözlük) + K-428/K-431 kenar testleri | ✅ birleşti; CI'da RED önce | #275 | `M5/ADR-037-isleri.md` |
-| K-501 pazartesi check-in (sunucu güdümlü sorular, tek clientId, V4: cevaplar yalnız ekranda; Bugün'de kart) | ✅ auto-merge; inceleme: rota korumasızdı, ekrandan çıkınca `back()` başka ekranı kapatabiliyordu, geri düğmesi yoktu → düzeltildi; mutasyon 13/13 + 5/5; simülatör K-502 ile birlikte | #276 | `M5/K-501.md` |
-| K-432 son seans düzenlenince hedef yeniden (V24 `unclean_exercise_ids`, `SessionProgress.edited`, `clearNext`, `Workout.setsNextTargets`) | 🔄 inceleme; CI'da RED önce (5) | #277 | (yazılacak) |
+| K-501 pazartesi check-in (sunucu güdümlü sorular, tek clientId, V4: cevaplar yalnız ekranda; Bugün'de kart) | ✅ birleşti; inceleme: rota korumasızdı, ekrandan çıkınca `back()` başka ekranı kapatabiliyordu, geri düğmesi yoktu → düzeltildi; mutasyon 13/13 + 5/5; simülatör K-502 ile birlikte | #276 | `M5/K-501.md` |
+| K-432 hedefin geldiği seans düzenlenince hedef yeniden (hareket başına; V24 `unclean_exercise_ids`, `clearNext`, `Workout.setsNextTargets` + telefon notu) | ✅ birleşti; CI'da RED önce (5); inceleme: bayrak `setNext`'ten dardı, telefon notu yanlış kalacaktı, kural hareket başına → ADR notu + testler; mutasyon 3/3 + 1/1 | #277 | `M5/ADR-037-isleri.md` |
+| K-516 (1/3) durum modu: `/v1/state`, V25 `decision.declared_state`, rıza + silme + dışa aktarma, hesap kilidi (ADR-038) | ✅ auto-merge; CI'da RED önce (25); inceleme: göç sırası (#277 bekledi), eşzamanlı beyan, enum sözleşme testi, dışa aktarma iddiası → düzeltildi | #279 | (K-516 sonunda) |
+| K-516 (2/3) motor: `declared_context` (güvenlik önce), duraklayan hafta (tutarlılık + uyum + kaçan plan haftası), Snapshot/StoredSnapshot bağlamı | 🔄 yerelde hazır (`../keel-516b`, kısım 1'e yığılı); saf testler + mutasyon 6/6 + 3/3 | — | |
+| K-516 (3/3) 3. ardışık duraklayan haftada tek soru (`STATE_STILL`) | ⏳ | — | |
 
 ## Session sonunda Levent'e sorulacaklar
 **M5 Part 1 (yeni, 55-59):**
