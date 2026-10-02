@@ -76,6 +76,10 @@ beforeEach(() => {
   mockStartPermission = { granted: true, canAskAgain: true };
   mockAnswerPermission = { granted: true, canAskAgain: true };
   mockLookup = async () => ok(YOGURT);
+  mockPOST.mockImplementation(async (path: string) => {
+    if (path === '/v1/foods/barcode-lookup') return mockLookup();
+    return refused(404, 'NOT_FOUND');
+  });
 });
 
 async function openScanner() {
@@ -162,4 +166,55 @@ test('closed without a code: nothing looked up', async () => {
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.close') })));
   expect(mockCamera).toBeNull();
   expect(lookups()).toHaveLength(0);
+});
+
+describe('review', () => {
+  test('a number the server refuses (a wrong check digit, 400) says to check the digits, not the connection', async () => {
+    mockLookup = async () => refused(400, 'VALIDATION_FAILED');
+    await openScanner();
+    await scan('5000112548168');
+    expect(screen.getByText(t('meal.barcode.badNumber'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('meal.barcode.failed'))).toBeNull();
+  });
+
+  test('refused once where the camera can still be asked again (Android): it says why, and asks again only on a tap', async () => {
+    mockStartPermission = { granted: false, canAskAgain: true };
+    mockAnswerPermission = { granted: false, canAskAgain: true };
+    await openScanner();
+    expect(mockRequest).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('meal.barcode.denied'))).toBeOnTheScreen();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.askAgain') })));
+    expect(mockRequest).toHaveBeenCalledTimes(2);
+  });
+
+  test('a barcode answer that arrives after a newer search is dropped', async () => {
+    let release: (answer: Answer) => void = () => {};
+    mockLookup = () => new Promise<Answer>((resolve) => (release = resolve));
+    mockPOST.mockImplementation(async (path: string) => {
+      if (path === '/v1/foods/barcode-lookup') return mockLookup();
+      if (path === '/v1/foods/search') return ok([{ ...YOGURT, id: 'fdc-9', name: 'Rice' }]);
+      return refused(404, 'NOT_FOUND');
+    });
+    await openScanner();
+    await scan('5000112548167');
+    await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), 'rice'));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.search.go') })));
+    await act(async () => release(ok(YOGURT)));
+    expect(screen.queryByLabelText(t('meal.item.amount', { name: YOGURT.name }))).toBeNull();
+    expect(screen.getByRole('button', { name: t('meal.search.add', { name: 'Rice' }) })).toBeOnTheScreen();
+  });
+
+  test('a full meal takes no barcode either: the scan is gone', async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <MealScreen />
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    for (let i = 0; i < 50; i++) {
+      await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.scan') })));
+      await scan('5000112548167');
+    }
+    expect(screen.queryByRole('button', { name: t('meal.barcode.scan') })).toBeNull();
+  });
 });

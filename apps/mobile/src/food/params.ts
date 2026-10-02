@@ -21,4 +21,5 @@ export const foodParams = {
   amountMaxChars: param<number>('meal_amount_max_chars'),
   barcodeMinDigits: param<number>('barcode_min_digits'),
   barcodeMaxDigits: param<number>('barcode_max_digits'),
+  barcodeMaxChars: param<number>('barcode_max_chars'),
 };

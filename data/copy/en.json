@@ -313,7 +313,9 @@
       "invalid": "A barcode is {min} to {max} digits.",
       "close": "Close",
       "notFound": "That product isn't in the food database yet. Find it by name.",
-      "failed": "Couldn't look that barcode up. Check your connection, or find it by name."
+      "failed": "Couldn't look that barcode up. Check your connection, or find it by name.",
+      "badNumber": "That number doesn't read as a barcode. Check the digits.",
+      "askAgain": "Allow the camera"
     }
   },
   "weighIn": {

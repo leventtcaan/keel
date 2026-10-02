@@ -32,6 +32,8 @@ type Found =
   | { state: 'found'; foods: Schemas['Food'][] }
   // A barcode not in the database (FDC is mostly US products, ADR-008), or not looked up.
   | { state: 'notInDatabase' }
+  // A number the server refuses as a barcode (a wrong check digit, 400): the digits, not the connection.
+  | { state: 'badNumber' }
   | { state: 'barcodeFailed' };
 
 const SLOTS: Schemas['MealSlot'][] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
@@ -177,10 +179,16 @@ export default function MealScreen() {
   const lookUpBarcode = async (gtin: string) => {
     setScanning(false);
     const mine = ++searchSeq.current;
-    const answer = await load(() => api.POST('/v1/foods/barcode-lookup', { body: { gtin } }));
+    let found: Found | Schemas['Food'];
+    try {
+      const { data, response } = await api.POST('/v1/foods/barcode-lookup', { body: { gtin } });
+      found = data ?? { state: response.status === 404 ? 'notInDatabase' : response.status === 400 ? 'badNumber' : 'barcodeFailed' };
+    } catch {
+      found = { state: 'barcodeFailed' };
+    }
     if (mine !== searchSeq.current) return;
-    if (answer.state === 'ready') add(answer.value);
-    else setFound({ state: answer.state === 'none' ? 'notInDatabase' : 'barcodeFailed' });
+    if ('id' in found) add(found);
+    else setFound(found);
   };
   const change = (index: number, part: Partial<DraftItem>) => {
     setItems((before) => before.map((item, i) => (i === index ? { ...item, ...part } : item)));
@@ -232,11 +240,13 @@ export default function MealScreen() {
         ? t('meal.search.failed')
         : found.state === 'notInDatabase'
           ? t('meal.barcode.notFound')
-          : found.state === 'barcodeFailed'
-            ? t('meal.barcode.failed')
-            : found.state === 'found' && found.foods.length === 0
-              ? t('meal.search.none')
-              : null;
+          : found.state === 'badNumber'
+            ? t('meal.barcode.badNumber')
+            : found.state === 'barcodeFailed'
+              ? t('meal.barcode.failed')
+              : found.state === 'found' && found.foods.length === 0
+                ? t('meal.search.none')
+                : null;
   // Named: with several items the question says which one it is about.
   const asked = shown?.question;
   const askedName = shown?.items.find((item) => item.foodId === asked?.foodId)?.name;

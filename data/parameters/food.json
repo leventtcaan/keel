@@ -96,6 +96,14 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#BarcodeLookup",
       "note": "GTIN-14, the longest the contract takes."
+    },
+    {
+      "key": "barcode_max_chars",
+      "value": 16,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#BarcodeLookup",
+      "note": "The typed barcode field's length: the longest GTIN (14 digits) and a little room for stray spaces, which are trimmed."
     }
   ]
 }

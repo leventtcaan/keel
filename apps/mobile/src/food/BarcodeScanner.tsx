@@ -26,12 +26,14 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
   const [typed, setTyped] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const taken = useRef(false);
-  const asked = useRef(false);
+  const asking = useRef(false);
+  // Asked once by itself; refused, it says why — on Android a first "no" can still be asked again, on a tap.
+  const [asked, setAsked] = useState(false);
 
   useEffect(() => {
-    if (permission === null || permission.granted || !permission.canAskAgain || asked.current) return;
-    asked.current = true;
-    void requestPermission();
+    if (permission === null || permission.granted || !permission.canAskAgain || asking.current) return;
+    asking.current = true;
+    void requestPermission().finally(() => setAsked(true));
   }, [permission, requestPermission]);
 
   const take = (code: string) => {
@@ -49,6 +51,11 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
     take(code);
   };
 
+  // On Android a first "no" can still be asked again; on iOS it is Settings.
+  const askAgain =
+    permission?.canAskAgain === true ? (
+      <Button label={t('meal.barcode.askAgain')} variant="ghost" size="sm" onPress={() => void requestPermission()} />
+    ) : null;
   const camera =
     permission?.granted === true ? (
       <CameraView
@@ -57,8 +64,11 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
         barcodeScannerSettings={{ barcodeTypes: [...FOOD_BARCODES] }}
         onBarcodeScanned={(result) => take(result.data)}
       />
-    ) : permission !== null && !permission.granted && !permission.canAskAgain ? (
-      <Text style={[styles.text, { color: color.text }]}>{t('meal.barcode.denied')}</Text>
+    ) : permission !== null && !permission.granted && (asked || !permission.canAskAgain) ? (
+      <View style={styles.typed}>
+        <Text style={[styles.text, { color: color.text }]}>{t('meal.barcode.denied')}</Text>
+        {askAgain}
+      </View>
     ) : null;
 
   return (
@@ -77,7 +87,7 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
               }}
               problem={problem}
               keyboardType="number-pad"
-              maxLength={foodParams.barcodeMaxDigits + 2}
+              maxLength={foodParams.barcodeMaxChars}
             />
             <Button label={t('meal.barcode.lookUp')} variant="ghost" size="sm" onPress={lookUpTyped} />
           </View>
