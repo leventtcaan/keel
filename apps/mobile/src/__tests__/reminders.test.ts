@@ -330,3 +330,49 @@ test('a sign-out while "on" is being kept: the next account does not find them o
   await reminders.keepSchedule(schedule); // the next account's profile
   expect(device.scheduled).toEqual([]);
 });
+
+describe("the user's own changes fail visibly; the phone's scheduling does not", () => {
+  function failing(key: string) {
+    const kv = memoryKv();
+    const set = kv.setItemAsync;
+    const remove = kv.removeItemAsync;
+    const fail = async () => {
+      throw Object.assign(new Error('disk full'), { name: 'StorageFailed' });
+    };
+    kv.setItemAsync = async (k: string, v: string) => (k === key ? fail() : set(k, v));
+    kv.removeItemAsync = async (k: string) => (k === key ? fail() : remove(k));
+    return kv;
+  }
+
+  test('a sentence that cannot be kept: the caller hears it, reported by name, and nothing changes', async () => {
+    const { reminders, report } = await make(failing('reminders.cue'));
+    await expect(reminders.setCue('After work')).rejects.toThrow('disk full');
+    expect(reminders.current().cue).toBe('');
+    expect(report).toHaveBeenCalledWith({ name: 'StorageFailed' });
+  });
+
+  test('"off" that cannot be kept: the caller hears it, and they stay on', async () => {
+    const kv = memoryKv();
+    const { reminders } = await make(kv);
+    await reminders.turnOn();
+    kv.removeItemAsync = async () => {
+      throw Object.assign(new Error('disk full'), { name: 'StorageFailed' });
+    };
+    await expect(reminders.turnOff()).rejects.toThrow('disk full');
+    expect(reminders.current().enabled).toBe(true);
+  });
+
+  test('"on" that cannot be kept: the caller hears it, and they stay off', async () => {
+    const { reminders } = await make(failing('reminders.enabled'));
+    await expect(reminders.turnOn()).rejects.toThrow('disk full');
+    expect(reminders.current().enabled).toBe(false);
+  });
+
+  test('a failed step does not stop the next one', async () => {
+    const { reminders, device } = await make(failing('reminders.cue'));
+    await reminders.keepSchedule(schedule);
+    await reminders.setCue('x').catch(() => {});
+    await reminders.turnOn();
+    expect(kinds(device.scheduled)).toContain('training');
+  });
+});

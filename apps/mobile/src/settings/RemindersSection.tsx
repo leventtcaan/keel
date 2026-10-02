@@ -1,5 +1,5 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { AppState, Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -26,18 +26,35 @@ export function RemindersSection() {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [cue, setCue] = useState(settings.cue);
 
+  // iOS's answer, read on arrival and each time the app comes back to the front — the way back from iOS Settings. An
+  // older, slower read never overwrites a newer one; a read that fails leaves what is shown.
+  const reads = useRef(0);
   useEffect(() => {
-    let alive = true;
-    reminders.permission().then(
-      (answer) => alive && setPermission(answer),
-      () => undefined, // unknown: shown as not allowed until a tap asks again
-    );
+    const read = () => {
+      const mine = ++reads.current;
+      reminders.permission().then(
+        (answer) => mine === reads.current && setPermission(answer),
+        () => undefined,
+      );
+    };
+    read();
+    const subscription = AppState.addEventListener('change', (state) => state === 'active' && read());
     return () => {
-      alive = false;
+      reads.current += 1; // a read still on its way lands on nothing
+      subscription.remove();
     };
   }, [reminders]);
 
-  const turnOn = () => void run(async () => setPermission(await reminders.turnOn()), {}, 'settings.reminders.failed');
+  const turnOn = () =>
+    void run(
+      async () => {
+        const answer = await reminders.turnOn();
+        reads.current += 1; // the sheet's answer is the newest
+        setPermission(answer);
+      },
+      {},
+      'settings.reminders.failed',
+    );
   const turnOff = () => void run(() => reminders.turnOff(), {}, 'settings.reminders.failed');
   const saveCue = () => void run(() => reminders.setCue(cue), {}, 'settings.reminders.failed');
 
@@ -58,6 +75,7 @@ export function RemindersSection() {
       />
       <Button
         label={t('settings.reminders.cue.save')}
+        accessibilityLabel={t('settings.reminders.cue.saveLabel')}
         variant="ghost"
         size="sm"
         disabled={busy || cue.trim() === settings.cue}
@@ -73,7 +91,14 @@ function OnRow({ busy, onTurnOff }: { busy: boolean; onTurnOff: () => void }) {
   return (
     <View style={styles.row}>
       <Text style={[styles.state, { color: color.text }]}>{t('settings.reminders.on')}</Text>
-      <Button label={t('settings.reminders.turnOff')} variant="ghost" size="sm" disabled={busy} onPress={onTurnOff} />
+      <Button
+        label={t('settings.reminders.turnOff')}
+        accessibilityLabel={t('settings.reminders.turnOffLabel')}
+        variant="ghost"
+        size="sm"
+        disabled={busy}
+        onPress={onTurnOff}
+      />
     </View>
   );
 }

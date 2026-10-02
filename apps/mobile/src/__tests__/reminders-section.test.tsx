@@ -37,6 +37,18 @@ const mockServices = {
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
+// The app coming back to the front (AppState), captured so a test can send it — as after a trip to iOS Settings.
+let mockForeground: (state: string) => void = () => {};
+jest.mock('react-native/Libraries/AppState/AppState', () => ({
+  __esModule: true,
+  default: {
+    addEventListener: (_type: string, listener: (state: string) => void) => {
+      mockForeground = listener;
+      return { remove: () => {} };
+    },
+    currentState: 'active',
+  },
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -65,7 +77,7 @@ test('off: it says what the three kinds are before iOS is asked, and turning on 
   await press(t('settings.reminders.turnOn'));
   expect(mockServices.reminders.turnOn).toHaveBeenCalledTimes(1);
   expect(screen.getByText(t('settings.reminders.on'))).toBeTruthy();
-  expect(screen.getByRole('button', { name: t('settings.reminders.turnOff') })).toBeTruthy();
+  expect(screen.getByRole('button', { name: t('settings.reminders.turnOffLabel') })).toBeTruthy();
 });
 
 test('iOS said no for good: the way to iOS Settings, and they stay off', async () => {
@@ -98,7 +110,7 @@ test('turning off goes through the service', async () => {
   mockSettings = { enabled: true, cue: '' };
   mockPermission = { granted: true, canAskAgain: false };
   await show();
-  await press(t('settings.reminders.turnOff'));
+  await press(t('settings.reminders.turnOffLabel'));
   expect(mockServices.reminders.turnOff).toHaveBeenCalledTimes(1);
   expect(screen.getByRole('button', { name: t('settings.reminders.turnOn') })).toBeTruthy();
 });
@@ -110,11 +122,11 @@ test('the sentence: shown as kept, saved when changed, and only then', async () 
   const field = screen.getByLabelText(t('settings.reminders.cue.label'));
   expect(field.props.value).toBe('Lunch break');
   expect(field.props.maxLength).toBe(P.cueMaxChars);
-  const save = () => screen.getByRole('button', { name: t('settings.reminders.cue.save') });
+  const save = () => screen.getByRole('button', { name: t('settings.reminders.cue.saveLabel') });
   expect(save().props.accessibilityState.disabled).toBe(true);
   await fireEvent.changeText(field, 'After work, straight to the gym');
   expect(save().props.accessibilityState.disabled).toBe(false);
-  await press(t('settings.reminders.cue.save'));
+  await press(t('settings.reminders.cue.saveLabel'));
   expect(mockServices.reminders.setCue).toHaveBeenCalledWith('After work, straight to the gym');
   expect(save().props.accessibilityState.disabled).toBe(true);
 });
@@ -125,4 +137,31 @@ test('a failure is worded, and reported by name only', async () => {
   await press(t('settings.reminders.turnOn'));
   expect(screen.getByText(t('settings.reminders.failed'))).toBeTruthy();
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'PermissionFailed' });
+});
+
+test('back from iOS Settings: the permission is read again — blocked becomes "Turn on", "On" becomes blocked', async () => {
+  mockPermission = { granted: false, canAskAgain: false };
+  await show();
+  expect(screen.getByText(t('settings.reminders.blocked'))).toBeTruthy();
+  mockPermission = { granted: true, canAskAgain: false };
+  await act(async () => mockForeground('active'));
+  expect(screen.queryByText(t('settings.reminders.blocked'))).toBeNull();
+  await press(t('settings.reminders.turnOn'));
+  expect(screen.getByText(t('settings.reminders.on'))).toBeTruthy();
+  mockPermission = { granted: false, canAskAgain: false };
+  await act(async () => mockForeground('background'));
+  expect(screen.getByText(t('settings.reminders.on'))).toBeTruthy(); // only coming to the front reads it
+  await act(async () => mockForeground('active'));
+  expect(screen.queryByText(t('settings.reminders.on'))).toBeNull();
+  expect(screen.getByText(t('settings.reminders.blocked'))).toBeTruthy();
+});
+
+test('an older answer does not overwrite a newer one', async () => {
+  let answerFirst: (p: NotificationPermission) => void = () => {};
+  mockServices.reminders.permission.mockImplementationOnce(() => new Promise((resolve) => (answerFirst = resolve)));
+  mockPermission = { granted: false, canAskAgain: false };
+  await show();
+  await act(async () => mockForeground('active')); // the second read answers at once: blocked
+  await act(async () => answerFirst({ granted: true, canAskAgain: false })); // the first, older, answers late
+  expect(screen.getByText(t('settings.reminders.blocked'))).toBeTruthy();
 });

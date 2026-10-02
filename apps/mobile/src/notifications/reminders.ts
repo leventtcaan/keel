@@ -72,13 +72,19 @@ export async function createReminders({ kv, access, now, report, muted = async (
   // after a sign-out reset the settings mid-step (the same guard as the session's, K-311).
   let generation = 0;
 
-  // Every change waits for the one before it: a step's failure is reported and does not stop the next.
+  const reportError = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
+
+  // Every change waits for the one before it: a step's failure is reported and does not stop the next. The user's own
+  // changes (on, off, the sentence) also reach the caller when they could not be kept, so the screen can say so; the
+  // phone failing to schedule is only reported — the next open tries again.
   let chain: Promise<void> = Promise.resolve();
-  function inTurn(step: () => Promise<void>): Promise<void> {
-    const next = chain.then(step).catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
-    chain = next;
-    return next;
+  function inTurn(step: () => Promise<void>, { rethrow = false } = {}): Promise<void> {
+    const run = chain.then(step);
+    const settled = run.catch(reportError);
+    chain = settled;
+    return rethrow ? run : settled;
   }
+  const quietly = (scheduling: Promise<void>) => scheduling.catch(reportError);
 
   /** What should be scheduled now, from what is kept — read inside the turn, so the plan is never older than a change. */
   async function reschedule(): Promise<void> {
@@ -112,33 +118,42 @@ export async function createReminders({ kv, access, now, report, muted = async (
     turnOn: async (): Promise<NotificationPermission> => {
       const startedIn = generation;
       const answer = await access.request();
-      await inTurn(async () => {
-        if (answer.granted && startedIn === generation) {
-          await kv.setItemAsync(KEY.enabled, ON);
-          if (startedIn === generation) become({ ...settings, enabled: true });
-        }
-        await reschedule();
-      });
+      await inTurn(
+        async () => {
+          if (answer.granted && startedIn === generation) {
+            await kv.setItemAsync(KEY.enabled, ON);
+            if (startedIn === generation) become({ ...settings, enabled: true });
+          }
+          await quietly(reschedule());
+        },
+        { rethrow: true },
+      );
       return answer;
     },
 
     turnOff: (): Promise<void> =>
-      inTurn(async () => {
-        await kv.removeItemAsync(KEY.enabled);
-        become({ ...settings, enabled: false });
-        await reschedule();
-      }),
+      inTurn(
+        async () => {
+          await kv.removeItemAsync(KEY.enabled);
+          become({ ...settings, enabled: false });
+          await quietly(reschedule());
+        },
+        { rethrow: true },
+      ),
 
     /** The user's own routine sentence, the training reminder's words (I1 C3); blank removes it. */
     setCue: (text: string): Promise<void> => {
       const startedIn = generation;
       const cue = Array.from(text.trim()).slice(0, P.cueMaxChars).join('').trim();
-      return inTurn(async () => {
-        if (cue === '') await kv.removeItemAsync(KEY.cue);
-        else await kv.setItemAsync(KEY.cue, cue);
-        if (startedIn === generation) become({ ...settings, cue });
-        await reschedule();
-      });
+      return inTurn(
+        async () => {
+          if (cue === '') await kv.removeItemAsync(KEY.cue);
+          else await kv.setItemAsync(KEY.cue, cue);
+          if (startedIn === generation) become({ ...settings, cue });
+          await quietly(reschedule());
+        },
+        { rethrow: true },
+      );
     },
 
     /** The schedule the server holds, kept whenever the profile is read or saved (training days, time, check-in day). */
