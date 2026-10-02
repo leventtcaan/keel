@@ -106,6 +106,50 @@ class TrainingStatusApiTests {
         assertThat(snapshot).isEqualTo("4");
     }
 
+    @Test
+    void aWeekWithOnlyWorkoutsWithoutAWorkingSetIsAWeekThePlanWasMissed() throws Exception {
+        // K-431 (ADR-037 #39): the missed-plan weeks the deload ladder reads (K-110, overtraining_missed_plan_weeks) count
+        // the sessions done the same way as consistency — a workout opened and left, or only warmed up in, is none.
+        AccountId account = withAProgramMadeDaysAgo(40);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate thisWeek = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        workoutOn(account, thisWeek.minusWeeks(3), "WORKING");
+        workoutOn(account, thisWeek.minusWeeks(2), null);
+        workoutOn(account, thisWeek.minusWeeks(1), "WARM_UP");
+
+        assertThat(reader.status(account, today, ZoneOffset.UTC, DayOfWeek.MONDAY).orElseThrow().weeksPlanMissed()).isEqualTo(2);
+
+        workoutOn(account, thisWeek.minusWeeks(1), "FAILURE");
+
+        assertThat(reader.status(account, today, ZoneOffset.UTC, DayOfWeek.MONDAY).orElseThrow().weeksPlanMissed()).isZero();
+    }
+
+    @Test
+    void withNoWorkoutWithAWorkingSetNothingIsCountedMissed() throws Exception {
+        // Not logging is not failing to train (U3, U7): only empty workouts, so no first workout to count from.
+        AccountId account = withAProgramMadeDaysAgo(40);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate thisWeek = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        workoutOn(account, thisWeek.minusWeeks(3), null);
+        workoutOn(account, thisWeek.minusWeeks(2), "WARM_UP");
+
+        assertThat(reader.status(account, today, ZoneOffset.UTC, DayOfWeek.MONDAY).orElseThrow().weeksPlanMissed()).isZero();
+    }
+
+    /** A workout at 10:00 UTC on that day, with one bench set of this type — or none. */
+    private void workoutOn(AccountId account, LocalDate day, String setType) throws Exception {
+        String workout = (String) map(send("POST", account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
+                day.atTime(10, 0).toInstant(ZoneOffset.UTC).toString()))).get("id");
+        if (setType != null) {
+            Map<String, Object> set = new java.util.HashMap<>(Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
+                    "setType", setType, "loadKg", 60, "reps", 8, "side", "BOTH"));
+            if (!"FAILURE".equals(setType)) {
+                set.put("rir", 2);
+            }
+            assertThat(send("POST", account, "/v1/workouts/" + workout + "/sets", set)).hasStatus(201);
+        }
+    }
+
     /** A man on UTC training on Mondays, with his own one-day program of bench, squat and curls made that many days ago. */
     private AccountId withAProgramMadeDaysAgo(int days) {
         AccountId account = TestSessions.newAccount();

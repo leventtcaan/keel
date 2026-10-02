@@ -40,13 +40,14 @@ public class TrainingLog {
 
     /**
      * When each workout started in [from, to), oldest first: the sessions done that consistency counts (K-220). A
-     * session done has a working set (K-431, ADR-037 #39): a workout opened and left, or only warmed up in, is not one.
+     * session done has a working set (K-431, ADR-037 #39) — in the glossary's sense, any set that is not a warm-up
+     * (docs/sozluk.md): a set to failure or a drop set is one. A workout opened and left, or only warmed up in, is not.
      */
     public List<Instant> workoutStarts(AccountId account, Instant from, Instant to) {
         return jdbc.sql("""
                 select w.started_at from training.workout w
                 where w.account_id = :account and w.started_at >= :from and w.started_at < :to
-                  and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type = 'WORKING')
+                  and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type <> 'WARM_UP')
                 order by w.started_at""")
                 .param("account", account.value()).param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
                 .query((row, n) -> row.getObject("started_at", OffsetDateTime.class).toInstant()).list();
