@@ -7,6 +7,8 @@ import { type ApiClient, createApiClient } from '@/api/client';
 import { type ConsentState, createConsentState } from '@/consent/consentState';
 import { withdrawConsent } from '@/consent/consents';
 import { forgetSentActivityDays } from '@/health/activitySync';
+import { notificationsUnavailable } from '@/notifications/notificationAccess';
+import { type NotificationAccess, type Reminders, createReminders } from '@/notifications/reminders';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
@@ -27,6 +29,9 @@ type Deps = {
   kv: KeyValue;
   /** The device locale (BCP 47), for defaults before the user chooses. */
   locale: string;
+  /** The phone's notifications (K-410); none where there are none (tests). */
+  notifications?: NotificationAccess;
+  now?: () => Date;
 };
 
 export type AppServices = {
@@ -57,19 +62,35 @@ export type AppServices = {
   forgetRecord(clientId: string): Promise<void>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
   report(problem: SyncProblem): void;
+  /** The three reminder slots, scheduled on the phone (K-410). */
+  reminders: Reminders;
 };
 
-export async function createAppServices({ baseUrl, storage, db, fetch, report, kv, locale }: Deps): Promise<AppServices> {
+export async function createAppServices({
+  baseUrl,
+  storage,
+  db,
+  fetch,
+  report,
+  kv,
+  locale,
+  notifications = notificationsUnavailable,
+  now = () => new Date(),
+}: Deps): Promise<AppServices> {
   const session = createSessionManager({ storage, refresh: refreshWithServer({ baseUrl, fetch }) });
   const api = createApiClient({ baseUrl, accessToken: session.accessToken, refresh: session.refresh, fetch });
   const store = await openRecordStore(db);
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
-  const profile = await createProfileStatus({ kv, api, units });
+  const reminders = await createReminders({ kv, access: notifications, now, report });
+  const profile = await createProfileStatus({ kv, api, units, onProfile: (read) => reminders.keepSchedule(read.schedule) });
   const consents = createConsentState({ api, kv });
   const training = createTrainingCache(kv);
   // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
-  if (!(await session.isSignedIn())) await profile.forget();
+  if (!(await session.isSignedIn())) {
+    await profile.forget();
+    await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
+  }
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
   // deleted: the phone cannot tell which) — the records go with it: they belong to the account that made them, and
@@ -88,6 +109,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     consents.forget().catch(reportError); // and what the phone knew of its consents
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
     training.forget().catch(reportError); // and the program kept for offline training (K-405)
+    reminders.forget().catch(reportError); // and the reminders: nothing scheduled for an account that left (K-410)
   });
 
   return {
@@ -99,6 +121,7 @@ export async function createAppServices({ baseUrl, storage, db, fetch, report, k
     consents,
     training,
     report,
+    reminders,
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
      * answer on its tokens are refused, so the phone only forgets: the session, and with it the records and settings
