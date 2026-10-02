@@ -58,3 +58,15 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
     note: "TÜRETİLMİŞ (K-112): her haftası en az bu kadar tartılı bir pencerede kilo kararı HIGH güvenle verilir, min_weighins_per_week ile bu arası MEDIUM. Aynı hesap: n=6 → iki haftalık ortalama farkının payı 1,96·0,42·√(2/6) ≈ 0,48 kg (n=4'te 0,58)."
+  - key: missed_sessions_in_a_row
+    value: 2
+    unit: sessions
+    tag: tecrube
+    source: "arastirma/ham/guray/G5-surec-supplement.md#T-4"
+    note: "Proaktif soru (K-512, ADR-039): programın bu kadar planlı günü geçip ilkinden beri tek seans yoksa. Güray: 'ard arda 2 antrenman kaçırma' → içsel motivasyon tavsiyesi verme, dışsal taahhüt (sabit saat). Hiç seans kaydedilmemişse sorulmaz (U3, U7)."
+  - key: hunger_question_days
+    value: 2
+    unit: days
+    tag: tecrube
+    source: "arastirma/ham/guray/G5-surec-supplement.md#T-2"
+    note: "Proaktif soru (K-512): bir açık (cut) planın ilk bu kadar günü açlık sorulur; 'hiç aç değilim' başarı sayılmaz — açlık tipik olarak 3-4. günde ve ilk ağır bacak antrenmanından sonra gelir (Güray). Güray'ın agresif protokolünden; ılımlı açıkta da erken iyilik hâli geçicidir."
