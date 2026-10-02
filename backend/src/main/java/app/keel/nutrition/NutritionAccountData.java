@@ -11,16 +11,21 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-/** Nutrition's part of the user's data (K-214, K-209): every meal with its items. The food database is nobody's data. */
+/**
+ * Nutrition's part of the user's data (K-214, K-209, K-413): every meal with its items, every recipe with its ingredients.
+ * The food database is nobody's data.
+ */
 @Component
 class NutritionAccountData implements AccountDataExport {
 
     private final JdbcClient jdbc;
     private final MealStore meals;
+    private final RecipeStore recipes;
 
-    NutritionAccountData(JdbcClient jdbc, MealStore meals) {
+    NutritionAccountData(JdbcClient jdbc, MealStore meals, RecipeStore recipes) {
         this.jdbc = jdbc;
         this.meals = meals;
+        this.recipes = recipes;
     }
 
     @ApplicationModuleListener
@@ -28,7 +33,7 @@ class NutritionAccountData implements AccountDataExport {
         delete(deletion.account());
     }
 
-    /** Meals are health data (K-231): in the withdrawal's transaction. */
+    /** Meals and recipes are health data (K-231, ADR-034): in the withdrawal's transaction. */
     @EventListener
     void on(ConsentWithdrawn withdrawn) {
         if (withdrawn.kind() == ConsentKind.HEALTH_DATA) {
@@ -40,6 +45,8 @@ class NutritionAccountData implements AccountDataExport {
         // Items go with their meal (on delete cascade); by account too, as for sets.
         jdbc.sql("delete from nutrition.meal_item where account_id = :account").param("account", account.value()).update();
         jdbc.sql("delete from nutrition.meal where account_id = :account").param("account", account.value()).update();
+        jdbc.sql("delete from nutrition.recipe_item where account_id = :account").param("account", account.value()).update();
+        jdbc.sql("delete from nutrition.recipe where account_id = :account").param("account", account.value()).update();
     }
 
     @Override
@@ -49,6 +56,6 @@ class NutritionAccountData implements AccountDataExport {
 
     @Override
     public Object export(AccountId account) {
-        return Map.of("meals", meals.all(account));
+        return Map.of("meals", meals.all(account), "recipes", recipes.all(account));
     }
 }

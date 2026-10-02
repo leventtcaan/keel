@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
@@ -52,15 +53,20 @@ class FoodEstimator {
     }
 
     static final String GRAMS_QUESTION = "foodEstimate.question.grams";
+    /** A recipe as an item (ADR-034): "recipe:<id>", by the portion. Contract ItemRequest.foodId. */
+    static final String RECIPE = "recipe:";
+    static final String PORTION = "portion";
     private static final int QUANTITY_DECIMALS = 2;
 
     private final FoodStore foods;
     private final ParameterSet parameters;
     private final Profiles profiles;
     private final FoodController.NutritionLimits limits;
+    private final RecipeStore recipes;
 
-    FoodEstimator(FoodStore foods, ParameterSet parameters, Profiles profiles, FoodController.NutritionLimits limits) {
+    FoodEstimator(FoodStore foods, ParameterSet parameters, Profiles profiles, FoodController.NutritionLimits limits, RecipeStore recipes) {
         this.foods = foods;
+        this.recipes = recipes;
         this.parameters = parameters;
         this.profiles = profiles;
         this.limits = limits;
@@ -74,6 +80,11 @@ class FoodEstimator {
         List<FoodRanges.Item> forQuestion = new ArrayList<>();
         for (ItemRequest item : requested) {
             require(item != null && item.foodId() != null && item.amount() != null);
+            if (item.foodId().startsWith(RECIPE)) {
+                // A portion is not asked in grams: the question is only ever about a database food.
+                items.add(recipeItem(account, item));
+                continue;
+            }
             FoodStore.Food food = foods.find(item.foodId()).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
             Measured measured = measure(food, item.amount());
             FoodRanges.Nutrients nutrients = FoodRanges.item(food.per100g(), food.source(), measured.grams(), measured.certainty(), p);
@@ -81,8 +92,32 @@ class FoodEstimator {
                     nutrients.fatG()));
             forQuestion.add(new FoodRanges.Item(food.id(), nutrients, measured.certainty()));
         }
-        return new Estimate(List.copyOf(items), FoodRanges.total(forQuestion.stream().map(FoodRanges.Item::nutrients).toList()),
+        return new Estimate(List.copyOf(items), FoodRanges.total(items.stream().map(EstimatedItem::nutrients).toList()),
                 FoodRanges.question(forQuestion, p).map(food -> new AmountQuestion(food, GRAMS_QUESTION)));
+    }
+
+    /** A recipe's ingredients (ADR-034): database foods only — no recipe in a recipe. */
+    Estimate ingredients(AccountId account, List<ItemRequest> requested) {
+        require(requested != null && requested.stream().allMatch(item -> item != null && item.foodId() != null && !item.foodId().startsWith(RECIPE)));
+        return estimate(account, requested);
+    }
+
+    /** The user's own recipe, by the portion: its ingredients' ranges now (U1), the portions' share rounded outward (U5). */
+    private EstimatedItem recipeItem(AccountId account, ItemRequest item) {
+        UUID id;
+        try {
+            id = UUID.fromString(item.foodId().substring(RECIPE.length()));
+        } catch (IllegalArgumentException notAnId) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
+        Amount amount = item.amount();
+        require(amount.quantity() != null && amount.quantity().signum() > 0 && amount.quantity().stripTrailingZeros().scale() <= QUANTITY_DECIMALS
+                && amount.quantity().compareTo(BigDecimal.valueOf(limits.maxPortions())) <= 0 && amount.unit() != null
+                && PORTION.equalsIgnoreCase(amount.unit().strip()));
+        // Another user's recipe is refused like a food that is not there: whether it exists is not told.
+        RecipeStore.Recipe recipe = recipes.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
+        FoodRanges.Nutrients share = FoodRanges.share(ingredients(account, recipe.items()).total(), amount.quantity(), recipe.portions());
+        return new EstimatedItem(item.foodId(), recipe.name(), amount, share.kcal(), share.proteinG(), share.carbsG(), share.fatG());
     }
 
     /** The engine's parameters; the food ones have one value for both sexes (the profile's sex when there is one). */
