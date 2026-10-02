@@ -1462,7 +1462,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-209, K-304]
     why: "Sürtünmesiz kayıt"
     acceptance:
@@ -1575,7 +1575,7 @@ tasks:
     module: nutrition
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-208]
     why: "Ev yemeği en büyük sürtünme; tarif bir kez girilsin (Ö-16, L3 P14)"
     acceptance:
@@ -1660,6 +1660,44 @@ tasks:
     refs: ["arastirma/ham/L3-ozellik-boslugu.md", "arastirma/ham/guray/G6-eski-arsiv.md#K-33"]
     learn:
       - "Türetilmiş metrik"
+  - id: K-424
+    title: "Süperset ve kullanıcının kendi hareketi (sözleşme + saklama)"
+    milestone: M4
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-210, K-219]
+    why: "K-416 sunucuda iki alan ister; mobil görevden bölündü (bir görev = bir modül; L3 §7 #17 'mobile + training · L (bölünür)', K-422 emsali). Masa bahsi (L3 §1 #7, #10)"
+    acceptance:
+      - "Sözleşme: NewSet ve LoggedSet `supersetId` (isteğe bağlı uuid): aynı süpersetin setleri aynı kimliği taşır; geçmişte gruplanır"
+      - "Kullanıcının kendi hareketi: ad + bileşik/izole + yük modeli + ekipman + tek taraf (motor sınıflamayı sorar, L3 §1 #10); `custom:<id>` kimliğiyle sete yazılır, yalnız sahibinin"
+      - "Motor ve durum okuması kendi hareketi katalog hareketi gibi okur (yük modeli, bileşik/izole); program üreticisi kullanmaz"
+      - "Göç; dışa aktarmada var, hesap silmede gider; ad sınırı ve hesap başına sayı yapılandırmadan"
+    tests:
+      - "CustomExerciseTests"
+      - "SupersetTests"
+    refs: ["arastirma/ham/L3-ozellik-boslugu.md"]
+    learn: ["Katalog + kullanıcı verisi birleşimi", "Geriye uyumlu sözleşme genişletme"]
+
+  - id: K-423
+    title: "Tarifler telefonda: gir, listele, öğüne porsiyonla ekle"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-413, K-407]
+    why: "K-413 tarif hafızasını sunucuya koydu (ADR-034); kullanıcıya telefondan ulaşması gerekir. Mobil kısım bölündü (bir görev = bir modül)"
+    acceptance:
+      - "Tarif girişi öğün ekranının kalem akışıyla: arama/barkod, miktar boş başlar, kaç porsiyon çıktığı; girişte rıza (ADR-030 #25)"
+      - "Öğün ekranında tarif porsiyonla eklenir (en çok tarifin tamamı); aralık sunucudan (U1, U5)"
+      - "Malzemesi veritabanından düşmüş tarif işaretli görünür, eklenemez, silinebilir"
+    tests:
+      - "RecipeScreenTests"
+    refs: ["plan/kararlar/ADR-034-tarif-hafizasi.md"]
+    learn: ["Bileşik kayıt arayüzü"]
+
   - id: K-416
     title: "Süperset, özel hareket, geçmiş seansı düzenleme"
     milestone: M4
@@ -1667,7 +1705,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-405]
+    depends_on: [K-405, K-424]
     why: "Masa bahsi (L3 §1)"
     acceptance:
       - "Süperset gruplama"

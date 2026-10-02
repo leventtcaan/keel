@@ -239,7 +239,7 @@ Ortak talimat `plan/oturum-promptlari/M4.md`. Part prompt'ları `M4-part1.md` �
 |---|---|---|
 | 1 · Bugün ve ölçüm | K-308 kalanı (cihaz), K-231, K-230, K-420, K-401, K-409, K-402, K-404 | ✅ bitti (1 Eki) — K-308 cihaz adımı Levent'te |
 | 2 · Antrenman | K-414, K-405, K-406, K-417, K-415 (+ K-421, K-422 bölündü) | ✅ bitti (2 Eki) — aktarım bekliyor |
-| 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | sürüyor (2 Eki) |
+| 3 · Öğün ve hareket | K-407, K-413, K-416, K-418 (+ K-419 Levent) | sürüyor (2 Eki) — K-407, K-413 bitti |
 | 4 · Native ve teslim | K-410, K-411, K-412 · M4 çıkışı · M5 prompt'ları | başlamadı |
 
 **Part 1 başı (1 Eki):** senkron tamam (M3 ÇIKIŞ git ile tutarlı: #211 birleşik, açık PR/worktree yok, `main` temiz).
@@ -356,8 +356,13 @@ agent karar verir, PR'da gerekçe.
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-407 (1/3) Yemek sekmesinde günün öğünleri + "dünkü gibi" tek dokunuş (`repeatOf`, kuyruk, girişte rıza) | ✅ birleşti; simülatör: FDC adları virgüllü ("Oats, rolled") → her kalem ayrı satır; inceleme: ikinci dokunuş aynı öğünü iki kez kaydediyordu (ref + okuma başına gizleme), rızasızken sessizdi, okunamayan liste "boş" deniyordu; mutasyon 24/24 + 10/10 | #236 | `M4/K-407.md` |
-| K-407 (2/3) öğün ekranı: arama, miktar (boş başlar), birim/tartıldı, aralık kartı + adlı tek soru, kayıt | inceleme sürüyor; simülatör: Türkçe klavye "Chıcken" yaptı → arama alanında büyük harf/otomatik düzeltme kapalı, klavye tuşu arar | — | `M4/K-407.md` |
+| K-407 (1/4) Yemek sekmesinde günün öğünleri + "dünkü gibi" tek dokunuş (`repeatOf`, kuyruk, girişte rıza) | ✅ birleşti; simülatör: FDC adları virgüllü ("Oats, rolled") → her kalem ayrı satır; inceleme: ikinci dokunuş aynı öğünü iki kez kaydediyordu (ref + okuma başına gizleme), rızasızken sessizdi, okunamayan liste "boş" deniyordu; mutasyon 24/24 + 10/10 | #236 | `M4/K-407.md` |
+| K-407 (2/4) öğün ekranı: arama, miktar (boş başlar), birim/tartıldı, aralık kartı + adlı tek soru, kayıt | ✅ birleşti; simülatör: Türkçe klavye "Chıcken" → arama alanı ham metin; inceleme: 50+ kalem kuyrukta kayboluyordu, arama cevapları sırasız, rıza okunamayınca bekliyordu; mutasyon 24/24 | #237 | `M4/K-407.md` |
+| (yol üstü) `GymApiTests` eşzamanlılık testi #237'de düştü: test yardımcısı `on conflict (id)` → hedefsiz | ✅ birleşti | #238 | `M4/K-407.md` |
+| K-407 (3/4) düzeltme: kayıtlı öğün açılır, önce sunucuda sil sonra aynı saatle kaydet, sil (onaylı) | ✅ birleşti; simülatör: birim değişince miktar kalıyordu (1 cup → 15 g); inceleme: porsiyon gramı bilinmeyince denetim kaçıyor → iki öğün kaybı → silme ancak tahmin alındıktan sonra; kayıp DELETE cevabı; telefondaki kopya unutulur; mutasyon 17/17 | #240 | `M4/K-407.md` |
+| K-407 (4/4) barkod (`expo-camera`, yalnız barkod, mikrofonsuz; yazma yedeği) | ✅ birleşti; simülatör: alan esneyip/çöküyordu → ScrollView + kare kamera; inceleme: 400 "bağlantı" diyordu, Android ilk ret açıklamasız; mutasyon 12/12 | #241 | `M4/K-407.md` |
+| K-413 tarif hafızası (ADR-034, V22, `/v1/recipes`, öğünde `recipe:<id>` porsiyonla) | ✅ birleşti; CI'da RED önce (iki tur); inceleme: düşen tek malzeme bütün listeyi 400 yapıyordu, porsiyon taşması, sınırsız tarif; saf `RecipeShareTests` | #239 | `M4/K-413.md` |
+| K-416 bölündü → **K-424** (training: `supersetId`, kullanıcının hareketi) + K-416 (mobil); K-413'ün telefon kısmı → **K-423** | backlog'a yazıldı | — | — |
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
@@ -385,6 +390,15 @@ agent karar verir, PR'da gerekçe.
     aranmaz" (bir tekrar fazlası için form bozulur). Görev kartı ise "izolasyonda yük PR'ı yok, **tekrar/efor PR'ı var**"
     diyor; K-406 özeti de izolasyonda "Same weight, 2 more reps" yazıyor. Şimdi kart uygulanıyor (ADR-033). (a) böyle kalsın
     (kart); (b) izolasyonda ne rekor ne kıyas (K-33 metni) — rekor listesi ve özet satırı izolasyonda boş kalır.
+45. **(K-413, veri — YENİ, Part 3)** Tarif **sağlık verisi** sayıldı (ADR-034 #5): HEALTH_DATA rızası ister, rıza geri
+    çekilince silinir. Gerekçe: tarif ne yediğini anlatır; tutucu olan seçildi. (a) böyle kalsın; (b) tarif sağlık verisi
+    değil (yalnız öğün kaydı öyle): rızasız da girilebilir, geri çekmede kalır.
+46. **(K-407, ürün — YENİ)** Yeni öğünün varsayılan öğün türü saatten (`data/parameters/food.json` `meal_slot_starts`:
+    kahvaltı 04, öğle 11, akşam 16, ara 22'den; tek dokunuşla değişir). Saatler tahminim. (a) böyle; (b) başka saatler;
+    (c) varsayılan yok, her seferinde seçilsin (bir dokunuş fazla).
+47. **(K-413, ürün/U5 — YENİ)** Tarifin porsiyonu kesin pay sayılıyor (4 porsiyonun 1'i = tam ¼; aralık yalnız malzemeden).
+    Gerçekte tabaklar eşit değil. (a) böyle kalsın; (b) porsiyon payına da belirsizlik eklensin (ör. ±%15 — kaynak gerekir);
+    (c) ileride pişmiş toplam ağırlık + tartılan porsiyon (ADR-034 alternatifi).
 **25-32 → ADR-030 (1 Eki, M3 sonu).** Açık soru yok. Açık kalan: referans çizimlerin çizeri/bütçesi (K-313).
 33. **(K-231, veri — YENİ, M4 Part 1)** Apple Health rızası geri çekilince ne silinsin? Şimdi: Health'ten **okuma durur**,
     sunucuda zaten tutulan tartı (`source=APPLE_HEALTH`) ve adım/uyku günleri **kalır** — bunlar sağlık verisi rızasıyla
