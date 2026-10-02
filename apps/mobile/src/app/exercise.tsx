@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Body, { type Slug } from 'react-native-body-highlighter';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -11,7 +12,7 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { tipsFor } from '@/train/demo';
+import { drawingAreas, mapAreas, tipsFor } from '@/train/demo';
 import { workoutParams } from '@/train/params';
 import { exerciseName } from '@/train/program';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
@@ -22,6 +23,10 @@ import { type Move, type TrainData, movesOf } from '@/train/trainData';
  * none has passed yet, so the screen says so and shows nothing in their place: no stand-in footage, no AI video), Güray's
  * tips for the move, and the muscles it works. Offline: the catalog and the setup are the phone's.
  */
+const SIDES = ['front', 'back'] as const;
+// Two drawings side by side across the screen's width (the library draws at 200 × 400 at scale 1).
+const MAP_SCALE = 0.75;
+
 export default function ExerciseScreen() {
   const { api, training, report } = useAppServices();
   const { exercise } = useLocalSearchParams<{ exercise: string }>();
@@ -71,6 +76,25 @@ export default function ExerciseScreen() {
         {saved && <Text style={[styles.small, { color: color.muted }]}>{t('demo.saved')}</Text>}
       </View>
     );
+  // The muscle map (ADR-017; react-native-body-highlighter, MIT): front and back, the move's areas in the accent colour
+  // and every other area in the theme's track colour (the drawing's own grey does not follow the theme).
+  const muscleWords = move === undefined ? '' : move.muscles.map((m) => t(`demo.muscle.${m}`)).join(t('demo.separator'));
+  const marked = move === undefined ? [] : mapAreas(move);
+  const areas =
+    marked.length === 0
+      ? []
+      : [...marked, ...drawingAreas().filter((slug) => !marked.includes(slug))].map((slug) => ({
+          slug: slug as Slug, // the areas named in muscle_map_areas are checked against the drawing (exercise-screen.test)
+          color: marked.includes(slug) ? color.accent : color.track,
+        }));
+  const muscleMap =
+    areas.length === 0 ? null : (
+      <View style={styles.map} accessible accessibilityLabel={t('demo.mapLabel', { muscles: muscleWords })}>
+        {SIDES.map((side) => (
+          <Body key={side} data={areas} side={side} scale={MAP_SCALE} border="none" />
+        ))}
+      </View>
+    );
   // Clips are filmed for the catalog's moves (ADR-017): an own move gets none, so none is promised to it.
   const clipsPending =
     move === undefined || move.name !== undefined || move.clips !== undefined ? null : (
@@ -89,8 +113,9 @@ export default function ExerciseScreen() {
           </Text>
         ))}
         {move.muscles.length > 0 && <Text style={[styles.label, { color: color.text }]}>{t('demo.muscles')}</Text>}
+        {muscleMap}
         {move.muscles.length > 0 && (
-          <Text style={[styles.text, { color: color.textSecondary }]}>{move.muscles.map((m) => t(`demo.muscle.${m}`)).join(t('demo.separator'))}</Text>
+          <Text style={[styles.text, { color: color.textSecondary }]}>{muscleWords}</Text>
         )}
       </>
     );
@@ -113,6 +138,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   section: { gap: tokens.space.sm },
+  map: { flexDirection: 'row', justifyContent: 'center', gap: tokens.space.md },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },

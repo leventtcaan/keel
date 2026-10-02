@@ -191,6 +191,29 @@
       "tag": "urun",
       "source": "arastirma/ham/guray/G1-antrenman.md#K-38",
       "note": "One setup note (seat, pad, grip) kept on the phone (K-418, ADR-017): the same machine set the same way (K-38) needs a short mark like 'seat 4, pin 3'."
+    },
+    {
+      "key": "muscle_map_areas",
+      "value": {
+        "chest": ["chest"],
+        "front_delts": ["deltoids"],
+        "side_delts": ["deltoids"],
+        "rear_delts": ["deltoids"],
+        "lats": ["upper-back"],
+        "upper_back": ["upper-back", "trapezius"],
+        "biceps": ["biceps"],
+        "triceps": ["triceps"],
+        "forearms": ["forearm"],
+        "quads": ["quadriceps"],
+        "hamstrings": ["hamstring"],
+        "glutes": ["gluteal"],
+        "calves": ["calves"],
+        "erectors": ["lower-back"]
+      },
+      "unit": "body areas",
+      "tag": "urun",
+      "source": "arastirma/ham/L1-egzersiz-gosterimi.md#4",
+      "note": "Each catalog muscle (data/muscles.yaml) as the areas of the muscle map's drawing (react-native-body-highlighter 3.2.0 slugs, K-418): the drawing has one area for all three delts and none for the lats alone."
     }
   ]
 }
