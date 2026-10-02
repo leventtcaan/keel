@@ -252,6 +252,18 @@ class DecisionPipelineTests {
     }
 
     @Test
+    void aDeclaredStateStaysThroughEveryOtherInput() {
+        // The withers build a new Snapshot each: none may drop the state on the way.
+        Snapshot snapshot = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(30), weekly("80.0")).withContext(DeclaredContext.BUSY)
+                .withFatProxyPct(new BigDecimal("20")).withEnergy(new EnergyBudget(2400, 300)).withMenstrualLossReported(false).withCheckIn(ON_PLAN)
+                .withProfile(new Profile(30, 180)).withObservingMaintenance(false).withPhaseStart(TODAY.minusDays(30)).withTraining(PLATEAU)
+                .withSafetyHold(false).withCycleResolved(false).withMiniCutUntil(TODAY.plusDays(20))
+                .withFatProxy(new BigDecimal("20"), new BigDecimal("22")).withFatProxy(new BigDecimal("20"), new BigDecimal("22"), new BigDecimal("19"));
+
+        assertThat(snapshot.context()).contains(DeclaredContext.BUSY);
+    }
+
+    @Test
     void theDeclaredStateIsHealthDataAndNeverPrinted() {
         assertThat(user(Phase.CUT, weekly("80.0")).withContext(DeclaredContext.SICK).toString()).doesNotContain("SICK").contains("context=<hidden>");
         assertThat(user(Phase.CUT, weekly("80.0")).toString()).contains("context=none");

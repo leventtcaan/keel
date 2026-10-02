@@ -102,6 +102,9 @@ class TrainingStatusTests {
         List<LocalDate> kept = List.of(day(-21), day(-19), day(-17));
         assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(day(-11)), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(1);
         assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(2);
+        // The week's first and last days count: Monday 21 Sep, Sunday 27 Sep.
+        assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(day(-14)), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(1);
+        assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(day(-8)), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(1);
     }
 
     @Test
