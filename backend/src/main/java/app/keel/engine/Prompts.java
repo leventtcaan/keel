@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -12,9 +13,10 @@ import java.util.Set;
 
 /**
  * The coach's own questions between the weekly calls (K-512, ADR-039): Güray's triggers (G5 §2), asked in the app — never
- * pushed (ADR-036). Each carries its rule, its source and a key for the occurrence, so it is asked once. None changes a
- * call (U1, U2: the weekly engine decides); none in a week the user declared (ADR-038). In priority order: steps first,
- * Güray's "highest-priority metabolic warning".
+ * pushed (ADR-036). Each carries its rule, its source and a key for the occurrence — the same for as long as it lasts —
+ * so it is asked once. None changes a call (U1, U2: the weekly engine decides); none while a state is declared, and no
+ * day the user or the ladder paused counts against anyone (ADR-038). In priority order: steps first, Güray's
+ * "highest-priority metabolic warning".
  */
 public final class Prompts {
 
@@ -31,6 +33,7 @@ public final class Prompts {
     /** One question: its rule and source (U14), the occurrence it is for, its words, its answers. */
     public record Prompt(RuleId rule, Source source, String key, CopyKey copyKey, List<String> choices) {
     }
+
     /**
      * What the questions read, on the user's calendar.
      *
@@ -59,60 +62,77 @@ public final class Prompts {
             return List.of();
         }
         List<Prompt> prompts = new ArrayList<>();
-        String week = facts.today().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString();
-        if (stepsDropped(facts, parameters)) {
-            prompts.add(prompt(STEPS_DROPPED, STEPS, week, "BUSY", "LESS"));
+        // The calendar week just over: a week is judged once it is over, and a question about it keeps its key all week.
+        LocalDate lastWeek = facts.today().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
+        if (stepsDropped(facts, lastWeek, parameters)) {
+            prompts.add(prompt(STEPS_DROPPED, STEPS, lastWeek.toString(), "BUSY", "LESS"));
         }
         firstMissed(facts, parameters).ifPresent(day -> prompts.add(prompt(SESSIONS_MISSED, SESSIONS, day.toString(), "FIXED_TIME", "LIFE", "NOT_NOW")));
-        if (facts.loadsDroppedLastWeek()) {
-            prompts.add(prompt(LOADS_DROPPED, LOADS, week, "OK"));
+        if (loadsDropped(facts, lastWeek)) {
+            prompts.add(prompt(LOADS_DROPPED, LOADS, lastWeek.toString(), "OK"));
         }
-        facts.deficitBegan().filter(began -> !facts.today().isBefore(began)
+        facts.deficitBegan().filter(began -> onACut(facts) && !facts.today().isBefore(began)
                         && facts.today().isBefore(began.plusDays(parameters.wholeNumber(ParameterKey.HUNGER_QUESTION_DAYS))))
                 .ifPresent(began -> prompts.add(prompt(HUNGER_FIRST_DAYS, HUNGER, began.toString(), "HUNGRY", "NOT_HUNGRY")));
         return List.copyOf(prompts);
     }
 
     /**
-     * T-13: the last seven full days' average under the target after the seven before were on it — each week with enough
-     * days counted (min_logged_days_per_week), or nothing is said.
+     * T-13: the last calendar week's average under the target after the week before was on it — paused days not counted,
+     * each week with enough days left (min_logged_days_per_week), or nothing is said.
      */
-    private static boolean stepsDropped(Facts facts, Parameters parameters) {
+    private static boolean stepsDropped(Facts facts, LocalDate lastWeek, Parameters parameters) {
         int enough = parameters.wholeNumber(ParameterKey.MIN_LOGGED_DAYS_PER_WEEK);
-        OptionalDouble last = average(facts, 1, enough);
-        OptionalDouble before = average(facts, 1 + DAYS_PER_WEEK, enough);
+        OptionalDouble last = average(facts, lastWeek, enough);
+        OptionalDouble before = average(facts, lastWeek.minusWeeks(1), enough);
         return last.isPresent() && before.isPresent() && last.getAsDouble() < facts.stepTarget() && before.getAsDouble() >= facts.stepTarget();
     }
 
-    /** The average of the seven days ending {@code daysBack} days before today, if at least {@code enough} have a count. */
-    private static OptionalDouble average(Facts facts, int daysBack, int enough) {
-        List<Integer> counts = new ArrayList<>();
-        for (int day = 0; day < DAYS_PER_WEEK; day++) {
-            Integer steps = facts.steps().get(facts.today().minusDays(daysBack + day));
-            if (steps != null) {
-                counts.add(steps);
-            }
-        }
+    /** The average of the week from {@code monday}, if at least {@code enough} of its days not paused have a count. */
+    private static OptionalDouble average(Facts facts, LocalDate monday, int enough) {
+        List<Integer> counts = monday.datesUntil(monday.plusWeeks(1)).filter(day -> !facts.pausedDays().contains(day))
+                .map(facts.steps()::get).filter(steps -> steps != null).toList();
         return counts.size() < enough ? OptionalDouble.empty() : counts.stream().mapToInt(Integer::intValue).average();
     }
 
     /**
-     * T-4: the first of the last missed_sessions_in_a_row planned days before today, if no session was done from it on.
-     * Never a session logged at all is no miss (U3, U7: not logging is not failing to train).
+     * T-4: the first planned day after the last session, once missed_sessions_in_a_row planned days have passed since it
+     * with none done — planned by the training days in force then, today not passed yet, paused days not planned. The key
+     * stays that first day for as long as the miss lasts. Never a session logged is no miss (U3, U7: not logging is not
+     * failing to train).
      */
     private static Optional<LocalDate> firstMissed(Facts facts, Parameters parameters) {
-        int inARow = parameters.wholeNumber(ParameterKey.MISSED_SESSIONS_IN_A_ROW);
-        if (facts.sessionDays().isEmpty() || facts.trainingDays().isEmpty()) {
+        Optional<LocalDate> lastSession = facts.sessionDays().stream().max(Comparator.naturalOrder());
+        if (lastSession.isEmpty()) {
             return Optional.empty();
         }
-        // A program trains at least once a week: that many weeks back hold that many planned days.
-        List<LocalDate> planned = facts.today().minusWeeks(inARow).datesUntil(facts.today())
-                .filter(day -> facts.trainingDays().contains(day.getDayOfWeek())).toList();
-        if (planned.size() < inARow) {
+        LocalDate from = lastSession.get().plusDays(1);
+        if (from.isBefore(facts.trainingDaysSince())) {
+            from = facts.trainingDaysSince();
+        }
+        if (!from.isBefore(facts.today())) {
             return Optional.empty();
         }
-        LocalDate first = planned.get(planned.size() - inARow);
-        return facts.sessionDays().stream().anyMatch(day -> !day.isBefore(first)) ? Optional.empty() : Optional.of(first);
+        List<LocalDate> missed = from.datesUntil(facts.today())
+                .filter(day -> facts.trainingDays().contains(day.getDayOfWeek()) && !facts.pausedDays().contains(day)).toList();
+        return missed.size() < parameters.wholeNumber(ParameterKey.MISSED_SESSIONS_IN_A_ROW) ? Optional.empty() : Optional.of(missed.getFirst());
+    }
+
+    /**
+     * T-5, on a cut only: there Güray calls lower loads normal and asks for sets and protein; building, the weekly engine
+     * reads them as recovery to fix (G7 K-73), and a question saying "normal" would contradict its call. Two weeks with a
+     * day paused or lightened on purpose explain the drop: nothing is asked.
+     */
+    private static boolean loadsDropped(Facts facts, LocalDate lastWeek) {
+        if (!facts.loadsDroppedLastWeek() || !onACut(facts)) {
+            return false;
+        }
+        return lastWeek.minusWeeks(1).datesUntil(lastWeek.plusWeeks(1))
+                .noneMatch(day -> facts.pausedDays().contains(day) || facts.lighterDays().contains(day));
+    }
+
+    private static boolean onACut(Facts facts) {
+        return facts.phase().filter(phase -> phase == Phase.CUT).isPresent();
     }
 
     private static Prompt prompt(RuleId rule, Source source, String key, String... choices) {
