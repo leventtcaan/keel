@@ -16,6 +16,7 @@ import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { FinishForm } from '@/train/FinishForm';
+import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { RestTimer } from '@/train/RestTimer';
 import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
@@ -24,7 +25,7 @@ import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
 import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
-import { type Move, type TrainData, movesOf } from '@/train/trainData';
+import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise } from '@/train/workout';
 import { weightInput } from '@/units/units';
@@ -58,6 +59,8 @@ export default function WorkoutScreen() {
   const [failed, setFailed] = useState(false);
   // The "Add a move" search: null while closed, what is typed while open.
   const [adding, setAdding] = useState<string | null>(null);
+  // Creating the user's own move from the search (K-416): the name it started from, null while not creating.
+  const [creating, setCreating] = useState<string | null>(null);
 
   const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
   // A failed read back is not a failed save: the set is kept; the screen catches up at the next read.
@@ -239,14 +242,41 @@ export default function WorkoutScreen() {
     setAdded((before) => (before.includes(id) ? before : [...before, id]));
     setPicked(id);
     setAdding(null);
+    setCreating(null);
+  };
+  // Saved online (ADR-035): the kept copy read again so the move is there offline later; one not read back yet is added.
+  const saveOwn = async (body: components['schemas']['NewCustomExercise']): Promise<SaveOutcome> => {
+    try {
+      const { data: kept } = await api.POST('/v1/custom-exercises', { body });
+      if (kept === undefined) return 'refused';
+      const mine = await training.own(api);
+      setOwn(mine.some((m) => m.id === kept.id) ? mine : [...mine, ownMove(kept)]);
+      addMove(kept.id);
+      return 'saved';
+    } catch (error) {
+      named(error);
+      return 'offline';
+    }
   };
   const found = adding === null ? [] : findMoves(adding, [...moves.values()], new Set(entries.map((e) => e.exerciseId)));
   const addNote =
     adding !== null && adding.trim() !== '' && found.length === 0 ? (
       <Text style={[styles.small, { color: color.muted }]}>{t('workout.add.none')}</Text>
     ) : null;
+  const inSession = new Set(entries.map((e) => e.exerciseId));
+  const typedName = adding?.trim() ?? '';
+  const createButton =
+    typedName === '' ? null : <Button label={t('workout.add.create', { name: typedName })} variant="ghost" size="sm" onPress={() => setCreating(typedName)} />;
   const addPanel =
-    day === null ? null : adding === null ? (
+    day === null ? null : creating !== null ? (
+      <OwnMoveForm
+        name={creating}
+        catalog={data?.exercises.state === 'ready' ? data.exercises.value.filter((m) => !inSession.has(m.id)) : []}
+        onPick={addMove}
+        onSave={saveOwn}
+        onBack={() => setCreating(null)}
+      />
+    ) : adding === null ? (
       <Button label={t('workout.add.open')} variant="ghost" size="sm" onPress={() => setAdding('')} />
     ) : (
       <View style={styles.list}>
@@ -262,6 +292,7 @@ export default function WorkoutScreen() {
           </Pressable>
         ))}
         {addNote}
+        {createButton}
         <Button label={t('workout.add.close')} variant="ghost" size="sm" onPress={() => setAdding(null)} />
       </View>
     );

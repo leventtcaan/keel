@@ -13,7 +13,7 @@ import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import { workoutParams } from '@/train/params';
-import type { Move, TrainData } from '@/train/trainData';
+import { type Move, type TrainData, ownMove } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
@@ -74,8 +74,10 @@ const keep = async (outbound: Outbound) => {
 const mockRecord = jest.fn(keep);
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 const mockWorkoutRecords = jest.fn(async () => mockRecords);
+let mockSave: (body: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
+const mockPOST = jest.fn(async (_path: string, init: { body: unknown }) => mockSave(init.body));
 const mockServices = {
-  api: {},
+  api: { POST: mockPOST },
   training: { read: async () => mockData, own: async () => mockOwn },
   workoutRecords: () => mockWorkoutRecords(),
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
@@ -630,5 +632,99 @@ describe("the user's own move (K-416, ADR-035)", () => {
     expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'custom:1', loadKg: 30, reps: 10 });
     await fireEvent.press(await screen.findByText(t('workout.finish')));
     expect(await screen.findByLabelText(`Landmine press: ${t('workout.form.clean')}`)).toBeOnTheScreen();
+  });
+});
+
+describe("creating the user's own move (K-416, ADR-035): the catalog's matches first, the engine's questions asked", () => {
+  const answer = (question: string, choice: string) => fireEvent.press(screen.getByLabelText(`${t(question)} ${choice}`));
+  const openCreate = async (name: string) => {
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), name);
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.add.create', { name }) }));
+  };
+  const answerAll = async () => {
+    await answer('ownMove.kind', t('ownMove.kinds.COMPOUND'));
+    await answer('ownMove.equipment', t('ownMove.equipments.BARBELL'));
+    await answer('ownMove.unilateral', t('ownMove.no'));
+  };
+  const saved = (body: { clientId: string; name: string }) => ({ ...(body as object), id: 'custom:9' });
+  beforeEach(() => {
+    mockSave = async (body) => {
+      const move = saved(body as { clientId: string; name: string });
+      mockOwn = [ownMove(move as components['schemas']['CustomExercise'])];
+      return { data: move, response: new Response(null, { status: 201 }) };
+    };
+  });
+
+  test("a catalog move that matches the name is offered first, and picking it creates nothing", async () => {
+    const T_BAR = { id: 't_bar_row', nameKey: 'exercises.t_bar_row.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, T_BAR] } };
+    await show();
+    await openCreate('Landmine row'); // the T-bar row's other name
+    expect(screen.getByText(t('ownMove.similar'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.t_bar_row.name') }) }));
+    expect(mockPOST).not.toHaveBeenCalled();
+    expect(screen.getAllByText(t('exercises.t_bar_row.name')).length).toBeGreaterThan(1);
+  });
+
+  test('saved only when every question is answered; then it is in the session by its name, its sets under its id', async () => {
+    await show();
+    await openCreate('Landmine press');
+    const save = screen.getByRole('button', { name: t('ownMove.save') });
+    expect(save).toBeDisabled();
+    await answerAll();
+    await fireEvent.press(save);
+    expect(mockPOST).toHaveBeenCalledWith('/v1/custom-exercises', {
+      body: { clientId: expect.any(String), name: 'Landmine press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false },
+    });
+    expect(await screen.findAllByText('Landmine press')).not.toHaveLength(0);
+    expect(screen.queryByText(t('ownMove.title'))).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '30');
+    await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'custom:9' });
+  });
+
+  test('the body as the equipment asks whether weight is added', async () => {
+    await show();
+    await openCreate('Ring dip');
+    await answer('ownMove.kind', t('ownMove.kinds.COMPOUND'));
+    await answer('ownMove.equipment', t('ownMove.equipments.BODYWEIGHT'));
+    await answer('ownMove.unilateral', t('ownMove.no'));
+    expect(screen.getByRole('button', { name: t('ownMove.save') })).toBeDisabled();
+    await answer('ownMove.added', t('ownMove.addedYes'));
+    await fireEvent.press(screen.getByRole('button', { name: t('ownMove.save') }));
+    expect(mockPOST.mock.calls[0][1].body).toMatchObject({ load: 'BODYWEIGHT_PLUS_EXTERNAL', equipment: 'BODYWEIGHT' });
+  });
+
+  test('offline it says a connection is needed, keeps the answers, and a second try is the same move (one clientId)', async () => {
+    let first = true;
+    const online = mockSave;
+    mockSave = async (body) => {
+      if (first) {
+        first = false;
+        throw new TypeError('Network request failed');
+      }
+      return online(body);
+    };
+    await show();
+    await openCreate('Landmine press');
+    await answerAll();
+    await fireEvent.press(screen.getByRole('button', { name: t('ownMove.save') }));
+    expect(await screen.findByText(t('ownMove.offline'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('ownMove.save') }));
+    expect(await screen.findAllByText('Landmine press')).not.toHaveLength(0);
+    const [a, b] = mockPOST.mock.calls.map(([, init]) => (init.body as { clientId: string }).clientId);
+    expect(a).toBe(b);
+  });
+
+  test('refused by the server: said, nothing added', async () => {
+    mockSave = async () => ({ error: { code: 'VALIDATION_FAILED' }, response: new Response(null, { status: 400 }) });
+    await show();
+    await openCreate('Landmine press');
+    await answerAll();
+    await fireEvent.press(screen.getByRole('button', { name: t('ownMove.save') }));
+    expect(await screen.findByText(t('ownMove.refused'))).toBeOnTheScreen();
+    expect(screen.getByText(t('ownMove.title'))).toBeOnTheScreen();
   });
 });

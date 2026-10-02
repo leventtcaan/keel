@@ -32,7 +32,8 @@ const meals = [
 ];
 const log = [];
 const move = (id, unilateral = false, equipment = 'BARBELL') => ({ id, nameKey: 'exercises.' + id + '.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment, unilateral, setupFields: [] });
-const EXERCISES = [move('bench_press'), move('barbell_row'), move('bulgarian_split_squat', true, 'DUMBBELL'), move('lat_pulldown', false, 'CABLE'), move('lateral_raise', false, 'DUMBBELL')];
+const EXERCISES = [move('bench_press'), move('barbell_row'), move('bulgarian_split_squat', true, 'DUMBBELL'), move('lat_pulldown', false, 'CABLE'), move('lateral_raise', false, 'DUMBBELL'), move('t_bar_row', false, 'PLATE_LOADED')];
+const own = [];
 const wset = (exerciseId, setType, loadKg, reps, rir, side) => ({ id: uuid(), clientId: uuid(), exerciseId, setType, loadKg, reps, ...(rir === undefined ? {} : { rir }), ...(side ? { side } : {}) });
 const workouts = [
   { id: uuid(), clientId: uuid(), startedAt: at(yesterday, 17), endedAt: at(yesterday, 18), sets: [wset('bench_press', 'WARM_UP', 40, 8), wset('bench_press', 'WORKING', 80, 8, 1), wset('bench_press', 'WORKING', 80, 7, 1), wset('barbell_row', 'WORKING', 70, 10, 2)] },
@@ -66,6 +67,14 @@ http.createServer((req, res) => {
       return send(res, 204);
     }
     if (p === '/v1/exercises') return send(res, 200, EXERCISES);
+    if (p === '/v1/custom-exercises' && req.method === 'GET') return send(res, 200, own);
+    if (p === '/v1/custom-exercises' && req.method === 'POST') {
+      const kept = own.find((m) => m.clientId === body.clientId);
+      if (kept) return send(res, 200, kept);
+      const stored = { ...body, id: 'custom:' + uuid() };
+      own.push(stored);
+      return send(res, 201, stored);
+    }
     if (p === '/v1/program') {
       const weekday = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
       return send(res, 200, { id: 'p1', source: 'GENERATED', days: [{ id: 'day-a', nameKey: 'upper_a', weekday, exercises: [
