@@ -37,6 +37,15 @@ class StoredSnapshotTests {
     }
 
     @Test
+    void aDeclaredStateIsKeptSoTheCallComesOutTheSame() throws Exception {
+        // K-516: the week's call waited for it; made again, it must wait again. A call kept before it had none.
+        Snapshot declared = full(false).withContext(app.keel.engine.DeclaredContext.SICK);
+
+        assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(declared)), StoredSnapshot.class).toSnapshot()).isEqualTo(declared);
+        assertThat(JSON.writeValueAsString(StoredSnapshot.of(full(false)))).doesNotContain("context");
+    }
+
+    @Test
     void theCycleAnswerIsNeverKept() throws Exception {
         String json = JSON.writeValueAsString(StoredSnapshot.of(full(true)));
 

@@ -5,6 +5,7 @@ import app.keel.consent.ConsentKind;
 import app.keel.engine.Action;
 import app.keel.engine.ActivityLevel;
 import app.keel.engine.CheckIn;
+import app.keel.engine.DeclaredContext;
 import app.keel.engine.Decision;
 import app.keel.engine.DecisionPipeline;
 import app.keel.engine.EnergyBudget;
@@ -72,11 +73,13 @@ class DecisionService {
     private final WeekLogs logs;
     private final TrainingCalls training;
     private final TrainingStatusReader statuses;
+    private final StateStore states;
 
     private static final int DAYS_PER_WEEK = 7;
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
-            QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses) {
+            QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses, StateStore states) {
+        this.states = states;
         this.statuses = statuses;
         this.logs = logs;
         this.training = training;
@@ -96,7 +99,7 @@ class DecisionService {
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
             List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate, Optional<BigDecimal> fatForEnergy,
-            boolean safetyHold) {
+            boolean safetyHold, Optional<DeclaredContext> declared) {
     }
 
     /** The fat estimate's inputs: the latest look and the waist's RFM (K-224). */
@@ -128,6 +131,13 @@ class DecisionService {
             asked.add(Answers.Kind.CYCLE_STOPPED);
         }
         asked.addAll(spine);
+        // The third paused week running (K-516, ADR-038 #5): once, inside the budget.
+        int weekBudget = budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase()));
+        if (spine.size() < weekBudget && CheckInQuestions.asksWhetherStillSo(states.current(account, week.today()).isPresent(),
+                states.days(account, week.today().minusWeeks(budget.stillAfterPausedWeeks()), week.today()), week.today(),
+                budget.stillAfterPausedWeeks())) {
+            asked.add(Answers.Kind.STATE_STILL);
+        }
         return new CheckInView(week.weekOf(), asked.stream().map(CheckInQuestions::describe).toList(), false);
     }
 
@@ -164,6 +174,10 @@ class DecisionService {
             }
             return estimated;
         }).orElseGet(() -> calls.start(account, firstPlan(week)));
+        // Not still so (K-516): the state ends yesterday; this week, declared, still waits.
+        if (answers.stateOver()) {
+            states.end(account, week.today());
+        }
         CheckIn dataSays = dataSays(account, week, plan);
         // Appetite is the user's answer (K-227): no data says it.
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
@@ -202,7 +216,9 @@ class DecisionService {
         FatInputs fat = fatInputs(account, profile, today, p);
         return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights, dataSays,
                 FatEstimate.of(fat.fromLook(), fat.fromWaist()), FatEstimate.forEnergy(fat.fromLook(), fat.fromWaist(), p),
-                SafetyHolds.from(calls.outcomes(account)));
+                SafetyHolds.from(calls.outcomes(account)),
+                // A state declared on a day of this check-in week (K-516, ADR-038).
+                states.latest(account, today.minusDays(DAYS_PER_WEEK - 1L), today));
     }
 
     /**
@@ -247,7 +263,9 @@ class DecisionService {
 
     /** Where training stands, from the set log (K-221): read once per check-in, only where the engine runs. */
     private Optional<TrainingStatus> training(AccountId account, Week week) {
-        return statuses.status(account, week.today(), week.profile().timeZone(), week.profile().checkInDay());
+        // A week with a declared day is neither kept nor missed (K-516, ADR-038).
+        return statuses.status(account, week.today(), week.profile().timeZone(), week.profile().checkInDay(),
+                states.daysUpTo(account, week.today()));
     }
 
     private Snapshot snapshot(Week week, CallStore.Plan plan, CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved,
@@ -261,7 +279,7 @@ class DecisionService {
                 week.fatEstimate().map(FatEstimate.Estimate::lowerPct), Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown),
                 menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training,
                 week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.safetyHold(), cycleResolved, Optional.ofNullable(plan.miniCutUntil()),
-                week.fatForEnergy());
+                week.fatForEnergy(), week.declared());
     }
 
     /**

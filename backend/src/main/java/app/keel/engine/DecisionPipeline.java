@@ -12,6 +12,7 @@ import java.util.Optional;
  * <ol>
  *   <li>Safety net (U13): the one hard stop, low energy, losing too fast.</li>
  *   <li>The mini cut's day has come (K-227): back to building, whatever else would wait.</li>
+ *   <li>A state the user declared this week (K-516): the call waits.</li>
  *   <li>Training going wrong — a plan missed two weeks running, or last week's loads lost (G7 K-68/K-70/K-73): Güray's
  *       tree fixes training before any food decision.</li>
  *   <li>Maintenance being observed (G2 K-8) · not enough weight data (U8): nothing about food yet.</li>
@@ -54,6 +55,12 @@ public final class DecisionPipeline {
         Optional<Decision> miniCutOver = MiniCutGate.over(snapshot, parameters);
         if (miniCutOver.isPresent()) {
             return miniCutOver.get();
+        }
+        // A week the user declared disturbed waits, training going wrong included: a sick week's missed sessions are no
+        // overtraining (K-516, ADR-038).
+        Optional<Decision> declared = StateMode.check(snapshot);
+        if (declared.isPresent()) {
+            return declared.get();
         }
         Optional<Decision> ladder = snapshot.training().flatMap(status -> DeloadLadder.check(status, snapshot, parameters));
         if (ladder.isPresent() && trainingGoingWrong(ladder.get())) {

@@ -6,3 +6,4 @@
 ## Aktarım sırası (Part 1)
 1. ADR-037 işleri (`ADR-037-isleri.md`) — K-429 rıza metni ve sürümü, K-428 tutulan yük biter, K-431 setli seans, K-434 hatırlatma teklifi, K-432 düzenleme hedefi yeniler
 2. K-501 pazartesi check-in — sunucu güdümlü sorular, tek clientId, V4 (cevaplar yalnız ekranda)
+3. K-516 durum modu (motor + sunucu) — aralık olarak kayıt, rıza, güvenlik önce, duraklayan hafta, 3. haftanın sorusu

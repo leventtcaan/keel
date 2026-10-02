@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,8 +40,10 @@ class WeekLogs {
     private final Measurements measurements;
     private final MealTotals meals;
     private final CallStore calls;
+    private final StateStore states;
 
-    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals, CallStore calls) {
+    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals, CallStore calls, StateStore states) {
+        this.states = states;
         this.calls = calls;
         this.training = training;
         this.measurements = measurements;
@@ -58,7 +61,8 @@ class WeekLogs {
             return Optional.empty();
         }
         WeekTallies.Logs logs = logs(account, profile, weeks.getFirst(), weeks.getLast().plusWeeks(1).minusDays(1), bodyweight);
-        return WeekTallies.adherence(weeks, logs, asked(account, profile, plan, bodyweight, ageYears, parameters));
+        return WeekTallies.adherence(logs, paused(account, WeekTallies.of(weeks, logs, asked(account, profile, plan, bodyweight, ageYears, parameters)),
+                today));
     }
 
     /** This week so far and the record since the first call (K-420), from the same logs and plan as the adherence. */
@@ -71,7 +75,18 @@ class WeekLogs {
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON));
         WeekTallies.Logs logs = logs(account, profile, over.isEmpty() ? monday : over.getFirst(), today, bodyweight);
         WeekTallies.Plan asked = asked(account, profile, plan, bodyweight, ageYears, parameters);
-        return new Now(WeekTallies.thisWeek(today, logs, asked), Consistency.record(WeekTallies.of(over, logs, asked), parameters));
+        return new Now(paused(account, List.of(WeekTallies.thisWeek(today, logs, asked)), today).getFirst(),
+                Consistency.record(paused(account, WeekTallies.of(over, logs, asked), today), parameters));
+    }
+
+    /** The weeks with a day the user declared a state on, paused (K-516, ADR-038): neither on track nor missed. */
+    private List<WeekTally> paused(AccountId account, List<WeekTally> weeks, LocalDate today) {
+        if (weeks.isEmpty()) {
+            return weeks;
+        }
+        Set<LocalDate> declared = states.days(account, weeks.getFirst().weekStart(), today);
+        return weeks.stream().map(week -> week.weekStart().datesUntil(week.weekStart().plusWeeks(1)).anyMatch(declared::contains) ? week.asPaused() : week)
+                .toList();
     }
 
     // The modules' logs from one day to another, on the user's calendar. Protein is judged only against a bodyweight.

@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 /**
@@ -33,6 +34,11 @@ public class TrainingStatusReader {
 
     /** {@code checkInDay} counts the weeks the load has been held in check-in weeks. */
     public Optional<TrainingStatus> status(AccountId account, LocalDate today, ZoneId zone, DayOfWeek checkInDay) {
+        return status(account, today, zone, checkInDay, Set.of());
+    }
+
+    /** {@code pausedDays}: days the user declared a state on (K-516) — their weeks are neither kept nor missed. */
+    public Optional<TrainingStatus> status(AccountId account, LocalDate today, ZoneId zone, DayOfWeek checkInDay, Set<LocalDate> pausedDays) {
         Optional<ProgramStore.Program> program = programs.current(account);
         Optional<Instant> made = programs.createdAt(account);
         if (program.isEmpty() || made.isEmpty()) {
@@ -44,7 +50,7 @@ public class TrainingStatusReader {
                 .filter(id -> catalog.find(id).filter(move -> move.kind() == ExerciseCatalog.Kind.COMPOUND).isPresent())
                 .forEach(id -> compound.put(id, TrainingStatuses.sessions(log.workingSets(account, id, made.get(), to), zone)));
         List<LocalDate> workoutDays = log.workoutStarts(account, made.get(), to).stream().map(at -> at.atZone(zone).toLocalDate()).toList();
-        return Optional.of(TrainingStatuses.of(compound, calls.changes(account), workoutDays, program.get().days().size(), today,
+        return Optional.of(TrainingStatuses.of(compound, calls.changes(account), workoutDays, pausedDays, program.get().days().size(), today,
                 checkInDay, made.get().atZone(zone).toLocalDate()));
     }
 }

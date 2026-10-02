@@ -18,6 +18,7 @@ class QuestionBudget {
 
     private final int normal;
     private final int anomaly;
+    private final int stillAfterPausedWeeks;
 
     QuestionBudget() throws IOException {
         LoaderOptions strict = new LoaderOptions();
@@ -28,11 +29,17 @@ class QuestionBudget {
             List<Map<String, Object>> parameters = (List<Map<String, Object>>) document.get("parameters");
             this.normal = whole(parameters, "question_budget_per_week");
             this.anomaly = whole(parameters, "question_budget_per_week_anomaly");
+            this.stillAfterPausedWeeks = whole(parameters, "state_still_after_paused_weeks");
         }
     }
 
     int forWeek(boolean dataDisagrees) {
         return dataDisagrees ? anomaly : normal;
+    }
+
+    /** After this many paused weeks in a row, the check-in asks once whether the state is still so (K-516, ADR-038 #5). */
+    int stillAfterPausedWeeks() {
+        return stillAfterPausedWeeks;
     }
 
     private static int whole(List<Map<String, Object>> parameters, String key) {

@@ -235,6 +235,20 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void aDeclaredWeekStillAsksHerAboutHerCycleAndHerYesStillStopsTheDeficit() throws Exception {
+        // K-516 review (U13): a state declared quiets the week's call, never the safety question or the hard stop.
+        AccountId account = womanOnALowPlan();
+        assertThat(send(account, "PUT", "/v1/state", Map.of("kind", "SICK")).getResponse().getStatus()).isEqualTo(200);
+
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
+        assertThat(questions).extracting(question -> question.get("kind")).contains("CYCLE_STOPPED");
+
+        Map<String, Object> made = map(answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES"))));
+        assertThat((Map<String, Object>) made.get("action")).isEqualTo(Map.of("type", "CHANGE_PHASE", "to", "BULK"));
+        assertThat(made).containsEntry("safety", true);
+    }
+
+    @Test
     void herYesIsTheHardStopUnderAGeneralLabelAndItsApplyingEndsTheDeficit() throws Exception {
         // ADR-020 L-1, ADR-027 #18: the call is kept, its reason a general label; the answer leaves no trace. Applied, the
         // plan turns to building at no less than maintenance, watched (K-222).

@@ -96,6 +96,18 @@ class TrainingStatusTests {
     }
 
     @Test
+    void aWeekWithADeclaredDayIsNeitherKeptNorMissed() {
+        // K-516 (ADR-038): sick from Thursday 24 Sep — the week of 21 Sep is paused, like a week off; the week of 28 Sep
+        // missed is counted; the week of 14 Sep kept the plan and ends the count.
+        List<LocalDate> kept = List.of(day(-21), day(-19), day(-17));
+        assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(day(-11)), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(1);
+        assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(2);
+        // The week's first and last days count: Monday 21 Sep, Sunday 27 Sep.
+        assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(day(-14)), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(1);
+        assertThat(TrainingStatuses.weeksPlanMissed(kept, List.of(), java.util.Set.of(day(-8)), 3, MONDAY, MONDAY.minusDays(60))).isEqualTo(1);
+    }
+
+    @Test
     void aSessionIsTheTopLoadOfAWorkoutAndTheMostRepsAtIt() {
         java.time.Instant workout = java.time.Instant.parse("2026-09-28T17:00:00Z");
         List<TrainingLog.WorkSet> sets = List.of(set(workout, "80", 8), set(workout, "82.5", 5), set(workout, "80", 10), set(workout, "82.5", 6),

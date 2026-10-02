@@ -1,6 +1,7 @@
 package app.keel.decision;
 
 import app.keel.engine.CheckIn;
+import app.keel.engine.DeclaredContext;
 import app.keel.engine.EnergyBudget;
 import app.keel.engine.Phase;
 import app.keel.engine.Profile;
@@ -9,6 +10,7 @@ import app.keel.engine.Snapshot;
 import app.keel.engine.TrainingStatus;
 import app.keel.engine.WeighIn;
 import app.keel.engine.WeightSeries;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -21,11 +23,13 @@ import java.util.Optional;
  * engine's input and nothing else. {@code fatProxyHighPct} null: a call kept before there were two estimates (K-224
  * review), made on its one. {@code safetyHold} null: a call kept before K-229, made without a hold. {@code miniCutUntil}
  * null: not on a mini cut, or a call kept before K-227. {@code fatProxyEnergyPct} null: no estimate, or a call kept before
- * K-230, made with the lower for the low-energy rule too.
+ * K-230, made with the lower for the low-energy rule too. {@code context} null: no state declared that week, or a call kept
+ * before K-516 (health data in the call's own record, deleted with it).
  */
 record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, List<Weight> weights, BigDecimal fatProxyPct,
         Energy energy, Answered checkIn, Body profile, boolean observingMaintenance, LocalDate phaseStart, Training training,
-        BigDecimal fatProxyHighPct, Boolean safetyHold, LocalDate miniCutUntil, BigDecimal fatProxyEnergyPct) {
+        BigDecimal fatProxyHighPct, Boolean safetyHold, LocalDate miniCutUntil, BigDecimal fatProxyEnergyPct,
+        @JsonInclude(JsonInclude.Include.NON_NULL) DeclaredContext context) {
 
     record Weight(LocalDate date, BigDecimal kg) {
     }
@@ -58,7 +62,7 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 snapshot.training().map(training -> new Training(training.stalledSessions(), training.weeksLoadHeld(), training.monthsStalled(),
                         training.restedLastWeek(), training.loadsBelowLastWeek(), training.weeksPlanMissed())).orElse(null),
                 snapshot.fatProxyHighPct().orElse(null), snapshot.safetyHold(), snapshot.miniCutUntil().orElse(null),
-                snapshot.fatProxyEnergyPct().orElse(null));
+                snapshot.fatProxyEnergyPct().orElse(null), snapshot.context().orElse(null));
     }
 
     /** The Snapshot again; the cycle answer as not reported (never kept). */
@@ -78,6 +82,6 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 // Kept since K-229; a call kept before it was made without a hold. The answer that ends one is never kept.
                 Boolean.TRUE.equals(safetyHold), false, Optional.ofNullable(miniCutUntil),
                 // Kept since K-230; a call kept before it read the lower for the low-energy rule too.
-                Optional.ofNullable(fatProxyEnergyPct).or(() -> Optional.ofNullable(fatProxyPct)));
+                Optional.ofNullable(fatProxyEnergyPct).or(() -> Optional.ofNullable(fatProxyPct)), Optional.ofNullable(context));
     }
 }

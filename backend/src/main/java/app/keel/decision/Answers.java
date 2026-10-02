@@ -17,22 +17,27 @@ import java.util.Set;
 final class Answers {
 
     /** Contract QuestionKind. */
-    enum Kind { TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED }
+    enum Kind { TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED, STATE_STILL }
 
     /** Contract Answer: exactly the field its question's format names is set. */
     record Answer(Kind kind, Integer scale, String choice, BigDecimal cm) {
     }
 
-    record Read(CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved) {
+    /** {@code stateOver}: the declared state is not still so (STATE_STILL NO, K-516). */
+    record Read(CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved, boolean stateOver) {
     }
 
-    private static final Set<Kind> CHOICES = EnumSet.of(Kind.LOOK, Kind.TRAINING, Kind.RECOVERY, Kind.APPETITE, Kind.CYCLE_STOPPED);
+    private static final Set<Kind> CHOICES = EnumSet.of(Kind.LOOK, Kind.TRAINING, Kind.RECOVERY, Kind.APPETITE, Kind.CYCLE_STOPPED,
+            Kind.STATE_STILL);
 
     private Answers() {
     }
 
     /** The cycle question's answers (V4). */
     enum Cycle { YES, NO }
+
+    /** Whether a declared state is still so (K-516). */
+    enum StillSo { YES, NO }
 
     /** IllegalArgumentException for an answer the engine cannot read: a choice it does not have, a kind twice, the wrong field. */
     static Read read(List<Answer> answers, Sex sex) {
@@ -42,6 +47,7 @@ final class Answers {
         CheckIn.Appetite appetite = CheckIn.Appetite.UNKNOWN;
         boolean cycleStopped = false;
         boolean cycleResolved = false;
+        boolean stateOver = false;
         Set<Kind> seen = EnumSet.noneOf(Kind.class);
         for (Answer answer : answers) {
             require(answer != null && answer.kind() != null && seen.add(answer.kind()), "each question is answered once");
@@ -58,10 +64,12 @@ final class Answers {
                     cycleStopped = cycle == Cycle.YES;
                     cycleResolved = cycle == Cycle.NO; // after a hard stop, a deficit may open again (K-229)
                 }
+                case STATE_STILL -> stateOver = choice(StillSo.class, answer.choice()) == StillSo.NO;
                 default -> throw new IllegalStateException("unreachable: " + answer.kind());
             }
         }
-        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), cycleStopped, cycleResolved);
+        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), cycleStopped, cycleResolved,
+                stateOver);
     }
 
     // UNKNOWN is the engine's word for "not answered", never an answer.
