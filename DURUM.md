@@ -482,9 +482,28 @@ DURUM ile birlikte commitlendi.
 | K-428 geri çekmede açık "yükü tut" biter (`TrainingCalls.endHold`, decision'ın geri çekme dinleyicisinden, aynı transaction) | ✅ birleşti; CI'da RED önce; code-reviewer ≥80 yok; test analizi birleşmeden sonra geldi (süreç kayması: auto-merge incelemeden önce açıldı) → boşluklar #275'te | #271 | `M5/ADR-037-isleri.md` |
 | K-431 yalnız ısınma dışı setli antrenman seans sayılır (`TrainingLog.workoutStarts`; tutarlılık, uyum, kaçan plan haftası) | ✅ birleşti (#272: WORKING); #275: sözlüğe göre FAILURE/DROP da çalışma seti → `<> 'WARM_UP'` + `weeksPlanMissed` testleri | #272, #275 | `M5/ADR-037-isleri.md` |
 | K-434 hatırlatma teklifi onboarding'de — **ayrı ekran değil**, "What to expect"te (≤12 ekran, I1 F1; K-306 kabulü) | ✅ auto-merge; inceleme: iOS kesin ret → ölü düğme, kaybolan cümle, yeniden açılınca tekrar teklif → düzeltildi; mutasyon 7/7 + 7/7 | #274 | `M5/ADR-037-isleri.md` |
-| K-430 sıçrama sınırı (`load_jump_max_steps` 2, `urun`; Java + TS + ortak vakalar; `SessionProgress` bağlı) | 🔄 inceleme; CI'da RED önce (API: 20×8 → 10×13); mutasyon 6/6 | #273 | `M5/ADR-037-isleri.md` |
+| K-430 sıçrama sınırı (`load_jump_max_steps` 2, `urun`; Java + TS + ortak vakalar; `SessionProgress` bağlı) | ⏸ **Levent bekliyor (soru 55)**: kural makine yığınlarını da kapsıyor → K-414 testi kırmızı (42×8 → 35×13, K1) ve tutma sonsuz/tekrar sınırsız; PR açık, auto-merge kapalı; mutasyon 6/6 | #273 | `M5/ADR-037-isleri.md` |
+| K-431 takip: FAILURE/DROP da çalışma seti (sözlük) + K-428/K-431 kenar testleri | ✅ birleşti; CI'da RED önce | #275 | `M5/ADR-037-isleri.md` |
+| K-501 pazartesi check-in (sunucu güdümlü sorular, tek clientId, V4: cevaplar yalnız ekranda; Bugün'de kart) | ✅ auto-merge; inceleme: rota korumasızdı, ekrandan çıkınca `back()` başka ekranı kapatabiliyordu, geri düğmesi yoktu → düzeltildi; mutasyon 13/13 + 5/5; simülatör K-502 ile birlikte | #276 | `M5/K-501.md` |
+| K-432 son seans düzenlenince hedef yeniden (V24 `unclean_exercise_ids`, `SessionProgress.edited`, `clearNext`, `Workout.setsNextTargets`) | 🔄 inceleme; CI'da RED önce (5) | #277 | (yazılacak) |
 
 ## Session sonunda Levent'e sorulacaklar
+**M5 Part 1 (yeni, 55-59):**
+55. **(K-430, ürün + K1)** ADR-037 #38 (b) "en yakın ağır yük motor adımının 2 katından uzaksa yük tutulur, tekrar artar" makine
+    yığınlarına ve yalnız 10'luk plakalı bara da uygulanıyor: 7 kg adımlı makinede üst vücut (motor adımı 2,5) 35 → 42 sıçraması
+    5'i aşıyor → yük 35'te kalır. (i) **K1:** K-414'ün `aMachinesOwnStepIsTheOneTheLoadIsRoundedTo` testi 42×8 bekliyor → 35×13
+    olur; beklentiyi değiştirmeme onay? (ii) **Çıkış koşulu yok:** tutma sonsuz, hedef tekrar her seans +1 (35×13, 14, 15…).
+    Seçenekler: (a) **önerim** — e1RM eşdeğerliği: biriken tekrarlar ağır yükü aralığın altında yapılabilir kılınca (Epley, H3
+    B15) sıçra (35×14 → 42×6); (b) aralığın üstünde N tekrar sınırı (parametre, kaynak yok); (c) böyle kalsın. PR #273 açık bekliyor.
+56. **(K-431, bilgi)** Sözlük "çalışma seti"ni "ısınma olmayan, tükenişe yakın" diye tanımlıyor → yalnız FAILURE/DROP setli
+    antrenman da seans sayılır (`<> 'WARM_UP'`, #275). Farklı istiyorsan söyle.
+57. **(K-429, ürün/hukuk)** Sağlık rızası metninin ilk cümlesi "food and training logs are health data" diyor; ADR-007'ye göre
+    antrenman sağlık verisi değil ve geri çekmede silinmiyor. Yeni cümle "antrenman kaydı hariç silinir" diyerek doğru söylüyor,
+    ama ilk cümledeki sınıflama kalsın mı? (metin hâlâ `-draft`)
+58. **(K-434, bilgi)** Hatırlatma teklifi ayrı ekran değil "What to expect"te: K-306'nın ≤12 ekran kabulü (görünüş + AI rızası
+    gelince) ayrı adımla 13 olurdu. ADR-037 #51'in "onboarding sonunda bir adım" ifadesinden bu sapma uygun mu?
+59. **(K1, K-501)** `today.test.ts` Bugün'ün okuduğu uç noktaların listesi check-in ile büyüdü (iddia genişledi, eskisi silinmedi). Onay?
+
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
 olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
