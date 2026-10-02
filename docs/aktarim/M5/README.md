@@ -8,3 +8,4 @@
 2. K-501 pazartesi check-in — sunucu güdümlü sorular, tek clientId, V4 (cevaplar yalnız ekranda)
 3. K-516 durum modu (motor + sunucu) — aralık olarak kayıt, rıza, güvenlik önce, duraklayan hafta, 3. haftanın sorusu
 4. K-518 durum modu telefonda — sunucunun son cevabı telefonda, susan hatırlatmalar, Bugün kartı, beyan ekranı
+5. K-512 proaktif tetikleyiciler — takvim haftası, duraklayan gün, oluş anahtarı, T-5 yalnız açıkta, açığın ilk günü

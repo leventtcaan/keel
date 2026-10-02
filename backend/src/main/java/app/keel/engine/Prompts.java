@@ -6,6 +6,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +29,10 @@ public final class Prompts {
     private static final Source SESSIONS = new Source("arastirma/ham/guray/G5-surec-supplement.md#T-4", SourceTag.EXPERIENCE);
     private static final Source LOADS = new Source("arastirma/ham/guray/G5-surec-supplement.md#T-5", SourceTag.EXPERIENCE);
     private static final Source HUNGER = new Source("arastirma/ham/guray/G5-surec-supplement.md#T-2", SourceTag.EXPERIENCE);
+    private static final Map<RuleId, List<String>> CHOICES = Map.of(STEPS_DROPPED, List.of("BUSY", "LESS"),
+            SESSIONS_MISSED, List.of("FIXED_TIME", "LIFE", "NOT_NOW"), LOADS_DROPPED, List.of("OK"), HUNGER_FIRST_DAYS, List.of("HUNGRY", "NOT_HUNGRY"));
+    private static final Map<RuleId, Set<String>> REPLIES = Map.of(STEPS_DROPPED, Set.of("LESS"),
+            SESSIONS_MISSED, Set.of("NOT_NOW"), LOADS_DROPPED, Set.of("OK"), HUNGER_FIRST_DAYS, Set.of("HUNGRY", "NOT_HUNGRY"));
 
     /** One question: its rule and source (U14), the occurrence it is for, its words, its answers. */
     public record Prompt(RuleId rule, Source source, String key, CopyKey copyKey, List<String> choices) {
@@ -66,15 +71,15 @@ public final class Prompts {
         // The calendar week just over: a week is judged once it is over, and a question about it keeps its key all week.
         LocalDate lastWeek = facts.today().with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON)).minusWeeks(1);
         if (stepsDropped(facts, lastWeek, parameters)) {
-            prompts.add(prompt(STEPS_DROPPED, STEPS, lastWeek.toString(), "BUSY", "LESS"));
+            prompts.add(prompt(STEPS_DROPPED, STEPS, lastWeek.toString()));
         }
-        firstMissed(facts, parameters).ifPresent(day -> prompts.add(prompt(SESSIONS_MISSED, SESSIONS, day.toString(), "FIXED_TIME", "LIFE", "NOT_NOW")));
+        firstMissed(facts, parameters).ifPresent(day -> prompts.add(prompt(SESSIONS_MISSED, SESSIONS, day.toString())));
         if (loadsDropped(facts, lastWeek)) {
-            prompts.add(prompt(LOADS_DROPPED, LOADS, lastWeek.toString(), "OK"));
+            prompts.add(prompt(LOADS_DROPPED, LOADS, lastWeek.toString()));
         }
         facts.deficitBegan().filter(began -> onACut(facts) && !facts.today().isBefore(began)
                         && facts.today().isBefore(began.plusDays(parameters.wholeNumber(ParameterKey.HUNGER_QUESTION_DAYS))))
-                .ifPresent(began -> prompts.add(prompt(HUNGER_FIRST_DAYS, HUNGER, began.toString(), "HUNGRY", "NOT_HUNGRY")));
+                .ifPresent(began -> prompts.add(prompt(HUNGER_FIRST_DAYS, HUNGER, began.toString())));
         return List.copyOf(prompts);
     }
 
@@ -145,7 +150,23 @@ public final class Prompts {
         return facts.phase().filter(phase -> phase == Phase.CUT).isPresent();
     }
 
-    private static Prompt prompt(RuleId rule, Source source, String key, String... choices) {
-        return new Prompt(rule, source, key, new CopyKey("prompt." + rule.value()), List.of(choices));
+    /** Each question's answers, as asked: an answer is one of these or none. */
+    public static Optional<List<String>> choices(RuleId rule) {
+        return Optional.ofNullable(CHOICES.get(rule));
+    }
+
+    /**
+     * The words an answer gets back, if any: T-13's "fewer steps" and T-4's "not now" get Güray's point, T-5 its reassurance
+     * (no "you are losing muscle"), T-2 either answer what hunger does in a cut's first days. The others take the user
+     * somewhere (a state declared, the reminders) — the phone's part.
+     */
+    public static Optional<CopyKey> reply(RuleId rule, String choice) {
+        return REPLIES.getOrDefault(rule, Set.of()).contains(choice)
+                ? Optional.of(new CopyKey("prompt." + rule.value() + ".reply." + choice.toLowerCase(Locale.ROOT)))
+                : Optional.empty();
+    }
+
+    private static Prompt prompt(RuleId rule, Source source, String key) {
+        return new Prompt(rule, source, key, new CopyKey("prompt." + rule.value()), CHOICES.get(rule));
     }
 }

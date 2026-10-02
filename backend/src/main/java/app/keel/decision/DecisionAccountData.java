@@ -26,8 +26,10 @@ class DecisionAccountData implements AccountDataExport {
     private final JsonMapper json;
     private final TrainingCalls training;
     private final StateStore states;
+    private final PromptStore prompts;
 
-    DecisionAccountData(JdbcClient jdbc, CallStore calls, JsonMapper json, TrainingCalls training, StateStore states) {
+    DecisionAccountData(JdbcClient jdbc, CallStore calls, JsonMapper json, TrainingCalls training, StateStore states, PromptStore prompts) {
+        this.prompts = prompts;
         this.jdbc = jdbc;
         this.calls = calls;
         this.json = json;
@@ -58,6 +60,7 @@ class DecisionAccountData implements AccountDataExport {
         jdbc.sql("delete from decision.weekly_call where account_id = :account").param("account", account.value()).update();
         jdbc.sql("delete from decision.plan where account_id = :account").param("account", account.value()).update();
         jdbc.sql("delete from decision.declared_state where account_id = :account").param("account", account.value()).update();
+        jdbc.sql("delete from decision.prompt_answer where account_id = :account").param("account", account.value()).update();
     }
 
     @Override
@@ -85,6 +88,7 @@ class DecisionAccountData implements AccountDataExport {
             return entry;
         }).toList());
         decision.put("declaredStates", states.all(account).stream().map(StateController.DeclaredState::of).toList());
+        decision.put("promptAnswers", prompts.all(account));
         return decision;
     }
 }

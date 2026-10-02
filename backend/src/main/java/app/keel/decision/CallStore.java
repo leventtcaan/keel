@@ -170,6 +170,22 @@ class CallStore {
                 .list();
     }
 
+    /** What an applied call did to the plan: before and after. */
+    record PlanStep(Instant appliedAt, Plan before, Plan after) {
+    }
+
+    /** The plan changes of the calls applied and not undone, oldest first: no snapshot read (K-229 review). */
+    List<PlanStep> planSteps(AccountId account) {
+        return jdbc.sql("""
+                        select applied_at, plan_before::text as plan_before_json, plan_after::text as plan_after_json from decision.weekly_call
+                        where account_id = :account and application = 'APPLIED' and plan_before is not null and plan_after is not null
+                        order by applied_at, id""")
+                .param("account", account.value())
+                .query((row, n) -> new PlanStep(row.getObject("applied_at", OffsetDateTime.class).toInstant(), plan(row.getString("plan_before_json")),
+                        plan(row.getString("plan_after_json"))))
+                .list();
+    }
+
     private List<Call> calls(String where, Map<String, Object> params, int limit) {
         return calls(where, params, limit, "");
     }

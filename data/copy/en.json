@@ -56,6 +56,35 @@
       "refused": "Something went wrong on our side. Try again in a moment."
     }
   },
+  "prompt": {
+    "steps_dropped": {
+      "title": "Your steps fell last week.",
+      "body": "Steps are the quiet half of what you burn: a drop can cost more than any slowdown in your metabolism. Was it a busy week?",
+      "choice": { "busy": "Yes, life got in the way", "less": "Just moved less" },
+      "reply": { "less": "Aim for your step target again: a walk after training covers much of it, and it moves more than you'd think." }
+    },
+    "sessions_missed": {
+      "title": "A few sessions slipped by.",
+      "body": "It happens. What helps most is a fixed time you don't negotiate with.",
+      "choice": { "fixed_time": "Set a fixed time", "life": "Life got in the way", "not_now": "Not now" },
+      "reply": { "not_now": "Fine. Your next session is on the plan as usual; nothing to make up." }
+    },
+    "loads_dropped": {
+      "title": "Your loads dipped a little.",
+      "body": "In a deficit that's normal, and it isn't muscle leaving. Keep your sets, and keep protein on target.",
+      "choice": { "ok": "Got it" },
+      "reply": { "ok": "Strength comes back quickly once food goes up. Keep showing up." }
+    },
+    "hunger_first_days": {
+      "title": "How's your hunger so far?",
+      "body": "The first days of a cut can feel easy. It's worth knowing what comes next.",
+      "choice": { "hungry": "I'm hungry", "not_hungry": "Not hungry at all" },
+      "reply": {
+        "hungry": "That's expected. It tends to settle once your meals find their rhythm.",
+        "not_hungry": "Enjoy it, but don't read it as a sign: hunger usually arrives around day 3 or 4, and after your first heavy leg day."
+      }
+    }
+  },
   "today": {
     "checkIn": {
       "title": "This week's check-in",

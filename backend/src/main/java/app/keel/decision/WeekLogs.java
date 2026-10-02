@@ -112,7 +112,7 @@ class WeekLogs {
      * review — else raising it would call the weeks before a miss). Changed only by applied calls; an undone one is as
      * if never applied.
      */
-    private Function<LocalDate, Integer> stepTargets(AccountId account, CallStore.Plan plan, ZoneId zone, Parameters parameters) {
+    Function<LocalDate, Integer> stepTargets(AccountId account, CallStore.Plan plan, ZoneId zone, Parameters parameters) {
         List<CallStore.Call> changes = calls.all(account).stream()
                 .filter(call -> call.application() == CallStore.Application.APPLIED
                         && !Objects.equals(call.planBefore().stepsPerDay(), call.planAfter().stepsPerDay()))
