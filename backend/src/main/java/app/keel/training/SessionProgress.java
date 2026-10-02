@@ -3,6 +3,7 @@ package app.keel.training;
 import app.keel.engine.BodyRegion;
 import app.keel.engine.LiftKind;
 import app.keel.engine.LiftSession;
+import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
 import app.keel.engine.Progression;
@@ -105,7 +106,8 @@ class SessionProgress {
                                     .flatMap(sets -> NextTargets.session(kind, region, range, sets, planned.targetRir(),
                                                     !uncleanExerciseIds.contains(planned.exerciseId())).stream())
                                     .flatMap(session -> next(session, p, thisWeeksSets, load -> gym
-                                            .map(inUse -> LoadSteps.round(exercise.equipment(), exercise.id(), inUse, session.loadKg(), load))
+                                            .map(inUse -> LoadSteps.round(exercise.equipment(), exercise.id(), inUse, session.loadKg(), load,
+                                                    BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS))))
                                             .orElse(new LoadSteps.Rounding.Unknown())).stream())
                                     .toList();
                             NextTargets.weaker(sides.stream().map(Next::target).toList())

@@ -37,7 +37,7 @@ test('there are shared cases to run', () => {
 });
 
 test.each(fixture.round.map((c) => [c.case, c] as const))('%s', (_name, c) => {
-  const result = round(c.equipment as never, c.exerciseId, gym(c.gym), c.lastKg, c.targetKg, 'maxJump' in c ? c.maxJump : undefined);
+  const result = round(c.equipment as never, c.exerciseId, gym(c.gym), c.lastKg, c.targetKg, 'maxJump' in c ? (c.maxJump as number) : undefined);
   if (c.expect === 'NO_HEAVIER') expect(result).toEqual({ kind: 'noHeavier' });
   else if (c.expect === 'UNKNOWN') expect(result).toEqual({ kind: 'unknown' });
   else expect(result).toEqual({ kind: 'to', kg: c.expect });
