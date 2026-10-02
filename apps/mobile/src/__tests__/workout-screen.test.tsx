@@ -824,6 +824,17 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'bench_press', supersetId: 'g1' });
   });
 
+  test('a move already in a superset is not offered to another move', async () => {
+    const LAT = { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
+    await show();
+    await link(); // the bench with the row
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) }));
+    expect(screen.queryByRole('button', { name: t('superset.link') })).toBeNull(); // nothing left to pair it with
+  });
+
   test('picking a partner says what it is for, and can be left without linking', async () => {
     await show();
     await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
