@@ -1,23 +1,76 @@
 package app.keel.engine;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** RED stub (K-513). */
+/**
+ * The first eight weeks (K-513, ADR-040; 04 §7.5, I1 F2): the user's own week since the account began, its content —
+ * the first week silent, I1 F2's "no comment, no score" — and from first_weeks_risk_from (G2 K-63: weeks five to eight
+ * are the critical window) the risk: the signals of the calendar week just over, each said on its own. Any one is a
+ * risk; none is weighed against another, as no source gives weights (U14). A week paused by a declared state signals
+ * nothing (ADR-038). Its use: the week's question budget widens and the phone says one human word (K-521); no call
+ * changes (U1).
+ */
 public final class FirstWeeks {
 
+    static final RuleId NO_SESSION_LAST_WEEK = new RuleId("no_session_last_week");
+    static final RuleId FORGIVEN_WEEK_USED = new RuleId("forgiven_week_used");
+    static final RuleId LOGGING_DROPPED = new RuleId("logging_dropped");
+    private static final Source SIGNALS = new Source("arastirma/ham/I1-onboarding-aliskanlik.md#F2", SourceTag.LITERATURE);
+    private static final int DAYS_PER_WEEK = 7;
+
+    /**
+     * What the week reads, on the user's calendar.
+     *
+     * @param began the day the account began: day one of week one
+     * @param sessionsLastWeek sessions done (a set past the warm-ups, K-431) in the calendar week just over
+     * @param trainingPlanned the program asks for training at all
+     * @param forgivenLastWeek the week just over was the one missed week consistency forgives (04 §7.3)
+     * @param loggedDaysLastWeek days with food logged in the week just over; {@code loggedDaysWeekBefore} the week before
+     * @param lastWeekPaused a state was declared on a day of the week just over
+     */
     public record Facts(LocalDate today, LocalDate began, int sessionsLastWeek, boolean trainingPlanned, boolean forgivenLastWeek,
             int loggedDaysLastWeek, int loggedDaysWeekBefore, boolean lastWeekPaused) {
     }
 
+    /** The week: its number (1 to first_weeks), its content (none in the first), the risk's signals (none: no risk). */
     public record Week(int number, Optional<CopyKey> content, List<Reason> risk) {
     }
 
     private FirstWeeks() {
     }
 
+    /** This week of the flow; empty before the account's first day and once the flow is over. */
     public static Optional<Week> of(Facts facts, Parameters parameters) {
-        return Optional.of(new Week(0, Optional.empty(), List.of()));
+        long days = ChronoUnit.DAYS.between(facts.began(), facts.today());
+        int number = (int) (days / DAYS_PER_WEEK) + 1;
+        if (days < 0 || number > parameters.wholeNumber(ParameterKey.FIRST_WEEKS)) {
+            return Optional.empty();
+        }
+        Optional<CopyKey> content = number == 1 ? Optional.empty() : Optional.of(new CopyKey("first_weeks.week" + number));
+        List<Reason> risk = number >= parameters.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM) ? signals(facts, parameters) : List.of();
+        return Optional.of(new Week(number, content, risk));
+    }
+
+    private static List<Reason> signals(Facts facts, Parameters parameters) {
+        if (facts.lastWeekPaused()) {
+            return List.of();
+        }
+        List<Reason> signals = new ArrayList<>();
+        if (facts.trainingPlanned() && facts.sessionsLastWeek() == 0) {
+            signals.add(new Reason(NO_SESSION_LAST_WEEK, SIGNALS));
+        }
+        if (facts.forgivenLastWeek()) {
+            signals.add(new Reason(FORGIVEN_WEEK_USED, SIGNALS));
+        }
+        // A drop under a week's worth of logging (H1 §3.4's min_logged_days_per_week), not a new threshold of its own.
+        int enough = parameters.wholeNumber(ParameterKey.MIN_LOGGED_DAYS_PER_WEEK);
+        if (facts.loggedDaysLastWeek() < enough && facts.loggedDaysWeekBefore() >= enough) {
+            signals.add(new Reason(LOGGING_DROPPED, SIGNALS));
+        }
+        return List.copyOf(signals);
     }
 }

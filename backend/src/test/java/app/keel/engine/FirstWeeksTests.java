@@ -98,6 +98,14 @@ class FirstWeeksTests {
         assertThat(FirstWeeks.of(eighth, MALE).orElseThrow().risk()).isNotEmpty();
     }
 
+    @Test
+    void everyWeeksContentHasWords() {
+        for (int week = 2; week <= MALE.wholeNumber(ParameterKey.FIRST_WEEKS); week++) {
+            CopyKey content = FirstWeeks.of(facts(BEGAN.plusWeeks(week - 1)), MALE).orElseThrow().content().orElseThrow();
+            assertThat(EngineFixtures.copyGroup(content)).as(content.value()).containsKeys("title", "body");
+        }
+    }
+
     private static LocalDate weekFive() {
         return BEGAN.plusWeeks(4);
     }

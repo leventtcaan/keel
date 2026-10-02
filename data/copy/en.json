@@ -56,6 +56,15 @@
       "refused": "Something went wrong on our side. Try again in a moment."
     }
   },
+  "first_weeks": {
+    "week2": { "title": "Week 2: your first comparison", "body": "Same move as last week, side by side. This is the honest evidence early on: what you lift." },
+    "week3": { "title": "Week 3: how steady you've been", "body": "How many days you logged, and why we show it: steady logging is what lets the numbers mean something." },
+    "week4": { "title": "Week 4: what's changing", "body": "Most of your strength gain so far is your nervous system learning the moves, not muscle yet. That's normal, and it's the foundation." },
+    "week5": { "title": "Week 5: past the line", "body": "People who reach this point tend to keep going. You're here." },
+    "week6": { "title": "Week 6: six weeks in", "body": "Now muscle can start to show in the measurements. Time for your first photo or tape check, if you'd like." },
+    "week7": { "title": "Week 7: you, then and now", "body": "Week 1 next to week 7: your lifts, your consistency, your trend." },
+    "week8": { "title": "Week 8: your eight weeks", "body": "What changed, what didn't, and why. Eight weeks start a habit; the next block makes it yours." }
+  },
   "prompt": {
     "steps_dropped": {
       "title": "Your steps fell last week.",
