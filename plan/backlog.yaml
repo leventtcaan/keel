@@ -1543,8 +1543,7 @@ tasks:
     why: "Masa bahsi: uygulama arka plandayken sayaç çalışmıyordu (L3)"
     acceptance:
       - "Arka planda sayaç biter ve bildirim gelir"
-      - "Live Activity: kalan süre + sıradaki set; seans bitince kapanır"
-      - "expo-widgets bağımlılığı Levent onayıyla (K5)"
+      - "Live Activity K-426'ya bölündü (2 Eki): native hedef + App Group ister, Expo Go'da yok, cihaz derlemesi (K-308) olmadan görülemez"
     tests:
       - "RestTimerTests"
     refs: ["arastirma/ham/L3-ozellik-boslugu.md"]
@@ -1790,6 +1789,25 @@ tasks:
       - "ExerciseScreenTests (klipli hareket)"
     refs: ["plan/kararlar/ADR-017-hareket-gosterimi.md", "tools/clip.py"]
     learn: ["Video oynatma", "Varlık paketleme (asset bundling)"]
+
+  - id: K-426
+    title: "Dinlenme sayacı kilit ekranında: Live Activity"
+    milestone: M4
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-411, K-308]
+    why: "K-411'den bölündü (2 Eki): arka plan bildirimi Expo Go'da doğrulandı; Live Activity native widget hedefi + App Group (Apple hesabında kayıt) ister, cihaz derlemesi olmadan görülemez"
+    acceptance:
+      - "`expo-widgets` 57.x (`npx expo install`, K5 gerekçesi PR'da; docs v57: Expo Go'da yok, iOS 16+), `createLiveActivity` + `@expo/ui` `Text` `timerInterval` (kurulu tiplerde doğrulandı) ile canlı geri sayım"
+      - "Kalan süre + sıradaki set; yeni set günceller, seans bitince/çıkınca kapanır; Expo Go'da yetenek 'kullanılamaz' (K-403 kalıbı)"
+      - "App Group kimliği yapılandırmada (kodda değil); Apple tarafı kayıt Levent'in terminalinde"
+      - "Gerçek cihazda kilit ekranında görüldü"
+    tests:
+      - "RestActivityTests"
+    refs: ["arastirma/ham/L3-ozellik-boslugu.md", "plan/kararlar/ADR-036-bildirimler.md"]
+    learn: ["Live Activities", "Widget extension", "App Groups"]
 
   - id: K-313
     title: "Onboarding: referans görünüş adımı"
