@@ -26,8 +26,14 @@ export function addFood(items: DraftItem[], food: Schemas['Food']): DraftItem[] 
   return [...items, { foodId: food.id, name: food.name, units, quantity: '', unit: units[0], weighed: false }];
 }
 
+export type KnownRecipes = Map<string, Schemas['Recipe']>;
+
+export function addRecipe(items: DraftItem[], _recipe: Schemas['Recipe']): DraftItem[] {
+  return items;
+}
+
 /** Why the server would refuse this item's amount, or null. A serving whose grams are not known is left to the server. */
-export function itemProblem(item: DraftItem, known: KnownFoods): ItemProblem | null {
+export function itemProblem(item: DraftItem, known: KnownFoods, _recipes: KnownRecipes = new Map()): ItemProblem | null {
   if (item.quantity.trim() === '') return 'missing';
   const quantity = parseQuantity(item.quantity);
   if (quantity === null) return 'invalid';
@@ -38,7 +44,7 @@ export function itemProblem(item: DraftItem, known: KnownFoods): ItemProblem | n
 }
 
 /** The contract's items, or null while there are none, more than the server takes, or any amount it would refuse. */
-export function requestsOf(items: DraftItem[], known: KnownFoods): Schemas['ItemRequest'][] | null {
+export function requestsOf(items: DraftItem[], known: KnownFoods, _recipes: KnownRecipes = new Map()): Schemas['ItemRequest'][] | null {
   if (items.length === 0 || items.length > foodParams.itemsMax || items.some((item) => itemProblem(item, known) !== null)) return null;
   return items.map((item) => ({
     foodId: item.foodId,
