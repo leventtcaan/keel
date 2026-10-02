@@ -222,6 +222,7 @@
     "reachedOne": "{reached} of 1 exercise reached your target effort"
   },
   "food": {
+    "log": "Log a meal",
     "budget": {
       "title": "Left today",
       "kcalUnit": "kcal",
@@ -260,6 +261,39 @@
       "failed": "Couldn't log it. Try again.",
       "noConsent": "Logging food needs the health data consent. Check your connection, or allow it in Settings."
     }
+  },
+  "meal": {
+    "title": "Log a meal",
+    "consent": {
+      "allow": "Allow and continue",
+      "notNow": "Not now",
+      "failed": "Couldn't record your choice. Check your connection and try again."
+    },
+    "search": {
+      "label": "Find a food",
+      "go": "Search",
+      "add": "Add {name}",
+      "tooShort": "Type at least two letters.",
+      "none": "Nothing found. Try other words.",
+      "failed": "Searching needs a connection. Try again."
+    },
+    "item": {
+      "amount": "Amount of {name}",
+      "grams": "g",
+      "unitSpoken": "{name} in {unit}",
+      "weighed": "Weighed",
+      "weighedSpoken": "{name} was weighed",
+      "remove": "Remove",
+      "removeSpoken": "Remove {name}",
+      "invalid": "That doesn't look like an amount. Check the number.",
+      "tooMuch": "That's more than one item can be. Check the amount."
+    },
+    "estimate": {
+      "title": "Estimate",
+      "question": "{name}: {question}"
+    },
+    "save": "Log it",
+    "saveFailed": "Couldn't save it on this phone. Try again."
   },
   "weighIn": {
     "title": "Weigh-in",

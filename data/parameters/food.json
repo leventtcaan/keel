@@ -3,10 +3,22 @@
     {
       "key": "meal_slot_starts",
       "value": [
-        { "slot": "BREAKFAST", "fromHour": 4 },
-        { "slot": "LUNCH", "fromHour": 11 },
-        { "slot": "DINNER", "fromHour": 16 },
-        { "slot": "SNACK", "fromHour": 22 }
+        {
+          "slot": "BREAKFAST",
+          "fromHour": 4
+        },
+        {
+          "slot": "LUNCH",
+          "fromHour": 11
+        },
+        {
+          "slot": "DINNER",
+          "fromHour": 16
+        },
+        {
+          "slot": "SNACK",
+          "fromHour": 22
+        }
       ],
       "unit": "hour_of_day",
       "tag": "urun",
@@ -28,6 +40,14 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#FoodSearch",
       "note": "FoodSearch.q maxLength."
+    },
+    {
+      "key": "food_search_results",
+      "value": 20,
+      "unit": "foods",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#FoodSearch",
+      "note": "FoodSearch.limit: the contract's default, sent as it is (the generated type asks for it). Best matches come first; a longer list is scrolled past, not read."
     },
     {
       "key": "meal_amount_max_g",

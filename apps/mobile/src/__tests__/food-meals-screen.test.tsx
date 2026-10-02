@@ -36,6 +36,7 @@ const answer = async (path: string, init?: { params?: { query?: { day?: string }
   return mockAnswers[path] ?? refused(404, 'NOT_FOUND');
 };
 const mockGET = jest.fn(answer);
+const mockPush = jest.fn();
 let mockRecords: LocalRecord[] = [];
 let mockGranted = true;
 const mockRecord = jest.fn(async (_record: unknown) => true);
@@ -44,7 +45,7 @@ const mockDrain = jest.fn(async () => {
 });
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn() },
+  router: { push: (to: unknown) => mockPush(to) },
   useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -181,7 +182,7 @@ test('a repeat tapped twice before the list is read again is logged once (review
   await act(async () => release());
 });
 
-test("a repeat hidden only until the next read: if that read has no such meal (refused, deleted), it is offered again", async () => {
+test('a repeat hidden only until the next read: if that read has no such meal (refused, deleted), it is offered again', async () => {
   await show();
   const name = t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' });
   await act(async () => fireEvent.press(screen.getByRole('button', { name })));
@@ -192,9 +193,12 @@ test("a repeat hidden only until the next read: if that read has no such meal (r
 test('two presses in the same moment log once (review)', async () => {
   await show();
   const lunch = screen.getByRole('button', { name: t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' }) });
+  // Both in one step, before a render could disable the button: the press handler itself, twice (fireEvent would wrap
+  // each press in its own act, and acts cannot overlap).
+  const press = (lunch.props as { onClick: (event: object) => void }).onClick;
   await act(async () => {
-    fireEvent.press(lunch);
-    fireEvent.press(lunch);
+    press({ nativeEvent: {} });
+    press({ nativeEvent: {} });
   });
   expect(mockRecord).toHaveBeenCalledTimes(1);
 });
@@ -213,7 +217,7 @@ test('a repeat the phone could not save says so, by name only in the report (V3)
   expect(screen.queryByText(t('food.repeat.failed'))).toBeNull();
 });
 
-test("today's list not read (a server error): no offers, no \"nothing logged\", and the way to try again (review)", async () => {
+test('today\'s list not read (a server error): no offers, no "nothing logged", and the way to try again (review)', async () => {
   mockAnswers['/v1/days/{day}/budget'] = ok({
     day: '2026-09-29',
     targetKcal: 2300,
@@ -234,7 +238,7 @@ test('the consent the meals list asks for is enough to show the way to Settings'
   expect(screen.queryByText(t('food.meals.title'))).toBeNull();
 });
 
-test("what waits on the phone failing to go does not blank the tab; it is reported by name", async () => {
+test('what waits on the phone failing to go does not blank the tab; it is reported by name', async () => {
   mockDrain.mockRejectedValueOnce(new TypeError('x'));
   await show();
   expect(screen.getByText('Oats, rolled')).toBeOnTheScreen();
@@ -270,4 +274,10 @@ test("offline: the meals the phone holds, and no offers (yesterday's list is not
   await show();
   expect(screen.getByText('Eggs')).toBeOnTheScreen();
   expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
+});
+
+test('a meal is logged from here: the way to the meal screen', async () => {
+  await show();
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.log') })));
+  expect(mockPush).toHaveBeenCalledWith('/meal');
 });

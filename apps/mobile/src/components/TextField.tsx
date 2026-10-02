@@ -17,10 +17,12 @@ type Props = {
   maxLength?: number;
   /** A few sentences rather than a short answer (a note). */
   multiline?: boolean;
+  /** Words to look up rather than to write (a search): taken as typed, no capital, no autocorrect; the key searches. */
+  onSearch?: () => void;
 };
 
 /** A labelled field for a short answer: a number, a year, a time — or, multiline, a note. */
-export function TextField({ label, value, onChangeText, suffix, hint, problem, keyboardType, maxLength, multiline = false }: Props) {
+export function TextField({ label, value, onChangeText, suffix, hint, problem, keyboardType, maxLength, multiline = false, onSearch }: Props) {
   const { color } = useTheme();
   const note = problem ?? hint;
   return (
@@ -35,6 +37,7 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, k
           keyboardType={keyboardType}
           maxLength={maxLength}
           multiline={multiline}
+          {...(onSearch === undefined ? {} : { autoCapitalize: 'none', autoCorrect: false, returnKeyType: 'search', onSubmitEditing: onSearch })}
           style={[styles.input, multiline && styles.multiline, { color: color.text }]}
         />
         {suffix !== undefined && <Text style={[styles.suffix, { color: color.muted }]}>{suffix}</Text>}

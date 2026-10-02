@@ -44,7 +44,10 @@ export default function FoodScreen() {
     try {
       // The consent as the phone knows it: withdrawn in Settings since this list was read, nothing is kept.
       if (await consents.granted('HEALTH_DATA')) {
-        await queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt: new Date().toISOString(), slot: meal.slot, repeatOf: meal.id } });
+        await queue.record({
+          kind: 'meal',
+          body: { clientId: newClientId(), eatenAt: new Date().toISOString(), slot: meal.slot, repeatOf: meal.id },
+        });
         setRepeated((before) => ({ read: data, ids: new Set(before.read === data ? before.ids : []).add(meal.id) }));
       } else {
         setRepeatProblem(t('food.repeat.noConsent'));
@@ -85,8 +88,7 @@ export default function FoodScreen() {
   const targets = data !== null && data.targets.state === 'ready' ? <TargetsCard targets={data.targets.value} /> : null;
   const meals = data !== null && data.meals !== null ? <MealList meals={data.meals} complete={data.mealsRead} /> : null;
   const offered = data === null ? [] : data.offers.filter((meal) => !hidden.has(meal.id));
-  const offers =
-    offered.length > 0 ? <RepeatOffers offers={offered} busy={repeating} onRepeat={(meal) => void repeat(meal)} /> : null;
+  const offers = offered.length > 0 ? <RepeatOffers offers={offered} busy={repeating} onRepeat={(meal) => void repeat(meal)} /> : null;
   const repeatNote = repeatProblem !== null ? <Text style={[styles.text, { color: color.text }]}>{repeatProblem}</Text> : null;
 
   return (
@@ -97,6 +99,7 @@ export default function FoodScreen() {
         {problem}
         {consent}
         {budget}
+        {!needsConsent && data !== null && <Button label={t('food.log')} onPress={() => router.push('/meal')} />}
         {meals}
         {offers}
         {repeatNote}
