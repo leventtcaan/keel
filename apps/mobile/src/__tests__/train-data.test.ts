@@ -335,3 +335,23 @@ test("an own-moves read still on its way when the user signs out keeps nothing: 
   await reading;
   expect(kv.map.size).toBe(0);
 });
+
+describe('the setup kept on the phone (K-418, ADR-017)', () => {
+  test('saved by move, read back; another move has none; signing out forgets it', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    await cache.saveSetup('leg_press', { seat_height: '4', foot_position: 'high' });
+    await cache.saveSetup('bench_press', { grip_width: 'rings' });
+    expect(await cache.setup('leg_press')).toEqual({ seat_height: '4', foot_position: 'high' });
+    expect(await createTrainingCache(kv).setup('bench_press')).toEqual({ grip_width: 'rings' });
+    expect(await cache.setup('squat')).toEqual({});
+    await cache.forget();
+    expect(kv.map.size).toBe(0);
+  });
+
+  test('a field left empty is not kept', async () => {
+    const cache = createTrainingCache(memoryKv());
+    await cache.saveSetup('leg_press', { seat_height: '  ', foot_position: ' high ' });
+    expect(await cache.setup('leg_press')).toEqual({ foot_position: 'high' });
+  });
+});

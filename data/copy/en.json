@@ -208,6 +208,41 @@
       "none": "No move by that name in the catalog. Try other words."
     }
   },
+  "demo": {
+    "open": "How to",
+    "openLabel": "{exercise}: how to",
+    "setup": "Your setup",
+    "setupNote": "Kept on this phone. Set it the same way every time.",
+    "save": "Save setup",
+    "saved": "Saved.",
+    "clipsPending": "The demo clips aren't filmed yet. They'll show the first rep and the last one, side by side.",
+    "tips": "How to do it",
+    "tip": {
+      "fullRange": "Full range of motion on every rep. Take weight off if you have to.",
+      "backRange": "On back moves, partial reps at the end of a set are fine.",
+      "tempo": "Lower with control, lift with intent. No slow-motion negatives.",
+      "lastRep": "Your last rep slows down on its own. That's where the set ends."
+    },
+    "muscles": "Works",
+    "separator": ", ",
+    "muscle": {
+      "biceps": "Biceps",
+      "calves": "Calves",
+      "chest": "Chest",
+      "erectors": "Lower back",
+      "forearms": "Forearms",
+      "front_delts": "Front delts",
+      "glutes": "Glutes",
+      "hamstrings": "Hamstrings",
+      "lats": "Lats",
+      "quads": "Quads",
+      "rear_delts": "Rear delts",
+      "side_delts": "Side delts",
+      "triceps": "Triceps",
+      "upper_back": "Upper back"
+    },
+    "unknown": "This move isn't in the catalog on this phone yet. Open it again when you're online."
+  },
   "superset": {
     "link": "Superset with…",
     "pick": "Superset with {name}",

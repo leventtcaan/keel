@@ -408,12 +408,20 @@ export default function WorkoutScreen() {
           <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(moveId, moves)}</Text>
           {targetLine}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId, moves) })}
-          onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}>
-          <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
-        </Pressable>
+        <View style={styles.links}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId, moves) })}
+            onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}>
+            <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('demo.openLabel', { exercise: exerciseName(moveId, moves) })}
+            onPress={() => router.push({ pathname: '/exercise', params: { exercise: moveId } })}>
+            <Text style={[styles.small, { color: color.accent }]}>{t('demo.open')}</Text>
+          </Pressable>
+        </View>
         {supersetBlock}
         {warmBlock}
         <SetTable plan={plan} move={move} />
@@ -492,6 +500,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   list: { gap: tokens.space.xs },
+  links: { flexDirection: 'row', gap: tokens.space.lg },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: tokens.space.sm },
   grow: { flex: 1 },

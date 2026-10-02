@@ -129,6 +129,12 @@ test('one tap logs the set as suggested, with the target RIR, under the workout;
   expect(screen.getByText('Set 2 of 3')).toBeTruthy();
 });
 
+test("the move under way opens its screen: setup, tips, muscles (K-418)", async () => {
+  await show();
+  await fireEvent.press(await screen.findByLabelText(t('demo.openLabel', { exercise: 'Bench press' })));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise', params: { exercise: 'bench_press' } });
+});
+
 test('the move under way opens its history and records (K-415)', async () => {
   await show();
   await fireEvent.press(await screen.findByLabelText('Bench press: history'));

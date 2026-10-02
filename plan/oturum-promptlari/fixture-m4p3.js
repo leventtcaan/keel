@@ -32,7 +32,7 @@ const meals = [
 ];
 const log = [];
 const move = (id, unilateral = false, equipment = 'BARBELL') => ({ id, nameKey: 'exercises.' + id + '.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment, unilateral, setupFields: [] });
-const EXERCISES = [move('bench_press'), move('barbell_row'), move('bulgarian_split_squat', true, 'DUMBBELL'), move('lat_pulldown', false, 'CABLE'), move('lateral_raise', false, 'DUMBBELL'), move('t_bar_row', false, 'PLATE_LOADED')];
+const EXERCISES = [{ ...move('bench_press'), muscles: ['chest', 'front_delts', 'triceps'], setupFields: ['grip_width'] }, move('barbell_row'), move('bulgarian_split_squat', true, 'DUMBBELL'), move('lat_pulldown', false, 'CABLE'), move('lateral_raise', false, 'DUMBBELL'), move('t_bar_row', false, 'PLATE_LOADED')];
 const own = [];
 const wset = (exerciseId, setType, loadKg, reps, rir, side) => ({ id: uuid(), clientId: uuid(), exerciseId, setType, loadKg, reps, ...(rir === undefined ? {} : { rir }), ...(side ? { side } : {}) });
 const workouts = [
