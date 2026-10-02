@@ -2157,6 +2157,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LoggedSet"
+        setsNextTargets:
+          type: boolean
+          description: |
+            On a finished session of the program only: whether a target of its day came from it. Adding or deleting one of
+            its sets then derives that target again from what it holds, with the finish's answer on form (K-432); a target
+            a newer session set stays.
     SetType:
       type: string
       description: |

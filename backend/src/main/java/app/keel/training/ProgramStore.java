@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -140,6 +141,29 @@ class ProgramStore {
                 where account_id = :account and id = :id and (next_from is null or next_from <= :from)""")
                 .param("account", account.value()).param("id", plannedId).param("load", loadKg).param("reps", reps).param("last", lastLoadKg)
                 .param("from", from.atOffset(ZoneOffset.UTC)).update();
+    }
+
+    /**
+     * The target that came from the session started at {@code from} is gone: none of its sets of the move are left (K-432).
+     * A target from another session stays.
+     */
+    void clearNext(AccountId account, UUID plannedId, Instant from) {
+        jdbc.sql("""
+                update training.planned_exercise set next_load_kg = null, next_reps = null, last_load_kg = null, next_from = null
+                where account_id = :account and id = :id and next_from = :from""")
+                .param("account", account.value()).param("id", plannedId).param("from", from.atOffset(ZoneOffset.UTC)).update();
+    }
+
+    /** The sessions the account's targets came from, as "day id @ start" — one read for a whole list of workouts. */
+    Set<String> targetSources(AccountId account) {
+        return Set.copyOf(jdbc.sql("""
+                select distinct day_id, next_from from training.planned_exercise where account_id = :account and next_from is not null""")
+                .param("account", account.value())
+                .query((row, n) -> source(row.getObject("day_id", UUID.class), row.getObject("next_from", OffsetDateTime.class).toInstant())).list());
+    }
+
+    static String source(UUID dayId, Instant startedAt) {
+        return dayId + "@" + startedAt;
     }
 
     private static BigDecimal plain(BigDecimal kg) {

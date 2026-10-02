@@ -1421,6 +1421,12 @@ export interface components {
             /** @description The session's note, given at the finish (WorkoutFinish.note). */
             note?: string;
             sets: components["schemas"]["LoggedSet"][];
+            /**
+             * @description On a finished session of the program only: whether a target of its day came from it. Adding or deleting one of
+             *     its sets then derives that target again from what it holds, with the finish's answer on form (K-432); a target
+             *     a newer session set stays.
+             */
+            setsNextTargets?: boolean;
         };
         /**
          * @description Only WORKING sets count toward effort and estimated 1RM (K-218). FAILURE is a set taken to failure: its rir is 0
