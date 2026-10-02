@@ -1,0 +1,36 @@
+{
+  "parameters": [
+    {
+      "key": "training_reminder_lead_minutes",
+      "value": 30,
+      "unit": "minutes",
+      "tag": "literatur",
+      "source": "arastirma/ham/I1-onboarding-aliskanlik.md#F4",
+      "note": "Slot 1 (K-410): on a training day, this long before the user's own usual time, in the user's own words. A consistent time and a routine to hang it on are the only two cues that predict the behaviour (I1 C2, r = 0.11-0.13)."
+    },
+    {
+      "key": "check_in_reminder_time",
+      "value": "09:00",
+      "unit": "local_time",
+      "tag": "urun",
+      "source": "arastirma/ham/I1-onboarding-aliskanlik.md#F4",
+      "note": "Slot 2: the check-in day (Monday, onboarding.json check_in_day) in the morning. F4 says 'Monday morning'; no source gives the hour (I1 D1: 'no direct evidence for the hour'), so 09:00 is a product choice."
+    },
+    {
+      "key": "quiet_days",
+      "value": 7,
+      "unit": "days",
+      "tag": "literatur",
+      "source": "arastirma/ham/I1-onboarding-aliskanlik.md#F4",
+      "note": "Slot 3: one self-compassion message after this many days without the app opened, only once per quiet spell (I1 C6: self-compassion after a lapse, blame makes it worse)."
+    },
+    {
+      "key": "cue_max_chars",
+      "value": 120,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "arastirma/ham/I1-onboarding-aliskanlik.md#C3",
+      "note": "The user's own routine sentence ('After work, straight to the gym') is the training reminder's body: a lock-screen line, so short."
+    }
+  ]
+}

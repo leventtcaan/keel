@@ -10,7 +10,13 @@ import type { KeyValue, UnitsPreference } from '@/units/preference';
 
 export type OnboardingState = 'unknown' | 'needed' | 'done';
 type Profile = components['schemas']['Profile'];
-type Options = { kv: KeyValue; api: ApiClient; units: UnitsPreference };
+type Options = {
+  kv: KeyValue;
+  api: ApiClient;
+  units: UnitsPreference;
+  /** The profile the server holds, after each read or save that still belongs to this account (the reminders, K-410). */
+  onProfile?: (profile: Profile) => Promise<void>;
+};
 
 const KEY = 'onboarded';
 
@@ -24,7 +30,7 @@ const DONE = 'done';
 
 export type ProfileStatus = Awaited<ReturnType<typeof createProfileStatus>>;
 
-export async function createProfileStatus({ kv, api, units }: Options) {
+export async function createProfileStatus({ kv, api, units, onProfile }: Options) {
   let state: OnboardingState = (await kv.getItemAsync(KEY)) === DONE ? 'done' : 'unknown';
   const listeners = new Set<() => void>();
   // Bumped by a sign-out: a read or save that started for the previous account must not land on the next one.
@@ -44,7 +50,7 @@ export async function createProfileStatus({ kv, api, units }: Options) {
     const { data, response } = answer;
     if (data !== undefined) {
       await adoptUnits(data.units);
-      await markDone(startedIn);
+      await markDone(startedIn, data);
     } else if (response.status === 404) {
       if (startedIn !== generation) return;
       await kv.removeItemAsync(KEY);
@@ -60,10 +66,13 @@ export async function createProfileStatus({ kv, api, units }: Options) {
     listeners.forEach((listener) => listener());
   }
 
-  async function markDone(startedIn: number) {
+  async function markDone(startedIn: number, profile: Profile) {
     if (startedIn !== generation) return;
     await kv.setItemAsync(KEY, DONE);
     become('done');
+    // Not waited for: routing on "done" must not hang on the phone's notification centre (the reminders report their own
+    // failures, K-410).
+    void onProfile?.(profile);
   }
 
   return {
@@ -100,7 +109,7 @@ export async function createProfileStatus({ kv, api, units }: Options) {
       const { data, response } = answer;
       if (data === undefined) throw failure('ProfileSaveFailed', `profile save failed with HTTP ${response.status}`);
       await adoptUnits(data.units);
-      await markDone(startedIn);
+      await markDone(startedIn, data);
     },
 
     /** Sign-out: the answer belongs to the account. */

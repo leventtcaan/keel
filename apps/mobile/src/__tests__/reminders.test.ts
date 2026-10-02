@@ -1,0 +1,218 @@
+/**
+ * The reminders on the phone (K-410): off until the user turns them on and iOS allows them; then every change — the
+ * schedule from the profile, the user's sentence, an app opened — replaces what is scheduled, one change at a time.
+ */
+import type { Reminder, Schedule } from '@/notifications/plan';
+import { notificationParams as P } from '@/notifications/params';
+import { type NotificationAccess, type NotificationPermission, createReminders } from '@/notifications/reminders';
+
+const schedule: Schedule = { trainingDays: ['MONDAY'], usualTrainingTime: '18:00', checkInDay: 'MONDAY', timeZone: 'Europe/Istanbul' };
+const now = new Date(2026, 9, 2, 12, 0);
+
+function memoryKv() {
+  const items = new Map<string, string>();
+  return {
+    items,
+    getItemAsync: async (key: string) => items.get(key) ?? null,
+    setItemAsync: async (key: string, value: string) => void items.set(key, value),
+    removeItemAsync: async (key: string) => items.delete(key),
+  };
+}
+
+/** A phone: what is scheduled now, how often it was replaced, and the permission iOS would answer. */
+type Device = {
+  permission: NotificationPermission;
+  answer: NotificationPermission;
+  scheduled: Reminder[];
+  replaced: number;
+  asked: number;
+  access: NotificationAccess;
+};
+function fakeDevice(permission: NotificationPermission = { granted: true, canAskAgain: true }): Device {
+  const device: Device = {
+    permission,
+    answer: permission,
+    scheduled: [] as Reminder[],
+    replaced: 0,
+    asked: 0,
+    access: {
+      permission: async () => device.permission,
+      request: async () => {
+        device.asked += 1;
+        device.permission = device.answer;
+        return device.permission;
+      },
+      replace: async (reminders: Reminder[]) => {
+        device.replaced += 1;
+        device.scheduled = reminders;
+      },
+      clear: async () => {
+        device.scheduled = [];
+      },
+    },
+  };
+  return device;
+}
+
+const kinds = (reminders: Reminder[]) => reminders.map((r) => r.kind);
+
+async function make(kv = memoryKv(), device = fakeDevice(), report = jest.fn()) {
+  const reminders = await createReminders({ kv, access: device.access, now: () => now, report });
+  return { reminders, kv, device, report };
+}
+
+test('off until the user turns them on: a schedule and an open plan nothing', async () => {
+  const { reminders, device } = await make();
+  await reminders.keepSchedule(schedule);
+  await reminders.opened();
+  expect(reminders.current().enabled).toBe(false);
+  expect(device.scheduled).toEqual([]);
+  expect(device.asked).toBe(0);
+});
+
+test('turning on asks iOS once; allowed, the three slots are scheduled from what is kept', async () => {
+  const { reminders, device } = await make();
+  await reminders.keepSchedule(schedule);
+  await reminders.opened();
+  expect(await reminders.turnOn()).toEqual({ granted: true, canAskAgain: true });
+  expect(device.asked).toBe(1);
+  expect(reminders.current().enabled).toBe(true);
+  expect(kinds(device.scheduled)).toEqual(['training', 'check_in', 'quiet']);
+});
+
+test('refused by iOS, they stay off and nothing is scheduled', async () => {
+  const device = fakeDevice({ granted: false, canAskAgain: true });
+  device.answer = { granted: false, canAskAgain: false };
+  const { reminders } = await make(memoryKv(), device);
+  await reminders.keepSchedule(schedule);
+  expect(await reminders.turnOn()).toEqual({ granted: false, canAskAgain: false });
+  expect(reminders.current().enabled).toBe(false);
+  expect(device.scheduled).toEqual([]);
+});
+
+test('turned off in iOS Settings later: the next change clears them; allowed again, they come back', async () => {
+  const { reminders, device } = await make();
+  await reminders.keepSchedule(schedule);
+  await reminders.turnOn();
+  device.permission = { granted: false, canAskAgain: false };
+  await reminders.opened();
+  expect(device.scheduled).toEqual([]);
+  device.permission = { granted: true, canAskAgain: true };
+  await reminders.opened();
+  expect(kinds(device.scheduled)).toContain('training');
+});
+
+test('the user\'s sentence: trimmed, cut to the limit, kept, and the training reminder\'s body', async () => {
+  const { reminders, device, kv } = await make();
+  await reminders.keepSchedule(schedule);
+  await reminders.turnOn();
+  await reminders.setCue(`  ${'a'.repeat(P.cueMaxChars + 10)}  `);
+  expect(reminders.current().cue).toBe('a'.repeat(P.cueMaxChars));
+  await reminders.setCue('  After work, straight to the gym ');
+  expect(device.scheduled.find((r) => r.kind === 'training')?.body).toBe('After work, straight to the gym');
+  const again = await make(kv);
+  expect(again.reminders.current().cue).toBe('After work, straight to the gym');
+  await reminders.setCue('   ');
+  expect(reminders.current().cue).toBe('');
+  expect(kv.items.has('reminders.cue')).toBe(false);
+});
+
+test('opening the app moves the quiet message a week past this open', async () => {
+  let clock = now;
+  const kv = memoryKv();
+  const device = fakeDevice();
+  const reminders = await createReminders({ kv, access: device.access, now: () => clock, report: jest.fn() });
+  await reminders.turnOn();
+  await reminders.opened();
+  clock = new Date(2026, 9, 4, 8, 30);
+  await reminders.opened();
+  const quiet = device.scheduled.find((r) => r.kind === 'quiet');
+  expect(quiet?.when).toEqual({ at: new Date(2026, 9, 4 + P.quietDays, 8, 30) });
+});
+
+test('on and off are kept: a new start keeps the choice and the schedule', async () => {
+  const { reminders, kv } = await make();
+  await reminders.keepSchedule(schedule);
+  await reminders.turnOn();
+  const restarted = await make(kv);
+  expect(restarted.reminders.current().enabled).toBe(true);
+  await restarted.reminders.opened();
+  expect(kinds(restarted.device.scheduled)).toEqual(['training', 'check_in', 'quiet']);
+  await restarted.reminders.turnOff();
+  expect(restarted.device.scheduled).toEqual([]);
+  expect((await make(kv)).reminders.current().enabled).toBe(false);
+});
+
+test('a sign-out forgets it all: nothing scheduled, nothing kept for the next account', async () => {
+  const { reminders, kv, device } = await make();
+  await reminders.keepSchedule(schedule);
+  await reminders.setCue('Lunch break, gym next door');
+  await reminders.turnOn();
+  await reminders.forget();
+  expect(device.scheduled).toEqual([]);
+  expect([...kv.items.keys()].filter((key) => key.startsWith('reminders.'))).toEqual([]);
+  expect(reminders.current()).toEqual({ enabled: false, cue: '' });
+});
+
+test('changes go one at a time: the last scheduled plan holds every change, however slow the phone', async () => {
+  const device = fakeDevice();
+  let active = 0;
+  let most = 0;
+  const replace = device.access.replace;
+  device.access.replace = async (reminders) => {
+    active += 1;
+    most = Math.max(most, active);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    await replace(reminders);
+    active -= 1;
+  };
+  const { reminders } = await make(memoryKv(), device);
+  await reminders.turnOn();
+  await Promise.all([reminders.keepSchedule(schedule), reminders.setCue('Right after class'), reminders.opened()]);
+  expect(most).toBe(1);
+  expect(device.scheduled.find((r) => r.kind === 'training')?.body).toBe('Right after class');
+});
+
+test('a sign-out while a change is on its way still ends with nothing scheduled', async () => {
+  const device = fakeDevice();
+  const replace = device.access.replace;
+  device.access.replace = async (reminders) => {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    await replace(reminders);
+  };
+  const { reminders } = await make(memoryKv(), device);
+  await reminders.keepSchedule(schedule);
+  await reminders.turnOn();
+  const late = reminders.opened();
+  await reminders.forget();
+  await late;
+  expect(device.scheduled).toEqual([]);
+});
+
+test('a phone that fails to schedule is reported by name; the caller goes on', async () => {
+  const device = fakeDevice();
+  device.access.replace = async () => {
+    throw Object.assign(new Error('UNUserNotificationCenter said no'), { name: 'ScheduleFailed' });
+  };
+  const { reminders, report } = await make(memoryKv(), device);
+  await reminders.turnOn();
+  await expect(reminders.opened()).resolves.toBeUndefined();
+  expect(report).toHaveBeenCalledWith({ name: 'ScheduleFailed' });
+});
+
+test('a declared state mutes them (K-516 plugs it in)', async () => {
+  const device = fakeDevice();
+  const reminders = await createReminders({ kv: memoryKv(), access: device.access, now: () => now, report: jest.fn(), muted: async () => true });
+  await reminders.keepSchedule(schedule);
+  await reminders.turnOn();
+  expect(device.scheduled).toEqual([]);
+});
+
+test('a kept schedule that is not one (an older app wrote it) counts as none', async () => {
+  const kv = memoryKv();
+  kv.items.set('reminders.schedule', '{not json');
+  kv.items.set('reminders.enabled', 'on');
+  const { reminders, device } = await make(kv);
+  await reminders.opened();
+  expect(kinds(device.scheduled)).toEqual(['quiet']);
+});

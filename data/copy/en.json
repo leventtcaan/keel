@@ -1145,6 +1145,20 @@
     "signOut": "Sign out",
     "serverError": "Something went wrong on our side. Try again in a moment."
   },
+  "reminders": {
+    "training": {
+      "title": "Training in {minutes} minutes",
+      "body": "Your session is coming up."
+    },
+    "checkIn": {
+      "title": "A new week",
+      "body": "Last week is closed. Open keel to see where it stands and set up this one."
+    },
+    "quiet": {
+      "title": "It's been a week",
+      "body": "One quiet week doesn't undo what you've built. When you're ready, one short session picks it back up."
+    }
+  },
   "settings": {
     "title": "Settings",
     "entry": "Settings",

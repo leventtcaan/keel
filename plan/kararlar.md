@@ -40,3 +40,4 @@
 | [ADR-033](kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md) | Geçmiş sunucudan (+ gönderilmemiş yerel kayıtlar), rekor yalnız çalışma setinden, izolasyonda yük rekoru yok, hacim rekoru yok | KABUL |
 | [ADR-034](kararlar/ADR-034-tarif-hafizasi.md) | Tarif = malzemeler + porsiyon; sayı her seferinde veritabanından; öğünde `recipe:<id>` tek kalem, porsiyonla ölçeklenir; sağlık verisi | KABUL |
 | [ADR-035](kararlar/ADR-035-superset-ve-kendi-hareket.md) | Süperset = setin üstünde `supersetId`; kullanıcının hareketi sınıflamasıyla (`custom:<id>`), programa girmez, silinmez | KABUL |
+| [ADR-036](kararlar/ADR-036-bildirimler.md) | Bildirimler yalnız yerel (expo-notifications), üç tür telefonda planlanır, her değişiklik sırayla hepsini yeniden kurar, kapalı başlar | KABUL |

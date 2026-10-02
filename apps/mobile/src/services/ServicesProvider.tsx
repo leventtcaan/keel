@@ -9,13 +9,14 @@ import { File, Paths } from 'expo-file-system';
 import { openDatabaseAsync } from 'expo-sqlite';
 import Storage from 'expo-sqlite/kv-store';
 import { type ReactNode, createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
-import { Share } from 'react-native';
+import { AppState, Share } from 'react-native';
 
 import { apiBaseUrl } from '@/api/config';
 import type { HealthAccess } from '@/health/health';
 import { healthKitAccess } from '@/health/healthKit';
 import { syncActivityDays } from '@/health/activitySync';
 import { syncHealthWeights } from '@/health/weightSync';
+import { deviceNotifications } from '@/notifications/deviceNotifications';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
@@ -52,10 +53,20 @@ async function build(): Promise<PhoneServices> {
     report: (problem) => console.warn('sync problem:', problem.name),
     kv: Storage,
     locale: Intl.DateTimeFormat().resolvedOptions().locale,
+    notifications: deviceNotifications(), // local only: no push token, nothing to a server (K-410)
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);
   startAutoSync(services.queue.drainInBackground, deviceTriggers);
+  // Each time the app comes to the front the quiet spell starts again, and iOS's answer is read afresh (K-410). The
+  // reminders report their own failures; a keychain that cannot say whether anyone is signed in skips this one.
+  const opened = () =>
+    void services.session
+      .isSignedIn()
+      .then((signedIn) => (signedIn ? services.reminders.opened() : undefined))
+      .catch(() => undefined);
+  opened();
+  AppState.addEventListener('change', (state) => state === 'active' && opened()); // for the app's life, like the sync triggers
   const health = healthKitAccess(); // not available in Expo Go (no native module)
   return {
     ...services,

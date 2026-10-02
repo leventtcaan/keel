@@ -524,3 +524,71 @@ describe('deleting the account (K-309, K-214)', () => {
     },
   );
 });
+
+describe('the reminders (K-410)', () => {
+  const PROFILE = {
+    goal: 'LOSE_FAT',
+    sex: 'MALE',
+    heightCm: 178,
+    birthYear: 1994,
+    programChoice: 'BUILD_ONE_FOR_ME',
+    schedule: { trainingDays: ['MONDAY'], usualTrainingTime: '18:00', checkInDay: 'MONDAY', timeZone: 'Europe/Istanbul' },
+    units: 'METRIC',
+  };
+  const profileServer = (status = 200) =>
+    jest.fn(async (request: Request) =>
+      request.url.endsWith('/v1/profile')
+        ? new Response(JSON.stringify(PROFILE), { status, headers: { 'Content-Type': 'application/json' } })
+        : new Response(null, { status: 204 }),
+    );
+  function phone() {
+    const scheduled: { kind: string }[][] = [];
+    const notifications = {
+      permission: async () => ({ granted: true, canAskAgain: true }),
+      request: async () => ({ granted: true, canAskAgain: true }),
+      replace: async (reminders: { kind: string }[]) => void scheduled.push(reminders),
+      clear: async () => void scheduled.push([]),
+    };
+    return { notifications, now: () => scheduled[scheduled.length - 1] ?? [] };
+  }
+
+  test("the profile read at sign-in brings the account's schedule: turned on, its training day is scheduled", async () => {
+    const device = phone();
+    const services = await createAppServices({
+      baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: profileServer(), report: () => {}, kv: memoryKv(), locale: 'en-US', notifications: device.notifications,
+    });
+    await services.reminders.turnOn();
+    expect(device.now().map((r) => r.kind)).toEqual([]);
+    await services.session.signIn(SESSION);
+    await settle();
+    await services.reminders.opened();
+    expect(device.now().map((r) => r.kind)).toEqual(['training', 'check_in', 'quiet']);
+  });
+
+  test('the profile saved at the end of onboarding brings it too', async () => {
+    const device = phone();
+    const services = await createAppServices({
+      baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: profileServer(), report: () => {}, kv: memoryKv(), locale: 'en-US', notifications: device.notifications,
+    });
+    await services.reminders.turnOn();
+    await services.profile.save(PROFILE as Parameters<typeof services.profile.save>[0]);
+    await settle();
+    expect(device.now().map((r) => r.kind)).toContain('training');
+  });
+
+  test('a sign-out leaves nothing scheduled and nothing kept for the next account', async () => {
+    const device = phone();
+    const kv = memoryKv();
+    const services = await createAppServices({
+      baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: profileServer(), report: () => {}, kv, locale: 'en-US', notifications: device.notifications,
+    });
+    await services.session.signIn(SESSION);
+    await settle();
+    await services.reminders.setCue('After work');
+    await services.reminders.turnOn();
+    await services.signOut();
+    await settle();
+    expect(device.now()).toEqual([]);
+    expect([...kv.items.keys()].filter((key) => key.startsWith('reminders.'))).toEqual([]);
+  });
+});
