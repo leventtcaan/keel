@@ -68,9 +68,11 @@ K-105 #138 · K-108 #139 · K-109 #140 · K-110 ilk kısım #141 · K-111 #142. 
 **Kararlar:** ADR-020 (L-1…L-13, M2/M3 ön kararları). Apple kimlikleri (Team/Bundle/Services ID): Levent "sonra vereceğim"
 dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonunda sorulacak.
 
-## ▶ DEVAM NOKTASI (2 Eki — M4 Part 3 sürüyor)
-Part 3 başladı (aşağıda › M4 ilerleme › Part 3 tablosu). Part 2 aktarımı hâlâ bekliyor (`docs/aktarim/M4/` README 8-13).
-Levent'i bekleyen: K-308 cihaz adımları, sorular 33-44.
+## ▶ DEVAM NOKTASI (2 Eki akşam — M4 Part 3 yarıda, compact)
+**Önce oku:** `plan/oturum-promptlari/M4-part3-devam.md` (tam olarak nerede, sıradaki adımlar, dersler).
+Birleşen: K-407, K-413, K-424, K-416 1/3 (#236-#241, #244, #245). Yarım: K-416 2/3 dal `mobile/113-add-moves` (5fb1341,
+PR yok). Sonra K-416 2b (kendi hareketi) + 3/3 (süperset), K-418 (yer tutucu), K-419 eksik listesi, Part 3 ÇIKIŞ.
+Part 2 aktarımı da bekliyor. Levent'i bekleyen: K-308 cihaz adımları, sorular 33-48.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -364,7 +366,8 @@ agent karar verir, PR'da gerekçe.
 | K-413 tarif hafızası (ADR-034, V22, `/v1/recipes`, öğünde `recipe:<id>` porsiyonla) | ✅ birleşti; CI'da RED önce (iki tur); inceleme: düşen tek malzeme bütün listeyi 400 yapıyordu, porsiyon taşması, sınırsız tarif; saf `RecipeShareTests` | #239 | `M4/K-413.md` |
 | K-416 bölündü → **K-424** (training: `supersetId`, kullanıcının hareketi) + K-416 (mobil); K-413'ün telefon kısmı → **K-423** | backlog'a yazıldı | — | — |
 | K-424 süperset (`supersetId`) + kullanıcının hareketi (`/v1/custom-exercises`, `custom:<id>`, sınıflama kullanıcıya sorulur; ADR-035, V23) | ✅ birleşti; CI'da RED önce; inceleme: sözleşme metni düzenlenince tipler eski kaldı (mobil CI kırmızı), kendi hareketi "temiz değil" denince bitiş tümüyle reddediliyordu → kabul, etkisiz | #244 | `M4/K-424.md` |
-| K-416 (1/3) geçmiş seansı düzenle: sil (onaylı) + unutulan seti ekle (çevrimiçi), silinen setin telefondaki kopyası unutulur, geçmiş odakta yeniden okunur | PR açık (auto-merge); simülatör: boş alanlar görünmüyordu → son setten öneri; RIR eksikti; inceleme: süren seansta da düzenleme vardı, yeniden denemede yeni clientId (çift set), çift dokunuş onaylı silmeyi geçiyordu; hedefler değişmez → soru 48; mutasyon 11/11 + 2/2 + 7/7 | #245 | `M4/K-416.md` |
+| K-416 (1/3) geçmiş seansı düzenle: sil (onaylı) + unutulan seti ekle (çevrimiçi), silinen setin telefondaki kopyası unutulur, geçmiş odakta yeniden okunur | ✅ birleşti; simülatör: boş alanlar görünmüyordu → son setten öneri; RIR eksikti; inceleme: süren seansta da düzenleme vardı, yeniden denemede yeni clientId (çift set), çift dokunuş onaylı silmeyi geçiyordu; hedefler değişmez → soru 48; mutasyon 11/11 + 2/2 + 7/7 | #245 | `M4/K-416.md` |
+| K-416 (2/3) seansa plan dışı hareket ekle (katalogda ad/takma ad, `extraPlan`, boş sayı alanında soluk "–") | ⏸ yarım: dal `mobile/113-add-moves` 5fb1341, PR yok; eksik: panel "Kapat", inceleme | — | `M4/K-416.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
