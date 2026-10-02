@@ -42,26 +42,13 @@ export function RemindersSection() {
   const saveCue = () => void run(() => reminders.setCue(cue), {}, 'settings.reminders.failed');
 
   const on = settings.enabled && permission?.granted === true;
-  // iOS will not show its sheet again: only iOS Settings can allow it now.
   const blocked = permission !== null && !permission.granted && !permission.canAskAgain;
   const muted = { color: color.muted };
 
   return (
     <Section title={t('settings.reminders.title')}>
       <Text style={[styles.note, muted]}>{t('settings.reminders.what', { minutes: P.trainingLeadMinutes })}</Text>
-      {on ? (
-        <View style={styles.row}>
-          <Text style={[styles.state, { color: color.text }]}>{t('settings.reminders.on')}</Text>
-          <Button label={t('settings.reminders.turnOff')} variant="ghost" size="sm" disabled={busy} onPress={turnOff} />
-        </View>
-      ) : blocked ? (
-        <>
-          <Text style={[styles.note, { color: color.text }]}>{t('settings.reminders.blocked')}</Text>
-          <Button label={t('settings.reminders.openSettings')} variant="ghost" onPress={() => void Linking.openSettings()} />
-        </>
-      ) : (
-        <Button label={t('settings.reminders.turnOn')} disabled={busy} onPress={turnOn} />
-      )}
+      {on ? <OnRow busy={busy} onTurnOff={turnOff} /> : blocked ? <Blocked /> : <Button label={t('settings.reminders.turnOn')} disabled={busy} onPress={turnOn} />}
       <TextField
         label={t('settings.reminders.cue.label')}
         value={cue}
@@ -78,6 +65,27 @@ export function RemindersSection() {
       />
       {problem !== null && <Text style={[styles.note, { color: color.text }]}>{problem}</Text>}
     </Section>
+  );
+}
+
+function OnRow({ busy, onTurnOff }: { busy: boolean; onTurnOff: () => void }) {
+  const { color } = useTheme();
+  return (
+    <View style={styles.row}>
+      <Text style={[styles.state, { color: color.text }]}>{t('settings.reminders.on')}</Text>
+      <Button label={t('settings.reminders.turnOff')} variant="ghost" size="sm" disabled={busy} onPress={onTurnOff} />
+    </View>
+  );
+}
+
+/** iOS will not show its sheet again: only iOS Settings can allow notifications now. */
+function Blocked() {
+  const { color } = useTheme();
+  return (
+    <>
+      <Text style={[styles.note, { color: color.text }]}>{t('settings.reminders.blocked')}</Text>
+      <Button label={t('settings.reminders.openSettings')} variant="ghost" onPress={() => void Linking.openSettings()} />
+    </>
   );
 }
 

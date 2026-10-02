@@ -7,13 +7,14 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
 import { ConsentsSection } from '@/settings/ConsentsSection';
+import { RemindersSection } from '@/settings/RemindersSection';
 import { UnitsSection } from '@/settings/UnitsSection';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * Settings (K-309, prototype 5.2), opened from Today. Notifications (K-410) and the subscription (K-702) join when
- * those exist.
+ * Settings (K-309, prototype 5.2), opened from Today. The reminders (K-410) sit after the units; the subscription
+ * (K-702) joins when it exists.
  */
 export default function SettingsScreen() {
   const { color } = useTheme();
@@ -25,6 +26,7 @@ export default function SettingsScreen() {
         </Pressable>
         <ScreenTitle>{t('settings.title')}</ScreenTitle>
         <UnitsSection />
+        <RemindersSection />
         <Button label={t('settings.gyms')} variant="ghost" onPress={() => router.push('/gyms')} />
         <ConsentsSection />
         <AccountSection />
