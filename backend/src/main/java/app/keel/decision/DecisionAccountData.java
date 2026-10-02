@@ -14,7 +14,10 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Decision's part of the user's data (K-214, K-212): the plan and every call with the Snapshot it was made from. */
+/**
+ * Decision's part of the user's data (K-214, K-212): the plan, every call with the Snapshot it was made from, and the states
+ * the user declared (K-516).
+ */
 @Component
 class DecisionAccountData implements AccountDataExport {
 
@@ -22,12 +25,14 @@ class DecisionAccountData implements AccountDataExport {
     private final CallStore calls;
     private final JsonMapper json;
     private final TrainingCalls training;
+    private final StateStore states;
 
-    DecisionAccountData(JdbcClient jdbc, CallStore calls, JsonMapper json, TrainingCalls training) {
+    DecisionAccountData(JdbcClient jdbc, CallStore calls, JsonMapper json, TrainingCalls training, StateStore states) {
         this.jdbc = jdbc;
         this.calls = calls;
         this.json = json;
         this.training = training;
+        this.states = states;
     }
 
     @ApplicationModuleListener
@@ -52,6 +57,7 @@ class DecisionAccountData implements AccountDataExport {
     private void delete(AccountId account) {
         jdbc.sql("delete from decision.weekly_call where account_id = :account").param("account", account.value()).update();
         jdbc.sql("delete from decision.plan where account_id = :account").param("account", account.value()).update();
+        jdbc.sql("delete from decision.declared_state where account_id = :account").param("account", account.value()).update();
     }
 
     @Override
@@ -78,6 +84,7 @@ class DecisionAccountData implements AccountDataExport {
             entry.put("snapshot", snapshot);
             return entry;
         }).toList());
+        decision.put("declaredStates", states.all(account).stream().map(StateController.DeclaredState::of).toList());
         return decision;
     }
 }

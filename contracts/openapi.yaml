@@ -915,6 +915,59 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /v1/state:
+    get:
+      tags: [check-in]
+      operationId: getState
+      summary: The state the user declared, in force today (K-516, ADR-038)
+      description: |
+        What life brought, declared by the user — never asked for (U9). NOT_FOUND when none is in force today. Sickness and
+        pain are health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as every /v1/decisions route; CONFLICT
+        without a profile (no calendar to read today on).
+      responses:
+        "200":
+          description: The state in force
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeclaredState"
+        default:
+          $ref: "#/components/responses/Error"
+    put:
+      tags: [check-in]
+      operationId: declareState
+      summary: Declare a state from today
+      description: |
+        From today on the user's calendar, until `until` (included) or until they are back. A state in force ends
+        yesterday; one begun today is replaced whole. `until` before today, or more than max-range-days on, is
+        VALIDATION_FAILED. While a week holds a declared day the week is paused — neither on track nor missed — and the
+        week's call waits (NO_DECISION_YET); safety calls never wait (ADR-038).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewDeclaredState"
+      responses:
+        "200":
+          description: The state declared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeclaredState"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [check-in]
+      operationId: endState
+      summary: Back — the state in force ends yesterday
+      description: A state begun today is taken back. Nothing in force is nothing to do (204 all the same).
+      responses:
+        "204":
+          description: Back
+        default:
+          $ref: "#/components/responses/Error"
+
   # ── decision (K-212, K-216, K-217, ADR-003) ────────────────────────────────────────────────────────────────
   /v1/decisions:
     get:
@@ -2327,6 +2380,34 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Answer"
+
+    StateKind:
+      type: string
+      description: What life brought (L3 §4.2). Words in en.json › state.kind.<kind lowercased>.
+      enum: [TRAVELING, SICK, PAIN, BUSY, NEW_GYM]
+    DeclaredState:
+      type: object
+      required: [kind, since]
+      properties:
+        kind:
+          $ref: "#/components/schemas/StateKind"
+        since:
+          type: string
+          format: date
+          description: Its first day, on the user's calendar.
+        until:
+          type: string
+          format: date
+          description: Its last day, when the user gave one; absent until they are back.
+    NewDeclaredState:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: "#/components/schemas/StateKind"
+        until:
+          type: string
+          format: date
 
     # ── decision (the engine's Decision, field for field — ContractTests) ────────────────────────────────────
     Consistency:
