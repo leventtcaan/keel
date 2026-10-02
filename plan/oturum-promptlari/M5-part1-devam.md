@@ -28,6 +28,9 @@
    aktarım README'ye K-520 ve K-513 satırları.
 6. K-430 #273 Levent'te (soru 55) — dokunma.
 
+**Disk 4,3 GB (3 Eki, 5 GB altı):** oturum başında önbellek temizliği (`~/Library/Caches`, Xcode DerivedData, eski Gradle
+önbellekleri) — simülatörden önce şart; hâlâ azsa Levent'e sor.
+
 ## Sonra (part kapsamı)
 K-520 (tetikleyici soruları telefonda) · K-513 (önce böl: motor + K-521 mobil; ilk 8 hafta + 5. hafta risk — risk ağırlıkları kaynakta
 yok → girdiler kaynaklı, eşikler `urun` ya da soru) · K-519 (kararın dayanağı, sunucu) · K-502 (karar kartı varyantları + gerekçe
