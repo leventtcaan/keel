@@ -297,8 +297,12 @@ class SessionProgressApiTests {
         String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
         sets(account, older, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, older, List.of())).hasStatusOk();
+        // The newer session sets every move's target: none is left for an edit of the older one to move.
         String newer = start(account, MONDAY_EVENING);
         sets(account, newer, "bench_press", 3, 60, 10, "BOTH");
+        sets(account, newer, "squat", 3, 100, 10, "BOTH");
+        sets(account, newer, "one_arm_dumbbell_row", 3, 20, 10, "LEFT");
+        sets(account, newer, "one_arm_dumbbell_row", 3, 20, 10, "RIGHT");
         assertThat(finish(account, newer, List.of())).hasStatusOk();
         String unfinished = start(account, MONDAY_EVENING.plus(java.time.Duration.ofHours(1)));
 
