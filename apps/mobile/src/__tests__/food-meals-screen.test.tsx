@@ -181,6 +181,14 @@ test('a repeat tapped twice before the list is read again is logged once (review
   await act(async () => release());
 });
 
+test("a repeat hidden only until the next read: if that read has no such meal (refused, deleted), it is offered again", async () => {
+  await show();
+  const name = t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' });
+  await act(async () => fireEvent.press(screen.getByRole('button', { name })));
+  // mockRecords stays empty and the server's list has no lunch: the read that followed shows none.
+  expect(screen.getByRole('button', { name })).toBeOnTheScreen();
+});
+
 test('two presses in the same moment log once (review)', async () => {
   await show();
   const lunch = screen.getByRole('button', { name: t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Rice; Chicken' }) });

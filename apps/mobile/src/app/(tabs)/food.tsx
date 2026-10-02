@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,11 +29,12 @@ export default function FoodScreen() {
   const { data, reload } = useFoodDay();
   const [repeating, setRepeating] = useState(false);
   const [repeatProblem, setRepeatProblem] = useState<string | null>(null);
-  // Offers logged since the last read: hidden until the read that shows their meal lands, so a second tap on a slow
-  // network cannot log the same meal twice (each tap is a new clientId, which the server cannot tell apart).
-  const [repeated, setRepeated] = useState<ReadonlySet<string>>(new Set());
+  // Offers logged since this read: hidden until the next read lands (it shows their meal), so a second tap on a slow
+  // network cannot log the same meal twice — each tap is a new clientId, which the server cannot tell apart. Kept with
+  // the read they belong to: a new read starts with none hidden.
+  const [repeated, setRepeated] = useState<{ read: typeof data; ids: ReadonlySet<string> }>({ read: null, ids: new Set() });
+  const hidden = repeated.read === data ? repeated.ids : new Set<string>();
   const busy = useRef(false); // two presses in the same moment must not log twice
-  useEffect(() => setRepeated(new Set()), [data]);
 
   const repeat = async (meal: components['schemas']['Meal']) => {
     if (busy.current) return;
@@ -44,7 +45,7 @@ export default function FoodScreen() {
       // The consent as the phone knows it: withdrawn in Settings since this list was read, nothing is kept.
       if (await consents.granted('HEALTH_DATA')) {
         await queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt: new Date().toISOString(), slot: meal.slot, repeatOf: meal.id } });
-        setRepeated((before) => new Set(before).add(meal.id));
+        setRepeated((before) => ({ read: data, ids: new Set(before.read === data ? before.ids : []).add(meal.id) }));
       } else {
         setRepeatProblem(t('food.repeat.noConsent'));
       }
@@ -83,7 +84,7 @@ export default function FoodScreen() {
   ) : null;
   const targets = data !== null && data.targets.state === 'ready' ? <TargetsCard targets={data.targets.value} /> : null;
   const meals = data !== null && data.meals !== null ? <MealList meals={data.meals} complete={data.mealsRead} /> : null;
-  const offered = data === null ? [] : data.offers.filter((meal) => !repeated.has(meal.id));
+  const offered = data === null ? [] : data.offers.filter((meal) => !hidden.has(meal.id));
   const offers =
     offered.length > 0 ? <RepeatOffers offers={offered} busy={repeating} onRepeat={(meal) => void repeat(meal)} /> : null;
   const repeatNote = repeatProblem !== null ? <Text style={[styles.text, { color: color.text }]}>{repeatProblem}</Text> : null;
