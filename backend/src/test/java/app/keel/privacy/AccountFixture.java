@@ -72,6 +72,8 @@ final class AccountFixture {
                 "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 300, "unit", "g")))));
         // A state declared (K-516): sickness and pain are health data, so every state is (ADR-038).
         send(account, "PUT", "/v1/state", Map.of("kind", "SICK"));
+        // An answer to the coach's own question (K-512): health data, as the answers to the check-in are.
+        send(account, "POST", "/v1/prompts/loads_dropped/answers", Map.of("key", "2026-09-28", "choice", "OK"));
         // This week's check-in (Mondays, UTC): the plan and the call (K-212).
         send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "answers", List.of(),
                 "weekOf", LocalDate.now(ZoneOffset.UTC).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString()));
