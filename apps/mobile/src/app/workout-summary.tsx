@@ -14,7 +14,7 @@ import { tokens } from '@/theme/tokens';
 import { exerciseName } from '@/train/program';
 import { setText } from '@/train/session';
 import { type Summary, summarize } from '@/train/summary';
-import type { TrainData } from '@/train/trainData';
+import { type Move, type TrainData, movesOf } from '@/train/trainData';
 import { lastTime, setsOf, workoutOf } from '@/train/workout';
 
 /**
@@ -27,16 +27,16 @@ export default function WorkoutSummaryScreen() {
   const { workout } = useLocalSearchParams<{ workout: string }>();
   const units = useUnits();
   const { color } = useTheme();
-  const [read, setRead] = useState<{ data: TrainData; records: LocalRecord[] } | null>(null);
+  const [read, setRead] = useState<{ data: TrainData; own: Move[]; records: LocalRecord[] } | null>(null);
 
   useEffect(() => {
-    void Promise.all([training.read(api), workoutRecords()])
-      .then(([data, records]) => setRead({ data, records }))
+    void Promise.all([training.read(api), training.own(api), workoutRecords()])
+      .then(([data, own, records]) => setRead({ data, own, records }))
       .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
   }, [api, training, workoutRecords, report]);
 
   let summary: Summary | null = null;
-  const moves = new Map((read?.data.exercises.state === 'ready' ? read.data.exercises.value : []).map((m) => [m.id, m]));
+  const moves = movesOf(read?.data ?? null, read?.own ?? []);
   if (read !== null) {
     const program = read.data.program.state === 'ready' ? read.data.program.value : null;
     const dayId = workoutOf(read.records, workout)?.programDayId;
@@ -60,7 +60,7 @@ export default function WorkoutSummaryScreen() {
     const move = moves.get(done.exerciseId);
     return (
       <Card key={done.exerciseId}>
-        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(done.exerciseId)}</Text>
+        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(done.exerciseId, moves)}</Text>
         {done.line !== null && <Text style={[styles.text, { color: color.accent }]}>{done.line}</Text>}
         {move !== undefined &&
           done.sets.map((s) => (

@@ -16,6 +16,7 @@ import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { FinishForm } from '@/train/FinishForm';
+import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { RestTimer } from '@/train/RestTimer';
 import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
@@ -24,7 +25,7 @@ import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
 import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
-import type { TrainData } from '@/train/trainData';
+import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise } from '@/train/workout';
 import { weightInput } from '@/units/units';
@@ -44,6 +45,7 @@ export default function WorkoutScreen() {
   const units = useUnits();
   const { color } = useTheme();
   const [data, setData] = useState<TrainData | null>(null);
+  const [own, setOwn] = useState<Move[]>([]);
   const [records, setRecords] = useState<LocalRecord[] | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [rest, setRest] = useState<number | null>(null);
@@ -57,14 +59,17 @@ export default function WorkoutScreen() {
   const [failed, setFailed] = useState(false);
   // The "Add a move" search: null while closed, what is typed while open.
   const [adding, setAdding] = useState<string | null>(null);
+  // Creating the user's own move from the search (K-416): the name it started from, null while not creating.
+  const [creating, setCreating] = useState<string | null>(null);
 
   const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
   // A failed read back is not a failed save: the set is kept; the screen catches up at the next read.
   const refresh = useCallback(() => workoutRecords().then(setRecords).catch(named), [workoutRecords, named]);
   useEffect(() => {
-    void Promise.all([training.read(api), workoutRecords()])
-      .then(([read, kept]) => {
+    void Promise.all([training.read(api), training.own(api), workoutRecords()])
+      .then(([read, mine, kept]) => {
         setData(read);
+        setOwn(mine);
         setRecords(kept);
       })
       .catch((error: unknown) => {
@@ -83,7 +88,7 @@ export default function WorkoutScreen() {
   // warm-ups alone is no session (K-220). Leaving before a work set leaves nothing behind.
   const [held, setHeld] = useState<components['schemas']['NewSet'][]>([]);
   const warmedUp = [...done, ...held];
-  const moves = useMemo(() => new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((m) => [m.id, m])), [data]);
+  const moves = useMemo(() => movesOf(data, own), [data, own]);
   // The session's moves (K-416): the day's plan, then the moves done in this session outside it (a swap, an extra; read
   // back from the sets), then the ones added on this screen in the order they were added — a first set does not move
   // one ahead of the others.
@@ -237,14 +242,46 @@ export default function WorkoutScreen() {
     setAdded((before) => (before.includes(id) ? before : [...before, id]));
     setPicked(id);
     setAdding(null);
+    setCreating(null);
+  };
+  // Saved online (ADR-035): kept on the phone from the server's answer at once, so it is there offline later; then the
+  // own moves read again.
+  const saveOwn = async (body: components['schemas']['NewCustomExercise']): Promise<SaveOutcome> => {
+    try {
+      const { data: kept, error } = await api.POST('/v1/custom-exercises', { body });
+      if (kept === undefined) {
+        report({ name: error?.code ?? 'Unknown' }); // the limit or a rule: the code only, never the name typed
+        return 'refused';
+      }
+      await training.saved(kept);
+      const mine = await training.own(api);
+      setOwn(mine.some((m) => m.id === kept.id) ? mine : [...mine, ownMove(kept)]);
+      addMove(kept.id);
+      return 'saved';
+    } catch (error) {
+      named(error);
+      return 'offline';
+    }
   };
   const found = adding === null ? [] : findMoves(adding, [...moves.values()], new Set(entries.map((e) => e.exerciseId)));
   const addNote =
     adding !== null && adding.trim() !== '' && found.length === 0 ? (
       <Text style={[styles.small, { color: color.muted }]}>{t('workout.add.none')}</Text>
     ) : null;
+  const inSession = new Set(entries.map((e) => e.exerciseId));
+  const typedName = adding?.trim() ?? '';
+  const createButton =
+    typedName === '' ? null : <Button label={t('workout.add.create', { name: typedName })} variant="ghost" size="sm" onPress={() => setCreating(typedName)} />;
   const addPanel =
-    day === null ? null : adding === null ? (
+    day === null ? null : creating !== null ? (
+      <OwnMoveForm
+        name={creating}
+        catalog={[...moves.values()].filter((m) => !inSession.has(m.id))}
+        onPick={addMove}
+        onSave={saveOwn}
+        onBack={() => setCreating(null)}
+      />
+    ) : adding === null ? (
       <Button label={t('workout.add.open')} variant="ghost" size="sm" onPress={() => setAdding('')} />
     ) : (
       <View style={styles.list}>
@@ -253,13 +290,14 @@ export default function WorkoutScreen() {
           <Pressable
             key={m.id}
             accessibilityRole="button"
-            accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id) })}
+            accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id, moves) })}
             onPress={() => addMove(m.id)}
             style={styles.move}>
-            <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id)}</Text>
+            <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id, moves)}</Text>
           </Pressable>
         ))}
         {addNote}
+        {createButton}
         <Button label={t('workout.add.close')} variant="ghost" size="sm" onPress={() => setAdding(null)} />
       </View>
     );
@@ -277,7 +315,7 @@ export default function WorkoutScreen() {
             onPress={() => setPicked(p.exerciseId)}
             style={[styles.move, on && { backgroundColor: color.surface }]}>
             <Text style={[styles.text, styles.grow, { color: status?.current === null ? color.muted : color.text }]}>
-              {exerciseName(p.exerciseId)}
+              {exerciseName(p.exerciseId, moves)}
             </Text>
             <Text style={[styles.small, { color: on ? color.accent : color.muted }]}>{status === null ? '' : exerciseStatus(status)}</Text>
           </Pressable>
@@ -320,18 +358,18 @@ export default function WorkoutScreen() {
   const card =
     moveId === undefined ? null : move === undefined || plan === null ? (
       <Card>
-        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(moveId)}</Text>
+        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(moveId, moves)}</Text>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.unknownMove')}</Text>
       </Card>
     ) : (
       <Card>
         <View style={styles.cardHead}>
-          <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(moveId)}</Text>
+          <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(moveId, moves)}</Text>
           {targetLine}
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId) })}
+          accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId, moves) })}
           onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}>
           <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
         </Pressable>
@@ -353,6 +391,7 @@ export default function WorkoutScreen() {
     <>
       <FinishForm
         moves={worked}
+        named={moves}
         unclean={unclean}
         busy={busy}
         onMark={(id, clean) =>

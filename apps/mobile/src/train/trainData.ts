@@ -14,6 +14,24 @@ import type { KeyValue } from '@/units/preference';
 
 type Schemas = components['schemas'];
 
+/**
+ * A move as the session, the summary and the history read it: the catalog's, or the user's own (K-416, ADR-035) with
+ * the name they gave it — the catalog's names are the app's copy (`nameKey`), an own move's is the user's words.
+ */
+export type Move = Schemas['Exercise'] & { name?: string };
+
+/** An own move as the catalog's: the engine's questions answered by the user; no muscles, swaps or setup to show. */
+export function ownMove(own: Schemas['CustomExercise']): Move {
+  const { id, name, kind, load: loadModel, equipment, unilateral } = own;
+  return { id, nameKey: '', name, kind, muscles: [], alternatives: [], load: loadModel, equipment, unilateral, setupFields: [] };
+}
+
+/** The catalog's moves and the user's own, by id: what a set's exerciseId names. */
+export function movesOf(data: TrainData | null, own: Move[]): Map<string, Move> {
+  const catalog: Move[] = data?.exercises.state === 'ready' ? data.exercises.value : [];
+  return new Map([...catalog, ...own].map((m) => [m.id, m]));
+}
+
 export type TrainData = {
   program: Loaded<Schemas['Program']>;
   exercises: Loaded<Schemas['Exercise'][]>;
@@ -27,6 +45,7 @@ const PROGRAM = 'train.program';
 const EXERCISES = 'train.exercises';
 const GYM = 'train.gym';
 const HISTORY = 'train.history';
+const OWN = 'train.own';
 
 /** The gym marked current, as weights to round to: "none" when no gym is in use (its kept copy goes). */
 function gymInUse(read: Loaded<Schemas['Gym'][]>): Loaded<GymWeights> {
@@ -100,10 +119,29 @@ export function createTrainingCache(kv: KeyValue) {
       const read = await load(() => api.GET('/v1/workouts', { params: { query: { from, to } } }));
       return (await withCopy(HISTORY, read, startedIn)).read;
     },
+    /** The user's own moves (K-416), kept for offline like the catalog; none when unread and nothing kept. */
+    async own(api: ApiClient): Promise<Move[]> {
+      const startedIn = generation;
+      const read = await load(() => api.GET('/v1/custom-exercises')).then((answer) => withCopy(OWN, answer, startedIn));
+      return read.read.state === 'ready' ? read.read.value.map(ownMove) : [];
+    },
+    /** A move just saved (K-416): kept at once from the server's answer, so the next read offline has it. */
+    async saved(move: Schemas['CustomExercise']): Promise<void> {
+      const startedIn = generation;
+      const copy = await kv.getItemAsync(OWN);
+      let kept: Schemas['CustomExercise'][] = [];
+      try {
+        kept = copy === null ? [] : (JSON.parse(copy) as Schemas['CustomExercise'][]);
+      } catch {
+        kept = []; // a copy that cannot be read is no copy
+      }
+      if (startedIn !== generation) return; // signed out meanwhile: the move was the last account's
+      await kv.setItemAsync(OWN, JSON.stringify([...kept.filter((m) => m.id !== move.id), move]));
+    },
     /** The kept copies belong to the account: they go at sign-out. */
     async forget(): Promise<void> {
       generation += 1;
-      await Promise.all([kv.removeItemAsync(PROGRAM), kv.removeItemAsync(EXERCISES), kv.removeItemAsync(GYM), kv.removeItemAsync(HISTORY)]);
+      await Promise.all([PROGRAM, EXERCISES, GYM, HISTORY, OWN].map((key) => kv.removeItemAsync(key)));
     },
   };
 }

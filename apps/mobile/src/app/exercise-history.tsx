@@ -16,7 +16,7 @@ import { type Loaded, localDay } from '@/today/today';
 import { type PersonalRecord, type Session, historyOf, recordsOf, sessionsOf } from '@/train/history';
 import { exerciseName, shortDate } from '@/train/program';
 import { setText } from '@/train/session';
-import { type TrainData, historyFrom } from '@/train/trainData';
+import { type Move, type TrainData, historyFrom, movesOf } from '@/train/trainData';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
 type Schemas = components['schemas'];
@@ -46,19 +46,20 @@ export default function ExerciseHistoryScreen() {
   const { exercise } = useLocalSearchParams<{ exercise: string }>();
   const units = useUnits();
   const { color } = useTheme();
-  const [read, setRead] = useState<{ data: TrainData; history: Loaded<Schemas['Workout'][]>; records: LocalRecord[]; from: string } | null>(null);
+  const [read, setRead] = useState<{ data: TrainData; own: Move[]; history: Loaded<Schemas['Workout'][]>; records: LocalRecord[]; from: string } | null>(null);
 
   // Read whenever the screen comes into view: coming back from editing a session (K-416) shows the edit at once.
   useFocusEffect(
     useCallback(() => {
       const now = new Date();
-      void Promise.all([training.read(api), training.history(api, now), workoutRecords()])
-        .then(([data, history, records]) => setRead({ data, history, records, from: historyFrom(now) }))
+      void Promise.all([training.read(api), training.own(api), training.history(api, now), workoutRecords()])
+        .then(([data, own, history, records]) => setRead({ data, own, history, records, from: historyFrom(now) }))
         .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
     }, [api, training, workoutRecords, report]),
   );
 
-  const move = read?.data.exercises.state === 'ready' ? read.data.exercises.value.find((m) => m.id === exercise) : undefined;
+  const moves = movesOf(read?.data ?? null, read?.own ?? []);
+  const move = read === null ? undefined : moves.get(exercise);
   const server = read?.history.state === 'ready' ? read.history.value : null;
   // Without the catalog the move's sets cannot be written (its load model): no history rather than an empty one.
   const sessions = read === null || move === undefined ? [] : historyOf(sessionsOf(server, read.records, read.from), exercise);
@@ -126,7 +127,7 @@ export default function ExerciseHistoryScreen() {
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <ScreenTitle>{exerciseName(exercise)}</ScreenTitle>
+        <ScreenTitle>{exerciseName(exercise, moves)}</ScreenTitle>
         {phoneOnly}
         {recordCard}
         {sessions.length > 0 && <Text style={[styles.heading, { color: color.text }]}>{t('history.sessions')}</Text>}

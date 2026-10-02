@@ -5,6 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import { dayName, exerciseName, nextLine, programNotes, repsLine, setsLine } from '@/train/program';
+import type { Move } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
@@ -47,4 +48,11 @@ test("the server's next target in the user's unit; none until there is one", () 
   expect(nextLine(bench, 'METRIC', 'EXTERNAL')).toBeNull();
   // A bodyweight move has no weight to aim for: its reps.
   expect(nextLine({ ...bench, nextLoadKg: 0, nextReps: 9 }, 'METRIC', 'BODYWEIGHT')).toBe('Next 9 reps');
+});
+
+test("the user's own move by the name they gave; a move unknown everywhere by its id", () => {
+  const own = new Map([['custom:1', { id: 'custom:1', nameKey: '', name: 'Landmine press' } as Move]]);
+  expect(exerciseName('custom:1', own)).toBe('Landmine press');
+  expect(exerciseName('bench_press', own)).toBe('Bench press');
+  expect(exerciseName('custom:2', own)).toBe('custom:2');
 });

@@ -7,6 +7,8 @@ import type { components } from '@/api/schema';
 import { has, t } from '@/copy';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
+import type { Move } from './trainData';
+
 type Schemas = components['schemas'];
 
 const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -30,8 +32,10 @@ export function dayName(day: Schemas['ProgramDay']): string {
   return day.nameKey !== undefined ? t(`programDays.${day.nameKey}.name`) : (day.name ?? '');
 }
 
-/** A move by the catalog's copy; a move this app version does not know, by its id. */
-export function exerciseName(id: string): string {
+/** A move by the catalog's copy, the user's own by the name they gave it; a move this app version does not know, by its id. */
+export function exerciseName(id: string, moves?: ReadonlyMap<string, Move>): string {
+  const own = moves?.get(id)?.name;
+  if (own !== undefined) return own;
   const key = `exercises.${id}.name`;
   return has(key) ? t(key) : id;
 }

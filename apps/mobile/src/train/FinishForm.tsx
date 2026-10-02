@@ -9,10 +9,13 @@ import { tokens } from '@/theme/tokens';
 
 import { workoutParams } from './params';
 import { exerciseName } from './program';
+import type { Move } from './trainData';
 
 type Props = {
   /** The moves with a set done this session. */
   moves: string[];
+  /** The catalog's moves and the user's own: an own move by the name they gave it. */
+  named: ReadonlyMap<string, Move>;
   unclean: Set<string>;
   onMark: (exerciseId: string, clean: boolean) => void;
   /** The session's note (K-422), optional. */
@@ -27,7 +30,7 @@ type Props = {
  * Before the workout ends: was each move's form clean? A move that was not keeps its weight and reps next time (G6 K-31,
  * K-217). Clean is the default: the question is asked, never assumed against the user.
  */
-export function FinishForm({ moves, unclean, onMark, note, onNote, onFinish, onBack, busy }: Props) {
+export function FinishForm({ moves, named, unclean, onMark, note, onNote, onFinish, onBack, busy }: Props) {
   const { color } = useTheme();
   return (
     <View style={styles.form}>
@@ -35,16 +38,16 @@ export function FinishForm({ moves, unclean, onMark, note, onNote, onFinish, onB
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.form.note')}</Text>
       {moves.map((id) => (
         <View key={id} style={styles.move}>
-          <Text style={[styles.text, styles.name, { color: color.text }]}>{exerciseName(id)}</Text>
+          <Text style={[styles.text, styles.name, { color: color.text }]}>{exerciseName(id, named)}</Text>
           <Chip
             label={t('workout.form.clean')}
-            accessibilityLabel={`${exerciseName(id)}: ${t('workout.form.clean')}`}
+            accessibilityLabel={`${exerciseName(id, named)}: ${t('workout.form.clean')}`}
             selected={!unclean.has(id)}
             onPress={() => onMark(id, true)}
           />
           <Chip
             label={t('workout.form.unclean')}
-            accessibilityLabel={`${exerciseName(id)}: ${t('workout.form.unclean')}`}
+            accessibilityLabel={`${exerciseName(id, named)}: ${t('workout.form.unclean')}`}
             selected={unclean.has(id)}
             onPress={() => onMark(id, false)}
           />

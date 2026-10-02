@@ -267,3 +267,71 @@ test("a history read still on its way when the user signs out keeps nothing: the
   await reading;
   expect(kv.map.size).toBe(0);
 });
+
+describe("the user's own moves (K-416, ADR-035)", () => {
+  const OWN = [{ id: 'custom:1', clientId: 'c1', name: 'Landmine press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: true }];
+  const AS_MOVE = {
+    id: 'custom:1',
+    nameKey: '',
+    name: 'Landmine press',
+    kind: 'COMPOUND',
+    muscles: [],
+    alternatives: [],
+    load: 'EXTERNAL',
+    equipment: 'BARBELL',
+    unilateral: true,
+    setupFields: [],
+  };
+  const owning = api((path) => (path === '/v1/custom-exercises' ? json(OWN) : json(EXERCISES)));
+
+  test('read as moves like the catalog’s, with their own names; kept for offline', async () => {
+    const kv = memoryKv();
+    expect(await createTrainingCache(kv).own(owning)).toEqual([AS_MOVE]);
+    expect(
+      await createTrainingCache(kv).own(
+        api(() => 'offline'),
+      ),
+    ).toEqual([AS_MOVE]);
+  });
+
+  test('a move just saved is kept at once: the next read offline has it, though the read after saving failed', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    await cache.own(api(() => json([])));
+    await cache.saved(OWN[0] as never);
+    await cache.saved(OWN[0] as never); // twice is once
+    expect(await cache.own(api(() => 'offline'))).toEqual([AS_MOVE]);
+  });
+
+  test('unread and nothing kept: none', async () => {
+    expect(await createTrainingCache(memoryKv()).own(api(() => 'offline'))).toEqual([]);
+  });
+
+  test('signing out forgets them', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    await cache.own(owning);
+    await cache.forget();
+    expect(kv.map.size).toBe(0);
+  });
+});
+
+test("an own-moves read still on its way when the user signs out keeps nothing: the names were the last account's", async () => {
+  const kv = memoryKv();
+  const cache = createTrainingCache(kv);
+  let answer: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => (answer = resolve));
+  const slow = createApiClient({
+    baseUrl: BASE,
+    accessToken: async () => 'tok',
+    fetch: async () => {
+      await gate;
+      return json([{ id: 'custom:1', clientId: 'c1', name: 'Landmine press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false }]);
+    },
+  });
+  const reading = cache.own(slow);
+  await cache.forget();
+  answer();
+  await reading;
+  expect(kv.map.size).toBe(0);
+});

@@ -167,6 +167,14 @@
       "tag": "urun",
       "source": "arastirma/ham/I2-etkilesim-modeli.md#A4",
       "note": "How many moves the session's 'Add a move' search shows (K-416): a short list to pick from with one tap (I2 A4: alternatives ready, no long search)."
+    },
+    {
+      "key": "own_move_name_max_chars",
+      "value": 60,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewCustomExercise",
+      "note": "The name of the user's own move (K-416, ADR-035): the contract's maxLength, the server's keel.training.custom-exercise.max-name."
     }
   ]
 }

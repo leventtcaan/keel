@@ -204,8 +204,37 @@
       "search": "Find a move",
       "pick": "Add {name}",
       "close": "Close",
+      "create": "Create \u201c{name}\u201d",
       "none": "No move by that name in the catalog. Try other words."
     }
+  },
+  "ownMove": {
+    "title": "Your own move",
+    "similar": "Is it one of these?",
+    "name": "Name",
+    "kind": "What kind of move?",
+    "kinds": {
+      "COMPOUND": "Several joints (like a squat)",
+      "ISOLATION": "One joint (like a curl)"
+    },
+    "equipment": "What do you lift?",
+    "equipments": {
+      "BARBELL": "Barbell",
+      "DUMBBELL": "Dumbbell",
+      "MACHINE": "Machine",
+      "CABLE": "Cable",
+      "PLATE_LOADED": "Plate-loaded",
+      "BODYWEIGHT": "Your body"
+    },
+    "added": "Do you add weight to it?",
+    "addedYes": "Yes, a plate or dumbbell",
+    "unilateral": "One side at a time?",
+    "yes": "Yes",
+    "no": "No",
+    "save": "Save and add",
+    "back": "Back",
+    "offline": "Saving a move needs a connection. Try again when you're online.",
+    "refused": "This move could not be saved. Try again."
   },
   "summary": {
     "title": "Workout done",
