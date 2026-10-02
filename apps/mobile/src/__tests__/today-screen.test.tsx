@@ -471,13 +471,28 @@ describe("this week's check-in (K-501)", () => {
 });
 
 describe('state mode on Today (K-518, ADR-038)', () => {
-  test('a state in force: the week is paused, since when, and "I\'m back" ends it', async () => {
+  test('a state in force: the week is paused, since when, and "I\'m back" ends it — read again, the welcome stays', async () => {
     mockAnswers['/v1/state'] = ok({ kind: 'SICK', since: '2026-09-28' });
+    mockServices.state.back.mockImplementationOnce(async () => {
+      mockAnswers['/v1/state'] = refused(404, 'NOT_FOUND');
+    });
     await show();
     expect(screen.getByText(t('today.state.paused', { state: t('state.kind.sick.name'), since: 'Mon, Sep 28' }))).toBeOnTheScreen();
     await press(t('today.state.back'));
     expect(mockServices.state.back).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(t('today.state.paused', { state: t('state.kind.sick.name'), since: 'Mon, Sep 28' }))).toBeNull();
     expect(screen.getByText(t('today.state.welcomeBack'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('today.state.declare') })).toBeOnTheScreen();
+  });
+
+  test('a note belongs to the state it was said for: a new state shows no old welcome', async () => {
+    mockAnswers['/v1/state'] = ok({ kind: 'SICK', since: '2026-09-28' });
+    mockServices.state.back.mockImplementationOnce(async () => {
+      mockAnswers['/v1/state'] = ok({ kind: 'BUSY', since: '2026-09-29' });
+    });
+    await show();
+    await press(t('today.state.back'));
+    expect(screen.queryByText(t('today.state.welcomeBack'))).toBeNull();
   });
 
   test('no state: one quiet way to say life got in the way', async () => {

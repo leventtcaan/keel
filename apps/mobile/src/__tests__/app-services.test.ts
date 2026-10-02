@@ -397,6 +397,29 @@ describe('withdrawing the health data consent (K-231)', () => {
     expect(await services.state.inForce()).toBe(false);
   });
 
+  test('and the reminders it quieted come back at once (K-518)', async () => {
+    const scheduled: string[][] = [];
+    const notifications = {
+      permission: async () => ({ granted: true, canAskAgain: true }),
+      request: async () => ({ granted: true, canAskAgain: true }),
+      replace: async (reminders: { id: string }[]) => void scheduled.push(reminders.map((r) => r.id)),
+      clear: async () => void scheduled.push([]),
+    };
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(200).fetch, report: () => {},
+      kv: memoryKv(), locale: 'en-US', notifications });
+    await services.session.signIn(SESSION);
+    await services.reminders.keepSchedule({ trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'UTC' } as never);
+    await services.reminders.turnOn();
+    await services.state.keep({ state: 'ready', value: { kind: 'SICK', since: '2026-10-07' } });
+    await settle();
+    expect(scheduled.at(-1)).toEqual([]);
+
+    await services.withdrawHealthData();
+    await settle();
+
+    expect(scheduled.at(-1)?.length).toBeGreaterThan(0);
+  });
+
   test('the phone remembers it at once: offline, the health data consent reads as withdrawn (K-402)', async () => {
     const { services, fake } = await withEntries(200);
     await services.consents.remember('HEALTH_DATA', 'GRANTED');

@@ -93,3 +93,13 @@ test('forgotten: nothing is known, nothing kept', async () => {
   expect(await state.inForce()).toBe(false);
   expect(kv.items.size).toBe(0);
 });
+
+test("its last day, while it is in force: for the reminders' return by date; none past it or without one", async () => {
+  const { state } = service({});
+  await state.keep({ state: 'ready', value: { kind: 'TRAVELING', since: '2026-10-05', until: '2026-10-09' } });
+  expect(await state.until()).toBe('2026-10-09');
+  await state.keep({ state: 'ready', value: { kind: 'SICK', since: '2026-10-05' } });
+  expect(await state.until()).toBeNull();
+  await state.keep({ state: 'ready', value: { kind: 'BUSY', since: '2026-10-01', until: '2026-10-06' } });
+  expect(await state.until()).toBeNull();
+});
