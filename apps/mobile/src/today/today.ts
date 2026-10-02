@@ -28,6 +28,8 @@ export type TodayData = {
   checkIn?: Loaded<Schemas['CheckIn']>;
   /** A state the user declared, in force today (K-518): the week is paused. */
   state?: Loaded<Schemas['DeclaredState']>;
+  /** The coach's own questions not answered yet (K-520). */
+  prompts?: Loaded<Schemas['Prompt'][]>;
 };
 
 type Answer<T> = { data?: T; error?: { code?: string }; response: Response };
@@ -47,7 +49,7 @@ export async function load<T>(request: () => Promise<Answer<T>>): Promise<Loaded
 
 /** Every part at once; `day` is today on the phone's calendar (YYYY-MM-DD). */
 export async function loadToday(api: ApiClient, day: string): Promise<TodayData> {
-  const [consistency, decision, program, weighIns, targets, budget, checkIn, state] = await Promise.all([
+  const [consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts] = await Promise.all([
     load(() => api.GET('/v1/consistency')),
     load(() => api.GET('/v1/decisions/current')),
     load(() => api.GET('/v1/program')),
@@ -56,8 +58,9 @@ export async function loadToday(api: ApiClient, day: string): Promise<TodayData>
     load(() => api.GET('/v1/days/{day}/budget', { params: { path: { day } } })),
     load(() => api.GET('/v1/check-ins/current')),
     load(() => api.GET('/v1/state')),
+    load(() => api.GET('/v1/prompts')),
   ]);
-  return { consistency, decision, program, weighIns, targets, budget, checkIn, state };
+  return { consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts };
 }
 
 // "Mon, Sep 28": a calendar day with its weekday, in English like every word of the app, read as a date only.

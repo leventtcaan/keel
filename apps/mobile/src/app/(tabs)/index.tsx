@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { CallCard } from '@/today/CallCard';
 import { CheckInCard } from '@/today/CheckInCard';
+import { PromptCard } from '@/today/PromptCard';
 import { StateCard } from '@/today/StateCard';
 import { CoachChips } from '@/today/CoachChips';
 import { ConsistencyCard } from '@/today/ConsistencyCard';
@@ -55,6 +56,8 @@ export default function TodayScreen() {
   const stateCard = data === null ? null : <StateCard state={data.state} onChanged={reload} />;
   // The check-in waits for an answer before this week's call (K-501); not read, nothing offered — the call card says enough.
   const checkIn = data?.checkIn?.state === 'ready' ? <CheckInCard checkIn={data.checkIn.value} /> : null;
+  // The coach's own question (K-520): read on each focus, so an answered one is gone and the next comes.
+  const prompt = data?.prompts?.state === 'ready' ? <PromptCard prompts={data.prompts.value} /> : null;
   const list =
     data === null ? null : (
       <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
@@ -74,6 +77,7 @@ export default function TodayScreen() {
         {consistency}
         {stateCard}
         {checkIn}
+        {prompt}
         {call}
         {list}
         {coachChips}
