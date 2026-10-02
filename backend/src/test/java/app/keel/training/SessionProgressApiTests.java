@@ -307,6 +307,62 @@ class SessionProgressApiTests {
         assertThat(map(send("GET", account, "/v1/workouts/" + unfinished, null))).doesNotContainKey("setsNextTargets");
     }
 
+    @Test
+    void anOlderSessionStillATargetsSourceMovesItWhenEdited() throws Exception {
+        // Per move (K-432 review): the newer session has no bench, so bench's target is still the older session's —
+        // correcting that session's bench corrects the target; squat's came from the newer one and stays.
+        AccountId account = withAProgram();
+        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        String newer = start(account, MONDAY_EVENING);
+        sets(account, newer, "squat", 3, 100, 10, "BOTH");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+        List<Object> squat = next(account, 1);
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + older, null))).containsEntry("setsNextTargets", true);
+        assertThat(send("DELETE", account, "/v1/workouts/" + older + "/sets/" + setIds(account, older).getFirst(), null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(target(60, 10));
+        assertThat(next(account, 1)).isEqualTo(squat);
+    }
+
+    @Test
+    void aSessionWhoseMoveHasNoTargetYetSetsOneWhenTheMoveIsAdded() throws Exception {
+        // The forgotten bench of the last session: no target came from it, yet adding the sets makes one — so it says so.
+        AccountId account = withAProgram();
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "squat", 3, 100, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout, null))).containsEntry("setsNextTargets", true);
+
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+    }
+
+    @Test
+    void theListSaysItForEachSession() throws Exception {
+        AccountId account = withAProgram();
+        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        String newer = start(account, MONDAY_EVENING);
+        for (String move : List.of("bench_press", "squat", "one_arm_dumbbell_row")) {
+            sets(account, newer, move, 3, 20, 10, "one_arm_dumbbell_row".equals(move) ? "LEFT" : "BOTH");
+        }
+        set(account, newer, "one_arm_dumbbell_row", 20, 10, 1, "RIGHT");
+        set(account, newer, "one_arm_dumbbell_row", 20, 10, 1, "RIGHT");
+        set(account, newer, "one_arm_dumbbell_row", 20, 10, 1, "RIGHT");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+
+        Map<String, Object> listed = ((List<Map<String, Object>>) JSON.readValue(send("GET", account,
+                "/v1/workouts?from=2026-09-01&to=2026-09-30", null).getResponse().getContentAsString(), List.class)).stream()
+                .collect(java.util.stream.Collectors.toMap(w -> (String) w.get("id"), w -> w.get("setsNextTargets")));
+
+        assertThat(listed).containsEntry(newer, true).containsEntry(older, false);
+    }
+
     @SuppressWarnings("unchecked")
     private List<String> setIds(AccountId account, String workout) throws Exception {
         return ((List<Map<String, Object>>) map(send("GET", account, "/v1/workouts/" + workout, null)).get("sets")).stream()

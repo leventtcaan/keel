@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -95,8 +96,8 @@ class WorkoutController {
     }
 
     /**
-     * Contract Workout. {@code setsNextTargets}, on a finished session of the program: whether a target of its day came
-     * from it, so an edit of its sets moves that target (K-432).
+     * Contract Workout. {@code setsNextTargets}, on a finished session of the program: whether an edit of its sets can
+     * move a target of its day — one that came from it or an older session, or a move with none yet (K-432).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<LoggedSet> sets,
@@ -153,7 +154,7 @@ class WorkoutController {
     List<Workout> list(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         require(api.range(from, to));
         ZoneId zone = profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
-        Set<String> targetSources = programs.targetSources(account);
+        Map<UUID, List<Optional<Instant>>> targetSources = programs.targetSources(account);
         return store.between(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant())
                 .stream().map(workout -> read(workout, targetSources)).toList();
     }
@@ -221,9 +222,9 @@ class WorkoutController {
         return read(workout, programs.targetSources(account));
     }
 
-    private Workout read(WorkoutStore.Workout workout, Set<String> targetSources) {
+    private Workout read(WorkoutStore.Workout workout, Map<UUID, List<Optional<Instant>>> targetSources) {
         Boolean setsNextTargets = workout.endedAt() == null || workout.programDayId() == null ? null
-                : targetSources.contains(ProgramStore.source(workout.programDayId(), workout.startedAt()));
+                : ProgramStore.movesATarget(targetSources.getOrDefault(workout.programDayId(), List.of()), workout.startedAt());
         return new Workout(workout.id(), workout.clientId(), workout.startedAt(), workout.endedAt(), workout.programDayId(), workout.note(),
                 store.sets(workout.id()).stream().map(LoggedSet::of).toList(), setsNextTargets);
     }

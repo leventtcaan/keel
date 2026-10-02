@@ -1357,7 +1357,8 @@
     "openSpoken": "Edit the session of {day}",
     "underWay": "This session is still under way: change it in the session itself.",
     "keep": "Keep it",
-    "targetsNote": "Changes here don't move your next session's targets: those were set when you finished."
+    "targetsNote": "Changes here don't move your next session's targets: a later session set them.",
+    "targetsMove": "Changes here update your next session's targets, from what this session now holds."
   },
   "gyms": {
     "title": "Gyms",

@@ -12,7 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -154,16 +153,25 @@ class ProgramStore {
                 .param("account", account.value()).param("id", plannedId).param("from", from.atOffset(ZoneOffset.UTC)).update();
     }
 
-    /** The sessions the account's targets came from, as "day id @ start" — one read for a whole list of workouts. */
-    Set<String> targetSources(AccountId account) {
-        return Set.copyOf(jdbc.sql("""
-                select distinct day_id, next_from from training.planned_exercise where account_id = :account and next_from is not null""")
-                .param("account", account.value())
-                .query((row, n) -> source(row.getObject("day_id", UUID.class), row.getObject("next_from", OffsetDateTime.class).toInstant())).list());
+    /**
+     * Where each planned move of each day has its target from (K-432): the start of the session it came from, or none —
+     * one read for a whole list of workouts.
+     */
+    Map<UUID, List<Optional<Instant>>> targetSources(AccountId account) {
+        Map<UUID, List<Optional<Instant>>> sources = new LinkedHashMap<>();
+        jdbc.sql("select day_id, next_from from training.planned_exercise where account_id = :account").param("account", account.value())
+                .query((row, n) -> Map.entry(row.getObject("day_id", UUID.class),
+                        Optional.ofNullable(row.getObject("next_from", OffsetDateTime.class)).map(OffsetDateTime::toInstant)))
+                .list().forEach(move -> sources.computeIfAbsent(move.getKey(), day -> new java.util.ArrayList<>()).add(move.getValue()));
+        return sources;
     }
 
-    static String source(UUID dayId, Instant startedAt) {
-        return dayId + "@" + startedAt;
+    /**
+     * Whether an edit of a session started at {@code startedAt} on that day can move a target: as setNext decides — a move
+     * with no target yet, or one from this session or an older one.
+     */
+    static boolean movesATarget(List<Optional<Instant>> daySources, Instant startedAt) {
+        return daySources.stream().anyMatch(from -> from.isEmpty() || !from.get().isAfter(startedAt));
     }
 
     private static BigDecimal plain(BigDecimal kg) {
