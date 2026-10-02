@@ -5,3 +5,4 @@
 
 ## Aktarım sırası (Part 1)
 1. ADR-037 işleri (`ADR-037-isleri.md`) — K-429 rıza metni ve sürümü
+2. K-501 pazartesi check-in — sunucu güdümlü sorular, tek clientId, V4 (cevaplar yalnız ekranda)
