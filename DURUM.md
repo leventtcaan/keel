@@ -77,7 +77,7 @@ M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sa
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
 ## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 sürüyor, compact öncesi durdu)
-Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki sürdü: K-518 #284 ✅, K-512 #283 + #285 ✅, K-519 #286 auto-merge, K-520 #287 inceleme; sırada K-513 (böl), K-502; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
+Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki: K-518, K-512, K-519, K-520 ✅ birleşti; K-513 kısım 1 #289 inceleme, kısım 2 sırada; sonra K-502, simülatör, Part 1 ÇIKIŞ; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
 #279/#282 K-516. Aktarım bekliyor: M4 Part 2-4 + M5 Part 1 (`docs/aktarim/M5/`). Sorular 55-62.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
@@ -492,8 +492,10 @@ DURUM ile birlikte commitlendi.
 | K-516 PR'ları | ✅ #279 + #282 birleşti | | |
 | K-512 (1/2) motor `Prompts` (T-13, T-4, T-5, T-2; ADR-039) | ✅ birleşti; yeniden tasarım: takvim haftaları, duraklayan günler (beyan + mola), T-5 yalnız CUT, kararlı anahtar, açığın ilk günü; 2. inceleme: adım hedefi gün gün (K-220 dersi) → RED önce; mutasyon 19/19 + 6/6 | #283 | `M5/K-512.md` |
 | K-512 (2/2) `/v1/prompts` + V26 cevaplar + V27 `training_days_since` + `DeficitStart` + modül API'leri | ✅ birleşti; inceleme: birim değişimi seans sayacını sıfırlıyordu → V27; bozuk kural 500 → 400; metin "this week"/"Two" → "last week"/"A few"; bağlantılar testsizdi → mola haftası, açlık, yük (geçen pazar) testleri; CI'da RED önce | #285 | `M5/K-512.md` |
-| K-519 kararın dayanağı (`GET /v1/decisions/{id}/basis`, `DecisionBasis`, `WeeklySpine.windowMeans`, `DecisionPipeline.windowRead`) | 🔄 auto-merge; inceleme: pencereyi okumamış karara hafta/hız gösteriyordu → `windowRead`; hedef kalori sözleşme testine takıldı (U5) → alan çıkarıldı; uyum yalnız oran (sayılar saklanmıyor) → soru 63; mutasyon 8/8 + 6/6 | #286 | `M5/K-519.md` |
-| K-520 tetikleyici soruları Bugün'de (tek soru, bir kez cevap, yanıt ya da yön) | 🔄 inceleme sürüyor; RED önce; 1462/1462; mutasyon 10/10 | #287 | `M5/K-520.md` |
+| K-519 kararın dayanağı (`GET /v1/decisions/{id}/basis`, `DecisionBasis`, `WeeklySpine.windowMeans`, `DecisionPipeline.windowRead`) | ✅ birleşti; inceleme: pencereyi okumamış karara hafta/hız gösteriyordu → `windowRead`; hedef kalori sözleşme testine takıldı (U5) → alan çıkarıldı; uyum yalnız oran → soru 63; mutasyon 8/8 + 6/6 | #286 | `M5/K-519.md` |
+| K-520 tetikleyici soruları Bugün'de (tek soru, bir kez cevap, yanıt ya da yön) | ✅ birleşti; inceleme: ret "bağlantı" diyordu, eski "gönderilemedi" notu kalıyordu, sunucu dizgisinden anahtarlar testsizdi → düzeltildi (RED 2); mutasyon 10/10 + 2/2 | #287 | `M5/K-520.md` |
+| K-513 (1/2) motor `FirstWeeks` (kişinin haftası, H1 sessiz, H2-H8 içerik, 5-8. hafta risk: herhangi bir sinyal; ADR-040) | 🔄 PR, inceleme sürüyor; RED 7/10 önce; mutasyon 10/10; K-521 (telefon) backlog'da | #289 | `M5/K-513.md` |
+| K-513 (2/2) sunucu `/v1/first-weeks` + riskte soru bütçesi 5 | bekliyor | — | |
 
 ## Session sonunda Levent'e sorulacaklar
 **M5 Part 1 (yeni, 55-59):**
@@ -525,6 +527,12 @@ DURUM ile birlikte commitlendi.
     görüntüsüne eklenir (göç değil, JSON alanı; eski kararlar oranla kalır). (a) oran yeter; (b) yeni kararlarda sayıları da sakla.
 64. **(K-512, ürün)** Kaçan seans kuralı **profilin** antrenman günlerine bakıyor (`trainingDays`). Kullanıcının kendi programı (`PUT
     /v1/program`) başka hafta günlerine konmuşsa soru o günler üzerinden sorulmaz. Programın günleri mi esas alınsın? (inceleme notu, <80)
+65. **(K-513, ürün)** İlk 8 haftanın metinleri taslak (`en.json › first_weeks.week2..8`; H4 nöral açıklama, H6 ilk kez "muscle"). Onay ya
+    da düzeltme? Ayrıca risk 5-8. haftada okunuyor (I1 F2 "5. hafta", G2 K-63 "5.-8. hafta kritik") ve **herhangi bir sinyal** risk
+    sayılıyor (kaynak ağırlık vermiyor). Kayıt düşüşü `min_logged_days_per_week`'i kullanıyor — o parametrenin kendisi de "SEÇİM,
+    Levent onayı bekliyor" notlu.
+66. **(K-513/K-521, ürün)** Riskli haftada telefon tek "insan tonu" mesaj gösterecek (I1 F2). Metni sen mi yazarsın, ben taslak mı
+    yazayım? Ayrıca "uygulama açılmaması" sinyali yalnız telefonda bilinir — sunucuya gönderilsin mi (açılış zamanı, sağlık verisi değil)?
 
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
 olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.

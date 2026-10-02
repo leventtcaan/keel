@@ -2,20 +2,20 @@
 
 > Önce oku: `M5.md` (ortak), `M5-part1.md`, `DURUM.md › ## M5 ilerleme` + `## ▶ DEVAM NOKTASI`. Git ile doğrula.
 
-## Yarım işler (sırayla) — güncel: 3 Eki, ikinci oturum
-1. ✅ K-518 #284, ✅ K-512 #283 + #285 birleşti.
-2. **K-519 #286** (`../keel-519`, auto-merge açık) ve **K-520 #287** (`../keel-520`, auto-merge açık): CI yeşil olunca GitHub birleştirir.
-   `get_status`/`gh pr view` ile doğrula; kırmızıysa düzelt. Birleşince worktree'leri kaldır (`git worktree remove`; squash'lı yerel dal
-   `branch -d` ile silinmez — `-D` hook'ta yasak, yerel dalı bırak).
-3. **K-513** (motor + sunucu; telefon K-521, backlog'da bölündü): ADR-040 yazılacak. Taslak karar:
-   - Hafta sayımı: kullanıcının ilk planının günü (decision.plan `plan_start` değil — ilk kararın `firstMadeOn` ya da profil ilk kaydı;
-     karar ver, ADR'ye yaz). H1-H8 içerik anahtarı motorda saf fonksiyon (`EightWeeks`), metinler `en.json`.
-   - 5. hafta riski (I1 F2): sinyaller kaynaklı — bu hafta 0 seans, af haftası kullanımı (Consistency'nin affettiği hafta), kayıt
-     tutarlılığı düşüşü; **uygulama açılmaması sunucuda yok** (açılış yalnız telefonda) → K-521'e. Birleştirme: **herhangi biri = risk**
-     (ağırlık yok → kaynaksız ağırlık uydurma yok). "Düşüş" eşiği kaynakta yok → `urun` parametresi + Levent'e soru.
-   - Riskte soru bütçesi ≤5 (U9): `QuestionBudget`'a bağla.
-4. **K-502** (karar kartı varyantları + gerekçe sayfası; K-519'un `/v1/decisions/{id}/basis`'ini kullanır; prototip 3.2-3.5).
-5. K-430 #273 Levent'te (soru 55) — dokunma.
+## Yarım işler (sırayla) — güncel: 3 Eki, ikinci oturum sonu
+1. ✅ K-518 #284, K-512 #283 + #285, K-519 #286, K-520 #287 birleşti.
+2. **K-513 kısım 1 #289** (`../keel-513`, dal `engine/119-first-weeks`): motor `FirstWeeks` + ADR-040 (main'de). İnceleme ajanı
+   çalışıyordu — sonucu yoksa yeniden incelet (code-reviewer). Bulgular TDD ile, sonra `gh pr merge 289 --auto --squash`.
+3. **K-513 kısım 2** (sunucu, decision modülü): `GET /v1/first-weeks` → `{week, contentKey?, risk: [rule]}` (8. haftadan sonra 404);
+   Facts: hesabın açılış günü (identity `account.created_at` — kimlik modülünden public okuyucu gerekir), biten takvim haftasının seans
+   sayısı (`TrainingLog.workoutStarts`), antrenman planlı mı (profil günleri), affedilen hafta (Consistency kaydı: son sayılan hafta
+   kaçtı ve önceki kaçmadı — `WeekLogs`/`Consistency.record` mantığından, motora saf yardımcı ekle), öğün kaydı olan gün sayıları (iki
+   hafta), biten hafta beyanlı mı (`StateStore.days`). Risk varken haftanın soru bütçesi `question_budget_per_week_anomaly`
+   (`QuestionBudget.forWeek`). Sözleşme + DB testi + RED CI'da önce.
+4. **K-502** (karar kartı varyantları + gerekçe sayfası; `/v1/decisions/{id}/basis` hazır; prototip 3.2-3.5).
+5. Simülatör turu (K-501, K-434, K-518, K-520, K-502), Part 1 ÇIKIŞ (DURUM), Part 2 sağlayıcı soruları, `M5-part2.md` kontrolü,
+   aktarım README'ye K-520 ve K-513 satırları.
+6. K-430 #273 Levent'te (soru 55) — dokunma.
 
 ## Sonra (part kapsamı)
 K-520 (tetikleyici soruları telefonda) · K-513 (önce böl: motor + K-521 mobil; ilk 8 hafta + 5. hafta risk — risk ağırlıkları kaynakta
@@ -31,3 +31,7 @@ sayfası, prototip 3.2-3.5) · simülatör turu (K-501, K-434, K-518, K-502 ekra
 - Göç sürüm sırası: açık PR'lar V24/V25/V26 kullanıyor — sıra boşluğu `MigrationConventionTests`'te kırmızı.
 - Tüm saf backend testleri yerelde: `./gradlew test`, düşenlerden `PostgresTestConfiguration|SpringBootTest` olmayanları ayıkla.
 - Sabitleyen liste testleri (uç noktalar, cevap türleri) bilerek genişleyince K1 notu (soru 59).
+- İki commit'i (RED + düzeltme) birlikte itme: CI yalnız ucu koşar, RED görünmez. Önce RED'i it, CI kırmızıyı görsün.
+- git_guard tüm komutu engeller (zincirin bir parçası yasaksa hiçbiri çalışmaz): `branch -D` yok; squash'lı yerel dalı bırak.
+- Test fikstüründe `weekly_call.snapshot = '{}'` 500 verir (Jackson 3 eksik primitive'i reddeder): gerçek `StoredSnapshot` JSON'u koy.
+- Sözleşme testi tek sayılık kaloriyi yakalar (U5): izin listesini genişletmeden önce alanın gerçekten gerekip gerekmediğine bak.

@@ -1879,7 +1879,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-416, K-217]
     why: "ADR-037 #48 (agent): düzenleme veriyi düzeltir, U2 — yanlış veriden türemiş hedef kalmaz"
     acceptance:
@@ -2004,7 +2004,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-213, K-401]
     why: "Haftada ≤2 soru (U9)"
     acceptance:
@@ -2204,7 +2204,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-112, K-404]
     why: "Ürünün koçluk davranışı backlog'da yoktu (Ö-18, L3 P3)"
     acceptance:
@@ -2221,7 +2221,7 @@ tasks:
     module: engine
     type: feature
     size: L
-    status: todo
+    status: in_progress
     depends_on: [K-111, K-512]
     why: "'Ürünün en yüksek değerli tek davranışı olabilir' (Ö-20) — görevi yoktu (L3 P3)"
     acceptance:
@@ -2282,7 +2282,7 @@ tasks:
     module: engine
     type: feature
     size: L
-    status: doing
+    status: done
     depends_on: [K-112, K-111]
     why: "Hayat araya girer: beyan edilen durum yeni veridir (U2), sayaç sıfırlanmaz (U7) (L3 Y2)"
     acceptance:
@@ -2304,7 +2304,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-516, K-410]
     why: "K-516'dan bölündü (ADR-038 #8): beyan kullanıcıdan gelir (U9), hatırlatmalar durur (ADR-036 #7)"
     acceptance:
@@ -2323,7 +2323,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-212]
     why: "K-502'den bölündü: gerekçe sayfasının 'The data' satırları kararın kendi anlık görüntüsünden gelmeli (Ö-25, U3 'hangi veri' yarısı)"
     acceptance:
@@ -2341,7 +2341,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-512]
     why: "K-512'den bölündü: tetikleyiciler bildirim değil, Bugün'de uygulama içi soru (ADR-036)"
     acceptance:
