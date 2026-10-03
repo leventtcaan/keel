@@ -116,6 +116,18 @@ function Body({ read, onRetry }: { read: Read | null; onRetry: () => void }) {
           </View>
         ))}
       </Card>
+      {/* What else the data says (K-603), beside the call and never changing it; a safety call says nothing else. */}
+      {decision.safety !== true && basis.signals !== undefined && basis.signals.length > 0 ? (
+        <Card>
+          <Text style={[styles.label, { color: color.muted }]}>{t('why.signals')}</Text>
+          {basis.signals.map((signal) => (
+            <View key={signal.rule} style={[styles.rule, { borderTopColor: color.line }]}>
+              <Text style={[styles.text, { color: color.text }]}>{t(`decision.rule.${signal.rule}`)}</Text>
+              <Text style={small}>{t(`today.call.source.${signal.source.tag}`)}</Text>
+            </View>
+          ))}
+        </Card>
+      ) : null}
       <Card>
         {confident ? <Text style={[styles.text, { color: color.text }]}>{t(`today.call.confidence.${decision.confidence}`)}</Text> : null}
         <Text style={small}>{t('today.call.nextReview', { date: weekdayDate(decision.nextReview) })}</Text>

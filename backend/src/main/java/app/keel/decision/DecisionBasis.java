@@ -1,9 +1,11 @@
 package app.keel.decision;
 
 import app.keel.engine.CheckIn;
+import app.keel.engine.CompositionSignal;
 import app.keel.engine.DeclaredContext;
 import app.keel.engine.Parameters;
 import app.keel.engine.Phase;
+import app.keel.engine.SourceTag;
 import app.keel.engine.DecisionPipeline;
 import app.keel.engine.WeeklySpine;
 import app.keel.engine.Snapshot;
@@ -22,10 +24,19 @@ import java.util.List;
  * never here (U4); nor the cycle answer, which is never kept (ADR-020 L-1).
  *
  * @param changeKgPerWeek from the window's first week to its latest, per week; none when the window was not read
+ * @param signals what else the read data says, beside the call and never changing it (K-603: weight steady, waist down);
+ *     none when there is nothing
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWeek, BigDecimal adherence, AdherenceCount adherenceCount,
-        Answers answers, StoredSnapshot.Training training, DeclaredContext pausedBy) {
+        Answers answers, StoredSnapshot.Training training, DeclaredContext pausedBy, List<Signal> signals) {
+
+    /** A signal as the contract's Reason: the rule, and only the kind of source it rests on (K-523: the path stays here). */
+    record Signal(String rule, Kind source) {
+    }
+
+    record Kind(SourceTag tag) {
+    }
 
     /** What the adherence was made of (K-526, ADR-041 #63): kept by calls made since; none for an older one. */
     record AdherenceCount(int done, int planned) {
@@ -50,11 +61,14 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
         StoredSnapshot.Answered answered = snapshot.checkIn();
         AdherenceCount count = answered.adherenceDone() == null || answered.adherencePlanned() == null ? null
                 : new AdherenceCount(answered.adherenceDone(), answered.adherencePlanned());
+        // What else the window says (K-603), only where the call read it: weight steady, waist down.
+        List<Signal> signals = CompositionSignal.of(weeks.stream().map(WeekMean::kg).toList(), answered.waist(), parameters).stream()
+                .map(reason -> new Signal(reason.rule().value(), new Kind(reason.source().tag()))).toList();
         return new DecisionBasis(snapshot.phase(), weeks, change(weeks), answered.adherence(), count,
                 new Answers(given(answered.look(), CheckIn.Look.UNKNOWN), given(answered.training(), CheckIn.Training.UNKNOWN),
                         given(answered.recovery(), CheckIn.Recovery.UNKNOWN), given(answered.waist(), CheckIn.Waist.UNKNOWN),
                         given(answered.appetite(), CheckIn.Appetite.UNKNOWN)),
-                snapshot.training(), snapshot.context());
+                snapshot.training(), snapshot.context(), signals.isEmpty() ? null : signals);
     }
 
     // Kilograms a week from the window's first week to its latest.

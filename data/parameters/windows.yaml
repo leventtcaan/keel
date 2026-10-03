@@ -45,7 +45,7 @@ parameters:
     unit: kg
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
-    note: "TÜRETİLMİŞ (ADR-020 L-10). Karar penceresinin ilk ve son haftasının ortalama farkı bu payı hedef yönde aşmıyorsa kilo 'sabit' sayılır. min_weighins_per_week ile aynı hesap: 1,96 · 0,42 · √(2/4) ≈ 0,58 kg. Erkekte 14 gün arayla ≈ 0,3 kg/hafta ve üstü 'hareket'. Güray'da plato tanımı yok (G2 K-64 notu)."
+    note: "TÜRETİLMİŞ (ADR-020 L-10). Karar penceresinin ilk ve son haftasının ortalama farkı bu payı hedef yönde aşmıyorsa kilo 'sabit' sayılır. min_weighins_per_week ile aynı hesap: 1,96 · 0,42 · √(2/4) ≈ 0,58 kg. Erkekte 14 gün arayla ≈ 0,3 kg/hafta ve üstü 'hareket'. Güray'da plato tanımı yok (G2 K-64 notu). 'Kilo sabit' sinyali (K-603) de bu payı kullanır: ilk ve son hafta farkı payı iki yönde de aşmıyorsa."
   - key: flat_wait_weeks
     value: 1
     unit: weeks

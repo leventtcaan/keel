@@ -16,6 +16,7 @@ parameters:
     unit: cm
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#1.2"
+    note: "Bel trendi (WaistTrend) bu hatayı aşınca DOWN/UP. 'Kilo sabit, bel düştü' sinyali (K-603, H1 §1.6) aynı eşiği kullanır: yeni eşik yok."
   - key: weight_daily_noise_sd_kg
     value: 0.42
     unit: kg
