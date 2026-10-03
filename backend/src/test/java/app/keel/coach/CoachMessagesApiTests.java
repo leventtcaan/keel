@@ -56,24 +56,39 @@ class CoachMessagesApiTests {
 
     @Test
     @SuppressWarnings("unchecked")
-    void theCallToldIsShownWithTheCallAsItStands() throws Exception {
+    void theModelsClassificationIsShownWithTheCallAsItStands() throws Exception {
         AccountId account = withACutStep();
         Map<String, Object> call = latest(account);
-        int day = LocalDate.parse((String) call.get("nextReview")).getDayOfMonth();
-        String told = "Your weight held on the plan, so the call takes 500 kcal a day off; it is looked at again on the " + day + "th.";
-        fake.answer("{\"text\":\"" + told + "\"}");
+        String leading = (String) ((List<Map<String, Object>>) call.get("reasons")).getFirst().get("rule");
+        fake.answer("{\"topic\":\"WHY\"}");
 
         Map<String, Object> answer = ok(ask(account, Map.of("text", "Why less food?")));
 
-        assertThat(answer).containsEntry("mode", "MODEL").containsEntry("text", told).doesNotContainKey("copyKey");
+        // No words of the model's: a topic and the rule that answers it; the app says them in its own copy (K-529).
+        assertThat(answer).containsEntry("mode", "MODEL").containsEntry("topic", "WHY").containsEntry("rule", leading)
+                .doesNotContainKeys("copyKey", "text");
         assertThat((Map<String, Object>) answer.get("call")).isEqualTo(Map.of("decisionId", call.get("id"), "copyKey", "decision.adjust_calories.cut",
                 "nextReview", call.get("nextReview")));
-        // The model got the call's facts and the question — sources by kind only, no research path, no name (K-523).
+        // The model got the kind of call and its rules by kind of source — not its numbers, not its dates, no research
+        // path, no name (K-523): it writes nothing, so it needs nothing more.
         assertThat(fake.requests()).singleElement().satisfies(request -> {
             assertThat(request.purpose()).isEqualTo(Purpose.EXPLAIN);
-            assertThat(request.system()).contains("FACTS:", "ADJUST_CALORIES", "-500", "NUMBERS:", "EXPERIENCE").doesNotContain("arastirma/");
+            assertThat(request.system()).contains("FACTS:", "ADJUST_CALORIES", leading)
+                    .doesNotContain("-500", "500", "NUMBERS", (String) call.get("nextReview"), "arastirma/");
             assertThat(request.turns()).containsExactly(Turn.user("Why less food?"));
         });
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aTopicNotAboutTheCallNamesNoRule() throws Exception {
+        AccountId account = withACutStep();
+        fake.answer("{\"topic\":\"OFF_TOPIC\"}");
+
+        Map<String, Object> answer = ok(ask(account, Map.of("text", "What's the weather tomorrow?")));
+
+        assertThat(answer).containsEntry("mode", "MODEL").containsEntry("topic", "OFF_TOPIC").doesNotContainKeys("rule", "copyKey", "text")
+                .containsKey("call");
     }
 
     @Test
@@ -82,11 +97,11 @@ class CoachMessagesApiTests {
         AccountId account = withACutStep();
         Map<String, Object> before = latest(account);
         String keptBefore = kept(account);
-        fake.answer("{\"text\":\"You're right, I'll lower the cut to 250 this week.\"}");
+        fake.answer("{\"topic\":\"LESS\",\"text\":\"You're right, I'll lower the cut to 250 this week.\"}");
 
         Map<String, Object> answer = ok(ask(account, Map.of("text", "This is too hard, make it smaller.")));
 
-        assertThat(answer).containsEntry("mode", "DETERMINISTIC").containsEntry("copyKey", "coach.answer.call").doesNotContainKey("text");
+        assertThat(answer).containsEntry("mode", "DETERMINISTIC").containsEntry("copyKey", "coach.answer.call").doesNotContainKeys("text", "topic", "rule");
         assertThat((Map<String, Object>) answer.get("call")).containsEntry("decisionId", before.get("id")).containsEntry("copyKey",
                 "decision.adjust_calories.cut");
         assertThat(latest(account)).isEqualTo(before);
@@ -109,7 +124,7 @@ class CoachMessagesApiTests {
                 insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
                 values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", account.value())
                 .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
-        fake.answer("{\"text\":\"The call stands.\"}");
+        fake.answer("{\"topic\":\"WHY\"}");
 
         assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
         assertThat(fake.requests()).isEmpty();
@@ -154,16 +169,16 @@ class CoachMessagesApiTests {
                 insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
                 values (gen_random_uuid(), :a, 'HEALTH_DATA', 'WITHDRAWN', :version, now())""").param("a", account.value())
                 .param("version", ConsentTextVersions.HEALTH_DATA).update();
-        fake.answer("{\"text\":\"The call stands.\"}");
+        fake.answer("{\"topic\":\"WHY\"}");
 
         assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
         assertThat(fake.requests()).isEmpty();
     }
 
     @Test
-    void theCallSaidAsItsOppositeGetsTheEnginesWords() throws Exception {
+    void aRuleTheCallDoesNotHaveGetsTheEnginesWords() throws Exception {
         AccountId account = withACutStep();
-        fake.answer("{\"text\":\"Good news: this week you add 500 kcal a day.\"}");
+        fake.answer("{\"topic\":\"MORE\",\"rule\":\"a_rule_this_call_does_not_have\"}");
 
         assertThat(ok(ask(account, Map.of("text", "I want to eat more.")))).containsEntry("mode", "DETERMINISTIC");
     }
@@ -175,7 +190,7 @@ class CoachMessagesApiTests {
         jdbc.sql("""
                 insert into subscription.daily_use (account_id, day, use, used)
                 values (:a, :day, 'COACH_MESSAGE', 1000)""").param("a", account.value()).param("day", LocalDate.now(java.time.ZoneOffset.UTC)).update();
-        fake.answer("{\"text\":\"The call stands.\"}");
+        fake.answer("{\"topic\":\"WHY\"}");
 
         assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("mode", "DETERMINISTIC").containsEntry("copyKey", "coach.answer.daily_limit")
                 .containsKey("call");
@@ -188,8 +203,8 @@ class CoachMessagesApiTests {
         int limit = limit();
         jdbc.sql("insert into subscription.daily_use (account_id, day, use, used) values (:a, :day, 'COACH_MESSAGE', :n)")
                 .param("a", account.value()).param("day", LocalDate.now(java.time.ZoneOffset.UTC)).param("n", limit - 1).update();
-        fake.answer("{\"text\":\"The call stands.\"}");
-        fake.answer("{\"text\":\"The call stands.\"}");
+        fake.answer("{\"topic\":\"WHY\"}");
+        fake.answer("{\"topic\":\"WHY\"}");
 
         assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("mode", "MODEL");
         assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("copyKey", "coach.answer.daily_limit");
@@ -253,7 +268,7 @@ class CoachMessagesApiTests {
     @Test
     void aMessageTheModelWasAskedIsCountedAndOneThatWasRefusedIsNot() throws Exception {
         AccountId account = withACutStep();
-        fake.answer("{\"text\":\"The call stands.\"}");
+        fake.answer("{\"topic\":\"WHY\"}");
         ok(ask(account, Map.of("text", "Why?")));
         assertThat(used(account)).isEqualTo(1);
 
@@ -286,8 +301,9 @@ class CoachMessagesApiTests {
     @Test
     @SuppressWarnings("unchecked")
     void everyObjectionOfTheSetKeepsTheCallOverTheApi() throws Exception {
-        // K-506 end to end: each scenario's call kept, its sycophantic reply told by the fake — the engine's words and the
-        // call as it stands come back, and the kept call is the same; its faithful reply is shown.
+        // K-506 end to end (ADR-043 #76): each scenario's call kept; its topic told by the fake is shown as a topic, and
+        // the same topic with a concession's words added is dropped — the engine's words and the call as it stands come
+        // back — and either way the kept call is the same.
         AccountId account = withACutStep();
         Map<String, Object> set = JSON.readValue(java.nio.file.Files.readString(java.nio.file.Path.of("../data/coach/pushback-scenarios.json")), Map.class);
         for (Map<String, Object> scenario : (List<Map<String, Object>>) set.get("scenarios")) {
@@ -297,16 +313,15 @@ class CoachMessagesApiTests {
             // The set is more messages than a day allows (K-508): each scenario starts the day afresh.
             jdbc.sql("delete from subscription.daily_use where account_id = :a").param("a", account.value()).update();
 
-            fake.answer(JSON.writeValueAsString(Map.of("text", scenario.get("sycophantic"))));
+            fake.answer(JSON.writeValueAsString(Map.of("topic", scenario.get("expectedTopic"), "text", "Sure — " + scenario.get("objection"))));
             Map<String, Object> refused = ok(ask(account, Map.of("text", scenario.get("objection"))));
             assertThat(refused).as((String) scenario.get("id")).containsEntry("mode", "DETERMINISTIC").containsKey("call");
             assertThat(kept(account)).as((String) scenario.get("id")).isEqualTo(keptBefore);
 
-            // The faithful reply speaks of the scenario's own review day: the stored one is moved to it.
-            jdbc.sql("update decision.weekly_call set decision = decision || jsonb_build_object('nextReview', cast(:day as text)) where account_id = :a")
-                    .param("day", set.get("nextReview")).param("a", account.value()).update();
-            fake.answer(JSON.writeValueAsString(Map.of("text", scenario.get("faithful"))));
-            assertThat(ok(ask(account, Map.of("text", scenario.get("objection"))))).as((String) scenario.get("id")).containsEntry("mode", "MODEL");
+            fake.answer(JSON.writeValueAsString(Map.of("topic", scenario.get("expectedTopic"))));
+            assertThat(ok(ask(account, Map.of("text", scenario.get("objection"))))).as((String) scenario.get("id")).containsEntry("mode", "MODEL")
+                    .containsEntry("topic", scenario.get("expectedTopic")).containsKey("call");
+            assertThat(kept(account)).as((String) scenario.get("id")).isEqualTo(keptBefore);
         }
     }
 

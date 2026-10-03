@@ -20,7 +20,7 @@ Kapsam, sırayla:
    (taslak: aday besinler, confident, tek dokunuş); her cevapta karar kartı (CoachCall); DETERMINISTIC görünür (kota dolunca
    coach.answer.daily_limit); plan değişikliği sohbetten değil, mevcut uygulama akışından (applyCall); o günün verisinden çipler.
 2) K-507 gün içi yemek önerileri: kullanıcının yiyebildiklerinden, kalori veritabanından aralıkla, telafi dili yok (U7).
-3) K-517 haftalık kısa koç notu: sayılar kararla birebir (ReplyCheck/CallNumbers'ı yeniden kullan); LLM yoksa deterministik şablon.
+3) K-517 haftalık kısa koç notu: ADR-043'e göre her zaman deterministik şablon (karar başlığı + baştaki kuralın cümlesi + tek odak); sayılar kararla birebir.
 4) K-511 sağlayıcı — ADR-041'e göre **belgesel karşılaştırma**: en az üç aday, resmî sayfalardan (K6) sıfır veri saklama +
    eğitimde kullanmama (yoksa elenir), yapılandırılmış çıktı, liste fiyatı; ADR + rıza metni taslağı (V2: sağlayıcı adı +
    veri türleri — bugün kodun istediği adlar `keel.coach.data-types`: "coach question", "meal note"; rıza metni Levent'te).

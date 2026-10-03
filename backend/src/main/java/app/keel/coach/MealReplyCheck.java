@@ -1,5 +1,6 @@
 package app.keel.coach;
 
+import app.keel.shared.Decimals;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -72,8 +73,9 @@ final class MealReplyCheck {
             if (quantity.signum() <= 0 || quantity.compareTo(maxQuantity) > 0) {
                 return Optional.empty();
             }
-            read.add(new Item(words, CallNumbers.plain(quantity), measure));
+            read.add(new Item(words, Decimals.plain(quantity), measure));
         }
         return Optional.of(List.copyOf(read));
     }
+
 }

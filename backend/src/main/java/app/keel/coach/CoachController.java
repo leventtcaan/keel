@@ -19,7 +19,7 @@ class CoachController {
 
     /** Contract CoachAnswer. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record AnswerView(Explanation.Mode mode, String text, String copyKey, Explanation.Call call) {
+    record AnswerView(Explanation.Mode mode, Topic topic, String rule, String copyKey, Explanation.Call call) {
     }
 
     record MealWords(String text) {
@@ -53,6 +53,6 @@ class CoachController {
         }
         Explanation.Answer answer = explanation.answer(account, question.text(), Optional.ofNullable(question.decisionId()))
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return new AnswerView(answer.mode(), answer.text(), answer.copyKey(), answer.call());
+        return new AnswerView(answer.mode(), answer.topic(), answer.rule(), answer.copyKey(), answer.call());
     }
 }

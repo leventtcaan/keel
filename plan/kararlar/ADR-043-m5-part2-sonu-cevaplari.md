@@ -18,11 +18,14 @@ K-509 (sohbet ekranı) bu cevaba göre kurulur.
 | 77 | Kota sayaçları + öğün metni | (i) **Dünden eski sayaç satırları her gece silinir** (amaçtan fazla veri yok; dışa aktarma küçülür). (ii) Öğün metni **koç kotasından** düşmeye devam eder (günde 25) | İş: K-532 |
 
 ## 76'nın ayrıntısı (agent, teknik)
-- **Konular** kapalı bir liste, kod + metin dosyasında: istek yumuşatma (`EASIER`), hızlandırma (`FASTER`), erteleme (`LATER`),
-  açlık (`HUNGER`), tartı şüphesi (`SCALE`), "iyi hissediyorum" (`FEELS_FINE`), kayıp korkusu (`WORRY`), kızgınlık (`FRUSTRATED`),
-  doktor/sağlık (`HEALTH` — koç tıbbi tavsiyenin yerine geçmez, U6), soru (`WHY`), konu dışı (`OFF_TOPIC`). Kesin liste ve metinler
-  K-529'da; her konu cümlesi sayısız, suçlamasız (U7), taviz vermez (U2).
+- **Konular** kapalı bir liste (`coach.Topic`, sözleşme `CoachAnswer.topic`): daha azı (`LESS`), daha fazlası/hızlısı (`MORE`),
+  erteleme (`LATER`), açlık (`HUNGER`), veriden şüphe (`DOUBTS_DATA`), "iyi hissediyorum" (`FEELS_FINE`), kayıp korkusu (`WORRY`),
+  kızgınlık (`FRUSTRATED`), doktor/sağlık (`HEALTH` — koç tıbbi bakımın yerine geçmez, U6; kural yok), soru (`WHY`), konu dışı
+  (`OFF_TOPIC`; kural yok). Metinler `en.json › coach.topic.*`; her konu cümlesi sayısız, suçlamasız (U7), taviz vermez (U2).
+- **Modele giden en az veri:** kararın türü + kuralları (kaynak türüyle); kararın sayıları ve tarihleri gitmez (model yazmıyor).
 - **Kural:** model kararın `reasons` listesinden seçer; listede olmayan kural → cevap atılır. Kural seçmezse baştaki kural.
+- **Söz sırası (telefon):** konu cümlesi; kural varsa kuralın cümlesi + "karar duruyor, {gün}". Kural yoksa (HEALTH, OFF_TOPIC) yalnız
+  konu cümlesi — doktor konusunun ardından "karar duruyor" denmez (U6: önce doktor).
 - **Sözleşme:** `CoachAnswer` `text` alanını kaybeder; `topic` + `rule` kazanır (`mode: MODEL` = model sınıflandırdı). Telefon
   cümleyi kurar. İstemci henüz yok (K-509), kırılan tüketici yok.
 - **Kazanç:** U1/U2 yapısal: kullanıcıya hiç model sözü gitmez → sayı uydurma, taviz, yasaklı ifade, kişi adı **imkânsız**; çıktı
