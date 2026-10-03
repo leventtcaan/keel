@@ -341,12 +341,12 @@ test('offline: it says so, and trying again reads again', async () => {
   expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
 });
 
-test("the coach's chips come from the day; one opens the coach", async () => {
+test("the coach's chips come from the day; one opens the coach on that chip (K-509)", async () => {
   await show();
   expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('today.chips.swap') })).toBeOnTheScreen();
   await press(t('today.chips.why'));
-  expect(mockPush).toHaveBeenCalledWith('/coach');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/coach', params: { chip: 'today.chips.why' } });
 });
 
 test('back on Today after giving the consent in Settings, it reads again and shows the number (K-401 review)', async () => {

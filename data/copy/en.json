@@ -32,8 +32,7 @@
       "note": "Photos, strength and projection arrive in M6."
     },
     "coach": {
-      "title": "Coach",
-      "note": "Questions about your plan and this week's call arrive in M5."
+      "title": "Coach"
     }
   },
   "state": {
@@ -1262,6 +1261,19 @@
     },
     "call": {
       "nextReview": "Looked at again on {date}, with the week's weigh-ins and logs."
+    },
+    "input": "Message the coach",
+    "send": "Send",
+    "thinking": "Reading your message…",
+    "standard": "In the plan's own words",
+    "consent": "The coach reads your messages only with the AI consent. You can give it in Settings.",
+    "failed": "Your message didn't go through.",
+    "retry": "Try again",
+    "chip": {
+      "weighIn": "One morning on the scale is mostly water and salt. Weighing in every morning shows the trend underneath, and the trend is what the weekly call reads.",
+      "start": "Each week the plan reads your weigh-ins, food and training, and makes one call: keep going, or change one thing. Ask about the call any time; new data is what changes it.",
+      "swap": "Swapping an exercise is done in today's session: open it and tap the exercise.",
+      "openWorkout": "Open today's session"
     }
   },
   "units": {
