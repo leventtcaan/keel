@@ -100,6 +100,8 @@ keel:
     # What the day can still hold (K-507): foods from the user's own meals of the last weeks, a few at most.
     suggestions: 3
     suggestion-days: 28
+    # The most eaten foods estimated to find them (each estimate reads the database; a few may not fit).
+    suggestion-candidates: 9
   # The quota's old counts (K-532, ADR-043 #77): deleted once a day. Any hour keeps every time zone's today and
   # yesterday (QuotaCleanup.oldestKept); after 18:00 UTC the cut is also the tightest — the day before yesterday goes
   # everywhere from -12:00 to +05:30 (run before 18:00 UTC, it would go a day later for most).

@@ -58,10 +58,14 @@ class MealController {
     private final ObjectProvider<DailyTargets> targets;
     private final ApiLimits api;
     private final FoodController.NutritionLimits limits;
+    private final RecipeStore recipes;
+    private final FoodStore foods;
 
     MealController(MealStore store, FoodEstimator estimator, Profiles profiles, ConsentGate consent, ObjectProvider<DailyTargets> targets,
-            ApiLimits api, FoodController.NutritionLimits limits) {
+            ApiLimits api, FoodController.NutritionLimits limits, RecipeStore recipes, FoodStore foods) {
         this.limits = limits;
+        this.recipes = recipes;
+        this.foods = foods;
         this.store = store;
         this.estimator = estimator;
         this.profiles = profiles;
@@ -122,15 +126,34 @@ class MealController {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(api.day(day));
         DayBudget.Balance left = budgetOf(account, day).left().kcal();
+        // Nothing can fit a day with nothing likely left: no estimate is made for it.
+        if (!MealSuggestions.fits(new FoodRanges.Range(0, 0), left)) {
+            return List.of();
+        }
         List<MealStore.Meal> eaten = store.days(account, day.minusDays(limits.suggestionDays()), day);
         List<Suggestion> fitting = new java.util.ArrayList<>();
-        for (MealSuggestions.Usual usual : MealSuggestions.usual(eaten, profiles.foodsAvoided(account))) {
+        // The most eaten few are estimated, not every food of the weeks (each estimate reads the database).
+        List<MealSuggestions.Usual> usual = MealSuggestions.usual(eaten, profiles.foodsAvoided(account), id -> ingredientNames(account, id));
+        for (MealSuggestions.Usual candidate : usual.subList(0, Math.min(usual.size(), limits.suggestionCandidates()))) {
             if (fitting.size() == limits.suggestions()) {
                 break;
             }
-            estimated(account, usual).filter(suggestion -> MealSuggestions.fits(suggestion.kcal(), left)).ifPresent(fitting::add);
+            estimated(account, candidate).filter(suggestion -> MealSuggestions.fits(suggestion.kcal(), left)).ifPresent(fitting::add);
         }
         return List.copyOf(fitting);
+    }
+
+    /** A recipe's ingredients by name (a food is only its own name): what a foods-to-avoid word is read against too. */
+    private List<String> ingredientNames(AccountId account, String foodId) {
+        if (!foodId.startsWith(FoodEstimator.RECIPE)) {
+            return List.of();
+        }
+        try {
+            return recipes.find(account, UUID.fromString(foodId.substring(FoodEstimator.RECIPE.length()))).map(recipe -> recipe.items().stream()
+                    .map(item -> foods.find(item.foodId()).map(FoodStore.Food::name).orElse("")).toList()).orElse(List.of());
+        } catch (IllegalArgumentException notARecipeId) {
+            return List.of();
+        }
     }
 
     /** A usual amount as the database estimates it now; a food or recipe gone since (or now refused) is not offered. */

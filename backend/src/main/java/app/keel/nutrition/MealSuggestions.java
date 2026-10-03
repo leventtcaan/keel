@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -28,19 +29,30 @@ final class MealSuggestions {
     private MealSuggestions() {
     }
 
-    static List<Usual> usual(List<MealStore.Meal> meals, List<String> avoid) {
-        List<Pattern> avoided = avoid.stream().filter(word -> !word.isBlank())
-                .map(word -> Pattern.compile(Pattern.quote(word.strip()), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)).toList();
+    /**
+     * The usual foods; {@code alsoNamed} gives the other names a food goes by — a recipe's ingredients (K-507 review: a
+     * recipe named "Morning bowl" holds walnuts) — each read against the list as its own name is.
+     */
+    static List<Usual> usual(List<MealStore.Meal> meals, List<String> avoid, Function<String, List<String>> alsoNamed) {
         Map<String, List<Seen>> byFood = new LinkedHashMap<>();
+        Map<String, Boolean> left = new LinkedHashMap<>();
         for (MealStore.Meal meal : meals) {
             for (FoodEstimator.EstimatedItem item : meal.items()) {
-                if (avoided.stream().noneMatch(word -> word.matcher(item.name()).find())) {
+                boolean avoided = left.computeIfAbsent(item.foodId(), id -> avoids(item.name(), avoid)
+                        || alsoNamed.apply(id).stream().anyMatch(name -> avoids(name, avoid)));
+                if (!avoided) {
                     byFood.computeIfAbsent(item.foodId(), id -> new ArrayList<>()).add(new Seen(item, meal.eatenAt()));
                 }
             }
         }
         return byFood.values().stream().map(MealSuggestions::usual)
                 .sorted(Comparator.comparingInt(Usual::times).reversed().thenComparing(Usual::last, Comparator.reverseOrder())).toList();
+    }
+
+    /** Whether a name holds any of the words the user said they cannot eat — part of a word too, any case. */
+    static boolean avoids(String name, List<String> avoid) {
+        return avoid.stream().filter(word -> !word.isBlank())
+                .anyMatch(word -> Pattern.compile(Pattern.quote(word.strip()), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE).matcher(name).find());
     }
 
     /** One food's usual amount: the quantity and unit had most often, the latest of them on a tie; always as estimated. */

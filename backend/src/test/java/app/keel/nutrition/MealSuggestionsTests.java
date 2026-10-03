@@ -37,7 +37,7 @@ class MealSuggestionsTests {
                 meal(9, item("rice", "Rice, white, cooked", "150", "g"), item("egg", "Egg, whole", "2", "piece")),
                 meal(5, item("rice", "Rice, white, cooked", "200", "g")),
                 meal(3, item("rice", "Rice, white, cooked", "150", "g"), item("yogurt", "Yogurt, greek", "1", "cup")),
-                meal(1, item("egg", "Egg, whole", "2", "piece"))), List.of());
+                meal(1, item("egg", "Egg, whole", "2", "piece"))), List.of(), id -> List.of());
 
         assertThat(usual).extracting(MealSuggestions.Usual::foodId).containsExactly("rice", "egg", "yogurt");
         assertThat(usual.getFirst().amount().quantity()).isEqualByComparingTo("150");
@@ -48,7 +48,7 @@ class MealSuggestionsTests {
     @Test
     void aTieInAmountsGoesToTheMostRecent() {
         List<MealSuggestions.Usual> usual = MealSuggestions.usual(List.of(
-                meal(6, item("oats", "Oats", "1", "cup")), meal(2, item("oats", "Oats", "80", "g"))), List.of());
+                meal(6, item("oats", "Oats", "1", "cup")), meal(2, item("oats", "Oats", "80", "g"))), List.of(), id -> List.of());
         assertThat(usual.getFirst().amount().unit()).isEqualTo("g");
     }
 
@@ -57,8 +57,17 @@ class MealSuggestionsTests {
         // An allergy reads wide: "nut" leaves out walnuts and peanut butter; a case or a plural changes nothing.
         List<MealSuggestions.Usual> usual = MealSuggestions.usual(List.of(meal(1, item("pb", "Peanut butter, smooth", "2", "tablespoon"),
                 item("walnut", "Walnuts, chopped", "30", "g"), item("peas", "Peas, green", "80", "g"), item("milk", "Milk, whole", "200", "ml"))),
-                List.of("nut", "MILK", " "));
+                List.of("nut", "MILK", " "), id -> List.of());
         assertThat(usual).extracting(MealSuggestions.Usual::foodId).containsExactly("peas");
+    }
+
+    @Test
+    void aRecipeHoldingAFoodTheUserCannotEatIsNeverOfferedEither() {
+        // K-507 review: "Morning bowl" is its ingredients too.
+        List<MealSuggestions.Usual> usual = MealSuggestions.usual(List.of(meal(1, item("recipe:1", "Morning bowl", "1", "portion"),
+                item("rice", "Rice, white, cooked", "150", "g"))), List.of("nut"),
+                id -> id.equals("recipe:1") ? List.of("Oats, rolled", "Walnuts, chopped") : List.of());
+        assertThat(usual).extracting(MealSuggestions.Usual::foodId).containsExactly("rice");
     }
 
     @Test
