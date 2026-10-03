@@ -1847,7 +1847,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-414]
     why: "ADR-037 #38: seyrek raflı salonda en yakın ağır yük +%100 olabiliyordu (dambıl 10 → 20)"
     acceptance:
@@ -2040,7 +2040,7 @@ tasks:
     module: coach
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-214]
     why: "Sağlayıcıdan bağımsız dil katmanı (ADR-004)"
     acceptance:
@@ -2079,7 +2079,7 @@ tasks:
     module: coach
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-503, K-212]
     why: "LLM kararı anlatır, değiştiremez (U1, U2)"
     acceptance:
@@ -2394,7 +2394,7 @@ tasks:
     module: decision
     type: chore
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-041 #72: Levent 'Güray adı hardcode edilmesin, profesyonel uygulama'. Arayüzde yok ama API cevabındaki kaynak yolu (arastirma/ham/guray/...), GURAY_* sabitleri ve sözleşme açıklaması kişi adı taşıyor"
     acceptance:
@@ -2427,7 +2427,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-516]
     why: "ADR-041 #62: STATE_STILL şu an 3. duraklayan haftadan sonra her hafta soruluyor; YES sonrası state_still_after_paused_weeks kadar sessiz"
     acceptance:
@@ -2442,7 +2442,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-519, K-502]
     why: "ADR-041 #63: '19 eylemin 16'sı' yüzdeden şeffaf (Ö-25); yeni kararlar sayıları da saklar, eskiler oranla kalır"
     acceptance:
@@ -2458,7 +2458,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-512]
     why: "ADR-041 #64: kendi programı başka günlere kurulan kullanıcıya kaçan seans sorusu yanlış günlerden soruluyordu"
     acceptance:
