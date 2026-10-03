@@ -661,6 +661,11 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
     training stable, so change nothing."). Şu an çoğu kararda yalnız kaynak türü görünüyor. Cümleleri ben kaynaklarından taslak yazayım
     (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
 
+**M5 Part 4 (86-):**
+86. **(K-515, ürün — ADR-048 #5)** Kilit ekranından kilo girişi: (a) parametreli Siri/Shortcuts intent'i ("Log 82.4 kg" — uygulama açılmadan;
+    SDK 58 stabil + Swift `perform()` ister, şimdi yapılamaz) mı, (b) widget'ta uygulamayı tartı ekranına açan buton mu (SDK 57'de
+    `expo-widgets` ile, cihaz adımında)? Önerim (b) şimdi, (a) SDK 58 stabil olunca.
+
 **73, 78-85 → ADR-045 (3 Eki, Part 4 başı; hepsi önerilen).** Aşağıdaki liste kayıt içindir.
 **M5 Part 3 (78-):**
 81. **(K-511, veri dışarı + para — ADR-044 ÖNERİ)** Ölçüm listesi (OpenAI Luna AB, Vertex Flash-Lite eu, Mistral Ministral; Anthropic yedek), kazanma
