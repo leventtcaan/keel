@@ -6,7 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M5 Part 1 (Motor ve check-in) BAŞLADI (2 Eki)** — önce ADR-037 işleri, sonra K-516, K-512, K-513, K-501, K-502.
+**M5 Part 1 (Motor ve check-in) BİTTİ (3 Eki)** — ADR-037 işleri, K-516, K-512, K-513, K-501, K-502 (+ K-518, K-519, K-520) birleşti; aktarım bekliyor; K-430 Levent'te.
 **M4 KAPANDI (2 Eki, kod)** — Part 4: K-410 bildirimler, K-411 dinlenme arka planda, K-412 Health'e yazma, K-423 tarifler
 telefonda. Cihaz adımları (K-308) ve klipler (K-419) Levent'te. Sıradaki koşu **M5** (`plan/oturum-promptlari/M5.md`).
 **M4 Part 1 (Bugün ve ölçüm) BİTTİ (1 Eki)** — K-231, K-230, K-420, K-401, K-409, K-402, K-404 birleşti; K-308 cihaz adımı Levent'te.
@@ -76,9 +76,10 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sabite), K-428, K-430, K-431, K-432 (backend),
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
-## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 sürüyor, compact öncesi durdu)
-Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki: K-518, K-512, K-519, K-520, K-513 #289 + #290 ✅ birleşti; K-502 (1/2) #291 auto-merge, (2/2) sürüyor; sonra K-502, simülatör, Part 1 ÇIKIŞ; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
-#279/#282 K-516. Aktarım bekliyor: M4 Part 2-4 + M5 Part 1 (`docs/aktarim/M5/`). Sorular 55-62.
+## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 BİTTİ, aktarım bekliyor)
+Part 1 ÇIKIŞ `## M5 ilerleme` altında. Sıradaki: **Levent dönünce M5 Part 1 aktarımı** (`docs/aktarim/M5/README.md` 1-9; M4 Part 2-4 aktarımı
+da bekliyor). Sonra M5 Part 2 (`plan/oturum-promptlari/M5-part2.md`; başta sağlayıcı soruları 67-71). Açık: #273 K-430 (soru 55), sorular
+55-66 + 72.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -465,7 +466,7 @@ Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` �
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ▶ sürüyor (2 Eki) |
+| 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ✅ bitti (3 Eki) — aktarım bekliyor; K-430 Levent'te (soru 55) |
 | 2 · Koç altyapısı | K-503, K-505, K-506, K-504, K-508 | bekliyor |
 | 3 · Koç yüzü + sağlayıcı | K-509, K-507, K-517, K-511 | bekliyor |
 | 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | bekliyor |
@@ -497,7 +498,28 @@ DURUM ile birlikte commitlendi.
 | K-513 (1/2) motor `FirstWeeks` (kişinin haftası, H1 sessiz, H2-H8 içerik + antrenmansız sürüm, risk biten kullanıcı haftası 5-8 iken: herhangi bir sinyal; af `Consistency.lastWeekForgiven`; ADR-040) | ✅ birleşti; 1. inceleme 5 bulgu (pencere bir hafta kaymış, af sunucuda, 5. hafta metni herkese "eşiği geçtin", antrenmansıza kas vaadi, ADR adı) + 2. inceleme 2 (yalnız Çarşamba başlangıcı test ediliyordu, kısa liste sinyali sessizce kapatıyordu); CI'da RED önce (2 kez); mutasyon 10/10 + 12/12 + 4/4 | #289 | `M5/K-513.md` |
 | K-513 (2/2) sunucu `/v1/first-weeks` (`AccountDates`, decision → identity; mola haftası da duraklatır; akış dışında/1-5. haftada kayıt okunmaz) + riskte soru bütçesi 5 (bugün gözlenemez: motor anomali dışında ≤2 soru bekler) | ✅ birleşti; CI'da RED önce (12); inceleme: akış bitince de bütün hafta okunuyordu, 1-5. haftada kullanılmayan kayıtlar → `readsRisk`; yalnız UTC test ediliyordu → İstanbul testi; mutasyon 4/4 (saf) | #290 | `M5/K-513.md` |
 | K-502 (1/2) karar kartı yüzleri (hold/advice/change/wait, sunucudan okunur) + telefondan "Apply from today" (önceden hiç yoktu) | ✅ birleşti; CI'da RED önce (2 kez); inceleme 4+3 (FIX_* "değişiklik yok" diyordu, her ret "geçmiş", not yeni okumada kalıyordu, merdivende "hedeflerin değişti"); mutasyon 12/12 | #291 | `M5/K-502.md` |
-| K-502 (2/2) gerekçe sayfası `/why` (veri satırları `basisRows`, kurallar + kaynak türü, güven, sonraki değerlendirme, sınır cümlesi) | 🔄 auto-merge; CI'da RED önce; inceleme: uyum yüzdesi kayan noktada bir puan düşük (0,58→57), değişken anahtarlar her enum için denenmiyordu; mutasyon 15/15 (**mobil mutasyon betiği deseni tek argüman veriyordu → sahte "öldü"; düzeltildi, kontrol mutantı**) | #292 | `M5/K-502.md` |
+| K-502 (2/2) gerekçe sayfası `/why` (veri satırları `basisRows`, kurallar + kaynak türü, güven, sonraki değerlendirme, sınır cümlesi) | ✅ birleşti; CI'da RED önce; inceleme: uyum yüzdesi kayan noktada bir puan düşük (0,58→57), değişken anahtarlar her enum için denenmiyordu; mutasyon 15/15 (**mobil mutasyon betiği deseni tek argüman veriyordu → sahte "öldü"; düzeltildi, kontrol mutantı**); simülatör: kural cümleleri yok → K-522 | #292 | `M5/K-502.md` |
+
+**Part 1 ÇIKIŞ (3 Eki):**
+- **Birleşen (Part 1):** K-429 #270 · K-428 #271 · K-431 #272/#275 · K-434 #274 · K-501 #276 · K-432 #277 · K-516 #279/#282 · K-518 #281 ·
+  K-512 #283/#285 · K-519 #286 · K-520 #287 · K-513 #289/#290 · K-502 #291/#292. Açık PR: yalnız **#273 K-430** (Levent, soru 55; worktree
+  `../keel-k430`, auto-merge kapalı). Kalıcı worktree `../keel-main`. Ana checkout ayrık HEAD (`origin/main`, temiz).
+- **Kontrol çıktısı (3 Eki, `main` f5a7355):** mobil `npm run check` 91 suite **1500/1500**; backend saf testler **1024/1024** (336 DB testi
+  yerelde Docker yok → CI'da; `main` CI yeşil).
+- **Simülatör turu (Expo Go + fikstür sunucusu + geçici koruma yaması, ikisi de geri alındı):** K-501 check-in (sorular nedenleriyle, tek
+  gönderim, kart kalkar), K-518 beyan + Bugün'de duraklatılan hafta, K-520 soru kartı, K-502 beş yüz + uygulama + gerekçe sayfası
+  (`docs/aktarim/M5/img/`). **Bulunan:** gerekçede kural cümleleri yok → K-522 (soru 72). **Görülemeyen:** K-434 (onboarding adımı — Metro
+  yamayı almadı; testleri + mutasyonu PR'ında).
+- **Backlog:** K-513, K-502 `done`; K-430 `doing` (Levent); K-521 (ilk 8 hafta telefonda) ve **K-522 (kural cümleleri, yeni)** `todo`; sync ✅.
+- **Part 2'nin bilmesi gerekenler:**
+  - Kararın gerekçe satırları sunucuda `DecisionBasis` (K-519), telefonda `src/today/basis.ts`; karar yüzü `src/today/call.ts` `variantOf`
+    (sunucunun "uygulanacak" durumundan) — koç anlatımı (K-505) bu yüzlerle ve `basisRows` sayılarıyla birebir olmalı (sadakat testi).
+  - Uygulama telefonda `applyCall` (409 = geçmiş, başka ret = bizim sorunumuz); geri alma (undo) telefonda yok.
+  - İlk 8 hafta `GET /v1/first-weeks` (risk sinyalleri kural kimliğiyle) — koçun "insan tonu" risk mesajı K-521'de; risk haftasında soru
+    bütçesi 5 ama motor anomali dışında ≤2 soru bekler (ADR-040 #4).
+  - Mobil mutasyon: jest desenini böl, "test koşmadı"yı ayır, kontrol mutantı (`plan/oturum-promptlari/M5-part1-devam.md › Dersler`).
+  - Disk temizlik sonrası **4,9 GB**; çalışan simülatör ~3 GB tutar (kapatınca döner).
+- **Yeni sorular:** 72 (kural cümleleri). Part 2 başında sorulacak sağlayıcı kapısı: **67-71** (hazır).
 
 ## Session sonunda Levent'e sorulacaklar
 **M5 Part 1 (yeni, 55-59):**
@@ -535,6 +557,10 @@ DURUM ile birlikte commitlendi.
     Levent onayı bekliyor" notlu.
 66. **(K-513/K-521, ürün)** Riskli haftada telefon tek "insan tonu" mesaj gösterecek (I1 F2). Metni sen mi yazarsın, ben taslak mı
     yazayım? Ayrıca "uygulama açılmaması" sinyali yalnız telefonda bilinir — sunucuya gönderilsin mi (açılış zamanı, sağlık verisi değil)?
+
+72. **(K-522, ürün/metin)** Gerekçe sayfası ve "Why this call" listesi kural başına cümle gösterecek (prototip 3.5: "Moving toward goal and
+    training stable, so change nothing."). Şu an çoğu kararda yalnız kaynak türü görünüyor. Cümleleri ben kaynaklarından taslak yazayım
+    (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
 
 **M5 Part 2 başında sorulacak — sağlayıcı kapısı (67-71; AskUserQuestion, cevap ADR'ye; cevapsız Part 2 yalnız sahte sağlayıcıyla):**
 67. **(K-511, veri dışarı + marka)** Ölçülecek adaylar (en az üç, ADR-004 katman 2): Anthropic (Claude, küçük model), OpenAI (küçük model),

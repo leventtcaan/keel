@@ -2022,7 +2022,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-501, K-212, K-519]
     why: "Tezin ekrandaki hali"
     acceptance:
@@ -2371,6 +2371,23 @@ tasks:
     refs: ["arastirma/04-faz3-urun.md#7.5", "arastirma/ham/I1-onboarding-aliskanlik.md"]
     learn:
       - "Öncü gösterge"
+  - id: K-522
+    title: "Kural cümleleri: gerekçenin her kuralı kendi sözüyle"
+    milestone: M5
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-502]
+    why: "K-502 simülatör turunda bulundu: 'Why this call' kartı ve gerekçe sayfası çoğu kararda yalnız kaynak türünü gösteriyor — baştaki kural kararın başlığı, diğer kuralların cümlesi metin dosyasında yok (prototip 3.5 kural cümlesi gösteriyor)"
+    acceptance:
+      - "Motorun verebildiği her kural kimliği için bir kural cümlesi (`decision.rule.<kural>` ya da benzeri), kaynağıyla tutarlı; metin taslak, Levent onayı (DURUM soru 72)"
+      - "Gerekçe sayfası ve Bugün'deki gerekçe listesi kural cümlesini gösterir; baştaki kural da (başlıktan farklı söz)"
+      - "Test: motorun kural kimliklerinin hepsinin cümlesi var (sunucu RuleId listesiyle karşılaştırma)"
+    tests:
+      - "why-screen.test.tsx, copy-keys"
+    refs: ["prototip/keel-prototype.html#3.5", "arastirma/04-faz3-urun.md#Ö-25"]
+    learn: ["Açıklanabilirlik"]
   - id: K-517
     title: "Haftalık kısa koç notu"
     milestone: M5

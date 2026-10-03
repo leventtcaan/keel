@@ -1,4 +1,4 @@
-# M5 Part 1 — devam (compact sonrası, 3 Eki)
+# M5 Part 1 — devam (compact sonrası, 3 Eki) — ✅ PART 1 BİTTİ (3 Eki, üçüncü oturum); ÇIKIŞ DURUM › M5 ilerleme. Bu dosya artık yalnız kayıt + dersler.
 
 > Önce oku: `M5.md` (ortak), `M5-part1.md`, `DURUM.md › ## M5 ilerleme` + `## ▶ DEVAM NOKTASI`. Git ile doğrula.
 
