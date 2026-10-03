@@ -79,6 +79,14 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#NewWaistMeasurement",
       "note": "NewWaistMeasurement.cm maximum."
+    },
+    {
+      "key": "first_weeks_app_absent_days",
+      "value": 7,
+      "unit": "days",
+      "tag": "urun",
+      "source": "arastirma/ham/I1-onboarding-aliskanlik.md#F2",
+      "note": "K-521 (ADR-040 #3, ADR-041 #66): 'the app not opened' — one of the week-5 risk signals (I1 F2), known only on the phone. No source gives a number; a week, as the other signals read the user's week just over: the app not opened in the days before today's open."
     }
   ]
 }

@@ -30,6 +30,10 @@ export type TodayData = {
   state?: Loaded<Schemas['DeclaredState']>;
   /** The coach's own questions not answered yet (K-520). */
   prompts?: Loaded<Schemas['Prompt'][]>;
+  /** The first eight weeks (K-521): this week's words and the risk's signals. */
+  firstWeeks?: Loaded<Schemas['FirstWeeks']>;
+  /** The day the app was opened before today, kept on the phone only (K-521); null the first time. */
+  previousOpen?: string | null;
 };
 
 type Answer<T> = { data?: T; error?: { code?: string }; response: Response };
@@ -49,7 +53,7 @@ export async function load<T>(request: () => Promise<Answer<T>>): Promise<Loaded
 
 /** Every part at once; `day` is today on the phone's calendar (YYYY-MM-DD). */
 export async function loadToday(api: ApiClient, day: string): Promise<TodayData> {
-  const [consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts] = await Promise.all([
+  const [consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts, firstWeeks] = await Promise.all([
     load(() => api.GET('/v1/consistency')),
     load(() => api.GET('/v1/decisions/current')),
     load(() => api.GET('/v1/program')),
@@ -59,8 +63,9 @@ export async function loadToday(api: ApiClient, day: string): Promise<TodayData>
     load(() => api.GET('/v1/check-ins/current')),
     load(() => api.GET('/v1/state')),
     load(() => api.GET('/v1/prompts')),
+    load(() => api.GET('/v1/first-weeks')),
   ]);
-  return { consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts };
+  return { consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts, firstWeeks };
 }
 
 // "Mon, Sep 28": a calendar day with its weekday, in English like every word of the app, read as a date only.

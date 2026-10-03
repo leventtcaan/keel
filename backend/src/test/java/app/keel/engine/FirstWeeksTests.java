@@ -71,6 +71,16 @@ class FirstWeeksTests {
     }
 
     @Test
+    void theWeekSaysWhetherItReadsTheRiskQuietOrNot() {
+        // K-521: the phone reads its own signal (the app not opened) in the same weeks — a quiet week reads it too.
+        for (int day = 0; day < 7 * 9; day++) {
+            LocalDate today = BEGAN.plusDays(day);
+            assertThat(FirstWeeks.of(quiet(today), MALE).orElseThrow().readsRisk()).as("day " + day)
+                    .isEqualTo(day >= 7 * MALE.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM));
+        }
+    }
+
+    @Test
     void theWeekStartsOnTheDayOfTheWeekTheAccountBegan() {
         // The server reads the user's week just over from here: the seven days before it.
         assertThat(FirstWeeks.weekStart(BEGAN, BEGAN.plusDays(40))).isEqualTo(BEGAN.plusDays(35));

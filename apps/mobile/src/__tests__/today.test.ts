@@ -96,7 +96,7 @@ describe('loadToday', () => {
     expect(GET.mock.calls.map(([path]) => path).sort()).toEqual(
       // K-501 adds the check-in, K-518 the state, K-520 the coach's questions (K1 note to the product owner: the list grows by the part
       // each task adds).
-      ['/v1/check-ins/current', '/v1/consistency', '/v1/days/{day}/budget', '/v1/decisions/current', '/v1/program', '/v1/prompts', '/v1/state',
+      ['/v1/check-ins/current', '/v1/consistency', '/v1/days/{day}/budget', '/v1/decisions/current', '/v1/first-weeks', '/v1/program', '/v1/prompts', '/v1/state',
         '/v1/targets', '/v1/weigh-ins'].sort(),
     );
   });

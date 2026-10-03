@@ -48,8 +48,11 @@ public final class FirstWeeks {
         }
     }
 
-    /** The week: its number (1 to first_weeks + 1), its content (none in the first and the last), the risk's signals. */
-    public record Week(int number, Optional<CopyKey> content, List<Reason> risk) {
+    /**
+     * The week: its number (1 to first_weeks + 1), its content (none in the first and the last), the risk's signals, and
+     * whether it reads the risk at all (K-521: the phone adds its own signal — the app not opened — in the same weeks).
+     */
+    public record Week(int number, Optional<CopyKey> content, List<Reason> risk, boolean readsRisk) {
     }
 
     private FirstWeeks() {
@@ -78,8 +81,9 @@ public final class FirstWeeks {
             return Optional.empty();
         }
         int number = (int) (ChronoUnit.DAYS.between(facts.began(), facts.today()) / DAYS_PER_WEEK) + 1;
-        List<Reason> risk = readsRisk(facts.began(), facts.today(), parameters) ? signals(facts, parameters) : List.of();
-        return Optional.of(new Week(number, content(number, parameters.wholeNumber(ParameterKey.FIRST_WEEKS), facts.trainingPlanned()), risk));
+        boolean reads = readsRisk(facts.began(), facts.today(), parameters);
+        List<Reason> risk = reads ? signals(facts, parameters) : List.of();
+        return Optional.of(new Week(number, content(number, parameters.wholeNumber(ParameterKey.FIRST_WEEKS), facts.trainingPlanned()), risk, reads));
     }
 
     private static Optional<CopyKey> content(int number, int flow, boolean trainingPlanned) {

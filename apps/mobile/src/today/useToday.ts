@@ -14,15 +14,15 @@ import { useReadOnFocus } from './useReadOnFocus';
  * start a new read each render.
  */
 export function useToday(): { day: string; data: TodayData | null; reload: () => void } {
-  const { api, syncHealth, queue, report, reminders, state } = useAppServices();
-  const latest = useRef({ syncHealth, queue, report, reminders, state });
+  const { api, syncHealth, queue, report, reminders, state, opens } = useAppServices();
+  const latest = useRef({ syncHealth, queue, report, reminders, state, opens });
   useEffect(() => {
-    latest.current = { syncHealth, queue, report, reminders, state };
+    latest.current = { syncHealth, queue, report, reminders, state, opens };
   });
   return useReadOnFocus(
     useCallback(
       async (day: string) => {
-        const { syncHealth: sync, queue: waiting, report: tell, reminders: remind, state: declared } = latest.current;
+        const { syncHealth: sync, queue: waiting, report: tell, reminders: remind, state: declared, opens: opened } = latest.current;
         const era = remind.era(); // a sign-out during this read must not hand its week off to the next account
         const named = (error: unknown) => tell({ name: error instanceof Error ? error.name : 'Unknown' });
         const health = await sync().catch(named);
@@ -34,7 +34,12 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
         // A state declared, kept on the phone for the reminders (K-518) — not for an account that left during the read.
         if (today.state !== undefined && remind.era() === era) await declared.keep(today.state).catch(named);
-        return { ...today, stepsToday: health?.stepsToday ?? null };
+        // Today's open counted, the one before read (K-521): the week-5 risk's "the app not opened", on the phone only.
+        const previousOpen = await opened.previous().catch((error: unknown) => {
+          named(error);
+          return null;
+        });
+        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen };
       },
       [api],
     ),

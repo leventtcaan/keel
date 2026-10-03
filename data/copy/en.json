@@ -56,6 +56,7 @@
     }
   },
   "first_weeks": {
+    "risk": "Around now, weeks often get fuller. One session this week keeps the thread going, whatever shape it takes.",
     "week2": { "title": "Week 2: your first comparison", "body": "Same move as last week, side by side. This is the honest evidence early on: what you lift." },
     "week3": { "title": "Week 3: how steady you've been", "body": "How many days you logged, and why we show it: steady logging is what lets the numbers mean something." },
     "week4": { "title": "Week 4: what's changing", "body": "Most of your strength gain so far is your nervous system learning the moves, not muscle yet. That's normal, and it's the foundation." },

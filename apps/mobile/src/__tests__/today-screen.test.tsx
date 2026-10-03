@@ -61,6 +61,7 @@ const PROGRAM: Schemas['Program'] = {
 };
 
 let mockAnswers: Record<string, Answer | 'offline'> = {};
+let mockPreviousOpen: string | null = null;
 const mockGET = jest.fn(async (path: string, _init?: unknown) => {
   const answer = mockAnswers[path] ?? refused(404, 'NOT_FOUND');
   if (answer === 'offline') throw new TypeError('Network request failed');
@@ -111,6 +112,7 @@ const mockServices = {
   reminders: { keepRestUntil: mockKeepRestUntil, era: () => 0 },
   // The state read is kept on the phone for the reminders (K-518).
   state: { keep: jest.fn(async (_loaded: unknown) => {}), back: jest.fn(async () => {}) },
+  opens: { previous: async () => mockPreviousOpen },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
@@ -796,4 +798,37 @@ test('"Why this call" leads on to the data behind it: its own page, for this cal
   await press(t('today.call.why'));
   await press(t('today.call.data'));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/why', params: { id: 'd1' } });
+});
+
+describe('the first eight weeks (K-521)', () => {
+  beforeEach(() => {
+    mockPreviousOpen = '2026-09-28';
+  });
+
+  test("the week's own words from the server; week one says nothing", async () => {
+    mockAnswers['/v1/first-weeks'] = ok({ week: 4, contentKey: 'first_weeks.week4', risk: [], readsRisk: false });
+    await show();
+    expect(screen.getByText(t('first_weeks.week4.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('first_weeks.week4.body'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('first_weeks.risk'))).toBeNull();
+  });
+
+  test('week one: no card', async () => {
+    mockAnswers['/v1/first-weeks'] = ok({ week: 1, risk: [], readsRisk: false });
+    await show();
+    expect(screen.queryByTestId('first-weeks')).toBeNull();
+  });
+
+  test("a risky week: one message, in a human voice — the server's signal", async () => {
+    mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [{ rule: 'no_session_last_week', source: { tag: 'PRODUCT' } }], readsRisk: true });
+    await show();
+    expect(screen.getAllByText(t('first_weeks.risk'))).toHaveLength(1);
+  });
+
+  test("a risky week: the app not opened in the week before, known only on the phone (ADR-041 #66)", async () => {
+    mockPreviousOpen = '2026-09-20'; // nine days before Tuesday 29 September
+    mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [], readsRisk: true });
+    await show();
+    expect(screen.getByText(t('first_weeks.risk'))).toBeOnTheScreen();
+  });
 });
