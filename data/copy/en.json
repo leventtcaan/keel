@@ -532,6 +532,9 @@
     "save": "Log it",
     "saveFailed": "Couldn't save it on this phone. Try again.",
     "full": "A meal holds up to {max} items. Log the rest as another meal.",
+    "fromCoach": {
+      "notChecked": "These amounts couldn't be checked. If a measure isn't one the food has, change it to grams; offline, try again when you're online."
+    },
     "edit": {
       "delete": "Delete this meal",
       "confirmDelete": "Delete it",
@@ -1275,6 +1278,17 @@
       "swap": "A different move today is done in the session: open it and add the move you'd rather do.",
       "openWorkout": "Open today's session",
       "unread": "This week's call couldn't be read just now. Try again in a moment."
+    },
+    "meal": {
+      "chip": "Log a meal in words",
+      "prompt": "Tell me what you ate, in your own words. I'll match it to the food database.",
+      "input": "What did you eat?",
+      "item": "{food} · {quantity} {unit}",
+      "pick": "Which one is it?",
+      "noMatch": "Nothing in the food database matches “{food}”. Add it by name on the meal screen.",
+      "log": "Log these",
+      "unread": "I couldn't read that as a meal. You can log it by name instead.",
+      "byName": "Log by name"
     }
   },
   "units": {

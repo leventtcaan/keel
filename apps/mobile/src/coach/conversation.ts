@@ -7,7 +7,7 @@
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { has } from '@/copy';
-import { load, type Loaded } from '@/today/today';
+import { chips, load, type Loaded, type TodayData } from '@/today/today';
 
 type Schemas = components['schemas'];
 
@@ -46,6 +46,18 @@ const CHIP_WORDS: Record<string, string> = {
 
 export function isChip(key: string): boolean {
   return key === 'today.chips.why' || key in CHIP_WORDS;
+}
+
+/** A meal said in words, read into a draft of the database's foods (K-504): always on offer in the coach. */
+export const MEAL_CHIP = 'coach.meal.chip';
+
+/**
+ * The coach's chips (prototype 2.1): three — the day's own first (two at most), a meal in words always, and how it works
+ * when the day gives fewer.
+ */
+export function coachChips(today: TodayData, day: string): string[] {
+  const own = chips(today, day).filter((key) => key !== 'today.chips.start').slice(0, 2);
+  return [...own, MEAL_CHIP, 'today.chips.start'].slice(0, 3);
 }
 
 /**
@@ -88,4 +100,13 @@ export async function ask(api: ApiClient, text: string, date: DayWords): Promise
   // A topic not about the call shows no card either: nothing says the call stands after "your doctor comes first" (U6).
   const aboutTheCall = value.mode === 'DETERMINISTIC' || !NOT_ABOUT_THE_CALL.has(value.topic);
   return { state: 'ready', said: { lines: linesOf(value, date), call: aboutTheCall ? value.call : undefined }, standard: value.mode === 'DETERMINISTIC' };
+}
+
+export type Read = { state: 'ready'; draft: Schemas['MealDraft'] } | { state: 'consent' } | { state: 'failed' };
+
+/** A meal in words, read into a draft (K-504): the database's foods for each, nothing of what they hold (U1). */
+export async function readMeal(api: ApiClient, text: string): Promise<Read> {
+  const draft = await load(() => api.POST('/v1/meals/parse', { body: { text } }));
+  if (draft.state === 'consent') return { state: 'consent' };
+  return draft.state === 'ready' ? { state: 'ready', draft: draft.value } : { state: 'failed' };
 }

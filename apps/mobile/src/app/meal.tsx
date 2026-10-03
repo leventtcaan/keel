@@ -12,8 +12,9 @@ import { has, t } from '@/copy';
 import { EstimateCard } from '@/food/EstimateCard';
 import { FoodPicker } from '@/food/FoodPicker';
 import { ItemRows } from '@/food/ItemRows';
-import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, recipeItemId, requestsOf } from '@/food/draft';
+import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, itemsHanded, recipeItemId, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
+import { clearMeal, peekMeal } from '@/food/handoff';
 import { foodParams } from '@/food/params';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
@@ -50,7 +51,10 @@ export default function MealScreen() {
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [slot, setSlot] = useState<Schemas['MealSlot']>(() => defaultSlot(new Date()));
-  const [items, setItems] = useState<DraftItem[]>([]);
+  // A meal the coach read comes in with its foods and amounts (K-509); a correction reads its own meal instead.
+  const [items, setItems] = useState<DraftItem[]>(() => (edit === undefined ? itemsHanded(peekMeal()) : []));
+  const [fromCoach] = useState(() => edit === undefined && peekMeal() !== null);
+  useEffect(() => clearMeal(), []);
   const [known, setKnown] = useState<KnownFoods>(() => new Map());
   // The user's recipes (K-423), read at the first search (no search, no request); unreadable (offline) is none this
   // time — the foods alone are offered, and the next search asks again.
@@ -140,8 +144,11 @@ export default function MealScreen() {
   // Correcting deletes the logged meal first: only once the server has taken these very items (the estimate runs the
   // same checks as the log), so a refused correction can never cost the meal it replaces (review: a serving's grams
   // are not known here, and 100 cups slipped through).
-  const unchecked = original !== null && estimate !== null && estimate.key === key && estimate.value === null;
-  const checked = original === null || shown !== null;
+  // A meal the coach read waits for the same check (K-509 review): its measure is the user's word, which may not be one of
+  // the food's servings — saved unchecked, the server would refuse it later, after the user thought it logged.
+  const mustCheck = original !== null || fromCoach;
+  const unchecked = mustCheck && estimate !== null && estimate.key === key && estimate.value === null;
+  const checked = !mustCheck || shown !== null;
 
   const allow = async () => {
     setBusy(true);
@@ -258,7 +265,7 @@ export default function MealScreen() {
 
         {shown !== null && <EstimateCard estimate={shown} question={question} />}
         {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
-        {unchecked && <Text style={[styles.text, { color: color.text }]}>{t('meal.edit.notChecked')}</Text>}
+        {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
         <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
         {deleting}
       </View>

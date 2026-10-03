@@ -8,6 +8,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import CoachScreen from '@/app/coach';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
 type Schemas = components['schemas'];
@@ -39,9 +40,11 @@ const mockGET = jest.fn(async (path: string, _init?: unknown) => {
   if (answer === 'offline') throw new TypeError('Network request failed');
   return answer;
 });
-const mockPOST = jest.fn(async (_path: string, _init?: unknown) => {
-  if (mockSent === 'offline') throw new TypeError('Network request failed');
-  return mockSent;
+let mockParsed: Answer | 'offline' = ok({ mode: 'DETERMINISTIC', items: [] });
+const mockPOST = jest.fn(async (path: string, _init?: unknown) => {
+  const answer = path === '/v1/meals/parse' ? mockParsed : mockSent;
+  if (answer === 'offline') throw new TypeError('Network request failed');
+  return answer;
 });
 const mockPush = jest.fn();
 let mockParams: { chip?: string } = {};
@@ -67,6 +70,8 @@ beforeEach(() => {
   mockParams = {};
   mockAnswers = { '/v1/decisions/current': ok(DECISION), '/v1/program': ok(PROGRAM), '/v1/weigh-ins': ok([]) };
   mockSent = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.call', call: CALL });
+  mockParsed = ok({ mode: 'DETERMINISTIC', items: [] });
+  takeMeal();
 });
 
 async function show() {
@@ -87,11 +92,12 @@ async function send(text: string) {
   await press(t('coach.send'));
 }
 
-test("on opening: chips from the day's data — the call, today's session, no weigh-in yet", async () => {
+test("on opening: three chips — the day's own first (the call, today's session), then a meal in words", async () => {
   await show();
-  for (const chip of ['today.chips.why', 'today.chips.swap', 'today.chips.weighIn']) {
+  for (const chip of ['today.chips.why', 'today.chips.swap', 'coach.meal.chip']) {
     expect(screen.getByRole('button', { name: t(chip) })).toBeOnTheScreen();
   }
+  expect(screen.queryByRole('button', { name: t('today.chips.weighIn') })).toBeNull();
   expect(mockGET).toHaveBeenCalledWith('/v1/weigh-ins', { params: { query: { from: '2026-09-29', to: '2026-09-29' } } });
 });
 
@@ -227,3 +233,111 @@ test('a retry pressed while another message waits sends nothing more', async () 
   expect(mockPOST).toHaveBeenCalledTimes(2);
   await act(async () => release(ok({ mode: 'MODEL', topic: 'WHY', rule: 'cut_step', call: CALL })));
 });
+
+describe('a meal in words (K-504 draft)', () => {
+  const EGGS = { food: 'eggs', amount: { quantity: 2, unit: 'piece' }, confident: true, candidates: [{ id: 'fdc-1', name: 'Egg, whole' }, { id: 'fdc-2', name: 'Egg white' }] };
+  const TOAST = { food: 'toast', amount: { quantity: 1, unit: 'slice' }, confident: false, candidates: [{ id: 'fdc-7', name: 'Bread, white, toasted' }, { id: 'fdc-8', name: 'Bread, whole wheat, toasted' }] };
+
+  async function tellMeal(text: string) {
+    await press(t('coach.meal.chip'));
+    await act(async () => fireEvent.changeText(screen.getByLabelText(t('coach.meal.input')), text));
+    await press(t('coach.send'));
+  }
+
+  test('the chip asks for the meal; the words go to the meal reader, not to the coach', async () => {
+    mockParsed = ok({ mode: 'MODEL', items: [EGGS] });
+    await show();
+    await press(t('coach.meal.chip'));
+    expect(screen.getByText(t('coach.meal.prompt'))).toBeOnTheScreen();
+    await act(async () => fireEvent.changeText(screen.getByLabelText(t('coach.meal.input')), 'two eggs'));
+    await press(t('coach.send'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/meals/parse', { body: { text: 'two eggs' } });
+    expect(mockPOST).not.toHaveBeenCalledWith('/v1/coach/messages', expect.anything());
+    // Then the box is the coach's again.
+    expect(screen.getByLabelText(t('coach.input'))).toBeOnTheScreen();
+  });
+
+  test("the draft: each food in the user's words and measure; a sure match picked, an unsure one asks — no calorie here (U1)", async () => {
+    mockParsed = ok({ mode: 'MODEL', items: [EGGS, TOAST] });
+    await show();
+    await tellMeal('two eggs and toast');
+    expect(screen.getByText(t('coach.meal.item', { food: 'eggs', quantity: '2', unit: 'piece' }))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Egg, whole' })).toHaveProp('accessibilityState', expect.objectContaining({ selected: true }));
+    expect(screen.getByText(t('coach.meal.pick'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('coach.meal.log') })).toBeDisabled();
+    expect(allText()).not.toMatch(/kcal/i);
+  });
+
+  test('one tap each: the picks go to the meal screen in memory, not in the link', async () => {
+    mockParsed = ok({ mode: 'MODEL', items: [EGGS, TOAST] });
+    await show();
+    await tellMeal('two eggs and toast');
+    await press('Bread, whole wheat, toasted');
+    await press(t('coach.meal.log'));
+    expect(mockPush).toHaveBeenCalledWith('/meal');
+    expect(takeMeal()).toEqual([
+      { foodId: 'fdc-1', name: 'Egg, whole', quantity: 2, unit: 'piece' },
+      { foodId: 'fdc-8', name: 'Bread, whole wheat, toasted', quantity: 1, unit: 'slice' },
+    ]);
+  });
+
+  test("a meal the reader couldn't read — or past the day's limit — says so, and the meal screen is a tap away", async () => {
+    mockParsed = ok({ mode: 'DETERMINISTIC', items: [] });
+    await show();
+    await tellMeal('mmm');
+    expect(screen.getByText(t('coach.meal.unread'))).toBeOnTheScreen();
+    await press(t('coach.meal.byName'));
+    expect(mockPush).toHaveBeenCalledWith('/meal');
+    expect(takeMeal()).toBeNull();
+  });
+
+  test('a food the database has nothing for is left to the meal screen; the rest go over', async () => {
+    const STEW = { food: 'stew', amount: { quantity: 1, unit: 'bowl' }, confident: false, candidates: [] };
+    mockParsed = ok({ mode: 'MODEL', items: [EGGS, STEW] });
+    await show();
+    await tellMeal('eggs and stew');
+    expect(screen.getByText(t('coach.meal.noMatch', { food: 'stew' }))).toBeOnTheScreen();
+    await press(t('coach.meal.log'));
+    expect(takeMeal()).toEqual([{ foodId: 'fdc-1', name: 'Egg, whole', quantity: 2, unit: 'piece' }]);
+  });
+
+  test('nothing the database has: nothing to hand over, the meal screen by name', async () => {
+    mockParsed = ok({ mode: 'MODEL', items: [{ ...TOAST, candidates: [] }] });
+    await show();
+    await tellMeal('mystery stew');
+    expect(screen.getByRole('button', { name: t('coach.meal.log') })).toBeDisabled();
+    await press(t('coach.meal.byName'));
+    expect(mockPush).toHaveBeenCalledWith('/meal');
+  });
+
+  test("a retry above a draft keeps the draft's picks", async () => {
+    mockSent = 'offline';
+    await show();
+    await send('Why?');
+    mockParsed = ok({ mode: 'MODEL', items: [TOAST] });
+    await tellMeal('toast');
+    await press('Bread, whole wheat, toasted');
+    mockSent = ok({ mode: 'MODEL', topic: 'WHY', rule: 'cut_step', call: CALL });
+    await press(t('coach.retry'));
+    expect(screen.getByRole('button', { name: 'Bread, whole wheat, toasted' })).toHaveProp('accessibilityState', expect.objectContaining({ selected: true }));
+    await press(t('coach.meal.log'));
+    expect(takeMeal()).toEqual([{ foodId: 'fdc-8', name: 'Bread, whole wheat, toasted', quantity: 1, unit: 'slice' }]);
+  });
+
+  test('without the consents: the consent line; no answer: retry reads the meal again', async () => {
+    mockParsed = refused(403, 'CONSENT_REQUIRED');
+    await show();
+    await tellMeal('two eggs');
+    expect(screen.getByText(t('coach.consent'))).toBeOnTheScreen();
+    mockParsed = 'offline';
+    await tellMeal('two eggs');
+    mockParsed = ok({ mode: 'MODEL', items: [EGGS] });
+    await press(t('coach.retry'));
+    expect(mockPOST).toHaveBeenLastCalledWith('/v1/meals/parse', { body: { text: 'two eggs' } });
+    expect(screen.getByRole('button', { name: t('coach.meal.log') })).toBeEnabled();
+  });
+});
+
+function allText(): string {
+  return screen.toJSON() === null ? '' : JSON.stringify(screen.toJSON());
+}
