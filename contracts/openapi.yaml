@@ -1204,8 +1204,13 @@ paths:
       operationId: askCoach
       summary: Ask about a call or the plan; the coach explains, it does not decide (U1)
       description: |
-        The question goes to a third-party language model, so it needs the THIRD_PARTY_AI consent (V2); without it the
-        answer is 403 CONSENT_REQUIRED. Quota: coach_messages_per_day (429 RATE_LIMITED).
+        About the call `decisionId` names, or the latest. The question and the call's facts go to a third-party language
+        model, so they need the THIRD_PARTY_AI consent to that provider and that data (V2); without it the answer is 403
+        CONSENT_REQUIRED. The call is health data: HEALTH_DATA consent. The model's words are shown only when they are the
+        call told — its numbers only, no concession, no forbidden phrase (K-505); otherwise, and when there is no call yet
+        or for the safety label, the answer is the engine's own words (DETERMINISTIC, nothing sent anywhere). Every answer
+        about a call carries the call as it stands: the coach explains, it never changes it (U1, U2). Unknown decisionId:
+        404. Quota: coach_messages_per_day (K-508).
       requestBody:
         required: true
         content:
@@ -2962,8 +2967,30 @@ components:
           description: The call the question is about, if any.
     CoachAnswer:
       type: object
-      required: [text]
+      required: [mode]
       properties:
+        mode:
+          type: string
+          enum: [MODEL, DETERMINISTIC]
+          description: MODEL — the model's words, checked; DETERMINISTIC — the engine's own words (copyKey).
         text:
           type: string
-          description: Words only; numbers in it come from the engine or the database (U1).
+          description: The model's words, present in MODEL mode only; every number in it is the call's (U1).
+        copyKey:
+          type: string
+          description: The engine's own words, in DETERMINISTIC mode (data/copy/en.json › coach.answer.*).
+        call:
+          $ref: "#/components/schemas/CoachCall"
+    CoachCall:
+      type: object
+      description: The call the answer is about, as it stands (U2) — its words, and when new data looks at it again.
+      required: [decisionId, copyKey, nextReview]
+      properties:
+        decisionId:
+          type: string
+          format: uuid
+        copyKey:
+          type: string
+        nextReview:
+          type: string
+          format: date

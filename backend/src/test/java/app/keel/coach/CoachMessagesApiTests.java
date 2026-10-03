@@ -1,0 +1,206 @@
+package app.keel.coach;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import app.keel.consent.ConsentTextVersions;
+import app.keel.identity.TestSessions;
+import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.shared.AccountId;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * POST /v1/coach/messages (K-505): the coach tells the call — the model's words only when they are the call told, the
+ * engine's own otherwise — and every answer carries the call as it stands; nothing the user says changes it (U2).
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import(PostgresTestConfiguration.class)
+class CoachMessagesApiTests {
+
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    @Autowired
+    MockMvcTester mvc;
+
+    @Autowired
+    ApplicationContext context;
+
+    @Autowired
+    JdbcClient jdbc;
+
+    @Autowired
+    LanguageModel model;
+
+    private FakeLanguageModel fake;
+
+    @BeforeEach
+    void forget() {
+        fake = (FakeLanguageModel) model;
+        fake.forget();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theCallToldIsShownWithTheCallAsItStands() throws Exception {
+        AccountId account = withACutStep();
+        Map<String, Object> call = latest(account);
+        int day = LocalDate.parse((String) call.get("nextReview")).getDayOfMonth();
+        String told = "Your weight held on the plan, so the call takes 500 kcal a day off; it is looked at again on the " + day + "th.";
+        fake.answer("{\"text\":\"" + told + "\"}");
+
+        Map<String, Object> answer = ok(ask(account, Map.of("text", "Why less food?")));
+
+        assertThat(answer).containsEntry("mode", "MODEL").containsEntry("text", told).doesNotContainKey("copyKey");
+        assertThat((Map<String, Object>) answer.get("call")).isEqualTo(Map.of("decisionId", call.get("id"), "copyKey", "decision.adjust_calories.cut",
+                "nextReview", call.get("nextReview")));
+        // The model got the call's facts and the question — sources by kind only, no research path, no name (K-523).
+        assertThat(fake.requests()).singleElement().satisfies(request -> {
+            assertThat(request.purpose()).isEqualTo(Purpose.EXPLAIN);
+            assertThat(request.system()).contains("FACTS:", "ADJUST_CALORIES", "-500", "NUMBERS:", "EXPERIENCE").doesNotContain("arastirma/");
+            assertThat(request.turns()).containsExactly(Turn.user("Why less food?"));
+        });
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void anObjectionMetWithAConcessionGetsTheEnginesWordsAndTheCallStays() throws Exception {
+        AccountId account = withACutStep();
+        Map<String, Object> before = latest(account);
+        String keptBefore = kept(account);
+        fake.answer("{\"text\":\"You're right, I'll lower the cut to 250 this week.\"}");
+
+        Map<String, Object> answer = ok(ask(account, Map.of("text", "This is too hard, make it smaller.")));
+
+        assertThat(answer).containsEntry("mode", "DETERMINISTIC").containsEntry("copyKey", "coach.answer.call").doesNotContainKey("text");
+        assertThat((Map<String, Object>) answer.get("call")).containsEntry("decisionId", before.get("id")).containsEntry("copyKey",
+                "decision.adjust_calories.cut");
+        assertThat(latest(account)).isEqualTo(before);
+        assertThat(kept(account)).isEqualTo(keptBefore);
+    }
+
+    @Test
+    void wordsTheModelMadeUpOrNothingAtAllGetTheEnginesWords() throws Exception {
+        AccountId account = withACutStep();
+        fake.answer("{\"text\":\"Eat 1,900 kcal a day.\"}");
+        assertThat(ok(ask(account, Map.of("text", "How much should I eat?")))).containsEntry("mode", "DETERMINISTIC");
+        // Told nothing, the fake answers {}: the deterministic mode.
+        assertThat(ok(ask(account, Map.of("text", "How much should I eat?")))).containsEntry("mode", "DETERMINISTIC");
+    }
+
+    @Test
+    void withoutTheAiConsentNothingIsSent() throws Exception {
+        AccountId account = withACutStep();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", account.value())
+                .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
+        fake.answer("{\"text\":\"The call stands.\"}");
+
+        assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
+        assertThat(fake.requests()).isEmpty();
+    }
+
+    @Test
+    void noCallYetIsSaidByTheEngineAndNothingIsSent() throws Exception {
+        AccountId account = ready();
+
+        assertThat(ok(ask(account, Map.of("text", "What's my call?")))).isEqualTo(Map.of("mode", "DETERMINISTIC", "copyKey", "coach.answer.no_call"));
+        assertThat(fake.requests()).isEmpty();
+    }
+
+    @Test
+    void theSafetyLabelIsNeverToldByTheModel() throws Exception {
+        // ADR-028 #24, V4: what is behind the safety label is never told — not to the model either.
+        AccountId account = withACutStep();
+        jdbc.sql("update decision.weekly_call set decision = decision || '{\"safety\": true}'::jsonb where account_id = :a")
+                .param("a", account.value()).update();
+
+        assertThat(ok(ask(account, Map.of("text", "Why this?")))).containsEntry("mode", "DETERMINISTIC").containsKey("call");
+        assertThat(fake.requests()).isEmpty();
+    }
+
+    @Test
+    void anotherUsersCallOrNoneIsNotFoundAndAQuestionIsAFewSentences() throws Exception {
+        AccountId owner = withACutStep();
+        AccountId other = withACutStep();
+        Object ownersCall = latest(owner).get("id");
+
+        assertThat(ask(other, Map.of("text", "Why?", "decisionId", ownersCall))).hasStatus(404);
+        assertThat(ask(owner, Map.of("text", "Why?", "decisionId", UUID.randomUUID()))).hasStatus(404);
+        assertThat(ask(owner, Map.of("text", " "))).hasStatus(400);
+        assertThat(ask(owner, Map.of("text", "a".repeat(2001)))).hasStatus(400);
+        assertThat(fake.requests()).isEmpty();
+    }
+
+    /** A user with both consents and a profile, weighed in: no call yet. */
+    private AccountId ready() {
+        AccountId account = TestSessions.newAccount();
+        send(account, "/v1/consents/HEALTH_DATA", "PUT", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
+        send(account, "/v1/consents/THIRD_PARTY_AI", "PUT", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI",
+                "dataTypes", List.of("meal photo", "meal note", "coach question")));
+        assertThat(send(account, "/v1/profile", "PUT", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")))).hasStatusOk();
+        send(account, "/v1/weigh-ins", "POST", Map.of("clientId", UUID.randomUUID(), "measuredAt", java.time.Instant.now().minusSeconds(3600).toString(),
+                "kg", 82.4, "source", "MANUAL"));
+        return account;
+    }
+
+    /** Ready, with this week's call made — kept as a cut's step of 500 kcal a day, a call with a number to tell. */
+    private AccountId withACutStep() {
+        AccountId account = ready();
+        String weekOf;
+        try {
+            weekOf = (String) ok(mvc.get().uri("/v1/check-ins/current").header("Authorization", TestSessions.bearer(context, account)).exchange())
+                    .get("weekOf");
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        assertThat(send(account, "/v1/check-ins/current/answers", "POST", Map.of("clientId", UUID.randomUUID(), "weekOf", weekOf, "answers", List.of())))
+                .hasStatusOk();
+        jdbc.sql("""
+                update decision.weekly_call set decision = decision || '{"action": {"type": "ADJUST_CALORIES", "kcalPerDay": -500},
+                    "copyKey": "decision.adjust_calories.cut"}'::jsonb where account_id = :a""").param("a", account.value()).update();
+        return account;
+    }
+
+    private String kept(AccountId account) {
+        return jdbc.sql("select decision::text || application from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+    }
+
+    private Map<String, Object> latest(AccountId account) throws Exception {
+        return ok(mvc.get().uri("/v1/decisions/current").header("Authorization", TestSessions.bearer(context, account)).exchange());
+    }
+
+    private MvcTestResult ask(AccountId account, Map<String, Object> question) {
+        return send(account, "/v1/coach/messages", "POST", question);
+    }
+
+    private MvcTestResult send(AccountId account, String uri, String method, Object body) {
+        var request = method.equals("PUT") ? mvc.put() : mvc.post();
+        return request.uri(uri).header("Authorization", TestSessions.bearer(context, account)).contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(body)).exchange();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> ok(MvcTestResult result) throws Exception {
+        assertThat(result).hasStatusOk();
+        return JSON.readValue(result.getResponse().getContentAsString(), Map.class);
+    }
+}

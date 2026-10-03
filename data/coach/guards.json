@@ -1,0 +1,26 @@
+{
+  "_about": "What a coach's reply may never do (K-505, U1, U2): claim to change, soften or skip the engine's call. Checked on every reply the model writes (ReplyCheck, coach); a reply that matches is dropped and the coach answers with the engine's own words. Patterns are case-insensitive regular expressions read the same in Java and JavaScript; each proves itself on its examples and near-misses (GuardsTests).",
+  "concessions": [
+    {
+      "id": "promise-to-change",
+      "why": "The coach promising to change the plan itself — the change is the engine's, from data (U2).",
+      "pattern": "\\b(i|we)('ll| will| can| could| would| am going to| are going to)\\s+(just\\s+)?(lower|raise|cut|reduce|increase|change|adjust|drop|skip|pause|undo|ease|loosen|relax|bump)\\b",
+      "examples": ["I'll lower your calories", "We can skip this week's change", "I will adjust it for you", "we'll just bump it up", "I could reduce it a bit"],
+      "nonExamples": ["We'll look at it again on 12 October", "I can only talk about the call and the plan", "We will see what the weigh-ins say"]
+    },
+    {
+      "id": "lets-change",
+      "why": "Inviting a change the engine did not make.",
+      "pattern": "\\blet'?s\\s+(just\\s+)?(lower|raise|cut|reduce|increase|change|adjust|drop|skip|pause|undo|ease|keep it at|go with|try)\\b",
+      "examples": ["Let's lower it to what you had", "let's skip the cut this week", "Lets keep it at the old number", "Let's go with your plan"],
+      "nonExamples": ["Let's see what next week's weigh-ins say", "let us look at the trend"]
+    },
+    {
+      "id": "you-are-right-instead",
+      "why": "Agreeing to the objection in place of the call.",
+      "pattern": "\\b(you'?re|you are) right\\b[^.!?]*\\b(instead|change|lower|raise|skip|no need)\\b|\\binstead\\b[^.!?]*\\b(calories|kcal|sets|plan|cut|deficit)\\b|\\b(ignore|disregard|forget about)\\s+(the|this|that)\\s+(call|change|plan)\\b",
+      "examples": ["You're right, let's change it", "you are right, no need for the deficit", "Eat what you had instead of these calories", "Feel free to ignore the call this week"],
+      "nonExamples": ["You're right that the scale went up; the call stands", "The trend, not one weigh-in, is what the call reads"]
+    }
+  ]
+}

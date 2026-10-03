@@ -69,6 +69,14 @@ tasks.processResources {
     from(files("../data/muscles.yaml", "../data/exercise-setup.yaml")) {
         into("data")
     }
+    // The coach's instructions and the replies it may never give (K-505), and the phrases no text may carry (U4, U6,
+    // person names — the app reads the same file).
+    from("../data/coach") {
+        into("data/coach")
+    }
+    from(files("../data/copy/forbidden-phrases.json")) {
+        into("data/copy")
+    }
 }
 
 // Integration tests start the same PostgreSQL image as compose.yaml, named once in the version catalog (K-202).

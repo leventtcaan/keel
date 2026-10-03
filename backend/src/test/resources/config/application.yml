@@ -24,3 +24,6 @@ keel:
     data-types:
       explain: coach question
       parse-meal: meal note
+    # A question is a few sentences (contract CoachQuestion.text); a reply three short ones (data/coach/explain.md).
+    max-question-chars: 2000
+    max-reply-chars: 400
