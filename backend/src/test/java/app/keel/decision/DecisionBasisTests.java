@@ -85,8 +85,18 @@ class DecisionBasisTests {
         assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("81.0", null, "81.0"), waist(CheckIn.Waist.DOWN)), MALE).signals()).isNull();
     }
 
+    @Test
+    void aCallKeptBeforeTheWaistsSpanWasSaysNoSignal() {
+        // K-603 review: whether the readings were weeks apart (H1 §1.5) is not known for it — nothing is said.
+        StoredSnapshot.Answered noSpan = new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN,
+                CheckIn.Waist.DOWN, null, CheckIn.Appetite.UNKNOWN);
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("81.2", "81.0", "81.0"), noSpan), MALE).signals()).isNull();
+    }
+
+    /** The waist trend the call read, from readings waist_signal_min_span_days apart (K-603). */
     private static StoredSnapshot.Answered waist(CheckIn.Waist waist) {
-        return new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, null, CheckIn.Appetite.UNKNOWN);
+        return new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, null, CheckIn.Appetite.UNKNOWN,
+                null, null, MALE.wholeNumber(app.keel.engine.ParameterKey.WAIST_SIGNAL_MIN_SPAN_DAYS));
     }
 
     @Test

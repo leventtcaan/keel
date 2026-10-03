@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * A Snapshot as it is kept with its call (K-212, ADR-003 §6): every input the engine read, so the call can be made again
@@ -43,13 +44,19 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
      * {@code adherenceDone} of {@code adherencePlanned}: what {@code adherence} was made of (K-526) — kept by calls made
      * since; null for an older call, never made up from the ratio.
      */
+    /** {@code waistSpanDays}: days between the window's first and last waist reading (K-603); none on a call kept before. */
     record Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
             CheckIn.Appetite appetite, @JsonInclude(JsonInclude.Include.NON_NULL) Integer adherenceDone,
-            @JsonInclude(JsonInclude.Include.NON_NULL) Integer adherencePlanned) {
+            @JsonInclude(JsonInclude.Include.NON_NULL) Integer adherencePlanned, @JsonInclude(JsonInclude.Include.NON_NULL) Integer waistSpanDays) {
 
         Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
                 CheckIn.Appetite appetite) {
-            this(look, training, recovery, waist, adherence, appetite, null, null);
+            this(look, training, recovery, waist, adherence, appetite, null, null, null);
+        }
+
+        Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
+                CheckIn.Appetite appetite, Integer adherenceDone, Integer adherencePlanned) {
+            this(look, training, recovery, waist, adherence, appetite, adherenceDone, adherencePlanned, null);
         }
     }
 
@@ -61,11 +68,18 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
     }
 
     static StoredSnapshot of(Snapshot snapshot) {
-        return of(snapshot, Optional.empty());
+        return of(snapshot, Optional.empty(), OptionalInt.empty());
     }
 
-    /** With the counts the adherence was made of (K-526): only the ones that make the very ratio the engine read (U1). */
     static StoredSnapshot of(Snapshot snapshot, Optional<Consistency.WindowCount> adherenceCount) {
+        return of(snapshot, adherenceCount, OptionalInt.empty());
+    }
+
+    /**
+     * With the counts the adherence was made of (K-526): only the ones that make the very ratio the engine read (U1); and
+     * the days the waist readings the call read spanned (K-603).
+     */
+    static StoredSnapshot of(Snapshot snapshot, Optional<Consistency.WindowCount> adherenceCount, OptionalInt waistSpanDays) {
         CheckIn in = snapshot.checkIn();
         adherenceCount.ifPresent(count -> {
             if (in.adherence().map(ratio -> ratio.compareTo(count.ratio()) != 0).orElse(true)) {
@@ -78,7 +92,8 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 snapshot.energy().map(energy -> new Energy(energy.targetKcal(), energy.exerciseKcalPerDay().isPresent()
                         ? energy.exerciseKcalPerDay().getAsInt() : null)).orElse(null),
                 new Answered(in.look(), in.training(), in.recovery(), in.waist(), in.adherence().orElse(null), in.appetite(),
-                        adherenceCount.map(Consistency.WindowCount::done).orElse(null), adherenceCount.map(Consistency.WindowCount::planned).orElse(null)),
+                        adherenceCount.map(Consistency.WindowCount::done).orElse(null), adherenceCount.map(Consistency.WindowCount::planned).orElse(null),
+                        waistSpanDays.isPresent() ? waistSpanDays.getAsInt() : null),
                 snapshot.profile().map(profile -> new Body(profile.ageYears(), profile.heightCm())).orElse(null),
                 snapshot.observingMaintenance(), snapshot.phaseStart(),
                 snapshot.training().map(training -> new Training(training.stalledSessions(), training.weeksLoadHeld(), training.monthsStalled(),

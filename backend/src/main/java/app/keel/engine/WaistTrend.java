@@ -3,8 +3,11 @@ package app.keel.engine;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * Where the waist went (K-213) over the readings given — the caller passes the decision window's: the last day measured
@@ -34,6 +37,13 @@ public final class WaistTrend {
             return CheckIn.Waist.UP;
         }
         return change.compareTo(error.negate()) < 0 ? CheckIn.Waist.DOWN : CheckIn.Waist.FLAT;
+    }
+
+    /** Days from the first reading to the last (K-603: were they weeks apart, H1 §1.5); none without a reading. */
+    public static OptionalInt spanDays(List<Reading> readings) {
+        Optional<LocalDate> first = readings.stream().map(Reading::day).min(Comparator.naturalOrder());
+        Optional<LocalDate> last = readings.stream().map(Reading::day).max(Comparator.naturalOrder());
+        return first.isEmpty() ? OptionalInt.empty() : OptionalInt.of((int) ChronoUnit.DAYS.between(first.get(), last.get()));
     }
 
     // A day measured twice counts as the mean of its readings: which came first is not known (the day has no time).

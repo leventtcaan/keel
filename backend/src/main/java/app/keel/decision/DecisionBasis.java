@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.OptionalInt;
 
 /**
  * What a call read, as the rows "Why this call" shows (K-519, Ö-25, U3's "which data"): from the call's own stored
@@ -62,7 +63,8 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
         AdherenceCount count = answered.adherenceDone() == null || answered.adherencePlanned() == null ? null
                 : new AdherenceCount(answered.adherenceDone(), answered.adherencePlanned());
         // What else the window says (K-603), only where the call read it: weight steady, waist down.
-        List<Signal> signals = CompositionSignal.of(weeks.stream().map(WeekMean::kg).toList(), answered.waist(), parameters).stream()
+        List<Signal> signals = CompositionSignal.of(weeks.stream().map(WeekMean::kg).toList(), snapshot.phase(), answered.waist(),
+                answered.waistSpanDays() == null ? OptionalInt.empty() : OptionalInt.of(answered.waistSpanDays()), parameters).stream()
                 .map(reason -> new Signal(reason.rule().value(), new Kind(reason.source().tag()))).toList();
         return new DecisionBasis(snapshot.phase(), weeks, change(weeks), answered.adherence(), count,
                 new Answers(given(answered.look(), CheckIn.Look.UNKNOWN), given(answered.training(), CheckIn.Training.UNKNOWN),
