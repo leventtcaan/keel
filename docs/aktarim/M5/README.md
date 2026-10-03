@@ -10,3 +10,6 @@
 4. K-518 durum modu telefonda — sunucunun son cevabı telefonda, susan hatırlatmalar, Bugün kartı, beyan ekranı
 5. K-512 proaktif tetikleyiciler — takvim haftası, duraklayan gün, oluş anahtarı, T-5 yalnız açıkta, açığın ilk günü
 6. K-519 kararın dayanağı (sunucu) — anlık görüntüden satırlar, spine ile tek pencere, U4/U5
+7. K-520 tetikleyici soruları Bugün'de — tek soru, bir kez cevap, yanıt ya da yön, okumaya bağlı not
+8. K-513 ilk 8 hafta + 5. hafta riski (motor + sunucu) — kişinin haftası, tek Pazar eşlemesi, herhangi bir sinyal (ağırlık yok), okuma kapıları
+9. K-502 karar kartı yüzleri + gerekçe sayfası — yüz sunucudan okunur, telefondan uygulama, ret türleri, ref kilidi, kayan nokta yüzdesi
