@@ -52,6 +52,24 @@ public final class Consistency {
      * 70 % of the plan is success).
      */
     public static ConsistencyRecord record(List<WeekTally> weeks, Parameters parameters) {
+        Walk walk = walk(weeks, parameters);
+        return new ConsistencyRecord(walk.onTrack(), walk.counted(), walk.run());
+    }
+
+    /**
+     * Whether the last of the weeks, given oldest first, is the one missed week the run forgave (04 §7.3): a miss right
+     * after a week on track. A miss with no run before it forgives nothing; a paused or unplanned week is skipped between,
+     * and is never itself forgiven. Its use is the leading sign of dropping off (I1 F3; K-513).
+     */
+    public static boolean lastWeekForgiven(List<WeekTally> weeks, Parameters parameters) {
+        return walk(weeks, parameters).lastForgiven();
+    }
+
+    /** The run walked once, for both readers. */
+    private record Walk(int onTrack, int counted, int run, boolean lastForgiven) {
+    }
+
+    private static Walk walk(List<WeekTally> weeks, Parameters parameters) {
         Objects.requireNonNull(weeks, "weeks");
         for (int i = 1; i < weeks.size(); i++) {
             // Consecutive weeks: a week left out would silently count as "nothing planned" and flatter a user who
@@ -66,7 +84,9 @@ public final class Consistency {
         int counted = 0;
         int run = 0;
         int missesInARow = 0;
+        boolean forgiven = false;
         for (WeekTally week : weeks) {
+            forgiven = false;
             if (week.planned() == 0 || week.paused()) {
                 continue; // nothing planned, or paused by a declared state (K-516): neither a success nor a miss
             }
@@ -77,9 +97,11 @@ public final class Consistency {
                 missesInARow = 0;
             } else if (++missesInARow >= 2) {
                 run = 0; // a second missed week in a row ends the run; the cumulative count stays
+            } else {
+                forgiven = run > 0; // a lone miss keeps a run going; with no run there is nothing to forgive
             }
         }
-        return new ConsistencyRecord(onTrack, counted, run);
+        return new Walk(onTrack, counted, run, forgiven);
     }
 
     /**
