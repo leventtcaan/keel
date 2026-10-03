@@ -16,16 +16,20 @@ import java.util.List;
 /**
  * What a call read, as the rows "Why this call" shows (K-519, Ö-25, U3's "which data"): from the call's own stored
  * snapshot, nothing else — the decision window's weekly means and the change per week from the first to the latest, when
- * the call read the window; the adherence ratio counted (the counts behind it are not kept); the check-in answers given
- * (one left open is no row); where training stood; a state declared that week. The target is not a row here: it is the
- * plan's (/v1/targets), a single number by exception (U5). The fat estimates the engine read are never here (U4); nor
+ * the call read the window; the adherence ratio counted, and the counts it is made of when the call kept them (K-526); the
+ * check-in answers given (one left open is no row); where training stood; a state declared that week. The target is not
+ * a row here: it is the plan's (/v1/targets), a single number by exception (U5). The fat estimates the engine read are never here (U4); nor
  * the cycle answer, which is never kept (ADR-020 L-1).
  *
  * @param changeKgPerWeek from the window's first week to its latest, per week; none when the window was not read
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWeek, BigDecimal adherence, Answers answers,
-        StoredSnapshot.Training training, DeclaredContext pausedBy) {
+record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWeek, BigDecimal adherence, AdherenceCount adherenceCount,
+        Answers answers, StoredSnapshot.Training training, DeclaredContext pausedBy) {
+
+    /** What the adherence was made of (K-526, ADR-041 #63): kept by calls made since; none for an older one. */
+    record AdherenceCount(int done, int planned) {
+    }
 
     record WeekMean(LocalDate ends, BigDecimal kg) {
     }
@@ -44,7 +48,9 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
                         .map(week -> new WeekMean(week.ends(), week.kg().orElseThrow())).toList()
                 : List.of();
         StoredSnapshot.Answered answered = snapshot.checkIn();
-        return new DecisionBasis(snapshot.phase(), weeks, change(weeks), answered.adherence(),
+        AdherenceCount count = answered.adherenceDone() == null || answered.adherencePlanned() == null ? null
+                : new AdherenceCount(answered.adherenceDone(), answered.adherencePlanned());
+        return new DecisionBasis(snapshot.phase(), weeks, change(weeks), answered.adherence(), count,
                 new Answers(given(answered.look(), CheckIn.Look.UNKNOWN), given(answered.training(), CheckIn.Training.UNKNOWN),
                         given(answered.recovery(), CheckIn.Recovery.UNKNOWN), given(answered.waist(), CheckIn.Waist.UNKNOWN),
                         given(answered.appetite(), CheckIn.Appetite.UNKNOWN)),

@@ -1,8 +1,10 @@
 package app.keel.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import app.keel.engine.CheckIn;
+import app.keel.engine.Consistency;
 import app.keel.engine.EnergyBudget;
 import app.keel.engine.Phase;
 import app.keel.engine.Profile;
@@ -106,6 +108,28 @@ class StoredSnapshotTests {
         String before = JSON.writeValueAsString(StoredSnapshot.of(full(false))).replaceAll(",\"fatProxyEnergyPct\":[^,}]*", "");
         assertThat(before).doesNotContain("fatProxyEnergyPct");
         assertThat(JSON.readValue(before, StoredSnapshot.class).toSnapshot()).isEqualTo(full(false));
+    }
+
+    @Test
+    void theCountsBehindTheAdherenceAreKeptAndACallKeptBeforeThemHasNone() throws Exception {
+        // K-526 (ADR-041 #63): 17 of 20 is the 0.85 the engine read; kept beside it, never in its place.
+        Snapshot full = full(false);
+        StoredSnapshot counted = JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(full, Optional.of(new Consistency.WindowCount(17, 20)))),
+                StoredSnapshot.class);
+
+        assertThat(counted.checkIn().adherenceDone()).isEqualTo(17);
+        assertThat(counted.checkIn().adherencePlanned()).isEqualTo(20);
+        assertThat(counted.toSnapshot()).isEqualTo(full);
+        assertThat(JSON.writeValueAsString(StoredSnapshot.of(full))).doesNotContain("adherenceDone").doesNotContain("adherencePlanned");
+    }
+
+    @Test
+    void aCountThatIsNotTheRatioTheEngineReadIsRefused() {
+        // Never a number made up beside the one the call was made on (U1).
+        assertThatIllegalArgumentException().isThrownBy(() -> StoredSnapshot.of(full(false), Optional.of(new Consistency.WindowCount(16, 20))));
+        Snapshot unread = new Snapshot(TODAY, Sex.FEMALE, Phase.BULK, TODAY.minusDays(14),
+                new WeightSeries(List.of(new WeighIn(TODAY, new BigDecimal("61.3")))));
+        assertThatIllegalArgumentException().isThrownBy(() -> StoredSnapshot.of(unread, Optional.of(new Consistency.WindowCount(1, 2))));
     }
 
     @Test

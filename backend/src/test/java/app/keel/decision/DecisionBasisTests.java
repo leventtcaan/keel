@@ -68,12 +68,25 @@ class DecisionBasisTests {
     }
 
     @Test
+    void aNewCallsAdherenceIsShownAsItsCount() {
+        // K-526 (ADR-041 #63, Ö-25): "16 of 19 actions" says more than 84 %.
+        StoredSnapshot.Answered answered = new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN,
+                CheckIn.Waist.UNKNOWN, new BigDecimal("0.8421052631578947"), CheckIn.Appetite.UNKNOWN, 16, 19);
+
+        DecisionBasis basis = DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("82.0", "81.5", "81.0"), answered), MALE);
+
+        assertThat(basis.adherenceCount()).isEqualTo(new DecisionBasis.AdherenceCount(16, 19));
+    }
+
+    @Test
     void theAnswersGivenAndNotTheOnesLeftOpen() {
         StoredSnapshot.Answered answered = new StoredSnapshot.Answered(CheckIn.Look.BETTER, CheckIn.Training.UNKNOWN, CheckIn.Recovery.POOR,
                 CheckIn.Waist.UNKNOWN, new BigDecimal("0.8"), CheckIn.Appetite.UNKNOWN);
         DecisionBasis basis = DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("82.0", "81.5", "81.0"), answered), MALE);
 
         assertThat(basis.adherence()).isEqualByComparingTo("0.8");
+        // A call kept before K-526 has the ratio only: no count is made up for it (ADR-041 #63).
+        assertThat(basis.adherenceCount()).isNull();
         assertThat(basis.answers().look()).isEqualTo(CheckIn.Look.BETTER);
         assertThat(basis.answers().recovery()).isEqualTo(CheckIn.Recovery.POOR);
         assertThat(basis.answers().training()).isNull();

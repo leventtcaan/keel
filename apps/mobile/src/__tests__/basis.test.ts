@@ -30,6 +30,12 @@ test('the trend from the window’s first week to its latest, its rate a week, t
   expect(row(rows, 'why.row.adherence')).toBe(t('why.value.adherence', { percent: 84 }));
 });
 
+test('a call that kept its counts shows them, not a percent (K-526, ADR-041 #63)', () => {
+  const rows = basisRows({ ...READ, adherence: 16 / 19, adherenceCount: { done: 16, planned: 19 } }, 'METRIC');
+  expect(row(rows, 'why.row.adherence')).toBe(t('why.value.adherenceCount', { done: 16, planned: 19 }));
+  expect(t('why.value.adherenceCount', { done: 16, planned: 19 })).toBe('16 of 19 planned actions');
+});
+
 test('in pounds for a user on pounds, rounded once', () => {
   const rows = basisRows(READ, 'IMPERIAL');
   expect(row(rows, 'why.row.trend')).toBe(t('why.value.trend', { from: formatWeight(82.34, 'IMPERIAL'), to: formatWeight(81.91, 'IMPERIAL') }));
