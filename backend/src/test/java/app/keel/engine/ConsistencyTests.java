@@ -149,6 +149,62 @@ class ConsistencyTests {
     }
 
     @Test
+    void theForgivenWeeksAreCountedAndNeverReset() {
+        // K-608: "11 of 12 weeks · 1 forgiven week used". A lone miss in a run is forgiven; cumulative, like the count (U7).
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 9)).forgivenWeeks()).isOne();
+        List<WeekTally> twelve = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            twelve.add(training(MONDAY.plusWeeks(i), 10, i % 4 == 3 ? 3 : 9)); // weeks 4, 8, 12 off, each alone
+        }
+        assertThat(Consistency.record(twelve, P).forgivenWeeks()).isEqualTo(3);
+    }
+
+    @Test
+    void aForgivenWeekStaysUsedWhenTheNextIsMissedToo() {
+        // K-608 review: forgiven when it was missed, as the user was told then — a second miss ends the run, it does not
+        // take the forgiven week back (U7: the number never goes down). Only the lone miss is forgiven, not the second.
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2)).forgivenWeeks()).isOne();
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 1)).forgivenWeeks()).isOne();
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 1), week(10, 9)).forgivenWeeks()).isOne();
+    }
+
+    @Test
+    void aPausedOrUnplannedWeekBetweenIsSkippedAsTheRunSkipsIt() {
+        // on, miss, paused, on → 1; on, miss, paused, miss → the pause does not split two misses: still the one forgiven.
+        assertThat(Consistency.record(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 2),
+                training(MONDAY.plusWeeks(2), 10, 0).asPaused(), training(MONDAY.plusWeeks(3), 10, 9)), P).forgivenWeeks()).isOne();
+        assertThat(Consistency.record(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 2),
+                training(MONDAY.plusWeeks(2), 10, 0).asPaused(), training(MONDAY.plusWeeks(3), 10, 1)), P).forgivenWeeks()).isOne();
+        assertThat(record(week(10, 9), week(10, 2), week(0, 0)).forgivenWeeks()).isOne();
+    }
+
+    @Property
+    boolean theForgivenWeeksNeverGoDownAsWeeksAreAdded(@ForAll("tallies") List<int[]> history) {
+        List<WeekTally> weeks = new ArrayList<>();
+        int previous = 0;
+        for (int i = 0; i < history.size(); i++) {
+            weeks.add(training(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
+            int now = Consistency.record(weeks, P).forgivenWeeks();
+            if (now < previous) {
+                return false;
+            }
+            previous = now;
+        }
+        return true;
+    }
+
+    @Test
+    void aMissWithNoRunBeforeItIsNoForgivenWeek() {
+        assertThat(record(week(10, 2), week(10, 9)).forgivenWeeks()).isZero();
+    }
+
+    @Test
+    void theLatestWeekMissedAloneIsForgivenAsLastWeekForgivenReadsIt() {
+        // K-513's sign reads the same walk: forgiven when missed.
+        assertThat(record(week(10, 9), week(10, 2)).forgivenWeeks()).isOne();
+    }
+
+    @Test
     void aWeekWithNothingPlannedIsLeftOut() {
         // A holiday week with no plan is neither a success nor a miss.
         ConsistencyRecord record = record(week(10, 9), week(0, 0), week(10, 9));
@@ -215,6 +271,17 @@ class ConsistencyTests {
         }
         ConsistencyRecord record = Consistency.record(weeks, P);
         return record.currentRun() <= record.onTrackWeeks() && record.onTrackWeeks() <= record.countedWeeks();
+    }
+
+    @Property
+    boolean aForgivenWeekIsAMissedWeekAndOneOnTrackWeekCameBeforeEach(@ForAll("tallies") List<int[]> history) {
+        List<WeekTally> weeks = new ArrayList<>();
+        for (int i = 0; i < history.size(); i++) {
+            weeks.add(training(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
+        }
+        ConsistencyRecord record = Consistency.record(weeks, P);
+        int missed = record.countedWeeks() - record.onTrackWeeks();
+        return record.forgivenWeeks() >= 0 && record.forgivenWeeks() <= missed && record.forgivenWeeks() <= record.onTrackWeeks();
     }
 
     @Property

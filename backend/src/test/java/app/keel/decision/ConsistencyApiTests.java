@@ -66,7 +66,7 @@ class ConsistencyApiTests {
         assertThat((int) consistency.get("done")).isEqualTo(2);
         assertThat(consistency).containsKeys("planned", "percent");
         // The first call is this week: no week is over since, nothing counted yet.
-        assertThat(consistency.get("record")).isEqualTo(Map.of("onTrackWeeks", 0, "countedWeeks", 0, "currentRun", 0));
+        assertThat(consistency.get("record")).isEqualTo(Map.of("onTrackWeeks", 0, "countedWeeks", 0, "currentRun", 0, "forgivenWeeks", 0));
     }
 
     @Test
@@ -178,6 +178,36 @@ class ConsistencyApiTests {
         assertThat(after.get("record")).isEqualTo(before);
         // This week began with three days asked: the five are asked from next Monday.
         assertThat(after.get("training")).isEqualTo(Map.of("planned", 3, "done", 0));
+    }
+
+    @Test
+    void aLoneMissedWeekInARunIsAForgivenWeekInTheRecord() throws Exception {
+        // K-608: "11 of 12 weeks on track · 1 forgiven week used". On track, missed, then on track: the miss is forgiven.
+        // Two sessions (the profile's days) and three weigh-ins of four are 5 of 6, on track (on_track_min_ratio).
+        AccountId account = consenting();
+        LocalDate today = LocalDate.now(ISTANBUL);
+        LocalDate began = today.minusDays(30);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+        int index = 0;
+        for (LocalDate week = began.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)); week.plusDays(6).isBefore(today); week = week.plusWeeks(1)) {
+            if (index++ == 1) {
+                continue; // the second week: nothing done
+            }
+            for (int day : new int[] {0, 3}) {
+                workout(account, "WORKING", week.plusDays(day).atTime(12, 0).atZone(ISTANBUL).toInstant());
+            }
+            for (int day : new int[] {0, 1, 2}) {
+                send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
+                        week.plusDays(day).atTime(8, 0).atZone(ISTANBUL).toInstant().toString(), "kg", 82.0, "source", "MANUAL"));
+            }
+        }
+
+        Map<String, Object> record = (Map<String, Object>) read(get(account)).get("record");
+
+        assertThat(index).as("weeks over since the plan began").isGreaterThanOrEqualTo(3);
+        assertThat(record).containsEntry("countedWeeks", index).containsEntry("onTrackWeeks", index - 1).containsEntry("forgivenWeeks", 1);
     }
 
     @Test

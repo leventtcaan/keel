@@ -26,12 +26,7 @@ export function ConsistencyCard({ consistency }: { consistency: Consistency | nu
     );
   const record =
     consistency.record.countedWeeks === 0 ? null : (
-      <Text style={[styles.small, { color: color.muted }]}>
-        {t('today.consistency.record', {
-          onTrack: consistency.record.onTrackWeeks,
-          counted: consistency.record.countedWeeks,
-        })}
-      </Text>
+      <Text style={[styles.small, { color: color.muted }]}>{recordLine(consistency.record)}</Text>
     );
   // A state declared this week (K-516): the week counts neither way, the record leaves it out (U7).
   const paused = consistency.paused ? <Text style={[styles.small, { color: color.muted }]}>{t('today.consistency.paused')}</Text> : null;
@@ -69,6 +64,16 @@ export function ConsistencyCard({ consistency }: { consistency: Consistency | nu
       {record}
     </Card>
   );
+}
+
+/** "11 of 12 weeks on track · 1 forgiven week used" (K-608): never reset, the forgiven weeks said only once one was used (U7). */
+function recordLine(record: Consistency['record']): string {
+  const onTrack = t('today.consistency.record', { onTrack: record.onTrackWeeks, counted: record.countedWeeks });
+  if (record.forgivenWeeks === 0) return onTrack;
+  const forgiven = t(record.forgivenWeeks === 1 ? 'today.consistency.forgiven.one' : 'today.consistency.forgiven.other', {
+    count: record.forgivenWeeks,
+  });
+  return t('today.consistency.recordWithForgiven', { record: onTrack, forgiven });
 }
 
 const styles = StyleSheet.create({

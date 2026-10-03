@@ -106,7 +106,7 @@ class DecisionController {
             view.put("paused", true); // a state declared this week (K-516): neither on track nor missed
         }
         view.put("record", Map.of("onTrackWeeks", now.record().onTrackWeeks(), "countedWeeks", now.record().countedWeeks(),
-                "currentRun", now.record().currentRun()));
+                "currentRun", now.record().currentRun(), "forgivenWeeks", now.record().forgivenWeeks()));
         return view;
     }
 

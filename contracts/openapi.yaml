@@ -2714,7 +2714,7 @@ components:
             nor missed, and the record leaves it out.
         record:
           type: object
-          required: [onTrackWeeks, countedWeeks, currentRun]
+          required: [onTrackWeeks, countedWeeks, currentRun, forgivenWeeks]
           description: Weeks over since the first call; a week is on track at on_track_min_ratio (K-111). Never reset.
           properties:
             onTrackWeeks:
@@ -2727,6 +2727,12 @@ components:
               type: integer
               minimum: 0
               description: On-track weeks in a row; one missed week is forgiven, two in a row end the run.
+            forgivenWeeks:
+              type: integer
+              minimum: 0
+              description: |
+                The missed weeks a run forgave, over the whole record (K-608): each lone miss after an on-track week, counted
+                when forgiven — never reset, never taken back by a second miss (which ends the run).
     ActionCount:
       type: object
       description: One kind of planned action this week; done is counted up to planned.

@@ -36,7 +36,7 @@ const CONSISTENCY: Schemas['Consistency'] = {
   planned: 19,
   done: 16,
   percent: 84,
-  record: { onTrackWeeks: 2, countedWeeks: 3, currentRun: 2 },
+  record: { onTrackWeeks: 2, countedWeeks: 3, currentRun: 2, forgivenWeeks: 0 },
 };
 const decision = (copyKey: string, extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => ({
   id: 'd1',
@@ -204,6 +204,7 @@ test('the number and its four parts, as the server counted them', async () => {
     ).toBeOnTheScreen();
   }
   expect(screen.getByText(t('today.consistency.record', { onTrack: 2, counted: 3 }))).toBeOnTheScreen();
+  expect(screen.queryByText(/forgiven/)).toBeNull();
 });
 
 test("this week's call: its label, its words from the copy key, its confidence; 'Why this call' opens the reasons", async () => {
@@ -831,4 +832,15 @@ describe('the first eight weeks (K-521)', () => {
     await show();
     expect(screen.getByText(t('first_weeks.risk'))).toBeOnTheScreen();
   });
+});
+
+test("the record says the forgiven weeks used, never reset (K-608: 11 of 12 weeks · 1 forgiven week used)", async () => {
+  mockAnswers['/v1/consistency'] = ok({ ...CONSISTENCY, record: { onTrackWeeks: 11, countedWeeks: 12, currentRun: 4, forgivenWeeks: 1 } });
+  await show();
+
+  expect(await screen.findByText('11 of 12 weeks on track · 1 forgiven week used')).toBeOnTheScreen();
+});
+
+test('several forgiven weeks are counted in words', () => {
+  expect(t('today.consistency.forgiven.other', { count: 3 })).toBe('3 forgiven weeks used');
 });
