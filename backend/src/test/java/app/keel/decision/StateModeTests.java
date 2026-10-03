@@ -369,7 +369,9 @@ class StateModeTests {
 
     private LocalDate stillSoOn(AccountId account, String kind) {
         return jdbc.sql("select still_so_on from decision.declared_state where account_id = :a and kind = :kind")
-                .param("a", account.value()).param("kind", kind).query(LocalDate.class).single();
+                .param("a", account.value()).param("kind", kind)
+                // A null day is the answer here: read as a row, not as a required value.
+                .query((row, n) -> java.util.Optional.ofNullable(row.getObject(1, LocalDate.class))).single().orElse(null);
     }
 
     /** A user in Kiritimati, with the consent and a profile. */
