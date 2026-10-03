@@ -661,7 +661,7 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
   - Widget içeriği `widgets/lockScreen.ts`; `expo-widgets` kurulumu cihaz adımında (App Group).
   - Koç sınıflandırmasını cihazda yapma yönü ADR-047 #3 (cihaz adımı).
   - Disk: yerelde `DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test` saf testleri hızlı koşar, DB testleri Docker'sız düşer (sayımı ayır).
-- **Yeni sorular:** 86 (kilit ekranından kilo girişi).
+- **Sorular:** 86 → ADR-048 #5 (önce buton, sonra intent). Açık: 57 (rıza metni hukuki bakış, yayından önce).
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
@@ -705,6 +705,7 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
     training stable, so change nothing."). Şu an çoğu kararda yalnız kaynak türü görünüyor. Cümleleri ben kaynaklarından taslak yazayım
     (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
 
+**86 → ADR-048 #5 (3 Eki, Part 4 sonu; önerilen: önce buton, sonra intent).**
 **M5 Part 4 (86-):**
 86. **(K-515, ürün — ADR-048 #5)** Kilit ekranından kilo girişi: (a) parametreli Siri/Shortcuts intent'i ("Log 82.4 kg" — uygulama açılmadan;
     SDK 58 stabil + Swift `perform()` ister, şimdi yapılamaz) mı, (b) widget'ta uygulamayı tartı ekranına açan buton mu (SDK 57'de

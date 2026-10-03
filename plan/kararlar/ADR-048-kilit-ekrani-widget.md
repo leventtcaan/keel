@@ -1,5 +1,5 @@
 # ADR-048 · Kilit ekranı: `expo-widgets` 57 ile karar widget'ı ve Live Activity; App Intents SDK 58 stabil olunca (K-515, K-426)
-- **Durum:** KABUL (agent, teknik — ADR-019) · ürün sorusu açık: kilit ekranından kilo girişi (DURUM soru 86) · **cihaz adımı bekliyor** (K-308)
+- **Durum:** KABUL (agent, teknik — ADR-019; madde 5'in ürün yanı Levent, 3 Eki 2026, soru 86: önce buton, sonra intent) · **cihaz adımı bekliyor** (K-308)
 - **Tarih:** 2026-10-03 · **Karar veren:** agent (teknik); Levent (madde 5'in ürün yanı)
 
 ## Bağlam
@@ -27,7 +27,8 @@ Activity olarak. Araştırma: `arastirma/ham/H11-cihaz-ustu-ve-widget.md` §0, �
 4. **Live Activity (K-426):** aynı paket; props kalan süre + sıradaki set, `@expo/ui` `Text timerInterval`; ağ yok.
 5. **App Intents ertelendi:** `expo-app-intents` alpha ve SDK 58'e bağlı (`@expo/ui ^58`); SDK 58 **beta** (RN 0.88 RC). "Log weigh-in
    uygulamayı açmadan" her yolda Swift `perform()` ister. Tetikleyici: SDK 58 stabil + `expo-app-intents` ≥ beta. Kilit ekranından kilo
-   girişinin **biçimi** (parametreli Siri/Shortcuts intent'i mi, uygulamayı derin bağlantıyla açan buton mu) **ürün kararı** → soru 86.
+   girişinin biçimi (Levent, soru 86): **şimdi** widget'ta uygulamayı tartı ekranına derin bağlantıyla açan buton (SDK 57, `expo-widgets`,
+   cihaz adımında); **SDK 58 stabil olunca** uygulamayı açmadan parametreli Siri/Shortcuts intent'i ("Log 82.4 kg", Swift `perform()`).
 6. **SDK 58 yükseltmesi: şimdi değil.** Beta; stabil çıkınca ayrı görev (L3 P15). iOS 27'ye özgü API gerekirse önce SDK 57 +
    `expo-build-properties › ios.enableSceneSupport` (Xcode 27 UIScene şartı; 57.0.23+ — biz 57.0.25) değerlendirilir.
 
