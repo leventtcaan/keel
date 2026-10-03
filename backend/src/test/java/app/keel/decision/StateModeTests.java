@@ -217,6 +217,42 @@ class StateModeTests {
     }
 
     @Test
+    void stillSoIsKeptWithTheStateAndGoesInTheExport() throws Exception {
+        // K-525: the answer is the day it was given, on the state it was given for — the user's data, exported.
+        AccountId account = ready();
+        send(account, "PUT", Map.of("kind", "SICK"));
+        LocalDate monday = today().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        jdbc.sql("update decision.declared_state set starts_on = :start where account_id = :a").param("start", monday.minusWeeks(2))
+                .param("a", account.value()).update();
+
+        answer(account, "YES");
+
+        assertThat(jdbc.sql("select still_so_on from decision.declared_state where account_id = :a").param("a", account.value())
+                .query(LocalDate.class).single()).isEqualTo(today());
+        Map<String, Object> export = read(mvc.get().uri("/v1/account/export").header("Authorization", TestSessions.bearer(context, account))
+                .exchange());
+        assertThat(export.toString()).contains("stillSoOn=" + today());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void afterStillSoTheQuestionWaitsThreeWeeksAndIsAskedOnceMore() throws Exception {
+        // ADR-041 #62: every three weeks (state_still_after_paused_weeks) — not every week after the third.
+        AccountId account = ready();
+        send(account, "PUT", Map.of("kind", "BUSY"));
+        LocalDate monday = today().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        jdbc.sql("update decision.declared_state set starts_on = :start, still_so_on = :said where account_id = :a")
+                .param("start", monday.minusWeeks(5)).param("said", monday.minusWeeks(2)).param("a", account.value()).update();
+
+        assertThat(checkIn(account)).as("two weeks on").containsEntry("questions", List.of());
+
+        jdbc.sql("update decision.declared_state set still_so_on = :said where account_id = :a").param("said", monday.minusWeeks(3).plusDays(6))
+                .param("a", account.value()).update();
+        assertThat((List<Map<String, Object>>) checkIn(account).get("questions")).as("three weeks on").singleElement()
+                .satisfies(question -> assertThat(question).containsEntry("kind", "STATE_STILL"));
+    }
+
+    @Test
     void twoPausedWeeksAskNothing() throws Exception {
         AccountId account = ready();
         send(account, "PUT", Map.of("kind", "SICK"));

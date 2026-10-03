@@ -21,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 class StateStore {
 
-    /** {@code endsOn} empty: until the user is back. */
-    record State(DeclaredContext kind, LocalDate startsOn, Optional<LocalDate> endsOn) {
+    /** {@code endsOn} empty: until the user is back. {@code stillSoOn}: the day the user last said it still is (K-525). */
+    record State(DeclaredContext kind, LocalDate startsOn, Optional<LocalDate> endsOn, Optional<LocalDate> stillSoOn) {
 
         boolean inForceOn(LocalDate day) {
             return !day.isBefore(startsOn) && endsOn.map(last -> !day.isAfter(last)).orElse(true);
@@ -52,7 +52,15 @@ class StateStore {
                 values (:id, :account, :kind, :starts, :ends, :now)""")
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("kind", kind.name()).param("starts", today)
                 .param("ends", until.orElse(null)).param("now", now.atOffset(ZoneOffset.UTC)).update();
-        return new State(kind, today, until);
+        return new State(kind, today, until, Optional.empty());
+    }
+
+    /** "Still so" (STATE_STILL YES, K-525): kept on the state in force today, the day it was said. Harmless with none. */
+    void stillSo(AccountId account, LocalDate today) {
+        jdbc.sql("""
+                update decision.declared_state set still_so_on = :today
+                where account_id = :account and starts_on <= :today and (ends_on is null or ends_on >= :today)""")
+                .param("account", account.value()).param("today", today).update();
     }
 
     /** "I'm back": what is in force today or later ends yesterday; begun today, it is taken back. Harmless with none. */
@@ -96,10 +104,12 @@ class StateStore {
 
     /** Every state, oldest first (the export; the weeks it paused). */
     List<State> all(AccountId account) {
-        return jdbc.sql("select kind, starts_on, ends_on from decision.declared_state where account_id = :account order by starts_on, created_at")
+        return jdbc.sql("""
+                        select kind, starts_on, ends_on, still_so_on from decision.declared_state where account_id = :account
+                        order by starts_on, created_at""")
                 .param("account", account.value())
                 .query((row, n) -> new State(DeclaredContext.valueOf(row.getString("kind")), row.getObject("starts_on", LocalDate.class),
-                        Optional.ofNullable(row.getObject("ends_on", LocalDate.class))))
+                        Optional.ofNullable(row.getObject("ends_on", LocalDate.class)), Optional.ofNullable(row.getObject("still_so_on", LocalDate.class))))
                 .list();
     }
 
