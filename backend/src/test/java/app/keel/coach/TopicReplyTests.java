@@ -69,12 +69,26 @@ class TopicReplyTests {
         "{\"topic\":\"HUNGER\",\"rule\":\"cut_step\"}",
         "{\"topic\":\"HUNGER\",\"rule\":7}",
         "{\"topic\":\"HUNGER\",\"rule\":\"\"}",
+        "{\"topic\":\"WHY\",\"rule\":\"null\"}",
+        "{\"topic\":\"OFF_TOPIC\",\"rule\":\"made_up\"}",
         "{\"topic\":\"LESS\",\"rule\":\"stall_window\",\"text\":\"Sure, 250 this week.\"}",
         "{\"topic\":\"LESS\",\"kcalPerDay\":-250}",
         "{\"text\":\"The call stands.\"}",
     })
     void anythingElseIsDropped(String raw) {
         assertThat(READ.read(raw, CUT)).as(raw).isEmpty();
+    }
+
+    @Test
+    void theModelIsSentTheKindOfCallAndItsRulesOnly() {
+        // Whatever numbers a call carries (a step, a fraction, a phase), the model gets none: it writes none (K-529).
+        for (Map<String, Object> action : List.<Map<String, Object>>of(Map.of("type", "DELOAD", "setsFraction", 0.5), Map.of("type", "CHANGE_PHASE", "to", "CUT"),
+                Map.of("type", "CHANGE_MOVEMENT", "stepsPerDay", 2000))) {
+            CallFacts call = new CallFacts(CUT.id(), CUT.madeOn(), action, CUT.reasons(), "HIGH", CUT.nextReview(), CUT.copyKey(), true);
+            String facts = Explanation.facts(call);
+            assertThat(facts).contains("\"action\":\"" + action.get("type") + "\"", "not_toward_goal", "EXPERIENCE")
+                    .doesNotContain("0.5", "CUT\"", "2000", "HIGH", "2026");
+        }
     }
 
     @Test

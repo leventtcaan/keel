@@ -17,6 +17,7 @@ Choose:
   HEALTH — brings up a doctor, medication or a health matter
   WHY — asks why, or what the call means
   OFF_TOPIC — is not about the call or the plan
-- "rule": the rule from FACTS.reasons whose reason best answers the message, exactly as written there; or null.
+- "rule": the rule from FACTS.reasons whose reason best answers the message, exactly as written there; or null (not in quotes)
+  when none does, or when the topic is HEALTH or OFF_TOPIC.
 
-Reply with JSON only, exactly: {"topic": "<topic>", "rule": "<rule or null>"}
+Reply with JSON only, exactly one of: {"topic": "<topic>", "rule": "<rule>"} or {"topic": "<topic>", "rule": null}

@@ -2010,8 +2010,10 @@ export interface components {
         CoachAnswer: {
             /**
              * @description MODEL — the model classified the message (topic, and rule when the topic is about the call); the app says it in
-             *     its own copy (ADR-043 #76: coach.topic.<topic>, then decision.rule.<rule> and coach.answer.stands). The model
-             *     writes nothing the user reads. DETERMINISTIC — the engine's own words (copyKey).
+             *     its own copy (ADR-043 #76): coach.topic.<topic>, and only when a rule is present decision.rule.<rule> then
+             *     coach.answer.stands — a topic not about the call (HEALTH, OFF_TOPIC) says its own sentence and nothing of the
+             *     call standing (U6: a doctor comes first). The model writes nothing the user reads. DETERMINISTIC — the engine's
+             *     own words (copyKey).
              * @enum {string}
              */
             mode: "MODEL" | "DETERMINISTIC";

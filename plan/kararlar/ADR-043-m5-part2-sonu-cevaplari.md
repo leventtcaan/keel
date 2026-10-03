@@ -24,6 +24,8 @@ K-509 (sohbet ekranı) bu cevaba göre kurulur.
   (`OFF_TOPIC`; kural yok). Metinler `en.json › coach.topic.*`; her konu cümlesi sayısız, suçlamasız (U7), taviz vermez (U2).
 - **Modele giden en az veri:** kararın türü + kuralları (kaynak türüyle); kararın sayıları ve tarihleri gitmez (model yazmıyor).
 - **Kural:** model kararın `reasons` listesinden seçer; listede olmayan kural → cevap atılır. Kural seçmezse baştaki kural.
+- **Söz sırası (telefon):** konu cümlesi; kural varsa kuralın cümlesi + "karar duruyor, {gün}". Kural yoksa (HEALTH, OFF_TOPIC) yalnız
+  konu cümlesi — doktor konusunun ardından "karar duruyor" denmez (U6: önce doktor).
 - **Sözleşme:** `CoachAnswer` `text` alanını kaybeder; `topic` + `rule` kazanır (`mode: MODEL` = model sınıflandırdı). Telefon
   cümleyi kurar. İstemci henüz yok (K-509), kırılan tüketici yok.
 - **Kazanç:** U1/U2 yapısal: kullanıcıya hiç model sözü gitmez → sayı uydurma, taviz, yasaklı ifade, kişi adı **imkânsız**; çıktı

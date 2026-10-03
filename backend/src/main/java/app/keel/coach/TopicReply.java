@@ -10,8 +10,9 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Whether the model's classification may be used (K-529, ADR-043 #76; ADR-004: a reply off its schema is dropped): JSON
  * of exactly {@code {"topic"}} or {@code {"topic", "rule"}}, within {@code maxChars}; the topic a {@link Topic} by its
- * exact name; the rule one of the call's own reasons, or none — then the leading one. A topic not about the call names no
- * rule, whatever the model said. The model writes no words the user sees, so it has nothing to concede with (U2) and no
+ * exact name; the rule one of the call's own reasons (a rule of the model's making — "null" in quotes too — drops the reply),
+ * or none — then the leading one. A topic not about the call names no rule, even when the model named one of the call's.
+ * The model writes no words the user sees, so it has nothing to concede with (U2) and no
  * number to make up (U1): what it could add beyond the two fields drops the whole reply.
  */
 final class TopicReply {
