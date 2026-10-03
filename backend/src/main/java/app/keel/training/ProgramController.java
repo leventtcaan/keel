@@ -88,10 +88,12 @@ class ProgramController {
     private final TrainingCalls calls;
     private final Clock clock;
     private final GymStore gyms;
+    private final TrainingLog log;
 
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
-            WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms) {
+            WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log) {
         this.gyms = gyms;
+        this.log = log;
         this.calls = calls;
         this.clock = clock;
         this.store = store;
@@ -159,7 +161,11 @@ class ProgramController {
         List<TrainingChanges.Change> changes = calls.changes(account);
         Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(changes, TrainingChanges.Kind.LIGHTER_WEEK, today);
         boolean held = TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).isPresent();
-        Back back = new Back(today, zone, parametersFor(account), gyms.current(account));
+        // The break is the account's, from its training log (ADR-043 #75): the last session done before today, any day of the
+        // program or none. Before today, so the session back itself — and a program read during it — stays a step lighter.
+        Optional<LocalDate> lastSession = log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant())
+                .map(started -> started.atZone(zone).toLocalDate());
+        Back back = new Back(today, zone, parametersFor(account), gyms.current(account), lastSession);
         List<ProgramDay> days = program.days().stream().map(day -> new ProgramDay(day.id(), day.nameKey(), day.name(), day.weekday(),
                 day.exercises().stream().map(planned -> {
                     Optional<NextTargets.Target> next = next(planned, held, back);
@@ -168,20 +174,32 @@ class ProgramController {
                             next.map(NextTargets.Target::reps).orElse(null));
                 }).toList())).toList();
         boolean backAfterBreak = program.days().stream().flatMap(day -> day.exercises().stream()).anyMatch(planned -> afterBreak(planned, back));
+        // backAfterBreak: some target shown a step lighter today — the account's break, not one program day's.
         return new Program(program.id(), program.source(), days, lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null),
                 backAfterBreak ? Boolean.TRUE : null);
     }
 
-    /** What a target back after a break is read with: the user's day, the engine's parameters, the gym in use. */
-    private record Back(LocalDate today, ZoneId zone, Parameters parameters, Optional<GymStore.Gym> gym) {
+    /**
+     * What a target back after a break is read with: the user's day, the engine's parameters, the gym in use, and the day
+     * of the account's last session before today.
+     */
+    private record Back(LocalDate today, ZoneId zone, Parameters parameters, Optional<GymStore.Gym> gym, Optional<LocalDate> lastSession) {
+
+        /** Back after a long break today (K-531): the account's last session before today a long break ago. */
+        boolean afterBreak() {
+            return lastSession.filter(day -> ReturnLoad.afterBreak(day, today, parameters)).isPresent();
+        }
     }
 
-    /** A target from a session a long break ago (K-531): its day on the user's calendar against today. */
+    /**
+     * A target stepped back: on a day back after a long break, one from before today — a target the session back wrote
+     * today is that session's own, not stepped back again.
+     */
     private static boolean afterBreak(ProgramStore.PlannedExercise planned, Back back) {
-        return planned.nextLoadKg() != null && planned.lastLoadKg() != null && planned.nextFrom() != null
-                && ReturnLoad.afterBreak(planned.nextFrom().atZone(back.zone()).toLocalDate(), back.today(), back.parameters());
+        return back.afterBreak() && planned.nextLoadKg() != null && planned.lastLoadKg() != null && planned.nextFrom() != null
+                && planned.nextFrom().atZone(back.zone()).toLocalDate().isBefore(back.today());
     }
 
     /**

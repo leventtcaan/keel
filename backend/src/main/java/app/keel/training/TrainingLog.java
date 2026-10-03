@@ -53,6 +53,19 @@ public class TrainingLog {
                 .query((row, n) -> row.getObject("started_at", OffsetDateTime.class).toInstant()).list();
     }
 
+    /**
+     * When the last session done (a working set, K-431) started before {@code before}: in any workout, of a program day or
+     * not — the training log a break is measured from (K-531, ADR-043 #75).
+     */
+    public Optional<Instant> lastSessionBefore(AccountId account, Instant before) {
+        return jdbc.sql("""
+                select max(w.started_at) as last from training.workout w
+                where w.account_id = :account and w.started_at < :before
+                  and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type <> 'WARM_UP')""")
+                .param("account", account.value()).param("before", before.atOffset(ZoneOffset.UTC))
+                .query((row, n) -> Optional.ofNullable(row.getObject("last", OffsetDateTime.class)).map(OffsetDateTime::toInstant)).single();
+    }
+
     /** The working sets of a move in workouts started in [from, to), in the order they were done. */
     public List<WorkSet> workingSets(AccountId account, String exerciseId, Instant from, Instant to) {
         ExerciseCatalog.Load load = catalog.find(exerciseId).orElseThrow(() -> new IllegalArgumentException("Not in the catalog: " + exerciseId))
