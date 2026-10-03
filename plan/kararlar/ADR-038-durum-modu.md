@@ -33,9 +33,11 @@ gürültü süresi, yeniden-baseline kuralı: kaynak yok.**
      reçete CSCCa/NSCA 2019 uzman konsensüsü, yük değil hacim/sıklık tavanı, rabdomiyoliz önleme amaçlı, kolej sporcusu (H9 §1.7);
      dolaşımdaki "%85-95" sayılarının birincil kaynağı yok (H9 §3). Birincil veri antrenmanlı gençte 14 günlük tam aranın 1RM'i
      anlamlı düşürmediğini (Hortobágyi 1993, Hwang 2017) ve kuvvetin 3 haftaya kadar korunabildiğini (McMaster 2013) gösteriyor →
-     motorun bugünkü davranışı (yük düşürülmez, ilk seansın verisi çift ilerlemeyle okunur, U2) kısa molayla uyumlu; uzun mola için
-     sayı yok. `SICK`/`PAIN` literatürün kapsamı dışında (sağlıklı-inaktif denekler; U6). G7 K-72 ("yavaş başla") çelişmez:
-     gerekçesi kuvvet kaybı değil yorgunluk/psikoloji.
+     literatür kısa molada yükü düşürmeyi gerektirmiyor, uzun mola için sayı vermiyor. **Güray G7 K-72 kuraldır** ("molanın ardından
+     tam yüke dönülmez; yavaş yavaş girilir") ve motorun bugünkü davranışıyla (yük düşürülmez) **çelişir**; U14'e göre Güray kazanır,
+     ama K-72 miktar vermediği için uygulanamaz (K2: sayı uydurulmaz). Yani yükün korunması kaynaklı bir tercih değil, sayılı kural
+     olmadığı için olan şey → **soru 60 dönüş yükü için açık kalır** (Levent: K-72'ye sayı mı, literatüre göre "yük korunur" mu).
+     `SICK`/`PAIN` literatürün kapsamı dışında (sağlıklı-inaktif denekler; U6).
    - **Yoğun hafta minimum dozu — kural (K-524):** `BusyWeekDose` — haftada 1 seans, egzersiz başına 1 set, yük korunur
      (Bickel 2011 1/9 doz; Rønnestad 2011; Spiering 2021); `busy_min_older_age` (60) ve üstünde 2 seans × 2 set (düşük güven).
      Parametreler `training.yaml › busy_min_*`. Programa ve telefona bağlanması **K-528** (gösterim, öneri olarak — zorunluluk değil:

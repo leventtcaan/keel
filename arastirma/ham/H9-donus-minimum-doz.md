@@ -1,6 +1,6 @@
 # H9 · Moladan dönüş yükü ve yoğun hafta minimum dozu — literatür taraması
 
-> Durum: **TAMAMLANDI (spike)** · 2026-10-03
+> Durum: **TAMAMLANDI (spike)** · 2026-10-03 · İnceleme (3 Eki): atıflar Europe PMC'de doğrulandı; Graves 1988'in 1-2 gün/hafta bulgusu ikincil kaynaktan → tablolarda `[doğrulanmadı]`.
 > Amaç: ADR-038 madde 7'de kaynak bekleyen iki alt kural (soru 60).
 > Kaynak önceliği: meta-analiz / sistematik derleme > tek RCT / kontrollü deneme > pozisyon / konsensüs > uygulayıcı yazısı.
 > Okuma yöntemi: özetler Europe PMC REST API'den (PubMed kaydının birebir kopyası) okundu. Bickel 2011'in ve CSCCa/NSCA
@@ -248,8 +248,8 @@ Mujika & Padilla 2000). Yaşlıda (60+) kas boyutu için daha fazlası gerekiyor
 ### Net protokol (Soru 2)
 | Parametre | Değer | Popülasyon | Kanıt |
 |---|---|---|---|
-| Sıklık | **1 seans/hafta** yeter; 0.5/hafta yetmez | Genç; antrenmanlı profesyonel | RCT (Bickel 2011), kontrollü (Rønnestad 2011, Graves 1988, Tavares 2017) |
-| Hacim | **Egzersiz başına 1 set** (Bickel: 3 quadriceps egzersizi × 1 = 3 set/hafta; Graves: 1 egzersiz × 1 set) | Genç, önceden antrenmansız → 10–18 hf antrenmanlı | RCT (Bickel 2011), Graves 1988 |
+| Sıklık | **1 seans/hafta** yeter; 0.5/hafta yetmez | Genç; antrenmanlı profesyonel | RCT (Bickel 2011), kontrollü (Rønnestad 2011, Tavares 2017); Graves 1988 `[doğrulanmadı: ikincil]` |
+| Hacim | **Egzersiz başına 1 set** (Bickel: 3 quadriceps egzersizi × 1 = 3 set/hafta; Graves: 1 egzersiz × 1 set) | Genç, önceden antrenmansız → 10–18 hf antrenmanlı | RCT (Bickel 2011); Spiering 2021 (derleme); Graves 1988 `[doğrulanmadı: ikincil]` |
 | Yoğunluk | **Aynı göreli yük** (8–12RM, yorgunluğa yakın) — düşürülmez | Genç | Bickel 2011 yöntem; Spiering 2021; Mujika & Padilla 2000 |
 | Süre | 8–32 hafta test edildi (1 hafta bunun çok altında) | — | Bickel, Graves, Rønnestad, Tavares |
 | Yaş ≥ 60 | Kuvvet 1/9 dozla korunur, **kas boyutu korunmaz**; 2 seans × 2–3 set gerekebilir | 60–75 yaş | Bickel 2011 (birincil); Spiering 2021 (derleme) |
@@ -330,7 +330,7 @@ için de sayı yok. U14 gereği oran uygulanmaz.
 | Parametre | Değer | Birim | Kaynak (çapa) | Doğrudan / TÜRETİLMİŞ |
 |---|---|---|---|---|
 | `busy_min_sessions_per_week` | **1** | seans/hafta | H9 §2.1 (Bickel 2011, 1/9 doz), §2.4 (Rønnestad 2011), §2.5 (Spiering 2021) [literatür] | Doğrudan (genç; antrenmanlı profesyonelde de 1/hafta yeterli, 0.5/hafta yetersiz) |
-| `busy_min_sets_per_exercise` | **1** | set / egzersiz / hafta | H9 §2.1 (Bickel 2011: 3 egzersiz × 1 set × 1 gün), §2.2 (Graves 1988), §2.5 (Spiering 2021) [literatür] | Doğrudan (alt vücut, diz ekstansörü). **TÜRETİLMİŞ:** üst vücut ve diğer kas gruplarına genelleme |
+| `busy_min_sets_per_exercise` | **1** | set / egzersiz / hafta | H9 §2.1 (Bickel 2011: 3 egzersiz × 1 set × 1 gün), §2.5 (Spiering 2021); §2.2 (Graves 1988) `[doğrulanmadı: ikincil]` [literatür] | Doğrudan (alt vücut, diz ekstansörü). **TÜRETİLMİŞ:** üst vücut ve diğer kas gruplarına genelleme |
 | `busy_keep_load` | **true** (yük düşürülmez; set yorgunluğa yakın, programdaki RM aralığında) | — | H9 §2.1 (Bickel: "maintaining intensity (8RM to 12RM)"), §2.5 (Spiering: yoğunluk anahtar), §1.6 (Mujika & Padilla) [literatür] | Doğrudan |
 | `busy_min_older_age` | **60** | yaş (yıl) | H9 §2.1 (Bickel 60–75 yaş grubu) [literatür] | Doğrudan (yaş sınırı çalışmanın grup sınırı) |
 | `busy_min_sessions_per_week_older` | **2** | seans/hafta | H9 §2.5 (Spiering 2021, "up to 2 sessions") [literatür, derleme] | Derlemede doğrudan; birincil dayanağı okunmadı → **düşük güven** |

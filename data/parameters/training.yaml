@@ -100,7 +100,7 @@ parameters:
     unit: sets
     tag: literatur
     source: "arastirma/ham/H9-donus-minimum-doz.md#§2.1"
-    note: "Egzersiz başına 1 set (Bickel 2011 1/9 doz; Graves 1988, H9 §2.2). Birim çalışmanınki: egzersiz başına, kas başına değil. Güray G1 K-9: tek set hakkın varsa o seti tükenişe götür — Bickel'in seti de istemli yorgunluğa kadar. TÜRETİLMİŞ: üst vücuda genelleme (Bickel ve Graves yalnız alt vücut)."
+    note: "Egzersiz başına 1 set (Bickel 2011 1/9 doz; Spiering 2021 'egzersiz başına 1 set', H9 §2.5; Graves 1988'in 1-2 gün/hafta bulgusu ikincil kaynaktan [doğrulanmadı], H9 §2.2). Birim çalışmanınki: egzersiz başına, kas başına değil. Güray G1 K-9: tek set hakkın varsa o seti tükenişe götür — Bickel'in seti de istemli yorgunluğa kadar. TÜRETİLMİŞ: üst vücuda genelleme (Bickel ve Graves yalnız alt vücut)."
   - key: busy_min_keep_load
     value: true
     unit: boolean
