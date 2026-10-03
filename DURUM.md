@@ -575,6 +575,11 @@ gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (mod
 |---|---|---|---|
 | K-522 kural cümleleri: `decision.rule.<kural>` (60), `reasonLines` → `sentenceKey` (baştaki de; güvenlik kararında yok), `RuleSentencesTests` (yansıma, iki yön) | ✅ birleşti; RED 2+4; inceleme **5 bulgu** (cümle–kural uyuşmazlığı: `cut_step` tek yön, `toward_goal` antrenman demiyor, `bulk_ceiling` ters, `plan_missed` "çoğu", `stall_window` "düz") → düzeltildi; test analizi 3 öneri işlendi; mutasyon mobil 5/5 (+kontrol), sunucu 1/1 | #314 | `M5/K-522.md` |
 | K-529 koç sınıflandırır: `Topic` (11), `TopicReply` (tam şema, kural kararın kendi), modele yalnız tür + kurallar, `CoachAnswer` `topic`+`rule`, 54 itiraz beklenen konuyla; ReplyCheck/ReplyGuards/CallNumbers/guards.json silindi (K1 onaylı) | ⏳ auto-merge; RED 6; inceleme: tırnaklı `"null"` cevabı düşürürdü, HEALTH'te "karar duruyor" denmemeli (sözleşme + ADR), eski aktarım notları; test analizi: sözleşme konu listesi testi, `facts` tüm türlerde; mutasyon 6/6 (+1 eşdeğer) + 3/3 | #316 | `M5/K-529.md` |
+| K-532 eski kota sayaçları gece silinir (arka plan ajanı) | ✅ birleşti | #315 | `M5/K-532.md` |
+| K-509 (1/2) koç sohbeti: günün çipleri telefonda cevaplanır (model yok), mesaj → konu + kural + "karar duruyor", karar kartı → gerekçe (uygulama yok), DETERMINISTIC işaretli | ✅ birleşti; RED 23; inceleme: okunamayan karar "henüz yok" deniyordu, HEALTH'ten sonra kart görünüyordu (U6), swap çipi olmayan özelliği anlatıyordu + günsüz açıyordu, klavye kutuyu örtüyordu → düzeltildi; mutasyon 10/10 | #317 | (K-509 sonunda) |
+| K-509 (2/2) sohbette öğün: üç çip (öğün çipi hep), `/v1/meals/parse` taslağı, tek dokunuş, devir **bellek içi** (`food/handoff.ts`, V3) → öğün ekranı | ⏳ auto-merge; RED 11; inceleme: **koçun ölçüsü ("bowl") porsiyon değilse kayıt kuyruğa girip sunucuda reddediliyordu** → tahmin geçmeden kaydetme yok; mesaj kimliği; eşleşmeyen besin öğünü kilitlemesin; mutasyon 9/9 + 3/4 (1 eşdeğer) | #319 | (K-509 sonunda) |
+| K-530 planlanan seans programdan (arka plan ajanı) | ⏳ auto-merge (CI'da yeni DB testi); inceleme notları ajanın; **sorular 78-79** | #318 | `M5/K-530.md` |
+| K-531 uzun moladan dönüş | ⏸ başlamadı (ajan disk dolunca durduruldu) | | |
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
@@ -617,6 +622,17 @@ gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (mod
 72. **(K-522, ürün/metin)** Gerekçe sayfası ve "Why this call" listesi kural başına cümle gösterecek (prototip 3.5: "Moving toward goal and
     training stable, so change nothing."). Şu an çoğu kararda yalnız kaynak türü görünüyor. Cümleleri ben kaynaklarından taslak yazayım
     (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
+
+**M5 Part 3 (78-):**
+78. **(K-530, ürün)** Programın bazı günleri haftanın gününe bağlı değilse planlanan seans **program gün sayısı** mı (seçilen; `weeksPlanMissed`
+    ile aynı sayı), yalnız haftanın gününe bağlı günler mi?
+79. **(K-530, ürün)** Program değişince (3 → 5 gün) **geçmiş haftalar** yeni sayıyla mı yargılansın (bugün: tutarlılık ve uyum geriye dönük
+    düşer), yoksa her hafta o hafta geçerli olan sayıyla mı (program öncesi haftalara profilin sayısı — ayrı iş)?
+80. **(ortam, disk)** 3 Eki öğleden sonra disk **doldu** (boş 0): Docker Desktop'ın sanal diski **17 GB** (`~/Library/Containers/com.docker.docker`).
+    Oturumda DB testleri yerelde Docker'la koştu (arka plan ajanı Docker'ı açmış); ben Docker'ı kapattım, npm/Gradle/Jest önbelleklerini
+    sildim (yeniden üretilebilir) → ~650 MB. Docker daemon bu boşlukla açılmıyor. **Senin kararın:** Docker'ı açıp `docker system prune`
+    (başka projelerin durmuş konteynerleri/imajları da gider) ya da Docker Desktop › Troubleshoot › "Clean / Purge data". O zamana kadar DB
+    testleri yalnız CI'da, yerelde Gradle koşmuyorum (bağımlılıkları yeniden indirmek yer ister).
 
 **74-77 → ADR-043 (3 Eki, Part 3 başı).** Aşağıdaki 74-77 kayıt içindir.
 **M5 Part 2 (73-):**
