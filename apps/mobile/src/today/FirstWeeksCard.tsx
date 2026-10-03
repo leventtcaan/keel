@@ -17,12 +17,12 @@ export function FirstWeeksCard({ read, previousOpen, day }: { read: Loaded<compo
   const { color } = useTheme();
   if (read?.state !== 'ready') return null;
   const said = firstWeeksSay(read.value, previousOpen, day);
-  if (said.content === undefined && !said.risk) return null;
+  if (said.content === undefined && said.risk === undefined) return null;
   return (
     <Card testID="first-weeks">
       {said.content !== undefined && <Text style={[styles.title, { color: color.text }]}>{t(`${said.content}.title`)}</Text>}
       {said.content !== undefined && <Text style={[styles.text, { color: color.textSecondary }]}>{t(`${said.content}.body`)}</Text>}
-      {said.risk && <Text style={[styles.text, { color: color.text }]}>{t('first_weeks.risk')}</Text>}
+      {said.risk !== undefined && <Text style={[styles.text, { color: color.text }]}>{t(said.risk)}</Text>}
     </Card>
   );
 }

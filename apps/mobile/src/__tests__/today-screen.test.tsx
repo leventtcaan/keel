@@ -806,7 +806,7 @@ describe('the first eight weeks (K-521)', () => {
   });
 
   test("the week's own words from the server; week one says nothing", async () => {
-    mockAnswers['/v1/first-weeks'] = ok({ week: 4, contentKey: 'first_weeks.week4', risk: [], readsRisk: false });
+    mockAnswers['/v1/first-weeks'] = ok({ week: 4, contentKey: 'first_weeks.week4', risk: [], readsRisk: false, training: true });
     await show();
     expect(screen.getByText(t('first_weeks.week4.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('first_weeks.week4.body'))).toBeOnTheScreen();
@@ -814,20 +814,20 @@ describe('the first eight weeks (K-521)', () => {
   });
 
   test('week one: no card', async () => {
-    mockAnswers['/v1/first-weeks'] = ok({ week: 1, risk: [], readsRisk: false });
+    mockAnswers['/v1/first-weeks'] = ok({ week: 1, risk: [], readsRisk: false, training: true });
     await show();
     expect(screen.queryByTestId('first-weeks')).toBeNull();
   });
 
   test("a risky week: one message, in a human voice — the server's signal", async () => {
-    mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [{ rule: 'no_session_last_week', source: { tag: 'PRODUCT' } }], readsRisk: true });
+    mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [{ rule: 'no_session_last_week', source: { tag: 'PRODUCT' } }], readsRisk: true, training: true });
     await show();
     expect(screen.getAllByText(t('first_weeks.risk'))).toHaveLength(1);
   });
 
   test("a risky week: the app not opened in the week before, known only on the phone (ADR-041 #66)", async () => {
     mockPreviousOpen = '2026-09-20'; // nine days before Tuesday 29 September
-    mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [], readsRisk: true });
+    mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [], readsRisk: true, training: true });
     await show();
     expect(screen.getByText(t('first_weeks.risk'))).toBeOnTheScreen();
   });
