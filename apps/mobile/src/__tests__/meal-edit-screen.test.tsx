@@ -9,6 +9,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import MealScreen from '@/app/meal';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { handOffMeal, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
 type Schemas = components['schemas'];
@@ -303,4 +304,11 @@ describe('a meal with a recipe in it (K-423)', () => {
     expect(screen.getByRole('button', { name: t('meal.save') }).props.accessibilityState.disabled).toBe(true);
     expect(mockDELETE).not.toHaveBeenCalled();
   });
+});
+
+test("a correction reads its own meal: a meal the coach handed over is not mixed in, and is cleared (K-509 review)", async () => {
+  handOffMeal([{ foodId: 'fdc-999', name: 'Handed food', quantity: 1, unit: 'g' }]);
+  await show();
+  expect(screen.queryByText('Handed food')).toBeNull();
+  expect(takeMeal()).toBeNull();
 });

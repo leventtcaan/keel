@@ -28,6 +28,8 @@ export function addFood(items: DraftItem[], food: Schemas['Food']): DraftItem[] 
 }
 
 /** The user's recipes the phone was given, by their item id ("recipe:<id>", ADR-034): how many portions each makes. */
+export type KnownRecipes = Map<string, Schemas['Recipe']>;
+
 /**
  * A meal the coach read, as rows to confirm (K-509): its measure first, grams always offered — the server says whether the
  * measure is one of the food's (a measure it does not know asks for grams there, K-504).
@@ -43,7 +45,6 @@ export function itemsHanded(handed: HandedMeal | null): DraftItem[] {
   }));
 }
 
-export type KnownRecipes = Map<string, Schemas['Recipe']>;
 
 /** A recipe's unit in a meal (ADR-034 #2): portions — never grams, the recipe's weight is not known. */
 export const PORTION = 'portion';

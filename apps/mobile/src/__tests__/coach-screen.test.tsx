@@ -291,12 +291,37 @@ describe('a meal in words (K-504 draft)', () => {
     expect(takeMeal()).toBeNull();
   });
 
-  test('a food the database has nothing for is not offered to log', async () => {
-    mockParsed = ok({ mode: 'MODEL', items: [{ ...TOAST, confident: false, candidates: [] }] });
+  test('a food the database has nothing for is left to the meal screen; the rest go over', async () => {
+    const STEW = { food: 'stew', amount: { quantity: 1, unit: 'bowl' }, confident: false, candidates: [] };
+    mockParsed = ok({ mode: 'MODEL', items: [EGGS, STEW] });
+    await show();
+    await tellMeal('eggs and stew');
+    expect(screen.getByText(t('coach.meal.noMatch', { food: 'stew' }))).toBeOnTheScreen();
+    await press(t('coach.meal.log'));
+    expect(takeMeal()).toEqual([{ foodId: 'fdc-1', name: 'Egg, whole', quantity: 2, unit: 'piece' }]);
+  });
+
+  test('nothing the database has: nothing to hand over, the meal screen by name', async () => {
+    mockParsed = ok({ mode: 'MODEL', items: [{ ...TOAST, candidates: [] }] });
     await show();
     await tellMeal('mystery stew');
-    expect(screen.getByText(t('coach.meal.noMatch', { food: 'toast' }))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('coach.meal.log') })).toBeDisabled();
+    await press(t('coach.meal.byName'));
+    expect(mockPush).toHaveBeenCalledWith('/meal');
+  });
+
+  test("a retry above a draft keeps the draft's picks", async () => {
+    mockSent = 'offline';
+    await show();
+    await send('Why?');
+    mockParsed = ok({ mode: 'MODEL', items: [TOAST] });
+    await tellMeal('toast');
+    await press('Bread, whole wheat, toasted');
+    mockSent = ok({ mode: 'MODEL', topic: 'WHY', rule: 'cut_step', call: CALL });
+    await press(t('coach.retry'));
+    expect(screen.getByRole('button', { name: 'Bread, whole wheat, toasted' })).toHaveProp('accessibilityState', expect.objectContaining({ selected: true }));
+    await press(t('coach.meal.log'));
+    expect(takeMeal()).toEqual([{ foodId: 'fdc-8', name: 'Bread, whole wheat, toasted', quantity: 1, unit: 'slice' }]);
   });
 
   test('without the consents: the consent line; no answer: retry reads the meal again', async () => {

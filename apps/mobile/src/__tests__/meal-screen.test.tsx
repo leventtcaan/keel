@@ -137,6 +137,19 @@ describe('a meal the coach read (K-509)', () => {
     expect(mockRecord).not.toHaveBeenCalled();
   });
 
+  test("a measure the server doesn't take: not saved until the estimate passes — it would be refused later (review)", async () => {
+    mockEstimate = async () => refused(400, 'VALIDATION_FAILED');
+    handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 1, unit: 'bowl' }]);
+    await show();
+    expect(screen.getByRole('button', { name: t('meal.save') })).toBeDisabled();
+    expect(screen.getByText(t('meal.fromCoach.notChecked'))).toBeOnTheScreen();
+    mockEstimate = async (request) => ok(estimateOf(request));
+    // Grams instead: the amount empties (nothing converted for the user), then the server takes it.
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: RICE.name, unit: t('meal.item.grams') }) })));
+    await amount(RICE, '150');
+    expect(screen.getByRole('button', { name: t('meal.save') })).toBeEnabled();
+  });
+
   test('is taken once: the next meal starts empty', async () => {
     handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 1, unit: 'g' }]);
     await show();

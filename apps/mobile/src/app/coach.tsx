@@ -29,6 +29,9 @@ type Message =
   | { from: 'coach'; meal: Schemas['MealDraft'] }
   | { from: 'coach'; problem: 'consent' | 'failed'; text: string; mode: Mode };
 
+/** A message with its own id: a retry removes one, and a draft's picks must stay with their draft (K-509 review). */
+type Kept = Message & { id: number };
+
 /**
  * The coach (K-509, prototype 2.1; ADR-043 #76): chips from the day's data, answered on the phone; a message goes to the
  * server and comes back as what it is about and the call's rule, said in the app's copy, with the call's card. The engine's
@@ -41,7 +44,13 @@ export default function CoachScreen() {
   const { color } = useTheme();
   const [day] = useState(() => localDay(new Date()));
   const [today, setToday] = useState<TodayData | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setKept] = useState<Kept[]>([]);
+  const ids = useRef(0);
+  const setMessages = useCallback(
+    (change: (said: Message[]) => Message[]) =>
+      setKept((kept) => change(kept).map((message) => ('id' in message ? (message as Kept) : { ...message, id: ++ids.current }))),
+    [],
+  );
   const [text, setText] = useState('');
   const [waiting, setWaiting] = useState(false);
   const opened = useRef(false);
@@ -84,7 +93,7 @@ export default function CoachScreen() {
         },
       ]);
     },
-    [today, day],
+    [today, day, setMessages],
   );
 
   // A chip Today opened the coach with is answered once the day is read — only one of the day's own.
@@ -139,8 +148,8 @@ export default function CoachScreen() {
           {today !== null && <CoachChips keys={coachChips(today, day)} onChip={onChip} />}
         </View>
         <ScrollView ref={scroll} contentContainerStyle={styles.body} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
-          {messages.map((message, i) => (
-            <Bubble key={i} message={message} onRetry={(words, to) => void send(words, to, true)} />
+          {messages.map((message) => (
+            <Bubble key={message.id} message={message} onRetry={(words, to) => void send(words, to, true)} />
           ))}
           {waiting && <Text style={[styles.small, { color: color.muted }]}>{t('coach.thinking')}</Text>}
         </ScrollView>
@@ -211,13 +220,12 @@ function MealSaid({ draft }: { draft: Schemas['MealDraft'] }) {
       </View>
     );
   }
+  // A food the database has nothing for is left to the meal screen (by name); the rest go over once each is picked.
+  const matched = draft.items.flatMap((item, i) => (item.candidates.length > 0 ? [{ item, pick: item.candidates.find((food) => food.id === picks[i]) }] : []));
+  const ready = matched.length > 0 && matched.every(({ pick }) => pick !== undefined);
   const log = () => {
-    handOffMeal(
-      draft.items.map((item, i) => {
-        const food = item.candidates.find((candidate) => candidate.id === picks[i]);
-        return { foodId: food?.id ?? '', name: food?.name ?? '', quantity: item.amount.quantity, unit: item.amount.unit };
-      }),
-    );
+    if (!ready) return;
+    handOffMeal(matched.flatMap(({ item, pick }) => (pick === undefined ? [] : [{ foodId: pick.id, name: pick.name, quantity: item.amount.quantity, unit: item.amount.unit }])));
     router.push('/meal');
   };
   return (
@@ -228,9 +236,16 @@ function MealSaid({ draft }: { draft: Schemas['MealDraft'] }) {
           <MealPick item={item} picked={picks[i]} onPick={(id) => setPicks((before) => before.map((p, j) => (j === i ? id : p)))} />
         </View>
       ))}
-      <Button label={t('coach.meal.log')} size="sm" disabled={picks.some((pick) => pick === null)} onPress={log} />
+      <Button label={t('coach.meal.log')} size="sm" disabled={!ready} onPress={log} />
+      <ByName shown={matched.length === 0} />
     </View>
   );
+}
+
+/** Nothing to hand over: the meal screen, by name. */
+function ByName({ shown }: { shown: boolean }) {
+  if (!shown) return null;
+  return <Button label={t('coach.meal.byName')} variant="ghost" size="sm" onPress={() => router.push('/meal')} />;
 }
 
 /** The database's foods for one item: nothing found says so; an unsure match asks which. */
