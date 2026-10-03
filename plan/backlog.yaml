@@ -2022,12 +2022,13 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-501, K-212, K-519]
     why: "Tezin ekrandaki hali"
     acceptance:
       - "CONTINUE / değişiklik / NO_DECISION_YET varyantları"
       - "Gerekçe: veri satırları, kural, kaynak etiketi (tecrübe/literatür), güven, sonraki değerlendirme"
+      - "Bölündü (3 Eki): (1/2) Bugün'deki kartın yüzleri + telefondan uygulama (#291); (2/2) gerekçe sayfası (#292)"
     tests:
       - "DecisionCardTests (her varyant)"
     refs: ["prototip/", "arastirma/04-faz3-urun.md#Ö-25"]
@@ -2221,7 +2222,7 @@ tasks:
     module: engine
     type: feature
     size: L
-    status: doing
+    status: done
     depends_on: [K-111, K-512]
     why: "'Ürünün en yüksek değerli tek davranışı olabilir' (Ö-20) — görevi yoktu (L3 P3)"
     acceptance:
