@@ -19,8 +19,12 @@ export function shortDate(day: string): string {
 }
 
 /** The calls in force, most binding first: a week off, then a lighter week, then the weights held. */
-export function programNotes(program: Schemas['Program']): string[] {
+export function programNotes(program: Schemas['Program'], declared?: Schemas['DeclaredState'] | null): string[] {
   const notes: string[] = [];
+  // K-528: a busy week's least dose, a suggestion beside the program — its targets stay as they are (U2). The server sends
+  // one with a busy week only.
+  const dose = declared?.busyDose;
+  if (dose !== undefined) notes.push(busyNote(dose));
   if (program.restUntil !== undefined) notes.push(t('train.status.restWeek', { date: shortDate(program.restUntil) }));
   if (program.deload !== undefined) notes.push(t('train.status.deload', { date: shortDate(program.deload.until) }));
   if (program.loadHeldSince !== undefined) notes.push(t('train.status.held', { date: shortDate(program.loadHeldSince) }));
@@ -56,4 +60,11 @@ export function nextLine(planned: Schemas['PlannedExercise'], units: UnitSystem,
   if (load === 'BODYWEIGHT') return t('train.nextBodyweight', { reps: planned.nextReps }); // no weight to aim for
   const key = load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'train.nextAdded' : 'train.next';
   return t(key, { load: formatLoad(planned.nextLoadKg, units), reps: planned.nextReps });
+}
+
+/** "One session and one set per exercise, at your usual weights": the server's numbers, said in words. */
+function busyNote(dose: Schemas['BusyDose']): string {
+  const sessions = t(dose.sessions === 1 ? 'train.busy.sessions.one' : 'train.busy.sessions.other', { count: dose.sessions });
+  const sets = t(dose.setsPerExercise === 1 ? 'train.busy.sets.one' : 'train.busy.sets.other', { count: dose.setsPerExercise });
+  return t(dose.keepLoad ? 'train.busy.withLoad' : 'train.busy.dose', { sessions, sets });
 }

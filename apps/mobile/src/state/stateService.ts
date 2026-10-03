@@ -67,6 +67,9 @@ export function createStateService({ api, kv, now, onChange }: Options) {
     /** A state in force today, as last known on the phone: none past its last day. */
     inForce: async (): Promise<boolean> => (await current()) !== null,
 
+    /** The state in force today itself, as last known on the phone (K-528: a busy week's dose with it). */
+    current,
+
     /** The last day of the state in force, if it has one — the reminders come back after it by date (K-518). */
     until: async (): Promise<string | null> => (await current())?.until ?? null,
 

@@ -3,6 +3,10 @@ package app.keel.decision;
 import app.keel.consent.ConsentGate;
 import app.keel.consent.ConsentKind;
 import app.keel.engine.DeclaredContext;
+import app.keel.engine.BusyWeekDose;
+import app.keel.engine.ParameterSet;
+import app.keel.engine.Parameters;
+import app.keel.engine.Sex;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
@@ -32,13 +36,30 @@ class StateController {
     record NewState(String kind, LocalDate until) {
     }
 
-    /** Contract DeclaredState. */
+    /** Contract DeclaredState; a busy week with its least dose (K-528). */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record DeclaredState(DeclaredContext kind, LocalDate since, LocalDate until) {
+    record DeclaredState(DeclaredContext kind, LocalDate since, LocalDate until, BusyDose busyDose) {
 
+        /** As declared, nothing derived: what an export holds (the dose is the engine's reading, not the user's data). */
         static DeclaredState of(StateStore.State state) {
-            return new DeclaredState(state.kind(), state.startsOn(), state.endsOn().orElse(null));
+            return new DeclaredState(state.kind(), state.startsOn(), state.endsOn().orElse(null), null);
         }
+    }
+
+    /** Contract BusyDose. */
+    record BusyDose(int sessions, int setsPerExercise, boolean keepLoad) {
+    }
+
+    /**
+     * A busy week's least dose (K-528, ADR-038 #7; H9 §2): with BUSY only — the sessions, the sets per exercise, the load
+     * kept — by the user's age this year (the older dose from busy_min_older_age; a year's precision is the study's).
+     */
+    static Optional<BusyDose> busyDose(DeclaredContext kind, int birthYear, LocalDate today, Parameters parameters) {
+        if (kind != DeclaredContext.BUSY) {
+            return Optional.empty();
+        }
+        BusyWeekDose dose = BusyWeekDose.of(today.getYear() - birthYear, parameters);
+        return Optional.of(new BusyDose(dose.sessions(), dose.setsPerExercise(), dose.keepLoad()));
     }
 
     private final StateStore states;
@@ -46,8 +67,10 @@ class StateController {
     private final ConsentGate consent;
     private final ApiLimits api;
     private final Clock clock;
+    private final ParameterSet parameters;
 
-    StateController(StateStore states, Profiles profiles, ConsentGate consent, ApiLimits api, Clock clock) {
+    StateController(StateStore states, Profiles profiles, ConsentGate consent, ApiLimits api, Clock clock, ParameterSet parameters) {
+        this.parameters = parameters;
         this.states = states;
         this.profiles = profiles;
         this.consent = consent;
@@ -58,7 +81,8 @@ class StateController {
     @GetMapping("/v1/state")
     DeclaredState current(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        return states.current(account, today(account)).map(DeclaredState::of).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        LocalDate today = today(account);
+        return states.current(account, today).map(state -> shown(account, state, today)).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
     @PutMapping("/v1/state")
@@ -70,7 +94,7 @@ class StateController {
         if (declared.until() != null && !api.range(today, declared.until())) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
-        return DeclaredState.of(states.declare(account, kind, today, Optional.ofNullable(declared.until()), clock.instant()));
+        return shown(account, states.declare(account, kind, today, Optional.ofNullable(declared.until()), clock.instant()), today);
     }
 
     @DeleteMapping("/v1/state")
@@ -78,6 +102,13 @@ class StateController {
     void back(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         states.end(account, today(account));
+    }
+
+    private DeclaredState shown(AccountId account, StateStore.State state, LocalDate today) {
+        ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        Parameters forUser = parameters.forSex(Sex.valueOf(profile.sex().name()));
+        return new DeclaredState(state.kind(), state.startsOn(), state.endsOn().orElse(null),
+                busyDose(state.kind(), profile.birthYear(), today, forUser).orElse(null));
     }
 
     /** Today on the user's calendar; without a profile there is none (CONFLICT, as a check-in). */

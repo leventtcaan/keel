@@ -27,14 +27,15 @@ type Schemas = components['schemas'];
  * server's.
  */
 export default function TrainScreen() {
-  const { api, training, workoutRecords } = useAppServices();
+  const { api, training, workoutRecords, state } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
   const { day, data, reload } = useReadOnFocus(
     useCallback(async () => {
-      const [read, records] = await Promise.all([training.read(api), workoutRecords()]);
-      return { ...read, active: activeWorkout(records) };
-    }, [api, training, workoutRecords]),
+      // A state declared, as the phone last knew it (K-518): a busy week brings its least dose (K-528).
+      const [read, records, declared] = await Promise.all([training.read(api), workoutRecords(), state.current().catch(() => null)]);
+      return { ...read, active: activeWorkout(records), declared };
+    }, [api, training, workoutRecords, state]),
   );
 
   const program = data?.program.state === 'ready' ? data.program.value : null;
@@ -75,7 +76,7 @@ export default function TrainScreen() {
   const notes =
     program === null ? null : (
       <View style={styles.note}>
-        {programNotes(program).map((note) => (
+        {programNotes(program, data?.declared).map((note) => (
           <Text key={note} style={[styles.text, { color: color.text }]}>
             {note}
           </Text>

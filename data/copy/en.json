@@ -208,6 +208,12 @@
       "deload": "A lighter week, until {date}: fewer sets, the same weights.",
       "held": "Weights held since {date}: reach the top of the range before adding weight."
     },
+    "busy": {
+      "withLoad": "A busy week: {sessions} with {sets} per exercise, at your usual weights, keeps what you've built. Anything more is a bonus.",
+      "dose": "A busy week: {sessions} with {sets} per exercise keeps what you've built. Anything more is a bonus.",
+      "sessions": { "one": "one session", "other": "{count} sessions" },
+      "sets": { "one": "one set", "other": "{count} sets" }
+    },
     "today": "Today",
     "sets": {
       "one": "1 set",

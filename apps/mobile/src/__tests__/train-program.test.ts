@@ -25,6 +25,18 @@ test('a week off, a lighter week and held weights each say until or since when, 
   ]);
 });
 
+test("a busy week's dose: the server's numbers in words, with the weights when it keeps them; a state without one says none (K-528)", () => {
+  const busy = (dose: Schemas['BusyDose']): Schemas['DeclaredState'] => ({ kind: 'BUSY', since: '2026-09-28', busyDose: dose });
+  expect(programNotes(program(), busy({ sessions: 1, setsPerExercise: 1, keepLoad: true }))).toEqual([
+    "A busy week: one session with one set per exercise, at your usual weights, keeps what you've built. Anything more is a bonus.",
+  ]);
+  expect(programNotes(program(), busy({ sessions: 2, setsPerExercise: 2, keepLoad: false }))).toEqual([
+    "A busy week: 2 sessions with 2 sets per exercise keeps what you've built. Anything more is a bonus.",
+  ]);
+  expect(programNotes(program(), { kind: 'SICK', since: '2026-09-28' })).toEqual([]);
+  expect(programNotes(program(), null)).toEqual([]);
+});
+
 test("a day's name: the copy of a generated day, the user's own text for their own", () => {
   expect(dayName({ id: 'a', nameKey: 'upper_a', weekday: 'MONDAY', exercises: [] })).toBe('Upper A');
   expect(dayName({ id: 'b', name: 'Push', exercises: [] })).toBe('Push');
