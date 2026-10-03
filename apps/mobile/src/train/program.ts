@@ -21,13 +21,14 @@ export function shortDate(day: string): string {
 /** The calls in force, most binding first: a week off, then a lighter week, then the weights held. */
 export function programNotes(program: Schemas['Program'], declared?: Schemas['DeclaredState'] | null): string[] {
   const notes: string[] = [];
-  // K-528: a busy week's least dose, a suggestion beside the program — its targets stay as they are (U2). The server sends
-  // one with a busy week only.
-  const dose = declared?.busyDose;
-  if (dose !== undefined) notes.push(busyNote(dose));
+
   if (program.restUntil !== undefined) notes.push(t('train.status.restWeek', { date: shortDate(program.restUntil) }));
   if (program.deload !== undefined) notes.push(t('train.status.deload', { date: shortDate(program.deload.until) }));
   if (program.loadHeldSince !== undefined) notes.push(t('train.status.held', { date: shortDate(program.loadHeldSince) }));
+  // K-528: a busy week's least dose — a suggestion, so last; never beside a week off, which the engine called (U2). The server
+  // sends one with a busy week only.
+  const dose = declared?.busyDose;
+  if (dose !== undefined && program.restUntil === undefined) notes.push(busyNote(dose));
   return notes;
 }
 

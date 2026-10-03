@@ -34,6 +34,13 @@ test("a busy week's dose: the server's numbers in words, with the weights when i
     "A busy week: 2 sessions with 2 sets per exercise keeps what you've built. Anything more is a bonus.",
   ]);
   expect(programNotes(program(), { kind: 'SICK', since: '2026-09-28' })).toEqual([]);
+  // A suggestion comes after the engine's calls, and says nothing beside a week off.
+  expect(programNotes(program({ loadHeldSince: '2026-09-21' }), busy({ sessions: 1, setsPerExercise: 1, keepLoad: true }))[0]).toBe(
+    'Weights held since Sep 21: reach the top of the range before adding weight.',
+  );
+  expect(programNotes(program({ restUntil: '2026-10-04' }), busy({ sessions: 1, setsPerExercise: 1, keepLoad: true }))).toEqual([
+    'A week off training, until Oct 4.',
+  ]);
   expect(programNotes(program(), null)).toEqual([]);
 });
 
