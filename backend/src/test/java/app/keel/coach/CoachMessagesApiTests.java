@@ -183,6 +183,74 @@ class CoachMessagesApiTests {
     }
 
     @Test
+    void theLastAnswerOfTheDayIsTheModelsAndTheNextTheEngines() throws Exception {
+        AccountId account = withACutStep();
+        int limit = limit();
+        jdbc.sql("insert into subscription.daily_use (account_id, day, use, used) values (:a, :day, 'COACH_MESSAGE', :n)")
+                .param("a", account.value()).param("day", LocalDate.now(java.time.ZoneOffset.UTC)).param("n", limit - 1).update();
+        fake.answer("{\"text\":\"The call stands.\"}");
+        fake.answer("{\"text\":\"The call stands.\"}");
+
+        assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("mode", "MODEL");
+        assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("copyKey", "coach.answer.daily_limit");
+        assertThat(fake.requests()).hasSize(1);
+        assertThat(used(account)).isEqualTo(limit);
+    }
+
+    @Test
+    void whatTheModelIsNotAskedForCountsNothing() throws Exception {
+        // No call, a call only the engine tells, a call not found, a question not taken, no consent: nothing counted.
+        AccountId noCall = ready();
+        ok(ask(noCall, Map.of("text", "Why?")));
+        assertThat(used(noCall)).isZero();
+        AccountId account = withACutStep();
+        assertThat(ask(account, Map.of("text", "Why?", "decisionId", UUID.randomUUID()))).hasStatus(404);
+        assertThat(ask(account, Map.of("text", " "))).hasStatus(400);
+        jdbc.sql("update decision.weekly_call set decision = decision || '{\"safety\": true}'::jsonb where account_id = :a")
+                .param("a", account.value()).update();
+        ok(ask(account, Map.of("text", "Why?")));
+        assertThat(used(account)).isZero();
+    }
+
+    @Test
+    void aReplyTheCheckDropsStillCountsTheModelWasAsked() throws Exception {
+        AccountId account = withACutStep();
+        fake.answer("{\"text\":\"Eat 1,900 kcal.\"}");
+
+        assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("mode", "DETERMINISTIC");
+        assertThat(used(account)).isEqualTo(1);
+    }
+
+    @Test
+    void aProviderThatFailsGivesTheUseBack() throws Exception {
+        AccountId account = withACutStep();
+        fake.fail(new IllegalStateException("provider down"));
+
+        assertThat(ask(account, Map.of("text", "Why?")).getResponse().getStatus()).isGreaterThanOrEqualTo(500);
+        assertThat(used(account)).isZero();
+    }
+
+    @Test
+    void pastTheLimitWithoutTheConsentIsStillAConsentAnswer() throws Exception {
+        AccountId account = withACutStep();
+        jdbc.sql("insert into subscription.daily_use (account_id, day, use, used) values (:a, :day, 'COACH_MESSAGE', 1000)")
+                .param("a", account.value()).param("day", LocalDate.now(java.time.ZoneOffset.UTC)).update();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", account.value())
+                .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
+
+        assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
+    }
+
+    private static int limit() throws Exception {
+        java.util.List<java.util.Map<String, Object>> parameters = (java.util.List<java.util.Map<String, Object>>) new org.yaml.snakeyaml.Yaml()
+                .<java.util.Map<String, Object>>load(java.nio.file.Files.readString(java.nio.file.Path.of("../data/parameters/quota.yaml"))).get("parameters");
+        return parameters.stream().filter(parameter -> "coach_messages_per_day".equals(parameter.get("key"))).map(parameter -> (Integer) parameter.get("value"))
+                .findFirst().orElseThrow();
+    }
+
+    @Test
     void aMessageTheModelWasAskedIsCountedAndOneThatWasRefusedIsNot() throws Exception {
         AccountId account = withACutStep();
         fake.answer("{\"text\":\"The call stands.\"}");
@@ -194,7 +262,7 @@ class CoachMessagesApiTests {
                 values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", account.value())
                 .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
         assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
-        assertThat(used(account)).as("given back").isEqualTo(1);
+        assertThat(used(account)).as("not counted").isEqualTo(1);
     }
 
     private int used(AccountId account) {

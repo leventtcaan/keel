@@ -48,6 +48,6 @@ Orta (paket taşıma).
 
 ## Değişiklik — K-508 (3 Eki 2026, agent, teknik)
 `subscription` → `profile` bağımlılığı eklendi: günlük kota kullanıcının kendi gününde sayılır (saat dilimi profilde). Ters yön yok
-(`profile` yalnız `consent`'e bağlı), döngü yok (`ModularityTests`). Limitler `data/parameters/quota.yaml`'dan, `QuestionBudget` gibi
+(`profile` yalnız `identity` ve `consent`'e bağlı), döngü yok (`ModularityTests`). Limitler `data/parameters/quota.yaml`'dan, `QuestionBudget` gibi
 doğrudan okunur — `engine` bağımlılığı gerekmedi.
 

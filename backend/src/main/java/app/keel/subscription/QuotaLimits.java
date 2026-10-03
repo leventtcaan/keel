@@ -7,6 +7,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.core.io.ClassPathResource;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -24,18 +25,24 @@ final class QuotaLimits {
         this.limits = Map.copyOf(limits);
     }
 
-    @SuppressWarnings("unchecked")
     static QuotaLimits fromClasspath() {
         try (InputStream in = new ClassPathResource("data/parameters/quota.yaml").getInputStream()) {
-            List<Map<String, Object>> parameters = (List<Map<String, Object>>) ((Map<String, Object>) new Yaml().load(in)).get("parameters");
-            Map<Quota.Use, Integer> limits = new EnumMap<>(Quota.Use.class);
-            KEYS.forEach((use, key) -> limits.put(use, parameters.stream().filter(parameter -> key.equals(parameter.get("key")))
-                    .map(parameter -> parameter.get("value")).filter(value -> value instanceof Integer limit && limit >= 1).map(Integer.class::cast)
-                    .findFirst().orElseThrow(() -> new IllegalStateException("quota.yaml: " + key + " is missing or not a whole number of at least 1"))));
-            return new QuotaLimits(limits);
+            return fromYaml(in);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    static QuotaLimits fromYaml(InputStream in) {
+        LoaderOptions strict = new LoaderOptions();
+        strict.setAllowDuplicateKeys(false);
+        List<Map<String, Object>> parameters = (List<Map<String, Object>>) ((Map<String, Object>) new Yaml(strict).load(in)).get("parameters");
+        Map<Quota.Use, Integer> limits = new EnumMap<>(Quota.Use.class);
+        KEYS.forEach((use, key) -> limits.put(use, parameters.stream().filter(parameter -> key.equals(parameter.get("key")))
+                .map(parameter -> parameter.get("value")).filter(value -> value instanceof Integer limit && limit >= 1).map(Integer.class::cast)
+                .findFirst().orElseThrow(() -> new IllegalStateException("quota.yaml: " + key + " is missing or not a whole number of at least 1"))));
+        return new QuotaLimits(limits);
     }
 
     int perDay(Quota.Use use) {

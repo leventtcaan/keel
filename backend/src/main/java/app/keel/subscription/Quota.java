@@ -7,6 +7,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
@@ -32,19 +33,29 @@ public class Quota {
     }
 
     /**
-     * One use today, if the limit allows: true and counted, or false and nothing counted. Counted in one statement, so
-     * requests at the same moment never take more than the limit.
+     * One use today, if the limit allows: the day it was counted on, or none and nothing counted. Counted in one
+     * statement, so requests at the same moment never take more than the limit.
      */
-    public boolean take(AccountId account, Use use) {
-        return true;
+    public Optional<LocalDate> take(AccountId account, Use use) {
+        LocalDate today = today(account);
+        return jdbc.sql("""
+                        insert into subscription.daily_use (account_id, day, use, used) values (:account, :day, :use, 1)
+                        on conflict (account_id, day, use) do update set used = subscription.daily_use.used + 1
+                        where subscription.daily_use.used < :limit
+                        returning used""")
+                .param("account", account.value()).param("day", today).param("use", use.name()).param("limit", limits.perDay(use))
+                .query(Integer.class).optional().map(used -> today);
     }
 
-    /** A use taken for a call that did not happen (refused, failed): given back, never below none. */
-    public void giveBack(AccountId account, Use use) {
+    /**
+     * A use taken for a call that did not happen (refused, failed): given back to the day it was taken on — not to
+     * whatever day it is now (a call across midnight), never below none.
+     */
+    public void giveBack(AccountId account, Use use, LocalDate takenOn) {
         jdbc.sql("""
                 update subscription.daily_use set used = used - 1
                 where account_id = :account and day = :day and use = :use and used > 0""")
-                .param("account", account.value()).param("day", today(account)).param("use", use.name()).update();
+                .param("account", account.value()).param("day", takenOn).param("use", use.name()).update();
     }
 
     private LocalDate today(AccountId account) {

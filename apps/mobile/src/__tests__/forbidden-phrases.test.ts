@@ -124,3 +124,20 @@ describe('person names (K-523, ADR-041 #72)', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('no currency for the daily limit (K-508, ADR-012)', () => {
+  const words = forbidden.quotaWords;
+  const re = () => new RegExp(words.pattern, 'gi');
+
+  test.each(words.examples)('catches "%s"', (example) => {
+    expect(example.match(re())).not.toBeNull();
+  });
+
+  test.each(words.nonExamples)('lets "%s" through', (text) => {
+    expect(text.match(re())).toBeNull();
+  });
+
+  test('no string in en.json speaks of credits or coins', () => {
+    expect(strings(en as Json).filter(([, text]) => re().test(text)).map(([key]) => key)).toEqual([]);
+  });
+});

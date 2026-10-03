@@ -181,6 +181,9 @@ class AccountDataTests {
         assertThat((List<Map<String, Object>>) decision.get("declaredStates")).singleElement()
                 .satisfies(state -> assertThat(state).containsEntry("kind", "SICK").containsKey("since").doesNotContainKey("until")
                         .doesNotContainKey("stillSoOn"));
+        // The day's use of the coach (K-508): a count, the user's.
+        assertThat((java.util.List<Map<String, Object>>) ((Map<String, Object>) sections.get("subscription")).get("dailyUses")).singleElement()
+                .satisfies(use -> assertThat(use).containsEntry("use", "COACH_MESSAGE").containsEntry("used", 1).containsKey("day"));
         // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
         assertThat(body).doesNotContainIgnoringCase("fatProxy");
         // A call's reasons go out with the kind of source only (K-523, ADR-041 #72): no research path, even to the user.

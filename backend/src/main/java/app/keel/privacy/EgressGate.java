@@ -38,6 +38,11 @@ public class EgressGate {
      * Data for a third-party AI (V2, K-503, K-505): only to {@code provider}, only {@code dataType}, and only with the
      * consent that names both, checked at the moment of sending; without it the call does not run.
      */
+    /** Whether {@link #sendToAi} would send this now: asked before anything is counted for the call (K-508). */
+    public boolean allowsAi(AccountId account, String provider, String dataType) {
+        return consents.grantedAi(account, provider, dataType);
+    }
+
     public <T> T sendToAi(AccountId account, String provider, String dataType, Supplier<T> call) {
         consents.requireAi(account, provider, dataType);
         return call.get();

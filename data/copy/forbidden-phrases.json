@@ -1,5 +1,5 @@
 {
-  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions. Every rule carries examples it must catch and near-misses it must let through; coachingNonExamples are ordinary coaching sentences no rule may catch. A number in copy is usually a {placeholder}, so number branches accept both. personNames (K-523): no person's name in the copy, the contract or the product's code, a research path aside.",
+  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions. Every rule carries examples it must catch and near-misses it must let through; coachingNonExamples are ordinary coaching sentences no rule may catch. A number in copy is usually a {placeholder}, so number branches accept both. personNames (K-523): no person's name in the copy, the contract or the product's code, a research path aside. quotaWords (K-508): no currency words for the daily limit.",
   "rules": [
     {
       "id": "body-fat-number",
@@ -175,5 +175,21 @@
       "coaching experience (G2 K-17)"
     ],
     "_about": "Scanned: data/copy/en.json, contracts/openapi.yaml, the app's code and the data files it bundles (forbidden-phrases.test.ts), the backend's code (NoPersonNameTests) and the contract (ContractTests)."
+  },
+  "quotaWords": {
+    "source": "plan/kararlar/ADR-012-abonelik-ve-kota.md",
+    "why": "ADR-012 (K-508): the daily limit is not a currency — no text speaks of credits, coins or tokens to spend (the 'Coins' crisis, ADR-004), in the copy or in a coach's reply.",
+    "pattern": "\\b(credits?|coins?|tokens?|kredi\\w*|jeton\\w*)\\b",
+    "examples": [
+      "3 credits left",
+      "Buy more coins",
+      "You're out of tokens",
+      "kredin bitti"
+    ],
+    "nonExamples": [
+      "Past this point, more food mostly adds fat",
+      "Today's coach answers are used up",
+      "an incredible week"
+    ]
   }
 }

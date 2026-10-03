@@ -15,6 +15,7 @@ final class FakeLanguageModel implements LanguageModel {
     private static final int REMEMBERED = 100;
 
     private final Deque<String> answers = new ArrayDeque<>();
+    private RuntimeException failure;
     private final List<ModelRequest> requests = new ArrayList<>();
 
     @Override
@@ -24,6 +25,11 @@ final class FakeLanguageModel implements LanguageModel {
             requests.removeFirst();
         }
         requests.add(request);
+        if (failure != null) {
+            RuntimeException thrown = failure;
+            failure = null;
+            throw thrown;
+        }
         String text = answers.isEmpty() ? "{}" : answers.removeFirst();
         return new ModelReply(text, 0, 0);
     }
@@ -37,9 +43,15 @@ final class FakeLanguageModel implements LanguageModel {
         return List.copyOf(requests);
     }
 
+    /** The next call fails with this, as a provider that is down would. */
+    synchronized void fail(RuntimeException next) {
+        failure = next;
+    }
+
     /** Nothing told, nothing asked. */
     synchronized void forget() {
         answers.clear();
         requests.clear();
+        failure = null;
     }
 }

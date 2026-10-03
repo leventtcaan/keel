@@ -57,12 +57,14 @@ class QuotaTests {
     void theLimitIsTakenToTheLastAndNoMore() {
         AccountId account = TestSessions.newAccount();
 
-        assertThat(IntStream.range(0, messages).mapToObj(n -> quota.take(account, Quota.Use.COACH_MESSAGE))).containsOnly(true);
-        assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).isFalse();
-        assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).as("still no").isFalse();
+        assertThat(IntStream.range(0, messages).mapToObj(n -> quota.take(account, Quota.Use.COACH_MESSAGE).isPresent())).containsOnly(true);
+        assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).isEmpty();
+        assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).as("still no").isEmpty();
         // Another use has its own count; another account its own.
-        assertThat(quota.take(account, Quota.Use.PHOTO_ANALYSIS)).isTrue();
-        assertThat(quota.take(TestSessions.newAccount(), Quota.Use.COACH_MESSAGE)).isTrue();
+        assertThat(quota.take(account, Quota.Use.PHOTO_ANALYSIS)).isPresent();
+        assertThat(quota.take(TestSessions.newAccount(), Quota.Use.COACH_MESSAGE)).isPresent();
+        // A no counts nothing: the day stays at the limit.
+        assertThat(used(account, LocalDate.now(ZoneOffset.UTC))).isEqualTo(messages);
     }
 
     @Test
@@ -74,7 +76,7 @@ class QuotaTests {
             LocalDate today = LocalDate.now(zone);
             used(account, today.minusDays(1), messages);
 
-            assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).as(zone + ": yesterday's count is yesterday's").isTrue();
+            assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).as(zone + ": yesterday's count is yesterday's").contains(today);
             assertThat(jdbc.sql("select day from subscription.daily_use where account_id = :a and day <> :yesterday")
                     .param("a", account.value()).param("yesterday", today.minusDays(1)).query(LocalDate.class).single()).as(zone.toString()).isEqualTo(today);
         }
@@ -85,13 +87,13 @@ class QuotaTests {
         AccountId account = TestSessions.newAccount();
         used(account, LocalDate.now(ZoneOffset.UTC), messages);
 
-        assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).isFalse();
+        assertThat(quota.take(account, Quota.Use.COACH_MESSAGE)).isEmpty();
     }
 
     @Test
     void requestsAtTheSameMomentNeverTakeMoreThanTheLimit() throws Exception {
         AccountId account = TestSessions.newAccount();
-        Callable<Boolean> take = () -> quota.take(account, Quota.Use.COACH_MESSAGE);
+        Callable<Boolean> take = () -> quota.take(account, Quota.Use.COACH_MESSAGE).isPresent();
         try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
             List<Boolean> taken = pool.invokeAll(IntStream.range(0, messages + 10).mapToObj(n -> take).toList()).stream().map(future -> {
                 try {
@@ -102,6 +104,7 @@ class QuotaTests {
             }).toList();
 
             assertThat(taken.stream().filter(Boolean::booleanValue)).hasSize(messages);
+            assertThat(used(account, LocalDate.now(ZoneOffset.UTC))).isEqualTo(messages);
         }
     }
 
@@ -116,6 +119,11 @@ class QuotaTests {
                         "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                         "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", zone.getId()))))
                 .exchange()).hasStatusOk();
+    }
+
+    private int used(AccountId account, LocalDate day) {
+        return jdbc.sql("select coalesce(sum(used), 0) from subscription.daily_use where account_id = :a and day = :day").param("a", account.value())
+                .param("day", day).query(Integer.class).single();
     }
 
     private void used(AccountId account, LocalDate day, int count) {
