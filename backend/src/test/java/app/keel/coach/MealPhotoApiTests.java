@@ -156,10 +156,15 @@ class MealPhotoApiTests {
 
     @Test
     void withoutTheConsentToSendAMealPhotoNothingIsSent() throws Exception {
-        // The AI consent names the data (V2): agreeing to send a meal note is not agreeing to send a photo.
+        // The AI consent names the data (V2): agreeing to send a meal note is not agreeing to send a photo. The server
+        // takes a grant only with today's list, so a consent that left the photo out is one given to another text.
         AccountId account = TestSessions.newAccount();
         healthConsent(account);
-        aiConsent(account, List.of("meal note", "coach question"));
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, provider, data_types, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'GRANTED', :version, 'Example AI', :types, now())""")
+                .param("a", account.value()).param("version", ConsentTextVersions.THIRD_PARTY_AI)
+                .param("types", new String[] {"meal note", "coach question"}).update();
         fake.answer(RICE);
 
         assertThat(photo(account, MealPhotoTests.jpeg(200, 200))).hasStatus(403);
