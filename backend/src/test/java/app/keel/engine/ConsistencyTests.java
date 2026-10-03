@@ -2,6 +2,7 @@ package app.keel.engine;
 
 import static app.keel.engine.EngineFixtures.parameters;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
@@ -79,6 +80,30 @@ class ConsistencyTests {
         List<WeekTally> window = List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 2, 0));
 
         assertThat(Consistency.windowRatio(window)).hasValueSatisfying(ratio -> assertThat(ratio).isEqualByComparingTo("0.75"));
+    }
+
+    @Test
+    void aWindowsCountIsWhatItsRatioIsMadeOf() {
+        // K-526 (ADR-041 #63): "16 of 20" is shown where 0.8 was — the same sums, so never a count that disagrees.
+        List<WeekTally> window = List.of(training(MONDAY, 10, 7), training(MONDAY.plusWeeks(1), 10, 9),
+                training(MONDAY.plusWeeks(2), 0, 0));
+
+        assertThat(Consistency.windowCount(window)).contains(new Consistency.WindowCount(16, 20));
+        assertThat(Consistency.windowCount(window).orElseThrow().ratio()).isEqualByComparingTo(Consistency.windowRatio(window).orElseThrow());
+        // Overdone counts as done (U7), a paused week is out (K-516), nothing planned is no count.
+        assertThat(Consistency.windowCount(List.of(training(MONDAY, 4, 8), training(MONDAY.plusWeeks(1), 4, 0))))
+                .contains(new Consistency.WindowCount(4, 8));
+        assertThat(Consistency.windowCount(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 0).asPaused())))
+                .contains(new Consistency.WindowCount(9, 10));
+        assertThat(Consistency.windowCount(List.of(training(MONDAY, 0, 0)))).isEmpty();
+    }
+
+    @Test
+    void aCountIsNeverMoreDoneThanPlannedNorOfNothingPlanned() {
+        assertThatIllegalArgumentException().isThrownBy(() -> new Consistency.WindowCount(5, 4));
+        assertThatIllegalArgumentException().isThrownBy(() -> new Consistency.WindowCount(0, 0));
+        assertThatIllegalArgumentException().isThrownBy(() -> new Consistency.WindowCount(-1, 4));
+        assertThat(new Consistency.WindowCount(4, 4).ratio()).isEqualByComparingTo("1");
     }
 
     @Test

@@ -17,3 +17,4 @@
 ## Aktarım sırası (Part 2)
 10. ADR-041 işleri — K-430 Epley çıkışı (`ADR-037-isleri.md` › K-430), K-523 üründe kişi adı yok (`K-523.md`)
 11. K-525 "hâlâ öyle mi" üç haftada bir (`K-525.md`)
+13. K-526 uyum sayıları (`K-526.md`)

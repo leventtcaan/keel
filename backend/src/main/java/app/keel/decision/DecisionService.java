@@ -5,6 +5,7 @@ import app.keel.consent.ConsentKind;
 import app.keel.engine.Action;
 import app.keel.engine.ActivityLevel;
 import app.keel.engine.CheckIn;
+import app.keel.engine.Consistency;
 import app.keel.engine.Decision;
 import app.keel.engine.DecisionPipeline;
 import app.keel.engine.DeclaredContext;
@@ -125,7 +126,7 @@ class DecisionService {
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
         // the estimate a plan without a target would get.
         CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
-        CheckIn dataSays = dataSays(account, week, plan);
+        CheckIn dataSays = dataSays(week, counted(account, week, plan));
         Optional<TrainingStatus> training = training(account, week);
         // The cycle question first, outside the budget: a safety question (V4, ADR-020 L-1), asked in the low energy band —
         // and after a hard stop, when this week's call, on the data or on the answers asked for, would open a deficit
@@ -193,14 +194,15 @@ class DecisionService {
         if (answers.stillSo()) {
             states.stillSo(account, week.today());
         }
-        CheckIn dataSays = dataSays(account, week, plan);
+        Optional<Consistency.WindowCount> counted = counted(account, week, plan);
+        CheckIn dataSays = dataSays(week, counted);
         // Appetite is the user's answer (K-227): no data says it.
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
                 dataSays.adherence(), answers.checkIn().appetite());
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
-                StoredSnapshot.of(snapshot), DecisionJson.of(decision), application(decision));
+                StoredSnapshot.of(snapshot, counted), DecisionJson.of(decision), application(decision));
         if (!calls.keep(account, call)) {
             // The same clientId or this week, stored at the same moment by another request.
             return calls.byClient(account, clientId).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
@@ -265,9 +267,13 @@ class DecisionService {
     }
 
     /** What the data says, with how the plan was followed over the window, counted from the logs (K-220). */
-    private CheckIn dataSays(AccountId account, Week week, CallStore.Plan plan) {
-        return logs.adherence(account, week.profile(), week.today(), plan, bodyweight(account, week), week.body().ageYears(), week.parameters())
-                .map(week.dataSays()::withAdherence).orElse(week.dataSays());
+    private CheckIn dataSays(Week week, Optional<Consistency.WindowCount> counted) {
+        return counted.map(count -> week.dataSays().withAdherence(count.ratio())).orElse(week.dataSays());
+    }
+
+    /** The window's count from the logs (K-220): its ratio is the adherence the engine reads; its numbers are kept (K-526). */
+    private Optional<Consistency.WindowCount> counted(AccountId account, Week week, CallStore.Plan plan) {
+        return logs.adherence(account, week.profile(), week.today(), plan, bodyweight(account, week), week.body().ageYears(), week.parameters());
     }
 
     // Today's trend weight, or the last weight known however old (K-216 review).

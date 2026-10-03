@@ -2663,7 +2663,20 @@ components:
           type: number
           minimum: 0
           maximum: 1
-          description: The share of the planned actions done, as the call counted it (the counts behind it are not kept).
+          description: The share of the planned actions done, as the call counted it.
+        adherenceCount:
+          type: object
+          description: >-
+            The planned actions and the ones done that the share is made of (K-526, ADR-041 #63). Kept by calls made since;
+            absent for an older call — never made up from the share.
+          required: [done, planned]
+          properties:
+            done:
+              type: integer
+              minimum: 0
+            planned:
+              type: integer
+              minimum: 1
         answers:
           type: object
           description: The check-in answers given; one left open is absent.

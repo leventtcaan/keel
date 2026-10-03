@@ -1774,8 +1774,13 @@ export interface components {
             }[];
             /** @description From the window's first week to its latest, per week; negative is down. Absent when the window was not read. */
             changeKgPerWeek?: number;
-            /** @description The share of the planned actions done, as the call counted it (the counts behind it are not kept). */
+            /** @description The share of the planned actions done, as the call counted it. */
             adherence?: number;
+            /** @description The planned actions and the ones done that the share is made of (K-526, ADR-041 #63). Kept by calls made since; absent for an older call — never made up from the share. */
+            adherenceCount?: {
+                done: number;
+                planned: number;
+            };
             /** @description The check-in answers given; one left open is absent. */
             answers: {
                 /** @enum {string} */

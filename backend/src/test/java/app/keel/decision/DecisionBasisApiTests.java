@@ -56,8 +56,29 @@ class DecisionBasisApiTests {
         assertThat(basis).containsEntry("phase", "CUT");
         assertThat((List<Map<String, Object>>) basis.get("weeks")).isNotEmpty().allSatisfy(week -> assertThat(week).containsKeys("ends", "kg"));
         assertThat((Map<String, Object>) basis.get("answers")).containsEntry("training", "STABLE");
+        // K-526 (ADR-041 #63): a new call keeps the counts its adherence is made of — the weigh-ins planned and done here.
+        Map<String, Object> count = (Map<String, Object>) basis.get("adherenceCount");
+        assertThat(count).containsOnlyKeys("done", "planned");
+        assertThat(new java.math.BigDecimal(String.valueOf(basis.get("adherence")))).isEqualByComparingTo(
+                java.math.BigDecimal.valueOf((Integer) count.get("done")).divide(java.math.BigDecimal.valueOf((Integer) count.get("planned")),
+                        java.math.MathContext.DECIMAL64));
         // Never a fat estimate (U4), never the cycle answer (not kept).
         assertThat(body.toLowerCase()).doesNotContain("fat").doesNotContain("cycle").doesNotContain("menstrual");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aCallKeptBeforeTheCountsShowsItsShareAndNoCount() throws Exception {
+        // K-526 (ADR-041 #63): no count is made up for an older call — through the real jsonb and the server's own JSON.
+        AccountId account = onACut();
+        Map<String, Object> call = checkIn(account);
+        jdbc.sql("update decision.weekly_call set snapshot = snapshot #- '{checkIn,adherenceDone}' #- '{checkIn,adherencePlanned}' where id = :id")
+                .param("id", UUID.fromString((String) call.get("id"))).update();
+
+        Map<String, Object> basis = JSON.readValue(send(account, "GET", "/v1/decisions/" + call.get("id") + "/basis").getResponse()
+                .getContentAsString(), Map.class);
+
+        assertThat(basis).containsKey("adherence").doesNotContainKey("adherenceCount");
     }
 
     @Test

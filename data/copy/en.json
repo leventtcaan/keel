@@ -606,6 +606,7 @@
       "rateUp": "Up {weight} a week",
       "rateFlat": "Steady",
       "adherence": "{percent}% of planned actions",
+      "adherenceCount": "{done} of {planned} planned actions",
       "yes": "Yes"
     },
     "answer": {

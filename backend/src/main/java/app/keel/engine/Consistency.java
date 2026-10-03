@@ -38,13 +38,35 @@ public final class Consistency {
      * was planned.
      */
     public static Optional<BigDecimal> windowRatio(List<WeekTally> weeks) {
+        return windowCount(weeks).map(WindowCount::ratio);
+    }
+
+    /**
+     * What a window's ratio is made of (K-526, ADR-041 #63): the actions done and planned over its weeks not paused —
+     * "16 of 19", the same sums, so a count shown never disagrees with the ratio the engine read. None when nothing was
+     * planned.
+     */
+    public static Optional<WindowCount> windowCount(List<WeekTally> weeks) {
         List<WeekTally> counted = weeks.stream().filter(week -> !week.paused()).toList();
         int planned = counted.stream().mapToInt(WeekTally::planned).sum();
         if (planned == 0) {
             return Optional.empty();
         }
-        int done = counted.stream().mapToInt(WeekTally::done).sum();
-        return Optional.of(BigDecimal.valueOf(done).divide(BigDecimal.valueOf(planned), MathContext.DECIMAL64));
+        return Optional.of(new WindowCount(counted.stream().mapToInt(WeekTally::done).sum(), planned));
+    }
+
+    /** Actions done of the ones planned; an overdone one counts as done once (U7), so never more than planned. */
+    public record WindowCount(int done, int planned) {
+
+        public WindowCount {
+            if (planned < 1 || done < 0 || done > planned) {
+                throw new IllegalArgumentException("a count is 0 to planned done of at least 1 planned, was " + done + " of " + planned);
+            }
+        }
+
+        public BigDecimal ratio() {
+            return BigDecimal.valueOf(done).divide(BigDecimal.valueOf(planned), MathContext.DECIMAL64);
+        }
     }
 
     /**
