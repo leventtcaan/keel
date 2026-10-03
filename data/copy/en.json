@@ -151,7 +151,6 @@
         "PRODUCT": "A rule of this app"
       },
       "nextReview": "Next review {date}",
-    "wait": "Wait",
     "hold": "Nothing to do differently.",
     "waitNote": "Keep logging the same way. That's what makes the next call clear.",
     "oneThing": "Only one change at a time, so we know what worked. Everything else stays as it is.",

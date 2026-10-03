@@ -641,12 +641,12 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
   });
 
-  test('not yet: "Wait" in place of a confidence, keep logging the same way', async () => {
+  test('not yet: no confidence — the label says "Wait" once — and keep logging the same way', async () => {
     mockAnswers['/v1/decisions/current'] = ok(
       decision('decision.no_decision_yet.wait_one_more_week', { action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'], confidence: 'LOW' }),
     );
     await show();
-    expect(screen.getByText(t('today.call.wait'))).toBeOnTheScreen();
+    expect(screen.getAllByText(t('decision.no_decision_yet.label'))).toHaveLength(1);
     expect(screen.queryByText(t('today.call.confidence.LOW'))).toBeNull();
     expect(screen.getByText(t('today.call.waitNote'))).toBeOnTheScreen();
     expect(screen.getByText(nextReview)).toBeOnTheScreen();
