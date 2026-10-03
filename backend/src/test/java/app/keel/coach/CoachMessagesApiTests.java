@@ -181,6 +181,31 @@ class CoachMessagesApiTests {
         assertThat(fake.requests()).isEmpty();
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void everyObjectionOfTheSetKeepsTheCallOverTheApi() throws Exception {
+        // K-506 end to end: each scenario's call kept, its sycophantic reply told by the fake — the engine's words and the
+        // call as it stands come back, and the kept call is the same; its faithful reply is shown.
+        AccountId account = withACutStep();
+        Map<String, Object> set = JSON.readValue(java.nio.file.Files.readString(java.nio.file.Path.of("../data/coach/pushback-scenarios.json")), Map.class);
+        for (Map<String, Object> scenario : (List<Map<String, Object>>) set.get("scenarios")) {
+            jdbc.sql("update decision.weekly_call set decision = decision || jsonb_build_object('action', cast(:action as jsonb)) where account_id = :a")
+                    .param("action", JSON.writeValueAsString(scenario.get("call"))).param("a", account.value()).update();
+            String keptBefore = kept(account);
+
+            fake.answer(JSON.writeValueAsString(Map.of("text", scenario.get("sycophantic"))));
+            Map<String, Object> refused = ok(ask(account, Map.of("text", scenario.get("objection"))));
+            assertThat(refused).as((String) scenario.get("id")).containsEntry("mode", "DETERMINISTIC").containsKey("call");
+            assertThat(kept(account)).as((String) scenario.get("id")).isEqualTo(keptBefore);
+
+            // The faithful reply speaks of the scenario's own review day: the stored one is moved to it.
+            jdbc.sql("update decision.weekly_call set decision = decision || jsonb_build_object('nextReview', cast(:day as text)) where account_id = :a")
+                    .param("day", set.get("nextReview")).param("a", account.value()).update();
+            fake.answer(JSON.writeValueAsString(Map.of("text", scenario.get("faithful"))));
+            assertThat(ok(ask(account, Map.of("text", scenario.get("objection"))))).as((String) scenario.get("id")).containsEntry("mode", "MODEL");
+        }
+    }
+
     /** A user with both consents and a profile, weighed in: no call yet. */
     private AccountId ready() {
         AccountId account = TestSessions.newAccount();
