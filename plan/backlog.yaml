@@ -2151,8 +2151,8 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-504, K-505, K-508]
-    why: "Bağlam anlatma ve soru sorma kanalı"
+    depends_on: [K-504, K-505, K-508, K-529]
+    why: "Bağlam anlatma ve soru sorma kanalı (ADR-043: koçun cevabı konu + kural, söz telefonda en.json'dan; plan değişikliği karar kartının mevcut uygulama akışıyla — applyCall)"
     acceptance:
       - "Açılışta o günün verisinden 3 çip"
       - "Yapılandırılmış kartlar (kayıt önizleme, karar)"
@@ -2496,8 +2496,8 @@ tasks:
     type: feature
     size: S
     status: todo
-    depends_on: [K-505]
-    why: "Pazartesi kararının 3 cümlelik anlatımı + haftanın tek odağı (L3 Y8)"
+    depends_on: [K-505, K-522]
+    why: "Pazartesi kararının 3 cümlelik anlatımı + haftanın tek odağı (L3 Y8). ADR-043: her zaman deterministik şablon (karar başlığı + baştaki kuralın cümlesi + tek odak), model yok"
     acceptance:
       - "Sayılar kararla birebir (sadakat testi)"
       - "Kota dışı; LLM yoksa deterministik şablon"
@@ -2506,6 +2506,73 @@ tasks:
     refs: ["arastirma/ham/L3-ozellik-boslugu.md"]
     learn:
       - "Şablon geri düşüşü"
+
+  - id: K-529
+    title: "Koç sınıflandırır: konu + kararın kuralı, söz metin dosyasından"
+    milestone: M5
+    module: coach
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-505, K-506, K-522]
+    why: "ADR-043 #76 (a): model serbest cümle yazmaz; mesajın konusunu ve kararın hangi gerekçesinin cevap olduğunu seçer, cümle en.json'dan (U1/U2 yapısal)"
+    acceptance:
+      - "Model cevabı yalnız {topic, rule}: topic kapalı listeden, rule yalnız kararın kendi reasons'ından; başka her şey atılır → deterministik"
+      - "CoachAnswer: text yok; topic + rule (sözleşme + üretilen tipler); her konunun cümlesi en.json'da (sayısız, suçlamasız, taviz yok)"
+      - "32 itiraz senaryosu beklenen konuyla (sahte model), karar değişmez; ReplyCheck/ReplyGuards/guards.json ve testleri silinir (K1 onaylı, ADR-043)"
+    tests:
+      - "ExplanationTests (şema), SycophancyEvalTests (beklenen konu), CoachMessagesApiTests, CoachCopyKeysTests"
+    refs: ["plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md"]
+    learn:
+      - "Yapılandırılmış çıktı ile serbest metin farkı"
+  - id: K-530
+    title: "Planlanan seans sayısı programın günlerinden (tutarlılık, ilk 8 hafta, hedefler)"
+    milestone: M5
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-527]
+    why: "ADR-043 #74: plan programdır; kaçan seans zaten programın günlerine bakıyor (K-527), geri kalan profilin gün sayısına bakıyordu"
+    acceptance:
+      - "Haftalık tutarlılık, ilk 8 hafta ve hedeflerin planlanan seans sayısı programın günlerinden; program yoksa profilin günleri"
+      - "Programı 4 gün, profili 3 gün olan kullanıcıda tek sayı (test)"
+    tests:
+      - "Consistency/FirstWeeks/hedef testleri (program ≠ profil)"
+    refs: ["plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md"]
+    learn: []
+  - id: K-531
+    title: "Uzun moladan dönüş: ilk seans bir motor adımı geri"
+    milestone: M5
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-524]
+    why: "ADR-043 #75: G7 K-72'ye sayı — ≥3 hafta molada ilk seans bir motor adımı geri; kısa molada yük düşmez (H9 §1)"
+    acceptance:
+      - "Son çalışma setli seanstan bu yana ≥ return_step_back_after_weeks (3) hafta ise ilk seansın hedef yükü bir motor adımı geri; sonraki seans normal kural"
+      - "Kısa molada (< eşik) yük değişmez; eşik parametre dosyasında (urun), kaynak G7 K-72 + H9 §1 (U14, K2)"
+    tests:
+      - "SessionProgress/LoadSteps testleri (20 gün, 21 gün, ikinci seans)"
+    refs: ["arastirma/ham/H9-donus-minimum-doz.md", "plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md"]
+    learn: []
+  - id: K-532
+    title: "Kota sayaçlarının eskisi her gece silinir"
+    milestone: M5
+    module: subscription
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-508]
+    why: "ADR-043 #77: subscription.daily_use her aktif gün için bir satır süresiz kalıyordu; yalnız bugünkü okunur"
+    acceptance:
+      - "Gecelik iş dünden eski sayaç satırlarını siler (kullanıcının gününe göre: hiçbir saat diliminde bugünü silmez)"
+      - "Dışa aktarma ve hesap silme bundan etkilenmez; iş hatası BackgroundFailures'a"
+    tests:
+      - "QuotaCleanupTests (DB)"
+    refs: ["plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md"]
+    learn: []
 
 # ───────────────────────────── M6 · İlerleme ─────────────────────────────
   - id: K-601

@@ -29,7 +29,7 @@ gürültü süresi, yeniden-baseline kuralı: kaynak yok.**
 6. **Yeniden baseline için yeni kural yok:** 7+ gün sessizlikten sonra veri yeterliliği (H1 §3.4, `min_weighins_per_week`)
    pencerenin her haftasında tartı ister → karar kendiliğinden "henüz değil" bekler. Suçlamasız dönüş metni mobilde (K-518).
 7. **Bekleyen (U14) → literatür taraması (K-524, ADR-041 #60, `arastirma/ham/H9-donus-minimum-doz.md`, 3 Eki):**
-   - **Dönüş yükü — uygulanmaz.** İlk seansın önceki yükün yüzde kaçı olacağını test eden birincil çalışma yok (H9 §5); tek sayılı
+   - **Dönüş yükü — uygulanmaz** *(→ ADR-043 #75: ≥3 hafta molada ilk seans bir motor adımı geri, K-531; aşağısı kayıt için)*. İlk seansın önceki yükün yüzde kaçı olacağını test eden birincil çalışma yok (H9 §5); tek sayılı
      reçete CSCCa/NSCA 2019 uzman konsensüsü, yük değil hacim/sıklık tavanı, rabdomiyoliz önleme amaçlı, kolej sporcusu (H9 §1.7);
      dolaşımdaki "%85-95" sayılarının birincil kaynağı yok (H9 §3). Birincil veri antrenmanlı gençte 14 günlük tam aranın 1RM'i
      anlamlı düşürmediğini (Hortobágyi 1993, Hwang 2017) ve kuvvetin 3 haftaya kadar korunabildiğini (McMaster 2013) gösteriyor →

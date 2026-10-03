@@ -6,6 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M5 Part 3 (Koç yüzü + sağlayıcı) SÜRÜYOR (3 Eki)** — 74-77 + K1 → ADR-043 (koç sınıflandırır, cümle yazmaz). Sıra: K-522 → K-529 → K-509 → K-507 → K-517 → K-511 → K-528 → K-521; arka planda K-532, K-530, K-531.
 **M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
 **M5 Part 1 (Motor ve check-in) BİTTİ (3 Eki)** — ADR-037 işleri, K-516, K-512, K-513, K-501, K-502 (+ K-518, K-519, K-520) birleşti; aktarım bekliyor; K-430 Levent'te.
 **M4 KAPANDI (2 Eki, kod)** — Part 4: K-410 bildirimler, K-411 dinlenme arka planda, K-412 Health'e yazma, K-423 tarifler
@@ -468,7 +469,7 @@ Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` �
 |---|---|---|
 | 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ✅ bitti (3 Eki) — aktarım bekliyor; K-430 Levent'te (soru 55) |
 | 2 · Koç altyapısı | ADR-041 işleri (K-430, K-523, K-525, K-526, K-527, K-524) · K-503, K-505, K-506, K-504, K-508 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 74-77 |
-| 3 · Koç yüzü + sağlayıcı | K-509, K-507, K-517, K-511 | bekliyor |
+| 3 · Koç yüzü + sağlayıcı | ADR-043 işleri (K-529, K-530, K-531, K-532) · K-522, K-509, K-507, K-517, K-511, K-528, K-521 | sürüyor (3 Eki) |
 | 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | bekliyor |
 
 **Part 1 başı (2 Eki):** senkron tamam — M4 ÇIKIŞ git ile tutarlı (K-410 #253/#254, K-411 #256, K-412 #257, K-423 #258/#259,
@@ -563,6 +564,16 @@ kalıcı `../keel-main`; devam dosyası yok). Sağlayıcı kapısı ADR-041 ile 
     `.git/info/exclude`'a da eklendi. Squash birleşmeden sonra yığılmış dallar `git rebase --onto origin/main <eski taban>` ile taşınır.
 - **Yeni sorular:** 74 (tutarlılık programın günleri mi), 75 (dönüş yükü / K-72), 76 (koçun sesi), 77 (kota geçmişi, öğün metni kotası).
 
+**Part 3 başı (3 Eki):** senkron tamam — Part 2 ÇIKIŞ git ile tutarlı (#273, #299-#308 birleşik; açık PR yok; worktree yalnız
+`../keel-main`; devam dosyası yok). Disk 5,6 GB. Dependabot uyarıları #2, #3 (bilinen). Ana checkout ayrık HEAD (6ddb324).
+**74-77 → ADR-043** (dördü önerilen): 74 programın günleri (K-530), 75 ≥3 hafta molada bir adım geri (K-531), **76 (a) koç
+sınıflandırır** — model yalnız `{topic, rule}`, söz `en.json`'dan (K-529, K-509'dan önce; K-522'nin kural cümlelerini kullanır),
+**K1 onayı:** `ReplyCheck`/`ReplyGuards`/`guards.json` ve testleri silinir, 32 senaryo beklenen konu setine döner; 77 eski sayaçlar
+gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (model yok).
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
 **M5 Part 1 (55-59):**
@@ -605,6 +616,7 @@ kalıcı `../keel-main`; devam dosyası yok). Sağlayıcı kapısı ADR-041 ile 
     training stable, so change nothing."). Şu an çoğu kararda yalnız kaynak türü görünüyor. Cümleleri ben kaynaklarından taslak yazayım
     (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
 
+**74-77 → ADR-043 (3 Eki, Part 3 başı).** Aşağıdaki 74-77 kayıt içindir.
 **M5 Part 2 (73-):**
 73. **(K-430, ürün)** Epley çıkışı seyrek raflarda çok geç ya da hiç gelmiyor: 10 → 20 kg dambılda sıçramak için 10 kg'da ~47 tekrar gerekir;
     oran ~3,4'ü aşınca (5 → 20) gereken tekrar 100'ü (API'nin set sınırı) geçer, hedef tekrar sonsuza tırmanır. Seçenekler: (a) böyle kalsın
