@@ -2244,7 +2244,7 @@ tasks:
     module: coach
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-503, K-208, K-214]
     why: "Fotoğraf → görüntü modeli → kalemler → veritabanı eşleme görevi eksikti (L3 P4)"
     acceptance:

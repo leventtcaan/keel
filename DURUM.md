@@ -6,7 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M5 Part 4 (Fotoğraf, cihaz, teslim) SÜRÜYOR (3 Eki)** — 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
+**M5 Part 4 (Fotoğraf, cihaz, teslim) SÜRÜYOR (3 Eki)** — K-514 #327 birleşti, K-408 #328 incelemede; 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
 **M5 Part 3 (Koç yüzü + sağlayıcı) BİTTİ (3 Eki)** — ADR-043 (koç sınıflandırır, cümle yazmaz) + 11 görev birleşti (#314-#325); aktarım bekliyor (`docs/aktarim/M5/README.md` 20-30). Simülatör turu **disk yüzünden ertelendi** (soru 80). Sorular 78-85.
 **M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
 **M5 Part 1 (Motor ve check-in) BİTTİ (3 Eki)** — ADR-037 işleri, K-516, K-512, K-513, K-501, K-502 (+ K-518, K-519, K-520) birleşti; aktarım bekliyor; K-430 Levent'te.
@@ -617,6 +617,7 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
+| K-514 öğün fotoğrafı backend'i: `POST /v1/meals/photo` (base64), boyut başlıktan (>1024 → 400), sunucu yalnız piksellerden JPEG yazar (metadata gitmez), `PHOTO_MEAL` → "meal photo" rızası, `PHOTO_ANALYSIS` kotası, model yalnız göz kararı gram → `ESTIMATED` (ADR-046) | ✅ birleşti; RED 11; inceleme: **ham fotoğraf ImageIO'nun dosya önbelleğiyle diske iniyordu** (V1/V3) → bellek; rızasız fotoğraf çözülüyordu → sıra rıza → çözme → kota; başlık-önce denetimini ısıran test yoktu → PNG bombası + ayrılan bayt ölçümü; CI'da tek kırmızı: kısmi AI rızası API'den verilemiyor → test DB'ye yazar; mutasyon 16/16 | #327 | `M5/K-514.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
