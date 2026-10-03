@@ -80,3 +80,10 @@
 - takıldım: simülatörün yazma aracı karakter düşürüyor; çalışan simülatör diski ~4 GB tüketti (shutdown ile döndü); renk bekçisi `#51b` yorumunu hex sandı
 - sıradaki: Levent dönünce Part 4 aktarımı (README 19-23; Part 2-3: 8-18); sonra M5 Part 1 (önce ADR-037 backend işleri + K-429, K-434)
 - AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion, 23 soru)
+
+## 2026-10-03 · M5 Part 2 (toplu mod)
+- yaptım: ADR-041 işleri K-430 #273 (Epley çıkışı), K-523 #299 (üründe kişi adı yok, API kaynak yalnız tür), K-525 #300, K-527 #301, K-526 #302, K-524 #304 (literatür H9: dönüş yükü uygulanmaz, `BusyWeekDose`); koç altyapısı K-503 #303 (LLM portu, tek kapı), K-505 #305 (anlatım + itiraz, `ReplyCheck`), K-506 #306 (32 itiraz seti), K-508 #307 (günlük kota), K-504 #308 (serbest metinden öğün taslağı)
+- karar: ADR-042 (LLM portu); her AI çağrısı sağlayıcı adı + veri türüyle kapıdan; "anlatılabilir karar" `decision`'da (V4); öğün ölçüsü grama modelce çevrilmez (ADR-004)
+- takıldım: inceleme ajanları her görevde gerçek hata buldu — en ciddisi döngü sorusu bekleyen kararın modele gitmesi (V4); regex bekçiler ince dalkavukluğu göremiyor → soru 76; worktree sembolik bağı commit'e girdi
+- sıradaki: Levent dönünce Part 2 aktarımı (README 10-19); sorular 74-77 (76 K-509'dan önce); sonra Part 3
+- AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent'e (74-77)
