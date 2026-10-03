@@ -97,6 +97,10 @@ keel:
     max-recipe-name: 80
     # Recipes a user keeps: each is estimated again whenever the list is read (ADR-034).
     max-recipes: 100
+  # The quota's old counts (K-532, ADR-043 #77): deleted each night at 03:15 server time. Any hour is safe — the cut
+  # keeps every time zone's today and yesterday (QuotaCleanup.oldestKept).
+  subscription:
+    quota-cleanup: "0 15 3 * * *"
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:
