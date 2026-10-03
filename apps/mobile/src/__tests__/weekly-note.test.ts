@@ -74,7 +74,8 @@ test('a safety call: its general words and focus, nothing of why (ADR-028 #24)',
   const note = weeklyNote(
     call({ type: 'CHANGE_PHASE', to: 'BULK' }, { safety: true, copyKey: 'decision.change_phase.low_energy_safety', reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' } }] }),
   );
-  expect(note).toEqual([{ key: 'decision.change_phase.low_energy_safety.title' }, { key: 'coach.note.focus.change_phase.bulk' }]);
+  // It arrives as a change of phase to BULK; its focus is the pause's — never "building" (U6).
+  expect(note).toEqual([{ key: 'decision.change_phase.low_energy_safety.title' }, { key: 'coach.note.focus.hard_stop' }]);
 });
 
 test('a leading rule without its sentence is not said', () => {
@@ -82,4 +83,15 @@ test('a leading rule without its sentence is not said', () => {
     'decision.adjust_calories.not_toward_goal.title',
     'coach.note.focus.continue',
   ]);
+});
+
+test('applied, the focus is the same change — said as the change, so it never reads as a second step (U1)', () => {
+  const applied = weeklyNote(call({ type: 'ADJUST_CALORIES', kcalPerDay: -250 }, { application: { state: 'APPLIED', appliedAt: '2026-10-05T08:00:00Z' } }));
+  expect(applied.at(-1)).toEqual({ key: 'coach.note.focus.adjust_calories.less', values: { kcal: '250' } });
+  expect(t('coach.note.focus.adjust_calories.less', { kcal: '250' })).not.toMatch(/than your current/);
+});
+
+test('a change taken back is said to be: no focus on it', () => {
+  const undone = weeklyNote(call({ type: 'ADJUST_CALORIES', kcalPerDay: -250 }, { application: { state: 'UNDONE', undoneAt: '2026-10-06T08:00:00Z' } }));
+  expect(undone.at(-1)).toEqual({ key: 'coach.note.focus.undone' });
 });

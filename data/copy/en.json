@@ -1285,10 +1285,11 @@
         "no_decision_yet": "This week's one focus: keep logging as you are. The call comes when the data is enough.",
         "continue": "This week's one focus: the same plan, done the same way.",
         "adjust_calories": {
-          "less": "This week's one focus: {kcal} kcal a day less than your current target.",
-          "more": "This week's one focus: {kcal} kcal a day more than your current target."
+          "less": "This week's one focus: your daily target goes down by {kcal} kcal.",
+          "more": "This week's one focus: your daily target goes up by {kcal} kcal."
         },
-        "increase_calories": "This week's one focus: {kcal} kcal a day more than your current target.",
+        "increase_calories": "This week's one focus: your daily target goes up by {kcal} kcal.",
+        "undone": "This week's change was taken back: the plan stays as it was until the next check-in.",
         "change_movement": "This week's one focus: your new daily step goal.",
         "fix_training": "This week's one focus: your sessions, as planned.",
         "fix_recovery": "This week's one focus: sleep and recovery.",

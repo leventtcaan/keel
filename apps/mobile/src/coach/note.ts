@@ -14,12 +14,19 @@ export function weeklyNote(decision: Decision): Line[] {
   const lines: Line[] = [{ key: `${decision.copyKey}.title` }];
   const lead = decision.reasons[0];
   if (decision.safety !== true && lead !== undefined && has(`decision.rule.${lead.rule}`)) lines.push({ key: `decision.rule.${lead.rule}` });
-  lines.push(focus(decision.action));
+  lines.push(focus(decision));
   return lines;
 }
 
-/** The week's one focus, from the kind of call — its numbers as the call holds them. */
-function focus(action: Decision['action']): Line {
+/**
+ * The week's one focus, from the kind of call — its numbers as the call holds them, said as the change itself (true before
+ * and after it is applied). A safety call arrives as a change of phase: its focus is the pause's, never "building" (U6).
+ * A change taken back is said to be.
+ */
+function focus(decision: Decision): Line {
+  if (decision.safety === true) return { key: 'coach.note.focus.hard_stop' };
+  if (decision.application.state === 'UNDONE') return { key: 'coach.note.focus.undone' };
+  const { action } = decision;
   const key = `coach.note.focus.${action.type.toLowerCase()}`;
   switch (action.type) {
     case 'ADJUST_CALORIES':
