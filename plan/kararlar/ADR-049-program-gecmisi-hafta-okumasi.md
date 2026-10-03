@@ -10,14 +10,17 @@ içinde** değişirse o hafta hangi sayıyla okunur?
 ## Karar
 1. **`training.program_history`** (V30): her `replace`'te bir satır — `sessions_per_week` (program günü sayısı) ve `effective_from`.
    Satır değişmez, yalnız eklenir. Var olan programlar kendi `created_at`'leriyle tohumlanır; ondan öncesi bilinmez → profil.
-   Zaman geriye gitmez: `greatest(created_at, son satır)` — aynı anda iki değişimde son kaydedilen program yürürlükte olandır.
+   Zaman geriye gitmez ve eşitlenmez: `greatest(created_at, son satır + 1 µs)` — aynı anda iki değişimde son kaydedilen program yürürlükte olandır, sıra eşitliğe düşmez.
 2. **Hafta okuması** (`decision/PlannedSessions.inWeek`, saf): haftanın başında (pazartesi 00:00, kullanıcının ev saat diliminde)
    yürürlükteki programın sayısı — o an program yoksa profilin gün sayısı; hafta **içinde** yeni program geldiyse hepsinin
    **en azı**.
 3. Tutarlılık, uyum (spine), Bugün'ün haftası ve ilk 8 haftanın takvimi bu okumayı kullanır (`WeekTallies.Plan.trainingSessionsIn`).
-   Hedefler (`PlanTargets`) ve "antrenman isteniyor mu" bugünkü programla (`perWeek`) kalır: ileriye dönük şeyler.
-4. Kaçan plan haftası (`TrainingStatuses.weeksPlanMissed`) zaten yalnız yürürlükteki programın yapıldığı günden sonraki haftaları
-   sayıyor — onların hepsi bu programın haftası; değişiklik gerekmedi.
+   İlk 8 haftanın "geçen hafta seans yok" riski, kişinin geçen 7 gününün başından bu yana hep antrenman istenmiş mi diye okur
+   (`PlannedSessions.askedSince`, `FirstWeeks.Facts.trainingAskedLastWeek`). Hedefler (`PlanTargets`) ve bu haftanın metni bugünkü
+   programla (`perWeek`) kalır: ileriye dönük şeyler.
+4. Kaçan plan haftası (`TrainingStatuses.weeksPlanMissed`) yürürlükteki programın yapıldığı andan sonra **başlayan** haftaları sayar
+   (`TrainingStatuses.judgedFrom`: pazartesi 10:00'da yapılan program o haftayı istemedi). İnceleme bulgusu: önce o pazartesinin
+   haftası yeni sayıyla sayılıyordu.
 
 ## Neden
 - "En az": U7. Pazartesi 3 gün planlayıp çarşamba 5'e çıkaran kullanıcı o haftanın 3 seansını yapınca eksik görünmemeli; 5'ten 3'e
