@@ -6,7 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M6 Part 1 (Geçmiş ve sinyaller) SÜRÜYOR (3 Eki)** — `## M6 ilerleme`.
+**M6 Part 1 (Geçmiş ve sinyaller) BİTTİ (4 Eki)** — K-535, K-534, K-608, K-603, K-611, K-610 birleşti (#333-#341); aktarım bekliyor (`docs/aktarim/M6/README.md` 1-6); sorular 87-93; Part 2 başında sağlık kapısı soruları. Sıradaki: M6 Part 2 (`plan/oturum-promptlari/M6-part2.md`).
 **M5 KAPANDI (3 Eki, kod)** — Part 4: K-514 #327, K-408 #328, K-515 #329 (cihazsız kısım), spike ADR-047/048; cihaz adımları (K-308 → K-510, K-515, K-426) Levent'te. Sıradaki koşu **M6** (`plan/oturum-promptlari/M6.md`, `M6-part1.md`). Aktarım bekliyor: M5 (`docs/aktarim/M5/README.md` 1-35). 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
 **M5 Part 3 (Koç yüzü + sağlayıcı) BİTTİ (3 Eki)** — ADR-043 (koç sınıflandırır, cümle yazmaz) + 11 görev birleşti (#314-#325); aktarım bekliyor (`docs/aktarim/M5/README.md` 20-30). Simülatör turu **disk yüzünden ertelendi** (soru 80). Sorular 78-85.
 **M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
@@ -669,7 +669,7 @@ Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` �
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Geçmiş ve sinyaller | K-535, K-534, K-608, K-603, K-611, K-610 | ▶ sürüyor (3 Eki) |
+| 1 · Geçmiş ve sinyaller | K-535, K-534, K-608, K-603, K-611, K-610 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 87-93 |
 | 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-606 | — |
 | 3 · Efor ve fotoğraf | K-604, K-601, K-602 | — |
 | 4 · İçe aktarma, paylaşım, teslim | K-609, K-612 · M6 çıkışı · M7 prompt'ları | — |
@@ -687,8 +687,55 @@ yalnız kalıcı `../keel-main`; `M5-part4-devam`/`M6-*-devam` yok). Ana checkou
 | K-608 tutarlılık geçmişi: "11 of 12 weeks on track · 1 forgiven week used" — `ConsistencyRecord.forgivenWeeks` (motorun aynı yürüyüşü; tek kaçış affedildiği an sayılır, **geri alınmaz**, sıfırlanmaz) → sözleşme → Bugün kartı | ✅ #338 birleşti; RED 3 + 2 + 3; inceleme: **ilk sürümde sayı ikinci kaçışta geri düşüyordu** ("kullanıldı" denmişken, 82) → affedildiği an; duraklayan hafta araya girince vakaları; K1 notu: `ConsistencyApiTests` tam eşitliği `forgivenWeeks: 0` ile genişledi (soru 87); mutasyon 4/4 + 3/3 | #338 | `M6/K-608.md` |
 | K-603 kompozisyon sinyali "kilo sabit, bel düştü" (H1 §1.6, Ross 2000): `CompositionSignal` — sabitlik **spine'ın kendi hükmü** (`WeeklySpine.steady`), bel `WaistTrend` DOWN + ölçümler en az `waist_signal_min_span_days` (14, H1 §1.5) arayla; **karardan bağımsız**: "Why this call" › "Also in your data" (`DecisionBasis.signals`), güvenlik kararında yok | ⏳ #339 auto-merge; RED 2+1+1, 3; inceleme: cut'ta spine "hareket" derken "sabit" yazabiliyordu (85) → spine'ın hükmü; **bel iki gün arayla ölçülse de söylüyordu** (82) → aralık parametresi + `Answered.waistSpanDays`; mutasyon 4/4 + 4/4; soru 88 (bel düşerken cut'ta kalori kararı) | #339 | `M6/K-603.md` |
 | K-611 karar defteri: `GET /v1/decisions` + `readTrendKg` (kararın okuduğu son hafta) → telefon `today/ledger.ts` + `app/ledger.tsx` "After this call: trend X → Y by <tarih>" (nedensellik yok, test), sayfalar tek liste; "Why this call"dan | ⏳ #340 auto-merge; RED 1 + 5+3+1; inceleme: **eski bekleyen karar sonsuza "Not applied yet"** (telafi borcu gibi, U7, 85) → yalnız son karar; eski sayfa hatası sessizdi (80); sunucunun pozitif yolu DB testinde; mutasyon (bekleyen durum testsizdi → vaka) | #340 | `M6/K-611.md` |
+| K-610 "kararı ne değiştirir?": `WhatIf` — bugünün **canlı** anlık görüntüsü + yürürlükteki plandan bir hafta sonrası, 2×2×2 örnek (trend hedefe doğru/düz · plan tutuldu/hiç · antrenman tutuyor/düşüyor) motordan; `GET /v1/decisions/{id}/what-if` (yalnız son karar, güvenlik kararında 404), "example: true"; telefon `app/what-if.tsx` "This runs the same rules on example data, not yours. No AI involved." | ⏳ #341 auto-merge; RED 3 + 2+2+1 (+2+1 inceleme); inceleme: **örnek kararın bayat planından kuruluyordu** (uygulanmış kalori kararından sonra "−500 daha", 92) → canlı plan; **sabit adım ~73 kg altında kayıp tavanını aşıyordu** ("hedefe gidersen çok hızlı", 88) → tavanın payı (`what_if_cut_step_of_loss_cap`); "plan kaçtı" eşikte kısmi kurala düşüyordu (85); mutasyon 5/5 + 3/3 | #341 | `M6/K-610.md` |
+
+
+**Part 1 ÇIKIŞ (4 Eki):**
+- **Birleşen:** K-535 #333 + #336 · K-534 #335 · K-608 #338 · K-603 #339 · K-611 #340 · K-610 #341 (auto-merge). Kontrol mutantı PR'ları #334, #337
+  kapatıldı. `main`'e doğrudan: ADR-049 (+ inceleme sonrası güncelleme), aktarım dosyaları `docs/aktarim/M6/` (README 1-6). Açık PR yok (#341
+  birleşince). Worktree yalnız kalıcı `../keel-main`. Yerel artık dallar (birleşti, squash): `training/331-program-history`, `mut/331-history`.
+- **Kontrol çıktısı:** mobil `npm run check` 104 suite **1702/1702**; sunucu saf testler **1439/1439** (431 DB testi Docker'sız düşer → CI; her PR CI'da
+  DB dahil yeşil). Disk 3,8 GB; Docker sanal diski 17 GB (soru 80 açık) → simülatör turu yine yok.
+- **Backlog:** K-535, K-534, K-608, K-603, K-611, K-610 `done`; sync ✅.
+- **Part 2'nin bilmesi gerekenler:**
+  - Hafta okuması (ADR-049): `PlannedSessions.byWeek/inWeek` — hafta başındaki program, hafta içinde değiştiyse **en azı**; hedefler bugünkü programla.
+    Program geçmişi `training.program_history` (yalnız eklenir); program `created_at`'ini geri taşıyan test düzenlemesi geçmişi de taşımalı (CTE kalıbı).
+  - Kompozisyon sinyali K-603 kararın **yanında** (`DecisionBasis.signals`, "Why this call" › "Also in your data"), kararı değiştirmez; bel aralığı
+    kararla saklanır (`Answered.waistSpanDays`, eski kararlarda yok). K-606 projeksiyonu sinyalle **karıştırılmamalı**.
+  - "What would change the call" (K-610) **kural** simülasyonu; K-606 şekil projeksiyonu **zaman/vücut** — ayrı (L3 Y3 notu). Örnekler canlı plandan.
+  - Defter K-611: `readTrendKg` defter satırında; "after" dili testli.
+  - Yeni parametreler: `rep_ceiling_above_range` (5, urun), `waist_signal_min_span_days` (14, H1 §1.5), `what_if_trend_step_margins` (1,25, urun),
+    `what_if_cut_step_of_loss_cap` (0,5, urun); yeni birim `margins`.
+  - Telefon tuzakları: yeni ekranda `.expo/types/router.d.ts` sil; metin bekçisi JSX içindeki dizgileri metin sayar → koşullu düğmeleri küçük
+    bileşene al; test sahtesi `useAppServices` sabit nesne dönmeli (yoksa efekt döngüsü).
+- **Yeni sorular:** 87-93 (aşağıda). **Part 2 başında sorulacak sağlık kapısı** (M6.md): aşağıda "Part 2 sağlık kapısı".
 
 ## Session sonunda Levent'e sorulacaklar
+**M6 Part 1 (87-93) — 4 Eki:**
+87. **(K1, bilgi/onay)** Sabitleyen testler bilerek değişti, beklenti değil düzenleme: (a) `ConsistencyApiTests.thisWeeksActions…` `record` tam eşitliği
+    `forgivenWeeks: 0` ile genişledi (eski üç değer aynı); (b) K-530'un iki testi (`theProgramsDays…`, `aProgramDayWithoutAWeekday…`) programı
+    bu hafta yapıyordu → ADR-049'a göre bu hafta en azla okunur; düzenleme "program geçen haftadan beri yürürlükte" oldu, beklenti (4) aynı;
+    (c) beş test `training.program.created_at`'i geri taşırken artık geçmişi de taşıyor. Onay?
+88. **(sağlık/ürün, K-603)** Cut'ta kilo pencerede sabit, bel ≥14 gün arayla ölçüm hatasının üstünde düşmüş: spine bugün **kalori düşürür** (G2 K-64
+    "kilo ve bel düz" plato der; bel düşerken plato değil). Seçenekler: (a) **önerim** böyle kalsın, sinyal yalnız yanında (şimdiki); (b) bel düşüyorsa
+    kalori adımı yerine bir hafta daha bekle (Ross 2000, H1 §1.6); (c) bel düşüyorsa kalori değil "devam".
+89. **(ürün, metin)** İlk 8 haftanın `first_weeks.forgiven_week_used` metni "One off week is forgiven; this was that week." diyor; motor koşudaki
+    **her** tek kaçışı affediyor (yalnız birini değil). Metin "A single off week doesn't end your run; this was one." olsun mu? (ADR-045 #83 metni olduğu
+    gibi kabul etmişti.)
+90. **(ürün, K-534)** `rep_ceiling_above_range` = 5 (8-12 aralığında 17 tekrar; kaynaksız seçim). Uygun mu?
+91. **(ürün, K-610)** Örnek haftalar: "hedefe doğru" cut'ta kayıp tavanının yarısı (80 kg'da 0,4 kg), bulk'ta payın 1,25 katı; uyum "çoğunlukla
+    tutuldu" (`on_track_min_ratio`) / "tutulmadı" (0); antrenman tutuyor/düşüyor. Prototipteki dokunmalı seçim yerine 8 satırlık liste. Uygun mu?
+92. **(ürün, ADR-049)** Program hafta içinde değişince Bugün o haftayı **en az** programla sayar; Hedefler yeni sayıyı gösterir (ör. 3 ve 5) — bir
+    sonraki pazartesi eşitlenir. Kabul mü?
+93. **(ürün, K-611)** Defter yalnız son kararın "Not applied yet" durumunu gösterir; eski bekleyen kararlar durum söylemez (telafi borcu gibi
+    okunmasın, U7). Kabul mü?
+
+**Part 2 sağlık kapısı (Part 2 başında AskUserQuestion — cevap ADR'ye; o zamana kadar kapı kapalı):**
+- **SCOFF metni:** 5 soru (Morgan, Reid & Lacey 1999, BMJ) — hangi dil/sürüm (İngilizce orijinal mi, onaylı Türkçe uyarlama mı)? `arastirma/ham/H2-projeksiyon.md` §(tarama), `04-faz3-urun.md` satır 270.
+- **Pozitifte destek kaynağı:** ülkeye göre (TR / US / genel) — hangi kuruluş, hangi metin; uygulama yönlendirir, teşhis koymaz (U6).
+- **Saklama:** SCOFF cevabı saklanmasın (V4 benzeri, döngü cevabı gibi) — yalnız "kapı açık/kapalı" sonucu mu saklanır, o da mı yok?
+- **Projeksiyon kapı eşikleri:** 18 yaş altı · BMI<20'de zayıflama yönü · SCOFF ≥2 → özellik açılmaz; varsayılan kapalı (`H2-projeksiyon.md` satır 477, 582). Onay ya da düzeltme.
+
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
 **M5 Part 1 (55-59):**
 55. **(K-430, ürün + K1)** ADR-037 #38 (b) "en yakın ağır yük motor adımının 2 katından uzaksa yük tutulur, tekrar artar" makine

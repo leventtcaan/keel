@@ -9,3 +9,4 @@
 3. K-608 tutarlılık geçmişi (`K-608.md`) — af sayısı, affedildiği an, sıfırlanmaz
 4. K-603 "kilo sabit, bel düştü" (`K-603.md`) — spine'ın hükmü, bel aralığı, karardan bağımsız
 5. K-611 karar defteri (`K-611.md`) — "after" dili, yalnız son karar bekler
+6. K-610 "kararı ne değiştirir?" (`K-610.md`) — canlı plandan örnek hafta, tavanın payı, örnek etiketi

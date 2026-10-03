@@ -2635,7 +2635,7 @@ tasks:
     module: engine
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-103]
     why: "Terazi durunca kullanıcı bırakıyor; bırakmayı engelleyen kanıtlı sinyal (Ross 2000)"
     acceptance:
@@ -2723,7 +2723,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-111, K-401]
     why: "Sıfırlanmayan, aflı haftalık sayaç (U7)"
     acceptance:
@@ -2759,7 +2759,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-112, K-502]
     why: "Kullanıcı kuralı deneyerek öğrenir; LLM yok (L3 Y3)"
     acceptance:
@@ -2777,7 +2777,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-212, K-502]
     why: "12 haftada verilen kararlar ve ardından olanlar (L3 Y4)"
     acceptance:
@@ -2812,7 +2812,7 @@ tasks:
     module: engine
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-430]
     why: "ADR-045 #73: oran büyük rafta (10 → 20 kg) Epley çıkışı ~47 tekrar ister, hedef tekrar sonsuza tırmanır; motor bilmediği yerde söylemeli (U3)"
     acceptance:
@@ -2829,7 +2829,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-530]
     why: "ADR-045 #79: program 3 → 5 gün değişince geçmiş haftaların tutarlılığı ve uyumu geriye dönük düşmemeli (U7)"
     acceptance:
