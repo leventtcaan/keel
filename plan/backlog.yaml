@@ -2060,7 +2060,7 @@ tasks:
     module: coach
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-503, K-208, K-210]
     why: "'pulldown 60 kg x 8' → set; '2 yumurta ve tost' → öğün"
     acceptance:

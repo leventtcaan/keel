@@ -6,6 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
 **M5 Part 1 (Motor ve check-in) BİTTİ (3 Eki)** — ADR-037 işleri, K-516, K-512, K-513, K-501, K-502 (+ K-518, K-519, K-520) birleşti; aktarım bekliyor; K-430 Levent'te.
 **M4 KAPANDI (2 Eki, kod)** — Part 4: K-410 bildirimler, K-411 dinlenme arka planda, K-412 Health'e yazma, K-423 tarifler
 telefonda. Cihaz adımları (K-308) ve klipler (K-419) Levent'te. Sıradaki koşu **M5** (`plan/oturum-promptlari/M5.md`).
@@ -76,10 +77,9 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sabite), K-428, K-430, K-431, K-432 (backend),
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
-## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 BİTTİ; sorular 55-72 → ADR-041)
-Sıradaki koşu **M5 Part 2** (`plan/oturum-promptlari/M5-part2.md`): önce ADR-041 işleri (K-430 #273, K-523, K-525, K-526, K-527; K-524
-literatür), sonra K-503, K-505, K-506, K-504, K-508 — **yalnız sahte sağlayıcı**. Aktarım bekliyor: M4 Part 2-4 + M5 Part 1
-(`docs/aktarim/M5/README.md` 1-9). Açık soru: 57.
+## ▶ DEVAM NOKTASI (3 Eki — M5 Part 2 BİTTİ; session açık, aktarım bekliyor)
+Bu session'da sıradaki iş **Part 2 aktarımı** (`docs/aktarim/M5/README.md` 10-19; Levent dönünce). Sonra **M5 Part 3**
+(`plan/oturum-promptlari/M5-part3.md`, Part 2 sonunda güncellendi): önce soru 76 (koçun sesi) — K-509 ona bağlı. Açık sorular 57, 74-77.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -467,7 +467,7 @@ Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` �
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ✅ bitti (3 Eki) — aktarım bekliyor; K-430 Levent'te (soru 55) |
-| 2 · Koç altyapısı | ADR-041 işleri (K-430, K-523, K-525, K-526, K-527, K-524) · K-503, K-505, K-506, K-504, K-508 | sürüyor (3 Eki) |
+| 2 · Koç altyapısı | ADR-041 işleri (K-430, K-523, K-525, K-526, K-527, K-524) · K-503, K-505, K-506, K-504, K-508 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 74-77 |
 | 3 · Koç yüzü + sağlayıcı | K-509, K-507, K-517, K-511 | bekliyor |
 | 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | bekliyor |
 
@@ -537,7 +537,31 @@ kalıcı `../keel-main`; devam dosyası yok). Sağlayıcı kapısı ADR-041 ile 
 | K-505 karar anlatımı + itiraz: `POST /v1/coach/messages`, `decision.CallReader` (`tellable`), `ReplyCheck` (şema, normalleştirme, sayılar, tarih, taviz, çelişki, sayı sözcüğü, yasaklı ifade), her cevapta karar; amaç → rızanın veri türü (`sendToAi(…, dataType)`) | ✅ birleşti; inceleme **5 bulgu**: döngü sorusu bekleyen karar modele gidiyordu (**V4**) → `tellable`; ters yön / "no change" geçiyordu → çelişki kalıpları; ’ kesme, tam genişlik rakam, "eighteen percent", NBSP → normalleştirme; mutasyon 9+1+8 | #305 | `M5/K-505.md` |
 | K-506 hayır diyen koç: 32 senaryo (dalkavuk düşer, sadık geçer) + API'de karar değişmez; `heldOut` 14 senaryo sınırı ölçer | ✅ birleşti; test analizi: ince dalkavukluk 14/14 geçiyor, sadık 14/14 düşüyor → **soru 76** | #306 | `M5/K-506.md` |
 | K-508 günlük kota: V29 `subscription.daily_use`, `Quota.take/giveBack` (kullanıcının günü), aşınca koç motorun sözüyle; `subscription → profile` (ADR-015 notu) | ✅ birleşti; CI'da RED önce (9); inceleme: SQL gerçek PostgreSQL'de doğrulandı; metin yargılıyordu, geri verme yanlış güne düşebilirdi, rızasız kullanıcı kota mesajı alıyordu → düzeltildi; `quotaWords`; 10 test boşluğu | #307 | `M5/K-508.md` |
-| K-504 serbest metinden öğün taslağı: `POST /v1/meals/parse`, `{"food","quantity","unit"}` (kalori alanı → atılır; ölçü grama çevrilmez), `nutrition.FoodFinder`, tam sözcük kesinliği, sırayla yedek, HEALTH_DATA + AI rızası | ⏳ auto-merge; inceleme **6 bulgu** (paylaşılan DB'de fikstür çakışması, 2+ ondalık, model porsiyonu grama çeviriyordu — ADR-004, yedekleri tek sözcük dolduruyordu, "egg"→"Eggnog", sağlık rızası) → düzeltildi; mutasyon 7/7 | #308 | `M5/K-504.md` |
+| K-504 serbest metinden öğün taslağı: `POST /v1/meals/parse`, `{"food","quantity","unit"}` (kalori alanı → atılır; ölçü grama çevrilmez), `nutrition.FoodFinder`, tam sözcük kesinliği, sırayla yedek, HEALTH_DATA + AI rızası | ✅ birleşti; inceleme **6 bulgu** (paylaşılan DB'de fikstür çakışması, 2+ ondalık, model porsiyonu grama çeviriyordu — ADR-004, yedekleri tek sözcük dolduruyordu, "egg"→"Eggnog", sağlık rızası) → düzeltildi; mutasyon 7/7 | #308 | `M5/K-504.md` |
+
+
+**Part 2 ÇIKIŞ (3 Eki):**
+- **Birleşen:** K-430 #273 · K-523 #299 · K-525 #300 · K-527 #301 · K-526 #302 · K-503 #303 · K-524 #304 · K-505 #305 · K-506 #306 · K-508 #307 ·
+  K-504 #308. Açık PR yok. Worktree yalnız kalıcı `../keel-main`. Ana checkout ayrık HEAD `origin/main` (6ddb324), temiz.
+- **Kontrol çıktısı (3 Eki, `main` 6ddb324):** backend saf testler **1160/1160** (DB testleri CI'da; `main` CI yeşil); mobil `npm run check`
+  91 suite **1540/1540**. Disk 6,2 GB.
+- **Kararlar:** ADR-042 (LLM portu, tek kapı, sahte sağlayıcı); ADR-038 #7 güncellendi (dönüş yükü uygulanmaz — K-72 çelişkisi açık, soru 75;
+  minimum doz `BusyWeekDose`); ADR-015 notu (`subscription → profile`).
+- **Backlog:** K-430, K-523..K-527, K-503..K-506, K-508 `done`; **K-528** (yoğun hafta dozu programda) yeni `todo`; sync ✅.
+- **Part 3'ün bilmesi gerekenler:**
+  - Koç: `POST /v1/coach/messages` → `CoachAnswer {mode, text?, copyKey?, call?}`; `POST /v1/meals/parse` → `MealDraft {mode, items[{food,
+    amount, confident, candidates}]}`. Her LLM çağrısı `CoachModel.ask(account, Purpose, …)` → `EgressGate.sendToAi(account, provider,
+    dataType, …)`; amaç → rızanın veri türü `keel.coach.data-types` (V2). Önce rıza (`CoachModel.mayAsk`), sonra kota (`Quota.take` gün
+    döner, hata olursa `giveBack(…, gün)`), sonra model.
+  - Model cevabı yalnız denetimden geçerse: `ReplyCheck` (anlatım) / `MealReplyCheck` (öğün); sınırı `pushback-scenarios.json › heldOut`
+    (14/14 ince dalkavukluk geçiyor, 14/14 sadık düşüyor) → **soru 76** K-509'dan önce.
+  - Anlatılamayan karar: `decision.CallFacts.tellable` (güvenlik etiketi, döngü sorusu — V4 —, güvenlik ağı) → modele hiç gitmez.
+  - Sahte model: `FakeLanguageModel.answer/fail/forget/requests` (testler, K-506 seti). Gerçek sağlayıcı yok (ADR-041); K-511 belgesel.
+  - Paylaşılan test veritabanı: besin fikstürleri benzersiz adlarla + temizlik (`MealParseApiTests` dersi); 32 senaryoluk API testi günü
+    her senaryoda sıfırlar (kota).
+  - Worktree dersi: `contracts/node_modules` sembolik bağı `.gitignore`'un sondaki `/`'ı yüzünden commit'e girmişti → düzeltildi,
+    `.git/info/exclude`'a da eklendi. Squash birleşmeden sonra yığılmış dallar `git rebase --onto origin/main <eski taban>` ile taşınır.
+- **Yeni sorular:** 74 (tutarlılık programın günleri mi), 75 (dönüş yükü / K-72), 76 (koçun sesi), 77 (kota geçmişi, öğün metni kotası).
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
