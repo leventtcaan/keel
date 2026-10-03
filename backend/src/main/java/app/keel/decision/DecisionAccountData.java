@@ -87,7 +87,12 @@ class DecisionAccountData implements AccountDataExport {
             entry.put("snapshot", snapshot);
             return entry;
         }).toList());
-        decision.put("declaredStates", states.all(account).stream().map(StateController.DeclaredState::of).toList());
+        // Each with the day the user last said it still was (K-525): their answer, so theirs to take.
+        decision.put("declaredStates", states.all(account).stream().map(state -> {
+            Map<String, Object> entry = new LinkedHashMap<>(json.convertValue(StateController.DeclaredState.of(state), Map.class));
+            state.stillSoOn().ifPresent(day -> entry.put("stillSoOn", day.toString()));
+            return entry;
+        }).toList());
         decision.put("promptAnswers", prompts.all(account));
         return decision;
     }

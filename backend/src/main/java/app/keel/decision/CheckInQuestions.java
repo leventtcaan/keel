@@ -100,12 +100,16 @@ final class CheckInQuestions {
 
     /**
      * Whether the check-in asks if the declared state is still so (K-516, ADR-038 #5): one is in force today, and each of
-     * the last {@code weeks} weeks (this one included, Monday to Sunday) has a declared day.
+     * the last {@code weeks} weeks (this one included, Monday to Sunday) has a declared day — and, once the user said it
+     * is ({@code stillSoOn}), {@code weeks} weeks on from that answer's week, not before (K-525, ADR-041 #62).
      */
-    static boolean asksWhetherStillSo(boolean inForceToday, java.util.Set<LocalDate> declaredDays, LocalDate today, int weeks) {
+    static boolean asksWhetherStillSo(boolean inForceToday, java.util.Set<LocalDate> declaredDays, LocalDate today, int weeks,
+            java.util.Optional<LocalDate> stillSoOn) {
         LocalDate monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
         return inForceToday && java.util.stream.IntStream.range(0, weeks).mapToObj(monday::minusWeeks)
-                .allMatch(week -> week.datesUntil(week.plusWeeks(1)).anyMatch(declaredDays::contains));
+                .allMatch(week -> week.datesUntil(week.plusWeeks(1)).anyMatch(declaredDays::contains))
+                && stillSoOn.map(said -> !said.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+                        .plusWeeks(weeks).isAfter(monday)).orElse(true);
     }
 
     /**

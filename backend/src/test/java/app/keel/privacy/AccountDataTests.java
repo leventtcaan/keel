@@ -179,7 +179,8 @@ class AccountDataTests {
         });
         // The state the fixture declared (K-516): sickness is health data, and the user's own (GDPR Art. 15, 20).
         assertThat((List<Map<String, Object>>) decision.get("declaredStates")).singleElement()
-                .satisfies(state -> assertThat(state).containsEntry("kind", "SICK").containsKey("since").doesNotContainKey("until"));
+                .satisfies(state -> assertThat(state).containsEntry("kind", "SICK").containsKey("since").doesNotContainKey("until")
+                        .doesNotContainKey("stillSoOn"));
         // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
         assertThat(body).doesNotContainIgnoringCase("fatProxy");
         // A call's reasons go out with the kind of source only (K-523, ADR-041 #72): no research path, even to the user.

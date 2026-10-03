@@ -117,6 +117,16 @@ class CheckInPartsTests {
                 CheckIn.Waist.UNKNOWN, java.util.Optional.empty(), CheckIn.Appetite.GONE));
         assertThat(read.menstrualLossReported()).isFalse();
         assertThat(Answers.read(List.of(), Sex.MALE).checkIn()).as("nothing answered: all unknown, the engine asks").isEqualTo(CheckIn.NONE);
+        // K-525: only an explicit "yes" is "still so" — a check-in with no answer to it neither ends nor keeps the state.
+        Answers.Read none = Answers.read(List.of(), Sex.MALE);
+        assertThat(none.stillSo()).isFalse();
+        assertThat(none.stateOver()).isFalse();
+        Answers.Read yes = Answers.read(List.of(new Answers.Answer(Answers.Kind.STATE_STILL, null, "YES", null)), Sex.MALE);
+        assertThat(yes.stillSo()).isTrue();
+        assertThat(yes.stateOver()).isFalse();
+        Answers.Read no = Answers.read(List.of(new Answers.Answer(Answers.Kind.STATE_STILL, null, "NO", null)), Sex.MALE);
+        assertThat(no.stillSo()).isFalse();
+        assertThat(no.stateOver()).isTrue();
     }
 
     @Test

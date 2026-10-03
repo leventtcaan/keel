@@ -23,8 +23,8 @@ final class Answers {
     record Answer(Kind kind, Integer scale, String choice, BigDecimal cm) {
     }
 
-    /** {@code stateOver}: the declared state is not still so (STATE_STILL NO, K-516). */
-    record Read(CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved, boolean stateOver) {
+    /** {@code stateOver}: the declared state is not still so (STATE_STILL NO, K-516); {@code stillSo}: it is (YES, K-525). */
+    record Read(CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved, boolean stateOver, boolean stillSo) {
     }
 
     private static final Set<Kind> CHOICES = EnumSet.of(Kind.LOOK, Kind.TRAINING, Kind.RECOVERY, Kind.APPETITE, Kind.CYCLE_STOPPED,
@@ -48,6 +48,7 @@ final class Answers {
         boolean cycleStopped = false;
         boolean cycleResolved = false;
         boolean stateOver = false;
+        boolean stillSo = false;
         Set<Kind> seen = EnumSet.noneOf(Kind.class);
         for (Answer answer : answers) {
             require(answer != null && answer.kind() != null && seen.add(answer.kind()), "each question is answered once");
@@ -64,12 +65,15 @@ final class Answers {
                     cycleStopped = cycle == Cycle.YES;
                     cycleResolved = cycle == Cycle.NO; // after a hard stop, a deficit may open again (K-229)
                 }
-                case STATE_STILL -> stateOver = choice(StillSo.class, answer.choice()) == StillSo.NO;
+                case STATE_STILL -> {
+                    stateOver = choice(StillSo.class, answer.choice()) == StillSo.NO;
+                    stillSo = !stateOver;
+                }
                 default -> throw new IllegalStateException("unreachable: " + answer.kind());
             }
         }
         return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), cycleStopped, cycleResolved,
-                stateOver);
+                stateOver, stillSo);
     }
 
     // UNKNOWN is the engine's word for "not answered", never an answer.
