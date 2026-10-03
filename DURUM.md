@@ -586,6 +586,10 @@ kalıcı `../keel-main`; devam dosyası yok). Sağlayıcı kapısı ADR-041 ile 
     (oran büyükse kullanıcı rafı değiştirir/ekler); (b) gereken tekrar bir tavanı (ör. aralığın üstü + N, ya da 30) aşınca "bu salonda bu
     hareketin sonraki yükü yok" notu ve hedef tekrar orada durur (parametre `urun`, kaynaksız); (c) başka.
 
+77. **(K-508/K-504, veri + ürün)** (i) Günlük kota sayaçları (`subscription.daily_use`) her aktif gün için bir satır olarak **süresiz**
+    kalıyor; yalnız bugünkü okunuyor. Önerim: dünden eskisini her gece sil (amaçtan fazla veri tutmamak; dışa aktarma da küçülür).
+    (ii) Serbest metinden öğün (`/v1/meals/parse`) şimdilik **koç mesajı** kotasından düşüyor (günde 25). Ayrı bir sayaç mı olsun
+    (ör. günde 15 öğün metni), yoksa böyle mi kalsın?
 76. **(K-505/K-506, ürün — koçun sesi)** Model serbest cümle yazıyor; cevabı kalıplarla (regex) denetliyoruz. Ölçüm: açık tavizler
     düşüyor ama **ince dalkavukluk geçiyor** ("It's up to you", "the call can wait" — 14/14) ve **doğru cevapların çoğu yanlışlıkla
     düşüyor** ("The call stays the same" — 14/14; kullanıcı o zaman hep motorun hazır cümlesini görür). Kalıp yarışı bitmez. Seçenekler:
