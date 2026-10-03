@@ -666,6 +666,93 @@
       "maxJump": 2,
       "expect": "TOO_FAR",
       "tooFarKg": 16
+    },
+    {
+      "case": "the engine's step is target - last, not 2.5: a 5 kg step on 5 kg plates, 110 is exactly two steps over 100",
+      "equipment": "BARBELL",
+      "exerciseId": "squat",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          5
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 100,
+      "targetKg": 105,
+      "maxJump": 2,
+      "expect": 110
+    },
+    {
+      "case": "a 5 kg step on 10 kg plates only: 120 is four steps over 100",
+      "equipment": "BARBELL",
+      "exerciseId": "squat",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          10
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 100,
+      "targetKg": 105,
+      "maxJump": 2,
+      "expect": "TOO_FAR",
+      "tooFarKg": 120
+    },
+    {
+      "case": "a fraction of steps is kept: 3.5 over 10 is within 1.5 steps of 2.5 (3.75)",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          13.5
+        ],
+        "machines": {}
+      },
+      "lastKg": 10,
+      "targetKg": 12.5,
+      "maxJump": 1.5,
+      "expect": 13.5
+    },
+    {
+      "case": "an lb gym (45 lb bar, 5 lb plates): 145 lb is 10 lb over 135, within two steps of the engine's 2.5 kg",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          2.27
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 61.23,
+      "targetKg": 63.73,
+      "maxJump": 2,
+      "expect": 65.77
+    },
+    {
+      "case": "an lb gym with 45 lb plates only: 225 lb is 90 lb over 135",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20.41,
+        "platesKg": [
+          20.41
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "lastKg": 61.23,
+      "targetKg": 63.73,
+      "maxJump": 2,
+      "expect": "TOO_FAR",
+      "tooFarKg": 102.06
     }
   ],
   "platesPerSide": [

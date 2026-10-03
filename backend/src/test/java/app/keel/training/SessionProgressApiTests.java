@@ -108,6 +108,23 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void aBodyweightMovesAddedLoadHasNoJumpLimitTheBodyIsPartOfTheLoad() throws Exception {
+        // K-430 review: +10 → +20 kg on a pull-up is four of the engine's steps, but the body moves too — about 90 → 100 kg
+        // for an 80 kg lifter, not a doubling. The limit is for a load all on the equipment; here the nearest is taken.
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "Pull", "weekday", "MONDAY", "exercises",
+                List.of(own("pull_up", 8, 12))))))).hasStatusOk();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "platesKg", List.of(10),
+                "dumbbellsKg", List.of(), "machines", List.of()));
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "pull_up", 3, 10, 12, "BOTH");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(20, 8));
+    }
+
+    @Test
     void aMachinesOwnStepIsTheOneTheLoadIsRoundedTo() throws Exception {
         // The move's own machine in the gym's list (by the move's id), not the gym's stack step: 35 + 2.5 is 42 by 7s, 40 by 5s.
         AccountId account = withAProgram();
@@ -120,14 +137,16 @@ class SessionProgressApiTests {
 
         assertThat(finish(account, workout, List.of())).hasStatusOk();
 
-        // 42 is 7 over 35, past load_jump_max_steps (2) of the engine's 2.5 (K-430): 35 × 12 is worth 4 at 42 (Epley), so
+        // 42 is 7 over 35, past load_jump_max_steps (2) of the engine's 2.5 (K-430): 35 × 12 at RIR 1 is worth 5 to failure
+        // at 42 (Epley), short of 8 at the planned RIR 1, so
         // the load stays and the reps go up (ADR-041 #55: 42 × 8 → 35 × 13, K1 approved).
         assertThat(next(account, 0)).isEqualTo(target(35, 13));
     }
 
     @Test
     void aMachineLoadTooFarIsTakenOnceTheSetsAtTheLastAreWorthTheBottomOfTheRangeThere() throws Exception {
-        // K-430 (ADR-041 #55): 35 × 16 at RIR 1 is worth 8 at 42 (Epley) — the bottom of 8-12 — so the jump, from the bottom.
+        // K-430 (ADR-041 #55): 35 × 16 at RIR 1 is worth 9 to failure at 42 (Epley) — 8 at the planned RIR 1, the bottom of
+        // 8-12 — so the jump, from the bottom.
         AccountId account = withAProgram();
         assertThat(send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "Pull", "weekday", "MONDAY", "exercises",
                 List.of(own("lat_pulldown", 8, 12))))))).hasStatusOk();

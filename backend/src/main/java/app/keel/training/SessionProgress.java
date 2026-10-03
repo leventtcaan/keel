@@ -100,14 +100,16 @@ class SessionProgress {
                             BodyRegion region = BodyRegion.valueOf(catalog.region(exercise.muscles().getFirst()).name());
                             RepRange range = new RepRange(planned.repMin(), planned.repMax());
                             int thisWeeksSets = TrainingChanges.sets(planned.sets(), lighter);
+                            // A jump limit only where the set's load is all the load moved (K-430).
+                            BigDecimal maxJump = BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS));
                             // Each side is its own set (SetRules): one session per side; both sides of a two-sided move are one.
                             List<Next> sides = worked.getOrDefault(planned.exerciseId(), List.of()).stream()
                                     .collect(Collectors.groupingBy(set -> String.valueOf(set.side()))).values().stream()
                                     .flatMap(sets -> NextTargets.session(kind, region, range, sets, planned.targetRir(),
                                                     !uncleanExerciseIds.contains(planned.exerciseId())).stream())
-                                    .flatMap(session -> next(session, p, thisWeeksSets, load -> gym
+                                    .flatMap(session -> next(session, p, thisWeeksSets, planned.targetRir(), load -> gym
                                             .map(inUse -> LoadSteps.round(exercise.equipment(), exercise.id(), inUse, session.loadKg(), load,
-                                                    BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS))))
+                                                    maxJump))
                                             .orElse(new LoadSteps.Rounding.Unknown())).stream())
                                     .toList();
                             NextTargets.weaker(sides.stream().map(Next::target).toList())
@@ -119,9 +121,9 @@ class SessionProgress {
                 });
     }
 
-    private static Optional<Next> next(LiftSession session, Parameters parameters, int thisWeeksSets,
+    private static Optional<Next> next(LiftSession session, Parameters parameters, int thisWeeksSets, int plannedRir,
             Function<BigDecimal, LoadSteps.Rounding> rounding) {
-        return NextTargets.after(session, Progression.next(session, parameters), false, thisWeeksSets, rounding, parameters)
+        return NextTargets.after(session, Progression.next(session, parameters), false, thisWeeksSets, plannedRir, rounding, parameters)
                 .map(target -> new Next(target, session.loadKg()));
     }
 }

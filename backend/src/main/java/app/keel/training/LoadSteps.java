@@ -99,6 +99,18 @@ final class LoadSteps {
     }
 
     /**
+     * Whether a set's load is all the load the muscles move, so one load over another reads as how much heavier (K-430
+     * review): not on a plate-loaded machine (the sled is not counted, ADR-032) nor on a bodyweight move (the body is
+     * not) — there +10 → +20 kg is not a doubling, and no jump limit applies.
+     */
+    static boolean wholeLoad(ExerciseCatalog.Equipment equipment) {
+        return switch (equipment) {
+            case BARBELL, DUMBBELL, MACHINE, CABLE -> true;
+            case PLATE_LOADED, BODYWEIGHT -> false;
+        };
+    }
+
+    /**
      * As {@link #round(ExerciseCatalog.Equipment, String, GymStore.Gym, BigDecimal, BigDecimal)}, and the nearest heavier
      * load is taken only within {@code maxJump} of the engine's steps (target − last) over the last (K-430, ADR-037 #38):
      * further — a sparse rack, 10 kg dumbbells then 20 — it is TooFar with that load, and the caller decides when the

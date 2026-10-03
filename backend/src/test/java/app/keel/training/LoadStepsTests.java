@@ -20,6 +20,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -53,6 +54,15 @@ class LoadStepsTests {
                         to -> assertThat(to.kg()).isEqualByComparingTo(kg(expected)));
             }
         }));
+    }
+
+    @Test
+    void onlyALoadThatIsAllTheLoadMovedHasAJumpLimit() {
+        // K-430 review: a plate-loaded machine's sled and a bodyweight move's body are not in loadKg (ADR-032), so +10 →
+        // +20 there is not a doubling.
+        assertThat(java.util.Arrays.stream(ExerciseCatalog.Equipment.values()).filter(LoadSteps::wholeLoad))
+                .containsExactlyInAnyOrder(ExerciseCatalog.Equipment.BARBELL, ExerciseCatalog.Equipment.DUMBBELL,
+                        ExerciseCatalog.Equipment.MACHINE, ExerciseCatalog.Equipment.CABLE);
     }
 
     @TestFactory
