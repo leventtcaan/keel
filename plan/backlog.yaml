@@ -2268,7 +2268,8 @@ tasks:
     why: "Tezi uygulamayı açmadan her gün göstermek; Apple editoryal değerlendirmesi yeni API ister (L3 Y1)"
     acceptance:
       - "Widget: haftanın kararı + sonraki değerlendirme; varsayılan sayısız görünüm (V3)"
-      - "Spike: Expo SDK 58 expo-app-intents (alpha) vs native Swift; 'Log weigh-in' uygulamayı açmadan kayıt; seçim ADR"
+      - "Spike: Expo SDK 58 expo-app-intents (alpha) vs native Swift; seçim ADR (ADR-048: App Intents SDK 58 stabil olunca)"
+      - "Kilitten kilo (ADR-048 #5, soru 86): widget'ta uygulamayı tartı ekranına derin bağlantıyla açan buton (cihaz adımı); intent → K-536"
       - "Expo SDK 58 yükseltme değerlendirmesi (L3 P15)"
     tests:
       - "WidgetTests"
@@ -3116,6 +3117,23 @@ tasks:
     refs: []
     learn: ["Geri bildirimi önceliklendirme"]
 
+  - id: K-536
+    title: "Kilitten kilo girişi: parametreli Siri/Shortcuts intent'i (uygulamayı açmadan)"
+    milestone: M9
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-515]
+    why: "ADR-048 #5 (soru 86): önce buton, sonra intent — Expo SDK 58 stabil + expo-app-intents ≥ beta olunca"
+    acceptance:
+      - "\"Log 82.4 kg\" uygulama açılmadan kaydedilir (Swift perform() → yerel kuyruk), uygulama açılınca senkronlanır"
+      - "Kilo kilit ekranında gösterilmez (V3); birim kullanıcının (kg/lb)"
+      - "SDK 58 yükseltmesi ayrı görev olarak önce (L3 P15)"
+    tests:
+      - "IntentQueueTests"
+    refs: ["plan/kararlar/ADR-048-kilit-ekrani-widget.md", "arastirma/ham/H11-cihaz-ustu-ve-widget.md"]
+    learn: ["App Intents", "Swift"]
 # ───────────────────────────── M10 · Lansman ─────────────────────────────
   - id: K-1001
     title: "Ürün adı ve marka kontrolü"
