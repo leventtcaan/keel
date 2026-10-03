@@ -94,3 +94,10 @@
 - takıldım: ImageIO ham fotoğrafı diske önbelleğe yazıyordu (inceleme); `app.json` plugin'i kamera izin metnini eziyordu (test analizi); "önce çöz" mutantı yığına sığdı → ayrılan bayt ölçümü; disk 3,5 GB, simülatör turu yine yapılamadı
 - sıradaki: Levent dönünce M5 Part 4 aktarımı (README 31-35; Part 1-3: 1-30); Levent: Docker temizliği, K-308, soru 86; sonra M6 Part 1
 - AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion; 73, 78-85 cevaplı, 86 açık)
+
+## 2026-10-04 · M6 Part 1 (toplu mod)
+- yaptım: K-535 #333/#336 (program geçmişi tablosu + hafta en azla okunur, ADR-049), K-534 #335 (seyrek rafta tekrar tavanı, sunucu "raf bitti" der), K-608 #338 (af haftaları, affedildiği an, sıfırlanmaz), K-603 #339 ("kilo sabit, bel düştü" karardan bağımsız), K-611 #340 (karar defteri, "after" dili), K-610 #341 ("kararı ne değiştirir?", canlı plandan örnek haftalar)
+- karar: ADR-049 (hafta içinde değişen program en azla; kaçan plan haftası `judgedFrom`; ilk 8 haftanın riski `askedSince`); yeni parametreler `rep_ceiling_above_range`, `waist_signal_min_span_days`, `what_if_*`
+- takıldım: inceleme her görevde gerçek hata buldu — en ciddileri: K-610 örneği bayat plandan kuruyordu ve 73 kg altında güvenlik ağına değiyordu; K-534 notu tekrardan çıkarıyordu (teknik kapısı yanlış not); K-608 sayısı geri düşebiliyordu; K-603 spine'la çelişebiliyordu; Docker yanıtsız, DB testleri CI'da (kontrol mutantları taslak PR'larla)
+- sıradaki: Levent dönünce Part 1 aktarımı (docs/aktarim/M6/README.md 1-6); sorular 87-93; Part 2 başında sağlık kapısı (SCOFF, destek kaynağı, saklamama, eşikler)
+- AI: bütün kod, test, ADR, metin agent; ürün/sağlık soruları Levent'e (87-93 + sağlık kapısı)
