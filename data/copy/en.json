@@ -1275,6 +1275,17 @@
       "swap": "A different move today is done in the session: open it and add the move you'd rather do.",
       "openWorkout": "Open today's session",
       "unread": "This week's call couldn't be read just now. Try again in a moment."
+    },
+    "meal": {
+      "chip": "Log a meal in words",
+      "prompt": "Tell me what you ate, in your own words. I'll match it to the food database.",
+      "input": "What did you eat?",
+      "item": "{food} · {quantity} {unit}",
+      "pick": "Which one is it?",
+      "noMatch": "Nothing in the food database matches “{food}”. You can log it by name instead.",
+      "log": "Log these",
+      "unread": "I couldn't read that as a meal. You can log it by name instead.",
+      "byName": "Log by name"
     }
   },
   "units": {

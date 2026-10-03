@@ -12,8 +12,9 @@ import { has, t } from '@/copy';
 import { EstimateCard } from '@/food/EstimateCard';
 import { FoodPicker } from '@/food/FoodPicker';
 import { ItemRows } from '@/food/ItemRows';
-import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, recipeItemId, requestsOf } from '@/food/draft';
+import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, itemsHanded, recipeItemId, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
+import { clearMeal, peekMeal } from '@/food/handoff';
 import { foodParams } from '@/food/params';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
@@ -50,7 +51,9 @@ export default function MealScreen() {
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [slot, setSlot] = useState<Schemas['MealSlot']>(() => defaultSlot(new Date()));
-  const [items, setItems] = useState<DraftItem[]>([]);
+  // A meal the coach read comes in with its foods and amounts (K-509); a correction reads its own meal instead.
+  const [items, setItems] = useState<DraftItem[]>(() => (edit === undefined ? itemsHanded(peekMeal()) : []));
+  useEffect(() => clearMeal(), []);
   const [known, setKnown] = useState<KnownFoods>(() => new Map());
   // The user's recipes (K-423), read at the first search (no search, no request); unreadable (offline) is none this
   // time — the foods alone are offered, and the next search asks again.

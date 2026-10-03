@@ -5,7 +5,8 @@
  * default costs more than an empty field).
  */
 import type { components } from '@/api/schema';
-import { type DraftItem, addFood, draftOf, itemProblem, requestsOf } from '@/food/draft';
+import { type DraftItem, addFood, draftOf, itemProblem, itemsHanded, requestsOf } from '@/food/draft';
+import { foodParams } from '@/food/params';
 
 type Schemas = components['schemas'];
 
@@ -129,5 +130,17 @@ describe('draftOf', () => {
         { foodId: 'fdc-2', name: 'Milk', units: ['1 cup', 'g'], quantity: '1', unit: '1 cup', weighed: false },
       ],
     });
+  });
+});
+
+describe('itemsHanded (K-509)', () => {
+  test("a meal the coach read: its measure first, grams always offered once; the amount as written; never more than a meal takes", () => {
+    expect(itemsHanded([{ foodId: 'a', name: 'Egg', quantity: 2, unit: 'piece' }, { foodId: 'b', name: 'Rice', quantity: 150, unit: 'g' }])).toEqual([
+      { foodId: 'a', name: 'Egg', units: ['piece', 'g'], quantity: '2', unit: 'piece', weighed: false },
+      { foodId: 'b', name: 'Rice', units: ['g'], quantity: '150', unit: 'g', weighed: false },
+    ]);
+    expect(itemsHanded(null)).toEqual([]);
+    const many = Array.from({ length: foodParams.itemsMax + 3 }, (_, i) => ({ foodId: String(i), name: 'x', quantity: 1, unit: 'g' }));
+    expect(itemsHanded(many)).toHaveLength(foodParams.itemsMax);
   });
 });

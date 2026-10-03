@@ -8,6 +8,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import MealScreen from '@/app/meal';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { handOffMeal, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
 type Schemas = components['schemas'];
@@ -124,6 +125,24 @@ async function amount(food: Schemas['Food'], text: string) {
 }
 const kcal = (low: number, high: number) => `${t('format.range', { low, high })} ${t('food.budget.kcalUnit')}`;
 const estimates = () => mockPOST.mock.calls.filter(([path]) => path === '/v1/food-estimates');
+
+describe('a meal the coach read (K-509)', () => {
+  test('comes in with its foods and amounts, and the estimate follows — the same screen, nothing saved yet', async () => {
+    handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 1.5, unit: '1 cup' }]);
+    await show();
+    expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('1.5');
+    expect(estimates().at(-1)?.[1]).toEqual({
+      body: { items: [{ foodId: RICE.id, amount: { quantity: 1.5, unit: '1 cup', certainty: 'ESTIMATED' } }] },
+    });
+    expect(mockRecord).not.toHaveBeenCalled();
+  });
+
+  test('is taken once: the next meal starts empty', async () => {
+    handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 1, unit: 'g' }]);
+    await show();
+    expect(takeMeal()).toBeNull();
+  });
+});
 
 describe('without the health data consent', () => {
   test('the consent comes first, and nothing can be typed (ADR-030 #25)', async () => {

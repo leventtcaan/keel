@@ -4,7 +4,8 @@
  * comes first). A chip from the day is answered on the phone, without the model (no quota, nothing sent).
  */
 import type { components } from '@/api/schema';
-import { chipAnswer, linesOf } from '@/coach/conversation';
+import { MEAL_CHIP, chipAnswer, coachChips, linesOf } from '@/coach/conversation';
+import type { TodayData } from '@/today/today';
 import { has } from '@/copy';
 
 type Schemas = components['schemas'];
@@ -101,5 +102,22 @@ describe('chipAnswer', () => {
   test("the swap leads on to today's session, on its program day; without a session today, nowhere", () => {
     expect(chipAnswer('today.chips.swap', { state: 'ready', value: decision }, date, 'a').open).toEqual({ key: 'coach.chip.openWorkout', day: 'a' });
     expect(chipAnswer('today.chips.swap', { state: 'ready', value: decision }, date).open).toBeUndefined();
+  });
+});
+
+describe('coachChips', () => {
+  const none = { state: 'none' } as const;
+  const day = (parts: Partial<TodayData>): TodayData => ({ consistency: none, decision: none, program: none, weighIns: { state: 'ready', value: [] }, targets: none, budget: none, ...parts });
+
+  test("the day's own first, two at most, then a meal in words — never more than three", () => {
+    expect(coachChips(day({ decision: { state: 'ready', value: {} as Schemas['Decision'] } }), '2026-09-29')).toEqual(['today.chips.why', 'today.chips.weighIn', MEAL_CHIP]);
+  });
+
+  test('a day with nothing of its own: a meal in words and how it works', () => {
+    expect(coachChips(day({ weighIns: { state: 'ready', value: [{} as Schemas['WeighIn']] } }), '2026-09-29')).toEqual([MEAL_CHIP, 'today.chips.start']);
+  });
+
+  test('one of its own: that, a meal, how it works', () => {
+    expect(coachChips(day({}), '2026-09-29')).toEqual(['today.chips.weighIn', MEAL_CHIP, 'today.chips.start']);
   });
 });

@@ -6,6 +6,7 @@
  */
 import type { components } from '@/api/schema';
 
+import type { HandedMeal } from './handoff';
 import { amountGrams, parseQuantity } from './meals';
 import { foodParams } from './params';
 
@@ -27,6 +28,21 @@ export function addFood(items: DraftItem[], food: Schemas['Food']): DraftItem[] 
 }
 
 /** The user's recipes the phone was given, by their item id ("recipe:<id>", ADR-034): how many portions each makes. */
+/**
+ * A meal the coach read, as rows to confirm (K-509): its measure first, grams always offered — the server says whether the
+ * measure is one of the food's (a measure it does not know asks for grams there, K-504).
+ */
+export function itemsHanded(handed: HandedMeal | null): DraftItem[] {
+  return (handed ?? []).slice(0, foodParams.itemsMax).map((item) => ({
+    foodId: item.foodId,
+    name: item.name,
+    units: item.unit === GRAMS ? [GRAMS] : [item.unit, GRAMS],
+    quantity: String(item.quantity),
+    unit: item.unit,
+    weighed: false,
+  }));
+}
+
 export type KnownRecipes = Map<string, Schemas['Recipe']>;
 
 /** A recipe's unit in a meal (ADR-034 #2): portions — never grams, the recipe's weight is not known. */
