@@ -87,6 +87,16 @@ class PlannedSessionsTests {
         assertThat(PlannedSessions.inWeek(history, PROFILE_DAYS, MON_28_SEP, ISTANBUL)).isEqualTo(4);
     }
 
+    @Test
+    void fromAMomentOnTheFewestAnyProgramAskedSinceIsRead() {
+        // K-535 (ADR-049): the first eight weeks' week just over is the user's own seven days, not a Monday week.
+        List<ProgramPeriod> history = List.of(at(MON_28_SEP.plusDays(3), 9, 4));
+        Instant thursdayBefore = MON_28_SEP.minusDays(4).atStartOfDay(ISTANBUL).toInstant();
+        assertThat(PlannedSessions.fewestSince(history, 0, thursdayBefore)).isZero();
+        assertThat(PlannedSessions.fewestSince(history, 0, MON_28_SEP.plusDays(4).atStartOfDay(ISTANBUL).toInstant())).isEqualTo(4);
+        assertThat(PlannedSessions.fewestSince(List.of(), 3, thursdayBefore)).isEqualTo(3);
+    }
+
     @Property
     void aWeekAsksOneOfItsProgramsAndNoMoreThanAny(@ForAll @Size(max = 6) List<@IntRange(min = 0, max = 7) Integer> sessions,
             @ForAll @Size(min = 6, max = 6) List<@IntRange(min = 0, max = 400) Integer> hoursApart, @ForAll @IntRange(min = 0, max = 7) int profile,

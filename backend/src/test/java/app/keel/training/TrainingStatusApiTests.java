@@ -160,7 +160,8 @@ class TrainingStatusApiTests {
                 Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)),
                 Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 3, "max", 6)),
                 Map.of("exerciseId", "barbell_curl", "sets", 3, "reps", Map.of("min", 10, "max", 15)))))));
-        jdbc.sql("update training.program set created_at = now() - make_interval(days => :days) where account_id = :a").param("days", days)
+        jdbc.sql("with made as (update training.program set created_at = now() - make_interval(days => :days) where account_id = :a returning created_at) "
+                + "update training.program_history set effective_from = (select created_at from made) where account_id = :a").param("days", days)
                 .param("a", account.value()).update();
         return account;
     }

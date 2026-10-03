@@ -98,7 +98,8 @@ public class TrainingStatusReader {
                 .filter(id -> catalog.find(id).filter(move -> move.kind() == ExerciseCatalog.Kind.COMPOUND).isPresent())
                 .forEach(id -> compound.put(id, TrainingStatuses.sessions(log.workingSets(account, id, made.get(), to), zone)));
         List<LocalDate> workoutDays = log.workoutStarts(account, made.get(), to).stream().map(at -> at.atZone(zone).toLocalDate()).toList();
+        // Missed plan weeks only from a week this program was in force from the start of (K-535, ADR-049).
         return Optional.of(TrainingStatuses.of(compound, calls.changes(account), workoutDays, pausedDays, program.get().days().size(), today,
-                checkInDay, made.get().atZone(zone).toLocalDate()));
+                checkInDay, TrainingStatuses.judgedFrom(made.get(), zone)));
     }
 }

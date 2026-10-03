@@ -18,8 +18,9 @@ import org.springframework.stereotype.Component;
  * a missed session is asked about stays K-527's rule (PromptController.today).
  *
  * <p>A week gone by keeps the program it had (K-535, ADR-045 #79): consistency, adherence and the first eight weeks read
- * {@link #byWeek}; the targets read today's ({@link #perWeek}). The missed plan weeks are counted only since the program
- * in force was made (TrainingStatusReader.status), so they too are judged by the program each had.
+ * {@link #byWeek}; the first eight weeks' risk asks whether the week just over asked training ({@link #askedSince}); the
+ * targets and this week's words read today's ({@link #perWeek}). The missed plan weeks are counted only from a week the
+ * program in force was in force from the start of (TrainingStatuses.judgedFrom), so they too are the program's own.
  */
 @Component
 class PlannedSessions {
@@ -36,8 +37,15 @@ class PlannedSessions {
      * never asks more of that week than was planned). {@code history} oldest first; of two at one instant, the later.
      */
     static int inWeek(List<ProgramPeriod> history, int profileDays, LocalDate monday, ZoneId zone) {
-        Instant start = monday.atStartOfDay(zone).toInstant();
-        Instant end = monday.plusWeeks(1).atStartOfDay(zone).toInstant();
+        return fewestBetween(history, profileDays, monday.atStartOfDay(zone).toInstant(), monday.plusWeeks(1).atStartOfDay(zone).toInstant());
+    }
+
+    /** The fewest sessions any program asked from {@code start} on (K-535: the first eight weeks' week just over, to now). */
+    static int fewestSince(List<ProgramPeriod> history, int profileDays, Instant start) {
+        return fewestBetween(history, profileDays, start, Instant.MAX);
+    }
+
+    private static int fewestBetween(List<ProgramPeriod> history, int profileDays, Instant start, Instant end) {
         int fewest = profileDays;
         for (ProgramPeriod period : history) {
             if (!period.from().isAfter(start)) {
@@ -57,6 +65,11 @@ class PlannedSessions {
         List<ProgramPeriod> history = statuses.programHistory(account);
         int profileDays = profile.trainingDays().size();
         return monday -> inWeek(history, profileDays, monday, profile.timeZone());
+    }
+
+    /** Whether training was asked all along from {@code day} (home zone) to now: by every program since, or the profile. */
+    boolean askedSince(AccountId account, ProfileFacts profile, LocalDate day) {
+        return fewestSince(statuses.programHistory(account), profile.trainingDays().size(), day.atStartOfDay(profile.timeZone()).toInstant()) > 0;
     }
 
     /** The sessions a week the plan asks from now on: the targets (PlanTargets) and whether training is asked at all. */

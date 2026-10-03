@@ -33,18 +33,25 @@ public final class FirstWeeks {
      * What the week reads, on the user's calendar.
      *
      * @param began the day the account began: day one of week one
-     * @param trainingPlanned the program asks for training at all
+     * @param trainingPlanned the program asks for training at all (this week's words)
+     * @param trainingAskedLastWeek training was asked all through the user's week just over (its risk, K-535)
      * @param lastWeek the user's week just over: the seven days before {@link #weekStart}
      * @param loggedDaysWeekBefore days with food logged in the user's week before that
      * @param calendarWeeks consistency's weeks, oldest first and consecutive, through at least the one that ended inside
      *     {@code lastWeek} (any later is not read); none, or beginning after it, when there was no record then
      */
-    public record Facts(LocalDate today, LocalDate began, boolean trainingPlanned, UserWeek lastWeek, int loggedDaysWeekBefore,
-            List<WeekTally> calendarWeeks) {
+    public record Facts(LocalDate today, LocalDate began, boolean trainingPlanned, boolean trainingAskedLastWeek, UserWeek lastWeek,
+            int loggedDaysWeekBefore, List<WeekTally> calendarWeeks) {
 
         public Facts {
             Objects.requireNonNull(lastWeek, "lastWeek");
             calendarWeeks = List.copyOf(calendarWeeks);
+        }
+
+        /** The program unchanged since the week just over began: asked then as now. */
+        public Facts(LocalDate today, LocalDate began, boolean trainingPlanned, UserWeek lastWeek, int loggedDaysWeekBefore,
+                List<WeekTally> calendarWeeks) {
+            this(today, began, trainingPlanned, trainingPlanned, lastWeek, loggedDaysWeekBefore, calendarWeeks);
         }
     }
 
@@ -103,7 +110,7 @@ public final class FirstWeeks {
             return List.of();
         }
         List<Reason> signals = new ArrayList<>();
-        if (facts.trainingPlanned() && last.sessions() == 0) {
+        if (facts.trainingAskedLastWeek() && last.sessions() == 0) {
             signals.add(new Reason(NO_SESSION_LAST_WEEK, SIGNALS));
         }
         if (forgivenInside(facts, parameters)) {
