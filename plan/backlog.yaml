@@ -2154,7 +2154,7 @@ tasks:
     depends_on: [K-504, K-505, K-508, K-529]
     why: "Bağlam anlatma ve soru sorma kanalı (ADR-043: koçun cevabı konu + kural, söz telefonda en.json'dan; plan değişikliği karar kartının mevcut uygulama akışıyla — applyCall)"
     acceptance:
-      - "Açılışta o günün verisinden 3 çip"
+      - "Açılışta o günün verisinden en çok 3 çip (günün çipleri ≤2 + öğün + nasıl çalışır; boş günde 2 — ADR-045 #85)"
       - "Yapılandırılmış kartlar (kayıt önizleme, karar)"
       - "Plan değişikliği sohbetten değil: karar kartı gerekçeye götürür, uygulama Bugün'ün mevcut akışıyla (applyCall) — Part 3 talimatı, ADR-043"
     tests:
@@ -2805,6 +2805,40 @@ tasks:
     refs: ["arastirma/ham/L3-ozellik-boslugu.md", "docs/anayasa.md#U12"]
     learn:
       - "Görsel üretimi cihazda"
+  - id: K-534
+    title: "Seyrek rafta tekrar tavanı: sonraki yük yoksa hedef tekrar durur, not çıkar"
+    milestone: M6
+    module: engine
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-430]
+    why: "ADR-045 #73: oran büyük rafta (10 → 20 kg) Epley çıkışı ~47 tekrar ister, hedef tekrar sonsuza tırmanır; motor bilmediği yerde söylemeli (U3)"
+    acceptance:
+      - "Gereken tekrar tavanı (aralığın üstü + N, data/parameters, kaynak türü urun) aşınca hedef tekrar tavanda durur"
+      - "Telefon notu: bu salonda bu hareketin sonraki yükü yok — rafı güncelle (en.json, suçlamasız)"
+      - "Raf güncellenince (ara yük eklenince) normal sıçrama geri gelir"
+    tests:
+      - "SessionProgressTests (seyrek raf, tavan, raf güncellemesi) + TS ortak vakalar"
+    refs: ["plan/kararlar/ADR-045-m5-part3-sonu-cevaplari.md", "plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md"]
+    learn: []
+  - id: K-535
+    title: "Geçmiş haftalar o haftanın program sayısıyla"
+    milestone: M6
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-530]
+    why: "ADR-045 #79: program 3 → 5 gün değişince geçmiş haftaların tutarlılığı ve uyumu geriye dönük düşmemeli (U7)"
+    acceptance:
+      - "Her hafta o hafta geçerli olan programın gün sayısıyla yargılanır (program geçmişi tarihli okunur)"
+      - "Program öncesi haftalar profilin sayısıyla"
+      - "Tutarlılık, uyum, kaçan plan haftası ve ilk 8 hafta aynı okumayı kullanır"
+    tests:
+      - "ConsistencyTests + program değişimi DB testi (geçmiş hafta değişmez)"
+    refs: ["plan/kararlar/ADR-045-m5-part3-sonu-cevaplari.md", "plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md"]
+    learn: []
 
 # ───────────────────────────── M7 · Abonelik ─────────────────────────────
   - id: K-701

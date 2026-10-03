@@ -6,6 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M5 Part 4 (Fotoğraf, cihaz, teslim) SÜRÜYOR (3 Eki)** — 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
 **M5 Part 3 (Koç yüzü + sağlayıcı) BİTTİ (3 Eki)** — ADR-043 (koç sınıflandırır, cümle yazmaz) + 11 görev birleşti (#314-#325); aktarım bekliyor (`docs/aktarim/M5/README.md` 20-30). Simülatör turu **disk yüzünden ertelendi** (soru 80). Sorular 78-85.
 **M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
 **M5 Part 1 (Motor ve check-in) BİTTİ (3 Eki)** — ADR-037 işleri, K-516, K-512, K-513, K-501, K-502 (+ K-518, K-519, K-520) birleşti; aktarım bekliyor; K-430 Levent'te.
@@ -470,7 +471,7 @@ Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` �
 | 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ✅ bitti (3 Eki) — aktarım bekliyor; K-430 Levent'te (soru 55) |
 | 2 · Koç altyapısı | ADR-041 işleri (K-430, K-523, K-525, K-526, K-527, K-524) · K-503, K-505, K-506, K-504, K-508 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 74-77 |
 | 3 · Koç yüzü + sağlayıcı | ADR-043 işleri (K-529, K-530, K-531, K-532) · K-522, K-509, K-507, K-517, K-511, K-528, K-521 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 78-85 |
-| 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | bekliyor |
+| 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | sürüyor (3 Eki) |
 
 **Part 1 başı (2 Eki):** senkron tamam — M4 ÇIKIŞ git ile tutarlı (K-410 #253/#254, K-411 #256, K-412 #257, K-423 #258/#259,
 K-435 #268, K-433 #269 birleşik; açık PR yok; worktree yalnız kalıcı `../keel-main`; `M5-part*-devam.md` yok). 33-54 → ADR-037
@@ -607,6 +608,16 @@ gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (mod
   - Arka plan ajanları Docker açabiliyor → ajan talimatına "Docker/Gradle DB testi yerelde koşma" yaz.
 - **Yeni sorular:** 81-85 (aşağıda).
 
+**Part 4 başı (3 Eki):** senkron tamam — Part 3 ÇIKIŞ git ile tutarlı (#314-#325 birleşik; açık PR yok; worktree yalnız `../keel-main`;
+devam dosyası yok). Ana checkout ayrık HEAD 195dd98'e çekildi (bir commit gerideydi). Disk **5,9 GB**; Docker çalışıyor (sanal disk ~17 GB).
+Dependabot uyarıları 3 (braces, node-forge, decode-uri-component — bilinen geçişli). **73, 78-85 → ADR-045** (hepsi önerilen): yeni görevler
+**K-534** (seyrek rafta tekrar tavanı, M6) ve **K-535** (geçmiş haftalar o haftanın program sayısıyla, M6); ADR-044 KABUL; K-509 kabulü "en çok 3
+çip". **K-308 yok** → K-510 karşılaştırma + ADR taslağı, K-515 kod + test, cihaz adımları DURUM'a. **Disk:** Levent Docker'ı temizleyecek;
+o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer açılınca.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
 **M5 Part 1 (55-59):**
@@ -649,6 +660,7 @@ gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (mod
     training stable, so change nothing."). Şu an çoğu kararda yalnız kaynak türü görünüyor. Cümleleri ben kaynaklarından taslak yazayım
     (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
 
+**73, 78-85 → ADR-045 (3 Eki, Part 4 başı; hepsi önerilen).** Aşağıdaki liste kayıt içindir.
 **M5 Part 3 (78-):**
 81. **(K-511, veri dışarı + para — ADR-044 ÖNERİ)** Ölçüm listesi (OpenAI Luna AB, Vertex Flash-Lite eu, Mistral Ministral; Anthropic yedek), kazanma
     ölçütü (şema ≥ %99, konu doğruluğu, sonra maliyet) ve **rıza metni taslağı** onay mı? ZDR hiçbirinde varsayılan değil — başvuru ve (bazılarında)

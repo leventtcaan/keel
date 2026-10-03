@@ -1,5 +1,5 @@
 # ADR-044 · Dil modeli sağlayıcısı: belgesel karşılaştırma ve ölçüm listesi (K-511)
-- **Durum:** ÖNERİ — sağlayıcı seçimi, rıza metni ve sözleşmeler Levent'in (veri dışarı + para, ADR-019). Gerçek çağrı yok (ADR-041).
+- **Durum:** KABUL (Levent, 3 Eki 2026 — ADR-045 #81: ölçüm listesi, kazanma ölçütü, rıza metni taslağı). Gerçek çağrı ve harcama yine yok (ADR-041); gerçek ölçüm K-533; rıza metni yayından önce hukuki bakıştan geçer.
 - **Tarih:** 2026-10-03 · **Karar veren:** Levent (öneren: agent)
 
 ## Bağlam
