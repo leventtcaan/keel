@@ -165,6 +165,7 @@ describe('a meal the coach read (K-509)', () => {
     takeMeal();
     handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 180, unit: 'g' }], 'photo');
     await show();
+    expect(screen.getByText(kcal(170, 240))).toBeOnTheScreen(); // the estimate is there — only no question
     expect(screen.queryByText(t('meal.photo.why'))).toBeNull();
   });
 

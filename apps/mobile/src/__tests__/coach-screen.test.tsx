@@ -8,7 +8,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import CoachScreen from '@/app/coach';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { takeMeal } from '@/food/handoff';
+import { handedFrom, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
 type Schemas = components['schemas'];
@@ -301,6 +301,7 @@ describe('a meal in words (K-504 draft)', () => {
     await press('Bread, whole wheat, toasted');
     await press(t('coach.meal.log'));
     expect(mockPush).toHaveBeenCalledWith('/meal');
+    expect(handedFrom()).toBe('coach'); // a meal in words never gives the photo's reason
     expect(takeMeal()).toEqual([
       { foodId: 'fdc-1', name: 'Egg, whole', quantity: 2, unit: 'piece' },
       { foodId: 'fdc-8', name: 'Bread, whole wheat, toasted', quantity: 1, unit: 'slice' },

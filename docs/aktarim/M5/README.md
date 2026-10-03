@@ -42,3 +42,4 @@
 ## Aktarım sırası (Part 4)
 31. ADR-045 (cevaplar 73, 78-85) — `plan/kararlar/ADR-045-m5-part3-sonu-cevaplari.md`
 32. K-514 öğün fotoğrafı backend'i (`K-514.md`, ADR-046)
+33. K-408 öğün fotoğrafı telefonda (`K-408.md`)

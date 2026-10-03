@@ -32,7 +32,7 @@ const DRAFT = {
 
 let mockGranted = true;
 let mockAnswer: Answer | 'offline' = ok(DRAFT);
-let mockPicked: { uri: string; width: number; height: number } | null | 'denied' = { uri: 'file:///p.jpg', width: 4032, height: 3024 };
+let mockPicked: { uri: string } | null | 'denied' = { uri: 'file:///p.jpg' };
 const mockPOST = jest.fn(async (_path: string, _init?: unknown) => {
   if (mockAnswer === 'offline') throw new TypeError('Network request failed');
   return mockAnswer;
@@ -43,14 +43,20 @@ const mockPush = jest.fn();
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({ router: { push: (...a: unknown[]) => mockPush(...a), replace: (...a: unknown[]) => mockReplace(...a), back: jest.fn() } }));
 jest.mock('@/food/photoTools', () => ({ photoTools: { pick: (source: string) => mockPick(source), shrink: () => mockShrink() } }));
-const mockServices = { api: { POST: mockPOST }, consents: { granted: async () => mockGranted }, report: () => {} };
+let mockGrantedFails = false;
+const mockServices = {
+  api: { POST: mockPOST },
+  consents: { granted: async () => (mockGrantedFails ? Promise.reject(new Error('keychain')) : mockGranted) },
+  report: () => {},
+};
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockGranted = true;
+  mockGrantedFails = false;
   mockAnswer = ok(DRAFT);
-  mockPicked = { uri: 'file:///p.jpg', width: 4032, height: 3024 };
+  mockPicked = { uri: 'file:///p.jpg' };
   takeMeal();
 });
 
@@ -133,4 +139,32 @@ test('offline or unreadable: said so, try again', async () => {
   await press(t('mealPhoto.camera'));
   expect(screen.getByText(t('mealPhoto.failed'))).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('mealPhoto.camera') })).toBeOnTheScreen();
+});
+
+test('a consent the phone cannot read is not given: the consent step, not a blank screen', async () => {
+  mockGrantedFails = true;
+  await show();
+  expect(screen.getByText(t('mealPhoto.consent'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('mealPhoto.camera') })).toBeNull();
+});
+
+test('the server’s consent answer: the consent step, the camera gone', async () => {
+  mockAnswer = { error: { code: 'CONSENT_REQUIRED', message: 'x' }, response: new Response(null, { status: 403 }) };
+  await show();
+  await press(t('mealPhoto.camera'));
+  expect(screen.getByRole('button', { name: t('today.consent.open') })).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('mealPhoto.camera') })).toBeNull();
+});
+
+test('while it reads, it says so and nothing can be taken again (a second tap would use a second analysis)', async () => {
+  let answer: (value: Answer) => void = () => {};
+  mockPOST.mockImplementationOnce(() => new Promise<Answer>((resolve) => (answer = resolve)));
+  await show();
+  await press(t('mealPhoto.camera'));
+  expect(screen.getByText(t('mealPhoto.reading'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('mealPhoto.camera') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('mealPhoto.library') })).toBeNull();
+  await act(async () => answer(ok(DRAFT)));
+  expect(screen.getByText(t('mealPhoto.item', { food: 'chicken', quantity: '120' }))).toBeOnTheScreen();
+  expect(mockPOST).toHaveBeenCalledTimes(1);
 });

@@ -33,6 +33,23 @@ describe('fitWithin (ResizeTests)', () => {
     expect(fitWithin(640, 480, 1024)).toBeNull();
   });
 
+  it('over the limit: the longer side is exactly the limit, the other at least 1 and at most the limit (every size to 6000)', () => {
+    const wrong: string[] = [];
+    for (let w = 1; w <= 6000; w += 7) {
+      for (const h of [1, 2, 37, 480, 1023, 1024, 1025, 1122, 2999, 3024, 4032, w]) {
+        const fit = fitWithin(w, h, 1024);
+        const over = w > 1024 || h > 1024;
+        if (!over) {
+          if (fit !== null) wrong.push(`${w}x${h} resized`);
+          continue;
+        }
+        if (fit === null || Math.max(fit.width, fit.height) !== 1024 || Math.min(fit.width, fit.height) < 1 || fit.width > 1024 || fit.height > 1024)
+          wrong.push(`${w}x${h} -> ${JSON.stringify(fit)}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
   it('the limit is V1’s', () => {
     expect(foodParams.photoMaxSide).toBe(1024);
   });
@@ -41,8 +58,8 @@ describe('fitWithin (ResizeTests)', () => {
 describe('readMealPhoto (PhotoLogTests)', () => {
   const tools = (over: Partial<PhotoTools> = {}): PhotoTools & { pick: jest.Mock; shrink: jest.Mock } =>
     ({
-      pick: jest.fn(async () => ({ uri: 'file:///photo.heic', width: 4032, height: 3024 })),
-      shrink: jest.fn(async (_uri: string, size: { width: number; height: number } | null) => ({ base64: 'AAAA', ...(size ?? { width: 640, height: 480 }) })),
+      pick: jest.fn(async () => ({ uri: 'file:///photo.heic' })),
+      shrink: jest.fn(async () => ({ base64: 'AAAA', width: 1024, height: 768 })),
       ...over,
     }) as PhotoTools & { pick: jest.Mock; shrink: jest.Mock };
   const services = (granted: boolean, answer: Answer | 'offline' = ok(DRAFT)) => {
@@ -76,15 +93,8 @@ describe('readMealPhoto (PhotoLogTests)', () => {
     const t = tools();
     await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'library')).resolves.toEqual({ state: 'ready', draft: DRAFT });
     expect(t.pick).toHaveBeenCalledWith('library');
-    expect(t.shrink).toHaveBeenCalledWith('file:///photo.heic', { width: 1024, height: 768 }, foodParams.photoQuality);
+    expect(t.shrink).toHaveBeenCalledWith('file:///photo.heic', foodParams.photoMaxSide, foodParams.photoQuality);
     expect(s.POST).toHaveBeenCalledWith('/v1/meals/photo', { body: { image: 'AAAA' } });
-  });
-
-  it('a small photo is still written again (its metadata left behind), only not enlarged', async () => {
-    const s = services(true);
-    const t = tools({ pick: jest.fn(async () => ({ uri: 'file:///small.jpg', width: 640, height: 480 })) });
-    await readMealPhoto({ api: s.api, consents: s.consents }, t, 'camera');
-    expect(t.shrink).toHaveBeenCalledWith('file:///small.jpg', null, foodParams.photoQuality);
   });
 
   it('cancelled: nothing sent', async () => {
@@ -103,9 +113,12 @@ describe('readMealPhoto (PhotoLogTests)', () => {
     expect(s.POST).not.toHaveBeenCalled();
   });
 
-  it('a shrunk photo still longer than the limit is never sent', async () => {
+  it.each([
+    [1025, 700],
+    [700, 1025],
+  ])('a shrunk photo still over the limit (%i × %i) is never sent', async (width, height) => {
     const s = services(true);
-    const t = tools({ shrink: jest.fn(async () => ({ base64: 'AAAA', width: 1025, height: 700 })) });
+    const t = tools({ shrink: jest.fn(async () => ({ base64: 'AAAA', width, height })) });
     await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'camera')).resolves.toEqual({ state: 'failed' });
     expect(s.POST).not.toHaveBeenCalled();
   });

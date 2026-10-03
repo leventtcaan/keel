@@ -34,15 +34,7 @@
         }
       ],
       "expo-sqlite",
-      "expo-secure-store",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Choose a photo of a meal to find its foods. Only the photo you choose is used.",
-          "cameraPermission": "Take a photo of a meal to find its foods, or scan a barcode.",
-          "microphonePermission": false
-        }
-      ]
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

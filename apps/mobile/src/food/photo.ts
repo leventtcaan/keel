@@ -14,15 +14,18 @@ import { load } from '@/today/today';
 import { foodParams } from './params';
 
 export type PhotoSource = 'camera' | 'library';
-export type Picked = { uri: string; width: number; height: number };
+export type Picked = { uri: string };
 export type Shrunk = { base64: string; width: number; height: number };
 
 /** The camera or the library, and the shrinking — native, so given (photoTools.ts), and faked in tests. */
 export interface PhotoTools {
   /** The photo the user took or chose; null when they backed out; 'denied' when the camera is not allowed. */
   pick(source: PhotoSource): Promise<Picked | null | 'denied'>;
-  /** The photo written again as a JPEG at `quality`, resized to `size` when given, in base64. */
-  shrink(uri: string, size: { width: number; height: number } | null, quality: number): Promise<Shrunk>;
+  /**
+   * The photo written again as a JPEG at `quality`, in base64 — resized when its own rendered size is over `maxSide`
+   * (fitWithin; a picker's reported size may be 0) — with the saved file's size.
+   */
+  shrink(uri: string, maxSide: number, quality: number): Promise<Shrunk>;
 }
 
 export type PhotoRead =
@@ -33,13 +36,13 @@ export type PhotoRead =
   | { state: 'failed' };
 
 /**
- * The size that brings the longer side down to `max`, the shape kept and every side rounded down (never over the limit);
- * null when the photo is within it already — a photo is never enlarged.
+ * The size that brings the longer side down to exactly `max`, the shape kept — the shorter side rounded down, at least
+ * 1 (a sliver of a photo is still a photo); null when the photo is within it already — a photo is never enlarged.
  */
 export function fitWithin(width: number, height: number, max: number): { width: number; height: number } | null {
   if (width <= max && height <= max) return null;
-  const scale = max / Math.max(width, height);
-  return { width: Math.min(max, Math.floor(width * scale)), height: Math.min(max, Math.floor(height * scale)) };
+  const shorter = (side: number, longer: number) => Math.max(1, Math.floor((side * max) / longer));
+  return width >= height ? { width: max, height: shorter(height, width) } : { width: shorter(width, height), height: max };
 }
 
 export async function readMealPhoto(
@@ -55,7 +58,7 @@ export async function readMealPhoto(
     const picked = await tools.pick(source);
     if (picked === null) return { state: 'cancelled' };
     if (picked === 'denied') return { state: 'denied' };
-    shrunk = await tools.shrink(picked.uri, fitWithin(picked.width, picked.height, foodParams.photoMaxSide), foodParams.photoQuality);
+    shrunk = await tools.shrink(picked.uri, foodParams.photoMaxSide, foodParams.photoQuality);
   } catch {
     return { state: 'failed' };
   }
