@@ -64,6 +64,12 @@ class DecisionBasisApiTests {
                         java.math.MathContext.DECIMAL64));
         // Never a fat estimate (U4), never the cycle answer (not kept).
         assertThat(body.toLowerCase()).doesNotContain("fat").doesNotContain("cycle").doesNotContain("menstrual");
+        // K-611: the ledger keeps the latest week the call read — the basis's last weekly mean, the same number.
+        List<Map<String, Object>> weeks = (List<Map<String, Object>>) basis.get("weeks");
+        Map<String, Object> ledger = JSON.readValue(send(account, "GET", "/v1/decisions").getResponse().getContentAsString(), Map.class);
+        assertThat(((List<Map<String, Object>>) ledger.get("items")).getFirst()).containsEntry("id", call.get("id"))
+                .hasEntrySatisfying("readTrendKg", kg -> assertThat(new java.math.BigDecimal(String.valueOf(kg)))
+                        .isEqualByComparingTo(new java.math.BigDecimal(String.valueOf(weeks.getLast().get("kg")))));
     }
 
     @Test

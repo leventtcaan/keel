@@ -616,6 +616,20 @@
     },
     "earlyNote": "Two weeks of weigh-ins before the trend says much. Keep weighing; the line fills in."
   },
+  "ledger": {
+    "title": "Your calls",
+    "intro": "Every weekly call so far, newest first, with what your trend did after it.",
+    "after": "After this call: trend {from} → {to} by {date}.",
+    "state": {
+      "applied": "Applied",
+      "undone": "Undone",
+      "pending": "Not applied yet"
+    },
+    "open": "All your calls",
+    "none": "No calls yet: your first comes with your first weekly check-in.",
+    "failed": "Couldn't load your calls.",
+    "more": "Show older calls"
+  },
   "why": {
     "title": "Why this call",
     "back": "Back",

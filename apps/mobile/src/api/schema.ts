@@ -1873,6 +1873,11 @@ export interface components {
              *     does not give away the answer that led to it (K-228, ADR-028 #24, GDPR Art. 9). It cannot be undone.
              */
             safety?: boolean;
+            /**
+             * @description In the ledger (GET /v1/decisions) only: the latest weekly mean of the window the call read (K-611), so the
+             *     ledger can say what came after it — never why. Absent when the call read no window.
+             */
+            readTrendKg?: number;
             application: components["schemas"]["Application"];
         };
         /**

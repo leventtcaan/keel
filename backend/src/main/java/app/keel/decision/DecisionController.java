@@ -58,7 +58,12 @@ class DecisionController {
         // One more than asked tells whether an older page exists.
         List<CallStore.Call> page = decisions.page(account, Optional.ofNullable(before), size + 1);
         List<CallStore.Call> shown = page.subList(0, Math.min(size, page.size()));
-        return new DecisionPage(shown.stream().map(DecisionController::view).toList(),
+        // Each call with the trend weight it read (K-611): the ledger says what came after it, never why.
+        return new DecisionPage(shown.stream().map(call -> {
+                    Map<String, Object> view = view(call);
+                    decisions.trendRead(call).ifPresent(kg -> view.put("readTrendKg", kg));
+                    return view;
+                }).toList(),
                 page.size() > size ? shown.getLast().id().toString() : null);
     }
 

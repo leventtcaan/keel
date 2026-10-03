@@ -47,6 +47,14 @@ class DecisionBasisTests {
     }
 
     @Test
+    void theLedgerKeepsTheLatestWeekTheCallRead() {
+        // K-611: the trend weight each call read, so the ledger can say what came after it (L3 Y4) — none where it read none.
+        assertThat(DecisionBasis.trendRead(snapshot(TODAY.minusDays(60), weeks("82.0", "81.5", "81.0")), MALE)).hasValueSatisfying(
+                kg -> assertThat(kg).isEqualByComparingTo("81.0"));
+        assertThat(DecisionBasis.trendRead(snapshot(TODAY.minusDays(60), weeks("82.0", null, "81.0")), MALE)).isEmpty();
+    }
+
+    @Test
     void aCallThatWaitedForMoreDataReadNoWindowSoShowsNone() {
         // A week with no weigh-in (data_insufficient), and a plan too young for a full window (window_not_full): the call
         // said "not yet" before any weekly mean was taken — none is its data (U3).
