@@ -33,3 +33,4 @@
 23. K-509 koç sohbeti + sohbette öğün (`K-509.md`)
 24. K-517 haftalık koç notu (`K-517.md`)
 25. ADR-043 işleri: K-532 (`K-532.md`), K-530 (`K-530.md`)
+26. K-511 sağlayıcı: belgesel karşılaştırma + ölçüm betiği (`K-511.md`, ADR-044)

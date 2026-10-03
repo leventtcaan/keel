@@ -2190,12 +2190,12 @@ tasks:
     depends_on: [K-503, K-506]
     why: "Rıza ekranı sağlayıcıyı adıyla anmak zorunda; seçim sezgiyle değil ölçümle (Levent sorusu, 29 Eyl)"
     acceptance:
-      - "En az üç sağlayıcı aynı sette ölçüldü: öğün ayrıştırma, karar anlatım sadakati, 'hayır diyen koç' seti, maliyet, gecikme"
-      - "Veri saklama/eğitim politikaları resmî sayfadan doğrulandı"
-      - "Seçim ADR olarak yazıldı; rıza metni güncellendi"
+      - "ADR-041 #67-#71 ile değişti: en az üç sağlayıcı resmî sayfalardan karşılaştırıldı (ZDR + eğitim yok kapısı, yapılandırılmış çıktı, liste fiyatı, veri konumu)"
+      - "Veri saklama/eğitim politikaları resmî sayfadan doğrulandı (arastirma/ham/H10-llm-saglayici.md, URL + tarih)"
+      - "ADR (ÖNERİ, Levent) + rıza metni taslağı; ölçüm betiği hazır (tools/llm_eval.py), gerçek ölçüm K-533'te"
     tests:
-      - "Karşılaştırma raporu"
-    refs: ["plan/kararlar/ADR-004-hesaplama-katmanlari-llm.md"]
+      - "tools/test_llm_eval.py (CI)"
+    refs: ["plan/kararlar/ADR-004-hesaplama-katmanlari-llm.md", "plan/kararlar/ADR-044-llm-saglayici-belgesel.md"]
     learn:
       - "Model değerlendirme"
       - "Maliyet/kalite takası"
@@ -2572,6 +2572,23 @@ tasks:
     tests:
       - "QuotaCleanupTests (DB)"
     refs: ["plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md"]
+    learn: []
+
+  - id: K-533
+    title: "Sağlayıcı gerçek ölçümü: 54 itiraz + öğün seti, üç aday (yayına çıkarken)"
+    milestone: M10
+    module: coach
+    type: spike
+    size: S
+    status: todo
+    depends_on: [K-511]
+    why: "ADR-041/044: gerçek maliyet/kalite ölçümü yayına çıkarken, Levent'in anahtarı ve harcama limitiyle; ZDR onayı alınmış sağlayıcılarla"
+    acceptance:
+      - "ZDR onayı + eğitim ayarı kapalı (kanıt kayıtta) olan her aday için tools/llm_eval.py iki sette koşuldu; sonuç tablosu ADR-044'e"
+      - "Kazanan: şema ≥ %99, konu doğruluğu en yüksekler arasında istek başı maliyeti en düşük; keel.coach yapılandırması + adaptör; rıza metni sürümü"
+    tests:
+      - "tools/llm_eval.py çıktısı (ADR-044)"
+    refs: ["plan/kararlar/ADR-044-llm-saglayici-belgesel.md"]
     learn: []
 
 # ───────────────────────────── M6 · İlerleme ─────────────────────────────
