@@ -121,7 +121,7 @@ class SessionProgress {
 
     private static Optional<Next> next(LiftSession session, Parameters parameters, int thisWeeksSets,
             Function<BigDecimal, LoadSteps.Rounding> rounding) {
-        return NextTargets.after(session, Progression.next(session, parameters), false, thisWeeksSets, rounding)
+        return NextTargets.after(session, Progression.next(session, parameters), false, thisWeeksSets, rounding, parameters)
                 .map(target -> new Next(target, session.loadKg()));
     }
 }

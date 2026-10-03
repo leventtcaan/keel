@@ -120,6 +120,24 @@ class SessionProgressApiTests {
 
         assertThat(finish(account, workout, List.of())).hasStatusOk();
 
+        // 42 is 7 over 35, past load_jump_max_steps (2) of the engine's 2.5 (K-430): 35 × 12 is worth 4 at 42 (Epley), so
+        // the load stays and the reps go up (ADR-041 #55: 42 × 8 → 35 × 13, K1 approved).
+        assertThat(next(account, 0)).isEqualTo(target(35, 13));
+    }
+
+    @Test
+    void aMachineLoadTooFarIsTakenOnceTheSetsAtTheLastAreWorthTheBottomOfTheRangeThere() throws Exception {
+        // K-430 (ADR-041 #55): 35 × 16 at RIR 1 is worth 8 at 42 (Epley) — the bottom of 8-12 — so the jump, from the bottom.
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "Pull", "weekday", "MONDAY", "exercises",
+                List.of(own("lat_pulldown", 8, 12))))))).hasStatusOk();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "platesKg", List.of(),
+                "dumbbellsKg", List.of(), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "lat_pulldown", "stepKg", 7))));
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "lat_pulldown", 3, 35, 16, "BOTH");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
         assertThat(next(account, 0)).isEqualTo(target(42, 8));
     }
 

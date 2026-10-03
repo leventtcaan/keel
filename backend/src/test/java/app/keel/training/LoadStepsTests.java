@@ -47,6 +47,8 @@ class LoadStepsTests {
             switch (String.valueOf(expected)) {
                 case "NO_HEAVIER" -> assertThat(rounding).isEqualTo(new LoadSteps.Rounding.NoHeavier());
                 case "UNKNOWN" -> assertThat(rounding).isEqualTo(new LoadSteps.Rounding.Unknown());
+                case "TOO_FAR" -> assertThat(rounding).isInstanceOfSatisfying(LoadSteps.Rounding.TooFar.class,
+                        tooFar -> assertThat(tooFar.kg()).isEqualByComparingTo(kg(c.get("tooFarKg"))));
                 default -> assertThat(rounding).isInstanceOfSatisfying(LoadSteps.Rounding.To.class,
                         to -> assertThat(to.kg()).isEqualByComparingTo(kg(expected)));
             }
