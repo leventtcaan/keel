@@ -731,7 +731,7 @@ yalnız kalıcı `../keel-main`; `M5-part4-devam`/`M6-*-devam` yok). Ana checkou
     okunmasın, U7). Kabul mü?
 
 **Part 2 sağlık kapısı (Part 2 başında AskUserQuestion — cevap ADR'ye; o zamana kadar kapı kapalı):**
-- **SCOFF metni:** 5 soru (Morgan, Reid & Lacey 1999, BMJ) — hangi dil/sürüm (İngilizce orijinal mi, onaylı Türkçe uyarlama mı)? `arastirma/ham/H2-projeksiyon.md` §(tarama), `04-faz3-urun.md` satır 270.
+- **SCOFF metni:** 5 soru (künye [doğrulanmadı] — Morgan, Reid & Lacey 1999, BMJ olarak bilinir; Part 2 K-605/K-607 başında birincil kaynakla doğrulanacak) — hangi dil/sürüm (İngilizce orijinal mi, onaylı Türkçe uyarlama mı)? `arastirma/ham/H2-projeksiyon.md` §(tarama), `04-faz3-urun.md` satır 270.
 - **Pozitifte destek kaynağı:** ülkeye göre (TR / US / genel) — hangi kuruluş, hangi metin; uygulama yönlendirir, teşhis koymaz (U6).
 - **Saklama:** SCOFF cevabı saklanmasın (V4 benzeri, döngü cevabı gibi) — yalnız "kapı açık/kapalı" sonucu mu saklanır, o da mı yok?
 - **Projeksiyon kapı eşikleri:** 18 yaş altı · BMI<20'de zayıflama yönü · SCOFF ≥2 → özellik açılmaz; varsayılan kapalı (`H2-projeksiyon.md` satır 477, 582). Onay ya da düzeltme.
