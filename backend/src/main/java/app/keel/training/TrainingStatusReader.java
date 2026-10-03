@@ -72,7 +72,7 @@ public class TrainingStatusReader {
 
     /** Every program the account has had, oldest first (K-535); empty without one. */
     public List<ProgramPeriod> programHistory(AccountId account) {
-        return List.of();
+        return programs.history(account);
     }
 
     /** The day the account's program was made (or last replaced), on the user's calendar. */
