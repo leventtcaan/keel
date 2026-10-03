@@ -50,7 +50,7 @@ export default function TodayScreen() {
     );
   const call =
     data === null || (data.decision.state !== 'ready' && data.decision.state !== 'none') ? null : (
-      <CallCard decision={data.decision.state === 'ready' ? data.decision.value : null} />
+      <CallCard decision={data.decision.state === 'ready' ? data.decision.value : null} onChanged={reload} />
     );
   // What the user declared (K-518): the week paused, or a way to say so. Ended, Today reads again.
   const stateCard = data === null ? null : <StateCard state={data.state} onChanged={reload} />;
