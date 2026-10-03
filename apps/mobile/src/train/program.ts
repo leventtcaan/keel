@@ -7,6 +7,8 @@ import type { components } from '@/api/schema';
 import { has, t } from '@/copy';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
+import { workoutParams } from './params';
+import { atCeiling } from './repCeiling';
 import type { Move } from './trainData';
 
 type Schemas = components['schemas'];
@@ -63,6 +65,12 @@ export function nextLine(planned: Schemas['PlannedExercise'], units: UnitSystem,
   if (load === 'BODYWEIGHT') return t('train.nextBodyweight', { reps: planned.nextReps }); // no weight to aim for
   const key = load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'train.nextAdded' : 'train.next';
   return t(key, { load: formatLoad(planned.nextLoadKg, units), reps: planned.nextReps });
+}
+
+/** The target stopped at the rep ceiling (K-534): the gym has no next weight the user can reach. None below it. */
+export function rackNote(planned: Schemas['PlannedExercise']): string | null {
+  if (planned.nextReps === undefined || !atCeiling(planned.reps, planned.nextReps, workoutParams.repCeilingAboveRange)) return null;
+  return t('train.rackEnds');
 }
 
 /** "One session and one set per exercise, at your usual weights": the server's numbers, said in words. */

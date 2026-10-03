@@ -5,7 +5,8 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { dayName, exerciseName, nextLine, programNotes, repsLine, setsLine } from '@/train/program';
+import { dayName, exerciseName, nextLine, programNotes, rackNote, repsLine, setsLine } from '@/train/program';
+import { workoutParams } from '@/train/params';
 import type { Move } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -80,4 +81,12 @@ test("the user's own move by the name they gave; a move unknown everywhere by it
   expect(exerciseName('custom:1', own)).toBe('Landmine press');
   expect(exerciseName('bench_press', own)).toBe('Bench press');
   expect(exerciseName('custom:2', own)).toBe('custom:2');
+});
+
+test("a target stopped at the rep ceiling says the gym has no next weight to reach (K-534); below it, nothing", () => {
+  const ceiling = bench.reps.max + workoutParams.repCeilingAboveRange;
+  expect(rackNote({ ...bench, nextLoadKg: 10, nextReps: ceiling })).toBe(t('train.rackEnds'));
+  expect(t('train.rackEnds')).not.toMatch(/missing/);
+  expect(rackNote({ ...bench, nextLoadKg: 10, nextReps: ceiling - 1 })).toBeNull();
+  expect(rackNote(bench)).toBeNull();
 });

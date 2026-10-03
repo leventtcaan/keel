@@ -14,8 +14,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The rep ceiling on a sparse rack (K-534, ADR-045 #73): the shared cases in contracts/fixtures/rep-ceiling.json, which
- * the app reads too (rep-ceiling.test.ts), so the target the server stops at and the note the phone shows agree.
+ * The rep ceiling on a sparse rack (K-534, ADR-045 #73): the shared cases in contracts/fixtures/rep-ceiling.json — the
+ * server's target here (oneMore), the phone's note there (atCeiling, rep-ceiling.test.ts) — so the two agree.
  */
 class RepCeilingTests {
 
@@ -35,9 +35,6 @@ class RepCeilingTests {
         RepRange reps = new RepRange(range.get("min"), range.get("max"));
         int above = (int) c.get("ceilingAbove");
 
-        int oneMore = NextTargets.oneMore(reps, (int) c.get("weakest"), above);
-
-        assertThat(oneMore).as((String) c.get("case")).isEqualTo(c.get("oneMore"));
-        assertThat(NextTargets.atCeiling(reps, oneMore, above)).as((String) c.get("case")).isEqualTo(c.get("atCeiling"));
+        assertThat(NextTargets.oneMore(reps, (int) c.get("weakest"), above)).as((String) c.get("case")).isEqualTo(c.get("oneMore"));
     }
 }

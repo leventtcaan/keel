@@ -66,18 +66,16 @@ final class NextTargets {
         };
     }
 
-    /** One more rep than the weakest set, past the top of the range (K-414) — never past the ceiling (K-534). */
+    /**
+     * One more rep than the weakest set, past the top of the range (K-414) — never past the ceiling (K-534): there the
+     * target stops, and the phone says the rack has no next load to reach (train/repCeiling.ts, the same cases).
+     */
     static int oneMore(RepRange range, int weakest, int ceilingAbove) {
         return Math.min(weakest + 1, range.max() + ceilingAbove);
     }
 
     private static int ceiling(Parameters parameters) {
         return parameters.wholeNumber(ParameterKey.REP_CEILING_ABOVE_RANGE);
-    }
-
-    /** Whether a target of {@code reps} is the ceiling: the rack has no next load to reach (K-534). */
-    static boolean atCeiling(RepRange range, int reps, int ceilingAbove) {
-        return reps >= range.max() + ceilingAbove;
     }
 
     /**
