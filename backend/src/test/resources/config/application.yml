@@ -13,3 +13,10 @@ keel:
     third-party-ai:
       provider: Example AI
       data-types: [meal photo, meal note]
+  # The fake model (K-503), with values that show they come from here.
+  coach:
+    provider: fake
+    model: test-model
+    max-output: 300 # tokens
+    input-price-per-million: 0.10
+    output-price-per-million: 0.40
