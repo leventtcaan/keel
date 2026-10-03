@@ -93,6 +93,19 @@ test('the call, the data it read, the rules each with its kind of source, its co
   expect(allText()).not.toContain('arastirma/');
 });
 
+test('every rule with words says them; the leading one is the call’s title, said once', async () => {
+  mockAnswers['/v1/decisions/{id}'] = ok({
+    ...CALL,
+    reasons: [
+      { rule: 'toward_goal', source: { reference: 'arastirma/ham/guray/G2.md#K-1', tag: 'EXPERIENCE' } },
+      { rule: 'energy_floor', source: { reference: 'arastirma/ham/H5.md#2', tag: 'LITERATURE' } },
+    ],
+  });
+  await show();
+  expect(screen.getByText(t('decision.continue.energy_floor.title'))).toBeOnTheScreen();
+  expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(1);
+});
+
 test('in the user’s units', async () => {
   mockUnits = 'IMPERIAL';
   await show();

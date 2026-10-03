@@ -76,3 +76,43 @@ test('where training stood, only what says something; a paused week by its state
 test('a call that stopped before the window read nothing of it: no rows', () => {
   expect(basisRows({ phase: 'BULK', weeks: [], answers: {} }, 'METRIC')).toEqual([]);
 });
+
+test('the plan followed is the server’s whole percent, never a point low from floating point', () => {
+  // 29 of 50: 0.58 × 100 is 57.99999999999999 in floating point.
+  expect(row(basisRows({ ...READ, adherence: 0.58 }, 'METRIC'), 'why.row.adherence')).toBe(t('why.value.adherence', { percent: 58 }));
+  expect(row(basisRows({ ...READ, adherence: 0.29 }, 'METRIC'), 'why.row.adherence')).toBe(t('why.value.adherence', { percent: 29 }));
+  expect(row(basisRows({ ...READ, adherence: 0.999 }, 'METRIC'), 'why.row.adherence')).toBe(t('why.value.adherence', { percent: 99 }));
+});
+
+test('every answer, every state and both phases have their words: none falls back to a missing key', () => {
+  const missing = /^\[missing/;
+  const answers: Basis['answers'][] = [
+    ...(['BETTER', 'SAME', 'WORSE'] as const).map((look) => ({ look })),
+    ...(['IMPROVING', 'STABLE', 'DECLINING'] as const).map((training) => ({ training })),
+    ...(['GOOD', 'POOR'] as const).map((recovery) => ({ recovery })),
+    ...(['DOWN', 'FLAT', 'UP'] as const).map((waist) => ({ waist })),
+    ...(['NORMAL', 'GONE'] as const).map((appetite) => ({ appetite })),
+  ];
+  for (const given of answers) {
+    const rows = basisRows({ phase: 'CUT', weeks: [], answers: given }, 'METRIC');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].value).not.toMatch(missing);
+  }
+  for (const pausedBy of ['TRAVELING', 'SICK', 'PAIN', 'BUSY', 'NEW_GYM'] as const) {
+    expect(row(basisRows({ phase: 'CUT', weeks: [], answers: {}, pausedBy }, 'METRIC'), 'why.row.paused')).not.toMatch(missing);
+  }
+  for (const phase of ['CUT', 'BULK'] as const) expect(t(`why.phase.${phase}`)).not.toMatch(missing);
+});
+
+test('each training figure under its own label', () => {
+  const rows = basisRows(
+    { ...READ, training: { stalledSessions: 3, weeksLoadHeld: 2, monthsStalled: 4, weeksPlanMissed: 1, restedLastWeek: false, loadsBelowLastWeek: true } },
+    'METRIC',
+  );
+  expect(row(rows, 'why.row.stalled')).toBe('3');
+  expect(row(rows, 'why.row.loadHeld')).toBe('2');
+  expect(row(rows, 'why.row.monthsStalled')).toBe('4');
+  expect(row(rows, 'why.row.planMissed')).toBe('1');
+  expect(row(rows, 'why.row.loadsBelow')).toBe(t('why.value.yes'));
+  expect(row(rows, 'why.row.rested')).toBeUndefined();
+});
