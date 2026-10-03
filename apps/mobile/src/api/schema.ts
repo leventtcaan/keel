@@ -1039,6 +1039,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meals/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A meal said in words, as a draft of the database's foods to confirm (K-504)
+         * @description The words go to a third-party language model, which reads which foods and how much (grams) — never what a food
+         *     holds (U1). It needs the THIRD_PARTY_AI consent to that provider and the meal note (V2); without it 403
+         *     CONSENT_REQUIRED. The foods are the database's: sure when a food holds every word the model gave, otherwise the
+         *     foods of each word, one tap away (U5), or none. Nothing is logged: the app estimates with /v1/food-estimates and
+         *     logs with /v1/meals once the user confirms. A reply off its schema, or past the day's limit
+         *     (coach_messages_per_day, K-508), gives an empty DETERMINISTIC draft: the user searches.
+         */
+        post: operations["parseMeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1993,6 +2018,28 @@ export interface components {
             /** @description The engine's own words, in DETERMINISTIC mode (data/copy/en.json › coach.answer.*). */
             copyKey?: string;
             call?: components["schemas"]["CoachCall"];
+        };
+        MealWords: {
+            text: string;
+        };
+        MealDraft: {
+            /** @enum {string} */
+            mode: "MODEL" | "DETERMINISTIC";
+            items: components["schemas"]["MealDraftItem"][];
+        };
+        /** @description A food as the model read it, how much, and the database's foods for it — never what it holds (U1). */
+        MealDraftItem: {
+            /** @description The model's words for the food. */
+            food: string;
+            grams: number;
+            /** @description A food holds every word — the first candidate is the pick; otherwise the user picks one (U5). */
+            confident: boolean;
+            candidates: components["schemas"]["FoodMatch"][];
+        };
+        FoodMatch: {
+            id: string;
+            name: string;
+            brand?: string;
         };
         /** @description The call the answer is about, as it stands (U2) — its words, and when new data looks at it again. */
         CoachCall: {
@@ -3502,6 +3549,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoachAnswer"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    parseMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MealWords"];
+            };
+        };
+        responses: {
+            /** @description The draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealDraft"];
                 };
             };
             default: components["responses"]["Error"];

@@ -1229,6 +1229,34 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /v1/meals/parse:
+    post:
+      tags: [coach]
+      operationId: parseMeal
+      summary: A meal said in words, as a draft of the database's foods to confirm (K-504)
+      description: |
+        The words go to a third-party language model, which reads which foods and how much (grams) — never what a food
+        holds (U1). It needs the THIRD_PARTY_AI consent to that provider and the meal note (V2); without it 403
+        CONSENT_REQUIRED. The foods are the database's: sure when a food holds every word the model gave, otherwise the
+        foods of each word, one tap away (U5), or none. Nothing is logged: the app estimates with /v1/food-estimates and
+        logs with /v1/meals once the user confirms. A reply off its schema, or past the day's limit
+        (coach_messages_per_day, K-508), gives an empty DETERMINISTIC draft: the user searches.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MealWords"
+      responses:
+        "200":
+          description: The draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealDraft"
+        default:
+          $ref: "#/components/responses/Error"
+
 components:
   securitySchemes:
     session:
@@ -2983,6 +3011,52 @@ components:
           description: The engine's own words, in DETERMINISTIC mode (data/copy/en.json › coach.answer.*).
         call:
           $ref: "#/components/schemas/CoachCall"
+    MealWords:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 500
+    MealDraft:
+      type: object
+      required: [mode, items]
+      properties:
+        mode:
+          type: string
+          enum: [MODEL, DETERMINISTIC]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MealDraftItem"
+    MealDraftItem:
+      type: object
+      description: A food as the model read it, how much, and the database's foods for it — never what it holds (U1).
+      required: [food, grams, confident, candidates]
+      properties:
+        food:
+          type: string
+          description: The model's words for the food.
+        grams:
+          type: number
+          exclusiveMinimum: 0
+        confident:
+          type: boolean
+          description: A food holds every word — the first candidate is the pick; otherwise the user picks one (U5).
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoodMatch"
+    FoodMatch:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
     CoachCall:
       type: object
       description: The call the answer is about, as it stands (U2) — its words, and when new data looks at it again.

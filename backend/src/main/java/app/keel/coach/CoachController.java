@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-/** POST /v1/coach/messages (K-505; contract CoachQuestion → CoachAnswer): a question about a call; the coach explains it. */
+/** The coach (K-505, K-504): a question about a call, explained; a meal in words, read into a draft. */
 @RestController
 class CoachController {
 
@@ -22,12 +22,28 @@ class CoachController {
     record AnswerView(Explanation.Mode mode, String text, String copyKey, Explanation.Call call) {
     }
 
-    private final Explanation explanation;
-    private final CoachProperties properties;
+    record MealWords(String text) {
+    }
 
-    CoachController(Explanation explanation, CoachProperties properties) {
+    private final Explanation explanation;
+    private final MealDraft meals;
+    private final CoachProperties properties;
+    private final MealProperties mealProperties;
+
+    CoachController(Explanation explanation, MealDraft meals, CoachProperties properties, MealProperties mealProperties) {
         this.explanation = explanation;
+        this.meals = meals;
         this.properties = properties;
+        this.mealProperties = mealProperties;
+    }
+
+    /** POST /v1/meals/parse (K-504; contract MealWords → MealDraft): a meal in words, as a draft of the database's foods. */
+    @PostMapping("/v1/meals/parse")
+    MealDraft.Draft parse(AccountId account, @RequestBody MealWords words) {
+        if (words == null || words.text() == null || words.text().isBlank() || words.text().length() > mealProperties.maxTextChars()) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
+        return meals.read(account, words.text());
     }
 
     @PostMapping("/v1/coach/messages")
