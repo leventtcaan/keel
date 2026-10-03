@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
@@ -71,6 +72,12 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
                         given(answered.recovery(), CheckIn.Recovery.UNKNOWN), given(answered.waist(), CheckIn.Waist.UNKNOWN),
                         given(answered.appetite(), CheckIn.Appetite.UNKNOWN)),
                 snapshot.training(), snapshot.context(), signals.isEmpty() ? null : signals);
+    }
+
+    /** The latest weekly mean the call read (K-611: the ledger's "after"); none when it read no window. */
+    static Optional<BigDecimal> trendRead(StoredSnapshot snapshot, Parameters parameters) {
+        List<WeekMean> weeks = of(snapshot, parameters).weeks();
+        return weeks.isEmpty() ? Optional.empty() : Optional.of(weeks.getLast().kg());
     }
 
     // Kilograms a week from the window's first week to its latest.

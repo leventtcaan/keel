@@ -188,3 +188,9 @@ test('a safety call says nothing else either (ADR-028 #24)', async () => {
   expect(screen.queryByText(t('why.signals'))).toBeNull();
   expect(screen.queryByText(t('decision.rule.weight_steady_waist_down'))).toBeNull();
 });
+
+test('every call so far is one step away (K-611)', async () => {
+  await show();
+  fireEvent.press(screen.getByText(t('ledger.open')));
+  expect(mockPush).toHaveBeenCalledWith('/ledger');
+});

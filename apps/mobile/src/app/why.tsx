@@ -133,6 +133,7 @@ function Body({ read, onRetry }: { read: Read | null; onRetry: () => void }) {
         <Text style={small}>{t('today.call.nextReview', { date: weekdayDate(decision.nextReview) })}</Text>
       </Card>
       <Text style={small}>{t('why.boundary')}</Text>
+      <Button label={t('ledger.open')} variant="ghost" size="sm" onPress={() => router.push('/ledger')} />
     </>
   );
 }

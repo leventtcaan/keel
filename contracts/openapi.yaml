@@ -2774,6 +2774,11 @@ components:
           description: |
             Present (true) only on the hard stop, which is kept and shown as its change of phase to BULK so the record
             does not give away the answer that led to it (K-228, ADR-028 #24, GDPR Art. 9). It cannot be undone.
+        readTrendKg:
+          type: number
+          description: |
+            In the ledger (GET /v1/decisions) only: the latest weekly mean of the window the call read (K-611), so the
+            ledger can say what came after it — never why. Absent when the call read no window.
         application:
           $ref: "#/components/schemas/Application"
     DecisionBasis:

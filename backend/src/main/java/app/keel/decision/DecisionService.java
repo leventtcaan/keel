@@ -565,6 +565,11 @@ class DecisionService {
     }
 
     /** What the call read, from its own stored snapshot (K-519): read with the parameters for the sex it was made for. */
+    /** The trend weight a kept call read (K-611); none when it read no window. */
+    Optional<BigDecimal> trendRead(CallStore.Call call) {
+        return DecisionBasis.trendRead(call.snapshot(), parameters.forSex(call.snapshot().sex()));
+    }
+
     Optional<DecisionBasis> basis(AccountId account, UUID id) {
         return find(account, id).map(call -> DecisionBasis.of(call.snapshot(), parameters.forSex(call.snapshot().sex())));
     }

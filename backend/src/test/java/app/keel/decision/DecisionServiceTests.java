@@ -289,6 +289,8 @@ class DecisionServiceTests {
         Map<String, Object> page = map(send(account, "GET", "/v1/decisions?limit=2", null));
         List<Map<String, Object>> items = (List<Map<String, Object>>) page.get("items");
         assertThat(items).hasSize(2).first().satisfies(call -> assertThat(call).containsEntry("id", latest));
+        // K-611: a call that read no window (no weigh-ins here) has no trend weight in the ledger — none is made up.
+        assertThat(items).allSatisfy(call -> assertThat(call).doesNotContainKey("readTrendKg"));
         Map<String, Object> older = map(send(account, "GET", "/v1/decisions?limit=2&before=" + page.get("next"), null));
         assertThat((List<?>) older.get("items")).hasSize(1);
         assertThat(older).doesNotContainKey("next");
