@@ -10,8 +10,8 @@ backend/build/
 backend/.kotlin/
 backend/.jqwik-database
 # mobile
-apps/mobile/node_modules/
-contracts/node_modules/
+apps/mobile/node_modules
+contracts/node_modules
 apps/mobile/.expo/
 apps/mobile/dist/
 apps/mobile/ios/

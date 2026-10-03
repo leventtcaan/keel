@@ -6,7 +6,7 @@
       "unit": "seconds",
       "tag": "tecrube",
       "source": "arastirma/ham/guray/G1-antrenman.md#K-49",
-      "note": "Rest between work sets, low volume and high intensity (Güray K-49: 2-3 minutes; the aim is mechanical tension, not metabolic stress). The session's rest timer counts up and shows the band (K-405); the timer in the background and the Live Activity are K-411."
+      "note": "Rest between work sets, low volume and high intensity (coaching experience, K-49: 2-3 minutes; the aim is mechanical tension, not metabolic stress). The session's rest timer counts up and shows the band (K-405); the timer in the background and the Live Activity are K-411."
     },
     {
       "key": "rest_seconds_max",
@@ -94,7 +94,7 @@
       "unit": "ratio_of_work_load",
       "tag": "urun",
       "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
-      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; ürün onayı bekliyor (DURUM soru 40)."
     },
     {
       "key": "warmup_reps_first_move",
@@ -106,7 +106,7 @@
       "unit": "reps",
       "tag": "urun",
       "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
-      "note": "Fewer reps as the load climbs: ready, not tired (K-17). TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+      "note": "Fewer reps as the load climbs: ready, not tired (K-17). TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; ürün onayı bekliyor (DURUM soru 40)."
     },
     {
       "key": "warmup_fractions_other_move",
@@ -116,7 +116,7 @@
       "unit": "ratio_of_work_load",
       "tag": "urun",
       "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
-      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; ürün onayı bekliyor (DURUM soru 40)."
     },
     {
       "key": "warmup_reps_other_move",
@@ -126,7 +126,7 @@
       "unit": "reps",
       "tag": "urun",
       "source": "arastirma/ham/L3-ozellik-boslugu.md#1.1",
-      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; Levent onayı bekliyor (DURUM soru 40)."
+      "note": "TÜRETİLMİŞ (kaynak sayı vermiyor: G1 K-17 yalnız kaç ısınma ve 'tükenişe asla yaklaşmaz' diyor; L3 §1.1 #3: sunum kuralı, parametre + not). Yaygın uygulayıcı merdiveni; ürün onayı bekliyor (DURUM soru 40)."
     },
     {
       "key": "warmup_round_kg",

@@ -10,7 +10,6 @@ import app.keel.engine.Parameters;
 import app.keel.engine.Prompts;
 import app.keel.engine.RuleId;
 import app.keel.engine.Sex;
-import app.keel.engine.Source;
 import app.keel.engine.TrainingStatus;
 import app.keel.measurement.Measurements;
 import app.keel.profile.ProfileFacts;
@@ -50,7 +49,7 @@ import org.springframework.web.bind.annotation.RestController;
 class PromptController {
 
     /** Contract Prompt. */
-    record PromptView(String rule, String key, String copyKey, List<String> choices, Source source) {
+    record PromptView(String rule, String key, String copyKey, List<String> choices, SourceView source) {
     }
 
     record Answer(String key, String choice) {
@@ -120,7 +119,7 @@ class PromptController {
                 plan.flatMap(current -> DeficitStart.of(current, calls.planSteps(account))), states.current(account, today).isPresent());
         Set<String> answered = answers.answered(account);
         return Prompts.today(facts, p).stream().filter(prompt -> !answered.contains(prompt.rule().value() + "/" + prompt.key()))
-                .map(prompt -> new PromptView(prompt.rule().value(), prompt.key(), prompt.copyKey().value(), prompt.choices(), prompt.source()))
+                .map(prompt -> new PromptView(prompt.rule().value(), prompt.key(), prompt.copyKey().value(), prompt.choices(), SourceView.of(prompt.source())))
                 .toList();
     }
 

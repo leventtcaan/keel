@@ -30,7 +30,8 @@ final class PersonNames {
     }
 
     static Pattern pattern() {
-        return Pattern.compile((String) section().get("pattern"), Pattern.CASE_INSENSITIVE);
+        // Case is in the pattern itself, as the app reads it too: no flag.
+        return Pattern.compile((String) section().get("pattern"));
     }
 
     @SuppressWarnings("unchecked")

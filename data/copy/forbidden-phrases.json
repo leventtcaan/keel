@@ -151,13 +151,16 @@
   ],
   "personNames": {
     "source": "plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md",
-    "why": "ADR-041 #72 (K-523): a professional app names no person — not the coach whose experience the rules rest on, not the people who built it. The app, the API contract and the product's code say what kind of source a rule has; the research path (arastirma/…, internal, read on the server for audit) is taken out before the scan, so a path may hold a name. Matched apart from letters on either side, so code names (GURAY_LOSS_CAP) are caught too.",
-    "pattern": "(?<![a-z])(g(u|ü|Ü)ray|levent)(?![a-z])",
+    "why": "ADR-041 #72 (K-523): a professional app names no person — not the coach whose experience the rules rest on, not the people who built it. The app, the API contract and the product's code say what kind of source a rule has; the research path (arastirma/…, internal, read on the server for audit) is taken out before the scan, so a path may hold a name. Case is spelled out in the pattern (no case-insensitive flag, the same in Java and JavaScript): a name is not glued to a lowercase letter on either side, but a capital starts a word, so code names are caught — GURAY_LOSS_CAP, gurayLossCap, fromLevent — and 'eleventh' or 'Leventis' are not.",
+    "pattern": "(?:(?<![a-z])|(?=[GL]))([gG]([uU]|ü|Ü)[rR][aA][yY]|[lL][eE][vV][eE][nN][tT])(?![a-z])",
     "researchPath": "arastirma/[^\\s\"'`)]*",
     "examples": [
       "Güray says so",
       "GÜRAY",
       "GURAY_LOSS_CAP",
+      "gurayLossCap",
+      "GurayTree",
+      "fromLevent",
       "guray's tree",
       "Levent's call",
       "(Levent, 29 Sep)"
@@ -165,10 +168,12 @@
     "nonExamples": [
       "the Levantine coast",
       "Leventis",
+      "the eleventh week",
       "a gray day",
       "arastirma/ham/guray/G2-kilo-verme.md#K-17",
       "arastirma/03-guray-karar-omurgasi.md#2.4",
       "coaching experience (G2 K-17)"
-    ]
+    ],
+    "_about": "Scanned: data/copy/en.json, contracts/openapi.yaml, the app's code and the data files it bundles (forbidden-phrases.test.ts), the backend's code (NoPersonNameTests) and the contract (ContractTests)."
   }
 }

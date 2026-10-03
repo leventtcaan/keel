@@ -13,3 +13,6 @@
 7. K-520 tetikleyici soruları Bugün'de — tek soru, bir kez cevap, yanıt ya da yön, okumaya bağlı not
 8. K-513 ilk 8 hafta + 5. hafta riski (motor + sunucu) — kişinin haftası, tek Pazar eşlemesi, herhangi bir sinyal (ağırlık yok), okuma kapıları
 9. K-502 karar kartı yüzleri + gerekçe sayfası — yüz sunucudan okunur, telefondan uygulama, ret türleri, ref kilidi, kayan nokta yüzdesi
+
+## Aktarım sırası (Part 2)
+10. ADR-041 işleri — K-430 Epley çıkışı (`ADR-037-isleri.md` › K-430), K-523 üründe kişi adı yok (`K-523.md`)

@@ -302,7 +302,13 @@ class DecisionServiceTests {
         // K-523 (ADR-041 #72): the app is told what kind of source a reason rests on; where it is written down
         // (arastirma/…, which may name a person) stays with the kept call, for audit.
         AccountId account = ready("LOSE_FAT");
-        String id = (String) map(answer(account, UUID.randomUUID(), thisWeek(), List.of())).get("id");
+        UUID clientId = UUID.randomUUID();
+        MvcTestResult answered = answer(account, clientId, thisWeek(), List.of());
+        String id = (String) map(answered).get("id");
+        // The answer's own reply, and the same answers sent again, are the call as sent too.
+        for (MvcTestResult reply : List.of(answered, answer(account, clientId, thisWeek(), List.of()))) {
+            assertThat(reply.getResponse().getContentAsString()).doesNotContain("arastirma/").contains("\"source\":{\"tag\":");
+        }
 
         for (String path : List.of("/v1/decisions", "/v1/decisions/current", "/v1/decisions/" + id)) {
             MvcTestResult result = send(account, "GET", path, null);

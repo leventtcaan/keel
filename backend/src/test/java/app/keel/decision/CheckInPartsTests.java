@@ -75,6 +75,29 @@ class CheckInPartsTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void aCallIsSentWithItsSourcesKindOnlyAndKeptWithTheirPaths() {
+        // K-523 (ADR-041 #72): the kept call holds each reason's research path (audit); what is sent holds its kind only —
+        // a hard stop too, still marked safety under the change-of-phase words (ADR-028 #24).
+        Decision decision = new Decision(new Action.HardStop(),
+                List.of(new Reason(new RuleId("cut_stalled"), new Source("arastirma/ham/guray/G2-kilo-verme.md#K-14", SourceTag.EXPERIENCE)),
+                        new Reason(new RuleId("low_energy_safety"), new Source("arastirma/ham/J1-cinsiyet.md#C6", SourceTag.LITERATURE))),
+                Confidence.HIGH, LocalDate.of(2026, 10, 12), new CopyKey("decision.hard_stop.low_energy_safety"));
+        Map<String, Object> kept = DecisionJson.of(decision);
+
+        Map<String, Object> sent = SourceView.sent(kept);
+
+        assertThat(sent.get("reasons")).isEqualTo(List.of(
+                Map.of("rule", "cut_stalled", "source", Map.of("tag", "EXPERIENCE")),
+                Map.of("rule", "low_energy_safety", "source", Map.of("tag", "LITERATURE"))));
+        assertThat(sent).containsEntry("safety", true).containsEntry("copyKey", "decision.change_phase.low_energy_safety")
+                .containsEntry("action", kept.get("action"));
+        assertThat(((List<Map<String, Object>>) kept.get("reasons")).getFirst().get("source"))
+                .isEqualTo(Map.of("reference", "arastirma/ham/guray/G2-kilo-verme.md#K-14", "tag", "EXPERIENCE"));
+        assertThat(DecisionJson.action(kept)).isInstanceOf(Action.HardStop.class);
+    }
+
+    @Test
     void anActionsDataIsWrittenPlainly() {
         assertThat(DecisionJson.of(decision(new Action.Deload(new BigDecimal("0.50")))).get("action"))
                 .isEqualTo(Map.of("type", "DELOAD", "setsFactor", new BigDecimal("0.5")));
