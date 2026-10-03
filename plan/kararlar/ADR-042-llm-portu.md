@@ -10,11 +10,15 @@ Mevcut mimari kural: ağa yalnız `privacy` modülü çıkar (`EgressRuleTests`)
 ## Karar
 1. **Port** `coach.LanguageModel.complete(ModelRequest) → ModelReply` (paket içi). İstek: amaç (sayım etiketi, gönderilmez), model,
    çıktı sınırı, talimat, turlar. Cevap: ham metin (şemaya göre okunmadan kullanılmaz, ADR-004) + token sayıları.
-2. **Tek yol `CoachModel.ask`:** her çağrı `EgressGate.send(account, THIRD_PARTY_AI, …)` içinde — rıza yoksa model hiç çağrılmaz.
-   `LanguageModelBoundaryTests`: `LanguageModel.complete`'i `CoachModel` dışında kimse çağıramaz (kendini sahte fikstürle kanıtlar).
-3. **Yapılandırma `keel.coach`:** `provider` (sunucunun bildiği adaptör adı), `model`, `max-output` (token), liste fiyatları (milyon token
-   başına). Kodda model adı, sınır, fiyat yok (K2). Bilinmeyen sağlayıcı ya da imkânsız değer → sunucu açılmaz.
-4. **Yalnız `fake`:** ağ yok, veri dışarı çıkmaz; söyleneni sırayla cevaplar, sorulanı hatırlar (testler, K-506 seti). Hiçbir şey
+2. **Tek yol `CoachModel.ask`:** her çağrı `EgressGate.sendToAi(account, providerName, …)` içinde — rıza yoksa ya da rıza **başka
+   bir sağlayıcıyı** anıyorsa model hiç çağrılmaz (`ConsentGate.requireAi`). Düz `send` AI'a veri taşıyamaz (sağlayıcı adı zorunlu).
+   `LanguageModelBoundaryTests`: sahibi `LanguageModel`'e atanabilen hiçbir `complete`'e `CoachModel` dışında erişilmez — arayüz,
+   adaptörün kendi sınıfı, metot referansı, dar alt arayüz, `super` (inceleme: ilk kural yalnız arayüz çağrısını görüyordu); her yol
+   bir fikstürle kanıtlı. `CoachModel`'in kendi içi davranış testinde (`CoachModelTests`).
+3. **Yapılandırma `keel.coach`:** `provider` (sunucunun bildiği adaptör adı), `provider-name` (çağrının gittiği sağlayıcı, rızanın
+   andığı adla — V2), `model`, `max-output` (token; anahtar adında "token" yok: sır bekçisi), liste fiyatları (milyon token başına). Kodda model adı, sınır, fiyat yok (K2). Bilinmeyen sağlayıcı ya da imkânsız değer → sunucu açılmaz.
+4. **Yalnız `fake`:** ağ yok, veri dışarı çıkmaz; söyleneni sırayla cevaplar, sorulanın son 100'ünü hatırlar (testler, K-506 seti;
+   sınırsız bellek yok). Üretimde `provider-name: none` ve AI rıza yapılandırması yok → kapı kapalı. Hiçbir şey
    söylenmemişse `{}` döner → hiçbir cevap şeması kabul etmez → koç motorun yazdığını söyler (deterministik mod).
 5. **Gerçek adaptör (K-511 sonrası):** adaptör ağa kendisi çıkmaz; HTTP `privacy` modülündeki bir taşıyıcıdan geçer (rıza kontrolü ile
    ayrılmaz). Bu ADR onu kurmaz; K-511'de ayrı karar. Harcama limiti ve anahtar (V5, ortam değişkeni) yayına çıkarken — DURUM'da.

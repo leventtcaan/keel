@@ -109,6 +109,8 @@ keel:
   # no spending yet) — it sends nothing anywhere. The AI consent names the provider (keel.consent.third-party-ai).
   coach:
     provider: fake
+    # Who the calls go to, as the AI consent names it (V2); the fake sends nowhere.
+    provider-name: none
     model: fake
     max-output: 400 # tokens
     input-price-per-million: 0

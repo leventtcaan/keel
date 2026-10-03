@@ -12,11 +12,17 @@ import java.util.List;
  */
 final class FakeLanguageModel implements LanguageModel {
 
+    private static final int REMEMBERED = 100;
+
     private final Deque<String> answers = new ArrayDeque<>();
     private final List<ModelRequest> requests = new ArrayList<>();
 
     @Override
     public synchronized ModelReply complete(ModelRequest request) {
+        // The last few only: a bean that lives as long as the server keeps no growing record of anyone's words.
+        if (requests.size() == REMEMBERED) {
+            requests.removeFirst();
+        }
         requests.add(request);
         String text = answers.isEmpty() ? "{}" : answers.removeFirst();
         return new ModelReply(text, 0, 0);
