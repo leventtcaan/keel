@@ -122,7 +122,8 @@ class QuotaTests {
     }
 
     private int used(AccountId account, LocalDate day) {
-        return jdbc.sql("select coalesce(sum(used), 0) from subscription.daily_use where account_id = :a and day = :day").param("a", account.value())
+        return jdbc.sql("select coalesce(sum(used), 0) from subscription.daily_use where account_id = :a and day = :day and use = 'COACH_MESSAGE'")
+                .param("a", account.value())
                 .param("day", day).query(Integer.class).single();
     }
 

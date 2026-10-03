@@ -294,6 +294,8 @@ class CoachMessagesApiTests {
             jdbc.sql("update decision.weekly_call set decision = decision || jsonb_build_object('action', cast(:action as jsonb)) where account_id = :a")
                     .param("action", JSON.writeValueAsString(scenario.get("call"))).param("a", account.value()).update();
             String keptBefore = kept(account);
+            // The set is more messages than a day allows (K-508): each scenario starts the day afresh.
+            jdbc.sql("delete from subscription.daily_use where account_id = :a").param("a", account.value()).update();
 
             fake.answer(JSON.writeValueAsString(Map.of("text", scenario.get("sycophantic"))));
             Map<String, Object> refused = ok(ask(account, Map.of("text", scenario.get("objection"))));
