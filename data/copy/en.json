@@ -1244,7 +1244,21 @@
     "answer": {
       "call": "This week's call stands as it is. What changes it is new data, not a different answer.",
       "no_call": "There's no call yet. The first one comes with your first weekly check-in.",
-      "daily_limit": "Today's coach answers are used up. Here's this week's call as it stands; tomorrow the coach answers in its own words again."
+      "daily_limit": "Today's coach answers are used up. Here's this week's call as it stands; tomorrow the coach answers your messages again.",
+      "stands": "The call stands until its next look on {date}: new data changes it, not a different answer."
+    },
+    "topic": {
+      "less": "It's fair to want it lighter.",
+      "more": "Wanting faster results makes sense.",
+      "later": "Timing matters, and life doesn't always fit the plan.",
+      "hunger": "Hunger is real, and it usually eases as your body adjusts.",
+      "doubts_data": "If a reading looks off, log it as it is: the trend smooths out odd days.",
+      "feels_fine": "Feeling good is a good sign.",
+      "worry": "That worry makes sense.",
+      "frustrated": "Fair enough. The call isn't about blame; it reads what the data shows.",
+      "health": "What your doctor tells you comes first. The coach talks about training and food, not medical care, so share your plan with them.",
+      "why": "Here's the reason.",
+      "off_topic": "I can only talk about your call and your plan."
     },
     "call": {
       "nextReview": "Looked at again on {date}, with the week's weigh-ins and logs."

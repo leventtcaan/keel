@@ -72,8 +72,14 @@ final class MealReplyCheck {
             if (quantity.signum() <= 0 || quantity.compareTo(maxQuantity) > 0) {
                 return Optional.empty();
             }
-            read.add(new Item(words, CallNumbers.plain(quantity), measure));
+            read.add(new Item(words, plain(quantity), measure));
         }
         return Optional.of(List.copyOf(read));
+    }
+
+    /** One way to write a quantity, so equal ones are equal: 50, not 5E+1; 0.5, not 0.50. */
+    static BigDecimal plain(BigDecimal value) {
+        BigDecimal stripped = value.stripTrailingZeros();
+        return stripped.scale() < 0 ? stripped.setScale(0) : stripped;
     }
 }

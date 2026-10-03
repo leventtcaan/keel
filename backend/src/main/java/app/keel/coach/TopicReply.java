@@ -44,10 +44,8 @@ final class TopicReply {
         }
         Optional<Topic> topic = topic(name);
         Object rule = reply.get("rule");
-        if (topic.isEmpty() || (rule != null && !(rule instanceof String))) {
-            return Optional.empty();
-        }
-        if (rule != null && call.reasons().stream().noneMatch(reason -> reason.rule().equals(rule))) {
+        // A rule that is not one of the call's own (a number, a rule of the model's making) drops the reply.
+        if (topic.isEmpty() || (rule != null && call.reasons().stream().noneMatch(reason -> reason.rule().equals(rule)))) {
             return Optional.empty();
         }
         if (!topic.get().aboutTheCall()) {

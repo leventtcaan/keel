@@ -74,11 +74,4 @@ final class PatternList {
     int size() {
         return entries.size();
     }
-
-    /** These entries and those. */
-    PatternList with(PatternList other) {
-        List<Entry> both = new ArrayList<>(entries);
-        both.addAll(other.entries);
-        return new PatternList(both);
-    }
 }
