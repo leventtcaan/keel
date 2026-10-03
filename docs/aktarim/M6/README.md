@@ -6,3 +6,6 @@
 ## Aktarım sırası (Part 1 · Geçmiş ve sinyaller)
 1. K-535 geçmiş haftalar kendi program sayısıyla (`K-535.md`, ADR-049) — program geçmişi tablosu, haftanın okuması (en az), saat dilimi sınırı
 2. K-534 seyrek rafta tekrar tavanı (`K-534.md`) — tavan, ortak vaka dosyası, telefon notu
+3. K-608 tutarlılık geçmişi (`K-608.md`) — af sayısı, affedildiği an, sıfırlanmaz
+4. K-603 "kilo sabit, bel düştü" (`K-603.md`) — spine'ın hükmü, bel aralığı, karardan bağımsız
+5. K-611 karar defteri (`K-611.md`) — "after" dili, yalnız son karar bekler
