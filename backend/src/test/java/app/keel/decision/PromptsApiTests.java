@@ -150,6 +150,24 @@ class PromptsApiTests {
     }
 
     @Test
+    void theProgramsDaysAreTheOnesMissedAndTheProfilesOnlyWhenItHasNone() throws Exception {
+        // K-527 (ADR-041 #64): a program built on other days than the profile's — the misses are its days.
+        AccountId account = ready(); // the profile trains on Monday
+        LocalDate trained = LocalDate.now(ZoneOffset.UTC).minusDays(15);
+        session(account, trained);
+        program(account, "WEDNESDAY");
+        trainingDaysSetLongAgo(account);
+
+        assertThat(list(account)).singleElement().satisfies(prompt -> assertThat(prompt).containsEntry("rule", "sessions_missed")
+                .containsEntry("key", trained.with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY)).toString()));
+
+        // A program whose days have no weekday: the profile's Monday.
+        program(account, null);
+        assertThat(list(account)).singleElement().satisfies(prompt -> assertThat(prompt).containsEntry("rule", "sessions_missed")
+                .containsEntry("key", trained.with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString()));
+    }
+
+    @Test
     void theLaddersWeekOffIsNoMiss() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
@@ -255,6 +273,17 @@ class PromptsApiTests {
         Object id = JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id");
         assertThat(send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
                 "setType", "WORKING", "loadKg", benchKg, "reps", 8, "rir", 2)).getResponse().getStatus()).isLessThan(300);
+    }
+
+    /** A one-day program on that weekday (none: a day without one), as if made 60 days ago. */
+    private void program(AccountId account, String weekday) {
+        Map<String, Object> day = new java.util.HashMap<>(Map.of("name", "Full body", "exercises",
+                List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))));
+        if (weekday != null) {
+            day.put("weekday", weekday);
+        }
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", List.of(day)))).hasStatusOk();
+        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
     }
 
     /** The profile's training days as if set 60 days ago. */
