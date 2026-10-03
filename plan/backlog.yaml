@@ -2156,7 +2156,7 @@ tasks:
     acceptance:
       - "Açılışta o günün verisinden 3 çip"
       - "Yapılandırılmış kartlar (kayıt önizleme, karar)"
-      - "Plan değişikliği sohbetten tetiklenir, yapılandırılmış onay ekranında onaylanır"
+      - "Plan değişikliği sohbetten değil: karar kartı gerekçeye götürür, uygulama Bugün'ün mevcut akışıyla (applyCall) — Part 3 talimatı, ADR-043"
     tests:
       - "ChatScreenTests"
     refs: ["arastirma/04-faz3-urun.md#8.4"]
