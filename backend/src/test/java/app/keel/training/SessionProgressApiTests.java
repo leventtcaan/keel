@@ -67,6 +67,63 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void backAfterALongBreakTheTargetIsAStepLighterFromTheBottomOfTheRange() throws Exception {
+        // K-531 (ADR-043 #75, G7 K-72): the targets came from a session three weeks and more ago — one of the region's steps
+        // under the last load, from the bottom of the range; the program says why.
+        AccountId account = withAProgram();
+        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(22)));
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        sets(account, workout, "squat", 3, 100, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").subtract(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+        assertThat(next(account, 1)).isEqualTo(target(new BigDecimal("100").subtract(step(ParameterKey.LOAD_INCREMENT_LOWER_KG)), 6));
+        assertThat(map(send("GET", account, "/v1/program", null))).containsEntry("backAfterBreak", true);
+    }
+
+    @Test
+    void aShorterBreakChangesNothing() throws Exception {
+        AccountId account = withAProgram();
+        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(19)));
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+        assertThat(map(send("GET", account, "/v1/program", null))).doesNotContainKey("backAfterBreak");
+    }
+
+    @Test
+    void theStepBackIsALoadTheGymCanMakeAndNoneWhereItMakesNothingLighter() throws Exception {
+        // No 1.25 plates: 60 − 2.5 is not on the bar, 55 is; a 10/20 rack has nothing between: 20 − 2.5 is 10. Here the row's
+        // 10 is the lightest — nothing lighter, so the last load stays (from the bottom of the range all the same).
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "barKg", 20,
+                "platesKg", List.of(20, 10, 5), "dumbbellsKg", List.of(10, 20), "machines", List.of()));
+        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(30)));
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "LEFT");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "RIGHT");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(55, 6));
+        assertThat(next(account, 3)).isEqualTo(target(10, 8));
+    }
+
+    @Test
+    void aSessionBackEndsTheBreakItsTargetsAreTheUsualOnes() throws Exception {
+        AccountId account = withAProgram();
+        String before = start(account, Instant.now().minus(java.time.Duration.ofDays(25)));
+        sets(account, before, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, before, List.of())).hasStatusOk();
+        String back = start(account, Instant.now().minus(java.time.Duration.ofHours(2)));
+        sets(account, back, "bench_press", 3, 57.5, 7, "BOTH");
+        assertThat(finish(account, back, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(57.5, 8));
+        assertThat(map(send("GET", account, "/v1/program", null))).doesNotContainKey("backAfterBreak");
+    }
+
+    @Test
     void theAddedLoadIsWhatTheGymInUseCanMake() throws Exception {
         // K-414: plates by 2.5 make +5 on the bar; dumbbells by 2 make 22 of 20 + 2.5; at the rack's heaviest, one more rep.
         AccountId account = withAProgram();
