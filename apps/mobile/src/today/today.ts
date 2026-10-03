@@ -97,17 +97,17 @@ export function labelKey(copyKey: string): string {
   return `${copyKey.split('.').slice(0, 2).join('.')}.label`;
 }
 
-export type ReasonLine = { titleKey: string | null; tag: Schemas['SourceTag'] };
+export type ReasonLine = { sentenceKey: string | null; tag: Schemas['SourceTag'] };
 
 /**
- * "Why this call" (U14): each reason with its words where the copy has them for this call's action, and always the kind
- * of source it rests on. The research file itself stays on the server: a path means nothing on a phone.
+ * "Why this call" (U14, K-522): each reason in its own sentence ("decision.rule.<rule>" — the leading one too, in words
+ * other than the call's title), and always the kind of source it rests on. A safety call says nothing of why (ADR-028
+ * #24): its kinds of source only. The research file itself stays on the server: a path means nothing on a phone.
  */
 export function reasonLines(decision: Schemas['Decision']): ReasonLine[] {
-  const action = decision.copyKey.split('.').slice(0, 2).join('.');
   return decision.reasons.map((reason) => {
-    const key = `${action}.${reason.rule}.title`;
-    return { titleKey: has(key) ? key : null, tag: reason.source.tag };
+    const key = `decision.rule.${reason.rule}`;
+    return { sentenceKey: decision.safety !== true && has(key) ? key : null, tag: reason.source.tag };
   });
 }
 

@@ -217,7 +217,9 @@ test("this week's call: its label, its words from the copy key, its confidence; 
   expect(screen.getByText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
   expect(screen.getByText(t('today.call.nextReview', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
   expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(1); // the leading reason is the title
+  expect(screen.getByText(t('decision.rule.toward_goal'))).toBeOnTheScreen(); // and says its own sentence (K-522)
   await press(t('today.call.hide'));
+  expect(screen.queryByText(t('decision.rule.toward_goal'))).toBeNull();
   expect(screen.queryByText(t('today.call.source.EXPERIENCE'))).toBeNull();
 });
 
@@ -251,6 +253,7 @@ test('a safety call shows as its general change: no hard stop, no cycle, on the 
   await show();
   await press(t('today.call.why'));
   expect(screen.getByText(t('decision.change_phase.label'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('decision.rule.low_energy_safety'))).toBeNull();
   expect(allText()).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
 });
 
