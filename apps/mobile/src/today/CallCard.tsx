@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -11,7 +11,7 @@ import { tokens } from '@/theme/tokens';
 
 import { useAppServices } from '@/services/ServicesProvider';
 
-import { applyCall, variantOf } from './call';
+import { applyCall, appliedKey, variantOf } from './call';
 import { labelKey, reasonLines } from './today';
 
 type Decision = components['schemas']['Decision'];
@@ -25,6 +25,8 @@ const REVIEW_DAY = new Intl.DateTimeFormat('en-US', {
 });
 
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
+// No connection is the user's to fix; a call that is past (409) is said so; anything else is ours, worth another try.
+const SAID: Record<string, string> = { NoConnection: 'today.call.applyFailed', ApplyRefused: 'today.call.applyRefused' };
 
 /**
  * This week's call (K-212), in its own words: label, title and body from its copy key, whatever the action — the "not
@@ -38,8 +40,10 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
   const { color } = useTheme();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  // Not applied, for this call only: a new call is a new try.
-  const [failed, setFailed] = useState<{ id: string; key: string } | null>(null);
+  // Not applied, said for the read it happened on: Today read again is a new try (as the coach's question, K-520).
+  const [failed, setFailed] = useState<{ read: Decision; key: string } | null>(null);
+  // A ref, not state: two taps in the same moment both see state from before either ran, a ref they share.
+  const sending = useRef(false);
   if (decision === null) {
     return (
       <Card>
@@ -65,20 +69,22 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
   const variant = variantOf(decision);
   const holds = variant === 'hold';
   const waits = variant === 'wait';
-  const id = decision.id;
+  const shown = decision;
 
   async function apply() {
+    if (sending.current) return;
+    sending.current = true;
     setBusy(true);
     try {
-      await applyCall(api, id);
+      await applyCall(api, shown.id);
       setFailed(null);
       onChanged();
     } catch (error) {
       const name = nameOf(error);
       report({ name });
-      // No connection is the user's to fix; a refusal means the call is past (another moved the plan, or it was undone).
-      setFailed({ id, key: name === 'NoConnection' ? 'today.call.applyFailed' : 'today.call.applyRefused' });
+      setFailed({ read: shown, key: SAID[name] ?? 'today.call.applyError' });
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
@@ -89,10 +95,10 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
       <View style={styles.reasons}>
         <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t('today.call.oneThing')}</Text>
         <Button label={t('today.call.apply')} size="sm" onPress={() => void apply()} disabled={busy} />
-        {failed?.id === id ? <Text style={[styles.small, { color: color.decisionMuted }]}>{t(failed.key)}</Text> : null}
+        {failed?.read === decision ? <Text style={[styles.small, { color: color.decisionMuted }]}>{t(failed.key)}</Text> : null}
       </View>
     ) : (
-      <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t(state === 'UNDONE' ? 'today.call.undone' : 'today.call.applied')}</Text>
+      <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t(state === 'UNDONE' ? 'today.call.undone' : appliedKey(decision.copyKey))}</Text>
     );
   return (
     <DecisionBlock testID="call" eyebrow={t(labelKey(decision.copyKey))} title={t(titleKey)}>

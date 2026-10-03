@@ -739,6 +739,8 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     await press(t('today.call.apply'));
     expect(screen.getByText(t('today.call.applyFailed'))).toBeOnTheScreen();
 
+    // Each read is parsed anew: the same call, a new object.
+    mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
     await act(async () => mockRefocus());
     expect(screen.queryByText(t('today.call.applyFailed'))).toBeNull();
     expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
