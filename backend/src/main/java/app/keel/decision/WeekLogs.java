@@ -128,7 +128,7 @@ class WeekLogs {
     private WeekTallies.Plan asked(AccountId account, ProfileFacts profile, CallStore.Plan plan, Optional<BigDecimal> bodyweight, int ageYears,
             Parameters parameters) {
         int proteinG = bodyweight.map(kg -> MacroTargets.proteinG(kg, Sex.valueOf(profile.sex().name()), ageYears, parameters)).orElse(0);
-        return new WeekTallies.Plan(planned.byWeek(account, profile), parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK), proteinG,
+        return new WeekTallies.Plan(week -> planned.perWeek(account, profile), parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK), proteinG,
                 stepTargets(account, plan, profile.timeZone(), parameters));
     }
 
