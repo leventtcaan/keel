@@ -19,3 +19,4 @@
 11. K-525 "hâlâ öyle mi" üç haftada bir (`K-525.md`)
 12. K-527 kaçan seans programın günlerinde (`K-527.md`)
 13. K-526 uyum sayıları (`K-526.md`)
+14. K-524 literatür: dönüş yükü (uygulanmaz) + yoğun hafta minimum dozu (`K-524.md`, `arastirma/ham/H9-donus-minimum-doz.md`)

@@ -89,6 +89,42 @@ parameters:
     tag: urun
     source: "arastirma/ham/L3-ozellik-boslugu.md#5"
     note: "TÜRETİLMİŞ, ürün kararı (Levent, ADR-037 #38 b). §5 Y7: motorun artışı salonda mümkün en yakın yüke yuvarlanır, mümkün değilse tekrar artışına çevrilir. En yakın ağır yük son yükün üstünde motor adımının (hedef − son) bu katından uzaksa 'mümkün değil' sayılır: seyrek rafta 10 → 20 kg dambıl +%100 sıçramaydı. Kaynaklı bir sıçrama sınırı yok. Tutma şöyle biter (ADR-041 #55): son yükteki setlerin her biri ağır yükte aralığın altına eşdeğer olunca (Epley, H3 B15) sıçranır."
+  - key: busy_min_sessions_per_week
+    value: 1
+    unit: sessions_per_week
+    tag: literatur
+    source: "arastirma/ham/H9-donus-minimum-doz.md#§2.1"
+    note: "Yoğun hafta minimum dozu (K-524, ADR-038 #7). Bickel 2011: haftada 1 seans 20-35 yaşta kuvveti ve kas kütlesini 32 hafta korudu; Rønnestad 2011 (profesyonel): haftada 1 korudu, 2 haftada 1 korumadı (H9 §2.4). Güray G1 K-22 ile çelişmez: '1/hafta mantıksız ama atrofi yaratmaz' — gelişim için 2, koruma için 1. TÜRETİLMİŞ: tek bir haftaya uygulamak (çalışmalar 8-32 hafta; kısa süre daha kolay korunur)."
+  - key: busy_min_sets_per_exercise
+    value: 1
+    unit: sets
+    tag: literatur
+    source: "arastirma/ham/H9-donus-minimum-doz.md#§2.1"
+    note: "Egzersiz başına 1 set (Bickel 2011 1/9 doz; Spiering 2021 'egzersiz başına 1 set', H9 §2.5; Graves 1988'in 1-2 gün/hafta bulgusu ikincil kaynaktan [doğrulanmadı], H9 §2.2). Birim çalışmanınki: egzersiz başına, kas başına değil. Güray G1 K-9: tek set hakkın varsa o seti tükenişe götür — Bickel'in seti de istemli yorgunluğa kadar. TÜRETİLMİŞ: üst vücuda genelleme (Bickel ve Graves yalnız alt vücut)."
+  - key: busy_min_keep_load
+    value: true
+    unit: boolean
+    tag: literatur
+    source: "arastirma/ham/H9-donus-minimum-doz.md#§2.5"
+    note: "Yük (göreli yoğunluk) düşürülmez: Spiering 2021 'yoğunluk anahtar değişken'; Bickel 2011 idame dozunu aynı 8-12RM ile yaptı; Mujika & Padilla 2000 (H9 §1.6)."
+  - key: busy_min_older_age
+    value: 60
+    unit: years
+    tag: literatur
+    source: "arastirma/ham/H9-donus-minimum-doz.md#§2.1"
+    note: "Bickel 2011'in 60-75 yaş grubu: 1/9 doz kuvveti korudu, kas boyutunu korumadı. Sınır çalışmanın grup sınırı."
+  - key: busy_min_sessions_per_week_older
+    value: 2
+    unit: sessions_per_week
+    tag: literatur
+    source: "arastirma/ham/H9-donus-minimum-doz.md#§2.5"
+    note: "Spiering 2021 (derleme): yaşlıda kas boyutu için 'haftada 2 seansa kadar'. Düşük güven: derlemenin birincil dayanağı okunamadı (H9 §2.5)."
+  - key: busy_min_sets_per_exercise_older
+    value: 2
+    unit: sets
+    tag: literatur
+    source: "arastirma/ham/H9-donus-minimum-doz.md#§2.5"
+    note: "Spiering 2021: yaşlıda 'egzersiz başına 2-3 set'; alt sınır 2. Düşük güven (H9 §2.5)."
   - key: load_progression_compound_only
     value: true
     unit: boolean

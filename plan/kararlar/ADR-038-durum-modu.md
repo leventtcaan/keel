@@ -28,9 +28,21 @@ gürültü süresi, yeniden-baseline kuralı: kaynak yok.**
    bütçesinin içinde. NO → durum dün biter. Kötüye kullanım sınırı (L3 §4.2): ertelemek kullanıcının hakkı, değiştirmek değil (U2).
 6. **Yeniden baseline için yeni kural yok:** 7+ gün sessizlikten sonra veri yeterliliği (H1 §3.4, `min_weighins_per_week`)
    pencerenin her haftasında tartı ister → karar kendiliğinden "henüz değil" bekler. Suçlamasız dönüş metni mobilde (K-518).
-7. **Bekleyen (U14):** dönüş yükü (ilk seans önceki yükün altında — oran yok, G7 K-72 yalnız nitel) ve yoğun hafta "minimum
-   doz" hacmi (koruma seti sayısı yok). Kaynak gelene kadar uygulanmaz → soru 60. Ağrıda bölgeye göre ilerleme kapısı (L3 §4.2)
-   kabul kriterinde yok → ayrı iş.
+7. **Bekleyen (U14) → literatür taraması (K-524, ADR-041 #60, `arastirma/ham/H9-donus-minimum-doz.md`, 3 Eki):**
+   - **Dönüş yükü — uygulanmaz.** İlk seansın önceki yükün yüzde kaçı olacağını test eden birincil çalışma yok (H9 §5); tek sayılı
+     reçete CSCCa/NSCA 2019 uzman konsensüsü, yük değil hacim/sıklık tavanı, rabdomiyoliz önleme amaçlı, kolej sporcusu (H9 §1.7);
+     dolaşımdaki "%85-95" sayılarının birincil kaynağı yok (H9 §3). Birincil veri antrenmanlı gençte 14 günlük tam aranın 1RM'i
+     anlamlı düşürmediğini (Hortobágyi 1993, Hwang 2017) ve kuvvetin 3 haftaya kadar korunabildiğini (McMaster 2013) gösteriyor →
+     literatür kısa molada yükü düşürmeyi gerektirmiyor, uzun mola için sayı vermiyor. **Güray G7 K-72 kuraldır** ("molanın ardından
+     tam yüke dönülmez; yavaş yavaş girilir") ve motorun bugünkü davranışıyla (yük düşürülmez) **çelişir**; U14'e göre Güray kazanır,
+     ama K-72 miktar vermediği için uygulanamaz (K2: sayı uydurulmaz). Yani yükün korunması kaynaklı bir tercih değil, sayılı kural
+     olmadığı için olan şey → **soru 60 dönüş yükü için açık kalır** (Levent: K-72'ye sayı mı, literatüre göre "yük korunur" mu).
+     `SICK`/`PAIN` literatürün kapsamı dışında (sağlıklı-inaktif denekler; U6).
+   - **Yoğun hafta minimum dozu — kural (K-524):** `BusyWeekDose` — haftada 1 seans, egzersiz başına 1 set, yük korunur
+     (Bickel 2011 1/9 doz; Rønnestad 2011; Spiering 2021); `busy_min_older_age` (60) ve üstünde 2 seans × 2 set (düşük güven).
+     Parametreler `training.yaml › busy_min_*`. Programa ve telefona bağlanması **K-528** (gösterim, öneri olarak — zorunluluk değil:
+     iki haftalık ara bile 1RM düşürmüyor).
+   Ağrıda bölgeye göre ilerleme kapısı (L3 §4.2) kabul kriterinde yok → ayrı iş.
 8. **Mobil (K-518):** beyan ekranı (Bugün'den), durum sürerken hatırlatmalar susar (ADR-036 #7 `muted`), dönüşte suçlamasız
    karşılama.
 
