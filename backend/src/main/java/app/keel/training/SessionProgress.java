@@ -101,7 +101,8 @@ class SessionProgress {
                             RepRange range = new RepRange(planned.repMin(), planned.repMax());
                             int thisWeeksSets = TrainingChanges.sets(planned.sets(), lighter);
                             // A jump limit only where the set's load is all the load moved (K-430).
-                            BigDecimal maxJump = BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS));
+                            BigDecimal maxJump = LoadSteps.wholeLoad(exercise.equipment())
+                                    ? BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS)) : null;
                             // Each side is its own set (SetRules): one session per side; both sides of a two-sided move are one.
                             List<Next> sides = worked.getOrDefault(planned.exerciseId(), List.of()).stream()
                                     .collect(Collectors.groupingBy(set -> String.valueOf(set.side()))).values().stream()
