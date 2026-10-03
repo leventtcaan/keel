@@ -1,15 +1,24 @@
 package app.keel.coach;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.zip.CRC32;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * A meal photo before it goes to a model (K-514, V1): at most 1024 px a side — the app shrinks it (K-408), the server
@@ -37,6 +46,28 @@ class MealPhotoTests {
     }
 
     @Test
+    void thePhotoNeverTouchesTheDisk(@TempDir Path cache) throws IOException {
+        // ImageIO caches a stream it reads in a file by default (K-514 review): the photo, EXIF and all, would sit in a
+        // temporary file — left behind if the server dies mid-request. A cache directory nothing can be written to shows
+        // that nothing is: the photo is still read.
+        File before = ImageIO.getCacheDirectory();
+        boolean usedCache = ImageIO.getUseCache();
+        byte[] photo = withSegment(jpeg(320, 240), exif("GPSLatitude 36.8969"));
+        File locked = cache.toFile();
+        assertThat(locked.setWritable(false)).isTrue();
+        try {
+            ImageIO.setUseCache(true);
+            ImageIO.setCacheDirectory(locked);
+            assertThat(PHOTO.clean(photo)).isPresent();
+            assertThat(locked.list()).isEmpty();
+        } finally {
+            ImageIO.setCacheDirectory(before);
+            ImageIO.setUseCache(usedCache);
+            locked.setWritable(true);
+        }
+    }
+
+    @Test
     void aCommentInTheFileIsGoneToo() throws IOException {
         byte[] withComment = withSegment(jpeg(100, 100), segment(0xFE, "taken at home, kitchen table".getBytes(StandardCharsets.US_ASCII)));
 
@@ -52,8 +83,22 @@ class MealPhotoTests {
         assertThat(PHOTO.clean(jpeg(768, 1024))).isPresent();
         assertThat(PHOTO.clean(jpeg(1025, 768))).as("the app shrinks; the server does not").isEmpty();
         assertThat(PHOTO.clean(jpeg(768, 1025))).isEmpty();
-        // Read from the header, before the pixels: a tiny file that says it is huge is not decoded.
         assertThat(PHOTO.clean(png(4000, 1))).isEmpty();
+    }
+
+    @Test
+    void theSizeIsReadFromTheHeaderBeforeAPixelIsDecoded() throws IOException {
+        // A PNG of 10,000 × 10,000 zeros deflates to about a hundred kilobytes — under the byte limit — and takes 100 MB
+        // once decoded (K-514 review): refused from its header, it is never decoded. What this thread allocates shows
+        // it, whatever the heap (decoded and then refused would be refused too).
+        byte[] bomb = zeroPng(10_000);
+        assertThat(bomb.length).isLessThan(2_000_000);
+        com.sun.management.ThreadMXBean threads = (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
+        long before = threads.getCurrentThreadAllocatedBytes();
+
+        assertThat(PHOTO.clean(bomb)).isEmpty();
+
+        assertThat(threads.getCurrentThreadAllocatedBytes() - before).as("bytes allocated").isLessThan(16_000_000L);
     }
 
     @Test
@@ -68,6 +113,14 @@ class MealPhotoTests {
         assertThat(sent.bytes()[0] & 0xFF).isEqualTo(0xFF);
         assertThat(sent.bytes()[1] & 0xFF).isEqualTo(0xD8);
         assertThat(ImageIO.read(new ByteArrayInputStream(sent.bytes())).getWidth()).isEqualTo(50);
+    }
+
+    @Test
+    void aPhotoIsMadeWithRealLimits() {
+        assertThatIllegalArgumentException().isThrownBy(() -> new MealPhoto(0, 1, 0.85f));
+        assertThatIllegalArgumentException().isThrownBy(() -> new MealPhoto(1024, 0, 0.85f));
+        assertThatIllegalArgumentException().isThrownBy(() -> new MealPhoto(1024, 1, 0f));
+        assertThatIllegalArgumentException().isThrownBy(() -> new MealPhoto(1024, 1, 1.01f));
     }
 
     @Test
@@ -93,6 +146,35 @@ class MealPhotoTests {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(image, "jpg", out);
         return out.toByteArray();
+    }
+
+    /** A valid grayscale PNG of side × side zeros, written chunk by chunk: no BufferedImage of that size is ever made. */
+    private static byte[] zeroPng(int side) throws IOException {
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        png.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'});
+        ByteBuffer header = ByteBuffer.allocate(13).putInt(side).putInt(side).put((byte) 8).put((byte) 0).put((byte) 0).put((byte) 0).put((byte) 0);
+        chunk(png, "IHDR", header.array());
+        ByteArrayOutputStream deflated = new ByteArrayOutputStream();
+        try (DeflaterOutputStream rows = new DeflaterOutputStream(deflated, new Deflater(Deflater.BEST_COMPRESSION))) {
+            byte[] row = new byte[side + 1]; // a filter byte (none) and the row's zeros
+            for (int y = 0; y < side; y++) {
+                rows.write(row);
+            }
+        }
+        chunk(png, "IDAT", deflated.toByteArray());
+        chunk(png, "IEND", new byte[0]);
+        return png.toByteArray();
+    }
+
+    private static void chunk(ByteArrayOutputStream png, String type, byte[] data) throws IOException {
+        byte[] name = type.getBytes(StandardCharsets.US_ASCII);
+        CRC32 crc = new CRC32();
+        crc.update(name);
+        crc.update(data);
+        png.write(ByteBuffer.allocate(4).putInt(data.length).array());
+        png.write(name);
+        png.write(data);
+        png.write(ByteBuffer.allocate(4).putInt((int) crc.getValue()).array());
     }
 
     private static byte[] png(int width, int height) throws IOException {

@@ -87,7 +87,12 @@ class MealPhotoApiTests {
         assertThat(JSON.writeValueAsString(draft)).doesNotContainIgnoringCase("kcal");
         assertThat(fake.requests()).singleElement().satisfies(request -> {
             assertThat(request.purpose()).isEqualTo(Purpose.PHOTO_MEAL);
-            assertThat(request.turns()).singleElement().satisfies(turn -> assertThat(turn.picture()).isNotNull());
+            // The photo's own instructions (grams only): a real model given the words' would answer in cups (K-514 review).
+            assertThat(request.system()).isEqualTo(CoachInstructions.read("photo-meal.md"));
+            assertThat(request.turns()).singleElement().satisfies(turn -> {
+                assertThat(turn.text()).isEmpty();
+                assertThat(turn.picture().mediaType()).isEqualTo("image/jpeg");
+            });
         });
         assertThat(used(account, "PHOTO_ANALYSIS")).as("a photo analysis, not a coach message").isEqualTo(1);
         assertThat(used(account, "COACH_MESSAGE")).isZero();
@@ -141,6 +146,9 @@ class MealPhotoApiTests {
         assertThat(post(account, Map.of("image", Base64.getEncoder().encodeToString("not a picture".getBytes())))).hasStatus(400);
         assertThat(post(account, Map.of("image", "%%% not base64 %%%"))).hasStatus(400);
         assertThat(post(account, Map.of())).hasStatus(400);
+        assertThat(post(account, Map.of("image", 123))).hasStatus(400);
+        assertThat(mvc.post().uri("/v1/meals/photo").header("Authorization", TestSessions.bearer(context, account)).contentType(MediaType.APPLICATION_JSON)
+                .content("[]").exchange()).hasStatus(400);
         assertThat(mvc.post().uri("/v1/meals/photo").header("Authorization", TestSessions.bearer(context, account)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"image\":\"" + "A".repeat(4_000_000) + "\"}").exchange()).as("more than a 1024 px photo can be").hasStatus(413);
         assertThat(fake.requests()).isEmpty();
@@ -157,6 +165,16 @@ class MealPhotoApiTests {
         assertThat(photo(account, MealPhotoTests.jpeg(200, 200))).hasStatus(403);
         assertThat(fake.requests()).isEmpty();
         assertThat(used(account, "PHOTO_ANALYSIS")).isZero();
+    }
+
+    @Test
+    void withoutTheConsentAPhotoIsNotEvenLookedAt() throws Exception {
+        // The consent first (K-514 review): a user who has not agreed gets the consent's answer, not a verdict on the photo.
+        AccountId account = TestSessions.newAccount();
+        healthConsent(account);
+
+        assertThat(post(account, Map.of("image", Base64.getEncoder().encodeToString("not a picture".getBytes())))).hasStatus(403);
+        assertThat(photo(account, MealPhotoTests.jpeg(1025, 10))).hasStatus(403);
     }
 
     @Test

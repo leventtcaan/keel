@@ -16,6 +16,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -66,7 +67,9 @@ class MealDraft {
     private final String instructions;
     private final String photoInstructions;
 
-    MealDraft(CoachModel model, Quota quota, FoodFinder foods, MealProperties properties) {
+    private final MealPhoto photo;
+
+    MealDraft(CoachModel model, Quota quota, FoodFinder foods, MealProperties properties, PhotoProperties photoProperties) {
         this.model = model;
         this.quota = quota;
         this.foods = foods;
@@ -78,23 +81,31 @@ class MealDraft {
         this.stopWords = properties.stopWords().stream().map(word -> word.toLowerCase(Locale.ROOT)).collect(Collectors.toUnmodifiableSet());
         this.instructions = CoachInstructions.read("parse-meal.md");
         this.photoInstructions = CoachInstructions.read("photo-meal.md");
+        this.photo = photoProperties.photo();
     }
 
     Draft read(AccountId account, String words) {
-        return draft(account, Purpose.PARSE_MEAL, Quota.Use.COACH_MESSAGE, instructions, Turn.user(words), check, null);
+        return draft(account, Purpose.PARSE_MEAL, Quota.Use.COACH_MESSAGE, instructions, () -> Turn.user(words), check, null);
     }
 
-    /** A meal photo the server cleaned (MealPhoto): the foods seen, with grams by eye. */
-    Draft readPhoto(AccountId account, Picture photo) {
-        return draft(account, Purpose.PHOTO_MEAL, Quota.Use.PHOTO_ANALYSIS, photoInstructions, Turn.userWithPicture("", photo), photoCheck,
+    /**
+     * A meal photo as it came (K-514): looked at only once both consents are there — then checked and cleaned (MealPhoto;
+     * VALIDATION_FAILED for anything else, before anything is counted) — the foods seen, with grams by eye.
+     */
+    Draft readPhoto(AccountId account, byte[] image) {
+        return draft(account, Purpose.PHOTO_MEAL, Quota.Use.PHOTO_ANALYSIS, photoInstructions,
+                () -> Turn.userWithPicture("", photo.clean(image).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED))), photoCheck,
                 Certainty.ESTIMATED);
     }
 
-    private Draft draft(AccountId account, Purpose purpose, Quota.Use use, String system, Turn turn, MealReplyCheck reading, Certainty certainty) {
+    /** The consents, then what is sent ({@code sent}, which may refuse it), then the day's use, then the model. */
+    private Draft draft(AccountId account, Purpose purpose, Quota.Use use, String system, Supplier<Turn> sent, MealReplyCheck reading,
+            Certainty certainty) {
         foods.requireMealConsent(account);
         if (!model.mayAsk(account, purpose)) {
             throw new ApiException(ErrorCode.CONSENT_REQUIRED);
         }
+        Turn turn = sent.get();
         Optional<LocalDate> taken = quota.take(account, use);
         if (taken.isEmpty()) {
             return new Draft(Mode.DETERMINISTIC, List.of());

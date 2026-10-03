@@ -39,7 +39,6 @@ class CoachController {
     private final CoachProperties properties;
     private final MealProperties mealProperties;
     private final PhotoProperties photoProperties;
-    private final MealPhoto photo;
 
     CoachController(Explanation explanation, MealDraft meals, CoachProperties properties, MealProperties mealProperties, PhotoProperties photoProperties) {
         this.explanation = explanation;
@@ -47,14 +46,13 @@ class CoachController {
         this.properties = properties;
         this.mealProperties = mealProperties;
         this.photoProperties = photoProperties;
-        this.photo = photoProperties.photo();
     }
 
     /**
      * POST /v1/meals/photo (K-514; contract MealPhoto → MealDraft): a meal photo — a JPEG or a PNG of at most 1024 px a
      * side, in base64 — as a draft of the database's foods with grams by eye. Read up to the longest a photo can be and
-     * no further (413), so an endless body is never held; the photo is checked and cleaned before anything is counted or
-     * sent, and is kept nowhere.
+     * no further (413), so an endless body is never held; the photo is looked at only with the consents, checked and
+     * cleaned before anything is counted or sent (MealDraft.readPhoto), and is kept nowhere.
      */
     @PostMapping(value = "/v1/meals/photo", consumes = MediaType.APPLICATION_JSON_VALUE)
     MealDraft.Draft photo(AccountId account, HttpServletRequest request) throws IOException {
@@ -75,8 +73,7 @@ class CoachController {
         } catch (JacksonException | IllegalArgumentException notAPhoto) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
-        Picture cleaned = photo.clean(image).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
-        return meals.readPhoto(account, cleaned);
+        return meals.readPhoto(account, image);
     }
 
     /** POST /v1/meals/parse (K-504; contract MealWords → MealDraft): a meal in words, as a draft of the database's foods. */

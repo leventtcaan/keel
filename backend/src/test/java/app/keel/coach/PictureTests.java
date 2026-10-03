@@ -40,5 +40,7 @@ class PictureTests {
         assertThat(Turn.user("words").picture()).isNull();
         assertThat(Turn.userWithPicture("", picture).picture()).isEqualTo(picture);
         assertThatThrownBy(() -> new Picture("image/jpeg", new byte[0])).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Turn.userWithPicture("", null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new Turn(Turn.Role.ASSISTANT, "", picture)).as("only the user's turn").isInstanceOf(IllegalArgumentException.class);
     }
 }

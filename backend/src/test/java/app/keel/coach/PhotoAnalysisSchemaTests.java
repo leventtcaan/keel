@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -41,10 +40,5 @@ class PhotoAnalysisSchemaTests {
         MealReplyCheck words = new MealReplyCheck(20, new BigDecimal("5000"), 100, ForbiddenWords.fromClasspath());
         assertThat(words.read("{\"items\":[{\"food\":\"rice\",\"quantity\":1,\"unit\":\"cup\"}]}"))
                 .contains(List.of(new MealReplyCheck.Item("rice", new BigDecimal("1"), "cup")));
-    }
-
-    @Test
-    void theOnlyUnitAPhotoReplyMayHaveIsGrams() {
-        assertThat(MealReplyCheck.PHOTO_UNITS).isEqualTo(Set.of("g"));
     }
 }

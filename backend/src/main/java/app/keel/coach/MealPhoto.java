@@ -17,6 +17,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 
 /**
@@ -24,7 +25,8 @@ import javax.imageio.stream.MemoryCacheImageOutputStream;
  * {@code maxBytes} bytes — the app shrinks it (K-408); a larger one is refused, not shrunk, since it should never have left
  * the phone. The size is read from the header, before a pixel is decoded (a small file can say it is huge). What goes on
  * is a JPEG the server writes itself from the pixels alone: nothing the file carried besides them — EXIF with the place
- * and the phone, XMP, a comment — can reach the model. Nothing is kept: the bytes live as long as the request.
+ * and the phone, XMP, a comment — can reach the model. Nothing is kept: the bytes live in memory as long as the request,
+ * read and written without a cache file.
  */
 final class MealPhoto {
 
@@ -57,11 +59,9 @@ final class MealPhoto {
     }
 
     private Optional<BufferedImage> pixels(byte[] raw) throws IOException {
-        ImageInputStream opened = ImageIO.createImageInputStream(new ByteArrayInputStream(raw));
-        if (opened == null) {
-            return Optional.empty();
-        }
-        try (ImageInputStream in = opened) {
+        // In memory, never ImageIO's default file cache: the photo, EXIF and all, would sit in a temporary file — left
+        // behind if the server died mid-request (K-514 review, V1, V3).
+        try (ImageInputStream in = new MemoryCacheImageInputStream(new ByteArrayInputStream(raw))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
             if (!readers.hasNext()) {
                 return Optional.empty();

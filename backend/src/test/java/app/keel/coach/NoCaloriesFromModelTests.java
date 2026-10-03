@@ -2,6 +2,7 @@ package app.keel.coach;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.nutrition.FoodFinder;
 import java.lang.reflect.RecordComponent;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -41,7 +42,7 @@ class NoCaloriesFromModelTests {
     @Test
     void theDraftHasNoPlaceForWhatAFoodHolds() {
         List<String> nutrient = List.of("kcal", "calorie", "energy", "protein", "carb", "fat", "nutrient", "macro");
-        List<String> components = Stream.of(MealDraft.Draft.class, MealDraft.Item.class, MealDraft.Amount.class)
+        List<String> components = Stream.of(MealDraft.Draft.class, MealDraft.Item.class, MealDraft.Amount.class, FoodFinder.FoodMatch.class)
                 .flatMap(type -> Arrays.stream(type.getRecordComponents())).map(RecordComponent::getName)
                 .map(name -> name.toLowerCase(Locale.ROOT)).toList();
         assertThat(components).isNotEmpty().noneMatch(name -> nutrient.stream().anyMatch(name::contains));
