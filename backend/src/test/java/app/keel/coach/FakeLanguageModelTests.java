@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class FakeLanguageModelTests {
 
     private static ModelRequest asked(String words) {
-        return new ModelRequest("explain", "m", 10, "s", List.of(Turn.user(words)));
+        return new ModelRequest(Purpose.EXPLAIN, "m", 10, "s", List.of(Turn.user(words)));
     }
 
     @Test

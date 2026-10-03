@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -14,8 +15,10 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
  */
 class LanguageModelConfigurationTests {
 
+    private static final Map<Purpose, String> TYPES = Map.of(Purpose.EXPLAIN, "coach question", Purpose.PARSE_MEAL, "meal note");
+
     private static CoachProperties properties(String provider) {
-        return new CoachProperties(provider, "Example AI", "fake-model", 400, new BigDecimal("0.10"), new BigDecimal("0.40"));
+        return new CoachProperties(provider, "Example AI", "fake-model", 400, new BigDecimal("0.10"), new BigDecimal("0.40"), TYPES);
     }
 
     @Test
@@ -31,15 +34,20 @@ class LanguageModelConfigurationTests {
 
     @Test
     void theLimitsAndPricesAreRealOnes() {
-        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 0, BigDecimal.ZERO, BigDecimal.ZERO));
-        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", null, BigDecimal.ZERO, BigDecimal.ZERO))
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 0, BigDecimal.ZERO, BigDecimal.ZERO, TYPES));
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", null, BigDecimal.ZERO, BigDecimal.ZERO, TYPES))
                 .withMessageContaining("max-output");
-        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, new BigDecimal("-1"), BigDecimal.ZERO));
-        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, BigDecimal.ZERO, new BigDecimal("-1")));
-        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", " ", 400, BigDecimal.ZERO, BigDecimal.ZERO));
-        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties(null, "AI", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO));
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, new BigDecimal("-1"), BigDecimal.ZERO, TYPES));
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, BigDecimal.ZERO, new BigDecimal("-1"), TYPES));
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", " ", 400, BigDecimal.ZERO, BigDecimal.ZERO, TYPES));
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties(null, "AI", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO, TYPES));
+        // Every purpose names the data it carries, as the consent does (V2, K-505).
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO,
+                Map.of(Purpose.EXPLAIN, "coach question"))).withMessageContaining("data-types");
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO,
+                Map.of(Purpose.EXPLAIN, " ", Purpose.PARSE_MEAL, "meal note")));
         // Who the calls go to, as the consent names it (V2): never left out.
-        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", " ", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO));
+        assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", " ", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO, TYPES));
     }
 
     @Test
@@ -55,10 +63,12 @@ class LanguageModelConfigurationTests {
         ApplicationContextRunner runner = new ApplicationContextRunner().withUserConfiguration(LanguageModelConfiguration.class);
         runner.run(context -> assertThat(context).hasFailed().getFailure().rootCause().hasMessageContaining("keel.coach needs a provider"));
         runner.withPropertyValues("keel.coach.provider=fake", "keel.coach.provider-name=Example AI", "keel.coach.model=m",
-                        "keel.coach.input-price-per-million=0", "keel.coach.output-price-per-million=0")
+                        "keel.coach.input-price-per-million=0", "keel.coach.output-price-per-million=0",
+                        "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note")
                 .run(context -> assertThat(context).hasFailed().getFailure().rootCause().hasMessageContaining("max-output"));
         runner.withPropertyValues("keel.coach.provider=fake", "keel.coach.provider-name=Example AI", "keel.coach.model=m", "keel.coach.max-output=300",
-                        "keel.coach.input-price-per-million=0.10", "keel.coach.output-price-per-million=0.40")
+                        "keel.coach.input-price-per-million=0.10", "keel.coach.output-price-per-million=0.40",
+                        "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note")
                 .run(context -> assertThat(context).hasSingleBean(LanguageModel.class).getBean(CoachProperties.class)
                         .satisfies(bound -> assertThat(bound.inputPricePerMillion()).isEqualByComparingTo("0.10")));
     }

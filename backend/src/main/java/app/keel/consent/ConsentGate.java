@@ -30,11 +30,13 @@ public class ConsentGate {
     }
 
     /**
-     * The AI consent, to this very provider (V2, K-503): given now, to the provider the server states — and that is the one
-     * the call goes to. A call to another provider than the user agreed to is refused like no consent at all.
+     * The AI consent, to this very provider and this data (V2, K-503, K-505): given now, to the provider and the data the
+     * server states — and those are the call's. A call to another provider, or with data the user did not agree to send,
+     * is refused like no consent at all.
      */
-    public void requireAi(AccountId account, String provider) {
-        if (!granted(account, ConsentKind.THIRD_PARTY_AI) || !properties.ai().map(ai -> ai.provider().equals(provider)).orElse(false)) {
+    public void requireAi(AccountId account, String provider, String dataType) {
+        if (!granted(account, ConsentKind.THIRD_PARTY_AI)
+                || !properties.ai().map(ai -> ai.provider().equals(provider) && ai.dataTypes().contains(dataType)).orElse(false)) {
             throw new ApiException(ErrorCode.CONSENT_REQUIRED);
         }
     }

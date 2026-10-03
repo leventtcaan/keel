@@ -117,10 +117,10 @@ class ConsentTests {
                 .hasStatus(400);
 
         MvcTestResult result = put(account, "THIRD_PARTY_AI",
-                Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI", "dataTypes", List.of("meal photo", "meal note")));
+                Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI", "dataTypes", List.of("meal photo", "meal note", "coach question")));
 
         assertThat(read(result)).containsEntry("status", "GRANTED").containsEntry("provider", "Example AI")
-                .containsEntry("dataTypes", List.of("meal photo", "meal note"));
+                .containsEntry("dataTypes", List.of("meal photo", "meal note", "coach question"));
     }
 
     @Test
@@ -129,9 +129,12 @@ class ConsentTests {
         AccountId account = TestSessions.newAccount();
 
         assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Other AI",
-                "dataTypes", List.of("meal photo", "meal note")))).hasStatus(400);
+                "dataTypes", List.of("meal photo", "meal note", "coach question")))).hasStatus(400);
         assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI",
-                "dataTypes", List.of("meal photo", "meal note", "weight")))).hasStatus(400);
+                "dataTypes", List.of("meal photo", "meal note", "coach question", "weight")))).hasStatus(400);
+        // Less than the server would send is not it either (K-505: the coach's question is one of the data).
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI",
+                "dataTypes", List.of("meal photo", "meal note")))).hasStatus(400);
     }
 
     @Test
@@ -140,7 +143,7 @@ class ConsentTests {
         AccountId oldText = TestSessions.newAccount();
         AccountId oldProvider = TestSessions.newAccount();
         insert(oldText, "HEALTH_DATA", "0-old", null, null);
-        insert(oldProvider, "THIRD_PARTY_AI", ConsentTextVersions.THIRD_PARTY_AI, "Former AI", new String[] {"meal photo", "meal note"});
+        insert(oldProvider, "THIRD_PARTY_AI", ConsentTextVersions.THIRD_PARTY_AI, "Former AI", new String[] {"meal photo", "meal note", "coach question"});
 
         assertThat(gate.granted(oldText, ConsentKind.HEALTH_DATA)).isFalse();
         assertThat(gate.granted(oldProvider, ConsentKind.THIRD_PARTY_AI)).isFalse();

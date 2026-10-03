@@ -35,11 +35,11 @@ public class EgressGate {
     }
 
     /**
-     * Data for a third-party AI (V2, K-503): only to {@code provider}, and only with the consent that names it, checked at
-     * the moment of sending; without it the call does not run.
+     * Data for a third-party AI (V2, K-503, K-505): only to {@code provider}, only {@code dataType}, and only with the
+     * consent that names both, checked at the moment of sending; without it the call does not run.
      */
-    public <T> T sendToAi(AccountId account, String provider, Supplier<T> call) {
-        consents.requireAi(account, provider);
+    public <T> T sendToAi(AccountId account, String provider, String dataType, Supplier<T> call) {
+        consents.requireAi(account, provider, dataType);
         return call.get();
     }
 }
