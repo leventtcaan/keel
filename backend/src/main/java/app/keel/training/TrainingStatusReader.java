@@ -70,6 +70,11 @@ public class TrainingStatusReader {
         return programs.current(account).map(program -> program.days().size()).filter(days -> days > 0);
     }
 
+    /** Every program the account has had, oldest first (K-535); empty without one. */
+    public List<ProgramPeriod> programHistory(AccountId account) {
+        return programs.history(account);
+    }
+
     /** The day the account's program was made (or last replaced), on the user's calendar. */
     public Optional<LocalDate> programSince(AccountId account, ZoneId zone) {
         return programs.createdAt(account).map(made -> made.atZone(zone).toLocalDate());

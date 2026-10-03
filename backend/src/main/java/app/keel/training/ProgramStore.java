@@ -66,6 +66,15 @@ class ProgramStore {
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("source", source.name())
                 .param("now", clock.instant().atOffset(ZoneOffset.UTC)).query(UUID.class).single();
         jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
+        // What this program asks a week, from now (K-535): the weeks before keep the program they had. Always after the
+        // last row: two replaces at once each read the clock before the lock, and the one stored last must be in force —
+        // strictly after, so the order never falls to a tie.
+        jdbc.sql("""
+                insert into training.program_history (id, account_id, sessions_per_week, effective_from)
+                values (:id, :account, :sessions, greatest((select created_at from training.program where id = :program),
+                        (select max(effective_from) + interval '1 microsecond' from training.program_history where account_id = :account)))""")
+                .param("id", UUID.randomUUID()).param("account", account.value()).param("sessions", days.size()).param("program", program)
+                .update();
         for (int d = 0; d < days.size(); d++) {
             Day day = days.get(d);
             UUID dayId = UUID.randomUUID();
@@ -92,6 +101,14 @@ class ProgramStore {
     Optional<Instant> createdAt(AccountId account) {
         return jdbc.sql("select created_at from training.program where account_id = :account").param("account", account.value())
                 .query((row, n) -> row.getObject("created_at", OffsetDateTime.class).toInstant()).optional();
+    }
+
+    /** Every program the account has had, oldest first (K-535). */
+    List<ProgramPeriod> history(AccountId account) {
+        return jdbc.sql("select effective_from, sessions_per_week from training.program_history where account_id = :account order by effective_from, id")
+                .param("account", account.value())
+                .query((row, n) -> new ProgramPeriod(row.getObject("effective_from", OffsetDateTime.class).toInstant(), row.getInt("sessions_per_week")))
+                .list();
     }
 
     /**
