@@ -2047,7 +2047,7 @@ tasks:
       - "LanguageModel arayüzü; sağlayıcı yapılandırmadan seçilir"
       - "Model adı, token limiti, fiyat koda gömülü değil"
       - "Her çağrı privacy egress kapısından"
-      - "Sağlayıcıda harcama limiti kurulu (manuel adım, DURUM'da not)"
+      - "Sağlayıcıda harcama limiti kurulu (manuel adım, DURUM'da not) — ertelendi: ADR-041 (gerçek çağrı yok, harcama yok; yayına çıkarken)"
     tests:
       - "Sahte sağlayıcıyla port testleri"
       - "Rızasız çağrı reddi"

@@ -46,3 +46,4 @@
 | [ADR-039](kararlar/ADR-039-proaktif-tetikleyiciler.md) | Proaktif tetikleyiciler: saf motor kuralı, dört soru (G5 T-13, T-4, T-5, T-2), uygulama içi, bir kez, cevap karar değiştirmez | KABUL |
 | [ADR-040](kararlar/ADR-040-ilk-sekiz-hafta.md) | İlk 8 hafta: kişinin haftası, H1 sessiz, antrenmansız sürüm, risk biten kullanıcı haftası 5-8 iken (herhangi bir sinyal, ağırlık yok), af takvim haftasıyla (tek Pazar), riskte soru bütçesi 5 | KABUL |
 | [ADR-041](kararlar/ADR-041-m5-part1-sonu-cevaplari.md) | M5 Part 1 sonu cevapları (55-72): e1RM ile sıçrama, literatür taraması, 3 haftada bir "hâlâ öyle mi", uyum sayıları, programın günleri, sağlayıcı şimdi belgesel (gerçek ölçüm yayında), sıfır saklama şart, üründe kişi adı yok | KABUL |
+| [ADR-042](kararlar/ADR-042-llm-portu.md) | LLM portu: `coach.LanguageModel` (paket içi), tek yol `CoachModel` → privacy kapısı, `keel.coach` yapılandırması, yalnız sahte sağlayıcı (ADR-041) | KABUL |

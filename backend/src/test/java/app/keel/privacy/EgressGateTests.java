@@ -40,7 +40,7 @@ class EgressGateTests {
         AccountId account = TestSessions.newAccount();
         AtomicBoolean called = new AtomicBoolean();
 
-        assertThatThrownBy(() -> egress.send(account, EgressGate.Destination.THIRD_PARTY_AI, () -> {
+        assertThatThrownBy(() -> egress.sendToAi(account, "Example AI", () -> {
             called.set(true);
             return "reply";
         })).isInstanceOfSatisfying(ApiException.class, refused -> assertThat(refused.code()).isEqualTo(ErrorCode.CONSENT_REQUIRED));
@@ -56,7 +56,21 @@ class EgressGateTests {
                 .param("account", account.value()).param("version", ConsentTextVersions.THIRD_PARTY_AI).param("types", new String[] {"meal photo", "meal note"}).update();
         assertThat(consents.granted(account, ConsentKind.THIRD_PARTY_AI)).isTrue();
 
-        assertThat(egress.send(account, EgressGate.Destination.THIRD_PARTY_AI, () -> "reply")).isEqualTo("reply");
+        assertThat(egress.sendToAi(account, "Example AI", () -> "reply")).isEqualTo("reply");
+        // K-503: to another provider than the one the user agreed to, nothing is sent and the call never runs.
+        AtomicBoolean called = new AtomicBoolean();
+        assertThatThrownBy(() -> egress.sendToAi(account, "Other AI", () -> {
+            called.set(true);
+            return "reply";
+        })).isInstanceOfSatisfying(ApiException.class, refused -> assertThat(refused.code()).isEqualTo(ErrorCode.CONSENT_REQUIRED));
+        assertThat(called).isFalse();
+    }
+
+    @Test
+    void aCallToAnAiNamesItsProvider() {
+        // The plain send cannot carry data to an AI: the provider would go unchecked (K-503).
+        assertThatThrownBy(() -> egress.send(TestSessions.newAccount(), EgressGate.Destination.THIRD_PARTY_AI, () -> "reply"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

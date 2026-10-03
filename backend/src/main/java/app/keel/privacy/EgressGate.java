@@ -1,7 +1,6 @@
 package app.keel.privacy;
 
 import app.keel.consent.ConsentGate;
-import app.keel.consent.ConsentKind;
 import app.keel.shared.AccountId;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Service;
@@ -27,10 +26,20 @@ public class EgressGate {
         this.consents = consents;
     }
 
+    /** A call that carries no data for an AI. The AI goes through {@link #sendToAi}, which names the provider. */
     public <T> T send(AccountId account, Destination destination, Supplier<T> call) {
         if (destination == Destination.THIRD_PARTY_AI) {
-            consents.require(account, ConsentKind.THIRD_PARTY_AI);
+            throw new IllegalArgumentException("a call to an AI names its provider: sendToAi");
         }
+        return call.get();
+    }
+
+    /**
+     * Data for a third-party AI (V2, K-503): only to {@code provider}, and only with the consent that names it, checked at
+     * the moment of sending; without it the call does not run.
+     */
+    public <T> T sendToAi(AccountId account, String provider, Supplier<T> call) {
+        consents.requireAi(account, provider);
         return call.get();
     }
 }

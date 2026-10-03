@@ -104,6 +104,17 @@ keel:
     sweep-every: 1m
     retry-after: 1m
     retry-every: 5m
+  # The language model the coach uses (K-503, ADR-004, ADR-042): an adapter the server has, the model, the output limit
+  # and the provider's list prices per million tokens. "fake" until a provider is chosen (K-511; ADR-041: no real call,
+  # no spending yet) — it sends nothing anywhere. The AI consent names the provider (keel.consent.third-party-ai).
+  coach:
+    provider: fake
+    # Who the calls go to, as the AI consent names it (V2); the fake sends nowhere.
+    provider-name: none
+    model: fake
+    max-output: 400 # tokens
+    input-price-per-million: 0
+    output-price-per-million: 0
   # The consent texts the app shows now (data/copy/en.json › consent.*, K-204); "-draft" until the product owner approves.
   consent:
     versions:

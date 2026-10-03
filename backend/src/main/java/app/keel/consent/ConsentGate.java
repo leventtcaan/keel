@@ -29,6 +29,16 @@ public class ConsentGate {
                 && properties.current(kind, event.textVersion(), event.provider(), event.dataTypes())).isPresent();
     }
 
+    /**
+     * The AI consent, to this very provider (V2, K-503): given now, to the provider the server states — and that is the one
+     * the call goes to. A call to another provider than the user agreed to is refused like no consent at all.
+     */
+    public void requireAi(AccountId account, String provider) {
+        if (!granted(account, ConsentKind.THIRD_PARTY_AI) || !properties.ai().map(ai -> ai.provider().equals(provider)).orElse(false)) {
+            throw new ApiException(ErrorCode.CONSENT_REQUIRED);
+        }
+    }
+
     /** CONSENT_REQUIRED unless the consent is given now. */
     public void require(AccountId account, ConsentKind kind) {
         if (!granted(account, kind)) {
