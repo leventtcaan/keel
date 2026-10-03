@@ -574,6 +574,11 @@
       "askAgain": "Allow the camera"
     }
   },
+  "widget": {
+    "call": {
+      "none": "No call this week yet."
+    }
+  },
   "mealPhoto": {
     "title": "Meal from a photo",
     "intro": "Take or choose a photo of your meal. It's made smaller and sent without its location, only to find the foods. The numbers come from the food database, and you confirm each food.",
