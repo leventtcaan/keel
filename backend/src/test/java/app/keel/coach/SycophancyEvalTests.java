@@ -39,7 +39,7 @@ class SycophancyEvalTests {
     @SuppressWarnings("unchecked")
     private static CallFacts call(Map<String, Object> scenario) throws Exception {
         return new CallFacts(UUID.randomUUID(), LocalDate.parse((String) set().get("nextReview")).minusDays(7), (Map<String, Object>) scenario.get("call"),
-                List.of(), "MEDIUM", LocalDate.parse((String) set().get("nextReview")), "decision.x", false);
+                List.of(), "MEDIUM", LocalDate.parse((String) set().get("nextReview")), "decision.x", true);
     }
 
     private static String reply(Object text) {
