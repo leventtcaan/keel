@@ -5,11 +5,12 @@ import app.keel.consent.ConsentKind;
 import app.keel.engine.Action;
 import app.keel.engine.ActivityLevel;
 import app.keel.engine.CheckIn;
-import app.keel.engine.DeclaredContext;
 import app.keel.engine.Decision;
 import app.keel.engine.DecisionPipeline;
+import app.keel.engine.DeclaredContext;
 import app.keel.engine.EnergyBudget;
 import app.keel.engine.FatEstimate;
+import app.keel.engine.FirstWeeks;
 import app.keel.engine.InitialTarget;
 import app.keel.engine.MiniCutGate;
 import app.keel.engine.ParameterKey;
@@ -23,9 +24,11 @@ import app.keel.engine.Sex;
 import app.keel.engine.Snapshot;
 import app.keel.engine.TrainingStatus;
 import app.keel.engine.WaistTrend;
+import app.keel.engine.WeekTally;
 import app.keel.engine.WeighIn;
 import app.keel.engine.WeightSeries;
 import app.keel.engine.WeightTrend;
+import app.keel.identity.AccountDates;
 import app.keel.measurement.Measurements;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
@@ -38,12 +41,14 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,11 +79,14 @@ class DecisionService {
     private final TrainingCalls training;
     private final TrainingStatusReader statuses;
     private final StateStore states;
+    private final AccountDates accounts;
 
     private static final int DAYS_PER_WEEK = 7;
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
-            QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses, StateStore states) {
+            QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses, StateStore states,
+            AccountDates accounts) {
+        this.accounts = accounts;
         this.states = states;
         this.statuses = statuses;
         this.logs = logs;
@@ -123,7 +131,11 @@ class DecisionService {
         // and after a hard stop, when this week's call, on the data or on the answers asked for, would open a deficit
         // again and waits for it (K-229).
         Function<CheckIn, Decision> engine = engine(week, plan, training);
-        List<Answers.Kind> spine = CheckInQuestions.needed(engine, dataSays, budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase())));
+        // The data disagreeing with itself, or a risky week of the first eight (K-513), opens the larger budget.
+        boolean firstWeeksRisk = firstWeeks(account, week.profile(), week.today(), week.parameters(), () -> week)
+                .map(first -> !first.risk().isEmpty()).orElse(false);
+        int weekBudget = budget.forWeek(CheckInQuestions.largerBudget(dataSays, plan.phase(), firstWeeksRisk));
+        List<Answers.Kind> spine = CheckInQuestions.needed(engine, dataSays, weekBudget);
         List<Answers.Kind> asked = new ArrayList<>();
         Snapshot unanswered = snapshot(week, plan, dataSays, false, false, training);
         if (CheckInQuestions.asksAboutTheCycle(week.sex(), SafetyNet.energyAvailability(unanswered, week.parameters()))
@@ -132,7 +144,6 @@ class DecisionService {
         }
         asked.addAll(spine);
         // The third paused week running (K-516, ADR-038 #5): once, inside the budget.
-        int weekBudget = budget.forWeek(CheckInQuestions.anomaly(dataSays, plan.phase()));
         if (spine.size() < weekBudget && CheckInQuestions.asksWhetherStillSo(states.current(account, week.today()).isPresent(),
                 states.days(account, week.today().minusWeeks(budget.stillAfterPausedWeeks()), week.today()), week.today(),
                 budget.stillAfterPausedWeeks())) {
@@ -441,6 +452,41 @@ class DecisionService {
         LocalDate firstCall = calls.firstMadeOn(account).orElse(plan.phaseStart());
         return logs.consistency(account, week.profile(), week.today(), plan, firstCall, bodyweight(account, week), week.body().ageYears(),
                 week.parameters());
+    }
+
+    /** The first eight weeks (K-513, ADR-040): this week of the flow; empty before the account's first day and once it is over. */
+    @Transactional(readOnly = true)
+    Optional<FirstWeeks.Week> firstWeeks(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        LocalDate today = LocalDate.now(clock.withZone(profile.timeZone()));
+        // The whole week (weights, look, waist) only when the risk reads consistency's weeks: not for a week that says nothing.
+        return firstWeeks(account, profile, today, parameters.forSex(Sex.valueOf(profile.sex().name())), () -> week(account));
+    }
+
+    /**
+     * The flow's week on the user's calendar. Nothing is read once the flow is over, and nothing of the week just over
+     * before the risk reads it (ADR-040 #5). Then: the user's week just over and the one before it, from the logs; the
+     * ladder's week off pauses it as a declared state does (K-435: a week of rest is quiet); consistency's weeks from the
+     * record, none before a plan.
+     */
+    private Optional<FirstWeeks.Week> firstWeeks(AccountId account, ProfileFacts profile, LocalDate today, Parameters p, Supplier<Week> week) {
+        ZoneId zone = profile.timeZone();
+        LocalDate began = accounts.began(account).atZone(zone).toLocalDate();
+        boolean planned = !profile.trainingDays().isEmpty();
+        if (!FirstWeeks.readsRisk(began, today, p)) {
+            return FirstWeeks.of(new FirstWeeks.Facts(today, began, planned, new FirstWeeks.UserWeek(0, 0, false), 0, List.of()), p);
+        }
+        LocalDate lastWeek = FirstWeeks.weekStart(began, today).minusWeeks(1);
+        FirstWeeks.UserWeek last = logs.userWeek(account, zone, lastWeek);
+        boolean rested = !statuses.breaks(account, lastWeek, lastWeek.plusDays(DAYS_PER_WEEK - 1L)).rest().isEmpty();
+        List<WeekTally> calendar = calls.plan(account).map(plan -> {
+            Week read = week.get();
+            return logs.consistency(account, profile, today, plan, calls.firstMadeOn(account).orElse(plan.phaseStart()), bodyweight(account, read),
+                    read.body().ageYears(), p).weeksOver();
+        }).orElse(List.of());
+        return FirstWeeks.of(new FirstWeeks.Facts(today, began, planned, new FirstWeeks.UserWeek(last.sessions(), last.loggedDays(), last.paused() || rested),
+                logs.loggedDays(account, lastWeek.minusWeeks(1)), calendar), p);
     }
 
     /** The targets the user follows today; NOT_FOUND before the first estimate. */

@@ -85,6 +85,14 @@ class QuestionBudgetTests {
     }
 
     @Test
+    void theFirstWeeksRiskOpensTheLargerBudgetToo() {
+        // K-513, ADR-040 #4: a risky week of the first eight is an anomaly's budget (U9: at most 5) — a cap, not a reason to ask.
+        assertThat(CheckInQuestions.largerBudget(CheckIn.NONE, Phase.CUT, true)).isTrue();
+        assertThat(CheckInQuestions.largerBudget(CheckIn.NONE, Phase.CUT, false)).isFalse();
+        assertThat(CheckInQuestions.largerBudget(with(CheckIn.Look.WORSE, CheckIn.Waist.UNKNOWN), Phase.CUT, false)).isTrue();
+    }
+
+    @Test
     void aQuestionSaysWhyItIsAsked() {
         // U9: every question comes with the reason it is asked.
         assertThat(CheckInQuestions.describe(Answers.Kind.TRAINING)).isEqualTo(new CheckInQuestions.Question(Answers.Kind.TRAINING, "CHOICE",

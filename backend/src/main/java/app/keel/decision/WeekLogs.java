@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import app.keel.engine.Consistency;
 import app.keel.engine.ConsistencyRecord;
+import app.keel.engine.FirstWeeks;
 import app.keel.engine.MacroTargets;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
@@ -36,6 +37,8 @@ import org.springframework.stereotype.Component;
 @Component
 class WeekLogs {
 
+    private static final int DAYS_PER_WEEK = 7;
+
     private final TrainingLog training;
     private final Measurements measurements;
     private final MealTotals meals;
@@ -65,8 +68,11 @@ class WeekLogs {
                 today));
     }
 
-    /** This week so far and the record since the first call (K-420), from the same logs and plan as the adherence. */
-    record Now(WeekTally week, ConsistencyRecord record) {
+    /**
+     * This week so far and the record since the first call (K-420), from the same logs and plan as the adherence; the
+     * weeks over it was counted from, oldest first (K-513 reads the forgiven week from them).
+     */
+    record Now(WeekTally week, ConsistencyRecord record, List<WeekTally> weeksOver) {
     }
 
     Now consistency(AccountId account, ProfileFacts profile, LocalDate today, CallStore.Plan plan, LocalDate firstCall,
@@ -75,8 +81,25 @@ class WeekLogs {
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON));
         WeekTallies.Logs logs = logs(account, profile, over.isEmpty() ? monday : over.getFirst(), today, bodyweight);
         WeekTallies.Plan asked = asked(account, profile, plan, bodyweight, ageYears, parameters);
+        List<WeekTally> weeksOver = paused(account, WeekTallies.of(over, logs, asked), today);
         return new Now(paused(account, List.of(WeekTallies.thisWeek(today, logs, asked)), today).getFirst(),
-                Consistency.record(paused(account, WeekTallies.of(over, logs, asked), today), parameters));
+                Consistency.record(weeksOver, parameters), weeksOver);
+    }
+
+    /**
+     * The user's own seven days from {@code from} (K-513): the days a session was done (two workouts on a day are its one
+     * session, as in a week's tally), the days food was logged, and whether a state was declared on any of them.
+     */
+    FirstWeeks.UserWeek userWeek(AccountId account, ZoneId zone, LocalDate from) {
+        LocalDate to = from.plusDays(DAYS_PER_WEEK - 1L);
+        int sessions = (int) training.workoutStarts(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant())
+                .stream().map(started -> started.atZone(zone).toLocalDate()).distinct().count();
+        return new FirstWeeks.UserWeek(sessions, loggedDays(account, from), !states.days(account, from, to).isEmpty());
+    }
+
+    /** The days food was logged in the seven from {@code from}. */
+    int loggedDays(AccountId account, LocalDate from) {
+        return meals.proteinByDay(account, from, from.plusDays(DAYS_PER_WEEK - 1L)).size();
     }
 
     /** The weeks with a day the user declared a state on, paused (K-516, ADR-038): neither on track nor missed. */
