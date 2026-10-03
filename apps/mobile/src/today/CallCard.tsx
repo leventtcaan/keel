@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -33,7 +34,8 @@ const SAID: Record<string, string> = { NoConnection: 'today.call.applyFailed', A
  * yet" variants (U3), the short cut (K-227), a safety call as its general change of phase (ADR-028 #24: the words of
  * the copy key, nothing more). Its face (K-502): a hold says nothing needs doing; a wait gives no confidence (its label
  * says "Wait"); a change is one thing at a time, applied from today with one tap — then Today reads again. The next review
- * is always in sight; "Why this call" opens the reasons, each with its kind of source (U14).
+ * is always in sight; "Why this call" opens the reasons, each with its kind of source (U14), and leads on to the
+ * data behind it (K-502, its own page).
  */
 export function CallCard({ decision, onChanged }: { decision: Decision | null; onChanged: () => void }) {
   const { api, report } = useAppServices();
@@ -64,6 +66,7 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
           <Text style={[styles.small, { color: color.decisionMuted }]}>{t(`today.call.source.${line.tag}`)}</Text>
         </View>
       ))}
+      <Button label={t('today.call.data')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/why', params: { id: decision.id } })} />
     </View>
   ) : null;
   const variant = variantOf(decision);
