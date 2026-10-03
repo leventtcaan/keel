@@ -1,18 +1,21 @@
 package app.keel.engine;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * The first eight weeks (K-513, ADR-040; 04 §7.5, I1 F2): the user's own week since the account began, its content —
- * the first week silent, I1 F2's "no comment, no score" — and from first_weeks_risk_from (G2 K-63: weeks five to eight
- * are the critical window) the risk: the signals of the calendar week just over, each said on its own. Any one is a
- * risk; none is weighed against another, as no source gives weights (U14). A week paused by a declared state signals
- * nothing (ADR-038). Its use: the week's question budget widens and the phone says one human word (K-521); no call
- * changes (U1).
+ * the first week silent, I1 F2's "no comment, no score"; a version without lifting for someone who does not train — and
+ * the risk. G2 K-63 makes weeks five to eight the critical window, so the risk reads the user's week just over while it is
+ * one of those: in weeks six to nine, the ninth open for that alone. Any signal is a risk; none is weighed against
+ * another, as no source gives weights (U14). A week paused by a declared state signals nothing (ADR-038). Its use: the
+ * week's question budget widens and the phone says one human word (K-521); no call changes (U1).
  */
 public final class FirstWeeks {
 
@@ -26,49 +29,88 @@ public final class FirstWeeks {
     public record UserWeek(int sessions, int loggedDays, boolean paused) {
     }
 
+    /**
+     * What the week reads, on the user's calendar.
+     *
+     * @param began the day the account began: day one of week one
+     * @param trainingPlanned the program asks for training at all
+     * @param lastWeek the user's week just over: the seven days before {@link #weekStart}
+     * @param loggedDaysWeekBefore days with food logged in the user's week before that
+     * @param calendarWeeks consistency's weeks, oldest first and consecutive, through at least the one that ended inside
+     *     {@code lastWeek}; any later is not read
+     */
     public record Facts(LocalDate today, LocalDate began, boolean trainingPlanned, UserWeek lastWeek, int loggedDaysWeekBefore,
             List<WeekTally> calendarWeeks) {
+
+        public Facts {
+            Objects.requireNonNull(lastWeek, "lastWeek");
+            calendarWeeks = List.copyOf(calendarWeeks);
+        }
     }
 
-    /** The week: its number (1 to first_weeks), its content (none in the first), the risk's signals (none: no risk). */
+    /** The week: its number (1 to first_weeks + 1), its content (none in the first and the last), the risk's signals. */
     public record Week(int number, Optional<CopyKey> content, List<Reason> risk) {
     }
 
     private FirstWeeks() {
     }
 
-    /** This week of the flow; empty before the account's first day and once the flow is over. */
-    public static Optional<Week> of(Facts facts, Parameters parameters) {
-        long days = ChronoUnit.DAYS.between(facts.began(), facts.today());
-        int number = (int) (days / DAYS_PER_WEEK) + 1;
-        if (days < 0 || number > parameters.wholeNumber(ParameterKey.FIRST_WEEKS)) {
-            return Optional.empty();
-        }
-        Optional<CopyKey> content = number == 1 ? Optional.empty() : Optional.of(new CopyKey("first_weeks.week" + number));
-        List<Reason> risk = number >= parameters.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM) ? signals(facts, parameters) : List.of();
-        return Optional.of(new Week(number, content, risk));
+    /** The first day of the user's week that {@code today} is in: the weekday the account began on. */
+    public static LocalDate weekStart(LocalDate began, LocalDate today) {
+        return began.plusWeeks(Math.floorDiv(ChronoUnit.DAYS.between(began, today), DAYS_PER_WEEK));
     }
 
-    public static LocalDate weekStart(LocalDate began, LocalDate today) {
-        return began.plusWeeks(ChronoUnit.DAYS.between(began, today) / DAYS_PER_WEEK);
+    /** This week of the flow; empty before the account's first day and once the week after the flow is over. */
+    public static Optional<Week> of(Facts facts, Parameters parameters) {
+        long days = ChronoUnit.DAYS.between(facts.began(), facts.today());
+        int flow = parameters.wholeNumber(ParameterKey.FIRST_WEEKS);
+        long number = days / DAYS_PER_WEEK + 1;
+        if (days < 0 || number > flow + 1) {
+            return Optional.empty();
+        }
+        long weekJustOver = number - 1;
+        List<Reason> risk = weekJustOver >= parameters.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM) ? signals(facts, parameters) : List.of();
+        return Optional.of(new Week((int) number, content((int) number, flow, facts.trainingPlanned()), risk));
+    }
+
+    private static Optional<CopyKey> content(int number, int flow, boolean trainingPlanned) {
+        if (number == 1 || number > flow) {
+            return Optional.empty();
+        }
+        // Weeks two, four and six speak of lifting and muscle (I1 F2); someone not training reads their own version.
+        return Optional.of(new CopyKey((trainingPlanned ? "first_weeks.week" : "first_weeks.no_training.week") + number));
     }
 
     private static List<Reason> signals(Facts facts, Parameters parameters) {
-        if (facts.lastWeek().paused()) {
+        UserWeek last = facts.lastWeek();
+        if (last.paused()) {
             return List.of();
         }
         List<Reason> signals = new ArrayList<>();
-        if (facts.trainingPlanned() && facts.lastWeek().sessions() == 0) {
+        if (facts.trainingPlanned() && last.sessions() == 0) {
             signals.add(new Reason(NO_SESSION_LAST_WEEK, SIGNALS));
         }
-        if (Consistency.lastWeekForgiven(facts.calendarWeeks(), parameters)) {
+        if (forgivenInside(facts, parameters)) {
             signals.add(new Reason(FORGIVEN_WEEK_USED, SIGNALS));
         }
         // A drop under a week's worth of logging (H1 §3.4's min_logged_days_per_week), not a new threshold of its own.
         int enough = parameters.wholeNumber(ParameterKey.MIN_LOGGED_DAYS_PER_WEEK);
-        if (facts.lastWeek().loggedDays() < enough && facts.loggedDaysWeekBefore() >= enough) {
+        if (last.loggedDays() < enough && facts.loggedDaysWeekBefore() >= enough) {
             signals.add(new Reason(LOGGING_DROPPED, SIGNALS));
         }
         return List.copyOf(signals);
+    }
+
+    /**
+     * Consistency forgives calendar weeks, Monday to Sunday: the number the user sees. The user's seven days hold exactly
+     * one Sunday, so exactly one calendar week ends inside them — that one is read, and none after it.
+     */
+    private static boolean forgivenInside(Facts facts, Parameters parameters) {
+        LocalDate lastDay = weekStart(facts.began(), facts.today()).minusDays(1);
+        DayOfWeek lastOfACalendarWeek = Consistency.WEEK_STARTS_ON.minus(1);
+        LocalDate monday = lastDay.with(TemporalAdjusters.previousOrSame(lastOfACalendarWeek)).minusDays(DAYS_PER_WEEK - 1);
+        List<WeekTally> through = facts.calendarWeeks().stream().filter(week -> !week.weekStart().isAfter(monday)).toList();
+        return !through.isEmpty() && through.getLast().weekStart().equals(monday)
+                && Consistency.lastWeekForgiven(through, parameters);
     }
 }

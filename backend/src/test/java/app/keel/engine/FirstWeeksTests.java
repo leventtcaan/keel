@@ -149,6 +149,18 @@ class FirstWeeksTests {
         List<WeekTally> withNow = new ArrayList<>(calendar(today, 9, 9));
         withNow.add(training(withNow.getLast().weekStart().plusWeeks(1), 2));
         assertThat(week(new FirstWeeks.Facts(today, BEGAN, true, ON_TRACK, 7, withNow)).risk()).isEmpty();
+        // And the week just over is still read past it: forgiven, then a week on track running now.
+        List<WeekTally> forgivenThenNow = new ArrayList<>(calendar(today, 9, 2));
+        forgivenThenNow.add(training(forgivenThenNow.getLast().weekStart().plusWeeks(1), 9));
+        assertThat(rules(week(new FirstWeeks.Facts(today, BEGAN, true, ON_TRACK, 7, forgivenThenNow)))).containsExactly("forgiven_week_used");
+    }
+
+    @Test
+    void consistencysWeeksStoppingShortOfTheWeekJustOverSayNothingOfIt() {
+        // The forgiven week a week earlier is not the user's week just over.
+        LocalDate today = weekStarting(6);
+        List<WeekTally> shortOfIt = calendar(today, 9, 2, 9).subList(0, 2);
+        assertThat(week(new FirstWeeks.Facts(today, BEGAN, true, ON_TRACK, 7, shortOfIt)).risk()).isEmpty();
     }
 
     @Test

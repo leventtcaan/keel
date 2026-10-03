@@ -2230,8 +2230,9 @@ tasks:
       - "Risk yüksekken soru bütçesi ≤5 (U9)"
       - "Bölündü (3 Eki): bu kart motor + sunucu (hafta içeriği anahtarı, risk sinyalleri, /v1 okuması); telefon K-521"
     tests:
-      - "EightWeekFlowTests"
-      - "RiskScoreTests"
+      - "FirstWeeksTests"
+      - "ConsistencyTests (lastWeekForgiven)"
+      - "FirstWeeksApiTests"
     refs: ["arastirma/04-faz3-urun.md#7.5", "arastirma/ham/I1-onboarding-aliskanlik.md"]
     learn:
       - "Kohort davranışı"

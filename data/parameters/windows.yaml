@@ -75,10 +75,10 @@ parameters:
     unit: weeks
     tag: urun
     source: "arastirma/04-faz3-urun.md#7.5"
-    note: "İlk 8 hafta akışı (K-513, ADR-040): H1-H8, kişinin kendi haftası, hesabın açıldığı günden. 8 hafta alışkanlık kurmaz (Lally) — bir sonraki bloğa devrettirir."
+    note: "İlk 8 hafta akışı (K-513, ADR-040): H1-H8, kişinin kendi haftası, hesabın açıldığı günden; ardından bir hafta yalnız 8. haftanın riski için açık. 8 hafta alışkanlık kurmaz (Lally) — bir sonraki bloğa devrettirir."
   - key: first_weeks_risk_from
     value: 5
     unit: weeks
     tag: tecrube
     source: "arastirma/ham/guray/G2-kilo-verme.md#K-63"
-    note: "5. haftadan akışın sonuna risk okunur (K-513, ADR-040): G2 K-63 kritik uyum penceresi 5.-8. hafta; I1 F2 risk skoru 5. haftada devreye girer."
+    note: "Biten kullanıcı haftası bu ve sonrası (akışın sonuna kadar) iken risk okunur, yani 6-9. haftalarda (K-513, ADR-040): G2 K-63 kritik uyum penceresi 5.-8. hafta; I1 F2 risk skoru 5. haftada devreye girer."
