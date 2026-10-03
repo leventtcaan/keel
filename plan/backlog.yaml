@@ -2411,7 +2411,7 @@ tasks:
     module: engine
     type: spike
     size: S
-    status: todo
+    status: done
     depends_on: [K-516]
     why: "ADR-041 #60 / ADR-038: iki alt madde kaynaksız olduğu için uygulanmıyor (U14); Levent literatür taraması istedi"
     acceptance:
@@ -2466,6 +2466,28 @@ tasks:
     tests:
       - "PromptsApiTests"
     refs: ["plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md"]
+    learn: []
+  - id: K-528
+    title: Yoğun hafta minimum dozu programda (BUSY beyanında)
+    milestone: M5
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on:
+    - K-524
+    - K-518
+    why: 'K-524 (ADR-038 #7): BusyWeekDose kaynaklı ama hiçbir yere bağlı değil; BUSY beyan edilen haftada program ve telefon minimum
+      dozu gösterebilir'
+    acceptance:
+    - BUSY süren haftada program görünümü BusyWeekDose'u (seans, egzersiz başına set, yük aynı) öneri olarak verir; hedefler
+      değişmez (U2)
+    - Metin suçlamasız ve öneri dili (U7); yaş busy_min_older_age ve üstündeyse yaşlı dozu
+    tests:
+    - ProgramApiTests (BUSY haftası), telefon gösterimi
+    refs:
+    - arastirma/ham/H9-donus-minimum-doz.md
+    - plan/kararlar/ADR-038-durum-modu.md
     learn: []
   - id: K-517
     title: "Haftalık kısa koç notu"

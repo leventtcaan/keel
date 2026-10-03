@@ -18,3 +18,4 @@
 10. ADR-041 işleri — K-430 Epley çıkışı (`ADR-037-isleri.md` › K-430), K-523 üründe kişi adı yok (`K-523.md`)
 11. K-525 "hâlâ öyle mi" üç haftada bir (`K-525.md`)
 13. K-526 uyum sayıları (`K-526.md`)
+14. K-524 literatür: dönüş yükü (uygulanmaz) + yoğun hafta minimum dozu (`K-524.md`, `arastirma/ham/H9-donus-minimum-doz.md`)
