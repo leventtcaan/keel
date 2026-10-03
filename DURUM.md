@@ -77,7 +77,7 @@ M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sa
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
 ## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 sürüyor, compact öncesi durdu)
-Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki: K-518, K-512, K-519, K-520, K-513 (1/2) #289 ✅ birleşti; K-513 kısım 2 #290 inceleme; sonra K-502, simülatör, Part 1 ÇIKIŞ; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
+Devam: `plan/oturum-promptlari/M5-part1-devam.md`. 3 Eki: K-518, K-512, K-519, K-520, K-513 #289 + #290 ✅ birleşti; K-502 (1/2) #291 auto-merge, (2/2) sürüyor; sonra K-502, simülatör, Part 1 ÇIKIŞ; K-430 #273 Levent'te. Birleşenler bu part'ta: #270 K-429, #271 K-428, #272/#275 K-431, #274 K-434, #276 K-501, #277 K-432,
 #279/#282 K-516. Aktarım bekliyor: M4 Part 2-4 + M5 Part 1 (`docs/aktarim/M5/`). Sorular 55-62.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
@@ -495,7 +495,9 @@ DURUM ile birlikte commitlendi.
 | K-519 kararın dayanağı (`GET /v1/decisions/{id}/basis`, `DecisionBasis`, `WeeklySpine.windowMeans`, `DecisionPipeline.windowRead`) | ✅ birleşti; inceleme: pencereyi okumamış karara hafta/hız gösteriyordu → `windowRead`; hedef kalori sözleşme testine takıldı (U5) → alan çıkarıldı; uyum yalnız oran → soru 63; mutasyon 8/8 + 6/6 | #286 | `M5/K-519.md` |
 | K-520 tetikleyici soruları Bugün'de (tek soru, bir kez cevap, yanıt ya da yön) | ✅ birleşti; inceleme: ret "bağlantı" diyordu, eski "gönderilemedi" notu kalıyordu, sunucu dizgisinden anahtarlar testsizdi → düzeltildi (RED 2); mutasyon 10/10 + 2/2 | #287 | `M5/K-520.md` |
 | K-513 (1/2) motor `FirstWeeks` (kişinin haftası, H1 sessiz, H2-H8 içerik + antrenmansız sürüm, risk biten kullanıcı haftası 5-8 iken: herhangi bir sinyal; af `Consistency.lastWeekForgiven`; ADR-040) | ✅ birleşti; 1. inceleme 5 bulgu (pencere bir hafta kaymış, af sunucuda, 5. hafta metni herkese "eşiği geçtin", antrenmansıza kas vaadi, ADR adı) + 2. inceleme 2 (yalnız Çarşamba başlangıcı test ediliyordu, kısa liste sinyali sessizce kapatıyordu); CI'da RED önce (2 kez); mutasyon 10/10 + 12/12 + 4/4 | #289 | `M5/K-513.md` |
-| K-513 (2/2) sunucu `/v1/first-weeks` (`AccountDates`, decision → identity; mola haftası da duraklatır) + riskte soru bütçesi 5 (bugün gözlenemez: motor anomali dışında ≤2 soru bekler) | 🔄 PR, inceleme sürüyor; CI'da RED önce (12) | #290 | `M5/K-513.md` |
+| K-513 (2/2) sunucu `/v1/first-weeks` (`AccountDates`, decision → identity; mola haftası da duraklatır; akış dışında/1-5. haftada kayıt okunmaz) + riskte soru bütçesi 5 (bugün gözlenemez: motor anomali dışında ≤2 soru bekler) | ✅ birleşti; CI'da RED önce (12); inceleme: akış bitince de bütün hafta okunuyordu, 1-5. haftada kullanılmayan kayıtlar → `readsRisk`; yalnız UTC test ediliyordu → İstanbul testi; mutasyon 4/4 (saf) | #290 | `M5/K-513.md` |
+| K-502 (1/2) karar kartı yüzleri (hold/advice/change/wait, sunucudan okunur) + telefondan "Apply from today" (önceden hiç yoktu) | 🔄 auto-merge; CI'da RED önce (2 kez); inceleme 4+3 (FIX_* "değişiklik yok" diyordu, her ret "geçmiş", not yeni okumada kalıyordu, merdivende "hedeflerin değişti"); mutasyon 12/12 | #291 | `M5/K-502.md` |
+| K-502 (2/2) gerekçe sayfası (veri satırları, kurallar, kaynak, güven, sonraki değerlendirme; `/v1/decisions/{id}/basis`) | sürüyor | — | |
 
 ## Session sonunda Levent'e sorulacaklar
 **M5 Part 1 (yeni, 55-59):**
