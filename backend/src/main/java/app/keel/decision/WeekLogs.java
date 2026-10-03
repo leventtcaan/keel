@@ -54,10 +54,10 @@ class WeekLogs {
     }
 
     /**
-     * Done over planned over the decision window's weeks; empty when nothing was planned in them. Protein days are judged
+     * Done of planned over the decision window's weeks (its ratio the adherence, K-526); empty when nothing was planned in them. Protein days are judged
      * against the protein at {@code bodyweight}; without one they are not judged.
      */
-    Optional<BigDecimal> adherence(AccountId account, ProfileFacts profile, LocalDate today, CallStore.Plan plan, Optional<BigDecimal> bodyweight,
+    Optional<Consistency.WindowCount> adherence(AccountId account, ProfileFacts profile, LocalDate today, CallStore.Plan plan, Optional<BigDecimal> bodyweight,
             int ageYears, Parameters parameters) {
         List<LocalDate> weeks = WeekTallies.weeks(today, parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS), plan.phaseStart());
         if (weeks.isEmpty()) {

@@ -2,6 +2,7 @@ package app.keel.engine;
 
 import static app.keel.engine.EngineFixtures.parameters;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
@@ -95,6 +96,14 @@ class ConsistencyTests {
         assertThat(Consistency.windowCount(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 0).asPaused())))
                 .contains(new Consistency.WindowCount(9, 10));
         assertThat(Consistency.windowCount(List.of(training(MONDAY, 0, 0)))).isEmpty();
+    }
+
+    @Test
+    void aCountIsNeverMoreDoneThanPlannedNorOfNothingPlanned() {
+        assertThatIllegalArgumentException().isThrownBy(() -> new Consistency.WindowCount(5, 4));
+        assertThatIllegalArgumentException().isThrownBy(() -> new Consistency.WindowCount(0, 0));
+        assertThatIllegalArgumentException().isThrownBy(() -> new Consistency.WindowCount(-1, 4));
+        assertThat(new Consistency.WindowCount(4, 4).ratio()).isEqualByComparingTo("1");
     }
 
     @Test

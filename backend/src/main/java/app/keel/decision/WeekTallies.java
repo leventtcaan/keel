@@ -68,13 +68,16 @@ final class WeekTallies {
 
     /** Done over planned over the weeks; empty with no whole week, or nothing logged at all (nothing to go by). */
     static Optional<BigDecimal> adherence(List<LocalDate> weeks, Logs logs, Plan plan) {
-        return adherence(logs, of(weeks, logs, plan));
+        return adherence(logs, of(weeks, logs, plan)).map(Consistency.WindowCount::ratio);
     }
 
-    /** The window's ratio over these tallies (some paused, K-516); nothing logged at all is no adherence. */
-    static Optional<BigDecimal> adherence(Logs logs, List<WeekTally> tallies) {
+    /**
+     * The window's count over these tallies (some paused, K-516): its ratio is the adherence, its numbers are kept with
+     * the call (K-526). Nothing logged at all is no adherence.
+     */
+    static Optional<Consistency.WindowCount> adherence(Logs logs, List<WeekTally> tallies) {
         boolean nothingLogged = logs.workoutDays().isEmpty() && logs.weighInDays().isEmpty() && logs.protein().isEmpty() && logs.steps().isEmpty();
-        return nothingLogged ? Optional.empty() : Consistency.windowRatio(tallies);
+        return nothingLogged ? Optional.empty() : Consistency.windowCount(tallies);
     }
 
     /** One tally per week given, every week passed even with nothing logged (K-111: missing is not empty). */

@@ -67,6 +67,21 @@ class DecisionBasisApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void aCallKeptBeforeTheCountsShowsItsShareAndNoCount() throws Exception {
+        // K-526 (ADR-041 #63): no count is made up for an older call — through the real jsonb and the server's own JSON.
+        AccountId account = onACut();
+        Map<String, Object> call = checkIn(account);
+        jdbc.sql("update decision.weekly_call set snapshot = snapshot #- '{checkIn,adherenceDone}' #- '{checkIn,adherencePlanned}' where id = :id")
+                .param("id", UUID.fromString((String) call.get("id"))).update();
+
+        Map<String, Object> basis = JSON.readValue(send(account, "GET", "/v1/decisions/" + call.get("id") + "/basis").getResponse()
+                .getContentAsString(), Map.class);
+
+        assertThat(basis).containsKey("adherence").doesNotContainKey("adherenceCount");
+    }
+
+    @Test
     void anotherUsersCallOrNoneIsNotFound() throws Exception {
         AccountId owner = onACut();
         Map<String, Object> call = checkIn(owner);

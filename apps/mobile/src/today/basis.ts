@@ -26,7 +26,9 @@ export function basisRows(basis: Basis, units: UnitSystem): BasisRow[] {
   if (basis.changeKgPerWeek !== undefined) add('rate', rate(basis.changeKgPerWeek, units));
   // Rounded down, as the consistency number: it never claims more than was done — after the float's own error is gone
   // (0.58 × 100 is 57.99999999999999; the server's whole percent is 58).
-  if (basis.adherence !== undefined) add('adherence', t('why.value.adherence', { percent: Math.floor(roundTo(basis.adherence * 100, FLOAT_DIGITS)) }));
+  // The counts when the call kept them (K-526, ADR-041 #63: "16 of 19" says more than a share); an older call's share only.
+  if (basis.adherenceCount !== undefined) add('adherence', t('why.value.adherenceCount', { done: basis.adherenceCount.done, planned: basis.adherenceCount.planned }));
+  else if (basis.adherence !== undefined) add('adherence', t('why.value.adherence', { percent: Math.floor(roundTo(basis.adherence * 100, FLOAT_DIGITS)) }));
 
   const { look, training, recovery, waist, appetite } = basis.answers;
   if (look !== undefined) add('look', t(`why.answer.look.${look.toLowerCase()}`));

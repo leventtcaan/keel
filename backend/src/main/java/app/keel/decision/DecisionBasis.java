@@ -18,8 +18,8 @@ import java.util.List;
  * snapshot, nothing else — the decision window's weekly means and the change per week from the first to the latest, when
  * the call read the window; the adherence ratio counted, and the counts it is made of when the call kept them (K-526); the
  * check-in answers given (one left open is no row); where training stood; a state declared that week. The target is not
- * a row here: it is the plan's (/v1/targets), a single number by exception (U5). The fat estimates the engine read are never here (U4); nor
- * the cycle answer, which is never kept (ADR-020 L-1).
+ * a row here: it is the plan's (/v1/targets), a single number by exception (U5). The fat estimates the engine read are
+ * never here (U4); nor the cycle answer, which is never kept (ADR-020 L-1).
  *
  * @param changeKgPerWeek from the window's first week to its latest, per week; none when the window was not read
  */
