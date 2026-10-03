@@ -94,8 +94,9 @@ class SessionProgressApiTests {
 
     @Test
     void theStepBackIsALoadTheGymCanMakeAndNoneWhereItMakesNothingLighter() throws Exception {
-        // No 1.25 plates: 60 − 2.5 is not on the bar, 55 is; a 10/20 rack has nothing between: 20 − 2.5 is 10. Here the row's
-        // 10 is the lightest — nothing lighter, so the last load stays (from the bottom of the range all the same).
+        // No plate under 5: the bar goes by pairs of 5, so 60 − 2.5 is not on it, and the heaviest under it is 50 (55 would
+        // need 17.5 a side). The row's 10 is the rack's lightest — nothing lighter, so the last load stays (from the bottom
+        // of the range all the same).
         AccountId account = withAProgram();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "barKg", 20,
                 "platesKg", List.of(20, 10, 5), "dumbbellsKg", List.of(10, 20), "machines", List.of()));
@@ -105,7 +106,7 @@ class SessionProgressApiTests {
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "RIGHT");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
 
-        assertThat(next(account, 0)).isEqualTo(target(55, 6));
+        assertThat(next(account, 0)).isEqualTo(target(50, 6));
         assertThat(next(account, 3)).isEqualTo(target(10, 8));
     }
 
