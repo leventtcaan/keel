@@ -115,6 +115,34 @@ class ConsistencyApiTests {
     }
 
     @Test
+    void theProgramsDaysAreTheSessionsAskedWhateverTheProfileSays() throws Exception {
+        // K-530 (ADR-043 #74): a program built on four days, a profile saying three — one number, the program's.
+        AccountId account = afterTheFirstCall();
+        trainingDays(account, "MONDAY", "WEDNESDAY", "FRIDAY");
+        program(account, "MONDAY", "TUESDAY", "THURSDAY", "SATURDAY");
+
+        assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 4, "done", 0));
+    }
+
+    @Test
+    void aProgramDayWithoutAWeekdayIsStillASessionAsked() throws Exception {
+        // The program's days are counted, put on a weekday or not; the weekdays only say which day (K-527).
+        AccountId account = afterTheFirstCall();
+        trainingDays(account, "MONDAY", "WEDNESDAY", "FRIDAY");
+        program(account, "MONDAY", null, null, null);
+
+        assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 4, "done", 0));
+    }
+
+    @Test
+    void withoutAProgramTheProfilesDaysAreTheSessionsAsked() throws Exception {
+        AccountId account = afterTheFirstCall();
+        trainingDays(account, "MONDAY", "WEDNESDAY", "FRIDAY");
+
+        assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 3, "done", 0));
+    }
+
+    @Test
     void beforeTheFirstCallNothingIsPlannedYet() {
         AccountId account = consenting();
 
@@ -146,6 +174,26 @@ class ConsistencyApiTests {
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY", "THURSDAY"), "checkInDay", "MONDAY", "timeZone", ISTANBUL.getId())));
         return account;
+    }
+
+    /** The profile's training days, the rest of it as {@link #consenting} has it. */
+    private void trainingDays(AccountId account, String... days) {
+        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of(days), "checkInDay", "MONDAY", "timeZone", ISTANBUL.getId())));
+    }
+
+    /** The user's own program: a day on each weekday given (null: a day without one). */
+    private void program(AccountId account, String... weekdays) {
+        List<Map<String, Object>> days = java.util.Arrays.stream(weekdays).map(weekday -> {
+            Map<String, Object> day = new java.util.HashMap<>(Map.of("name", "Full body", "exercises",
+                    List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))));
+            if (weekday != null) {
+                day.put("weekday", weekday);
+            }
+            return day;
+        }).toList();
+        send(account, "PUT", "/v1/program", Map.of("days", days));
     }
 
     private MvcTestResult get(AccountId account) {

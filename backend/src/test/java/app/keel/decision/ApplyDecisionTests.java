@@ -12,9 +12,7 @@ import app.keel.engine.Sex;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -202,8 +200,7 @@ class ApplyDecisionTests {
     @Test
     void aTargetIsTheCaloriesWithTheirMacrosTheStepsAndTheTrainingDays() {
         // 2600 kcal at 80 kg, 30 years: protein 2.0 g/kg = 160 g, fat 1 g/kg = 80 g, carbs the rest (K-108).
-        Optional<PlanTargets> targets = PlanTargets.of(CUT, new BigDecimal("80.0"), Sex.MALE, 30,
-                EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), P);
+        Optional<PlanTargets> targets = PlanTargets.of(CUT, new BigDecimal("80.0"), Sex.MALE, 30, 3, P);
 
         assertThat(targets).hasValueSatisfying(t -> {
             assertThat(t.targetKcal()).isEqualTo(2600);
@@ -221,7 +218,7 @@ class ApplyDecisionTests {
         Parameters female = engineParameters().forSex(Sex.FEMALE);
         CallStore.Plan plan = new CallStore.Plan(Phase.CUT, TODAY, TODAY, 1900, false, null);
 
-        assertThat(PlanTargets.of(plan, new BigDecimal("60.0"), Sex.FEMALE, 50, EnumSet.of(DayOfWeek.TUESDAY), female)).hasValueSatisfying(t ->
+        assertThat(PlanTargets.of(plan, new BigDecimal("60.0"), Sex.FEMALE, 50, 1, female)).hasValueSatisfying(t ->
                 assertThat(t.proteinG()).isEqualTo(new BigDecimal("60.0").multiply(BigDecimal.valueOf(
                         female.number(ParameterKey.PROTEIN_G_PER_KG_FEMALE_45_PLUS))).setScale(0, java.math.RoundingMode.HALF_UP).intValueExact()));
     }
@@ -233,7 +230,7 @@ class ApplyDecisionTests {
         // stay readable — protein does not depend on calories — and carbs and fat are not guessed.
         CallStore.Plan tooLow = new CallStore.Plan(Phase.CUT, TODAY, TODAY, 800, false, null);
 
-        assertThat(PlanTargets.of(tooLow, new BigDecimal("80.0"), Sex.MALE, 30, EnumSet.of(DayOfWeek.MONDAY), P)).hasValueSatisfying(t -> {
+        assertThat(PlanTargets.of(tooLow, new BigDecimal("80.0"), Sex.MALE, 30, 1, P)).hasValueSatisfying(t -> {
             assertThat(t.targetKcal()).isEqualTo(800);
             assertThat(t.proteinG()).isEqualTo(160);
             assertThat(t.carbsG()).isNull();
@@ -246,7 +243,7 @@ class ApplyDecisionTests {
     void noTargetBeforeTheFirstEstimate() {
         CallStore.Plan noTarget = new CallStore.Plan(Phase.CUT, TODAY, TODAY, null, true, null);
 
-        assertThat(PlanTargets.of(noTarget, new BigDecimal("80.0"), Sex.MALE, 30, EnumSet.of(DayOfWeek.MONDAY), P)).isEmpty();
+        assertThat(PlanTargets.of(noTarget, new BigDecimal("80.0"), Sex.MALE, 30, 1, P)).isEmpty();
     }
 
     @Test

@@ -70,6 +70,26 @@ class FirstWeeksApiTests {
     }
 
     @Test
+    void theProgramsDaysDecideWhetherTrainingIsPlanned() throws Exception {
+        // K-530 (ADR-043 #74): a program asks for training even when the profile names no day; without one, the profile.
+        AccountId programmed = ready(List.of());
+        program(programmed, "TUESDAY", null);
+        began(programmed, today().minusDays(15));
+
+        assertThat(read(get(programmed))).containsEntry("week", 3).containsEntry("contentKey", "first_weeks.week3");
+    }
+
+    @Test
+    void inTheSixthWeekAProgramsSessionsAreAskedForWhenTheProfileNamesNoDay() throws Exception {
+        // The risk reads the same number: no session in the week just over is a risk once the program asks for one.
+        AccountId account = ready(List.of());
+        program(account, "MONDAY");
+        began(account, today().minusDays(35));
+
+        assertThat(rules(account)).containsExactly("no_session_last_week");
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void inTheSixthWeekNoSessionInTheUsersWeekJustOverIsARiskWithItsSource() throws Exception {
         AccountId account = inWeekSix();
@@ -212,6 +232,19 @@ class FirstWeeksApiTests {
         AccountId account = ready(List.of("MONDAY"));
         began(account, today().minusDays(35));
         return account;
+    }
+
+    /** The user's own program: a day on each weekday given (null: a day without one). */
+    private void program(AccountId account, String... weekdays) {
+        List<Map<String, Object>> days = java.util.Arrays.stream(weekdays).map(weekday -> {
+            Map<String, Object> day = new java.util.HashMap<>(Map.of("name", "Full body", "exercises",
+                    List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))));
+            if (weekday != null) {
+                day.put("weekday", weekday);
+            }
+            return day;
+        }).toList();
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", days))).hasStatusOk();
     }
 
     private void began(AccountId account, LocalDate day) {

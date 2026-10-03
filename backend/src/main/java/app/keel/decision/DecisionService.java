@@ -79,6 +79,7 @@ class DecisionService {
     private final WeekLogs logs;
     private final TrainingCalls training;
     private final TrainingStatusReader statuses;
+    private final PlannedSessions planned;
     private final StateStore states;
     private final AccountDates accounts;
 
@@ -86,7 +87,8 @@ class DecisionService {
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
             QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses, StateStore states,
-            AccountDates accounts) {
+            AccountDates accounts, PlannedSessions planned) {
+        this.planned = planned;
         this.accounts = accounts;
         this.states = states;
         this.statuses = statuses;
@@ -483,9 +485,9 @@ class DecisionService {
     private Optional<FirstWeeks.Week> firstWeeks(AccountId account, ProfileFacts profile, LocalDate today, Parameters p, Supplier<Week> week) {
         ZoneId zone = profile.timeZone();
         LocalDate began = accounts.began(account).atZone(zone).toLocalDate();
-        boolean planned = !profile.trainingDays().isEmpty();
+        boolean trainingPlanned = planned.perWeek(account, profile) > 0;
         if (!FirstWeeks.readsRisk(began, today, p)) {
-            return FirstWeeks.of(new FirstWeeks.Facts(today, began, planned, new FirstWeeks.UserWeek(0, 0, false), 0, List.of()), p);
+            return FirstWeeks.of(new FirstWeeks.Facts(today, began, trainingPlanned, new FirstWeeks.UserWeek(0, 0, false), 0, List.of()), p);
         }
         LocalDate lastWeek = FirstWeeks.weekStart(began, today).minusWeeks(1);
         FirstWeeks.UserWeek last = logs.userWeek(account, zone, lastWeek);
@@ -495,7 +497,7 @@ class DecisionService {
             return logs.consistency(account, profile, today, plan, calls.firstMadeOn(account).orElse(plan.phaseStart()), bodyweight(account, read),
                     read.body().ageYears(), p).weeksOver();
         }).orElse(List.of());
-        return FirstWeeks.of(new FirstWeeks.Facts(today, began, planned, new FirstWeeks.UserWeek(last.sessions(), last.loggedDays(), last.paused() || rested),
+        return FirstWeeks.of(new FirstWeeks.Facts(today, began, trainingPlanned, new FirstWeeks.UserWeek(last.sessions(), last.loggedDays(), last.paused() || rested),
                 logs.loggedDays(account, lastWeek.minusWeeks(1)), calendar), p);
     }
 
@@ -517,7 +519,8 @@ class DecisionService {
         // Today's trend weight, or the last weight known however old: a user who stopped weighing in can still read the
         // targets and take a call back (K-216 review). A target exists only after a weigh-in, so there is always one.
         BigDecimal bodyweight = bodyweight(account, week).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
-        return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), week.profile().trainingDays(), week.parameters())
+        return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), planned.perWeek(account, week.profile()),
+                week.parameters())
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));
     }
 
@@ -528,7 +531,7 @@ class DecisionService {
     private PlanTargets targetsAfter(AccountId account) {
         return targetsNow(account).orElseGet(() -> {
             Week week = week(account);
-            return PlanTargets.withoutCalories(calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)), week.profile().trainingDays(),
+            return PlanTargets.withoutCalories(calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)), planned.perWeek(account, week.profile()),
                     week.parameters());
         });
     }

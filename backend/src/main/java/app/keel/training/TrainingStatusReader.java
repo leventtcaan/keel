@@ -62,6 +62,14 @@ public class TrainingStatusReader {
                 .filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet())).orElse(Set.of());
     }
 
+    /**
+     * The sessions a week the account's program asks for (K-530): one a program day, put on a weekday or not — the
+     * number its missed weeks are counted against too ({@link #status}). Empty without a program.
+     */
+    public Optional<Integer> programSessionsPerWeek(AccountId account) {
+        return programs.current(account).map(program -> program.days().size()).filter(days -> days > 0);
+    }
+
     /** The day the account's program was made (or last replaced), on the user's calendar. */
     public Optional<LocalDate> programSince(AccountId account, ZoneId zone) {
         return programs.createdAt(account).map(made -> made.atZone(zone).toLocalDate());

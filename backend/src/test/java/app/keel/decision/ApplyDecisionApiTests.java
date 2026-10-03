@@ -431,6 +431,41 @@ class ApplyDecisionApiTests {
         assertThat(send(account, "POST", "/v1/decisions/" + call.id() + "/undo")).hasStatusOk();
     }
 
+    @Test
+    void theTargetsTrainingSessionsAreTheProgramsDays() throws Exception {
+        // K-530 (ADR-043 #74): a program on four days, a profile saying three — the targets say the program's four.
+        AccountId account = onACut();
+        send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("MONDAY", "WEDNESDAY", "FRIDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        assertThat(map(send(account, "GET", "/v1/targets"))).as("no program: the profile's").containsEntry("trainingSessionsPerWeek", 3);
+
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", List.of("MONDAY", "TUESDAY", "THURSDAY", "SATURDAY").stream()
+                .map(weekday -> Map.of("name", "Full body", "weekday", weekday, "exercises",
+                        List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10))))).toList()))).hasStatusOk();
+
+        assertThat(map(send(account, "GET", "/v1/targets"))).containsEntry("trainingSessionsPerWeek", 4);
+    }
+
+    @Test
+    void beforeTheFirstEstimateTheTargetsTrainingSessionsAreTheProgramsDaysToo() throws Exception {
+        AccountId account = ready();
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, observing_maintenance)
+                values (:a, 'CUT', :start, :start, true)""").param("a", account.value()).param("start", PLAN_START).update();
+        // The profile trains on Mondays; the program was generated on two days.
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY")));
+        Decision decision = new Decision(new Action.Deload(new BigDecimal("0.5")), List.of(new Reason(new RuleId("r"),
+                new Source("arastirma/x.md#1", SourceTag.LITERATURE))), Confidence.MEDIUM, TODAY.plusDays(7), new CopyKey("decision.continue"));
+        CallStore.Call call = new CallStore.Call(UUID.randomUUID(), UUID.randomUUID(), CheckInWeek.weekOf(TODAY, java.time.DayOfWeek.MONDAY), TODAY,
+                Instant.now(), parameters.versionHash(), StoredSnapshot.of(new Snapshot(TODAY, Sex.MALE, Phase.CUT, PLAN_START,
+                new WeightSeries(List.of()))), DecisionJson.of(decision), CallStore.Application.PENDING);
+        store.keep(account, call);
+
+        assertThat(map(send(account, "POST", "/v1/decisions/" + call.id() + "/apply"))).containsEntry("trainingSessionsPerWeek", 2)
+                .doesNotContainKey("targetKcal");
+    }
+
     private void change(AccountId account, String kind, LocalDate from, LocalDate until, BigDecimal factor) {
         jdbc.sql("""
                 insert into training.program_change (id, account_id, call_id, kind, starts_on, ends_on, sets_factor)
