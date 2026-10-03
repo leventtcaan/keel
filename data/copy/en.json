@@ -417,6 +417,7 @@
       "log": "Log {name}"
     },
     "log": "Log a meal",
+    "photo": "Log from a photo",
     "recipes": "Your recipes",
     "budget": {
       "title": "Left today",
@@ -546,6 +547,9 @@
     "save": "Log it",
     "saveFailed": "Couldn't save it on this phone. Try again.",
     "full": "A meal holds up to {max} items. Log the rest as another meal.",
+    "photo": {
+      "why": "A photo shows what's on the plate, not how much it weighs."
+    },
     "fromCoach": {
       "notChecked": "These amounts couldn't be checked. If a measure isn't one the food has, change it to grams; offline, try again when you're online."
     },
@@ -569,6 +573,18 @@
       "badNumber": "That number doesn't read as a barcode. Check the digits.",
       "askAgain": "Allow the camera"
     }
+  },
+  "mealPhoto": {
+    "title": "Meal from a photo",
+    "intro": "Take or choose a photo of your meal. It's made smaller and sent without its location, only to find the foods. The numbers come from the food database, and you confirm each food.",
+    "camera": "Take a photo",
+    "library": "Choose a photo",
+    "reading": "Reading the photo…",
+    "item": "{food} · about {quantity} g",
+    "unread": "I couldn't find a meal in that photo. You can log it by name instead.",
+    "consent": "Reading a meal photo needs the AI consent. You can give it in Settings.",
+    "denied": "The camera isn't allowed for this app. You can allow it in the iPhone's Settings, or choose a photo instead.",
+    "failed": "That photo couldn't be read. Try again, or log the meal by name."
   },
   "weighIn": {
     "title": "Weigh-in",

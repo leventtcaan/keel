@@ -105,6 +105,7 @@ export default function FoodScreen() {
         {budget}
         {!needsConsent && data !== null && <Suggestions suggestions={data.suggestions} />}
         {!needsConsent && data !== null && <Button label={t('food.log')} onPress={() => router.push('/meal')} />}
+        {!needsConsent && data !== null && <PhotoEntry />}
         <Button label={t('food.recipes')} variant="ghost" size="sm" onPress={() => router.push('/recipes')} />
         {meals}
         {offers}
@@ -126,3 +127,8 @@ const styles = StyleSheet.create({
   text: { fontSize: tokens.type.body },
   coach: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
 });
+
+/** A meal from a photo (K-408): beside logging by name, behind the same consent. */
+function PhotoEntry() {
+  return <Button label={t('food.photo')} variant="ghost" size="sm" onPress={() => router.push('/meal-photo')} />;
+}

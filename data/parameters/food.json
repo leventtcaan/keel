@@ -120,6 +120,22 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#NewRecipe",
       "note": "How many portions a recipe can make (NewRecipe.portions, 1..50, a whole number)."
+    },
+    {
+      "key": "meal_photo_max_side",
+      "value": 1024,
+      "unit": "px",
+      "tag": "literatur",
+      "source": "arastirma/ham/K5-fiyat-kota-maliyet.md#A2",
+      "note": "A meal photo leaves the phone at most this long a side (anayasa V1: image cost -74%). The server refuses a longer one (keel.coach.photo.max-side, ADR-046) rather than shrink it."
+    },
+    {
+      "key": "meal_photo_jpeg_quality",
+      "value": 0.8,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "arastirma/ham/K5-fiyat-kota-maliyet.md#A2",
+      "note": "The JPEG the phone writes from the shrunk photo (K-408, ADR-046): small enough to send quickly, clear enough to tell the foods apart. The server writes its own again (0.85)."
     }
   ]
 }
