@@ -32,7 +32,7 @@ const EVERY_CALL = Object.entries(decisions).flatMap(([action, rules]) =>
 );
 
 test('the call’s label and when it is looked at again', () => {
-  expect(lockScreenCall(call('decision.continue.on_track'))).toEqual({
+  expect(lockScreenCall(call('decision.continue.toward_goal'))).toEqual({
     line: t('decision.continue.label'),
     next: t('today.call.nextReview', { date: 'Mon, Oct 12' }),
   });
@@ -50,12 +50,19 @@ test('never the title: on a screen anyone can see, the action only — not why',
   for (const key of EVERY_CALL) expect(lockScreenCall(call(key)).line).not.toBe(t(`${key}.title`));
 });
 
-test('a safety call is its general change of phase (ADR-028 #24)', () => {
+test('a safety call is its general change of phase (ADR-028 #24) — on the phone too, whatever key it came with', () => {
   const safety = lockScreenCall(call('decision.change_phase.low_energy_safety', { safety: true, action: { type: 'CHANGE_PHASE', to: 'BULK' } }));
   expect(safety.line).toBe(t('decision.change_phase.label'));
+  // The server words it as a change of phase; a lock screen anyone can see does not rely on that alone.
+  const hardStop = lockScreenCall(call('decision.hard_stop.low_energy', { safety: true, action: { type: 'CHANGE_PHASE', to: 'BULK' } }));
+  expect(hardStop.line).toBe(t('decision.change_phase.label'));
 });
 
-test('no call, or a call the app cannot word: one neutral line, no date', () => {
+test('no call: says so, no date', () => {
   expect(lockScreenCall(null)).toEqual({ line: t('widget.call.none'), next: null });
-  expect(lockScreenCall(call('decision.unknown_action.whatever'))).toEqual({ line: t('widget.call.none'), next: null });
+});
+
+test('a call the app cannot word is still a call: a neutral line that says there is one, no date', () => {
+  expect(lockScreenCall(call('decision.unknown_action.whatever'))).toEqual({ line: t('widget.call.ready'), next: null });
+  expect(t('widget.call.ready')).not.toMatch(/[\d{}%]/);
 });

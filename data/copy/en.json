@@ -576,7 +576,8 @@
   },
   "widget": {
     "call": {
-      "none": "No call this week yet."
+      "none": "No call this week yet.",
+      "ready": "This week's call is ready."
     }
   },
   "mealPhoto": {
