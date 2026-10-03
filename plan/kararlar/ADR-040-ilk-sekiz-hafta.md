@@ -35,7 +35,8 @@ dosya. Kaynak 5. haftanın sinyallerini sayar ama birleştirme ağırlığı ver
    profilin saat diliminde; seans = ısınma dışı setli antrenman günü (iki antrenman bir gün = bir seans), kayıt = öğün olan gün;
    **merdivenin mola haftası da duraklatır** (K-435: mola haftası susar; Prompts ile aynı) — planlı dinlenmede "seans yok" risk değildir.
    Takvim haftaları sayacın kendisinden (`WeekLogs.consistency(...).weeksOver`), plan yoksa yok. Akış dışında hiçbir kayıt okunmaz
-   (`FirstWeeks.open`): iki yıllık kullanıcı her check-in'de bunun için okunmaz.
+   (`FirstWeeks.open`): iki yıllık kullanıcı her check-in'de bunun için okunmaz; risk okunmayan haftalarda (1-5) geçen haftanın kaydı da
+   okunmaz (`FirstWeeks.readsRisk`); uç noktada bütün hafta (tartı, görünüş, bel) yalnız sayacın haftaları gerektiğinde okunur.
 
 ## Alternatifler ve neden o değil
 | Alternatif | Neden değil |

@@ -9,6 +9,7 @@ import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
@@ -104,11 +105,12 @@ class FirstWeeksApiTests {
     void loggingDroppedUnderAWeeksWorthIsARisk() throws Exception {
         AccountId account = inWeekSix();
         session(account, today().minusDays(3));
-        // Food on four days of the week before (min_logged_days_per_week), on one day of the week just over.
-        for (int day = 14; day > 10; day--) {
+        // Food on four days of the week before (min_logged_days_per_week), on one day of the week just over — its edges:
+        // the week before's last day and the week just over's first.
+        for (int day : new int[] {14, 13, 12, 8}) {
             meal(account, today().minusDays(day));
         }
-        meal(account, today().minusDays(2));
+        meal(account, today().minusDays(7));
 
         assertThat(rules(account)).containsExactly("logging_dropped");
     }
@@ -164,6 +166,22 @@ class FirstWeeksApiTests {
     }
 
     @Test
+    void theWeekIsOnTheUsersCalendarNotUtcs() throws Exception {
+        // Istanbul is UTC+3: begun at half past midnight there, the account began the evening before on UTC.
+        ZoneId istanbul = ZoneId.of("Europe/Istanbul");
+        LocalDate localToday = LocalDate.now(istanbul);
+        AccountId begunAfterMidnight = ready(List.of("MONDAY"), istanbul.getId());
+        began(begunAfterMidnight, localToday.minusDays(34).atTime(0, 30).atZone(istanbul).toInstant());
+        assertThat(read(get(begunAfterMidnight))).as("34 days on the user's calendar, 35 on UTC's").containsEntry("week", 5);
+
+        // A session at half past midnight on the first day of the user's week just over is that week's, not the one before.
+        AccountId sessionAfterMidnight = ready(List.of("MONDAY"), istanbul.getId());
+        began(sessionAfterMidnight, localToday.minusDays(35).atTime(12, 0).atZone(istanbul).toInstant());
+        session(sessionAfterMidnight, localToday.minusDays(7).atTime(0, 30).atZone(istanbul).toInstant());
+        assertThat(rules(sessionAfterMidnight)).isEmpty();
+    }
+
+    @Test
     void itIsHealthDataSoItNeedsTheConsentAndAProfile() {
         AccountId stranger = TestSessions.newAccount();
         assertThat(get(stranger)).hasStatus(403).bodyJson().extractingPath("$.code").isEqualTo("CONSENT_REQUIRED");
@@ -177,11 +195,15 @@ class FirstWeeksApiTests {
 
     /** A man on UTC with the consent and a profile training on these days. */
     private AccountId ready(List<String> trainingDays) {
+        return ready(trainingDays, "UTC");
+    }
+
+    private AccountId ready(List<String> trainingDays, String timeZone) {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
-                "schedule", Map.of("trainingDays", trainingDays, "checkInDay", "MONDAY", "timeZone", "UTC")))).hasStatusOk();
+                "schedule", Map.of("trainingDays", trainingDays, "checkInDay", "MONDAY", "timeZone", timeZone)))).hasStatusOk();
         return account;
     }
 
@@ -193,7 +215,11 @@ class FirstWeeksApiTests {
     }
 
     private void began(AccountId account, LocalDate day) {
-        jdbc.sql("update identity.account set created_at = :at where id = :id").param("at", day.atTime(12, 0).atOffset(ZoneOffset.UTC))
+        began(account, day.atTime(12, 0).toInstant(ZoneOffset.UTC));
+    }
+
+    private void began(AccountId account, Instant at) {
+        jdbc.sql("update identity.account set created_at = :at where id = :id").param("at", at.atOffset(ZoneOffset.UTC))
                 .param("id", account.value()).update();
     }
 
@@ -204,7 +230,10 @@ class FirstWeeksApiTests {
     /** A session done on that day: a workout with a working set (K-431) — at noon, or a minute ago when that is today. */
     private void session(AccountId account, LocalDate day) throws Exception {
         Instant noon = day.atTime(12, 0).toInstant(ZoneOffset.UTC);
-        Instant started = noon.isAfter(Instant.now()) ? Instant.now().minusSeconds(60) : noon;
+        session(account, noon.isAfter(Instant.now()) ? Instant.now().minusSeconds(60) : noon);
+    }
+
+    private void session(AccountId account, Instant started) throws Exception {
         MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", started.toString()));
         assertThat(workout.getResponse().getStatus()).isLessThan(300);
         Object id = JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id");

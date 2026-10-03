@@ -48,6 +48,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -131,7 +132,8 @@ class DecisionService {
         // again and waits for it (K-229).
         Function<CheckIn, Decision> engine = engine(week, plan, training);
         // The data disagreeing with itself, or a risky week of the first eight (K-513), opens the larger budget.
-        boolean firstWeeksRisk = firstWeeks(account, week).map(first -> !first.risk().isEmpty()).orElse(false);
+        boolean firstWeeksRisk = firstWeeks(account, week.profile(), week.today(), week.parameters(), () -> week)
+                .map(first -> !first.risk().isEmpty()).orElse(false);
         int weekBudget = budget.forWeek(CheckInQuestions.largerBudget(dataSays, plan.phase(), firstWeeksRisk));
         List<Answers.Kind> spine = CheckInQuestions.needed(engine, dataSays, weekBudget);
         List<Answers.Kind> asked = new ArrayList<>();
@@ -456,29 +458,35 @@ class DecisionService {
     @Transactional(readOnly = true)
     Optional<FirstWeeks.Week> firstWeeks(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        return firstWeeks(account, week(account));
+        ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        LocalDate today = LocalDate.now(clock.withZone(profile.timeZone()));
+        // The whole week (weights, look, waist) only when the risk reads consistency's weeks: not for a week that says nothing.
+        return firstWeeks(account, profile, today, parameters.forSex(Sex.valueOf(profile.sex().name())), () -> week(account));
     }
 
     /**
-     * The flow's week on the user's calendar: the user's week just over and the one before it, from the logs; the ladder's
-     * week off pauses it as a declared state does (K-435: a week of rest is quiet); consistency's weeks from the record,
-     * none before a plan. Nothing is read once the flow is over.
+     * The flow's week on the user's calendar. Nothing is read once the flow is over, and nothing of the week just over
+     * before the risk reads it (ADR-040 #5). Then: the user's week just over and the one before it, from the logs; the
+     * ladder's week off pauses it as a declared state does (K-435: a week of rest is quiet); consistency's weeks from the
+     * record, none before a plan.
      */
-    private Optional<FirstWeeks.Week> firstWeeks(AccountId account, Week week) {
-        ZoneId zone = week.profile().timeZone();
+    private Optional<FirstWeeks.Week> firstWeeks(AccountId account, ProfileFacts profile, LocalDate today, Parameters p, Supplier<Week> week) {
+        ZoneId zone = profile.timeZone();
         LocalDate began = accounts.began(account).atZone(zone).toLocalDate();
-        if (!FirstWeeks.open(began, week.today(), week.parameters())) {
-            return Optional.empty();
+        boolean planned = !profile.trainingDays().isEmpty();
+        if (!FirstWeeks.readsRisk(began, today, p)) {
+            return FirstWeeks.of(new FirstWeeks.Facts(today, began, planned, new FirstWeeks.UserWeek(0, 0, false), 0, List.of()), p);
         }
-        LocalDate lastWeek = FirstWeeks.weekStart(began, week.today()).minusWeeks(1);
+        LocalDate lastWeek = FirstWeeks.weekStart(began, today).minusWeeks(1);
         FirstWeeks.UserWeek last = logs.userWeek(account, zone, lastWeek);
         boolean rested = !statuses.breaks(account, lastWeek, lastWeek.plusDays(DAYS_PER_WEEK - 1L)).rest().isEmpty();
-        List<WeekTally> calendar = calls.plan(account).map(plan -> logs.consistency(account, week.profile(), week.today(), plan,
-                calls.firstMadeOn(account).orElse(plan.phaseStart()), bodyweight(account, week), week.body().ageYears(), week.parameters())
-                .weeksOver()).orElse(List.of());
-        return FirstWeeks.of(new FirstWeeks.Facts(week.today(), began, !week.profile().trainingDays().isEmpty(),
-                new FirstWeeks.UserWeek(last.sessions(), last.loggedDays(), last.paused() || rested), logs.loggedDays(account, lastWeek.minusWeeks(1)),
-                calendar), week.parameters());
+        List<WeekTally> calendar = calls.plan(account).map(plan -> {
+            Week read = week.get();
+            return logs.consistency(account, profile, today, plan, calls.firstMadeOn(account).orElse(plan.phaseStart()), bodyweight(account, read),
+                    read.body().ageYears(), p).weeksOver();
+        }).orElse(List.of());
+        return FirstWeeks.of(new FirstWeeks.Facts(today, began, planned, new FirstWeeks.UserWeek(last.sessions(), last.loggedDays(), last.paused() || rested),
+                logs.loggedDays(account, lastWeek.minusWeeks(1)), calendar), p);
     }
 
     /** The targets the user follows today; NOT_FOUND before the first estimate. */

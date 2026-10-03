@@ -66,14 +66,19 @@ public final class FirstWeeks {
         return days >= 0 && days / DAYS_PER_WEEK + 1 <= parameters.wholeNumber(ParameterKey.FIRST_WEEKS) + 1;
     }
 
+    /** Whether {@code today}'s week reads the risk: the flow is open and the user's week just over is first_weeks_risk_from or later. */
+    public static boolean readsRisk(LocalDate began, LocalDate today, Parameters parameters) {
+        return open(began, today, parameters)
+                && ChronoUnit.DAYS.between(began, today) / DAYS_PER_WEEK >= parameters.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM);
+    }
+
     /** This week of the flow; empty before the account's first day and once the week after the flow is over. */
     public static Optional<Week> of(Facts facts, Parameters parameters) {
         if (!open(facts.began(), facts.today(), parameters)) {
             return Optional.empty();
         }
         int number = (int) (ChronoUnit.DAYS.between(facts.began(), facts.today()) / DAYS_PER_WEEK) + 1;
-        int weekJustOver = number - 1;
-        List<Reason> risk = weekJustOver >= parameters.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM) ? signals(facts, parameters) : List.of();
+        List<Reason> risk = readsRisk(facts.began(), facts.today(), parameters) ? signals(facts, parameters) : List.of();
         return Optional.of(new Week(number, content(number, parameters.wholeNumber(ParameterKey.FIRST_WEEKS), facts.trainingPlanned()), risk));
     }
 

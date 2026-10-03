@@ -60,6 +60,17 @@ class FirstWeeksTests {
     }
 
     @Test
+    void theRiskIsReadExactlyOnTheDaysItCanBe() {
+        // The server reads the week just over's logs only then: in weeks one to five nothing of it is used.
+        for (int day = -1; day <= 7 * 9; day++) {
+            LocalDate today = BEGAN.plusDays(day);
+            FirstWeeks.Facts everything = new FirstWeeks.Facts(today, BEGAN, true, new FirstWeeks.UserWeek(0, 0, false), 7, List.of());
+            boolean read = FirstWeeks.of(everything, MALE).map(week -> !week.risk().isEmpty()).orElse(false);
+            assertThat(FirstWeeks.readsRisk(BEGAN, today, MALE)).as("day " + day).isEqualTo(read);
+        }
+    }
+
+    @Test
     void theWeekStartsOnTheDayOfTheWeekTheAccountBegan() {
         // The server reads the user's week just over from here: the seven days before it.
         assertThat(FirstWeeks.weekStart(BEGAN, BEGAN.plusDays(40))).isEqualTo(BEGAN.plusDays(35));
