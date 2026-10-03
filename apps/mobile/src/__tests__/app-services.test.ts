@@ -211,6 +211,17 @@ test('the unit choice goes with the session: forgotten at sign-out', async () =>
   expect(services.units.current()).toBe('IMPERIAL');
 });
 
+test('the days the app was opened go with the session: forgotten at sign-out (K-521)', async () => {
+  const kv = memoryKv();
+  const { services } = await setup(server(404), memoryStorage(), kv);
+  await services.session.signIn(SESSION);
+  await services.opens.previous();
+  expect(kv.items.has('keel.opens')).toBe(true);
+  await services.signOut();
+  await settle();
+  expect(kv.items.has('keel.opens')).toBe(false);
+});
+
 test('a declared state goes with the session: forgotten at sign-out (K-518)', async () => {
   const kv = memoryKv();
   const { services } = await setup(server(404), memoryStorage(), kv);

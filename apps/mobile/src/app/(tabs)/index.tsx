@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { CallCard } from '@/today/CallCard';
 import { CheckInCard } from '@/today/CheckInCard';
+import { FirstWeeksCard } from '@/today/FirstWeeksCard';
 import { PromptCard } from '@/today/PromptCard';
 import { StateCard } from '@/today/StateCard';
 import { CoachChips } from '@/today/CoachChips';
@@ -52,6 +53,8 @@ export default function TodayScreen() {
     data === null || (data.decision.state !== 'ready' && data.decision.state !== 'none') ? null : (
       <CallCard decision={data.decision.state === 'ready' ? data.decision.value : null} onChanged={reload} />
     );
+  // The first eight weeks (K-521): the week's words; in a risky week, one message.
+  const firstWeeks = data === null ? null : <FirstWeeksCard read={data.firstWeeks} previousOpen={data.previousOpen ?? null} day={day} />;
   // What the user declared (K-518): the week paused, or a way to say so. Ended, Today reads again.
   const stateCard = data === null ? null : <StateCard state={data.state} onChanged={reload} />;
   // The check-in waits for an answer before this week's call (K-501); not read, nothing offered — the call card says enough.
@@ -75,6 +78,7 @@ export default function TodayScreen() {
         {problem}
         {consent}
         {consistency}
+        {firstWeeks}
         {stateCard}
         {checkIn}
         {prompt}

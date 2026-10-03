@@ -19,7 +19,7 @@ class FirstWeeksController {
 
     /** Contract FirstWeeks. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record FirstWeeksView(int week, String contentKey, List<SignalView> risk) {
+    record FirstWeeksView(int week, String contentKey, List<SignalView> risk, boolean readsRisk, boolean training) {
     }
 
     /** Contract Reason: a signal's rule and its source. */
@@ -36,6 +36,7 @@ class FirstWeeksController {
     FirstWeeksView thisWeek(AccountId account) {
         FirstWeeks.Week week = decisions.firstWeeks(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         return new FirstWeeksView(week.number(), week.content().map(CopyKey::value).orElse(null),
-                week.risk().stream().map(signal -> new SignalView(signal.rule().value(), SourceView.of(signal.source()))).toList());
+                week.risk().stream().map(signal -> new SignalView(signal.rule().value(), SourceView.of(signal.source()))).toList(), week.readsRisk(),
+                week.training());
     }
 }

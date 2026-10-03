@@ -1906,6 +1906,13 @@ export interface components {
             next?: string;
         };
         FirstWeeks: {
+            /** @description Whether the plan asks for training — the phone's words for a risky week, as the content's (K-521). */
+            training: boolean;
+            /**
+             * @description Whether this week reads the risk at all (weeks after first_weeks_risk_from, the week just over not paused): the phone
+             *     adds its own signal — the app not opened in the week just over, known only there (ADR-041 #66) — in the same weeks (K-521).
+             */
+            readsRisk: boolean;
             week: number;
             /** @description The week's words in the copy file; absent in week 1 and week 9. */
             contentKey?: string;

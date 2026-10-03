@@ -37,3 +37,4 @@
 27. K-531 uzun moladan dönüş (`K-531.md`)
 28. K-528 yoğun hafta minimum dozu (`K-528.md`)
 29. K-507 gün içi yemek önerileri (`K-507.md`)
+30. K-521 ilk 8 hafta telefonda (`K-521.md`)

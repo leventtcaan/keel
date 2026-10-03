@@ -56,6 +56,7 @@
     }
   },
   "first_weeks": {
+    "risk": "Around now, weeks often get fuller. One session this week keeps the thread going, whatever shape it takes.",
     "week2": { "title": "Week 2: your first comparison", "body": "Same move as last week, side by side. This is the honest evidence early on: what you lift." },
     "week3": { "title": "Week 3: how steady you've been", "body": "How many days you logged, and why we show it: steady logging is what lets the numbers mean something." },
     "week4": { "title": "Week 4: what's changing", "body": "Most of your strength gain so far is your nervous system learning the moves, not muscle yet. That's normal, and it's the foundation." },
@@ -64,6 +65,7 @@
     "week7": { "title": "Week 7: you, then and now", "body": "Week 1 next to week 7: your lifts, your consistency, your trend." },
     "week8": { "title": "Week 8: your eight weeks", "body": "What changed, what didn't, and why. Eight weeks start a habit; the next block makes it yours." },
     "no_training": {
+      "risk": "Around now, weeks often get fuller. Logging a meal or a weigh-in today keeps the thread going, whatever shape the week takes.",
       "week2": { "title": "Week 2: your first comparison", "body": "This week next to last: what you logged, and where your trend began. Early on, the habit counts more than the number." },
       "week3": { "title": "Week 3: how steady you've been", "body": "How many days you logged, and why we show it: steady logging is what lets the numbers mean something." },
       "week4": { "title": "Week 4: what's changing", "body": "Your weight goes up and down day to day; the trend over weeks is what counts. That's why you see a range, not one number." },

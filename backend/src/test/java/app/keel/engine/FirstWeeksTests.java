@@ -71,6 +71,31 @@ class FirstWeeksTests {
     }
 
     @Test
+    void aPausedWeekJustOverReadsNoRiskNotEvenThePhones() {
+        // ADR-040 #3: a declared state or a week off silences the risk; the phone's "app not opened" goes with it (K-521).
+        FirstWeeks.Facts paused = new FirstWeeks.Facts(BEGAN.plusDays(7L * 6), BEGAN, true, new FirstWeeks.UserWeek(0, 0, true), 7, List.of());
+        assertThat(week(paused).readsRisk()).isFalse();
+        assertThat(week(paused).risk()).isEmpty();
+    }
+
+    @Test
+    void theWeekSaysWhetherThePlanAsksForTraining() {
+        LocalDate today = BEGAN.plusDays(7L * 6);
+        assertThat(week(quiet(today)).training()).isTrue();
+        assertThat(week(new FirstWeeks.Facts(today, BEGAN, false, ON_TRACK, 7, List.of())).training()).isFalse();
+    }
+
+    @Test
+    void theWeekSaysWhetherItReadsTheRiskQuietOrNot() {
+        // K-521: the phone reads its own signal (the app not opened) in the same weeks — a quiet week reads it too.
+        for (int day = 0; day < 7 * 9; day++) {
+            LocalDate today = BEGAN.plusDays(day);
+            assertThat(FirstWeeks.of(quiet(today), MALE).orElseThrow().readsRisk()).as("day " + day)
+                    .isEqualTo(day >= 7 * MALE.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM));
+        }
+    }
+
+    @Test
     void theWeekStartsOnTheDayOfTheWeekTheAccountBegan() {
         // The server reads the user's week just over from here: the seven days before it.
         assertThat(FirstWeeks.weekStart(BEGAN, BEGAN.plusDays(40))).isEqualTo(BEGAN.plusDays(35));

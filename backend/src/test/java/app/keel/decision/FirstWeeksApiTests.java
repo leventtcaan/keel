@@ -55,7 +55,14 @@ class FirstWeeksApiTests {
 
         Map<String, Object> week = read(get(account));
 
-        assertThat(week).containsEntry("week", 1).containsEntry("risk", List.of()).doesNotContainKey("contentKey");
+        assertThat(week).containsEntry("week", 1).containsEntry("risk", List.of()).doesNotContainKey("contentKey")
+                .containsEntry("readsRisk", false);
+    }
+
+    @Test
+    void aWeekThatReadsTheRiskSaysSoEvenQuiet() throws Exception {
+        // K-521: the phone adds the app not opened in the same weeks, so the server says which weeks those are.
+        assertThat(read(get(inWeekSix()))).containsEntry("week", 6).containsEntry("readsRisk", true);
     }
 
     @Test

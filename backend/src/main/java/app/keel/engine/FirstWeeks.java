@@ -48,8 +48,12 @@ public final class FirstWeeks {
         }
     }
 
-    /** The week: its number (1 to first_weeks + 1), its content (none in the first and the last), the risk's signals. */
-    public record Week(int number, Optional<CopyKey> content, List<Reason> risk) {
+    /**
+     * The week: its number (1 to first_weeks + 1), its content (none in the first and the last), the risk's signals, and
+     * whether it reads the risk at all — not after a paused week (K-521: the phone adds its own signal, the app not opened,
+     * in the same weeks), and whether the plan asks for training (the phone's words for the risk, as the content's).
+     */
+    public record Week(int number, Optional<CopyKey> content, List<Reason> risk, boolean readsRisk, boolean training) {
     }
 
     private FirstWeeks() {
@@ -78,8 +82,11 @@ public final class FirstWeeks {
             return Optional.empty();
         }
         int number = (int) (ChronoUnit.DAYS.between(facts.began(), facts.today()) / DAYS_PER_WEEK) + 1;
-        List<Reason> risk = readsRisk(facts.began(), facts.today(), parameters) ? signals(facts, parameters) : List.of();
-        return Optional.of(new Week(number, content(number, parameters.wholeNumber(ParameterKey.FIRST_WEEKS), facts.trainingPlanned()), risk));
+        // A week just over that paused (a state declared, a week off) gives no signal (ADR-040 #3) — the phone's neither.
+        boolean reads = readsRisk(facts.began(), facts.today(), parameters) && !facts.lastWeek().paused();
+        List<Reason> risk = reads ? signals(facts, parameters) : List.of();
+        return Optional.of(new Week(number, content(number, parameters.wholeNumber(ParameterKey.FIRST_WEEKS), facts.trainingPlanned()), risk, reads,
+                facts.trainingPlanned()));
     }
 
     private static Optional<CopyKey> content(int number, int flow, boolean trainingPlanned) {

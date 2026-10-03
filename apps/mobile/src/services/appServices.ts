@@ -14,6 +14,8 @@ import { type NotificationAccess, type Reminders, createReminders } from '@/noti
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { type StateService, createStateService } from '@/state/stateService';
+import { localDay } from '@/today/today';
+import { type Opens, createOpens } from '@/today/opens';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
@@ -83,6 +85,8 @@ export type AppServices = {
   healthWriting: HealthWriting;
   /** What the user declared (K-518): kept on the phone for the reminders. */
   state: StateService;
+  /** The days the app was opened, on the phone only (K-521, ADR-041 #66). */
+  opens: Opens;
 };
 
 export async function createAppServices({
@@ -106,6 +110,7 @@ export async function createAppServices({
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   // A state the user declared quiets the reminders while it is in force (K-518, ADR-036 #7); each change plans again.
   const state = createStateService({ api, kv, now, onChange: () => void reminders.refresh() });
+  const opens = createOpens({ kv, today: () => localDay(now()) });
   const reminders = await createReminders({ kv, access: notifications, now, report, muted: () => state.inForce(),
     mutedUntil: () => state.until() });
   const restAlert = createRestAlert({ access: alerts, report });
@@ -148,6 +153,7 @@ export async function createAppServices({
     training.forget().catch(reportError); // and the program kept for offline training (K-405)
     reminders.forget().catch(reportError); // and the reminders: nothing scheduled for an account that left (K-410)
     state.forget().catch(reportError); // and a state declared: sickness and pain are health data (K-518)
+    opens.forget().catch(reportError); // and the days the app was opened (K-521)
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
@@ -164,6 +170,7 @@ export async function createAppServices({
     report,
     reminders,
     state,
+    opens,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     healthWriting,
