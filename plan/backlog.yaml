@@ -2502,7 +2502,7 @@ tasks:
       - "Sayılar kararla birebir (sadakat testi)"
       - "Kota dışı; LLM yoksa deterministik şablon"
     tests:
-      - "CoachNoteFaithfulnessTests"
+      - "weekly-note.test.ts (sadakat: nottaki her sayı kararın kendi alanı), coach-screen.test.tsx — not telefonda kurulur (karar orada; uç nokta ve veri çıkışı gerekmez)"
     refs: ["arastirma/ham/L3-ozellik-boslugu.md"]
     learn:
       - "Şablon geri düşüşü"

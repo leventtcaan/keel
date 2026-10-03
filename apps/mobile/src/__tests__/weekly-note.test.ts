@@ -37,6 +37,8 @@ test.each([
   [{ type: 'ADJUST_CALORIES', kcalPerDay: 150 }, 'coach.note.focus.adjust_calories.more', { kcal: '150' }],
   [{ type: 'INCREASE_CALORIES', kcalPerDay: 200 }, 'coach.note.focus.increase_calories', { kcal: '200' }],
   [{ type: 'DELOAD', setsFactor: 0.6 }, 'coach.note.focus.deload', { percent: '60' }],
+  // 0.57 × 100 is 56.99999999999999 in floating point: the percent the call holds is 57.
+  [{ type: 'DELOAD', setsFactor: 0.57 }, 'coach.note.focus.deload', { percent: '57' }],
   [{ type: 'MINI_CUT', minWeeks: 2, maxWeeks: 4 }, 'coach.note.focus.mini_cut', { min: '2', max: '4' }],
   [{ type: 'CHANGE_PHASE', to: 'CUT' }, 'coach.note.focus.change_phase.cut', undefined],
   [{ type: 'CHANGE_PHASE', to: 'BULK' }, 'coach.note.focus.change_phase.bulk', undefined],

@@ -30,3 +30,6 @@
 20. ADR-043 (koçun sesi: sınıflandırma) — cevaplar 74-77 (`plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md`)
 21. K-522 kural cümleleri (`K-522.md`)
 22. K-529 koç sınıflandırır, uygulama konuşur (`K-529.md`)
+23. K-509 koç sohbeti + sohbette öğün (`K-509.md`)
+24. K-517 haftalık koç notu (`K-517.md`)
+25. ADR-043 işleri: K-532 (`K-532.md`), K-530 (`K-530.md`)

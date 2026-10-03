@@ -69,7 +69,8 @@ export default function CoachScreen() {
         const { value } = decision;
         const note: Message = {
           from: 'coach',
-          said: { heading: 'coach.note.title', lines: weeklyNote(value), call: { decisionId: value.id, copyKey: value.copyKey, nextReview: value.nextReview } },
+          // Its first sentence is the call's own words: no card to say them twice.
+          said: { heading: 'coach.note.title', lines: weeklyNote(value) },
           standard: false,
         };
         setMessages((said) => [note, ...said]);

@@ -83,6 +83,9 @@ async function show() {
   await act(async () => {});
 }
 
+/** How many times words are on screen: the week's note says the call first (K-517), so an answer adds one more. */
+const count = (words: string) => screen.queryAllByText(words).length;
+
 async function press(name: string) {
   await act(async () => fireEvent.press(screen.getByRole('button', { name })));
 }
@@ -117,11 +120,12 @@ test('no call yet: no note', async () => {
 
 test("'Why this call?' is answered on the phone: every rule's sentence, the call stands, its card — nothing sent", async () => {
   await show();
+  const [rules, cards] = [count(t('decision.rule.not_toward_goal')), count(t('decision.adjust_calories.not_toward_goal.title'))];
   await press(t('today.chips.why'));
-  expect(screen.getByText(t('decision.rule.not_toward_goal'))).toBeOnTheScreen();
+  expect(count(t('decision.rule.not_toward_goal'))).toBe(rules + 1);
   expect(screen.getByText(t('decision.rule.cut_step'))).toBeOnTheScreen();
   expect(screen.getByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
-  expect(screen.getByText(t('decision.adjust_calories.not_toward_goal.title'))).toBeOnTheScreen();
+  expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(cards + 1);
   expect(mockPOST).not.toHaveBeenCalled();
 });
 
@@ -142,8 +146,9 @@ test('a chip Today opened the coach with is answered at once', async () => {
 test("'Why this call?' from Today waits for the call: its rules and card, nothing sent", async () => {
   mockParams = { chip: 'today.chips.why' };
   await show();
-  expect(screen.getByText(t('decision.rule.not_toward_goal'))).toBeOnTheScreen();
-  expect(screen.getByText(t('decision.adjust_calories.not_toward_goal.title'))).toBeOnTheScreen();
+  // The week's note and the chip's answer: each says the leading rule and shows the card.
+  expect(count(t('decision.rule.not_toward_goal'))).toBe(2);
+  expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(2);
   expect(mockPOST).not.toHaveBeenCalled();
 });
 
@@ -172,13 +177,14 @@ test('a chip from a link that is not one of ours is not answered', async () => {
 test("a message: sent as written; the answer is the topic's sentence, the rule's, that the call stands — and the call", async () => {
   mockSent = ok({ mode: 'MODEL', topic: 'HUNGER', rule: 'cut_step', call: CALL });
   await show();
+  const cards = count(t('decision.adjust_calories.not_toward_goal.title'));
   await send('I am starving');
   expect(mockPOST).toHaveBeenCalledWith('/v1/coach/messages', { body: { text: 'I am starving' } });
   expect(screen.getByText('I am starving')).toBeOnTheScreen();
   expect(screen.getByText(t('coach.topic.hunger'))).toBeOnTheScreen();
   expect(screen.getByText(t('decision.rule.cut_step'))).toBeOnTheScreen();
   expect(screen.getByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
-  expect(screen.getByText(t('decision.adjust_calories.not_toward_goal.title'))).toBeOnTheScreen();
+  expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(cards + 1);
   expect(screen.queryByText(t('coach.standard'))).toBeNull();
   expect(screen.getByLabelText(t('coach.input')).props.value).toBe('');
 });
@@ -186,11 +192,12 @@ test("a message: sent as written; the answer is the topic's sentence, the rule's
 test('a doctor brought up: the coach says only that the doctor comes first — not that the call stands (U6)', async () => {
   mockSent = ok({ mode: 'MODEL', topic: 'HEALTH', call: CALL });
   await show();
+  const cards = count(t('decision.adjust_calories.not_toward_goal.title'));
   await send('I started new medication');
   expect(screen.getByText(t('coach.topic.health'))).toBeOnTheScreen();
   expect(screen.queryByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeNull();
-  // Nor the call's card: nothing on screen says the call stands after the doctor (U6).
-  expect(screen.queryByText(t('decision.adjust_calories.not_toward_goal.title'))).toBeNull();
+  // Nor the call's card: the answer adds none — nothing says the call stands after the doctor (U6).
+  expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(cards);
 });
 
 test("the engine's own words are marked as such — past the day's limit too", async () => {
@@ -249,6 +256,11 @@ test('a retry pressed while another message waits sends nothing more', async () 
 });
 
 describe('a meal in words (K-504 draft)', () => {
+  // No call this week: no note above, so nothing but the draft is on screen to read (its 'no calorie' too).
+  beforeEach(() => {
+    mockAnswers['/v1/decisions/current'] = refused(404, 'NOT_FOUND');
+  });
+
   const EGGS = { food: 'eggs', amount: { quantity: 2, unit: 'piece' }, confident: true, candidates: [{ id: 'fdc-1', name: 'Egg, whole' }, { id: 'fdc-2', name: 'Egg white' }] };
   const TOAST = { food: 'toast', amount: { quantity: 1, unit: 'slice' }, confident: false, candidates: [{ id: 'fdc-7', name: 'Bread, white, toasted' }, { id: 'fdc-8', name: 'Bread, whole wheat, toasted' }] };
 
