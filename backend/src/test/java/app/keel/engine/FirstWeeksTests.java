@@ -2,6 +2,7 @@ package app.keel.engine;
 
 import static app.keel.engine.EngineFixtures.parameters;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -156,11 +157,35 @@ class FirstWeeksTests {
     }
 
     @Test
-    void consistencysWeeksStoppingShortOfTheWeekJustOverSayNothingOfIt() {
-        // The forgiven week a week earlier is not the user's week just over.
+    void consistencysWeeksStoppingShortOfTheWeekJustOverAreRefused() {
+        // A caller's slip, not a quiet week: it would switch the signal off for everyone.
         LocalDate today = weekStarting(6);
         List<WeekTally> shortOfIt = calendar(today, 9, 2, 9).subList(0, 2);
-        assertThat(week(new FirstWeeks.Facts(today, BEGAN, true, ON_TRACK, 7, shortOfIt)).risk()).isEmpty();
+        assertThatThrownBy(() -> FirstWeeks.of(new FirstWeeks.Facts(today, BEGAN, true, ON_TRACK, 7, shortOfIt), MALE))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void consistencysWeeksBeginningAfterTheWeekJustOverSayNothingOfIt() {
+        // No consistency record yet, or one that began later (the first call): nothing was forgiven then.
+        LocalDate today = weekStarting(6);
+        List<WeekTally> later = new ArrayList<>(calendar(today, 9));
+        later.set(0, training(later.getFirst().weekStart().plusWeeks(1), 2));
+        assertThat(week(new FirstWeeks.Facts(today, BEGAN, true, ON_TRACK, 7, later)).risk()).isEmpty();
+        assertThat(week(new FirstWeeks.Facts(today, BEGAN, true, ON_TRACK, 7, List.of())).risk()).isEmpty();
+    }
+
+    @Test
+    void whateverTheDayTheAccountBeganTheCalendarWeekEndingInsideTheUsersWeekIsRead() {
+        // Begun on a Monday the user's week is the calendar's; begun on a Sunday its first day is the calendar week's last.
+        for (DayOfWeek day : DayOfWeek.values()) {
+            LocalDate began = BEGAN.with(TemporalAdjusters.nextOrSame(day));
+            LocalDate today = began.plusWeeks(5);
+            LocalDate sunday = today.minusDays(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+            List<WeekTally> forgiven = List.of(training(sunday.minusDays(13), 9), training(sunday.minusDays(6), 2));
+            assertThat(rules(FirstWeeks.of(new FirstWeeks.Facts(today, began, true, ON_TRACK, 7, forgiven), MALE).orElseThrow()))
+                    .as(day.toString()).containsExactly("forgiven_week_used");
+        }
     }
 
     @Test
