@@ -1024,6 +1024,28 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /v1/first-weeks:
+    get:
+      tags: [check-in]
+      operationId: getFirstWeeks
+      summary: This week of the first eight (K-513, ADR-040)
+      description: |
+        The user's own week since the account began (04 §7.5, I1 F2): week 1 has no words ("no comment, no score"), weeks
+        2-8 have `contentKey`.title/.body (a version without lifting when no training is planned). Once the user's week
+        just over is week 5 to 8 (G2 K-63), `risk` lists that week's signals, each with its source — any one is a risk,
+        none weighed; empty when none, or when the week was paused (a declared state, the ladder's week off). Week 9 is
+        open for week 8's risk alone, without words. NOT_FOUND once the flow is over. Health data: CONSENT_REQUIRED
+        without the HEALTH_DATA consent; CONFLICT without a profile. It never changes a call (U1).
+      responses:
+        "200":
+          description: This week of the flow
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FirstWeeks"
+        default:
+          $ref: "#/components/responses/Error"
+
   # ── decision (K-212, K-216, K-217, ADR-003) ────────────────────────────────────────────────────────────────
   /v1/decisions:
     get:
@@ -2707,6 +2729,21 @@ components:
         next:
           type: string
           description: The cursor for the next (older) page; absent on the last page.
+    FirstWeeks:
+      type: object
+      required: [week, risk]
+      properties:
+        week:
+          type: integer
+          minimum: 1
+          maximum: 9
+        contentKey:
+          type: string
+          description: The week's words in the copy file; absent in week 1 and week 9.
+        risk:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reason"
     Reason:
       type: object
       required: [rule, source]

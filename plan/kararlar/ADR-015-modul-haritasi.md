@@ -19,7 +19,7 @@ Paket kökü `app.keel` (geçici; ürün adı gelince değişebilir). Modüller:
 | `measurement` | Kilo, bel, fotoğraftan türetilmiş değerler, trendler | profile, consent, engine (ADR-026) |
 | `nutrition` | Öğün kayıtları, besin eşleme, günlük bütçe | profile, consent (ADR-026), engine (ADR-026) |
 | `training` | Program, seanslar, setler, egzersiz kataloğu | profile, engine (ADR-026) |
-| `decision` | Haftalık check-in, Snapshot kurma, motoru çağırma, karar kaydı | engine, profile, measurement, nutrition, training, consent (ADR-026) |
+| `decision` | Haftalık check-in, Snapshot kurma, motoru çağırma, karar kaydı | engine, profile, measurement, nutrition, training, consent (ADR-026), identity (ADR-040: hesabın açıldığı an, `AccountDates`) |
 | `subscription` | Yetki, kota sayaçları | identity |
 | `privacy` | Tek egress kapısı, veri dışa aktarma, silme olayı | consent |
 | `coach` | Dil katmanı: anlatım, serbest metin → kayıt, soru bütçesi | decision, nutrition, training, subscription, privacy |

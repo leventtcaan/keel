@@ -26,9 +26,16 @@ dosya. Kaynak 5. haftanın sinyallerini sayar ama birleştirme ağırlığı ver
    - kayıt düştü: biten haftada öğün kaydı olan gün `min_logged_days_per_week`'in altına indi, önceki hafta o eşikteydi — yeni eşik yok;
    - **uygulama açılmaması** sunucuda bilinmez (açılış yalnız telefonda, K-410) → K-521.
    **Birleştirme: herhangi biri = risk.** Ağırlık yok: kaynak ağırlık vermiyor, uydurulmaz (U14). Biten hafta duraklamışsa (beyan, ADR-038) sinyal yok.
-4. **Risk varken soru bütçesi** haftanın anomali bütçesi (`question_budget_per_week_anomaly`, 5; U9). Mesaj: tek, insan tonunda,
-   suçlamasız (U7) — telefonda (K-521).
-5. API: `GET /v1/first-weeks` → `{week, contentKey?, risk}`; 9. haftadan sonra 404 (akış bitti).
+4. **Risk varken soru bütçesi** haftanın anomali bütçesi (`question_budget_per_week_anomaly`, 5; U9): `CheckInQuestions.largerBudget`.
+   **Tavandır, soru sebebi değil:** sorular yine yalnız motorun beklediği cevaplardır. Bugünkü motor anomali dışında en fazla 2 soru
+   bekler (TRAINING/RECOVERY yalnız "daha kötü görünüyor"da, o da anomali) — yani genişleme bugün gözlenebilir bir şey değiştirmez;
+   motor yeni bir soru beklediğinde devreye girer. Mesaj: tek, insan tonunda, suçlamasız (U7) — telefonda (K-521).
+5. API: `GET /v1/first-weeks` → `{week, contentKey?, risk: [Reason]}`; 9. haftadan sonra 404 (akış bitti). Sunucu (`DecisionService.firstWeeks`):
+   açılış günü kimlik modülünden (`AccountDates.began`, decision → identity bağımlılığı, ADR-015 güncellendi), kullanıcının haftası
+   profilin saat diliminde; seans = ısınma dışı setli antrenman günü (iki antrenman bir gün = bir seans), kayıt = öğün olan gün;
+   **merdivenin mola haftası da duraklatır** (K-435: mola haftası susar; Prompts ile aynı) — planlı dinlenmede "seans yok" risk değildir.
+   Takvim haftaları sayacın kendisinden (`WeekLogs.consistency(...).weeksOver`), plan yoksa yok. Akış dışında hiçbir kayıt okunmaz
+   (`FirstWeeks.open`): iki yıllık kullanıcı her check-in'de bunun için okunmaz.
 
 ## Alternatifler ve neden o değil
 | Alternatif | Neden değil |

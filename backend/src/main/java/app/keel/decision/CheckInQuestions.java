@@ -108,8 +108,12 @@ final class CheckInQuestions {
                 .allMatch(week -> week.datesUntil(week.plusWeeks(1)).anyMatch(declaredDays::contains));
     }
 
+    /**
+     * The week's larger budget (U9: at most 5): the data disagreeing with itself, or a risky week of the first eight
+     * (K-513, ADR-040 #4). A cap, not a reason to ask: the questions are still only what the engine would wait for.
+     */
     static boolean largerBudget(CheckIn dataSays, Phase phase, boolean firstWeeksRisk) {
-        return anomaly(dataSays, phase);
+        return firstWeeksRisk || anomaly(dataSays, phase);
     }
 
     static boolean anomaly(CheckIn dataSays, Phase phase) {

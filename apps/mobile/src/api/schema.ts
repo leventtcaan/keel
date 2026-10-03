@@ -809,6 +809,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/first-weeks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This week of the first eight (K-513, ADR-040)
+         * @description The user's own week since the account began (04 §7.5, I1 F2): week 1 has no words ("no comment, no score"), weeks
+         *     2-8 have `contentKey`.title/.body (a version without lifting when no training is planned). Once the user's week
+         *     just over is week 5 to 8 (G2 K-63), `risk` lists that week's signals, each with its source — any one is a risk,
+         *     none weighed; empty when none, or when the week was paused (a declared state, the ladder's week off). Week 9 is
+         *     open for week 8's risk alone, without words. NOT_FOUND once the flow is over. Health data: CONSENT_REQUIRED
+         *     without the HEALTH_DATA consent; CONFLICT without a profile. It never changes a call (U1).
+         */
+        get: operations["getFirstWeeks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions": {
         parameters: {
             query?: never;
@@ -1791,6 +1816,12 @@ export interface components {
             items: components["schemas"]["Decision"][];
             /** @description The cursor for the next (older) page; absent on the last page. */
             next?: string;
+        };
+        FirstWeeks: {
+            week: number;
+            /** @description The week's words in the copy file; absent in week 1 and week 9. */
+            contentKey?: string;
+            risk: components["schemas"]["Reason"][];
         };
         Reason: {
             rule: string;
@@ -3218,6 +3249,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromptReply"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getFirstWeeks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description This week of the flow */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FirstWeeks"];
                 };
             };
             default: components["responses"]["Error"];

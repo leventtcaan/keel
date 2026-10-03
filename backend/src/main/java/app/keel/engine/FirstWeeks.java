@@ -60,21 +60,21 @@ public final class FirstWeeks {
         return began.plusWeeks(Math.floorDiv(ChronoUnit.DAYS.between(began, today), DAYS_PER_WEEK));
     }
 
+    /** Whether {@code today} has a week of the flow: from the account's first day through the week after the last. */
     public static boolean open(LocalDate began, LocalDate today, Parameters parameters) {
-        return false;
+        long days = ChronoUnit.DAYS.between(began, today);
+        return days >= 0 && days / DAYS_PER_WEEK + 1 <= parameters.wholeNumber(ParameterKey.FIRST_WEEKS) + 1;
     }
 
     /** This week of the flow; empty before the account's first day and once the week after the flow is over. */
     public static Optional<Week> of(Facts facts, Parameters parameters) {
-        long days = ChronoUnit.DAYS.between(facts.began(), facts.today());
-        int flow = parameters.wholeNumber(ParameterKey.FIRST_WEEKS);
-        long number = days / DAYS_PER_WEEK + 1;
-        if (days < 0 || number > flow + 1) {
+        if (!open(facts.began(), facts.today(), parameters)) {
             return Optional.empty();
         }
-        long weekJustOver = number - 1;
+        int number = (int) (ChronoUnit.DAYS.between(facts.began(), facts.today()) / DAYS_PER_WEEK) + 1;
+        int weekJustOver = number - 1;
         List<Reason> risk = weekJustOver >= parameters.wholeNumber(ParameterKey.FIRST_WEEKS_RISK_FROM) ? signals(facts, parameters) : List.of();
-        return Optional.of(new Week((int) number, content((int) number, flow, facts.trainingPlanned()), risk));
+        return Optional.of(new Week(number, content(number, parameters.wholeNumber(ParameterKey.FIRST_WEEKS), facts.trainingPlanned()), risk));
     }
 
     private static Optional<CopyKey> content(int number, int flow, boolean trainingPlanned) {
