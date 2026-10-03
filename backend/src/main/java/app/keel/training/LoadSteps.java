@@ -118,6 +118,27 @@ final class LoadSteps {
      */
     static Rounding round(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal lastKg, BigDecimal targetKg,
             BigDecimal maxJump) {
+        Made made = made(equipment, exerciseId, gym, targetKg);
+        Scale scale = made.scale();
+        long last = scale.units(lastKg);
+        long target = scale.target(targetKg);
+        List<Long> loads = made.loads();
+        if (loads.isEmpty()) {
+            return new Rounding.Unknown();
+        }
+        return loads.stream().filter(load -> load > last)
+                .min(Comparator.comparingLong((Long load) -> Math.abs(load - target)).thenComparingLong(load -> load))
+                .<Rounding>map(load -> maxJump == null
+                        || BigDecimal.valueOf(load - last).compareTo(maxJump.multiply(BigDecimal.valueOf(target - last))) <= 0
+                        ? new Rounding.To(scale.kg(load)) : new Rounding.TooFar(scale.kg(load)))
+                .orElse(new Rounding.NoHeavier());
+    }
+
+    /** The loads the gym makes for an equipment, around a target, on the scale its weights were entered in. */
+    private record Made(Scale scale, List<Long> loads) {
+    }
+
+    private static Made made(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal targetKg) {
         BigDecimal stepKg = Optional.ofNullable(gym.machineStepsKg().get(exerciseId)).orElse(gym.stackStepKg());
         Scale scale = switch (equipment) {
             case DUMBBELL -> Scale.of(gym.dumbbellsKg().stream());
@@ -126,7 +147,6 @@ final class LoadSteps {
             case PLATE_LOADED -> Scale.of(gym.platesKg().stream());
             case BODYWEIGHT -> Scale.of(Stream.concat(gym.platesKg().stream(), gym.dumbbellsKg().stream()));
         };
-        long last = scale.units(lastKg);
         long target = scale.target(targetKg);
         List<Long> loads = switch (equipment) {
             case DUMBBELL -> gym.dumbbellsKg().stream().map(scale::units).toList();
@@ -139,15 +159,24 @@ final class LoadSteps {
                 yield added;
             }
         };
-        if (loads.isEmpty()) {
-            return new Rounding.Unknown();
-        }
-        return loads.stream().filter(load -> load > last)
-                .min(Comparator.comparingLong((Long load) -> Math.abs(load - target)).thenComparingLong(load -> load))
-                .<Rounding>map(load -> maxJump == null
-                        || BigDecimal.valueOf(load - last).compareTo(maxJump.multiply(BigDecimal.valueOf(target - last))) <= 0
-                        ? new Rounding.To(scale.kg(load)) : new Rounding.TooFar(scale.kg(load)))
-                .orElse(new Rounding.NoHeavier());
+        return new Made(scale, loads);
+    }
+
+    /** Whether the gym says anything about the loads of this equipment (K-531): weights, a stack's step, a bar. */
+    static boolean knows(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym) {
+        return !made(equipment, exerciseId, gym, BigDecimal.ONE).loads().isEmpty();
+    }
+
+    /**
+     * A step back the gym can make (K-531): the heaviest load it makes at or under {@code targetKg} and lighter than
+     * {@code fromKg}. Empty when it makes none so light, or says nothing about this equipment — the caller decides.
+     */
+    static Optional<BigDecimal> lighter(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal fromKg,
+            BigDecimal targetKg) {
+        Made made = made(equipment, exerciseId, gym, targetKg);
+        long from = made.scale().units(fromKg);
+        long target = made.scale().target(targetKg);
+        return made.loads().stream().filter(load -> load <= target && load < from).max(Long::compare).map(made.scale()::kg);
     }
 
     /**

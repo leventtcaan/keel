@@ -4,6 +4,7 @@
  * Nothing is computed here: the server's numbers, in words.
  */
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
 import { dayName, exerciseName, nextLine, programNotes, repsLine, setsLine } from '@/train/program';
 import type { Move } from '@/train/trainData';
 
@@ -42,6 +43,11 @@ test("a busy week's dose: the server's numbers in words, with the weights when i
     'A week off training, until Oct 4.',
   ]);
   expect(programNotes(program(), null)).toEqual([]);
+});
+
+test('back after a long break: the targets start a step lighter, and it says so (K-531)', () => {
+  expect(programNotes(program({ backAfterBreak: true }))).toEqual([t('train.status.backAfterBreak')]);
+  expect(t('train.status.backAfterBreak')).not.toMatch(/\[missing/);
 });
 
 test("a day's name: the copy of a generated day, the user's own text for their own", () => {

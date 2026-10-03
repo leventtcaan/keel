@@ -1,9 +1,11 @@
 package app.keel.training;
 
+import app.keel.engine.BodyRegion;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
 import app.keel.engine.RepRange;
+import app.keel.engine.ReturnLoad;
 import app.keel.engine.Sex;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -67,11 +70,12 @@ class ProgramController {
 
     /**
      * Contract Program, with the deload ladder's calls in force today (K-217): a lighter week, a week off
-     * ({@code restUntil}), the load held ({@code loadHeldSince}).
+     * ({@code restUntil}), the load held ({@code loadHeldSince}); back after a long break (K-531), a target a step lighter
+     * ({@code backAfterBreak}, absent otherwise).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Program(UUID id, ProgramStore.Source source, List<ProgramDay> days, DeloadWeek deload, LocalDate restUntil,
-            LocalDate loadHeldSince) {
+            LocalDate loadHeldSince, Boolean backAfterBreak) {
     }
 
     private final ProgramStore store;
@@ -83,9 +87,13 @@ class ProgramController {
 
     private final TrainingCalls calls;
     private final Clock clock;
+    private final GymStore gyms;
+    private final TrainingLog log;
 
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
-            WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock) {
+            WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log) {
+        this.gyms = gyms;
+        this.log = log;
         this.calls = calls;
         this.clock = clock;
         this.store = store;
@@ -148,25 +156,72 @@ class ProgramController {
 
     /** The program as it is this week: the calls in force today on the user's calendar (K-217). */
     private Program view(AccountId account, ProgramStore.Program program) {
-        LocalDate today = LocalDate.now(clock.withZone(profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC)));
+        ZoneId zone = profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
+        LocalDate today = LocalDate.now(clock.withZone(zone));
         List<TrainingChanges.Change> changes = calls.changes(account);
         Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(changes, TrainingChanges.Kind.LIGHTER_WEEK, today);
         boolean held = TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).isPresent();
-        return new Program(program.id(), program.source(), program.days().stream().map(day -> new ProgramDay(day.id(), day.nameKey(),
-                day.name(), day.weekday(), day.exercises().stream().map(planned -> new PlannedExercise(planned.exerciseId(), planned.sets(),
-                        TrainingChanges.sets(planned.sets(), lighter), new Reps(planned.repMin(), planned.repMax()), planned.targetRir(),
-                        next(planned, held).map(NextTargets.Target::loadKg).orElse(null), next(planned, held).map(NextTargets.Target::reps).orElse(null)))
-                        .toList()))
-                .toList(),
-                lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
+        // The break is the account's, from its training log (ADR-043 #75): the last session done before today, any day of the
+        // program or none. Before today, so the session back itself — and a program read during it — stays a step lighter.
+        Optional<LocalDate> lastSession = log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant())
+                .map(started -> started.atZone(zone).toLocalDate());
+        Back back = new Back(today, zone, parametersFor(account), gyms.current(account), lastSession);
+        List<ProgramDay> days = program.days().stream().map(day -> new ProgramDay(day.id(), day.nameKey(), day.name(), day.weekday(),
+                day.exercises().stream().map(planned -> {
+                    Optional<NextTargets.Target> next = next(planned, held, back);
+                    return new PlannedExercise(planned.exerciseId(), planned.sets(), TrainingChanges.sets(planned.sets(), lighter),
+                            new Reps(planned.repMin(), planned.repMax()), planned.targetRir(), next.map(NextTargets.Target::loadKg).orElse(null),
+                            next.map(NextTargets.Target::reps).orElse(null));
+                }).toList())).toList();
+        boolean backAfterBreak = program.days().stream().flatMap(day -> day.exercises().stream()).anyMatch(planned -> afterBreak(planned, back));
+        // backAfterBreak: some target shown a step lighter today — the account's break, not one program day's.
+        return new Program(program.id(), program.source(), days, lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
-                TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null));
+                TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null),
+                backAfterBreak ? Boolean.TRUE : null);
     }
 
-    /** The next session's target as shown today: a hold of the deload ladder in force keeps the last load (K-217). */
-    private static Optional<NextTargets.Target> next(ProgramStore.PlannedExercise planned, boolean held) {
+    /**
+     * What a target back after a break is read with: the user's day, the engine's parameters, the gym in use, and the day
+     * of the account's last session before today.
+     */
+    private record Back(LocalDate today, ZoneId zone, Parameters parameters, Optional<GymStore.Gym> gym, Optional<LocalDate> lastSession) {
+
+        /** Back after a long break today (K-531): the account's last session before today a long break ago. */
+        boolean afterBreak() {
+            return lastSession.filter(day -> ReturnLoad.afterBreak(day, today, parameters)).isPresent();
+        }
+    }
+
+    /**
+     * A target stepped back: on a day back after a long break, one from before today — a target the session back wrote
+     * today is that session's own, not stepped back again.
+     */
+    private static boolean afterBreak(ProgramStore.PlannedExercise planned, Back back) {
+        return back.afterBreak() && planned.nextLoadKg() != null && planned.lastLoadKg() != null && planned.nextFrom() != null
+                && planned.nextFrom().atZone(back.zone()).toLocalDate().isBefore(back.today());
+    }
+
+    /**
+     * The next session's target as shown today. Back after a long break (K-531, ADR-043 #75): the last load one engine step
+     * lighter, as the gym can make it (where it makes none so light, the last load; where it says nothing, the engine's
+     * number), from the bottom of the range — before anything else. Otherwise a hold of the deload ladder in force keeps
+     * the last load (K-217).
+     */
+    private Optional<NextTargets.Target> next(ProgramStore.PlannedExercise planned, boolean held, Back back) {
         if (planned.nextLoadKg() == null) {
             return Optional.empty();
+        }
+        if (afterBreak(planned, back)) {
+            return catalog.find(planned.exerciseId()).map(exercise -> {
+                BodyRegion region = BodyRegion.valueOf(catalog.region(exercise.muscles().getFirst()).name());
+                BigDecimal stepped = ReturnLoad.stepBack(planned.lastLoadKg(), region, back.parameters());
+                BigDecimal load = back.gym().filter(gym -> LoadSteps.knows(exercise.equipment(), exercise.id(), gym))
+                        .map(gym -> LoadSteps.lighter(exercise.equipment(), exercise.id(), gym, planned.lastLoadKg(), stepped)
+                                .orElse(planned.lastLoadKg()))
+                        .orElse(stepped);
+                return new NextTargets.Target(load, planned.repMin());
+            });
         }
         return Optional.of(NextTargets.shown(new NextTargets.Target(planned.nextLoadKg(), planned.nextReps()), planned.lastLoadKg(),
                 new RepRange(planned.repMin(), planned.repMax()), held));

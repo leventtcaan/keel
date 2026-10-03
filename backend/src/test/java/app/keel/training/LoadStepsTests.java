@@ -237,6 +237,50 @@ class LoadStepsTests {
         return fewest[amount] == Integer.MAX_VALUE ? -1 : fewest[amount];
     }
 
+    @Test
+    void aStepBackIsTheHeaviestLoadTheGymMakesAtOrUnderItAndLighterThanTheLast() {
+        // K-531: back after a break, one engine step lighter — as the gym can make it.
+        GymStore.Gym barbell = gymWith(new BigDecimal("20"), weights("1.25", "2.5", "5", "10", "20"), List.of());
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.BARBELL, "bench_press", barbell, new BigDecimal("60"), new BigDecimal("57.5")))
+                .contains(new BigDecimal("57.5"));
+        GymStore.Gym dumbbells = gymWith(null, List.of(), weights("10", "12.5", "15", "20"));
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.DUMBBELL, "db_press", dumbbells, new BigDecimal("20"), new BigDecimal("17.5")))
+                .contains(new BigDecimal("15"));
+        GymStore.Gym stack = new GymStore.Gym(null, "Test", true, null, List.of(), List.of(), new BigDecimal("7"), Map.of());
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.MACHINE, "leg_press_machine", stack, new BigDecimal("42"), new BigDecimal("39.5")))
+                .contains(new BigDecimal("35"));
+    }
+
+    @Test
+    void noStepBackWhereTheGymMakesNothingSoLightOrSaysNothing() {
+        GymStore.Gym sparse = gymWith(null, List.of(), weights("10", "20"));
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.DUMBBELL, "db_press", sparse, new BigDecimal("10"), new BigDecimal("7.5"))).isEmpty();
+        GymStore.Gym silent = new GymStore.Gym(null, "Test", true, null, List.of(), List.of(), null, Map.of());
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.MACHINE, "leg_press_machine", silent, new BigDecimal("42"), new BigDecimal("39.5"))).isEmpty();
+    }
+
+    @Test
+    void aStepBackOnTheGymsTargetItselfIsTakenButNeverTheLastLoad() {
+        GymStore.Gym dumbbells = gymWith(null, List.of(), weights("10", "12.5", "15"));
+        // The target is a load the gym has: that one; a target at the last (no step at all) gives a lighter one, never the last.
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.DUMBBELL, "db_press", dumbbells, new BigDecimal("15"), new BigDecimal("12.5")))
+                .contains(new BigDecimal("12.5"));
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.DUMBBELL, "db_press", dumbbells, new BigDecimal("15"), new BigDecimal("15")))
+                .contains(new BigDecimal("12.5"));
+    }
+
+    @Test
+    void aLoadBetweenTheStepAndTheLastIsNotAStepBack() {
+        // A whole step back from 20 is 15; the 17.5 between them is less than a step and is not taken.
+        GymStore.Gym dumbbells = gymWith(null, List.of(), weights("10", "12.5", "15", "17.5", "20"));
+        assertThat(LoadSteps.lighter(ExerciseCatalog.Equipment.DUMBBELL, "db_lunge", dumbbells, new BigDecimal("20"), new BigDecimal("15")))
+                .contains(new BigDecimal("15"));
+    }
+
+    private static List<BigDecimal> weights(String... kg) {
+        return java.util.Arrays.stream(kg).map(BigDecimal::new).toList();
+    }
+
     private static GymStore.Gym gymWith(BigDecimal bar, List<BigDecimal> plates, List<BigDecimal> dumbbells) {
         return new GymStore.Gym(null, "Test", true, bar, plates, dumbbells, null, Map.of());
     }

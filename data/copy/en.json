@@ -206,7 +206,8 @@
       "restWeek": "A week off training, until {date}.",
       "restWeekNote": "Rest is the plan this week. Your program picks up after it.",
       "deload": "A lighter week, until {date}: fewer sets, the same weights.",
-      "held": "Weights held since {date}: reach the top of the range before adding weight."
+      "held": "Weights held since {date}: reach the top of the range before adding weight.",
+      "backAfterBreak": "Back after a few weeks away: today's weights start a step lighter, from the bottom of the range."
     },
     "busy": {
       "withLoad": "A busy week: {sessions} with {sets} per exercise, at your usual weights, keeps what you've built. Anything more is a bonus.",
@@ -679,6 +680,7 @@
       "plateau": "When a lift stalls, the weight holds while the reps catch up.",
       "profile_needed": "Your age and height show what your body needs at rest, and a lower target stays above it.",
       "rapid_loss": "A lot lost in a short time means calories go up a step.",
+      "return_after_break": "After a few weeks away, the first session back starts a step lighter, so the strength you kept isn't spent in a week.",
       "recovery_poor": "When training holds but sleep and energy don't, recovery is what to fix.",
       "sessions_missed": "Planned sessions didn't happen, so the coach asks what got in the way.",
       "stall_window": "In a cut, weight that hasn't moved toward your goal over the whole window means the plan changes.",

@@ -29,11 +29,11 @@ class ProgramStore {
      * {@code lastLoadKg} the load it came from; {@code id} the stored row (null before it is stored).
      */
     record PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
-            BigDecimal lastLoadKg, UUID id) {
+            BigDecimal lastLoadKg, UUID id, Instant nextFrom) {
 
         /** As planned, before any workout. */
         PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir) {
-            this(exerciseId, sets, repMin, repMax, targetRir, null, null, null, null);
+            this(exerciseId, sets, repMin, repMax, targetRir, null, null, null, null, null);
         }
     }
 
@@ -110,14 +110,16 @@ class ProgramStore {
         record Row(UUID day, PlannedExercise exercise) {
         }
         Map<UUID, List<PlannedExercise>> exercises = jdbc.sql("""
-                select e.id, e.day_id, e.exercise_id, e.sets, e.rep_min, e.rep_max, e.target_rir, e.next_load_kg, e.next_reps, e.last_load_kg
+                select e.id, e.day_id, e.exercise_id, e.sets, e.rep_min, e.rep_max, e.target_rir, e.next_load_kg, e.next_reps, e.last_load_kg,
+                       e.next_from
                 from training.planned_exercise e
                 join training.program_day d on d.id = e.day_id where d.program_id = :program order by e.day_id, e.seq""")
                 .param("program", program)
                 .query((row, n) -> new Row(row.getObject("day_id", UUID.class), new PlannedExercise(row.getString("exercise_id"),
                         row.getInt("sets"), row.getInt("rep_min"), row.getInt("rep_max"), row.getInt("target_rir"),
                         plain(row.getBigDecimal("next_load_kg")), row.getObject("next_reps", Integer.class), plain(row.getBigDecimal("last_load_kg")),
-                        row.getObject("id", UUID.class))))
+                        row.getObject("id", UUID.class), Optional.ofNullable(row.getObject("next_from", OffsetDateTime.class))
+                                .map(OffsetDateTime::toInstant).orElse(null))))
                 .list().stream()
                 .collect(Collectors.groupingBy(Row::day, LinkedHashMap::new, Collectors.mapping(Row::exercise, Collectors.toList())));
         List<Day> days = jdbc.sql("select id, name_key, name, weekday from training.program_day where program_id = :program order by seq")

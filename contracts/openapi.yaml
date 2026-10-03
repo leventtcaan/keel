@@ -2127,6 +2127,11 @@ components:
         loadHeldSince:
           type: string
           format: date
+        backAfterBreak:
+          type: boolean
+          description: |
+            Back after a long break (K-531, ADR-043 #75): a target from a session return_step_back_after_weeks or more ago is
+            shown one engine step lighter, from the bottom of its range; present (true) only then.
         id:
           type: string
           format: uuid

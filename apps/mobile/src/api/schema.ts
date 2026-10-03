@@ -1489,6 +1489,11 @@ export interface components {
             restUntil?: string;
             /** Format: date */
             loadHeldSince?: string;
+            /**
+             * @description Back after a long break (K-531, ADR-043 #75): a target from a session return_step_back_after_weeks or more ago is
+             *     shown one engine step lighter, from the bottom of its range; present (true) only then.
+             */
+            backAfterBreak?: boolean;
             /** Format: uuid */
             id: string;
             /** @enum {string} */
