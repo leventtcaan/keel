@@ -54,3 +54,5 @@ jobs:
         run: python3 tools/test_git_guard.py
       - name: Clip tool tests (K-419; the real cut runs where ffmpeg is installed)
         run: python3 tools/test_clip.py
+      - name: Language model check script (K-511)
+        run: python3 tools/test_llm_eval.py
