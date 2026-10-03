@@ -3,6 +3,7 @@ package app.keel.coach;
 import app.keel.decision.CallFacts;
 import app.keel.decision.CallReader;
 import app.keel.shared.AccountId;
+import app.keel.subscription.Quota;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ class Explanation {
 
     static final String CALL_WORDS = "coach.answer.call";
     static final String NO_CALL_WORDS = "coach.answer.no_call";
+    static final String DAILY_LIMIT_WORDS = "coach.answer.daily_limit";
 
     enum Mode { MODEL, DETERMINISTIC }
 
@@ -41,12 +43,14 @@ class Explanation {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final CallReader calls;
+    private final Quota quota;
     private final CoachModel model;
     private final ReplyCheck check;
     private final String instructions;
 
-    Explanation(CallReader calls, CoachModel model, CoachProperties properties) {
+    Explanation(CallReader calls, Quota quota, CoachModel model, CoachProperties properties) {
         this.calls = calls;
+        this.quota = quota;
         this.model = model;
         this.check = ReplyCheck.fromClasspath(properties.maxReplyChars());
         this.instructions = CoachInstructions.read("explain.md");
@@ -62,7 +66,17 @@ class Explanation {
         if (!call.tellable()) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, CALL_WORDS, told));
         }
-        ModelReply reply = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts(call), List.of(Turn.user(question)));
+        // The day's limit (K-508): past it, the engine's words — no hard stop. A use is given back if the call never ran.
+        if (!quota.take(account, Quota.Use.COACH_MESSAGE)) {
+            return Optional.of(new Answer(Mode.DETERMINISTIC, null, DAILY_LIMIT_WORDS, told));
+        }
+        ModelReply reply;
+        try {
+            reply = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts(call), List.of(Turn.user(question)));
+        } catch (RuntimeException notAsked) {
+            quota.giveBack(account, Quota.Use.COACH_MESSAGE);
+            throw notAsked;
+        }
         return Optional.of(check.read(reply.text(), call).map(text -> new Answer(Mode.MODEL, text, null, told))
                 .orElseGet(() -> new Answer(Mode.DETERMINISTIC, null, CALL_WORDS, told)));
     }

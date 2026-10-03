@@ -72,6 +72,8 @@ final class AccountFixture {
                 "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 300, "unit", "g")))));
         // A state declared (K-516): sickness and pain are health data, so every state is (ADR-038).
         send(account, "PUT", "/v1/state", Map.of("kind", "SICK"));
+        // A day's use of the coach (K-508): a count, the account's.
+        assertThat(context.getBean(app.keel.subscription.Quota.class).take(account, app.keel.subscription.Quota.Use.COACH_MESSAGE)).isTrue();
         // An answer to the coach's own question (K-512): health data, as the answers to the check-in are.
         send(account, "POST", "/v1/prompts/loads_dropped/answers", Map.of("key", "2026-09-28", "choice", "OK"));
         // This week's check-in (Mondays, UTC): the plan and the call (K-212).

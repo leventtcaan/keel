@@ -169,6 +169,40 @@ class CoachMessagesApiTests {
     }
 
     @Test
+    void pastTheDailyLimitTheEngineAnswersAndNothingIsSent() throws Exception {
+        // K-508: no hard stop, nothing to buy — the call in the engine's words, with why.
+        AccountId account = withACutStep();
+        jdbc.sql("""
+                insert into subscription.daily_use (account_id, day, use, used)
+                values (:a, :day, 'COACH_MESSAGE', 1000)""").param("a", account.value()).param("day", LocalDate.now(java.time.ZoneOffset.UTC)).update();
+        fake.answer("{\"text\":\"The call stands.\"}");
+
+        assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("mode", "DETERMINISTIC").containsEntry("copyKey", "coach.answer.daily_limit")
+                .containsKey("call");
+        assertThat(fake.requests()).isEmpty();
+    }
+
+    @Test
+    void aMessageTheModelWasAskedIsCountedAndOneThatWasRefusedIsNot() throws Exception {
+        AccountId account = withACutStep();
+        fake.answer("{\"text\":\"The call stands.\"}");
+        ok(ask(account, Map.of("text", "Why?")));
+        assertThat(used(account)).isEqualTo(1);
+
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", account.value())
+                .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
+        assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
+        assertThat(used(account)).as("given back").isEqualTo(1);
+    }
+
+    private int used(AccountId account) {
+        return jdbc.sql("select coalesce(sum(used), 0) from subscription.daily_use where account_id = :a").param("a", account.value())
+                .query(Integer.class).single();
+    }
+
+    @Test
     void anotherUsersCallOrNoneIsNotFoundAndAQuestionIsAFewSentences() throws Exception {
         AccountId owner = withACutStep();
         AccountId other = withACutStep();

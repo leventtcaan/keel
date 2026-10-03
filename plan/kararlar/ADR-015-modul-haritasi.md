@@ -20,7 +20,7 @@ Paket kökü `app.keel` (geçici; ürün adı gelince değişebilir). Modüller:
 | `nutrition` | Öğün kayıtları, besin eşleme, günlük bütçe | profile, consent (ADR-026), engine (ADR-026) |
 | `training` | Program, seanslar, setler, egzersiz kataloğu | profile, engine (ADR-026) |
 | `decision` | Haftalık check-in, Snapshot kurma, motoru çağırma, karar kaydı | engine, profile, measurement, nutrition, training, consent (ADR-026), identity (ADR-040: hesabın açıldığı an, `AccountDates`) |
-| `subscription` | Yetki, kota sayaçları | identity |
+| `subscription` | Yetki, kota sayaçları | identity, profile (K-508: kotanın günü kullanıcının saat diliminde) |
 | `privacy` | Tek egress kapısı, veri dışa aktarma, silme olayı | consent |
 | `coach` | Dil katmanı: anlatım, serbest metin → kayıt, soru bütçesi | decision, nutrition, training, subscription, privacy |
 
@@ -45,3 +45,9 @@ Orta (paket taşıma).
 
 ## Doğrulama
 `ModularityTests` (modül listesi + `verify()`).
+
+## Değişiklik — K-508 (3 Eki 2026, agent, teknik)
+`subscription` → `profile` bağımlılığı eklendi: günlük kota kullanıcının kendi gününde sayılır (saat dilimi profilde). Ters yön yok
+(`profile` yalnız `consent`'e bağlı), döngü yok (`ModularityTests`). Limitler `data/parameters/quota.yaml`'dan, `QuestionBudget` gibi
+doğrudan okunur — `engine` bağımlılığı gerekmedi.
+

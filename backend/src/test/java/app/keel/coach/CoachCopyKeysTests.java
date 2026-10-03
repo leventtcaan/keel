@@ -15,7 +15,7 @@ class CoachCopyKeysTests {
     @SuppressWarnings("unchecked")
     void theDeterministicAnswersAreInTheCopyFile() throws Exception {
         Map<String, Object> copy = JsonMapper.builder().build().readValue(Files.readString(Path.of("../data/copy/en.json")), Map.class);
-        for (String key : new String[] {Explanation.CALL_WORDS, Explanation.NO_CALL_WORDS}) {
+        for (String key : new String[] {Explanation.CALL_WORDS, Explanation.NO_CALL_WORDS, Explanation.DAILY_LIMIT_WORDS}) {
             Object node = copy;
             for (String part : key.split("\\.")) {
                 node = ((Map<String, Object>) node).get(part);

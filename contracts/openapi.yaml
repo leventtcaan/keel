@@ -1211,7 +1211,8 @@ paths:
         the engine's own words (DETERMINISTIC). When there is no call yet, or for a call only the engine tells (the safety
         label, a call waiting for the cycle question, the safety net's), nothing is sent anywhere. Every answer
         about a call carries the call as it stands: the coach explains, it never changes it (U1, U2). Unknown decisionId:
-        404. Quota: coach_messages_per_day (K-508).
+        404. Daily limit: coach_messages_per_day (data/parameters/quota.yaml, the user's day; K-508) — past it the answer
+        is the engine's words (DETERMINISTIC, copyKey coach.answer.daily_limit), never an error and nothing to buy.
       requestBody:
         required: true
         content:
