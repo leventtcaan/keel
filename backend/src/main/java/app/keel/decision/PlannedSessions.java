@@ -6,9 +6,10 @@ import app.keel.training.TrainingStatusReader;
 import org.springframework.stereotype.Component;
 
 /**
- * The sessions a week the plan asks for (K-530, ADR-043 #74): the plan is the program, so its days — in consistency's
- * weeks, the first eight weeks and the targets alike, the number its missed weeks are counted against too. Without a
- * program, the profile's training days (as K-527's missed session).
+ * The sessions a week the plan asks for (K-530, ADR-043 #74), in consistency's weeks, the first eight weeks and the
+ * targets alike. The plan is the program: one session a program day, on a weekday or not — the count its missed weeks
+ * are judged against too (TrainingStatusReader.status). The profile's training days only without a program. Which days
+ * a missed session is asked about stays K-527's rule (PromptController.today).
  */
 @Component
 class PlannedSessions {

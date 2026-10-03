@@ -71,7 +71,8 @@ class FirstWeeksApiTests {
 
     @Test
     void theProgramsDaysDecideWhetherTrainingIsPlanned() throws Exception {
-        // K-530 (ADR-043 #74): a program asks for training even when the profile names no day; without one, the profile.
+        // K-530 (ADR-043 #74): a program asks for training even when the profile names no day (without one, the profile:
+        // eachWeekHasItsWordsAndSomeoneNotTrainingReadsTheirOwn).
         AccountId programmed = ready(List.of());
         program(programmed, "TUESDAY", null);
         began(programmed, today().minusDays(15));
@@ -84,6 +85,8 @@ class FirstWeeksApiTests {
         // The risk reads the same number: no session in the week just over is a risk once the program asks for one.
         AccountId account = ready(List.of());
         program(account, "MONDAY");
+        // Made when the account began: the week just over was asked for by it (a week before a program is K-530's question 2).
+        jdbc.sql("update training.program set created_at = now() - interval '35 days' where account_id = :a").param("a", account.value()).update();
         began(account, today().minusDays(35));
 
         assertThat(rules(account)).containsExactly("no_session_last_week");
