@@ -32,6 +32,14 @@ describe('linesOf', () => {
     ]);
   });
 
+  test.each(['HEALTH', 'OFF_TOPIC'] as const)('%s with a rule anyway: still only itself (U6, whatever the server sent)', (topic) => {
+    expect(linesOf({ mode: 'MODEL', topic, rule: 'cut_step', call: CALL }, date)).toEqual([{ key: `coach.topic.${topic.toLowerCase()}` }]);
+  });
+
+  test("the engine's own words without a key: the call as it stands, never an empty answer", () => {
+    expect(linesOf({ mode: 'DETERMINISTIC', call: CALL }, date)).toEqual([{ key: 'coach.answer.call' }]);
+  });
+
   test("the engine's own words: its key, nothing added", () => {
     expect(linesOf({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.daily_limit', call: CALL }, date)).toEqual([{ key: 'coach.answer.daily_limit' }]);
     expect(linesOf({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.no_call' }, date)).toEqual([{ key: 'coach.answer.no_call' }]);
@@ -59,7 +67,7 @@ describe('chipAnswer', () => {
   };
 
   test("'Why this call?': every rule's sentence and that the call stands, with the call", () => {
-    expect(chipAnswer('today.chips.why', decision, date)).toEqual({
+    expect(chipAnswer('today.chips.why', { state: 'ready', value: decision }, date)).toEqual({
       lines: [{ key: 'decision.rule.toward_goal' }, { key: 'decision.rule.energy_floor' }, { key: 'coach.answer.stands', values: { date: 'on 2026-10-12' } }],
       call: { decisionId: 'd1', copyKey: 'decision.continue.toward_goal', nextReview: '2026-10-12' },
     });
@@ -67,11 +75,18 @@ describe('chipAnswer', () => {
 
   test('a safety call says nothing of why: its general change only (ADR-028 #24)', () => {
     const safety = { ...decision, safety: true, reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' as const } }] };
-    expect(chipAnswer('today.chips.why', safety, date).lines).toEqual([{ key: 'coach.answer.stands', values: { date: 'on 2026-10-12' } }]);
+    expect(chipAnswer('today.chips.why', { state: 'ready', value: safety }, date).lines).toEqual([{ key: 'coach.answer.stands', values: { date: 'on 2026-10-12' } }]);
   });
 
   test("without a call, 'Why this call?' says there is none yet", () => {
-    expect(chipAnswer('today.chips.why', null, date)).toEqual({ lines: [{ key: 'coach.answer.no_call' }] });
+    expect(chipAnswer('today.chips.why', { state: 'none' }, date)).toEqual({ lines: [{ key: 'coach.answer.no_call' }] });
+  });
+
+  test("a call that could not be read is not 'none': it says so; without the consent, that it needs it", () => {
+    for (const problem of ['NoConnection', 'ServerError'] as const) {
+      expect(chipAnswer('today.chips.why', { state: 'failed', problem }, date)).toEqual({ lines: [{ key: 'coach.chip.unread' }] });
+    }
+    expect(chipAnswer('today.chips.why', { state: 'consent' }, date)).toEqual({ lines: [{ key: 'today.consent.body' }] });
   });
 
   test.each([
@@ -79,11 +94,12 @@ describe('chipAnswer', () => {
     ['today.chips.start', 'coach.chip.start'],
     ['today.chips.swap', 'coach.chip.swap'],
   ])('%s is answered in its own words', (chip, key) => {
-    expect(chipAnswer(chip, decision, date).lines).toEqual([{ key }]);
+    expect(chipAnswer(chip, { state: 'ready', value: decision }, date, 'a').lines).toEqual([{ key }]);
     expect(has(key)).toBe(true);
   });
 
-  test("the swap leads on to the session, where swapping is done", () => {
-    expect(chipAnswer('today.chips.swap', decision, date).open).toEqual({ key: 'coach.chip.openWorkout', path: '/workout' });
+  test("the swap leads on to today's session, on its program day; without a session today, nowhere", () => {
+    expect(chipAnswer('today.chips.swap', { state: 'ready', value: decision }, date, 'a').open).toEqual({ key: 'coach.chip.openWorkout', day: 'a' });
+    expect(chipAnswer('today.chips.swap', { state: 'ready', value: decision }, date).open).toBeUndefined();
   });
 });

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
@@ -14,14 +14,12 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { CoachChips } from '@/today/CoachChips';
-import { chips, labelKey, load, localDay, weekdayDate, type TodayData } from '@/today/today';
+import { chips, labelKey, load, localDay, programToday, weekdayDate, type TodayData } from '@/today/today';
 
 type Schemas = components['schemas'];
 
 type Message =
-  | { from: 'user'; text: string }
-  | { from: 'coach'; said: Said; standard: boolean }
-  | { from: 'coach'; problem: 'consent' | 'failed'; text: string };
+  { from: 'user'; text: string } | { from: 'coach'; said: Said; standard: boolean } | { from: 'coach'; problem: 'consent' | 'failed'; text: string };
 
 /**
  * The coach (K-509, prototype 2.1; ADR-043 #76): chips from the day's data, answered on the phone; a message goes to the
@@ -48,7 +46,15 @@ export default function CoachScreen() {
       load(() => api.GET('/v1/program')),
       load(() => api.GET('/v1/weigh-ins', { params: { query: { from: day, to: day } } })),
     ]).then(([decision, program, weighIns]) => {
-      if (live) setToday({ decision, program, weighIns, consistency: { state: 'none' }, targets: { state: 'none' }, budget: { state: 'none' } });
+      if (live)
+        setToday({
+          decision,
+          program,
+          weighIns,
+          consistency: { state: 'none' },
+          targets: { state: 'none' },
+          budget: { state: 'none' },
+        });
     });
     return () => {
       live = false;
@@ -57,10 +63,20 @@ export default function CoachScreen() {
 
   const answerChip = useCallback(
     (key: string) => {
-      const decision = today?.decision.state === 'ready' ? today.decision.value : null;
-      setMessages((said) => [...said, { from: 'user', text: t(key) }, { from: 'coach', said: chipAnswer(key, decision, weekdayDate), standard: false }]);
+      if (today === null) return;
+      const planned = today.program.state === 'ready' ? programToday(today.program.value, day) : null;
+      const session = planned?.kind === 'session' ? planned.day.id : undefined;
+      setMessages((said) => [
+        ...said,
+        { from: 'user', text: t(key) },
+        {
+          from: 'coach',
+          said: chipAnswer(key, today.decision, weekdayDate, session),
+          standard: false,
+        },
+      ]);
     },
-    [today],
+    [today, day],
   );
 
   // A chip Today opened the coach with is answered once the day is read — only one of the day's own.
@@ -88,28 +104,32 @@ export default function CoachScreen() {
   };
 
   const submit = () => {
-    if (text.trim() === '' || busy.current) return;
+    if (text.trim() === '') return;
     const words = text;
     setText('');
     void send(words);
   };
 
+  // The newest message in sight; the box above the keyboard (iOS lifts the view, Android resizes the window).
+  const scroll = useRef<ScrollView>(null);
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <View style={styles.head}>
-        <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
-        {today !== null && <CoachChips keys={chips(today, day)} onChip={answerChip} />}
-      </View>
-      <ScrollView contentContainerStyle={styles.body}>
-        {messages.map((message, i) => (
-          <Bubble key={i} message={message} onRetry={(words) => void send(words, true)} />
-        ))}
-        {waiting && <Text style={[styles.small, { color: color.muted }]}>{t('coach.thinking')}</Text>}
-      </ScrollView>
-      <View style={styles.input}>
-        <TextField label={t('coach.input')} value={text} onChangeText={setText} multiline />
-        <Button label={t('coach.send')} size="sm" disabled={waiting || text.trim() === ''} onPress={submit} />
-      </View>
+      <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.head}>
+          <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
+          {today !== null && <CoachChips keys={chips(today, day)} onChip={answerChip} />}
+        </View>
+        <ScrollView ref={scroll} contentContainerStyle={styles.body} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
+          {messages.map((message, i) => (
+            <Bubble key={i} message={message} onRetry={(words) => void send(words, true)} />
+          ))}
+          {waiting && <Text style={[styles.small, { color: color.muted }]}>{t('coach.thinking')}</Text>}
+        </ScrollView>
+        <View style={styles.input}>
+          <TextField label={t('coach.input')} value={text} onChangeText={setText} multiline />
+          <Button label={t('coach.send')} size="sm" disabled={waiting || text.trim() === ''} onPress={submit} />
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -154,10 +174,10 @@ function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string
   );
 }
 
-/** A way on from an answer: the session, for a swap. */
+/** A way on from an answer: today's session, on its program day (as Train opens it). */
 function WayOn({ open }: { open: Said['open'] }) {
   if (open === undefined) return null;
-  return <Button label={t(open.key)} variant="ghost" size="sm" onPress={() => router.push(open.path)} />;
+  return <Button label={t(open.key)} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/workout', params: { day: open.day } })} />;
 }
 
 /** The call as it stands: its words and when new data looks at it again; on to why. No apply here (Today's). */
@@ -173,10 +193,23 @@ function CallSaid({ call }: { call: Schemas['CoachCall'] }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  head: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.sm, gap: tokens.space.sm },
+  head: {
+    paddingHorizontal: tokens.space.lg,
+    paddingTop: tokens.space.sm,
+    gap: tokens.space.sm,
+  },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
-  input: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm, gap: tokens.space.sm },
-  user: { alignSelf: 'flex-end', maxWidth: '85%', padding: tokens.space.md, borderRadius: tokens.radius.card },
+  input: {
+    paddingHorizontal: tokens.space.lg,
+    paddingBottom: tokens.space.sm,
+    gap: tokens.space.sm,
+  },
+  user: {
+    alignSelf: 'flex-end',
+    maxWidth: '85%',
+    padding: tokens.space.md,
+    borderRadius: tokens.radius.card,
+  },
   coach: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

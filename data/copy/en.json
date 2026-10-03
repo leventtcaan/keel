@@ -1272,8 +1272,9 @@
     "chip": {
       "weighIn": "One morning on the scale is mostly water and salt. Weighing in every morning shows the trend underneath, and the trend is what the weekly call reads.",
       "start": "Each week the plan reads your weigh-ins, food and training, and makes one call: keep going, or change one thing. Ask about the call any time; new data is what changes it.",
-      "swap": "Swapping an exercise is done in today's session: open it and tap the exercise.",
-      "openWorkout": "Open today's session"
+      "swap": "A different move today is done in the session: open it and add the move you'd rather do.",
+      "openWorkout": "Open today's session",
+      "unread": "This week's call couldn't be read just now. Try again in a moment."
     }
   },
   "units": {

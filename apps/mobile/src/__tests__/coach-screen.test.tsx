@@ -119,6 +119,30 @@ test('a chip Today opened the coach with is answered at once', async () => {
   expect(screen.getByText(t('coach.chip.weighIn'))).toBeOnTheScreen();
 });
 
+test("'Why this call?' from Today waits for the call: its rules and card, nothing sent", async () => {
+  mockParams = { chip: 'today.chips.why' };
+  await show();
+  expect(screen.getByText(t('decision.rule.not_toward_goal'))).toBeOnTheScreen();
+  expect(screen.getByText(t('decision.adjust_calories.not_toward_goal.title'))).toBeOnTheScreen();
+  expect(mockPOST).not.toHaveBeenCalled();
+});
+
+test("'Why this call?' from Today while the call can't be read: says so — never that there is none", async () => {
+  mockParams = { chip: 'today.chips.why' };
+  mockAnswers['/v1/decisions/current'] = 'offline';
+  await show();
+  expect(screen.getByText(t('coach.chip.unread'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('coach.answer.no_call'))).toBeNull();
+});
+
+test('the swap leads on to today\'s session', async () => {
+  await show();
+  await press(t('today.chips.swap'));
+  expect(screen.getByText(t('coach.chip.swap'))).toBeOnTheScreen();
+  await press(t('coach.chip.openWorkout'));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'a' } });
+});
+
 test('a chip from a link that is not one of ours is not answered', async () => {
   mockParams = { chip: 'settings.title' };
   await show();
@@ -145,6 +169,8 @@ test('a doctor brought up: the coach says only that the doctor comes first — n
   await send('I started new medication');
   expect(screen.getByText(t('coach.topic.health'))).toBeOnTheScreen();
   expect(screen.queryByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeNull();
+  // Nor the call's card: nothing on screen says the call stands after the doctor (U6).
+  expect(screen.queryByText(t('decision.adjust_calories.not_toward_goal.title'))).toBeNull();
 });
 
 test("the engine's own words are marked as such — past the day's limit too", async () => {
@@ -174,6 +200,7 @@ test('no answer: says so, and the same message is sent again on retry', async ()
   expect(mockPOST).toHaveBeenLastCalledWith('/v1/coach/messages', { body: { text: 'Why?' } });
   expect(screen.getByText(t('coach.topic.why'))).toBeOnTheScreen();
   expect(screen.queryByText(t('coach.failed'))).toBeNull();
+  expect(screen.getAllByText('Why?')).toHaveLength(1);
 });
 
 test('a blank message is not sent; nothing is sent twice while one waits', async () => {
@@ -187,4 +214,16 @@ test('a blank message is not sent; nothing is sent twice while one waits', async
   expect(mockPOST).toHaveBeenCalledTimes(1);
   await act(async () => release(ok({ mode: 'MODEL', topic: 'WHY', rule: 'cut_step', call: CALL })));
   expect(screen.getByText(t('coach.topic.why'))).toBeOnTheScreen();
+});
+
+test('a retry pressed while another message waits sends nothing more', async () => {
+  mockSent = 'offline';
+  await show();
+  await send('Why?');
+  let release: (answer: Answer) => void = () => {};
+  mockPOST.mockImplementationOnce(() => new Promise<Answer>((resolve) => (release = resolve)));
+  await send('And this?');
+  await press(t('coach.retry'));
+  expect(mockPOST).toHaveBeenCalledTimes(2);
+  await act(async () => release(ok({ mode: 'MODEL', topic: 'WHY', rule: 'cut_step', call: CALL })));
 });
