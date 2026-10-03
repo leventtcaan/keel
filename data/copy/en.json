@@ -127,6 +127,11 @@
       "part": "{done}/{planned}",
       "partSpoken": "{part}: {done} of {planned}",
       "record": "{onTrack} of {counted} weeks on track",
+      "forgiven": {
+        "one": "1 forgiven week used",
+        "other": "{count} forgiven weeks used"
+      },
+      "recordWithForgiven": "{record} · {forgiven}",
       "firstWeek": "Your number starts with your first weekly check-in.",
       "paused": "This week is paused: it counts neither way."
     },

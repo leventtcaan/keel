@@ -75,7 +75,7 @@ public final class Consistency {
      */
     public static ConsistencyRecord record(List<WeekTally> weeks, Parameters parameters) {
         Walk walk = walk(weeks, parameters);
-        return new ConsistencyRecord(walk.onTrack(), walk.counted(), walk.run());
+        return new ConsistencyRecord(walk.onTrack(), walk.counted(), walk.run(), walk.forgivenWeeks());
     }
 
     /**
@@ -88,7 +88,7 @@ public final class Consistency {
     }
 
     /** The run walked once, for both readers. */
-    private record Walk(int onTrack, int counted, int run, boolean lastForgiven) {
+    private record Walk(int onTrack, int counted, int run, boolean lastForgiven, int forgivenWeeks) {
     }
 
     private static Walk walk(List<WeekTally> weeks, Parameters parameters) {
@@ -107,6 +107,8 @@ public final class Consistency {
         int run = 0;
         int missesInARow = 0;
         boolean forgiven = false;
+        boolean pending = false; // a lone miss forgiven, until the next counted week says whether it stays forgiven
+        int forgivenWeeks = 0;
         for (WeekTally week : weeks) {
             forgiven = false;
             if (week.planned() == 0 || week.paused()) {
@@ -117,13 +119,16 @@ public final class Consistency {
                 onTrack++;
                 run++;
                 missesInARow = 0;
+                forgivenWeeks += pending ? 1 : 0;
             } else if (++missesInARow >= 2) {
                 run = 0; // a second missed week in a row ends the run; the cumulative count stays
             } else {
                 forgiven = run > 0; // a lone miss keeps a run going; with no run there is nothing to forgive
             }
+            pending = forgiven;
         }
-        return new Walk(onTrack, counted, run, forgiven);
+        // The latest week missed alone is forgiven for now, as lastWeekForgiven reads it.
+        return new Walk(onTrack, counted, run, forgiven, forgivenWeeks + (pending ? 1 : 0));
     }
 
     /**

@@ -1844,6 +1844,11 @@ export interface components {
                 countedWeeks: number;
                 /** @description On-track weeks in a row; one missed week is forgiven, two in a row end the run. */
                 currentRun: number;
+                /**
+                 * @description The missed weeks a run forgave, over the whole record, never reset (K-608): a lone miss after an on-track
+                 *     week, not followed by a second miss; the latest week, missed alone, is forgiven for now.
+                 */
+                forgivenWeeks: number;
             };
         };
         /** @description One kind of planned action this week; done is counted up to planned. */

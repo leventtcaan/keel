@@ -149,6 +149,35 @@ class ConsistencyTests {
     }
 
     @Test
+    void theForgivenWeeksAreCountedAndNeverReset() {
+        // K-608: "11 of 12 weeks · 1 forgiven week used". A lone miss in a run is forgiven; cumulative, like the count (U7).
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 9)).forgivenWeeks()).isOne();
+        List<WeekTally> twelve = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            twelve.add(training(MONDAY.plusWeeks(i), 10, i % 4 == 3 ? 3 : 9)); // weeks 4, 8, 12 off, each alone
+        }
+        assertThat(Consistency.record(twelve, P).forgivenWeeks()).isEqualTo(3);
+    }
+
+    @Test
+    void twoMissesInARowAreNotForgivenWeeks() {
+        // The second miss ends the run: the first was not forgiven after all (04-faz3 §7.3), and the earlier forgiven week stays.
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 1), week(10, 9)).forgivenWeeks()).isZero();
+        assertThat(record(week(10, 9), week(10, 2), week(10, 9), week(10, 2), week(10, 1)).forgivenWeeks()).isOne();
+    }
+
+    @Test
+    void aMissWithNoRunBeforeItIsNoForgivenWeek() {
+        assertThat(record(week(10, 2), week(10, 9)).forgivenWeeks()).isZero();
+    }
+
+    @Test
+    void theLatestWeekMissedAloneIsForgivenForNow() {
+        // As lastWeekForgiven reads it (K-513): forgiven until a second miss says otherwise.
+        assertThat(record(week(10, 9), week(10, 2)).forgivenWeeks()).isOne();
+    }
+
+    @Test
     void aWeekWithNothingPlannedIsLeftOut() {
         // A holiday week with no plan is neither a success nor a miss.
         ConsistencyRecord record = record(week(10, 9), week(0, 0), week(10, 9));
@@ -215,6 +244,17 @@ class ConsistencyTests {
         }
         ConsistencyRecord record = Consistency.record(weeks, P);
         return record.currentRun() <= record.onTrackWeeks() && record.onTrackWeeks() <= record.countedWeeks();
+    }
+
+    @Property
+    boolean aForgivenWeekIsAMissedWeekAndOneOnTrackWeekCameBeforeEach(@ForAll("tallies") List<int[]> history) {
+        List<WeekTally> weeks = new ArrayList<>();
+        for (int i = 0; i < history.size(); i++) {
+            weeks.add(training(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
+        }
+        ConsistencyRecord record = Consistency.record(weeks, P);
+        int missed = record.countedWeeks() - record.onTrackWeeks();
+        return record.forgivenWeeks() >= 0 && record.forgivenWeeks() <= missed && record.forgivenWeeks() <= record.onTrackWeeks();
     }
 
     @Property
