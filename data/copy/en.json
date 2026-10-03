@@ -231,6 +231,7 @@
     "inProgress": "Workout in progress",
     "continue": "Continue",
     "nextBodyweight": "Next {reps} reps",
+    "rackEnds": "Your gym has no next weight for this move that you can reach yet. Add one to your gym's weights and the load can go up again.",
     "startDay": "Start {day}"
   },
   "workout": {

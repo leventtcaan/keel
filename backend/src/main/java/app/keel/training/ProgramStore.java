@@ -29,11 +29,11 @@ class ProgramStore {
      * {@code lastLoadKg} the load it came from; {@code id} the stored row (null before it is stored).
      */
     record PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
-            BigDecimal lastLoadKg, UUID id, Instant nextFrom) {
+            BigDecimal lastLoadKg, UUID id, Instant nextFrom, boolean nextRackEnds) {
 
         /** As planned, before any workout. */
         PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir) {
-            this(exerciseId, sets, repMin, repMax, targetRir, null, null, null, null, null);
+            this(exerciseId, sets, repMin, repMax, targetRir, null, null, null, null, null, false);
         }
     }
 
@@ -128,7 +128,7 @@ class ProgramStore {
         }
         Map<UUID, List<PlannedExercise>> exercises = jdbc.sql("""
                 select e.id, e.day_id, e.exercise_id, e.sets, e.rep_min, e.rep_max, e.target_rir, e.next_load_kg, e.next_reps, e.last_load_kg,
-                       e.next_from
+                       e.next_from, e.next_rack_ends
                 from training.planned_exercise e
                 join training.program_day d on d.id = e.day_id where d.program_id = :program order by e.day_id, e.seq""")
                 .param("program", program)
@@ -136,7 +136,7 @@ class ProgramStore {
                         row.getInt("sets"), row.getInt("rep_min"), row.getInt("rep_max"), row.getInt("target_rir"),
                         plain(row.getBigDecimal("next_load_kg")), row.getObject("next_reps", Integer.class), plain(row.getBigDecimal("last_load_kg")),
                         row.getObject("id", UUID.class), Optional.ofNullable(row.getObject("next_from", OffsetDateTime.class))
-                                .map(OffsetDateTime::toInstant).orElse(null))))
+                                .map(OffsetDateTime::toInstant).orElse(null), row.getBoolean("next_rack_ends"))))
                 .list().stream()
                 .collect(Collectors.groupingBy(Row::day, LinkedHashMap::new, Collectors.mapping(Row::exercise, Collectors.toList())));
         List<Day> days = jdbc.sql("select id, name_key, name, weekday from training.program_day where program_id = :program order by seq")
@@ -150,14 +150,17 @@ class ProgramStore {
     }
 
     /**
-     * The next session's target for a planned exercise (K-217), unless a later workout already set one: a workout
+     * The next session's target for a planned exercise (K-217) — {@code rackEnds} when its reps stopped at the ceiling
+     * (K-534) — unless a later workout already set one: a workout
      * finished late, or a finish sent again after a newer one, does not roll the target back (K-217 review).
      */
-    void setNext(AccountId account, UUID plannedId, BigDecimal loadKg, int reps, BigDecimal lastLoadKg, Instant from) {
+    void setNext(AccountId account, UUID plannedId, BigDecimal loadKg, int reps, boolean rackEnds, BigDecimal lastLoadKg, Instant from) {
         jdbc.sql("""
-                update training.planned_exercise set next_load_kg = :load, next_reps = :reps, last_load_kg = :last, next_from = :from
+                update training.planned_exercise set next_load_kg = :load, next_reps = :reps, next_rack_ends = :rackEnds, last_load_kg = :last,
+                    next_from = :from
                 where account_id = :account and id = :id and (next_from is null or next_from <= :from)""")
-                .param("account", account.value()).param("id", plannedId).param("load", loadKg).param("reps", reps).param("last", lastLoadKg)
+                .param("account", account.value()).param("id", plannedId).param("load", loadKg).param("reps", reps).param("rackEnds", rackEnds)
+                .param("last", lastLoadKg)
                 .param("from", from.atOffset(ZoneOffset.UTC)).update();
     }
 
@@ -167,7 +170,7 @@ class ProgramStore {
      */
     void clearNext(AccountId account, UUID plannedId, Instant from) {
         jdbc.sql("""
-                update training.planned_exercise set next_load_kg = null, next_reps = null, last_load_kg = null, next_from = null
+                update training.planned_exercise set next_load_kg = null, next_reps = null, next_rack_ends = false, last_load_kg = null, next_from = null
                 where account_id = :account and id = :id and next_from = :from""")
                 .param("account", account.value()).param("id", plannedId).param("from", from.atOffset(ZoneOffset.UTC)).update();
     }

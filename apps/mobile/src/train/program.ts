@@ -65,6 +65,11 @@ export function nextLine(planned: Schemas['PlannedExercise'], units: UnitSystem,
   return t(key, { load: formatLoad(planned.nextLoadKg, units), reps: planned.nextReps });
 }
 
+/** The server's word that the target stopped at the rep ceiling (K-534): the gym has no next weight to reach. Never read from the reps. */
+export function rackNote(planned: Schemas['PlannedExercise']): string | null {
+  return planned.rackEnds === true ? t('train.rackEnds') : null;
+}
+
 /** "One session and one set per exercise, at your usual weights": the server's numbers, said in words. */
 function busyNote(dose: Schemas['BusyDose']): string {
   const sessions = t(dose.sessions === 1 ? 'train.busy.sessions.one' : 'train.busy.sessions.other', { count: dose.sessions });

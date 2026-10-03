@@ -1588,6 +1588,12 @@ export interface components {
             nextLoadKg?: number;
             /** @description The reps to aim for next session (double progression, K-217); absent until known. */
             nextReps?: number;
+            /**
+             * @description The next reps stopped at the ceiling (K-534, ADR-045 #73): the gym has no next load for this move the user can
+             *     reach (none heavier, or too far to take yet). Present (true) only then; not while a deload hold or a return after
+             *     a break shows another target.
+             */
+            rackEnds?: boolean;
         };
         /** @description min < max (a range to climb in, double progression); max at most 100. */
         RepRange: {

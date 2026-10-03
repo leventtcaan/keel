@@ -14,7 +14,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { programToday } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
-import { dayName, exerciseName, nextLine, programNotes, repsLine, setsLine } from '@/train/program';
+import { dayName, exerciseName, nextLine, programNotes, rackNote, repsLine, setsLine } from '@/train/program';
 import { activeWorkout } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -109,6 +109,7 @@ export default function TrainScreen() {
         </View>
         {programDay.exercises.map((planned, index) => {
           const next = nextLine(planned, units, moves.get(planned.exerciseId)?.load ?? 'EXTERNAL');
+          const rack = rackNote(planned);
           return (
             <View key={`${planned.exerciseId}-${index}`} style={styles.move}>
               <Pressable
@@ -119,6 +120,7 @@ export default function TrainScreen() {
               </Pressable>
               <Text style={[styles.small, { color: color.textSecondary }]}>{`${setsLine(planned)} · ${repsLine(planned)}`}</Text>
               {next !== null && <Text style={[styles.small, { color: color.text }]}>{next}</Text>}
+              {rack !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{rack}</Text>}
             </View>
           );
         })}

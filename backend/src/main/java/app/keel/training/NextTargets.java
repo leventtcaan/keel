@@ -4,6 +4,7 @@ import app.keel.engine.BodyRegion;
 import app.keel.engine.E1rm;
 import app.keel.engine.LiftKind;
 import app.keel.engine.LiftSession;
+import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
 import app.keel.engine.Progression;
 import app.keel.engine.ProgressionStep;
@@ -24,7 +25,15 @@ import java.util.function.Function;
  */
 final class NextTargets {
 
-    record Target(BigDecimal loadKg, int reps) {
+    /**
+     * {@code rackEnds}: the reps stopped at the ceiling because the gym has no next load the user can reach (K-534) — the
+     * server's word for the phone's note, never read from the reps (a session held for form can be as high).
+     */
+    record Target(BigDecimal loadKg, int reps, boolean rackEnds) {
+
+        Target(BigDecimal loadKg, int reps) {
+            this(loadKg, reps, false);
+        }
     }
 
     private NextTargets() {
@@ -39,7 +48,8 @@ final class NextTargets {
      * The target with an added load as the gym can make it (K-414, ADR-032): the nearest load it has; when it has
      * nothing heavier, one more rep than the weakest set — past the top of the range; when it says nothing, the engine's.
      * When the nearest is too far over the last (K-430), it is taken once every set is worth the bottom of the range
-     * there at the planned RIR (Epley, ADR-041 #55) — until then, one more rep. {@code plannedRir} and
+     * there at the planned RIR (Epley, ADR-041 #55) — until then, one more rep. The reps past the range stop at a
+     * ceiling (K-534, ADR-045 #73): the rack has no next load the user can reach, the phone says so. {@code plannedRir} and
      * {@code parameters} only for that; null parameters where no gym rounds.
      */
     static Optional<Target> after(LiftSession session, Progression progression, boolean loadHeld, int plannedSets, int plannedRir,
@@ -53,15 +63,43 @@ final class NextTargets {
                     Optional.of(loadHeld || session.sets().size() < plannedSets ? new Target(session.loadKg(), range.max())
                             : switch (rounding.apply(newLoadKg)) {
                                 case LoadSteps.Rounding.To(BigDecimal kg) -> new Target(kg, targetReps);
-                                case LoadSteps.Rounding.NoHeavier() -> new Target(session.loadKg(), weakest + 1);
+                                case LoadSteps.Rounding.NoHeavier() -> oneMoreAt(session.loadKg(), range, weakest, ceiling(parameters), true);
                                 case LoadSteps.Rounding.TooFar(BigDecimal kg) -> worthAt(session, kg, parameters) >= targetReps + plannedRir
-                                        ? new Target(kg, targetReps) : new Target(session.loadKg(), weakest + 1);
+                                        ? new Target(kg, targetReps)
+                                        : oneMoreAt(session.loadKg(), range, weakest, ceiling(parameters),
+                                                !ceilingReaches(session.loadKg(), range, kg, targetReps, plannedRir, parameters));
                                 case LoadSteps.Rounding.Unknown() -> new Target(newLoadKg, targetReps);
                             });
             case ProgressionStep.AddReps() -> Optional.of(new Target(session.loadKg(), Math.min(weakest + 1, range.max())));
             case ProgressionStep.Hold() -> Optional.of(new Target(session.loadKg(), Math.max(weakest, range.min())));
             case ProgressionStep.NotTracked() -> Optional.empty();
         };
+    }
+
+    /**
+     * One more rep than the weakest set, past the top of the range (K-414) — never past the ceiling (K-534): there the
+     * target stops, and the program says the rack has no next load to reach (Target.rackEnds).
+     */
+    static int oneMore(RepRange range, int weakest, int ceilingAbove) {
+        return Math.min(weakest + 1, range.max() + ceilingAbove);
+    }
+
+    /**
+     * The load kept and one more rep; at the ceiling with no next load in reach, the rack ends (K-534). A load too far that
+     * sets at the ceiling would be worth taking is still in reach: the jump comes the session after.
+     */
+    private static Target oneMoreAt(BigDecimal loadKg, RepRange range, int weakest, int ceilingAbove, boolean nextOutOfReach) {
+        int reps = oneMore(range, weakest, ceilingAbove);
+        return new Target(loadKg, reps, nextOutOfReach && reps == range.max() + ceilingAbove);
+    }
+
+    /** Whether sets at the ceiling, at the planned RIR, are worth the bottom of the range at {@code kg} (Epley, as worthAt). */
+    private static boolean ceilingReaches(BigDecimal loadKg, RepRange range, BigDecimal kg, int targetReps, int plannedRir, Parameters parameters) {
+        return E1rm.repsToFailureAt(loadKg, range.max() + ceiling(parameters) + plannedRir, kg, parameters) >= targetReps + plannedRir;
+    }
+
+    private static int ceiling(Parameters parameters) {
+        return parameters.wholeNumber(ParameterKey.REP_CEILING_ABOVE_RANGE);
     }
 
     /**
