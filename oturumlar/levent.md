@@ -87,3 +87,10 @@
 - takıldım: inceleme ajanları her görevde gerçek hata buldu — en ciddisi döngü sorusu bekleyen kararın modele gitmesi (V4); regex bekçiler ince dalkavukluğu göremiyor → soru 76; worktree sembolik bağı commit'e girdi
 - sıradaki: Levent dönünce Part 2 aktarımı (README 10-19); sorular 74-77 (76 K-509'dan önce); sonra Part 3
 - AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent'e (74-77)
+
+## 2026-10-03 · M5 Part 4 (toplu mod)
+- yaptım: ADR-045 (73, 78-85 cevapları; K-534, K-535), K-514 #327 (öğün fotoğrafı sunucu: başlıktan boyut, piksellerden JPEG, göz kararı gram ESTIMATED), K-408 #328 (telefon: rıza önce, küçült, `DraftPicks`, gramın nedeni), K-510 spike → ADR-047 + H11, K-515 #329 (kilit ekranı metni sayısız) + ADR-048; M5 çıkışı; M6 prompt'ları
+- karar: ADR-046 (fotoğraf yolu), ADR-047 (kendi ince Expo modülü, Vision OCR + FM), ADR-048 (`expo-widgets` 57, App Intents SDK 58 stabil olunca)
+- takıldım: ImageIO ham fotoğrafı diske önbelleğe yazıyordu (inceleme); `app.json` plugin'i kamera izin metnini eziyordu (test analizi); "önce çöz" mutantı yığına sığdı → ayrılan bayt ölçümü; disk 3,5 GB, simülatör turu yine yapılamadı
+- sıradaki: Levent dönünce M5 Part 4 aktarımı (README 31-35; Part 1-3: 1-30); Levent: Docker temizliği, K-308, soru 86; sonra M6 Part 1
+- AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion; 73, 78-85 cevaplı, 86 açık)
