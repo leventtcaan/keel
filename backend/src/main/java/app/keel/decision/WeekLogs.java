@@ -44,8 +44,10 @@ class WeekLogs {
     private final MealTotals meals;
     private final CallStore calls;
     private final StateStore states;
+    private final PlannedSessions planned;
 
-    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals, CallStore calls, StateStore states) {
+    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals, CallStore calls, StateStore states, PlannedSessions planned) {
+        this.planned = planned;
         this.states = states;
         this.calls = calls;
         this.training = training;
@@ -126,7 +128,7 @@ class WeekLogs {
     private WeekTallies.Plan asked(AccountId account, ProfileFacts profile, CallStore.Plan plan, Optional<BigDecimal> bodyweight, int ageYears,
             Parameters parameters) {
         int proteinG = bodyweight.map(kg -> MacroTargets.proteinG(kg, Sex.valueOf(profile.sex().name()), ageYears, parameters)).orElse(0);
-        return new WeekTallies.Plan(profile.trainingDays().size(), parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK), proteinG,
+        return new WeekTallies.Plan(planned.perWeek(account, profile), parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK), proteinG,
                 stepTargets(account, plan, profile.timeZone(), parameters));
     }
 

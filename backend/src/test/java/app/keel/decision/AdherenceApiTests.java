@@ -91,6 +91,41 @@ class AdherenceApiTests {
     }
 
     @Test
+    void theSessionsTheWeeksAskForAreTheProgramsDays() throws Exception {
+        // K-530 (ADR-043 #74): the profile trains on Mondays, the program on three days — each week asks for three.
+        LocalDate today = LocalDate.now(ISTANBUL);
+        List<LocalDate> weeks = new ArrayList<>();
+        for (LocalDate monday = today.minusDays(21); monday.plusDays(6).isBefore(today); monday = monday.plusDays(1)) {
+            if (monday.getDayOfWeek() == DayOfWeek.MONDAY) {
+                weeks.add(monday);
+            }
+        }
+        AccountId account = inIstanbul();
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", List.of("MONDAY", "WEDNESDAY", "FRIDAY").stream()
+                .map(weekday -> Map.of("name", "Full body", "weekday", weekday, "exercises",
+                        List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10))))).toList()))
+                .getResponse().getStatus()).isLessThan(300);
+        // Made before the window's weeks: they were asked for by it (a week before a program is K-530's question 2).
+        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+        MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
+                at(weeks.getFirst(), 12).toString()));
+        post(account, "/v1/workouts/" + JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id") + "/sets",
+                Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press", "setType", "WORKING", "loadKg", 60, "reps", 8, "rir", 2));
+        // A weigh-in today, in no week over: the call has a weight to go by.
+        post(account, "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", Instant.now().minusSeconds(3600).toString(),
+                "kg", 82.0, "source", "MANUAL"));
+
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(),
+                "weekOf", CheckInWeek.weekOf(today, DayOfWeek.MONDAY).toString(), "answers", List.of()))).hasStatusOk();
+
+        // Per week: 3 sessions (not the profile's 1) and 4 weigh-ins asked; one session done in all.
+        BigDecimal expected = BigDecimal.ONE.divide(BigDecimal.valueOf(7L * weeks.size()), MathContext.DECIMAL64);
+        String snapshot = jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        assertThat(JSON.readValue(snapshot, StoredSnapshot.class).checkIn().adherence()).isEqualByComparingTo(expected);
+    }
+
+    @Test
     void aPlanBegunThisWeekHasNoWeeksToJudgeYet() throws Exception {
         LocalDate today = LocalDate.now(ISTANBUL);
         AccountId account = inIstanbul();
