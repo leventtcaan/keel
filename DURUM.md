@@ -573,6 +573,8 @@ gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (mod
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
+| K-522 kural cümleleri: `decision.rule.<kural>` (60), `reasonLines` → `sentenceKey` (baştaki de; güvenlik kararında yok), `RuleSentencesTests` (yansıma, iki yön) | ✅ birleşti; RED 2+4; inceleme **5 bulgu** (cümle–kural uyuşmazlığı: `cut_step` tek yön, `toward_goal` antrenman demiyor, `bulk_ceiling` ters, `plan_missed` "çoğu", `stall_window` "düz") → düzeltildi; test analizi 3 öneri işlendi; mutasyon mobil 5/5 (+kontrol), sunucu 1/1 | #314 | `M5/K-522.md` |
+| K-529 koç sınıflandırır: `Topic` (11), `TopicReply` (tam şema, kural kararın kendi), modele yalnız tür + kurallar, `CoachAnswer` `topic`+`rule`, 54 itiraz beklenen konuyla; ReplyCheck/ReplyGuards/CallNumbers/guards.json silindi (K1 onaylı) | ⏳ auto-merge; RED 6; inceleme: tırnaklı `"null"` cevabı düşürürdü, HEALTH'te "karar duruyor" denmemeli (sözleşme + ADR), eski aktarım notları; test analizi: sözleşme konu listesi testi, `facts` tüm türlerde; mutasyon 6/6 (+1 eşdeğer) + 3/3 | #316 | `M5/K-529.md` |
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
