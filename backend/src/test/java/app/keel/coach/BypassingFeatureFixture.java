@@ -6,7 +6,7 @@ import java.util.function.Function;
 /** What LanguageModelBoundaryTests must catch: features that call a model past the gate, each another way. */
 final class BypassingFeatureFixture {
 
-    private static final ModelRequest REQUEST = new ModelRequest("explain", "m", 1, "s", List.of());
+    private static final ModelRequest REQUEST = new ModelRequest(Purpose.EXPLAIN, "m", 1, "s", List.of());
 
     static ModelReply explain(LanguageModel model) {
         return model.complete(REQUEST);

@@ -40,7 +40,7 @@ class EgressGateTests {
         AccountId account = TestSessions.newAccount();
         AtomicBoolean called = new AtomicBoolean();
 
-        assertThatThrownBy(() -> egress.sendToAi(account, "Example AI", () -> {
+        assertThatThrownBy(() -> egress.sendToAi(account, "Example AI", "coach question", () -> {
             called.set(true);
             return "reply";
         })).isInstanceOfSatisfying(ApiException.class, refused -> assertThat(refused.code()).isEqualTo(ErrorCode.CONSENT_REQUIRED));
@@ -53,13 +53,19 @@ class EgressGateTests {
         jdbc.sql("""
                 insert into consent.consent_event (id, account_id, kind, action, text_version, provider, data_types, occurred_at)
                 values (gen_random_uuid(), :account, 'THIRD_PARTY_AI', 'GRANTED', :version, 'Example AI', :types, now())""")
-                .param("account", account.value()).param("version", ConsentTextVersions.THIRD_PARTY_AI).param("types", new String[] {"meal photo", "meal note"}).update();
+                .param("account", account.value()).param("version", ConsentTextVersions.THIRD_PARTY_AI).param("types", new String[] {"meal photo", "meal note", "coach question"}).update();
         assertThat(consents.granted(account, ConsentKind.THIRD_PARTY_AI)).isTrue();
 
-        assertThat(egress.sendToAi(account, "Example AI", () -> "reply")).isEqualTo("reply");
+        assertThat(egress.sendToAi(account, "Example AI", "coach question", () -> "reply")).isEqualTo("reply");
         // K-503: to another provider than the one the user agreed to, nothing is sent and the call never runs.
         AtomicBoolean called = new AtomicBoolean();
-        assertThatThrownBy(() -> egress.sendToAi(account, "Other AI", () -> {
+        assertThatThrownBy(() -> egress.sendToAi(account, "Other AI", "coach question", () -> {
+            called.set(true);
+            return "reply";
+        })).isInstanceOfSatisfying(ApiException.class, refused -> assertThat(refused.code()).isEqualTo(ErrorCode.CONSENT_REQUIRED));
+        assertThat(called).isFalse();
+        // K-505: data the consent does not name is not sent either.
+        assertThatThrownBy(() -> egress.sendToAi(account, "Example AI", "location", () -> {
             called.set(true);
             return "reply";
         })).isInstanceOfSatisfying(ApiException.class, refused -> assertThat(refused.code()).isEqualTo(ErrorCode.CONSENT_REQUIRED));

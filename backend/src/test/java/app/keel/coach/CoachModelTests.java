@@ -48,7 +48,7 @@ class CoachModelTests {
         AccountId account = TestSessions.newAccount();
         fake.answer("{\"text\":\"hello\"}");
 
-        assertThatThrownBy(() -> coach.ask(account, "explain", "system words", List.of(Turn.user("why?"))))
+        assertThatThrownBy(() -> coach.ask(account, Purpose.EXPLAIN, "system words", List.of(Turn.user("why?"))))
                 .isInstanceOfSatisfying(ApiException.class, refused -> assertThat(refused.code()).isEqualTo(ErrorCode.CONSENT_REQUIRED));
         assertThat(fake.requests()).isEmpty();
     }
@@ -60,16 +60,16 @@ class CoachModelTests {
                 insert into consent.consent_event (id, account_id, kind, action, text_version, provider, data_types, occurred_at)
                 values (gen_random_uuid(), :account, 'THIRD_PARTY_AI', 'GRANTED', :version, 'Example AI', :types, now())""")
                 .param("account", account.value()).param("version", ConsentTextVersions.THIRD_PARTY_AI)
-                .param("types", new String[] {"meal photo", "meal note"}).update();
+                .param("types", new String[] {"meal photo", "meal note", "coach question"}).update();
         fake.answer("{\"text\":\"hello\"}");
 
-        ModelReply reply = coach.ask(account, "explain", "system words", List.of(Turn.user("why?")));
+        ModelReply reply = coach.ask(account, Purpose.EXPLAIN, "system words", List.of(Turn.user("why?")));
 
         assertThat(reply.text()).isEqualTo("{\"text\":\"hello\"}");
         assertThat(fake.requests()).singleElement().satisfies(request -> {
             assertThat(request.model()).isEqualTo("test-model");
             assertThat(request.maxOutputTokens()).isEqualTo(300);
-            assertThat(request.purpose()).isEqualTo("explain");
+            assertThat(request.purpose()).isEqualTo(Purpose.EXPLAIN);
             assertThat(request.system()).isEqualTo("system words");
             assertThat(request.turns()).containsExactly(Turn.user("why?"));
         });

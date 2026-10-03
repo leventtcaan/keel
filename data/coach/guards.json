@@ -1,0 +1,280 @@
+{
+  "_about": "What a coach's reply may never do (K-505, U1, U2): claim to change, soften or skip the engine's call, say the call is other than it is, or write a number in words. Read by the coach in Java (ReplyCheck) after the reply is normalized (NFKC, one apostrophe, one kind of space); a reply that matches is dropped and the coach answers with the engine's own words. Patterns are case-insensitive; each proves itself on its examples and near-misses (GuardsTests). The near-misses include faithful replies of data/coach/pushback-scenarios.json.",
+  "concessions": [
+    {
+      "id": "promise-to-change",
+      "why": "The coach promising to change the plan itself — the change is the engine's, from data (U2).",
+      "pattern": "\\b(?:i|we)(?:'ll| will| can| could| would| shall| am going to| are going to)\\s+(?:just\\s+)?(?:lower|raise|cut|reduce|increase|change|adjust|drop|skip|pause|undo|ease|loosen|relax|bump|shorten|lengthen|extend|delay|postpone|disregard|ignore|meet|keep (?:building|bulking|training|adding|going))\\b|\\b(?:i|we)(?:'ve| have)\\s+(?:just\\s+)?(?:lowered|raised|cut|reduced|increased|changed|adjusted|dropped|skipped|paused|eased|shortened|removed|cancelled|canceled)\\b|\\b(?:i'm|i am|we're|we are)\\s+(?:going to |happy to |glad to |willing to )?(?:just\\s+)?(?:lower|raise|cut|reduce|increase|change|adjust|drop|skip|pause|undo|ease|loosen|relax|bump|shorten|lengthen|extend|delay|postpone|disregard|ignore|meet|keep (?:building|bulking|training|adding|going)|lowering|raising|cutting|reducing|increasing|changing|adjusting|dropping|skipping|pausing|easing|shortening)\\b",
+      "examples": [
+        "I'll lower your calories",
+        "We can skip this week's change",
+        "I will adjust it for you",
+        "we'll just bump it up",
+        "I could reduce it a bit",
+        "I'll shorten it to one week for you",
+        "Fine, I can disregard the recovery part",
+        "we can meet halfway",
+        "No mini cut then, we'll keep building",
+        "I’ll lower your calories",
+        "I've lowered it for you",
+        "I'm going to lower it",
+        "I’m happy to ease off this week",
+        "We're changing it this week"
+      ],
+      "nonExamples": [
+        "We'll look at it again on 12 October",
+        "I can only talk about the call and the plan",
+        "We will see what the weigh-ins say",
+        "We'll keep the call as it is",
+        "I can only explain the call",
+        "I'm here to explain the call",
+        "We are looking at it again on the 12th"
+      ]
+    },
+    {
+      "id": "lets-change",
+      "why": "Inviting a change the engine did not make.",
+      "pattern": "\\blet'?s\\s+(?:just\\s+)?(?:lower|raise|cut|reduce|increase|change|adjust|drop|skip|pause|undo|ease|keep it at|go with|try|hold off|delay|postpone|meet|keep (?:training|building|bulking|adding|going))\\b",
+      "examples": [
+        "Let's lower it to what you had",
+        "let's skip the cut this week",
+        "Lets keep it at the old number",
+        "Let's go with your plan",
+        "You're right, let's keep training this week",
+        "let's hold off on the bulk",
+        "Let’s skip the cut this week"
+      ],
+      "nonExamples": [
+        "Let's see what next week's weigh-ins say",
+        "let us look at the trend"
+      ]
+    },
+    {
+      "id": "you-are-right-instead",
+      "why": "Agreeing to the objection in place of the call.",
+      "pattern": "\\b(?:you'?re|you are) right\\b[^.!?]*\\b(?:instead|change|lower|raise|skip|no need)\\b|\\binstead\\b[^.!?]*\\b(?:calories|kcal|sets|plan|cut|deficit)\\b|\\b(?:ignore|disregard|forget about)\\s+(?:the|this|that)\\s+(?:call|change|plan)\\b",
+      "examples": [
+        "You're right, let's change it",
+        "you are right, no need for the deficit",
+        "Eat what you had instead of these calories",
+        "Feel free to ignore the call this week",
+        "You’re right, let’s change it"
+      ],
+      "nonExamples": [
+        "You're right that the scale went up; the call stands",
+        "The trend, not one weigh-in, is what the call reads"
+      ]
+    },
+    {
+      "id": "permission-to-deviate",
+      "why": "Agreeing to do something else than the call: 'okay, skip it', 'fine, eat at maintenance'.",
+      "pattern": "\\b(?:okay|ok|sure|fine|alright|all right|no problem|got it|fair)\\b[,!.]?\\s+[^.!?]*\\b(?:eat at maintenance|skip|keep (?:training|adding|bulking|building|going)|train as normal|hold off|drop|ignore|disregard)\\b",
+      "examples": [
+        "Okay, eat at maintenance for now and we'll see.",
+        "Okay, skip the deload and train as normal.",
+        "Okay, keep adding weight then.",
+        "Sure, skip it this once"
+      ],
+      "nonExamples": [
+        "Okay — the call stands at 500 kcal a day less.",
+        "Fair question: the trend, not one weigh-in, decides.",
+        "Got it. What changes the call is the data at the next check-in."
+      ]
+    },
+    {
+      "id": "call-dropped",
+      "why": "Saying the call's action is off: 'no mini cut then', 'skip the deload'.",
+      "pattern": "\\bno (?:mini ?cut|cut|deficit|deload|rest week|bulk|change|need to)\\b|\\b(?:skip|drop|ditch|cancel|forget)\\s+(?:the|this|your)\\s+(?:cut|deficit|deload|rest week|mini ?cut|change|bulk|plan|call)\\b",
+      "examples": [
+        "No mini cut then",
+        "No need to walk more",
+        "skip the deload",
+        "Ditch the deficit for now"
+      ],
+      "nonExamples": [
+        "No blame: the call is about following the plan.",
+        "The call is a mini cut of 2 to 4 weeks.",
+        "There's no call yet."
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "cut-said-otherwise",
+      "actions": [
+        "ADJUST_CALORIES"
+      ],
+      "why": "A cut's step said as more food or as no change.",
+      "pattern": "\\b(?:add(?:s|ed|ing)?|eat more|more (?:food|calories|kcal)|increas\\w*|rais(?:e|es|ed|ing)|extra|surplus|no change|nothing changes|(?:keep|keeps) (?:everything|it|eating) (?:the same|as (?:it is|you are|before|usual))|same as (?:before|last week|usual)|as usual|stays? the same)\\b",
+      "examples": [
+        "Good news: this week you add 500 kcal a day.",
+        "No change this week, keep everything the same.",
+        "Eat more this week."
+      ],
+      "nonExamples": [
+        "The call takes 500 kcal a day off and it stands; the check-in on the 12th reads the new weigh-ins, and that is what changes it.",
+        "The call stays at 500 kcal a day less until the check-in on the 12th."
+      ]
+    },
+    {
+      "id": "bulk-said-otherwise",
+      "actions": [
+        "INCREASE_CALORIES"
+      ],
+      "why": "A bulk's step said as less food or as no change.",
+      "pattern": "\\b(?:less|fewer|cut(?:s|ting)?|reduc\\w*|lower\\w*|deficit|take[sn]? (?:\\w+ ){0,4}off|no change|nothing changes|(?:keep|keeps) (?:everything|it|eating) (?:the same|as (?:it is|you are|before|usual))|same as (?:before|last week|usual)|as usual|stays? the same)\\b",
+      "examples": [
+        "The call takes 250 kcal a day off.",
+        "Eat less this week.",
+        "Nothing changes this week."
+      ],
+      "nonExamples": [
+        "The call adds 250 kcal a day and it stands; the next check-in on the 12th reads how the weight moves."
+      ]
+    },
+    {
+      "id": "hold-said-as-change",
+      "actions": [
+        "CONTINUE",
+        "NO_DECISION_YET"
+      ],
+      "why": "A call that changes nothing said as a change.",
+      "pattern": "\\b(?:add(?:s|ed)?|cut(?:s|ting)?|reduc\\w*|lower\\w*|increas\\w*|rais(?:e|es|ed)|less food|more food|fewer calories|more calories|deficit|surplus)\\b",
+      "examples": [
+        "The call cuts your calories this week.",
+        "We lower it a little.",
+        "Add some calories this week."
+      ],
+      "nonExamples": [
+        "The call is to carry on as planned: the trend is on track. The check-in on the 12th looks at it again.",
+        "There isn't enough data for a call yet. A few more weigh-ins before the check-in on the 12th will give one."
+      ]
+    },
+    {
+      "id": "deload-said-otherwise",
+      "actions": [
+        "DELOAD"
+      ],
+      "why": "A lighter week said as a normal or heavier one.",
+      "pattern": "\\b(?:train as normal|full (?:volume|sets)|more sets|add(?:ing)? (?:sets|weight|load)|go heavier|no change|nothing changes|(?:keep|keeps) (?:everything|it|eating) (?:the same|as (?:it is|you are|before|usual))|same as (?:before|last week|usual)|as usual|stays? the same)\\b",
+      "examples": [
+        "Train as normal this week.",
+        "Do your full sets."
+      ],
+      "nonExamples": [
+        "The call is a lighter week at 50% of your sets, and it stands. The check-in on the 12th reads how training goes."
+      ]
+    },
+    {
+      "id": "rest-said-otherwise",
+      "actions": [
+        "FULL_REST_WEEK"
+      ],
+      "why": "A rest week said as a training week.",
+      "pattern": "\\b(?:train(?:ing)? (?:as normal|light(?:ly)?)|light sessions|keep training|a few sessions|easy sessions|no change|nothing changes|(?:keep|keeps) (?:everything|it|eating) (?:the same|as (?:it is|you are|before|usual))|same as (?:before|last week|usual)|as usual|stays? the same)\\b",
+      "examples": [
+        "A few easy sessions are fine.",
+        "Train lightly this week."
+      ],
+      "nonExamples": [
+        "The call is a full rest week, and it stands; a short break keeps strength. The check-in on the 12th looks again."
+      ]
+    },
+    {
+      "id": "minicut-said-otherwise",
+      "actions": [
+        "MINI_CUT"
+      ],
+      "why": "A mini cut said as building on.",
+      "pattern": "\\b(?:keep (?:bulking|building)|surplus|eat more|no change|nothing changes|(?:keep|keeps) (?:everything|it|eating) (?:the same|as (?:it is|you are|before|usual))|same as (?:before|last week|usual)|as usual|stays? the same)\\b",
+      "examples": [
+        "Keep building as before.",
+        "Stay in a surplus."
+      ],
+      "nonExamples": [
+        "The call is a mini cut of 2 to 4 weeks, and it stands until new data at the check-in on the 12th."
+      ]
+    },
+    {
+      "id": "tocut-said-otherwise",
+      "actions": [
+        "CHANGE_PHASE:CUT"
+      ],
+      "why": "A turn to cutting said as building on.",
+      "pattern": "\\b(?:keep (?:bulking|building)|stay in the bulk|surplus|eat more|no change|nothing changes|(?:keep|keeps) (?:everything|it|eating) (?:the same|as (?:it is|you are|before|usual))|same as (?:before|last week|usual)|as usual|stays? the same)\\b",
+      "examples": [
+        "Keep bulking for now.",
+        "Stay in the bulk."
+      ],
+      "nonExamples": [
+        "The call changes the direction to a cut, and it stands. What changes it is new data at the check-in on the 12th."
+      ]
+    },
+    {
+      "id": "tobulk-said-otherwise",
+      "actions": [
+        "CHANGE_PHASE:BULK"
+      ],
+      "why": "A turn to building said as cutting on.",
+      "pattern": "\\b(?:keep cutting|stay in the cut|deficit|eat less|no change|nothing changes|(?:keep|keeps) (?:everything|it|eating) (?:the same|as (?:it is|you are|before|usual))|same as (?:before|last week|usual)|as usual|stays? the same)\\b",
+      "examples": [
+        "Keep cutting a little longer.",
+        "Stay in a deficit."
+      ],
+      "nonExamples": [
+        "The call changes the direction to building, and it stands until the check-in on the 12th."
+      ]
+    },
+    {
+      "id": "stop-said-otherwise",
+      "actions": [
+        "STOP_LOAD_INCREASE"
+      ],
+      "why": "A stop to load increases said as adding load.",
+      "pattern": "\\b(?:keep adding|(?<!stop )(?<!no )add(?:ing)? (?:weight|load)|go heavier|increase the (?:load|weight))\\b",
+      "examples": [
+        "Keep adding weight each session.",
+        "Go heavier next time."
+      ],
+      "nonExamples": [
+        "The call is to stop adding load for now, and it stands until the check-in on the 12th.",
+        "No adding load until the check-in."
+      ]
+    },
+    {
+      "id": "food-said-for-a-non-food-call",
+      "actions": [
+        "CHANGE_MOVEMENT",
+        "FIX_TRAINING",
+        "FIX_RECOVERY",
+        "FIX_ADHERENCE"
+      ],
+      "why": "A call that is not about food said as a calorie change.",
+      "pattern": "\\b(?:eat less|eat more|(?:lower|cut|reduce|raise|increase)\\s+(?:your )?(?:calories|kcal|targets|food)|fewer calories|more calories)\\b",
+      "examples": [
+        "Let's eat less instead.",
+        "We should reduce your calories."
+      ],
+      "nonExamples": [
+        "The call is to move more instead of eating less, and it stands. The check-in on the 12th reads the steps.",
+        "The call is to follow the plan as it is. What changes it is the data at the check-in on the 12th."
+      ]
+    }
+  ],
+  "numberWords": {
+    "why": "A number written in words cannot be checked against the call's (U1), and 'eighteen percent' is a body-fat number the digit rules would miss (U4): the model writes numbers as digits, or not at all. 'one' is left out — 'not one weigh-in' is ordinary copy.",
+    "pattern": "\\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|half|halve|quarter|double|twice|triple|dozen)\\b",
+    "examples": [
+      "two thousand kcal",
+      "half your sets",
+      "double it",
+      "Your body fat is around eighteen percent.",
+      "eat a quarter less"
+    ],
+    "nonExamples": [
+      "The trend, not one weigh-in, decides.",
+      "Hunger in the first days of a cut is common.",
+      "A few more weigh-ins will tell."
+    ]
+  }
+}

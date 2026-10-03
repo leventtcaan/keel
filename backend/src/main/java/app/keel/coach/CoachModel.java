@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * The one way to the language model (K-503, V2): every call goes out through the privacy module's gate, to the provider
- * keel.coach names — without the AI consent to that provider, it never runs — with the model and the output limit
- * keel.coach sets.
+ * keel.coach names, carrying the data its purpose names — without the AI consent to that provider and that data, it never
+ * runs — with the model and the output limit keel.coach sets.
  */
 @Component
 class CoachModel {
@@ -23,8 +23,8 @@ class CoachModel {
         this.properties = properties;
     }
 
-    ModelReply ask(AccountId account, String purpose, String system, List<Turn> turns) {
+    ModelReply ask(AccountId account, Purpose purpose, String system, List<Turn> turns) {
         ModelRequest request = new ModelRequest(purpose, properties.model(), properties.maxOutput(), system, turns);
-        return egress.sendToAi(account, properties.providerName(), () -> model.complete(request));
+        return egress.sendToAi(account, properties.providerName(), properties.dataTypes().get(purpose), () -> model.complete(request));
     }
 }

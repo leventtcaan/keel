@@ -140,7 +140,7 @@ class AccountDataTests {
                 "source", "MANUAL"));
         send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "1926-09-30T15:00:00Z"));
         send(account, "PUT", "/v1/consents/THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI",
-                "dataTypes", List.of("meal photo", "meal note")));
+                "dataTypes", List.of("meal photo", "meal note", "coach question")));
         AccountId bystander = accountWithDataEverywhere();
         // What only the bystander has: none of it may appear in the user's export.
         send(bystander, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", "2026-09-29T05:00:00Z", "kg", 93.7,
@@ -188,7 +188,7 @@ class AccountDataTests {
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("consent")).get("events"))
                 .anySatisfy(event -> assertThat(event).containsEntry("provider", "Example AI")
-                        .containsEntry("dataTypes", List.of("meal photo", "meal note")));
+                        .containsEntry("dataTypes", List.of("meal photo", "meal note", "coach question")));
         assertThat(body).doesNotContain("93.7", "111.3", "12345", bystanderSubject, bystander.value().toString());
     }
 

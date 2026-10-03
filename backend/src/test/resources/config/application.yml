@@ -12,7 +12,7 @@ keel:
   consent:
     third-party-ai:
       provider: Example AI
-      data-types: [meal photo, meal note]
+      data-types: [meal photo, meal note, coach question]
   # The fake model (K-503), with values that show they come from here.
   coach:
     provider: fake
@@ -21,3 +21,9 @@ keel:
     max-output: 300 # tokens
     input-price-per-million: 0.10
     output-price-per-million: 0.40
+    data-types:
+      explain: coach question
+      parse-meal: meal note
+    # A question is a few sentences (contract CoachQuestion.text); a reply three short ones (data/coach/explain.md).
+    max-question-chars: 2000
+    max-reply-chars: 400

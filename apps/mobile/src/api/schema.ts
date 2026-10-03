@@ -1022,8 +1022,14 @@ export interface paths {
         put?: never;
         /**
          * Ask about a call or the plan; the coach explains, it does not decide (U1)
-         * @description The question goes to a third-party language model, so it needs the THIRD_PARTY_AI consent (V2); without it the
-         *     answer is 403 CONSENT_REQUIRED. Quota: coach_messages_per_day (429 RATE_LIMITED).
+         * @description About the call `decisionId` names, or the latest. The question and the call's facts go to a third-party language
+         *     model, so they need the THIRD_PARTY_AI consent to that provider and that data (V2); without it the answer is 403
+         *     CONSENT_REQUIRED. The call is health data: HEALTH_DATA consent. The model's words are shown only when they are the
+         *     call told — its numbers only, no concession, no contradiction, no forbidden phrase (K-505); otherwise the answer is
+         *     the engine's own words (DETERMINISTIC). When there is no call yet, or for a call only the engine tells (the safety
+         *     label, a call waiting for the cycle question, the safety net's), nothing is sent anywhere. Every answer
+         *     about a call carries the call as it stands: the coach explains, it never changes it (U1, U2). Unknown decisionId:
+         *     404. Quota: coach_messages_per_day (K-508).
          */
         post: operations["askCoach"];
         delete?: never;
@@ -1976,8 +1982,24 @@ export interface components {
             decisionId?: string;
         };
         CoachAnswer: {
-            /** @description Words only; numbers in it come from the engine or the database (U1). */
-            text: string;
+            /**
+             * @description MODEL — the model's words, checked; DETERMINISTIC — the engine's own words (copyKey).
+             * @enum {string}
+             */
+            mode: "MODEL" | "DETERMINISTIC";
+            /** @description The model's words, present in MODEL mode only; every number in it is the call's (U1). */
+            text?: string;
+            /** @description The engine's own words, in DETERMINISTIC mode (data/copy/en.json › coach.answer.*). */
+            copyKey?: string;
+            call?: components["schemas"]["CoachCall"];
+        };
+        /** @description The call the answer is about, as it stands (U2) — its words, and when new data looks at it again. */
+        CoachCall: {
+            /** Format: uuid */
+            decisionId: string;
+            copyKey: string;
+            /** Format: date */
+            nextReview: string;
         };
     };
     responses: {
