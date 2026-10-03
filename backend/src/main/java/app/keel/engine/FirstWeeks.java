@@ -37,7 +37,7 @@ public final class FirstWeeks {
      * @param lastWeek the user's week just over: the seven days before {@link #weekStart}
      * @param loggedDaysWeekBefore days with food logged in the user's week before that
      * @param calendarWeeks consistency's weeks, oldest first and consecutive, through at least the one that ended inside
-     *     {@code lastWeek}; any later is not read
+     *     {@code lastWeek} (any later is not read); none, or beginning after it, when there was no record then
      */
     public record Facts(LocalDate today, LocalDate began, boolean trainingPlanned, UserWeek lastWeek, int loggedDaysWeekBefore,
             List<WeekTally> calendarWeeks) {
@@ -109,7 +109,12 @@ public final class FirstWeeks {
         LocalDate lastDay = weekStart(facts.began(), facts.today()).minusDays(1);
         DayOfWeek lastOfACalendarWeek = Consistency.WEEK_STARTS_ON.minus(1);
         LocalDate monday = lastDay.with(TemporalAdjusters.previousOrSame(lastOfACalendarWeek)).minusDays(DAYS_PER_WEEK - 1);
-        List<WeekTally> through = facts.calendarWeeks().stream().filter(week -> !week.weekStart().isAfter(monday)).toList();
+        List<WeekTally> weeks = facts.calendarWeeks();
+        if (!weeks.isEmpty() && weeks.getLast().weekStart().isBefore(monday)) {
+            // A caller's slip, not a quiet week: left unsaid, the signal would be off for everyone.
+            throw new IllegalArgumentException("Consistency's weeks end at " + weeks.getLast().weekStart() + ", before the week of " + monday);
+        }
+        List<WeekTally> through = weeks.stream().filter(week -> !week.weekStart().isAfter(monday)).toList();
         return !through.isEmpty() && through.getLast().weekStart().equals(monday)
                 && Consistency.lastWeekForgiven(through, parameters);
     }

@@ -9,7 +9,7 @@ dosya. Kaynak 5. haftanın sinyallerini sayar ama birleştirme ağırlığı ver
 
 ## Karar
 1. **Hafta sayımı:** hesabın açıldığı gün, kullanıcının takviminde, 1. haftanın ilk günüdür. Hafta = açılıştan bu yana geçen gün / 7 + 1
-   (`FirstWeeks.weekStart`). Takvim haftası değil, kişinin kendi haftası ("kullanıcının kendi haftasından", K-513 kabulü). Akış 1-8;
+   (`FirstWeeks.of`; haftanın ilk günü `FirstWeeks.weekStart`). Takvim haftası değil, kişinin kendi haftası ("kullanıcının kendi haftasından", K-513 kabulü). Akış 1-8;
    **9. hafta yalnız risk için açık** (8. haftanın davranışı orada okunur, içerik yok); sonrası akış yok.
 2. **İçerik anahtarı** motorda saf fonksiyon: `FirstWeeks.of(facts)` → `first_weeks.week<N>` (metinler `en.json`). H1'de içerik yok
    (I1 F2: "yorum yok, skor yok"). **Antrenman planlamayan** kullanıcı `first_weeks.no_training.week<N>` okur: H2 (performans), H4
@@ -21,7 +21,8 @@ dosya. Kaynak 5. haftanın sinyallerini sayar ama birleştirme ağırlığı ver
    - affedilen hafta kullanıldı (Consistency'nin tek affettiği hafta, 04 §7.3; I1 F3: "af kullanımı churn'ün öncü göstergesi").
      Af **takvim haftasıyla** sayılır (kullanıcının gördüğü sayı Pzt-Paz); kişinin 7 günü tam bir Pazar içerir, yani içinde tam bir
      takvim haftası biter — o okunur, sonrakiler okunmaz. Hesap motorda: `Consistency.lastWeekForgiven` (sayacın aynı yürüyüşü: tek
-     kaçan hafta, öncesinde hedefte bir hafta; koşu yoksa af yok; duraklayan/plansız hafta atlanır, kendisi affedilmiş sayılmaz);
+     kaçan hafta, öncesinde hedefte bir hafta; koşu yoksa af yok; duraklayan/plansız hafta atlanır, kendisi affedilmiş sayılmaz). Sayaç o hafta yoksa (ilk karar
+     sonra) af yok; takvim haftaları o haftadan **önce** bitiyorsa çağıranın hatasıdır → istisna (sinyal sessizce kapanmasın);
    - kayıt düştü: biten haftada öğün kaydı olan gün `min_logged_days_per_week`'in altına indi, önceki hafta o eşikteydi — yeni eşik yok;
    - **uygulama açılmaması** sunucuda bilinmez (açılış yalnız telefonda, K-410) → K-521.
    **Birleştirme: herhangi biri = risk.** Ağırlık yok: kaynak ağırlık vermiyor, uydurulmaz (U14). Biten hafta duraklamışsa (beyan, ADR-038) sinyal yok.
