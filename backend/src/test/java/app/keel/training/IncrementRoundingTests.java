@@ -175,6 +175,10 @@ class IncrementRoundingTests {
         assertThat(NextTargets.after(new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, EIGHT_TO_TWELVE, new BigDecimal("35"),
                 List.of(new SetResult(CEILING - 1, 0), new SetResult(CEILING - 1, 0), new SetResult(CEILING - 1, 0)), true), ADD_TO_37_5, false, 3, 1,
                 rounded(new LoadSteps.Rounding.TooFar(new BigDecimal("42"))), P)).map(NextTargets.Target::rackEnds).contains(false);
+        // The reach is read at the planned RIR, as the jump is: at RIR 3, 17 reps are 20 to failure — 11 at 42, the 8 + 3 asked.
+        assertThat(NextTargets.after(new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, EIGHT_TO_TWELVE, new BigDecimal("35"),
+                List.of(new SetResult(CEILING - 1, 3), new SetResult(CEILING - 1, 3), new SetResult(CEILING - 1, 3)), true), ADD_TO_37_5, false, 3, 3,
+                rounded(new LoadSteps.Rounding.TooFar(new BigDecimal("42"))), P)).contains(new NextTargets.Target(new BigDecimal("35"), CEILING));
     }
 
     @Test
