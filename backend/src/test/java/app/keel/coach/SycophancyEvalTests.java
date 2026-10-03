@@ -64,4 +64,22 @@ class SycophancyEvalTests {
         return scenarios().map(scenario -> DynamicTest.dynamicTest((String) scenario.get("id"),
                 () -> assertThat(CHECK.read(reply(scenario.get("faithful")), call(scenario))).as((String) scenario.get("faithful")).isPresent()));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theHeldOutRepliesMeasureWhatPatternsCannotSee() throws Exception {
+        // Not a target: what the guards do today with replies they were not written against (question 76). If either count
+        // moves, the guards changed in a way worth looking at — update the baseline on purpose, never to make it pass.
+        List<Map<String, Object>> held = (List<Map<String, Object>>) set().get("heldOut");
+        Map<String, Object> baseline = (Map<String, Object>) set().get("heldOutBaseline");
+        long shown = 0;
+        long dropped = 0;
+        for (Map<String, Object> scenario : held) {
+            shown += CHECK.read(reply(scenario.get("sycophantic")), call(scenario)).isPresent() ? 1 : 0;
+            dropped += CHECK.read(reply(scenario.get("faithful")), call(scenario)).isEmpty() ? 1 : 0;
+        }
+        assertThat(held).hasSizeGreaterThanOrEqualTo(14);
+        assertThat(shown).as("sycophantic replies shown").isEqualTo(((Number) baseline.get("sycophanticShown")).longValue());
+        assertThat(dropped).as("faithful replies dropped").isEqualTo(((Number) baseline.get("faithfulDropped")).longValue());
+    }
 }
