@@ -16,10 +16,19 @@ import argparse
 import json
 import os
 import pathlib
+import re
 import statistics
 import sys
 import time
+import unicodedata
+import urllib.error
 import urllib.request
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+
+try:  # JavaScript's look-behinds of any width, as the app's phrases use them; the standard re takes only fixed ones.
+    import regex as pattern_engine
+except ImportError:
+    pattern_engine = re
 
 sys.dont_write_bytecode = True
 
@@ -47,8 +56,56 @@ REASONS_BY_KIND = {
     "CHANGE_MOVEMENT": ["bmr_floor"],
 }
 
-MEAL_MAX_ITEMS = 20
-MEAL_MAX_QUANTITY = 5000
+def _settings():
+    """application.yml's keys by their dotted path (keel.coach.max-output): the few plain values the check needs, no YAML library."""
+    found, path = {}, []
+    for line in (ROOT / "backend/src/main/resources/application.yml").read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith(("#", "-")) or ":" not in line:
+            continue
+        depth = (len(line) - len(line.lstrip())) // 2
+        key, _, value = line.strip().partition(":")
+        path = path[:depth] + [key]
+        found[".".join(path)] = value.split(" #")[0].strip()
+    return found
+
+
+def _limits():
+    """The server's own limits (application.yml, K2): read here so the check reads replies exactly as the server does."""
+    at = _settings()
+    whole = lambda key: int(at[key])  # noqa: E731
+    return {"reply_chars": whole("keel.coach.max-reply-chars"), "max_output": whole("keel.coach.max-output"),
+            "items": min(whole("keel.coach.meal.max-items"), whole("keel.nutrition.max-items")),
+            "food_chars": whole("keel.coach.meal.max-food-chars"), "quantity": whole("keel.nutrition.max-grams")}
+
+
+LIMITS = _limits()
+# A measure as MealReplyCheck takes it: letters and spaces, 1-30, after the same normalizing.
+UNIT = re.compile(r"[^\W\d_]+(?: [^\W\d_]+)*|[^\W\d_ ]")
+APOSTROPHES = re.compile("[\u2019\u2018\u02bc\u2032`]")
+SPACES = re.compile(r"[\s\u00a0\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+")
+
+
+def _forbidden():
+    """The phrases no food name may carry (ForbiddenWords): the rules, person names, the quota's currency words. Without the
+    regex module a phrase the standard re cannot read is named in MISSING, and a real run stops (its schema share would read high)."""
+    phrases = json.loads((ROOT / "data/copy/forbidden-phrases.json").read_text(encoding="utf-8"))
+    entries = [(rule["id"], rule["pattern"], re.IGNORECASE) for rule in phrases["rules"]]
+    entries += [("personNames", phrases["personNames"]["pattern"], 0), ("quotaWords", phrases["quotaWords"]["pattern"], re.IGNORECASE)]
+    compiled, missing = [], []
+    for name, pattern, flags in entries:
+        try:
+            compiled.append(pattern_engine.compile(pattern, flags))
+        except re.error:
+            missing.append(name)
+    return compiled, missing
+
+
+FORBIDDEN, MISSING = _forbidden()
+
+
+def normalize(text):
+    """As Words.normalize: NFKC, one apostrophe, one kind of space."""
+    return SPACES.sub(" ", APOSTROPHES.sub("'", unicodedata.normalize("NFKC", text)))
 
 PROVIDERS = {
     # Chat completions with a JSON object reply (OpenAI; Mistral's API has the same shape).
@@ -74,7 +131,10 @@ def reasons_for(scenario):
 
 
 def read_topic(raw, reasons):
-    """As TopicReply: exactly {"topic"} or {"topic","rule"}; the topic by its exact name; the rule one of the call's or none."""
+    """As TopicReply: within the reply's length; exactly {"topic"} or {"topic","rule"}; the topic by its exact name; the rule
+    one of the call's or none."""
+    if not isinstance(raw, str) or len(raw) > LIMITS["reply_chars"]:
+        return None
     try:
         reply = json.loads(raw)
     except ValueError:
@@ -90,23 +150,36 @@ def read_topic(raw, reasons):
 
 
 def read_meal(raw):
-    """As MealReplyCheck's schema: {"items": [{"food","quantity","unit"}]}; no digit in a food, 0 < quantity ≤ 5000, no other field."""
+    """As MealReplyCheck: {"items": [{"food","quantity","unit"}]} — at most the items a meal takes; a food normalized, within
+    its length, no digit, no forbidden phrase; a measure of letters and spaces; the quantity rounded half up to 2 decimals,
+    then over 0 and at most the grams an item may be. Anything else drops the reply."""
+    if not isinstance(raw, str):
+        return None
     try:
         reply = json.loads(raw)
     except ValueError:
         return None
-    if not isinstance(reply, dict) or set(reply) != {"items"} or not isinstance(reply["items"], list) or len(reply["items"]) > MEAL_MAX_ITEMS:
+    if not isinstance(reply, dict) or set(reply) != {"items"} or not isinstance(reply["items"], list) or len(reply["items"]) > LIMITS["items"]:
         return None
     read = []
     for item in reply["items"]:
         if not isinstance(item, dict) or set(item) != {"food", "quantity", "unit"}:
             return None
         food, quantity, unit = item["food"], item["quantity"], item["unit"]
-        if not isinstance(food, str) or not food.strip() or any(c.isdigit() for c in food) or not isinstance(unit, str) or not unit.strip():
+        if not isinstance(food, str) or not isinstance(unit, str) or isinstance(quantity, bool) or not isinstance(quantity, (int, float)):
             return None
-        if isinstance(quantity, bool) or not isinstance(quantity, (int, float)) or not 0 < quantity <= MEAL_MAX_QUANTITY:
+        words, measure = normalize(food).strip(), normalize(unit).strip().lower()
+        if not words or len(words) > LIMITS["food_chars"] or any(c.isdigit() for c in words) or any(p.search(words) for p in FORBIDDEN):
             return None
-        read.append((food.strip(), float(quantity), unit.strip()))
+        if not 1 <= len(measure) <= 30 or not UNIT.fullmatch(measure):
+            return None
+        try:
+            rounded = Decimal(str(quantity)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        except InvalidOperation:
+            return None
+        if rounded <= 0 or rounded > LIMITS["quantity"]:
+            return None
+        read.append((words, float(rounded), measure))
     return read
 
 
@@ -148,14 +221,16 @@ def request(provider, model, system, user, key):
     """URL, headers (the key goes only here), body — the same instructions and words to each."""
     spec = PROVIDERS[provider]
     if provider in ("openai", "mistral"):
+        # The output limit the server sends (keel.coach.max-output): OpenAI names it max_completion_tokens, Mistral max_tokens.
+        limit = "max_completion_tokens" if provider == "openai" else "max_tokens"
         body = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                "response_format": {"type": "json_object"}}
+                "response_format": {"type": "json_object"}, limit: LIMITS["max_output"]}
         return spec["url"], {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, body
     if provider == "anthropic":
-        body = {"model": model, "max_tokens": 400, "system": system, "messages": [{"role": "user", "content": user}]}
+        body = {"model": model, "max_tokens": LIMITS["max_output"], "system": system, "messages": [{"role": "user", "content": user}]}
         return spec["url"], {"x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}, body
     body = {"systemInstruction": {"parts": [{"text": system}]}, "contents": [{"role": "user", "parts": [{"text": user}]}],
-            "generationConfig": {"responseMimeType": "application/json"}}
+            "generationConfig": {"responseMimeType": "application/json", "maxOutputTokens": LIMITS["max_output"]}}
     return spec["url"].format(model=model), {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, body
 
 
@@ -203,8 +278,15 @@ def run(provider, model, which, key, dry_run=False, transport=http, limit=None, 
     for case_id, system, user, correct, schema in chosen:
         url, headers, body = request(provider, model, system, user, key)
         started = time.monotonic()
-        text, tokens_in, tokens_out = reply_of(provider, transport(base_url or url, headers, body))
-        results.append(Result(case_id, schema(text), correct(text), round((time.monotonic() - started) * 1000), tokens_in, tokens_out))
+        try:
+            text, tokens_in, tokens_out = reply_of(provider, transport(base_url or url, headers, body))
+        except (urllib.error.URLError, OSError, KeyError, IndexError, TypeError, ValueError) as failed:
+            # A refusal, a blocked or empty answer, a 429/500: the server would have used the engine's words — dropped, and
+            # the run goes on with what it has paid for.
+            print(json.dumps({"case": case_id, "failed": type(failed).__name__}), file=sys.stderr)
+            text, tokens_in, tokens_out = None, 0, 0
+        ms = round((time.monotonic() - started) * 1000)
+        results.append(Result(case_id, text is not None and schema(text), text is not None and correct(text), ms, tokens_in, tokens_out))
     return {"provider": provider, "model": model, "set": which, **summarize(results, price_in, price_out)}
 
 
@@ -219,6 +301,8 @@ def main():
     parser.add_argument("--limit", type=int)
     parser.add_argument("--dry-run", action="store_true", help="print the requests, send nothing")
     args = parser.parse_args()
+    if MISSING and not args.dry_run:
+        sys.exit(f"phrases the standard re cannot read: {MISSING} — pip install regex, then run again")
     key = None if args.dry_run else os.environ.get(PROVIDERS[args.provider]["key"])
     if not args.dry_run and not key:
         sys.exit(f"{PROVIDERS[args.provider]['key']} is not set (the key stays in the environment, V5)")

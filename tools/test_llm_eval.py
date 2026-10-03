@@ -49,6 +49,31 @@ class MealReading(unittest.TestCase):
             self.assertIsNone(llm_eval.read_meal(raw), raw)
 
 
+class AsTheServerReads(unittest.TestCase):
+    """Where MealReplyCheck and TopicReply drop a reply, the check does too — or its schema share would read high."""
+
+    def test_a_measure_of_letters_and_spaces_only(self):
+        for unit in ["tbsp.", "fl. oz", "1/2 cup", "", "x" * 31]:
+            self.assertIsNone(llm_eval.read_meal(json.dumps({"items": [{"food": "oats", "quantity": 1, "unit": unit}]})), unit)
+        self.assertEqual(llm_eval.read_meal('{"items":[{"food":"milk","quantity":1,"unit":"Glass"}]}'), [("milk", 1.0, "glass")])
+
+    def test_the_quantity_rounded_half_up_to_two_decimals_first(self):
+        self.assertIsNone(llm_eval.read_meal('{"items":[{"food":"salt","quantity":0.004,"unit":"g"}]}'))
+        self.assertEqual(llm_eval.read_meal('{"items":[{"food":"oil","quantity":0.335,"unit":"tablespoon"}]}'), [("oil", 0.34, "tablespoon")])
+
+    def test_a_food_too_long_or_with_a_forbidden_phrase(self):
+        self.assertIsNone(llm_eval.read_meal(json.dumps({"items": [{"food": "a" * (llm_eval.LIMITS["food_chars"] + 1), "quantity": 1, "unit": "g"}]})))
+        self.assertIsNone(llm_eval.read_meal('{"items":[{"food":"chicken for insulin resistance","quantity":1,"unit":"piece"}]}'))
+
+    def test_a_reply_longer_than_the_server_reads(self):
+        padded = '{"topic":"WHY"' + " " * llm_eval.LIMITS["reply_chars"] + "}"
+        self.assertIsNone(llm_eval.read_topic(padded, REASONS))
+
+    def test_no_text_at_all(self):
+        self.assertIsNone(llm_eval.read_topic(None, REASONS))
+        self.assertIsNone(llm_eval.read_meal(None))
+
+
 class Scoring(unittest.TestCase):
     def test_objections_count_schema_topic_and_cost(self):
         results = [llm_eval.Result("a", True, True, 120, 600, 20), llm_eval.Result("b", True, False, 300, 600, 20),
@@ -93,6 +118,34 @@ class Requests(unittest.TestCase):
         }
         for provider, answer in answers.items():
             self.assertEqual(llm_eval.reply_of(provider, answer), ("X", 5, 2), provider)
+
+    def test_every_provider_gets_the_servers_output_limit(self):
+        for provider in llm_eval.PROVIDERS:
+            _, _, body = llm_eval.request(provider, "m", "S", "U", key="k")
+            self.assertIn(llm_eval.LIMITS["max_output"], json.dumps(body) and [body.get("max_completion_tokens"), body.get("max_tokens"),
+                                                                             body.get("generationConfig", {}).get("maxOutputTokens")], provider)
+
+    def test_a_run_scores_each_case_on_its_own_and_goes_on_past_a_failure(self):
+        cases = llm_eval.meals()[:4]
+        answers = [
+            {"items": [{"food": i["food"], "quantity": i["quantity"], "unit": i["unit"]} for i in cases[0]["expected"]]},
+            {"items": [{"food": i["food"], "quantity": i["quantity"] + 1, "unit": i["unit"]} for i in cases[1]["expected"]]},
+            None,  # a refusal: content null
+            RuntimeError,  # a 500
+        ]
+
+        def transport(url, headers, body):
+            answer = answers.pop(0)
+            if answer is RuntimeError:
+                raise OSError("HTTP 500")
+            content = None if answer is None else json.dumps(answer)
+            return {"choices": [{"message": {"content": content}}], "usage": {"prompt_tokens": 10, "completion_tokens": 5}}
+
+        out = llm_eval.run("openai", "m", "meals", key="k", transport=transport, limit=4, price_in=1.0, price_out=1.0)
+        self.assertEqual(out["n"], 4)
+        self.assertAlmostEqual(out["schema"], 2 / 4)
+        self.assertAlmostEqual(out["correct"], 1 / 4)
+        self.assertEqual(out["wrong"], [c["id"] for c in cases[1:]])
 
     def test_a_dry_run_sends_nothing(self):
         sent = []
