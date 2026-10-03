@@ -91,7 +91,12 @@ class MealParseApiTests {
         assertThat(items.get(1)).containsEntry("confident", false).containsEntry("candidates", List.of())
                 .containsEntry("amount", Map.of("quantity", 1, "unit", "bowl"));
         assertThat(JSON.writeValueAsString(draft)).doesNotContainIgnoringCase("kcal");
-        assertThat(fake.requests()).singleElement().satisfies(request -> assertThat(request.purpose()).isEqualTo(Purpose.PARSE_MEAL));
+        assertThat(fake.requests()).singleElement().satisfies(request -> {
+            assertThat(request.purpose()).isEqualTo(Purpose.PARSE_MEAL);
+            // The words' own instructions and the user's words, as they were (K-514 review: the shared path pins neither).
+            assertThat(request.system()).isEqualTo(CoachInstructions.read("parse-meal.md"));
+            assertThat(request.turns()).containsExactly(Turn.user("150 g grilled chicken breast and some mystery stew"));
+        });
         assertThat(used(account)).as("one use for one message").isEqualTo(1);
     }
 

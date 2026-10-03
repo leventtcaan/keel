@@ -38,3 +38,7 @@
 28. K-528 yoğun hafta minimum dozu (`K-528.md`)
 29. K-507 gün içi yemek önerileri (`K-507.md`)
 30. K-521 ilk 8 hafta telefonda (`K-521.md`)
+
+## Aktarım sırası (Part 4)
+31. ADR-045 (cevaplar 73, 78-85) — `plan/kararlar/ADR-045-m5-part3-sonu-cevaplari.md`
+32. K-514 öğün fotoğrafı backend'i (`K-514.md`, ADR-046)

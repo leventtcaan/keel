@@ -15,7 +15,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
  */
 class LanguageModelConfigurationTests {
 
-    private static final Map<Purpose, String> TYPES = Map.of(Purpose.EXPLAIN, "coach question", Purpose.PARSE_MEAL, "meal note");
+    private static final Map<Purpose, String> TYPES = Map.of(Purpose.EXPLAIN, "coach question", Purpose.PARSE_MEAL, "meal note", Purpose.PHOTO_MEAL,
+            "meal photo");
 
     private static CoachProperties properties(String provider) {
         return new CoachProperties(provider, "Example AI", "fake-model", 400, new BigDecimal("0.10"), new BigDecimal("0.40"), TYPES, 2000, 400);
@@ -45,7 +46,7 @@ class LanguageModelConfigurationTests {
         assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO,
                 Map.of(Purpose.EXPLAIN, "coach question"), 2000, 400)).withMessageContaining("data-types");
         assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO,
-                Map.of(Purpose.EXPLAIN, " ", Purpose.PARSE_MEAL, "meal note"), 2000, 400));
+                Map.of(Purpose.EXPLAIN, " ", Purpose.PARSE_MEAL, "meal note", Purpose.PHOTO_MEAL, "meal photo"), 2000, 400));
         assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", "AI", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO, TYPES, 2000, 0));
         // Who the calls go to, as the consent names it (V2): never left out.
         assertThatIllegalStateException().isThrownBy(() -> new CoachProperties("fake", " ", "m", 400, BigDecimal.ZERO, BigDecimal.ZERO, TYPES, 2000, 400));
@@ -65,12 +66,12 @@ class LanguageModelConfigurationTests {
         runner.run(context -> assertThat(context).hasFailed().getFailure().rootCause().hasMessageContaining("keel.coach needs a provider"));
         runner.withPropertyValues("keel.coach.provider=fake", "keel.coach.provider-name=Example AI", "keel.coach.model=m",
                         "keel.coach.input-price-per-million=0", "keel.coach.output-price-per-million=0",
-                        "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note",
+                        "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note", "keel.coach.data-types.photo-meal=meal photo",
                         "keel.coach.max-question-chars=2000", "keel.coach.max-reply-chars=400")
                 .run(context -> assertThat(context).hasFailed().getFailure().rootCause().hasMessageContaining("max-output"));
         runner.withPropertyValues("keel.coach.provider=fake", "keel.coach.provider-name=Example AI", "keel.coach.model=m", "keel.coach.max-output=300",
                         "keel.coach.input-price-per-million=0.10", "keel.coach.output-price-per-million=0.40",
-                        "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note",
+                        "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note", "keel.coach.data-types.photo-meal=meal photo",
                         "keel.coach.max-question-chars=2000", "keel.coach.max-reply-chars=400")
                 .run(context -> assertThat(context).hasSingleBean(LanguageModel.class).getBean(CoachProperties.class)
                         .satisfies(bound -> assertThat(bound.inputPricePerMillion()).isEqualByComparingTo("0.10")));

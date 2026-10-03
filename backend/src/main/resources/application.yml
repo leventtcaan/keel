@@ -131,6 +131,7 @@ keel:
     data-types:
       explain: coach question
       parse-meal: meal note
+      photo-meal: meal photo
     # A question is a few sentences (contract CoachQuestion.text); a reply three short ones (data/coach/explain.md).
     max-question-chars: 2000
     max-reply-chars: 400
@@ -142,6 +143,12 @@ keel:
       candidates: 5
       # Words no food is looked up by: they are in half the database's names ("and" is in "Candies", "Sandwich").
       stop-words: [and, with, the, of, some, my, a, an, in, on, or, plus]
+    # A meal photo (K-514, V1): at most 1024 px a side (the app shrinks it, K-408), and so at most this many bytes — a
+    # 1024 px PNG of a plate is under 2 MB; what the server sends on is its own JPEG at this quality, no metadata.
+    photo:
+      max-side: 1024
+      max-bytes: 2500000
+      jpeg-quality: 0.85
   # The consent texts the app shows now (data/copy/en.json › consent.*, K-204); "-draft" until the product owner approves.
   consent:
     versions:
