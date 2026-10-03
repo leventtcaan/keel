@@ -1,0 +1,15 @@
+{
+  "_about": "Meals said in words, each with what a faithful read gives: the food in the user's words, how much, in the user's measure — never grams for a measure, never a calorie (K-504, ADR-004). The model-side half of the meal check at launch (tools/llm_eval.py, ADR-044); the database match is the server's.",
+  "cases": [
+    {"id": "eggs-toast", "text": "two eggs and a slice of toast", "expected": [{"food": "egg", "quantity": 2, "unit": "piece"}, {"food": "toast", "quantity": 1, "unit": "slice"}]},
+    {"id": "rice-grams", "text": "150 g rice", "expected": [{"food": "rice", "quantity": 150, "unit": "g"}]},
+    {"id": "oats-cup", "text": "a cup of oats with milk, about 200 ml", "expected": [{"food": "oats", "quantity": 1, "unit": "cup"}, {"food": "milk", "quantity": 200, "unit": "ml"}]},
+    {"id": "banana", "text": "1 banana", "expected": [{"food": "banana", "quantity": 1, "unit": "piece"}]},
+    {"id": "chicken-half", "text": "half a chicken breast", "expected": [{"food": "chicken breast", "quantity": 0.5, "unit": "piece"}]},
+    {"id": "yogurt-tbsp", "text": "greek yogurt 3 tablespoons", "expected": [{"food": "yogurt", "quantity": 3, "unit": "tablespoon"}]},
+    {"id": "apple-two", "text": "Two apples.", "expected": [{"food": "apple", "quantity": 2, "unit": "piece"}]},
+    {"id": "pasta-plate", "text": "a plate of pasta", "expected": [{"food": "pasta", "quantity": 1, "unit": "plate"}]},
+    {"id": "coffee", "text": "black coffee, one mug", "expected": [{"food": "coffee", "quantity": 1, "unit": "mug"}]},
+    {"id": "nuts", "text": "a handful of almonds", "expected": [{"food": "almond", "quantity": 1, "unit": "handful"}]}
+  ]
+}
