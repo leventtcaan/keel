@@ -9,6 +9,7 @@ import { CoachEntry } from '@/components/CoachEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import type { components } from '@/api/schema';
+import { Suggestions } from '@/food/Suggestions';
 import { BudgetLine } from '@/food/BudgetLine';
 import { MealList, RepeatOffers } from '@/food/MealList';
 import { TargetsCard } from '@/food/TargetsCard';
@@ -102,6 +103,7 @@ export default function FoodScreen() {
         {problem}
         {consent}
         {budget}
+        {!needsConsent && data !== null && <Suggestions suggestions={data.suggestions} />}
         {!needsConsent && data !== null && <Button label={t('food.log')} onPress={() => router.push('/meal')} />}
         <Button label={t('food.recipes')} variant="ghost" size="sm" onPress={() => router.push('/recipes')} />
         {meals}

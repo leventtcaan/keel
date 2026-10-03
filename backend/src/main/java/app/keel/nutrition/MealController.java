@@ -47,15 +47,25 @@ class MealController {
     record Budget(LocalDate day, int targetKcal, FoodRanges.Nutrients eaten, DayBudget.Left left) {
     }
 
+    /** Contract Suggestion: a food the user eats, in their usual amount, as the database estimates it now (U1, U5). */
+    record Suggestion(String foodId, String name, FoodEstimator.Amount amount, FoodRanges.Range kcal, FoodRanges.Range proteinG) {
+    }
+
     private final MealStore store;
     private final FoodEstimator estimator;
     private final Profiles profiles;
     private final ConsentGate consent;
     private final ObjectProvider<DailyTargets> targets;
     private final ApiLimits api;
+    private final FoodController.NutritionLimits limits;
+    private final RecipeStore recipes;
+    private final FoodStore foods;
 
     MealController(MealStore store, FoodEstimator estimator, Profiles profiles, ConsentGate consent, ObjectProvider<DailyTargets> targets,
-            ApiLimits api) {
+            ApiLimits api, FoodController.NutritionLimits limits, RecipeStore recipes, FoodStore foods) {
+        this.limits = limits;
+        this.recipes = recipes;
+        this.foods = foods;
         this.store = store;
         this.estimator = estimator;
         this.profiles = profiles;
@@ -103,7 +113,62 @@ class MealController {
     Budget budget(AccountId account, @PathVariable LocalDate day) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(api.day(day));
-        // The targets come from calls (decision, K-216); no target yet, no budget.
+        return budgetOf(account, day);
+    }
+
+    /**
+     * What the day can still hold (K-507, Ö-17): foods from the user's own meals of the last suggestion-days, each in its
+     * usual amount, estimated from the database now (U1, U5) — never one they cannot eat — kept while it fits what is
+     * likely left, the most eaten first, a few at most. A day past its target offers none, and says nothing of it (U7).
+     */
+    @GetMapping("/v1/days/{day}/suggestions")
+    List<Suggestion> suggestions(AccountId account, @PathVariable LocalDate day) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        require(api.day(day));
+        DayBudget.Balance left = budgetOf(account, day).left().kcal();
+        // Nothing can fit a day with nothing likely left: no estimate is made for it.
+        if (!MealSuggestions.fits(new FoodRanges.Range(0, 0), left)) {
+            return List.of();
+        }
+        List<MealStore.Meal> eaten = store.days(account, day.minusDays(limits.suggestionDays()), day);
+        List<Suggestion> fitting = new java.util.ArrayList<>();
+        // The most eaten few are estimated, not every food of the weeks (each estimate reads the database).
+        List<MealSuggestions.Usual> usual = MealSuggestions.usual(eaten, profiles.foodsAvoided(account), id -> ingredientNames(account, id));
+        for (MealSuggestions.Usual candidate : usual.subList(0, Math.min(usual.size(), limits.suggestionCandidates()))) {
+            if (fitting.size() == limits.suggestions()) {
+                break;
+            }
+            estimated(account, candidate).filter(suggestion -> MealSuggestions.fits(suggestion.kcal(), left)).ifPresent(fitting::add);
+        }
+        return List.copyOf(fitting);
+    }
+
+    /** A recipe's ingredients by name (a food is only its own name): what a foods-to-avoid word is read against too. */
+    private List<String> ingredientNames(AccountId account, String foodId) {
+        if (!foodId.startsWith(FoodEstimator.RECIPE)) {
+            return List.of();
+        }
+        try {
+            return recipes.find(account, UUID.fromString(foodId.substring(FoodEstimator.RECIPE.length()))).map(recipe -> recipe.items().stream()
+                    .map(item -> foods.find(item.foodId()).map(FoodStore.Food::name).orElse("")).toList()).orElse(List.of());
+        } catch (IllegalArgumentException notARecipeId) {
+            return List.of();
+        }
+    }
+
+    /** A usual amount as the database estimates it now; a food or recipe gone since (or now refused) is not offered. */
+    private Optional<Suggestion> estimated(AccountId account, MealSuggestions.Usual usual) {
+        try {
+            FoodEstimator.EstimatedItem item = estimator.estimate(account, List.of(new FoodEstimator.ItemRequest(usual.foodId(), usual.amount())))
+                    .items().getFirst();
+            return Optional.of(new Suggestion(item.foodId(), item.name(), item.amount(), item.kcal(), item.proteinG()));
+        } catch (ApiException gone) {
+            return Optional.empty();
+        }
+    }
+
+    /** The day's target minus the eaten range; no target yet (it comes from calls, K-216), no budget. */
+    private Budget budgetOf(AccountId account, LocalDate day) {
         // One provider (decision); a second would be a wiring mistake, and getIfUnique does not pick one quietly.
         DailyTargets.Targets target = Optional.ofNullable(targets.getIfUnique()).flatMap(provider -> provider.forDay(account, day))
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));

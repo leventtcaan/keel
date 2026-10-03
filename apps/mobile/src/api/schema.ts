@@ -422,6 +422,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/days/{day}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                day: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * What the day can still hold — foods the user eats, in their usual amounts, that fit what is likely left (K-507)
+         * @description From the user's own meals of the last weeks, each in the amount they have most often, estimated from the database
+         *     now (U1, U5); never a food in the profile's foods to avoid; kept while its high end fits the middle of what is
+         *     left; a few at most, the most eaten first. Empty when nothing fits (a day past its target says nothing of it, U7).
+         *     NOT_FOUND until the user has a target; CONSENT_REQUIRED without the HEALTH_DATA consent.
+         */
+        get: operations["getDaySuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recipes": {
         parameters: {
             query?: never;
@@ -1333,6 +1358,14 @@ export interface components {
              */
             foodId: string;
             amount: components["schemas"]["Amount"];
+        };
+        /** @description A food the user eats, in their usual amount, as the database estimates it now (K-507). */
+        Suggestion: {
+            foodId: string;
+            name: string;
+            amount: components["schemas"]["Amount"];
+            kcal: components["schemas"]["KcalRange"];
+            proteinG: components["schemas"]["GramRange"];
         };
         EstimatedItem: {
             foodId: string;
@@ -2797,6 +2830,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DayBudget"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getDaySuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                day: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The suggestions, in order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suggestion"][];
                 };
             };
             default: components["responses"]["Error"];

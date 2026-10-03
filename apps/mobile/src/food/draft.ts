@@ -38,7 +38,8 @@ export function itemsHanded(handed: HandedMeal | null): DraftItem[] {
   return (handed ?? []).slice(0, foodParams.itemsMax).map((item) => ({
     foodId: item.foodId,
     name: item.name,
-    units: item.unit === GRAMS ? [GRAMS] : [item.unit, GRAMS],
+    // A recipe is eaten in portions only — never weighed (ADR-034); a food's measure first, grams always offered.
+    units: item.unit === GRAMS || item.unit === PORTION ? [item.unit] : [item.unit, GRAMS],
     quantity: String(item.quantity),
     unit: item.unit,
     weighed: false,

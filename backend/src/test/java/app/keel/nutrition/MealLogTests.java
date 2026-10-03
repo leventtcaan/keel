@@ -176,6 +176,78 @@ class MealLogTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void theDaySuggestsTheUsersOwnFoodsInTheirUsualAmountsThatFitWhatIsLeft() throws Exception {
+        // K-507: two meals of the last weeks; both foods, in the amount logged, estimated now — as estimated, a range (U5).
+        AccountId account = consenting();
+        Targets.WITH_TARGETS.add(account);
+        send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-20T12:30:00Z", "LUNCH"));
+        send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-30T12:30:00Z", "LUNCH"));
+
+        List<Map<String, Object>> suggested = list(send(account, "GET", "/v1/days/2026-09-30/suggestions", null));
+
+        assertThat(suggested).extracting(item -> item.get("foodId")).containsExactlyInAnyOrder("fdc:171477", "fdc:1897574");
+        Map<String, Object> chicken = suggested.stream().filter(item -> item.get("foodId").equals("fdc:171477")).findFirst().orElseThrow();
+        assertThat((Map<String, Object>) chicken.get("amount")).containsEntry("unit", "g").containsEntry("certainty", "ESTIMATED");
+        assertThat(((Number) ((Map<String, Object>) chicken.get("amount")).get("quantity")).intValue()).isEqualTo(200);
+        assertThat((Map<String, Object>) chicken.get("kcal")).containsKeys("low", "high");
+    }
+
+    @Test
+    void aFoodTheProfileAvoidsIsNeverSuggestedAndAFullDaySuggestsNothing() throws Exception {
+        AccountId account = consenting();
+        Targets.WITH_TARGETS.add(account);
+        assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC", "food", Map.of("avoid", List.of("cereal")),
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")))).hasStatusOk();
+        send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-25T12:30:00Z", "LUNCH"));
+
+        assertThat(list(send(account, "GET", "/v1/days/2026-09-30/suggestions", null))).extracting(item -> item.get("foodId"))
+                .containsExactly("fdc:171477");
+
+        // Four such meals today: what is likely left is under nothing — no suggestion, and no word of it (U7).
+        for (int i = 0; i < 4; i++) {
+            send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-30T1" + i + ":00:00Z", "SNACK"));
+        }
+        assertThat(list(send(account, "GET", "/v1/days/2026-09-30/suggestions", null))).isEmpty();
+    }
+
+    @Test
+    void aFewAtMostTheMostEatenFirstAndARecipeGoneSinceIsSkipped() throws Exception {
+        jdbc.sql("""
+                insert into nutrition.food (id, name, source, kcal, protein_g, carbs_g, fat_g) values
+                ('test:k507-apple', 'K-507 test apple', 'FOUNDATION', 52, 0.3, 14, 0.2),
+                ('test:k507-pear', 'K-507 test pear', 'FOUNDATION', 57, 0.4, 15, 0.1) on conflict (id) do nothing""").update();
+        AccountId account = consenting();
+        Targets.WITH_TARGETS.add(account);
+        Map<String, Object> recipe = map(send(account, "POST", "/v1/recipes", Map.of("clientId", UUID.randomUUID(), "name", "K-507 bowl",
+                "portions", 2, "items", List.of(Map.of("foodId", "test:k507-apple", "amount", Map.of("quantity", 100, "unit", "g"))))));
+        // Chicken and cereal three times, the bowl twice, the apple once (later), the pear once (earlier).
+        for (int day = 20; day <= 22; day++) {
+            send(account, "POST", "/v1/meals", meal(UUID.randomUUID(), "2026-09-" + day + "T12:30:00Z", "LUNCH"));
+        }
+        for (int day = 23; day <= 24; day++) {
+            send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-" + day + "T08:00:00Z", "slot", "BREAKFAST",
+                    "items", List.of(Map.of("foodId", "recipe:" + recipe.get("id"), "amount", Map.of("quantity", 1, "unit", "portion")))));
+        }
+        send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-26T16:00:00Z", "slot", "SNACK",
+                "items", List.of(Map.of("foodId", "test:k507-apple", "amount", Map.of("quantity", 150, "unit", "g")))));
+        send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", "2026-09-25T16:00:00Z", "slot", "SNACK",
+                "items", List.of(Map.of("foodId", "test:k507-pear", "amount", Map.of("quantity", 150, "unit", "g")))));
+        assertThat(send(account, "DELETE", "/v1/recipes/" + recipe.get("id"), null)).hasStatus(204);
+
+        // The bowl is gone: skipped, not a failure; three at most, the most eaten first, then the most recent.
+        assertThat(list(send(account, "GET", "/v1/days/2026-09-30/suggestions", null))).extracting(item -> item.get("foodId"))
+                .containsExactly("fdc:171477", "fdc:1897574", "test:k507-apple");
+    }
+
+    @Test
+    void suggestionsNeedATargetAndTheConsent() {
+        assertThat(send(consenting(), "GET", "/v1/days/2026-09-30/suggestions", null)).hasStatus(404);
+        assertThat(send(TestSessions.newAccount(), "GET", "/v1/days/2026-09-30/suggestions", null)).hasStatus(403);
+    }
+
+    @Test
     void noTargetYetIsNoBudget() {
         assertThat(send(consenting(), "GET", "/v1/days/2026-09-30/budget", null)).hasStatus(404);
     }

@@ -2,11 +2,13 @@
  * The Food tab's day (K-409): what is left of today's budget as a range (U5), and the targets the calls set (K-216) —
  * carbs and fat only when a split fits (no number made up), and without a calorie target only steps and training.
  */
-import { act, render, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import FoodScreen from '@/app/(tabs)/food';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
 type Schemas = components['schemas'];
@@ -162,4 +164,37 @@ test('without the health data consent: one line and the way to Settings', async 
   await show();
   expect(screen.getByText(t('food.consent'))).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('today.consent.open') })).toBeOnTheScreen();
+});
+
+describe('what the day can still hold (K-507)', () => {
+  const RICE: Schemas['Suggestion'] = {
+    foodId: 'fdc-3',
+    name: 'Rice, white, cooked',
+    amount: { quantity: 150, unit: 'g', certainty: 'ESTIMATED' },
+    kcal: { low: 170, high: 240 },
+    proteinG: { low: 3, high: 5 },
+  };
+
+  test("the user's own foods in their usual amounts, each with its range from the database (U1, U5) — today's day asked", async () => {
+    mockAnswers['/v1/days/{day}/suggestions'] = ok([RICE]);
+    await show();
+    expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/suggestions', { params: { path: { day: '2026-09-29' } } });
+    expect(screen.getByText(t('food.suggestions.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('food.suggestions.item', { name: RICE.name, quantity: '150', unit: 'g' }))).toBeOnTheScreen();
+    expect(screen.getByText(range(170, 240, t('food.budget.kcalUnit')))).toBeOnTheScreen();
+  });
+
+  test('one tap: the meal screen with that food and amount, handed over in memory (V3)', async () => {
+    mockAnswers['/v1/days/{day}/suggestions'] = ok([RICE]);
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.suggestions.log', { name: RICE.name }) })));
+    expect(jest.mocked(router.push)).toHaveBeenCalledWith('/meal');
+    expect(takeMeal()).toEqual([{ foodId: 'fdc-3', name: RICE.name, quantity: 150, unit: 'g' }]);
+  });
+
+  test('nothing fits, or no answer: no section, and no word of it (U7)', async () => {
+    mockAnswers['/v1/days/{day}/suggestions'] = ok([]);
+    await show();
+    expect(screen.queryByText(t('food.suggestions.title'))).toBeNull();
+  });
 });

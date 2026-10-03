@@ -140,6 +140,8 @@ describe('itemsHanded (K-509)', () => {
       { foodId: 'b', name: 'Rice', units: ['g'], quantity: '150', unit: 'g', weighed: false },
     ]);
     expect(itemsHanded(null)).toEqual([]);
+    // A recipe goes by its portions only: grams would be refused by the server (ADR-034).
+    expect(itemsHanded([{ foodId: 'recipe:1', name: 'Morning bowl', quantity: 1, unit: 'portion' }])[0].units).toEqual(['portion']);
     const many = Array.from({ length: foodParams.itemsMax + 3 }, (_, i) => ({ foodId: String(i), name: 'x', quantity: 1, unit: 'g' }));
     expect(itemsHanded(many)).toHaveLength(foodParams.itemsMax);
   });
