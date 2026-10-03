@@ -123,6 +123,7 @@ public enum ParameterKey {
     MIN_WEIGHINS_PER_WEEK(ParameterDomain.WINDOWS, Unit.WEIGHINS_PER_WEEK),
     ON_TRACK_MIN_RATIO(ParameterDomain.WINDOWS, Unit.RATIO),
     ADHERENCE_FIX_BELOW(ParameterDomain.WINDOWS, Unit.RATIO),
+    WHAT_IF_TREND_STEP_MARGINS(ParameterDomain.WINDOWS, Unit.MARGINS),
     FLAT_MARGIN_KG(ParameterDomain.WINDOWS, Unit.KG),
     FLAT_WAIT_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS),
     DENSE_WEIGHINS_PER_WEEK(ParameterDomain.WINDOWS, Unit.WEIGHINS_PER_WEEK);

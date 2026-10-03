@@ -25,6 +25,7 @@ import app.keel.engine.Sex;
 import app.keel.engine.Snapshot;
 import app.keel.engine.TrainingStatus;
 import app.keel.engine.WaistTrend;
+import app.keel.engine.WhatIf;
 import app.keel.engine.WeekTally;
 import app.keel.engine.WeighIn;
 import app.keel.engine.WeightSeries;
@@ -45,6 +46,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -567,6 +569,19 @@ class DecisionService {
     /** The trend weight a kept call read (K-611); none when it read no window. */
     Optional<BigDecimal> trendRead(CallStore.Call call) {
         return DecisionBasis.trendRead(call.snapshot(), parameters.forSex(call.snapshot().sex()));
+    }
+
+    /** "What would change the call" (K-610): example weeks after a kept call, each run through the pipeline; none for a safety call. */
+    Optional<Map<String, Object>> whatIf(AccountId account, UUID id) {
+        return find(account, id).filter(call -> !Boolean.TRUE.equals(call.decision().get("safety"))).map(call -> {
+            Parameters p = parameters.forSex(call.snapshot().sex());
+            List<Map<String, Object>> scenarios = WhatIf.scenarios(call.snapshot().toSnapshot(), p).stream()
+                    .map(scenario -> Map.<String, Object>of("when", Map.of("trend", scenario.when().trend().name(),
+                            "adherence", scenario.when().adherence().name(), "training", scenario.when().training().name()),
+                            "decision", SourceView.sent(DecisionJson.of(scenario.decision()))))
+                    .toList();
+            return Map.of("example", true, "scenarios", scenarios);
+        });
     }
 
     /** What the call read, from its own stored snapshot (K-519): read with the parameters for the sex it was made for. */

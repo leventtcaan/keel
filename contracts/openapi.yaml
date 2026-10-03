@@ -1141,6 +1141,26 @@ paths:
                 $ref: "#/components/schemas/DecisionBasis"
         default:
           $ref: "#/components/responses/Error"
+  /v1/decisions/{id}/what-if:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [decision]
+      operationId: getDecisionWhatIf
+      description: |
+        "What would change the call" (K-610, L3 Y3): the same rules run on example data a week from the call — every
+        combination of next week's trend, plan kept and training. Example data, never the user's own, and labelled so.
+        NOT_FOUND for a safety call (it says nothing of why, ADR-028 #24) and for a call that is not the user's;
+        CONSENT_REQUIRED without the HEALTH_DATA consent.
+      responses:
+        "200":
+          description: The example weeks and what the rules would call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatIf"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/decisions/{id}/apply:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2872,6 +2892,56 @@ components:
             the window with the waist down past its error (weight_steady_waist_down, H1 §1.6). Absent when there is none.
           items:
             $ref: "#/components/schemas/Reason"
+    WhatIf:
+      type: object
+      required: [example, scenarios]
+      properties:
+        example:
+          type: boolean
+          enum: [true]
+          description: Always true — these are the rules on example data, not the user's (K-610).
+        scenarios:
+          type: array
+          description: Every combination of next week, in a fixed order; each the engine's call on that example week.
+          items:
+            type: object
+            required: [when, decision]
+            properties:
+              when:
+                type: object
+                required: [trend, adherence, training]
+                properties:
+                  trend:
+                    type: string
+                    enum: [TOWARD_GOAL, FLAT]
+                  adherence:
+                    type: string
+                    enum: [ON_TRACK, UNDER]
+                  training:
+                    type: string
+                    enum: [HOLDING, DROPPING]
+              decision:
+                $ref: "#/components/schemas/ExampleCall"
+    ExampleCall:
+      type: object
+      description: The engine's call on an example week — a Decision without an id, a day or an application (never kept).
+      required: [action, reasons, confidence, nextReview, copyKey]
+      properties:
+        action:
+          $ref: "#/components/schemas/Action"
+        reasons:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reason"
+        confidence:
+          $ref: "#/components/schemas/Confidence"
+        nextReview:
+          type: string
+          format: date
+        copyKey:
+          type: string
+        safety:
+          type: boolean
     Application:
       type: object
       description: |

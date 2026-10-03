@@ -132,10 +132,16 @@ function Body({ read, onRetry }: { read: Read | null; onRetry: () => void }) {
         {confident ? <Text style={[styles.text, { color: color.text }]}>{t(`today.call.confidence.${decision.confidence}`)}</Text> : null}
         <Text style={small}>{t('today.call.nextReview', { date: weekdayDate(decision.nextReview) })}</Text>
       </Card>
+      {decision.safety !== true && <WhatIfButton id={decision.id} />}
       <Text style={small}>{t('why.boundary')}</Text>
       <Button label={t('ledger.open')} variant="ghost" size="sm" onPress={() => router.push('/ledger')} />
     </>
   );
+}
+
+/** The same rules on example weeks (K-610); not from a safety call, which says nothing of why (ADR-028 #24). */
+function WhatIfButton({ id }: { id: string }) {
+  return <Button label={t('whatIf.open')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/what-if', params: { id } })} />;
 }
 
 const styles = StyleSheet.create({

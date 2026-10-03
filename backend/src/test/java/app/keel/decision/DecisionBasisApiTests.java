@@ -98,6 +98,31 @@ class DecisionBasisApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void whatWouldChangeTheCallIsTheSameRulesOnExampleDataLabelledSo() throws Exception {
+        // K-610 (L3 Y3, prototype 5.6): every combination of next week, each the engine's call — the kind of source only
+        // (K-523), and marked as example data so it is never read as the user's own.
+        AccountId account = onACut();
+        Map<String, Object> call = checkIn(account);
+
+        MvcTestResult result = send(account, "GET", "/v1/decisions/" + call.get("id") + "/what-if");
+
+        assertThat(result).hasStatusOk();
+        String body = result.getResponse().getContentAsString();
+        Map<String, Object> whatIf = JSON.readValue(body, Map.class);
+        assertThat(whatIf).containsEntry("example", true);
+        List<Map<String, Object>> scenarios = (List<Map<String, Object>>) whatIf.get("scenarios");
+        assertThat(scenarios).hasSize(8).allSatisfy(scenario -> {
+            assertThat((Map<String, Object>) scenario.get("when")).containsOnlyKeys("trend", "adherence", "training");
+            assertThat((Map<String, Object>) scenario.get("decision")).containsKeys("action", "reasons", "copyKey", "confidence", "nextReview");
+        });
+        assertThat(body).doesNotContain("arastirma/").doesNotContain("reference");
+        // The call itself is untouched: its basis reads as before.
+        assertThat(send(account, "GET", "/v1/decisions/" + call.get("id") + "/basis")).hasStatusOk();
+        assertThat(send(onACut(), "GET", "/v1/decisions/" + call.get("id") + "/what-if")).as("someone else's").hasStatus(404);
+    }
+
+    @Test
     void itIsHealthDataSoItNeedsTheConsent() {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "GET", "/v1/decisions/" + UUID.randomUUID() + "/basis")).hasStatus(403).bodyJson()

@@ -46,6 +46,12 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
     note: "TÜRETİLMİŞ (ADR-020 L-10). Karar penceresinin ilk ve son haftasının ortalama farkı bu payı hedef yönde aşmıyorsa kilo 'sabit' sayılır. min_weighins_per_week ile aynı hesap: 1,96 · 0,42 · √(2/4) ≈ 0,58 kg. Erkekte 14 gün arayla ≈ 0,3 kg/hafta ve üstü 'hareket'. Güray'da plato tanımı yok (G2 K-64 notu). 'Kilo sabit' sinyali (K-603) de bu payı kullanır: ilk ve son hafta farkı payı iki yönde de aşmıyorsa."
+  - key: what_if_trend_step_margins
+    value: 1.25
+    unit: margins
+    tag: urun
+    source: "arastirma/ham/L3-ozellik-boslugu.md#5"
+    note: "TÜRETİLMİŞ, ürün (K-610, L3 Y3 'Kararı ne değiştirir?'). Örnek verinin 'hedefe doğru' haftası son haftanın ortalamasından flat_margin_kg'nin bu katı kadar hedef yönde. 1 kat eşikte kalır (pay aşılmalı, ADR-020 L-10; bulk'ta 'durdu' okunur); 2 kat cut'ta haftalık kayıp tavanını aşar (80 kg'da %1,45 > weekly_loss_cap_pct_bodyweight → kalori artışı). 1,25: 80 kg'da 0,73 kg (%0,9) — iki fazda da motorun 'hareket' dediği en küçük açık adım. Yalnız örnek veri; gerçek karara girmez."
   - key: flat_wait_weeks
     value: 1
     unit: weeks
