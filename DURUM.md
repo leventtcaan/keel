@@ -467,7 +467,7 @@ Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` �
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ✅ bitti (3 Eki) — aktarım bekliyor; K-430 Levent'te (soru 55) |
-| 2 · Koç altyapısı | K-503, K-505, K-506, K-504, K-508 | bekliyor |
+| 2 · Koç altyapısı | ADR-041 işleri (K-430, K-523, K-525, K-526, K-527, K-524) · K-503, K-505, K-506, K-504, K-508 | sürüyor (3 Eki) |
 | 3 · Koç yüzü + sağlayıcı | K-509, K-507, K-517, K-511 | bekliyor |
 | 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | bekliyor |
 
@@ -483,7 +483,7 @@ DURUM ile birlikte commitlendi.
 | K-428 geri çekmede açık "yükü tut" biter (`TrainingCalls.endHold`, decision'ın geri çekme dinleyicisinden, aynı transaction) | ✅ birleşti; CI'da RED önce; code-reviewer ≥80 yok; test analizi birleşmeden sonra geldi (süreç kayması: auto-merge incelemeden önce açıldı) → boşluklar #275'te | #271 | `M5/ADR-037-isleri.md` |
 | K-431 yalnız ısınma dışı setli antrenman seans sayılır (`TrainingLog.workoutStarts`; tutarlılık, uyum, kaçan plan haftası) | ✅ birleşti (#272: WORKING); #275: sözlüğe göre FAILURE/DROP da çalışma seti → `<> 'WARM_UP'` + `weeksPlanMissed` testleri | #272, #275 | `M5/ADR-037-isleri.md` |
 | K-434 hatırlatma teklifi onboarding'de — **ayrı ekran değil**, "What to expect"te (≤12 ekran, I1 F1; K-306 kabulü) | ✅ auto-merge; inceleme: iOS kesin ret → ölü düğme, kaybolan cümle, yeniden açılınca tekrar teklif → düzeltildi; mutasyon 7/7 + 7/7 | #274 | `M5/ADR-037-isleri.md` |
-| K-430 sıçrama sınırı (`load_jump_max_steps` 2, `urun`; Java + TS + ortak vakalar; `SessionProgress` bağlı) | ⏸ **Levent bekliyor (soru 55)**: kural makine yığınlarını da kapsıyor → K-414 testi kırmızı (42×8 → 35×13, K1) ve tutma sonsuz/tekrar sınırsız; PR açık, auto-merge kapalı; mutasyon 6/6 | #273 | `M5/ADR-037-isleri.md` |
+| K-430 sıçrama sınırı (`load_jump_max_steps` 2, `urun`; Java + TS + ortak vakalar; `SessionProgress` bağlı) | → Part 2'de bitti (ADR-041 #55, aşağıda) | #273 | `M5/ADR-037-isleri.md` |
 | K-431 takip: FAILURE/DROP da çalışma seti (sözlük) + K-428/K-431 kenar testleri | ✅ birleşti; CI'da RED önce | #275 | `M5/ADR-037-isleri.md` |
 | K-501 pazartesi check-in (sunucu güdümlü sorular, tek clientId, V4: cevaplar yalnız ekranda; Bugün'de kart) | ✅ birleşti; inceleme: rota korumasızdı, ekrandan çıkınca `back()` başka ekranı kapatabiliyordu, geri düğmesi yoktu → düzeltildi; mutasyon 13/13 + 5/5; simülatör K-502 ile birlikte | #276 | `M5/K-501.md` |
 | K-432 hedefin geldiği seans düzenlenince hedef yeniden (hareket başına; V24 `unclean_exercise_ids`, `clearNext`, `Workout.setsNextTargets` + telefon notu) | ✅ birleşti; CI'da RED önce (5); inceleme: bayrak `setNext`'ten dardı, telefon notu yanlış kalacaktı, kural hareket başına → ADR notu + testler; mutasyon 3/3 + 1/1 | #277 | `M5/ADR-037-isleri.md` |
@@ -520,6 +520,14 @@ DURUM ile birlikte commitlendi.
   - Mobil mutasyon: jest desenini böl, "test koşmadı"yı ayır, kontrol mutantı (`plan/oturum-promptlari/M5-part1-devam.md › Dersler`).
   - Disk temizlik sonrası **4,9 GB**; çalışan simülatör ~3 GB tutar (kapatınca döner).
 - **Yeni sorular:** 72 (kural cümleleri). Part 2 başında sorulacak sağlayıcı kapısı: **67-71** (hazır).
+
+**Part 2 başı (3 Eki):** senkron tamam — Part 1 ÇIKIŞ git ile tutarlı (#270-#292 birleşik; açık PR yalnız #273; worktree `../keel-k430` +
+kalıcı `../keel-main`; devam dosyası yok). Sağlayıcı kapısı ADR-041 ile cevaplı (yalnız sahte sağlayıcı). Disk 5,3 GB. Dependabot uyarıları
+#2, #3 (bilinen). Ana checkout ayrık HEAD `origin/main`.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-430 bitişi (ADR-041 #55): `TooFar(kg)`; her set ağır yükte Epley'le tükenişe kadar aralık altı + planlı RIR'a eşdeğer olunca sıçra (`E1rm.repsToFailureAt`); sınır yalnız `LoadSteps.wholeLoad` (bar/dambıl/makine/kablo) | ✅ auto-merge; CI'da RED önce (2 kez); inceleme: vücut ağırlıklı hareket eklenen yükle kıyaslanıyordu, setin kendi RIR'ı ters etki → düzeltildi; ulaşılamayan çıkış → **soru 73**; test analizi: plakalı, 5 kg adım, kesirli, lb vakaları; mutasyon 10/10 + 8/8 + TS 1/1 | #273 | `M5/ADR-037-isleri.md` › K-430 |
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
@@ -562,6 +570,12 @@ DURUM ile birlikte commitlendi.
 72. **(K-522, ürün/metin)** Gerekçe sayfası ve "Why this call" listesi kural başına cümle gösterecek (prototip 3.5: "Moving toward goal and
     training stable, so change nothing."). Şu an çoğu kararda yalnız kaynak türü görünüyor. Cümleleri ben kaynaklarından taslak yazayım
     (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
+
+**M5 Part 2 (73-):**
+73. **(K-430, ürün)** Epley çıkışı seyrek raflarda çok geç ya da hiç gelmiyor: 10 → 20 kg dambılda sıçramak için 10 kg'da ~47 tekrar gerekir;
+    oran ~3,4'ü aşınca (5 → 20) gereken tekrar 100'ü (API'nin set sınırı) geçer, hedef tekrar sonsuza tırmanır. Seçenekler: (a) böyle kalsın
+    (oran büyükse kullanıcı rafı değiştirir/ekler); (b) gereken tekrar bir tavanı (ör. aralığın üstü + N, ya da 30) aşınca "bu salonda bu
+    hareketin sonraki yükü yok" notu ve hedef tekrar orada durur (parametre `urun`, kaynaksız); (c) başka.
 
 **M5 Part 2 başında sorulacak — sağlayıcı kapısı (67-71; AskUserQuestion, cevap ADR'ye; cevapsız Part 2 yalnız sahte sağlayıcıyla):**
 67. **(K-511, veri dışarı + marka)** Ölçülecek adaylar (en az üç, ADR-004 katman 2): Anthropic (Claude, küçük model), OpenAI (küçük model),
