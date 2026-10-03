@@ -22,4 +22,19 @@ class GuardsTests {
         assertThat(ForbiddenWords.fromClasspath().selfCheck()).isEmpty();
         assertThat(ForbiddenWords.fromClasspath().size()).isGreaterThanOrEqualTo(3);
     }
+
+    @Test
+    void everyKindOfCallTheCoachTellsHasItsContradictions() {
+        // The hard stop is never told (it is kept as a change of phase under the safety label).
+        java.util.Set<String> kinds = new java.util.HashSet<>();
+        for (app.keel.engine.ActionType type : app.keel.engine.ActionType.values()) {
+            if (type == app.keel.engine.ActionType.CHANGE_PHASE) {
+                kinds.add("CHANGE_PHASE:CUT");
+                kinds.add("CHANGE_PHASE:BULK");
+            } else if (type != app.keel.engine.ActionType.HARD_STOP) {
+                kinds.add(type.name());
+            }
+        }
+        assertThat(ReplyGuards.fromClasspath().kinds()).containsExactlyInAnyOrderElementsOf(kinds);
+    }
 }

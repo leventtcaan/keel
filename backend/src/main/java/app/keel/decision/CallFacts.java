@@ -8,10 +8,12 @@ import java.util.UUID;
 /**
  * A kept call as the coach may tell it (K-505): the action with its data as the contract writes it, the rules it rests on
  * by kind of source only (K-523: no research path, no name), how sure, when it is looked at again, its words' key, and
- * whether it is the safety label (ADR-028 #24). Health data: read behind the consent.
+ * whether anyone but the engine may tell it ({@code tellable}): not the safety label (ADR-028 #24), not a call waiting for
+ * the cycle question (V4 — the question exists because of an earlier answer), not one resting on the safety net (U6).
+ * Health data: read behind the consent.
  */
 public record CallFacts(UUID id, LocalDate madeOn, Map<String, Object> action, List<Rule> reasons, String confidence, LocalDate nextReview,
-        String copyKey, boolean safety) {
+        String copyKey, boolean tellable) {
 
     public record Rule(String rule, String sourceTag) {
     }

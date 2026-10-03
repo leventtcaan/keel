@@ -135,6 +135,40 @@ class CoachMessagesApiTests {
     }
 
     @Test
+    void aCallWaitingForTheCycleQuestionIsNeverToldByTheModel() throws Exception {
+        // K-505 review, V4: the question exists because of an earlier answer — the call says so to no one but the user.
+        AccountId account = withACutStep();
+        jdbc.sql("""
+                update decision.weekly_call set decision = decision || '{"action": {"type": "NO_DECISION_YET"},
+                    "reasons": [{"rule": "cycle_check_needed", "source": {"reference": "arastirma/ham/J1-cinsiyet.md#C6", "tag": "LITERATURE"}}],
+                    "copyKey": "decision.no_decision_yet.cycle_check_needed"}'::jsonb where account_id = :a""").param("a", account.value()).update();
+
+        assertThat(ok(ask(account, Map.of("text", "Why no call?")))).containsEntry("mode", "DETERMINISTIC").containsKey("call");
+        assertThat(fake.requests()).isEmpty();
+    }
+
+    @Test
+    void theCallIsHealthDataSoWithoutThatConsentNothingIsSent() throws Exception {
+        AccountId account = withACutStep();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'HEALTH_DATA', 'WITHDRAWN', :version, now())""").param("a", account.value())
+                .param("version", ConsentTextVersions.HEALTH_DATA).update();
+        fake.answer("{\"text\":\"The call stands.\"}");
+
+        assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
+        assertThat(fake.requests()).isEmpty();
+    }
+
+    @Test
+    void theCallSaidAsItsOppositeGetsTheEnginesWords() throws Exception {
+        AccountId account = withACutStep();
+        fake.answer("{\"text\":\"Good news: this week you add 500 kcal a day.\"}");
+
+        assertThat(ok(ask(account, Map.of("text", "I want to eat more.")))).containsEntry("mode", "DETERMINISTIC");
+    }
+
+    @Test
     void anotherUsersCallOrNoneIsNotFoundAndAQuestionIsAFewSentences() throws Exception {
         AccountId owner = withACutStep();
         AccountId other = withACutStep();

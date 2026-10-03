@@ -18,8 +18,10 @@ final class PatternList {
     /** {@code ignoring}, if any: what is taken out of a text before it is matched (a research path, for a name). */
     record Entry(String id, Pattern pattern, Pattern ignoring, List<String> examples, List<String> nonExamples) {
 
+        /** On the text as the checks read it ({@link Words#normalize}). */
         boolean matches(String text) {
-            return pattern.matcher(ignoring == null ? text : ignoring.matcher(text).replaceAll("")).find();
+            String read = Words.normalize(text);
+            return pattern.matcher(ignoring == null ? read : ignoring.matcher(read).replaceAll("")).find();
         }
     }
 
@@ -71,5 +73,12 @@ final class PatternList {
 
     int size() {
         return entries.size();
+    }
+
+    /** These entries and those. */
+    PatternList with(PatternList other) {
+        List<Entry> both = new ArrayList<>(entries);
+        both.addAll(other.entries);
+        return new PatternList(both);
     }
 }

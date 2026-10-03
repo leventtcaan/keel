@@ -18,8 +18,9 @@ import tools.jackson.databind.json.JsonMapper;
  * — the coach repeats it and says the next check-in's data is what changes it; it never changes it. When the model's
  * words cannot be used, or are not asked for, the answer is the engine's own words (the deterministic mode).
  *
- * <p>Not asked of the model: when there is no call yet, and for the safety label (ADR-028 #24; V4 — what is behind it is
- * never told, by anyone).
+ * <p>Not asked of the model: when there is no call yet, and for a call only the engine may tell ({@link CallFacts#tellable}:
+ * the safety label, a call waiting for the cycle question — V4, what is behind it is never told by anyone — and the
+ * safety net's calls, U6).
  */
 @Service
 class Explanation {
@@ -58,7 +59,7 @@ class Explanation {
         }
         CallFacts call = found.get();
         Call told = new Call(call.id(), call.copyKey(), call.nextReview());
-        if (call.safety()) {
+        if (!call.tellable()) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, CALL_WORDS, told));
         }
         ModelReply reply = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts(call), List.of(Turn.user(question)));
@@ -74,6 +75,6 @@ class Explanation {
         facts.put("confidence", call.confidence());
         facts.put("nextReview", call.nextReview().toString());
         return "FACTS: " + JSON.writeValueAsString(facts) + "\nNUMBERS: "
-                + CallNumbers.of(call).stream().sorted().map(BigDecimal::toPlainString).toList();
+                + CallNumbers.told(call).stream().sorted().map(BigDecimal::toPlainString).toList();
     }
 }

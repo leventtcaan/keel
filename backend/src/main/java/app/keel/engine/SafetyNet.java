@@ -45,6 +45,13 @@ public final class SafetyNet {
     static final RuleId LOW_ENERGY_SAFETY = new RuleId("low_energy_safety");
     static final RuleId LOW_FAT_FLOOR = new RuleId("low_fat_floor");
 
+    /**
+     * The safety net's rules, for what tells a call (K-505): a call resting on one is said in the engine's own words only —
+     * never in a language model's, which could turn a safety limit into advice (U6) or hint at what is behind it (V4).
+     */
+    public static final java.util.Set<RuleId> RULES = java.util.Set.of(LOSS_RATE_CAP, LOSS_RATE_CAP_BODYWEIGHT, BMR_FLOOR, RAPID_LOSS,
+            LOW_ENERGY_AVAILABILITY, LOW_ENERGY_SAFETY, LOW_FAT_FLOOR);
+
     private static final Source LOSS_CAP_SOURCE = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-17", SourceTag.EXPERIENCE);
     private static final Source LITERATURE_LOSS_CAP = new Source("arastirma/ham/H3-bosluk-literatur.md#Ç1", SourceTag.LITERATURE);
     private static final Source BMR_FLOOR_SOURCE = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-11", SourceTag.EXPERIENCE);

@@ -1025,8 +1025,9 @@ export interface paths {
          * @description About the call `decisionId` names, or the latest. The question and the call's facts go to a third-party language
          *     model, so they need the THIRD_PARTY_AI consent to that provider and that data (V2); without it the answer is 403
          *     CONSENT_REQUIRED. The call is health data: HEALTH_DATA consent. The model's words are shown only when they are the
-         *     call told — its numbers only, no concession, no forbidden phrase (K-505); otherwise, and when there is no call yet
-         *     or for the safety label, the answer is the engine's own words (DETERMINISTIC, nothing sent anywhere). Every answer
+         *     call told — its numbers only, no concession, no contradiction, no forbidden phrase (K-505); otherwise the answer is
+         *     the engine's own words (DETERMINISTIC). When there is no call yet, or for a call only the engine tells (the safety
+         *     label, a call waiting for the cycle question, the safety net's), nothing is sent anywhere. Every answer
          *     about a call carries the call as it stands: the coach explains, it never changes it (U1, U2). Unknown decisionId:
          *     404. Quota: coach_messages_per_day (K-508).
          */
