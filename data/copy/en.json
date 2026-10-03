@@ -151,6 +151,7 @@
         "PRODUCT": "A rule of this app"
       },
       "nextReview": "Next review {date}",
+    "data": "See the data behind it",
     "hold": "Nothing to do differently.",
     "waitNote": "Keep logging the same way. That's what makes the next call clear.",
     "oneThing": "Only one change at a time, so we know what worked. Everything else stays as it is.",
@@ -570,6 +571,47 @@
       "spoken": "Weigh-ins faint, the 7-day trend in bold"
     },
     "earlyNote": "Two weeks of weigh-ins before the trend says much. Keep weighing; the line fills in."
+  },
+  "why": {
+    "title": "Why this call",
+    "back": "Back",
+    "made": "{date} · {phase}",
+    "phase": { "CUT": "Cut phase", "BULK": "Building phase" },
+    "data": "The data",
+    "rules": "Rules applied",
+    "noData": "This call stopped before reading your weeks: there is no trend to show yet.",
+    "boundary": "The call comes from the rules above. The coach can explain it; it doesn't make it.",
+    "failed": "Couldn't load the reasons for this call.",
+    "retry": "Try again",
+    "row": {
+      "trend": "Trend weight",
+      "rate": "Rate",
+      "adherence": "Plan followed",
+      "look": "Looks",
+      "training": "Training",
+      "recovery": "Recovery",
+      "waist": "Waist",
+      "appetite": "Appetite",
+      "stalled": "Sessions without progress",
+      "loadHeld": "Weeks at the same load",
+      "monthsStalled": "Months without progress",
+      "planMissed": "Weeks the plan was missed",
+      "rested": "Rested last week",
+      "loadsBelow": "Loads below last week",
+      "paused": "Week paused"
+    },
+    "value": {
+      "trend": "{from} → {to}",
+      "rateDown": "Down {weight} a week",
+      "rateUp": "Up {weight} a week",
+      "rateFlat": "Steady",
+      "adherence": "{percent}% of planned actions",
+      "yes": "Yes"
+    },
+    "answer": {
+      "look": { "better": "Better", "same": "The same", "worse": "Worse" },
+      "waist": { "down": "Going down", "flat": "Holding", "up": "Going up" }
+    }
   },
   "decision": {
     "no_decision_yet": {

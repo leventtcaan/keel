@@ -781,3 +781,10 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
   });
 });
+
+test('"Why this call" leads on to the data behind it: its own page, for this call', async () => {
+  await show();
+  await press(t('today.call.why'));
+  await press(t('today.call.data'));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/why', params: { id: 'd1' } });
+});
