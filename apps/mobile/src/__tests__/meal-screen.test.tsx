@@ -150,6 +150,25 @@ describe('a meal the coach read (K-509)', () => {
     expect(screen.getByRole('button', { name: t('meal.save') })).toBeEnabled();
   });
 
+  test('from a photo, the gram question says why: a photo shows the plate, not the weight (K-408)', async () => {
+    handOffMeal([{ foodId: CHICKEN.id, name: CHICKEN.name, quantity: 180, unit: 'g' }], 'photo');
+    await show();
+    expect(estimates().at(-1)?.[1]).toEqual({ body: { items: [{ foodId: CHICKEN.id, amount: { quantity: 180, unit: 'g', certainty: 'ESTIMATED' } }] } });
+    expect(screen.getByText(t('meal.estimate.question', { name: CHICKEN.name, question: t('foodEstimate.question.grams') }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.photo.why'))).toBeOnTheScreen();
+  });
+
+  test('the reason is the photo’s: a meal in words, or no question, does not give it', async () => {
+    handOffMeal([{ foodId: CHICKEN.id, name: CHICKEN.name, quantity: 180, unit: 'g' }]);
+    await show();
+    expect(screen.queryByText(t('meal.photo.why'))).toBeNull();
+    takeMeal();
+    handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 180, unit: 'g' }], 'photo');
+    await show();
+    expect(screen.getByText(kcal(170, 240))).toBeOnTheScreen(); // the estimate is there — only no question
+    expect(screen.queryByText(t('meal.photo.why'))).toBeNull();
+  });
+
   test('is taken once: the next meal starts empty', async () => {
     handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 1, unit: 'g' }]);
     await show();

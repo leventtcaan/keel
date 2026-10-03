@@ -9,10 +9,10 @@ import { DecisionBlock } from '@/components/DecisionBlock';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, readMeal, type Said } from '@/coach/conversation';
-import { Chip } from '@/components/Chip';
 import { t } from '@/copy';
 import { weeklyNote } from '@/coach/note';
-import { handOffMeal } from '@/food/handoff';
+import { DraftPicks, anyMatched } from '@/food/DraftPicks';
+import { handOffMeal, type HandedMeal } from '@/food/handoff';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -217,40 +217,31 @@ function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string
 }
 
 /**
- * A meal read into a draft (K-504): each food in the user's words and measure with the database's foods for it — a sure
- * match picked, an unsure one asks — and nothing of what they hold (U1: the meal screen estimates from the database).
- * One tap each, then the meal screen takes the picks (in memory, not a link — V3). Unread: the meal screen by name.
+ * A meal read into a draft (K-504): each food in the user's words and measure, picked among the database's foods
+ * (DraftPicks); then the meal screen takes the picks (in memory, not a link — V3). Unread: the meal screen by name.
  */
 function MealSaid({ draft }: { draft: Schemas['MealDraft'] }) {
   const { color } = useTheme();
-  const [picks, setPicks] = useState<(string | null)[]>(() => draft.items.map((item) => (item.confident ? (item.candidates[0]?.id ?? null) : null)));
-  const line = (words: string) => <Text style={[styles.text, { color: color.text }]}>{words}</Text>;
   if (draft.items.length === 0) {
     return (
       <View style={styles.coach}>
-        {line(t('coach.meal.unread'))}
+        <Text style={[styles.text, { color: color.text }]}>{t('coach.meal.unread')}</Text>
         <Button label={t('coach.meal.byName')} variant="ghost" size="sm" onPress={() => router.push('/meal')} />
       </View>
     );
   }
-  // A food the database has nothing for is left to the meal screen (by name); the rest go over once each is picked.
-  const matched = draft.items.flatMap((item, i) => (item.candidates.length > 0 ? [{ item, pick: item.candidates.find((food) => food.id === picks[i]) }] : []));
-  const ready = matched.length > 0 && matched.every(({ pick }) => pick !== undefined);
-  const log = () => {
-    if (!ready) return;
-    handOffMeal(matched.flatMap(({ item, pick }) => (pick === undefined ? [] : [{ foodId: pick.id, name: pick.name, quantity: item.amount.quantity, unit: item.amount.unit }])));
+  const log = (items: HandedMeal) => {
+    handOffMeal(items);
     router.push('/meal');
   };
   return (
     <View style={styles.coach}>
-      {draft.items.map((item, i) => (
-        <View key={i} style={styles.coach}>
-          {line(t('coach.meal.item', { food: item.food, quantity: String(item.amount.quantity), unit: item.amount.unit }))}
-          <MealPick item={item} picked={picks[i]} onPick={(id) => setPicks((before) => before.map((p, j) => (j === i ? id : p)))} />
-        </View>
-      ))}
-      <Button label={t('coach.meal.log')} size="sm" disabled={!ready} onPress={log} />
-      <ByName shown={matched.length === 0} />
+      <DraftPicks
+        draft={draft}
+        describe={(item) => t('coach.meal.item', { food: item.food, quantity: String(item.amount.quantity), unit: item.amount.unit })}
+        onLog={log}
+      />
+      <ByName shown={!anyMatched(draft)} />
     </View>
   );
 }
@@ -259,22 +250,6 @@ function MealSaid({ draft }: { draft: Schemas['MealDraft'] }) {
 function ByName({ shown }: { shown: boolean }) {
   if (!shown) return null;
   return <Button label={t('coach.meal.byName')} variant="ghost" size="sm" onPress={() => router.push('/meal')} />;
-}
-
-/** The database's foods for one item: nothing found says so; an unsure match asks which. */
-function MealPick({ item, picked, onPick }: { item: Schemas['MealDraftItem']; picked: string | null; onPick: (id: string) => void }) {
-  const { color } = useTheme();
-  if (item.candidates.length === 0) return <Text style={[styles.small, { color: color.muted }]}>{t('coach.meal.noMatch', { food: item.food })}</Text>;
-  return (
-    <>
-      {!item.confident && <Text style={[styles.small, { color: color.muted }]}>{t('coach.meal.pick')}</Text>}
-      <View style={styles.picks}>
-        {item.candidates.map((food) => (
-          <Chip key={food.id} label={food.name} selected={picked === food.id} onPress={() => onPick(food.id)} />
-        ))}
-      </View>
-    </>
-  );
 }
 
 /** A message's small heading (the week's note). */
@@ -321,7 +296,6 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.card,
   },
   coach: { gap: tokens.space.sm },
-  picks: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });

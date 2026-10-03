@@ -14,7 +14,7 @@ import { FoodPicker } from '@/food/FoodPicker';
 import { ItemRows } from '@/food/ItemRows';
 import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, itemsHanded, recipeItemId, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
-import { clearMeal, peekMeal } from '@/food/handoff';
+import { clearMeal, handedFrom, peekMeal } from '@/food/handoff';
 import { foodParams } from '@/food/params';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
@@ -54,6 +54,8 @@ export default function MealScreen() {
   // A meal the coach read comes in with its foods and amounts (K-509); a correction reads its own meal instead.
   const [items, setItems] = useState<DraftItem[]>(() => (edit === undefined ? itemsHanded(peekMeal()) : []));
   const [fromCoach] = useState(() => edit === undefined && peekMeal() !== null);
+  // A photo's grams are by eye (K-408, ADR-046): when the server asks for one, the screen says why.
+  const [fromPhoto] = useState(() => fromCoach && handedFrom() === 'photo');
   useEffect(() => clearMeal(), []);
   const [known, setKnown] = useState<KnownFoods>(() => new Map());
   // The user's recipes (K-423), read at the first search (no search, no request); unreadable (offline) is none this
@@ -264,6 +266,7 @@ export default function MealScreen() {
         <FoodPicker full={full} onFood={add} recipes={readRecipes} onRecipe={addOwnRecipe} />
 
         {shown !== null && <EstimateCard estimate={shown} question={question} />}
+        {fromPhoto && question !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('meal.photo.why')}</Text>}
         {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
         {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
         <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />

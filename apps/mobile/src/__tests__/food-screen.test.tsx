@@ -166,6 +166,18 @@ test('without the health data consent: one line and the way to Settings', async 
   expect(screen.getByRole('button', { name: t('today.consent.open') })).toBeOnTheScreen();
 });
 
+test('a meal from a photo is one tap from the Food tab, beside logging by name (K-408)', async () => {
+  await show();
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.photo') })));
+  expect(jest.mocked(router.push)).toHaveBeenCalledWith('/meal-photo');
+});
+
+test('without the health data consent there is no photo either', async () => {
+  mockAnswers = { '/v1/days/{day}/budget': refused(403, 'CONSENT_REQUIRED'), '/v1/targets': refused(403, 'CONSENT_REQUIRED') };
+  await show();
+  expect(screen.queryByRole('button', { name: t('food.photo') })).toBeNull();
+});
+
 describe('what the day can still hold (K-507)', () => {
   const RICE: Schemas['Suggestion'] = {
     foodId: 'fdc-3',

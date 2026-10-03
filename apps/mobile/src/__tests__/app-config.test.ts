@@ -34,6 +34,15 @@ test('the camera is for barcodes only (K-407): its permission text from the copy
   ]);
 });
 
+test('a meal photo (K-408): the picker’s permission texts are the copy file’s — one camera text, the barcode’s and the photo’s — no microphone', () => {
+  const picker = (config.plugins as Plugin[]).filter((p) => (Array.isArray(p) ? p[0] : p) === 'expo-image-picker');
+  expect(picker).toEqual([
+    ['expo-image-picker', { photosPermission: t('permissions.photos'), cameraPermission: t('permissions.camera'), microphonePermission: false }],
+  ]);
+  // Not in app.json: a plugin there runs after these and would put its own text on the camera.
+  expect((base.expo.plugins as Plugin[]).some((p) => (Array.isArray(p) ? p[0] : p) === 'expo-image-picker')).toBe(false);
+});
+
 test('everything else in app.json is kept', () => {
   expect(config.name).toBe(base.expo.name);
   expect(config.ios?.usesAppleSignIn).toBe(true);
