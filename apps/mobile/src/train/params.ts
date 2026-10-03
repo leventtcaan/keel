@@ -17,7 +17,6 @@ export const workoutParams = {
   e1rmEpleyDivisor: param<number>('e1rm_epley_divisor'),
   e1rmMaxRepsToFailure: param<number>('e1rm_max_reps_to_failure'),
   targetRirMax: param<number>('target_rir_max'),
-  repCeilingAboveRange: param<number>('rep_ceiling_above_range'),
   historyDays: param<number>('history_days'),
   noteMaxChars: param<number>('note_max_chars'),
   moveSearchResults: param<number>('move_search_results'),

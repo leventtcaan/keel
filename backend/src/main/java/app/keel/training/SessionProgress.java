@@ -115,7 +115,7 @@ class SessionProgress {
                                     .toList();
                             NextTargets.weaker(sides.stream().map(Next::target).toList())
                                     .flatMap(target -> sides.stream().filter(side -> side.target().equals(target)).findFirst())
-                                    .ifPresentOrElse(side -> programs.setNext(account, planned.id(), side.target().loadKg(), side.target().reps(),
+                                    .ifPresentOrElse(side -> programs.setNext(account, planned.id(), side.target().loadKg(), side.target().reps(), side.target().rackEnds(),
                                             side.fromKg(), workout.startedAt()), () -> programs.clearNext(account, planned.id(), workout.startedAt()));
                         });
                     }

@@ -7,6 +7,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import TrainScreen from '@/app/(tabs)/train';
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
@@ -100,6 +101,15 @@ test("each day with its moves, this week's sets, the reps and the server's next 
   // Tuesday: the lower day is today's.
   expect(screen.getByTestId('day-b')).toHaveTextContent(/Today/);
   expect(screen.getByTestId('day-a')).not.toHaveTextContent(/Today/);
+});
+
+test("a target stopped at the ceiling says the rack ends, under that move only (K-534)", async () => {
+  const rackEnds = { ...PROGRAM.days[0].exercises[1], nextLoadKg: 10, nextReps: 15, rackEnds: true };
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...PROGRAM.days[0], exercises: [PROGRAM.days[0].exercises[0], rackEnds] }] } } };
+  await show();
+  expect(await screen.findByText('Upper A')).toBeTruthy();
+
+  expect(screen.getAllByText(t('train.rackEnds'))).toHaveLength(1);
 });
 
 test('the calls in force are said above the days: a week off with its note, a lighter week with its fewer sets', async () => {

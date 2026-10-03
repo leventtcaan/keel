@@ -3,38 +3,26 @@ package app.keel.training;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.engine.RepRange;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import tools.jackson.databind.json.JsonMapper;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * The rep ceiling on a sparse rack (K-534, ADR-045 #73): the shared cases in contracts/fixtures/rep-ceiling.json — the
- * server's target here (oneMore), the phone's note there (atCeiling, rep-ceiling.test.ts) — so the two agree.
+ * The rep ceiling on a sparse rack (K-534, ADR-045 #73): one more rep than the weakest set, never past the range's top +
+ * the ceiling. Whether a target is at the ceiling is the server's to say (PlannedExercise.rackEnds): a session held for
+ * form can be past it without the rack ending (K-534 review).
  */
 class RepCeilingTests {
 
-    private static final Path CASES = Path.of("../contracts/fixtures/rep-ceiling.json");
-
-    @SuppressWarnings("unchecked")
-    static Stream<Map<String, Object>> cases() throws IOException {
-        Map<String, Object> fixture = JsonMapper.builder().build().readValue(Files.readString(CASES), Map.class);
-        return ((List<Map<String, Object>>) fixture.get("cases")).stream();
-    }
-
     @ParameterizedTest(name = "{0}")
-    @MethodSource("cases")
-    @SuppressWarnings("unchecked")
-    void theSharedCases(Map<String, Object> c) {
-        Map<String, Integer> range = (Map<String, Integer>) c.get("range");
-        RepRange reps = new RepRange(range.get("min"), range.get("max"));
-        int above = (int) c.get("ceilingAbove");
-
-        assertThat(NextTargets.oneMore(reps, (int) c.get("weakest"), above)).as((String) c.get("case")).isEqualTo(c.get("oneMore"));
+    @CsvSource({
+        "the first rep past the top,          8, 12, 12, 5, 13",
+        "one under the ceiling,               8, 12, 15, 5, 16",
+        "one more reaches the ceiling,        8, 12, 16, 5, 17",
+        "at the ceiling the target stays,     8, 12, 17, 5, 17",
+        "a set past the ceiling does not raise it, 8, 12, 22, 5, 17",
+        "a low range,                         3, 5, 9, 5, 10",
+        "another ceiling,                     6, 10, 11, 2, 12"})
+    void oneMoreRepUpToTheCeiling(String name, int min, int max, int weakest, int ceilingAbove, int expected) {
+        assertThat(NextTargets.oneMore(new RepRange(min, max), weakest, ceilingAbove)).isEqualTo(expected);
     }
 }

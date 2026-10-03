@@ -6,7 +6,6 @@
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { dayName, exerciseName, nextLine, programNotes, rackNote, repsLine, setsLine } from '@/train/program';
-import { workoutParams } from '@/train/params';
 import type { Move } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -83,10 +82,10 @@ test("the user's own move by the name they gave; a move unknown everywhere by it
   expect(exerciseName('custom:2', own)).toBe('custom:2');
 });
 
-test("a target stopped at the rep ceiling says the gym has no next weight to reach (K-534); below it, nothing", () => {
-  const ceiling = bench.reps.max + workoutParams.repCeilingAboveRange;
-  expect(rackNote({ ...bench, nextLoadKg: 10, nextReps: ceiling })).toBe(t('train.rackEnds'));
+test("the server's word that the rack ends is the note (K-534); many reps alone are not", () => {
+  expect(rackNote({ ...bench, nextLoadKg: 10, nextReps: 15, rackEnds: true })).toBe(t('train.rackEnds'));
   expect(t('train.rackEnds')).not.toMatch(/missing/);
-  expect(rackNote({ ...bench, nextLoadKg: 10, nextReps: ceiling - 1 })).toBeNull();
+  // A session held for form can be as high (K-534 review): without the server's word, nothing.
+  expect(rackNote({ ...bench, nextLoadKg: 10, nextReps: 40 })).toBeNull();
   expect(rackNote(bench)).toBeNull();
 });

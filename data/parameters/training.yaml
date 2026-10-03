@@ -100,7 +100,7 @@ parameters:
     unit: reps
     tag: urun
     source: "arastirma/ham/L3-ozellik-boslugu.md#5"
-    note: "TÜRETİLMİŞ, ürün kararı (Levent, ADR-045 #73: tavan + not; kaynaksız). Salonda sonraki yük yoksa ya da çok uzaksa (load_jump_max_steps) hedef zayıf setin bir fazlasıdır; bu tekrar aralığın üstüne en çok bu kadar çıkar, orada durur ve telefon 'rafı güncelle' der (motor bilmediği yerde söyler, U3). Değer 5 bir seçim, kaynağı yok: 8-12 aralığında 17 tekrar (bağlam: Epley 10 tekrardan sonra güvenilirliğini yitiriyor, H3 B15). Telefon da okur (workout.json, MobileParameterMirrorTests)."
+    note: "TÜRETİLMİŞ, ürün kararı (Levent, ADR-045 #73: tavan + not; kaynaksız). Salonda sonraki yük yoksa ya da çok uzaksa (load_jump_max_steps) hedef zayıf setin bir fazlasıdır; bu tekrar aralığın üstüne en çok bu kadar çıkar, orada durur ve telefon 'rafı güncelle' der (motor bilmediği yerde söyler, U3). Değer 5 bir seçim, kaynağı yok: 8-12 aralığında 17 tekrar (bağlam: Epley 10 tekrardan sonra güvenilirliğini yitiriyor, H3 B15). Telefon sayıyı okumaz; tavana ulaşıldığını sunucu söyler (PlannedExercise.rackEnds)."
   - key: busy_min_sessions_per_week
     value: 1
     unit: sessions_per_week

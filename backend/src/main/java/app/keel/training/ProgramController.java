@@ -54,9 +54,13 @@ class ProgramController {
     record OwnProgram(List<OwnDay> days) {
     }
 
-    /** Contract PlannedExercise; {@code sets} is this week's (a deload lowers it, K-217), {@code baseSets} the program's. */
+    /**
+     * Contract PlannedExercise; {@code sets} is this week's (a deload lowers it, K-217), {@code baseSets} the program's;
+     * {@code rackEnds} true only when the target shown stopped at the ceiling (K-534), absent otherwise.
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record PlannedExercise(String exerciseId, int baseSets, int sets, Reps reps, int targetRir, BigDecimal nextLoadKg, Integer nextReps) {
+    record PlannedExercise(String exerciseId, int baseSets, int sets, Reps reps, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
+            Boolean rackEnds) {
     }
 
     /** Contract ProgramDay: {@code nameKey} for a generated day, {@code name} for the user's own. */
@@ -171,7 +175,7 @@ class ProgramController {
                     Optional<NextTargets.Target> next = next(planned, held, back);
                     return new PlannedExercise(planned.exerciseId(), planned.sets(), TrainingChanges.sets(planned.sets(), lighter),
                             new Reps(planned.repMin(), planned.repMax()), planned.targetRir(), next.map(NextTargets.Target::loadKg).orElse(null),
-                            next.map(NextTargets.Target::reps).orElse(null));
+                            next.map(NextTargets.Target::reps).orElse(null), next.filter(NextTargets.Target::rackEnds).map(target -> Boolean.TRUE).orElse(null));
                 }).toList())).toList();
         boolean backAfterBreak = program.days().stream().flatMap(day -> day.exercises().stream()).anyMatch(planned -> afterBreak(planned, back));
         // backAfterBreak: some target shown a step lighter today — the account's break, not one program day's.
@@ -223,7 +227,7 @@ class ProgramController {
                 return new NextTargets.Target(load, planned.repMin());
             });
         }
-        return Optional.of(NextTargets.shown(new NextTargets.Target(planned.nextLoadKg(), planned.nextReps()), planned.lastLoadKg(),
+        return Optional.of(NextTargets.shown(new NextTargets.Target(planned.nextLoadKg(), planned.nextReps(), planned.nextRackEnds()), planned.lastLoadKg(),
                 new RepRange(planned.repMin(), planned.repMax()), held));
     }
 

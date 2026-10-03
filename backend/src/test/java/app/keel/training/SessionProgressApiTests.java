@@ -198,6 +198,42 @@ class SessionProgressApiTests {
         assertThat(finish(account, workout, List.of())).hasStatusOk();
 
         assertThat(next(account, 3)).isEqualTo(target(10, 13));
+        assertThat(planned(account, 3)).as("below the ceiling, no word of the rack (K-534)").doesNotContainKey("rackEnds");
+    }
+
+    @Test
+    void onASparseRackTheRepsStopAtTheCeilingAndTheProgramSaysTheRackEnds() throws Exception {
+        // K-534 (ADR-045 #73): 10 kg then 20 — at the range's top + rep_ceiling_above_range the target stays, and says why.
+        AccountId account = withAProgram();
+        int ceiling = 12 + parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.REP_CEILING_ABOVE_RANGE);
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
+                "dumbbellsKg", List.of(10, 20), "machines", List.of()));
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, ceiling, "LEFT");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, ceiling, "RIGHT");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 3)).isEqualTo(target(10, ceiling));
+        assertThat(planned(account, 3)).containsEntry("rackEnds", true);
+    }
+
+    @Test
+    void manyRepsHeldForFormAreNotTheRackEnding() throws Exception {
+        // K-534 review: unclean form holds the session at any rep count (G6 K-31) — past the ceiling, with a 12 kg pair in
+        // the gym. The rack did not end: no word of it.
+        AccountId account = withAProgram();
+        int past = 12 + parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.REP_CEILING_ABOVE_RANGE) + 1;
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
+                "dumbbellsKg", List.of(10, 12, 14), "machines", List.of()));
+        String workout = start(account, MONDAY_EVENING);
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, past, "LEFT");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 10, past, "RIGHT");
+
+        assertThat(finish(account, workout, List.of("one_arm_dumbbell_row"))).hasStatusOk();
+
+        assertThat(next(account, 3)).isEqualTo(target(10, past));
+        assertThat(planned(account, 3)).doesNotContainKey("rackEnds");
     }
 
     @Test

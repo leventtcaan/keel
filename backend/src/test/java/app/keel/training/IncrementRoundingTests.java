@@ -151,18 +151,45 @@ class IncrementRoundingTests {
     void onASparseRackTheRepsStopAtTheCeiling() {
         // K-534: one more rep up to the ceiling, then the target stays there — the weakest set decides, as before.
         Function<BigDecimal, LoadSteps.Rounding> sparse = rounded(new LoadSteps.Rounding.TooFar(new BigDecimal("20")));
+        // At the ceiling the target says the rack ends (the phone's note); one under it, not yet.
+        assertThat(NextTargets.after(press(CEILING - 2, CEILING - 2, CEILING - 2), ADD_TO_12_5, false, 3, 1, sparse, P))
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING - 1));
         assertThat(NextTargets.after(press(CEILING - 1, CEILING - 1, CEILING - 1), ADD_TO_12_5, false, 3, 1, sparse, P))
-                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING, true));
         assertThat(NextTargets.after(press(CEILING, CEILING, CEILING), ADD_TO_12_5, false, 3, 1, sparse, P))
-                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING, true));
         assertThat(NextTargets.after(press(CEILING + 4, CEILING + 3, CEILING + 6), ADD_TO_12_5, false, 3, 1, sparse, P))
-                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING, true));
     }
 
     @Test
     void withNothingHeavierTheRepsStopAtTheCeilingToo() {
         assertThat(NextTargets.after(press(CEILING, CEILING, CEILING), ADD_TO_12_5, false, 3, 1, rounded(new LoadSteps.Rounding.NoHeavier()), P))
-                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING, true));
+    }
+
+    @Test
+    void aLoadTooFarThatSetsAtTheCeilingWouldReachIsNotTheRackEnding() {
+        // K-534 review: 35 × 16 at RIR 0 is one rep short of 42 (moreInReserve… above); at the ceiling, 17 at RIR 1 would be
+        // worth it — the jump is in reach, the rack has not ended. 10 kg with 20 next is out of reach at any ceiling rep.
+        assertThat(NextTargets.after(new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, EIGHT_TO_TWELVE, new BigDecimal("35"),
+                List.of(new SetResult(CEILING - 1, 0), new SetResult(CEILING - 1, 0), new SetResult(CEILING - 1, 0)), true), ADD_TO_37_5, false, 3, 1,
+                rounded(new LoadSteps.Rounding.TooFar(new BigDecimal("42"))), P)).map(NextTargets.Target::rackEnds).contains(false);
+    }
+
+    @Test
+    void aSessionHeldForFormPastTheCeilingIsNotTheRackEnding() {
+        // K-534 review: unclean form holds at any rep count (G6 K-31); that is not the rack running out.
+        Progression held = new Progression(new ProgressionStep.Hold(), ADD_LOAD.reasons());
+        assertThat(NextTargets.after(press(CEILING + 1, CEILING + 1, CEILING + 1), held, false, 3, 1, rounded(new LoadSteps.Rounding.NoHeavier()), P))
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING + 1));
+    }
+
+    @Test
+    void aTargetAtTheCeilingShownUnderTheDeloadHoldIsTheTopOfTheRangeWithNoWordOfTheRack() {
+        NextTargets.Target atCeiling = new NextTargets.Target(new BigDecimal("10"), CEILING, true);
+        assertThat(NextTargets.shown(atCeiling, new BigDecimal("10"), EIGHT_TO_TWELVE, true)).isEqualTo(new NextTargets.Target(new BigDecimal("10"), 12));
+        assertThat(NextTargets.shown(atCeiling, new BigDecimal("10"), EIGHT_TO_TWELVE, false)).isEqualTo(atCeiling);
     }
 
     @Test
