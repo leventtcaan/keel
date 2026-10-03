@@ -21,6 +21,7 @@ import app.keel.training.TrainingLog;
 import app.keel.training.TrainingStatusReader;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -98,9 +99,15 @@ class PromptController {
         Optional<CallStore.Plan> plan = calls.plan(account);
         // From the Monday of the week before last: the two calendar weeks the steps and the loads compare.
         LocalDate weekBefore = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON)).minusWeeks(2);
-        // The training days are asked for from when the profile set them, or the program was made, whichever is later.
-        LocalDate since = Stream.of(profiles.trainingDaysSince(account).map(at -> at.atZone(zone).toLocalDate()), statuses.programSince(account, zone))
-                .flatMap(Optional::stream).max(Comparator.naturalOrder()).orElse(today);
+        // The days a session is missed on are the program's (K-527, ADR-041 #64); the profile's when it puts none on a weekday.
+        // They are asked for from when they were set: the program's from when it was made; the profile's from when the
+        // profile set them, or the program was made, whichever is later.
+        Set<DayOfWeek> programDays = statuses.programDays(account);
+        Set<DayOfWeek> trainingDays = programDays.isEmpty() ? profile.trainingDays() : programDays;
+        Stream<Optional<LocalDate>> setOn = programDays.isEmpty()
+                ? Stream.of(profiles.trainingDaysSince(account).map(at -> at.atZone(zone).toLocalDate()), statuses.programSince(account, zone))
+                : Stream.of(statuses.programSince(account, zone));
+        LocalDate since = setOn.flatMap(Optional::stream).max(Comparator.naturalOrder()).orElse(today);
         LocalDate from = since.isBefore(weekBefore) ? since : weekBefore;
         TrainingStatusReader.Breaks breaks = statuses.breaks(account, from, today);
         Set<LocalDate> paused = new HashSet<>(states.days(account, from, today));
@@ -115,7 +122,7 @@ class PromptController {
         Function<LocalDate, Integer> stepTarget = plan.map(current -> weeks.stepTargets(account, current, zone, p))
                 .orElseGet(() -> day -> p.wholeNumber(ParameterKey.STEPS_TARGET_START));
         Prompts.Facts facts = new Prompts.Facts(today, plan.map(CallStore.Plan::phase), measurements.stepsByDay(account, weekBefore, today.minusDays(1)),
-                stepTarget, List.copyOf(profile.trainingDays()), since, sessions, Set.copyOf(paused), breaks.lighter(), loadsDropped,
+                stepTarget, List.copyOf(trainingDays), since, sessions, Set.copyOf(paused), breaks.lighter(), loadsDropped,
                 plan.flatMap(current -> DeficitStart.of(current, calls.planSteps(account))), states.current(account, today).isPresent());
         Set<String> answered = answers.answered(account);
         return Prompts.today(facts, p).stream().filter(prompt -> !answered.contains(prompt.rule().value() + "/" + prompt.key()))

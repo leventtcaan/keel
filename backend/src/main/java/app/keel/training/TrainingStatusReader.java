@@ -10,8 +10,10 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
@@ -52,6 +54,12 @@ public class TrainingStatusReader {
             }
         }
         return new Breaks(Set.copyOf(rest), Set.copyOf(lighter));
+    }
+
+    /** The weekdays the account's program puts its days on (K-527); empty without a program or a day with a weekday. */
+    public Set<DayOfWeek> programDays(AccountId account) {
+        return programs.current(account).map(program -> program.days().stream().map(ProgramStore.Day::weekday)
+                .filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet())).orElse(Set.of());
     }
 
     /** The day the account's program was made (or last replaced), on the user's calendar. */

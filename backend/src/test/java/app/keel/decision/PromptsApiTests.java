@@ -150,6 +150,41 @@ class PromptsApiTests {
     }
 
     @Test
+    void theProgramsDaysAreTheOnesMissedAndTheProfilesOnlyWhenItHasNone() throws Exception {
+        // K-527 (ADR-041 #64): a program built on other days than the profile's — the misses are its days. The session is
+        // on a Thursday 15-21 days ago, so the profile's next Monday (+4) comes before the program's Wednesday (+6): a mix
+        // of the two would ask from the Monday.
+        AccountId account = ready(); // the profile trains on Monday
+        LocalDate trained = sessionOnAThursday(account);
+        program(account, "WEDNESDAY");
+        trainingDaysSetLongAgo(account);
+
+        assertThat(firstMissed(account)).isEqualTo(trained.with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY)));
+
+        // A program whose days have no weekday: the profile's Monday.
+        program(account, (String) null);
+        assertThat(firstMissed(account)).isEqualTo(trained.with(TemporalAdjusters.next(DayOfWeek.MONDAY)));
+        // Some days with a weekday, some without: the ones it puts on a weekday.
+        program(account, "WEDNESDAY", null);
+        assertThat(firstMissed(account)).isEqualTo(trained.with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY)));
+    }
+
+    @Test
+    void theProgramsDaysCountFromWhenItWasMadeNotFromAChangeOfTheProfilesDays() throws Exception {
+        AccountId account = ready();
+        LocalDate trained = sessionOnAThursday(account);
+        program(account, "WEDNESDAY");
+        trainingDaysSetLongAgo(account);
+        // New profile days change nothing the program's days are counted from (K-527 review).
+        assertThat(send(account, "PUT", "/v1/profile", profile("METRIC", List.of("MONDAY", "THURSDAY")))).hasStatusOk();
+        assertThat(firstMissed(account)).isEqualTo(trained.with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY)));
+        // A new program on new days: asked for from when it was made — today, nothing missed yet.
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", List.of(Map.of("name", "Full body", "weekday", "FRIDAY", "exercises",
+                List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
+        assertThat(list(account)).isEmpty();
+    }
+
+    @Test
     void theLaddersWeekOffIsNoMiss() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
@@ -255,6 +290,34 @@ class PromptsApiTests {
         Object id = JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id");
         assertThat(send(account, "POST", "/v1/workouts/" + id + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
                 "setType", "WORKING", "loadKg", benchKg, "reps", 8, "rir", 2)).getResponse().getStatus()).isLessThan(300);
+    }
+
+    /** A program of a day on each weekday given (null: a day without one), as if made 60 days ago. */
+    private void program(AccountId account, String... weekdays) {
+        List<Map<String, Object>> days = java.util.Arrays.stream(weekdays).map(weekday -> {
+            Map<String, Object> day = new java.util.HashMap<>(Map.of("name", "Full body", "exercises",
+                    List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))));
+            if (weekday != null) {
+                day.put("weekday", weekday);
+            }
+            return day;
+        }).toList();
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", days))).hasStatusOk();
+        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+    }
+
+    /** A session on the Thursday 15 to 21 days ago: at least two of any weekday since, and Monday before Wednesday. */
+    private LocalDate sessionOnAThursday(AccountId account) throws Exception {
+        LocalDate trained = LocalDate.now(ZoneOffset.UTC).minusDays(15).with(TemporalAdjusters.previousOrSame(DayOfWeek.THURSDAY));
+        session(account, trained);
+        return trained;
+    }
+
+    /** The day the one sessions_missed question asks from. */
+    private LocalDate firstMissed(AccountId account) throws Exception {
+        List<Map<String, Object>> prompts = list(account);
+        assertThat(prompts).singleElement().satisfies(prompt -> assertThat(prompt).containsEntry("rule", "sessions_missed"));
+        return LocalDate.parse((String) prompts.getFirst().get("key"));
     }
 
     /** The profile's training days as if set 60 days ago. */
