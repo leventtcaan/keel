@@ -5,11 +5,14 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { formatWeight, type UnitSystem } from '@/units/units';
+import { formatWeight, roundTo, type UnitSystem } from '@/units/units';
 
 type Basis = components['schemas']['DecisionBasis'];
 
 export type BasisRow = { label: string; value: string };
+
+/** Enough digits to undo a product's floating-point error, far fewer than a ratio of real counts needs. */
+const FLOAT_DIGITS = 9;
 
 export function basisRows(basis: Basis, units: UnitSystem): BasisRow[] {
   const rows: BasisRow[] = [];
@@ -21,8 +24,9 @@ export function basisRows(basis: Basis, units: UnitSystem): BasisRow[] {
     add('trend', basis.weeks.length === 1 ? formatWeight(latest.kg, units) : t('why.value.trend', { from: formatWeight(first.kg, units), to: formatWeight(latest.kg, units) }));
   }
   if (basis.changeKgPerWeek !== undefined) add('rate', rate(basis.changeKgPerWeek, units));
-  // Rounded down, as the consistency number: it never claims more than was done.
-  if (basis.adherence !== undefined) add('adherence', t('why.value.adherence', { percent: Math.floor(basis.adherence * 100) }));
+  // Rounded down, as the consistency number: it never claims more than was done — after the float's own error is gone
+  // (0.58 × 100 is 57.99999999999999; the server's whole percent is 58).
+  if (basis.adherence !== undefined) add('adherence', t('why.value.adherence', { percent: Math.floor(roundTo(basis.adherence * 100, FLOAT_DIGITS)) }));
 
   const { look, training, recovery, waist, appetite } = basis.answers;
   if (look !== undefined) add('look', t(`why.answer.look.${look.toLowerCase()}`));
