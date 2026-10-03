@@ -2388,6 +2388,85 @@ tasks:
       - "why-screen.test.tsx, copy-keys"
     refs: ["prototip/keel-prototype.html#3.5", "arastirma/04-faz3-urun.md#Ö-25"]
     learn: ["Açıklanabilirlik"]
+  - id: K-523
+    title: "Ürün yüzünden kişi adı: API kaynağın yalnız türünü gönderir, kod adları nötr"
+    milestone: M5
+    module: decision
+    type: chore
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-041 #72: Levent 'Güray adı hardcode edilmesin, profesyonel uygulama'. Arayüzde yok ama API cevabındaki kaynak yolu (arastirma/ham/guray/...), GURAY_* sabitleri ve sözleşme açıklaması kişi adı taşıyor"
+    acceptance:
+      - "API'deki Source yalnız tür taşır (yol yok); yol sunucuda kalır (karar kaydı, denetim) — sözleşme + üretilen tipler; dışa aktarma da yolsuz"
+      - "Kod sabit adları ve sözleşme/yorum açıklamaları kişi adı içermez (ör. GURAY_LOSS_CAP → LOSS_CAP_SOURCE; 'koçluk deneyimi, G2 K-60')"
+      - "Yasaklı ifade taraması kişi adlarını yakalar (metin dosyası + sözleşme); mimari test: istemciye giden alanlarda 'arastirma/' yok"
+    tests:
+      - "ContractTests, forbidden-phrases.test.ts, DecisionApiTests"
+    refs: ["plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md"]
+    learn: ["Bilgi sızıntısı: iç yapıyı dışarı açmamak"]
+  - id: K-524
+    title: "Literatür: durum modundan dönüş yükü ve yoğun hafta minimum dozu"
+    milestone: M5
+    module: engine
+    type: spike
+    size: S
+    status: todo
+    depends_on: [K-516]
+    why: "ADR-041 #60 / ADR-038: iki alt madde kaynaksız olduğu için uygulanmıyor (U14); Levent literatür taraması istedi"
+    acceptance:
+      - "Detraining (hastalık/mola sonrası güç kaybı ve dönüş) ve minimum etkili doz (koruma için haftalık set) için birincil kaynaklar, `arastirma/ham/` altında bir dosya (iddia + kaynak + güven)"
+      - "Kaynak yeterliyse iki kural kural-ekle ile (parametre + test); değilse ADR-038'e 'uygulanmaz' gerekçesi"
+    tests:
+      - "(kural eklenirse) DeclaredContextTests"
+    refs: ["plan/kararlar/ADR-038-durum-modu.md", "plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md"]
+    learn: ["Literatür okuma: birincil kaynak, etki büyüklüğü"]
+  - id: K-525
+    title: "'Hâlâ öyle mi?' 3 haftada bir"
+    milestone: M5
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-516]
+    why: "ADR-041 #62: STATE_STILL şu an 3. duraklayan haftadan sonra her hafta soruluyor; YES sonrası state_still_after_paused_weeks kadar sessiz"
+    acceptance:
+      - "STATE_STILL YES cevabından sonra parametre kadar hafta sorulmaz, sonra yine bir kez"
+    tests:
+      - "StateModeTests"
+    refs: ["plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md"]
+    learn: []
+  - id: K-526
+    title: "Uyum sayıları kararın anlık görüntüsünde ve gerekçe sayfasında"
+    milestone: M5
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-519, K-502]
+    why: "ADR-041 #63: '19 eylemin 16'sı' yüzdeden şeffaf (Ö-25); yeni kararlar sayıları da saklar, eskiler oranla kalır"
+    acceptance:
+      - "Yeni kararın anlık görüntüsü yapılan/planlanan sayıları saklar (JSON alanı, migration yok); /basis onları döner (yoksa alan yok)"
+      - "Gerekçe sayfası sayı varsa 'N eylemin M'si', yoksa yüzde; eski karar için sayı uydurulmaz"
+    tests:
+      - "DecisionBasisApiTests, basis.test.ts"
+    refs: ["plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md"]
+    learn: []
+  - id: K-527
+    title: "Kaçan seans programın günlerine bakar"
+    milestone: M5
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-512]
+    why: "ADR-041 #64: kendi programı başka günlere kurulan kullanıcıya kaçan seans sorusu yanlış günlerden soruluyordu"
+    acceptance:
+      - "T-4 (kaçan seanslar) programın günlerini esas alır; programda gün yoksa profilin günleri"
+    tests:
+      - "PromptsApiTests"
+    refs: ["plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md"]
+    learn: []
   - id: K-517
     title: "Haftalık kısa koç notu"
     milestone: M5
@@ -3035,3 +3114,7 @@ tasks:
     learn:
       - "watchOS"
       - "Swift"
+      - "ADR-041 (3 Eki): şimdi belgesel/mantıksal karşılaştırma (resmî sayfalar: saklama, yapılandırılmış çıktı, liste fiyatı), gerçek çağrı yok; gerçek maliyet/kalite ölçümü yayına çıkarken. Sıfır veri saklama şart (saklamama + eğitimde kullanmama taahhüdü yoksa elenir)"
+      - "ADR-041 #66: 'uygulama açılmaması' sinyali telefonda kalır; açılış günü sunucuya gönderilmez"
+      - "ADR-041 #72: metni agent yazar (ürün sesi, kaynağa sadık); kişi adı yok"
+      - "ADR-041 #55: tutma e1RM eşdeğerliğiyle biter — biriken tekrarlar ağır yükü aralığın altında yapılabilir kılınca sıçrar (Epley, H3 B15); K-414 testinin 35×13 beklentisi K1 onaylı"

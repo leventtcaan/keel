@@ -76,10 +76,10 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sabite), K-428, K-430, K-431, K-432 (backend),
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
-## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 BİTTİ, aktarım bekliyor)
-Part 1 ÇIKIŞ `## M5 ilerleme` altında. Sıradaki: **Levent dönünce M5 Part 1 aktarımı** (`docs/aktarim/M5/README.md` 1-9; M4 Part 2-4 aktarımı
-da bekliyor). Sonra M5 Part 2 (`plan/oturum-promptlari/M5-part2.md`; başta sağlayıcı soruları 67-71). Açık: #273 K-430 (soru 55), sorular
-55-66 + 72.
+## ▶ DEVAM NOKTASI (3 Eki — M5 Part 1 BİTTİ; sorular 55-72 → ADR-041)
+Sıradaki koşu **M5 Part 2** (`plan/oturum-promptlari/M5-part2.md`): önce ADR-041 işleri (K-430 #273, K-523, K-525, K-526, K-527; K-524
+literatür), sonra K-503, K-505, K-506, K-504, K-508 — **yalnız sahte sağlayıcı**. Aktarım bekliyor: M4 Part 2-4 + M5 Part 1
+(`docs/aktarim/M5/README.md` 1-9). Açık soru: 57.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -522,7 +522,8 @@ DURUM ile birlikte commitlendi.
 - **Yeni sorular:** 72 (kural cümleleri). Part 2 başında sorulacak sağlayıcı kapısı: **67-71** (hazır).
 
 ## Session sonunda Levent'e sorulacaklar
-**M5 Part 1 (yeni, 55-59):**
+**55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
+**M5 Part 1 (55-59):**
 55. **(K-430, ürün + K1)** ADR-037 #38 (b) "en yakın ağır yük motor adımının 2 katından uzaksa yük tutulur, tekrar artar" makine
     yığınlarına ve yalnız 10'luk plakalı bara da uygulanıyor: 7 kg adımlı makinede üst vücut (motor adımı 2,5) 35 → 42 sıçraması
     5'i aşıyor → yük 35'te kalır. (i) **K1:** K-414'ün `aMachinesOwnStepIsTheOneTheLoadIsRoundedTo` testi 42×8 bekliyor → 35×13
