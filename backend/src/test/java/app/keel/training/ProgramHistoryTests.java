@@ -70,7 +70,7 @@ class ProgramHistoryTests {
 
         assertThat(statuses.programHistory(account)).last().satisfies(period -> {
             assertThat(period.sessionsPerWeek()).isEqualTo(3);
-            assertThat(period.from()).isAfterOrEqualTo(later);
+            assertThat(period.from()).isAfter(later);
         });
     }
 
