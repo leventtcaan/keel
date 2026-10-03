@@ -1,6 +1,6 @@
 # M5 · Part 4 — Fotoğraf, cihaz ve teslim (session prompt'u)
 
-> Part 3 bittikten (ve aktarıldıktan) sonra, yeni session `~/Projects/keel` klasöründen açılır.
+> Part 3 bittikten (ve aktarıldıktan) sonra, yeni session `~/Projects/keel` klasöründen açılır. Part 3 sonunda güncellendi (3 Eki).
 
 ```
 oturum-baslat. Bu session toplu modda çalışır (hafıza: toplu-mod-aktarim, baglam-devri, tas-partlara-bolme).
@@ -8,8 +8,11 @@ M5 dört part hâlinde yapılıyor; bu PART 4 (son). Ortak talimat plan/oturum-p
 uygula. Hafıza DURUM.md › "## M5 ilerleme"de; sohbete güvenme. Part'ı baştan sona uygularsın, aktarıma BAŞLAMAZSIN.
 
 Başta:
-0) Senkron: "Part 3 ÇIKIŞ" git ile doğru mu (K-509, K-507, K-517, K-511)? K-308 (cihaz derlemesi) yapıldı mı? 0a) Disk
-   (native derleme 3-5 GB ister → önce Levent'e sor).
+0) Senkron: "Part 3 ÇIKIŞ" git ile doğru mu (K-522, K-529, K-509, K-532, K-530, K-517, K-511, K-528, K-531, K-507, K-521)?
+   K-308 (cihaz derlemesi) yapıldı mı? 0a) **Disk (soru 80):** Part 3'te disk iki kez doldu (Docker sanal diski 17 GB). Docker
+   temizlenmediyse yerelde DB testi ve simülatör yok; native derleme 3-5 GB ister → önce Levent'e sor.
+0b) Levent'in cevapları: sorular 78-80 + Part 3'ün yenileri (DURUM). Part 3'ten ertelenen **simülatör turu** (K-522 gerekçe sayfası,
+   K-509 sohbet + öğün taslağı, K-517 not, K-507 öneriler, K-521 ilk haftalar, K-528 doz, K-531 dönüş notu) disk izin verirse ilk iş.
 
 Kapsam, sırayla:
 1) K-514 öğün fotoğrafı backend'i: ≤1024 px, EXIF'siz, yalnız AI rızasıyla egress kapısından; model yalnız kalem +

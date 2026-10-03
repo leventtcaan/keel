@@ -6,7 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M5 Part 3 (Koç yüzü + sağlayıcı) SÜRÜYOR (3 Eki)** — ADR-043 (koç sınıflandırır); birleşenler: K-522, K-529, K-509, K-532, K-530, K-517; PR: K-511 (#321), K-531 (#322). Kalan: K-528 → K-507 → K-521 + simülatör turu. **Disk dar (~2 GB, soru 80): yerelde Docker/DB testi yok.**
+**M5 Part 3 (Koç yüzü + sağlayıcı) BİTTİ (3 Eki)** — ADR-043 (koç sınıflandırır, cümle yazmaz) + 11 görev birleşti (#314-#325); aktarım bekliyor (`docs/aktarim/M5/README.md` 20-30). Simülatör turu **disk yüzünden ertelendi** (soru 80). Sorular 78-85.
 **M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
 **M5 Part 1 (Motor ve check-in) BİTTİ (3 Eki)** — ADR-037 işleri, K-516, K-512, K-513, K-501, K-502 (+ K-518, K-519, K-520) birleşti; aktarım bekliyor; K-430 Levent'te.
 **M4 KAPANDI (2 Eki, kod)** — Part 4: K-410 bildirimler, K-411 dinlenme arka planda, K-412 Health'e yazma, K-423 tarifler
@@ -78,9 +78,9 @@ dedi → kod değer beklemeden yazılır, yapılandırmadan okunur; session sonu
 M5 Part 1 başına: K-429 (rıza metni `2-draft`; 26 backend test isteği tek sabite), K-428, K-430, K-431, K-432 (backend),
 K-434 (onboarding adımı; akış testi yürüyüşü değişir → K1 notu). Aktarım `docs/aktarim/M4/ADR-037-isleri.md` (README 23).
 
-## ▶ DEVAM NOKTASI (3 Eki — M5 Part 2 BİTTİ; session açık, aktarım bekliyor)
-Bu session'da sıradaki iş **Part 2 aktarımı** (`docs/aktarim/M5/README.md` 10-19; Levent dönünce). Sonra **M5 Part 3**
-(`plan/oturum-promptlari/M5-part3.md`, Part 2 sonunda güncellendi): önce soru 76 (koçun sesi) — K-509 ona bağlı. Açık sorular 57, 74-77.
+## ▶ DEVAM NOKTASI (3 Eki — M5 Part 3 BİTTİ; session açık, aktarım bekliyor)
+Bu session'da sıradaki iş **Part 3 aktarımı** (`docs/aktarim/M5/README.md` 20-30; Part 1-2'nin 1-19'u da bekliyor). Sonra **M5 Part 4**
+(`plan/oturum-promptlari/M5-part4.md`, Part 3 sonunda güncellendi): önce disk (soru 80), sorular 78-85, ertelenen simülatör turu.
 
 ## M3 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M3.md`. Part prompt'ları `M3-part1.md`, `M3-part2.md`, `M3-part3.md`.
@@ -469,7 +469,7 @@ Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` �
 |---|---|---|
 | 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ✅ bitti (3 Eki) — aktarım bekliyor; K-430 Levent'te (soru 55) |
 | 2 · Koç altyapısı | ADR-041 işleri (K-430, K-523, K-525, K-526, K-527, K-524) · K-503, K-505, K-506, K-504, K-508 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 74-77 |
-| 3 · Koç yüzü + sağlayıcı | ADR-043 işleri (K-529, K-530, K-531, K-532) · K-522, K-509, K-507, K-517, K-511, K-528, K-521 | sürüyor (3 Eki) |
+| 3 · Koç yüzü + sağlayıcı | ADR-043 işleri (K-529, K-530, K-531, K-532) · K-522, K-509, K-507, K-517, K-511, K-528, K-521 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 78-85 |
 | 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | bekliyor |
 
 **Part 1 başı (2 Eki):** senkron tamam — M4 ÇIKIŞ git ile tutarlı (K-410 #253/#254, K-411 #256, K-412 #257, K-423 #258/#259,
@@ -580,8 +580,32 @@ gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (mod
 | K-509 (2/2) sohbette öğün: üç çip (öğün çipi hep), `/v1/meals/parse` taslağı, tek dokunuş, devir **bellek içi** (`food/handoff.ts`, V3) → öğün ekranı | ✅ birleşti; RED 11; inceleme: **koçun ölçüsü ("bowl") porsiyon değilse kayıt kuyruğa girip sunucuda reddediliyordu** → tahmin geçmeden kaydetme yok; mesaj kimliği; eşleşmeyen besin öğünü kilitlemesin; mutasyon 9/9 + 3/4 (1 eşdeğer) | #319 | (K-509 sonunda) |
 | K-530 planlanan seans programdan (arka plan ajanı) | ✅ birleşti; inceleme notları ajanın; **sorular 78-79** | #318 | `M5/K-530.md` |
 | K-517 haftalık koç notu (telefonda şablon: karar + baştaki kural + tek odak; sohbetin ilk mesajı) | ✅ birleşti; RED 18; inceleme: **güvenlik kararı telde CHANGE_PHASE→BULK, not "building" diyordu** (U6) → duraklamanın odağı; "hedefinden 250 eksik" uygulanmış kararda çift açık (U1) → değişimin kendisi; mutasyon 6/6 + 2/2 | #320 | `M5/K-517.md` |
-| K-511 sağlayıcı: ADR-044 (ÖNERİ) + `arastirma/ham/H10` + ölçüm betiği `tools/llm_eval.py` (CI testli) + K-533 (M10, gerçek ölçüm) | ⏳ auto-merge; inceleme: betik sunucunun düşürdüğü öğün cevaplarını kabul ediyordu, tek ret koşuyu düşürüyordu, çıktı sınırı → düzeltildi; mutasyon 8/8 + 7/7 | #321 | `M5/K-511.md` |
-| K-531 uzun moladan dönüş: `engine/ReturnLoad`, `LoadSteps.lighter`, okuma anında hedef başına (`next_from`), `Program.backAfterBreak` + not | ⏳ inceleme; DB testleri CI'da (yerelde Docker yok); saf 1348/1348; mutasyon 4/4 + 3/3 | #322 | `M5/K-531.md` |
+| K-511 sağlayıcı: ADR-044 (ÖNERİ) + `arastirma/ham/H10` + ölçüm betiği `tools/llm_eval.py` (CI testli) + K-533 (M10, gerçek ölçüm) | ✅ birleşti; inceleme: betik sunucunun düşürdüğü öğün cevaplarını kabul ediyordu, tek ret koşuyu düşürüyordu, çıktı sınırı → düzeltildi; mutasyon 8/8 + 7/7 | #321 | `M5/K-511.md` |
+| K-531 uzun moladan dönüş: `engine/ReturnLoad`, `LoadSteps.lighter`, okuma anında; mola **hesabın** bugünden önceki son seansından (`TrainingLog.lastSessionBefore`), bugün yazılan hedef geri alınmaz; `Program.backAfterBreak` + not | ✅ birleşti; inceleme: **molayı program günü başına ölçüyordum** (yoğun haftada 2/4 gün yapana "dönüş" derdi, aynı hareket iki kez geri) → ADR-043'teki gibi hesabın kaydı; `knows` dalı testsizdi; CI: kendi beklentim yanlıştı (5'lik çiftle 55 yapılamaz → 50); mutasyon 4/4 + 3/3 | #322 | `M5/K-531.md` |
+| K-528 yoğun hafta minimum dozu: `/v1/state` → `busyDose` (yalnız BUSY; dışa aktarmada yok), Antrenman sekmesinde öneri notu | ✅ birleşti; inceleme: doz notu "dinlenme haftası"nın üstünde onunla çelişebiliyordu → en sona, dinlenme haftasında yok; "her durum" mutantı → telefondaki gereksiz denetim kalktı | #323 | `M5/K-528.md` |
+| K-507 gün içi öneriler: kendi öğünlerinden, besin başına en sık miktar, veritabanından aralık, "sığar" = üst uç ≤ kalanın ortası, kaçınılan **alt dizgi** (alerji geniş), Beslenme sekmesi + öğün devri | ✅ birleşti; mutasyon "tam sözcük" yaşadı → alt dizgi (güvenlik); inceleme: **tarif kaçınılanı atlatıyordu** (malzemeler okunur), tarif devrinde gram, dolu günde boşuna tahmin → düzeltildi | #324 | `M5/K-507.md` |
+| K-521 ilk 8 hafta telefonda: `readsRisk`/`training` (sunucu), açılış günleri **yalnız telefonda**, "7 gün açılmadı" (`urun`), Bugün kartı, tek risk mesajı | ✅ birleşti; inceleme: **duraklatılmış haftada telefon yine risk diyordu** (ADR-040 #3) → `readsRisk` false; antrenmansıza "seans" → kendi metni; çıkışta silme testi | #325 | `M5/K-521.md` |
+
+
+**Part 3 ÇIKIŞ (3 Eki):**
+- **Birleşen:** K-522 #314 · K-529 #316 · K-532 #315 · K-509 #317/#319 · K-530 #318 · K-517 #320 · K-511 #321 (+ ADR-044 `main`'de) · K-528 #323 ·
+  K-531 #322 · K-507 #324 · K-521 #325. Açık PR yok. Worktree yalnız kalıcı `../keel-main`. Ana checkout ayrık HEAD `origin/main` (b95119f).
+- **Kontrol çıktısı (3 Eki, `main` b95119f):** mobil `npm run check` 96 suite **1636/1636**; sunucu saf testler **1359/1359** (408 DB testi yerelde
+  Docker yok → CI; `main` CI yeşil); `tools/test_llm_eval.py` **19/19**.
+- **Kararlar:** ADR-043 (74-77 + K1: koç sınıflandırır; ReplyCheck/ReplyGuards/CallNumbers/guards.json silindi), ADR-044 (ÖNERİ: sağlayıcı
+  belgesel karşılaştırma, rıza metni taslağı), ADR-038 #7 notu (dönüş yükü K-531'le uygulandı).
+- **Backlog:** 11 görev `done`; **K-533** (M10, sağlayıcı gerçek ölçümü) yeni `todo`; sync ✅.
+- **Ertelenen:** **simülatör turu** (K-522, K-509, K-517, K-507, K-521, K-528, K-531 ekranları) — disk (~3,6 GB) simülatörü kaldırmıyor; Part 4 başında.
+- **Part 4'ün bilmesi gerekenler:**
+  - Koç: model yalnız `{topic, rule}` (`coach/TopicReply`, `Topic`); söz telefonda (`src/coach/conversation.ts › linesOf`); HEALTH/OFF_TOPIC kartsız.
+    Öğün fotoğrafı (K-514) da yapılandırılmış çıktıyla gelmeli (K-504'ün `MealReplyCheck` deseni) ve taslağı **bellek içi devirle** (`src/food/handoff.ts`)
+    öğün ekranına vermeli; koçtan gelen öğün sunucunun tahmini geçmeden kaydedilmez (`meal.tsx › mustCheck`).
+  - Modele giden en az veri: kararın türü + kuralları (sayı/tarih yok) — fotoğrafta da "gereken en az".
+  - Sağlayıcı: `tools/llm_eval.py` (yayında, K-533); ZDR hiçbir sağlayıcıda varsayılan değil (ADR-044).
+  - Disk: Docker sanal diski 17 GB; yerelde DB testi yok, `./gradlew test` saf testleri koşar (DB testleri düşer — sayımı ayır). **Native
+    derleme (K-510, K-515) 3-5 GB ister.**
+  - Arka plan ajanları Docker açabiliyor → ajan talimatına "Docker/Gradle DB testi yerelde koşma" yaz.
+- **Yeni sorular:** 81-85 (aşağıda).
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
@@ -626,6 +650,16 @@ gece silinir + öğün ortak kotada (K-532). K-517 artık her zaman şablon (mod
     (`en.json`, `-draft` gibi onayına), sen onaylarsın — uygun mu? Yoksa Güray'ın sözleriyle mi olsun?
 
 **M5 Part 3 (78-):**
+81. **(K-511, veri dışarı + para — ADR-044 ÖNERİ)** Ölçüm listesi (OpenAI Luna AB, Vertex Flash-Lite eu, Mistral Ministral; Anthropic yedek), kazanma
+    ölçütü (şema ≥ %99, konu doğruluğu, sonra maliyet) ve **rıza metni taslağı** onay mı? ZDR hiçbirinde varsayılan değil — başvuru ve (bazılarında)
+    tüzel kişilik gerekebilir.
+82. **(K-507, ürün)** "Sığar" = önerinin üst ucu, kalanın **orta noktasını** aşmaz; kaçınılan besin **alt dizgiyle** elenir ("nut" → walnuts).
+    Uygun mu? (daha cömert: kalanın üst ucu.)
+83. **(K-521, ürün/metin)** Risk mesajları (`first_weeks.risk`, `first_weeks.no_training.risk`) ve "7 gün açılmadı" eşiği (`urun`) — taslak.
+84. **(K-531, ürün)** Dönüşte yük bir adım geri **ve tekrar aralığın altından**; yalnız ilk seans (ertesi gün normal). Uygun mu?
+85. **(K-509, ürün)** Koçun çipleri: günün kendi çipleri (en çok 2) + "Log a meal in words" + "How does this work?" — gün boşsa 2 çip kalıyor
+    ("3 çip" kabulü). Uygun mu?
+
 78. **(K-530, ürün)** Programın bazı günleri haftanın gününe bağlı değilse planlanan seans **program gün sayısı** mı (seçilen; `weeksPlanMissed`
     ile aynı sayı), yalnız haftanın gününe bağlı günler mi?
 79. **(K-530, ürün)** Program değişince (3 → 5 gün) **geçmiş haftalar** yeni sayıyla mı yargılansın (bugün: tutarlılık ve uyum geriye dönük

@@ -2115,7 +2115,7 @@ tasks:
     module: coach
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-504, K-409]
     why: "Kalan bütçe → ne yiyebilirsin (tercih, bütçe, erişim)"
     acceptance:
@@ -2150,7 +2150,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-504, K-505, K-508, K-529]
     why: "Bağlam anlatma ve soru sorma kanalı (ADR-043: koçun cevabı konu + kural, söz telefonda en.json'dan; plan değişikliği karar kartının mevcut uygulama akışıyla — applyCall)"
     acceptance:
@@ -2186,7 +2186,7 @@ tasks:
     module: coach
     type: spike
     size: M
-    status: todo
+    status: done
     depends_on: [K-503, K-506]
     why: "Rıza ekranı sağlayıcıyı adıyla anmak zorunda; seçim sezgiyle değil ölçümle (Levent sorusu, 29 Eyl)"
     acceptance:
@@ -2360,7 +2360,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-513]
     why: "K-513'ten bölündü: haftanın içeriği (H1 sessiz, H4 nöral açıklama, H6 ilk kez 'kas') ve risk varsa tek insan tonu mesaj Bugün'de"
     acceptance:
@@ -2377,7 +2377,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-502]
     why: "K-502 simülatör turunda bulundu: 'Why this call' kartı ve gerekçe sayfası çoğu kararda yalnız kaynak türünü gösteriyor — baştaki kural kararın başlığı, diğer kuralların cümlesi metin dosyasında yok (prototip 3.5 kural cümlesi gösteriyor)"
     acceptance:
@@ -2473,7 +2473,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on:
     - K-524
     - K-518
@@ -2495,7 +2495,7 @@ tasks:
     module: coach
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-505, K-522]
     why: "Pazartesi kararının 3 cümlelik anlatımı + haftanın tek odağı (L3 Y8). ADR-043: her zaman deterministik şablon (karar başlığı + baştaki kuralın cümlesi + tek odak), model yok"
     acceptance:
@@ -2513,7 +2513,7 @@ tasks:
     module: coach
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-505, K-506, K-522]
     why: "ADR-043 #76 (a): model serbest cümle yazmaz; mesajın konusunu ve kararın hangi gerekçesinin cevap olduğunu seçer, cümle en.json'dan (U1/U2 yapısal)"
     acceptance:
@@ -2531,7 +2531,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-527]
     why: "ADR-043 #74: plan programdır; kaçan seans zaten programın günlerine bakıyor (K-527), geri kalan profilin gün sayısına bakıyordu"
     acceptance:
@@ -2547,7 +2547,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-524]
     why: "ADR-043 #75: G7 K-72'ye sayı — ≥3 hafta molada ilk seans bir motor adımı geri; kısa molada yük düşmez (H9 §1)"
     acceptance:
@@ -2563,7 +2563,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-508]
     why: "ADR-043 #77: subscription.daily_use her aktif gün için bir satır süresiz kalıyordu; yalnız bugünkü okunur"
     acceptance:
