@@ -4,6 +4,7 @@ import app.keel.engine.BodyRegion;
 import app.keel.engine.E1rm;
 import app.keel.engine.LiftKind;
 import app.keel.engine.LiftSession;
+import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
 import app.keel.engine.Progression;
 import app.keel.engine.ProgressionStep;
@@ -39,7 +40,8 @@ final class NextTargets {
      * The target with an added load as the gym can make it (K-414, ADR-032): the nearest load it has; when it has
      * nothing heavier, one more rep than the weakest set — past the top of the range; when it says nothing, the engine's.
      * When the nearest is too far over the last (K-430), it is taken once every set is worth the bottom of the range
-     * there at the planned RIR (Epley, ADR-041 #55) — until then, one more rep. {@code plannedRir} and
+     * there at the planned RIR (Epley, ADR-041 #55) — until then, one more rep. The reps past the range stop at a
+     * ceiling (K-534, ADR-045 #73): the rack has no next load the user can reach, the phone says so. {@code plannedRir} and
      * {@code parameters} only for that; null parameters where no gym rounds.
      */
     static Optional<Target> after(LiftSession session, Progression progression, boolean loadHeld, int plannedSets, int plannedRir,
@@ -53,15 +55,29 @@ final class NextTargets {
                     Optional.of(loadHeld || session.sets().size() < plannedSets ? new Target(session.loadKg(), range.max())
                             : switch (rounding.apply(newLoadKg)) {
                                 case LoadSteps.Rounding.To(BigDecimal kg) -> new Target(kg, targetReps);
-                                case LoadSteps.Rounding.NoHeavier() -> new Target(session.loadKg(), weakest + 1);
+                                case LoadSteps.Rounding.NoHeavier() -> new Target(session.loadKg(), oneMore(range, weakest, ceiling(parameters)));
                                 case LoadSteps.Rounding.TooFar(BigDecimal kg) -> worthAt(session, kg, parameters) >= targetReps + plannedRir
-                                        ? new Target(kg, targetReps) : new Target(session.loadKg(), weakest + 1);
+                                        ? new Target(kg, targetReps) : new Target(session.loadKg(), oneMore(range, weakest, ceiling(parameters)));
                                 case LoadSteps.Rounding.Unknown() -> new Target(newLoadKg, targetReps);
                             });
             case ProgressionStep.AddReps() -> Optional.of(new Target(session.loadKg(), Math.min(weakest + 1, range.max())));
             case ProgressionStep.Hold() -> Optional.of(new Target(session.loadKg(), Math.max(weakest, range.min())));
             case ProgressionStep.NotTracked() -> Optional.empty();
         };
+    }
+
+    /** One more rep than the weakest set, past the top of the range (K-414) — never past the ceiling (K-534). */
+    static int oneMore(RepRange range, int weakest, int ceilingAbove) {
+        return Math.min(weakest + 1, range.max() + ceilingAbove);
+    }
+
+    private static int ceiling(Parameters parameters) {
+        return parameters.wholeNumber(ParameterKey.REP_CEILING_ABOVE_RANGE);
+    }
+
+    /** Whether a target of {@code reps} is the ceiling: the rack has no next load to reach (K-534). */
+    static boolean atCeiling(RepRange range, int reps, int ceilingAbove) {
+        return reps >= range.max() + ceilingAbove;
     }
 
     /**

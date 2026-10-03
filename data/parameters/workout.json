@@ -61,6 +61,14 @@
       "note": "The same as training.yaml: no estimate past 10 reps to failure (Mayhew 2008)."
     },
     {
+      "key": "rep_ceiling_above_range",
+      "value": 5,
+      "unit": "reps",
+      "tag": "urun",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md#5",
+      "note": "The same as training.yaml (K-534, ADR-045 #73): a target this many reps over the range's top is the ceiling — the rack has no next load to reach, and the Train tab says so. MobileParameterMirrorTests keeps the two equal."
+    },
+    {
       "key": "target_rir_max",
       "value": 1,
       "unit": "reps_in_reserve",

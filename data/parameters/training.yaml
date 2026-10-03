@@ -95,6 +95,12 @@ parameters:
     tag: urun
     source: "arastirma/ham/L3-ozellik-boslugu.md#5"
     note: "TÜRETİLMİŞ, ürün kararı (Levent, ADR-037 #38 b). §5 Y7: motorun artışı salonda mümkün en yakın yüke yuvarlanır, mümkün değilse tekrar artışına çevrilir. En yakın ağır yük son yükün üstünde motor adımının (hedef − son) bu katından uzaksa 'mümkün değil' sayılır: seyrek rafta 10 → 20 kg dambıl +%100 sıçramaydı. Kaynaklı bir sıçrama sınırı yok. Tutma şöyle biter (ADR-041 #55): son yükteki setlerin her biri ağır yükte aralığın altına eşdeğer olunca (Epley, H3 B15) sıçranır."
+  - key: rep_ceiling_above_range
+    value: 5
+    unit: reps
+    tag: urun
+    source: "arastirma/ham/L3-ozellik-boslugu.md#5"
+    note: "TÜRETİLMİŞ, ürün kararı (Levent, ADR-045 #73: tavan + not; kaynaksız). Salonda sonraki yük yoksa ya da çok uzaksa (load_jump_max_steps) hedef zayıf setin bir fazlasıdır; bu tekrar aralığın üstüne en çok bu kadar çıkar, orada durur ve telefon 'rafı güncelle' der (motor bilmediği yerde söyler, U3). Değer 5 bir seçim, kaynağı yok: 8-12 aralığında 17 tekrar (bağlam: Epley 10 tekrardan sonra güvenilirliğini yitiriyor, H3 B15). Telefon da okur (workout.json, MobileParameterMirrorTests)."
   - key: busy_min_sessions_per_week
     value: 1
     unit: sessions_per_week

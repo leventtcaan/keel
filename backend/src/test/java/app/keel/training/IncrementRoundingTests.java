@@ -135,4 +135,40 @@ class IncrementRoundingTests {
         assertThat(NextTargets.after(toFailure, ADD_TO_37_5, false, 3, 0, rounded(new LoadSteps.Rounding.TooFar(new BigDecimal("42"))), P))
                 .contains(new NextTargets.Target(new BigDecimal("42"), 8));
     }
+
+    /** Dumbbells to 10 kg, then 20 (ADR-045 #73): Epley would ask ~47 reps at 10 before the jump. */
+    private static LiftSession press(int... reps) {
+        return new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, EIGHT_TO_TWELVE, new BigDecimal("10"),
+                java.util.Arrays.stream(reps).mapToObj(r -> new SetResult(r, 1)).toList(), true);
+    }
+
+    private static final Progression ADD_TO_12_5 = new Progression(new ProgressionStep.AddLoad(new BigDecimal("12.5"), 8), ADD_LOAD.reasons());
+
+    /** The ceiling on 8-12 (K-534): the range's top and rep_ceiling_above_range over it. */
+    private static final int CEILING = 12 + P.wholeNumber(app.keel.engine.ParameterKey.REP_CEILING_ABOVE_RANGE);
+
+    @Test
+    void onASparseRackTheRepsStopAtTheCeiling() {
+        // K-534: one more rep up to the ceiling, then the target stays there — the weakest set decides, as before.
+        Function<BigDecimal, LoadSteps.Rounding> sparse = rounded(new LoadSteps.Rounding.TooFar(new BigDecimal("20")));
+        assertThat(NextTargets.after(press(CEILING - 1, CEILING - 1, CEILING - 1), ADD_TO_12_5, false, 3, 1, sparse, P))
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+        assertThat(NextTargets.after(press(CEILING, CEILING, CEILING), ADD_TO_12_5, false, 3, 1, sparse, P))
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+        assertThat(NextTargets.after(press(CEILING + 4, CEILING + 3, CEILING + 6), ADD_TO_12_5, false, 3, 1, sparse, P))
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+    }
+
+    @Test
+    void withNothingHeavierTheRepsStopAtTheCeilingToo() {
+        assertThat(NextTargets.after(press(CEILING, CEILING, CEILING), ADD_TO_12_5, false, 3, 1, rounded(new LoadSteps.Rounding.NoHeavier()), P))
+                .contains(new NextTargets.Target(new BigDecimal("10"), CEILING));
+    }
+
+    @Test
+    void aRackUpdatedWithALoadBetweenBringsTheJumpBack() {
+        // K-534: the user adds the 12 kg pair; the next session at the ceiling jumps to it, from the bottom of the range.
+        assertThat(NextTargets.after(press(CEILING, CEILING, CEILING), ADD_TO_12_5, false, 3, 1, rounded(new LoadSteps.Rounding.To(new BigDecimal("12"))), P))
+                .contains(new NextTargets.Target(new BigDecimal("12"), 8));
+    }
 }
