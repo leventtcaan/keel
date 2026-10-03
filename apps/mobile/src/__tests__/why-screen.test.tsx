@@ -21,8 +21,8 @@ const CALL: Schemas['Decision'] = {
   madeOn: '2026-09-28',
   action: { type: 'CONTINUE' } as Schemas['Decision']['action'],
   reasons: [
-    { rule: 'toward_goal', source: { reference: 'arastirma/ham/guray/G2.md#K-1', tag: 'EXPERIENCE' } },
-    { rule: 'loss_rate', source: { reference: 'arastirma/ham/H1.md#3', tag: 'LITERATURE' } },
+    { rule: 'toward_goal', source: { tag: 'EXPERIENCE' } },
+    { rule: 'loss_rate', source: { tag: 'LITERATURE' } },
   ],
   confidence: 'HIGH',
   nextReview: '2026-10-05',
@@ -97,8 +97,8 @@ test('every rule with words says them; the leading one is the call’s title, sa
   mockAnswers['/v1/decisions/{id}'] = ok({
     ...CALL,
     reasons: [
-      { rule: 'toward_goal', source: { reference: 'arastirma/ham/guray/G2.md#K-1', tag: 'EXPERIENCE' } },
-      { rule: 'energy_floor', source: { reference: 'arastirma/ham/H5.md#2', tag: 'LITERATURE' } },
+      { rule: 'toward_goal', source: { tag: 'EXPERIENCE' } },
+      { rule: 'energy_floor', source: { tag: 'LITERATURE' } },
     ],
   });
   await show();
@@ -131,7 +131,7 @@ test('a safety call: its general change, nothing of why, no research file', asyn
     copyKey: 'decision.change_phase.low_energy_safety',
     action: { type: 'CHANGE_PHASE', to: 'BULK' } as Schemas['Decision']['action'],
     safety: true,
-    reasons: [{ rule: 'low_energy_safety', source: { reference: 'arastirma/ham/J1-cinsiyet.md#C6', tag: 'LITERATURE' } }],
+    reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' } }],
     application: { state: 'PENDING' },
   });
   await show();

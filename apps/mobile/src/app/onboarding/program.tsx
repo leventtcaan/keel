@@ -8,7 +8,7 @@ import { StepFrame } from '@/onboarding/StepFrame';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-// Both are supported, chosen here (Levent, 29 Sep; K-205).
+// Both are supported, chosen here (product decision, 29 Sep; K-205).
 const CHOICES: { value: Profile['programChoice']; key: string }[] = [
   { value: 'BRING_MY_OWN', key: 'bring_my_own' },
   { value: 'BUILD_ONE_FOR_ME', key: 'build_one_for_me' },

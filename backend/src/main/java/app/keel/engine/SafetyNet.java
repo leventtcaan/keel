@@ -14,10 +14,10 @@ import java.util.Optional;
  *
  * <ul>
  *   <li><b>Weekly loss cap</b> (cut only, dense data only): trend weight falling faster than min(weekly_loss_cap_kg, bodyweight ×
- *       weekly_loss_cap_pct_bodyweight) raises calories. Güray's 1 kg (G2 K-17: "don't try to go above it, you lose
- *       muscle") and the literature's 1 % (H3 Ç1) together: the 1 % only ever makes Güray's cap stricter.</li>
+ *       weekly_loss_cap_pct_bodyweight) raises calories. The coaching cap of 1 kg (G2 K-17: "don't try to go above it, you lose
+ *       muscle") and the literature's 1 % (H3 Ç1) together: the 1 % only ever makes the coaching cap stricter.</li>
  *   <li><b>BMR floor</b>: a proposed calorie target is never below BMR; the answer is more movement instead
- *       (G2 K-11, G2 decision table). BMR is an input: Güray uses the value an online calculator gives.</li>
+ *       (G2 K-11, G2 decision table). BMR is an input: coaching practice uses the value an online calculator gives.</li>
  *   <li><b>Low energy availability</b> (any phase): (plan kcal − exercise kcal) / fat-free mass at or under lea_threshold
  *       (male 25, female 30) narrows the deficit (J1 C6/L2.1, ADR-020 L-1/L-2). Fat-free mass comes from the internal
  *       fat estimate (U4: only the band leaves the engine). Under ea_warning the app warns; no decision changes.</li>
@@ -45,9 +45,9 @@ public final class SafetyNet {
     static final RuleId LOW_ENERGY_SAFETY = new RuleId("low_energy_safety");
     static final RuleId LOW_FAT_FLOOR = new RuleId("low_fat_floor");
 
-    private static final Source GURAY_LOSS_CAP = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-17", SourceTag.EXPERIENCE);
+    private static final Source LOSS_CAP_SOURCE = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-17", SourceTag.EXPERIENCE);
     private static final Source LITERATURE_LOSS_CAP = new Source("arastirma/ham/H3-bosluk-literatur.md#Ç1", SourceTag.LITERATURE);
-    private static final Source GURAY_BMR_FLOOR = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-11", SourceTag.EXPERIENCE);
+    private static final Source BMR_FLOOR_SOURCE = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-11", SourceTag.EXPERIENCE);
     private static final Source REDS_TIERS = new Source("arastirma/ham/J1-cinsiyet.md#C6", SourceTag.LITERATURE);
     private static final Source ENERGY_GATE = new Source("arastirma/ham/J1-cinsiyet.md#L2.1", SourceTag.LITERATURE);
 
@@ -75,7 +75,7 @@ public final class SafetyNet {
                 narrow.add(new Reason(RAPID_LOSS, REDS_TIERS));
             }
             if (overTheWeeklyCap(snapshot, parameters)) {
-                narrow.add(new Reason(LOSS_RATE_CAP, GURAY_LOSS_CAP));
+                narrow.add(new Reason(LOSS_RATE_CAP, LOSS_CAP_SOURCE));
                 narrow.add(new Reason(LOSS_RATE_CAP_BODYWEIGHT, LITERATURE_LOSS_CAP));
             }
         }
@@ -150,7 +150,7 @@ public final class SafetyNet {
         if (!parameters.flag(ParameterKey.BMR_FLOOR_ENABLED) || proposedKcal >= bmrKcal) {
             return Optional.empty();
         }
-        return Optional.of(safetyDecision(snapshot, new Action.ChangeMovement(), List.of(new Reason(BMR_FLOOR, GURAY_BMR_FLOOR))));
+        return Optional.of(safetyDecision(snapshot, new Action.ChangeMovement(), List.of(new Reason(BMR_FLOOR, BMR_FLOOR_SOURCE))));
     }
 
     /**

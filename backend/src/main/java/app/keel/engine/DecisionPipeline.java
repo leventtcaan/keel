@@ -13,7 +13,7 @@ import java.util.Optional;
  *   <li>Safety net (U13): the one hard stop, low energy, losing too fast.</li>
  *   <li>The mini cut's day has come (K-227): back to building, whatever else would wait.</li>
  *   <li>A state the user declared this week (K-516): the call waits.</li>
- *   <li>Training going wrong — a plan missed two weeks running, or last week's loads lost (G7 K-68/K-70/K-73): Güray's
+ *   <li>Training going wrong — a plan missed two weeks running, or last week's loads lost (G7 K-68/K-70/K-73): the coaching
  *       tree fixes training before any food decision.</li>
  *   <li>Maintenance being observed (G2 K-8) · not enough weight data (U8): nothing about food yet.</li>
  *   <li>Phase gate (K-105) · mini cut (G7 K-102).</li>

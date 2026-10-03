@@ -771,7 +771,7 @@ export interface paths {
         };
         /**
          * The coach's own questions today, not answered yet (K-512, ADR-039)
-         * @description Güray's triggers (G5 §2) read from the user's logs, asked in the app — never pushed (ADR-036): steps under the
+         * @description The coaching triggers (G5 §2) read from the user's logs, asked in the app — never pushed (ADR-036): steps under the
          *     target after a week on it (T-13), the planned sessions missed in a row (T-4), the loads below last week's (T-5), a
          *     cut's first days (T-2). Most pressing first; none in a week with a declared state (ADR-038). Each once per
          *     occurrence (`key`). Words: `copyKey`.title/.body, choices `copyKey`.choice.<choice lowercased>. Health data:
@@ -1827,9 +1827,8 @@ export interface components {
             rule: string;
             source: components["schemas"]["Source"];
         };
-        /** @description The rule's authority (U14): a research file and anchor, and what kind of source it is. */
+        /** @description What kind of source a rule rests on (U14): coaching experience, the literature, or a product decision. Where it is written down stays on the server with the kept call, for audit (K-523, ADR-041 #72). */
         Source: {
-            reference: string;
             tag: components["schemas"]["SourceTag"];
         };
         /** @enum {string} */

@@ -120,12 +120,15 @@ class DecisionController {
         return decisions.targets(account);
     }
 
-    /** Contract Decision: the id and the day, the engine's decision field for field, and whether and when it was applied. */
+    /**
+     * Contract Decision: the id and the day, the engine's decision field for field — its sources by kind only (K-523) —
+     * and whether and when it was applied.
+     */
     static Map<String, Object> view(CallStore.Call call) {
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("id", call.id());
         view.put("madeOn", call.madeOn());
-        view.putAll(call.decision());
+        view.putAll(SourceView.sent(call.decision()));
         Map<String, Object> application = new LinkedHashMap<>();
         application.put("state", call.application().name());
         if (call.appliedAt() != null) {

@@ -3,7 +3,7 @@ package app.keel.engine;
 import java.util.List;
 
 /**
- * After the hard stop (ADR-020 L-1) the plan builds at maintenance at least. How long that holds is ADR-028 #23 (Levent,
+ * After the hard stop (ADR-020 L-1) the plan builds at maintenance at least. How long that holds is ADR-028 #23 (product decision,
  * option b): before any call opens a deficit again — a cut, a step down, a mini cut — the cycle question is asked again.
  * "Resolved" lets the call through; no answer waits ("not yet": the check-in then asks, K-213); "still stopped" never
  * reaches here — the safety net makes it the hard stop again. The hold comes from the calls applied since (decision).

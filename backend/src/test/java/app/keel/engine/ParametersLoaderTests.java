@@ -46,7 +46,7 @@ class ParametersLoaderTests {
 
     @Test
     void givesASingleValueToBothSexes() {
-        // nutrition.yaml: cut_step_min_kcal 500 (Güray K-97); measurement.yaml: whtr_threshold 0.5
+        // nutrition.yaml: cut_step_min_kcal 500 (coaching experience, K-97); measurement.yaml: whtr_threshold 0.5
         ParameterSet set = ParameterSet.fromDocuments(repositoryDocuments());
 
         assertThat(set.forSex(Sex.MALE).wholeNumber(ParameterKey.CUT_STEP_MIN_KCAL)).isEqualTo(500);

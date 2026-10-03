@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The calorie ladder (K-107). A cut moves in steps of cut_step_min_kcal, up or down (G7 K-97: under 500 is measurement
- * noise; the literature's 5-10 % loses to Güray, U14). A bulk moves in steps of bulk_step_kcal (G3 K-10), all from carbs:
+ * noise; the literature's 5-10 % loses to coaching experience, U14). A bulk moves in steps of bulk_step_kcal (G3 K-10), all from carbs:
  * macros follow from the new target with protein and fat held (K-108). Going down, the target never crosses BMR (move
  * more instead, G2 K-11), the low-energy floor (a smaller step, or none, J1 L2.1) or the macro floors (move more, ADR-020
  * L-11). Changes are at least calorie_change_min_wait_weeks apart (H3 B3). Whether calories may move at all is the

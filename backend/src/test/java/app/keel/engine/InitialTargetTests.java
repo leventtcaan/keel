@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 /**
  * The starting calorie estimate (K-114, ADR-020 L-7): Mifflin-St Jeor resting energy × an activity factor (H6 A1,
  * A3), shown as a range (U5), never under resting energy; then held for maintenance_observation_days while the scale
- * says what maintenance really is (Güray G2 K-8: observation beats the formula; men 14, women 28 days).
+ * says what maintenance really is (coaching experience, G2 K-8: observation beats the formula; men 14, women 28 days).
  */
 class InitialTargetTests {
 

@@ -1,6 +1,6 @@
 /**
  * A move's screen (K-418, ADR-017): the setup first — seat, pad, grip, kept on this phone —, then the demo clips (not
- * filmed yet: said so, nothing in their place), Güray's tips for the move, and the muscles it works.
+ * filmed yet: said so, nothing in their place), the coaching tips for the move, and the muscles it works.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 

@@ -1,5 +1,5 @@
 /**
- * The main tabs, in order (Levent, 29 Sep: the app opens on Today; ADR-006). `name` is the route file in
+ * The main tabs, in order (product decision, 29 Sep: the app opens on Today; ADR-006). `name` is the route file in
  * app/(tabs)/, `titleKey` the en.json key, `icon` the SF Symbol for the unselected and selected tab.
  */
 import type { SFSymbolIcon } from 'expo-router/unstable-native-tabs';

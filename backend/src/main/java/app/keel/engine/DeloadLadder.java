@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Deload looks at the body, not the calendar (Güray G7 K-66): nothing here counts weeks since the last deload.
+ * Deload looks at the body, not the calendar (coaching experience, G7 K-66): nothing here counts weeks since the last deload.
  *
  * <p>Two signals come first (rung 3, ADR-020 L-12):
  * <ul>

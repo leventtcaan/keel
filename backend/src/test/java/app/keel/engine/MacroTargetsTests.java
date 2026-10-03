@@ -14,7 +14,7 @@ import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Test;
 
 /**
- * Macro targets from a calorie target (K-108). Protein 2 g/kg of total bodyweight (Güray G3 K-18/K-19), 2.2 for women
+ * Macro targets from a calorie target (K-108). Protein 2 g/kg of total bodyweight (coaching experience, G3 K-18/K-19), 2.2 for women
  * 45+ (J1 A5); fat from the top of its band down to its floor (G3 K-21, G2 K-22); carbs are what is left (03 §2.3);
  * fibre is absolute (H3 B11). Expected grams are worked out by hand with Atwater factors 4 / 9 / 4 kcal per gram.
  */
@@ -43,7 +43,7 @@ class MacroTargetsTests {
 
     @Test
     void proteinIsPerKiloOfTotalBodyweightNotLeanMass() {
-        // Güray G3 K-19: total bodyweight, even for a heavier person.
+        // coaching experience, G3 K-19: total bodyweight, even for a heavier person.
         assertThat(split(3000, "110", Sex.MALE, 30).proteinG()).isEqualTo(220);
     }
 
@@ -77,7 +77,7 @@ class MacroTargetsTests {
     @Test
     void aTargetUnderProteinAndBothFloorsIsRefusedNotBent() {
         // 100 kg, 1400 kcal: protein 200 g (800) + fat floor 50 g (450) + carb floor 50 g (200) = 1450 kcal > 1400.
-        // No split keeps Güray's protein (G3 K-18), fat floor (G2 K-22) and carb floor (03 §2.3: zero carb is rejected),
+        // No split keeps the coaching protein (G3 K-18), fat floor (G2 K-22) and carb floor (03 §2.3: zero carb is rejected),
         // so none is invented; the smallest target that fits is reported instead (H3 Ç3: "don't cut this far").
         MacroResult result = MacroTargets.forTarget(1400, new BigDecimal("100"), Sex.MALE, 30, MALE);
 

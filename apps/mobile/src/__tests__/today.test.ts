@@ -23,11 +23,11 @@ const DECISION: Schemas['Decision'] = {
   reasons: [
     {
       rule: 'toward_goal',
-      source: { reference: 'arastirma/ham/guray/G2.md#K-1', tag: 'EXPERIENCE' },
+      source: { tag: 'EXPERIENCE' },
     },
     {
       rule: 'no_such_rule',
-      source: { reference: 'arastirma/ham/H1.md#2', tag: 'LITERATURE' },
+      source: { tag: 'LITERATURE' },
     },
   ],
   confidence: 'HIGH',
@@ -94,7 +94,7 @@ describe('loadToday', () => {
     });
     expect(GET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-10-01' } } });
     expect(GET.mock.calls.map(([path]) => path).sort()).toEqual(
-      // K-501 adds the check-in, K-518 the state, K-520 the coach's questions (K1 note to Levent: the list grows by the part
+      // K-501 adds the check-in, K-518 the state, K-520 the coach's questions (K1 note to the product owner: the list grows by the part
       // each task adds).
       ['/v1/check-ins/current', '/v1/consistency', '/v1/days/{day}/budget', '/v1/decisions/current', '/v1/program', '/v1/prompts', '/v1/state',
         '/v1/targets', '/v1/weigh-ins'].sort(),

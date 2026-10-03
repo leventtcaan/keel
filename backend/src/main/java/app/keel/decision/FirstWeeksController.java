@@ -2,7 +2,6 @@ package app.keel.decision;
 
 import app.keel.engine.CopyKey;
 import app.keel.engine.FirstWeeks;
-import app.keel.engine.Source;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
@@ -24,7 +23,7 @@ class FirstWeeksController {
     }
 
     /** Contract Reason: a signal's rule and its source. */
-    record SignalView(String rule, Source source) {
+    record SignalView(String rule, SourceView source) {
     }
 
     private final DecisionService decisions;
@@ -37,6 +36,6 @@ class FirstWeeksController {
     FirstWeeksView thisWeek(AccountId account) {
         FirstWeeks.Week week = decisions.firstWeeks(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         return new FirstWeeksView(week.number(), week.content().map(CopyKey::value).orElse(null),
-                week.risk().stream().map(signal -> new SignalView(signal.rule().value(), signal.source())).toList());
+                week.risk().stream().map(signal -> new SignalView(signal.rule().value(), SourceView.of(signal.source()))).toList());
     }
 }

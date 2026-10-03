@@ -2,7 +2,7 @@
  * The session's summary (K-406, prototype 2.6, B §6.4): effort, not volume — the category's total volume rewards
  * adding sets and punishes adding effort. Against last time each move says what improved: the same weight for more reps
  * at the same RIR; the same weight and reps with more in the tank; a heavier weight; else a higher estimated max (Epley,
- * as the engine reads it, K-218). An isolation move is never compared by its weight (Güray G6 K-33); a bodyweight move
+ * as the engine reads it, K-218). An isolation move is never compared by its weight (coaching experience, G6 K-33); a bodyweight move
  * has no weight to compare. The header counts the moves whose work sets reached the target effort (RIR 0 to the
  * planned RIR, G1 K-5); a move past it gets a note for next time, never a blame (U7).
  */

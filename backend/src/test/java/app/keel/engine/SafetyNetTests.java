@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * U13: nothing lowers calories before the safety net has looked. Losing faster than
- * min(weekly_loss_cap_kg, bodyweight × weekly_loss_cap_pct_bodyweight) raises calories (Güray K-17, H3 Ç1);
- * a calorie target never goes under BMR — move more instead (Güray K-11, spec WC-12). Losing more than
+ * min(weekly_loss_cap_kg, bodyweight × weekly_loss_cap_pct_bodyweight) raises calories (coaching experience, K-17, H3 Ç1);
+ * a calorie target never goes under BMR — move more instead (coaching experience, K-11, spec WC-12). Losing more than
  * rapid_loss_narrow_pct in rapid_loss_window_weeks, or a plan whose energy availability is under lea_threshold,
  * narrows the deficit (J1 C6, ADR-020 L-1/L-2). The one hard stop: a reported loss of the menstrual cycle.
  */
@@ -50,7 +50,7 @@ class SafetyNetTests {
 
     @Test
     void theCapIsTheSmallerOfOneKiloAndOnePercent() {
-        // 110 kg: 1 % is 1.1 kg, so Güray's 1 kg is the tighter limit; 60 kg: 1 % (0.6 kg) is tighter.
+        // 110 kg: 1 % is 1.1 kg, so the coaching 1 kg is the tighter limit; 60 kg: 1 % (0.6 kg) is tighter.
         assertThat(SafetyNet.weeklyLossCapKg(new BigDecimal("110"), MALE)).isEqualByComparingTo(CAP_KG);
         assertThat(SafetyNet.weeklyLossCapKg(new BigDecimal("60"), MALE))
                 .isEqualByComparingTo(new BigDecimal("60").multiply(CAP_PCT));
@@ -69,7 +69,7 @@ class SafetyNetTests {
 
     @Test
     void theHeavierUsersCapStopsAtOneKilo() {
-        // 120 kg: 1 % would allow 1.2 kg; Güray's cap of 1 kg holds.
+        // 120 kg: 1 % would allow 1.2 kg; the coaching cap of 1 kg holds.
         assertThat(SafetyNet.check(losing("121.1", "120.0"), MALE)).isPresent();
         assertThat(SafetyNet.check(losing("121.0", "120.0"), MALE)).isNotPresent();
     }
@@ -135,7 +135,7 @@ class SafetyNetTests {
 
     @Test
     void theFirstWeeksWaterDropIsNotALossRate() {
-        // Güray K-19: the first week's drop is water and glycogen. Nothing is interpreted before
+        // coaching experience, K-19: the first week's drop is water and glycogen. Nothing is interpreted before
         // no_interpretation_days of data (H1), the safety net included.
         List<WeighIn> weighIns = new ArrayList<>(EngineFixtures.daily(TODAY.minusDays(12), TODAY.minusDays(7), "72.0"));
         weighIns.addAll(EngineFixtures.daily(TODAY.minusDays(6), TODAY, "70.5"));

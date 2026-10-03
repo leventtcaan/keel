@@ -8,14 +8,14 @@ import java.util.List;
  * Macro targets for a calorie target (K-108).
  *
  * <ol>
- *   <li>Protein: bodyweight × protein_g_per_kg — total bodyweight, not lean mass (Güray G3 K-18/K-19); women 45+ use
+ *   <li>Protein: bodyweight × protein_g_per_kg — total bodyweight, not lean mass (coaching experience, G3 K-18/K-19); women 45+ use
  *       protein_g_per_kg_female_45_plus from protein_female_higher_from_age (J1 A5, C5). Never lowered to make room for anything.</li>
  *   <li>Fat: starts at fat_g_per_kg_max (G3 K-21).</li>
  *   <li>Carbs: what is left (03 §2.3: carbs are the lever).</li>
  *   <li>If carbs fall under carbs_min_g_per_day, fat gives way first, never under fat_g_per_kg_min (G2 K-22), and the
  *       split notes it.</li>
  *   <li>If even that cannot fit — protein, fat floor and carb floor together exceed the target — there is no honest
- *       split: zero carb is rejected (03 §2.3) and H3 Ç3's protein cut to 1.8 g/kg loses to Güray's 2 g/kg (U14). The
+ *       split: zero carb is rejected (03 §2.3) and H3 Ç3's protein cut to 1.8 g/kg loses to the coaching 2 g/kg (U14). The
  *       result is {@link MacroResult.TargetTooLow} with the smallest target that fits (H3 Ç3: "don't cut this far").</li>
  *   <li>Fibre: a fixed daily amount, not a share of calories (H3 B11).</li>
  * </ol>

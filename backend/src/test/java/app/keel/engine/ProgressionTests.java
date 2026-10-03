@@ -88,7 +88,7 @@ class ProgressionTests {
 
     @Test
     void uncleanTechniqueHoldsTheLoadEvenAtTheTop() {
-        // Güray G6 K-31: load goes on only when the current load moves with perfect, comfortable form.
+        // coaching experience, G6 K-31: load goes on only when the current load moves with perfect, comfortable form.
         Progression next = Progression.next(bench("60", List.of(set(12, 1), set(12, 1), set(12, 1)), false), P);
 
         assertThat(next.step()).isEqualTo(new ProgressionStep.Hold());
@@ -98,7 +98,7 @@ class ProgressionTests {
 
     @Test
     void isolationLiftsAreNotLoadTracked() {
-        // Güray G6 K-33: lateral raise 12.5-15 kg for ten years; trained by feel.
+        // coaching experience, G6 K-33: lateral raise 12.5-15 kg for ten years; trained by feel.
         LiftSession lateralRaise = new LiftSession(LiftKind.ISOLATION, BodyRegion.UPPER, new RepRange(10, 15),
                 new BigDecimal("12.5"), List.of(set(15, 0), set(15, 0)), true);
 

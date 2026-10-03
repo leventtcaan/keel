@@ -81,7 +81,20 @@ class ContractTests {
         Map<String, Object> schemas = schemas();
 
         assertThat(properties(map(schemas.get("Reason"))).keySet()).containsExactlyInAnyOrderElementsOf(names(Reason.class));
-        assertThat(properties(map(schemas.get("Source"))).keySet()).containsExactlyInAnyOrderElementsOf(names(Source.class));
+        // The engine's Source less its reference: the research path stays on the server, with the kept call (K-523,
+        // ADR-041 #72) — the app gets what kind of source a rule rests on, not where it is written down.
+        List<String> sent = new ArrayList<>(names(Source.class));
+        sent.remove("reference");
+        assertThat(sent).containsExactly("tag");
+        assertThat(properties(map(schemas.get("Source"))).keySet()).containsExactlyInAnyOrderElementsOf(sent);
+    }
+
+    @Test
+    void theContractNamesNoResearchPathAndNoPerson() throws IOException {
+        // K-523 (ADR-041 #72): nothing the app is told, field or description, points into arastirma/ or names a person.
+        String contract = Files.readString(CONTRACT);
+        assertThat(contract).doesNotContain("arastirma/");
+        assertThat(PersonNames.in(contract)).isEmpty();
     }
 
     @Test

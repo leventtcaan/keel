@@ -15,7 +15,7 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 /**
- * The coach's own questions between the weekly calls (K-512, ADR-039; Güray's triggers, G5 §2): asked in the app, never
+ * The coach's own questions between the weekly calls (K-512, ADR-039; the coaching triggers, G5 §2): asked in the app, never
  * pushed (ADR-036); each with its rule and its source; asked once per occurrence, its key the same for as long as the
  * occurrence lasts; none in a declared week, none about a day the user or the ladder paused (ADR-038).
  */
@@ -224,7 +224,7 @@ class PromptsTests {
 
     @Test
     void stepsFirstThenSessionsThenLoadsThenHunger() {
-        // T-13 is Güray's highest priority (NEAT); the rest in the order of G5 by how much they change the week.
+        // T-13 is the coaching highest priority (NEAT); the rest in the order of G5 by how much they change the week.
         Prompts.Facts all = facts().steps(weeks(9000, 5000)).sessions(LAST_MONDAY).loadsDroppedLastWeek().deficitBegan(WEDNESDAY).build();
 
         assertThat(Prompts.today(all, MALE)).extracting(prompt -> prompt.rule().value())

@@ -1,7 +1,7 @@
 /**
- * The warm-up calculator (K-417): Güray G1 K-17 — at least one warm-up before each move, 3–4 before the day's first,
+ * The warm-up calculator (K-417): coaching experience (G1 K-17) — at least one warm-up before each move, 3–4 before the day's first,
  * never near failure. The ramp (how heavy, how many reps) is the app's (no source gives one; data/parameters/workout.json,
- * awaiting Levent): rounded to what the gym in use can make, else to the parameter's step.
+ * awaiting a product decision): rounded to what the gym in use can make, else to the parameter's step.
  */
 import type { components } from '@/api/schema';
 import type { GymWeights } from '@/train/loadSteps';

@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 /**
  * The daily number (U15): consistency. Weekly, cumulative, never reset, one missed week forgiven (U7; 04-faz3 §7.3:
  * gym data's one-week tolerance, Lally 2010, Duolingo's streak freeze). A week is on track at on_track_min_ratio of
- * its planned actions (Güray G2 K-60: 70 % of the plan is success). The week follows the user's home time zone, so
+ * its planned actions (coaching experience, G2 K-60: 70 % of the plan is success). The week follows the user's home time zone, so
  * travel never shifts it (L3 P13).
  */
 class ConsistencyTests {
