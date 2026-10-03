@@ -59,4 +59,14 @@ class WaistTrendTests {
     private static WaistTrend.Reading reading(int day, String cm) {
         return new WaistTrend.Reading(DAY.plusDays(day), new BigDecimal(cm));
     }
+
+    @Test
+    void theSpanIsTheDaysFromTheFirstReadingToTheLast() {
+        // K-603: what the composition signal needs to know the readings were weeks apart (H1 §1.5).
+        LocalDate first = LocalDate.of(2026, 9, 14);
+        assertThat(WaistTrend.spanDays(List.of(new WaistTrend.Reading(first.plusDays(16), BigDecimal.TEN), new WaistTrend.Reading(first, BigDecimal.TEN),
+                new WaistTrend.Reading(first.plusDays(3), BigDecimal.TEN)))).hasValue(16);
+        assertThat(WaistTrend.spanDays(List.of(new WaistTrend.Reading(first, BigDecimal.TEN), new WaistTrend.Reading(first, BigDecimal.ONE)))).hasValue(0);
+        assertThat(WaistTrend.spanDays(List.of())).isEmpty();
+    }
 }

@@ -151,6 +151,16 @@ public final class WeeklySpine {
         return Optional.empty();
     }
 
+    /**
+     * The weight held over the window as the spine reads it (K-603): within flat_margin_kg from the first week to the
+     * latest, either way, and — on a cut — not this week's step that the spine calls moving (ADR-027 #0). Weekly means
+     * oldest first, at least two.
+     */
+    public static boolean steady(List<BigDecimal> weeklyMeans, Phase phase, Parameters parameters) {
+        Window window = new Window(weeklyMeans, line(ParameterKey.FLAT_MARGIN_KG, parameters), phase == Phase.CUT);
+        return window.towardGoal(window.first()) == 0 && !(window.cut() && window.movingThisWeek());
+    }
+
     /** A week of the decision window: its last day, and the mean of its weigh-ins — none without one. */
     public record WeekMean(LocalDate ends, Optional<BigDecimal> kg) {
     }

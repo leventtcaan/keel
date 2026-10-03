@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -110,7 +111,7 @@ class DecisionService {
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
             List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate, Optional<BigDecimal> fatForEnergy,
-            boolean safetyHold, Optional<DeclaredContext> declared) {
+            boolean safetyHold, Optional<DeclaredContext> declared, OptionalInt waistSpanDays) {
     }
 
     /** The fat estimate's inputs: the latest look and the waist's RFM (K-224). */
@@ -204,7 +205,7 @@ class DecisionService {
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
-                StoredSnapshot.of(snapshot, counted), DecisionJson.of(decision), application(decision));
+                StoredSnapshot.of(snapshot, counted, week.waistSpanDays()), DecisionJson.of(decision), application(decision));
         if (!calls.keep(account, call)) {
             // The same clientId or this week, stored at the same moment by another request.
             return calls.byClient(account, clientId).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
@@ -229,15 +230,15 @@ class DecisionService {
         // with the week, so it does not slide off a check at midnight. The waist over the decision window.
         LocalDate weekOf = CheckInWeek.weekOf(today, profile.checkInDay());
         CheckIn.Look look = measurements.photoLook(account, weekOf.minusDays(DAYS_PER_WEEK - 1L), today).orElse(CheckIn.Look.UNKNOWN);
-        CheckIn.Waist waist = WaistTrend.direction(measurements.waists(account,
-                today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today), p);
+        List<WaistTrend.Reading> waists = measurements.waists(account, today.minusDays(p.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) - 1L), today);
+        CheckIn.Waist waist = WaistTrend.direction(waists, p);
         CheckIn dataSays = new CheckIn(look, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, Optional.empty(), CheckIn.Appetite.UNKNOWN);
         FatInputs fat = fatInputs(account, profile, today, p);
         return new Week(profile, today, weekOf, sex, p, new Profile(age, profile.heightCm()), weights, dataSays,
                 FatEstimate.of(fat.fromLook(), fat.fromWaist()), FatEstimate.forEnergy(fat.fromLook(), fat.fromWaist(), p),
                 SafetyHolds.from(calls.outcomes(account)),
                 // A state declared on a day of this check-in week (K-516, ADR-038).
-                states.latest(account, today.minusDays(DAYS_PER_WEEK - 1L), today));
+                states.latest(account, today.minusDays(DAYS_PER_WEEK - 1L), today), WaistTrend.spanDays(waists));
     }
 
     /**

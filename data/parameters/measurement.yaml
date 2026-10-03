@@ -16,6 +16,13 @@ parameters:
     unit: cm
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#1.2"
+    note: "Bel trendi (WaistTrend) bu hatayı aşınca DOWN/UP. 'Kilo sabit, bel düştü' sinyali (K-603, H1 §1.6) aynı eşiği kullanır: yeni eşik yok."
+  - key: waist_signal_min_span_days
+    value: 14
+    unit: days
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md#1.5"
+    note: "H1 §1.5: beklenen bel hızı 0,25-0,4 cm/hafta, öz-ölçüm hatası ±1 cm → haftalık bel değişimi gürültü; 2-4 haftada bir ölçülmeli. 'Kilo sabit, bel düştü' sinyali (K-603) pencerede ilk ve son bel ölçümü en az bu kadar arayla değilse söylenmez (§1.6: tek ölçüme dayanma). Alt uç (2 hafta) seçildi. Spine'ın bel kuralı (G2 K-64) bundan etkilenmez."
   - key: weight_daily_noise_sd_kg
     value: 0.42
     unit: kg

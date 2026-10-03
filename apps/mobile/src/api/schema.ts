@@ -1926,6 +1926,11 @@ export interface components {
                 weeksPlanMissed: number;
             };
             pausedBy?: components["schemas"]["StateKind"];
+            /**
+             * @description What else the data the call read says, beside the call and never changing it (K-603): the weight steady over
+             *     the window with the waist down past its error (weight_steady_waist_down, H1 §1.6). Absent when there is none.
+             */
+            signals?: components["schemas"]["Reason"][];
         };
         /**
          * @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,

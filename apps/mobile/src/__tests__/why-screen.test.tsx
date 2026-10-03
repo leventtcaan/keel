@@ -169,3 +169,22 @@ test('back goes back', async () => {
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('why.back') })));
   expect(mockBack).toHaveBeenCalled();
 });
+
+test('what else the data says sits beside the rules, in its own words with its kind of source (K-603); none, no section', async () => {
+  await show();
+  expect(screen.queryByText(t('why.signals'))).toBeNull();
+
+  mockAnswers['/v1/decisions/{id}/basis'] = ok({ ...BASIS, signals: [{ rule: 'weight_steady_waist_down', source: { tag: 'LITERATURE' } }] });
+  await show();
+  expect(screen.getByText(t('why.signals'))).toBeOnTheScreen();
+  expect(screen.getByText(t('decision.rule.weight_steady_waist_down'))).toBeOnTheScreen();
+  expect(t('decision.rule.weight_steady_waist_down')).not.toMatch(/missing|%|fat/i);
+});
+
+test('a safety call says nothing else either (ADR-028 #24)', async () => {
+  mockAnswers['/v1/decisions/{id}'] = ok({ ...CALL, safety: true, reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' } }] });
+  mockAnswers['/v1/decisions/{id}/basis'] = ok({ ...BASIS, signals: [{ rule: 'weight_steady_waist_down', source: { tag: 'LITERATURE' } }] });
+  await show();
+  expect(screen.queryByText(t('why.signals'))).toBeNull();
+  expect(screen.queryByText(t('decision.rule.weight_steady_waist_down'))).toBeNull();
+});

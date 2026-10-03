@@ -623,6 +623,7 @@
     "phase": { "CUT": "Cut phase", "BULK": "Building phase" },
     "data": "The data",
     "rules": "Rules applied",
+    "signals": "Also in your data",
     "noData": "This call stopped before reading your weeks: there is no trend to show yet.",
     "boundary": "The call comes from the rules above. The coach can explain it; it doesn't make it.",
     "failed": "Couldn't load the reasons for this call.",
@@ -660,6 +661,7 @@
   },
   "decision": {
     "rule": {
+      "weight_steady_waist_down": "Your weight held steady while your waist went down: the scale isn't showing everything that changed.",
       "adherence_low": "When most of the plan didn't happen, the plan can't be judged yet: doing it comes before changing it.",
       "adherence_partial": "Much of the plan happened, but not enough of it to tell whether the plan works.",
       "appetite_gone": "A long stretch of eating more can dull your appetite; a short cut brings it back.",

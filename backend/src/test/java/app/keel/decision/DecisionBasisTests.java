@@ -9,6 +9,7 @@ import app.keel.engine.Parameters;
 import app.keel.engine.ParameterDomain;
 import app.keel.engine.Phase;
 import app.keel.engine.Sex;
+import app.keel.engine.SourceTag;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -65,6 +66,37 @@ class DecisionBasisTests {
         StoredSnapshot declared = new StoredSnapshot(base.today(), base.sex(), base.phase(), base.planStart(), base.weights(), null, null,
                 base.checkIn(), base.profile(), false, base.phaseStart(), null, null, false, null, null, DeclaredContext.SICK);
         assertThat(DecisionBasis.of(declared, MALE).weeks()).isEmpty();
+    }
+
+    @Test
+    void aWeightHeldWithTheWaistDownIsSaidAsASignal() {
+        // K-603 (H1 §1.6): the scale steady over the window, the waist down past its error — said beside the call, which it
+        // does not change.
+        DecisionBasis basis = DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("81.2", "81.0", "81.0"), waist(CheckIn.Waist.DOWN)), MALE);
+
+        assertThat(basis.signals()).containsExactly(new DecisionBasis.Signal("weight_steady_waist_down", new DecisionBasis.Kind(SourceTag.LITERATURE)));
+    }
+
+    @Test
+    void noSignalWithoutTheWaistDownTheScaleSteadyOrTheWindowRead() {
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("81.2", "81.0", "81.0"), waist(CheckIn.Waist.FLAT)), MALE).signals()).isNull();
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("82.5", "81.5", "81.0"), waist(CheckIn.Waist.DOWN)), MALE).signals()).isNull();
+        // A call that stopped before the window (a week without a weigh-in) read no trend to say it of.
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("81.0", null, "81.0"), waist(CheckIn.Waist.DOWN)), MALE).signals()).isNull();
+    }
+
+    @Test
+    void aCallKeptBeforeTheWaistsSpanWasSaysNoSignal() {
+        // K-603 review: whether the readings were weeks apart (H1 §1.5) is not known for it — nothing is said.
+        StoredSnapshot.Answered noSpan = new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN,
+                CheckIn.Waist.DOWN, null, CheckIn.Appetite.UNKNOWN);
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("81.2", "81.0", "81.0"), noSpan), MALE).signals()).isNull();
+    }
+
+    /** The waist trend the call read, from readings waist_signal_min_span_days apart (K-603). */
+    private static StoredSnapshot.Answered waist(CheckIn.Waist waist) {
+        return new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN, waist, null, CheckIn.Appetite.UNKNOWN,
+                null, null, MALE.wholeNumber(app.keel.engine.ParameterKey.WAIST_SIGNAL_MIN_SPAN_DAYS));
     }
 
     @Test
