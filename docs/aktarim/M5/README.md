@@ -24,3 +24,4 @@
 16. K-505 kararın anlatımı + itiraz (`K-505.md`)
 17. K-506 hayır diyen koç seti (`K-506.md`)
 18. K-508 günlük kota (`K-508.md`)
+19. K-504 serbest metinden öğün taslağı (`K-504.md`)
