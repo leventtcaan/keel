@@ -129,6 +129,8 @@ keel:
       max-items: 20
       max-food-chars: 100
       candidates: 5
+      # Words no food is looked up by: they are in half the database's names ("and" is in "Candies", "Sandwich").
+      stop-words: [and, with, the, of, some, my, a, an, in, on, or, plus]
   # The consent texts the app shows now (data/copy/en.json › consent.*, K-204); "-draft" until the product owner approves.
   consent:
     versions:

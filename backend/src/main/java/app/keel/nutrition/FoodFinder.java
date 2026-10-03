@@ -1,6 +1,9 @@
 package app.keel.nutrition;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import app.keel.consent.ConsentGate;
+import app.keel.consent.ConsentKind;
+import app.keel.shared.AccountId;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -19,22 +22,32 @@ public class FoodFinder {
 
     private final FoodStore foods;
     private final FoodController.NutritionLimits limits;
+    private final ConsentGate consent;
 
-    FoodFinder(FoodStore foods, FoodController.NutritionLimits limits) {
+    FoodFinder(FoodStore foods, FoodController.NutritionLimits limits, ConsentGate consent) {
         this.foods = foods;
         this.limits = limits;
+        this.consent = consent;
     }
 
-    /** Foods whose name or brand holds every word, best first (FoodStore.search), at most {@code limit}. */
+    /**
+     * What a meal is, is health data (ADR-026 #2: every meal route is behind the consent): a meal read from words needs it
+     * as logging one does — CONSENT_REQUIRED otherwise, before anything is sent (K-504 review).
+     */
+    public void requireMealConsent(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+    }
+
+    /** Foods whose name or brand holds every word, best first (FoodStore.search), at most {@code limit}; words of 2 letters or more. */
     public List<FoodMatch> find(String words, int limit) {
-        if (words.isBlank() || words.length() > limits.maxQueryLength()) {
+        if (words.strip().length() < 2 || words.length() > limits.maxQueryLength()) {
             return List.of();
         }
         return foods.search(words, Math.min(limit, limits.maxSearchResults())).stream()
                 .map(food -> new FoodMatch(food.id(), food.name(), food.brand())).toList();
     }
 
-    /** The most a meal item may weigh (keel.nutrition.max-grams): what a logged item may be. */
+    /** The most an amount may be in grams (keel.nutrition.max-grams) — and so the largest quantity in any measure. */
     public BigDecimal maxGrams() {
         return limits.maxGrams();
     }
