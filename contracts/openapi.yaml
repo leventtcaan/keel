@@ -2565,6 +2565,26 @@ components:
           type: string
           format: date
           description: Its last day, when the user gave one; absent until they are back.
+        busyDose:
+          $ref: "#/components/schemas/BusyDose"
+    BusyDose:
+      type: object
+      description: |
+        A busy week's least dose (K-528, ADR-038 #7; H9 §2): with BUSY only — what keeps strength and muscle when the week
+        holds little. A suggestion; the program's targets do not change (U2).
+      required: [sessions, setsPerExercise, keepLoad]
+      properties:
+        sessions:
+          type: integer
+          minimum: 1
+          description: Sessions in the week.
+        setsPerExercise:
+          type: integer
+          minimum: 1
+          description: Sets of each of the day's exercises.
+        keepLoad:
+          type: boolean
+          description: The usual weights (intensity is what maintains).
     NewDeclaredState:
       type: object
       required: [kind]

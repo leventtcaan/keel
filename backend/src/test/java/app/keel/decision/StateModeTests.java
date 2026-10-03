@@ -58,6 +58,21 @@ class StateModeTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void aBusyWeekIsReadBackWithItsLeastDoseAndNoOtherStateIs() throws Exception {
+        // K-528 (ADR-038 #7, H9 §2): one session of one set per exercise, the usual weights, at 30 (born 1996); a suggestion
+        // with the state — the export keeps only what was declared.
+        AccountId account = ready();
+        Map<String, Object> busy = read(send(account, "PUT", Map.of("kind", "BUSY")));
+        assertThat((Map<String, Object>) busy.get("busyDose")).isEqualTo(Map.of("sessions", 1, "setsPerExercise", 1, "keepLoad", true));
+        assertThat((Map<String, Object>) read(send(account, "GET", null)).get("busyDose"))
+                .isEqualTo(Map.of("sessions", 1, "setsPerExercise", 1, "keepLoad", true));
+
+        AccountId traveling = ready();
+        assertThat(read(send(traveling, "PUT", Map.of("kind", "TRAVELING")))).doesNotContainKey("busyDose");
+    }
+
+    @Test
     void anEndDayIsKeptAndAStatePastItIsOver() throws Exception {
         AccountId account = ready();
         String until = today().plusDays(3).toString();

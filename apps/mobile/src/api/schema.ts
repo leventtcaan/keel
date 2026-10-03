@@ -1728,6 +1728,19 @@ export interface components {
              * @description Its last day, when the user gave one; absent until they are back.
              */
             until?: string;
+            busyDose?: components["schemas"]["BusyDose"];
+        };
+        /**
+         * @description A busy week's least dose (K-528, ADR-038 #7; H9 §2): with BUSY only — what keeps strength and muscle when the week
+         *     holds little. A suggestion; the program's targets do not change (U2).
+         */
+        BusyDose: {
+            /** @description Sessions in the week. */
+            sessions: number;
+            /** @description Sets of each of the day's exercises. */
+            setsPerExercise: number;
+            /** @description The usual weights (intensity is what maintains). */
+            keepLoad: boolean;
         };
         NewDeclaredState: {
             kind: components["schemas"]["StateKind"];

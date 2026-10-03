@@ -49,7 +49,7 @@ const mockServices = {
     era: () => 0,
   },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
   healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
-  state: { keep: async () => {} }, // Today keeps the state it read, for the reminders (K-518)
+  state: { keep: async () => {}, current: async () => null }, // Today keeps the state it read (K-518); Train reads it (K-528)
 };
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,
