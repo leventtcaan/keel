@@ -46,6 +46,18 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
     note: "TÜRETİLMİŞ (ADR-020 L-10). Karar penceresinin ilk ve son haftasının ortalama farkı bu payı hedef yönde aşmıyorsa kilo 'sabit' sayılır. min_weighins_per_week ile aynı hesap: 1,96 · 0,42 · √(2/4) ≈ 0,58 kg. Erkekte 14 gün arayla ≈ 0,3 kg/hafta ve üstü 'hareket'. Güray'da plato tanımı yok (G2 K-64 notu). 'Kilo sabit' sinyali (K-603) de bu payı kullanır: ilk ve son hafta farkı payı iki yönde de aşmıyorsa."
+  - key: what_if_trend_step_margins
+    value: 1.25
+    unit: margins
+    tag: urun
+    source: "arastirma/ham/L3-ozellik-boslugu.md#5"
+    note: "TÜRETİLMİŞ, ürün (K-610, L3 Y3 'Kararı ne değiştirir?'). Bulk'ta örnek verinin 'hedefe doğru' haftası son haftanın ortalamasından flat_margin_kg'nin bu katı kadar yukarıda: 1 kat eşikte kalır (pay aşılmalı, ADR-020 L-10; bulk 'durdu' okunur), 1,25 spine'ın 'hareket' dediği en küçük açık adım. Cut'ta kullanılmaz (what_if_cut_step_of_loss_cap). Yalnız örnek veri; gerçek karara girmez."
+  - key: what_if_cut_step_of_loss_cap
+    value: 0.5
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/L3-ozellik-boslugu.md#5"
+    note: "TÜRETİLMİŞ, ürün (K-610 incelemesi). Cut'ta örnek 'hedefe doğru' haftası haftalık kayıp tavanının (min(weekly_loss_cap_kg, weekly_loss_cap_pct_bodyweight × kilo), G2 K-17, H3 B3) bu payı kadar aşağıda: hiçbir kiloda güvenlik ağına değmez (sabit adım 73 kg altında tavanı aşıyordu), cut'ın 'bu hafta hareket' payını (ADR-027 #0) geçer — 80 kg'da 0,4 kg, 62 kg'da 0,31 kg. Yalnız örnek veri."
   - key: flat_wait_weeks
     value: 1
     unit: weeks

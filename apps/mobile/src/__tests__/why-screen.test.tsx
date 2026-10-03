@@ -194,3 +194,13 @@ test('every call so far is one step away (K-611)', async () => {
   fireEvent.press(screen.getByText(t('ledger.open')));
   expect(mockPush).toHaveBeenCalledWith('/ledger');
 });
+
+test('what would change the call is one step away; not from a safety call (K-610, ADR-028 #24)', async () => {
+  await show();
+  fireEvent.press(screen.getByText(t('whatIf.open')));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/what-if', params: { id: 'd1' } });
+
+  mockAnswers['/v1/decisions/{id}'] = ok({ ...CALL, safety: true, reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' } }] });
+  await show();
+  expect(screen.queryByText(t('whatIf.open'))).toBeNull();
+});

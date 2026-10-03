@@ -37,6 +37,8 @@ public enum Unit {
     ACTIVITY_FACTOR("activity_factor", Kind.FRACTION, Bound.AT_LEAST_ONE),
     // How many of the engine's load steps a gym's next load may be over the last (K-430); at least one step.
     LOAD_STEPS("load_steps", Kind.FRACTION, Bound.AT_LEAST_ONE),
+    // Multiples of flat_margin_kg (K-610's example week); at least one, or the example would sit inside the noise.
+    MARGINS("margins", Kind.FRACTION, Bound.AT_LEAST_ONE),
     DAYS("days", Kind.WHOLE, Bound.POSITIVE),
     WEEKS("weeks", Kind.WHOLE, Bound.POSITIVE),
     MONTHS("months", Kind.WHOLE, Bound.POSITIVE),

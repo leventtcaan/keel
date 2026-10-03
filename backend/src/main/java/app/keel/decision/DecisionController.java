@@ -83,6 +83,15 @@ class DecisionController {
         return decisions.basis(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
+    /**
+     * Contract WhatIf (K-610, L3 Y3): the same rules on example data a week from the call — every combination of next
+     * week. Not for a safety call: it says nothing of why (ADR-028 #24), and an example would.
+     */
+    @GetMapping("/v1/decisions/{id}/what-if")
+    Map<String, Object> whatIf(AccountId account, @PathVariable UUID id) {
+        return decisions.whatIf(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
     @PostMapping("/v1/decisions/{id}/apply")
     PlanTargets apply(AccountId account, @PathVariable UUID id) {
         return decisions.apply(account, id);

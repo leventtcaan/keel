@@ -937,6 +937,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/decisions/{id}/what-if": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * @description "What would change the call" (K-610, L3 Y3): the same rules run on example data a week from the call — every
+         *     combination of next week's trend, plan kept and training. Example data, never the user's own, and labelled so.
+         *     NOT_FOUND for a safety call (it says nothing of why, ADR-028 #24) and for a call that is not the user's;
+         *     CONSENT_REQUIRED without the HEALTH_DATA consent.
+         */
+        get: operations["getDecisionWhatIf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions/{id}/apply": {
         parameters: {
             query?: never;
@@ -1936,6 +1960,35 @@ export interface components {
              *     the window with the waist down past its error (weight_steady_waist_down, H1 §1.6). Absent when there is none.
              */
             signals?: components["schemas"]["Reason"][];
+        };
+        WhatIf: {
+            /**
+             * @description Always true — these are the rules on example data, not the user's (K-610).
+             * @enum {boolean}
+             */
+            example: true;
+            /** @description Every combination of next week, in a fixed order; each the engine's call on that example week. */
+            scenarios: {
+                when: {
+                    /** @enum {string} */
+                    trend: "TOWARD_GOAL" | "FLAT";
+                    /** @enum {string} */
+                    adherence: "ON_TRACK" | "UNDER";
+                    /** @enum {string} */
+                    training: "HOLDING" | "DROPPING";
+                };
+                decision: components["schemas"]["ExampleCall"];
+            }[];
+        };
+        /** @description The engine's call on an example week — a Decision without an id, a day or an application (never kept). */
+        ExampleCall: {
+            action: components["schemas"]["Action"];
+            reasons: components["schemas"]["Reason"][];
+            confidence: components["schemas"]["Confidence"];
+            /** Format: date */
+            nextReview: string;
+            copyKey: string;
+            safety?: boolean;
         };
         /**
          * @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,
@@ -3590,6 +3643,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DecisionBasis"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getDecisionWhatIf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The example weeks and what the rules would call */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatIf"];
                 };
             };
             default: components["responses"]["Error"];

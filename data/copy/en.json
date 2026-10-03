@@ -630,6 +630,26 @@
     "failed": "Couldn't load your calls.",
     "more": "Show older calls"
   },
+  "whatIf": {
+    "title": "What would change the call",
+    "intro": "If next week goes one of these ways, this is what the rules would call.",
+    "example": "This runs the same rules on example data, not yours. No AI involved.",
+    "open": "What would change it",
+    "failed": "Couldn't load the examples.",
+    "latestOnly": "Examples are for your latest call: what would change the next one.",
+    "trend": {
+      "TOWARD_GOAL": "Trend toward your goal",
+      "FLAT": "Trend flat"
+    },
+    "adherence": {
+      "ON_TRACK": "plan mostly kept",
+      "UNDER": "plan not kept"
+    },
+    "training": {
+      "HOLDING": "training holds",
+      "DROPPING": "training drops"
+    }
+  },
   "why": {
     "title": "Why this call",
     "back": "Back",

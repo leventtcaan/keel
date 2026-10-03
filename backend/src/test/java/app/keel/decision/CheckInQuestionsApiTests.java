@@ -268,6 +268,9 @@ class CheckInQuestionsApiTests {
                 .query(String.class).single();
         assertThat(kept).doesNotContainIgnoringCase("menstrual").doesNotContainIgnoringCase("cycle").doesNotContainIgnoringCase("hard_stop");
 
+        // K-610 (ADR-028 #24): a safety call has no "what would change it" — an example would say why.
+        assertThat(send(account, "GET", "/v1/decisions/" + made.get("id") + "/what-if", null).getResponse().getStatus()).isEqualTo(404);
+
         assertThat(send(account, "POST", "/v1/decisions/" + made.get("id") + "/apply", null).getResponse().getStatus()).isEqualTo(200);
         Map<String, Object> plan = jdbc.sql("select phase, observing_maintenance, target_kcal from decision.plan where account_id = :a")
                 .param("a", account.value()).query().singleRow();
