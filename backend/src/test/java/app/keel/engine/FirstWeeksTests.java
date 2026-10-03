@@ -49,6 +49,17 @@ class FirstWeeksTests {
     }
 
     @Test
+    void theFlowIsOpenExactlyOnTheDaysItHasAWeek() {
+        // The server reads the logs only then: a user of two years is not read for it at every check-in.
+        for (int day = -1; day <= 7 * 9; day++) {
+            LocalDate today = BEGAN.plusDays(day);
+            assertThat(FirstWeeks.open(BEGAN, today, MALE)).as("day " + day).isEqualTo(FirstWeeks.of(quiet(today), MALE).isPresent());
+        }
+        assertThat(FirstWeeks.open(BEGAN, BEGAN.plusDays(7L * 9 - 1), MALE)).isTrue();
+        assertThat(FirstWeeks.open(BEGAN, BEGAN.plusDays(7L * 9), MALE)).isFalse();
+    }
+
+    @Test
     void theWeekStartsOnTheDayOfTheWeekTheAccountBegan() {
         // The server reads the user's week just over from here: the seven days before it.
         assertThat(FirstWeeks.weekStart(BEGAN, BEGAN.plusDays(40))).isEqualTo(BEGAN.plusDays(35));

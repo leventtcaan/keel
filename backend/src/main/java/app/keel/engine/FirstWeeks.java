@@ -60,6 +60,10 @@ public final class FirstWeeks {
         return began.plusWeeks(Math.floorDiv(ChronoUnit.DAYS.between(began, today), DAYS_PER_WEEK));
     }
 
+    public static boolean open(LocalDate began, LocalDate today, Parameters parameters) {
+        return false;
+    }
+
     /** This week of the flow; empty before the account's first day and once the week after the flow is over. */
     public static Optional<Week> of(Facts facts, Parameters parameters) {
         long days = ChronoUnit.DAYS.between(facts.began(), facts.today());

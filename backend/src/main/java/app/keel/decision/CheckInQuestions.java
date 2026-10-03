@@ -108,6 +108,10 @@ final class CheckInQuestions {
                 .allMatch(week -> week.datesUntil(week.plusWeeks(1)).anyMatch(declaredDays::contains));
     }
 
+    static boolean largerBudget(CheckIn dataSays, Phase phase, boolean firstWeeksRisk) {
+        return anomaly(dataSays, phase);
+    }
+
     static boolean anomaly(CheckIn dataSays, Phase phase) {
         boolean waistAgainst = phase == Phase.CUT ? dataSays.waist() == CheckIn.Waist.UP : dataSays.waist() == CheckIn.Waist.DOWN;
         return dataSays.look() == CheckIn.Look.WORSE || waistAgainst;
