@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.function.Function;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,6 +16,10 @@ import org.springframework.stereotype.Component;
  * targets alike. The plan is the program: one session a program day, on a weekday or not — the count its missed weeks
  * are judged against too (TrainingStatusReader.status). The profile's training days only without a program. Which days
  * a missed session is asked about stays K-527's rule (PromptController.today).
+ *
+ * <p>A week gone by keeps the program it had (K-535, ADR-045 #79): consistency, adherence and the first eight weeks read
+ * {@link #byWeek}; the targets read today's ({@link #perWeek}). The missed plan weeks are counted only since the program
+ * in force was made (TrainingStatusReader.status), so they too are judged by the program each had.
  */
 @Component
 class PlannedSessions {
@@ -44,6 +49,17 @@ class PlannedSessions {
         return fewest;
     }
 
+    /**
+     * The sessions each week asks, by its Monday (K-535): what consistency, adherence and the first eight weeks judge a
+     * week by. The history is read once, here.
+     */
+    Function<LocalDate, Integer> byWeek(AccountId account, ProfileFacts profile) {
+        List<ProgramPeriod> history = statuses.programHistory(account);
+        int profileDays = profile.trainingDays().size();
+        return monday -> inWeek(history, profileDays, monday, profile.timeZone());
+    }
+
+    /** The sessions a week the plan asks from now on: the targets (PlanTargets) and whether training is asked at all. */
     int perWeek(AccountId account, ProfileFacts profile) {
         return statuses.programSessionsPerWeek(account).orElse(profile.trainingDays().size());
     }
