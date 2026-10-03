@@ -45,6 +45,16 @@ class ReplyCheckTests {
     }
 
     @Test
+    void aNumberWithThousandsCommasIsReadWhole() {
+        // "1,500" is one number, the call's; read as 1 and 500 it would be dropped for a 1 the call never said.
+        CallFacts big = new CallFacts(UUID.randomUUID(), LocalDate.of(2026, 10, 5), Map.of("type", "ADJUST_CALORIES", "kcalPerDay", -1500),
+                List.of(), "LOW", LocalDate.of(2026, 10, 12), "decision.adjust_calories.cut", false);
+
+        assertThat(CHECK.read(reply("The call takes 1,500 kcal a day off."), big)).isPresent();
+        assertThat(CHECK.read(reply("The call takes 1,600 kcal a day off."), big)).isEmpty();
+    }
+
+    @Test
     void aConcessionDropsTheReply() {
         assertThat(CHECK.read(reply("Fair enough, I'll lower it to 500 less only next week."), CUT_STEP)).isEmpty();
         assertThat(CHECK.read(reply("You're right, let's skip it."), CUT_STEP)).isEmpty();
