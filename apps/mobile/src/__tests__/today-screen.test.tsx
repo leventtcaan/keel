@@ -672,7 +672,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
 
     expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd7' } } });
     expect(mockGET.mock.calls.filter(([path]) => path === '/v1/decisions/current').length).toBe(reads + 1);
-    expect(screen.getByText(t('today.call.applied'))).toBeOnTheScreen();
+    expect(screen.getByText(t('decision.change_movement.applied'))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
   });
 
@@ -688,6 +688,88 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     await press(t('today.call.apply'));
     expect(screen.getByText(t('today.call.applyRefused'))).toBeOnTheScreen();
     expect(screen.queryByText(t('today.call.applyFailed'))).toBeNull();
+  });
+
+  test.each([
+    ['decision.stop_load_increase.plateau', 'STOP_LOAD_INCREASE'],
+    ['decision.deload.long_stagnation', 'DELOAD'],
+    ['decision.mini_cut.appetite_gone', 'MINI_CUT'],
+  ])('a training or phase call that moves the plan (%s) is a change too: applied from today', async (copyKey, type) => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision(copyKey, { action: { type } as Schemas['Decision']['action'], application: { state: 'PENDING' } }),
+    );
+    await show();
+    expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.hold'))).toBeNull();
+  });
+
+  test('advice that changes nothing (fix the habit that slipped) is its own words, not "nothing to do differently"', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision('decision.fix_adherence.adherence_low', { action: { type: 'FIX_ADHERENCE' } as Schemas['Decision']['action'] }),
+    );
+    await show();
+    expect(screen.getByText(t('decision.fix_adherence.adherence_low.body'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.hold'))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
+  });
+
+  test('applied, each says what moved: a week off changes the program, a step goal the targets', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision('decision.full_rest_week.plan_missed', { action: { type: 'FULL_REST_WEEK' } as Schemas['Decision']['action'], application: { state: 'APPLIED' } }),
+    );
+    await show();
+    expect(screen.getByText(t('decision.full_rest_week.applied'))).toBeOnTheScreen();
+    expect(t('decision.full_rest_week.applied')).not.toEqual(t('decision.change_movement.applied'));
+  });
+
+  test.each([500, 503, 403])('refused for another reason (%i): something went wrong on our side, try again — the button stays', async (status) => {
+    mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
+    mockPost = refused(status, status === 403 ? 'CONSENT_REQUIRED' : 'INTERNAL');
+    await show();
+    await press(t('today.call.apply'));
+    expect(screen.getByText(t('today.call.applyError'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.applyRefused'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
+  });
+
+  test('not applied is said for that read only: Today read again, the call is a new try', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
+    mockPost = 'offline';
+    await show();
+    await press(t('today.call.apply'));
+    expect(screen.getByText(t('today.call.applyFailed'))).toBeOnTheScreen();
+
+    await act(async () => mockRefocus());
+    expect(screen.queryByText(t('today.call.applyFailed'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
+  });
+
+  test('two taps at once apply once', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
+    let answer: (value: Answer) => void = () => {};
+    mockPOST.mockImplementationOnce(() => new Promise<Answer>((resolve) => (answer = resolve)));
+    await show();
+    const button = screen.getByRole('button', { name: t('today.call.apply') });
+    await act(async () => {
+      fireEvent.press(button);
+      fireEvent.press(button);
+    });
+    await act(async () => answer(ok({})));
+    expect(mockPOST).toHaveBeenCalledTimes(1);
+  });
+
+  test('a safety call is applied like any change, and still says nothing of why (ADR-028 #24)', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision('decision.change_phase.low_energy_safety', {
+        action: { type: 'CHANGE_PHASE' } as Schemas['Decision']['action'],
+        safety: true,
+        application: { state: 'PENDING' },
+      }),
+    );
+    await show();
+    expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.hold'))).toBeNull();
+    expect(allText()).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
   });
 
   test('undone: the plan is back as it was, and nothing to apply again', async () => {

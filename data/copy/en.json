@@ -155,10 +155,10 @@
     "waitNote": "Keep logging the same way. That's what makes the next call clear.",
     "oneThing": "Only one change at a time, so we know what worked. Everything else stays as it is.",
     "apply": "Apply from today",
-    "applied": "Applied. Your targets have changed from today.",
     "undone": "Undone: your plan is back as it was.",
     "applyFailed": "Not applied: no connection. Try again in a moment.",
     "applyRefused": "This call can't be applied any more. Your next check-in makes a new one.",
+    "applyError": "Not applied: something went wrong on our side. Try again in a moment.",
       "none": "Your first call comes after your first weekly check-in."
     },
     "list": {
@@ -629,6 +629,7 @@
     },
     "increase_calories": {
       "label": "Eat a little more",
+      "applied": "Applied. Your calorie target has changed from today.",
       "loss_rate_cap": {
         "title": "You're losing faster than your body can keep up with.",
         "body": "Past this pace you start losing muscle, and the extra on the scale is mostly water. Calories go up a step this week so what you lose stays fat."
@@ -644,6 +645,7 @@
     },
     "change_movement": {
       "label": "Move more",
+      "applied": "Applied. Your step goal has changed from today.",
       "bmr_floor": {
         "title": "Food stays where it is. Movement goes up.",
         "body": "Another calorie cut would take you under what your body needs at rest. More daily steps keep things moving without eating less — a gentler push than another cut."
@@ -662,6 +664,7 @@
     },
     "change_phase": {
       "label": "Change direction",
+      "applied": "Applied. Your plan changes direction from today.",
       "bulk_ceiling": {
         "title": "Time to switch to a cut.",
         "body": "Past this point, more food mostly adds fat rather than muscle. A cut now makes the next bulk count."
@@ -689,6 +692,7 @@
     },
     "stop_load_increase": {
       "label": "Hold the weight",
+      "applied": "Applied. Your program keeps its loads from today.",
       "plateau": {
         "title": "Keep the same weight this week.",
         "body": "The lifts that stalled keep the same weight for a week before anything else changes."
@@ -696,6 +700,7 @@
     },
     "deload": {
       "label": "Lighter week",
+      "applied": "Applied. Your program is lighter this week.",
       "load_held_still_stalled": {
         "title": "A lighter week.",
         "body": "Holding the weight didn't move things, so this week has fewer sets. A lighter week often gives your body room to recover."
@@ -707,6 +712,7 @@
     },
     "full_rest_week": {
       "label": "Week off",
+      "applied": "Applied. Your program takes the week off.",
       "plan_missed": {
         "title": "Take this week off from the gym.",
         "body": "For a while now the plan hasn't gone the way it was written. A lighter week rarely fixes that; a full week away does. Come back gradually after it."
@@ -762,6 +768,7 @@
     },
     "adjust_calories": {
       "label": "New calorie target",
+      "applied": "Applied. Your calorie target has changed from today.",
       "not_toward_goal": {
         "title": "Time for a new calorie target.",
         "body": "You followed the plan and your weight hasn't moved the way it should over the last few weeks. One clear step now, then a few weeks to see it work."
@@ -773,6 +780,7 @@
     },
     "mini_cut": {
       "label": "Short cut",
+      "applied": "Applied. The short cut starts today.",
       "appetite_gone": {
         "title": "A short cut to bring your appetite back.",
         "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating less than on the bulk resets your appetite and clears some of the fat the bulk added; then the bulk picks up again."
