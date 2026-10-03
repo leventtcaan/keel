@@ -66,10 +66,12 @@ class ProgramStore {
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("source", source.name())
                 .param("now", clock.instant().atOffset(ZoneOffset.UTC)).query(UUID.class).single();
         jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
-        // What this program asks a week, from now (K-535): the weeks before keep the program they had.
+        // What this program asks a week, from now (K-535): the weeks before keep the program they had. Never before the
+        // last row: two replaces at once each read the clock before the lock, and the one stored last must be in force.
         jdbc.sql("""
                 insert into training.program_history (id, account_id, sessions_per_week, effective_from)
-                values (:id, :account, :sessions, (select created_at from training.program where id = :program))""")
+                values (:id, :account, :sessions, greatest((select created_at from training.program where id = :program),
+                        (select max(effective_from) from training.program_history where account_id = :account)))""")
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("sessions", days.size()).param("program", program)
                 .update();
         for (int d = 0; d < days.size(); d++) {
