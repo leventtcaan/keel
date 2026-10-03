@@ -104,8 +104,9 @@ class PromptController {
         // profile set them, or the program was made, whichever is later.
         Set<DayOfWeek> programDays = statuses.programDays(account);
         Set<DayOfWeek> trainingDays = programDays.isEmpty() ? profile.trainingDays() : programDays;
-        Stream<Optional<LocalDate>> setOn = Stream.of(profiles.trainingDaysSince(account).map(at -> at.atZone(zone).toLocalDate()),
-                statuses.programSince(account, zone));
+        Stream<Optional<LocalDate>> setOn = programDays.isEmpty()
+                ? Stream.of(profiles.trainingDaysSince(account).map(at -> at.atZone(zone).toLocalDate()), statuses.programSince(account, zone))
+                : Stream.of(statuses.programSince(account, zone));
         LocalDate since = setOn.flatMap(Optional::stream).max(Comparator.naturalOrder()).orElse(today);
         LocalDate from = since.isBefore(weekBefore) ? since : weekBefore;
         TrainingStatusReader.Breaks breaks = statuses.breaks(account, from, today);
