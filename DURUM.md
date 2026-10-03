@@ -695,7 +695,7 @@ yalnız kalıcı `../keel-main`; `M5-part4-devam`/`M6-*-devam` yok). Ana checkou
   kapatıldı. `main`'e doğrudan: ADR-049 (+ inceleme sonrası güncelleme), aktarım dosyaları `docs/aktarim/M6/` (README 1-6). Açık PR yok (#341
   birleşince). Worktree yalnız kalıcı `../keel-main`. Yerel artık dallar (birleşti, squash): `training/331-program-history`, `mut/331-history`.
 - **Kontrol çıktısı:** mobil `npm run check` 104 suite **1702/1702**; sunucu saf testler **1439/1439** (431 DB testi Docker'sız düşer → CI; her PR CI'da
-  DB dahil yeşil). Disk 3,8 GB; Docker sanal diski 17 GB (soru 80 açık) → simülatör turu yine yok.
+  DB dahil yeşil). Disk **3,0 GB** (Gradle derlemeleri yedi; daemon günlükleri + derleme çıktısı silindi); Docker sanal diski 17 GB (soru 80 açık) → simülatör turu yine yok; 2 GB altına inerse dur.
 - **Backlog:** K-535, K-534, K-608, K-603, K-611, K-610 `done`; sync ✅.
 - **Part 2'nin bilmesi gerekenler:**
   - Hafta okuması (ADR-049): `PlannedSessions.byWeek/inWeek` — hafta başındaki program, hafta içinde değiştiyse **en azı**; hedefler bugünkü programla.
