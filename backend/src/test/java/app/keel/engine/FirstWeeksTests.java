@@ -167,6 +167,15 @@ class FirstWeeksTests {
     }
 
     @Test
+    void noSessionInAWeekThatAskedNoneIsNoRiskWhateverTheProgramAsksNow() {
+        // K-535 (ADR-049): a program made this week asks sessions from now on; the week just over asked none (U7).
+        FirstWeeks.Week week = week(new FirstWeeks.Facts(weekStarting(6), BEGAN, true, false, new FirstWeeks.UserWeek(0, 7, false), 7, List.of()));
+
+        assertThat(rules(week)).isEmpty();
+        assertThat(week.content()).as("this week's words are today's program's").contains(new CopyKey("first_weeks.week6"));
+    }
+
+    @Test
     void noSessionInTheUsersWeekJustOverIsARisk() {
         FirstWeeks.Week week = week(new FirstWeeks.Facts(weekStarting(6), BEGAN, true, new FirstWeeks.UserWeek(0, 7, false), 7, List.of()));
 

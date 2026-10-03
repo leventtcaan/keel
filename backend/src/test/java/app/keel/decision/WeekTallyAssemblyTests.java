@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 class WeekTallyAssemblyTests {
 
     private static final LocalDate MON_28_SEP = LocalDate.of(2026, 9, 28);
-    private static final WeekTallies.Plan PLAN = new WeekTallies.Plan(3, 4, 160, day -> 7000);
+    private static final WeekTallies.Plan PLAN = new WeekTallies.Plan(week -> 3, 4, 160, day -> 7000);
 
     @Test
     void theWindowsWeeksAreTheMondayWeeksOverByToday() {
@@ -59,11 +59,25 @@ class WeekTallyAssemblyTests {
     @Test
     void aStepDayIsJudgedAgainstTheTargetInForceThatDay() {
         // Raised from 7000 to 10000 on Thursday (K-216, CHANGE_MOVEMENT): 8000 before it is done, 8000 after it is not.
-        WeekTallies.Plan raisedThursday = new WeekTallies.Plan(3, 4, 160, day -> day.isBefore(MON_28_SEP.plusDays(3)) ? 7000 : 10000);
+        WeekTallies.Plan raisedThursday = new WeekTallies.Plan(week -> 3, 4, 160, day -> day.isBefore(MON_28_SEP.plusDays(3)) ? 7000 : 10000);
         WeekTallies.Logs logs = new WeekTallies.Logs(List.of(), Set.of(), Map.of(), Map.of(MON_28_SEP, 8000, MON_28_SEP.plusDays(2), 8000,
                 MON_28_SEP.plusDays(3), 8000, MON_28_SEP.plusDays(4), 10000));
 
         assertThat(WeekTallies.of(List.of(MON_28_SEP), logs, raisedThursday).getFirst().steps()).isEqualTo(new ActionTally(4, 3));
+    }
+
+    @Test
+    void eachWeeksTrainingIsAskedByTheProgramItHad() {
+        // K-535 (ADR-045 #79): three sessions a week until 5 Oct, five from then — three done each week is the whole of
+        // the first week's plan, not three of five.
+        WeekTallies.Plan raisedOn5Oct = new WeekTallies.Plan(week -> week.isBefore(LocalDate.of(2026, 10, 5)) ? 3 : 5, 4, 160, day -> 7000);
+        LocalDate oct5 = LocalDate.of(2026, 10, 5);
+        WeekTallies.Logs logs = new WeekTallies.Logs(List.of(MON_28_SEP, MON_28_SEP.plusDays(2), MON_28_SEP.plusDays(4), oct5, oct5.plusDays(2),
+                oct5.plusDays(4)), Set.of(), Map.of(), Map.of());
+
+        assertThat(WeekTallies.of(List.of(MON_28_SEP, oct5), logs, raisedOn5Oct)).extracting(WeekTally::training)
+                .containsExactly(new ActionTally(3, 3), new ActionTally(5, 3));
+        assertThat(WeekTallies.thisWeek(oct5.plusDays(5), logs, raisedOn5Oct).training()).isEqualTo(new ActionTally(5, 3));
     }
 
     @Test

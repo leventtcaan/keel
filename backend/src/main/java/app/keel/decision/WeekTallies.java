@@ -42,8 +42,11 @@ final class WeekTallies {
     record ProteinLogged(int lowG, int highG) {
     }
 
-    /** What the plan asks of a week; the step target of each day (it can change mid-window, K-216). */
-    record Plan(int trainingSessionsPerWeek, int weighInsPerWeek, int proteinG, Function<LocalDate, Integer> stepsOn) {
+    /**
+     * What the plan asks of a week: the sessions of each week by its Monday (the program it had, K-535), the step target of
+     * each day (it can change mid-window, K-216).
+     */
+    record Plan(Function<LocalDate, Integer> trainingSessionsIn, int weighInsPerWeek, int proteinG, Function<LocalDate, Integer> stepsOn) {
     }
 
     private static final int DAYS_PER_WEEK = 7;
@@ -92,7 +95,7 @@ final class WeekTallies {
             // The middle of the range reaches the target: low + high ≥ 2 × target, whole grams, no rounding.
             int proteinDone = (int) protein.stream().filter(day -> day.lowG() + day.highG() >= 2 * plan.proteinG()).count();
             int stepsDone = (int) steps.stream().filter(day -> day.getValue() >= plan.stepsOn().apply(day.getKey())).count();
-            return new WeekTally(week, new ActionTally(plan.trainingSessionsPerWeek(), workouts), new ActionTally(protein.size(), proteinDone),
+            return new WeekTally(week, new ActionTally(plan.trainingSessionsIn().apply(week), workouts), new ActionTally(protein.size(), proteinDone),
                     new ActionTally(steps.size(), stepsDone), new ActionTally(plan.weighInsPerWeek(), weighed));
         }).toList();
     }

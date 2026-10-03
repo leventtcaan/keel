@@ -234,7 +234,8 @@ class PromptsApiTests {
                 .param("began", LocalDate.now(ZoneOffset.UTC).minusDays(60)).update();
         assertThat(send(account, "PUT", "/v1/program", Map.of("days", List.of(Map.of("name", "Full body", "weekday", "MONDAY", "exercises",
                 List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
-        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+        jdbc.sql("with made as (update training.program set created_at = now() - interval '60 days' where account_id = :a returning created_at) "
+                + "update training.program_history set effective_from = (select created_at from made) where account_id = :a").param("a", account.value()).update();
         // The week before last at 80 kg, last week at 70; today 90 — read as of today the drop would not show.
         session(account, lastMonday().minusDays(5), 80);
         session(account, lastMonday().plusDays(2), 70);
@@ -303,7 +304,8 @@ class PromptsApiTests {
             return day;
         }).toList();
         assertThat(send(account, "PUT", "/v1/program", Map.of("days", days))).hasStatusOk();
-        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+        jdbc.sql("with made as (update training.program set created_at = now() - interval '60 days' where account_id = :a returning created_at) "
+                + "update training.program_history set effective_from = (select created_at from made) where account_id = :a").param("a", account.value()).update();
     }
 
     /** A session on the Thursday 15 to 21 days ago: at least two of any weekday since, and Monday before Wednesday. */

@@ -176,4 +176,19 @@ class TrainingStatusTests {
     private static TrainingChanges.Change change(TrainingChanges.Kind kind, LocalDate from, LocalDate until) {
         return new TrainingChanges.Change(UUID.randomUUID(), kind, from, until, kind == TrainingChanges.Kind.LIGHTER_WEEK ? new BigDecimal("0.5") : null);
     }
+
+    @Test
+    void aWeekIsJudgedByTheProgramOnlyIfItWasInForceWhenTheWeekBegan() {
+        // K-535 review (ADR-049): a program replaced at 10:00 on a Monday did not ask its days of that week — the week is
+        // the program before's (decision reads it by the fewest asked). Its missed weeks start the Tuesday after; one made
+        // at 00:00 on a Monday asks that whole week.
+        java.time.ZoneId istanbul = java.time.ZoneId.of("Europe/Istanbul");
+        LocalDate monday = MONDAY.minusWeeks(1);
+        assertThat(TrainingStatuses.judgedFrom(monday.atTime(10, 0).atZone(istanbul).toInstant(), istanbul)).isEqualTo(monday.plusDays(1));
+        assertThat(TrainingStatuses.judgedFrom(monday.atStartOfDay(istanbul).toInstant(), istanbul)).isEqualTo(monday);
+        // Three sessions that week, five asked from 10:00: not a missed week of the five-day program.
+        List<LocalDate> three = List.of(monday, monday.plusDays(2), monday.plusDays(4));
+        assertThat(TrainingStatuses.weeksPlanMissed(three, List.of(), 5, MONDAY,
+                TrainingStatuses.judgedFrom(monday.atTime(10, 0).atZone(istanbul).toInstant(), istanbul))).isZero();
+    }
 }

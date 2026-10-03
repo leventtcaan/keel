@@ -3,6 +3,7 @@ package app.keel.training;
 import app.keel.engine.TrainingStatus;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -83,6 +84,15 @@ final class TrainingStatuses {
         LocalDate to = today.minusDays(1);
         return changes.stream().filter(change -> change.kind() != TrainingChanges.Kind.HOLD_LOAD)
                 .anyMatch(change -> !change.startsOn().isAfter(to) && (change.endsOn() == null || !change.endsOn().isBefore(from)));
+    }
+
+    /**
+     * The first day a week of a program made at {@code made} can begin (K-535, ADR-049): the day it was made if made as that
+     * day began, else the next — a week is the program's only if it was in force from the week's start.
+     */
+    static LocalDate judgedFrom(Instant made, ZoneId zone) {
+        LocalDate day = made.atZone(zone).toLocalDate();
+        return made.equals(day.atStartOfDay(zone).toInstant()) ? day : day.plusDays(1);
     }
 
     /**

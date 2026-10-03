@@ -497,7 +497,10 @@ class DecisionService {
             return logs.consistency(account, profile, today, plan, calls.firstMadeOn(account).orElse(plan.phaseStart()), bodyweight(account, read),
                     read.body().ageYears(), p).weeksOver();
         }).orElse(List.of());
-        return FirstWeeks.of(new FirstWeeks.Facts(today, began, trainingPlanned, new FirstWeeks.UserWeek(last.sessions(), last.loggedDays(), last.paused() || rested),
+        // The week just over is judged by what it asked (K-535): a program made since asks nothing of it.
+        boolean askedLastWeek = trainingPlanned && planned.askedSince(account, profile, lastWeek);
+        return FirstWeeks.of(new FirstWeeks.Facts(today, began, trainingPlanned, askedLastWeek,
+                new FirstWeeks.UserWeek(last.sessions(), last.loggedDays(), last.paused() || rested),
                 logs.loggedDays(account, lastWeek.minusWeeks(1)), calendar), p);
     }
 

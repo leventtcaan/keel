@@ -106,7 +106,8 @@ class AdherenceApiTests {
                         List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10))))).toList()))
                 .getResponse().getStatus()).isLessThan(300);
         // Made before the window's weeks: they were asked for by it (a week before a program is K-530's question 2).
-        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+        jdbc.sql("with made as (update training.program set created_at = now() - interval '60 days' where account_id = :a returning created_at) "
+                + "update training.program_history set effective_from = (select created_at from made) where account_id = :a").param("a", account.value()).update();
         MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
                 at(weeks.getFirst(), 12).toString()));
         post(account, "/v1/workouts/" + JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id") + "/sets",
