@@ -120,6 +120,7 @@ class ConsistencyApiTests {
         AccountId account = afterTheFirstCall();
         trainingDays(account, "MONDAY", "WEDNESDAY", "FRIDAY");
         program(account, "MONDAY", "TUESDAY", "THURSDAY", "SATURDAY");
+        inForceSinceLastWeek(account);
 
         assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 4, "done", 0));
     }
@@ -130,6 +131,7 @@ class ConsistencyApiTests {
         AccountId account = afterTheFirstCall();
         trainingDays(account, "MONDAY", "WEDNESDAY", "FRIDAY");
         program(account, "MONDAY", null, null, null);
+        inForceSinceLastWeek(account);
 
         assertThat(read(get(account)).get("training")).isEqualTo(Map.of("planned", 4, "done", 0));
     }
@@ -217,6 +219,15 @@ class ConsistencyApiTests {
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of(days), "checkInDay", "MONDAY", "timeZone", ISTANBUL.getId())));
+    }
+
+    /**
+     * The program in force since before this week began (K-535, ADR-049): a program made during the week asks that week
+     * only the fewer of its days and the ones before it.
+     */
+    private void inForceSinceLastWeek(AccountId account) {
+        jdbc.sql("update training.program_history set effective_from = now() - interval '8 days' where account_id = :a")
+                .param("a", account.value()).update();
     }
 
     /** The user's own program: a day on each weekday given (null: a day without one). */
