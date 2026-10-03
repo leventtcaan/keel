@@ -59,10 +59,7 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
     <View style={styles.reasons}>
       {reasonLines(decision).map((line, i) => (
         <View key={i} style={styles.reason}>
-          {/* The leading reason is the call itself: its words are the block's title already. */}
-          {line.titleKey !== null && line.titleKey !== titleKey && (
-            <Text style={[styles.text, { color: color.decisionText }]}>{t(line.titleKey)}</Text>
-          )}
+          {line.sentenceKey !== null && <Text style={[styles.text, { color: color.decisionText }]}>{t(line.sentenceKey)}</Text>}
           <Text style={[styles.small, { color: color.decisionMuted }]}>{t(`today.call.source.${line.tag}`)}</Text>
         </View>
       ))}

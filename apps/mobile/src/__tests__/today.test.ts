@@ -120,10 +120,16 @@ describe('the call', () => {
     expect(labelKey('decision.no_decision_yet.cycle_check_needed')).toBe('decision.no_decision_yet.label');
   });
 
-  test("each reason with its words where the copy has them for this call's action, and always its kind of source (U14)", () => {
+  test("each reason in its own sentence where the copy has one — the leading one too (K-522) — and always its kind of source (U14)", () => {
     expect(reasonLines(DECISION)).toEqual([
-      { titleKey: 'decision.continue.toward_goal.title', tag: 'EXPERIENCE' },
-      { titleKey: null, tag: 'LITERATURE' },
+      { sentenceKey: 'decision.rule.toward_goal', tag: 'EXPERIENCE' },
+      { sentenceKey: null, tag: 'LITERATURE' },
+    ]);
+  });
+
+  test('a safety call says nothing of why: its kinds of source, no sentence (ADR-028 #24)', () => {
+    expect(reasonLines({ ...DECISION, safety: true, reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' } }] })).toEqual([
+      { sentenceKey: null, tag: 'LITERATURE' },
     ]);
   });
 });

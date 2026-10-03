@@ -93,7 +93,7 @@ test('the call, the data it read, the rules each with its kind of source, its co
   expect(allText()).not.toContain('arastirma/');
 });
 
-test('every rule with words says them; the leading one is the call’s title, said once', async () => {
+test('every rule says its own sentence, the leading one too — words other than the call’s title, which is said once (K-522)', async () => {
   mockAnswers['/v1/decisions/{id}'] = ok({
     ...CALL,
     reasons: [
@@ -102,7 +102,9 @@ test('every rule with words says them; the leading one is the call’s title, sa
     ],
   });
   await show();
-  expect(screen.getByText(t('decision.continue.energy_floor.title'))).toBeOnTheScreen();
+  expect(screen.getByText(t('decision.rule.toward_goal'))).toBeOnTheScreen();
+  expect(screen.getByText(t('decision.rule.energy_floor'))).toBeOnTheScreen();
+  expect(t('decision.rule.toward_goal')).not.toEqual(t('decision.continue.toward_goal.title'));
   expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(1);
 });
 
@@ -136,6 +138,7 @@ test('a safety call: its general change, nothing of why, no research file', asyn
   });
   await show();
   expect(screen.getByText(t('decision.change_phase.low_energy_safety.title'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('decision.rule.low_energy_safety'))).toBeNull();
   expect(allText()).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
   expect(allText()).not.toContain('J1-cinsiyet');
 });

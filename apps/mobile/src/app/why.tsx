@@ -111,8 +111,7 @@ function Body({ read, onRetry }: { read: Read | null; onRetry: () => void }) {
         <Text style={[styles.label, { color: color.muted }]}>{t('why.rules')}</Text>
         {reasonLines(decision).map((reason, i) => (
           <View key={i} style={[styles.rule, { borderTopColor: color.line }]}>
-            {/* The leading reason is the call itself: its words are the block's title already. */}
-            {reason.titleKey !== null && reason.titleKey !== titleKey ? <Text style={[styles.text, { color: color.text }]}>{t(reason.titleKey)}</Text> : null}
+            {reason.sentenceKey !== null ? <Text style={[styles.text, { color: color.text }]}>{t(reason.sentenceKey)}</Text> : null}
             <Text style={small}>{t(`today.call.source.${reason.tag}`)}</Text>
           </View>
         ))}
