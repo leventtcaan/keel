@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -217,21 +218,92 @@ class StateModeTests {
     }
 
     @Test
-    void stillSoIsKeptWithTheStateAndGoesInTheExport() throws Exception {
-        // K-525: the answer is the day it was given, on the state it was given for — the user's data, exported.
+    @SuppressWarnings("unchecked")
+    void stillSoIsKeptOnTheStateInForceOnlyAndGoesInTheExport() throws Exception {
+        // K-525: the answer is the day it was given, on the state in force — not an ended one, not anyone else's.
+        AccountId account = ready();
+        AccountId other = ready();
+        send(other, "PUT", Map.of("kind", "BUSY"));
+        send(account, "PUT", Map.of("kind", "SICK"));
+        LocalDate monday = today().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        jdbc.sql("update decision.declared_state set starts_on = :start where account_id = :a").param("start", monday.minusWeeks(2))
+                .param("a", account.value()).update();
+        jdbc.sql("""
+                insert into decision.declared_state (id, account_id, kind, starts_on, ends_on, created_at)
+                values (gen_random_uuid(), :a, 'PAIN', :start, :end, now())""").param("a", account.value())
+                .param("start", monday.minusWeeks(6)).param("end", monday.minusWeeks(5)).update();
+        UUID clientId = UUID.randomUUID();
+
+        answer(account, clientId, "YES");
+
+        assertThat(stillSoOn(account, "SICK")).isEqualTo(today());
+        assertThat(stillSoOn(account, "PAIN")).as("ended").isNull();
+        assertThat(stillSoOn(other, "BUSY")).as("someone else's").isNull();
+        // The same answers sent again (a retry) keep the call and do not write the day again.
+        jdbc.sql("update decision.declared_state set still_so_on = :said where account_id = :a and kind = 'SICK'")
+                .param("said", monday.minusWeeks(2)).param("a", account.value()).update();
+        answer(account, clientId, "YES");
+        assertThat(stillSoOn(account, "SICK")).isEqualTo(monday.minusWeeks(2));
+        // The export: on its state, with the days as the state's own; GET /v1/state stays the contract's DeclaredState.
+        Map<String, Object> export = read(mvc.get().uri("/v1/account/export").header("Authorization", TestSessions.bearer(context, account))
+                .exchange());
+        List<Map<String, Object>> states = (List<Map<String, Object>>) ((Map<String, Object>) ((Map<String, Object>) export.get("sections"))
+                .get("decision")).get("declaredStates");
+        assertThat(states).filteredOn(state -> "SICK".equals(state.get("kind"))).singleElement()
+                .satisfies(state -> assertThat(state).containsEntry("since", monday.minusWeeks(2).toString())
+                        .containsEntry("stillSoOn", monday.minusWeeks(2).toString()).doesNotContainKey("until"));
+        assertThat(states).filteredOn(state -> "PAIN".equals(state.get("kind"))).singleElement()
+                .satisfies(state -> assertThat(state).doesNotContainKey("stillSoOn"));
+        assertThat(read(send(account, "GET", null))).isEqualTo(Map.of("kind", "SICK", "since", monday.minusWeeks(2).toString()));
+    }
+
+    @Test
+    void aStillSoWithNoStateInForceIsTakenAndKeepsNothing() throws Exception {
+        // The question was fetched, then "I'm back", then "still so": the call is made, nothing is marked.
         AccountId account = ready();
         send(account, "PUT", Map.of("kind", "SICK"));
         LocalDate monday = today().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
         jdbc.sql("update decision.declared_state set starts_on = :start where account_id = :a").param("start", monday.minusWeeks(2))
                 .param("a", account.value()).update();
+        assertThat(send(account, "DELETE", null).getResponse().getStatus()).isLessThan(300);
 
-        answer(account, "YES");
+        answer(account, UUID.randomUUID(), "YES");
 
-        assertThat(jdbc.sql("select still_so_on from decision.declared_state where account_id = :a").param("a", account.value())
-                .query(LocalDate.class).single()).isEqualTo(today());
-        Map<String, Object> export = read(mvc.get().uri("/v1/account/export").header("Authorization", TestSessions.bearer(context, account))
-                .exchange());
-        assertThat(export.toString()).contains("stillSoOn=" + today());
+        assertThat(stillSoOn(account, "SICK")).isNull();
+        assertThat(send(account, "GET", null)).hasStatus(404);
+    }
+
+    @Test
+    void aCheckInWithoutTheQuestionKeepsNothing() throws Exception {
+        AccountId account = ready();
+        send(account, "PUT", Map.of("kind", "SICK"));
+        String weekOf = CheckInWeek.weekOf(today(), java.time.DayOfWeek.MONDAY).toString();
+
+        assertThat(mvc.post().uri("/v1/check-ins/current/answers").header("Authorization", TestSessions.bearer(context, account))
+                .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("clientId", UUID.randomUUID(),
+                        "weekOf", weekOf, "answers", List.of()))).exchange()).hasStatusOk();
+        assertThat(stillSoOn(account, "SICK")).isNull();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aNewStateDoesNotBringTheQuestionBackSoonerTheLastStillSoCounts() throws Exception {
+        // Putting the call off is the user's right, not a way round the question (U2): SICK said still so last week, then
+        // BUSY declared — the paused run goes on, and the question waits three weeks from that answer, not from BUSY.
+        AccountId account = ready();
+        LocalDate monday = today().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        jdbc.sql("""
+                insert into decision.declared_state (id, account_id, kind, starts_on, ends_on, still_so_on, created_at)
+                values (gen_random_uuid(), :a, 'SICK', :start, :end, :said, now())""").param("a", account.value())
+                .param("start", monday.minusWeeks(5)).param("end", today().minusDays(1)).param("said", monday.minusWeeks(1)).update();
+        send(account, "PUT", Map.of("kind", "BUSY"));
+
+        assertThat(checkIn(account)).as("a week after the answer").containsEntry("questions", List.of());
+
+        jdbc.sql("update decision.declared_state set still_so_on = :said where account_id = :a and kind = 'SICK'")
+                .param("said", monday.minusWeeks(3)).param("a", account.value()).update();
+        assertThat((List<Map<String, Object>>) checkIn(account).get("questions")).as("three weeks after it").singleElement()
+                .satisfies(question -> assertThat(question).containsEntry("kind", "STATE_STILL"));
     }
 
     @Test
@@ -285,10 +357,19 @@ class StateModeTests {
     }
 
     private void answer(AccountId account, String stillSo) throws Exception {
+        answer(account, UUID.randomUUID(), stillSo);
+    }
+
+    private void answer(AccountId account, UUID clientId, String stillSo) throws Exception {
         String weekOf = CheckInWeek.weekOf(today(), java.time.DayOfWeek.MONDAY).toString();
         assertThat(mvc.post().uri("/v1/check-ins/current/answers").header("Authorization", TestSessions.bearer(context, account))
-                .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("clientId", java.util.UUID.randomUUID(),
+                .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("clientId", clientId,
                         "weekOf", weekOf, "answers", List.of(Map.of("kind", "STATE_STILL", "choice", stillSo))))).exchange()).hasStatusOk();
+    }
+
+    private LocalDate stillSoOn(AccountId account, String kind) {
+        return jdbc.sql("select still_so_on from decision.declared_state where account_id = :a and kind = :kind")
+                .param("a", account.value()).param("kind", kind).query(LocalDate.class).single();
     }
 
     /** A user in Kiritimati, with the consent and a profile. */

@@ -107,7 +107,9 @@ final class CheckInQuestions {
             java.util.Optional<LocalDate> stillSoOn) {
         LocalDate monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
         return inForceToday && java.util.stream.IntStream.range(0, weeks).mapToObj(monday::minusWeeks)
-                .allMatch(week -> week.datesUntil(week.plusWeeks(1)).anyMatch(declaredDays::contains));
+                .allMatch(week -> week.datesUntil(week.plusWeeks(1)).anyMatch(declaredDays::contains))
+                && stillSoOn.map(said -> !said.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+                        .plusWeeks(weeks).isAfter(monday)).orElse(true);
     }
 
     /**

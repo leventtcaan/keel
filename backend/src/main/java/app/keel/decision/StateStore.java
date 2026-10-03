@@ -63,6 +63,15 @@ class StateStore {
                 .param("account", account.value()).param("today", today).update();
     }
 
+    /**
+     * The last day the user said a state was still so, whichever state (K-525): a new state declared since does not bring
+     * the question back sooner — putting the call off is the user's right, not a way round the question (U2).
+     */
+    Optional<LocalDate> lastStillSo(AccountId account) {
+        return jdbc.sql("select max(still_so_on) from decision.declared_state where account_id = :account").param("account", account.value())
+                .query((row, n) -> Optional.ofNullable(row.getObject(1, LocalDate.class))).single();
+    }
+
     /** "I'm back": what is in force today or later ends yesterday; begun today, it is taken back. Harmless with none. */
     @Transactional
     void end(AccountId account, LocalDate today) {
