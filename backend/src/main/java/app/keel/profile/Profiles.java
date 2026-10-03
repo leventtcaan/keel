@@ -3,6 +3,7 @@ package app.keel.profile;
 import app.keel.shared.AccountId;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,14 @@ public class Profiles {
         return store.find(account).map(profile -> new ProfileFacts(profile.sex(), profile.heightCm(), profile.birthYear(),
                 Optional.ofNullable(profile.activityLevel()), profile.goal(), profile.schedule().checkInDay(),
                 ZoneId.of(profile.schedule().timeZone()), Set.copyOf(profile.schedule().trainingDays())));
+    }
+
+    /**
+     * The foods the user said they cannot eat (K-507: never offered). May be health data — an allergy, coeliac disease
+     * (ADR-027 #14): read only behind the HEALTH_DATA consent, as the profile keeps it.
+     */
+    public List<String> foodsAvoided(AccountId account) {
+        return store.find(account).map(ProfileController.Profile::food).map(ProfileController.Food::avoid).map(List::copyOf).orElse(List.of());
     }
 
     /** When the training days were last set: they are asked for from then on, at the earliest (K-512). */

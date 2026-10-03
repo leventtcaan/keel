@@ -408,6 +408,11 @@
     "reachedOne": "{reached} of 1 exercise reached your target effort"
   },
   "food": {
+    "suggestions": {
+      "title": "Fits what's left today",
+      "item": "{name} · {quantity} {unit}",
+      "log": "Log {name}"
+    },
     "log": "Log a meal",
     "recipes": "Your recipes",
     "budget": {

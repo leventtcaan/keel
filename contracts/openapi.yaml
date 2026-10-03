@@ -545,6 +545,34 @@ paths:
                 $ref: "#/components/schemas/DayBudget"
         default:
           $ref: "#/components/responses/Error"
+  /v1/days/{day}/suggestions:
+    parameters:
+      - name: day
+        in: path
+        required: true
+        schema:
+          type: string
+          format: date
+    get:
+      tags: [nutrition]
+      operationId: getDaySuggestions
+      summary: What the day can still hold — foods the user eats, in their usual amounts, that fit what is likely left (K-507)
+      description: |
+        From the user's own meals of the last weeks, each in the amount they have most often, estimated from the database
+        now (U1, U5); never a food in the profile's foods to avoid; kept while its high end fits the middle of what is
+        left; a few at most, the most eaten first. Empty when nothing fits (a day past its target says nothing of it, U7).
+        NOT_FOUND until the user has a target; CONSENT_REQUIRED without the HEALTH_DATA consent.
+      responses:
+        "200":
+          description: The suggestions, in order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Suggestion"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/recipes:
     get:
       tags: [nutrition]
@@ -1855,6 +1883,21 @@ components:
             database foods only.
         amount:
           $ref: "#/components/schemas/Amount"
+    Suggestion:
+      type: object
+      description: A food the user eats, in their usual amount, as the database estimates it now (K-507).
+      required: [foodId, name, amount, kcal, proteinG]
+      properties:
+        foodId:
+          type: string
+        name:
+          type: string
+        amount:
+          $ref: "#/components/schemas/Amount"
+        kcal:
+          $ref: "#/components/schemas/KcalRange"
+        proteinG:
+          $ref: "#/components/schemas/GramRange"
     EstimatedItem:
       type: object
       required: [foodId, name, amount, kcal, proteinG]
