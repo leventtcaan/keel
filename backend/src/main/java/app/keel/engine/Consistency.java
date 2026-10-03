@@ -82,6 +82,10 @@ public final class Consistency {
         return new ConsistencyRecord(onTrack, counted, run);
     }
 
+    public static boolean lastWeekForgiven(List<WeekTally> weeks, Parameters parameters) {
+        return false;
+    }
+
     /**
      * The Monday that starts the week containing {@code moment} in the user's home time zone. The home zone, not the
      * phone's current zone, so a trip never moves a week (L3 P13); the engine never reads the machine's zone.

@@ -22,18 +22,12 @@ public final class FirstWeeks {
     private static final Source SIGNALS = new Source("arastirma/ham/I1-onboarding-aliskanlik.md#F2", SourceTag.LITERATURE);
     private static final int DAYS_PER_WEEK = 7;
 
-    /**
-     * What the week reads, on the user's calendar.
-     *
-     * @param began the day the account began: day one of week one
-     * @param sessionsLastWeek sessions done (a set past the warm-ups, K-431) in the calendar week just over
-     * @param trainingPlanned the program asks for training at all
-     * @param forgivenLastWeek the week just over was the one missed week consistency forgives (04 §7.3)
-     * @param loggedDaysLastWeek days with food logged in the week just over; {@code loggedDaysWeekBefore} the week before
-     * @param lastWeekPaused a state was declared on a day of the week just over
-     */
-    public record Facts(LocalDate today, LocalDate began, int sessionsLastWeek, boolean trainingPlanned, boolean forgivenLastWeek,
-            int loggedDaysLastWeek, int loggedDaysWeekBefore, boolean lastWeekPaused) {
+    /** The user's own seven days: sessions done (a set past the warm-ups, K-431), days with food logged, a state declared. */
+    public record UserWeek(int sessions, int loggedDays, boolean paused) {
+    }
+
+    public record Facts(LocalDate today, LocalDate began, boolean trainingPlanned, UserWeek lastWeek, int loggedDaysWeekBefore,
+            List<WeekTally> calendarWeeks) {
     }
 
     /** The week: its number (1 to first_weeks), its content (none in the first), the risk's signals (none: no risk). */
@@ -55,20 +49,24 @@ public final class FirstWeeks {
         return Optional.of(new Week(number, content, risk));
     }
 
+    public static LocalDate weekStart(LocalDate began, LocalDate today) {
+        return began.plusWeeks(ChronoUnit.DAYS.between(began, today) / DAYS_PER_WEEK);
+    }
+
     private static List<Reason> signals(Facts facts, Parameters parameters) {
-        if (facts.lastWeekPaused()) {
+        if (facts.lastWeek().paused()) {
             return List.of();
         }
         List<Reason> signals = new ArrayList<>();
-        if (facts.trainingPlanned() && facts.sessionsLastWeek() == 0) {
+        if (facts.trainingPlanned() && facts.lastWeek().sessions() == 0) {
             signals.add(new Reason(NO_SESSION_LAST_WEEK, SIGNALS));
         }
-        if (facts.forgivenLastWeek()) {
+        if (Consistency.lastWeekForgiven(facts.calendarWeeks(), parameters)) {
             signals.add(new Reason(FORGIVEN_WEEK_USED, SIGNALS));
         }
         // A drop under a week's worth of logging (H1 §3.4's min_logged_days_per_week), not a new threshold of its own.
         int enough = parameters.wholeNumber(ParameterKey.MIN_LOGGED_DAYS_PER_WEEK);
-        if (facts.loggedDaysLastWeek() < enough && facts.loggedDaysWeekBefore() >= enough) {
+        if (facts.lastWeek().loggedDays() < enough && facts.loggedDaysWeekBefore() >= enough) {
             signals.add(new Reason(LOGGING_DROPPED, SIGNALS));
         }
         return List.copyOf(signals);

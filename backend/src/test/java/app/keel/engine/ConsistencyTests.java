@@ -289,6 +289,41 @@ class ConsistencyTests {
         assertThat(Consistency.record(weeks, P)).isEqualTo(new ConsistencyRecord(1, 1, 1));
     }
 
+    // ── the forgiven week (K-513: I1 F3, its use is the leading sign of dropping off) ───────────────────────────
+
+    @Test
+    void theLastWeekIsForgivenWhenItIsALoneMissAfterAWeekOnTrack() {
+        assertThat(Consistency.lastWeekForgiven(dated(List.of(week(10, 9), week(10, 2))), P)).isTrue();
+        // A miss after a run that a forgiven week kept going: on, miss, on, miss — each lone miss is forgiven.
+        assertThat(Consistency.lastWeekForgiven(dated(List.of(week(10, 9), week(10, 2), week(10, 9), week(10, 2))), P)).isTrue();
+    }
+
+    @Test
+    void aWeekOnTrackOrASecondMissIsNotTheForgivenWeek() {
+        assertThat(Consistency.lastWeekForgiven(dated(List.of(week(10, 2), week(10, 9))), P)).as("on track").isFalse();
+        assertThat(Consistency.lastWeekForgiven(dated(List.of(week(10, 9), week(10, 2), week(10, 1))), P))
+                .as("the second miss in a row ends the run, it forgives nothing").isFalse();
+    }
+
+    @Test
+    void aMissWithNoRunBeforeItForgivesNothing() {
+        // The first counted week missed: there is no run to keep going, so nothing was forgiven.
+        assertThat(Consistency.lastWeekForgiven(dated(List.of(week(10, 2))), P)).isFalse();
+        assertThat(Consistency.lastWeekForgiven(dated(List.of(week(0, 0), week(10, 2))), P)).isFalse();
+        assertThat(Consistency.lastWeekForgiven(List.of(), P)).isFalse();
+    }
+
+    @Test
+    void aPausedOrUnplannedWeekBetweenIsSkippedAndIsNeverItselfForgiven() {
+        // on, paused, miss → the pause is left out: the miss is lone, forgiven.
+        assertThat(Consistency.lastWeekForgiven(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 0).asPaused(),
+                training(MONDAY.plusWeeks(2), 10, 2)), P)).isTrue();
+        // The last week paused, or with nothing planned: neither a miss nor forgiven.
+        assertThat(Consistency.lastWeekForgiven(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 0).asPaused()), P))
+                .isFalse();
+        assertThat(Consistency.lastWeekForgiven(dated(List.of(week(10, 9), week(0, 0))), P)).isFalse();
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
 
     /** A week where only training was planned: enough to exercise the counter. */
