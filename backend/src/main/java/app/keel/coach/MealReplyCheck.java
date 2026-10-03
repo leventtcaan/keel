@@ -17,13 +17,17 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code {"items": [{"food", "quantity", "unit"}]}} — at most {@code maxItems}; a food of a few words with no digit and no
  * forbidden phrase (it is shown); a quantity above 0, to 2 decimals (the estimate takes no more, contract Amount); a unit
  * of letters. The model never turns a measure into grams (ADR-004: portions are the database's) and never says what a
- * food holds (U1): any other field drops the reply.
+ * food holds (U1): any other field drops the reply. A meal photo's reply (K-514, {@link #grams}) is the same with the
+ * amount in grams by eye only.
  */
 final class MealReplyCheck {
 
     /** A food in the model's words, and how much in the user's measure. */
     record Item(String food, BigDecimal quantity, String unit) {
     }
+
+    /** The one unit a photo reply may have (K-514, ADR-046): grams by eye — a serving seen would read as measured. */
+    static final Set<String> PHOTO_UNITS = Set.of("g");
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Set<String> ITEM_FIELDS = Set.of("food", "quantity", "unit");
@@ -34,12 +38,24 @@ final class MealReplyCheck {
     private final BigDecimal maxQuantity;
     private final int maxFoodChars;
     private final ForbiddenWords forbidden;
+    private final Optional<Set<String>> units;
 
+    /** A meal in words: the unit is the user's own measure word. */
     MealReplyCheck(int maxItems, BigDecimal maxQuantity, int maxFoodChars, ForbiddenWords forbidden) {
+        this(maxItems, maxQuantity, maxFoodChars, forbidden, Optional.empty());
+    }
+
+    private MealReplyCheck(int maxItems, BigDecimal maxQuantity, int maxFoodChars, ForbiddenWords forbidden, Optional<Set<String>> units) {
         this.maxItems = maxItems;
         this.maxQuantity = maxQuantity;
         this.maxFoodChars = maxFoodChars;
         this.forbidden = forbidden;
+        this.units = units;
+    }
+
+    /** A meal photo (K-514): the same reply, the amount in grams by eye only. */
+    static MealReplyCheck grams(int maxItems, BigDecimal maxQuantity, int maxFoodChars, ForbiddenWords forbidden) {
+        return new MealReplyCheck(maxItems, maxQuantity, maxFoodChars, forbidden, Optional.of(PHOTO_UNITS));
     }
 
     Optional<List<Item>> read(String raw) {
@@ -61,7 +77,7 @@ final class MealReplyCheck {
             String words = Words.normalize(food).strip();
             String measure = Words.normalize(unit).strip().toLowerCase(java.util.Locale.ROOT);
             if (words.isEmpty() || words.length() > maxFoodChars || DIGIT.matcher(words).find() || !forbidden.found(words).isEmpty()
-                    || !UNIT.matcher(measure).matches()) {
+                    || !UNIT.matcher(measure).matches() || units.filter(allowed -> !allowed.contains(measure)).isPresent()) {
                 return Optional.empty();
             }
             BigDecimal quantity;

@@ -5,6 +5,7 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.subscription.Quota;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -21,23 +22,32 @@ import org.springframework.stereotype.Service;
 
 /**
  * A meal said in words, as a draft to confirm (K-504): the model reads which foods and how much, in the user's own measure
- * (Purpose PARSE_MEAL — the AI consent must name the meal note; a meal is health data, so that consent too). The foods
+ * (Purpose PARSE_MEAL — the AI consent must name the meal note; a meal is health data, so that consent too). A meal photo
+ * (K-514, Purpose PHOTO_MEAL — the consent must name the meal photo) is read the same way, the amount in grams by eye:
+ * an estimate ({@code certainty} ESTIMATED), so the database's range is wide and its gram question is asked (U5). The foods
  * are the database's; what they hold is never the model's (U1), nor is a measure turned into grams by it (ADR-004): the
  * app sends the amount as it is to /v1/food-estimates with the food the user picks.
  *
  * <p>Sure ({@code confident}) when a food's name holds every word of the item as a whole word ("egg" is not "Eggnog");
  * those come first. Otherwise the foods of each word, one tap away (U5), taken in turn across the words in the model's
  * order, at most {@code candidates}; none when no food holds any. A reply off its schema, or a day past its limit
- * (K-508), leaves an empty DETERMINISTIC draft — the user searches.
+ * (K-508; a photo counts against the day's photo analyses), leaves an empty DETERMINISTIC draft — the user searches.
  */
 @Service
-@EnableConfigurationProperties(MealProperties.class)
+@EnableConfigurationProperties({MealProperties.class, PhotoProperties.class})
 class MealDraft {
 
     enum Mode { MODEL, DETERMINISTIC }
 
-    /** How much, as the contract's Amount: a quantity in g, ml or the user's measure (a serving of the food picked). */
-    record Amount(BigDecimal quantity, String unit) {
+    /** How sure an amount is, as the contract's Amount.certainty: a photo's grams are by eye. */
+    enum Certainty { ESTIMATED }
+
+    /**
+     * How much, as the contract's Amount: a quantity in g, ml or the user's measure (a serving of the food picked); a
+     * certainty only for a photo's grams by eye.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record Amount(BigDecimal quantity, String unit, Certainty certainty) {
     }
 
     record Item(String food, Amount amount, boolean confident, List<FoodFinder.FoodMatch> candidates) {
@@ -51,46 +61,61 @@ class MealDraft {
     private final FoodFinder foods;
     private final MealProperties properties;
     private final MealReplyCheck check;
+    private final MealReplyCheck photoCheck;
     private final Set<String> stopWords;
     private final String instructions;
+    private final String photoInstructions;
 
     MealDraft(CoachModel model, Quota quota, FoodFinder foods, MealProperties properties) {
         this.model = model;
         this.quota = quota;
         this.foods = foods;
         this.properties = properties;
-        this.check = new MealReplyCheck(Math.min(properties.maxItems(), foods.maxItems()), foods.maxGrams(), properties.maxFoodChars(),
-                ForbiddenWords.fromClasspath());
+        int maxItems = Math.min(properties.maxItems(), foods.maxItems());
+        ForbiddenWords forbidden = ForbiddenWords.fromClasspath();
+        this.check = new MealReplyCheck(maxItems, foods.maxGrams(), properties.maxFoodChars(), forbidden);
+        this.photoCheck = MealReplyCheck.grams(maxItems, foods.maxGrams(), properties.maxFoodChars(), forbidden);
         this.stopWords = properties.stopWords().stream().map(word -> word.toLowerCase(Locale.ROOT)).collect(Collectors.toUnmodifiableSet());
         this.instructions = CoachInstructions.read("parse-meal.md");
+        this.photoInstructions = CoachInstructions.read("photo-meal.md");
     }
 
     Draft read(AccountId account, String words) {
+        return draft(account, Purpose.PARSE_MEAL, Quota.Use.COACH_MESSAGE, instructions, Turn.user(words), check, null);
+    }
+
+    /** A meal photo the server cleaned (MealPhoto): the foods seen, with grams by eye. */
+    Draft readPhoto(AccountId account, Picture photo) {
+        return draft(account, Purpose.PHOTO_MEAL, Quota.Use.PHOTO_ANALYSIS, photoInstructions, Turn.userWithPicture("", photo), photoCheck,
+                Certainty.ESTIMATED);
+    }
+
+    private Draft draft(AccountId account, Purpose purpose, Quota.Use use, String system, Turn turn, MealReplyCheck reading, Certainty certainty) {
         foods.requireMealConsent(account);
-        if (!model.mayAsk(account, Purpose.PARSE_MEAL)) {
+        if (!model.mayAsk(account, purpose)) {
             throw new ApiException(ErrorCode.CONSENT_REQUIRED);
         }
-        Optional<LocalDate> taken = quota.take(account, Quota.Use.COACH_MESSAGE);
+        Optional<LocalDate> taken = quota.take(account, use);
         if (taken.isEmpty()) {
             return new Draft(Mode.DETERMINISTIC, List.of());
         }
         ModelReply reply;
         try {
-            reply = model.ask(account, Purpose.PARSE_MEAL, instructions, List.of(Turn.user(words)));
+            reply = model.ask(account, purpose, system, List.of(turn));
         } catch (RuntimeException notAsked) {
             try {
-                quota.giveBack(account, Quota.Use.COACH_MESSAGE, taken.get());
+                quota.giveBack(account, use, taken.get());
             } catch (RuntimeException alsoFailed) {
                 notAsked.addSuppressed(alsoFailed);
             }
             throw notAsked;
         }
-        return check.read(reply.text()).map(items -> new Draft(Mode.MODEL, items.stream().map(this::matched).toList()))
+        return reading.read(reply.text()).map(items -> new Draft(Mode.MODEL, items.stream().map(item -> matched(item, certainty)).toList()))
                 .orElseGet(() -> new Draft(Mode.DETERMINISTIC, List.of()));
     }
 
-    private Item matched(MealReplyCheck.Item item) {
-        Amount amount = new Amount(item.quantity(), item.unit());
+    private Item matched(MealReplyCheck.Item item, Certainty certainty) {
+        Amount amount = new Amount(item.quantity(), item.unit(), certainty);
         List<String> words = words(item.food());
         if (words.isEmpty()) {
             return new Item(item.food(), amount, false, List.of());

@@ -1089,6 +1089,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meals/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A meal photo, as a draft of the database's foods with grams by eye (K-514)
+         * @description A JPEG or PNG of at most 1024 px a side (the app shrinks it and drops its metadata, V1); a larger one is 400, a
+         *     body longer than such a photo can be 413. The server sends on only a JPEG it writes from the pixels — nothing the
+         *     file carried besides them — and keeps nothing. The photo goes to a third-party language model, which reads which
+         *     foods and how many grams by eye — never what a food holds (U1). HEALTH_DATA consent (ADR-026) and the
+         *     THIRD_PARTY_AI consent to that provider and the meal photo (V2) — without either, 403 CONSENT_REQUIRED and nothing
+         *     is sent. Every amount is grams with certainty ESTIMATED: the app sends it as it is to /v1/food-estimates, whose
+         *     range is wide for an estimate and whose gram question narrows it (U5). Nothing is logged until the user confirms
+         *     with /v1/meals. A reply off its schema, or past the day's photo analyses (photo_analyses_per_day), gives an empty
+         *     DETERMINISTIC draft: the user searches.
+         */
+        post: operations["readMealPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2092,6 +2120,13 @@ export interface components {
         MealWords: {
             text: string;
         };
+        MealPhoto: {
+            /**
+             * Format: byte
+             * @description A JPEG or PNG, base64, at most 1024 px a side and 2,500,000 bytes, its metadata dropped by the app (V1).
+             */
+            image: string;
+        };
         MealDraft: {
             /** @enum {string} */
             mode: "MODEL" | "DETERMINISTIC";
@@ -2099,8 +2134,9 @@ export interface components {
         };
         /**
          * @description A food as the model read it, how much in the user's own measure, and the database's foods for it — never what it
-         *     holds (U1), never a measure turned into grams by the model (ADR-004). The app sends `amount` as it is to
-         *     /v1/food-estimates with the food the user picks (a measure that is not one of its servings asks for grams there).
+         *     holds (U1), never a measure turned into grams by the model (ADR-004). From a photo (K-514) the amount is grams by
+         *     eye with certainty ESTIMATED. The app sends `amount` as it is to /v1/food-estimates with the food the user picks
+         *     (a measure that is not one of its servings asks for grams there).
          */
         MealDraftItem: {
             /** @description The model's words for the food — no digit, no forbidden phrase. */
@@ -3661,6 +3697,31 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["MealWords"];
+            };
+        };
+        responses: {
+            /** @description The draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealDraft"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    readMealPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MealPhoto"];
             };
         };
         responses: {

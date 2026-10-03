@@ -8,5 +8,7 @@ enum Purpose {
     /** A question about a call or the plan: the call's facts and the user's words (K-505). */
     EXPLAIN,
     /** Free text read into a meal record (K-504). */
-    PARSE_MEAL
+    PARSE_MEAL,
+    /** A meal photo read into foods and grams by eye (K-514). */
+    PHOTO_MEAL
 }
