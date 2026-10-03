@@ -6,6 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M6 Part 1 (Geçmiş ve sinyaller) SÜRÜYOR (3 Eki)** — `## M6 ilerleme`.
 **M5 KAPANDI (3 Eki, kod)** — Part 4: K-514 #327, K-408 #328, K-515 #329 (cihazsız kısım), spike ADR-047/048; cihaz adımları (K-308 → K-510, K-515, K-426) Levent'te. Sıradaki koşu **M6** (`plan/oturum-promptlari/M6.md`, `M6-part1.md`). Aktarım bekliyor: M5 (`docs/aktarim/M5/README.md` 1-35). 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
 **M5 Part 3 (Koç yüzü + sağlayıcı) BİTTİ (3 Eki)** — ADR-043 (koç sınıflandırır, cümle yazmaz) + 11 görev birleşti (#314-#325); aktarım bekliyor (`docs/aktarim/M5/README.md` 20-30). Simülatör turu **disk yüzünden ertelendi** (soru 80). Sorular 78-85.
 **M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
@@ -662,6 +663,25 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
   - Koç sınıflandırmasını cihazda yapma yönü ADR-047 #3 (cihaz adımı).
   - Disk: yerelde `DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test` saf testleri hızlı koşar, DB testleri Docker'sız düşer (sayımı ayır).
 - **Sorular:** 86 → ADR-048 #5 (önce buton, sonra intent). Açık: 57 (rıza metni hukuki bakış, yayından önce).
+
+## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` … `M6-part4.md`.
+
+| Part | Görevler | Durum |
+|---|---|---|
+| 1 · Geçmiş ve sinyaller | K-535, K-534, K-608, K-603, K-611, K-610 | ▶ sürüyor (3 Eki) |
+| 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-606 | — |
+| 3 · Efor ve fotoğraf | K-604, K-601, K-602 | — |
+| 4 · İçe aktarma, paylaşım, teslim | K-609, K-612 · M6 çıkışı · M7 prompt'ları | — |
+
+**Part 1 başı (3 Eki):** senkron tamam — M5 ÇIKIŞ git ile tutarlı (K-514 #327, K-408 #328, K-515 #329 birleşik; açık PR yok; worktree
+yalnız kalıcı `../keel-main`; `M5-part4-devam`/`M6-*-devam` yok). Ana checkout ayrık HEAD bir commit gerideydi → `origin/main`. Bağımlılıklar
+`done` (K-530, K-430, K-111, K-401, K-103, K-212, K-502, K-112). Dependabot: aynı 3 geçişli uyarı (braces, node-forge, decode-uri-component).
+**Disk 3,6 GB** (npm/brew önbelleği temizlendi → 3,8 GB; gradle önbelleği 247 MB, gerekli). Docker sanal diski hâlâ **17 GB** (soru 80 açık)
+→ **simülatör turu bu part'ta da yok** (M5 Part 3 + K-408 ekranı ertelenen liste aynen bekliyor); DB testleri CI'da. Soru 86 → ADR-048 #5 işlenmiş.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.
