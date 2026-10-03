@@ -123,6 +123,34 @@ class DecisionBasisApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void theExamplesAreFromThePlanInForceNowAndOnlyForTheLatestCall() throws Exception {
+        // K-610 review: a call applied changes the plan (a new target from today); an example built from the call's own
+        // snapshot would step calories again from the old target. From the plan in force now, a flat week has no full window.
+        AccountId account = onACut();
+        Map<String, Object> call = checkIn(account);
+        jdbc.sql("update decision.plan set plan_start = :today, target_kcal = 2100 where account_id = :a").param("a", account.value())
+                .param("today", LocalDate.now(ZoneOffset.UTC)).update();
+
+        Map<String, Object> whatIf = JSON.readValue(send(account, "GET", "/v1/decisions/" + call.get("id") + "/what-if").getResponse()
+                .getContentAsString(), Map.class);
+
+        Map<String, Object> flat = ((List<Map<String, Object>>) whatIf.get("scenarios")).stream()
+                .filter(scenario -> scenario.get("when").equals(Map.of("trend", "FLAT", "adherence", "ON_TRACK", "training", "HOLDING")))
+                .findFirst().orElseThrow();
+        assertThat((Map<String, Object>) ((Map<String, Object>) flat.get("decision")).get("action")).containsEntry("type", "NO_DECISION_YET");
+
+        // An older call has no examples: what would change things is the latest call's question.
+        UUID older = UUID.randomUUID();
+        jdbc.sql("""
+                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision, application)
+                select :older, account_id, gen_random_uuid(), week_of - 7, made_on - 7, decided_at - interval '7 days', parameters_hash, snapshot,
+                       decision, application from decision.weekly_call where id = :id""")
+                .param("older", older).param("id", UUID.fromString((String) call.get("id"))).update();
+        assertThat(send(account, "GET", "/v1/decisions/" + older + "/what-if")).hasStatus(404);
+    }
+
+    @Test
     void itIsHealthDataSoItNeedsTheConsent() {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "GET", "/v1/decisions/" + UUID.randomUUID() + "/basis")).hasStatus(403).bodyJson()

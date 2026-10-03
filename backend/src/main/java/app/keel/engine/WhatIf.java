@@ -9,17 +9,18 @@ import java.util.Optional;
 /**
  * "What would change the call" (K-610, L3 Y3, prototype 5.6): the same rules run on example data — never mixed with the
  * call's own (U1: the engine decides, no model; U2: which data would change the call). The example is the call's own
- * Snapshot a week later: seven more mornings weighed at the latest week's mean, or toward the goal by
- * what_if_trend_step_margins × flat_margin_kg; the plan kept at on_track_min_ratio or not at adherence_fix_below (G2
- * K-60); training answered holding or dropping. Everything else is the call's: its body, its target, its other answers.
- * A state declared that week is not carried into an example week.
+ * Snapshot a week later — the caller passes the plan in force now, not a kept call's — seven more mornings weighed at the
+ * latest week's mean, or toward the goal: on a cut by what_if_cut_step_of_loss_cap of the weekly loss cap (never a
+ * safety call), on a bulk by what_if_trend_step_margins × flat_margin_kg; the plan kept at on_track_min_ratio or not kept
+ * at all (G2 K-60); training answered holding or dropping. Everything else is the snapshot's own. A state declared that
+ * week is not carried into an example week.
  */
 public final class WhatIf {
 
     /** Next week's trend: toward the goal, or flat. */
     public enum Trend { TOWARD_GOAL, FLAT }
 
-    /** The plan next week: kept (on_track_min_ratio), or not (adherence_fix_below). */
+    /** The plan next week: kept (on_track_min_ratio), or not kept at all (under adherence_fix_below: the plan-missed rule). */
     public enum Adherence { ON_TRACK, UNDER }
 
     /** Training next week, as the check-in asks it: holding, or dropping. */
@@ -60,8 +61,8 @@ public final class WhatIf {
                 weighIns.add(new WeighIn(call.today().plusDays(day), next));
             }
         });
-        BigDecimal adherence = BigDecimal.valueOf(parameters.number(
-                when.adherence() == Adherence.ON_TRACK ? ParameterKey.ON_TRACK_MIN_RATIO : ParameterKey.ADHERENCE_FIX_BELOW));
+        BigDecimal adherence = when.adherence() == Adherence.ON_TRACK ? BigDecimal.valueOf(parameters.number(ParameterKey.ON_TRACK_MIN_RATIO))
+                : BigDecimal.ZERO;
         CheckIn checkIn = call.checkIn().withAdherence(adherence)
                 .withTraining(when.training() == Training.HOLDING ? CheckIn.Training.STABLE : CheckIn.Training.DECLINING);
         return new Snapshot(today, call.sex(), call.phase(), call.planStart(), new WeightSeries(weighIns), call.fatProxyPct(), call.energy(),
@@ -76,8 +77,13 @@ public final class WhatIf {
     }
 
     private static BigDecimal towardGoal(BigDecimal kg, Phase phase, Parameters parameters) {
-        BigDecimal step = BigDecimal.valueOf(parameters.number(ParameterKey.FLAT_MARGIN_KG))
-                .multiply(BigDecimal.valueOf(parameters.number(ParameterKey.WHAT_IF_TREND_STEP_MARGINS)));
-        return phase == Phase.CUT ? kg.subtract(step) : kg.add(step);
+        if (phase == Phase.CUT) {
+            // A share of the weekly loss cap (G2 K-17 with H3 B3's percentage), so an example never trips the safety net.
+            BigDecimal cap = BigDecimal.valueOf(parameters.number(ParameterKey.WEEKLY_LOSS_CAP_KG))
+                    .min(kg.multiply(BigDecimal.valueOf(parameters.number(ParameterKey.WEEKLY_LOSS_CAP_PCT_BODYWEIGHT))));
+            return kg.subtract(cap.multiply(BigDecimal.valueOf(parameters.number(ParameterKey.WHAT_IF_CUT_STEP_OF_LOSS_CAP))));
+        }
+        return kg.add(BigDecimal.valueOf(parameters.number(ParameterKey.FLAT_MARGIN_KG))
+                .multiply(BigDecimal.valueOf(parameters.number(ParameterKey.WHAT_IF_TREND_STEP_MARGINS))));
     }
 }

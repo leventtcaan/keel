@@ -39,7 +39,8 @@ class WhatIfTests {
         // the plan first; training dropping → training first, no calorie change.
         assertThat(decide(WhatIf.Trend.FLAT, WhatIf.Adherence.ON_TRACK, WhatIf.Training.HOLDING).action()).isEqualTo(new Action.AdjustCalories(-500));
         assertThat(decide(WhatIf.Trend.TOWARD_GOAL, WhatIf.Adherence.ON_TRACK, WhatIf.Training.HOLDING).action()).isEqualTo(new Action.Continue());
-        assertThat(decide(WhatIf.Trend.FLAT, WhatIf.Adherence.UNDER, WhatIf.Training.HOLDING).action()).isEqualTo(new Action.FixAdherence());
+        assertThat(decide(WhatIf.Trend.FLAT, WhatIf.Adherence.UNDER, WhatIf.Training.HOLDING).copyKey())
+                .as("the plan not kept is the plan-missed rule, not the partial one (K-610 review)").isEqualTo(new CopyKey("decision.fix_adherence.adherence_low"));
         assertThat(decide(WhatIf.Trend.FLAT, WhatIf.Adherence.ON_TRACK, WhatIf.Training.DROPPING).action()).isEqualTo(new Action.FixTraining());
     }
 
@@ -53,6 +54,25 @@ class WhatIfTests {
 
         assertThat(scenarios.stream().filter(s -> s.when().equals(toward)).findFirst().orElseThrow().decision().action()).isEqualTo(new Action.Continue());
         assertThat(scenarios.stream().filter(s -> s.when().equals(flat)).findFirst().orElseThrow().decision().action()).isEqualTo(new Action.AdjustCalories(250));
+    }
+
+    @Test
+    void onALightCutTowardTheGoalIsNeverOverTheWeeklyLossCap() {
+        // K-610 review: a fixed step was over 1 % of bodyweight under about 73 kg — "move toward your goal" read as losing
+        // too fast. The cut's step is a share of the cap (min(weekly_loss_cap_kg, weekly_loss_cap_pct_bodyweight)).
+        Snapshot lightCut = new Snapshot(TODAY, Sex.FEMALE, Phase.CUT, TODAY.minusDays(27), weekly("62.0", "62.0", "62.0", "62.0"))
+                .withCheckIn(ON_PLAN).withEnergy(new EnergyBudget(1900, 200)).withProfile(new Profile(30, 165)).withFatProxyPct(new BigDecimal("30"));
+        WhatIf.When toward = new WhatIf.When(WhatIf.Trend.TOWARD_GOAL, WhatIf.Adherence.ON_TRACK, WhatIf.Training.HOLDING);
+
+        Decision decision = WhatIf.scenarios(lightCut, parameters(Sex.FEMALE)).stream().filter(s -> s.when().equals(toward)).findFirst().orElseThrow()
+                .decision();
+
+        assertThat(decision.action()).isEqualTo(new Action.Continue());
+        // At 48 kg the percentage binds (1 % is under the 1 kg cap): half of 1 kg would already be over it.
+        Snapshot lighter = new Snapshot(TODAY, Sex.FEMALE, Phase.CUT, TODAY.minusDays(27), weekly("48.0", "48.0", "48.0", "48.0"))
+                .withCheckIn(ON_PLAN).withEnergy(new EnergyBudget(1700, 200)).withProfile(new Profile(30, 150)).withFatProxyPct(new BigDecimal("30"));
+        assertThat(WhatIf.scenarios(lighter, parameters(Sex.FEMALE)).stream().filter(s -> s.when().equals(toward)).findFirst().orElseThrow()
+                .decision().action()).isEqualTo(new Action.Continue());
     }
 
     @Test

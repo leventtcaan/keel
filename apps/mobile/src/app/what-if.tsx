@@ -64,6 +64,7 @@ function Body({ read }: { read: Loaded<WhatIf> | null }) {
       </View>
     );
   }
+  if (read.state === 'none') return line('whatIf.latestOnly');
   if (read.state !== 'ready') return line('whatIf.failed');
   return (
     <>

@@ -571,17 +571,32 @@ class DecisionService {
         return DecisionBasis.trendRead(call.snapshot(), parameters.forSex(call.snapshot().sex()));
     }
 
-    /** "What would change the call" (K-610): example weeks after a kept call, each run through the pipeline; none for a safety call. */
+    /**
+     * "What would change the call" (K-610): example weeks from today, run through the pipeline — for the latest call only,
+     * and from the plan in force now (an applied call has changed it: the call's own snapshot would be stale). The data says
+     * what it says today; recovery and appetite are the latest call's answers (the examples set training and the plan).
+     * None for a safety call (ADR-028 #24) or an older one.
+     */
     Optional<Map<String, Object>> whatIf(AccountId account, UUID id) {
-        return find(account, id).filter(call -> !Boolean.TRUE.equals(call.decision().get("safety"))).map(call -> {
-            Parameters p = parameters.forSex(call.snapshot().sex());
-            List<Map<String, Object>> scenarios = WhatIf.scenarios(call.snapshot().toSnapshot(), p).stream()
-                    .map(scenario -> Map.<String, Object>of("when", Map.of("trend", scenario.when().trend().name(),
-                            "adherence", scenario.when().adherence().name(), "training", scenario.when().training().name()),
-                            "decision", SourceView.sent(DecisionJson.of(scenario.decision()))))
-                    .toList();
-            return Map.of("example", true, "scenarios", scenarios);
-        });
+        Optional<CallStore.Call> latest = current(account).filter(call -> call.id().equals(id))
+                .filter(call -> !Boolean.TRUE.equals(call.decision().get("safety")));
+        Optional<CallStore.Plan> plan = calls.plan(account);
+        if (latest.isEmpty() || plan.isEmpty()) {
+            return Optional.empty();
+        }
+        Week week = week(account);
+        CallStore.Plan inForce = withEstimate(plan.get(), week);
+        CheckIn dataSays = dataSays(week, counted(account, week, inForce));
+        StoredSnapshot.Answered answered = latest.get().snapshot().checkIn();
+        CheckIn now = new CheckIn(dataSays.look(), CheckIn.Training.UNKNOWN, answered.recovery(), dataSays.waist(), dataSays.adherence(),
+                answered.appetite());
+        Snapshot today = snapshot(week, inForce, now, false, false, training(account, week));
+        List<Map<String, Object>> scenarios = WhatIf.scenarios(today, week.parameters()).stream()
+                .map(scenario -> Map.<String, Object>of("when", Map.of("trend", scenario.when().trend().name(),
+                        "adherence", scenario.when().adherence().name(), "training", scenario.when().training().name()),
+                        "decision", SourceView.sent(DecisionJson.of(scenario.decision()))))
+                .toList();
+        return Optional.of(Map.of("example", true, "scenarios", scenarios));
     }
 
     /** What the call read, from its own stored snapshot (K-519): read with the parameters for the sex it was made for. */

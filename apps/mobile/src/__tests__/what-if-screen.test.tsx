@@ -59,3 +59,9 @@ test('not read, or no consent: one line', async () => {
   await show();
   expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
 });
+
+test('an older call has none: it says the examples are the latest call’s', async () => {
+  mockAnswer = refused(404, 'NOT_FOUND');
+  await show();
+  expect(screen.getByText(t('whatIf.latestOnly'))).toBeOnTheScreen();
+});
