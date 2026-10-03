@@ -35,10 +35,15 @@ public class ConsentGate {
      * is refused like no consent at all.
      */
     public void requireAi(AccountId account, String provider, String dataType) {
-        if (!granted(account, ConsentKind.THIRD_PARTY_AI)
-                || !properties.ai().map(ai -> ai.provider().equals(provider) && ai.dataTypes().contains(dataType)).orElse(false)) {
+        if (!grantedAi(account, provider, dataType)) {
             throw new ApiException(ErrorCode.CONSENT_REQUIRED);
         }
+    }
+
+    /** Whether {@link #requireAi} would let the call go: asked before anything is counted for it (K-508). */
+    public boolean grantedAi(AccountId account, String provider, String dataType) {
+        return granted(account, ConsentKind.THIRD_PARTY_AI)
+                && properties.ai().map(ai -> ai.provider().equals(provider) && ai.dataTypes().contains(dataType)).orElse(false);
     }
 
     /** CONSENT_REQUIRED unless the consent is given now. */

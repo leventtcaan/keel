@@ -23,3 +23,4 @@
 15. K-503 LLM portu (`K-503.md`, ADR-042)
 16. K-505 kararın anlatımı + itiraz (`K-505.md`)
 17. K-506 hayır diyen koç seti (`K-506.md`)
+18. K-508 günlük kota (`K-508.md`)

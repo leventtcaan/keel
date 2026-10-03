@@ -7,7 +7,8 @@ import java.util.regex.Pattern;
 
 /**
  * The phrases no text may carry, read from the file the app scans its copy with (data/copy/forbidden-phrases.json): a
- * body-fat number (U4), medical language (U6), a person's name (K-523; a research path aside — the coach never gets one).
+ * body-fat number (U4), medical language (U6), a person's name (K-523; a research path aside — the coach never gets one),
+ * a currency for the daily limit (ADR-012).
  * The rules are case-insensitive; the names spell their case out, as the app reads them.
  */
 final class ForbiddenWords {
@@ -27,6 +28,7 @@ final class ForbiddenWords {
                 .map(rule -> PatternList.entry(rule, rule.get("rule") + " " + rule.get("id"), Pattern.CASE_INSENSITIVE)).toList());
         Map<String, Object> names = (Map<String, Object>) file.get("personNames");
         entries.add(PatternList.entry(names, "person name", 0, Pattern.compile((String) names.get("researchPath"))));
+        entries.add(PatternList.entry((Map<String, Object>) file.get("quotaWords"), "quota currency", Pattern.CASE_INSENSITIVE));
         return new ForbiddenWords(new PatternList(entries), (List<String>) file.get("coachingNonExamples"));
     }
 

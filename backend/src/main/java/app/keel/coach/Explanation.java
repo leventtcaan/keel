@@ -3,7 +3,11 @@ package app.keel.coach;
 import app.keel.decision.CallFacts;
 import app.keel.decision.CallReader;
 import app.keel.shared.AccountId;
+import app.keel.shared.ApiException;
+import app.keel.shared.ErrorCode;
+import app.keel.subscription.Quota;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +31,7 @@ class Explanation {
 
     static final String CALL_WORDS = "coach.answer.call";
     static final String NO_CALL_WORDS = "coach.answer.no_call";
+    static final String DAILY_LIMIT_WORDS = "coach.answer.daily_limit";
 
     enum Mode { MODEL, DETERMINISTIC }
 
@@ -41,12 +46,14 @@ class Explanation {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final CallReader calls;
+    private final Quota quota;
     private final CoachModel model;
     private final ReplyCheck check;
     private final String instructions;
 
-    Explanation(CallReader calls, CoachModel model, CoachProperties properties) {
+    Explanation(CallReader calls, Quota quota, CoachModel model, CoachProperties properties) {
         this.calls = calls;
+        this.quota = quota;
         this.model = model;
         this.check = ReplyCheck.fromClasspath(properties.maxReplyChars());
         this.instructions = CoachInstructions.read("explain.md");
@@ -62,7 +69,26 @@ class Explanation {
         if (!call.tellable()) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, CALL_WORDS, told));
         }
-        ModelReply reply = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts(call), List.of(Turn.user(question)));
+        // Without the consent the model would not be asked: refused before anything is counted.
+        if (!model.mayAsk(account, Purpose.EXPLAIN)) {
+            throw new ApiException(ErrorCode.CONSENT_REQUIRED);
+        }
+        // The day's limit (K-508): past it, the call as it stands — no hard stop. A use is given back if the call never ran.
+        Optional<LocalDate> taken = quota.take(account, Quota.Use.COACH_MESSAGE);
+        if (taken.isEmpty()) {
+            return Optional.of(new Answer(Mode.DETERMINISTIC, null, DAILY_LIMIT_WORDS, told));
+        }
+        ModelReply reply;
+        try {
+            reply = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts(call), List.of(Turn.user(question)));
+        } catch (RuntimeException notAsked) {
+            try {
+                quota.giveBack(account, Quota.Use.COACH_MESSAGE, taken.get());
+            } catch (RuntimeException alsoFailed) {
+                notAsked.addSuppressed(alsoFailed);
+            }
+            throw notAsked;
+        }
         return Optional.of(check.read(reply.text(), call).map(text -> new Answer(Mode.MODEL, text, null, told))
                 .orElseGet(() -> new Answer(Mode.DETERMINISTIC, null, CALL_WORDS, told)));
     }

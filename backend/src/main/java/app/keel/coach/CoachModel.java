@@ -23,6 +23,11 @@ class CoachModel {
         this.properties = properties;
     }
 
+    /** Whether a call for this purpose would go: the AI consent to the provider and the data, now (K-508: before counting). */
+    boolean mayAsk(AccountId account, Purpose purpose) {
+        return egress.allowsAi(account, properties.providerName(), properties.dataTypes().get(purpose));
+    }
+
     ModelReply ask(AccountId account, Purpose purpose, String system, List<Turn> turns) {
         ModelRequest request = new ModelRequest(purpose, properties.model(), properties.maxOutput(), system, turns);
         return egress.sendToAi(account, properties.providerName(), properties.dataTypes().get(purpose), () -> model.complete(request));

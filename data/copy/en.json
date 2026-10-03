@@ -1181,7 +1181,8 @@
     "entry": "Ask the coach",
     "answer": {
       "call": "This week's call stands as it is. What changes it is new data, not a different answer.",
-      "no_call": "There's no call yet. The first one comes with your first weekly check-in."
+      "no_call": "There's no call yet. The first one comes with your first weekly check-in.",
+      "daily_limit": "Today's coach answers are used up. Here's this week's call as it stands; tomorrow the coach answers in its own words again."
     },
     "call": {
       "nextReview": "Looked at again on {date}, with the week's weigh-ins and logs."
