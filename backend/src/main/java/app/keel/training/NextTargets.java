@@ -1,8 +1,10 @@
 package app.keel.training;
 
 import app.keel.engine.BodyRegion;
+import app.keel.engine.E1rm;
 import app.keel.engine.LiftKind;
 import app.keel.engine.LiftSession;
+import app.keel.engine.Parameters;
 import app.keel.engine.Progression;
 import app.keel.engine.ProgressionStep;
 import app.keel.engine.RepRange;
@@ -30,15 +32,18 @@ final class NextTargets {
 
     /** The target with the engine's load as it is (no gym to round to). */
     static Optional<Target> after(LiftSession session, Progression progression, boolean loadHeld, int plannedSets) {
-        return after(session, progression, loadHeld, plannedSets, load -> new LoadSteps.Rounding.Unknown());
+        return after(session, progression, loadHeld, plannedSets, 0, load -> new LoadSteps.Rounding.Unknown(), null);
     }
 
     /**
      * The target with an added load as the gym can make it (K-414, ADR-032): the nearest load it has; when it has
      * nothing heavier, one more rep than the weakest set — past the top of the range; when it says nothing, the engine's.
+     * When the nearest is too far over the last (K-430), it is taken once every set is worth the bottom of the range
+     * there at the planned RIR (Epley, ADR-041 #55) — until then, one more rep. {@code plannedRir} and
+     * {@code parameters} only for that; null parameters where no gym rounds.
      */
-    static Optional<Target> after(LiftSession session, Progression progression, boolean loadHeld, int plannedSets,
-            Function<BigDecimal, LoadSteps.Rounding> rounding) {
+    static Optional<Target> after(LiftSession session, Progression progression, boolean loadHeld, int plannedSets, int plannedRir,
+            Function<BigDecimal, LoadSteps.Rounding> rounding, Parameters parameters) {
         RepRange range = session.range();
         int weakest = session.sets().stream().mapToInt(SetResult::reps).min().orElseThrow();
         return switch (progression.step()) {
@@ -49,12 +54,23 @@ final class NextTargets {
                             : switch (rounding.apply(newLoadKg)) {
                                 case LoadSteps.Rounding.To(BigDecimal kg) -> new Target(kg, targetReps);
                                 case LoadSteps.Rounding.NoHeavier() -> new Target(session.loadKg(), weakest + 1);
+                                case LoadSteps.Rounding.TooFar(BigDecimal kg) -> worthAt(session, kg, parameters) >= targetReps + plannedRir
+                                        ? new Target(kg, targetReps) : new Target(session.loadKg(), weakest + 1);
                                 case LoadSteps.Rounding.Unknown() -> new Target(newLoadKg, targetReps);
                             });
             case ProgressionStep.AddReps() -> Optional.of(new Target(session.loadKg(), Math.min(weakest + 1, range.max())));
             case ProgressionStep.Hold() -> Optional.of(new Target(session.loadKg(), Math.max(weakest, range.min())));
             case ProgressionStep.NotTracked() -> Optional.empty();
         };
+    }
+
+    /**
+     * The fewest reps to failure a set of the session is worth at {@code kg} (Epley, ADR-041 #55): a set left further
+     * from failure is worth more, never less (K-430 review).
+     */
+    private static int worthAt(LiftSession session, BigDecimal kg, Parameters parameters) {
+        return session.sets().stream().mapToInt(set -> E1rm.repsToFailureAt(session.loadKg(), set.reps() + set.rir(), kg, parameters)).min()
+                .orElseThrow();
     }
 
     /**

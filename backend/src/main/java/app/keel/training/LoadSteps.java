@@ -22,9 +22,16 @@ import java.util.stream.Stream;
  */
 final class LoadSteps {
 
-    /** What the gym makes of the engine's load: a load, nothing heavier than the last, or no word on this equipment. */
+    /**
+     * What the gym makes of the engine's load: a load, a load too far over the last (K-430), nothing heavier than the last,
+     * or no word on this equipment.
+     */
     sealed interface Rounding {
         record To(BigDecimal kg) implements Rounding {
+        }
+
+        /** The nearest heavier load the gym makes, further over the last than the jump allows (K-430). */
+        record TooFar(BigDecimal kg) implements Rounding {
         }
 
         record NoHeavier() implements Rounding {
@@ -88,6 +95,29 @@ final class LoadSteps {
      * NoHeavier only where the gym's weights end (a dumbbell rack); Unknown when the gym says nothing about this equipment.
      */
     static Rounding round(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal lastKg, BigDecimal targetKg) {
+        return round(equipment, exerciseId, gym, lastKg, targetKg, null);
+    }
+
+    /**
+     * Whether a set's load is all the load the muscles move, so one load over another reads as how much heavier (K-430
+     * review): not on a plate-loaded machine (the sled is not counted, ADR-032) nor on a bodyweight move (the body is
+     * not) — there +10 → +20 kg is not a doubling, and no jump limit applies.
+     */
+    static boolean wholeLoad(ExerciseCatalog.Equipment equipment) {
+        return switch (equipment) {
+            case BARBELL, DUMBBELL, MACHINE, CABLE -> true;
+            case PLATE_LOADED, BODYWEIGHT -> false;
+        };
+    }
+
+    /**
+     * As {@link #round(ExerciseCatalog.Equipment, String, GymStore.Gym, BigDecimal, BigDecimal)}, and the nearest heavier
+     * load is taken only within {@code maxJump} of the engine's steps (target − last) over the last (K-430, ADR-037 #38):
+     * further — a sparse rack, 10 kg dumbbells then 20 — it is TooFar with that load, and the caller decides when the
+     * sets at the last make it (ADR-041 #55). {@code maxJump} null: no limit.
+     */
+    static Rounding round(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal lastKg, BigDecimal targetKg,
+            BigDecimal maxJump) {
         BigDecimal stepKg = Optional.ofNullable(gym.machineStepsKg().get(exerciseId)).orElse(gym.stackStepKg());
         Scale scale = switch (equipment) {
             case DUMBBELL -> Scale.of(gym.dumbbellsKg().stream());
@@ -114,7 +144,10 @@ final class LoadSteps {
         }
         return loads.stream().filter(load -> load > last)
                 .min(Comparator.comparingLong((Long load) -> Math.abs(load - target)).thenComparingLong(load -> load))
-                .<Rounding>map(load -> new Rounding.To(scale.kg(load))).orElse(new Rounding.NoHeavier());
+                .<Rounding>map(load -> maxJump == null
+                        || BigDecimal.valueOf(load - last).compareTo(maxJump.multiply(BigDecimal.valueOf(target - last))) <= 0
+                        ? new Rounding.To(scale.kg(load)) : new Rounding.TooFar(scale.kg(load)))
+                .orElse(new Rounding.NoHeavier());
     }
 
     /**

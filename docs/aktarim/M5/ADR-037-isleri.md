@@ -61,3 +61,27 @@ diyordu ama hareket başına uygulanıyor → ADR notu + test. Mutasyon 3/3 (saf
 1. "Türetilmiş durum" nedir; hedef neden setlerden her seferinde hesaplanmıyor da saklanıyor?
 2. Eski bir seansı düzenlemek neden yeni seansın hedefini bozamıyor?
 3. "Form temiz değil" cevabını saklamasaydık düzenleme neyi yanlış yapardı?
+
+## K-430 · Seyrek rafta büyük sıçrama: yük tutulur, tekrar artar; Epley eşdeğerliğinde sıçranır (ADR-037 › 38, ADR-041 › 55) — #273
+| # | Basamak | Proje yeri |
+|---|---|---|
+| 1 | Motorun adımı (hedef − son) salonun en yakın ağır yüküne yuvarlanır (K-414); en yakın ağır yük son yükün `load_jump_max_steps` (2) adım ötesindeyse `TooFar(kg)` — yük bilinir ama alınmaz | `LoadSteps.round(…, maxJump)`, `loadSteps.ts` (aynı kural), `contracts/fixtures/load-steps.json` |
+| 2 | **Sıçrama sınırı yalnız `loadKg` taşınan yükün tamamıyken** (bar, dambıl, makine, kablo): plakalı makinede kızak, vücut ağırlıklı harekette vücut `loadKg`'de yok → +10 → +20 bir katlanma değil | `LoadSteps.wholeLoad`, `SessionProgress` |
+| 3 | Tutulurken hedef en zayıf set + 1 (K-414'teki "daha ağır yok" gibi) | `NextTargets.after` › `TooFar` |
+| 4 | **Çıkış (ADR-041 #55):** her set, ağır yükte Epley'le **tükenişe kadar tekrar** olarak aralığın altı + planlanan RIR'a eşdeğer olunca sıçra: `floor(son × (30 + tekrar + RIR) / ağır) − 30 ≥ min + RIR_plan`; hedef (ağır, aralığın altı) | `E1rm.repsToFailureAt`, `NextTargets.worthAt` |
+| 5 | Örnek (K-414 makinesi, 7 kg adım, 8-12, RIR 1): 35×12 → 42'de 5 → 35×13 (K1 onaylı beklenti değişimi) … 35×16 → 42'de 9 ≥ 9 → **42×8** | `SessionProgressApiTests` |
+
+**Neden "tükenişe kadar tekrar" ve planlanan RIR:** ilk sürüm her setin kendi RIR'ını iki yanda da kullanıyordu → tükenişten uzak bırakılan
+set (daha güçlü) **daha az** sayılıyordu (inceleme). Şimdi set tükenişe kadar ne kadar değerliyse o; hedef seansın planlı RIR'ında yapılabilir olmalı.
+**Epley'in geçerlik sınırı:** B15'e göre 10 tekrarın üstünde e1RM üretilmez (gösterilecek bir maks için). Burada iki yük karşılaştırılıp tek bir
+karar veriliyor; aşağı yuvarlama hatayı "bir seans daha bekle" yanına koyar — `E1rm.repsToFailureAt` belgesinde.
+**Açık kalan (soru 73):** oran ~3,4'ü aşan raflarda (5 → 20 dambıl) gereken tekrar 100'ü (API sınırı) aşar; 10 → 20'de ~47 tekrar. Ürün sorusu.
+
+RED: CI'da iki kez (35×16 → 42×8 beklendi; vücut ağırlıklı +10 → +20 beklendi). İnceleme: code-reviewer 3 bulgu (vücut ağırlığı, RIR yönü,
+ulaşılamayan çıkış → soru 73), test analizi (plakalı makine, 5 kg adım, kesirli sınır, lb salon vakaları eklendi). Mutasyon 10/10 + 8/8 (saf) +
+1/1 (TS kontrol mutantı).
+
+### Soru bankası
+1. Epley "iki yönlü" nasıl kullanılıyor; neden tek bölme ve aşağı yuvarlama?
+2. Her setin kendi RIR'ını kullanmak neden ters sonuç veriyordu?
+3. Pull-up'ta +10 → +20 kg neden sınıra takılmıyor?

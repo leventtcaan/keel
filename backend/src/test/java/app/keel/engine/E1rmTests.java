@@ -88,4 +88,31 @@ class E1rmTests {
         assertThat(estimate).isGreaterThanOrEqualTo(load.setScale(1, java.math.RoundingMode.HALF_UP));
         assertThat(oneMore).isGreaterThanOrEqualTo(estimate);
     }
+
+    @Test
+    void theRepsToFailureASetIsWorthAtAnotherLoad() {
+        // K-430 (ADR-041 #55): Epley both ways — 35 kg × 16 at RIR 1 is 17 to failure, a max of 35 × 47/30; at 42 that is
+        // 35 × 47 / 42 − 30 = 9.2 to failure, rounded down: 9.
+        assertThat(E1rm.repsToFailureAt(new BigDecimal("35"), 17, new BigDecimal("42"), P)).isEqualTo(9);
+        // One to failure fewer: 35 × 46 / 42 = 38.3 → 8.
+        assertThat(E1rm.repsToFailureAt(new BigDecimal("35"), 16, new BigDecimal("42"), P)).isEqualTo(8);
+        // The K-414 machine: 35 × 12 at RIR 1 (13 to failure) is worth 5 at 42.
+        assertThat(E1rm.repsToFailureAt(new BigDecimal("35"), 13, new BigDecimal("42"), P)).isEqualTo(5);
+    }
+
+    @Test
+    void aLoadBeyondWhatTheSetIsWorthIsNoRepNotANegativeOne() {
+        // 10 kg × 13 to failure at 20 kg: 10 × 43 / 20 = 21.5 → under the divisor; nothing to do there, 0.
+        assertThat(E1rm.repsToFailureAt(new BigDecimal("10"), 13, new BigDecimal("20"), P)).isZero();
+    }
+
+    @Property
+    void atTheSameLoadASetIsWorthItsOwnRepsAndAHeavierLoadNeverMore(@ForAll @BigRange(min = "1", max = "300") @Scale(2) BigDecimal load,
+            @ForAll @IntRange(min = 1, max = 110) int toFailure, @ForAll @BigRange(min = "0", max = "100") @Scale(2) BigDecimal more) {
+        assertThat(E1rm.repsToFailureAt(load, toFailure, load, P)).isEqualTo(toFailure);
+        int heavier = E1rm.repsToFailureAt(load, toFailure, load.add(more), P);
+        assertThat(heavier).isBetween(0, toFailure);
+        // Further from failure — more reps, or the same reps with more in reserve — is never worth less (K-430 review).
+        assertThat(E1rm.repsToFailureAt(load, toFailure + 1, load.add(more), P)).isGreaterThanOrEqualTo(heavier);
+    }
 }

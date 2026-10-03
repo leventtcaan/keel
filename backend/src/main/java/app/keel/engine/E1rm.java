@@ -38,4 +38,20 @@ public final class E1rm {
         int divisor = parameters.wholeNumber(ParameterKey.E1RM_EPLEY_DIVISOR);
         return Optional.of(loadKg.multiply(BigDecimal.valueOf(divisor + toFailure)).divide(BigDecimal.valueOf(divisor), 1, RoundingMode.HALF_UP));
     }
+
+    /**
+     * The reps to failure a set's {@code repsToFailure} at {@code fromKg} are worth at {@code toKg} (K-430, ADR-041 #55):
+     * Epley both ways — the reps to failure give a max, the max gives the reps to failure at the other load — rounded
+     * down, never under 0. At the same load a set is worth its own reps to failure.
+     *
+     * <p>Unlike {@link #estimate}, no cap on reps to failure: this compares two loads of one lift for one decision (when a
+     * load too far over the last is taken), not a max to show. Past ten reps Epley is less accurate (Mayhew 2008; Reynolds
+     * 2006: R² 0.955 from a 20RM against 0.993 from a 5RM); rounding down keeps the error on the side of waiting a session.
+     */
+    public static int repsToFailureAt(BigDecimal fromKg, int repsToFailure, BigDecimal toKg, Parameters parameters) {
+        int divisor = parameters.wholeNumber(ParameterKey.E1RM_EPLEY_DIVISOR);
+        // from × (d + t) / d is the max; × d / to − d the reps to failure there: d cancels, one division, rounded down once.
+        int there = fromKg.multiply(BigDecimal.valueOf((long) divisor + repsToFailure)).divide(toKg, 0, RoundingMode.FLOOR).intValueExact() - divisor;
+        return Math.max(0, there);
+    }
 }

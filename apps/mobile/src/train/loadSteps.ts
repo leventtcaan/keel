@@ -19,7 +19,7 @@ export type GymWeights = {
   stackStepKg: number | null;
   machineStepsKg: Record<string, number>;
 };
-export type Rounding = { kind: 'to'; kg: number } | { kind: 'noHeavier' } | { kind: 'unknown' };
+export type Rounding = { kind: 'to'; kg: number } | { kind: 'tooFar'; kg: number } | { kind: 'noHeavier' } | { kind: 'unknown' };
 
 /** The pound, by definition (ADR-029). */
 const KG_PER_LB = 0.45359237;
@@ -90,10 +90,12 @@ function stack(step: number, target: number): number[] {
 
 /**
  * The nearest load the gym makes to `targetKg` that is heavier than `lastKg`; a tie goes to the lighter. With `lastKg`
- * 0, simply the nearest load the gym makes (a warm-up). noHeavier only where the weights end; unknown when the gym
- * says nothing about this equipment.
+ * 0, simply the nearest load the gym makes (a warm-up). With `maxJump`, tooFar where the nearest is further than that many
+ * of the engine's steps (target − last) over the last (K-430, ADR-037 #38; the server takes it once the sets at the last
+ * are worth the bottom of the range there, ADR-041 #55). noHeavier where the weights end; unknown when the gym says
+ * nothing about this equipment.
  */
-export function round(equipment: Equipment, exerciseId: string, gym: GymWeights, lastKg: number, targetKg: number): Rounding {
+export function round(equipment: Equipment, exerciseId: string, gym: GymWeights, lastKg: number, targetKg: number, maxJump?: number): Rounding {
   const stepKg = gym.machineStepsKg[exerciseId] ?? gym.stackStepKg;
   let scale: Scale;
   switch (equipment) {
@@ -143,6 +145,7 @@ export function round(equipment: Equipment, exerciseId: string, gym: GymWeights,
     const [d, bestD] = [Math.abs(load - target), Math.abs(best - target)];
     return d < bestD || (d === bestD && load < best) ? load : best;
   });
+  if (maxJump !== undefined && nearest - last > maxJump * (target - last)) return { kind: 'tooFar', kg: scale.kg(nearest) };
   return { kind: 'to', kg: scale.kg(nearest) };
 }
 

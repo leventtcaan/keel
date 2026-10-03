@@ -20,6 +20,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -37,16 +38,31 @@ class LoadStepsTests {
         List<Map<String, Object>> cases = (List<Map<String, Object>>) fixture().get("round");
         assertThat(cases).isNotEmpty();
         return cases.stream().map(c -> DynamicTest.dynamicTest((String) c.get("case"), () -> {
-            LoadSteps.Rounding rounding = LoadSteps.round(ExerciseCatalog.Equipment.valueOf((String) c.get("equipment")), (String) c.get("exerciseId"),
-                    gym((Map<String, Object>) c.get("gym")), kg(c.get("lastKg")), kg(c.get("targetKg")));
+            ExerciseCatalog.Equipment equipment = ExerciseCatalog.Equipment.valueOf((String) c.get("equipment"));
+            String exerciseId = (String) c.get("exerciseId");
+            GymStore.Gym gym = gym((Map<String, Object>) c.get("gym"));
+            LoadSteps.Rounding rounding = c.get("maxJump") == null
+                    ? LoadSteps.round(equipment, exerciseId, gym, kg(c.get("lastKg")), kg(c.get("targetKg")))
+                    : LoadSteps.round(equipment, exerciseId, gym, kg(c.get("lastKg")), kg(c.get("targetKg")), kg(c.get("maxJump")));
             Object expected = c.get("expect");
             switch (String.valueOf(expected)) {
                 case "NO_HEAVIER" -> assertThat(rounding).isEqualTo(new LoadSteps.Rounding.NoHeavier());
                 case "UNKNOWN" -> assertThat(rounding).isEqualTo(new LoadSteps.Rounding.Unknown());
+                case "TOO_FAR" -> assertThat(rounding).isInstanceOfSatisfying(LoadSteps.Rounding.TooFar.class,
+                        tooFar -> assertThat(tooFar.kg()).isEqualByComparingTo(kg(c.get("tooFarKg"))));
                 default -> assertThat(rounding).isInstanceOfSatisfying(LoadSteps.Rounding.To.class,
                         to -> assertThat(to.kg()).isEqualByComparingTo(kg(expected)));
             }
         }));
+    }
+
+    @Test
+    void onlyALoadThatIsAllTheLoadMovedHasAJumpLimit() {
+        // K-430 review: a plate-loaded machine's sled and a bodyweight move's body are not in loadKg (ADR-032), so +10 →
+        // +20 there is not a doubling.
+        assertThat(java.util.Arrays.stream(ExerciseCatalog.Equipment.values()).filter(LoadSteps::wholeLoad))
+                .containsExactlyInAnyOrder(ExerciseCatalog.Equipment.BARBELL, ExerciseCatalog.Equipment.DUMBBELL,
+                        ExerciseCatalog.Equipment.MACHINE, ExerciseCatalog.Equipment.CABLE);
     }
 
     @TestFactory

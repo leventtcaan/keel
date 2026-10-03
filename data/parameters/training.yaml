@@ -83,6 +83,12 @@ parameters:
     unit: kg
     tag: literatur
     source: "arastirma/ham/H3-bosluk-literatur.md#B4"
+  - key: load_jump_max_steps
+    value: 2
+    unit: load_steps
+    tag: urun
+    source: "arastirma/ham/L3-ozellik-boslugu.md#5"
+    note: "TÜRETİLMİŞ, ürün kararı (Levent, ADR-037 #38 b). §5 Y7: motorun artışı salonda mümkün en yakın yüke yuvarlanır, mümkün değilse tekrar artışına çevrilir. En yakın ağır yük son yükün üstünde motor adımının (hedef − son) bu katından uzaksa 'mümkün değil' sayılır: seyrek rafta 10 → 20 kg dambıl +%100 sıçramaydı. Kaynaklı bir sıçrama sınırı yok. Tutma şöyle biter (ADR-041 #55): son yükteki setlerin her biri ağır yükte aralığın altına eşdeğer olunca (Epley, H3 B15) sıçranır."
   - key: load_progression_compound_only
     value: true
     unit: boolean
