@@ -43,3 +43,5 @@
 31. ADR-045 (cevaplar 73, 78-85) — `plan/kararlar/ADR-045-m5-part3-sonu-cevaplari.md`
 32. K-514 öğün fotoğrafı backend'i (`K-514.md`, ADR-046)
 33. K-408 öğün fotoğrafı telefonda (`K-408.md`)
+34. K-510 Apple FM spike (`K-510.md`, ADR-047, H11)
+35. K-515 kilit ekranı karar widget'ı (`K-515.md`, ADR-048)
