@@ -2,34 +2,16 @@
 
 > Önce oku: `M5.md` (ortak), `M5-part1.md`, `DURUM.md › ## M5 ilerleme` + `## ▶ DEVAM NOKTASI`. Git ile doğrula.
 
-## Yarım işler (sırayla) — güncel: 3 Eki, ikinci oturum sonu
-1. ✅ K-518 #284, K-512 #283 + #285, K-519 #286, K-520 #287 birleşti.
-2. **K-513 kısım 1 #289** (`../keel-513`, dal `engine/119-first-weeks`, auto-merge KAPALI): inceleme 5 bulgu — **önce bunlar**, TDD ile:
-   (1) **risk penceresi kaydı:** sinyaller biten takvim haftasından, kapı içinde bulunulan kullanıcı haftası (5-8) → 4-7. haftaların
-   davranışı okunuyor, 8. haftanınki hiç. Düzeltme: sinyalleri **biten kullanıcı haftasından** (kişinin 7 günlük bloğu) oku; risk,
-   biten hafta 5-8 iken (yani 6-9. haftalarda) okunur; akış 8. haftadan sonra da 1 hafta yalnız risk için açık. Affedilen hafta takvim
-   haftasıyla sayılıyor → bu sinyali de kişinin haftasına uyarla ya da ADR'ye uyumsuzluğu yaz. ADR-040 #1/#3 ve yaml notlarını güncelle.
-   (3) **affedilen hafta motorda hesaplansın:** `Consistency`'ye saf yardımcı (ör. `ConsistencyRecord.forgivenWeekUsed` ya da
-   `FirstWeeks.Facts` `List<WeekTally>` alsın); ilk sayılan hafta kaçtıysa "affedilen" değil (koşu yok) — testle tanımla; duraklayan
-   hafta atlanır. Facts'te konumsal int/bool kalabalığını azalt.
-   (2) **5. hafta metni** herkese "eşiği geçtin" diyor (I1 F2'de koşullu: 12'de 9) → koşulsuz bir cümleye çevir ya da seans sayısına
-   bağla. (4) **antrenmansız kullanıcıya** H2/H6 antrenman metni + "muscle can start to show" vaadi → `trainingPlanned` yoksa içerik
-   varyantı/yok; H6 "may"; "6. haftadan önce muscle yok" testi (H4'ün "not muscle yet" olumsuzu ADR'de izinli say). Metinler soru 65.
-   (5) ADR-040'da `EightWeeks` → `FirstWeeks`; backlog K-513 `tests:` → `FirstWeeksTests`.
-   Sonra yeniden incelet, `gh pr merge 289 --auto --squash`.
-3. **K-513 kısım 2** (sunucu, decision modülü): `GET /v1/first-weeks` → `{week, contentKey?, risk: [rule]}` (8. haftadan sonra 404);
-   Facts: hesabın açılış günü (identity `account.created_at` — kimlik modülünden public okuyucu gerekir), biten takvim haftasının seans
-   sayısı (`TrainingLog.workoutStarts`), antrenman planlı mı (profil günleri), affedilen hafta (Consistency kaydı: son sayılan hafta
-   kaçtı ve önceki kaçmadı — `WeekLogs`/`Consistency.record` mantığından, motora saf yardımcı ekle), öğün kaydı olan gün sayıları (iki
-   hafta), biten hafta beyanlı mı (`StateStore.days`). Risk varken haftanın soru bütçesi `question_budget_per_week_anomaly`
-   (`QuestionBudget.forWeek`). Sözleşme + DB testi + RED CI'da önce.
-4. **K-502** (karar kartı varyantları + gerekçe sayfası; `/v1/decisions/{id}/basis` hazır; prototip 3.2-3.5).
-5. Simülatör turu (K-501, K-434, K-518, K-520, K-502), Part 1 ÇIKIŞ (DURUM), Part 2 sağlayıcı soruları, `M5-part2.md` kontrolü,
-   aktarım README'ye K-520 ve K-513 satırları.
-6. K-430 #273 Levent'te (soru 55) — dokunma.
-
-**Disk 4,3 GB (3 Eki, 5 GB altı):** oturum başında önbellek temizliği (`~/Library/Caches`, Xcode DerivedData, eski Gradle
-önbellekleri) — simülatörden önce şart; hâlâ azsa Levent'e sor.
+## Yarım işler (sırayla) — güncel: 3 Eki, üçüncü oturum
+1. ✅ K-513 #289 (motor, iki inceleme turu) + #290 (sunucu) birleşti. ✅ K-502 (1/2) #291 birleşti; (2/2) #292 auto-merge.
+2. **Simülatör turu** (K-501, K-518, K-520, K-502 kartı + gerekçe sayfası; K-434 onboarding): ana checkout `git checkout --detach origin/main`
+   (node_modules orada gerçek; worktree'de sembolik bağ var — Metro riski), geçici koruma yaması (`_layout.tsx` signedIn/onboarding
+   sabit — **commitlenmez, geri alınır**), fikstür sunucusu bu oturumun scratchpad'inde `fixture.js` (8099; `/__call?v=hold|change|wait|advice|safety`,
+   `/__checkin?v=open|answered`, `/__state?v=none|sick`, `/__prompt?v=on|off`), `EXPO_PUBLIC_API_URL=http://127.0.0.1:8099 npx expo start`
+   (komut satırı .env'i ezer; .env okunmaz — sır), `xcrun simctl openurl booted exp://127.0.0.1:8081`. Görüntüler `docs/aktarim/M5/img/`,
+   `sips -Z 1000`. Bitince `xcrun simctl shutdown all`, yamayı geri al.
+3. Part 1 ÇIKIŞ (DURUM › M5 ilerleme), aktarım README'ye K-520, K-513, K-502 satırları, `M5-part2.md` kontrolü (sorular 67-71 DURUM'da hazır).
+4. K-430 #273 Levent'te (soru 55) — dokunma. K-521 (ilk 8 hafta telefonda) backlog'da, Part 1 dışı.
 
 ## Sonra (part kapsamı)
 K-520 (tetikleyici soruları telefonda) · K-513 (önce böl: motor + K-521 mobil; ilk 8 hafta + 5. hafta risk — risk ağırlıkları kaynakta
@@ -37,7 +19,14 @@ yok → girdiler kaynaklı, eşikler `urun` ya da soru) · K-519 (kararın dayan
 sayfası, prototip 3.2-3.5) · simülatör turu (K-501, K-434, K-518, K-502 ekranları; disk ~5 GB → önce `df -h ~`, iş bitince
 `xcrun simctl shutdown all`) · Part 1 ÇIKIŞ + Part 2 sağlayıcı soruları (DURUM) + `M5-part2.md` kontrolü.
 
-## Dersler (bu oturum)
+## Dersler (3. oturum)
+- Mobil mutasyon betiği: jest desenini **bölerek** ver; "No tests found" çıkış 1'dir → her mutant sahte "öldü". Çıktıda `Tests:` yoksa
+  "test koşmadı" yaz; davranışı değiştirmeyen kontrol mutantı yaşamalı.
+- Worktree'de `node_modules` sembolik bağı `.gitignore`'daki `node_modules/` ile yakalanmaz → `git add -A` onu commitler. Ortak
+  `info/exclude`'a `apps/mobile/node_modules` eklendi.
+- Sahte sunucu her okumada aynı nesneyi dönerse "okumaya bağlı" durum testleri yanılır: yeniden okumadan önce yeni nesne ver.
+
+## Dersler (önceki oturum)
 - Ana checkout ayrık HEAD'de kalsın; her dal kendi worktree'sinde (inceleme ajanı okurken dal değiştirme).
 - `gh pr edit` GraphQL (Projects classic) hatası → gövde için `gh api -X PATCH repos/leventtcaan/keel/pulls/N -F body=@dosya`.
 - Push çıktısını süzme: `git push 2>&1 | grep -E "main -> main|rejected"` (bir commit sessizce itilemedi).
