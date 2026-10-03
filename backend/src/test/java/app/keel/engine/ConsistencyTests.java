@@ -160,10 +160,37 @@ class ConsistencyTests {
     }
 
     @Test
-    void twoMissesInARowAreNotForgivenWeeks() {
-        // The second miss ends the run: the first was not forgiven after all (04-faz3 §7.3), and the earlier forgiven week stays.
-        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 1), week(10, 9)).forgivenWeeks()).isZero();
-        assertThat(record(week(10, 9), week(10, 2), week(10, 9), week(10, 2), week(10, 1)).forgivenWeeks()).isOne();
+    void aForgivenWeekStaysUsedWhenTheNextIsMissedToo() {
+        // K-608 review: forgiven when it was missed, as the user was told then — a second miss ends the run, it does not
+        // take the forgiven week back (U7: the number never goes down). Only the lone miss is forgiven, not the second.
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2)).forgivenWeeks()).isOne();
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 1)).forgivenWeeks()).isOne();
+        assertThat(record(week(10, 9), week(10, 9), week(10, 2), week(10, 1), week(10, 9)).forgivenWeeks()).isOne();
+    }
+
+    @Test
+    void aPausedOrUnplannedWeekBetweenIsSkippedAsTheRunSkipsIt() {
+        // on, miss, paused, on → 1; on, miss, paused, miss → the pause does not split two misses: still the one forgiven.
+        assertThat(Consistency.record(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 2),
+                training(MONDAY.plusWeeks(2), 10, 0).asPaused(), training(MONDAY.plusWeeks(3), 10, 9)), P).forgivenWeeks()).isOne();
+        assertThat(Consistency.record(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 2),
+                training(MONDAY.plusWeeks(2), 10, 0).asPaused(), training(MONDAY.plusWeeks(3), 10, 1)), P).forgivenWeeks()).isOne();
+        assertThat(record(week(10, 9), week(10, 2), week(0, 0)).forgivenWeeks()).isOne();
+    }
+
+    @Property
+    boolean theForgivenWeeksNeverGoDownAsWeeksAreAdded(@ForAll("tallies") List<int[]> history) {
+        List<WeekTally> weeks = new ArrayList<>();
+        int previous = 0;
+        for (int i = 0; i < history.size(); i++) {
+            weeks.add(training(MONDAY.plusWeeks(i), history.get(i)[0], history.get(i)[1]));
+            int now = Consistency.record(weeks, P).forgivenWeeks();
+            if (now < previous) {
+                return false;
+            }
+            previous = now;
+        }
+        return true;
     }
 
     @Test
@@ -172,8 +199,8 @@ class ConsistencyTests {
     }
 
     @Test
-    void theLatestWeekMissedAloneIsForgivenForNow() {
-        // As lastWeekForgiven reads it (K-513): forgiven until a second miss says otherwise.
+    void theLatestWeekMissedAloneIsForgivenAsLastWeekForgivenReadsIt() {
+        // K-513's sign reads the same walk: forgiven when missed.
         assertThat(record(week(10, 9), week(10, 2)).forgivenWeeks()).isOne();
     }
 

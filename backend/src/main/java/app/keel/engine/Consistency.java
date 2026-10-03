@@ -107,7 +107,6 @@ public final class Consistency {
         int run = 0;
         int missesInARow = 0;
         boolean forgiven = false;
-        boolean pending = false; // a lone miss forgiven, until the next counted week says whether it stays forgiven
         int forgivenWeeks = 0;
         for (WeekTally week : weeks) {
             forgiven = false;
@@ -119,16 +118,16 @@ public final class Consistency {
                 onTrack++;
                 run++;
                 missesInARow = 0;
-                forgivenWeeks += pending ? 1 : 0;
             } else if (++missesInARow >= 2) {
                 run = 0; // a second missed week in a row ends the run; the cumulative count stays
             } else {
                 forgiven = run > 0; // a lone miss keeps a run going; with no run there is nothing to forgive
+                // Used when it is forgiven, as the user is told then: a second miss ends the run, it does not take this
+                // back (K-608 review, U7: the count never goes down).
+                forgivenWeeks += forgiven ? 1 : 0;
             }
-            pending = forgiven;
         }
-        // The latest week missed alone is forgiven for now, as lastWeekForgiven reads it.
-        return new Walk(onTrack, counted, run, forgiven, forgivenWeeks + (pending ? 1 : 0));
+        return new Walk(onTrack, counted, run, forgiven, forgivenWeeks);
     }
 
     /**

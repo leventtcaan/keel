@@ -2731,8 +2731,8 @@ components:
               type: integer
               minimum: 0
               description: |
-                The missed weeks a run forgave, over the whole record, never reset (K-608): a lone miss after an on-track
-                week, not followed by a second miss; the latest week, missed alone, is forgiven for now.
+                The missed weeks a run forgave, over the whole record (K-608): each lone miss after an on-track week, counted
+                when forgiven — never reset, never taken back by a second miss (which ends the run).
     ActionCount:
       type: object
       description: One kind of planned action this week; done is counted up to planned.
