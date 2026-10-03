@@ -61,7 +61,7 @@ class ProgramHistoryTests {
         // last can carry the earlier time. The history never goes back: its last row is the program in force.
         AccountId account = TestSessions.newAccount();
         own(account, 2);
-        java.time.Instant later = java.time.Instant.now().plusSeconds(3600);
+        java.time.Instant later = java.time.Instant.now().plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.MICROS); // as stored
         context.getBean(org.springframework.jdbc.core.simple.JdbcClient.class).sql(
                 "insert into training.program_history (id, account_id, sessions_per_week, effective_from) values (gen_random_uuid(), :account, 4, :later)")
                 .param("account", account.value()).param("later", later.atOffset(java.time.ZoneOffset.UTC)).update();
