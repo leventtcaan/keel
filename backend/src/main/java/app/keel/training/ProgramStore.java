@@ -70,8 +70,7 @@ class ProgramStore {
         // last row: two replaces at once each read the clock before the lock, and the one stored last must be in force.
         jdbc.sql("""
                 insert into training.program_history (id, account_id, sessions_per_week, effective_from)
-                values (:id, :account, :sessions, greatest((select created_at from training.program where id = :program),
-                        (select max(effective_from) from training.program_history where account_id = :account)))""")
+                values (:id, :account, :sessions, (select created_at from training.program where id = :program))""")
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("sessions", days.size()).param("program", program)
                 .update();
         for (int d = 0; d < days.size(); d++) {

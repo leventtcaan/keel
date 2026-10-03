@@ -12,5 +12,5 @@ create table training.program_history
 create index program_history_by_time on training.program_history (account_id, effective_from);
 
 insert into training.program_history (id, account_id, sessions_per_week, effective_from)
-select gen_random_uuid(), p.account_id, (select count(*) from training.program_day d where d.program_id = p.id), p.created_at
+select gen_random_uuid(), p.account_id, (select count(*) from training.program_day d where d.program_id = p.id), now()
 from training.program p;
