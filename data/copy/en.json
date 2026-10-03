@@ -151,6 +151,15 @@
         "PRODUCT": "A rule of this app"
       },
       "nextReview": "Next review {date}",
+    "wait": "Wait",
+    "hold": "Nothing to do differently.",
+    "waitNote": "Keep logging the same way. That's what makes the next call clear.",
+    "oneThing": "Only one change at a time, so we know what worked. Everything else stays as it is.",
+    "apply": "Apply from today",
+    "applied": "Applied. Your targets have changed from today.",
+    "undone": "Undone: your plan is back as it was.",
+    "applyFailed": "Not applied: no connection. Try again in a moment.",
+    "applyRefused": "This call can't be applied any more. Your next check-in makes a new one.",
       "none": "Your first call comes after your first weekly check-in."
     },
     "list": {

@@ -629,3 +629,71 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
     expect(screen.queryByText(t('prompt.steps_dropped.title'))).toBeNull();
   });
 });
+
+describe("the call's three variants (K-502, prototype 3.2-3.4): from what the server says, never decided here", () => {
+  const nextReview = t('today.call.nextReview', { date: 'Mon, Oct 5' });
+
+  test('no change: its confidence, nothing to do differently, the next review in sight; nothing to apply', async () => {
+    await show();
+    expect(screen.getByText(t('today.call.confidence.HIGH'))).toBeOnTheScreen();
+    expect(screen.getByText(t('today.call.hold'))).toBeOnTheScreen();
+    expect(screen.getByText(nextReview)).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
+  });
+
+  test('not yet: "Wait" in place of a confidence, keep logging the same way', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision('decision.no_decision_yet.wait_one_more_week', { action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'], confidence: 'LOW' }),
+    );
+    await show();
+    expect(screen.getByText(t('today.call.wait'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.confidence.LOW'))).toBeNull();
+    expect(screen.getByText(t('today.call.waitNote'))).toBeOnTheScreen();
+    expect(screen.getByText(nextReview)).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
+  });
+
+  const change = (state: Schemas['Application']['state']) =>
+    decision('decision.change_movement.bmr_floor', {
+      id: 'd7',
+      action: { type: 'CHANGE_MOVEMENT' } as Schemas['Decision']['action'],
+      application: { state },
+    });
+
+  test('a change: one thing at a time, applied from today with one tap, and Today reads again', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
+    await show();
+    expect(screen.getByText(t('today.call.oneThing'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.hold'))).toBeNull();
+
+    mockAnswers['/v1/decisions/current'] = ok(change('APPLIED'));
+    const reads = mockGET.mock.calls.filter(([path]) => path === '/v1/decisions/current').length;
+    await press(t('today.call.apply'));
+
+    expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd7' } } });
+    expect(mockGET.mock.calls.filter(([path]) => path === '/v1/decisions/current').length).toBe(reads + 1);
+    expect(screen.getByText(t('today.call.applied'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
+  });
+
+  test('not applied: without a connection it says so and the button stays; refused, it says the call is past', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
+    mockPost = 'offline';
+    await show();
+    await press(t('today.call.apply'));
+    expect(screen.getByText(t('today.call.applyFailed'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
+
+    mockPost = refused(409, 'CONFLICT');
+    await press(t('today.call.apply'));
+    expect(screen.getByText(t('today.call.applyRefused'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.applyFailed'))).toBeNull();
+  });
+
+  test('undone: the plan is back as it was, and nothing to apply again', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(change('UNDONE'));
+    await show();
+    expect(screen.getByText(t('today.call.undone'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
+  });
+});
