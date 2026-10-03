@@ -2098,7 +2098,7 @@ tasks:
     module: coach
     type: test
     size: M
-    status: todo
+    status: done
     depends_on: [K-505]
     why: "Sycophancy regresyonunu yakalamak (MedPRESS, ELEPHANT)"
     acceptance:
@@ -2133,7 +2133,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-503]
     why: "Maliyet kuyruğunu sabitlemek (ADR-012)"
     acceptance:
