@@ -28,7 +28,7 @@ class QuotaCleanup {
 
     // @Async: the scheduler's own handler would log the failure's message; run as a listener does, a failure goes to
     // BackgroundFailures — which task, its type and where, never the message (V3).
-    @Scheduled(cron = "${keel.subscription.quota-cleanup}")
+    @Scheduled(cron = "${keel.subscription.quota-cleanup}", zone = "${keel.subscription.quota-cleanup-zone}")
     @Async
     void nightly() {
         cleanUp(clock.instant());
