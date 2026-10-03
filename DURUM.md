@@ -536,6 +536,20 @@ DURUM ile birlikte commitlendi.
 66. **(K-513/K-521, ürün)** Riskli haftada telefon tek "insan tonu" mesaj gösterecek (I1 F2). Metni sen mi yazarsın, ben taslak mı
     yazayım? Ayrıca "uygulama açılmaması" sinyali yalnız telefonda bilinir — sunucuya gönderilsin mi (açılış zamanı, sağlık verisi değil)?
 
+**M5 Part 2 başında sorulacak — sağlayıcı kapısı (67-71; AskUserQuestion, cevap ADR'ye; cevapsız Part 2 yalnız sahte sağlayıcıyla):**
+67. **(K-511, veri dışarı + marka)** Ölçülecek adaylar (en az üç, ADR-004 katman 2): Anthropic (Claude, küçük model), OpenAI (küçük model),
+    Google (Gemini Flash). Model adları, fiyatlar ve veri saklama/eğitim politikaları K-511'de resmî sayfalardan doğrulanacak — şu an
+    `[doğrulanmadı]`. Listeye eklemek/çıkarmak istediğin var mı (ör. Türkiye/AB'de barındırılan bir sağlayıcı)?
+68. **(K-511, ölçüm planı)** Aynı set üç adaya: öğün ayrıştırma (veritabanı eşlemesiyle, U1), karar anlatım sadakati (sayılar kararla
+    birebir), "hayır diyen koç" seti (K-506, ≥30 itiraz), maliyet (istek başı), gecikme. Gerçek koşular **senin terminalinde, senin
+    anahtarınla**; sonuç tablosu ADR'ye. Onay ya da eklemek istediğin ölçüt?
+69. **(para)** Aylık bütçe ve sağlayıcıdaki **harcama limiti** (K-503 kabulü: manuel adım). Ölçüm dönemi için ayrı bir tavan? (ADR-004:
+    LLM maliyeti gelirin ~%4'ü; asıl risk kotasız kötüye kullanım — kota `quota.yaml`, K-508.)
+70. **(hesap/sır, V5)** Anahtar nerede durur: geliştirmede senin terminalinde ortam değişkeni; üretimde sunucunun sır deposu (hangisi —
+    barındırma kararı henüz yok). Repoda, promptta, logda asla. Anahtarı sen oluşturursun; ben yalnız değişken adını bilirim.
+71. **(veri dışarı, KVKK/GDPR)** Kullanıcı verisi yurt dışındaki bir sağlayıcıya gider (V2: rıza sağlayıcıyı adıyla söyler). Sıfır saklama
+    (zero data retention) seçeneği olan sağlayıcıyı şart koşalım mı? Hukuki görüş gerekirse kimden?
+
 **33-54 → ADR-037 (2 Eki, M4 sonu).** Açık soru yok. İş doğuranlar: K-428…K-435 (mobil olanlar M4 kapanışında, backend
 olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
 38. **(K-414, sağlık/ürün — YENİ, Part 2)** Yuvarlama "son yükten ağır, hedefe en yakın mümkün yük"ü alıyor (kart: "mümkün en yakın").
