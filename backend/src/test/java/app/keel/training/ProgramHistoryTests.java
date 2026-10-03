@@ -43,14 +43,35 @@ class ProgramHistoryTests {
     @Test
     void aReplacedProgramKeepsWhatTheOneBeforeItAskedAndFromWhen() {
         AccountId account = TestSessions.newAccount();
+        ProgramStore programs = context.getBean(ProgramStore.class);
         send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY", "SATURDAY")));
+        java.time.Instant firstMade = programs.createdAt(account).orElseThrow();
         own(account, 5);
 
         List<ProgramPeriod> history = statuses.programHistory(account);
 
         assertThat(history).extracting(ProgramPeriod::sessionsPerWeek).containsExactly(3, 5);
-        assertThat(history.get(0).from()).isBeforeOrEqualTo(history.get(1).from());
-        assertThat(history.get(1).from()).isEqualTo(context.getBean(ProgramStore.class).createdAt(account).orElseThrow());
+        assertThat(history.get(0).from()).isEqualTo(firstMade).isBefore(history.get(1).from());
+        assertThat(history.get(1).from()).isEqualTo(programs.createdAt(account).orElseThrow());
+    }
+
+    @Test
+    void theProgramInForceIsAlwaysTheHistorysLast() {
+        // Two replaces at once (K-535 review): each read the clock before the other's lock let it in, so the one stored
+        // last can carry the earlier time. The history never goes back: its last row is the program in force.
+        AccountId account = TestSessions.newAccount();
+        own(account, 2);
+        java.time.Instant later = java.time.Instant.now().plusSeconds(3600);
+        context.getBean(org.springframework.jdbc.core.simple.JdbcClient.class).sql(
+                "insert into training.program_history (id, account_id, sessions_per_week, effective_from) values (gen_random_uuid(), :account, 4, :later)")
+                .param("account", account.value()).param("later", later.atOffset(java.time.ZoneOffset.UTC)).update();
+
+        own(account, 3);
+
+        assertThat(statuses.programHistory(account)).last().satisfies(period -> {
+            assertThat(period.sessionsPerWeek()).isEqualTo(3);
+            assertThat(period.from()).isAfterOrEqualTo(later);
+        });
     }
 
     @Test
