@@ -3116,7 +3116,6 @@ tasks:
       - "Backlog'da beta kaynaklı görevler"
     refs: []
     learn: ["Geri bildirimi önceliklendirme"]
-
   - id: K-536
     title: "Kilitten kilo girişi: parametreli Siri/Shortcuts intent'i (uygulamayı açmadan)"
     milestone: M9
@@ -3134,6 +3133,7 @@ tasks:
       - "IntentQueueTests"
     refs: ["plan/kararlar/ADR-048-kilit-ekrani-widget.md", "arastirma/ham/H11-cihaz-ustu-ve-widget.md"]
     learn: ["App Intents", "Swift"]
+
 # ───────────────────────────── M10 · Lansman ─────────────────────────────
   - id: K-1001
     title: "Ürün adı ve marka kontrolü"
