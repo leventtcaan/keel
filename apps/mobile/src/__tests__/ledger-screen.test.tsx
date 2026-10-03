@@ -86,3 +86,20 @@ test('no calls yet, no consent, or not read: one line each', async () => {
   await show();
   expect(screen.getByText(t('ledger.failed'))).toBeOnTheScreen();
 });
+
+test('older calls not read: the ones shown stay, and it says so (K-611 review)', async () => {
+  mockPages = { ...mockPages, c1: 'offline' };
+  await show();
+  await act(async () => {
+    fireEvent.press(screen.getByText(t('ledger.more')));
+  });
+  expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(2);
+  expect(screen.getByText(t('ledger.failed'))).toBeOnTheScreen();
+  expect(screen.getByText(t('ledger.more'))).toBeOnTheScreen();
+
+  mockPages = { ...mockPages, c1: refused(403, 'CONSENT_REQUIRED') };
+  await act(async () => {
+    fireEvent.press(screen.getByText(t('ledger.more')));
+  });
+  expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
+});

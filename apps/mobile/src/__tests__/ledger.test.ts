@@ -57,6 +57,12 @@ test('applied and undone are said; a call that changed nothing says nothing of i
   );
   expect(entries.map((entry) => entry.state)).toEqual([t('ledger.state.applied'), t('ledger.state.undone'), null]);
   expect(ledgerEntries([call('c4', '2026-10-12', { application: { state: 'PENDING' } })], 'METRIC')[0]?.state).toBe(t('ledger.state.pending'));
+  // K-611 review: only the latest call can be applied; an older one left pending is history, not a debt (U7) — no word.
+  const twoPending = ledgerEntries(
+    [call('c5', '2026-10-19', { application: { state: 'PENDING' } }), call('c4', '2026-10-12', { application: { state: 'PENDING' } })],
+    'METRIC',
+  );
+  expect(twoPending.map((entry) => entry.state)).toEqual([t('ledger.state.pending'), null]);
 });
 
 test('the words claim no cause', () => {

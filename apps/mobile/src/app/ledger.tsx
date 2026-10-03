@@ -16,7 +16,12 @@ import { load } from '@/today/today';
 import type { UnitSystem } from '@/units/units';
 
 type Decision = components['schemas']['Decision'];
-type Read = { state: 'loading' } | { state: 'ready'; calls: Decision[]; next: string | null } | { state: 'none' } | { state: 'consent' } | { state: 'failed' };
+type Read =
+  | { state: 'loading' }
+  | { state: 'ready'; calls: Decision[]; next: string | null; older?: 'consent' | 'failed' }
+  | { state: 'none' }
+  | { state: 'consent' }
+  | { state: 'failed' };
 
 /**
  * The call ledger (K-611, L3 Y4): every weekly call, newest first, each with what the trend did after it — read from the
@@ -51,8 +56,8 @@ export default function LedgerScreen() {
   const older = async () => {
     if (read.state !== 'ready' || read.next === null) return;
     const more = await page(read.next, read.calls);
-    // An older page not read keeps what is shown; the button stays to try again.
-    if (more.state === 'ready') setRead(more);
+    // An older page not read keeps what is shown and says so; the button stays to try again.
+    setRead(more.state === 'ready' ? more : { ...read, older: more.state === 'consent' ? 'consent' : 'failed' });
   };
 
   return (
@@ -97,8 +102,22 @@ function Body({ read, units, onOlder }: { read: Read; units: UnitSystem; onOlder
           {entry.after !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{entry.after}</Text>}
         </Card>
       ))}
+      {read.older !== undefined && <OlderNotRead reason={read.older} />}
       {read.next !== null && <OlderButton onPress={onOlder} />}
     </>
+  );
+}
+
+/** An older page not read (K-611 review): said under the calls shown; without the consent, the way to Settings. */
+function OlderNotRead({ reason }: { reason: 'consent' | 'failed' }) {
+  const { color } = useTheme();
+  const text = (key: string) => <Text style={[styles.text, { color: color.textSecondary }]}>{t(key)}</Text>;
+  if (reason === 'failed') return text('ledger.failed');
+  return (
+    <View style={styles.note}>
+      {text('today.consent.body')}
+      <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+    </View>
   );
 }
 

@@ -25,7 +25,8 @@ export function ledgerEntries(calls: Decision[], units: UnitSystem): LedgerEntry
       next !== undefined && call.readTrendKg !== undefined && next.readTrendKg !== undefined
         ? t('ledger.after', { from: formatWeight(call.readTrendKg, units), to: formatWeight(next.readTrendKg, units), date: weekdayDate(next.madeOn) })
         : null;
-    const state = STATE[call.application.state];
+    // Only the latest call can be applied: an older one left pending is history, not something still owed (U7).
+    const state = call.application.state === 'PENDING' && i > 0 ? undefined : STATE[call.application.state];
     return { id: call.id, date: weekdayDate(call.madeOn), title: t(`${call.copyKey}.title`), state: state === undefined ? null : t(state), after };
   });
 }
