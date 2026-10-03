@@ -11,6 +11,7 @@ import { TextField } from '@/components/TextField';
 import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, readMeal, type Said } from '@/coach/conversation';
 import { Chip } from '@/components/Chip';
 import { t } from '@/copy';
+import { weeklyNote } from '@/coach/note';
 import { handOffMeal } from '@/food/handoff';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -63,6 +64,17 @@ export default function CoachScreen() {
       load(() => api.GET('/v1/program')),
       load(() => api.GET('/v1/weigh-ins', { params: { query: { from: day, to: day } } })),
     ]).then(([decision, program, weighIns]) => {
+      // The week's note opens the conversation (K-517): the call, its leading rule, the one focus — no model, no quota.
+      if (live && decision.state === 'ready') {
+        const { value } = decision;
+        const note: Message = {
+          from: 'coach',
+          // Its first sentence is the call's own words: no card to say them twice.
+          said: { heading: 'coach.note.title', lines: weeklyNote(value) },
+          standard: false,
+        };
+        setMessages((said) => [note, ...said]);
+      }
       if (live)
         setToday({
           decision,
@@ -191,6 +203,7 @@ function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string
   const { said, standard } = message;
   return (
     <View style={styles.coach}>
+      <Heading words={said.heading} />
       {said.lines.map((line) => (
         <Text key={line.key} style={[styles.text, { color: color.text }]}>
           {t(line.key, line.values)}
@@ -262,6 +275,13 @@ function MealPick({ item, picked, onPick }: { item: Schemas['MealDraftItem']; pi
       </View>
     </>
   );
+}
+
+/** A message's small heading (the week's note). */
+function Heading({ words }: { words: string | undefined }) {
+  const { color } = useTheme();
+  if (words === undefined) return null;
+  return <Text style={[styles.small, { color: color.muted }]}>{t(words)}</Text>;
 }
 
 /** A way on from an answer: today's session, on its program day (as Train opens it). */

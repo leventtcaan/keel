@@ -15,7 +15,7 @@ type Schemas = components['schemas'];
 export type Line = { key: string; values?: Record<string, string> };
 
 /** What the coach says back: its lines, the call it is about, a way on (today's session, by its program day). */
-export type Said = { lines: Line[]; call?: Schemas['CoachCall']; open?: { key: string; day: string } };
+export type Said = { lines: Line[]; heading?: string; call?: Schemas['CoachCall']; open?: { key: string; day: string } };
 
 /** How a day is shown ("Mon, Oct 5"), handed in so this stays a pure reading of the answer. */
 type DayWords = (day: string) => string;
