@@ -1279,6 +1279,31 @@
       "openWorkout": "Open today's session",
       "unread": "This week's call couldn't be read just now. Try again in a moment."
     },
+    "note": {
+      "title": "This week's note",
+      "focus": {
+        "no_decision_yet": "This week's one focus: keep logging as you are. The call comes when the data is enough.",
+        "continue": "This week's one focus: the same plan, done the same way.",
+        "adjust_calories": {
+          "less": "This week's one focus: {kcal} kcal a day less than your current target.",
+          "more": "This week's one focus: {kcal} kcal a day more than your current target."
+        },
+        "increase_calories": "This week's one focus: {kcal} kcal a day more than your current target.",
+        "change_movement": "This week's one focus: your new daily step goal.",
+        "fix_training": "This week's one focus: your sessions, as planned.",
+        "fix_recovery": "This week's one focus: sleep and recovery.",
+        "fix_adherence": "This week's one focus: the plan as it is, one day at a time.",
+        "hard_stop": "This week's one focus: eating to your needs.",
+        "stop_load_increase": "This week's one focus: the same weights on the lifts that stalled.",
+        "deload": "This week's one focus: {percent}% of your usual sets.",
+        "full_rest_week": "This week's one focus: rest. No gym this week.",
+        "mini_cut": "This week's one focus: the short cut, {min} to {max} weeks.",
+        "change_phase": {
+          "cut": "This week's one focus: the switch to a cut.",
+          "bulk": "This week's one focus: the switch to building."
+        }
+      }
+    },
     "meal": {
       "chip": "Log a meal in words",
       "prompt": "Tell me what you ate, in your own words. I'll match it to the food database.",

@@ -101,6 +101,20 @@ test("on opening: three chips — the day's own first (the call, today's session
   expect(mockGET).toHaveBeenCalledWith('/v1/weigh-ins', { params: { query: { from: '2026-09-29', to: '2026-09-29' } } });
 });
 
+test("the week's note opens the conversation: the call, its leading rule, the one focus with the call's own number (K-517)", async () => {
+  await show();
+  expect(screen.getByText(t('coach.note.title'))).toBeOnTheScreen();
+  expect(screen.getByText(t('decision.rule.not_toward_goal'))).toBeOnTheScreen();
+  expect(screen.getByText(t('coach.note.focus.adjust_calories.less', { kcal: '250' }))).toBeOnTheScreen();
+  expect(mockPOST).not.toHaveBeenCalled();
+});
+
+test('no call yet: no note', async () => {
+  mockAnswers['/v1/decisions/current'] = refused(404, 'NOT_FOUND');
+  await show();
+  expect(screen.queryByText(t('coach.note.title'))).toBeNull();
+});
+
 test("'Why this call?' is answered on the phone: every rule's sentence, the call stands, its card — nothing sent", async () => {
   await show();
   await press(t('today.chips.why'));
