@@ -182,6 +182,8 @@ class AccountDataTests {
                 .satisfies(state -> assertThat(state).containsEntry("kind", "SICK").containsKey("since").doesNotContainKey("until"));
         // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
         assertThat(body).doesNotContainIgnoringCase("fatProxy");
+        // A call's reasons go out with the kind of source only (K-523, ADR-041 #72): no research path, even to the user.
+        assertThat(body).doesNotContain("arastirma/");
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("consent")).get("events"))
                 .anySatisfy(event -> assertThat(event).containsEntry("provider", "Example AI")

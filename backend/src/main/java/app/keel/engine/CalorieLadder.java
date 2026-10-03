@@ -12,7 +12,7 @@ import java.util.Optional;
  *
  * <ul>
  *   <li><b>Step size.</b> A cut moves cut_step_min_kcal, down or up (G7 K-97: "at least 500 down or at least 500 up";
- *       300-400 is measurement noise. The literature's 5-10 % of intake, H3 B3, loses to Güray, U14). A bulk moves
+ *       300-400 is measurement noise. The literature's 5-10 % of intake, H3 B3, loses to coaching experience, U14). A bulk moves
  *       bulk_step_kcal (G3 K-10), also when the genetic limit pulls it back.</li>
  *   <li><b>Where it lands.</b> Only the calorie target moves; macros follow from it (K-108), which holds protein and
  *       fat and moves carbs — so a bulk step is all carbs (G3 K-10) and a cut takes fat down only once carbs reach their

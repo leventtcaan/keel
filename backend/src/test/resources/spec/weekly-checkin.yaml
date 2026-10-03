@@ -1,5 +1,5 @@
 # Weekly check-in specification (K-106, K-104, K-103, K-112).
-# Each row is one branch of Güray's weekly decision tree or a safety/data rule, with its source.
+# Each row is one branch of the coaching weekly decision tree or a safety/data rule, with its source.
 # `given` is written in plain domain terms; K-101 turns it into a real Snapshot.
 # Row order is not execution order; the engine's fixed order is in ADR-003 §4, detailed in ADR-022.
 # Actions are the proposed vocabulary (K-101 finalizes it; renaming here is part of that task).
@@ -33,7 +33,7 @@ rows:
     given: {phase: cut, trend: flat, flat_weeks: 3, training: stable, adherence: 0.91}
     expect: {action: ADJUST_CALORIES, direction: down, step_param: cut_step_min_kcal}
     source: "arastirma/ham/H3-bosluk-literatur.md#B3"
-    note: "The tree says adjust (03 §2.4, reason not_toward_goal); how long flat before adjusting is Güray's gap (G2 B-1), filled by H3 B3's 2-3 weeks: the decision window (reason stall_window)."
+    note: "The tree says adjust (03 §2.4, reason not_toward_goal); how long flat before adjusting is the coaching gap (G2 B-1), filled by H3 B3's 2-3 weeks: the decision window (reason stall_window)."
 
   - id: WC-05
     title: "Toward goal but looks worse and training is bad: fix training first, no calorie decision"

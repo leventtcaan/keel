@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * What the weekly spine asks besides the scale (Güray's tree, 03 §2.4): how it looks, how training and recovery go,
+ * What the weekly spine asks besides the scale (the coaching tree, 03 §2.4): how it looks, how training and recovery go,
  * where the waist went, and how much of the plan was done. Each signal may be unknown: the spine then asks instead of
  * guessing (U3), and only when its branch needs that signal. Producers are later tasks (photo/waist K-601/K-206, set
  * log K-210, sleep and check-in questions K-404/K-213).

@@ -23,7 +23,7 @@ public enum Unit {
     G_PER_DAY("g_per_day", Kind.FRACTION, Bound.POSITIVE),
     KCAL_PER_KG_FFM_PER_DAY("kcal_per_kg_ffm_per_day", Kind.FRACTION, Bound.POSITIVE),
 
-    // Calorie targets and steps are whole kcal (Güray: 500, 250).
+    // Calorie targets and steps are whole kcal (coaching experience: 500, 250).
     KCAL_PER_DAY("kcal_per_day", Kind.WHOLE, Bound.POSITIVE),
     // Resting-energy formula terms (Mifflin-St Jeor, H6 A1). The constant can be negative (women: -161).
     KCAL_PER_KG_PER_DAY("kcal_per_kg_per_day", Kind.FRACTION, Bound.POSITIVE),

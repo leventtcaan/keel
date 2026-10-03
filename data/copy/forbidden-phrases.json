@@ -1,5 +1,5 @@
 {
-  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions. Every rule carries examples it must catch and near-misses it must let through; coachingNonExamples are ordinary coaching sentences no rule may catch. A number in copy is usually a {placeholder}, so number branches accept both.",
+  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions. Every rule carries examples it must catch and near-misses it must let through; coachingNonExamples are ordinary coaching sentences no rule may catch. A number in copy is usually a {placeholder}, so number branches accept both. personNames (K-523): no person's name in the copy, the contract or the product's code, a research path aside.",
   "rules": [
     {
       "id": "body-fat-number",
@@ -148,5 +148,27 @@
     "We don't read medications.",
     "This keeps your lifts from stalling.",
     "80% of the plan happened."
-  ]
+  ],
+  "personNames": {
+    "source": "plan/kararlar/ADR-041-m5-part1-sonu-cevaplari.md",
+    "why": "ADR-041 #72 (K-523): a professional app names no person — not the coach whose experience the rules rest on, not the people who built it. The app, the API contract and the product's code say what kind of source a rule has; the research path (arastirma/…, internal, read on the server for audit) is taken out before the scan, so a path may hold a name. Matched apart from letters on either side, so code names (GURAY_LOSS_CAP) are caught too.",
+    "pattern": "(?<![a-z])(g(u|ü|Ü)ray|levent)(?![a-z])",
+    "researchPath": "arastirma/[^\\s\"'`)]*",
+    "examples": [
+      "Güray says so",
+      "GÜRAY",
+      "GURAY_LOSS_CAP",
+      "guray's tree",
+      "Levent's call",
+      "(Levent, 29 Sep)"
+    ],
+    "nonExamples": [
+      "the Levantine coast",
+      "Leventis",
+      "a gray day",
+      "arastirma/ham/guray/G2-kilo-verme.md#K-17",
+      "arastirma/03-guray-karar-omurgasi.md#2.4",
+      "coaching experience (G2 K-17)"
+    ]
+  }
 }

@@ -45,7 +45,7 @@ const decision = (copyKey: string, extra: Partial<Schemas['Decision']> = {}): Sc
   reasons: [
     {
       rule: copyKey.split('.')[2],
-      source: { reference: 'arastirma/ham/guray/G2.md#K-1', tag: 'EXPERIENCE' },
+      source: { tag: 'EXPERIENCE' },
     },
   ],
   confidence: 'HIGH',
@@ -243,10 +243,7 @@ test('a safety call shows as its general change: no hard stop, no cycle, on the 
       reasons: [
         {
           rule: 'low_energy_safety',
-          source: {
-            reference: 'arastirma/ham/J1-cinsiyet.md#C6',
-            tag: 'LITERATURE',
-          },
+          source: { tag: 'LITERATURE' },
         },
       ],
     }),
@@ -255,7 +252,6 @@ test('a safety call shows as its general change: no hard stop, no cycle, on the 
   await press(t('today.call.why'));
   expect(screen.getByText(t('decision.change_phase.label'))).toBeOnTheScreen();
   expect(allText()).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
-  expect(allText()).not.toContain('J1-cinsiyet'); // the reference is the kind of source on the phone, not the file
 });
 
 test.each([
@@ -527,14 +523,14 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
     key: '2026-09-21',
     copyKey: 'prompt.steps_dropped',
     choices: ['BUSY', 'LESS'],
-    source: { reference: 'arastirma/ham/guray/G5-surec-supplement.md#T-13', tag: 'EXPERIENCE' },
+    source: { tag: 'EXPERIENCE' },
   };
   const MISSED: Schemas['Prompt'] = {
     rule: 'sessions_missed',
     key: '2026-09-24',
     copyKey: 'prompt.sessions_missed',
     choices: ['FIXED_TIME', 'LIFE', 'NOT_NOW'],
-    source: { reference: 'arastirma/ham/guray/G5-surec-supplement.md#T-4', tag: 'EXPERIENCE' },
+    source: { tag: 'EXPERIENCE' },
   };
 
   test('one question at a time, in its own words, with its answers', async () => {

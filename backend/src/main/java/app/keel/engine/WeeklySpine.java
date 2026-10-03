@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Güray's weekly check-in tree (03 §2.4, told as "the algorithm" on 2024-08-19):
+ * The coaching weekly check-in tree (03 §2.4, told as "the algorithm" on 2024-08-19):
  *
  * <pre>
  * Weight moving toward the goal?

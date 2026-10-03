@@ -60,8 +60,8 @@ class PromptsApiTests {
         assertThat(prompts).singleElement().satisfies(prompt -> {
             assertThat(prompt).containsEntry("rule", "steps_dropped").containsEntry("key", lastMonday().toString())
                     .containsEntry("copyKey", "prompt.steps_dropped").containsEntry("choices", List.of("BUSY", "LESS"));
-            assertThat((Map<String, Object>) prompt.get("source")).containsEntry("reference", "arastirma/ham/guray/G5-surec-supplement.md#T-13")
-                    .containsEntry("tag", "EXPERIENCE");
+            // The kind of source only (K-523, ADR-041 #72): the research path stays on the server.
+            assertThat((Map<String, Object>) prompt.get("source")).isEqualTo(Map.of("tag", "EXPERIENCE"));
         });
     }
 

@@ -1,5 +1,5 @@
 /**
- * The tips on a move's screen (K-418, ADR-017): Güray's, by the move — full range (G1 K-50) but on the back, where partial
+ * The tips on a move's screen (K-418, ADR-017): the coaching ones, by the move — full range (G1 K-50) but on the back, where partial
  * reps at the end of a set are fine (K-56) — the set goes on past the slowdown there (K-57), so the last-rep tip is not
  * said either —; a controlled lowering and a lift with intent (K-45); the last rep slowing down on its own (K-8) — a
  * signal that does not come on an isolation move, so it is not said there.

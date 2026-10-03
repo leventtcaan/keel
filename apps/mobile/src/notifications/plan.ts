@@ -1,6 +1,6 @@
 /**
- * The reminders the phone schedules (K-410): three kinds and never a fourth (arastirma/04-faz3-urun.md §7.4, Levent
- * 29 Sep: the budget is kinds, not a weekly count). Pure — what is planned from what is known — so the slots are tested
+ * The reminders the phone schedules (K-410): three kinds and never a fourth (arastirma/04-faz3-urun.md §7.4, product
+ * decision 29 Sep: the budget is kinds, not a weekly count). Pure — what is planned from what is known — so the slots are tested
  * without a phone; reminders.ts hands the plan to the device.
  *
  * 1. Training: each training day, the lead before the user's own usual time, in the user's own sentence (I1 F4, C2-C3).

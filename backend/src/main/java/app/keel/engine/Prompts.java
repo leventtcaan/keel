@@ -13,10 +13,10 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * The coach's own questions between the weekly calls (K-512, ADR-039): Güray's triggers (G5 §2), asked in the app — never
+ * The coach's own questions between the weekly calls (K-512, ADR-039): the coaching triggers (G5 §2), asked in the app — never
  * pushed (ADR-036). Each carries its rule, its source and a key for the occurrence — the same for as long as it lasts —
  * so it is asked once. None changes a call (U1, U2: the weekly engine decides); none while a state is declared, and no
- * day the user or the ladder paused counts against anyone (ADR-038). In priority order: steps first, Güray's
+ * day the user or the ladder paused counts against anyone (ADR-038). In priority order: steps first, the coaching
  * "highest-priority metabolic warning".
  */
 public final class Prompts {
@@ -134,7 +134,7 @@ public final class Prompts {
     }
 
     /**
-     * T-5, on a cut only: there Güray calls lower loads normal and asks for sets and protein; building, the weekly engine
+     * T-5, on a cut only: there coaching experience calls lower loads normal and asks for sets and protein; building, the weekly engine
      * reads them as recovery to fix (G7 K-73), and a question saying "normal" would contradict its call. Two weeks with a
      * day paused or lightened on purpose explain the drop: nothing is asked.
      */
@@ -156,7 +156,7 @@ public final class Prompts {
     }
 
     /**
-     * The words an answer gets back, if any: T-13's "fewer steps" and T-4's "not now" get Güray's point, T-5 its reassurance
+     * The words an answer gets back, if any: T-13's "fewer steps" and T-4's "not now" get the coaching point, T-5 its reassurance
      * (no "you are losing muscle"), T-2 either answer what hunger does in a cut's first days. The others take the user
      * somewhere (a state declared, the reminders) — the phone's part.
      */

@@ -7,7 +7,7 @@ import java.util.Objects;
  * the "which data" half (the observed values the rule compared) is added when the first data-driven rule lands
  * (K-103).
  *
- * <p>U14: an engine rule rests on Güray's experience or the literature. A product decision may set a parameter
+ * <p>U14: an engine rule rests on coaching experience or the literature. A product decision may set a parameter
  * (e.g. a quota) but is never the reason for a coaching decision.
  */
 public record Reason(RuleId rule, Source source) {

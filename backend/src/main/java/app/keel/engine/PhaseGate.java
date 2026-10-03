@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * The phase gate: which direction, cut or bulk. Staying at maintenance is not a direction (Güray, 03 §2.1).
+ * The phase gate: which direction, cut or bulk. Staying at maintenance is not a direction (coaching experience, 03 §2.1).
  *
  * <ul>
  *   <li>A bulk above the fat ceiling turns into a cut (G6 K-7: above 20 % muscle gain is at a disadvantage).</li>
@@ -29,9 +29,9 @@ public final class PhaseGate {
     static final RuleId SURPLUS_ZONE = new RuleId("surplus_zone");
     static final RuleId FEMALE_FAT_OFFSET = new RuleId("female_fat_offset");
 
-    private static final Source GURAY_CEILING = new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-7", SourceTag.EXPERIENCE);
-    private static final Source GURAY_FAT_FIRST = new Source("arastirma/ham/guray/G4-ilerleme-metabolik.md#K-10", SourceTag.EXPERIENCE);
-    private static final Source GURAY_ENTRY_GATE = new Source("arastirma/03-guray-karar-omurgasi.md#2.1", SourceTag.EXPERIENCE);
+    private static final Source CEILING_SOURCE = new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-7", SourceTag.EXPERIENCE);
+    private static final Source FAT_FIRST_SOURCE = new Source("arastirma/ham/guray/G4-ilerleme-metabolik.md#K-10", SourceTag.EXPERIENCE);
+    private static final Source ENTRY_GATE_SOURCE = new Source("arastirma/03-guray-karar-omurgasi.md#2.1", SourceTag.EXPERIENCE);
     private static final Source FEMALE_OFFSET = new Source("arastirma/ham/J1-cinsiyet.md#B1", SourceTag.LITERATURE);
 
     private static final int DAYS_PER_WEEK = 7;
@@ -49,10 +49,10 @@ public final class PhaseGate {
         return switch (snapshot.phase()) {
             case BULK -> {
                 if (fat.compareTo(band(parameters, ParameterKey.FAT_FIRST_FAT_PROXY_PCT)) > 0) {
-                    yield Optional.of(change(snapshot, Phase.CUT, FAT_FIRST, GURAY_FAT_FIRST));
+                    yield Optional.of(change(snapshot, Phase.CUT, FAT_FIRST, FAT_FIRST_SOURCE));
                 }
                 if (fat.compareTo(band(parameters, ParameterKey.BULK_CEILING_FAT_PROXY_PCT)) > 0) {
-                    yield Optional.of(change(snapshot, Phase.CUT, BULK_CEILING, GURAY_CEILING));
+                    yield Optional.of(change(snapshot, Phase.CUT, BULK_CEILING, CEILING_SOURCE));
                 }
                 yield Optional.empty();
             }
@@ -60,7 +60,7 @@ public final class PhaseGate {
             // A mini cut is not turned back here: it returns to building on its own day (K-227, MiniCutGate.over) —
             // turned at its first judged week it would end under mini_cut_weeks_min (G7 K-102).
             case CUT -> snapshot.miniCutUntil().isEmpty() && fat.compareTo(band(parameters, ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT)) < 0
-                    ? Optional.of(change(snapshot, Phase.BULK, SURPLUS_ZONE, GURAY_ENTRY_GATE))
+                    ? Optional.of(change(snapshot, Phase.BULK, SURPLUS_ZONE, ENTRY_GATE_SOURCE))
                     : Optional.empty();
         };
     }

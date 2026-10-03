@@ -19,7 +19,7 @@ import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Test;
 
 /**
- * Deload looks at the body, not the calendar (Güray G7 K-66). The ladder (G7 K-68): stalled → stop adding load that
+ * Deload looks at the body, not the calendar (coaching experience, G7 K-66). The ladder (G7 K-68): stalled → stop adding load that
  * week; still stalled after holding for a week → a lighter week (half the sets); three months at the same load off a
  * diet is a deload signal on its own (G7 K-69). Plateau = plateau_sessions without progress (H3 B5). Rung 3 is two
  * signals (ADR-020 L-12): last week's loads no longer go up → food and sleep, one by one (G7 K-68); the plan could not
@@ -160,7 +160,7 @@ class DeloadLadderTests {
 
     @Test
     void threeMonthsStuckOffADietIsADeloadOnItsOwn() {
-        // Spec WC-19, Güray G7 K-69: a signal "on its own", so it goes straight to a lighter week, skipping rung 1.
+        // Spec WC-19, coaching experience, G7 K-69: a signal "on its own", so it goes straight to a lighter week, skipping rung 1.
         Optional<Decision> decision = DeloadLadder.check(stalled(PLATEAU, 0, STAGNATION_MONTHS), bulk(), P);
 
         assertThat(decision).hasValueSatisfying(d -> {

@@ -9,7 +9,7 @@ import java.util.Objects;
  * Double progression (K-109, H3 B4): add reps within the range; when every set reaches the top, add the smallest
  * load step for the body region (load_increment_upper_kg / load_increment_lower_kg) and climb again from the bottom.
  *
- * <p>Güray's gates come first: isolation lifts are not load-tracked (G6 K-33, load_progression_compound_only), and
+ * <p>The coaching gates come first: isolation lifts are not load-tracked (G6 K-33, load_progression_compound_only), and
  * unclean form that week holds both load and reps (G6 K-31, technique_gate_required). Work
  * sets end at RIR 0 to target_rir_max (G1 K-5); sets left further from failure get a note to go closer.
  *

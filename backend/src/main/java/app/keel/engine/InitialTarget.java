@@ -13,14 +13,14 @@ import java.util.Optional;
  *   <li><b>Resting energy</b>: Mifflin-St Jeor, the simplified form (H6 A1): resting_kcal_per_kg × kg +
  *       resting_kcal_per_cm × cm − resting_kcal_per_year × age + resting_kcal_offset (men +5, women −161). The most
  *       reliable equation in the systematic review (H6 A2), though in people who train it misses about half the time.
- *       It is also the BMR the calorie floor uses (Güray G2 K-11 takes an online calculator's value).</li>
+ *       It is also the BMR the calorie floor uses (G2 K-11: coaching practice takes an online calculator's value).</li>
  *   <li><b>Maintenance</b>: resting × the activity factor (NASEM 2023 values, H6 A3); unknown activity uses
  *       activity_factor_unknown. Shown as a range of ± maintenance_estimate_error (U5, H6 A4).</li>
  *   <li><b>Observation</b>: the estimate is only a start. It holds for maintenance_observation_days (men 14, women 28)
  *       while the scale shows what maintenance really is — observation beats the formula (G2 K-8).</li>
  * </ul>
  *
- * <p>Güray starts from the last 2-3 months of eating (G2 K-9) rather than a formula; ADR-020 L-7 chose the formula,
+ * <p>Coaching practice starts from the last 2-3 months of eating (G2 K-9) rather than a formula; ADR-020 L-7 chose the formula,
  * because declared intake is under-counted (G2 K-13, NASEM 2023) and observation corrects the start either way.
  */
 public final class InitialTarget {

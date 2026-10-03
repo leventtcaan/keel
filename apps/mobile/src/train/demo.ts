@@ -1,5 +1,5 @@
 /**
- * A move's screen (K-418, ADR-017): Güray's tips, chosen by the move. Full range of motion everywhere (G1 K-50) but on the
+ * A move's screen (K-418, ADR-017): the coaching tips, chosen by the move. Full range of motion everywhere (G1 K-50) but on the
  * back, where the reps go on past the slowdown as partials to end the set (K-56, K-57; the back muscles: back_muscles). Controlled lowering, a
  * lift with intent, no tempo in seconds (K-45). The last rep slowing down on its own ends the set (K-8) — on an isolation
  * move that signal does not come, so it is not said.

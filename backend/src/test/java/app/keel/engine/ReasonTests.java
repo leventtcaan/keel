@@ -10,19 +10,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 /** A Reason names the rule that fired and the research it comes from (U3, U14). */
 class ReasonTests {
 
-    private static final Source GURAY_SPINE = new Source("arastirma/03-guray-karar-omurgasi.md#2.4", SourceTag.EXPERIENCE);
+    private static final Source SPINE_SOURCE = new Source("arastirma/03-guray-karar-omurgasi.md#2.4", SourceTag.EXPERIENCE);
 
     @Test
     void carriesRuleIdAndSource() {
-        Reason reason = new Reason(new RuleId("weight_flat_on_plan"), GURAY_SPINE);
+        Reason reason = new Reason(new RuleId("weight_flat_on_plan"), SPINE_SOURCE);
 
         assertThat(reason.rule()).isEqualTo(new RuleId("weight_flat_on_plan"));
-        assertThat(reason.source()).isEqualTo(GURAY_SPINE);
+        assertThat(reason.source()).isEqualTo(SPINE_SOURCE);
     }
 
     @Test
     void rejectsAReasonWithoutRuleOrSource() {
-        assertThatThrownBy(() -> new Reason(null, GURAY_SPINE))
+        assertThatThrownBy(() -> new Reason(null, SPINE_SOURCE))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("rule");
         assertThatThrownBy(() -> new Reason(new RuleId("weight_flat_on_plan"), null))
                 .isInstanceOf(NullPointerException.class).hasMessageContaining("source");
@@ -77,7 +77,7 @@ class ReasonTests {
 
     @Test
     void rejectsAReasonBackedOnlyByAProductDecision() {
-        // U14: an engine rule rests on Güray's experience or the literature. A product call is not evidence.
+        // U14: an engine rule rests on coaching experience or the literature. A product call is not evidence.
         Source productCall = new Source("arastirma/04-faz3-urun.md#7.3", SourceTag.PRODUCT);
 
         assertThatThrownBy(() -> new Reason(new RuleId("consistency_week"), productCall))

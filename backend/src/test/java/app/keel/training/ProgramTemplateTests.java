@@ -22,7 +22,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * The program templates (K-211): data/programs/<n>-days.yaml for 1 to 6 training days. Each holds Güray's limits, sets
+ * The program templates (K-211): data/programs/<n>-days.yaml for 1 to 6 training days. Each holds the coaching limits, sets
  * counted for a move's first (primary) muscle: at most sets_per_session_per_muscle_max per muscle in a session (G1 K-10),
  * at most weekly_sets_per_muscle in a week (G1 K-11); with four days or more, a muscle worked four sets or more a week is
  * worked on frequency_per_muscle_per_week days (G1 K-22).

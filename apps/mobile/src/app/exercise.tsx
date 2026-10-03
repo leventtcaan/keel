@@ -20,7 +20,7 @@ import { type Move, type TrainData, movesOf } from '@/train/trainData';
 /**
  * A move's screen (K-418, ADR-017): the setup first — seat, pad, grip, kept on this phone so the move is set the same way
  * every time (G1 K-38) —, then the demo clips (filmed by hand and checked against docs/hareket-cekim-kontrol-listesi.md;
- * none has passed yet, so the screen says so and shows nothing in their place: no stand-in footage, no AI video), Güray's
+ * none has passed yet, so the screen says so and shows nothing in their place: no stand-in footage, no AI video), the coaching
  * tips for the move, and the muscles it works. Offline: the catalog and the setup are the phone's.
  */
 const SIDES = ['front', 'back'] as const;

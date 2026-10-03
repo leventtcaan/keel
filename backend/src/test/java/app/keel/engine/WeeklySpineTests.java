@@ -21,7 +21,7 @@ import net.jqwik.api.Provide;
 import org.junit.jupiter.api.Test;
 
 /**
- * Güray's weekly tree (03 §2.4, "the algorithm", 2024-08-19): is weight moving toward the goal? No → adherence,
+ * the coaching weekly tree (03 §2.4, "the algorithm", 2024-08-19): is weight moving toward the goal? No → adherence,
  * training, then calories (the amount is K-107's). Yes → looks better → change nothing; looks worse → training →
  * recovery → genetic limit, pull calories back (both directions, ADR-020 L-5). One flat check-in is not a plateau
  * (G2 K-64). Adherence is the consistency ratio (ADR-020 L-6); between 50 and 70 % calories are not touched (L-9).

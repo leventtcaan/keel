@@ -12,12 +12,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The daily number: consistency (U15, Levent 29 Sep). Weekly, cumulative, never reset, one missed week forgiven
+ * The daily number: consistency (U15, product decision 29 Sep). Weekly, cumulative, never reset, one missed week forgiven
  * (U7; 04-faz3 §7.3: gym data's one-week tolerance, Lally 2010, Duolingo's streak freeze).
  */
 public final class Consistency {
 
-    /** Weeks run Monday to Sunday: the weekly check-in is on Monday (Levent, 29 Sep). */
+    /** Weeks run Monday to Sunday: the weekly check-in is on Monday (product decision, 29 Sep). */
     public static final DayOfWeek WEEK_STARTS_ON = DayOfWeek.MONDAY;
 
     private Consistency() {
@@ -48,7 +48,7 @@ public final class Consistency {
     }
 
     /**
-     * The record over weeks given oldest first. A week is on track at on_track_min_ratio or above (Güray G2 K-60:
+     * The record over weeks given oldest first. A week is on track at on_track_min_ratio or above (coaching experience, G2 K-60:
      * 70 % of the plan is success).
      */
     public static ConsistencyRecord record(List<WeekTally> weeks, Parameters parameters) {

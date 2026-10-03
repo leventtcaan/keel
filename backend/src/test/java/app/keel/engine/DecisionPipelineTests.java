@@ -48,7 +48,7 @@ class DecisionPipelineTests {
 
     @Test
     void trainingGoingWrongComesBeforeFoodDecisions() {
-        // Güray's tree: training bad → fix training first, no calorie decision. Even in the first two weeks of data.
+        // the coaching tree: training bad → fix training first, no calorie decision. Even in the first two weeks of data.
         Snapshot early = new Snapshot(TODAY, Sex.MALE, Phase.CUT, TODAY.minusDays(9), series(daily(TODAY.minusDays(9), TODAY, "80.0")))
                 .withTraining(PLAN_MISSED);
         Snapshot flat = user(Phase.CUT, weekly("80.0", "80.0", "80.0")).withTraining(PLAN_MISSED);

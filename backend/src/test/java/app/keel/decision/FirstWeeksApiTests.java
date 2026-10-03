@@ -80,8 +80,8 @@ class FirstWeeksApiTests {
 
         assertThat(risk).singleElement().satisfies(signal -> {
             assertThat(signal).containsEntry("rule", "no_session_last_week");
-            assertThat((Map<String, Object>) signal.get("source")).containsEntry("reference", "arastirma/ham/I1-onboarding-aliskanlik.md#F2")
-                    .containsEntry("tag", "LITERATURE");
+            // The kind of source only (K-523, ADR-041 #72): the research path stays on the server.
+            assertThat((Map<String, Object>) signal.get("source")).isEqualTo(Map.of("tag", "LITERATURE"));
         });
     }
 

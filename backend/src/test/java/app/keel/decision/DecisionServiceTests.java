@@ -298,6 +298,23 @@ class DecisionServiceTests {
     }
 
     @Test
+    void aCallGoesOutWithTheKindOfItsSourcesAndKeepsTheirPathsOnTheServer() throws Exception {
+        // K-523 (ADR-041 #72): the app is told what kind of source a reason rests on; where it is written down
+        // (arastirma/…, which may name a person) stays with the kept call, for audit.
+        AccountId account = ready("LOSE_FAT");
+        String id = (String) map(answer(account, UUID.randomUUID(), thisWeek(), List.of())).get("id");
+
+        for (String path : List.of("/v1/decisions", "/v1/decisions/current", "/v1/decisions/" + id)) {
+            MvcTestResult result = send(account, "GET", path, null);
+            assertThat(result).hasStatusOk();
+            assertThat(result.getResponse().getContentAsString()).as(path).doesNotContain("arastirma/").contains("\"source\":{\"tag\":");
+        }
+        String kept = jdbc.sql("select decision->'reasons'->0->'source'->>'reference' from decision.weekly_call where id = :id")
+                .param("id", UUID.fromString(id)).query(String.class).single();
+        assertThat(kept).startsWith("arastirma/");
+    }
+
+    @Test
     void whetherAHardStopHoldsIsReadWithoutTheCallsSnapshots() {
         // K-229 review: every week read the hold from each call of the last months; parsing their snapshots only to look
         // at the decision was a cost, and one unreadable snapshot would have made every week fail.

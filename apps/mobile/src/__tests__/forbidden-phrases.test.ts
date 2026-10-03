@@ -60,3 +60,45 @@ test('the scan reads every string in en.json', () => {
   expect(keys).toContain('tabs.today');
   expect(keys).toContain('decision.hard_stop.low_energy_safety.body');
 });
+
+describe('person names (K-523, ADR-041 #72)', () => {
+  const names = forbidden.personNames;
+  const found = (text: string) => text.replace(new RegExp(names.researchPath, 'g'), '').match(new RegExp(names.pattern, 'gi')) ?? [];
+  const sources = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return entry.name === '__tests__' ? [] : sources(full);
+      return /\.(ts|tsx)$/.test(entry.name) ? [full] : [];
+    });
+
+  test.each(names.examples)('catches "%s"', (example) => {
+    expect(found(example)).not.toEqual([]);
+  });
+
+  test.each(names.nonExamples)('lets "%s" through', (text) => {
+    expect(found(text)).toEqual([]);
+  });
+
+  test('no string in en.json names a person', () => {
+    const offenders = strings(en as Json).filter(([, text]) => found(text).length > 0).map(([key]) => key);
+    expect(offenders).toEqual([]);
+  });
+
+  test('the contract names no person and no research path', () => {
+    const contract = fs.readFileSync(path.join(ROOT, 'contracts/openapi.yaml'), 'utf8');
+    expect(found(contract)).toEqual([]);
+    expect(contract).not.toContain('arastirma/');
+  });
+
+  test("no file of the app's code names a person", () => {
+    const files = sources(path.join(ROOT, 'apps/mobile/src'));
+    expect(files.length).toBeGreaterThan(50);
+    const offenders = files.flatMap((file) =>
+      fs
+        .readFileSync(file, 'utf8')
+        .split('\n')
+        .flatMap((line, i) => (found(line).length > 0 ? [`${path.relative(ROOT, file)}:${i + 1}`] : [])),
+    );
+    expect(offenders).toEqual([]);
+  });
+});

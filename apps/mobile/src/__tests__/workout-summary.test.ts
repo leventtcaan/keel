@@ -2,7 +2,7 @@
  * The session's summary (K-406, prototype 2.6, B §6.4): effort, not volume. Against last time, each move says what
  * improved — the same weight for more reps at the same RIR, the same weight and reps with more in the tank, a heavier
  * weight, a higher estimated max (the engine's Epley, K-218) — and an isolation move is never compared by its weight
- * (Güray K-33). The header counts the moves whose work sets reached the target effort.
+ * (coaching experience, K-33). The header counts the moves whose work sets reached the target effort.
  */
 import type { components } from '@/api/schema';
 import { e1rm, summarize } from '@/train/summary';

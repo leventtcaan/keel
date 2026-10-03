@@ -1,7 +1,7 @@
 /**
- * The warm-up calculator (K-417). How many: Güray G1 K-17 — at least one before each move, 3–4 before the day's first;
+ * The warm-up calculator (K-417). How many: coaching experience (G1 K-17) — at least one before each move, 3–4 before the day's first;
  * warm-ups never come near failure. How heavy and how many reps: no source gives a ramp (L3 §1.1 #3: a presentation
- * rule, a parameter with its note), so it is the app's, in data/parameters/workout.json, until Levent confirms it.
+ * rule, a parameter with its note), so it is the app's, in data/parameters/workout.json, until a product decision confirms it.
  * Each load is one the gym in use makes (ADR-032, the same rounding as the server's); without a gym on the phone, the
  * parameter's step in the user's unit. Lighter than the work load, no two the same; with the gym known, never below its
  * bar (without one the bar is unknown). A work load with nothing lighter in the gym has no warm-up (soru 43).

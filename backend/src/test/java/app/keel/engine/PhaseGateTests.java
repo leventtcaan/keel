@@ -13,7 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 /**
- * The phase gate picks the direction; staying at maintenance is not one (Güray, 03 §2.1).
+ * The phase gate picks the direction; staying at maintenance is not one (coaching experience, 03 §2.1).
  * Bands come from data/parameters/safety.yaml (internal only, U4); a woman's band sits 10 points higher (J1 B1).
  * Each boundary: just below, at, just above.
  */
@@ -59,7 +59,7 @@ class PhaseGateTests {
     @ParameterizedTest
     @EnumSource(Sex.class)
     void wellAboveTheCeilingTheReasonIsFatFirst(Sex sex) {
-        // Güray G4 K-10: above ~25 % added muscle does not show; lose fat first.
+        // coaching experience, G4 K-10: above ~25 % added muscle does not show; lose fat first.
         BigDecimal justAbove = band(sex, ParameterKey.FAT_FIRST_FAT_PROXY_PCT).add(STEP);
 
         assertChangesTo(PhaseGate.check(snapshot(sex, Phase.BULK, justAbove), parameters(sex)), Phase.CUT, "fat_first");

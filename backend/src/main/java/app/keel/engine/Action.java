@@ -119,7 +119,7 @@ public sealed interface Action {
 
     /**
      * The phase gate turns the direction: a bulk above the fat ceiling becomes a cut, a cut below the working band
-     * becomes a bulk (K-105). Staying at maintenance is not a direction (Güray, 03 §2.1). The first action that
+     * becomes a bulk (K-105). Staying at maintenance is not a direction (coaching experience, 03 §2.1). The first action that
      * carries data: the phase to switch to.
      */
     record ChangePhase(Phase to) implements Action {
