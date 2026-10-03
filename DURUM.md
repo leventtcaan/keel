@@ -6,7 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M5 Part 4 (Fotoğraf, cihaz, teslim) SÜRÜYOR (3 Eki)** — K-514 #327 birleşti, K-408 #328 incelemede; 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
+**M5 KAPANDI (3 Eki, kod)** — Part 4: K-514 #327, K-408 #328, K-515 #329 (cihazsız kısım), spike ADR-047/048; cihaz adımları (K-308 → K-510, K-515, K-426) Levent'te. Sıradaki koşu **M6** (`plan/oturum-promptlari/M6.md`, `M6-part1.md`). Aktarım bekliyor: M5 (`docs/aktarim/M5/README.md` 1-35). 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
 **M5 Part 3 (Koç yüzü + sağlayıcı) BİTTİ (3 Eki)** — ADR-043 (koç sınıflandırır, cümle yazmaz) + 11 görev birleşti (#314-#325); aktarım bekliyor (`docs/aktarim/M5/README.md` 20-30). Simülatör turu **disk yüzünden ertelendi** (soru 80). Sorular 78-85.
 **M5 Part 2 (Koç altyapısı) BİTTİ (3 Eki)** — ADR-041 işleri + K-503, K-505, K-506, K-508, K-504 birleşti; yalnız sahte sağlayıcı; aktarım bekliyor (`docs/aktarim/M5/README.md` 10-19); sorular 74-77, **76 K-509'dan önce**.
 **M5 Part 1 (Motor ve check-in) BİTTİ (3 Eki)** — ADR-037 işleri, K-516, K-512, K-513, K-501, K-502 (+ K-518, K-519, K-520) birleşti; aktarım bekliyor; K-430 Levent'te.
@@ -471,7 +471,7 @@ Ortak talimat `plan/oturum-promptlari/M5.md`. Part prompt'ları `M5-part1.md` �
 | 1 · Motor ve check-in | ADR-037 işleri (K-429, K-428, K-431, K-430, K-432, K-434) · K-516, K-512, K-513, K-501, K-502 | ✅ bitti (3 Eki) — aktarım bekliyor; K-430 Levent'te (soru 55) |
 | 2 · Koç altyapısı | ADR-041 işleri (K-430, K-523, K-525, K-526, K-527, K-524) · K-503, K-505, K-506, K-504, K-508 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 74-77 |
 | 3 · Koç yüzü + sağlayıcı | ADR-043 işleri (K-529, K-530, K-531, K-532) · K-522, K-509, K-507, K-517, K-511, K-528, K-521 | ✅ bitti (3 Eki) — aktarım bekliyor; sorular 78-85 |
-| 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | sürüyor (3 Eki) |
+| 4 · Fotoğraf, cihaz, teslim | K-514, K-408, K-510, K-515 · M5 çıkışı · M6 prompt'ları | ✅ bitti (3 Eki) — aktarım bekliyor; cihaz adımları Levent'te |
 
 **Part 1 başı (2 Eki):** senkron tamam — M4 ÇIKIŞ git ile tutarlı (K-410 #253/#254, K-411 #256, K-412 #257, K-423 #258/#259,
 K-435 #268, K-433 #269 birleşik; açık PR yok; worktree yalnız kalıcı `../keel-main`; `M5-part*-devam.md` yok). 33-54 → ADR-037
@@ -618,6 +618,50 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-514 öğün fotoğrafı backend'i: `POST /v1/meals/photo` (base64), boyut başlıktan (>1024 → 400), sunucu yalnız piksellerden JPEG yazar (metadata gitmez), `PHOTO_MEAL` → "meal photo" rızası, `PHOTO_ANALYSIS` kotası, model yalnız göz kararı gram → `ESTIMATED` (ADR-046) | ✅ birleşti; RED 11; inceleme: **ham fotoğraf ImageIO'nun dosya önbelleğiyle diske iniyordu** (V1/V3) → bellek; rızasız fotoğraf çözülüyordu → sıra rıza → çözme → kota; başlık-önce denetimini ısıran test yoktu → PNG bombası + ayrılan bayt ölçümü; CI'da tek kırmızı: kısmi AI rızası API'den verilemiyor → test DB'ye yazar; mutasyon 16/16 | #327 | `M5/K-514.md` |
+| K-408 öğün fotoğrafı telefonda: Food › "Log from a photo" → AI rızası önce (yoksa kamera açılmaz) → kamera/galeri (`expo-image-picker`) → çizilmiş boyuttan ≤1024 + JPEG'e yeniden yazma (`expo-image-manipulator`) → telefonda boyut denetimi → taslak (`DraftPicks`, koçtan çıkarıldı) → bellek içi devir `'photo'` → öğün ekranında gram sorusunun **nedeni** | ✅ birleşti; RED 8 + 10 + 9; inceleme: **`app.json`'daki plugin kamera izin metnini eziyordu** (config mod sırası) → `app.config.ts` + `en.json`; `photoTools` testsizdi (V1'in yeri) → 8 test; seçici boyutu 0 → çıkmaz → çizilmiş boyuttan; `fitWithin` %12 1023 → tam 1024; mutasyon 19/19 + kontrol | #328 | `M5/K-408.md` |
+| K-510 Apple FM spike → **ADR-047** (kendi ince Expo modülü: Vision OCR + FM erişilebilirliği Apple'ın 3 nedeniyle + koç sınıflandırması cihazda; iOS 27 görüntü kapsam dışı; `expo-ai` tetikleyici) + `arastirma/ham/H11` | ◐ karar + araştırma; **cihaz denemesi bekliyor** (K-308) — kod yazılmadı | (main) | `M5/K-510.md` |
+| K-515 kilit ekranı → **ADR-048** (`expo-widgets` 57; sayısız varsayılan kodda; App Intents SDK 58 stabil olunca) + `widgets/lockScreen.ts` (etiket + sonraki değerlendirme, sayı/başlık yok; güvenlik genel; sözcüklenemeyen → "ready") | ⏳ auto-merge; RED 6; inceleme ≥80 yok (savunma: güvenlik etiketi telefonda sabit); mutasyon 6/6 + kontrol; **widget kurulumu cihaz adımı**; soru 86 | #329 | `M5/K-515.md` |
+
+
+**Part 4 ÇIKIŞ = M5 ÇIKIŞ (3 Eki):**
+- **Birleşen (Part 4):** K-514 #327 · K-408 #328 · K-515 (cihazsız kısmı) #329 (auto-merge). `main`'e doğrudan: ADR-045 (73, 78-85), ADR-046 (öğün
+  fotoğrafı yolu), ADR-047 (cihaz üstü katman), ADR-048 (kilit ekranı), `arastirma/ham/H11`, M6 prompt'ları (`plan/oturum-promptlari/M6*.md`).
+  Açık PR: yalnız #329 (auto-merge). Worktree yalnız kalıcı `../keel-main`. Ana checkout `mobile/121-lock-screen-call` dalında (birleşince `origin/main`'e).
+- **Kontrol çıktısı (3 Eki):** mobil `npm run check` 100 suite **1680/1680**; sunucu saf testler **1390/1390** (419 DB testi yerelde Docker yok →
+  CI; #327 CI'da DB dahil yeşil).
+- **M5 çıkış kriterleri (`plan/yol-haritasi.md › M5`), kanıtla:**
+  | Kriter | Durum | Kanıt |
+  |---|---|---|
+  | Pazartesi check-in | ✅ | K-501 #276 |
+  | Karar kartı varyantları + gerekçe | ✅ | K-502 #291/#292, K-519 #286, K-522 #314 |
+  | LLM portu ve yapılandırılmış çıktı | ✅ | K-503 #303, K-529 #316 (model yalnız `{topic, rule}`), K-504 #308, K-514 #327 |
+  | Karar anlatımı | ✅ | K-505 #305 → K-529 #316 (söz `en.json`'dan), K-509 #317/#319 |
+  | Soru bütçesi | ✅ | K-512 #283/#285 (2/hafta), K-513 #290 (riskte 5) |
+  | Gün içi öneriler | ✅ | K-507 #324 |
+  | Kota | ✅ | K-508 #307, K-532 #315; fotoğraf kotası K-514 |
+  | "Hayır diyen koç" seti CI'da | ✅ | K-506 #306 → K-529 (54 itiraz, beklenen konu) |
+  | Apple FM spike | ◐ | ADR-047 + H11; **cihaz denemesi** K-308 sonrası |
+  | Dil modeli sağlayıcısı seçimi (ölçümle) | ◐ | ADR-044 KABUL (belgesel, ADR-045 #81), `tools/llm_eval.py` #321; **gerçek ölçüm K-533 (yayında, ADR-041)** |
+  | Proaktif tetikleyiciler | ✅ | K-512 #283/#285, K-520 #287 |
+  | İlk 8 hafta + 5. hafta risk | ✅ | K-513 #289/#290, K-521 #325 |
+  | Kilit ekranı karar widget'ı | ◐ | ADR-048 + `lockScreenCall` #329; **widget kurulumu + görme cihazda** |
+  | Durum modu | ✅ | K-516 #279/#282, K-518 #284 |
+  | Haftalık koç notu | ✅ | K-517 #320 |
+  | (ek) Öğün fotoğrafı | ✅ | K-514 #327, K-408 #328 |
+- **Eksikler (DURUM'da, kod değil):** K-308 cihaz derlemesi (Levent) → K-510 deneme, K-515 widget, K-426 Live Activity, HealthKit görme; K-533
+  gerçek sağlayıcı ölçümü (yayında); AI rıza ekranı yok (sağlayıcı seçilince); simülatör turu (Part 3'ten ertelenen + K-408 ekranı) disk yüzünden
+  yapılmadı (soru 80: Docker hâlâ 18,2 GB, boş 3,5 GB).
+- **Backlog:** K-514, K-408 `done`; K-510, K-515 `doing` (cihaz adımı); K-534, K-535 (M6) yeni; sync ✅.
+- **M6'nın bilmesi gerekenler:**
+  - Öğün fotoğrafı: `POST /v1/meals/photo` → `MealDraft` (K-504'ün şekli, miktar `ESTIMATED` gram); sunucu fotoğrafı **bellekte** okur, yalnız
+    piksellerden JPEG yazar (`coach/MealPhoto`); telefon `food/photo.ts` + `photoTools.ts`. **İlerleme fotoğrafının (K-601) bu yolla hiçbir ilgisi yok:**
+    o hiç ağa gitmez (V1).
+  - `food/DraftPicks.tsx` paylaşılan taslak seçicisi (koç + fotoğraf); devir `handOffMeal(items, from)`.
+  - İzin metinleri yalnız `app.config.ts` + `en.json` (`app.json`'a plugin koyma: sonra çalışır, metni ezer).
+  - Widget içeriği `widgets/lockScreen.ts`; `expo-widgets` kurulumu cihaz adımında (App Group).
+  - Koç sınıflandırmasını cihazda yapma yönü ADR-047 #3 (cihaz adımı).
+  - Disk: yerelde `DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test` saf testleri hızlı koşar, DB testleri Docker'sız düşer (sayımı ayır).
+- **Yeni sorular:** 86 (kilit ekranından kilo girişi).
 
 ## Session sonunda Levent'e sorulacaklar
 **55-72 → ADR-041 (3 Eki, M5 Part 1 sonu; AskUserQuestion).** Açık yalnız 57 (rıza metni sınıflaması — yayından önce hukuki bakış). İş doğuranlar: K-430 (#273, e1RM), K-523 (üründe kişi adı yok), K-524 (literatür), K-525, K-526, K-527 — Part 2 başında. Sağlayıcı: şimdi belgesel, gerçek ölçüm yayında; harcama yok; sıfır saklama şart. Aşağıdaki liste kayıt içindir.

@@ -1482,7 +1482,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-407, K-514]
     why: "Fotoğraf tanımayı çözer, gramı çözmez; gram sorusu hatayı %56,6 → %20,2 düşürür"
     acceptance:
@@ -2168,7 +2168,7 @@ tasks:
     module: mobile
     type: spike
     size: M
-    status: todo
+    status: doing
     depends_on: [K-007]
     why: "Katman 1'in kapsamı (ADR-004)"
     acceptance:
@@ -2263,7 +2263,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-401, K-308]
     why: "Tezi uygulamayı açmadan her gün göstermek; Apple editoryal değerlendirmesi yeni API ister (L3 Y1)"
     acceptance:
