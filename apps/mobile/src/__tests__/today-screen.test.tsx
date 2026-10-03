@@ -205,6 +205,14 @@ test('the number and its four parts, as the server counted them', async () => {
 });
 
 test("this week's call: its label, its words from the copy key, its confidence; 'Why this call' opens the reasons", async () => {
+  mockAnswers['/v1/decisions/current'] = ok(
+    decision('decision.continue.toward_goal', {
+      reasons: [
+        { rule: 'toward_goal', source: { tag: 'EXPERIENCE' } },
+        { rule: 'energy_floor', source: { tag: 'LITERATURE' } },
+      ],
+    }),
+  );
   await show();
   expect(screen.getByText(t('decision.continue.label'))).toBeOnTheScreen();
   expect(screen.getByText(t('decision.continue.toward_goal.title'))).toBeOnTheScreen();
@@ -218,8 +226,10 @@ test("this week's call: its label, its words from the copy key, its confidence; 
   expect(screen.getByText(t('today.call.nextReview', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
   expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(1); // the leading reason is the title
   expect(screen.getByText(t('decision.rule.toward_goal'))).toBeOnTheScreen(); // and says its own sentence (K-522)
+  expect(screen.getByText(t('decision.rule.energy_floor'))).toBeOnTheScreen();
   await press(t('today.call.hide'));
   expect(screen.queryByText(t('decision.rule.toward_goal'))).toBeNull();
+  expect(screen.queryByText(t('decision.rule.energy_floor'))).toBeNull();
   expect(screen.queryByText(t('today.call.source.EXPERIENCE'))).toBeNull();
 });
 

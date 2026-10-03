@@ -25,3 +25,7 @@
 17. K-506 hayır diyen koç seti (`K-506.md`)
 18. K-508 günlük kota (`K-508.md`)
 19. K-504 serbest metinden öğün taslağı (`K-504.md`)
+
+## Aktarım sırası (Part 3)
+20. ADR-043 (koçun sesi: sınıflandırma) — cevaplar 74-77 (`plan/kararlar/ADR-043-m5-part2-sonu-cevaplari.md`)
+21. K-522 kural cümleleri (`K-522.md`)

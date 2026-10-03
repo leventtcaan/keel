@@ -55,3 +55,18 @@ test('the keys the settings screen builds from a consent kind exist (K-309)', ()
     }
   }
 });
+
+test("a rule's sentence is not a call's title: the leading rule says something the title doesn't (K-522)", () => {
+  const decision = (en as unknown as { decision: Record<string, Record<string, unknown>> }).decision;
+  const rules = decision.rule as Record<string, string>;
+  const same: string[] = [];
+  for (const [action, byRule] of Object.entries(decision)) {
+    if (action === 'rule') continue;
+    for (const [rule, words] of Object.entries(byRule)) {
+      const title = (words as { title?: unknown }).title;
+      if (typeof title === 'string' && rules[rule] === title) same.push(`${action}.${rule}`);
+    }
+  }
+  expect(Object.keys(rules).length).toBeGreaterThan(50);
+  expect(same).toEqual([]);
+});

@@ -20,7 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Every rule the engine can give has its own sentence in the app's copy (K-522, prototype 3.5, Ö-25): "Why this call"
  * says each rule in words, not only its kind of source. The rules are the engine's {@link RuleId} constants, read from
- * the classes themselves; the count of {@code new RuleId("…")} in the sources makes sure none is declared elsewhere.
+ * the classes themselves (sub-packages too); the count of {@code new RuleId("…")} in the sources makes sure none is declared elsewhere.
  */
 class RuleSentencesTests {
 
@@ -48,7 +48,7 @@ class RuleSentencesTests {
     @Test
     void theRulesAreTheConstantsAndNothingElse() throws Exception {
         TreeSet<String> written = new TreeSet<>();
-        try (Stream<Path> files = Files.list(ENGINE)) {
+        try (Stream<Path> files = Files.walk(ENGINE)) {
             for (Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
                 Matcher found = DECLARED.matcher(Files.readString(file));
                 while (found.find()) {
@@ -62,12 +62,13 @@ class RuleSentencesTests {
     /** The values of every static RuleId field of the engine's classes. */
     static TreeSet<String> engineRules() throws IOException, ReflectiveOperationException {
         TreeSet<String> rules = new TreeSet<>();
-        try (Stream<Path> files = Files.list(ENGINE)) {
+        try (Stream<Path> files = Files.walk(ENGINE)) {
             for (Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
-                String name = file.getFileName().toString().replace(".java", "");
-                if (name.equals("package-info")) {
+                if (file.getFileName().toString().equals("package-info.java")) {
                     continue;
                 }
+                // Sub-packages too: the class's name is its path under the engine.
+                String name = ENGINE.relativize(file).toString().replace(".java", "").replace(java.io.File.separatorChar, '.');
                 for (Field field : Class.forName("app.keel.engine." + name).getDeclaredFields()) {
                     if (Modifier.isStatic(field.getModifiers()) && field.getType() == RuleId.class) {
                         field.setAccessible(true);
