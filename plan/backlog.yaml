@@ -2599,7 +2599,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-301]
     why: "Fotoğraf hiçbir zaman ağa gitmez (V1); hatırlatma sabit gün değil pencere (H1 §2.5) — çekim ekranı (K-601) ve çıpa (K-602) buna dayanır"
     acceptance:
@@ -2620,7 +2620,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-301, K-614]
     why: "Poz normalizasyonu hatayı ~%50 azaltır (Wong 2021)"
     acceptance:
@@ -2639,7 +2639,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-601, K-614]
     why: "İnsan dünü hatırlar, başlangıcı hatırlamaz (Levent, 10 Eyl)"
     acceptance:
@@ -2673,7 +2673,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-406, K-218]
     why: "Değerlendirme 3 ay, karar 1-2 hafta; haftalık gürültü gelişim sanılmasın"
     acceptance:
