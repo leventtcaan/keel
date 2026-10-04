@@ -1,9 +1,10 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
+import { Button } from '@/components/Button';
 import { CoachEntry } from '@/components/CoachEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
@@ -88,6 +89,7 @@ export default function ProgressScreen() {
         {strength}
         {read !== null && <PhotoCard today={read.today} flowWeek={flowWeek(read.firstWeeks)} />}
         <ProjectionEntry />
+        <ShareEntry />
       </ScrollView>
       <View style={styles.coach}>
         <CoachEntry />
@@ -96,7 +98,19 @@ export default function ProgressScreen() {
   );
 }
 
+/** Share your progress (K-612): only when the user asks — a card of weeks and calls, made on this phone. */
+function ShareEntry() {
+  const { color } = useTheme();
+  return (
+    <View style={styles.share}>
+      <Button label={t('share.open')} variant="ghost" onPress={() => router.push('/share')} />
+      <Text style={[styles.small, { color: color.muted }]}>{t('share.openNote')}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  share: { gap: tokens.space.xs },
   safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: tokens.space.lg, gap: tokens.space.md },
   small: { fontSize: tokens.type.bodySmall },

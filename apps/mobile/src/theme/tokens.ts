@@ -92,6 +92,13 @@ export const tokens = {
     label: 12,
     /** Nothing below 11 pt (ADR-016). */
     min: 11,
+    /**
+     * The share card's text, in its image units (1080 wide, K-612) — an image, scaled to the screen to preview and kept
+     * at full size in the PNG: large enough to read in a feed, smaller ones would be under 11 pt once scaled down.
+     */
+    shareHeading: 64,
+    shareLine: 52,
+    shareFooter: 34,
   },
   weight: {
     regular: '400',

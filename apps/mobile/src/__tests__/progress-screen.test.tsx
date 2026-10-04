@@ -149,6 +149,15 @@ type Node = ReturnType<typeof screen.getByTestId>;
 /** An SVG text's words: react-native-svg keeps them on its span (`content`), not as a text child. */
 const svgText = (el: Node) => el.children.map((child) => (typeof child === 'string' ? child : (child.props.content as string))).join('');
 
+test('share your progress: the user starts it, from here (K-612)', async () => {
+  await show();
+
+  await fireEvent.press(screen.getByRole('button', { name: t('share.open') }));
+
+  expect(mockPush).toHaveBeenCalledWith('/share');
+  expect(screen.getByText(t('share.openNote'))).toBeOnTheScreen();
+});
+
 test('the lifts with a line, the most weeks first; an isolation move is not one of them', async () => {
   await show();
   expect(screen.getByRole('header', { name: t('screens.progress.title') })).toBeOnTheScreen();

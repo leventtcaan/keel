@@ -55,6 +55,7 @@ function AppStack() {
         <Stack.Screen name="projection" />
         <Stack.Screen name="photo-capture" options={{ presentation: 'modal' }} />
         <Stack.Screen name="compare" />
+        <Stack.Screen name="share" />
         <Stack.Screen name="import" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'needed'}>

@@ -24,6 +24,7 @@ import { devicePhotoFiles } from '@/photos/photoFiles';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
+import { deviceShareImage } from '@/share/deviceShare';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
 import type { UnitSystem } from '@/units/units';
 
@@ -43,6 +44,8 @@ export type PhoneServices = AppServices & {
    * the two consents are not both given (nothing is read then).
    */
   importHealthWeights(): Promise<number | 'consent'>;
+  /** The share card made on this phone (K-612), as a PNG in base64, handed to the share sheet; the app sends it nowhere. */
+  shareImage(base64: string): Promise<void>;
   /**
    * The system's file picker for another app's export (K-609): the chosen file's text, read on the phone; null when none
    * was chosen. The file goes nowhere from here (import/formats.ts reads it).
@@ -101,6 +104,7 @@ async function build(): Promise<PhoneServices> {
         consented: () => bothHealthConsents(services.consents),
         now: new Date(),
       }),
+    shareImage: deviceShareImage(services.report),
     importFile: {
       pick: async () => {
         const picked = await File.pickFileAsync();
