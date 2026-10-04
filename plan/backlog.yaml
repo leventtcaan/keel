@@ -2984,7 +2984,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-701, K-306, K-705]
     why: "$59,99/yıl · $12,99/ay · 7 gün deneme; iptal görünür"
     acceptance:
@@ -3036,7 +3036,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-701]
     why: "Paywall ve ayarlar ekranı yetkiyi sunucudan okur (ADR-012: istemciye güvenilmez); 'deneme', 'şu tarihte biter', 'duraklatıldı' der (ADR-056 #5 status)"
     acceptance:
