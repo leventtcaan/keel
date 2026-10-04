@@ -31,8 +31,9 @@ const EQUIPMENT_WORDS: Record<string, Equipment> = {
   machine: 'MACHINE',
   smith: 'MACHINE',
   bodyweight: 'BODYWEIGHT',
+  // A weighted pull-up is the pull-up with a load added (BODYWEIGHT_PLUS_EXTERNAL). "Assisted" is not here on purpose: an
+  // assisted pull-up takes weight off, and is not the move with a load on (K-609 review) — it stays a word, never sure.
   weighted: 'BODYWEIGHT',
-  assisted: 'BODYWEIGHT',
 };
 /** Shortenings people write for the same word. */
 const SAME_WORD: Record<string, string> = { db: 'dumbbell', bb: 'barbell' };

@@ -4,7 +4,7 @@
  * left out and counted, never bent to fit; the same file brought in twice is the same sessions (their ids come from it).
  */
 import type { components } from '@/api/schema';
-import { buildImport, uuidFromDigest } from '@/import/build';
+import { buildImport, sessionIds, uuidFromDigest } from '@/import/build';
 import type { FileSession } from '@/import/formats';
 import { importParams } from '@/import/params';
 import { workoutParams } from '@/train/params';
@@ -44,8 +44,11 @@ const CHOICES = new Map<string, string | null>([
   ['Dumbbell Row', 'one_arm_dumbbell_row'],
   ['Deadlift (Barbell)', null],
 ]);
-const build = (sessions: FileSession[], options: Partial<Parameters<typeof buildImport>[0]> = {}) =>
-  buildImport({ source: 'STRONG', sessions, choices: CHOICES, moves: MOVES, unit: 'kg', dumbbells: 'one', digest, ...options });
+const build = async (sessions: FileSession[], options: Partial<Parameters<typeof buildImport>[0]> = {}) => {
+  const source = options.source ?? 'STRONG';
+  const ids = await sessionIds(source, sessions, digest);
+  return buildImport({ source, sessions, ids, choices: CHOICES, moves: MOVES, unit: 'kg', dumbbells: 'one', ...options });
+};
 
 test('a mapped set: the move, warm-up or working, kg, reps; the times as instants', async () => {
   const built = await build([session(18, [set('Bench Press (Barbell)', 20, 12, true), set('Bench Press (Barbell)', 60, 8)])]);
@@ -149,4 +152,41 @@ test('nothing of the file but the mapped set goes: no names, no notes', async ()
   const built = await build([session(18, [set('Bench Press (Barbell)', 60)])]);
 
   expect(JSON.stringify(built.chunks)).not.toContain('Bench Press');
+});
+
+describe('ids come from the file alone (K-609 review)', () => {
+  const twins = [session(18, [set('Pull Up', 0, 8)]), session(18, [set('Bench Press (Barbell)', 60)])];
+
+  test('a choice changes no id: two sessions at one start keep theirs whichever is brought in', async () => {
+    const ids = await sessionIds('HEVY', twins, digest);
+    const onlyBench = buildImport({ source: 'HEVY', sessions: twins, ids, choices: new Map([['Bench Press (Barbell)', 'bench_press']]), moves: MOVES, unit: 'kg', dumbbells: 'one' });
+    const both = buildImport({ source: 'HEVY', sessions: twins, ids, choices: CHOICES, moves: MOVES, unit: 'kg', dumbbells: 'one' });
+
+    expect(onlyBench.chunks[0].workouts[0].clientId).toBe(ids[1]);
+    expect(both.chunks[0].workouts.map((w) => w.clientId)).toEqual(ids);
+    expect(new Set(ids).size).toBe(2);
+  });
+
+  test('an id does not depend on the other sessions of the file', async () => {
+    const [, alone] = [await sessionIds('STRONG', [session(17, []), session(18, [])], digest), await sessionIds('STRONG', [session(18, [])], digest)];
+    expect((await sessionIds('STRONG', [session(17, []), session(18, [])], digest))[1]).toBe(alone[0]);
+  });
+
+  test('the same start from the other app is another session', async () => {
+    const [strong] = await sessionIds('STRONG', [session(18, [])], digest);
+    const [hevy] = await sessionIds('HEVY', [session(18, [])], digest);
+    expect(hevy).not.toBe(strong);
+  });
+});
+
+test('one dumbbell counted as one: the load as the file has it', async () => {
+  const built = await build([session(18, [set('Bench Press (Dumbbell)', 30)])], { dumbbells: 'one' });
+
+  expect(built.chunks[0].workouts[0].sets[0].loadKg).toBe(30);
+});
+
+test('a set at the load and rep limits is a set', async () => {
+  const built = await build([session(18, [set('Bench Press (Barbell)', workoutParams.maxLoadKg, workoutParams.maxReps)])]);
+
+  expect(built.leftOut).toBe(0);
 });

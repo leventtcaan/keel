@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,12 +9,12 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
-import { type Built, buildImport } from '@/import/build';
+import { type Built, buildImport, sessionIds } from '@/import/build';
 import { type ExportRead, readExport } from '@/import/formats';
 import { type Matched, matchNames } from '@/import/match';
 import { MoveRow } from '@/import/MoveRow';
 import { sendImport } from '@/import/send';
-import { useAppServices, useUnits } from '@/services/ServicesProvider';
+import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Move, ownMove } from '@/train/trainData';
@@ -26,7 +26,7 @@ type Stage =
   | { kind: 'start' }
   | { kind: 'unknown' }
   | { kind: 'empty' }
-  | { kind: 'map'; read: Read; matched: Matched[] }
+  | { kind: 'map'; read: Read; matched: Matched[]; ids: string[] }
   | { kind: 'done'; imported: number; alreadyThere: number; built: Built };
 
 const FAILURES = ['NoConnection', 'ConsentRequired', 'ImportRefused'];
@@ -40,41 +40,39 @@ const digest = (text: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlg
  */
 export default function ImportScreen() {
   const { api, consents, importFile, training, report } = useAppServices();
-  const units = useUnits();
   const { color } = useTheme();
   const [stage, setStage] = useState<Stage>({ kind: 'checking' });
-  const [moves, setMoves] = useState<Move[]>([]);
+  // null while the catalog is read: a file chosen before it would match against nothing (K-609 review).
+  const [moves, setMoves] = useState<Move[] | 'failed' | null>(null);
   const [choices, setChoices] = useState<Map<string, string | null>>(new Map());
-  const [unit, setUnit] = useState<'kg' | 'lb'>(units === 'IMPERIAL' ? 'lb' : 'kg');
+  // Strong's unit is the user's answer, never preset from their own setting: the file was made in Strong's (H13 B2).
+  const [unit, setUnit] = useState<'kg' | 'lb' | null>(null);
   const [dumbbells, setDumbbells] = useState<'one' | 'both'>('one');
-  const [built, setBuilt] = useState<Built | null>(null);
   const [progress, setProgress] = useState<{ done: number; of: number } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const sending = useRef(false);
 
   useEffect(() => {
-    void consents.granted('HEALTH_DATA').then((granted) => setStage(granted ? { kind: 'start' } : { kind: 'consent' }));
+    // Not known is not given: nothing health is sent on a guess (ADR-030 #25).
+    void consents.granted('HEALTH_DATA').then(
+      (granted) => setStage(granted ? { kind: 'start' } : { kind: 'consent' }),
+      () => setStage({ kind: 'consent' }),
+    );
     // The catalog and the user's own moves, from the server or the copy kept on the phone (K-405, K-416).
-    void Promise.all([training.read(api), training.own(api)]).then(([data, own]) =>
-      setMoves([...(data.exercises.state === 'ready' ? data.exercises.value : []), ...own]),
+    void Promise.all([training.read(api), training.own(api)]).then(
+      ([data, own]) => setMoves(data.exercises.state === 'ready' ? [...data.exercises.value, ...own] : 'failed'),
+      () => setMoves('failed'),
     );
   }, [api, consents, training]);
 
-  const byId = useMemo(() => new Map(moves.map((m) => [m.id, m])), [moves]);
-  const read = stage.kind === 'map' ? stage.read : null;
-  const fileUnit = read?.unit ?? unit;
-
-  // What would go, worked out again whenever a choice changes: the button says how many sessions it is.
-  useEffect(() => {
-    if (read === null) return;
-    let current = true;
-    void buildImport({ source: read.source, sessions: read.sessions, choices, moves: byId, unit: fileUnit, dumbbells, digest }).then(
-      (next) => current && setBuilt(next),
-    );
-    return () => {
-      current = false;
-    };
-  }, [read, choices, byId, fileUnit, dumbbells]);
+  const known = useMemo(() => (Array.isArray(moves) ? moves : []), [moves]);
+  const byId = useMemo(() => new Map(known.map((m) => [m.id, m])), [known]);
+  const fileUnit = stage.kind === 'map' ? (stage.read.unit ?? unit) : null;
+  // What would go, from the choices on the screen now: the button's count and the send are the same thing.
+  const built =
+    stage.kind !== 'map' || fileUnit === null
+      ? null
+      : buildImport({ source: stage.read.source, sessions: stage.read.sessions, ids: stage.ids, choices, moves: byId, unit: fileUnit, dumbbells });
 
   const choose = async () => {
     setProblem(null);
@@ -87,13 +85,15 @@ export default function ImportScreen() {
     }
     const counts = new Map<string, number>();
     for (const set of next.sessions.flatMap((s) => s.sets)) counts.set(set.name, (counts.get(set.name) ?? 0) + 1);
-    const matched = matchNames(counts, moves);
+    const matched = matchNames(counts, known);
+    const ids = await sessionIds(next.source, next.sessions, digest);
     setChoices(new Map(matched.map((m) => [m.name, m.sure])));
-    setStage({ kind: 'map', read: next, matched });
+    setUnit(null);
+    setStage({ kind: 'map', read: next, matched, ids });
   };
 
   const send = async () => {
-    if (sending.current || built === null || read === null) return;
+    if (sending.current || built === null) return;
     sending.current = true;
     setProblem(null);
     setProgress({ done: 0, of: built.chunks.length });
@@ -112,7 +112,7 @@ export default function ImportScreen() {
 
   const pick = (file: string, id: string | null) => setChoices((before) => new Map(before).set(file, id));
   const savedOwn = (file: string, own: components['schemas']['CustomExercise']) => {
-    setMoves((before) => [...before.filter((m) => m.id !== own.id), ownMove(own)]);
+    setMoves((before) => [...(Array.isArray(before) ? before : []).filter((m) => m.id !== own.id), ownMove(own)]);
     pick(file, own.id);
   };
   const anyDumbbell = [...choices.values()].some((id) => {
@@ -120,38 +120,46 @@ export default function ImportScreen() {
     return m?.equipment === 'DUMBBELL' && !m.unilateral;
   });
 
+  // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
+  const moveState = moves === null ? 'loading' : moves === 'failed' ? 'failed' : 'ready';
+  let body: ReactNode = null;
+  if (stage.kind === 'consent') body = <Note text={t('import.needsConsent')} />;
+  else if (stage.kind === 'start' || stage.kind === 'unknown' || stage.kind === 'empty') {
+    body = <Start stage={stage.kind} moves={moveState} onChoose={() => void choose()} />;
+  } else if (stage.kind === 'map') {
+    const unitQuestion = stage.read.unit === null ? <Question kind="unit" value={unit ?? ''} onChange={(v) => setUnit(v as 'kg' | 'lb')} /> : null;
+    const dumbbellQuestion = anyDumbbell ? <Question kind="dumbbells" value={dumbbells} onChange={(v) => setDumbbells(v as 'one' | 'both')} /> : null;
+    const rowsLeftOut = stage.read.leftOut > 0 ? <Note text={t('import.rowsLeftOut', { count: stage.read.leftOut })} /> : null;
+    body = (
+      <View style={styles.part}>
+        <Text style={[styles.heading, { color: color.text }]}>
+          {t('import.summary', { sessions: stage.read.sessions.length, sets: setsIn(stage.read), app: t(`import.apps.${stage.read.source}`) })}
+        </Text>
+        {rowsLeftOut}
+        {unitQuestion}
+        {dumbbellQuestion}
+        <Text style={[styles.label, { color: color.muted }]}>{t('import.moves')}</Text>
+        {stage.matched.map((m) => (
+          <MoveRow
+            key={m.name}
+            matched={m}
+            chosen={choices.get(m.name) ?? null}
+            moves={known}
+            byId={byId}
+            onPick={(id) => pick(m.name, id)}
+            onSavedOwn={(own) => savedOwn(m.name, own)}
+          />
+        ))}
+        <SendPart built={built} progress={progress} problem={problem} onSend={() => void send()} />
+      </View>
+    );
+  } else if (stage.kind === 'done') body = <Done imported={stage.imported} alreadyThere={stage.alreadyThere} built={stage.built} />;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <ScreenTitle>{t('import.title')}</ScreenTitle>
-        {stage.kind === 'consent' && <Note text={t('import.needsConsent')} />}
-        {(stage.kind === 'start' || stage.kind === 'unknown' || stage.kind === 'empty') && (
-          <Start stage={stage.kind} onChoose={() => void choose()} />
-        )}
-        {stage.kind === 'map' && (
-          <View style={styles.part}>
-            <Text style={[styles.heading, { color: color.text }]}>
-              {t('import.summary', { sessions: stage.read.sessions.length, sets: setsIn(stage.read), app: t(`import.apps.${stage.read.source}`) })}
-            </Text>
-            {stage.read.leftOut > 0 && <Note text={t('import.rowsLeftOut', { count: stage.read.leftOut })} />}
-            {stage.read.unit === null && <Question kind="unit" value={unit} onChange={(v) => setUnit(v as 'kg' | 'lb')} />}
-            {anyDumbbell && <Question kind="dumbbells" value={dumbbells} onChange={(v) => setDumbbells(v as 'one' | 'both')} />}
-            <Text style={[styles.label, { color: color.muted }]}>{t('import.moves')}</Text>
-            {stage.matched.map((m) => (
-              <MoveRow
-                key={m.name}
-                matched={m}
-                chosen={choices.get(m.name) ?? null}
-                moves={moves}
-                byId={byId}
-                onPick={(id) => pick(m.name, id)}
-                onSavedOwn={(own) => savedOwn(m.name, own)}
-              />
-            ))}
-            <SendPart built={built} progress={progress} problem={problem} onSend={() => void send()} />
-          </View>
-        )}
-        {stage.kind === 'done' && <Done imported={stage.imported} alreadyThere={stage.alreadyThere} built={stage.built} />}
+        {body}
       </ScrollView>
     </SafeAreaView>
   );
@@ -164,14 +172,17 @@ function Note({ text }: { text: string }) {
   return <Text style={[styles.text, { color: color.textSecondary }]}>{text}</Text>;
 }
 
-function Start({ stage, onChoose }: { stage: 'start' | 'unknown' | 'empty'; onChoose: () => void }) {
+const INTRO = { start: 'import.intro', unknown: 'import.unknown', empty: 'import.empty' } as const;
+
+function Start({ stage, moves, onChoose }: { stage: 'start' | 'unknown' | 'empty'; moves: 'loading' | 'failed' | 'ready'; onChoose: () => void }) {
+  const status = moves === 'loading' ? <Note text={t('import.loadingMoves')} /> : moves === 'failed' ? <Note text={t('import.noMoves')} /> : null;
+  const label = t(stage === 'start' ? 'import.choose' : 'import.chooseAnother');
   return (
     <View style={styles.part}>
-      {stage === 'start' && <Note text={t('import.intro')} />}
-      {stage === 'unknown' && <Note text={t('import.unknown')} />}
-      {stage === 'empty' && <Note text={t('import.empty')} />}
+      <Note text={t(INTRO[stage])} />
       <Note text={t('import.privacy')} />
-      <Button label={t(stage === 'start' ? 'import.choose' : 'import.chooseAnother')} onPress={onChoose} />
+      {status}
+      <Button label={label} disabled={moves !== 'ready'} onPress={onChoose} />
     </View>
   );
 }
@@ -209,7 +220,9 @@ function SendPart({
     <View style={styles.part}>
       {problem !== null && <Note text={problem} />}
       {progress !== null && <Note text={t('import.sending', { done: progress.done, of: progress.of })} />}
-      {count === 0 ? (
+      {built === null ? (
+        <Note text={t('import.unitFirst')} />
+      ) : count === 0 ? (
         <Note text={t('import.nothing')} />
       ) : (
         <Button label={count === 1 ? t('import.sendOne') : t('import.send', { count })} disabled={progress !== null} onPress={onSend} />

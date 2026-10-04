@@ -62,26 +62,29 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Pr
     }
   };
 
+  // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
+  const offers = mode === 'view' && chosen === null && matched.suggestions.length > 0;
+  const searching = mode === 'search';
+  const below =
+    mode === 'own' ? (
+      <OwnMoveForm
+        name={[...file].slice(0, workoutParams.ownMoveNameMaxChars).join('')}
+        catalog={moves}
+        onPick={(id) => take(id)}
+        onSave={saveOwn}
+        onBack={() => setMode('view')}
+      />
+    ) : (
+      <Actions file={file} chosen={chosen} searching={searching} onOther={() => setMode(searching ? 'view' : 'search')} onOwn={() => setMode('own')} onSkip={() => take(null)} />
+    );
   return (
     <View style={[styles.row, { borderColor: color.line }]}>
       <Text style={[styles.name, { color: color.text }]}>{file}</Text>
       <Text style={[styles.small, { color: color.muted }]}>{t('import.sets', { count: matched.sets })}</Text>
       <Status chosen={chosen} byId={byId} />
-      {mode === 'view' && chosen === null && matched.suggestions.length > 0 && (
-        <Offers file={file} ids={matched.suggestions} byId={byId} onPick={(id) => take(id)} />
-      )}
-      {mode === 'search' && <Search file={file} query={query} onQuery={setQuery} moves={moves} byId={byId} onPick={(id) => take(id)} />}
-      {mode === 'own' ? (
-        <OwnMoveForm
-          name={[...file].slice(0, workoutParams.ownMoveNameMaxChars).join('')}
-          catalog={moves}
-          onPick={(id) => take(id)}
-          onSave={saveOwn}
-          onBack={() => setMode('view')}
-        />
-      ) : (
-        <Actions file={file} chosen={chosen} mode={mode} onOther={() => setMode(mode === 'search' ? 'view' : 'search')} onOwn={() => setMode('own')} onSkip={() => take(null)} />
-      )}
+      {offers && <Offers file={file} ids={matched.suggestions} byId={byId} onPick={(id) => take(id)} />}
+      {searching && <Search file={file} query={query} onQuery={setQuery} moves={moves} byId={byId} onPick={(id) => take(id)} />}
+      {below}
     </View>
   );
 }
@@ -132,20 +135,22 @@ function Search(props: {
   );
 }
 
-function Actions(props: { file: string; chosen: string | null; mode: 'view' | 'search'; onOther: () => void; onOwn: () => void; onSkip: () => void }) {
+function Actions(props: { file: string; chosen: string | null; searching: boolean; onOther: () => void; onOwn: () => void; onSkip: () => void }) {
+  const skip =
+    props.chosen === null ? null : (
+      <Button label={t('import.skip')} accessibilityLabel={t('import.skipLabel', { file: props.file })} variant="ghost" size="sm" onPress={props.onSkip} />
+    );
   return (
     <View style={styles.buttons}>
       <Button
-        label={t(props.mode === 'search' ? 'import.back' : 'import.other')}
-        accessibilityLabel={props.mode === 'search' ? undefined : t('import.otherLabel', { file: props.file })}
+        label={t(props.searching ? 'import.back' : 'import.other')}
+        accessibilityLabel={props.searching ? undefined : t('import.otherLabel', { file: props.file })}
         variant="ghost"
         size="sm"
         onPress={props.onOther}
       />
       <Button label={t('import.own')} accessibilityLabel={t('import.ownLabel', { file: props.file })} variant="ghost" size="sm" onPress={props.onOwn} />
-      {props.chosen !== null && (
-        <Button label={t('import.skip')} accessibilityLabel={t('import.skipLabel', { file: props.file })} variant="ghost" size="sm" onPress={props.onSkip} />
-      )}
+      {skip}
     </View>
   );
 }

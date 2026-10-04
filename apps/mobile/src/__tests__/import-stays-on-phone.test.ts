@@ -11,10 +11,11 @@ const uncommented = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').repl
 const READERS = ['csv.ts', 'formats.ts', 'match.ts', 'build.ts', 'params.ts'].map((name) => path.resolve(__dirname, '../import', name));
 /** What a reader may import: types of the contract, the copy, the train module's parameters and moves' type, its siblings. */
 const ALLOWED = [/^import type .* from '@\/api\/schema';$/, /^import type .* from '@\/train\/trainData';$/, /from '@\/copy';$/, /from '@\/train\/params';$/,
-  /from '\.\/[a-z]+';$/, /^import type .* from '\.\/[a-z]+';$/, /from '(\.\.\/)+data\/parameters\/import\.json';$/];
+  /from '\.\/(csv|formats|match|params)';$/, /from '(\.\.\/)+data\/parameters\/import\.json';$/];
 const NETWORK = /\bapi\b|\bfetch\b|XMLHttpRequest|WebSocket|sendBeacon|EventSource|upload|axios|ServicesProvider/i;
 
-const imports = (text: string) => text.split('\n').filter((line) => /^import\b/.test(line));
+/** Every line that brings code in: import, re-export, require. */
+const imports = (text: string) => text.split('\n').filter((line) => /^(import|export)\b.*\bfrom\b|\brequire\(/.test(line));
 const body = (text: string) => text.split('\n').filter((line) => !/^import\b/.test(line)).join('\n');
 
 test('every reader imports only what cannot reach a server', () => {
@@ -33,6 +34,8 @@ test('the scan catches what it is for', () => {
   expect(allowed("import type { components } from '@/api/schema';")).toBe(true);
   expect(allowed("import { components } from '@/api/schema';")).toBe(false); // a value import could be the client
   expect(allowed("import { useAppServices } from '@/services/ServicesProvider';")).toBe(false);
+  expect(allowed("import { sendImport } from './send';")).toBe(false); // the one sibling that sends
+  expect(imports("export { sendImport } from './send';\nconst x = require('./send');")).toHaveLength(2);
   expect(NETWORK.test("await fetch('https://x')")).toBe(true);
   expect(NETWORK.test('services.api.POST(x)')).toBe(true);
 });

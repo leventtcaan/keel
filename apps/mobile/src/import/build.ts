@@ -3,7 +3,7 @@
  * the move's id, warm-up or working, the load in kg as the move's load model counts it, the reps; names, notes and the
  * rest of the file stay on the phone. A set that cannot be one is left out and counted, never bent to fit (a load on a
  * bodyweight-only move is not made 0). Sessions go in chunks of import_workouts_per_request, oldest first; each session's
- * id comes from the file — its app and start — so the same file brought in twice is the same sessions ("already there").
+ * id comes from the file alone (sessionIds) — so the same file brought in twice is the same sessions ("already there").
  */
 import type { components } from '@/api/schema';
 import { workoutParams } from '@/train/params';
@@ -20,6 +20,8 @@ export type Built = { chunks: Schemas['WorkoutImport'][]; sessions: number; sets
 export type BuildInput = {
   source: ExportSource;
   sessions: FileSession[];
+  /** Each session's id, in the same order (sessionIds): from the file alone, so a choice changes no id. */
+  ids: string[];
   /** A file's move name → the move it is, or null: not brought in. A name not here is not brought in either. */
   choices: Map<string, string | null>;
   moves: Map<string, Move>;
@@ -27,20 +29,35 @@ export type BuildInput = {
   unit: 'kg' | 'lb';
   /** How the file counted a dumbbell move's load: one dumbbell (as the app does, ADR-032) or the pair together. */
   dumbbells: 'one' | 'both';
-  /** SHA-256 of a text, in hex (expo-crypto on the phone). */
-  digest: (text: string) => Promise<string>;
 };
 
 /** The pound, by definition (international yard and pound, 1959). */
 const KG_PER_LB = 0.45359237;
 
-export async function buildImport({ source, sessions, choices, moves, unit, dumbbells, digest }: BuildInput): Promise<Built> {
+/**
+ * Each session's id, from the file alone: its app, its start, and — for sessions starting in the same minute (Hevy's
+ * times have no seconds) — its place among them in the file. Worked out once per file, before any choice: an id that
+ * moved with the choices would make a re-import with another move mapped skip one session and store another twice.
+ */
+export async function sessionIds(source: ExportSource, sessions: FileSession[], digest: (text: string) => Promise<string>): Promise<string[]> {
+  const seen = new Map<string, number>();
+  const ids: string[] = [];
+  for (const session of sessions) {
+    const start = session.startedAt.toISOString();
+    const ordinal = seen.get(start) ?? 0;
+    seen.set(start, ordinal + 1);
+    ids.push(uuidFromDigest(await digest(`keel-import|${source}|${start}|${ordinal}`)));
+  }
+  return ids;
+}
+
+/** What goes, from the current choices — at once, so the send button always sends what the screen shows. */
+export function buildImport({ source, sessions, ids, choices, moves, unit, dumbbells }: BuildInput): Built {
   const workouts: Schemas['ImportedWorkout'][] = [];
-  const seenStarts = new Map<string, number>();
   let leftOut = 0;
   let skipped = 0;
   let sets = 0;
-  for (const session of sessions) {
+  sessions.forEach((session, index) => {
     const kept: Schemas['ImportedSet'][] = [];
     for (const set of session.sets) {
       const id = choices.get(set.name) ?? null;
@@ -56,15 +73,10 @@ export async function buildImport({ source, sessions, choices, moves, unit, dumb
       }
       kept.push({ exerciseId: move.id, setType: set.warmUp ? 'WARM_UP' : 'WORKING', loadKg, reps: set.reps });
     }
-    if (kept.length === 0) continue;
-    const start = session.startedAt.toISOString();
-    // Two sessions of the file may start in the same minute (Hevy's times have no seconds): their order tells them apart.
-    const ordinal = seenStarts.get(start) ?? 0;
-    seenStarts.set(start, ordinal + 1);
-    const clientId = uuidFromDigest(await digest(`keel-import|${source}|${start}|${ordinal}`));
-    workouts.push({ clientId, startedAt: start, endedAt: session.endedAt.toISOString(), sets: kept });
+    if (kept.length === 0) return;
+    workouts.push({ clientId: ids[index], startedAt: session.startedAt.toISOString(), endedAt: session.endedAt.toISOString(), sets: kept });
     sets += kept.length;
-  }
+  });
   const chunks: Schemas['WorkoutImport'][] = [];
   for (let i = 0; i < workouts.length; i += importParams.workoutsPerRequest) {
     chunks.push({ source, workouts: workouts.slice(i, i + importParams.workoutsPerRequest) });

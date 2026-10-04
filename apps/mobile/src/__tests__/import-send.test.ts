@@ -54,3 +54,12 @@ test('the consent withdrawn meanwhile: ConsentRequired; anything else refused: I
   await expect(sendImport({ api: { POST: consent } as never, chunks: [chunk(1)] })).rejects.toMatchObject({ name: 'ConsentRequired' });
   await expect(sendImport({ api: { POST: refused } as never, chunks: [chunk(1)] })).rejects.toMatchObject({ name: 'ImportRefused' });
 });
+
+test('both counts add up over the chunks', async () => {
+  const POST = jest
+    .fn()
+    .mockResolvedValueOnce(answer({ imported: 0, alreadyThere: 1 }))
+    .mockResolvedValueOnce(answer({ imported: 1, alreadyThere: 0 }));
+
+  expect(await sendImport({ api: { POST } as never, chunks: [chunk(1), chunk(1)] })).toEqual({ imported: 1, alreadyThere: 1 });
+});

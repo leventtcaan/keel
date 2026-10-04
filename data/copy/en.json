@@ -278,7 +278,7 @@
         "body": "{min} of rest. Next set when you're ready."
       }
     },
-    "sets": "Sets: {count}",
+    "sets": "{count} sets",
     "setsOne": "1 set",
     "setOf": "Set {number} of {count}",
     "setNumber": "Set {number}",
@@ -607,7 +607,7 @@
     "chooseAnother": "Choose another file",
     "unknown": "This isn't a Strong or Hevy export we can read. Export it again from the app, in English, and choose it without editing it.",
     "empty": "There are no sets in this file.",
-    "summary": "{sessions} sessions, {sets} sets from {app}",
+    "summary": "From {app} · sessions: {sessions} · sets: {sets}",
     "rowsLeftOut": "Rows that aren't sets we can bring in (no reps, like a timed hold, or a date we can't read): {count}",
     "apps": {
       "STRONG": "Strong",
@@ -615,7 +615,7 @@
     },
     "unit": {
       "title": "What unit are the weights in?",
-      "note": "Strong's file doesn't say. It's the unit set in Strong when you exported.",
+      "note": "Strong's file doesn't say. It's the unit set in Strong when you exported. Pick one to go on.",
       "kg": "kg",
       "lb": "lb"
     },
@@ -642,11 +642,14 @@
     "send": "Bring in {count} sessions",
     "sendOne": "Bring in 1 session",
     "nothing": "Nothing to bring in yet: match at least one move.",
+    "unitFirst": "Pick the unit the weights are in first.",
+    "loadingMoves": "Reading the moves list…",
+    "noMoves": "Couldn't read the moves list. Open this again when you're online.",
     "sending": "Sending {done} of {of}…",
     "done": "{count} sessions brought in.",
     "doneOne": "1 session brought in.",
     "already": "Already here from before: {count}",
-    "skipped": "Sets of moves you left out, kept in the file only: {count}",
+    "skipped": "Sets of moves you left out, kept in the file only: {count}. Bringing the same file in again won't add them to sessions already here.",
     "leftOut": "Sets that couldn't come in (a load the move can't take, or over the limits): {count}",
     "close": "Done",
     "failed": {

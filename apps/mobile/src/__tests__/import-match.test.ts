@@ -133,3 +133,35 @@ describe('with the whole catalog (data/exercises)', () => {
     expect(matched.suggestions[0]).toBe(id);
   });
 });
+
+describe('after the review (K-609)', () => {
+  test('an assisted pull-up is not the pull-up: offered, never matched (its load is help, not added)', () => {
+    expect(one('Pull Up (Assisted)').sure).toBeNull();
+    expect(one('Dip (Assisted)', [...CATALOG, move('dip', 'BODYWEIGHT', 'BODYWEIGHT_PLUS_EXTERNAL')]).sure).toBeNull();
+  });
+
+  test('a weighted pull-up is the pull-up with a load added', () => {
+    expect(one('Pull Up (Weighted)').sure).toBe('pull_up');
+  });
+
+  test('a bracket word that is no equipment is a word: "(Band)" is not the plain move', () => {
+    expect(one('Pull Up (Band)').sure).toBeNull();
+  });
+
+  test('two moves exactly so: not sure (U5)', () => {
+    const own: Move = { ...move('custom:1', 'BARBELL'), nameKey: '', name: 'Bench press' };
+    expect(one('Bench Press (Barbell)', [...CATALOG, own]).sure).toBeNull();
+  });
+
+  test('"(Machine)" and "(Smith Machine)" are the machine; BB is barbell', () => {
+    const machine = [...CATALOG, move('leg_press', 'MACHINE')];
+    expect(one('Leg Press (Machine)', machine).sure).toBe('leg_press');
+    expect(one('Bench Press (BB)').sure).toBe('bench_press');
+    expect(one('Bench Press (Smith Machine)').sure).toBeNull();
+  });
+
+  test('at most the configured number of offers, however many are alike', () => {
+    const many: Move[] = Array.from({ length: 5 }, (_, i) => ({ ...move(`custom:${i}`, 'BARBELL'), nameKey: '', name: `Press ${i}` }));
+    expect(one('Press', many).suggestions).toHaveLength(importParams.matchSuggestions);
+  });
+});

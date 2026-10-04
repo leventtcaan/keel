@@ -37,22 +37,18 @@ export function ImportSection() {
       'settings.import.failed',
     );
   const what = t('settings.import.weighIns');
+  // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
+  const weighIns = health.available ? (
+    <Row label={what} hint={t('settings.import.weighInsHint')}>
+      <Button label={t('settings.import.import')} accessibilityLabel={t('settings.import.importLabel', { what })} size="sm" disabled={busy} onPress={importWeighIns} />
+    </Row>
+  ) : (
+    <Text style={[styles.note, { color: color.muted }]}>{t('settings.import.unavailable')}</Text>
+  );
   return (
     <Section title={t('settings.import.title')}>
       <Text style={[styles.note, { color: color.muted }]}>{t('settings.import.note')}</Text>
-      {health.available ? (
-        <Row label={what} hint={t('settings.import.weighInsHint')}>
-          <Button
-            label={t('settings.import.import')}
-            accessibilityLabel={t('settings.import.importLabel', { what })}
-            size="sm"
-            disabled={busy}
-            onPress={importWeighIns}
-          />
-        </Row>
-      ) : (
-        <Text style={[styles.note, { color: color.muted }]}>{t('settings.import.unavailable')}</Text>
-      )}
+      {weighIns}
       {outcome !== null && <Said text={said(outcome)} />}
       {problem !== null && <Said text={problem} />}
       {/* A file needs no HealthKit: workouts can be brought in in any build (K-609). */}

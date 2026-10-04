@@ -132,3 +132,80 @@ describe('what is not read', () => {
     for (const word of ['heavy', 'Gym was busy', 'Training Title', 'Legs, then arms']) expect(kept).not.toContain(word);
   });
 });
+
+describe('after the review (K-609)', () => {
+  const strong = (rows: string[]) => [fixture('strong.csv').split('\n')[0], ...rows].join('\n');
+  const row = (reps: string, weight = '100', name = 'Squat (Barbell)', date = '2025-01-20 07:30:00') =>
+    `${date},"A",45m,"${name}",1,${weight},${reps},0,0,"","",`;
+
+  test('one rep is a set; part of a rep is not', () => {
+    const read = readExport(strong([row('1'), row('5.5')]));
+    expect(read.kind === 'read' && read.sessions[0].sets.map((x) => x.reps)).toEqual([1]);
+    expect(read.kind === 'read' && read.leftOut).toBe(1);
+  });
+
+  test('a weight that is not a number is left out, never sent to be refused', () => {
+    const read = readExport(strong([row('5', '1oo'), row('5', '"1,5"'), row('5')]));
+    expect(read.kind === 'read' && read.leftOut).toBe(2);
+  });
+
+  test('a date not on the calendar is left out (30 February)', () => {
+    const read = readExport(strong([row('5', '100', 'Squat (Barbell)', '2025-02-30 07:30:00'), row('5')]));
+    expect(read.kind === 'read' && read.leftOut).toBe(1);
+  });
+
+  test('a name with spaces around is the name; no name is no set', () => {
+    const read = readExport(strong([row('5', '100', '  Squat (Barbell) '), row('5', '100', '')]));
+    expect(read.kind === 'read' && read.sessions[0].sets.map((x) => x.name)).toEqual(['Squat (Barbell)']);
+    expect(read.kind === 'read' && read.leftOut).toBe(1);
+  });
+
+  test('a cut-off header is not the form', () => {
+    expect(readExport('Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps\n2025-01-20 07:30:00,A,45m,Squat,1,100,5').kind).toBe('unknown');
+  });
+
+  const hevy = (rows: string[]) => [fixture('hevy.csv').split('\r\n')[0], ...rows].join('\r\n');
+  const hrow = (type: string, start = '30 Jun 2025, 19:56', end = '30 Jun 2025, 20:58', title = 'Push') =>
+    `"${title}","${start}","${end}","","Lat Pulldown (Cable)",,"",0,"${type}",50,10,,,`;
+
+  test("a Hevy set type other than warm-up is a working set (H13 B3)", () => {
+    const read = readExport(hevy([hrow('dropset'), hrow('failure'), hrow('warmup')]));
+    expect(read.kind === 'read' && read.sessions[0].sets.map((x) => x.warmUp)).toEqual([false, false, true]);
+  });
+
+  test('a Hevy end before its start ends where it starts', () => {
+    const read = readExport(hevy([hrow('normal', '30 Jun 2025, 19:56', '30 Jun 2025, 18:00')]));
+    expect(read.kind === 'read' && read.sessions[0].endedAt).toEqual(read.kind === 'read' && read.sessions[0].startedAt);
+  });
+
+  test('two Hevy sessions at one start with two titles are two sessions', () => {
+    const read = readExport(hevy([hrow('normal', '30 Jun 2025, 19:56', '30 Jun 2025, 20:58', 'Push'), hrow('normal', '30 Jun 2025, 19:56', '30 Jun 2025, 20:58', 'Pull')]));
+    expect(read.kind === 'read' && read.sessions).toHaveLength(2);
+  });
+
+  test('the weights of an lb file are read from its own column', () => {
+    const csv = fixture('hevy.csv').replace('"weight_kg"', '"weight_lbs"').replace('"distance_km"', '"distance_miles"');
+    const read = readExport(csv);
+    expect(read.kind === 'read' && read.sessions[0].sets[1].weight).toBe(60);
+  });
+
+  test('a time with something after it is not the verified form', () => {
+    const read = readExport(strong([row('5', '100', 'Squat (Barbell)', '2025-01-20 07:30:00 AM'), row('5')]));
+    expect(read.kind === 'read' && read.leftOut).toBe(1);
+  });
+});
+
+describe('csv, more edges', () => {
+  test('a doubled quote then a comma inside the field', () => {
+    expect(parseCsv('"a"",b"')).toEqual([['a",b']]);
+  });
+  test('a row whose first field is empty is a row', () => {
+    expect(parseCsv(',x')).toEqual([['', 'x']]);
+  });
+  test('a one-column last line without a break', () => {
+    expect(parseCsv('a\nb')).toEqual([['a'], ['b']]);
+  });
+  test('a lone carriage return is text', () => {
+    expect(parseCsv('a\rb')).toEqual([['a\rb']]);
+  });
+});
