@@ -28,3 +28,4 @@
 16. K-616 Health kilo geçmişi (`K-616.md`) — tek seferlik okuma, clientId ile tekillik, arka planda gönderim, "Year" görünümü
 17. K-609 Strong/Hevy CSV (`K-609.md`, H13) — doğrulanmış biçimler, U5 eşleme, sorulan iki şey, dosyadan kimlik, dosya telefonda
 18. K-612 paylaşım kartı (`K-612.md`, ADR-054) — yalnız kelimeler, kilo kapalı, güvenlik kararları dışarıda, SVG → PNG telefonda
+19. K-617 fotoğrafın sahibi (`K-617.md`, ADR-055 › 101) — oturum sonu türleri, sahip özeti, oturumdan önce sahiplenme
