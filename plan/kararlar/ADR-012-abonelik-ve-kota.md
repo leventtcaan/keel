@@ -32,3 +32,15 @@ Orta (satın alma katmanı değişimi).
 
 ## Doğrulama
 Yetkisiz kullanıcının koç çağrısının reddedildiği test; kota sınırı testleri; webhook imza doğrulama testi.
+
+## Ek 1 · M7 başı cevapları (Levent, 2026-10-04)
+- **Hazır olan yok:** RevenueCat hesabı/projesi, App Store Connect abonelik grubu + ürünler + 7 gün deneme, Paid Applications sözleşmesi
+  (vergi/banka), sandbox test hesabı. Kod bunları beklemez: değerler (webhook yetki başlığı, entitlement adı, ürün kimlikleri) yapılandırmadan
+  okunur, kodda yoktur. Entitlement adı `premium`, ürünler `keel_monthly` / `keel_annual` yalnız **öneri**; Levent ASC/RevenueCat'te ne koyarsa
+  yapılandırmaya o yazılır.
+- **Veri dışarı (V2) — onaylı:** RevenueCat'e bizim seçtiğimiz tek alan hesabın **opak kimliği** (UUID; e-posta, ad, sağlık verisi yok).
+  RevenueCat SDK'sı ayrıca App Store satın alma kaydını, mağaza ülkesi/para birimini, cihaz/iOS sürümünü ve IP'yi alır — SDK'yı kullanmanın
+  kaçınılmaz parçası; Levent bunu da onayladı. Gizlilik politikasında madde: M8 (K-801). Webhook'la gelen olaydan sunucu yalnız durumun
+  gerektirdiğini saklar (ADR-056).
+- **Sürüm:** `react-native-purchases` 10.10.2 yazılı ama doğrulanmadı; Part 2'de `npx expo install` ile Expo SDK 57 uyumu çözülür, sürüm
+  `package.json`'dan okunup buraya yazılır (K6).

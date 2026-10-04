@@ -6,6 +6,7 @@ guncelleme: 2026-10-04
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M7 Part 1 (Yetki sunucuda) SÜRÜYOR (4 Eki)** — K-701, K-703; para/mağaza hazır değil (ADR-012 Ek 1); ayrıntı `## M7 ilerleme`.
 **M6 KAPANDI (4 Eki, kod)** — Part 4: K-615 #354, K-616 #356, K-609 #357, K-612 #358, ADR-055 metinleri #361, K-617 #362; ADR-053/054/055; sorular 87-104 cevaplı (ADR-055). Açık: K-618 (fotoğraf yedekten hariç, K-308 sonrası). Aktarım bekliyor: M6 (`docs/aktarim/M6/README.md` 1-19). **Disk 1,2 GB** (Docker 17 GB + başka uygulamaların önbellekleri — Levent). Sıradaki koşu **M7 · Abonelik** (`plan/oturum-promptlari/M7.md`, `M7-part1.md`).
 **M6 Part 3 (Efor ve fotoğraf) BİTTİ (4 Eki)** — K-604 #347, K-614 #349 (K-601'den bölündü), K-601 #350, K-602 #351 birleşti; aktarım bekliyor (`docs/aktarim/M6/README.md` 11-14); sorular 97-101 (97 ve 101 veri kararı). Simülatör turu yok (disk 2,3 GB, sunucu yok). Sıradaki: M6 Part 4 (`plan/oturum-promptlari/M6-part4.md`).
 **M6 Part 2 (Projeksiyon, sağlık kapılı) BİTTİ (4 Eki)** — ADR-050 (sağlık kapısı, Levent KABUL), ADR-051, ADR-052; K-605 #342, K-607 #344, K-613 #345 (K-606'dan bölündü), K-606 #346 birleşti; aktarım bekliyor (`docs/aktarim/M6/README.md` 7-10); sorular 94-96. **Repo public** (CI dakikası bitti, Levent'in kararı). Sıradaki: M6 Part 3 (`plan/oturum-promptlari/M6-part3.md`).
@@ -666,6 +667,27 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
   - Koç sınıflandırmasını cihazda yapma yönü ADR-047 #3 (cihaz adımı).
   - Disk: yerelde `DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test` saf testleri hızlı koşar, DB testleri Docker'sız düşer (sayımı ayır).
 - **Sorular:** 86 → ADR-048 #5 (önce buton, sonra intent). Açık: 57 (rıza metni hukuki bakış, yayından önce).
+
+## M7 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `M7-part2.md`.
+
+| Part | Görevler | Durum |
+|---|---|---|
+| 1 · Yetki sunucuda | K-701, K-703 | ⏳ sürüyor (4 Eki) |
+| 2 · Paywall ve teslim | K-702 · M7 çıkışı · M8 prompt'ları | bekliyor |
+
+**Part 1 başı (4 Eki):** senkron tamam — M6 ÇIKIŞ git ile tutarlı (#354, #356, #357, #358, #361, #362 birleşik; açık PR yok; worktree yalnız
+kalıcı `../keel-main`; `*-devam.md` yok). Ana checkout ayrık HEAD = `origin/main` (cf83dc5). Bağımlılıklar `done` (K-203, K-508, K-306).
+Dependabot: aynı 3 geçişli uyarı (braces, node-forge, decode-uri-component). **Disk 1,1 GB → 4,5 GB** (Levent onayıyla simülatör dyld
+önbelleği 3,4 GB + npm önbelleği silindi; simülatör ilk açılışta yeniden üretir). K-308 hâlâ `doing` (cihaz derlemesi Levent'te).
+**Para/mağaza kapısı (Levent, 4 Eki):** hiçbiri hazır değil (RevenueCat hesabı, ASC abonelik grubu/ürünler, Paid Applications, sandbox
+hesabı) → değerler yapılandırmadan okunur, kod beklemez; entitlement/ürün kimlikleri **öneri** olarak config'de. Veri dışarı: RevenueCat'e
+opak hesap kimliği + SDK'nın zorunlu verisi **onaylı** → ADR-012 Ek 1.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-701 RevenueCat webhook ve yetki | ⏳ | | |
+| K-703 premium uçlarda yetki | bekliyor | | |
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` … `M6-part4.md`.
