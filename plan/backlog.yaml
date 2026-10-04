@@ -3208,7 +3208,7 @@ tasks:
     module: mobile
     type: test
     size: M
-    status: doing
+    status: done
     depends_on: [K-301]
     why: "Featuring formu erişilebilirliği soruyor; koyu mod ve Dynamic Type hiçbir görevde yoktu (L3 P12)"
     acceptance:
@@ -3320,7 +3320,7 @@ tasks:
     module: identity
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-802]
     why: "Envanter açığı 2: Apple, Sign in with Apple kullanan uygulamanın silmede REST API ile jetonu iptal etmesini istiyor; yetki kodu alınıyor ama değiş tokuş edilmiyor"
     acceptance:
@@ -3339,7 +3339,7 @@ tasks:
     module: mobile
     type: test
     size: S
-    status: doing
+    status: done
     depends_on: [K-801]
     why: "Envanter sunucu tablolarını sütun düzeyinde bağlıyor ama telefonda saklanan ayarları yalnız düz metinle sayıyor (M8 Part 1 test analizi, puan 6; ADR-061 #5)"
     acceptance:
@@ -3394,7 +3394,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-802]
     why: "GDPR Md. 15: çıkarımla üretilen kişisel veri erişim hakkı kapsamında; Levent dışa aktarmaya girmesini seçti. U4 arayüz için aynen geçerli"
     acceptance:

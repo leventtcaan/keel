@@ -145,3 +145,11 @@
 - takıldım: olgu denetimi 14 yanlış/eksik cümle buldu (oturum süresi, sayaç, RevenueCat, güvenlik durağı geri alınmaz, yağ tahmini saklı); envanter 7 gerçek açık (silinen UUID event_publication'da, Apple jetonu iptal yok…) → K-802; kişi adı istisnası hiç çalışmamıştı; Docker budandı 1,5 → 20 GB
 - sıradaki: Levent dönünce M8 Part 1 aktarımı (docs/aktarim/M8/README.md 1-5); iletişim adresi; sonra M8 Part 2 (`plan/oturum-promptlari/M8-part2.md`)
 - AI: bütün kod, test, ADR, metin agent; ürün/hukuk/para soruları Levent (AskUserQuestion, başta 6 + sonda 5)
+
+## 2026-10-05 · M8 Part 2 (Denetimler ve teslim) — toplu mod
+- yaptım: K-802 #385 (envantere bağlı uçtan uca silme; Modulith işlenen olayı saklıyordu → `completion-mode: delete`), K-804 #389 (tek anayasa komutu, mağaza metni, rota koruması), K-810 #391, K-814 #392, K-811 #393, K-813 #394, K-807 #395, K-812 #398 + #400 (Apple iptali), K-818 #402, #386; M8 çıkışı; M9 prompt'ları
+- karar: ADR-061 (+ Ek 1), ADR-062 (+ Ek 1: privacy'de, privacy → identity), ADR-063 (Levent: fatProxy dışa aktarmada, silmede yeniden onay, kontrast M9'da), ADR-056 Ek 2 (olay kaydı 30 gün)
+- takıldım: jeton temizliği yeniden kullanım tespitini bozuyordu (aile kuralı); kv okuyucusunda 6 kaçış yolu; iki "Evet" fazla iddialı (kontrast, renk); Apple'ın 400'ü bizim hatamızı gizliyordu; çakışan PR'da CI başlamıyor; SANDBOX beta'da kalmalı (prompt aksini diyordu)
+- sıradaki: Levent dönünce M8 Part 2 aktarımı (docs/aktarim/M8/README.md 6-14; Part 1: 1-5); iletişim adresi; sonra M9 Part 1 (`plan/oturum-promptlari/M9-part1.md`)
+- AI: bütün kod, test, ADR, metin, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion, Bitiş'te 4)
+
