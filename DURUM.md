@@ -687,7 +687,8 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-801 metinler + envanter — ADR-060; envanter 37 tablo, sütun düzeyinde göçlere bağlı (`tools/test_veri_envanteri.py`, CI Tooling); politika/şartlar/feragatname `docs/yasal/site/`; yasal sayfalar U4/U6 taramasında (`legalNegations`); Pages iş akışı. RED 4 + 4 assertion; mutasyon 6/6; `npm run check` 2518/2518 | ⏳ inceleme | #375 | — |
+| K-801 metinler + envanter — ADR-060; envanter 37 tablo, sütun düzeyinde göçlere bağlı, katı SQL okuyucu; politika/şartlar/feragatname `docs/yasal/site/`; sayfalar U4/U6 + kişi adı taramasında (`legalNegations`); Pages (önce iki kontrol, PR'da derleme). İnceleme: olgu denetimi 15 (14 metin düzeltmesi, 1 yanlış: döngü cevabı saklanmıyor), test analizi 11 boşluk kapatıldı; mutasyon 6/6 + 9/9; envanter 22/22, `npm run check` 2520/2520. **Pages açıldı** (`leventtcaan.github.io/keel/`) | ⏳ auto-merge | #375 | `M8/K-801.md` |
+| K-809 yasal adresler `eas.json`'da (#376) — K-801'e yığılı; RED 7 → 8/8 | ⏳ #375'i bekliyor | — | — |
 
 **Envanterin bulduğu açıklar → K-802 (Part 2) kabul kriterine eklenecek:**
 1. `event_publication` tamamlanan olayları silmiyor (completion-mode update) → silinen hesabın UUID'si süresiz kalıyor (V1). Politika bunu dürüstçe
@@ -700,6 +701,9 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 5. Yenileme jetonları (iptal/süresi geçmiş) ve `webhook_event` hesap yaşarken hiç temizlenmiyor (veri en aza indirme).
 6. Telefonda öğün fotoğrafı dosyaları sistem önbelleğinde bırakılıyor (`food/photo.ts`, `photoTools.ts`).
 7. `FakeLanguageModel` son 100 isteği (soru, öğün notu, fotoğraf) bellekte tutuyor; üretimde `provider: fake` kalmamalı (M9 kontrol listesi).
+8. **Levent'e soru:** her kararın `snapshot`'ında motorun iç yağ tahmini (`fatProxy*`) saklanıyor, dışa aktarmadan U4 gereği çıkarılıyor. GDPR Md. 15 (erişim) ↔ U4:
+   dışa aktarmaya girsin mi (sayı olarak, açıklamalı) yoksa saklanmasın mı? Politika şu an "saklanır, hiçbir yerde sayı olarak gösterilmez, dışa aktarmada da" diyor.
+9. Telefon anahtarlarının (kv-store, `const KEY`) envantere bağlanması → K-804 (test analizi, puan 6).
 **M9'a (K-901) politikanın verdiği sözler:** HTTPS; sunucu bölgesi politikada yazılı olmalı; yedek ve ters vekil günlüğü saklama süresi politikaya eklenmeden
 yedek açılmaz (politika şu an yedekten söz etmiyor).
 
