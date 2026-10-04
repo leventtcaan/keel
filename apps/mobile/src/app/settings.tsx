@@ -8,6 +8,7 @@ import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
 import { ConsentsSection } from '@/settings/ConsentsSection';
 import { HealthWriteSection } from '@/settings/HealthWriteSection';
+import { ImportSection } from '@/settings/ImportSection';
 import { RemindersSection } from '@/settings/RemindersSection';
 import { UnitsSection } from '@/settings/UnitsSection';
 import { useTheme } from '@/theme/theme';
@@ -31,6 +32,7 @@ export default function SettingsScreen() {
         <Button label={t('settings.gyms')} variant="ghost" onPress={() => router.push('/gyms')} />
         <ConsentsSection />
         <HealthWriteSection />
+        <ImportSection />
         <AccountSection />
       </ScrollView>
     </SafeAreaView>

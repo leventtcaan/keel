@@ -1654,6 +1654,20 @@
       "unavailable": "Adding to Apple Health works in the app's device build.",
       "failed": "Couldn't change this. Try again."
     },
+    "import": {
+      "title": "Bring in your history",
+      "note": "Older weigh-ins show in your trend right away. They never change a call: your first one still comes at your weekly check-in.",
+      "weighIns": "Weigh-ins from Apple Health",
+      "weighInsHint": "The year before the last week, read once.",
+      "import": "Import",
+      "importLabel": "Import {what}",
+      "found": "{count} older weigh-ins found. They'll show in your trend.",
+      "foundOne": "1 older weigh-in found. It'll show in your trend.",
+      "noneNew": "Nothing new to bring in.",
+      "needsConsent": "This needs the health data and Apple Health consents above.",
+      "failed": "Couldn't read Apple Health. Try again.",
+      "unavailable": "Bringing in Apple Health history works in the app's device build."
+    },
     "consents": {
       "title": "Your data and consents",
       "HEALTH_DATA": "Health data",

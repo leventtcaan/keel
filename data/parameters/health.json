@@ -9,6 +9,14 @@
       "note": "How far back each Apple Health read looks for scale weigh-ins (K-402): the trend's own window (trend_display_days, windows.yaml), so a scale that synced late still lands inside the trend it changes. Older history is an import (K-609). Each sample keeps its Health id as its clientId: reading it again stores nothing twice."
     },
     {
+      "key": "health_weight_import_days",
+      "value": 365,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-053-gecmis-ice-aktarma.md#D1",
+      "note": "How far back the one-time import of Apple Health weigh-ins reads (K-616, ADR-018 §3): a year of history, enough for the trend and the strength of a habit, not a lifetime. It ends where the regular read (health_weight_read_days) begins, so the two never read the same sample. Imported weigh-ins are seen in the trend and never read by the engine (ADR-053)."
+    },
+    {
       "key": "weigh_in_chart_days",
       "value": 28,
       "unit": "days",

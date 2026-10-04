@@ -34,6 +34,8 @@ const mockServices = {
   },
   units: { set: jest.fn(async (_system: string) => 'profile' as const) },
   health: { available: true, requestRead: jest.fn(async () => {}) },
+  // Bring in your history (K-616): its own behaviour is import-section.test.tsx.
+  importHealthWeights: jest.fn(async () => 0),
   pendingCount: jest.fn(async () => 0),
   // Progress photos on this phone (K-614): none unless a test puts some.
   photos: { photos: jest.fn(async (): Promise<{ takenOn: string; pose: string; uri: string }[]> => []) },
