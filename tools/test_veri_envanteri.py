@@ -5,6 +5,7 @@
 - every permission text, Info.plist key, config plugin and Apple Health type the app asks for is in the inventory, and every
   one in the inventory is asked; every runtime dependency is listed with where it sends data, if anywhere;
 - health tables are the backend's health schemas; anything with an account goes with the account;
+- the App Store label draft names exactly the inventory's Apple data types, all Apple's; every age rating question is answered;
 - the recipients, the sections a policy needs and the AI section's "not active yet" follow the inventory and the server's config.
 
 Run: python3 tools/test_veri_envanteri.py
@@ -24,6 +25,7 @@ PRIVACY = ROOT / "docs/yasal/site/privacy.md"
 APP_CONFIG = ROOT / "apps/mobile/app.config.ts"
 COPY = ROOT / "data/copy/en.json"
 APP_JSON = ROOT / "apps/mobile/app.json"
+LABEL_DRAFT = ROOT / "docs/yasal/app-store-beyanlari.md"
 PACKAGE = ROOT / "apps/mobile/package.json"
 HEALTHKIT = ROOT / "apps/mobile/src/health/healthKit.ts"
 SERVER_CONFIG = ROOT / "backend/src/main/resources/application.yml"
@@ -150,6 +152,19 @@ def migration_tables(directory=MIGRATIONS):
 def policy_anchors(markdown):
     """Heading ids written as kramdown attributes: `## Health data {#data-health}`."""
     return re.findall(r"^#{1,6} .*\{#([a-z0-9-]+)\}\s*$", markdown, re.M)
+
+
+def label_draft_types(markdown):
+    """The Apple data types in the draft's label table: rows of `| Category › Type | …`."""
+    section = markdown.split("<!-- label:start -->")[1].split("<!-- label:end -->")[0]
+    return {m.strip() for m in re.findall(r"^\|\s*([^|]+›[^|]+?)\s*\|", section, re.M)}
+
+
+def age_draft_answers(markdown):
+    """{question: answer} from the draft's age rating table: rows of `| Question | Answer | Why |`."""
+    section = markdown.split("<!-- age:start -->")[1].split("<!-- age:end -->")[0]
+    rows = re.findall(r"^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|", section, re.M)
+    return {q: a for q, a in rows if q not in ("Soru",) and not set(q) <= set("-")}
 
 
 def inventory():
@@ -369,6 +384,35 @@ class PermissionsMatchTheApp(unittest.TestCase):
         texts = json.loads(COPY.read_text(encoding="utf-8"))["permissions"]
         for permission in inventory()["phone"]["permissions"]:
             self.assertIn(permission["copy_key"], texts)
+
+
+class LabelDraftMatchesTheInventory(unittest.TestCase):
+    def test_types_are_apples(self):
+        data = inventory()
+        apple = set(data["apple_data_types"]["types"])
+        self.assertIn("Health & Fitness › Health", apple)
+        used = {t for e in data["server"] + data["outbound"] for t in e.get("app_privacy", [])}
+        self.assertTrue(used)
+        self.assertEqual(sorted(used - apple), [])
+        later = {t for e in data["outbound"] for t in e.get("app_privacy_when_active", [])}
+        self.assertEqual(sorted(later - apple), [])
+
+    def test_draft_names_exactly_the_inventorys_types(self):
+        data = inventory()
+        used = {t for e in data["server"] + data["outbound"] for t in e.get("app_privacy", [])}
+        self.assertEqual(sorted(label_draft_types(LABEL_DRAFT.read_text(encoding="utf-8")) ^ used), [])
+
+
+    def test_every_age_question_is_answered(self):
+        data = inventory()
+        answers = age_draft_answers(LABEL_DRAFT.read_text(encoding="utf-8"))
+        self.assertEqual(sorted(answers), sorted(data["apple_age_questions"]["questions"]))
+
+    def test_the_rating_is_overridden_to_the_terms_minimum_age(self):
+        # Apple: a EULA whose minimum age exceeds the calculated rating must override to it; the terms say 18 (K-225).
+        draft = LABEL_DRAFT.read_text(encoding="utf-8")
+        self.assertIn("Override to Higher Age Rating → 18+", draft)
+        self.assertIn("18 or older", (ROOT / "docs/yasal/site/terms.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

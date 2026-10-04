@@ -926,7 +926,9 @@
    ],
    "exported": true,
    "policy": "data-subscription",
-   "app_privacy": [],
+   "app_privacy": [
+    "Usage Data › Product Interaction"
+   ],
    "kept_for": "through the following day, then the nightly cleanup (QuotaCleanup, 18:15 UTC): at most about three days"
   },
   {
@@ -1134,5 +1136,34 @@
    "note": "Not active: provider chosen at launch (K-533); consent cannot be given today (no third-party-ai config).",
    "terms": "docs/yasal/ai-saglayici-sartlari.md (K-806): candidates' training and retention terms, read 2026-10-04; condition ADR-041 #71 (no training, zero data retention)"
   }
- ]
+ ],
+ "apple_age_questions": {
+  "source": "https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions/ (2026-10-04)",
+  "questions": [
+   "Parental Controls",
+   "Age Assurance",
+   "Unrestricted Web Access",
+   "User-Generated Content",
+   "Social Media",
+   "Social Media Disabled for Users Under 13",
+   "Messaging and Chat",
+   "Advertising",
+   "Profanity or Crude Humor",
+   "Horror/Fear Themes",
+   "Alcohol, Tobacco, or Drug Use or References",
+   "Medical or Treatment Information",
+   "Health or Wellness Topics",
+   "Mature or Suggestive Themes",
+   "Sexual Content or Nudity",
+   "Graphic Sexual Content and Nudity",
+   "Cartoon or Fantasy Violence",
+   "Realistic Violence",
+   "Prolonged Graphic or Sadistic Realistic Violence",
+   "Guns or Other Weapons",
+   "Gambling",
+   "Simulated Gambling",
+   "Contests",
+   "Loot Boxes"
+  ]
+ }
 }
