@@ -1,6 +1,7 @@
 package app.keel.engine;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,8 +17,10 @@ import java.util.Optional;
  * plan (the water already lost is not lost again). The phone only draws it.
  *
  * <ul>
- *   <li><b>When</b>: an adult (projection_min_age), not while the safety net holds the plan (U13), weighed over at least projection_min_span_days (first to last weigh-in),
- *       with a trend weight this week, on a plan that moves toward a goal (a cut under maintenance, a bulk over it). Under
+ *   <li><b>When</b>: an adult (projection_min_age), not while the safety net holds the plan (U13), a body the model reaches,
+ *       weighed over at least projection_min_span_days (first to last weigh-in),
+ *       with a trend weight this week, on a plan that moves toward a goal by at least projection_min_gap_kcal (a cut under
+ *       maintenance, a bulk over it). Under
  *       BMI projection_loss_min_bmi the losing direction is closed; gaining stays open (ADR-050).</li>
  *   <li><b>A scenario</b>: keeping the plan a share of the time = eating the plan's calories that share of the days and
  *       maintenance the rest, on average maintenance + share × (target − maintenance).</li>
@@ -44,7 +47,7 @@ public final class ShapeProjection {
 
     public enum Direction { LOSS, GAIN }
 
-    public enum Closed { UNDER_AGE, SAFETY_HOLD, TOO_EARLY, NO_RECENT_WEIGHT, NO_DIRECTION, LOW_BMI_LOSS, NO_SAFE_SCENARIO }
+    public enum Closed { UNDER_AGE, SAFETY_HOLD, TOO_EARLY, NO_RECENT_WEIGHT, NO_DIRECTION, LOW_BMI_LOSS, OUTSIDE_MODEL, NO_SAFE_SCENARIO }
 
     /** What the projection reads: the person, the plan in force, the weigh-ins, and whether the safety net holds the plan. */
     public record Facts(LocalDate today, Sex sex, Profile profile, Optional<ActivityLevel> activity, Phase phase, WeightSeries weights,
@@ -98,14 +101,21 @@ public final class ShapeProjection {
         double weight = trend.get().doubleValue();
         InitialTarget.Estimate estimate = InitialTarget.estimate(facts.sex(), trend.get(), facts.profile(), facts.activity(), parameters);
         int maintenance = estimate.maintenanceKcal();
-        Optional<Direction> direction = direction(facts.phase(), facts.targetKcal(), maintenance);
+        Optional<Direction> direction = direction(facts.phase(), facts.targetKcal(), maintenance,
+                parameters.wholeNumber(ParameterKey.PROJECTION_MIN_GAP_KCAL));
         if (direction.isEmpty()) {
             return new NotShown(Closed.NO_DIRECTION);
         }
         double heightM = facts.profile().heightCm() / CM_PER_M;
-        double bmi = weight / (heightM * heightM);
-        if (direction.get() == Direction.LOSS && bmi < parameters.number(ParameterKey.PROJECTION_LOSS_MIN_BMI)) {
+        // In decimal: 64.8 / 1.8² is 19.999999999999996 in floating point, and BMI 20 is not under 20.
+        BigDecimal heightSquared = BigDecimal.valueOf(facts.profile().heightCm()).movePointLeft(2).pow(2);
+        BigDecimal bmi = trend.get().divide(heightSquared, MathContext.DECIMAL64);
+        if (direction.get() == Direction.LOSS && bmi.compareTo(BigDecimal.valueOf(parameters.number(ParameterKey.PROJECTION_LOSS_MIN_BMI))) < 0) {
             return new NotShown(Closed.LOW_BMI_LOSS);
+        }
+        if (!EnergyBalanceModel.reaches(new EnergyBalanceModel.Start(facts.sex(), facts.profile(), weight, estimate.restingKcal(), maintenance),
+                parameters)) {
+            return new NotShown(Closed.OUTSIDE_MODEL);
         }
 
         Run run = new Run(facts, parameters, weight, estimate.restingKcal(), maintenance, direction.get(), heightM);
@@ -121,11 +131,14 @@ public final class ShapeProjection {
                 scenarios);
     }
 
-    /** A cut under maintenance loses, a bulk over it gains; anything else has nowhere to go. */
-    private static Optional<Direction> direction(Phase phase, int targetKcal, int maintenanceKcal) {
+    /**
+     * A cut at least projection_min_gap_kcal under maintenance loses, a bulk as far over it gains; anything closer has nowhere
+     * to go the model could tell from staying put (its own error is wider, H12 M7-M8).
+     */
+    private static Optional<Direction> direction(Phase phase, int targetKcal, int maintenanceKcal, int minGap) {
         return switch (phase) {
-            case CUT -> targetKcal < maintenanceKcal ? Optional.of(Direction.LOSS) : Optional.empty();
-            case BULK -> targetKcal > maintenanceKcal ? Optional.of(Direction.GAIN) : Optional.empty();
+            case CUT -> maintenanceKcal - targetKcal >= minGap ? Optional.of(Direction.LOSS) : Optional.empty();
+            case BULK -> targetKcal - maintenanceKcal >= minGap ? Optional.of(Direction.GAIN) : Optional.empty();
         };
     }
 
@@ -167,9 +180,13 @@ public final class ShapeProjection {
             return EnergyBalanceModel.weightsKg(start, facts.targetKcal(), day -> intake, days, parameters);
         }
 
-        /** The lowest maintenance the model runs on: under it its physical activity term turns negative (H12 M5). */
+        /**
+         * The lowest maintenance the model runs on: under resting / (1 − βTEF) its physical activity term turns negative (H12
+         * M5). Rounded up to the next whole kcal and one more, so floating point cannot land a hair under it (review finding:
+         * a 500 for small older women).
+         */
         private double lowestMaintenance() {
-            return resting / (1 - parameters.number(ParameterKey.ENERGY_MODEL_THERMIC_EFFECT_RATIO));
+            return Math.ceil(resting / (1 - parameters.number(ParameterKey.ENERGY_MODEL_THERMIC_EFFECT_RATIO))) + 1;
         }
 
         /** Any week losing more than the plan's own weekly cap: min(kg, share of that week's starting weight). */

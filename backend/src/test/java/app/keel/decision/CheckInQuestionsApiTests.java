@@ -249,6 +249,15 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    void aHardStopNotYetAppliedClosesTheShapeProjection() throws Exception {
+        // K-613 review (U13): the hard stop is pending, the plan still holds the cut — no number may say where a loss would go.
+        AccountId account = womanOnALowPlan();
+        answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES")));
+
+        assertThat(map(send(account, "GET", "/v1/projection", null))).isEqualTo(Map.of("shown", false, "reason", "SAFETY_HOLD"));
+    }
+
+    @Test
     void herYesIsTheHardStopUnderAGeneralLabelAndItsApplyingEndsTheDeficit() throws Exception {
         // ADR-020 L-1, ADR-027 #18: the call is kept, its reason a general label; the answer leaves no trace. Applied, the
         // plan turns to building at no less than maintenance, watched (K-222).

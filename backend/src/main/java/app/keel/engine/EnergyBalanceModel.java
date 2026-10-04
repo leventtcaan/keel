@@ -92,6 +92,20 @@ public final class EnergyBalanceModel {
         return weights;
     }
 
+    /**
+     * Whether the model reaches this person at all: a starting fat over 0 (Jackson 2002 turns negative near BMI 15 in a young
+     * man), lean tissue left over, and a maintenance at least resting energy / (1 − βTEF) (eq. 8). A caller asks first rather
+     * than catching the refusal (K-613: a projection says "not shown", never an error).
+     */
+    public static boolean reaches(Start start, Parameters parameters) {
+        try {
+            new Body(start, start.maintenanceKcal() * KJ_PER_KCAL, parameters);
+            return true;
+        } catch (IllegalArgumentException outside) {
+            return false;
+        }
+    }
+
     /** The model's constants for one person, and the rates of change of the state. Energies in kJ, masses in kg, time in days. */
     private static final class Body {
 

@@ -615,9 +615,12 @@ class DecisionService {
         if (inForce.targetKcal() == null) {
             return notShown(ShapeProjection.Closed.TOO_EARLY);
         }
+        // Held: a hard stop applied (SafetyHolds), or the latest call a safety call not yet applied — the plan still holds the
+        // cut, but the call says stop (K-613 review, U13).
+        boolean held = week.safetyHold() || current(account).filter(call -> Boolean.TRUE.equals(call.decision().get("safety"))).isPresent();
         ShapeProjection.Facts facts = new ShapeProjection.Facts(week.today(), week.sex(), week.body(),
                 week.profile().activity().map(activity -> ActivityLevel.valueOf(activity.name())), inForce.phase(), new WeightSeries(week.weights()),
-                inForce.targetKcal(), week.safetyHold());
+                inForce.targetKcal(), held);
         return switch (ShapeProjection.of(facts, week.parameters())) {
             case ShapeProjection.NotShown(ShapeProjection.Closed why) -> notShown(why);
             case ShapeProjection.Shown shown -> Map.of("shown", true, "todayKg", shown.todayKg(), "direction", shown.direction().name(),

@@ -181,3 +181,9 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M8"
     note: "Aralık hiçbir zaman bundan dar değil: gözetimli çalışmalarda bile kısa vadeli ortalama mutlak hata 1,7-2,5 kg (Dent 2023'ün aktardığı); üst ucu."
+  - key: projection_min_gap_kcal
+    value: 100
+    unit: kcal_per_day
+    tag: urun
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M7"
+    note: "Plan bakıma bundan yakınsa projeksiyon yok (NO_DIRECTION, K-613 inceleme bulgusu). Türetme: 100 kcal ≈ 420 kJ/gün; başparmak kuralıyla (100 kJ/gün ≈ 1 kg, yarısı ~1 yılda) 26 haftada ~1-1,5 kg — aralığın 2,5 kg tabanının altında, yani modelin kendi hatası içinde 'değişmez'den ayırt edilemez. Bakım her istekte trend kilosundan yeniden tahmin edildiği için açık bu değerlerden geçer."

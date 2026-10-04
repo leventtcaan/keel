@@ -185,7 +185,17 @@ class EnergyBalanceModelTests {
     }
 
     @Test
+    void settledOnFastingIsAPossibleStart() {
+        double[] weights = EnergyBalanceModel.weightsKg(MAN, 0, day -> 0, 3, parameters(Sex.MALE));
+
+        assertThat(weights[0]).isCloseTo(MAN.weightKg(), within(1e-9));
+        assertThat(weights[3]).isLessThan(weights[0]);
+    }
+
+    @Test
     void aSettledIntakeThatCannotBeEatenIsRefused() {
+        assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(MAN, Double.POSITIVE_INFINITY, day -> 2000, 3, parameters(Sex.MALE)))
+                .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(MAN, -1, day -> 2000, 3, parameters(Sex.MALE)))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(MAN, Double.NaN, day -> 2000, 3, parameters(Sex.MALE)))

@@ -11,8 +11,9 @@ modele nasıl girer, aralık nasıl kurulur, "yalnız ileri yön" sayıda ne dem
    telefon yalnız çizer (K-606). SCOFF sonucu sunucuya hiç gelmez (ADR-050).
 2. **Kapılar sırasıyla:** 18 yaş altı → `UNDER_AGE` · güvenlik ağı planı tutuyorsa → `SAFETY_HOLD` (U13; ek, H2'de yoktu) · ilk ve son
    tartı arası < 28 gün → `TOO_EARLY` ("4 hafta / 2 ölçüm"ün okunuşu — soru 95) · bu hafta tartı yok → `NO_RECENT_WEIGHT` · plan hedefe
-   gitmiyor (cut'ta hedef ≥ bakım, bulk'ta ≤) → `NO_DIRECTION` · BMI < 20 ve kayıp → `LOW_BMI_LOSS` (kazanım açık) · hiç güvenli senaryo
-   kalmadı → `NO_SAFE_SCENARIO`. Plan yoksa ya da hedefi yoksa `TOO_EARLY`.
+   en az 100 kcal gitmiyor (`projection_min_gap_kcal`; inceleme bulgusu) → `NO_DIRECTION` · BMI < 20 (ondalıkta) ve kayıp → `LOW_BMI_LOSS`
+   (kazanım açık) · modelin ulaşmadığı beden (Jackson yağı ≤ 0) → `OUTSIDE_MODEL` · hiç güvenli senaryo kalmadı → `NO_SAFE_SCENARIO`.
+   Plan yoksa ya da hedefi yoksa `TOO_EARLY`; uygulanmamış güvenlik kararı da `SAFETY_HOLD`.
 3. **Senaryo:** planın %p tutulması = günlerin %p'sinde planın kalorisi, kalanında bakım → ortalama alım `bakım + p × (hedef − bakım)`
    (soru 96). Bakım keel'in tahmini (Mifflin × aktivite, bugünkü trend kilosunda). Model bugünkü trend kilosundan, **plana oturmuş**
    başlar (ADR-051 §4). Ufuk 26 hafta (H2 §4.2'nin "6 ay"ı).

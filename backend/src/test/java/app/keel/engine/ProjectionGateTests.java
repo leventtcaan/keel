@@ -122,6 +122,91 @@ class ProjectionGateTests {
                 .contains(new BigDecimal("0.6")).doesNotContain(new BigDecimal("0.95"));
     }
 
+    @Test
+    void eachRangeIsTheModelWithMaintenanceAMegajouleEitherSide() {
+        // ADR-052 §4: the same food, true maintenance 1 MJ (239 kcal) higher → the low end, lower → the high end (capped at
+        // today's weight). Both settled on the plan, like the middle number.
+        ShapeProjection.Scenario mid = ((ShapeProjection.Shown) ShapeProjection.of(cut(ADULT, "90", 35, MAINTENANCE - 500), MALE)).scenarios().get(1);
+        double intake = MAINTENANCE - 0.8 * 500;
+        double megajoule = 1000 / 4.184;
+        double higher = end(MAINTENANCE + megajoule, intake);
+        double lower = end(MAINTENANCE - megajoule, intake);
+
+        assertThat(mid.lowKg().doubleValue()).isCloseTo(Math.min(higher, mid.kg().doubleValue() - 2.5), within(0.05));
+        assertThat(mid.highKg().doubleValue()).isCloseTo(Math.min(90, Math.max(lower, mid.kg().doubleValue() + 2.5)), within(0.05));
+    }
+
+    @Test
+    void aPlanWithinAHundredKcalOfMaintenanceHasNowhereToGo() {
+        // Review finding: 1 kcal under maintenance drew three scenarios that never moved. projection_min_gap_kcal (100).
+        for (int gap : new int[] {0, 1, 99}) {
+            assertThat(ShapeProjection.of(cut(ADULT, "90", 35, MAINTENANCE - gap), MALE)).as("cut %d", gap)
+                    .isEqualTo(new ShapeProjection.NotShown(ShapeProjection.Closed.NO_DIRECTION));
+            assertThat(ShapeProjection.of(facts(ADULT, "90", 35, Phase.BULK, MAINTENANCE + gap), MALE)).as("bulk %d", gap)
+                    .isEqualTo(new ShapeProjection.NotShown(ShapeProjection.Closed.NO_DIRECTION));
+        }
+        assertThat(ShapeProjection.of(cut(ADULT, "90", 35, MAINTENANCE - 100), MALE)).isInstanceOf(ShapeProjection.Shown.class);
+        assertThat(ShapeProjection.of(facts(ADULT, "90", 35, Phase.BULK, MAINTENANCE + 100), MALE)).isInstanceOf(ShapeProjection.Shown.class);
+    }
+
+    @Test
+    void eighteenIsAnAdult() {
+        assertThat(ShapeProjection.of(cut(new Profile(18, 180), "90", 35, 2700), MALE)).isInstanceOf(ShapeProjection.Shown.class);
+    }
+
+    @Test
+    void bmiTwentyExactlyIsNotUnderTwenty() {
+        // Test analysis: 64.8 / 1.8² is 19.999999999999996 in floating point; BMI is read in decimal.
+        assertThat(ShapeProjection.of(cut(ADULT, "64.8", 35, 2300), MALE)).isNotEqualTo(new ShapeProjection.NotShown(ShapeProjection.Closed.LOW_BMI_LOSS));
+    }
+
+    @Test
+    void aCutMayReachBelowBmiTwentyButNotBelowEighteenAndAHalf() {
+        // 68 kg at 180 cm (BMI 21) on a gentle cut: the range reaches under 64.8 kg (BMI 20) — allowed — and stays over 59.9 kg.
+        ShapeProjection.Shown shown = (ShapeProjection.Shown) ShapeProjection.of(cut(ADULT, "68", 35, 2500), MALE);
+
+        assertThat(shown.scenarios()).anySatisfy(scenario -> assertThat(scenario.lowKg().doubleValue()).isLessThan(64.8));
+        assertThat(shown.scenarios()).allSatisfy(scenario -> assertThat(scenario.lowKg().doubleValue()).isGreaterThanOrEqualTo(59.9));
+    }
+
+    @Test
+    void aBodyTheModelDoesNotReachIsNotShownNeverAnError() {
+        // Test analysis: a young man at BMI 14.9 on a bulk — Jackson's starting fat is under 0 (H12 M4); gaining is open under
+        // BMI 20, so the model must say so, not throw (a 500 over the API).
+        Profile young = new Profile(18, 185);
+        ShapeProjection.Facts facts = new ShapeProjection.Facts(TODAY, Sex.MALE, young, Optional.of(ActivityLevel.ACTIVE), Phase.BULK,
+                series(daily(TODAY.minusDays(34), TODAY, "51")), 3400, false);
+
+        assertThat(ShapeProjection.of(facts, MALE)).isEqualTo(new ShapeProjection.NotShown(ShapeProjection.Closed.OUTSIDE_MODEL));
+    }
+
+    @Test
+    void aSmallOlderWomanOnABulkIsAnswered() {
+        // Review finding: maintenance 1 MJ lower hit the model's lowest maintenance, and rounding made it throw (a 500).
+        Parameters female = parameters(Sex.FEMALE);
+        Profile small = new Profile(63, 140);
+        int maintenance = InitialTarget.estimate(Sex.FEMALE, new BigDecimal("38"), small, Optional.of(ActivityLevel.INACTIVE), female).maintenanceKcal();
+        ShapeProjection.Facts facts = new ShapeProjection.Facts(TODAY, Sex.FEMALE, small, Optional.of(ActivityLevel.INACTIVE), Phase.BULK,
+                series(daily(TODAY.minusDays(34), TODAY, "38")), maintenance + 200, false);
+
+        assertThat(ShapeProjection.of(facts, female)).isNotNull();
+    }
+
+    @Test
+    void theSafetyNetComesBeforeEverythingButAge() {
+        // U13: held, it says so even before four weeks of weigh-ins.
+        ShapeProjection.Facts early = cut(ADULT, "90", 10, MAINTENANCE - 500);
+        ShapeProjection.Facts held = new ShapeProjection.Facts(early.today(), early.sex(), early.profile(), early.activity(), early.phase(),
+                early.weights(), early.targetKcal(), true);
+
+        assertThat(ShapeProjection.of(held, MALE)).isEqualTo(new ShapeProjection.NotShown(ShapeProjection.Closed.SAFETY_HOLD));
+    }
+
+    private static double end(double maintenance, double intake) {
+        EnergyBalanceModel.Start start = new EnergyBalanceModel.Start(Sex.MALE, ADULT, 90, 1880, maintenance);
+        return EnergyBalanceModel.weightsKg(start, MAINTENANCE - 500, day -> intake, 26 * 7, MALE)[26 * 7];
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
 
     private static ShapeProjection.Facts cut(Profile profile, String kg, int days, int targetKcal) {

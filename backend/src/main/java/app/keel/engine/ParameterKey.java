@@ -158,7 +158,8 @@ public enum ParameterKey {
     PROJECTION_ADHERENCE_MID(ParameterDomain.PROJECTION, Unit.RATIO),
     PROJECTION_ADHERENCE_HIGH(ParameterDomain.PROJECTION, Unit.RATIO),
     PROJECTION_MAINTENANCE_UNCERTAINTY_KJ_PER_DAY(ParameterDomain.PROJECTION, Unit.KJ_PER_DAY),
-    PROJECTION_ERROR_FLOOR_KG(ParameterDomain.PROJECTION, Unit.KG);
+    PROJECTION_ERROR_FLOOR_KG(ParameterDomain.PROJECTION, Unit.KG),
+    PROJECTION_MIN_GAP_KCAL(ParameterDomain.PROJECTION, Unit.KCAL_PER_DAY);
 
     private final ParameterDomain domain;
     private final Unit unit;

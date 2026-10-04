@@ -30,7 +30,8 @@ class ForwardOnlyTests {
         Sex sex = male ? Sex.MALE : Sex.FEMALE;
         Profile profile = new Profile(age, cm);
         int maintenance = InitialTarget.estimate(sex, BigDecimal.valueOf(kg), profile, Optional.of(activity), parameters(sex)).maintenanceKcal();
-        ShapeProjection.Projection projection = ShapeProjection.of(facts(sex, profile, kg, Phase.CUT, maintenance - deficit), parameters(sex));
+        ShapeProjection.Projection projection = ShapeProjection.of(facts(sex, profile, kg, Phase.CUT, maintenance - deficit, Optional.of(activity)),
+                parameters(sex));
         Assume.that(projection instanceof ShapeProjection.Shown);
         ShapeProjection.Shown shown = (ShapeProjection.Shown) projection;
         double floor = parameters(sex).number(ParameterKey.PROJECTION_ERROR_FLOOR_KG);
@@ -54,7 +55,8 @@ class ForwardOnlyTests {
         Profile profile = new Profile(age, cm);
         Assume.that(kg / ((cm / 100.0) * (cm / 100.0)) >= 16);
         int maintenance = InitialTarget.estimate(sex, BigDecimal.valueOf(kg), profile, Optional.of(activity), parameters(sex)).maintenanceKcal();
-        ShapeProjection.Projection projection = ShapeProjection.of(facts(sex, profile, kg, Phase.BULK, maintenance + surplus), parameters(sex));
+        ShapeProjection.Projection projection = ShapeProjection.of(facts(sex, profile, kg, Phase.BULK, maintenance + surplus, Optional.of(activity)),
+                parameters(sex));
         Assume.that(projection instanceof ShapeProjection.Shown);
         ShapeProjection.Shown shown = (ShapeProjection.Shown) projection;
         double floor = parameters(sex).number(ParameterKey.PROJECTION_ERROR_FLOOR_KG);
@@ -75,13 +77,37 @@ class ForwardOnlyTests {
         Profile profile = new Profile(35, cm);
         Assume.that(kg / ((cm / 100.0) * (cm / 100.0)) >= 16);
         int maintenance = InitialTarget.estimate(sex, BigDecimal.valueOf(kg), profile, Optional.empty(), parameters(sex)).maintenanceKcal();
-        ShapeProjection.Projection projection = ShapeProjection.of(facts(sex, profile, kg, Phase.CUT, maintenance - deficit), parameters(sex));
+        ShapeProjection.Projection projection = ShapeProjection.of(facts(sex, profile, kg, Phase.CUT, maintenance - deficit, Optional.empty()),
+                parameters(sex));
 
         double bmi = kg / ((cm / 100.0) * (cm / 100.0));
         if (bmi < parameters(sex).number(ParameterKey.PROJECTION_LOSS_MIN_BMI)) {
             assertThat(projection).isEqualTo(new ShapeProjection.NotShown(ShapeProjection.Closed.LOW_BMI_LOSS));
         } else {
             assertThat(projection).isNotEqualTo(new ShapeProjection.NotShown(ShapeProjection.Closed.LOW_BMI_LOSS));
+        }
+    }
+
+    @Property(tries = 100)
+    void noShownScenarioLosesFasterThanThePlansWeeklyCap(@ForAll @IntRange(min = 60, max = 160) int kg, @ForAll @IntRange(min = 155, max = 200) int cm,
+            @ForAll boolean male, @ForAll @IntRange(min = 300, max = 1600) int deficit) {
+        // The cap is min(1 kg, 1 % of the weight) a week (safety.yaml): the kilo arm binds over 100 kg, the share arm under it.
+        Sex sex = male ? Sex.MALE : Sex.FEMALE;
+        Profile profile = new Profile(35, cm);
+        Parameters p = parameters(sex);
+        InitialTarget.Estimate estimate = InitialTarget.estimate(sex, BigDecimal.valueOf(kg), profile, Optional.empty(), p);
+        int target = estimate.maintenanceKcal() - deficit;
+        ShapeProjection.Projection projection = ShapeProjection.of(facts(sex, profile, kg, Phase.CUT, target, Optional.empty()), p);
+        Assume.that(projection instanceof ShapeProjection.Shown);
+
+        EnergyBalanceModel.Start start = new EnergyBalanceModel.Start(sex, profile, kg, estimate.restingKcal(), estimate.maintenanceKcal());
+        for (ShapeProjection.Scenario scenario : ((ShapeProjection.Shown) projection).scenarios()) {
+            double intake = estimate.maintenanceKcal() + scenario.adherence().doubleValue() * (target - estimate.maintenanceKcal());
+            double[] weights = EnergyBalanceModel.weightsKg(start, target, day -> intake, 26 * 7, p);
+            for (int day = 7; day < weights.length; day++) {
+                double cap = Math.min(p.number(ParameterKey.WEEKLY_LOSS_CAP_KG), p.number(ParameterKey.WEEKLY_LOSS_CAP_PCT_BODYWEIGHT) * weights[day - 7]);
+                assertThat(weights[day - 7] - weights[day]).as("%s, day %d", scenario.adherence(), day).isLessThanOrEqualTo(cap);
+            }
         }
     }
 
@@ -100,8 +126,8 @@ class ForwardOnlyTests {
         }
     }
 
-    private static ShapeProjection.Facts facts(Sex sex, Profile profile, int kg, Phase phase, int targetKcal) {
-        return new ShapeProjection.Facts(TODAY, sex, profile, Optional.empty(), phase,
+    private static ShapeProjection.Facts facts(Sex sex, Profile profile, int kg, Phase phase, int targetKcal, Optional<ActivityLevel> activity) {
+        return new ShapeProjection.Facts(TODAY, sex, profile, activity, phase,
                 series(daily(TODAY.minusDays(34), TODAY, String.valueOf(kg))), targetKcal, false);
     }
 }
