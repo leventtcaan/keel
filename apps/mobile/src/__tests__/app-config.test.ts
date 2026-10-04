@@ -43,6 +43,12 @@ test('a meal photo (K-408): the picker’s permission texts are the copy file’
   expect((base.expo.plugins as Plugin[]).some((p) => (Array.isArray(p) ? p[0] : p) === 'expo-image-picker')).toBe(false);
 });
 
+test('the level reads the accelerometer, which needs no permission (K-601): no motion permission text at all', () => {
+  const sensors = (config.plugins as Plugin[]).filter((p) => (Array.isArray(p) ? p[0] : p) === 'expo-sensors');
+  // Left out, expo-sensors' plugin runs on its own and writes its own English text — none from the copy file (K2).
+  expect(sensors).toEqual([['expo-sensors', { motionPermission: false }]]);
+});
+
 test('everything else in app.json is kept', () => {
   expect(config.name).toBe(base.expo.name);
   expect(config.ios?.usesAppleSignIn).toBe(true);

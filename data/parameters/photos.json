@@ -1,0 +1,44 @@
+{
+  "parameters": [
+    {
+      "key": "photo_level_tolerance_deg",
+      "value": 2,
+      "unit": "degrees",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "The tilt the capture screen still calls level (K-601). H1 2.4: a level/tilt indicator is one of the three cheap aids that standardise the pose (Wong 2021: pose standardisation halves the precision error); the research gives no tolerance. Two degrees: within what a hand on a phone stand holds, small enough that the frame does not visibly lean. Product choice, no source for the number."
+    },
+    {
+      "key": "photo_ghost_opacity",
+      "value": 0.35,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "How strongly the last photo of the same pose shows over the viewfinder (H1 2.4: onion-skin overlay of the previous photo). Faint enough to see the live picture through it, strong enough to line up with. Product choice."
+    },
+    {
+      "key": "photo_timer_seconds",
+      "value": 10,
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "The self-timer (prototype 4.1 '10 s timer'): H1 2.4 asks for a fixed distance with the camera at chest height, so the phone stands and the user steps back into the frame. Product choice."
+    },
+    {
+      "key": "photo_level_update_ms",
+      "value": 200,
+      "unit": "milliseconds",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "How often the capture screen reads the accelerometer for its level (K-601): five times a second follows a hand without redrawing on every sensor tick. Product choice."
+    },
+    {
+      "key": "photo_jpeg_quality",
+      "value": 0.9,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "The camera's JPEG compression for a progress photo (expo-camera takePictureAsync quality, 0-1). Kept on the phone only and compared by eye; high enough that the outline is sharp. Product choice."
+    }
+  ]
+}

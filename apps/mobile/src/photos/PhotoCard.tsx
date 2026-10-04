@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -55,7 +56,12 @@ export function PhotoCard({ today, flowWeek }: Props) {
         .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' })),
     [photos, report],
   );
-  useEffect(() => void read(), [read]);
+  // Read whenever Progress comes into view: back from taking photos (K-601), the card shows them.
+  useFocusEffect(
+    useCallback(() => {
+      void read();
+    }, [read]),
+  );
 
   const remove = async () => {
     setAsking(false);
@@ -97,6 +103,7 @@ export function PhotoCard({ today, flowWeek }: Props) {
       </Text>
       <Text style={[styles.text, { color: color.textSecondary }]}>{windowText(photoWindow(last, today, flowWeek))}</Text>
       {count}
+      <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />
       {deleting}
       {failed && <Text style={[styles.text, { color: color.text }]}>{t('photos.deleteFailed')}</Text>}
     </Card>
