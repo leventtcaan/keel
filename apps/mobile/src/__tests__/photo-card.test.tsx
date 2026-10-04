@@ -132,6 +132,8 @@ test('a folder that cannot be read: reported by name, no card rather than a wron
   await show('over');
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'FileSystemError' });
   expect(screen.queryByTestId('photo-card')).toBeNull();
+});
+
 test('"Take photos" opens the guided capture (K-601); coming back, the card reads the folder again', async () => {
   await show('over');
   await fireEvent.press(screen.getByRole('button', { name: t('photos.take') }));

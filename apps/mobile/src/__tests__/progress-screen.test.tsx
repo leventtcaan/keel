@@ -16,14 +16,19 @@ import type { TrainData } from '@/train/trainData';
 type Schemas = components['schemas'];
 
 const mockPush = jest.fn();
-let mockFocus: (() => void) | null = null;
+// Every part of the tab that reads on focus (the strength chart's reads, the photos card): a focus runs them all.
+const mockFocusEffects = new Set<() => void>();
+const mockFocus = () => mockFocusEffects.forEach((effect) => effect());
 jest.mock('expo-router', () => ({
   router: { push: (to: unknown) => mockPush(to) },
   useRouter: () => ({ push: (to: unknown) => mockPush(to) }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
-    mockFocus = effect;
-    React.useEffect(effect, [effect]);
+    React.useEffect(() => {
+      mockFocusEffects.add(effect);
+      effect();
+      return () => void mockFocusEffects.delete(effect);
+    }, [effect]);
   },
 }));
 
@@ -306,7 +311,7 @@ test('a picked lift gone from the next read: the first lift shown, no crash', as
   await show();
   await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
   mockHistory = { state: 'ready', value: [workout('2026-09-28', [set('squat', 100, 5, 1)])] };
-  await act(async () => mockFocus?.());
+  await act(async () => mockFocus());
   expect(screen.getByTestId('strength-latest')).toHaveTextContent('120 kg');
 });
 

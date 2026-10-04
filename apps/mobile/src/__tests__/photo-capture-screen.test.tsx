@@ -29,7 +29,7 @@ jest.mock('expo-camera', () => {
       };
       return [permission, request];
     },
-    CameraView: React.forwardRef((_props: object, ref: React.Ref<unknown>) => {
+    CameraView: React.forwardRef(function CameraView(_props: object, ref: React.Ref<unknown>) {
       React.useImperativeHandle(ref, () => ({ takePictureAsync: mockTake }));
       return null;
     }),

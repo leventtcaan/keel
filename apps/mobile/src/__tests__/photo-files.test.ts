@@ -121,23 +121,30 @@ function sources(dir: string): string[] {
 const uncommented = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const code = (file: string) => uncommented(fs.readFileSync(file, 'utf8'));
 /** What a file under src/photos may import: nothing that talks to a server. */
-const ALLOWED = [/^react$/, /^react-native$/, /^react-native-svg$/, /^expo-file-system$/, /^expo-router$/, /^@\/components\//, /^@\/copy$/,
-  /^@\/theme\//, /^@\/settings\/Confirm$/, /^@\/services\/ServicesProvider$/, /^@\/onboarding\/params$/, /^@\/train\/program$/, /^\.\//,
+const ALLOWED = [/^react$/, /^react-native$/, /^react-native-svg$/, /^react-native-safe-area-context$/, /^expo-file-system$/, /^expo-router$/,
+  /^expo-camera$/, /^expo-image-picker$/, /^expo-sensors$/, /^@\/components\//, /^@\/copy$/, /^@\/theme\//, /^@\/settings\/Confirm$/,
+  /^@\/services\/ServicesProvider$/, /^@\/onboarding\/params$/, /^@\/train\/program$/, /^@\/photos\//, /^\.\//,
   /^(\.\.\/)+data\/parameters\/[a-z]+\.json$/];
+/** The one thing taken from a module that also talks to the server: the calendar day (`today.ts` holds `load` too). */
+const LOCAL_DAY_ONLY = /^import \{ localDay \} from '@\/today\/today';$/m;
 /** Ways to reach the network, or the API client, by any name. */
 const NETWORK = /\bapi\b|\bfetch\b|XMLHttpRequest|WebSocket|sendBeacon|EventSource|upload|axios/i;
 
 const PHOTOS = path.resolve(__dirname, '../photos');
+/** Every file that handles a progress photo: the photos folder and the capture screen (K-601). */
+const HANDLERS = () => [...sources(PHOTOS), path.resolve(__dirname, '../app/photo-capture.tsx')];
 
-test('no file under src/photos can reach the network: it imports nothing that does, and names no way to', () => {
-  const imports = sources(PHOTOS).flatMap((file) =>
-    [...code(file).matchAll(/from\s+['"]([^'"]+)['"]|require\(\s*['"]([^'"]+)['"]\s*\)|import\(\s*['"]([^'"]+)['"]\s*\)/g)].map(
-      (m) => `${path.relative(PHOTOS, file)}: ${m[1] ?? m[2] ?? m[3]}`,
-    ),
-  );
+test('no file that handles a photo can reach the network: it imports nothing that does, and names no way to', () => {
+  const imports = HANDLERS().flatMap((file) => {
+    // The calendar day alone may come from today.ts; anything else from it is a way to the server.
+    const text = code(file).replace(LOCAL_DAY_ONLY, '');
+    return [...text.matchAll(/from\s+['"]([^'"]+)['"]|require\(\s*['"]([^'"]+)['"]\s*\)|import\(\s*['"]([^'"]+)['"]\s*\)/g)].map(
+      (m) => `${path.basename(file)}: ${m[1] ?? m[2] ?? m[3]}`,
+    );
+  });
   expect(imports.length).toBeGreaterThan(0);
   expect(imports.filter((line) => !ALLOWED.some((ok) => ok.test(line.split(': ')[1])))).toEqual([]);
-  expect(sources(PHOTOS).filter((file) => NETWORK.test(code(file))).map((file) => path.relative(PHOTOS, file))).toEqual([]);
+  expect(HANDLERS().filter((file) => NETWORK.test(code(file))).map((file) => path.basename(file))).toEqual([]);
 });
 
 test('the scan catches the ways a photo could be sent', () => {
@@ -155,5 +162,7 @@ test('the scan catches the ways a photo could be sent', () => {
   expect(allowed('openapi-fetch')).toBe(false);
   expect(allowed('@/today/today')).toBe(false); // it holds load(), which calls the server
   expect(allowed('./library')).toBe(true);
+  expect(LOCAL_DAY_ONLY.test("import { localDay } from '@/today/today';")).toBe(true);
+  expect(LOCAL_DAY_ONLY.test("import { load, localDay } from '@/today/today';")).toBe(false);
   expect(uncommented('a(); // never uploaded\n/* fetch */ b("file://x")')).toBe('a(); \n b("file://x")');
 });
