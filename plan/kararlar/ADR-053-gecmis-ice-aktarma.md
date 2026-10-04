@@ -18,8 +18,9 @@ Biçimler: `arastirma/ham/H13-ice-aktarma-bicimleri.md` (üreticiler sütun yay�
 ## Karar
 1. **İçe aktarılan geçmiş görülür, karara girmez.** Motorun ve kural okumalarının hepsi (karar, check-in soruları, ilk 8 hafta,
    uyum/tutarlılık, antrenman durumu, projeksiyon) içe aktarılanı okumaz: kilo `source = IMPORT` dışarıda (`Measurements.dailyWeights`,
-   `latestWeightKg`), içe aktarılan seans (`imported_from` dolu) dışarıda (`TrainingLog`'un üç sorgusu). Ekranlar (kilo trendi, tartı listesi, antrenman listesi →
-   telefondaki güç grafiği K-604) hepsini gösterir. Böylece içe aktarma **hiçbir kararı değiştirmez**: aynı hesap, aynı kendi verisi,
+   `latestWeightKg`), içe aktarılan seans (`imported_from` dolu) dışarıda (`TrainingLog`'un üç sorgusu). Ekranlar (kilo trendi ve tartı ekranının "Year" görünümü,
+   tartı listesi, antrenman listesi ve hareket geçmişi) hepsini gösterir. **Güç grafiği (K-604) göstermez:** e1RM RIR ister (K-218), dosyalarda RIR
+   yok ve uydurulmaz (U1) — soru 102. Böylece içe aktarma **hiçbir kararı değiştirmez**: aynı hesap, aynı kendi verisi,
    içe aktarmalı ve içe aktarmasız → aynı çağrılar (`FirstDecisionNotBeforeMondayTests`).
 2. **Kilo geçmişi (K-616):** Apple Health'ten bir kez, kullanıcı isteyince (Ayarlar). Okunan aralık `health_weight_import_days`
    (365, `urun`) öncesinden **eşitleme penceresinin başına** (`health_weight_read_days`) kadar; pencerenin içi zaten düzenli eşitlemede

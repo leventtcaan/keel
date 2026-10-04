@@ -25,3 +25,4 @@
 
 ## Aktarım sırası (Part 4 · İçe aktarma, paylaşım)
 15. K-615 içe aktarılan geçmiş, sunucu (`K-615.md`, ADR-053) — kaynakla dışlama, toplu uç, hepsi ya da hiçbiri, ilk gün güvenlik ağı hatası
+16. K-616 Health kilo geçmişi (`K-616.md`) — tek seferlik okuma, clientId ile tekillik, arka planda gönderim, "Year" görünümü
