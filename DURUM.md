@@ -807,6 +807,15 @@ eşleme ekranı (#124). Biçim kaynağı `arastirma/ham/H13` — Strong/Hevy sü
 | K-609 Strong/Hevy CSV (telefon): `src/import/` (csv, formats — yalnız H13 başlıkları, match — birebir ya da 3 öneri, build — kg/dambıl/vücut ağırlığı/sınır/SHA-256 kimlik, send), `app/import.tsx`, `MoveRow` (öneri, arama, kendi hareketi), Ayarlar satırı (Expo Go'da da) | ⏳ dal `mobile/124-csv-import`, inceleme sürüyor — RED formats 11, match 9, build 12, send 3, ekran 13 (iskeletle), bölüm 2; sözleşme düzeltmesi (rıza yokken CONSENT_REQUIRED). **Kod incelemesi:** (92) "Pull Up (Assisted)" emin eşleşiyor, yardım ağırlığı ek yük olarak gidiyor (U5 + yanlış veri) → `assisted` ekipman kelimesi olmamalı; (85) kimlik sırası yalnız seti kalan seanslarla sayılıyor → seçimlere göre kimlik değişir (aynı başlangıçlı iki seans karışır); (82) katalog yüklenmeden dosya seçilirse hiçbir şey eşlenmez; (80) gönder eski `built`'i gönderebilir (asenkron yeniden kurulum yarışı, her dokunuşta yeniden SHA); (80) sonradan eşlenen hareketin setleri hiç gelmez (seans "zaten var") — metin söylemiyor; (80) tarama okuyucunun `./send`'i içe almasına izin veriyor; (85) `workout.sets` metni yanlışlıkla değişti ("Sets: 3"). Altında: yeniden denemede Done sayıları, Strong biriminin ön seçili gelmesi (H13 "kullanıcı seçer"), "1 sessions", rıza hatasında ekran takılı. **Ek bulgu (benim):** güç grafiği RIR'sız seti tahmin etmez → içe aktarılan setler grafikte yok, hareket geçmişinde var → ADR-053 düzeltilecek, soru 102 | — | — |
 
 ## Session sonunda Levent'e sorulacaklar
+**M6 Part 4 (102-) — 4 Eki:**
+102. **(ürün, K-609/K-604)** İçe aktarılan Strong/Hevy setlerinde RIR yok; güç grafiği (e1RM, K-218 Epley + RIR) RIR'sız seti tahmin etmez → içe aktarılan
+    geçmiş grafikte görünmez (hareket geçmişinde görünür). Seçenekler: (a) böyle kalsın — sayı uydurulmaz (U1), şimdiki; (b) RIR'sız sete "en az" tahmini
+    (RIR=0 → e1RM = yük × (1 + tekrar/30), alt sınır) grafikte ayrı işaretle; (c) içe aktarırken dosyadaki RPE'yi RIR'a çevir (10 − RPE; bu dosyalar için
+    doğrulanmadı, çoğu boş). Önerim (a), istersen (b).
+103. **(veri/ürün, K-609)** Aynı dosya ikinci kez içe aktarılırsa seanslar "zaten var" sayılır (dosyadan türeyen kimlik); ilk seferde dışarıda bırakılan
+    bir hareketi sonradan eklemek o seansları güncellemez. Hevy de "tek içe aktarma, geri al ve yeniden yükle" diyor. Uyguladığım: metin bunu söyler; geri
+    alma yok. İstersen: "içe aktarılanı geri al" (sunucuda kaynağa göre silme, küçük iş). Hangisi?
+
 **M6 Part 3 (97-) — 4 Eki:**
 97. **(veri dışarı/V1, K-614)** İlerleme fotoğrafları uygulamanın **belge klasöründe** (`progress-photos/`). iOS bu klasörü kullanıcının **iCloud/cihaz
     yedeğine** dahil eder; kurulu `expo-file-system` 57'de "yedekten hariç" ayarı yok. Onboarding metni "never uploaded. Not to us, not to anyone."
