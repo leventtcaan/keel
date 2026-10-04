@@ -12,11 +12,16 @@ Başta:
    olan varsa engellemeyen işle devam, sonda sor.
 
 Kapsam, sırayla:
+0) K-705 GET /v1/subscription (sunucu, sözleşme önce): telefonun yetkiyi ve durumu (TRIAL, CANCELLED + accessUntil, PAUSED…) sunucudan
+   okuması; fiyat yok. Part 1 ÇIKIŞ'taki "Part 2'nin bilmesi gerekenler"i oku (ENTITLEMENT_REQUIRED, appUserID, webhook gecikmesi).
 1) K-702 paywall, satın alma, geri yükleme, duraklat/iptal (telefon): `react-native-purchases` — `npx expo install` ile SDK 57 uyumlu
    sürüm (K5 gerekçesi PR'da, ADR-012'deki sürümü güncelle); native modül → Expo Go'da yok: satın alma bir **port** arkasında
    (bildirim/HealthKit kalıbı), testte sahte, cihazda gerçek. Fiyatlar mağazadan okunur (kodda fiyat yok, K2); deneme ve yenileme dili
    açık (Apple 3.1.2 — metin en.json'da); geri yükleme düğmesi; duraklat ve iptal iki dokunuşta (Apple'ın abonelik yönetimine derin
-   bağlantı); satın alma sonrası yetki sunucudan okunur (istemciye güvenilmez, ADR-012). Paywall'ın ne zaman göründüğü (deneme bitince,
+   bağlantı); satın alma sonrası yetki sunucudan okunur (istemciye güvenilmez, ADR-012; K-705 — webhook 5-60 sn gecikir, kısa yeniden sorma).
+   RevenueCat'e `appUserID` = hesabın UUID'si (girişten sonra `logIn`, çıkışta `logOut`); yoksa olaylar anonim kimlikle gelir ve sunucu
+   onları yok sayar (ADR-056 #3). Sunucunun 403 ENTITLEMENT_REQUIRED'ı (koç, öğün kelime/fotoğraf) paywall'u açar — bugün telefon onu
+   "failed" gösteriyor (`coach/conversation.ts`, `food/photo.ts`). Paywall'ın ne zaman göründüğü (deneme bitince,
    premium bir özelliğe dokununca) — ürün sorusuysa Levent'e.
 2) Cihaz adımları (K-308 yapıldıysa): sandbox satın alma, geri yükleme, iptal; yapılmadıysa DURUM'a.
 

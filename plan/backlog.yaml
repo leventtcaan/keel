@@ -2985,7 +2985,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-701, K-306]
+    depends_on: [K-701, K-306, K-705]
     why: "$59,99/yıl · $12,99/ay · 7 gün deneme; iptal görünür"
     acceptance:
       - "Fiyatlar mağazadan okunur, kodda yok"
@@ -3029,6 +3029,24 @@ tasks:
       - "RevenueCatRefreshTests (sahte HTTP)"
     refs: ["plan/kararlar/ADR-056-yetki-sunucuda.md"]
     learn: ["Webhook + REST uzlaştırma"]
+
+  - id: K-705
+    title: "subscription: telefon için abonelik durumu (GET /v1/subscription)"
+    milestone: M7
+    module: subscription
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-701]
+    why: "Paywall ve ayarlar ekranı yetkiyi sunucudan okur (ADR-012: istemciye güvenilmez); 'deneme', 'şu tarihte biter', 'duraklatıldı' der (ADR-056 #5 status)"
+    acceptance:
+      - "Sözleşmede GET /v1/subscription: active, status (ya da hiç), accessUntil; fiyat yok"
+      - "Satın alma sonrası webhook gecikmesi (5-60 sn) için telefon kısa süre yeniden sorar; sunucu ucu yalnız okur"
+      - "Hesabı olmayan/abonesiz kullanıcı için 200 + active=false (hata değil)"
+    tests:
+      - "SubscriptionStatusApiTests"
+    refs: ["plan/kararlar/ADR-056-yetki-sunucuda.md", "plan/kararlar/ADR-012-abonelik-ve-kota.md"]
+    learn: ["Sunucu doğruluğu, istemci görünümü"]
 
 # ───────────────────────────── M8 · Uyum ve yasal ─────────────────────────────
   - id: K-801
