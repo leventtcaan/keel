@@ -200,7 +200,11 @@ describe('restoring', () => {
 test('the wait is the parameter file\'s, read as written', () => {
   const file = jest.requireActual('../../../../data/parameters/subscription.json') as { parameters: { key: string; value: number }[] };
   const value = (key: string) => file.parameters.find((p) => p.key === key)?.value;
-  expect(subscriptionParams).toEqual({ confirmAttempts: value('subscription_confirm_attempts'), confirmIntervalMs: value('subscription_confirm_interval_ms') });
+  expect(subscriptionParams).toEqual({
+    confirmAttempts: value('subscription_confirm_attempts'),
+    confirmIntervalMs: value('subscription_confirm_interval_ms'),
+    trialReminderDaysBefore: value('trial_reminder_days_before'),
+  });
 });
 
 test("load tells the subscription's 403 apart from the consent's (K-703: ENTITLEMENT_REQUIRED opens the way to the plans)", async () => {

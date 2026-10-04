@@ -1,5 +1,5 @@
 /**
- * The subscription gate after onboarding (K-706, ADR-058 #1): an account that never subscribed reaches the tabs only through
+ * The subscription gate after onboarding (K-706, ADR-058 › 107): an account that never subscribed reaches the tabs only through
  * the paywall; an account with any subscription kept — an ended one too — does not meet it (the deterministic mode, K-703).
  * The server decides; its last answer is kept on the phone, so airplane mode does not open the gate and a subscriber is not
  * locked out offline. Without the store in the build, or without both legal links, the gate is never closed.

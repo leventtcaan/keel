@@ -11,6 +11,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
 import type { Plan } from '@/subscription/store';
+import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
 import { paywallWords, planWords } from '@/subscription/words';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -33,7 +34,7 @@ function stepOf(opened: Opened): Step {
 
 type Props = {
   /**
-   * The gate after onboarding (K-706, ADR-058 #1): no way to close it; once the server sees the subscription, "Continue" calls
+   * The gate after onboarding (K-706, ADR-058 › 107): no way to close it; once the server sees the subscription, "Continue" calls
    * `onActive` and the gate asks again (the tabs open) — on a tap, never by itself, so the moment is said first.
    */
   required?: boolean;
@@ -115,7 +116,7 @@ export function Paywall({ required = false, onActive }: Props) {
   const text = (words: string, tone: 'text' | 'textSecondary' | 'muted' = 'text') => (
     <Text style={[styles.text, { color: color[tone] }]}>{words}</Text>
   );
-  // The gate has no way out but the plans (and the account, on its own screen): ADR-058 #1.
+  // The gate has no way out but the plans (and the account, on its own screen): ADR-058 › 107.
   const close = required ? null : <Button label={t('subscription.close')} variant="ghost" size="sm" onPress={() => router.back()} />;
 
   let body: React.ReactNode;
@@ -136,6 +137,7 @@ export function Paywall({ required = false, onActive }: Props) {
     body = (
       <View style={styles.part}>
         {text(t('subscription.active'))}
+        <TrialReminderOffer />
         {onward}
       </View>
     );

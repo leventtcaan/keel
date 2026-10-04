@@ -11,7 +11,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * The gate after onboarding (K-706, ADR-058 #1): an account that never subscribed sees the plans, with no way to close them.
+ * The gate after onboarding (K-706, ADR-058 › 107): an account that never subscribed sees the plans, with no way to close them.
  * Its account stays reachable — export, delete (App Review 5.1.1(v): deletion in the app, without paying), sign out. Once the
  * server sees a purchase or a restore the gate asks again and the root layout opens the tabs. Not known yet (nothing kept on
  * this phone): it asks, and waits.

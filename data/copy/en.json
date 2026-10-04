@@ -1752,6 +1752,15 @@
     "checking": "Checking your subscription…",
     "checkFailed": "Couldn't check your subscription. Try again in a moment.",
     "continue": "Continue",
+    "reminderOffer": "{days} days before it ends: a reminder on this phone, if you'd like one.",
+    "reminder": {
+      "title": "Your free trial ends on {date}",
+      "body": "It renews then unless you cancel. To cancel: Settings, then Subscription.",
+      "ask": "Remind me before it ends",
+      "set": "We'll remind you on {date}.",
+      "refused": "Notifications for keel are off in iOS Settings, so there's no reminder.",
+      "failed": "Couldn't set the reminder. Try again in a moment."
+    },
     "failed": "The App Store couldn't show the plans. Try again in a moment.",
     "tryAgain": "Try again",
     "buying": "Waiting for the App Store…",

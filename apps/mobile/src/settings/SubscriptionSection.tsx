@@ -7,6 +7,8 @@ import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { restorePurchases, wait } from '@/subscription/paywall';
+import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
+import { dayWords } from '@/subscription/words';
 import { load } from '@/today/today';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -17,13 +19,10 @@ import { useAction } from './useAction';
 type Subscription = components['schemas']['Subscription'];
 type Read = { state: 'loading' } | { state: 'ready'; subscription: Subscription } | { state: 'failed' };
 
-// "Oct 11, 2026": the phone's own calendar day of the moment, in English like every word of the app.
-const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
 /** What the server keeps, in words: none, or the status with the day its access ends (or ended). */
 function stateWords(subscription: Subscription): string {
   if (subscription.status === undefined) return t('settings.subscription.none');
-  const date = subscription.accessUntil === undefined ? '' : DAY.format(new Date(subscription.accessUntil));
+  const date = subscription.accessUntil === undefined ? '' : dayWords(subscription.accessUntil);
   return t(`settings.subscription.status.${subscription.status}`, { date });
 }
 
@@ -101,6 +100,7 @@ export function SubscriptionSection() {
   return (
     <Section title={t('settings.subscription.title')}>
       <Text style={[styles.label, { color: color.text }]}>{stateWords(subscription)}</Text>
+      <TrialReminderOffer subscription={subscription} />
       {manageable && purchases.available && manageButton}
       {manageable && purchases.available && note(t('settings.subscription.manageNote'))}
       {manageable && !purchases.available && note(t('settings.subscription.unavailable'))}

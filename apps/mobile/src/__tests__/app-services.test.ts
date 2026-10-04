@@ -274,6 +274,19 @@ test('signed in already when the app starts: the gate is asked at once — and w
   expect(cold.gate.current()).toBe('open');
 });
 
+test('the trial reminder (K-707) goes with the session: cancelled at sign-out, under its own id', async () => {
+  const cancelled: string[] = [];
+  const alerts = { permission: async () => ({ granted: true, canAskAgain: false }), alertAt: async () => {}, cancel: async (id: string) => void cancelled.push(id) };
+  const kv = memoryKv();
+  kv.items.set('subscription.trialReminder', '2026-10-09T12:00:00.000Z'); // asked for earlier
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv, locale: 'en-US', alerts });
+  await services.session.signIn(SESSION);
+  await services.signOut();
+  await settle();
+  expect(cancelled).toContain('trial');
+  expect(await services.trialReminder.when()).toBeNull();
+});
+
 test('without the store or the legal links in the build, the gate is open (a development build is not locked)', async () => {
   const { services } = await setup();
   expect(services.gate.current()).toBe('open');

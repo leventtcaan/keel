@@ -42,7 +42,14 @@ jest.mock('expo-router', () => {
 let mockStore: SubscriptionStore;
 const mockApi = { GET: mockGET };
 const mockReport = jest.fn();
-const mockServices = { api: mockApi, get purchases() { return mockStore; }, report: (problem: { name: string }) => mockReport(problem.name) };
+const mockServices = {
+  api: mockApi,
+  get purchases() {
+    return mockStore;
+  },
+  report: (problem: { name: string }) => mockReport(problem.name),
+  trialReminder: { keep: async () => {}, when: async () => null, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
+};
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
 
@@ -179,4 +186,14 @@ test('a restore that fails says so and is reported by name', async () => {
   await press(t('subscription.restore'));
   expect(screen.getByText(t('subscription.restoreFailed'))).toBeOnTheScreen();
   expect(mockReport).toHaveBeenCalledWith('StoreError_10');
+});
+
+test('during a trial the reminder is offered here too (K-707); not otherwise', async () => {
+  await show(sub('TRIAL', true));
+  expect(screen.getByRole('button', { name: t('subscription.reminder.ask') })).toBeOnTheScreen();
+});
+
+test('renewing: no reminder offer', async () => {
+  await show(sub('ACTIVE', true));
+  expect(screen.queryByRole('button', { name: t('subscription.reminder.ask') })).toBeNull();
 });

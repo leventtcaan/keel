@@ -5,7 +5,16 @@
  */
 import { t } from '@/copy';
 
+import { subscriptionParams } from './params';
 import type { Plan } from './store';
+
+// "Oct 11, 2026": the phone's own calendar day of a moment, in English like every word of the app.
+const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+/** A moment (ISO, or a Date) as the day it falls on, on this phone. */
+export function dayWords(moment: string | Date): string {
+  return DAY.format(typeof moment === 'string' ? new Date(moment) : moment);
+}
 
 /** "7 days", "1 week": the trial in the store's own unit. */
 function span(trial: NonNullable<Plan['trial']>): string {
@@ -32,7 +41,13 @@ export function paywallWords(plan: Plan): { title: string; terms: string[]; acti
   }
   return {
     title: t('subscription.titleTrial', { trial: span(plan.trial) }),
-    terms: [t('subscription.today'), t(`subscription.after.${plan.period}`, { price: plan.price }), cancel],
+    // The reminder is offered, never promised: it needs the user's tap and iOS's yes (K-707, ADR-058 › 105).
+    terms: [
+      t('subscription.today'),
+      t('subscription.reminderOffer', { days: String(subscriptionParams.trialReminderDaysBefore) }),
+      t(`subscription.after.${plan.period}`, { price: plan.price }),
+      cancel,
+    ],
     action: t('subscription.startTrial'),
   };
 }
