@@ -138,3 +138,10 @@
 - takıldım: App Store'da duraklatma yok (kabul kriteri düzeltildi); inceleme her görevde gerçek hata buldu — girişte tek başarısız istek kapıyı açıyordu, `ledger`/`what-if` korumasızdı, Apple ücret aldıktan sonra "olmadı" diyebiliyordu, ayarlar satın almadan sonra tazelenmiyordu, hatırlatma satın alma saatinde çalıyordu; macOS harf çakışması (`Paywall.tsx`↔`paywall.ts`); disk 4,6 → 1,5 GB
 - sıradaki: Levent dönünce M7 Part 2 aktarımı (README 3-6; Part 1: 1-2); disk; K-308 + RevenueCat/ASC kurulumu; sonra M8 Part 1
 - AI: bütün kod, test, ADR, prompt agent; ürün soruları Levent (AskUserQuestion, 105-107)
+
+## 2026-10-04 · M8 Part 1 (Metinler ve envanter) — toplu mod
+- yaptım: ADR-059 (Levent: hukuki inceleme yok, Pages bu repodan, ASC M10, vergi M11) + Ek 1; ADR-060; K-801 #375 (envanter 37 tablo sütun düzeyinde göçlere bağlı, politika/şartlar/feragatname, Pages canlı), K-808 #377 (rıza metni, soru 57), K-806 #378, K-809 #379, K-803 #380, #381 (sorumlu adı, sunucu bölgesi)
+- karar: metinler koddan; katı SQL okuyucu; sağlık sınıfı sunucunun şemalarına bağlı; feragat istisnası cümle cümle; yayından önce iki kontrol; 18+ override zorunlu (Apple)
+- takıldım: olgu denetimi 14 yanlış/eksik cümle buldu (oturum süresi, sayaç, RevenueCat, güvenlik durağı geri alınmaz, yağ tahmini saklı); envanter 7 gerçek açık (silinen UUID event_publication'da, Apple jetonu iptal yok…) → K-802; kişi adı istisnası hiç çalışmamıştı; Docker budandı 1,5 → 20 GB
+- sıradaki: Levent dönünce M8 Part 1 aktarımı (docs/aktarim/M8/README.md 1-5); iletişim adresi; sonra M8 Part 2 (`plan/oturum-promptlari/M8-part2.md`)
+- AI: bütün kod, test, ADR, metin agent; ürün/hukuk/para soruları Levent (AskUserQuestion, başta 6 + sonda 5)
