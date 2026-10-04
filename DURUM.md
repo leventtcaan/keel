@@ -672,7 +672,7 @@ Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` �
 |---|---|---|
 | 1 · Geçmiş ve sinyaller | K-535, K-534, K-608, K-603, K-611, K-610 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 87-93 |
 | 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-613 (K-606'dan bölündü), K-606 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 94-96 |
-| 3 · Efor ve fotoğraf | K-604, K-601, K-602 | — |
+| 3 · Efor ve fotoğraf | K-604, K-601, K-602 | ⏳ sürüyor (4 Eki) |
 | 4 · İçe aktarma, paylaşım, teslim | K-609, K-612 · M6 çıkışı · M7 prompt'ları | — |
 
 **Part 1 başı (3 Eki):** senkron tamam — M5 ÇIKIŞ git ile tutarlı (K-514 #327, K-408 #328, K-515 #329 birleşik; açık PR yok; worktree
@@ -751,6 +751,17 @@ pozitifte yeniden deneme yok; H2 §4.3 tam eşik seti.
 - **CI gürültüsü (izle):** public'e geçişten sonraki ilk `main` koşusunda `today-screen` ve `workout-screen`'in **ilk testi** 5 sn Jest sınırını aştı
   (soğuk render); aynı ağaç PR'da ve yeniden koşuda yeşil. Tekrarlarsa bu iki dosyada ilk render'a zaman aşımı payı ya da ısınma — kanıtla, tahminle değil.
 - **Yeni sorular:** 94-96 (aşağıda).
+
+**Part 3 başı (4 Eki):** senkron tamam — Part 2 ÇIKIŞ git ile tutarlı (#342, #344, #345, #346 birleşik; açık PR yok; worktree yalnız `../keel-main`;
+`M6-*-devam` yok). Ana checkout ayrık HEAD 1 commit gerideydi → `origin/main` (ef94a13). Bağımlılıklar `done` (K-406, K-218, K-301). **K-308 hâlâ `doing`**
+(cihaz derlemesi yok) → K-601 kamera kılavuzu kod + test + simülatörde galeri yolu; cihaz adımı Levent'te. Dependabot: aynı 3 geçişli uyarı. Disk **4,4 GB**
+(npm/brew önbelleği temizlendi; Docker sanal diski 17 GB, soru 80). Bir simülatör (iPhone 16 Pro Max, iOS 18.1) zaten açık.
+**K-604 kararı (teknik):** e1RM telefonda **yeni formülle hesaplanmaz** — K-218'in aynası `train/summary.ts › e1rm` (ADR-033'te rekorlar da onu kullanır,
+`MobileParameterMirrorTests` sabitleri eşler); kaynak ADR-033'teki geçmiş (sunucu listesi 365 gün + gönderilmemiş). Sunucuya yeni uç açılmadı.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-604 efor grafiği: `progress/strength.ts` (haftanın en iyi e1RM'i, 90 gün, halka = aynı yük + aynı tekrar + daha çok RIR), `chartScale.ts` (etiket = çizginin gerçek en az/en çoğu, kendi yüksekliğinde), `StrengthChart`/`StrengthSection`, İlerleme sekmesi gerçek ekran (projeksiyon girişi korundu; `Placeholder` silindi); parametreler `evaluation_window_days` (ayna), `effort_call_window_weeks` (2, 03 §5) | ⏳ inceleme | — | — |
 
 ## Session sonunda Levent'e sorulacaklar
 **M6 Part 2 (94-) — 4 Eki:**
