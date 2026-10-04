@@ -79,7 +79,10 @@ describe('legal texts (K-801, ADR-060)', () => {
       .replace(/&[a-z]+;|&#\d+;/g, '')
       .replace(/[*_`]/g, '')
       .replace(/\s+/g, ' ');
-  const pages = walk(dir).map((file) => [path.relative(dir, file), plain(fs.readFileSync(file, 'utf8'))] as const);
+  // The controller's name, the law asks for, stands only in _config.yml's controller_name (ADR-060 #6, ADR-059 Ek 1): that one
+  // line is taken out before anything is read, while its underscores are still there to find it.
+  const withoutController = (text: string) => text.replace(/^controller_name:.*$/m, '');
+  const pages = walk(dir).map((file) => [path.relative(dir, file), plain(withoutController(fs.readFileSync(file, 'utf8')))] as const);
   const negations = (forbidden as { legalNegations?: string[] }).legalNegations ?? [];
 
   test('reads every page and the config', () => {
@@ -112,13 +115,15 @@ describe('legal texts (K-801, ADR-060)', () => {
   });
 
   test('no page names a person (K-523)', () => {
-    // The controller's name, the law asks for, comes from _config.yml's controller_name only (ADR-060 #6).
     const names = forbidden.personNames;
-    const offenders = pages.flatMap(([name, text]) => {
-      const scanned = name === '_config.yml' ? text.replace(/controller_name: "[^"]*"/, '') : text;
-      return (scanned.match(new RegExp(names.pattern, 'g')) ?? []).map((m) => `${name}: ${m}`);
-    });
+    const offenders = pages.flatMap(([name, text]) => (text.match(new RegExp(names.pattern, 'g')) ?? []).map((m) => `${name}: ${m}`));
     expect(offenders).toEqual([]);
+  });
+
+  test('only the controller_name line is taken out', () => {
+    const config = 'title: Legal\ncontroller_name: "Levent X"\nnote: Levent\n';
+    expect(withoutController(config)).not.toContain('Levent X');
+    expect(plain(withoutController(config))).toMatch(new RegExp(forbidden.personNames.pattern));
   });
 });
 

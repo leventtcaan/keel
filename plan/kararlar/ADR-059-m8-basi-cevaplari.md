@@ -63,3 +63,12 @@ K-801, K-803, K-805 (M11), K-806; `data/copy/en.json` (sağlık rızası metni);
 ## Doğrulama
 K-801 PR'ı: envanter testi (göçlerdeki her tablo envanterde, envanterdeki her tablo göçlerde), yasaklı ifade taraması metinlerde, yayımlanan
 adresler HTTP 200, paywall yapılandırması iki adresi okuyor.
+
+## Ek 1 · Part 1 sonu cevapları (Levent, 2026-10-04)
+- **Veri sorumlusu:** Levent Can Ceylan (gerçek kişi; App Store satıcı adıyla aynı). Ad yalnız `docs/yasal/site/_config.yml › controller_name`'de;
+  sayfalar onu yapılandırmadan gösterir, kişi adı taraması o alanı ayırır (ADR-060 #6).
+- **İletişim adresi:** Levent ayrı bir adres açacak; gelene kadar yer tutucu (`contact_email`). Lansmandan (ve dış TestFlight'tan) önce dolmalı.
+- **Sunucu bölgesi:** Contabo VPS Almanya (AB) → `server_region: Germany (EU)`. AB dışı aktarım yalnız RevenueCat (SCC). K-901 bölgeyi doğrular.
+- **GDPR Md. 27 (AB temsilcisi):** M10'da karar (lansman ülke listesi AB'yi içeriyor mu); o zamana kadar DURUM › Riskler.
+- **İç yağ tahmini (Md. 15 ↔ U4):** uygulamada ve dışa aktarmada sayı olarak gösterilmez; kullanıcı isterse e-postayla iletilir — politika bunu söyler,
+  kod değişmez.
