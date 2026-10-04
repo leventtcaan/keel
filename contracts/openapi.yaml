@@ -2509,7 +2509,7 @@ components:
             again from what the session holds, with the finish's answer on form (K-432); a target a newer session set stays.
     ImportSource:
       type: string
-      description: The app an imported session came from (K-615); its file formats are arastirma/ham/H13.
+      description: The app an imported session came from (K-615).
       enum: [STRONG, HEVY]
     WorkoutImport:
       type: object

@@ -102,7 +102,7 @@ class MeasurementController {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(api.range(from, to));
         ZoneId zone = measurements.zoneOf(account);
-        return store.weighIns(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant());
+        return store.weighIns(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant(), true);
     }
 
     @DeleteMapping("/v1/weigh-ins/{id}")
@@ -157,14 +157,15 @@ class MeasurementController {
         return new ActivityDay(stored.day(), stored.steps(), stored.sleepMinutes(), stored.activeEnergyKcal());
     }
 
-    /** The engine's trend (WeightTrend, trend_display_days) on the daily weights, for each day that has one. */
+    /** The engine's trend (WeightTrend, trend_display_days) on the daily weights, imported ones too, for each day that has one. */
     @GetMapping("/v1/weight-trend")
     List<TrendPoint> trend(AccountId account, @RequestParam LocalDate from, @RequestParam LocalDate to) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         require(api.range(from, to));
         ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         int days = parameters.forSex(Sex.valueOf(profile.sex().name())).wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
-        WeightSeries series = new WeightSeries(measurements.dailyWeights(account, from.minusDays(days - 1L), to));
+        // The history imported too: it is there to be seen (ADR-053); the engine's own reads leave it out.
+        WeightSeries series = new WeightSeries(measurements.dailyWeightsWithImported(account, from.minusDays(days - 1L), to));
         List<TrendPoint> points = new ArrayList<>();
         // No point for a day that has not happened yet in the user's time zone.
         LocalDate last = to.isAfter(today(profile.timeZone())) ? today(profile.timeZone()) : to;

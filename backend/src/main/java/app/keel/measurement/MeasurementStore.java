@@ -64,17 +64,21 @@ class MeasurementStore {
     }
 
     /** Weigh-ins in [from, to), oldest first. */
-    List<WeighIn> weighIns(AccountId account, Instant from, Instant to) {
+    /** Weigh-ins in [from, to), oldest first; the imported ones (IMPORT, K-616) only when asked for (ADR-053). */
+    List<WeighIn> weighIns(AccountId account, Instant from, Instant to, boolean imported) {
         return jdbc.sql("""
                 select * from measurement.weigh_in where account_id = :account and measured_at >= :from and measured_at < :to
+                  and (:imported or source <> 'IMPORT')
                 order by measured_at, id""")
                 .param("account", account.value()).param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
-                .query((row, n) -> weighIn(row)).list();
+                .param("imported", imported).query((row, n) -> weighIn(row)).list();
     }
 
-    /** The latest weigh-in's weight, whenever it was. */
+    /** The latest weigh-in's weight, whenever it was; not an imported one (ADR-053). */
     Optional<BigDecimal> latestKg(AccountId account) {
-        return jdbc.sql("select kg from measurement.weigh_in where account_id = :account order by measured_at desc, id desc limit 1")
+        return jdbc.sql("""
+                select kg from measurement.weigh_in where account_id = :account and source <> 'IMPORT'
+                order by measured_at desc, id desc limit 1""")
                 .param("account", account.value()).query(BigDecimal.class).optional();
     }
 

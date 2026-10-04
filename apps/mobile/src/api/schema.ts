@@ -1742,7 +1742,7 @@ export interface components {
             setsNextTargets?: boolean;
         };
         /**
-         * @description The app an imported session came from (K-615); its file formats are arastirma/ham/H13.
+         * @description The app an imported session came from (K-615).
          * @enum {string}
          */
         ImportSource: "STRONG" | "HEVY";

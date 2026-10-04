@@ -96,12 +96,12 @@ class WorkoutController {
     }
 
     /**
-     * Contract Workout. {@code setsNextTargets}, on a finished session of the program: whether an edit of its sets can
+     * Contract Workout. {@code importedFrom}: only on a session imported from another app's export (K-615). {@code setsNextTargets}, on a finished session of the program: whether an edit of its sets can
      * move a target of its day — one that came from it or an older session, or a move with none yet (K-432).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<LoggedSet> sets,
-            Boolean setsNextTargets) {
+            ImportSource importedFrom, Boolean setsNextTargets) {
     }
 
     /** Contract LoggedSet. */
@@ -226,7 +226,7 @@ class WorkoutController {
         Boolean setsNextTargets = workout.endedAt() == null || workout.programDayId() == null ? null
                 : ProgramStore.movesATarget(targetSources.getOrDefault(workout.programDayId(), List.of()), workout.startedAt());
         return new Workout(workout.id(), workout.clientId(), workout.startedAt(), workout.endedAt(), workout.programDayId(), workout.note(),
-                store.sets(workout.id()).stream().map(LoggedSet::of).toList(), setsNextTargets);
+                store.sets(workout.id()).stream().map(LoggedSet::of).toList(), workout.importedFrom(), setsNextTargets);
     }
 
     private static void require(boolean valid) {
