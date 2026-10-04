@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Stream;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
@@ -50,6 +51,24 @@ class MigrationTests {
                 where table_schema = 'public' and table_name = 'event_publication'""").query(String.class).set())
                 .containsExactlyInAnyOrder("id", "listener_id", "event_type", "serialized_event", "publication_date",
                         "completion_date", "status", "completion_attempts", "last_resubmission_date");
+    }
+
+    @Test
+    void theCleanupOfCompletedPublicationsKeepsTheOnesNotYetDone() throws IOException {
+        // V34 (K-802) ran on an empty database here; it is run again on rows of each kind. A deletion still failed or
+        // in flight must survive it: removing one would lose a deletion the user was told was made.
+        String listener = "test.V34#" + java.util.UUID.randomUUID();
+        for (String status : List.of("COMPLETED", "FAILED", "PUBLISHED")) {
+            jdbc.sql("""
+                    insert into event_publication (id, listener_id, event_type, serialized_event, publication_date, completion_date, status)
+                    values (gen_random_uuid(), :listener, 'test', :status, now(), case when :status = 'COMPLETED' then now() end, :status)""")
+                    .param("listener", listener).param("status", status).update();
+        }
+
+        jdbc.sql(Files.readString(MigrationConventions.DIRECTORY.resolve("V34__modulith_event_publication_completed.sql"))).update();
+
+        assertThat(jdbc.sql("select status from event_publication where listener_id = :listener").param("listener", listener)
+                .query(String.class).list()).containsExactlyInAnyOrder("FAILED", "PUBLISHED");
     }
 
     @Test

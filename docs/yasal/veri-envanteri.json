@@ -62,12 +62,12 @@
    "basis": "legitimate interest (Art. 6(1)(f)): keeping deletion and delivery reliable",
    "gated_by": null,
    "erased_by": [
-    "never"
+    "handled"
    ],
    "exported": false,
    "policy": "data-technical",
    "app_privacy": [],
-   "note": "Completed rows are kept (completion-mode update) and hold the deleted account's random id; purge belongs to K-802 (V1, ADR-023)."
+   "note": "A row is deleted once every listener has handled it (completion-mode delete, K-802); an unfinished or failed one stays until DeletionRetry finishes it. Holds only the deleted account's random id."
   },
   {
    "table": "identity.account",
@@ -85,6 +85,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "appleUserId",
    "policy": "data-account",
    "app_privacy": [
     "Identifiers › User ID"
@@ -136,6 +137,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "events",
    "policy": "data-consents",
    "app_privacy": []
   },
@@ -169,6 +171,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "goal",
    "policy": "data-profile",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -195,6 +198,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "weighIns",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -219,6 +223,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "waistMeasurements",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -243,6 +248,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "photoChecks",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -267,6 +273,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "bodyLooks",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -291,6 +298,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "activityDays",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -318,6 +326,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "workouts",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -350,6 +359,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "workouts[].sets",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -372,6 +382,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "program",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -397,6 +408,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "program.days",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -429,6 +441,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "program.days[].exercises",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -455,6 +468,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "programChanges",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -477,6 +491,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "programHistory",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -501,6 +516,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "gyms",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -523,6 +539,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "gyms[].platesKg",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -545,6 +562,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "gyms[].machineStepsKg",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -572,6 +590,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "customExercises",
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
@@ -704,6 +723,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "meals",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -739,6 +759,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "meals[].items",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -764,6 +785,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "recipes",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -790,6 +812,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "recipes[].items",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -817,6 +840,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "plan",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -850,6 +874,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "calls",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -877,6 +902,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "declaredStates",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -902,6 +928,7 @@
     "withdraw:HEALTH_DATA"
    ],
    "exported": true,
+   "export_key": "promptAnswers",
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
@@ -925,6 +952,7 @@
     "time"
    ],
    "exported": true,
+   "export_key": "dailyUses",
    "policy": "data-subscription",
    "app_privacy": [
     "Usage Data › Product Interaction"
@@ -948,6 +976,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "subscription",
    "policy": "data-subscription",
    "app_privacy": [
     "Purchases › Purchase History"
@@ -970,6 +999,7 @@
     "account_deletion"
    ],
    "exported": true,
+   "export_key": "subscriptionEvents",
    "policy": "data-subscription",
    "app_privacy": [
     "Purchases › Purchase History"

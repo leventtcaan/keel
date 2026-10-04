@@ -90,8 +90,8 @@ the import can carry body weight; imported sessions then stay in the training lo
 - When you delete your account or withdraw the health data consent, a short-lived record (only a random account number,
   which consent, and when) drives a second deletion pass; it is removed after that pass, about 10 minutes later.
 - Our server passes "account deleted" messages between its parts through an internal event log, so a deletion survives
-  a restart. Each entry holds only the random account number. These entries are currently kept after
-  they are handled; we are changing this so they are removed once handled.
+  a restart. Each entry holds only the random account number, and is removed as soon as every part has handled it
+  (usually within seconds; one that failed is retried, then removed).
 - Our server's logs record each request's route, status and timing. They never record your account, what you sent, or any
   health data.
 

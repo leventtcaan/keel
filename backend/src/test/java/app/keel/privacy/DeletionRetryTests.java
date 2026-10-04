@@ -21,6 +21,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -48,6 +49,9 @@ class DeletionRetryTests {
     @Autowired
     FlakyDeletion flaky;
 
+    @Autowired
+    JdbcClient jdbc;
+
     @Test
     void aFailedDeletionIsTriedAgainAndLoggedWithoutItsMessage(CapturedOutput log) throws Exception {
         AccountId account = TestSessions.newAccount();
@@ -55,19 +59,29 @@ class DeletionRetryTests {
         assertThat(mvc.delete().uri("/v1/account").header("Authorization", TestSessions.bearer(context, account)).exchange()).hasStatus(202);
         await(() -> flaky.calls(), 1);
         Thread.sleep(200); // the registry marks the publication failed after the listener throws
+        // Handled publications are deleted (K-802); the failed one is kept, or the retry would have nothing to resend.
+        assertThat(publicationsNaming(account, "%FlakyDeletion%")).as("the failed deletion, kept for its retry").isEqualTo(1);
 
         context.getBean(DeletionRetry.class).retry();
 
         await(() -> flaky.calls(), 2);
+        // Done by the retry, it is deleted too (Modulith completes a resubmission by id, not as the first try): the
+        // deleted account's id is in no publication left.
+        await(() -> publicationsNaming(account, "%"), 0);
         assertThat(log).contains("failure").contains("task=" + FlakyDeletion.class.getName() + "#on").doesNotContain(SECRET);
     }
 
-    private static void await(IntSupplier calls, int expected) throws InterruptedException {
+    private int publicationsNaming(AccountId account, String listener) {
+        return jdbc.sql("select count(*) from event_publication where listener_id like :listener and serialized_event like '%' || :id || '%'")
+                .param("listener", listener).param("id", account.value().toString()).query(Integer.class).single();
+    }
+
+    private static void await(IntSupplier count, int expected) throws InterruptedException {
         Instant deadline = Instant.now().plus(PATIENCE);
-        while (calls.getAsInt() < expected && Instant.now().isBefore(deadline)) {
+        while (count.getAsInt() != expected && Instant.now().isBefore(deadline)) {
             Thread.sleep(50);
         }
-        assertThat(calls.getAsInt()).as("deletion attempts").isEqualTo(expected);
+        assertThat(count.getAsInt()).isEqualTo(expected);
     }
 
     /** A module's deletion that fails the first time, as a lost connection would. */
