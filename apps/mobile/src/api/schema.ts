@@ -711,7 +711,7 @@ export interface paths {
          * @description Past sessions from another app's export (K-615, ADR-053), read on the phone (the file never leaves it). Each session
          *     is stored finished and marked with where it came from (Workout.importedFrom): it shows in the lists and the strength
          *     chart, and is never read by the engine — no call, check-in, consistency or training status counts it; nor does it
-         *     move a program target or reach Apple Health. Needs the health data consent (FORBIDDEN without it). All or nothing:
+         *     move a program target or reach Apple Health. Needs the health data consent (CONSENT_REQUIRED without it). All or nothing:
          *     one invalid session or set is VALIDATION_FAILED for the whole request. A session whose clientId is already stored
          *     is skipped (a retry is safe). A set's side is not known from such a file and is not stored (absent), on a
          *     unilateral move too.
