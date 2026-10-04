@@ -1366,6 +1366,7 @@ olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
 - 2026-09-29 · M0 gece kurulumu (yukarıda)
 
 ## Riskler
+- **GDPR Md. 27 AB temsilcisi (ADR-059 Ek 1):** AB'de yayın + sağlık verisi → temsilci gerekebilir (ücretli). Karar M10'da (ülke listesi).
 - **Yasal metinler avukattan geçmedi (ADR-059 #1, Levent'in kararı):** gizlilik politikası, şartlar, feragatname agent'ın resmî kaynaklardan
   yazdığı metinler; sağlık verisi (GDPR Md. 9) + AB kullanıcısı varken hata riski Levent'te. İnceleme her an eklenebilir.
 - **Türk ürün kapsamı (K-207):** USDA FDC Branded'da Türk markaları yok denecek kadar az ("ülker" 2 ithal kayıt,
