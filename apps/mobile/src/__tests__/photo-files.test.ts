@@ -131,8 +131,8 @@ const LOCAL_DAY_ONLY = /^import \{ localDay \} from '@\/today\/today';$/m;
 const NETWORK = /\bapi\b|\bfetch\b|XMLHttpRequest|WebSocket|sendBeacon|EventSource|upload|axios/i;
 
 const PHOTOS = path.resolve(__dirname, '../photos');
-/** Every file that handles a progress photo: the photos folder and the capture screen (K-601). */
-const HANDLERS = () => [...sources(PHOTOS), path.resolve(__dirname, '../app/photo-capture.tsx')];
+/** Every file that handles a progress photo: the photos folder, the capture screen (K-601) and the comparison (K-602). */
+const HANDLERS = () => [...sources(PHOTOS), ...['photo-capture.tsx', 'compare.tsx'].map((name) => path.resolve(__dirname, '../app', name))];
 
 test('no file that handles a photo can reach the network: it imports nothing that does, and names no way to', () => {
   const imports = HANDLERS().flatMap((file) => {

@@ -11,7 +11,8 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { shortDate } from '@/train/program';
 
-import type { PhotoCheck } from './library';
+import { comparison } from './compare';
+import { type PhotoCheck, POSES } from './library';
 import { type PhotoWindow, photoWindow } from './window';
 
 function windowText(window: PhotoWindow): string {
@@ -104,10 +105,16 @@ export function PhotoCard({ today, flowWeek }: Props) {
       <Text style={[styles.text, { color: color.textSecondary }]}>{windowText(photoWindow(last, today, flowWeek))}</Text>
       {count}
       <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />
+      {POSES.some((pose) => comparison(checks, pose) !== null) && <CompareLink />}
       {deleting}
       {failed && <Text style={[styles.text, { color: color.text }]}>{t('photos.deleteFailed')}</Text>}
     </Card>
   );
+}
+
+/** The way to the comparison anchor (K-602): only with two days of one pose to set side by side. */
+function CompareLink() {
+  return <Button label={t('photos.compare')} variant="ghost" size="sm" onPress={() => router.push('/compare')} />;
 }
 
 const styles = StyleSheet.create({
