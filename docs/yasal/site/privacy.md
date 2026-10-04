@@ -156,7 +156,8 @@ photos you choose to analyze (resized, with location and other metadata removed)
 Health data, name or email.
 
 We will use only a provider whose terms say it doesn't train its models on what it receives, and only once it has agreed
-to zero data retention — keeping none of what it receives once it has answered. Today's candidates set this out
+to zero data retention, under which it keeps nothing beyond the narrow exceptions its terms allow; this policy will state
+those exceptions. Today's candidates set this out
 differently: some keep requests for up to 30 days to check for abuse unless zero data retention is agreed, and they grant
 it only on request. This policy will name the provider, its country and how your data is protected when it leaves the
 EU before the AI coach is turned on. You can withdraw the AI consent at any time in Settings.
