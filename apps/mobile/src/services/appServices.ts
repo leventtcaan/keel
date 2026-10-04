@@ -18,6 +18,7 @@ import { type SessionManager, type SessionStorage, createSessionManager, refresh
 import { type StateService, createStateService } from '@/state/stateService';
 import { type SubscriptionGate, createSubscriptionGate } from '@/subscription/gate';
 import type { LegalLink } from '@/subscription/links';
+import { type TrialReminder, createTrialReminder } from '@/subscription/trialReminder';
 import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
 import { type Opens, createOpens } from '@/today/opens';
@@ -120,8 +121,10 @@ export type AppServices = {
   photos: PhotoLibrary;
   /** The App Store's side of the subscription (K-702); whether it is on is the server's answer (GET /v1/subscription). */
   purchases: SubscriptionStore;
-  /** After onboarding, an account that never subscribed meets the paywall first (K-706, ADR-058 #1). */
+  /** After onboarding, an account that never subscribed meets the paywall first (K-706, ADR-058 › 107). */
   gate: SubscriptionGate;
+  /** The trial reminder the user asked for (K-707): a billing notice under its own id, on this phone only. */
+  trialReminder: TrialReminder;
 };
 
 export async function createAppServices({
@@ -168,7 +171,11 @@ export async function createAppServices({
   // The program's week off reaches the reminders whenever the program is read (ADR-037 › 51b); they report their own failures.
   const training = createTrainingCache(kv, (program) => void reminders.keepRestUntil(program?.restUntil ?? null));
   const photos = createPhotoLibrary(photoFiles);
-  const gate = await createSubscriptionGate({ kv, api, purchases, links, report });
+  // iOS is asked only on the user's tap ("Remind me before it ends"), through the reminders' own access.
+  const trialReminder = createTrialReminder({ kv, alerts, ask: () => notifications.request(), now });
+  // Each answer the gate reads (every start, every sign-in) lets the trial reminder follow it: a trial cancelled anywhere —
+  // in Apple's sheet, in iOS Settings — loses its reminder at the next start (K-707 review).
+  const gate = await createSubscriptionGate({ kv, api, purchases, links, report, onRead: (read) => void trialReminder.keep(read).catch(reportName) });
   // Signed in already at the app's start: the kept answer routes at once, this one corrects it — and with nothing kept and no
   // answer (offline), the cold start opens the gate rather than lock the app with nothing to lift it (K-706).
   if (await session.isSignedIn()) void gate.refresh({ openWithoutAnswer: true });
@@ -214,6 +221,7 @@ export async function createAppServices({
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
+    trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     gate.forget().catch(reportError); // and whether this account met the paywall: the next one is asked afresh (K-706)
     purchases.forget().catch(reportError); // and the App Store's account: the next person's purchases are not this account's (K-702)
     // Not the progress photos (ADR-055 › 101): a refused refresh token (60 days away) would take the only copy, Day 1 too.
@@ -237,6 +245,7 @@ export async function createAppServices({
     photos,
     purchases,
     gate,
+    trialReminder,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     healthWriting,

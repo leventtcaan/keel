@@ -37,7 +37,15 @@ let mockStore: SubscriptionStore;
 // One api for the screen's life, as the app's services are built once (a new one each render would open the paywall again).
 const mockApi = { GET: mockGET };
 const mockReport = jest.fn();
-const mockServices = { api: mockApi, get purchases() { return mockStore; }, report: (problem: { name: string }) => mockReport(problem.name) };
+const mockServices = {
+  api: mockApi,
+  get purchases() {
+    return mockStore;
+  },
+  report: (problem: { name: string }) => mockReport(problem.name),
+  // The trial reminder's offer (K-707): its own behaviour is trial-reminder-offer.test.tsx.
+  trialReminder: { keep: async () => {}, when: async () => null, canRemind: () => true, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
+};
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 // No real waiting between the looks at the server.
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
@@ -112,6 +120,13 @@ test('bought, and the server sees it: subscribed, and a way back', async () => {
   expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
   await press(t('subscription.close'));
   expect(mockBack).toHaveBeenCalled();
+});
+
+test('bought into a trial: the reminder is offered (K-707)', async () => {
+  mockAnswers = [ok(NONE), ok(TRIAL)];
+  await show();
+  await press(t('subscription.startTrial'));
+  expect(screen.getByRole('button', { name: t('subscription.reminder.ask') })).toBeOnTheScreen();
 });
 
 test('bought, not seen in time: it can take a minute, and looking again asks the server — never buys again', async () => {

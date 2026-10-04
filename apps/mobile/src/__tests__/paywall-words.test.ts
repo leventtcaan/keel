@@ -17,10 +17,16 @@ test("each plan: its name and the store's price, the annual one's monthly share 
   expect(planWords({ ...ANNUAL, pricePerMonth: null }).body).toBe('$59.99 a year');
 });
 
-test('with a trial: what today costs, what is charged when it ends and that it renews until cancelled; the button starts the trial', () => {
+// ADR-058 › 105 (the product owner): the trial's terms say a reminder can come before it ends — offered, never promised.
+test('with a trial: what today costs, the reminder on offer, what is charged when it ends and that it renews until cancelled; the button starts the trial', () => {
   expect(paywallWords(ANNUAL)).toEqual({
     title: 'Try it free for 7 days',
-    terms: ['Today: full access, nothing charged.', 'When the trial ends: $59.99 a year, renewing every year until you cancel.', t('subscription.cancelNote')],
+    terms: [
+      'Today: full access, nothing charged.',
+      "2 days before it ends: a reminder on this phone, if you'd like one.",
+      'When the trial ends: $59.99 a year, renewing every year until you cancel.',
+      t('subscription.cancelNote'),
+    ],
     action: t('subscription.startTrial'),
   });
 });

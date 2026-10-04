@@ -22,7 +22,7 @@ export const unstable_settings = { anchor: '(tabs)' };
 // (tabs)/_layout.tsx; the app opens on the first one, Today. Signed out, the only screen is sign-in (K-305): when the
 // session ends (sign-out, a refused refresh) the guarded screens leave the history and sign-in takes their place.
 // Signed in without a profile, the only screens are onboarding's (K-306); not known yet, the one that asks the server.
-// Onboarded but never subscribed, the only screen is the gate (K-706, ADR-058 #1); not known yet, the gate asks.
+// Onboarded but never subscribed, the only screen is the gate (K-706, ADR-058 › 107); not known yet, the gate asks.
 function AppStack() {
   const { color } = useTheme();
   const signedIn = useSignedIn();

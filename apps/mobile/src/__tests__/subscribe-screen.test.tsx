@@ -1,5 +1,5 @@
 /**
- * The gate screen after onboarding (K-706, ADR-058 #1): an account that never subscribed sees the plans with no way to close
+ * The gate screen after onboarding (K-706, ADR-058 › 107): an account that never subscribed sees the plans with no way to close
  * them — but with its account: export, delete (App Review 5.1.1(v): deletion in the app, reachable without paying) and sign
  * out. Bought or restored, the gate asks the server again and the tabs open. Not known yet: it asks, and waits.
  */
@@ -39,6 +39,7 @@ const mockServices = {
   purchases: mockStore,
   gate: mockGate,
   report: () => {},
+  trialReminder: { keep: async () => {}, when: async () => null, canRemind: () => true, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
   // The account section (K-309): its own behaviour is settings-screen.test.tsx.
   exportData: jest.fn(async () => {}),
   deleteAccount: jest.fn(async () => {}),

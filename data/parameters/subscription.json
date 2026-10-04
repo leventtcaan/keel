@@ -15,6 +15,22 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-057-paywall-telefonda.md#D2",
       "note": "The wait between two of those questions."
+    },
+    {
+      "key": "trial_reminder_days_before",
+      "value": 2,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-058-m7-part2-cevaplari.md#105",
+      "note": "The trial reminder (K-707) fires this many days before the trial ends: time to decide and cancel before the first charge. Asked for by the user's tap; a billing notice, not one of the three reminder kinds (ADR-036)."
+    },
+    {
+      "key": "trial_reminder_hour",
+      "value": 10,
+      "unit": "hour_of_day",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-058-m7-part2-cevaplari.md#105",
+      "note": "The trial reminder rings at this hour of the phone's own day (K-707 review): never at the hour the trial happened to start — a purchase at 01:30 would ring at 01:30. Mid-morning, when a billing choice can be made."
     }
   ]
 }
