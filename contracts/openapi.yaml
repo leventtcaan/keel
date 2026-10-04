@@ -295,7 +295,8 @@ paths:
       summary: The trend weight per day (7-day average, the engine's WeightTrend)
       description: |
         One point per day, up to today in the user's time zone, whose 7 days hold at least one weigh-in (the day's first
-        counts). Needs the profile (NOT_FOUND without one). At most 400 days per request.
+        counts), imported ones too (the history is to be seen, ADR-053). Needs the profile (NOT_FOUND without one). At most
+        400 days per request.
       parameters:
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -885,6 +886,34 @@ paths:
       responses:
         "204":
           description: Deleted
+        default:
+          $ref: "#/components/responses/Error"
+
+  /v1/workout-imports:
+    post:
+      tags: [training]
+      operationId: importWorkouts
+      description: |
+        Past sessions from another app's export (K-615, ADR-053), read on the phone (the file never leaves it). Each session
+        is stored finished and marked with where it came from (Workout.importedFrom): it shows in the lists and the strength
+        chart, and is never read by the engine — no call, check-in, consistency or training status counts it; nor does it
+        move a program target or reach Apple Health. Needs the health data consent (FORBIDDEN without it). All or nothing:
+        one invalid session or set is VALIDATION_FAILED for the whole request. A session whose clientId is already stored
+        is skipped (a retry is safe). A set's side is not known from such a file and is not stored (absent), on a
+        unilateral move too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkoutImport"
+      responses:
+        "200":
+          description: How many sessions were stored now and how many were already there
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutImportResult"
         default:
           $ref: "#/components/responses/Error"
 
@@ -1725,6 +1754,9 @@ components:
     # ── measurement ──────────────────────────────────────────────────────────────────────────────────────────
     MeasurementSource:
       type: string
+      description: |
+        IMPORT is history brought in once (K-616, Apple Health's older weigh-ins): listed and in the trend, never read by
+        the engine — no call, check-in or tally counts it (ADR-053).
       enum: [MANUAL, APPLE_HEALTH, IMPORT]
     NewWeighIn:
       type: object
@@ -2465,12 +2497,86 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LoggedSet"
+        importedFrom:
+          description: Present only on a session imported from another app's export (K-615); the engine never reads it.
+          allOf:
+            - $ref: "#/components/schemas/ImportSource"
         setsNextTargets:
           type: boolean
           description: |
             On a finished session of the program only: whether adding or deleting one of its sets can move a target of its
             day — a target that came from it or an older session, or a move with no target yet. The target is then derived
             again from what the session holds, with the finish's answer on form (K-432); a target a newer session set stays.
+    ImportSource:
+      type: string
+      description: The app an imported session came from (K-615); its file formats are arastirma/ham/H13.
+      enum: [STRONG, HEVY]
+    WorkoutImport:
+      type: object
+      required: [source, workouts]
+      properties:
+        source:
+          $ref: "#/components/schemas/ImportSource"
+        workouts:
+          type: array
+          minItems: 1
+          maxItems: 20
+          description: At most import_workouts_per_request (data/parameters/import.json) sessions; each clientId once.
+          items:
+            $ref: "#/components/schemas/ImportedWorkout"
+    ImportedWorkout:
+      type: object
+      required: [clientId, startedAt, endedAt, sets]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          description: Not before startedAt.
+        sets:
+          type: array
+          minItems: 1
+          maxItems: 200
+          description: In the order they were done.
+          items:
+            $ref: "#/components/schemas/ImportedSet"
+    ImportedSet:
+      type: object
+      description: |
+        A set as the file had it, its move mapped on the phone: a catalog move or one of the user's own. The load follows
+        the move's Equipment (a DUMBBELL move: one dumbbell — the phone asked how the file counted them); a BODYWEIGHT move
+        is 0. No reps in reserve and no side: the file does not say.
+      required: [exerciseId, setType, loadKg, reps]
+      properties:
+        exerciseId:
+          type: string
+        setType:
+          type: string
+          enum: [WARM_UP, WORKING]
+        loadKg:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: At most 2 decimals.
+        reps:
+          type: integer
+          minimum: 1
+          maximum: 100
+    WorkoutImportResult:
+      type: object
+      required: [imported, alreadyThere]
+      properties:
+        imported:
+          type: integer
+          minimum: 0
+        alreadyThere:
+          type: integer
+          minimum: 0
+
     SetType:
       type: string
       description: |

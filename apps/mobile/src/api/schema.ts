@@ -216,7 +216,8 @@ export interface paths {
         /**
          * The trend weight per day (7-day average, the engine's WeightTrend)
          * @description One point per day, up to today in the user's time zone, whose 7 days hold at least one weigh-in (the day's first
-         *     counts). Needs the profile (NOT_FOUND without one). At most 400 days per request.
+         *     counts), imported ones too (the history is to be seen, ADR-053). Needs the profile (NOT_FOUND without one). At most
+         *     400 days per request.
          */
         get: operations["getWeightTrend"];
         put?: never;
@@ -692,6 +693,31 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["deleteSet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workout-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Past sessions from another app's export (K-615, ADR-053), read on the phone (the file never leaves it). Each session
+         *     is stored finished and marked with where it came from (Workout.importedFrom): it shows in the lists and the strength
+         *     chart, and is never read by the engine — no call, check-in, consistency or training status counts it; nor does it
+         *     move a program target or reach Apple Health. Needs the health data consent (FORBIDDEN without it). All or nothing:
+         *     one invalid session or set is VALIDATION_FAILED for the whole request. A session whose clientId is already stored
+         *     is skipped (a retry is safe). A set's side is not known from such a file and is not stored (absent), on a
+         *     unilateral move too.
+         */
+        post: operations["importWorkouts"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1311,7 +1337,11 @@ export interface components {
             /** Format: date-time */
             withdrawnAt?: string;
         };
-        /** @enum {string} */
+        /**
+         * @description IMPORT is history brought in once (K-616, Apple Health's older weigh-ins): listed and in the trend, never read by
+         *     the engine — no call, check-in or tally counts it (ADR-053).
+         * @enum {string}
+         */
         MeasurementSource: "MANUAL" | "APPLE_HEALTH" | "IMPORT";
         NewWeighIn: {
             clientId: components["schemas"]["ClientId"];
@@ -1702,12 +1732,53 @@ export interface components {
             /** @description The session's note, given at the finish (WorkoutFinish.note). */
             note?: string;
             sets: components["schemas"]["LoggedSet"][];
+            /** @description Present only on a session imported from another app's export (K-615); the engine never reads it. */
+            importedFrom?: components["schemas"]["ImportSource"];
             /**
              * @description On a finished session of the program only: whether adding or deleting one of its sets can move a target of its
              *     day — a target that came from it or an older session, or a move with no target yet. The target is then derived
              *     again from what the session holds, with the finish's answer on form (K-432); a target a newer session set stays.
              */
             setsNextTargets?: boolean;
+        };
+        /**
+         * @description The app an imported session came from (K-615); its file formats are arastirma/ham/H13.
+         * @enum {string}
+         */
+        ImportSource: "STRONG" | "HEVY";
+        WorkoutImport: {
+            source: components["schemas"]["ImportSource"];
+            /** @description At most import_workouts_per_request (data/parameters/import.json) sessions; each clientId once. */
+            workouts: components["schemas"]["ImportedWorkout"][];
+        };
+        ImportedWorkout: {
+            clientId: components["schemas"]["ClientId"];
+            /** Format: date-time */
+            startedAt: string;
+            /**
+             * Format: date-time
+             * @description Not before startedAt.
+             */
+            endedAt: string;
+            /** @description In the order they were done. */
+            sets: components["schemas"]["ImportedSet"][];
+        };
+        /**
+         * @description A set as the file had it, its move mapped on the phone: a catalog move or one of the user's own. The load follows
+         *     the move's Equipment (a DUMBBELL move: one dumbbell — the phone asked how the file counted them); a BODYWEIGHT move
+         *     is 0. No reps in reserve and no side: the file does not say.
+         */
+        ImportedSet: {
+            exerciseId: string;
+            /** @enum {string} */
+            setType: "WARM_UP" | "WORKING";
+            /** @description At most 2 decimals. */
+            loadKg: number;
+            reps: number;
+        };
+        WorkoutImportResult: {
+            imported: number;
+            alreadyThere: number;
         };
         /**
          * @description Only WORKING sets count toward effort and estimated 1RM (K-218). FAILURE is a set taken to failure: its rir is 0
@@ -3430,6 +3501,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    importWorkouts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutImport"];
+            };
+        };
+        responses: {
+            /** @description How many sessions were stored now and how many were already there */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutImportResult"];
+                };
             };
             default: components["responses"]["Error"];
         };
