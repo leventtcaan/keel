@@ -74,49 +74,58 @@ export default function PhotoCaptureScreen() {
     };
   }, []);
 
-  // A pending self-timer goes with the screen.
+  // While open: a photo that arrives after Close is not kept, and nothing goes back twice. A pending self-timer goes too.
+  const open = useRef(true);
   const countdown = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (countdown.current !== null) clearTimeout(countdown.current);
-  }, []);
+  useEffect(
+    () => () => {
+      open.current = false;
+      if (countdown.current !== null) clearTimeout(countdown.current);
+    },
+    [],
+  );
 
-  async function keep(uri: string) {
+  // One photo at a time, from the first tap: the camera takes seconds, and a second tap would take another (or fail).
+  const inFlight = useRef(false);
+  async function capture(source: () => Promise<string | null>) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     try {
+      const uri = await source();
+      if (uri === null || !open.current) return;
       await photos.add(uri, localDay(new Date()), pose);
+      if (!open.current) return;
       setFailed(false);
       if (step + 1 < POSES.length) setStep(step + 1);
       else router.back();
     } catch (error) {
-      setFailed(true);
       reportName(error);
+      if (open.current) setFailed(true);
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (open.current) setBusy(false);
     }
   }
 
-  async function shoot() {
-    setCounting(false);
-    countdown.current = null;
-    try {
-      const picture = await camera.current?.takePictureAsync({ quality: photoParams.jpegQuality, exif: false, shutterSound: false });
-      if (picture !== undefined) await keep(picture.uri);
-    } catch (error) {
-      setFailed(true);
-      reportName(error);
-    }
-  }
+  const fromCamera = async () => {
+    const picture = await camera.current?.takePictureAsync({ quality: photoParams.jpegQuality, exif: false, shutterSound: false });
+    return picture?.uri ?? null;
+  };
+  const fromLibrary = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, exif: false, base64: false, allowsEditing: false });
+    return result.canceled ? null : (result.assets[0]?.uri ?? null);
+  };
 
   function press() {
-    if (!timer) return void shoot();
+    if (inFlight.current || countdown.current !== null) return;
+    if (!timer) return void capture(fromCamera);
     setCounting(true);
-    countdown.current = setTimeout(() => void shoot(), photoParams.timerSeconds * 1000);
-  }
-
-  async function pick() {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, exif: false, base64: false, allowsEditing: false });
-    const asset = result.canceled ? undefined : result.assets[0];
-    if (asset !== undefined) await keep(asset.uri);
+    countdown.current = setTimeout(() => {
+      countdown.current = null;
+      setCounting(false);
+      void capture(fromCamera);
+    }, photoParams.timerSeconds * 1000);
   }
 
   const ghost = lastOf(checks, pose);
@@ -129,7 +138,8 @@ export default function PhotoCaptureScreen() {
     ghost === null ? null : (
       <Image testID="capture-ghost" source={{ uri: ghost }} resizeMode="cover" style={[StyleSheet.absoluteFill, { opacity: photoParams.ghostOpacity }]} />
     );
-  const access = granted ? null : permission?.canAskAgain === false ? (
+  // Not known yet (the hook's first answer): neither the camera nor "off".
+  const access = granted || permission === null ? null : permission.canAskAgain === false ? (
     <Text style={[styles.text, { color: color.textSecondary }]}>{t('capture.denied')}</Text>
   ) : (
     <Button label={t('capture.allow')} onPress={() => void requestPermission()} />
@@ -151,17 +161,18 @@ export default function PhotoCaptureScreen() {
         <Text style={[styles.label, { color: color.text }]}>{t(`capture.pose.${pose}`, { step: step + 1, total: POSES.length })}</Text>
         {/* The viewfinder stays dark in both themes (prototype 4.1). */}
         <ThemeProvider scheme="dark">
-          <Viewfinder tilt={tilt}>
+          <Finder>
             {viewfinder}
             {ghostImage}
-          </Viewfinder>
+          </Finder>
         </ThemeProvider>
+        <Level tilt={tilt} />
         <Text style={[styles.heading, { color: color.text }]}>{t('capture.guide')}</Text>
         {ghostNote}
         {access}
         {shutter}
         {countingNote}
-        <Button label={t('capture.library')} variant="ghost" onPress={() => void pick()} disabled={busy || counting} />
+        <Button label={t('capture.library')} variant="ghost" onPress={() => void capture(fromLibrary)} disabled={busy || counting} />
         {failure}
         <Text style={[styles.small, { color: color.muted }]}>{t('capture.onPhone')}</Text>
         <Button label={t('capture.close')} variant="ghost" size="sm" onPress={() => router.back()} />
@@ -170,28 +181,30 @@ export default function PhotoCaptureScreen() {
   );
 }
 
-/** The dark viewfinder: what the camera sees, the last photo faded over it, the frame guide, and the level under it. */
-function Viewfinder({ tilt, children }: { tilt: Tilt | null; children: ReactNode }) {
+/** The dark viewfinder (both themes, prototype 4.1): what the camera sees, the last photo faded over it, the frame guide. */
+function Finder({ children }: { children: ReactNode }) {
   const { color } = useTheme();
-  const level =
-    tilt === null ? null : (
-      <View style={styles.row}>
-        <Text style={[styles.small, { color: tilt.level ? color.accent : color.textSecondary }]}>{t('capture.level', { degrees: tilt.degrees })}</Text>
-        <Text style={[styles.small, { color: color.textSecondary }]}>{t(tilt.level ? 'capture.levelOk' : 'capture.levelOff')}</Text>
-      </View>
-    );
   return (
-    <View style={styles.finderBox}>
-      <View style={[styles.finder, { backgroundColor: color.background }]}>
-        {children}
-        <Svg testID="capture-frame" style={StyleSheet.absoluteFill} viewBox={`0 0 ${FRAME.width} ${FRAME.height}`} pointerEvents="none">
-          {CORNERS.map((d) => (
-            <Path key={d} d={d} fill="none" stroke={color.accent} strokeWidth={GUIDE_WIDTH} />
-          ))}
-          <Line x1={70} y1={FRAME.height / 2} x2={FRAME.width - 70} y2={FRAME.height / 2} stroke={color.text} strokeWidth={1.5} />
-        </Svg>
-      </View>
-      {level}
+    <View testID="capture-finder" style={[styles.finder, { backgroundColor: color.background }]}>
+      {children}
+      <Svg testID="capture-frame" style={StyleSheet.absoluteFill} viewBox={`0 0 ${FRAME.width} ${FRAME.height}`} pointerEvents="none">
+        {CORNERS.map((d) => (
+          <Path key={d} d={d} fill="none" stroke={color.accent} strokeWidth={GUIDE_WIDTH} />
+        ))}
+        <Line x1={70} y1={FRAME.height / 2} x2={FRAME.width - 70} y2={FRAME.height / 2} stroke={color.text} strokeWidth={1.5} />
+      </Svg>
+    </View>
+  );
+}
+
+/** The level under the viewfinder, on the page: the page's colours, the accent when straight. */
+function Level({ tilt }: { tilt: Tilt | null }) {
+  const { color } = useTheme();
+  if (tilt === null) return null;
+  return (
+    <View style={styles.row}>
+      <Text style={[styles.small, { color: tilt.level ? color.accent : color.textSecondary }]}>{t('capture.level', { degrees: tilt.degrees })}</Text>
+      <Text style={[styles.small, { color: color.textSecondary }]}>{t(tilt.level ? 'capture.levelOk' : 'capture.levelOff')}</Text>
     </View>
   );
 }
@@ -199,7 +212,6 @@ function Viewfinder({ tilt, children }: { tilt: Tilt | null; children: ReactNode
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
-  finderBox: { gap: tokens.space.xs },
   finder: { aspectRatio: FRAME.width / FRAME.height, borderRadius: tokens.radius.card, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },

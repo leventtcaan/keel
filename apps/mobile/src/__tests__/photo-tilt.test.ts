@@ -44,7 +44,11 @@ test('flat on a table or held sideways: far from level', () => {
   expect(tiltOf({ x: 1, y: 0, z: 0 })).toEqual({ degrees: 90, level: false });
 });
 
-test('no reading (all zero, or not a number) is not level', () => {
-  expect(tiltOf({ x: 0, y: 0, z: 0 }).level).toBe(false);
-  expect(tiltOf({ x: Number.NaN, y: -1, z: 0 }).level).toBe(false);
+test('no reading (all zero, or not a number) is not level, and shows as far from it — never "NaN°"', () => {
+  expect(tiltOf({ x: 0, y: 0, z: 0 })).toEqual({ degrees: 90, level: false });
+  expect(tiltOf({ x: Number.NaN, y: -1, z: 0 })).toEqual({ degrees: 90, level: false });
+});
+
+test('a large lean both ways: toward the user is measured against the screen plane, not one axis', () => {
+  expect(tiltOf(gravity(40, 45))).toEqual({ degrees: 45, level: false });
 });

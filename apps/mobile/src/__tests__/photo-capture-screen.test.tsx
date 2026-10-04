@@ -11,9 +11,10 @@ import { t } from '@/copy';
 import type { PhotoCheck } from '@/photos/library';
 import { photoParams } from '@/photos/params';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 
 type Permission = { granted: boolean; canAskAgain: boolean };
-let mockPermission: Permission = { granted: true, canAskAgain: true };
+let mockPermission: Permission | null = { granted: true, canAskAgain: true };
 let mockAnswer: Permission = { granted: true, canAskAgain: true };
 const mockRequest = jest.fn();
 const mockTake = jest.fn(async (_options: unknown) => ({ uri: 'file:///cache/Camera/shot.jpg', width: 3024, height: 4032 }));
@@ -21,7 +22,7 @@ jest.mock('expo-camera', () => {
   const React = jest.requireActual<typeof import('react')>('react');
   return {
     useCameraPermissions: () => {
-      const [permission, setPermission] = React.useState<Permission>(mockPermission);
+      const [permission, setPermission] = React.useState<Permission | null>(mockPermission);
       const request = async () => {
         mockRequest();
         setPermission(mockAnswer);
@@ -30,8 +31,9 @@ jest.mock('expo-camera', () => {
       return [permission, request];
     },
     CameraView: React.forwardRef(function CameraView(_props: object, ref: React.Ref<unknown>) {
+      const { View } = jest.requireActual<typeof import('react-native')>('react-native');
       React.useImperativeHandle(ref, () => ({ takePictureAsync: mockTake }));
-      return null;
+      return <View testID="camera" />;
     }),
   };
 });
@@ -41,10 +43,12 @@ jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (options: unkno
 
 let mockGravity: ((g: { x: number; y: number; z: number }) => void) | null = null;
 const mockRemove = jest.fn();
+const mockInterval = jest.fn();
+let mockAvailable: () => Promise<boolean> = async () => true;
 jest.mock('expo-sensors', () => ({
   Accelerometer: {
-    isAvailableAsync: async () => true,
-    setUpdateInterval: jest.fn(),
+    isAvailableAsync: () => mockAvailable(),
+    setUpdateInterval: (ms: number) => mockInterval(ms),
     addListener: (listener: (g: { x: number; y: number; z: number }) => void) => {
       mockGravity = listener;
       return { remove: mockRemove };
@@ -78,6 +82,7 @@ beforeEach(() => {
   mockAnswer = { granted: true, canAskAgain: true };
   mockChecks = [];
   mockGravity = null;
+  mockAvailable = async () => true;
   global.fetch = fetchSpy;
 });
 afterEach(() => {
@@ -200,4 +205,205 @@ test('leaving stops the accelerometer', async () => {
   await act(async () => {});
   await screen.unmount();
   expect(mockRemove).toHaveBeenCalledTimes(1);
+});
+
+/** A promise the test settles when it chooses. */
+function deferred<T>() {
+  let settle!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => (settle = resolve));
+  return { promise, settle };
+}
+const named = (name: string) => Object.assign(new Error('x'), { name });
+
+describe('one tap, one photo', () => {
+  test('a second tap while the camera is still taking takes nothing more', async () => {
+    const shot = deferred<{ uri: string; width: number; height: number }>();
+    mockTake.mockImplementationOnce(() => shot.promise);
+    await show();
+    await fireEvent.press(screen.getByRole('button', { name: t('capture.shutter') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('capture.shutter') }));
+    await act(async () => shot.settle({ uri: 'file:///cache/Camera/shot.jpg', width: 1, height: 1 }));
+    expect(mockTake).toHaveBeenCalledTimes(1);
+    expect(mockServices.photos.add).toHaveBeenCalledTimes(1);
+  });
+
+  test('while a photo is being kept, the shutter and the library wait', async () => {
+    const kept = deferred<never>();
+    mockServices.photos.add.mockImplementationOnce(() => kept.promise);
+    await show();
+    await press(t('capture.shutter'));
+    expect(screen.getByRole('button', { name: t('capture.shutter') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('capture.library') })).toBeDisabled();
+  });
+
+  test('during the countdown: said so, the shutter and the library wait, one photo at the end', async () => {
+    await show();
+    await press(t('capture.timer', { seconds: photoParams.timerSeconds }));
+    await press(t('capture.shutter'));
+    expect(screen.getByText(t('capture.counting'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('capture.shutter') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('capture.library') })).toBeDisabled();
+    await fireEvent.press(screen.getByRole('button', { name: t('capture.shutter') }));
+    await act(async () => {
+      jest.advanceTimersByTime(photoParams.timerSeconds * 1000);
+    });
+    expect(mockTake).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(t('capture.counting'))).toBeNull();
+  });
+
+  test('the timer turned off again: the photo is taken at once', async () => {
+    await show();
+    await press(t('capture.timer', { seconds: photoParams.timerSeconds }));
+    await press(t('capture.timer', { seconds: photoParams.timerSeconds }));
+    await press(t('capture.shutter'));
+    expect(mockTake).toHaveBeenCalledTimes(1);
+  });
+
+  test('closing during the countdown: no photo is taken afterwards', async () => {
+    await show();
+    await press(t('capture.timer', { seconds: photoParams.timerSeconds }));
+    await press(t('capture.shutter'));
+    const before = jest.getTimerCount();
+    await screen.unmount();
+    expect(jest.getTimerCount()).toBe(before - 1); // the countdown cleared, not left to fire
+    await act(async () => {
+      jest.advanceTimersByTime(photoParams.timerSeconds * 1000);
+    });
+    expect(mockTake).not.toHaveBeenCalled();
+  });
+});
+
+describe('two taps in the same instant (before the screen redraws)', () => {
+  test('the shutter: one photo', async () => {
+    await show();
+    const shutter = screen.getByRole('button', { name: t('capture.shutter') });
+    await act(async () => {
+      await Promise.all([fireEvent.press(shutter), fireEvent.press(shutter)]);
+    });
+    expect(mockTake).toHaveBeenCalledTimes(1);
+  });
+
+  test('with the timer: one countdown, one photo', async () => {
+    await show();
+    await press(t('capture.timer', { seconds: photoParams.timerSeconds }));
+    const shutter = screen.getByRole('button', { name: t('capture.shutter') });
+    await act(async () => {
+      await Promise.all([fireEvent.press(shutter), fireEvent.press(shutter)]);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(photoParams.timerSeconds * 1000);
+    });
+    expect(mockTake).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('failures', () => {
+  test('the camera fails: said so, reported by name, the step stays', async () => {
+    mockTake.mockRejectedValueOnce(named('CameraError'));
+    await show();
+    await press(t('capture.shutter'));
+    expect(screen.getByText(t('capture.failed'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'CameraError' });
+    expect(screen.getByText(t('capture.pose.front', { step: 1, total: 2 }))).toBeOnTheScreen();
+  });
+
+  test('the library fails: said so, reported by name', async () => {
+    mockPick.mockRejectedValueOnce(named('PickerError'));
+    await show();
+    await press(t('capture.library'));
+    expect(screen.getByText(t('capture.failed'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'PickerError' });
+  });
+
+  test('a retry that works clears the failure and moves on', async () => {
+    mockServices.photos.add.mockRejectedValueOnce(named('FileSystemError'));
+    await show();
+    await press(t('capture.shutter'));
+    await press(t('capture.shutter'));
+    expect(screen.queryByText(t('capture.failed'))).toBeNull();
+    expect(screen.getByText(t('capture.pose.side', { step: 2, total: 2 }))).toBeOnTheScreen();
+  });
+});
+
+describe('the level', () => {
+  test('read photo_level_update_ms apart', async () => {
+    await show();
+    expect(mockInterval).toHaveBeenCalledWith(photoParams.levelUpdateMs);
+  });
+
+  test('no accelerometer: no level, nothing listened to', async () => {
+    mockAvailable = async () => false;
+    await show();
+    expect(mockGravity).toBeNull();
+    expect(screen.queryByText(t('capture.levelOk'))).toBeNull();
+  });
+
+  test('closed before the phone answers: nothing listened to afterwards', async () => {
+    const answer = deferred<boolean>();
+    mockAvailable = () => answer.promise;
+    await show();
+    await screen.unmount();
+    await act(async () => answer.settle(true));
+    expect(mockGravity).toBeNull();
+  });
+});
+
+describe('the camera permission', () => {
+  test('not known yet: no camera, no shutter, no "off"', async () => {
+    mockPermission = null;
+    await show();
+    expect(screen.queryByTestId('camera')).toBeNull();
+    expect(screen.queryByRole('button', { name: t('capture.shutter') })).toBeNull();
+    expect(screen.queryByText(t('capture.denied'))).toBeNull();
+  });
+
+  test('asked and refused: said so, the library still there, no camera running', async () => {
+    mockPermission = { granted: false, canAskAgain: true };
+    mockAnswer = { granted: false, canAskAgain: false };
+    await show();
+    await press(t('capture.allow'));
+    expect(screen.getByText(t('capture.denied'))).toBeOnTheScreen();
+    expect(screen.queryByTestId('camera')).toBeNull();
+    expect(screen.getByRole('button', { name: t('capture.library') })).toBeOnTheScreen();
+  });
+});
+
+test('the viewfinder stays dark in the light theme; the level under it is in the page colours, the accent when straight', async () => {
+  await show();
+  expect(screen.getByTestId('capture-finder')).toHaveStyle({ backgroundColor: palettes.dark.background });
+  await act(async () => mockGravity?.({ x: 0, y: -1, z: 0 }));
+  // On the page, not in the dark box: the light theme's own colours, readable on its background.
+  expect(screen.getByText(t('capture.level', { degrees: 0 }))).toHaveStyle({ color: palettes.light.accent });
+  expect(screen.getByText(t('capture.levelOk'))).toHaveStyle({ color: palettes.light.textSecondary });
+});
+
+test('closed while the camera is still taking: the late photo is not kept, and nothing goes back twice', async () => {
+  const shot = deferred<{ uri: string; width: number; height: number }>();
+  mockTake.mockImplementationOnce(() => shot.promise);
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: t('capture.shutter') }));
+  await press(t('capture.close'));
+  await screen.unmount();
+  await act(async () => shot.settle({ uri: 'file:///cache/Camera/shot.jpg', width: 1, height: 1 }));
+  expect(mockServices.photos.add).not.toHaveBeenCalled();
+  expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('closed on the side while the photo is being kept: no second going back', async () => {
+  await show();
+  await press(t('capture.shutter')); // front kept
+  const kept = deferred<never>();
+  mockServices.photos.add.mockImplementationOnce(() => kept.promise);
+  await fireEvent.press(screen.getByRole('button', { name: t('capture.shutter') }));
+  await press(t('capture.close'));
+  await screen.unmount();
+  await act(async () => kept.settle(undefined as never));
+  expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('Close goes back without a photo', async () => {
+  await show();
+  await press(t('capture.close'));
+  expect(mockBack).toHaveBeenCalledTimes(1);
+  expect(mockServices.photos.add).not.toHaveBeenCalled();
 });
