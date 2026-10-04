@@ -3507,6 +3507,24 @@ tasks:
     refs: ["plan/kararlar/ADR-048-kilit-ekrani-widget.md", "arastirma/ham/H11-cihaz-ustu-ve-widget.md"]
     learn: ["App Intents", "Swift"]
 
+  - id: K-817
+    title: "API hız sınırı: Apple iptali, giriş, koç ve fotoğraf uçları"
+    milestone: M9
+    module: shared
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-812]
+    why: "K-812 incelemesi: /v1/account/apple-revocation her istekte ES256 imzası + Apple'a iki çağrı; hesap başına sınır yok, Apple'ın sınırı belgelenmemiş. RATE_LIMITED kodu tanımlı ama kullanılmıyor"
+    acceptance:
+      - "Hesap başına (ve oturumsuz uçlarda adres başına) istek sınırı; sayılar yapılandırmada (K2); aşılınca 429 RATE_LIMITED"
+      - "Apple iptali, giriş, koç ve fotoğraf uçları kapsamda; sınır sayacı sağlık verisi tutmaz (V3)"
+    tests:
+      - "RateLimitTests"
+    refs: ["plan/kararlar/ADR-062-apple-jeton-iptali.md"]
+    learn:
+      - "Hız sınırlama (token bucket)"
+
 # ───────────────────────────── M10 · Lansman ─────────────────────────────
   - id: K-1001
     title: "Ürün adı ve marka kontrolü"
