@@ -3510,7 +3510,7 @@ tasks:
   - id: K-817
     title: "API hız sınırı: Apple iptali, giriş, koç ve fotoğraf uçları"
     milestone: M9
-    module: shared
+    module: infra
     type: feature
     size: S
     status: todo
