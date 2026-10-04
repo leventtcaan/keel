@@ -131,3 +131,10 @@
 - sıradaki: Levent dönünce M7 Part 1 aktarımı (docs/aktarim/M7/README.md 1-2); sonra M7 Part 2 (K-705, K-702) — `plan/oturum-promptlari/M7-part2.md`
 - AI: bütün kod, test, ADR, prompt agent; para/veri soruları Levent (AskUserQuestion, Part 1 başı)
 
+
+## 2026-10-04 · M7 Part 2 (Paywall ve teslim) — toplu mod
+- yaptım: K-705 #368 (`GET /v1/subscription` + `appUserId`), K-702 #369 (paywall, port, RevenueCat 10.11.0, geri yükleme, iptal Apple'da, 403 → See plans), K-706 #372 (onboarding sonu zorunlu paywall, kapı), K-707 #373 (deneme hatırlatması); M7 çıkışı; M8 prompt'ları
+- karar: ADR-056 Ek 1, ADR-057 (port, tembel configure + UUID, teyit döngüsü, iki yasal bağlantı yoksa satış yok), ADR-058 (Levent 105-107: zorunlu paywall, iOS'ta duraklatma yok, hatırlatma fatura bildirimi)
+- takıldım: App Store'da duraklatma yok (kabul kriteri düzeltildi); inceleme her görevde gerçek hata buldu — girişte tek başarısız istek kapıyı açıyordu, `ledger`/`what-if` korumasızdı, Apple ücret aldıktan sonra "olmadı" diyebiliyordu, ayarlar satın almadan sonra tazelenmiyordu, hatırlatma satın alma saatinde çalıyordu; macOS harf çakışması (`Paywall.tsx`↔`paywall.ts`); disk 4,6 → 1,5 GB
+- sıradaki: Levent dönünce M7 Part 2 aktarımı (README 3-6; Part 1: 1-2); disk; K-308 + RevenueCat/ASC kurulumu; sonra M8 Part 1
+- AI: bütün kod, test, ADR, prompt agent; ürün soruları Levent (AskUserQuestion, 105-107)
