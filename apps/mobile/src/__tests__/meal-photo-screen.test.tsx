@@ -38,11 +38,14 @@ const mockPOST = jest.fn(async (_path: string, _init?: unknown) => {
   return mockAnswer;
 });
 const mockPick = jest.fn(async (_source: string) => mockPicked);
-const mockShrink = jest.fn(async () => ({ base64: 'AAAA', width: 1024, height: 768 }));
+const mockShrink = jest.fn(async () => ({ base64: 'AAAA', width: 1024, height: 768, uri: 'file:///shrunk.jpg' }));
+const mockDiscard = jest.fn(async (_uri: string) => {});
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({ router: { push: (...a: unknown[]) => mockPush(...a), replace: (...a: unknown[]) => mockReplace(...a), back: jest.fn() } }));
-jest.mock('@/food/photoTools', () => ({ photoTools: { pick: (source: string) => mockPick(source), shrink: () => mockShrink() } }));
+jest.mock('@/food/photoTools', () => ({
+  photoTools: { pick: (source: string) => mockPick(source), shrink: () => mockShrink(), discard: (uri: string) => mockDiscard(uri) },
+}));
 let mockGrantedFails = false;
 const mockServices = {
   api: { POST: mockPOST },

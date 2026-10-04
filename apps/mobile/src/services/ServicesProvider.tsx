@@ -20,6 +20,7 @@ import { importHealthWeights, syncHealthWeights } from '@/health/weightSync';
 import { deviceAlerts, deviceNotifications } from '@/notifications/deviceNotifications';
 import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
+import { devicePhotoCache } from '@/food/photoTools';
 import { devicePhotoFiles } from '@/photos/photoFiles';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import type { GateState } from '@/subscription/gate';
@@ -79,6 +80,7 @@ async function build(): Promise<PhoneServices> {
     alerts: deviceAlerts(), // the rest timer's (K-411)
     healthWrite: healthKitWrite(), // not available in Expo Go (no native module)
     photoFiles: devicePhotoFiles(), // progress photos: a folder on this phone, never uploaded (K-614, V1)
+    photoCache: devicePhotoCache, // a meal photo's leftovers, cleared when the session ends (K-811, V1)
     links: configuredLegalLinks(), // without both, nothing is sold and the gate stays open (ADR-057 D3, K-706)
     purchases: revenueCatStore({ report: reportProblem }), // not available in Expo Go or without the SDK key; set up only when first needed (ADR-057 D1)
   });

@@ -1893,6 +1893,7 @@
       "note": "Removes everything, on every device.",
       "confirmTitle": "Delete your account and all data?",
       "confirmBody": "Your logs, calls, consents and profile are deleted on our side, and this phone forgets you. This can't be undone. Export first if you want a copy.",
+      "subscription": "If you have a subscription, Apple goes on charging for it after your account is deleted. Cancel it first if you don't want to be charged.",
       "confirm": "Delete everything",
       "keep": "Keep my account",
       "failed": "Couldn't delete your account. Check your connection and try again."
