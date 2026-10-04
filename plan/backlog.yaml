@@ -3164,7 +3164,7 @@ tasks:
 
   - id: K-805
     title: "Vergi ve hesap: W-8BEN, GVK 20/B, ödeme akışı"
-    milestone: M8
+    milestone: M11  # ADR-059 #5: satıştan sonra
     module: legal
     type: human
     size: S

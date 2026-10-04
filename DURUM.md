@@ -680,7 +680,10 @@ Ortak talimat `plan/oturum-promptlari/M8.md`. Part prompt'ları `M8-part1.md`, `
 **Part 1 başı (4 Eki):** senkron tamam — M7 ÇIKIŞ git ile tutarlı (#368, #369, #372, #373 birleşik; açık PR yok; worktree yalnız `../keel-main`;
 `*-devam.md` yok). Ana checkout ayrık HEAD = `origin/main` (6028e6b). Bağımlılıklar `done` (K-214, K-503; K-803 ← K-801 bu part'ta).
 Dependabot: aynı 3 geçişli uyarı (braces, node-forge, decode-uri-component). **Disk 1,5 GB** (bizim önbellekler ~270 MB; temizlenecek
-büyük önbellek yok) → Levent'e soruldu. K-308 hâlâ `doing`.
+büyük önbellek yok) → Levent'in onayıyla Docker budandı → **20 GB** (adlandırılmış volume'lar yerinde). K-308 hâlâ `doing`.
+**Yasal/mağaza kapısı (Levent, 4 Eki) → ADR-059:** hukuki inceleme **yok** (agent kaynaklı yazar, metinler yayımlanır, "uyumlu" denmez;
+risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam dışı, sürüm artar); yayın yeri **bu repodan GitHub Pages**
+(`leventtcaan.github.io/keel/...`, agent açar); ASC beyanları **M10** (taslak şimdi, K-803); vergi K-805 → **M11** (satıştan sonra; madde açılmaz).
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
@@ -1339,6 +1342,8 @@ olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
 - 2026-09-29 · M0 gece kurulumu (yukarıda)
 
 ## Riskler
+- **Yasal metinler avukattan geçmedi (ADR-059 #1, Levent'in kararı):** gizlilik politikası, şartlar, feragatname agent'ın resmî kaynaklardan
+  yazdığı metinler; sağlık verisi (GDPR Md. 9) + AB kullanıcısı varken hata riski Levent'te. İnceleme her an eklenebilir.
 - **Türk ürün kapsamı (K-207):** USDA FDC Branded'da Türk markaları yok denecek kadar az ("ülker" 2 ithal kayıt,
   "torku"/"tadım" 0). Barkod Türkiye'de çoğunlukla "bulunamadı"; genel gıda eşlemesi çalışır. Ürün kararı Levent'te
   (soru 10).
