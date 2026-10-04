@@ -40,7 +40,7 @@ const SESSION = { accessToken: 'a1', accessTokenExpiresAt: '2026-09-30T12:15:00Z
 
 function apple(credential: Partial<{ identityToken: string | null; authorizationCode: string | null }> = {}): AppleAuth & { signInAsync: jest.Mock } {
   return {
-    signInAsync: jest.fn(async () => ({ identityToken: 'apple-jwt', authorizationCode: 'code-1', ...credential })),
+    signInAsync: jest.fn(async () => ({ identityToken: 'apple-jwt', authorizationCode: 'code-1', user: 'apple-user-001', ...credential })),
   };
 }
 
@@ -63,7 +63,8 @@ test('Apple gets the SHA-256 of the nonce and no scopes; the server gets the raw
 
 test('a session from the server is stored, and a first sign-in says so', async () => {
   const { run, session } = setup(server(200, SESSION));
-  expect(await run()).toEqual({ kind: 'signedIn', newAccount: true });
+  // The owner of this phone's progress photos (ADR-055 #101): Apple's user id, only as its SHA-256.
+  expect(await run()).toEqual({ kind: 'signedIn', newAccount: true, owner: sha256('apple-user-001') });
   expect(await session.accessToken()).toBe('a1');
 });
 
@@ -117,5 +118,36 @@ describe('the device nonce', () => {
 
   test('hash: lowercase hex SHA-256, what the server recomputes', async () => {
     expect(await deviceNonce.hash('abc')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  });
+});
+
+describe("whose this phone's photos are, before the session (ADR-055 #101, K-617 review)", () => {
+  test('the photos are claimed for this account before its session is kept', async () => {
+    const order: string[] = [];
+    const session = memorySession();
+    const api = createApiClient({ baseUrl: BASE, accessToken: session.accessToken, fetch: server(200, SESSION) });
+    const signIn = session.signIn;
+    session.signIn = async (tokens) => {
+      order.push('session');
+      await signIn(tokens);
+    };
+    const claimPhotos = jest.fn(async (owner: string) => void order.push(`claim ${owner}`));
+
+    await signInWithApple({ apple: apple(), nonce: { raw: () => 'n', hash: async (raw: string) => sha256(raw) }, api, session, claimPhotos });
+
+    expect(order).toEqual([`claim ${sha256('apple-user-001')}`, 'session']);
+  });
+
+  test('a claim that fails keeps the session out: no account sees photos that were not its own', async () => {
+    const session = memorySession();
+    const api = createApiClient({ baseUrl: BASE, accessToken: session.accessToken, fetch: server(200, SESSION) });
+    const claimPhotos = jest.fn(async () => {
+      throw Object.assign(new Error('locked'), { name: 'FileSystemError' });
+    });
+
+    const result = await signInWithApple({ apple: apple(), nonce: { raw: () => 'n', hash: async (raw: string) => sha256(raw) }, api, session, claimPhotos });
+
+    expect(result).toEqual({ kind: 'failed', reason: 'PHONE' });
+    expect(await session.accessToken()).toBeNull();
   });
 });

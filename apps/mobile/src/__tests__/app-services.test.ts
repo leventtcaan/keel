@@ -296,11 +296,11 @@ test('progress photos go with the session: deleted from the phone at sign-out (K
   expect(fake.seen.filter((r) => /jpg|photo/.test(r.body))).toEqual([]);
 });
 
-test('a start with no session deletes photos left on the phone (a backup restored onto a new phone, K-614)', async () => {
+test('a start with no session keeps the photos: whose they are is known at the next sign-in (ADR-055 #101)', async () => {
   const folder = photoFolder(['2026-10-07-front.jpg']);
   await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch, report: () => {},
     kv: memoryKv(), locale: 'en-US', photoFiles: folder.files });
-  expect([...folder.names]).toEqual([]);
+  expect([...folder.names]).toEqual(['2026-10-07-front.jpg']);
 });
 
 test('a start with a session keeps the photos: only a start with none deletes them (K-614)', async () => {
@@ -312,7 +312,7 @@ test('a start with a session keeps the photos: only a start with none deletes th
   expect([...folder.names]).toEqual(['2026-10-07-front.jpg']);
 });
 
-test('a refused refresh ends the session: the photos go too, as every record does (K-614)', async () => {
+test('a refused refresh ends the session but keeps the photos: the only copy, and maybe the same person back (ADR-055 #101)', async () => {
   const folder = photoFolder(['2026-10-07-front.jpg']);
   const fake = server(401);
   const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: fake.fetch, report: () => {},
@@ -321,7 +321,75 @@ test('a refused refresh ends the session: the photos go too, as every record doe
   await services.photos.add('file:///cache/a.jpg', '2026-10-08', 'front');
   await services.api.GET('/v1/profile'); // 401 → refresh → 401
   await settle();
-  expect([...folder.names]).toEqual([]);
+  expect(await services.session.isSignedIn()).toBe(false);
+  expect([...folder.names].sort()).toEqual(['2026-10-07-front.jpg', '2026-10-08-front.jpg']);
+});
+
+describe('whose photos they are (ADR-055 #101)', () => {
+  async function build(folder = photoFolder(['2026-10-07-front.jpg']), kv = memoryKv()) {
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch,
+      report: () => {}, kv, locale: 'en-US', photoFiles: folder.files });
+    return { services, folder, kv };
+  }
+
+  test('the same account signing in again keeps them', async () => {
+    const { services, folder } = await build();
+    await services.claimPhotos('owner-a');
+    await services.claimPhotos('owner-a');
+    expect([...folder.names]).toEqual(['2026-10-07-front.jpg']);
+  });
+
+  test('another account signing in on this phone: they are deleted before it sees them', async () => {
+    const { services, folder } = await build();
+    await services.claimPhotos('owner-a');
+    await services.claimPhotos('owner-b');
+    expect([...folder.names]).toEqual([]);
+  });
+
+  test('photos from before an owner was kept (an earlier version) go to the first account that signs in', async () => {
+    const { services, folder, kv } = await build();
+    await services.claimPhotos('owner-a');
+    expect([...folder.names]).toEqual(['2026-10-07-front.jpg']);
+    expect([...kv.items.values()]).toContain('owner-a');
+  });
+
+  test('another account, and the photos cannot be deleted: the claim fails and the owner stays (the sign-in fails closed)', async () => {
+    const folder = photoFolder(['2026-10-07-front.jpg']);
+    const kv = memoryKv();
+    const { services } = await build(
+      { ...folder, files: { ...folder.files, clear: async () => {
+        throw Object.assign(new Error('locked'), { name: 'FileSystemError' });
+      } } },
+      kv,
+    );
+    await services.claimPhotos('owner-a');
+
+    await expect(services.claimPhotos('owner-b')).rejects.toMatchObject({ name: 'FileSystemError' });
+    expect([...kv.items.values()]).toContain('owner-a');
+  });
+
+  test('the account deleted: the owner goes with the photos', async () => {
+    const folder = photoFolder(['2026-10-07-front.jpg']);
+    const kv = memoryKv();
+    const fetch = jest.fn(async (request: Request) => new Response(null, { status: request.method === 'DELETE' ? 202 : 404 }));
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv,
+      locale: 'en-US', photoFiles: folder.files });
+    await services.session.signIn(SESSION);
+    await services.claimPhotos('owner-a');
+    await services.deleteAccount();
+    expect([...kv.items.values()]).not.toContain('owner-a');
+    expect([...folder.names]).toEqual([]);
+  });
+
+  test('a sign-out by the user deletes them and forgets the owner', async () => {
+    const { services, folder, kv } = await build();
+    await services.session.signIn(SESSION);
+    await services.claimPhotos('owner-a');
+    await services.signOut();
+    await settle();
+    expect([...folder.names]).toEqual([]);
+    expect([...kv.items.values()]).not.toContain('owner-a');
+  });
 });
 
 test('the account deleted (202): its photos are deleted from the phone (K-614)', async () => {
@@ -343,10 +411,9 @@ test('photos that cannot be deleted at sign-out are reported by name, the sign-o
     kv: memoryKv(), locale: 'en-US', photoFiles: { ...folder.files, clear: async () => {
       throw Object.assign(new Error('locked'), { name: 'FileSystemError' });
     } } }).catch(() => null);
-  // The start with no session tried too: reported, the services still built.
+  // A start with no session does not try any more (ADR-055 #101): the services built, nothing to report yet.
   expect(services).not.toBeNull();
-  expect(report).toHaveBeenCalledWith({ name: 'FileSystemError' });
-  report.mockClear();
+  expect(report).not.toHaveBeenCalled();
   await services!.session.signIn(SESSION);
   await services!.signOut();
   await settle();
