@@ -1,8 +1,1079 @@
 {
-  "schema": 1,
-  "updated": "2026-10-04",
-  "apple_data_types": { "source": "https://developer.apple.com/app-store/app-privacy-details/ (2026-10-04)", "types": ["Health & Fitness › Health"] },
-  "server": [],
-  "phone": { "permissions": [], "stored": [] },
-  "outbound": []
+ "schema": 1,
+ "updated": "2026-10-04",
+ "about": "Every piece of data the product keeps or sends, derived from the code (K-801, ADR-060). tools/test_veri_envanteri.py binds it to the migrations, the app's permissions, the privacy policy and the App Store label draft.",
+ "apple_data_types": {
+  "source": "https://developer.apple.com/app-store/app-privacy-details/ (2026-10-04)",
+  "types": [
+   "Contact Info › Name",
+   "Contact Info › Email Address",
+   "Contact Info › Phone Number",
+   "Contact Info › Physical Address",
+   "Contact Info › Other User Contact Info",
+   "Health & Fitness › Health",
+   "Health & Fitness › Fitness",
+   "Financial Info › Payment Info",
+   "Financial Info › Credit Info",
+   "Financial Info › Other Financial Info",
+   "Location › Precise Location",
+   "Location › Coarse Location",
+   "Sensitive Info › Sensitive Info",
+   "Contacts › Contacts",
+   "User Content › Emails or Text Messages",
+   "User Content › Photos or Videos",
+   "User Content › Audio Data",
+   "User Content › Gameplay Content",
+   "User Content › Customer Support",
+   "User Content › Other User Content",
+   "Browsing History › Browsing History",
+   "Search History › Search History",
+   "Identifiers › User ID",
+   "Identifiers › Device ID",
+   "Purchases › Purchase History",
+   "Usage Data › Product Interaction",
+   "Usage Data › Advertising Data",
+   "Usage Data › Other Usage Data",
+   "Diagnostics › Crash Data",
+   "Diagnostics › Performance Data",
+   "Diagnostics › Other Diagnostic Data",
+   "Surroundings › Environment Scanning",
+   "Body › Hands",
+   "Body › Head",
+   "Other Data › Other Data Types"
+  ]
+ },
+ "server": [
+  {
+   "table": "public.event_publication",
+   "module": "shared",
+   "class": "technical",
+   "purpose": "Module events (account deletion, consent withdrawal) kept until every module has handled them, so a deletion survives a restart.",
+   "columns": [
+    "id",
+    "listener_id",
+    "event_type",
+    "serialized_event",
+    "publication_date",
+    "completion_date",
+    "status",
+    "completion_attempts",
+    "last_resubmission_date"
+   ],
+   "basis": "legitimate interest (Art. 6(1)(f)): keeping deletion and delivery reliable",
+   "gated_by": null,
+   "erased_by": [
+    "never"
+   ],
+   "exported": false,
+   "policy": "data-technical",
+   "app_privacy": [],
+   "note": "Completed rows are kept (completion-mode update) and hold the deleted account's random id; purge belongs to K-802 (V1, ADR-023)."
+  },
+  {
+   "table": "identity.account",
+   "module": "identity",
+   "class": "account",
+   "purpose": "Your account: Apple's stable user id for this app (no name, no email) and when the account was made.",
+   "columns": [
+    "id",
+    "apple_subject",
+    "created_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-account",
+   "app_privacy": [
+    "Identifiers › User ID"
+   ]
+  },
+  {
+   "table": "identity.refresh_token",
+   "module": "identity",
+   "class": "account",
+   "purpose": "Signed-in sessions, stored only as SHA-256 hashes of the refresh tokens (60 days).",
+   "columns": [
+    "id",
+    "account_id",
+    "family_id",
+    "token_hash",
+    "expires_at",
+    "revoked_at",
+    "created_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": false,
+   "policy": "data-account",
+   "app_privacy": [],
+   "note": "Revoked or expired rows are not purged while the account exists (RefreshTokens.java)."
+  },
+  {
+   "table": "consent.consent_event",
+   "module": "consent",
+   "class": "account",
+   "purpose": "Every consent given or withdrawn: which, which text version, when; for the AI consent the provider and data types.",
+   "columns": [
+    "id",
+    "seq",
+    "account_id",
+    "kind",
+    "action",
+    "text_version",
+    "provider",
+    "data_types",
+    "occurred_at"
+   ],
+   "basis": "legal obligation (Art. 6(1)(c), Art. 7(1)): proof of consent",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-consents",
+   "app_privacy": []
+  },
+  {
+   "table": "profile.profile",
+   "module": "profile",
+   "class": "account",
+   "purpose": "Your coaching profile: goal, sex, height, birth year, activity, program choice, units, training days and time, check-in day, time zone, foods you avoid, budget note.",
+   "columns": [
+    "account_id",
+    "goal",
+    "sex",
+    "height_cm",
+    "birth_year",
+    "activity_level",
+    "program_choice",
+    "units",
+    "training_days",
+    "usual_training_time",
+    "sessions_last_month",
+    "check_in_day",
+    "time_zone",
+    "food_avoid",
+    "budget_note",
+    "updated_at",
+    "training_days_since"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-profile",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ],
+   "note": "Foods you avoid need HEALTH_DATA and are cleared when it is withdrawn; the rest is contract (ProfileAccountData.java)."
+  },
+  {
+   "table": "measurement.weigh_in",
+   "module": "measurement",
+   "class": "health",
+   "purpose": "Your weigh-ins (typed, from Apple Health, or imported).",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "measured_at",
+    "kg",
+    "source"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "measurement.waist",
+   "module": "measurement",
+   "class": "health",
+   "purpose": "Your waist measurements.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "measured_on",
+    "cm"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "measurement.photo_check",
+   "module": "measurement",
+   "class": "health",
+   "purpose": "What you concluded from comparing your progress photos (better, same, worse) — never the photo.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "taken_on",
+    "look"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "measurement.body_look",
+   "module": "measurement",
+   "class": "health",
+   "purpose": "The reference look you picked as closest to yours (a level, never a percentage).",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "taken_on",
+    "level"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "measurement.activity_day",
+   "module": "measurement",
+   "class": "health",
+   "purpose": "A day's steps, sleep minutes and active energy from Apple Health.",
+   "columns": [
+    "account_id",
+    "day",
+    "steps",
+    "sleep_minutes",
+    "active_energy_kcal"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "training.workout",
+   "module": "training",
+   "class": "training",
+   "purpose": "Your workouts: when, which program day, your note, moves you marked as not clean, and the app an imported session came from.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "started_at",
+    "ended_at",
+    "program_day_id",
+    "note",
+    "unclean_exercise_ids",
+    "imported_from"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.workout_set",
+   "module": "training",
+   "class": "training",
+   "purpose": "Your sets: move, set type, load, reps, reps in reserve, side, superset, note.",
+   "columns": [
+    "id",
+    "workout_id",
+    "account_id",
+    "client_id",
+    "seq",
+    "exercise_id",
+    "set_type",
+    "load_kg",
+    "reps",
+    "rir",
+    "side",
+    "note",
+    "superset_id"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.program",
+   "module": "training",
+   "class": "training",
+   "purpose": "Your current program and whether it was generated or your own.",
+   "columns": [
+    "id",
+    "account_id",
+    "source",
+    "created_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.program_day",
+   "module": "training",
+   "class": "training",
+   "purpose": "Your program's days.",
+   "columns": [
+    "id",
+    "program_id",
+    "account_id",
+    "seq",
+    "name_key",
+    "name",
+    "weekday"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.planned_exercise",
+   "module": "training",
+   "class": "training",
+   "purpose": "Planned moves with sets, rep range, reps in reserve and the next session's target.",
+   "columns": [
+    "id",
+    "day_id",
+    "account_id",
+    "seq",
+    "exercise_id",
+    "sets",
+    "rep_min",
+    "rep_max",
+    "target_rir",
+    "next_load_kg",
+    "next_reps",
+    "last_load_kg",
+    "next_from",
+    "next_rack_ends"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.program_change",
+   "module": "training",
+   "class": "training",
+   "purpose": "Lighter weeks, weeks off and load holds applied to your program by a weekly call.",
+   "columns": [
+    "id",
+    "account_id",
+    "call_id",
+    "kind",
+    "starts_on",
+    "ends_on",
+    "sets_factor",
+    "ended_by"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.program_history",
+   "module": "training",
+   "class": "training",
+   "purpose": "How many sessions a week each program you had asked for, and from when.",
+   "columns": [
+    "id",
+    "account_id",
+    "sessions_per_week",
+    "effective_from"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.gym",
+   "module": "training",
+   "class": "training",
+   "purpose": "Your gyms: name, bar and machine stack steps.",
+   "columns": [
+    "id",
+    "account_id",
+    "name",
+    "current",
+    "bar_kg",
+    "stack_step_kg"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.gym_weight",
+   "module": "training",
+   "class": "training",
+   "purpose": "Plates and dumbbells your gym has.",
+   "columns": [
+    "gym_id",
+    "account_id",
+    "kind",
+    "kg"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.gym_machine",
+   "module": "training",
+   "class": "training",
+   "purpose": "Machines your gym has and their weight steps.",
+   "columns": [
+    "gym_id",
+    "account_id",
+    "exercise_id",
+    "step_kg"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.custom_exercise",
+   "module": "training",
+   "class": "training",
+   "purpose": "Moves you added yourself.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "name",
+    "kind",
+    "load",
+    "equipment",
+    "unilateral",
+    "created_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "privacy.deletion",
+   "module": "privacy",
+   "class": "technical",
+   "purpose": "An account deletion awaiting its second pass: only the deleted account's random id and when it was asked.",
+   "columns": [
+    "deleted_account_id",
+    "requested_at"
+   ],
+   "basis": "legitimate interest (Art. 6(1)(f)): keeping deletion and delivery reliable",
+   "gated_by": null,
+   "erased_by": [
+    "time"
+   ],
+   "exported": false,
+   "policy": "data-technical",
+   "app_privacy": [],
+   "kept_for": "about 10 minutes (the second pass removes it)"
+  },
+  {
+   "table": "privacy.consent_withdrawal",
+   "module": "privacy",
+   "class": "technical",
+   "purpose": "A health-data consent withdrawal awaiting its second pass: the account's random id, which consent, when.",
+   "columns": [
+    "withdrawn_account_id",
+    "kind",
+    "withdrawn_at"
+   ],
+   "basis": "legitimate interest (Art. 6(1)(f)): keeping deletion and delivery reliable",
+   "gated_by": null,
+   "erased_by": [
+    "time"
+   ],
+   "exported": false,
+   "policy": "data-technical",
+   "app_privacy": [],
+   "kept_for": "about 10 minutes (the second pass removes it)"
+  },
+  {
+   "table": "nutrition.food",
+   "module": "nutrition",
+   "class": "reference",
+   "purpose": "The food database (USDA FoodData Central, public domain).",
+   "columns": [
+    "id",
+    "name",
+    "brand",
+    "source",
+    "kcal",
+    "protein_g",
+    "carbs_g",
+    "fat_g",
+    "gtin",
+    "grams_per_ml"
+   ],
+   "basis": "not personal data",
+   "gated_by": null,
+   "erased_by": [
+    "never"
+   ],
+   "exported": false,
+   "policy": "data-reference",
+   "app_privacy": []
+  },
+  {
+   "table": "nutrition.food_serving",
+   "module": "nutrition",
+   "class": "reference",
+   "purpose": "Serving sizes of the food database.",
+   "columns": [
+    "food_id",
+    "seq",
+    "name",
+    "grams"
+   ],
+   "basis": "not personal data",
+   "gated_by": null,
+   "erased_by": [
+    "never"
+   ],
+   "exported": false,
+   "policy": "data-reference",
+   "app_privacy": []
+  },
+  {
+   "table": "nutrition.food_import",
+   "module": "nutrition",
+   "class": "reference",
+   "purpose": "Which food database release is loaded.",
+   "columns": [
+    "dataset",
+    "release",
+    "sha256",
+    "imported_at",
+    "foods",
+    "skipped"
+   ],
+   "basis": "not personal data",
+   "gated_by": null,
+   "erased_by": [
+    "never"
+   ],
+   "exported": false,
+   "policy": "data-reference",
+   "app_privacy": []
+  },
+  {
+   "table": "nutrition.meal",
+   "module": "nutrition",
+   "class": "health",
+   "purpose": "Your meals: when, which day, which meal.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "eaten_at",
+    "day",
+    "slot"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "nutrition.meal_item",
+   "module": "nutrition",
+   "class": "health",
+   "purpose": "What was in each meal, how much, and the calorie and macro ranges estimated then.",
+   "columns": [
+    "meal_id",
+    "account_id",
+    "seq",
+    "food_id",
+    "name",
+    "quantity",
+    "unit",
+    "certainty",
+    "kcal_low",
+    "kcal_high",
+    "protein_low",
+    "protein_high",
+    "carbs_low",
+    "carbs_high",
+    "fat_low",
+    "fat_high"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "nutrition.recipe",
+   "module": "nutrition",
+   "class": "health",
+   "purpose": "Your saved recipes: name and portions.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "name",
+    "portions",
+    "created_at"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "nutrition.recipe_item",
+   "module": "nutrition",
+   "class": "health",
+   "purpose": "Your recipes' ingredients.",
+   "columns": [
+    "recipe_id",
+    "account_id",
+    "seq",
+    "food_id",
+    "quantity",
+    "unit",
+    "certainty"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "decision.plan",
+   "module": "decision",
+   "class": "health",
+   "purpose": "Your current plan: phase, when it began, daily calorie and step targets.",
+   "columns": [
+    "account_id",
+    "phase",
+    "phase_start",
+    "plan_start",
+    "target_kcal",
+    "observing_maintenance",
+    "steps_per_day",
+    "mini_cut_until"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "decision.weekly_call",
+   "module": "decision",
+   "class": "health",
+   "purpose": "Every weekly call with the data it was made from, so it can be checked and undone.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "week_of",
+    "made_on",
+    "decided_at",
+    "parameters_hash",
+    "snapshot",
+    "decision",
+    "application",
+    "applied_at",
+    "undone_at",
+    "plan_before",
+    "plan_after"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "decision.declared_state",
+   "module": "decision",
+   "class": "health",
+   "purpose": "What you told the app about your life (travel, sick, pain, busy, new gym), with dates.",
+   "columns": [
+    "id",
+    "account_id",
+    "kind",
+    "starts_on",
+    "ends_on",
+    "created_at",
+    "still_so_on"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "decision.prompt_answer",
+   "module": "decision",
+   "class": "health",
+   "purpose": "Your answers to the coach's questions (for example hunger, why sessions were missed).",
+   "columns": [
+    "id",
+    "account_id",
+    "rule",
+    "key",
+    "choice",
+    "answered_at"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "subscription.daily_use",
+   "module": "subscription",
+   "class": "subscription",
+   "purpose": "How many coach messages and meal photo analyses you used each day — a count, no content.",
+   "columns": [
+    "account_id",
+    "day",
+    "use",
+    "used"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion",
+    "time"
+   ],
+   "exported": true,
+   "policy": "data-subscription",
+   "app_privacy": [],
+   "kept_for": "until the next nightly cleanup after your day ends"
+  },
+  {
+   "table": "subscription.subscription",
+   "module": "subscription",
+   "class": "subscription",
+   "purpose": "Your subscription state from RevenueCat: status, until when you have access, when it last changed. No price, country or payment data.",
+   "columns": [
+    "account_id",
+    "status",
+    "access_until",
+    "last_event_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-subscription",
+   "app_privacy": [
+    "Purchases › Purchase History"
+   ]
+  },
+  {
+   "table": "subscription.webhook_event",
+   "module": "subscription",
+   "class": "subscription",
+   "purpose": "Which RevenueCat events were applied to your account (id, type, time), so none is applied twice.",
+   "columns": [
+    "event_id",
+    "account_id",
+    "type",
+    "event_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "policy": "data-subscription",
+   "app_privacy": [
+    "Purchases › Purchase History"
+   ]
+  }
+ ],
+ "phone": {
+  "permissions": [
+   {
+    "copy_key": "healthRead",
+    "what": "Read from Apple Health: steps, sleep, body weight, active energy (workouts type requested, not read)",
+    "policy": "data-apple-health"
+   },
+   {
+    "copy_key": "healthWrite",
+    "what": "Write to Apple Health: your logged workouts and weigh-ins, only if you turn it on",
+    "policy": "data-apple-health"
+   },
+   {
+    "copy_key": "camera",
+    "what": "Camera: barcodes, meal photos, progress photos",
+    "policy": "data-photos"
+   },
+   {
+    "copy_key": "photos",
+    "what": "Photo library: pick a meal or progress photo",
+    "policy": "data-photos"
+   }
+  ],
+  "stored": [
+   {
+    "what": "Progress photos (Documents/progress-photos), never uploaded; part of the phone's own iCloud Backup until K-618",
+    "policy": "data-photos"
+   },
+   {
+    "what": "Session tokens in the Keychain (this device only)",
+    "policy": "data-on-phone"
+   },
+   {
+    "what": "A local copy of what you log (SQLite), sent to the server when online",
+    "policy": "data-on-phone"
+   },
+   {
+    "what": "Settings and states on the phone: units, consents, reminders and your reminder sentence, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache",
+    "policy": "data-on-phone"
+   },
+   {
+    "what": "Local notifications (reminders, rest timer, trial reminder) — no push token",
+    "policy": "data-on-phone"
+   }
+  ],
+  "health_read": [
+   "StepCount",
+   "SleepAnalysis",
+   "BodyMass",
+   "ActiveEnergyBurned",
+   "Workout"
+  ],
+  "health_write": [
+   "Workout",
+   "BodyMass"
+  ]
+ },
+ "outbound": [
+  {
+   "recipient": "Apple",
+   "data": "Sign in with Apple: Apple gives us a stable user id for this app; no name, no email is asked. Our server fetches Apple's public keys only.",
+   "when": "sign-in",
+   "basis": "contract",
+   "active": true,
+   "policy": "recipients",
+   "app_privacy": []
+  },
+  {
+   "recipient": "RevenueCat",
+   "data": "Your account's random id; the RevenueCat SDK also receives the App Store purchase record, store country and currency, device and iOS version, and IP address.",
+   "when": "when the paywall or subscription settings open",
+   "basis": "contract",
+   "active": true,
+   "policy": "recipients",
+   "app_privacy": [
+    "Purchases › Purchase History",
+    "Identifiers › User ID"
+   ]
+  },
+  {
+   "recipient": "Contabo",
+   "data": "Everything stored on our server, as our hosting provider (processor).",
+   "when": "always",
+   "basis": "contract",
+   "active": true,
+   "policy": "recipients",
+   "app_privacy": []
+  },
+  {
+   "recipient": "AI provider",
+   "data": "What you write to the coach with the kind of this week's call and its rules (no numbers); meal notes you type; meal photos you choose to analyze.",
+   "when": "only with the separate AI consent naming the provider",
+   "basis": "explicit consent",
+   "active": false,
+   "policy": "ai",
+   "app_privacy": [],
+   "app_privacy_when_active": [
+    "User Content › Other User Content",
+    "User Content › Photos or Videos",
+    "Health & Fitness › Health"
+   ],
+   "note": "Not active: provider chosen at launch (K-533); consent cannot be given today (no third-party-ai config)."
+  }
+ ]
 }

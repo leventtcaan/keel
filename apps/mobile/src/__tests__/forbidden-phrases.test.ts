@@ -61,6 +61,38 @@ test('the scan reads every string in en.json', () => {
   expect(keys).toContain('decision.hard_stop.low_energy_safety.body');
 });
 
+describe('legal texts (K-801, ADR-060)', () => {
+  // The published pages (docs/yasal/site): a health notice must say what the app does not do, so only the sentences in
+  // legalNegations — each a negation, each standing in a page — are taken out before the same rules run.
+  const dir = path.join(ROOT, 'docs/yasal/site');
+  const flat = (text: string) => text.replace(/\s+/g, ' ');
+  const pages = fs
+    .readdirSync(dir)
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => [name, flat(fs.readFileSync(path.join(dir, name), 'utf8'))] as const);
+  const negations = (forbidden as { legalNegations?: string[] }).legalNegations ?? [];
+
+  test('reads the pages', () => {
+    expect(pages.map(([name]) => name)).toEqual(expect.arrayContaining(['privacy.md', 'terms.md', 'health.md']));
+  });
+
+  test.each(negations)('"%s" is a negation, needed, and stands in a page', (sentence) => {
+    expect(sentence).toMatch(/\b(not|never|no)\b/i);
+    expect(forbidden.rules.some((rule) => regex(rule).test(sentence))).toBe(true);
+    expect(pages.some(([, text]) => text.includes(sentence))).toBe(true);
+  });
+
+  test('no page contains a forbidden phrase outside those sentences', () => {
+    const offenders = pages.flatMap(([name, text]) => {
+      const rest = negations.reduce((t, sentence) => t.split(sentence).join(' '), text);
+      return forbidden.rules
+        .filter((rule) => regex(rule).test(rest))
+        .map((rule) => `${name} (${rule.rule} ${rule.id}): ${rest.match(regex(rule))?.[0]}`);
+    });
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('person names (K-523, ADR-041 #72)', () => {
   const names = forbidden.personNames;
   // Case is in the pattern itself (no 'i'), as the backend reads it too.

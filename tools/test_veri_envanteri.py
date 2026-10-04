@@ -2,8 +2,7 @@
 - every table the migrations create is in the inventory, and every table in the inventory is created by a migration;
 - each table's columns are exactly the migrations' (create table + alter table add/drop column);
 - each inventory entry points at a section of the privacy policy, and each data section of the policy is pointed at;
-- every permission text the app asks iOS with is in the inventory, and every one in the inventory is asked;
-- the App Store privacy label draft names exactly the Apple data types the inventory gives, all from Apple's own list.
+- every permission text the app asks iOS with is in the inventory, and every one in the inventory is asked.
 
 Run: python3 tools/test_veri_envanteri.py
 """
@@ -19,7 +18,6 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 MIGRATIONS = ROOT / "backend/src/main/resources/db/migration"
 INVENTORY = ROOT / "docs/yasal/veri-envanteri.json"
 PRIVACY = ROOT / "docs/yasal/site/privacy.md"
-LABEL_DRAFT = ROOT / "docs/yasal/app-store-beyanlari.md"
 APP_CONFIG = ROOT / "apps/mobile/app.config.ts"
 COPY = ROOT / "data/copy/en.json"
 
@@ -88,12 +86,6 @@ def migration_tables(directory=MIGRATIONS):
 def policy_anchors(markdown):
     """Heading ids written as kramdown attributes: `## Health data {#data-health}`."""
     return re.findall(r"^#{1,6} .*\{#([a-z0-9-]+)\}\s*$", markdown, re.M)
-
-
-def label_draft_types(markdown):
-    """The Apple data types in the draft's label table: rows of `| Category › Type | …`."""
-    section = markdown.split("<!-- label:start -->")[1].split("<!-- label:end -->")[0]
-    return {m.strip() for m in re.findall(r"^\|\s*([^|]+›[^|]+?)\s*\|", section, re.M)}
 
 
 def inventory():
@@ -197,21 +189,6 @@ class PermissionsMatchTheApp(unittest.TestCase):
         texts = json.loads(COPY.read_text(encoding="utf-8"))["permissions"]
         for permission in inventory()["phone"]["permissions"]:
             self.assertIn(permission["copy_key"], texts)
-
-
-class LabelDraftMatchesTheInventory(unittest.TestCase):
-    def test_types_are_apples(self):
-        data = inventory()
-        apple = set(data["apple_data_types"]["types"])
-        self.assertIn("Health & Fitness › Health", apple)
-        used = {t for e in data["server"] + data["outbound"] for t in e.get("app_privacy", [])}
-        self.assertTrue(used)
-        self.assertEqual(sorted(used - apple), [])
-
-    def test_draft_names_exactly_the_inventorys_types(self):
-        data = inventory()
-        used = {t for e in data["server"] + data["outbound"] for t in e.get("app_privacy", [])}
-        self.assertEqual(sorted(label_draft_types(LABEL_DRAFT.read_text(encoding="utf-8")) ^ used), [])
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 {
-  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions. Every rule carries examples it must catch and near-misses it must let through; coachingNonExamples are ordinary coaching sentences no rule may catch. A number in copy is usually a {placeholder}, so number branches accept both. personNames (K-523): no person's name in the copy, the contract or the product's code, a research path aside. quotaWords (K-508): no currency words for the daily limit.",
+  "_about": "Phrases no user-facing text may contain (K-302). Checked against every string in en.json by apps/mobile/src/__tests__/forbidden-phrases.test.ts. Patterns are case-insensitive JavaScript regular expressions. Every rule carries examples it must catch and near-misses it must let through; coachingNonExamples are ordinary coaching sentences no rule may catch. A number in copy is usually a {placeholder}, so number branches accept both. personNames (K-523): no person's name in the copy, the contract or the product's code, a research path aside. quotaWords (K-508): no currency words for the daily limit. legalNegations (K-801, ADR-060): whole sentences of the legal pages (docs/yasal/site) that say what the app does not do; only these are taken out before the rules run on those pages, and each must be a negation that a rule would catch and that stands in a page.",
   "rules": [
     {
       "id": "body-fat-number",
@@ -191,5 +191,9 @@
       "Today's coach answers are used up",
       "an incredible week"
     ]
-  }
+  },
+  "legalNegations": [
+    "It does not diagnose, treat, cure or prevent any disease or condition.",
+    "The app never interprets blood tests or other lab results; take them to your doctor."
+  ]
 }
