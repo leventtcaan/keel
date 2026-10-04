@@ -16,20 +16,16 @@
   },
   "screens": {
     "today": {
-      "title": "Today",
-      "note": "Your consistency, this week's call and today's list arrive in M4."
+      "title": "Today"
     },
     "train": {
-      "title": "Train",
-      "note": "Sessions and sets arrive in M4."
+      "title": "Train"
     },
     "food": {
-      "title": "Food",
-      "note": "Meal logging arrives in M4."
+      "title": "Food"
     },
     "progress": {
-      "title": "Progress",
-      "note": "Photos and strength arrive next."
+      "title": "Progress"
     },
     "coach": {
       "title": "Coach"
@@ -784,7 +780,7 @@
       "fat_first": "With fat to lose, losing it first makes later muscle gains show.",
       "fat_trimmed_for_carbs": "Fat was trimmed toward its lower limit to leave room for the carbs your training runs on.",
       "female_fat_offset": "Women's bodies naturally carry more fat, so the points for changing direction sit higher.",
-      "forgiven_week_used": "One off week is forgiven; this was that week.",
+      "forgiven_week_used": "A single off week doesn't end your run; this was one.",
       "full_rest_week": "After a run of missed sessions, a full week off lets you come back fresh.",
       "genetic_limit": "Closer to your natural limit, gains come slower, so the pace eases to match.",
       "hunger_first_days": "Hunger in the first days of eating less is common, and it usually settles.",
@@ -1615,7 +1611,7 @@
       "title": "Your photos stay on your phone",
       "local": {
         "title": "Processed on this device.",
-        "body": "Progress photos are never uploaded. Not to us, not to anyone."
+        "body": "This app never uploads progress photos. Not to us, not to anyone."
       },
       "cadence": {
         "title": "One photo every {weeks} weeks.",
@@ -1824,8 +1820,8 @@
     "next": "Next photo from {date}. Weekly changes are too small to see.",
     "open": "Photo window open since {date}. Same spot, same light, morning.",
     "count": {
-      "one": "{count} photo day on this phone. keel never uploads them.",
-      "other": "{count} photo days on this phone. keel never uploads them."
+      "one": "{count} photo day on this phone. This app never uploads them.",
+      "other": "{count} photo days on this phone. This app never uploads them."
     },
     "take": "Take photos",
     "compare": "Compare",
@@ -1843,7 +1839,7 @@
     },
     "guide": "Same spot, same light, morning.",
     "ghost": "The faded photo is your last one. Line up with it.",
-    "onPhone": "Kept on this phone only. Never uploaded.",
+    "onPhone": "Kept on this phone. This app never uploads them.",
     "level": "Level {degrees}°",
     "levelOk": "Hold steady",
     "levelOff": "Straighten the phone",
