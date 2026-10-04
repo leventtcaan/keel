@@ -3233,6 +3233,24 @@ tasks:
     learn:
       - "Rızanın kanıtı: metin sürümü (GDPR Md. 7(1))"
 
+  - id: K-809
+    title: "Paywall'ın Kullanım Şartları ve Gizlilik Politikası adresleri yapılandırmada"
+    milestone: M8
+    module: mobile
+    type: chore
+    size: S
+    status: todo
+    depends_on: [K-801, K-702]
+    why: "İki yasal adres yoksa paywall satmaz ve zorunlu paywall kapısı açık kalır (ADR-057 D3, ADR-058); adresler GitHub Pages'te (ADR-059 #3)"
+    acceptance:
+      - "Her EAS derleme profilinde EXPO_PUBLIC_TERMS_URL ve EXPO_PUBLIC_PRIVACY_URL (gizli değil, eas.json › env)"
+      - "Adresler docs/yasal/site'taki sayfaların yayın adresine çıkar (_config.yml url + baseurl + permalink); paywall ikisini de gösterir"
+    tests:
+      - "Mobil: her profilde iki adres, https, legalComplete; her adres bir sayfanın permalink'i"
+    refs: ["plan/kararlar/ADR-057-paywall-telefonda.md", "plan/kararlar/ADR-060-veri-envanteri-ve-yasal-metinler.md"]
+    learn:
+      - "Derleme zamanı ortam değişkenleri (EXPO_PUBLIC_*)"
+
 # ───────────────────────────── M9 · Beta ─────────────────────────────
   - id: K-901
     title: "VPS dağıtımı: Docker Compose, HTTPS, yedek"
