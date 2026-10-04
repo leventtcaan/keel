@@ -9,7 +9,7 @@ import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { load } from '@/today/today';
 
-import type { LegalLink } from './links';
+import { type LegalLink, legalComplete } from './links';
 import { subscriptionParams } from './params';
 import type { Bought, Plan, SubscriptionStore } from './store';
 
@@ -43,14 +43,13 @@ async function identify({ api, store }: Deps): Promise<Subscription> {
   return read.value;
 }
 
-const LEGAL = ['subscription.terms', 'subscription.privacy'];
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
 
 export async function openPaywall(
   deps: Deps & { report: (problem: { name: string }) => void; links: LegalLink[] },
 ): Promise<Opened> {
   if (!deps.store.available) return { state: 'unavailable' };
-  if (!LEGAL.every((key) => deps.links.some((link) => link.key === key))) return { state: 'incomplete' };
+  if (!legalComplete(deps.links)) return { state: 'incomplete' };
   const read = await readSubscription(deps.api);
   if (read.state !== 'ready') return { state: 'offline' };
   if (read.value.active) return { state: 'subscribed', subscription: read.value };

@@ -13,6 +13,11 @@ export function legalLinks({ terms, privacy }: { terms: string | undefined; priv
   return links.filter((link) => link.url.startsWith('https://'));
 }
 
+/** Both the Terms of Use and the Privacy Policy are there: only then is anything sold (Apple 3.1.2, ADR-057 D3). */
+export function legalComplete(links: LegalLink[]): boolean {
+  return ['subscription.terms', 'subscription.privacy'].every((key) => links.some((link) => link.key === key));
+}
+
 /** The build's links: the static reads are what Expo replaces, so they stay spelled out. */
 export function configuredLegalLinks(): LegalLink[] {
   return legalLinks({ terms: process.env.EXPO_PUBLIC_TERMS_URL, privacy: process.env.EXPO_PUBLIC_PRIVACY_URL });
