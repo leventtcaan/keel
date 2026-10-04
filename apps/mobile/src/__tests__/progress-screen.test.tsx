@@ -16,11 +16,13 @@ import type { TrainData } from '@/train/trainData';
 type Schemas = components['schemas'];
 
 const mockPush = jest.fn();
+let mockFocus: (() => void) | null = null;
 jest.mock('expo-router', () => ({
   router: { push: (to: unknown) => mockPush(to) },
   useRouter: () => ({ push: (to: unknown) => mockPush(to) }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
+    mockFocus = effect;
     React.useEffect(effect, [effect]);
   },
 }));
@@ -132,7 +134,7 @@ test('a lift: its latest week large, where it started, and a chart whose labels 
   // The labels: the real lowest (96, Sep 7) and highest (104, this week) — not 95 or 105, which no week reached.
   expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['96 kg', '104 kg']);
   expect(chart().props.accessibilityLabel).toBe(
-    t('strength.spoken', {
+    `${t('strength.spoken', {
       move: t('exercises.bench_press.name'),
       first: '96 kg',
       firstDate: 'Sep 7',
@@ -140,7 +142,7 @@ test('a lift: its latest week large, where it started, and a chart whose labels 
       lastDate: 'Sep 28',
       low: '96 kg',
       high: '104 kg',
-    }),
+    })} ${t('strength.spokenEasier', { weeks: 'Sep 14' })}`,
   );
 });
 
@@ -199,4 +201,84 @@ test('a read that fails is reported, not shown as a crash', async () => {
   mockServices.training.history.mockRejectedValueOnce(new TypeError('x'));
   await show();
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'TypeError' });
+});
+
+const at = (week: string) => within(chart()).getByTestId(`strength-point-${week}`).props as { cx: number; cy: number };
+const tickYs = () => within(chart()).getAllByTestId('strength-tick').map((tick) => (tick.props.y as number[])[0]);
+
+test.each(['METRIC', 'IMPERIAL'] as const)('in %s the points are drawn on the labels scale, week after week, the band over the last two', async (units) => {
+  mockUnits = units;
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+  const [low, high] = [at('2026-09-07'), at('2026-09-28')]; // 96 and 104
+  const [lowTick, highTick] = tickYs();
+  // Each label sits the same distance from the point it names: on the same scale, in either unit.
+  expect(lowTick - low.cy).toBeCloseTo(highTick - high.cy, 6);
+  expect(high.cy).toBeLessThan(low.cy);
+  const weeks = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28'];
+  const xs = weeks.map((week) => at(week).cx);
+  for (let i = 1; i < xs.length; i += 1) expect(xs[i]).toBeGreaterThan(xs[i - 1]);
+  const band = within(chart()).getByTestId('strength-band').props.x as number;
+  expect(band).toBeGreaterThan(at('2026-09-21').cx);
+  expect(band).toBeLessThan(at('2026-09-28').cx);
+  // The line runs through the very same points.
+  const line = within(chart()).getByTestId('strength-line').props.d as string;
+  expect(line).toBe(`M${weeks.map((week) => `${at(week).cx} ${at(week).cy}`).join(' ')}`);
+});
+
+test('the dates under the chart: the line first Monday, inside the 90 days, and this week', async () => {
+  await show();
+  expect(svgText(within(chart()).getByTestId('strength-from'))).toBe('Jul 13');
+  expect(svgText(within(chart()).getByTestId('strength-to'))).toBe('Oct 5');
+});
+
+test('in pounds, two weights that read as one are the same weight: a ring', async () => {
+  mockUnits = 'IMPERIAL';
+  mockHistory = {
+    state: 'ready',
+    value: [workout('2026-09-21', [set('bench_press', 62.5, 8, 0)]), workout('2026-09-28', [set('bench_press', 62.51, 8, 1)])],
+  };
+  await show();
+  expect(within(chart()).getAllByTestId(/^strength-easier-/).map((ring) => ring.props.testID)).toEqual(['strength-easier-2026-09-28']);
+});
+
+test('no ring, no word about rings: neither in the legend nor in what VoiceOver says', async () => {
+  mockHistory = { state: 'ready', value: [workout('2026-09-21', [set('bench_press', 80, 5, 1)]), workout('2026-09-28', [set('bench_press', 85, 5, 1)])] };
+  await show();
+  expect(screen.queryByText(t('strength.legendEasier'))).toBeNull();
+  expect(chart().props.accessibilityLabel).not.toContain(t('strength.spokenEasier', { weeks: '' }).trim());
+});
+
+test('one lift: no chips to pick from', async () => {
+  mockHistory = { state: 'ready', value: [workout('2026-09-28', [set('bench_press', 80, 5, 1)])] };
+  await show();
+  expect(screen.queryByRole('button', { name: t('exercises.bench_press.name') })).toBeNull();
+  expect(screen.getByTestId('strength-latest')).toHaveTextContent('96 kg');
+});
+
+test('nothing to draw: the windows are not explained either', async () => {
+  mockHistory = { state: 'ready', value: [] };
+  await show();
+  expect(screen.queryByText(t('strength.callNote'))).toBeNull();
+  expect(screen.queryByText(t('strength.judgeNote'))).toBeNull();
+});
+
+test('the server answered: no "on this phone" note', async () => {
+  await show();
+  expect(screen.queryByText(t('history.phoneOnly'))).toBeNull();
+});
+
+test('the catalog never read on this phone: said so, not "log a lift"', async () => {
+  mockData = { program: { state: 'none' }, exercises: { state: 'failed', problem: 'NoConnection' }, kept: false };
+  await show();
+  expect(screen.getByText(t('strength.loadFailed'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('strength.empty'))).toBeNull();
+});
+
+test('a picked lift gone from the next read: the first lift shown, no crash', async () => {
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+  mockHistory = { state: 'ready', value: [workout('2026-09-28', [set('squat', 100, 5, 1)])] };
+  await act(async () => mockFocus?.());
+  expect(screen.getByTestId('strength-latest')).toHaveTextContent('120 kg');
 });

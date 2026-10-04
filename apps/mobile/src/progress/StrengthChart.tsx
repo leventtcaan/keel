@@ -43,11 +43,14 @@ export function StrengthChart({ points, from, today, units, move }: Props) {
     low: formatLoad(scale.ticks[0].point.kg, units),
     high: formatLoad(scale.ticks[scale.ticks.length - 1].point.kg, units),
   });
+  // The rings, said too: a screen reader reaches the chart as one image.
+  const easier = points.filter((p) => p.easier).map((p) => shortDate(p.week));
+  const spokenAll = easier.length === 0 ? spoken : `${spoken} ${t('strength.spokenEasier', { weeks: easier.join(', ') })}`;
   const at = (p: StrengthPoint) => ({ cx: scale.x(p.week), cy: scale.y(shown(p.kg)) });
   const label = { fontFamily: tokens.font.displaySemiBold, fontSize: tokens.type.label, fill: color.muted };
 
   return (
-    <View testID="strength-chart" accessible accessibilityRole="image" accessibilityLabel={spoken} style={{ aspectRatio: WIDTH / HEIGHT }}>
+    <View testID="strength-chart" accessible accessibilityRole="image" accessibilityLabel={spokenAll} style={{ aspectRatio: WIDTH / HEIGHT }}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
         <Rect testID="strength-band" x={scale.bandX} y={0} width={WIDTH - scale.bandX} height={BOX.bottom} fill={color.background} />
         <SvgText
@@ -69,13 +72,14 @@ export function StrengthChart({ points, from, today, units, move }: Props) {
             {formatLoad(tick.point.kg, units)}
           </SvgText>
         ))}
-        <SvgText x={BOX.left} y={DATE_Y} textAnchor="start" {...label}>
+        <SvgText testID="strength-from" x={BOX.left} y={DATE_Y} textAnchor="start" {...label}>
           {shortDate(weekOf(from))}
         </SvgText>
-        <SvgText x={BOX.right} y={DATE_Y} textAnchor="end" {...label}>
+        <SvgText testID="strength-to" x={BOX.right} y={DATE_Y} textAnchor="end" {...label}>
           {shortDate(weekOf(today))}
         </SvgText>
         <Polyline
+          testID="strength-line"
           points={points.map((p) => `${at(p).cx},${at(p).cy}`).join(' ')}
           fill="none"
           stroke={color.text}

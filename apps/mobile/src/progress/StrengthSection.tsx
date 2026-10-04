@@ -15,13 +15,14 @@ import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 import { StrengthChart } from './StrengthChart';
 import { strengthMoves, strengthPoints, windowFrom } from './strength';
 
-type Props = { moves: ReadonlyMap<string, Move>; sessions: Session[]; today: string; units: UnitSystem };
+/** `catalogRead`: the exercise catalog was read (now or a copy kept): without it no lift's load model is known. */
+type Props = { moves: ReadonlyMap<string, Move>; catalogRead: boolean; sessions: Session[]; today: string; units: UnitSystem };
 
 /**
  * Strength on the Progress tab (K-604, prototype 4.4): one lift at a time — the latest week large, where the window
  * started, the chart — then the two windows side by side, each saying which part of the chart it is.
  */
-export function StrengthSection({ moves, sessions, today, units }: Props) {
+export function StrengthSection({ moves, catalogRead, sessions, today, units }: Props) {
   const { color } = useTheme();
   const lifts = strengthMoves(moves, sessions, today);
   const [picked, setPicked] = useState<string | null>(null);
@@ -31,7 +32,7 @@ export function StrengthSection({ moves, sessions, today, units }: Props) {
   // Built outside the JSX below (the raw-text guard reads JSX children).
   const body =
     lift === undefined ? (
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('strength.empty')}</Text>
+      <Text style={[styles.text, { color: color.textSecondary }]}>{t(catalogRead ? 'strength.empty' : 'strength.loadFailed')}</Text>
     ) : (
       <Card>
         <View style={styles.top}>
@@ -44,7 +45,7 @@ export function StrengthSection({ moves, sessions, today, units }: Props) {
         </View>
         <StrengthChart points={points} from={windowFrom(today)} today={today} units={units} move={exerciseName(lift, moves)} />
         <Text style={[styles.small, { color: color.muted }]}>{t('strength.legendLine')}</Text>
-        <Text style={[styles.small, { color: color.accent }]}>{t('strength.legendEasier')}</Text>
+        {points.some((p) => p.easier) && <EasierLegend />}
       </Card>
     );
   // The two windows say which part of the chart is which: only with a chart.
@@ -80,6 +81,12 @@ export function StrengthSection({ moves, sessions, today, units }: Props) {
       {windows}
     </View>
   );
+}
+
+/** What a ring means; only under a chart that has one. */
+function EasierLegend() {
+  const { color } = useTheme();
+  return <Text style={[styles.small, { color: color.accent }]}>{t('strength.legendEasier')}</Text>;
 }
 
 /** One of the two windows (prototype 4.4 `.win .tile`): the decision window light, the evaluation window dark. */

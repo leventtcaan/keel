@@ -46,6 +46,7 @@ export default function ProgressScreen() {
     read === null ? null : (
       <StrengthSection
         moves={movesOf(read.data, read.own)}
+        catalogRead={read.data.exercises.state === 'ready'}
         sessions={sessionsOf(server, read.records, read.from)}
         today={read.today}
         units={units}

@@ -66,7 +66,8 @@ describe('any line', () => {
     const values = line.map((p) => p.kg);
     const [low, high] = [Math.min(...values), Math.max(...values)];
     expect(scale.ticks.map((tick) => tick.point.kg)).toEqual(low === high ? [low] : [low, high]);
-    for (const tick of scale.ticks) expect(tick.y).toBe(scale.y(tick.point.kg));
+    // The lowest at the bottom, the highest at the top; a flat line half way.
+    expect(scale.ticks.map((tick) => tick.y)).toEqual(low === high ? [75] : [BOX.bottom, BOX.top]);
     for (const p of line) {
       expect(scale.y(p.kg)).toBeGreaterThanOrEqual(BOX.top);
       expect(scale.y(p.kg)).toBeLessThanOrEqual(BOX.bottom);

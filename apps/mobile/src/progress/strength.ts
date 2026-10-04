@@ -33,9 +33,14 @@ export function weekOf(day: string): string {
   return plusDays(day, -((weekday + 6) % 7));
 }
 
-/** The evaluation window's first day: evaluation_window_days days, today included. */
+/**
+ * The line's first day: the first Monday inside the evaluation window (evaluation_window_days days, today included).
+ * Every week on the line is whole — a week counted from its Friday would be called the week's best, and start low.
+ */
 export function windowFrom(today: string): string {
-  return plusDays(today, -(workoutParams.evaluationWindowDays - 1));
+  const first = plusDays(today, -(workoutParams.evaluationWindowDays - 1));
+  const monday = weekOf(first);
+  return monday === first ? first : plusDays(monday, 7);
 }
 
 /** The decision window's first Monday: effort_call_window_weeks weeks, this one included. */

@@ -35,9 +35,12 @@ describe('the windows', () => {
     expect(weekOf('2026-03-01')).toBe('2026-02-23'); // across a month (and the clocks in March)
   });
 
-  test('the evaluation window is evaluation_window_days days, today included', () => {
+  test('the line starts on the first Monday inside the evaluation window (90 days, today included): every week whole', () => {
     expect(workoutParams.evaluationWindowDays).toBe(90);
-    expect(windowFrom(TODAY)).toBe('2026-07-10');
+    // 90 days back from Wednesday Oct 7 is Friday Jul 10: its week would be counted from Friday only, and called the week's best.
+    expect(windowFrom(TODAY)).toBe('2026-07-13');
+    expect(windowFrom('2026-10-11')).toBe('2026-07-20'); // a Sunday: 90 days back is Tuesday Jul 14, so the next Monday
+    expect(windowFrom('2026-10-10')).toBe('2026-07-13'); // 90 days back is Monday Jul 13 itself
   });
 
   test('the decision window is this week and the one before', () => {
@@ -71,9 +74,20 @@ describe('a lift week by week', () => {
     expect(strengthPoints('bench', sessions, TODAY)).toEqual([{ week: '2026-09-14', kg: 72, easier: false }]);
   });
 
-  test('the line spans the evaluation window: its first day in, the day before out', () => {
-    const sessions = [session('2026-07-09', [set('bench', 60, 5, 1)]), session('2026-07-10', [set('bench', 50, 5, 1)])];
-    expect(strengthPoints('bench', sessions, TODAY)).toEqual([{ week: '2026-07-06', kg: 60, easier: false }]); // 50 × 36/30
+  test('the line spans whole weeks: its first Monday in, the Sunday before out', () => {
+    const sessions = [session('2026-07-12', [set('bench', 60, 5, 1)]), session('2026-07-13', [set('bench', 50, 5, 1)])];
+    expect(strengthPoints('bench', sessions, TODAY)).toEqual([{ week: '2026-07-13', kg: 60, easier: false }]); // 50 × 36/30
+  });
+
+  test('a session logged today counts at once; one dated tomorrow does not', () => {
+    const sessions = [session(TODAY, [set('bench', 50, 5, 1)]), session('2026-10-08', [set('bench', 100, 5, 1)])];
+    expect(strengthPoints('bench', sessions, TODAY)).toEqual([{ week: '2026-10-05', kg: 60, easier: false }]);
+  });
+
+  test('the week is its best estimate, whichever set gives it: not the heaviest set', () => {
+    // 100 × 1 at RIR 0 is the load itself, 100; 90 × 8 at RIR 1 is 90 × 39/30 = 117.
+    const sessions = [session('2026-09-28', [set('bench', 100, 1, 0), set('bench', 90, 8, 1)])];
+    expect(strengthPoints('bench', sessions, TODAY).map((p) => p.kg)).toEqual([117]);
   });
 
   test('a ring where the same weight went for the same reps with more reps in reserve', () => {
@@ -94,6 +108,39 @@ describe('a lift week by week', () => {
     ];
     // This week's top set is 80 × 6 at RIR 0 (the fewest in reserve of the two at 80 × 6): no easier than last week's.
     expect(strengthPoints('bench', sessions, TODAY).map((p) => p.easier)).toEqual([false, false]);
+  });
+
+  test('the top set is the heaviest, not the one with the most reps', () => {
+    const sessions = [
+      session('2026-09-21', [set('bench', 100, 3, 1), set('bench', 60, 10, 0)]),
+      session('2026-09-28', [set('bench', 100, 3, 2), set('bench', 60, 10, 0)]),
+    ];
+    expect(strengthPoints('bench', sessions, TODAY).map((p) => p.easier)).toEqual([false, true]);
+  });
+
+  test('at the top weight, the set with the most reps', () => {
+    const sessions = [
+      session('2026-09-21', [set('bench', 100, 5, 1), set('bench', 100, 3, 1)]),
+      session('2026-09-28', [set('bench', 100, 5, 2), set('bench', 100, 3, 0)]),
+    ];
+    expect(strengthPoints('bench', sessions, TODAY).map((p) => p.easier)).toEqual([false, true]);
+  });
+
+  test('at the top weight and reps, the fewest in reserve, in whichever order they were done', () => {
+    const sessions = [
+      session('2026-09-21', [set('bench', 80, 6, 1)]),
+      session('2026-09-28', [set('bench', 80, 6, 2), set('bench', 80, 6, 0)]),
+    ];
+    expect(strengthPoints('bench', sessions, TODAY).map((p) => p.easier)).toEqual([false, false]);
+  });
+
+  test('each week is compared with the week before it, not the first', () => {
+    const sessions = [
+      session('2026-09-14', [set('bench', 80, 5, 2)]),
+      session('2026-09-21', [set('bench', 80, 5, 0)]),
+      session('2026-09-28', [set('bench', 80, 5, 1)]),
+    ];
+    expect(strengthPoints('bench', sessions, TODAY).map((p) => p.easier)).toEqual([false, false, true]);
   });
 
   test('weights read as the user sees them: two that show as one weight are the same weight', () => {
@@ -127,7 +174,29 @@ describe('the lifts it draws', () => {
     expect(strengthMoves(MOVES, sessions, TODAY)).toEqual(['squat', 'bench', 'row']);
   });
 
+  test('two lifts with as many weeks: by id, whichever was logged first', () => {
+    const sessions = [session('2026-09-28', [set('row', 70, 8, 1), set('bench', 80, 8, 1)])];
+    expect(strengthMoves(MOVES, sessions, TODAY)).toEqual(['bench', 'row']);
+  });
+
   test('a lift not in the catalog read is left out: its load model is unknown', () => {
     expect(strengthMoves(MOVES, [session('2026-09-28', [set('unknown', 80, 8, 1)])], TODAY)).toEqual([]);
+  });
+});
+
+describe('the day is the phone calendar day', () => {
+  const zone = process.env.TZ;
+  // A phone in Istanbul (UTC+3): 00:30 on Monday Oct 5 is 21:30 on Sunday in UTC.
+  beforeAll(() => {
+    process.env.TZ = 'Europe/Istanbul';
+  });
+  afterAll(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  });
+
+  test('a session just after midnight on Monday is in Monday week', () => {
+    const early = { clientId: 'early', startedAt: '2026-10-04T21:30:00Z', sets: [set('bench', 50, 5, 1)] };
+    expect(strengthPoints('bench', [early], TODAY).map((p) => p.week)).toEqual(['2026-10-05']);
   });
 });

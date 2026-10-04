@@ -1849,6 +1849,8 @@
     "legendLine": "Best estimated 1RM of the week",
     "legendEasier": "Same weight and reps, more reps in reserve",
     "band": "Call",
+    "spokenEasier": "Same weight and reps with more reps in reserve in the week of {weeks}.",
+    "loadFailed": "Strength couldn't load. Try again when you're online.",
     "spoken": "{move}, estimated 1RM by week: {first} in the week of {firstDate}, {last} in the week of {lastDate}. Lowest {low}, highest {high}.",
     "callEyebrow": "Decisions",
     "callTitle": "The last {weeks} weeks",
