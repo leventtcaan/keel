@@ -121,7 +121,9 @@ Health stays in Apple Health (you can delete it in the Health app).
   Signing out or deleting your account deletes them from the phone, so save the ones you want first.
 - The camera is used for barcodes, meal photos and progress photos; the photo library to pick a meal or progress photo.
   The microphone is never used.
-- A meal photo is sent only when you choose to analyze it, and only once the AI coach is active (see below).
+- A meal photo is sent only when you choose to analyze it, and only once the AI coach is active (see below). The app keeps
+  no copy of it: the files it writes to read the photo are deleted once it is read, and any left over when you sign out
+  or delete your account.
 
 ### What else stays on the phone {#data-on-phone}
 
