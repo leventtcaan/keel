@@ -3048,8 +3048,6 @@ tasks:
     refs: ["plan/kararlar/ADR-056-yetki-sunucuda.md", "plan/kararlar/ADR-012-abonelik-ve-kota.md"]
     learn: ["Sunucu doğruluğu, istemci görünümü"]
 
-# ───────────────────────────── M8 · Uyum ve yasal ─────────────────────────────
-
   - id: K-706
     title: "Onboarding sonunda zorunlu paywall; aboneliği biten deterministik modda"
     milestone: M7
@@ -3093,6 +3091,8 @@ tasks:
       - plan/kararlar/ADR-036-bildirimler.md
     learn:
       - "Yerel bildirim kimliği ve yaşam döngüsü"
+# ───────────────────────────── M8 · Uyum ve yasal ─────────────────────────────
+
   - id: K-801
     title: "Gizlilik politikası, kullanım şartları, sağlık feragatnamesi"
     milestone: M8
