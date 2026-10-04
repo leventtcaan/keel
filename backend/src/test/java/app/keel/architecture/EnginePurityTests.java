@@ -35,6 +35,9 @@ class EnginePurityTests {
     private static final Pattern REFLECTION =
             Pattern.compile("forName|getDeclared(Method|Field|Constructor)s?|get(Method|Field|Constructor)s?");
 
+    private static final Pattern NON_STRICT_MATH =
+            Pattern.compile("log|log10|log1p|exp|expm1|pow|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|cbrt|hypot");
+
     private static final JavaClasses ENGINE_CLASSES = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_PACKAGE_INFOS)
@@ -91,6 +94,10 @@ class EnginePurityTests {
             .orShould().callMethodWhere(DescribedPredicate.describe("use reflection",
                     (JavaMethodCall call) -> call.getTargetOwner().getName().equals("java.lang.Class")
                             && REFLECTION.matcher(call.getName()).matches()))
+            // java.lang.Math may use a faster, machine-specific algorithm for these (up to 1 ulp apart); StrictMath may not.
+            .orShould().callMethodWhere(DescribedPredicate.describe("use machine-dependent floating-point maths",
+                    (JavaMethodCall call) -> call.getTargetOwner().getName().equals("java.lang.Math")
+                            && NON_STRICT_MATH.matcher(call.getName()).matches()))
             .because("a decision must not depend on which machine, time zone or thread computes it (ADR-003 §1, U2)");
 
     private static final List<ArchRule> ALL_RULES = List.of(ONLY_JDK_AND_ITSELF, NO_IO, NO_CLOCK_OR_RANDOMNESS, NO_ENVIRONMENT);

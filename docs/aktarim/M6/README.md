@@ -10,3 +10,6 @@
 4. K-603 "kilo sabit, bel düştü" (`K-603.md`) — spine'ın hükmü, bel aralığı, karardan bağımsız
 5. K-611 karar defteri (`K-611.md`) — "after" dili, yalnız son karar bekler
 6. K-610 "kararı ne değiştirir?" (`K-610.md`) — canlı plandan örnek hafta, tavanın payı, örnek etiketi
+
+## Aktarım sırası (Part 2 · Projeksiyon)
+7. K-605 enerji dengesi modeli (`K-605.md`, ADR-051) — Hall denklemleri, K'nın türetmesi, RK4, doğrusallaştırma testi, hata payının yeniden okunması

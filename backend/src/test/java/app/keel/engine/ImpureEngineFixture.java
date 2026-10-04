@@ -68,5 +68,6 @@ public final class ImpureEngineFixture {
     static final class StartsThread { void x() { new Thread(() -> { }).start(); } }
     static final class UsesRuntime { Object x() { return Runtime.getRuntime(); } }
     static final class UsesProcess { Object x() { return new ProcessBuilder("ls"); } }
+    static final class NonStrictLog { double x() { return Math.log(2); } }
     static final class UsesReflection { Object x() throws Exception { return String.class.getDeclaredMethod("length"); } }
 }

@@ -56,7 +56,22 @@ public enum Unit {
     // The daily step target (G2 K-42).
     STEPS_PER_DAY("steps_per_day", Kind.WHOLE, Bound.POSITIVE),
     // How many reference looks the user picks from (K-224).
-    LEVELS("levels", Kind.WHOLE, Bound.POSITIVE);
+    LEVELS("levels", Kind.WHOLE, Bound.POSITIVE),
+
+    // The projection's energy balance model (Hall 2011, H12 M2-M5): published constants in the model's own units.
+    MJ_PER_KG("mj_per_kg", Kind.FRACTION, Bound.POSITIVE),
+    KJ_PER_KG("kj_per_kg", Kind.FRACTION, Bound.POSITIVE),
+    KJ_PER_KG_PER_DAY("kj_per_kg_per_day", Kind.FRACTION, Bound.POSITIVE),
+    // Grams of water stored with a gram of glycogen (more than 1, so not a ratio).
+    G_PER_G("g_per_g", Kind.FRACTION, Bound.POSITIVE),
+    MG_PER_ML("mg_per_ml", Kind.FRACTION, Bound.POSITIVE),
+    MG_PER_L_PER_DAY("mg_per_l_per_day", Kind.FRACTION, Bound.POSITIVE),
+    MG_PER_DAY("mg_per_day", Kind.FRACTION, Bound.POSITIVE),
+    // Terms of the starting body fat regression (Jackson 2002): inside the model only, never shown (U4). The constant
+    // term is negative.
+    PERCENT_PER_YEAR_INTERNAL_ONLY("percent_per_year_internal_only", Kind.FRACTION, Bound.POSITIVE),
+    PERCENT_PER_LN_BMI_INTERNAL_ONLY("percent_per_ln_bmi_internal_only", Kind.FRACTION, Bound.POSITIVE),
+    PERCENT_OFFSET_INTERNAL_ONLY("percent_offset_internal_only", Kind.FRACTION, Bound.NONE);
 
     /** What a value in this unit is. */
     public enum Kind {
