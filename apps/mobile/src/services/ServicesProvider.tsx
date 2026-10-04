@@ -43,6 +43,11 @@ export type PhoneServices = AppServices & {
    * the two consents are not both given (nothing is read then).
    */
   importHealthWeights(): Promise<number | 'consent'>;
+  /**
+   * The system's file picker for another app's export (K-609): the chosen file's text, read on the phone; null when none
+   * was chosen. The file goes nowhere from here (import/formats.ts reads it).
+   */
+  importFile: { pick(): Promise<string | null> };
   /** The account's data as a JSON file, handed to the share sheet (K-309). */
   exportData(): Promise<void>;
 };
@@ -96,6 +101,12 @@ async function build(): Promise<PhoneServices> {
         consented: () => bothHealthConsents(services.consents),
         now: new Date(),
       }),
+    importFile: {
+      pick: async () => {
+        const picked = await File.pickFileAsync();
+        return picked.canceled ? null : picked.result.text();
+      },
+    },
     exportData: () =>
       exportAccount({
         api: services.api,

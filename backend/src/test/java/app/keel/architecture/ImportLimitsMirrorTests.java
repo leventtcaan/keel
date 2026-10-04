@@ -32,9 +32,10 @@ class ImportLimitsMirrorTests {
         List<Map<String, Object>> phone = (List<Map<String, Object>>) JsonMapper.builder().build()
                 .readValue(Files.readString(Path.of("../data/parameters/import.json")), Map.class).get("parameters");
         Object perRequest = phone.stream().filter(p -> "import_workouts_per_request".equals(p.get("key"))).findFirst().orElseThrow().get("value");
+        Object perSession = phone.stream().filter(p -> "import_sets_per_session_max".equals(p.get("key"))).findFirst().orElseThrow().get("value");
 
         assertThat(workouts.get("maxItems")).as("contract").isEqualTo(server.get("max-workouts")).isEqualTo(perRequest);
-        assertThat(sets.get("maxItems")).as("contract").isEqualTo(server.get("max-sets"));
+        assertThat(sets.get("maxItems")).as("contract").isEqualTo(server.get("max-sets")).isEqualTo(perSession);
     }
 
     @SuppressWarnings("unchecked")
