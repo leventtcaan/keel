@@ -22,3 +22,6 @@
 12. K-614 fotoğraf kütüphanesi ve pencere (`K-614.md`) — yalnız cihazda klasör, gerçek takvim günü, açık kalan pencere, ağa gitmediğinin üç kanıtı
 13. K-601 rehberli çekim (`K-601.md`) — soğan kabuğu, eğim matematiği, tek dokunuş tek fotoğraf, izin metni
 14. K-602 karşılaştırma çıpası (`K-602.md`) — kullanıcının seçtiği geçmiş nokta, aynı poz, yan yana/kaydırma, before/after yok
+
+## Aktarım sırası (Part 4 · İçe aktarma, paylaşım)
+15. K-615 içe aktarılan geçmiş, sunucu (`K-615.md`, ADR-053) — kaynakla dışlama, toplu uç, hepsi ya da hiçbiri, ilk gün güvenlik ağı hatası
