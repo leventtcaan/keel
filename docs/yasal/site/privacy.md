@@ -119,7 +119,8 @@ Health stays in Apple Health (you can delete it in the Health app).
 
 - **Progress photos stay on your phone.** They are stored in the app's own folder, never uploaded, and only what you
   conclude from them (better, same or worse) is sent. If your phone is backed up to iCloud, that backup is between you and Apple and may include them.
-  Signing out or deleting your account deletes them from the phone, so save the ones you want first.
+  Signing out or deleting your account deletes them from the phone, so save the ones you want first. To know whose they
+  are, the phone keeps a one-way fingerprint (SHA-256) of your Apple user id for this app.
 - The camera is used for barcodes, meal photos and progress photos; the photo library to pick a meal or progress photo.
   The microphone is never used.
 - A meal photo is sent only when you choose to analyze it, and only once the AI coach is active (see below). The app keeps
@@ -130,7 +131,12 @@ Health stays in Apple Health (you can delete it in the Health app).
 
 To work offline, the app keeps a copy of what you log until it is sent, and keeps your settings and reminders on the
 phone: units, consents, reminders (including the sentence you wrote for them), your declared state, the result of the
-eating-pattern check (your answers are never stored), progress projections and a trial reminder if you asked for one.
+eating-pattern check (your answers are never stored), progress projections and a trial reminder if you asked for one. It
+also keeps a copy of your program, exercises, your own moves and their setups, gym and training history for training
+offline; your Apple Health switches, and the steps, sleep and active energy of the recent days it sent (up to 28 days),
+so a day isn't sent twice; whether you finished setting up and whether your account has met the subscription screen; the
+sex in your profile, to draw the muscle map; and the last days you opened the app (never sent), to notice a long gap and
+to time reminders.
 Your session is kept in the iPhone Keychain, on this device only. Notifications are local: the app has no push service.
 Signing out or deleting your account clears all of this from the phone, with one exception: if the eating-pattern check
 said projections aren't available, that result stays on the phone, so signing out doesn't reopen them.
