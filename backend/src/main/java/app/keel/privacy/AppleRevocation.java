@@ -47,18 +47,37 @@ class AppleRevocation {
                 "client_id", apple.clientId(), "client_secret", apple.clientSecret(), "token", refreshToken, "token_type_hint", "refresh_token")));
     }
 
+    /**
+     * Apple answers 400 with an OAuth error (RFC 6749 §5.2). invalid_grant is the code: used, too old, not this app's — the
+     * request's fault. Any other (invalid_client, unauthorized_client, invalid_request…) is our setup: the Team ID, the key or
+     * the app's id — an error of ours (500, logged at ERROR), or a revocation that never works would look routine.
+     */
     private static void answered(EgressGate.Answer answer) {
-        if (answer.status() == 400) {
-            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        if (answer.ok()) {
+            return;
         }
-        if (!answer.ok()) {
-            throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE);
+        if (answer.status() == 400) {
+            throw new ApiException("invalid_grant".equals(errorOf(answer.body())) ? ErrorCode.VALIDATION_FAILED : ErrorCode.INTERNAL);
+        }
+        throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE);
+    }
+
+    private static String errorOf(String body) {
+        try {
+            JsonNode error = JSON.readTree(body).get("error");
+            return error != null && error.isString() ? error.asString() : null;
+        } catch (JacksonException unreadable) {
+            return null;
         }
     }
 
     private static JsonNode json(String body) {
         try {
-            return JSON.readTree(body);
+            JsonNode node = JSON.readTree(body);
+            if (node == null || !node.isObject()) {
+                throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE);
+            }
+            return node;
         } catch (JacksonException unreadable) {
             throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE); // not the answer Apple documents; its content not kept
         }

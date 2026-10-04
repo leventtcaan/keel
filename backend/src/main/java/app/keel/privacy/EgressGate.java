@@ -33,9 +33,9 @@ public class EgressGate {
     }
 
     /** What the other side answered: its status and its body, as text. */
-    public record Answer(int status, String body) {
+    record Answer(int status, String body) {
 
-        public boolean ok() {
+        boolean ok() {
             return status >= 200 && status < 300;
         }
     }
@@ -52,9 +52,10 @@ public class EgressGate {
 
     /**
      * A form posted to {@code destination} (K-812: Apple's REST API), answered whatever its status; no answer at all is
-     * SERVICE_UNAVAILABLE. The form is not logged: it carries credentials.
+     * SERVICE_UNAVAILABLE. The form is not logged: it carries credentials. Package-private: only this module's own callers
+     * (AppleRevocation) post; another module's data goes out through send/sendToAi and their checks (K-812 review).
      */
-    public Answer postForm(Destination destination, URI uri, Map<String, String> form) {
+    Answer postForm(Destination destination, URI uri, Map<String, String> form) {
         if (destination == Destination.THIRD_PARTY_AI) {
             throw new IllegalArgumentException("a call to an AI names its provider: sendToAi");
         }

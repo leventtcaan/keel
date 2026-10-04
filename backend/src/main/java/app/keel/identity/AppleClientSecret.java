@@ -39,7 +39,8 @@ final class AppleClientSecret {
 
     /** The .p8 file's text: PKCS#8 in PEM. A key that does not read stops here, its content never in the message (V5). */
     static ECPrivateKey parse(String pem) {
-        String body = pem.replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "").replaceAll("\\s", "");
+        // An environment file holds one line, the line ends written as \n: they are line ends, then all whitespace goes.
+        String body = pem.replace("\\n", "\n").replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "").replaceAll("\\s", "");
         try {
             return (ECPrivateKey) KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(body)));
         } catch (GeneralSecurityException | IllegalArgumentException | ClassCastException unreadable) {
