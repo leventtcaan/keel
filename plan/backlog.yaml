@@ -3119,7 +3119,7 @@ tasks:
     module: privacy
     type: test
     size: S
-    status: doing
+    status: done
     depends_on: [K-214]
     why: "V6 ve App Store hesap silme şartı"
     acceptance:
@@ -3264,7 +3264,7 @@ tasks:
     module: identity
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-802]
     why: "Envanter açığı 5: süresi geçmiş/iptal edilmiş yenileme jetonları ve işlenmiş webhook_event satırları hesap yaşarken hiç silinmiyor (GDPR Md. 5(1)(e) saklama sınırı)"
     acceptance:

@@ -742,7 +742,8 @@ ayrık HEAD = `origin/main` (87fc154). Part 1 worktree'leri (`keel-k806/808/809`
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-802 envantere bağlı uçtan uca silme + dışa aktarma; `event_publication` işlenince silinir. RED CI'da (`event_publication.serialized_event`=14) → yeşil. Test analizi: 8+ yok; kapatılacak: başarısız yayın tutulur/yeniden denemede silinir (7), dışa aktarma tablo düzeyinde `export_key` (6), V34 gerçek satırla (5), kimlik taraması her sütun + apple_subject (4). Ayrıca #386: `AdherenceApiTests` gece yarısı hatası (İstanbul Pazartesi 00:11) | sürüyor | #385 | — |
+| K-802 envantere bağlı uçtan uca silme + dışa aktarma (`EndToEndDeletionTests`): kimlik + Apple kimliği **hiçbir sütunda** kalmaz, jetonlar 401, her `exported` tablo `export_key` yolunda dolu. **Hata bulundu:** Modulith işlenen olayı saklıyordu (silinen UUID 14 satırda) → `completion-mode: delete` + V34. Test analizi 7/6/5/4 kapatıldı (yeniden deneme yolu, `export_key`, V34 gerçek satırla, her sütun); kod incelemesi: politika tarihi. Mutasyon CI'da (#388) 3 mutant → 5 kırmızı. Yan: #386 (`AdherenceApiTests` Pazartesi 00-01 İstanbul) | ✅ birleşti (4042e22) | #385 | `M8/K-802.md` |
+| K-804 anayasa denetimi tek komut (`tools/anayasa-denetimi.sh`) + mağaza metni taslağı `data/copy/store.en.json` (U4/U6, kişi adı, Apple sınırları) + her rota korumalı (ADR-061); K-813 (telefon anahtarları) ayrıldı. Yerel mutasyon 4/4 | inceleme sürüyor | #389 | — |
 
 ## M7 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `M7-part2.md`.
