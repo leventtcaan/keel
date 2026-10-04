@@ -748,6 +748,8 @@ pozitifte yeniden deneme yok; H2 §4.3 tam eşik seti.
   - Koşullu JSX içindeki dize props metin bekçisine takılır → küçük bileşene al (K-607 `SupportLink`, K-606 `Failed`/`Options`).
   - Motor: `EnergyBalanceModel` (Hall 2011) + `ShapeProjection` saf; `engine`'de `java.lang.Math`'in makineye bağlı fonksiyonları yasak (`StrictMath`).
     Yeni parametre alanı `PROJECTION` (`projection.yaml`), telefon parametreleri `projection.json`.
+- **CI gürültüsü (izle):** public'e geçişten sonraki ilk `main` koşusunda `today-screen` ve `workout-screen`'in **ilk testi** 5 sn Jest sınırını aştı
+  (soğuk render); aynı ağaç PR'da ve yeniden koşuda yeşil. Tekrarlarsa bu iki dosyada ilk render'a zaman aşımı payı ya da ısınma — kanıtla, tahminle değil.
 - **Yeni sorular:** 94-96 (aşağıda).
 
 ## Session sonunda Levent'e sorulacaklar
