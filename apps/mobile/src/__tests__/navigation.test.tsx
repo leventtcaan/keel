@@ -42,6 +42,7 @@ const mockServices = {
     own: async () => [],
     history: async () => ({ state: 'none' }),
   },
+  photos: { checks: async () => [], forget: async () => {} }, // Progress's photos card (K-614): none yet
   workoutRecords: async () => [],
   mealRecords: async () => [],
   report: () => {},

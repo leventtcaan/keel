@@ -7,23 +7,40 @@ import type { components } from '@/api/schema';
 import { CoachEntry } from '@/components/CoachEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { PhotoCard } from '@/photos/PhotoCard';
 import { StrengthSection } from '@/progress/StrengthSection';
 import { ProjectionEntry } from '@/projection/ProjectionEntry';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { type Loaded, localDay } from '@/today/today';
+import { type Loaded, load, localDay } from '@/today/today';
 import { sessionsOf } from '@/train/history';
 import { type Move, type TrainData, historyFrom, movesOf } from '@/train/trainData';
 
 type Schemas = components['schemas'];
-type Read = { data: TrainData; own: Move[]; history: Loaded<Schemas['Workout'][]>; records: LocalRecord[]; from: string; today: string };
+type Read = {
+  data: TrainData;
+  own: Move[];
+  history: Loaded<Schemas['Workout'][]>;
+  records: LocalRecord[];
+  from: string;
+  today: string;
+  /** The week of the first eight (K-513), for the first photo's week (K-614). */
+  firstWeeks: Loaded<Schemas['FirstWeeks']>;
+};
+
+/** The flow's week as the photo window reads it: over once the server has none (404); unknown without consent or offline. */
+function flowWeek(read: Loaded<Schemas['FirstWeeks']>): number | 'over' | null {
+  if (read.state === 'ready') return read.value.week;
+  return read.state === 'none' ? 'over' : null;
+}
 
 /**
  * Progress (prototype section 4): the evidence beside the scale. Strength first (K-604): a compound lift's estimated 1RM
  * week by week, read from the same history as a move's records (ADR-033: the server's list kept on the phone, joined with
- * what is not sent yet); then the way to the shape projection (K-606).
+ * what is not sent yet); then progress photos — on this phone only, the window for the next one (K-614); then the way to
+ * the shape projection (K-606).
  */
 export default function ProgressScreen() {
   const { api, training, workoutRecords, report } = useAppServices();
@@ -35,8 +52,16 @@ export default function ProgressScreen() {
   useFocusEffect(
     useCallback(() => {
       const now = new Date();
-      void Promise.all([training.read(api), training.own(api), training.history(api, now), workoutRecords()])
-        .then(([data, own, history, records]) => setRead({ data, own, history, records, from: historyFrom(now), today: localDay(now) }))
+      void Promise.all([
+        training.read(api),
+        training.own(api),
+        training.history(api, now),
+        workoutRecords(),
+        load(() => api.GET('/v1/first-weeks')),
+      ])
+        .then(([data, own, history, records, firstWeeks]) =>
+          setRead({ data, own, history, records, from: historyFrom(now), today: localDay(now), firstWeeks }),
+        )
         .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
     }, [api, training, workoutRecords, report]),
   );
@@ -61,6 +86,7 @@ export default function ProgressScreen() {
         <ScreenTitle>{t('screens.progress.title')}</ScreenTitle>
         {phoneOnly}
         {strength}
+        {read !== null && <PhotoCard today={read.today} flowWeek={flowWeek(read.firstWeeks)} />}
         <ProjectionEntry />
       </ScrollView>
       <View style={styles.coach}>
