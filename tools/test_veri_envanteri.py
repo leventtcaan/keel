@@ -408,10 +408,11 @@ class LabelDraftMatchesTheInventory(unittest.TestCase):
         answers = age_draft_answers(LABEL_DRAFT.read_text(encoding="utf-8"))
         self.assertEqual(sorted(answers), sorted(data["apple_age_questions"]["questions"]))
 
-    def test_no_medical_content_is_declared(self):
-        # U6: no diagnosis, condition names or treatment language — the answer that keeps the rating from 13+/16+.
-        answers = age_draft_answers(LABEL_DRAFT.read_text(encoding="utf-8"))
-        self.assertEqual(answers.get("Medical or Treatment Information"), "None")
+    def test_the_rating_is_overridden_to_the_terms_minimum_age(self):
+        # Apple: a EULA whose minimum age exceeds the calculated rating must override to it; the terms say 18 (K-225).
+        draft = LABEL_DRAFT.read_text(encoding="utf-8")
+        self.assertIn("Override to Higher Age Rating → 18+", draft)
+        self.assertIn("18 or older", (ROOT / "docs/yasal/site/terms.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

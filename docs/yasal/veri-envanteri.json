@@ -926,7 +926,9 @@
    ],
    "exported": true,
    "policy": "data-subscription",
-   "app_privacy": [],
+   "app_privacy": [
+    "Usage Data › Product Interaction"
+   ],
    "kept_for": "through the following day, then the nightly cleanup (QuotaCleanup, 18:15 UTC): at most about three days"
   },
   {

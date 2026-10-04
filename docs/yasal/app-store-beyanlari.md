@@ -21,6 +21,7 @@ Health'ten okunup gönderilmeyenler, yerel bildirimler girmez.
 | Health & Fitness › Health | App Functionality | Evet | Hayır | Tartı, bel, görünüş, fotoğraf sonucu, aktivite günü, öğün ve tarifler, plan ve kararlar, beyan edilen durum, koç sorularına cevaplar, profil (yaş, boy, cinsiyet, kaçınılan besinler) — HEALTH_DATA rızasıyla |
 | Health & Fitness › Fitness | App Functionality | Evet | Hayır | Antrenman ve set kaydı, program ve geçmişi, salon ekipmanı, kendi hareketleri |
 | Identifiers › User ID | App Functionality | Evet | Hayır | Apple'ın bu uygulamaya özgü kullanıcı kimliği (`identity.account`); RevenueCat'e giden opak hesap UUID'si |
+| Usage Data › Product Interaction | App Functionality | Evet | Hayır | Günlük kullanım sayaçları (`subscription.daily_use`): koç mesajı ve öğün fotoğrafı analizi sayısı, içerik yok — kota için |
 | Purchases › Purchase History | App Functionality, Analytics | Evet | Hayır | Abonelik durumu ve RevenueCat olayları (sunucu); RevenueCat SDK'sının satın alma kaydı — RevenueCat'in rehberi Purchase History'yi "Analytics" ve "App Functionality" için seçmeyi söylüyor |
 <!-- label:end -->
 
@@ -28,7 +29,9 @@ Gerekçeler:
 - **Purchase History › Analytics:** RevenueCat'in kendi rehberi (https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy,
   4 Eki) "Purchase History" için hem "Analytics" hem "App Functionality" seçilmesini istiyor (RevenueCat paneli). Biz analitik yapmıyoruz; tür
   RevenueCat'in işlediği için var.
-- **Toplanmayanlar:** Contact Info (Apple'dan ad/e-posta istenmiyor: `requestedScopes: []`), Location, Contacts, Browsing/Search History, Usage Data,
+- **Usage Data › Product Interaction:** `subscription.daily_use` hesap başı günlük koç mesajı ve fotoğraf analizi sayısını ~3 gün tutar (kota) →
+  Apple'ın "collect" tanımına giriyor; App Functionality için beyan edilir.
+- **Toplanmayanlar:** Contact Info (Apple'dan ad/e-posta istenmiyor: `requestedScopes: []`), Location, Contacts, Browsing/Search History, Usage Data'nın geri kalanı (reklam, ürün analitiği yok),
   Diagnostics (çökme raporlama SDK'sı yok), Financial Info (ödeme Apple'da; Apple: geliştirici ödeme bilgisine erişmiyorsa toplanmış sayılmaz),
   Sensitive Info, Photos or Videos (ilerleme fotoğrafı cihazda; öğün fotoğrafı yalnız AI açılınca — aşağıda).
 - **AI koç açılınca (M10, K-533) eklenir:** User Content › Other User Content (koç sorusu, öğün notu), User Content › Photos or Videos (öğün fotoğrafı),
@@ -38,9 +41,10 @@ Gerekçeler:
 
 ## 2. Yaş derecelendirmesi anketi
 
-Hedef: anketin hesapladığı derece **9+** (aşağıdaki cevaplarla). Ürün 18 yaş ve üstü içindir (şartlar + profil kapısı, K-225); anket
-derecesi içeriğe göre hesaplanır, yaş sınırımız ayrıca şartlarda ve uygulamada uygulanır. Daha yüksek dereceyi elle seçme seçeneği resmî
-sayfada görünmedi `[doğrulanmadı]` — M10'da ASC'de bakılır; varsa **18+** seçmeyi öneririm (kalori açığı önerisi + yetişkin hedef kitle).
+Anketin hesapladığı derece **9+** (aşağıdaki cevaplarla; "Health or Wellness Topics" her sıklıkta 9+). **Override to Higher Age Rating → 18+
+zorunlu:** Apple: "If your app has a EULA with minimum age requirements that exceed the rating that Apple calculated, you must override to a
+rating that adheres to the requirements." Kullanım şartlarımız 18+ diyor (K-225) → ASC'de 18+ seçilir; mağaza 18+ gösterir, içerik açıklamaları
+anket cevaplarından gelir (https://developer.apple.com/help/app-store-connect/manage-app-information/set-an-app-age-rating/, 4 Eki 2026).
 
 <!-- age:start -->
 | Soru | Cevap | Gerekçe |
@@ -56,7 +60,7 @@ sayfada görünmedi `[doğrulanmadı]` — M10'da ASC'de bakılır; varsa **18+*
 | Profanity or Crude Humor | None | — |
 | Horror/Fear Themes | None | — |
 | Alcohol, Tobacco, or Drug Use or References | None | Besin veritabanında alkollü içecek kalemleri olabilir (USDA); referans değil, kayıt. `None` |
-| Medical or Treatment Information | None | U6: teşhis, hastalık adı, tedavi dili yok; kan tahlili yorumlanmaz (taramayla korunur) |
+| Medical or Treatment Information | None `[doğrulanmadı]` | U6: teşhis, hastalık adı, tedavi dili yok; kan tahlili yorumlanmaz. Ama Apple'ın tanımı geniş ("guidance around the management of medical conditions or health and wellness … emergency medical care") ve uygulamada üç yer var: yeme düzeni kontrolü ve destek hattı yönlendirmesi (`scoff.tsx`), düşük enerji güvenlik durağında "doktorunla konuş", "In pain … see a professional" durumu → "Infrequent" (13+) savunulabilir. 18+ override ile görünen derece değişmez; M10'da Levent'le seçilir |
 | Health or Wellness Topics | **Frequent** | Kalori takibi, diyet ve egzersiz önerisi uygulamanın ana işi (Apple'ın tanımı birebir) → 9+ |
 | Mature or Suggestive Themes | None | — |
 | Sexual Content or Nudity | None | İlerleme fotoğrafları kullanıcının kendi cihazında, uygulama içeriği değil |
