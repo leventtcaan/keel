@@ -2984,7 +2984,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-701, K-306, K-705]
     why: "$59,99/yıl · $12,99/ay · 7 gün deneme; iptal görünür"
     acceptance:
@@ -3091,6 +3091,7 @@ tasks:
       - plan/kararlar/ADR-036-bildirimler.md
     learn:
       - "Yerel bildirim kimliği ve yaşam döngüsü"
+
 # ───────────────────────────── M8 · Uyum ve yasal ─────────────────────────────
 
   - id: K-801

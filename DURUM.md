@@ -721,10 +721,11 @@ Dependabot: aynı 3 geçişli uyarı.
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-705 `GET /v1/subscription` — sözleşme önce (d96d11e), `appUserId` eklendi (telefon hesabın UUID'sini başka yoldan bilmiyor); ADR-056 Ek 1. RED CI'da 6 assertion (2013 test); inceleme temiz; test analizi 3 boşluk → sabit saatli saf test (`Instant.now()` mutantı öldü), ek süre, okuma yazmaz; birleşti (cd718c3, üç CI yeşil) | ✅ birleşti | #368 | `M7/K-705.md` |
-| K-702 paywall — `react-native-purchases` 10.11.0 (`npx expo install`; Expo listesinde yok → npm en yenisi); ADR-057 (port, tembel configure + UUID, teyit 12×5 sn, deneme dili yalnız ELIGIBLE, iptal Apple sayfasında, ENTITLEMENT_REQUIRED → "See plans", iki yasal bağlantı yoksa satış yok, hatalar `StoreError_<kod>`). Yerel RED'ler 70 (assertion). İnceleme 3 ajan: 3 + 6 bulgu + 8 yaşayan mutant → düzeltildi; mutasyon 6/6 öldü. `npm run check` 139 takım 2447/2447. Üretim kodu ~720 satır (bölmek ölü rota/erişilemez paywall bırakırdı; gerekçe PR'da). **Bulgu:** App Store'da duraklatma yok → soru 106. Simülatör yok (disk) | ⏳ auto-merge | #369 | `M7/K-702.md` |
+| K-702 paywall — `react-native-purchases` 10.11.0 (`npx expo install`; Expo listesinde yok → npm en yenisi); ADR-057 (port, tembel configure + UUID, teyit 12×5 sn, deneme dili yalnız ELIGIBLE, iptal Apple sayfasında, ENTITLEMENT_REQUIRED → "See plans", iki yasal bağlantı yoksa satış yok, hatalar `StoreError_<kod>`). Yerel RED'ler 70 (assertion). İnceleme 3 ajan: 3 + 6 bulgu + 8 yaşayan mutant → düzeltildi; mutasyon 6/6 öldü. `npm run check` 139 takım 2447/2447. Üretim kodu ~720 satır (bölmek ölü rota/erişilemez paywall bırakırdı; gerekçe PR'da). **Bulgu:** App Store'da duraklatma yok → soru 106. Simülatör yok (disk) | ✅ birleşti | #369 | `M7/K-702.md` |
 
-**Part 2 soruları (sonda AskUserQuestion):** 105 deneme bitmeden hatırlatma (prototip "Day 5") · 106 iOS'ta duraklatma yok → düğme yok mu · 107 paywall ne
-zaman (araştırma "sert paywall" ↔ K-703 "aboneliksiz deterministik mod"; onboarding sonunda kapatılabilir mi).
+**Part 2 soruları → ADR-058 (Levent, üçünde önerilen):** 107 onboarding sonunda **zorunlu** paywall, aboneliği biten deterministik modda → **K-706**
+(#370); 106 iOS'ta duraklat düğmesi yok (K-702 kabul kriteri + prototip düzeltildi); 105 deneme bitmeden isteğe bağlı yerel hatırlatma — fatura
+bildirimi, ADR-036'nın üç türünden sayılmaz → **K-707** (#371). Sıra: K-706 → K-707 → M7 çıkışı.
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` … `M6-part4.md`.
