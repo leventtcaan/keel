@@ -2966,7 +2966,7 @@ tasks:
     module: subscription
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-203]
     why: "Yetki sunucuda (ADR-012)"
     acceptance:
@@ -3011,6 +3011,24 @@ tasks:
       - "EntitlementGuardTests"
     refs: ["plan/kararlar/ADR-012-abonelik-ve-kota.md"]
     learn: ["Yetkilendirme (authorization)"]
+
+  - id: K-704
+    title: "subscription: RevenueCat REST tazelemesi (webhook sonrası, TRANSFER alıcısı)"
+    milestone: M7
+    module: subscription
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-701]
+    why: "RevenueCat her webhook'tan sonra GET /subscribers öneriyor; TRANSFER alıcısının bitiş tarihi olayda yok (ADR-056 açık iş). Önce Levent: RevenueCat hesabı + gizli API anahtarı"
+    acceptance:
+      - "Webhook işlendikten sonra hesabın yetkisi REST'ten tazelenir; REST cevabı durumu geri götürmez"
+      - "TRANSFER alıcısı hesap, sonraki olayı beklemeden yetkisini alır"
+      - "Gizli API anahtarı ortam değişkeninden; repoda, logda yok (V5)"
+    tests:
+      - "RevenueCatRefreshTests (sahte HTTP)"
+    refs: ["plan/kararlar/ADR-056-yetki-sunucuda.md"]
+    learn: ["Webhook + REST uzlaştırma"]
 
 # ───────────────────────────── M8 · Uyum ve yasal ─────────────────────────────
   - id: K-801
