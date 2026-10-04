@@ -674,7 +674,7 @@ Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Yetki sunucuda | K-701, K-703 (+ K-704, K-705 açıldı) | ✅ bitti (4 Eki) — aktarım bekliyor (README 1-2) |
-| 2 · Paywall ve teslim | K-705, K-702 · M7 çıkışı · M8 prompt'ları | bekliyor |
+| 2 · Paywall ve teslim | K-705, K-702 · M7 çıkışı · M8 prompt'ları | ⏳ sürüyor (4 Eki) |
 
 **Part 1 başı (4 Eki):** senkron tamam — M6 ÇIKIŞ git ile tutarlı (#354, #356, #357, #358, #361, #362 birleşik; açık PR yok; worktree yalnız
 kalıcı `../keel-main`; `*-devam.md` yok). Ana checkout ayrık HEAD = `origin/main` (cf83dc5). Bağımlılıklar `done` (K-203, K-508, K-306).
@@ -713,6 +713,18 @@ opak hesap kimliği + SDK'nın zorunlu verisi **onaylı** → ADR-012 Ek 1.
   - Disk 4,6 GB (simülatör dyld önbelleği silindi, ilk açılışta ~3 GB yeniden üretir → simülatör turu öncesi Levent'e). K-308 hâlâ `doing`.
 - **Yeni sorular:** yok (para/mağaza kapısı Part 1 başında cevaplandı → ADR-012 Ek 1). Açık: 80 (Docker/disk), 57 (rıza metni hukuki bakış);
   RevenueCat hesabı + ASC ürünleri + Paid Applications + sandbox hesabı Levent'te (Part 2'nin cihaz adımları için).
+
+**Part 2 başı (4 Eki):** senkron tamam — Part 1 ÇIKIŞ git ile tutarlı (#364, #366 birleşik; açık PR yok; worktree yalnız `../keel-main`;
+`*-devam.md` yok). Ana checkout `origin/main`'e (1b52227) çekildi. Disk 4,6 GB. K-308 hâlâ `doing`. Para/mağaza: değişiklik yok (hazır olan yok).
+Dependabot: aynı 3 geçişli uyarı.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-705 `GET /v1/subscription` — sözleşme önce (d96d11e), `appUserId` eklendi (telefon hesabın UUID'sini başka yoldan bilmiyor; d589201); ADR-056 Ek 1. RED CI'da 6 assertion (2013 test); uygulama 737a9df. Worktree `../keel-k705`. İnceleme ajanları çalışıyor | ⏳ | #368 | `M7/K-705.md` |
+| K-702 paywall — dal `mobile/75-paywall` (K-705'e yığılı, ana checkout); `react-native-purchases` 10.11.0 (`npx expo install`, Expo'nun listesinde yok → npm en yenisi); ADR-057 taslak (port, tembel configure + UUID, teyit döngüsü, deneme dili yalnız uygunken, iptal Apple sayfasında, ENTITLEMENT_REQUIRED → "See plans"). **Bulgu:** App Store'da duraklatma yok (yalnız Play) → soru 106 | ⏳ | — | `M7/K-702.md` |
+
+**Part 2 soruları (sonda AskUserQuestion):** 105 deneme bitmeden hatırlatma (prototip "Day 5") · 106 iOS'ta duraklatma yok → düğme yok mu · 107 paywall ne
+zaman (araştırma "sert paywall" ↔ K-703 "aboneliksiz deterministik mod"; onboarding sonunda kapatılabilir mi).
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` … `M6-part4.md`.
