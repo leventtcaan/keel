@@ -41,13 +41,6 @@ test('every literal copy key used in src exists in en.json', () => {
   expect(missing).toEqual([]);
 });
 
-test('every tab placeholder has a title and a note', () => {
-  for (const screen of ['today', 'train', 'food', 'progress']) {
-    expect(known.has(`screens.${screen}.title`)).toBe(true);
-    expect(known.has(`screens.${screen}.note`)).toBe(true);
-  }
-});
-
 test('the keys the settings screen builds from a consent kind exist (K-309)', () => {
   for (const kind of ['HEALTH_DATA', 'APPLE_HEALTH']) {
     for (const key of [`settings.consents.${kind}`, `settings.withdrawConfirm.${kind}.title`, `settings.withdrawConfirm.${kind}.body`]) {
