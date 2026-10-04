@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * The rule scanners prove themselves: each pattern catches known-bad samples and lets known-good ones through, and the
  * file walk really reaches the code. Without this, a broken regex would make every rule test pass on nothing.

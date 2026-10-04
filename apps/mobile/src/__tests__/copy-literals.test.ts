@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * User-facing text reaches components only through t() (K2, ADR-010). Two holes the key check cannot see:
  * - raw text written straight into JSX (<Text>Hello</Text>) or into a text prop (label="Apply");

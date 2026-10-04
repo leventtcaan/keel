@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * No user-facing text breaks U4 (no body-fat number) or U6 (no medical language). The phrase list is data
  * (data/copy/forbidden-phrases.json, K2); every pattern proves itself against its examples before it is trusted.
@@ -146,6 +147,15 @@ describe('store texts (K-804, ADR-061)', () => {
 
   test.each(texts)('%s names no person', (_, text) => {
     expect(text.match(new RegExp(forbidden.personNames.pattern, 'g'))).toBeNull();
+  });
+
+  test("the limits are Apple's, not numbers to tune", () => {
+    // External facts (limits._source); a limit raised in the file would let any text through.
+    expect(store.limits).toEqual({ _source: store.limits._source, subtitle: 30, promotionalText: 170, description: 4000, keywordsBytes: 100 });
+  });
+
+  test.each(texts)('%s puts no currency on the daily limit (ADR-012)', (_, text) => {
+    expect(text.match(new RegExp(forbidden.quotaWords.pattern, 'gi'))).toBeNull();
   });
 
   test("each fits Apple's limit: characters, and bytes for the keywords", () => {
