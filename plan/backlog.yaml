@@ -2800,7 +2800,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-615]
     why: "Geçmişi olan kullanıcıyı iki hafta bekletmemek (ADR-018 §3); trend hemen görünür"
     acceptance:
