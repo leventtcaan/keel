@@ -89,7 +89,7 @@ const mockServices = {
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
-beforeEach(() => {
+function reset() {
   jest.clearAllMocks();
   mockParams = {};
   mockUnits = 'METRIC';
@@ -98,7 +98,8 @@ beforeEach(() => {
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockOwn = [];
   mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
-});
+}
+beforeEach(reset);
 
 const show = () =>
   render(
@@ -106,6 +107,14 @@ const show = () =>
       <WorkoutScreen />
     </ThemeProvider>,
   );
+
+// The screen's first render loads and compiles what it draws: ~2 s locally with two workers and no cache, past Jest's 5 s
+// on CI's runner (three runs, 4 Oct). Paid once here, under its own budget, so no test carries it; each test still has 5 s.
+const COLD_START_MS = 30_000;
+beforeAll(async () => {
+  reset();
+  (await show()).unmount();
+}, COLD_START_MS);
 const sets = () => mockRecord.mock.calls.map(([outbound]) => outbound).filter((o) => o.kind === 'set');
 
 test("the day's moves, and the move under way with the server's target faint and last time beside it", async () => {
