@@ -112,8 +112,9 @@ class AdherenceApiTests {
                 at(weeks.getFirst(), 12).toString()));
         post(account, "/v1/workouts/" + JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id") + "/sets",
                 Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press", "setType", "WORKING", "loadKg", 60, "reps", 8, "rir", 2));
-        // A weigh-in today, in no week over: the call has a weight to go by.
-        post(account, "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", Instant.now().minusSeconds(3600).toString(),
+        // A weigh-in today, in no week over: the call has a weight to go by. At the day's start, not an hour ago: in the
+        // first hour of a Monday an hour ago is last Sunday, and the weigh-in counted in a week judged (CI, 5 Oct 00:11).
+        post(account, "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", today.atStartOfDay(ISTANBUL).toInstant().toString(),
                 "kg", 82.0, "source", "MANUAL"));
 
         assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(),
@@ -132,7 +133,7 @@ class AdherenceApiTests {
         AccountId account = inIstanbul();
         jdbc.sql("update decision.plan set phase_start = :today, plan_start = :today where account_id = :a").param("today", today)
                 .param("a", account.value()).update();
-        post(account, "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", Instant.now().minusSeconds(3600).toString(),
+        post(account, "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", today.atStartOfDay(ISTANBUL).toInstant().toString(),
                 "kg", 82.0, "source", "MANUAL"));
 
         assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(),
