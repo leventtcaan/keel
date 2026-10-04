@@ -97,7 +97,8 @@ değişmez, yinelenen olay bir kez, eski olay geri götürmez, bilinmeyen hesap 
 
 ## Ek 1 · K-705 telefonun okuduğu durum (agent, 4 Eki)
 - **`GET /v1/subscription`** (sözleşmede, `Subscription`): `active` (zorunlu; sunucunun cevabı, `accessUntil`'den — madde 5),
-  `status` + `accessUntil` yalnız hesabın bir durumu varsa. Hiç abone olmamış hesap → **200 + `active: false`** (hata değil; telefon
+  `appUserId` (zorunlu; hesabın opak UUID'si — telefon RevenueCat'e `logIn`'i bununla yapar, madde 3; telefon başka yoldan
+  bilmiyor: oturum cevabında yok, jetonun içi telefonun işi değil), `status` + `accessUntil` yalnız hesabın bir durumu varsa. Hiç abone olmamış hesap → **200 + `active: false`** (hata değil; telefon
   paywall'u buna bakarak gösterir). Fiyat yok (ADR-012, K2). Uç yalnız okur.
 - `status` enum'u `SubscriptionState.Status` ile birebir (test: `SubscriptionContractTests`); yeni bir durum sözleşmeye de girmeden olmaz.
 - Webhook gecikmesi (5-60 sn) sunucuda çözülmez: satın almadan sonra telefon bu ucu kısa süre yeniden sorar (K-702). Alternatif — telefonun

@@ -123,7 +123,7 @@ export interface paths {
          *     Read only from what the server keeps of RevenueCat's events (ADR-056) — never from the phone; a purchase the store
          *     has not told the server about yet (its webhook comes 5-60 seconds later) is not here yet, so the phone asks again
          *     for a short while after a purchase. No price: prices are the store's (ADR-012, K2). An account that never
-         *     subscribed is not an error: 200 and `active: false`, nothing else. Reading never changes anything.
+         *     subscribed is not an error: 200, `active: false` and the id to buy under. Reading never changes anything.
          */
         get: operations["getSubscription"];
         put?: never;
@@ -1240,9 +1240,17 @@ export interface components {
         };
         /**
          * @description The user's subscription (K-705, ADR-056 #5). Access is `active` alone — the server's own answer, from `accessUntil`;
-         *     `status` only says what kind of state it is, for the app to tell. Without a subscription ever kept: `active` only.
+         *     `status` only says what kind of state it is, for the app to tell. Without a subscription ever kept: `active` and
+         *     `appUserId` only.
          */
         Subscription: {
+            /**
+             * Format: uuid
+             * @description The id the store must know this account's purchases by — RevenueCat's app user id (ADR-056 #3): the account's
+             *     opaque id, nothing else of the user. The phone logs in to RevenueCat with it before a purchase; a purchase made
+             *     under another id never reaches this account.
+             */
+            appUserId: string;
             /** @description Whether the subscription pays for the coach's model and the meal photo now. */
             active: boolean;
             /**
