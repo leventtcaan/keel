@@ -14,3 +14,5 @@
 ## Aktarım sırası (Part 2 · Projeksiyon)
 7. K-605 enerji dengesi modeli (`K-605.md`, ADR-051) — Hall denklemleri, K'nın türetmesi, RK4, doğrusallaştırma testi, hata payının yeniden okunması
 8. K-607 SCOFF kapısı (`K-607.md`, ADR-050) — cevap saklanmaz, sonuç cihazda, "unavailable" kesin, bölge linki
+9. K-613 projeksiyonun sayıları (`K-613.md`, ADR-052) — kapılar, gün payı senaryosu, aralık, yalnız ileri, oturmuş başlangıç
+10. K-606 projeksiyon ekranı (`K-606.md`) — anahtar + SCOFF, figür, suçlamasız güncelleme
