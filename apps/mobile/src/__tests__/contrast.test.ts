@@ -80,3 +80,40 @@ describe.each(Object.entries(palettes))('%s decision block', (_, p) => {
     expect(contrast(p.accentInk, p.decisionBackground)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+// K-807 (Accessibility Nutrition Labels › Sufficient Contrast): the accent and the warning are text too — "in use" on a
+// gym, a failed save — on the page, in both themes.
+describe.each(Object.entries(palettes))('%s accent and warning as text', (_, p) => {
+  test.each(['accent', 'warn'] as const)('%s reaches 4.5:1 on background and surface', (ink) => {
+    expect(contrast(p[ink], p.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p[ink], p.surface)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+test('nothing inside the decision block is drawn in the warning colour: there it would fall under 4.5:1', () => {
+  // inverse() keeps the warning's colour (a warning looks the same everywhere), so it may not appear on the block — in the
+  // block's own code nor in anything a screen puts inside it.
+  const fs = jest.requireActual<typeof import('fs')>('fs');
+  const path = jest.requireActual<typeof import('path')>('path');
+  const ts = jest.requireActual<typeof import('typescript')>('typescript');
+  const walk = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? (e.name === '__tests__' ? [] : walk(path.join(dir, e.name))) : /\.tsx$/.test(e.name) ? [path.join(dir, e.name)] : [],
+    );
+  const inside: string[] = [];
+  for (const file of walk(path.resolve(__dirname, '..'))) {
+    const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const visit = (node: import('typescript').Node) => {
+      if (ts.isJsxElement(node) && ['InverseSurface', 'DecisionBlock'].includes(node.openingElement.tagName.getText(source))) {
+        inside.push(node.children.map((child) => child.getText(source)).join(''));
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+  }
+  expect(inside.length).toBeGreaterThan(0);
+  expect(inside.filter((jsx) => /color\.warn|variant=["']warn["']/.test(jsx))).toEqual([]);
+  // Its own code: the block draws its parts itself.
+  expect(fs.readFileSync(path.resolve(__dirname, '../components/DecisionBlock.tsx'), 'utf8')).not.toMatch(/color\.warn|variant=["']warn["']/);
+  for (const [, p] of Object.entries(palettes)) expect(contrast(p.warn, inverse(p).background)).toBeLessThan(4.5);
+});

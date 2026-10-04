@@ -74,3 +74,34 @@ anket cevaplarından gelir (https://developer.apple.com/help/app-store-connect/m
 | Contests | None | — |
 | Loot Boxes | No | — |
 <!-- age:end -->
+
+## 3. Erişilebilirlik Besin Etiketi (Accessibility Nutrition Labels) — K-807
+
+Kaynak (5 Eki 2026): developer.apple.com/help/app-store-connect/manage-app-accessibility/overview-of-accessibility-nutrition-labels —
+dokuz özellik; bir özellik ancak **"users must be able to complete all of the common tasks of your app using that feature"** ise
+işaretlenir. Etiket şimdilik **isteğe bağlı** ("voluntary to start"), ileride zorunlu olacak. ASC'ye Levent girer (M10, ADR-059).
+
+**Ortak görevler (bu uygulamanın):** giriş + onboarding · günlük kayıt (tartı, antrenman seti, öğün) · haftalık karar ve "Why this call" ·
+koça soru · paywall'dan abonelik · Ayarlar › abonelik iptali, dışa aktarma, hesap silme.
+
+| Özellik | Cevap (taslak) | Gerekçe | Kanıt / eksik |
+|---|---|---|---|
+| Dark Interface | **Evet** | Açık/koyu iki palet, sistem ayarını izler (ADR-016); her bileşen rengi `useTheme()`'den alır | `tokens.test.ts` (renk yalnız belirteç dosyasında), `contrast.test.ts` iki temada |
+| Sufficient Contrast | **Evet** | Bütün metin renkleri bütün zeminlerde ≥4.5:1, iki temada ve karar bloğunun ters paletinde (Apple: W3C 4.5:1); uyarı rengi karar bloğunda kullanılmaz | `contrast.test.ts` (K-807 ile `accent`/`warn` metin olarak da). Eksik: Apple'ın önerdiği Bold Text + Increase Contrast + Reduce Transparency açıkken cihazda göz kontrolü |
+| Differentiate Without Color Alone | **Evet (cihazda teyit)** | Seçili çip dolu/çerçeveli şekil farkı + VoiceOver "selected"; uyarılar ve kararlar metinle söylenir; güç grafiğinde "daha kolay" haftalar halka (şekil) ve sesli açıklama | Kod okuması; cihazda gri tonlamada (Color Filters › Grayscale) ortak görevler |
+| Reduced Motion | **Evet (cihazda teyit)** | Uygulamanın kendi animasyonu yok (test: `Animated`/reanimated/`LayoutAnimation` Reduce Motion'sız yasak); yerel yığın/sayfa geçişleri sistemindir [cihazda doğrulanmadı] | `accessibility.test.ts`; cihazda Reduce Motion açık tur |
+| Larger Text | **Henüz işaretlenmez** | Kod hazır: ölçekleme kapatılmamış, kesme yok (`allowFontScaling`, `maxFontSizeMultiplier`, `numberOfLines`, `adjustsFontSizeToFit` yasak — test). Apple: AX3'te ≥%200, yan yana öğeler büyüyünce alt alta | **Cihaz:** en büyük boyutta (AX5) ortak görevler, taşan satır var mı (K-308 sonrası) |
+| VoiceOver | **Henüz işaretlenmez** | Her `Pressable` rol + (etiket ya da okunacak metin); her görsel adlı ya da süs olarak işaretli; grafik tek görsel olarak okunur; kaydırıcı `adjustable` | `accessibility.test.ts`; **Cihaz:** ortak görevlerin hepsi VoiceOver'la (K-308 sonrası) |
+| Voice Control | **Henüz işaretlenmez** | Etiketler Voice Control'ün "Tap …" komutuna da isim verir | **Cihaz:** ortak görevler sesle |
+| Captions | **Uygulanamaz (işaretlenmez)** | Uygulamada sesli içerik yok: hareket klipleri sessiz kesilir (`tools/clip.py`, `-an`) | — |
+| Audio Descriptions | **Hayır** | Hareket kliplerinde anlatım yok; yazılı ipuçları (`demo.tip.*`) var ama Apple'ın tanımı zaman eşlemeli sesli anlatım | M11 adayı |
+
+**Cihaz kontrol listesi (K-308 sonrası, Levent ya da agent simülatörde + Levent cihazda):**
+1. Ayarlar › Erişilebilirlik › Ekran ve Metin Boyutu › Daha Büyük Metin › en büyük (AX5): giriş, Today, kayıt (tartı/set/öğün), karar kartı + Why, koç,
+   paywall, Ayarlar — kesilen, üst üste binen ya da ekrandan taşan metin yok; yan yana öğeler alt alta iniyor.
+2. VoiceOver açık: aynı ortak görevler baştan sona; her düğme adını ve rolünü söylüyor; karşılaştırma kaydırıcısı yukarı/aşağı kaydırmayla.
+3. Reduce Motion açık: geçişler yumuşak geçiş (cross-fade).
+4. Bold Text + Increase Contrast + Reduce Transparency açık, iki temada: okunmayan metin yok.
+5. Grayscale: seçili çip, uyarı, karar durumu renksiz de ayırt ediliyor.
+Simülatörde 1, 3, 4, 5 yapılabilir (`xcrun simctl ui booted content_size accessibility-extra-extra-extra-large`); VoiceOver yalnız cihazda
+(simülatörde Accessibility Inspector). Giriş Apple ile olduğundan oturumlu ekranlar cihaz ya da çalışan bir sunucu ister.
