@@ -23,6 +23,7 @@ Spring Boot 4.1 + Spring Modulith 2.1 modüler monolit, Java 25, Gradle 9 (Kotli
   göç değiştirilmez, yenisi yazılır. Her yabancı anahtara dizin; zaman serisinde `(account_id, zaman)` dizini; para/kcal
   aralığı `low`/`high` iki sütun. Yerel: `docker compose up -d` (port 55432) + `SPRING_PROFILES_ACTIVE=local`.
   Entegrasyon testi: `@Import(PostgresTestConfiguration.class)` (Testcontainers, compose ile aynı imaj).
-- **Yerel çalıştırma** ayrıca oturum anahtarı ister (V5): `export KEEL_SESSION_SECRET=$(openssl rand -base64 32)`.
+- **Yerel çalıştırma** ayrıca oturum anahtarı ve RevenueCat imza sırrı ister (V5): `export KEEL_SESSION_SECRET=$(openssl rand -base64 32)`,
+  `export KEEL_REVENUECAT_WEBHOOK_SECRET=$(openssl rand -hex 32)` (gerçeği RevenueCat panelinden, repoya girmez — ADR-056).
   Test değerleri `src/test/resources/config/application.yml`'da (gerçek sır değil).
 - Spesifikasyon testi `@Tag("pending")` ile başlar; görevi başlatan ilk iş etiketi kaldırmaktır. Satır silerek yeşile çevirmek yasak.

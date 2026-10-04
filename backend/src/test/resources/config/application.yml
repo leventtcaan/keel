@@ -9,6 +9,10 @@ keel:
   # A failed deletion is resent at once when a test asks (DeletionRetryTests).
   privacy:
     retry-after: 0s
+  # RevenueCat's webhook (K-701): a signing secret that signs nothing outside these tests (TestWebhooks signs with it).
+  subscription:
+    revenuecat:
+      webhook-secret: test-only revenuecat signing secret
   consent:
     third-party-ai:
       provider: Example AI
