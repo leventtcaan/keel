@@ -46,7 +46,10 @@ Biçimler: `arastirma/ham/H13-ice-aktarma-bicimleri.md` (üreticiler sütun yay�
 | `import_workouts_per_request` (`import.json`; sunucu `keel.training.import.max-workouts`; sözleşme `maxItems`) | 20 | Bir istek yavaş bağlantıda da kısa kalır; bir yıllık geçmiş (~200 seans) on istek. Üç yer `ImportLimitsMirrorTests` ile eşit |
 | Seans başına set (`max-sets`, sözleşme `maxItems`) | 200 | Gerçek bir seans bunun çok altında; fazlası dosya hatası sayılır |
 | `health_weight_import_days` (`health.json`) | 365 | Trend ve alışkanlık için bir yıl yeter; ömür boyu geçmiş gerekmez. Düzenli okumanın (`health_weight_read_days`) başladığı yerde biter |
-| Eşleme eşikleri (`import.json`, K-609) | K-609'da | Ad benzerliğinin "yüksek güven" sınırı; düşükte kullanıcı seçer (U5) |
+| `weigh_in_history_days` (`health.json`) | 365 | Tartı ekranının "Year" görünümü: içe aktarmanın okuduğu kadar geri — getirilen geçmiş görülsün (ADR-018 §3) |
+| `import_sets_per_session_max` (`import.json`) | 200 | Sunucunun `max-sets`'i ve sözleşme; fazlası seansın sonundan "dışarıda kaldı" sayılır |
+| `import_match_suggest_min` (`import.json`) | 0,5 | Önerilmek için ortak kelime payı (Dice); birebir aynı kelimeler dışında hiçbir şey kullanıcı yerine eşlenmez (U5) |
+| `import_match_suggestions` (`import.json`) | 3 | Eşlenmeyen ada en çok üç öneri, tek dokunuş; "Other" bütün katalog |
 
 ## Neden
 - Kaynak işaretiyle dışlamak, "ilk karar ilk pazartesiden önce gelmez"i bir tarih kuralından daha güçlü verir: içe aktarma kararı
