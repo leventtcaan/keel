@@ -26,6 +26,7 @@ import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } 
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
 import { noPhotoCache, type PhotoCache } from '@/food/photo';
+import { type AppleReauth, noAppleReauth } from '@/session/appleSignIn';
 import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } from '@/photos/library';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
@@ -54,6 +55,8 @@ type Deps = {
   healthWrite?: HealthWriteAccess;
   /** The progress photos' folder on the phone (K-614, photoFiles.ts); none where there is none (tests). */
   photoFiles?: PhotoFiles;
+  /** A fresh Sign in with Apple code, for ending it at deletion (K-812); none where there is no Apple (tests). */
+  appleReauth?: AppleReauth;
   /** The meal photos' cache folders (K-811, photoTools.ts); none where there are none (tests). */
   photoCache?: PhotoCache;
   /** The App Store through RevenueCat (K-702, revenueCat.ts); none where there is none (Expo Go, tests). */
@@ -143,6 +146,7 @@ export async function createAppServices({
   healthWrite = healthWriteUnavailable,
   photoFiles = noPhotoFiles,
   photoCache = noPhotoCache,
+  appleReauth = noAppleReauth,
   purchases = storeUnavailable,
   links = [],
   now = () => new Date(),
@@ -199,6 +203,20 @@ export async function createAppServices({
   const reportError = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   // The user's sign-out and the account's deletion: the photos and whose they were. A folder that cannot be deleted is
   // reported by name; the sign-out is still done.
+  // Sign in with Apple ended at deletion (K-812, ADR-062): a fresh code from Apple to our server, which revokes. Never in the
+  // way of the deletion (V6): the sheet closed, Apple or the server failing — told by name (never the code), and on.
+  const endAppleSignIn = async () => {
+    let code: string | null;
+    try {
+      code = await appleReauth.code();
+    } catch (error) {
+      reportError(error);
+      return;
+    }
+    if (code === null) return;
+    const answer = await api.POST('/v1/account/apple-revocation', { body: { authorizationCode: code } }).catch(() => null);
+    if (answer === null || answer.response.status !== 204) report({ name: 'AppleRevocationRefused' });
+  };
   const forgetPhotos = async () => {
     await photos.forget().catch(reportError);
     await kv.removeItemAsync(PHOTO_OWNER).catch(reportError);
@@ -260,6 +278,10 @@ export async function createAppServices({
      * (the listener above). A refusal keeps everything and throws by name.
      */
     deleteAccount: async () => {
+      // First: once the account is deleted, its session is refused. Without Apple there is nothing to wait for, so nothing
+      // is waited for. While Apple's sheet is up the queue may still send an entry: it is deleted with the account (and
+      // by the second pass, DeletionSweep).
+      if (appleReauth !== noAppleReauth) await endAppleSignIn();
       let status: number;
       try {
         status = (await api.DELETE('/v1/account')).response.status;

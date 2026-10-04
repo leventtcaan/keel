@@ -1895,7 +1895,7 @@
       "title": "Delete account",
       "note": "Removes everything, on every device.",
       "confirmTitle": "Delete your account and all data?",
-      "confirmBody": "Your logs, calls, consents and profile are deleted on our side, and this phone forgets you. This can't be undone. Export first if you want a copy.",
+      "confirmBody": "Your logs, calls, consents and profile are deleted on our side, and this phone forgets you. This can't be undone. Export first if you want a copy. Apple then asks you to confirm once more, to end Sign in with Apple for this app.",
       "subscription": "If you have a subscription, Apple goes on charging for it after your account is deleted. Cancel it first if you don't want to be charged.",
       "confirm": "Delete everything",
       "keep": "Keep my account",

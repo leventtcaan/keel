@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto';
 
 import { createApiClient } from '@/api/client';
-import { type AppleAuth, deviceNonce, signInWithApple } from '@/session/appleSignIn';
+import { type AppleAuth, appleReauthorization, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { type StoredSession, createSessionManager } from '@/session/session';
 
 jest.mock('expo-crypto', () => {
@@ -149,5 +149,31 @@ describe("whose this phone's photos are, before the session (ADR-055 #101, K-617
 
     expect(result).toEqual({ kind: 'failed', reason: 'PHONE' });
     expect(await session.accessToken()).toBeNull();
+  });
+});
+
+describe('a fresh authorization code, for ending Sign in with Apple at deletion (K-812, ADR-062)', () => {
+  const nonce = { raw: () => 'raw-nonce-123', hash: async (raw: string) => sha256(raw) };
+
+  test("Apple's sheet once more: the code it gives, asked with no scopes and a hashed nonce", async () => {
+    const auth = apple({ authorizationCode: 'fresh-code' });
+    await expect(appleReauthorization(auth, nonce).code()).resolves.toBe('fresh-code');
+    expect(auth.signInAsync).toHaveBeenCalledWith({ requestedScopes: [], nonce: sha256('raw-nonce-123') });
+  });
+
+  test('the sheet closed: no code, and no error — the deletion goes on', async () => {
+    const auth = apple();
+    auth.signInAsync.mockRejectedValueOnce(Object.assign(new Error('canceled'), { code: 'ERR_REQUEST_CANCELED' }));
+    await expect(appleReauthorization(auth, nonce).code()).resolves.toBeNull();
+  });
+
+  test('Apple gives no code: none', async () => {
+    await expect(appleReauthorization(apple({ authorizationCode: null }), nonce).code()).resolves.toBeNull();
+  });
+
+  test('Apple failing another way: an error the caller reports', async () => {
+    const auth = apple();
+    auth.signInAsync.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'ERR_REQUEST_FAILED' }));
+    await expect(appleReauthorization(auth, nonce).code()).rejects.toThrow();
   });
 });
