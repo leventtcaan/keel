@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,10 +18,12 @@ type Props = {
   coachEntry?: boolean;
   /** Today's way to Settings (prototype 5.2: "‹ Today"). */
   settingsEntry?: boolean;
+  /** What the tab already has, under its note (Progress: the shape projection, K-606). */
+  children?: ReactNode;
 };
 
 /** Temporary screen body until the real screen is built (M3/M4). */
-export function Placeholder({ screen, coachEntry = true, settingsEntry = false }: Props) {
+export function Placeholder({ screen, coachEntry = true, settingsEntry = false, children }: Props) {
   const { color } = useTheme();
   // Built outside the JSX below (the raw-text guard reads JSX children).
   const settings = settingsEntry ? (
@@ -36,6 +39,7 @@ export function Placeholder({ screen, coachEntry = true, settingsEntry = false }
         <ScreenTitle>{t(`screens.${screen}.title`)}</ScreenTitle>
         <Text style={[styles.note, { color: color.muted }]}>{t(`screens.${screen}.note`)}</Text>
         {settings}
+        {children}
       </View>
       {coachEntry && (
         <View style={styles.coach}>
