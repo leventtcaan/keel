@@ -2008,11 +2008,12 @@ export interface components {
             /**
              * @description Only when not shown. UNDER_AGE · SAFETY_HOLD (the safety net holds the plan, U13) · TOO_EARLY (no plan yet, or first
              *     and last weigh-in under 28 days apart) · NO_RECENT_WEIGHT (none this week) · NO_DIRECTION (the plan does not move
-             *     toward a goal) · LOW_BMI_LOSS (under BMI 20 losing is not projected) · NO_SAFE_SCENARIO (every scenario would lose
+             *     toward a goal by at least 100 kcal a day) · LOW_BMI_LOSS (under BMI 20 losing is not projected) · OUTSIDE_MODEL (a body the
+             *     energy balance model does not reach) · NO_SAFE_SCENARIO (every scenario would lose
              *     faster than the weekly cap or reach under BMI 18.5).
              * @enum {string}
              */
-            reason?: "UNDER_AGE" | "SAFETY_HOLD" | "TOO_EARLY" | "NO_RECENT_WEIGHT" | "NO_DIRECTION" | "LOW_BMI_LOSS" | "NO_SAFE_SCENARIO";
+            reason?: "UNDER_AGE" | "SAFETY_HOLD" | "TOO_EARLY" | "NO_RECENT_WEIGHT" | "NO_DIRECTION" | "LOW_BMI_LOSS" | "OUTSIDE_MODEL" | "NO_SAFE_SCENARIO";
             /** @description Only when shown. Today's trend weight (7-day mean), at most 1 decimal. */
             todayKg?: number;
             /**
