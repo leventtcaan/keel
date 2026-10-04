@@ -1780,13 +1780,21 @@
     "day1": "Day 1",
     "earlier": {
       "one": "{count} week earlier",
-      "other": "{count} weeks earlier"
+      "other": "{count} weeks earlier",
+      "days": {
+        "one": "{count} day earlier",
+        "other": "{count} days earlier"
+      }
     },
     "latest": "Latest",
     "caption": "{label} · {date}",
     "between": {
       "one": "{count} week between them",
-      "other": "{count} weeks between them"
+      "other": "{count} weeks between them",
+      "days": {
+        "one": "{count} day between them",
+        "other": "{count} days between them"
+      }
     },
     "front": "Front",
     "side": "Side",

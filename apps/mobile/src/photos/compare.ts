@@ -6,8 +6,11 @@
 import type { PhotoCheck, Pose } from './library';
 
 export type Shot = { takenOn: string; uri: string };
-/** A past point: `weeks` before the latest, to the nearest whole week (at least one). */
-export type Anchor = Shot & { kind: 'day1' | 'earlier'; weeks: number };
+/**
+ * A past point, `days` before the latest; `weeks` to the nearest whole week from a week on, null under a week — a gap of a
+ * day or two is said in days, never as a week that did not pass.
+ */
+export type Anchor = Shot & { kind: 'day1' | 'earlier'; days: number; weeks: number | null };
 export type Comparison = { latest: Shot; anchors: Anchor[] };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -21,11 +24,10 @@ export function comparison(checks: PhotoCheck[], pose: Pose): Comparison | null 
   });
   if (shots.length < 2) return null;
   const latest = shots[shots.length - 1];
-  const anchor = (shot: Shot, kind: Anchor['kind']): Anchor => ({
-    kind,
-    ...shot,
-    weeks: Math.max(1, Math.round(daysBetween(shot.takenOn, latest.takenOn) / 7)),
-  });
+  const anchor = (shot: Shot, kind: Anchor['kind']): Anchor => {
+    const days = Math.round(daysBetween(shot.takenOn, latest.takenOn));
+    return { kind, ...shot, days, weeks: days < 7 ? null : Math.round(days / 7) };
+  };
   const [first, previous] = [shots[0], shots[shots.length - 2]];
   return { latest, anchors: previous === first ? [anchor(first, 'day1')] : [anchor(first, 'day1'), anchor(previous, 'earlier')] };
 }

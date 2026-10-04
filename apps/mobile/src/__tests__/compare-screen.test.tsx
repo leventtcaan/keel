@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import CompareScreen from '@/app/compare';
 import { t } from '@/copy';
@@ -82,27 +82,101 @@ test('the other pose: the same two days, side; Day 1 picked again if the pick ha
   expect(screen.queryByRole('button', { name: t('compare.earlier.other', { count: 5 }) })).toBeNull();
 });
 
-test('slide: the latest photo over the past one, its divide moved by a swipe either way, within the frame', async () => {
+const swipe = async (slider: ReturnType<typeof screen.getByRole>, actionName: 'increment' | 'decrement', times = 1) => {
+  for (let i = 0; i < times; i += 1) await act(async () => fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName } }));
+};
+const touch = (slider: ReturnType<typeof screen.getByRole>, kind: 'responderGrant' | 'responderMove', x: number) =>
+  act(async () => fireEvent(slider, kind, { nativeEvent: { locationX: x, touches: [] }, touchHistory: { touchBank: [] } }));
+const layOut = (slider: ReturnType<typeof screen.getByRole>) =>
+  act(async () => fireEvent(slider, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 400 } } }));
+
+test('slide: the past photo on the left up to the divide, the latest on the right — the captions in the same order', async () => {
+  await show();
+  await press(t('compare.slide'));
+  const divide = screen.getByTestId('compare-divide');
+  expect(within(divide).getByTestId('compare-past').props.source).toEqual({ uri: 'file:///docs/2026-07-06-front.jpg' });
+  expect(within(divide).queryByTestId('compare-latest')).toBeNull();
+  expect(uri('compare-latest')).toBe('file:///docs/2026-10-05-front.jpg');
+  const captions = screen.getAllByText(/ · /).map((caption) => caption.props.children);
+  expect(captions).toEqual([
+    t('compare.caption', { label: t('compare.day1'), date: 'Jul 6' }),
+    t('compare.caption', { label: t('compare.latest'), date: 'Oct 5' }),
+  ]);
+});
+
+test('slide: a swipe moves the divide by compare_slide_step, both ways, held within the frame', async () => {
   await show();
   await press(t('compare.slide'));
   const slider = screen.getByRole('adjustable', { name: t('compare.slider') });
+  expect(slider.props.accessibilityActions).toEqual([{ name: 'increment' }, { name: 'decrement' }]);
   expect(slider).toHaveAccessibilityValue({ min: 0, max: 100, now: 50 });
   expect(screen.getByTestId('compare-divide')).toHaveStyle({ width: '50%' });
-  await act(async () => fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } }));
+  await swipe(slider, 'increment');
   const step = Math.round(photoParams.compareSlideStep * 100);
   expect(slider).toHaveAccessibilityValue({ now: 50 + step });
-  for (let i = 0; i < 20; i += 1) await act(async () => fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } }));
+  await swipe(slider, 'increment', 20);
+  expect(slider).toHaveAccessibilityValue({ now: 100 });
+  expect(screen.getByTestId('compare-divide')).toHaveStyle({ width: '100%' });
+  await swipe(slider, 'decrement', 20);
   expect(slider).toHaveAccessibilityValue({ now: 0 });
   expect(screen.getByTestId('compare-divide')).toHaveStyle({ width: '0%' });
 });
 
-test('slide by dragging: the divide follows the finger across the frame', async () => {
+test('slide by dragging: the divide follows the finger from the first touch, to the nearest percent', async () => {
   await show();
   await press(t('compare.slide'));
   const slider = screen.getByRole('adjustable', { name: t('compare.slider') });
-  await act(async () => fireEvent(slider, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 400 } } }));
-  await act(async () => fireEvent(slider, 'responderMove', { nativeEvent: { locationX: 75, touches: [] }, touchHistory: { touchBank: [] } }));
-  expect(slider).toHaveAccessibilityValue({ now: 25 });
+  await touch(slider, 'responderMove', 75); // before the frame is measured: nothing moves
+  expect(slider).toHaveAccessibilityValue({ now: 50 });
+  await layOut(slider);
+  // The clipped photo keeps the frame's full width: cut, not squeezed.
+  expect(screen.getByTestId('compare-past')).toHaveStyle({ width: 300 });
+  await touch(slider, 'responderGrant', 240);
+  expect(slider).toHaveAccessibilityValue({ now: 80 });
+  await touch(slider, 'responderMove', 100);
+  expect(slider).toHaveAccessibilityValue({ now: 33 });
+  await touch(slider, 'responderMove', 200);
+  expect(slider).toHaveAccessibilityValue({ now: 67 });
+  // A drag that wanders diagonally keeps the divide; the page does not take the touch away.
+  expect(slider.props.onResponderTerminationRequest()).toBe(false);
+});
+
+test('a gap under a week in days, one week as one', async () => {
+  mockChecks = [day('2026-10-04'), day('2026-10-05')];
+  await show();
+  expect(screen.getByText(t('compare.between.days.one', { count: 1 }))).toBeOnTheScreen();
+  mockChecks = [day('2026-09-28'), day('2026-10-05')];
+  await show();
+  expect(screen.getByText(t('compare.between.one', { count: 1 }))).toBeOnTheScreen();
+});
+
+test('the chips show what is picked: the anchor, the mode, the pose', async () => {
+  mockChecks = [day('2026-07-06'), day('2026-09-02', ['front']), day('2026-10-05')];
+  await show();
+  const selected = (name: string) => screen.getByRole('button', { name }).props.accessibilityState?.selected;
+  expect(selected(t('compare.day1'))).toBe(true);
+  expect(selected(t('compare.front'))).toBe(true);
+  expect(selected(t('compare.sideBySide'))).toBe(true);
+  await press(t('compare.earlier.other', { count: 5 }));
+  await press(t('compare.side'));
+  // The pick has no side photo: Day 1 is shown, and shown as picked.
+  expect(selected(t('compare.day1'))).toBe(true);
+  expect(selected(t('compare.side'))).toBe(true);
+  await press(t('compare.slide'));
+  expect(selected(t('compare.slide'))).toBe(true);
+  expect(selected(t('compare.sideBySide'))).toBe(false);
+});
+
+test('Close goes back', async () => {
+  await show();
+  await press(t('compare.close'));
+  expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('while the photos are read: no "empty" sentence yet', async () => {
+  mockServices.photos.checks.mockImplementationOnce(() => new Promise(() => {}));
+  await show();
+  expect(screen.queryByText(t('compare.empty'))).toBeNull();
 });
 
 test('one photo day of a pose: a sentence, no photos', async () => {
@@ -119,7 +193,11 @@ test('a folder that cannot be read: reported by name, the empty sentence', async
   expect(screen.getByText(t('compare.empty'))).toBeOnTheScreen();
 });
 
-test('no "before" or "after" anywhere in its words', () => {
-  const copy = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../../data/copy/en.json'), 'utf8')) as { compare: object };
+test('no "before" or "after" anywhere in its words, nor in the way to it', () => {
+  const copy = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../../data/copy/en.json'), 'utf8')) as {
+    compare: object;
+    photos: { compare: string };
+  };
   expect(JSON.stringify(copy.compare)).not.toMatch(/\b(before|after)\b/i);
+  expect(copy.photos.compare).not.toMatch(/\b(before|after)\b/i);
 });

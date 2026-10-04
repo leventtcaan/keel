@@ -20,7 +20,7 @@ test('one day of a pose: nothing to compare', () => {
 test('two days: Day 1 beside the latest', () => {
   expect(comparison([day('2026-07-06'), day('2026-08-03')], 'front')).toEqual({
     latest: { takenOn: '2026-08-03', uri: 'file:///docs/2026-08-03-front.jpg' },
-    anchors: [{ kind: 'day1', takenOn: '2026-07-06', uri: 'file:///docs/2026-07-06-front.jpg', weeks: 4 }],
+    anchors: [{ kind: 'day1', takenOn: '2026-07-06', uri: 'file:///docs/2026-07-06-front.jpg', days: 28, weeks: 4 }],
   });
 });
 
@@ -29,8 +29,8 @@ test('more days: Day 1, or the photo day before the latest, weeks counted to the
   expect(comparison(checks, 'side')).toEqual({
     latest: { takenOn: '2026-10-05', uri: 'file:///docs/2026-10-05-side.jpg' },
     anchors: [
-      { kind: 'day1', takenOn: '2026-07-06', uri: 'file:///docs/2026-07-06-side.jpg', weeks: 13 },
-      { kind: 'earlier', takenOn: '2026-09-02', uri: 'file:///docs/2026-09-02-side.jpg', weeks: 5 },
+      { kind: 'day1', takenOn: '2026-07-06', uri: 'file:///docs/2026-07-06-side.jpg', days: 91, weeks: 13 },
+      { kind: 'earlier', takenOn: '2026-09-02', uri: 'file:///docs/2026-09-02-side.jpg', days: 33, weeks: 5 },
     ],
   });
 });
@@ -41,8 +41,14 @@ test('the same pose only: a day without it is not a point to compare with', () =
   expect(comparison(checks, 'front')?.anchors.map((a) => a.takenOn)).toEqual(['2026-07-06', '2026-08-03']);
 });
 
-test('weeks to the nearest whole week, at least one', () => {
-  expect(comparison([day('2026-10-01'), day('2026-10-05')], 'front')?.anchors[0].weeks).toBe(1);
-  expect(comparison([day('2026-07-06'), day('2026-07-30')], 'front')?.anchors[0].weeks).toBe(3); // 24 days
-  expect(comparison([day('2026-07-06'), day('2026-08-01')], 'front')?.anchors[0].weeks).toBe(4); // 26 days
+test('under a week the gap is in days, never a week that did not pass; from a week, to the nearest whole week', () => {
+  const gap = (from: string, to: string) => {
+    const anchor = comparison([day(from), day(to)], 'front')?.anchors[0];
+    return anchor === undefined ? null : { days: anchor.days, weeks: anchor.weeks };
+  };
+  expect(gap('2026-10-04', '2026-10-05')).toEqual({ days: 1, weeks: null });
+  expect(gap('2026-09-29', '2026-10-05')).toEqual({ days: 6, weeks: null });
+  expect(gap('2026-09-28', '2026-10-05')).toEqual({ days: 7, weeks: 1 });
+  expect(gap('2026-07-06', '2026-07-30')).toEqual({ days: 24, weeks: 3 });
+  expect(gap('2026-07-06', '2026-08-01')).toEqual({ days: 26, weeks: 4 });
 });

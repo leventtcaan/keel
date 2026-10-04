@@ -152,3 +152,12 @@ test('two photo days or more: "Compare" opens the comparison (K-602); one day, n
   await fireEvent.press(screen.getByRole('button', { name: t('photos.compare') }));
   expect(mockPush).toHaveBeenCalledWith('/compare');
 });
+
+test('two days, but in different poses: no comparison to offer, so no way to it', async () => {
+  mockChecks = [
+    { takenOn: '2026-08-20', photos: { front: 'file:///docs/2026-08-20-front.jpg' } },
+    { takenOn: '2026-09-20', photos: { side: 'file:///docs/2026-09-20-side.jpg' } },
+  ];
+  await show('over');
+  expect(screen.queryByRole('button', { name: t('photos.compare') })).toBeNull();
+});

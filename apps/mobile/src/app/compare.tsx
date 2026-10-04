@@ -19,7 +19,9 @@ import { shortDate } from '@/train/program';
 const PHOTO_RATIO = 3 / 4;
 
 const plural = (key: string, count: number) => t(`${key}.${count === 1 ? 'one' : 'other'}`, { count });
-const anchorLabel = (anchor: Anchor) => (anchor.kind === 'day1' ? t('compare.day1') : plural('compare.earlier', anchor.weeks));
+/** A gap in weeks, or in days under a week (`key.days`). */
+const gap = (key: string, anchor: Anchor) => (anchor.weeks === null ? plural(`${key}.days`, anchor.days) : plural(key, anchor.weeks));
+const anchorLabel = (anchor: Anchor) => (anchor.kind === 'day1' ? t('compare.day1') : gap('compare.earlier', anchor));
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 
 /**
@@ -74,7 +76,7 @@ export default function CompareScreen() {
             {t('compare.caption', { label: t('compare.latest'), date: shortDate(pair.latest.takenOn) })}
           </Text>
         </View>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{plural('compare.between', past.weeks)}</Text>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{gap('compare.between', past)}</Text>
       </>
     );
 
@@ -104,7 +106,7 @@ function SideBySide({ past, latest }: { past: string; latest: string }) {
   );
 }
 
-/** The latest photo over the past one, shown up to the divide; drag across it, or swipe up/down with VoiceOver. */
+/** The past photo over the latest, shown up to the divide (left to right, as the captions); drag, or swipe with VoiceOver. */
 function Slide({ past, latest }: { past: string; latest: string }) {
   const { color } = useTheme();
   const [width, setWidth] = useState(0);
@@ -128,10 +130,13 @@ function Slide({ past, latest }: { past: string; latest: string }) {
       onMoveShouldSetResponder={() => true}
       onResponderGrant={(event) => follow(event.nativeEvent.locationX)}
       onResponderMove={(event) => follow(event.nativeEvent.locationX)}
+      // Inside a scrolling page: a drag that wanders diagonally keeps the divide.
+      onResponderTerminationRequest={() => false}
       style={[styles.slide, { backgroundColor: color.surface }]}>
-      <Image testID="compare-past" source={{ uri: past }} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      <Image testID="compare-latest" source={{ uri: latest }} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      {/* The past photo on the left, as side by side and as the captions read: shown up to the divide, at full width. */}
       <View testID="compare-divide" style={[styles.divide, { width: `${percent}%`, borderColor: color.accent }]}>
-        <Image testID="compare-latest" source={{ uri: latest }} resizeMode="cover" style={[styles.full, width > 0 && { width }]} />
+        <Image testID="compare-past" source={{ uri: past }} resizeMode="cover" style={[styles.full, width > 0 && { width }]} />
       </View>
     </View>
   );
