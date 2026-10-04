@@ -104,3 +104,10 @@ değişmez, yinelenen olay bir kez, eski olay geri götürmez, bilinmeyen hesap 
 - Webhook gecikmesi (5-60 sn) sunucuda çözülmez: satın almadan sonra telefon bu ucu kısa süre yeniden sorar (K-702). Alternatif — telefonun
   RevenueCat SDK'sından okuduğu `CustomerInfo`'yu göstermek — reddedildi: yetki istemciye güvenilmez (ADR-012); paywall "aktif" deyip
   koç 403 dönerse kullanıcı çelişki görür. K-704 (REST tazelemesi) gelince gecikme kısalır, uç değişmez.
+
+## Ek 2 (2026-10-05, K-814) — olay kaydı süreli
+#8'in "olay kaydı hesapla silinir" hükmü değişti: işlenmiş olay kaydı (`subscription.webhook_event`) olay zamanından **30 gün** sonra gece
+silinir (`keel.subscription.event-retention`, `WebhookEventCleanup`; GDPR Md. 5(1)(e)). Tekrar koruması bu süre boyunca kesindir. Sonrasında
+gelen bir teslim (RevenueCat'in kendi denemeleri ~2,5 saatte biter; panelin elle "Retry"ı süresiz) yeniden tartılır: #7 gereği **kesinlikle daha eski**
+olay durumu geri götürmez. Açık kalan tek durum: aynı milisaniyede iki olay, ikisinden eskisinin bir ay sonra elle yeniden gönderilmesi — o zaman
+durum o olayınkine döner; olasılık çok düşük, kabul edildi (K-814 incelemesi).
