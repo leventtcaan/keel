@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { restorePurchases, wait } from '@/subscription/paywall';
+import { hasStoreSubscription } from '@/subscription/status';
 import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
 import { dayWords } from '@/subscription/words';
 import { load } from '@/today/today';
@@ -25,10 +26,6 @@ function stateWords(subscription: Subscription): string {
   const date = subscription.accessUntil === undefined ? '' : dayWords(subscription.accessUntil);
   return t(`settings.subscription.status.${subscription.status}`, { date });
 }
-
-/** Something on the App Store to cancel or change: a subscription still running, or one the store is still trying to charge. */
-const hasStoreSubscription = (subscription: Subscription) =>
-  subscription.active || subscription.status === 'BILLING_ISSUE' || subscription.status === 'PAUSED';
 
 /**
  * Settings › Subscription (K-702, prototype 5.2, ADR-057 D4). The server's word on the subscription (K-705), said plainly.

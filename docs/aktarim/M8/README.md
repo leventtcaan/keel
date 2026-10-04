@@ -16,4 +16,6 @@
 7. K-804 anayasa denetimi tek komut, mağaza metni, rota koruması (`K-804.md`, ADR-061) — expo-router rota kaydı, `_sitemap`, Guideline 2.3
 8. K-810 yenileme jetonu ailesi gece silinir (`K-810.md`) — rotasyon, yeniden kullanım tespiti, saklama sınırı
 9. K-814 RevenueCat olay kayıtları 30 gün (`K-814.md`) — idempotency penceresi, durum makinesi
+10. K-813 telefon kv anahtarları ↔ envanter (`K-813.md`) — TypeScript AST ile veri akışı izleme
+11. K-811 silme onayında abonelik + öğün fotoğrafı dosyaları (`K-811.md`) — Apple silme rehberi, seçici kopyası, `finally`
 12. K-807 erişilebilirlik denetimi + Besin Etiketi taslağı (`K-807.md`) — VoiceOver/RN erişilebilirlik ağacı, WCAG kontrastı, Dynamic Type
