@@ -222,6 +222,22 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-031-healthkit-kutuphanesi.md#Ek",
       "note": "A session open longer than this is not written to Apple Health (K-412): sets carry no times, so the finish is the only end the app knows, and a session left unfinished for days would be kept there as a days-long workout (U1). Derived: the program's sessions are around an hour (G1); four hours is well past any of them."
+    },
+    {
+      "key": "evaluation_window_days",
+      "value": 90,
+      "unit": "days",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-25",
+      "note": "The same as windows.yaml (the engine's): progress is judged over 3 months, not week to week (coaching experience, K-25; 03 §2.7). The strength chart (K-604) spans this window. MobileParameterMirrorTests keeps the two equal."
+    },
+    {
+      "key": "effort_call_window_weeks",
+      "value": 2,
+      "unit": "weeks",
+      "tag": "tecrube",
+      "source": "arastirma/03-guray-karar-omurgasi.md#5",
+      "note": "The decision window the strength chart marks apart from the evaluation window (03 §5.2: decisions 1-2 weeks, evaluation 3 months, shown apart so weekly noise is not read as progress). Two, the longer end: the engine's training signals read about as far (plateau_sessions, 3 sessions at 2 a week; overtraining_missed_plan_weeks, 2). Display only; no call reads it."
     }
   ]
 }

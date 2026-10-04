@@ -1840,5 +1840,21 @@
         "NO_SAFE_SCENARIO": "None of the scenarios stays within the plan's pace and range, so none is shown."
       }
     }
+  },
+  "strength": {
+    "title": "Strength",
+    "subtitle": "Estimated 1RM, week by week",
+    "since": "{load} in the week of {date}",
+    "empty": "Log a compound lift with its reps in reserve, and its estimated 1RM shows here week by week.",
+    "legendLine": "Best estimated 1RM of the week",
+    "legendEasier": "Same weight and reps, more reps in reserve",
+    "band": "Call",
+    "spoken": "{move}, estimated 1RM by week: {first} in the week of {firstDate}, {last} in the week of {lastDate}. Lowest {low}, highest {high}.",
+    "callEyebrow": "Decisions",
+    "callTitle": "The last {weeks} weeks",
+    "callNote": "The shaded band. Weekly calls read short windows like this one.",
+    "judgeEyebrow": "Progress",
+    "judgeTitle": "Judged over {days} days",
+    "judgeNote": "The whole line. Flat weeks inside it are normal."
   }
 }
