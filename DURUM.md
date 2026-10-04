@@ -722,15 +722,18 @@ pozitifte yeniden deneme yok; H2 §4.3 tam eşik seti.
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-605 spike: Hall 2011 enerji dengesi modeli → **ADR-051** + `arastirma/ham/H12` (denklem 1-9 birincil kaynaktan; "±1,7-2,5 kg" yanlış okunmuştu: gözetimli çalışmaların kısa vadeli MAE'si — gerçek hayatta hata zamanla büyür → aralık modelin belirsizliğinden + taban). `engine/EnergyBalanceModel` saf (RK4, StrictMath), `projection.yaml` 20 parametre (yeni alan PROJECTION) | ⏳ #342 auto-merge; RED 8; yayımlanmış örnekler (Şekil 3 80±1, kural 1±0,25, 2B yönü, 2A ±4 bandı — Şekil 3 adamıyla 78,1 kg kayıtlı) + **makalenin doğrusallaştırması** (τ %1, kalıcı kayıp %2); inceleme: negatif/NaN alım (85), PAL<1,11 (80) → reddedilir; test analizi: ilk haftalar/η/τAT testsizdi → doğrusallaştırma + sabitleyici; `Math.log` yasağı (`EnginePurityTests`); mutasyon 37/39 + saflık kuralı | #342 | `M6/K-605.md` |
-| K-607 SCOFF kapısı (telefon): `projection/scoff.ts` (sonuç, bölge linki, cihaz bayrağı `projection.access`, "unavailable" kesin, çıkışta "clear" gider), `app/scoff.tsx`, `projection.json` (eşik 2, linkler), `en.json › projection` | ⏳ #344 auto-merge; RED 31+7; inceleme: çift dokunuş iki `back` (85), yazma hatası sessiz (80), "clear" sonraki hesaba taşınıyor (80 → soru 94); test analizi 5 eksik → eklendi; mutasyon 5/5 + kontrol; jest 1764/1764 | #344 | `M6/K-607.md` |
+| K-607 SCOFF kapısı (telefon): `projection/scoff.ts` (sonuç, bölge linki, cihaz bayrağı `projection.access`, "unavailable" kesin, çıkışta "clear" gider), `app/scoff.tsx`, `projection.json` (eşik 2, linkler), `en.json › projection` | ✅ #344 birleşti (3 CI yeşil); RED 31+7; inceleme: çift dokunuş iki `back` (85), yazma hatası sessiz (80), "clear" sonraki hesaba taşınıyor (80 → soru 94); test analizi 5 eksik → eklendi; mutasyon 5/5 + kontrol; jest 1764/1764 | #344 | `M6/K-607.md` |
 | K-605 | ✅ #342 birleşti | #342 | `M6/K-605.md` |
-| K-613 projeksiyonun motoru + ucu (K-606'dan bölündü, #343): `EnergyBalanceModel` plana oturmuş başlangıç ✅ (eş. 14 eğimi %3); sırada `ShapeProjection` + `GET /v1/projection` | 🔨 dal `engine/343-projection` (worktree `../keel-k613`) | — | — |
+| K-613 projeksiyonun motoru + ucu (K-606'dan bölündü, #343) → **ADR-052**: `EnergyBalanceModel` plana oturmuş başlangıç (eş. 14 eğimi %3), `engine/ShapeProjection` (kapılar + `SAFETY_HOLD`, senaryo = gün payı, aralık bakım ±1 MJ + 2,5 kg, yalnız ileri, haftalık tavan, BMI 18,5), `GET /v1/projection` + sözleşme `Projection` | 🔨 dal `engine/343-projection` (worktree `../keel-k613`), 5 commit; motor testleri yeşil; inceleme sürüyor; `ProjectionApiTests` CI'da | — | — |
 
 ## Session sonunda Levent'e sorulacaklar
 **M6 Part 2 (94-) — 4 Eki:**
 94. **(sağlık, ADR-050 dışı durum, K-607)** Aynı telefonda başka hesap açılınca: ADR-050 "bir kez sorulur" diyor. İnceleme: A "clear" çıkıp çıkış yaparsa
     B hiç taranmadan projeksiyonu açabilir. Uyguladığım (daha sıkı): çıkışta **"clear" unutulur** (sonraki kişi sorulur), **"unavailable" kalır** (kapı
     yeniden açılmaz — B'nin projeksiyonu da kapalı kalır, metin "From your answers…" der). Onay mı, yoksa hesap başına ayrı bayrak mı?
+95. **(ürün, ADR-052)** U12'nin "ilk 4 hafta / 2 ölçüm"ünü **ilk ve son tartı arası ≥ 28 gün** diye okudum (iki ölçüm noktası 4 hafta arayla).
+    Bel ölçümü şartı da olsun mu?
+96. **(ürün, ADR-052)** "%60 uyum" = günlerin %60'ında planın kalorisi, kalanında bakım (ortalama bakım + 0,6 × (hedef − bakım)). Uygun mu?
 
 **M6 Part 1 (87-93) — 4 Eki:**
 87. **(K1, bilgi/onay)** Sabitleyen testler bilerek değişti, beklenti değil düzenleme: (a) `ConsistencyApiTests.thisWeeksActions…` `record` tam eşitliği
