@@ -28,9 +28,11 @@ No data protection officer has been appointed.
 - **Your sessions.** When you sign in we issue tokens; the server keeps only a one-way fingerprint (SHA-256) of each
   refresh token, so a copy of our database can't be used to sign in. Sign-in tokens last 15 minutes and are renewed
   with the refresh token; a session ends after 60 days without use, when you sign out, or when you delete your account.
-  A refresh token is deleted the night after it expires.
+  A session's refresh tokens, a replaced or signed-out one too, are kept until the last of them expires (60 days after the
+  session's last renewal), so a stolen copy coming back ends the session; they are deleted the night after.
 
-*Why:* to run your account (contract). *How long:* until you delete your account.
+*Why:* to run your account and keep it safe (contract). *How long:* your Apple user id until you delete your account;
+refresh tokens as above, and all of them when you delete your account.
 
 ### Your consents {#data-consents}
 

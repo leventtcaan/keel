@@ -9,9 +9,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Expired refresh tokens go each night (K-810, GDPR Art. 5(1)(e)): one past its expiry is refused whatever it is, so it
- * is kept for no purpose. A revoked one stays until it expires: a copy of it coming back is how a stolen token is caught,
- * and its whole family stops working (RefreshTokens.rotate).
+ * A refresh token family goes the night after its last token expires (K-810, GDPR Art. 5(1)(e)): then nobody can use it,
+ * so it is kept for no purpose. Not before: each renewal gives the new token its own lifetime, so a family's old tokens
+ * expire while its newest still works — and an old copy coming back is how a stolen token is caught, the whole family
+ * stopping (RefreshTokens.rotate). Deleting the expired ones alone would turn that catch into a plain refusal.
  */
 @Component
 class RefreshTokenCleanup {
@@ -32,8 +33,11 @@ class RefreshTokenCleanup {
         cleanUp(clock.instant());
     }
 
-    /** Deletes every refresh token that expired before {@code now}. */
+    /** Deletes every family whose every token expired before {@code now}. */
     void cleanUp(Instant now) {
-        jdbc.sql("delete from identity.refresh_token where expires_at < :now").param("now", now.atOffset(ZoneOffset.UTC)).update();
+        jdbc.sql("""
+                delete from identity.refresh_token old where old.expires_at < :now
+                and not exists (select 1 from identity.refresh_token live where live.family_id = old.family_id and live.expires_at >= :now)""")
+                .param("now", now.atOffset(ZoneOffset.UTC)).update();
     }
 }

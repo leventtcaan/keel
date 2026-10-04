@@ -111,11 +111,11 @@
     "account_deletion",
     "time"
    ],
-   "kept_for": "until it expires (60 days after it was issued; a used one is revoked, then kept to its expiry to catch a stolen copy), then the nightly cleanup (RefreshTokenCleanup, 03:45 UTC)",
+   "kept_for": "until every token of its session has expired — each lasts 60 days from its renewal, and a replaced or signed-out one is kept until then to catch a stolen copy — then the nightly cleanup (RefreshTokenCleanup, 03:45 UTC)",
    "exported": false,
    "policy": "data-account",
    "app_privacy": [],
-   "note": "Expired rows go each night (K-810); revoked unexpired rows stay for reuse detection (RefreshTokens.rotate)."
+   "note": "A family goes the night after its last token expires (K-810); until then every row stays, revoked or expired, for reuse detection (RefreshTokens.rotate)."
   },
   {
    "table": "consent.consent_event",
