@@ -35,6 +35,8 @@ export default function ShareScreen() {
   const [showWeight, setShowWeight] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // A part the server could not give (offline): said, so an empty card is not read as "nothing yet".
+  const [partial, setPartial] = useState(false);
   const card = useRef<Svg>(null);
 
   useFocusEffect(
@@ -53,6 +55,7 @@ export default function ShareScreen() {
       ])
         .then(([consistency, call, weights, data, own, history, records]) => {
           const sessions = sessionsOf(history.state === 'ready' ? history.value : null, records, historyFrom(now));
+          setPartial([consistency, call, weights].some((read) => read.state === 'failed'));
           setFacts({
             consistency: consistency.state === 'ready' ? consistency.value : null,
             latestCall: call.state === 'ready' ? call.value : null,
@@ -79,35 +82,45 @@ export default function ShareScreen() {
     });
   };
 
+  // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
+  const weightSwitch =
+    facts?.weight == null ? null : (
+      <View style={styles.row}>
+        <View style={styles.words}>
+          <Text style={[styles.text, { color: color.text }]}>{t('share.showWeight')}</Text>
+          <Text style={[styles.small, { color: color.muted }]}>{t('share.weightNote')}</Text>
+        </View>
+        <Switch accessibilityLabel={t('share.showWeight')} value={showWeight} onValueChange={setShowWeight} />
+      </View>
+    );
+  const shareable =
+    text === null ? null : text.lines.length === 0 ? (
+      <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.nothing')}</Text>
+    ) : (
+      <View style={styles.part}>
+        <ShareCard ref={card} text={text} width={width - 2 * tokens.space.lg} />
+        {weightSwitch}
+        {failed && <Failed />}
+        <Button label={t('share.share')} disabled={busy} onPress={share} />
+      </View>
+    );
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('share.title')}</ScreenTitle>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.note')}</Text>
-        {text !== null && text.lines.length === 0 && <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.nothing')}</Text>}
-        {text !== null && text.lines.length > 0 && (
-          <View style={styles.part}>
-            <ShareCard ref={card} text={text} width={width - 2 * tokens.space.lg} />
-            <View style={styles.row}>
-              <View style={styles.words}>
-                <Text style={[styles.text, { color: color.text }]}>{t('share.showWeight')}</Text>
-                <Text style={[styles.small, { color: color.muted }]}>{t('share.weightNote')}</Text>
-              </View>
-              <Switch accessibilityLabel={t('share.showWeight')} value={showWeight} onValueChange={setShowWeight} />
-            </View>
-            {failed && <Failed />}
-            <Button label={t('share.share')} disabled={busy} onPress={share} />
-          </View>
-        )}
+        {partial && <Text style={[styles.small, { color: color.muted }]}>{t('share.partial')}</Text>}
+        {shareable}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/** The trend's first and last point in the window: what it was and what it is, both measured. */
+/** The trend's first and last point in the window: what it was and what it is, both measured, and since when. */
 function trendChange(points: Schemas['TrendPoint'][]): CardFacts['weight'] {
   if (points.length < 2) return null;
-  return { fromKg: points[0].kg, toKg: points[points.length - 1].kg };
+  return { fromKg: points[0].kg, toKg: points[points.length - 1].kg, since: points[0].day };
 }
 
 function Failed() {

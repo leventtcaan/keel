@@ -1,0 +1,12 @@
+{
+  "parameters": [
+    {
+      "key": "share_withheld_rules",
+      "value": ["low_energy_safety", "low_energy_availability", "rapid_loss", "loss_rate_cap", "loss_rate_cap_bodyweight", "low_fat_floor"],
+      "unit": "rules",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-054-paylasim-karti.md#D1",
+      "note": "A latest call resting on one of these rules is left off the share card (K-612, ADR-054 §4): the engine's safety net (SafetyNet) — a health signal, and rapid loss gives the weight's direction away even with the weight trend off. Provisional until question 104 is answered."
+    }
+  ]
+}

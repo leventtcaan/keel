@@ -54,7 +54,15 @@ export const ShareCard = forwardRef<Svg, Props>(function ShareCard({ text, width
     return pieces;
   });
   return (
-    <Svg ref={ref} width={width} height={(width * HEIGHT) / WIDTH} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} accessibilityLabel={t('share.spoken')}>
+    <Svg
+      ref={ref}
+      width={width}
+      height={(width * HEIGHT) / WIDTH}
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      accessible
+      accessibilityRole="image"
+      // What is on it, read out: the user checks what a health image says before it leaves the phone.
+      accessibilityLabel={[t('share.spoken'), text.heading, ...text.lines].join('. ')}>
       <Rect x={0} y={0} width={WIDTH} height={HEIGHT} fill={ink.decisionBackground} />
       {heading}
       {rule}

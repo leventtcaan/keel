@@ -7,7 +7,6 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import ShareScreen from '@/app/share';
 import { t } from '@/copy';
-import { workoutParams } from '@/train/params';
 import type { CardText } from '@/share/card';
 import { ThemeProvider } from '@/theme/theme';
 
@@ -65,7 +64,7 @@ beforeEach(() => {
       done: 18,
       record: { onTrackWeeks: 11, countedWeeks: 12, currentRun: 4, forgivenWeeks: 1 },
     }),
-    '/v1/decisions/current': ok({ action: { type: 'CHANGE_MOVEMENT' }, copyKey: 'decision.change_movement.bmr_floor' }),
+    '/v1/decisions/current': ok({ action: { type: 'CHANGE_MOVEMENT' }, copyKey: 'decision.change_movement.bmr_floor', reasons: [{ rule: 'bmr_floor', source: 'x' }] }),
     '/v1/weight-trend': ok([
       { day: '2026-07-10', kg: 84.2 },
       { day: '2026-10-03', kg: 81.6 },
@@ -93,7 +92,7 @@ test('the card: the record and the latest call; no weight until turned on', asyn
 
   expect(card()).toContain(t('share.card.record', { onTrack: 11, counted: 12 }));
   expect(card()).toContain(t('share.card.call', { call: t('decision.change_movement.bmr_floor.title') }));
-  expect(card()).not.toContain(t('share.card.weight', { days: workoutParams.evaluationWindowDays, from: '84.2 kg', to: '81.6 kg' }));
+  expect(card()).not.toContain(t('share.card.weight', { date: 'Jul 10', from: '84.2 kg', to: '81.6 kg' }));
   expect(screen.getByText(t('share.note'))).toBeOnTheScreen();
 });
 
@@ -103,7 +102,7 @@ test('turned on, the weight trend is on the card with its real values; off again
   expect(screen.getByLabelText(t('share.showWeight')).props.value).toBe(false); // off by default
   await fireEvent(screen.getByLabelText(t('share.showWeight')), 'valueChange', true);
   await act(async () => {});
-  expect(card()).toContain(t('share.card.weight', { days: workoutParams.evaluationWindowDays, from: '84.2 kg', to: '81.6 kg' }));
+  expect(card()).toContain(t('share.card.weight', { date: 'Jul 10', from: '84.2 kg', to: '81.6 kg' }));
 
   await fireEvent(screen.getByLabelText(t('share.showWeight')), 'valueChange', false);
   await act(async () => {});
@@ -136,4 +135,71 @@ test('nothing to put on a card: it says so and offers no share', async () => {
 
   expect(screen.getByText(t('share.nothing'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('share.share') })).toBeNull();
+});
+
+describe('after the review (K-612)', () => {
+  const bench = { id: 'bench_press', nameKey: 'exercises.bench_press.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] };
+  const workout = (day: string, kg: number) => ({
+    id: day,
+    clientId: day,
+    startedAt: `${day}T17:00:00Z`,
+    endedAt: `${day}T18:00:00Z`,
+    sets: [{ id: `${day}-s`, clientId: `${day}-s`, exerciseId: 'bench_press', setType: 'WORKING', loadKg: kg, reps: 8, rir: 2 }],
+  });
+
+  test('the weight trend is read over the strength chart\'s window', async () => {
+    await show();
+
+    const asked = mockServices.api.GET.mock.calls.find(([p]) => p === '/v1/weight-trend')?.[1] as { params: { query: { from: string; to: string } } };
+    expect(asked.params.query.from <= asked.params.query.to).toBe(true);
+    expect(Date.parse(asked.params.query.to) - Date.parse(asked.params.query.from)).toBeGreaterThan(80 * 24 * 3600 * 1000);
+  });
+
+  test('a lift from the history is on the card, since its first week', async () => {
+    mockServices.training.read.mockResolvedValueOnce({ program: { state: 'none' }, exercises: { state: 'ready', value: [bench] }, kept: false } as never);
+    const today = new Date();
+    const day = (back: number) => new Date(today.getTime() - back * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    mockServices.training.history.mockResolvedValueOnce({ state: 'ready', value: [workout(day(40), 80), workout(day(5), 85)] } as never);
+    await show();
+
+    expect(card()).toContain(t('exercises.bench_press.name'));
+  });
+
+  test('one trend point: no change to show, and no switch for it', async () => {
+    mockAnswers['/v1/weight-trend'] = ok([{ day: '2026-10-03', kg: 81.6 }]);
+    await show();
+
+    expect(screen.queryByLabelText(t('share.showWeight'))).toBeNull();
+  });
+
+  test('shared once, it can be shared again; a failure then a success clears the failure', async () => {
+    mockServices.shareImage.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'ShareFailed' }));
+    await show();
+
+    await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+    await act(async () => {});
+    expect(screen.getByText(t('share.failed'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+    await act(async () => {});
+
+    expect(mockServices.shareImage).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(t('share.failed'))).toBeNull();
+  });
+
+  test('a part that could not be read is said, apart from "nothing yet"', async () => {
+    mockServices.api.GET.mockImplementation(async (path: string) =>
+      path === '/v1/consistency' ? ({ error: { code: 'X', message: 'x' }, response: new Response(null, { status: 500 }) } as never) : (mockAnswers[path] ?? none),
+    );
+    await show();
+
+    expect(screen.getByText(t('share.partial'))).toBeOnTheScreen();
+    mockServices.api.GET.mockImplementation(async (path: string) => mockAnswers[path] ?? none);
+  });
+
+  test('a read that throws is reported by name', async () => {
+    mockServices.training.read.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }));
+    await show();
+
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'NoConnection' });
+  });
 });

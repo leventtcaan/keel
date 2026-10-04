@@ -24,7 +24,7 @@ import { devicePhotoFiles } from '@/photos/photoFiles';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
-import { shareCardImage } from '@/share/shareImage';
+import { deviceShareImage } from '@/share/deviceShare';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
 import type { UnitSystem } from '@/units/units';
 
@@ -99,16 +99,7 @@ async function build(): Promise<PhoneServices> {
         consented: () => bothHealthConsents(services.consents),
         now: new Date(),
       }),
-    shareImage: (base64) =>
-      shareCardImage(base64, {
-        saveImage: (name, data) => {
-          const file = new File(Paths.cache, name);
-          file.write(data, { encoding: 'base64' });
-          return { uri: file.uri, remove: () => file.delete() };
-        },
-        share: async (uri) => void (await Share.share({ url: uri })),
-        report: services.report,
-      }),
+    shareImage: deviceShareImage(services.report),
     exportData: () =>
       exportAccount({
         api: services.api,

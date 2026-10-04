@@ -52,3 +52,23 @@ test('a file that cannot be removed is reported by name; the share is not a fail
 
   expect(d.report).toHaveBeenCalledWith({ name: 'RemoveFailed' });
 });
+
+test('the file stays until the sheet is done with it', async () => {
+  const order: string[] = [];
+  let close: () => void = () => {};
+  const d = deps();
+  d.share.mockImplementationOnce(() => new Promise<void>((resolve) => (close = () => (order.push('closed'), resolve()))));
+  const saveImage = d.saveImage;
+  d.saveImage = jest.fn((name: string, base64: string) => {
+    const file = saveImage(name, base64);
+    return { uri: file.uri, remove: () => (order.push('removed'), file.remove()) };
+  });
+
+  const sharing = shareCardImage('iVBORw0KGgo=', d);
+  await Promise.resolve();
+  expect(order).toEqual([]);
+  close();
+  await sharing;
+
+  expect(order).toEqual(['closed', 'removed']);
+});

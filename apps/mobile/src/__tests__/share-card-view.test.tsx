@@ -6,7 +6,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { render } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react-native';
+import { createRef } from 'react';
+import type Svg from 'react-native-svg';
 
 import { ShareCard } from '@/share/ShareCard';
 
@@ -30,15 +32,35 @@ test('every line is on the card, a long one wrapped; nothing but text and colour
 
   expect(words).toEqual(expect.arrayContaining(['My training, week by week', '11 of 12 weeks on track', 'Latest call: Food stays where', 'it is. Movement goes up.']));
   expect(words.join(' ')).toContain(TEXT.footer);
-  expect(nodes.map((n) => n.type).filter((type) => /image|pattern|use/i.test(type))).toEqual([]);
+  expect(nodes.map((n) => n.type).filter((type) => /^(RNSVG)?(Image|Pattern|Use)$/i.test(type))).toEqual([]);
+});
+
+test('lines do not overlap: each starts below the last', async () => {
+  const { toJSON } = await render(<ShareCard text={TEXT} width={360} />);
+  // react-native-svg keeps a text's y on the RNSVGText node, as a list.
+  const ys = all(toJSON() as Node)
+    .filter((n) => n.type === 'RNSVGText')
+    .map((n) => (n.props.y as number[])[0]);
+  expect(ys.length).toBeGreaterThan(3);
+  const lines = ys;
+  expect(lines.every((y, i) => i === 0 || y > lines[i - 1])).toBe(true);
+});
+
+test('the image says what is on it, and its ref can make the PNG', async () => {
+  const ref = createRef<Svg>();
+  await render(<ShareCard ref={ref} text={TEXT} width={360} />);
+
+  expect(screen.getByLabelText(new RegExp(TEXT.lines[0]))).toBeOnTheScreen();
+  expect(typeof ref.current?.toDataURL).toBe('function');
 });
 
 describe('the share card stays on the phone and away from the photos', () => {
   const uncommented = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
   const SHARE = path.resolve(__dirname, '../share');
   const FILES = [...fs.readdirSync(SHARE).map((name) => path.join(SHARE, name)), path.resolve(__dirname, '../app/share.tsx')];
+  /** The camera roll is a photo library too: the card is handed to the sheet, never saved into one by the app. */
   /** A write to the server, a request of its own, an upload — or the progress photos (K-614): none may be named. */
-  const FORBIDDEN = /\.(POST|PUT|PATCH|DELETE)\b|\bfetch\b|XMLHttpRequest|upload|sendBeacon|WebSocket|@\/photos|services\.photos|\bphotos\b/;
+  const FORBIDDEN = /\.(POST|PUT|PATCH|DELETE)\b|\bfetch\b|XMLHttpRequest|upload|sendBeacon|WebSocket|@\/photos|services\.photos|\bphotos\b|MediaLibrary|CameraRoll/;
 
   test('no file of it writes to the server, fetches, uploads or reads a photo', () => {
     expect(FILES.length).toBeGreaterThan(3);
@@ -50,5 +72,8 @@ describe('the share card stays on the phone and away from the photos', () => {
       expect(FORBIDDEN.test(bad)).toBe(true);
     }
     expect(FORBIDDEN.test("api.GET('/v1/consistency')")).toBe(false);
+    expect(FORBIDDEN.test('MediaLibrary.saveToLibraryAsync(uri)')).toBe(true);
+    // The writing itself is in the scan: the device side lives under src/share.
+    expect(FILES.map((f) => path.basename(f))).toContain('deviceShare.ts');
   });
 });

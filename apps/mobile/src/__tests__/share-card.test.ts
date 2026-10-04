@@ -5,7 +5,6 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { workoutParams } from '@/train/params';
 import { type CardFacts, cardText, strengthFact, wrap } from '@/share/card';
 import type { Session } from '@/train/history';
 import type { Move } from '@/train/trainData';
@@ -26,12 +25,13 @@ const consistency = (onTrack: number, counted: number, forgiven = 0): Schemas['C
     done: 18,
     record: { onTrackWeeks: onTrack, countedWeeks: counted, currentRun: 4, forgivenWeeks: forgiven },
   }) as Schemas['Consistency'];
-const call = (type: string, copyKey: string): Schemas['Decision'] => ({ action: { type }, copyKey }) as unknown as Schemas['Decision'];
+const call = (type: string, copyKey: string): Schemas['Decision'] =>
+  ({ action: { type }, copyKey, reasons: [{ rule: copyKey.split('.').pop(), source: 'x' }] }) as unknown as Schemas['Decision'];
 const FULL: CardFacts = {
   consistency: consistency(11, 12, 1),
   latestCall: call('CHANGE_MOVEMENT', 'decision.change_movement.bmr_floor'),
-  strength: { move: 'Bench press', fromKg: 92.5, toKg: 100 },
-  weight: { fromKg: 84.2, toKg: 81.6 },
+  strength: { move: 'Bench press', fromKg: 92.5, toKg: 100, since: '2026-07-13' },
+  weight: { fromKg: 84.2, toKg: 81.6, since: '2026-07-14' },
 };
 
 test('the record, the latest call, the lift — and no weight unless turned on', () => {
@@ -42,7 +42,7 @@ test('the record, the latest call, the lift — and no weight unless turned on',
     t('share.card.record', { onTrack: 11, counted: 12 }),
     t('share.card.forgiven', { count: 1 }),
     t('share.card.call', { call: t('decision.change_movement.bmr_floor.title') }),
-    t('share.card.strength', { move: 'Bench press', days: workoutParams.evaluationWindowDays, from: '92.5 kg', to: '100 kg' }),
+    t('share.card.strength', { move: 'Bench press', date: 'Jul 13', from: '92.5 kg', to: '100 kg' }),
   ]);
   expect(card.lines.join(' ')).not.toContain('84.2');
 });
@@ -50,20 +50,44 @@ test('the record, the latest call, the lift — and no weight unless turned on',
 test('the weight trend, turned on: its real values, in the user unit', () => {
   const card = cardText(FULL, 'IMPERIAL', true);
 
-  expect(card.lines).toContain(t('share.card.weight', { days: workoutParams.evaluationWindowDays, from: '185.6 lb', to: '179.9 lb' }));
+  expect(card.lines).toContain(t('share.card.weight', { date: 'Jul 14', from: '185.6 lb', to: '179.9 lb' }));
 });
 
 test('no forgiven week: no line for it; "not yet" is no call to share', () => {
   const card = cardText({ ...FULL, consistency: consistency(3, 3), latestCall: call('NO_DECISION_YET', 'decision.no_decision_yet.observing') }, 'METRIC', false);
 
-  expect(card.lines).toEqual([t('share.card.record', { onTrack: 3, counted: 3 }), t('share.card.strength', { move: 'Bench press', days: workoutParams.evaluationWindowDays, from: '92.5 kg', to: '100 kg' })]);
+  expect(card.lines).toEqual([t('share.card.record', { onTrack: 3, counted: 3 }), t('share.card.strength', { move: 'Bench press', date: 'Jul 13', from: '92.5 kg', to: '100 kg' })]);
 });
 
 test('nothing yet: no lines (the screen offers nothing to share)', () => {
   expect(cardText({ consistency: consistency(0, 0), latestCall: null, strength: null, weight: null }, 'METRIC', true).lines).toEqual([]);
 });
 
+test('the lift in pounds in pounds', () => {
+  expect(cardText(FULL, 'IMPERIAL', false).lines).toContain(t('share.card.strength', { move: 'Bench press', date: 'Jul 13', from: '203.9 lb', to: '220.5 lb' }));
+});
+
+test('two forgiven weeks, said as two; the footer is the app\'s', () => {
+  const card = cardText({ ...FULL, consistency: consistency(10, 12, 2) }, 'METRIC', false);
+  expect(card.lines).toContain(t('share.card.forgivenMany', { count: 2 }));
+  expect(card.footer).toBe(t('share.card.footer'));
+});
+
+test.each(['low_energy_safety', 'rapid_loss', 'loss_rate_cap', 'low_energy_availability', 'low_fat_floor'])(
+  'a call resting on %s is left off the card (ADR-054 §4, provisional)',
+  (rule) => {
+    const safety = { ...call('INCREASE_CALORIES', 'decision.increase_calories.rapid_loss'), reasons: [{ rule, source: 'x' }] } as unknown as Schemas['Decision'];
+    expect(cardText({ ...FULL, latestCall: safety }, 'METRIC', false).lines.join(' ')).not.toContain(t('share.card.call', { call: '' }).trim());
+  },
+);
+
+test('the hard stop (safety) is left off whatever its words', () => {
+  const stop = { ...call('CHANGE_PHASE', 'decision.change_phase.bulk_ceiling'), safety: true } as unknown as Schemas['Decision'];
+  expect(cardText({ ...FULL, latestCall: stop }, 'METRIC', false).lines.some((l) => l.startsWith(t('share.card.call', { call: '' }).trim()))).toBe(false);
+});
+
 test('a line is wrapped at words to fit the card', () => {
+  expect(wrap('abcd efgh', 9)).toEqual(['abcd efgh']);
   expect(wrap('Latest call: keep the calories and train as planned', 20)).toEqual(['Latest call: keep', 'the calories and', 'train as planned']);
   expect(wrap('short', 20)).toEqual(['short']);
   expect(wrap('Supercalifragilisticexpialidocious move', 10)).toEqual(['Supercalifragilisticexpialidocious', 'move']);
@@ -88,12 +112,16 @@ describe('the lift', () => {
     sets: [{ clientId: `${day}-1`, exerciseId: 'bench_press', setType: 'WORKING', loadKg: kg, reps, rir: 2 }],
   });
 
-  test("the chart's own lift, first and last week's best estimated max — the strength chart's numbers", () => {
-    const fact = strengthFact(new Map([['bench_press', bench]]), [session('2026-08-03', 80, 8), session('2026-09-28', 85, 8)], '2026-10-04');
+  test("the chart's own lift (the most weeks), its first and last week's best estimated max and the first week's date", () => {
+    const squat: Move = { ...bench, id: 'squat', nameKey: 'exercises.squat.name' };
+    const squatSession = (day: string): Session => ({ ...session(day, 100, 5), sets: [{ ...session(day, 100, 5).sets[0], exerciseId: 'squat' }] });
+    const sessions = [session('2026-08-03', 85, 8), session('2026-08-24', 80, 8), session('2026-09-28', 90, 8), squatSession('2026-08-03'), squatSession('2026-09-28')];
 
-    expect(fact).not.toBeNull();
-    expect(fact?.move).toBe(t('exercises.bench_press.name'));
-    expect(fact!.toKg).toBeGreaterThan(fact!.fromKg);
+    const fact = strengthFact(new Map([['bench_press', bench], ['squat', squat]]), sessions, '2026-10-04');
+
+    expect(fact).toMatchObject({ move: t('exercises.bench_press.name'), since: '2026-08-03' });
+    expect(fact!.fromKg).toBeCloseTo(85 * (1 + 10 / 30), 1); // the first week, not the lowest (week 2 was lighter)
+    expect(fact!.toKg).toBeCloseTo(90 * (1 + 10 / 30), 1);
   });
 
   test('one week only: no change to tell', () => {
@@ -112,6 +140,13 @@ describe('no forbidden phrase on a card', () => {
 
   test.each((shareForbidden.rules as Rule[]).flatMap((r) => r.nonExamples.map((e) => [r.id, e])))('%s lets "%s" through', (id, text) => {
     expect(caught(text)).not.toContain(id);
+  });
+
+  test('every call title a card could carry', () => {
+    const decisions = (en as { decision: Record<string, Record<string, { title?: string }>> }).decision;
+    const titles = Object.values(decisions).flatMap((group) => Object.values(group).flatMap((v) => (typeof v === 'object' && v.title ? [v.title] : [])));
+    expect(titles.length).toBeGreaterThan(10);
+    expect(titles.flatMap((text) => caught(text).map((id) => `${id}: ${text}`))).toEqual([]);
   });
 
   test('every share text, and a full card in both units', () => {
