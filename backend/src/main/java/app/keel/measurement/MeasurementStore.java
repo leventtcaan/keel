@@ -63,7 +63,6 @@ class MeasurementStore {
                 .param("account", account.value()).param("client", clientId).query((row, n) -> weighIn(row)).single(), created == 1);
     }
 
-    /** Weigh-ins in [from, to), oldest first. */
     /** Weigh-ins in [from, to), oldest first; the imported ones (IMPORT, K-616) only when asked for (ADR-053). */
     List<WeighIn> weighIns(AccountId account, Instant from, Instant to, boolean imported) {
         return jdbc.sql("""

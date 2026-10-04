@@ -43,6 +43,9 @@ class WorkoutImportApiTests {
     @Autowired
     JdbcClient jdbc;
 
+    @Autowired
+    TrainingLog log;
+
     @Test
     void sessionsAreStoredFinishedMarkedAndListed() throws Exception {
         AccountId account = consented();
@@ -87,6 +90,99 @@ class WorkoutImportApiTests {
         assertThat(map(again)).containsEntry("imported", 1).containsEntry("alreadyThere", 1);
         assertThat(count(account, "training.workout")).isEqualTo(2);
         assertThat(count(account, "training.workout_set")).isEqualTo(2);
+    }
+
+    @Test
+    void aClientIdTheAppAlreadyUsedIsLeftAsItIs() throws Exception {
+        // The app's own session keeps its sets and stays unmarked: an import never overwrites what was logged.
+        AccountId account = consented();
+        UUID clientId = UUID.randomUUID();
+        send(account, "POST", "/v1/workouts", Map.of("clientId", clientId, "startedAt", "2025-07-01T17:00:00Z"));
+
+        MvcTestResult result = importing(account, "STRONG", session(clientId, "2025-06-30T17:56:00Z", "2025-06-30T18:58:00Z",
+                set("bench_press", "WORKING", 80, 8)));
+
+        assertThat(map(result)).containsEntry("imported", 0).containsEntry("alreadyThere", 1);
+        assertThat(list(send(account, "GET", "/v1/workouts?from=2025-06-30&to=2025-07-01", null))).singleElement()
+                .satisfies(w -> assertThat(w).containsEntry("startedAt", "2025-07-01T17:00:00Z").doesNotContainKey("importedFrom")
+                        .containsEntry("sets", List.of()));
+    }
+
+    @Test
+    void theTrainingLogTheEngineReadsHasNoImportedSession() {
+        // ADR-053: what the engine reads — sessions done, the last session before a break, a move's working sets — never
+        // holds an imported one.
+        AccountId account = consented();
+        importing(account, "STRONG", session(UUID.randomUUID(), "2025-06-30T17:56:00Z", "2025-06-30T18:58:00Z", set("bench_press", "WORKING", 80, 8)));
+        java.time.Instant from = java.time.Instant.parse("2025-06-01T00:00:00Z");
+        java.time.Instant to = java.time.Instant.parse("2025-08-01T00:00:00Z");
+
+        assertThat(log.workoutStarts(account, from, to)).isEmpty();
+        assertThat(log.lastSessionBefore(account, to)).isEmpty();
+        assertThat(log.workingSets(account, "bench_press", from, to)).isEmpty();
+    }
+
+    @Test
+    void theAppKeepsItsSourceTheSessionsItsOwn() throws Exception {
+        AccountId account = consented();
+        importing(account, "HEVY", session(UUID.randomUUID(), "2025-06-30T17:56:00Z", "2025-06-30T18:58:00Z", set("push_up", "WORKING", 0, 20)));
+
+        assertThat(list(send(account, "GET", "/v1/workouts?from=2025-06-30&to=2025-06-30", null))).singleElement()
+                .satisfies(w -> assertThat(w).containsEntry("importedFrom", "HEVY"));
+    }
+
+    @Test
+    void aSessionWithNoTimeBetweenStartAndEndIsTaken() {
+        // A file without a duration (H13: Strong's Duration unread) ends where it starts; the finish endpoint takes that too.
+        AccountId account = consented();
+
+        assertThat(importing(account, "STRONG", session(UUID.randomUUID(), "2025-06-30T17:56:00Z", "2025-06-30T17:56:00Z",
+                set("bench_press", "WORKING", 80, 8)))).hasStatusOk();
+    }
+
+    @Test
+    void atMostTwoHundredSetsASession() {
+        AccountId account = consented();
+        List<Map<String, Object>> sets = new ArrayList<>();
+        for (int i = 0; i < 201; i++) {
+            sets.add(set("bench_press", "WORKING", 80, 8));
+        }
+
+        assertThat(importing(account, "STRONG", Map.<String, Object>of("clientId", UUID.randomUUID(), "startedAt", "2025-06-30T17:56:00Z", "endedAt",
+                "2025-06-30T18:58:00Z", "sets", sets))).hasStatus(400);
+        assertThat(importing(account, "STRONG", Map.<String, Object>of("clientId", UUID.randomUUID(), "startedAt", "2025-06-30T17:56:00Z", "endedAt",
+                "2025-06-30T18:58:00Z", "sets", sets.subList(0, 200)))).hasStatusOk();
+    }
+
+    @Test
+    void aMissingPartIsRefusedNotAServerError() {
+        // A 500 would have the phone send the same chunk again and again; each of these is the request's fault.
+        AccountId account = consented();
+        Map<String, Object> set = set("bench_press", "WORKING", 80, 8);
+        Map<String, Object> noReps = new HashMap<>(set);
+        noReps.remove("reps");
+        List<Object> nullSession = new ArrayList<>();
+        nullSession.add(null);
+        List<Object> nullSet = new ArrayList<>();
+        nullSet.add(null);
+        Map<String, Object> session = session(UUID.randomUUID(), "2025-06-30T17:56:00Z", "2025-06-30T18:58:00Z", set);
+
+        assertThat(send(account, "POST", "/v1/workout-imports", Map.of("workouts", List.of(session)))).as("no source").hasStatus(400);
+        assertThat(send(account, "POST", "/v1/workout-imports", Map.of("source", "STRONG"))).as("no sessions").hasStatus(400);
+        assertThat(send(account, "POST", "/v1/workout-imports", Map.of("source", "STRONG", "workouts", List.of()))).as("none").hasStatus(400);
+        assertThat(send(account, "POST", "/v1/workout-imports", Map.of("source", "STRONG", "workouts", nullSession))).as("a null session")
+                .hasStatus(400);
+        assertThat(importing(account, "STRONG", Map.<String, Object>of("clientId", UUID.randomUUID(), "startedAt", "2025-06-30T17:56:00Z", "sets", List.of(set))))
+                .as("no end").hasStatus(400);
+        assertThat(importing(account, "STRONG", Map.<String, Object>of("clientId", UUID.randomUUID(), "startedAt", "2025-06-30T17:56:00Z", "endedAt",
+                "2025-06-30T18:58:00Z"))).as("no sets").hasStatus(400);
+        assertThat(importing(account, "STRONG", Map.<String, Object>of("clientId", UUID.randomUUID(), "startedAt", "2025-06-30T17:56:00Z", "endedAt",
+                "2025-06-30T18:58:00Z", "sets", nullSet))).as("a null set").hasStatus(400);
+        assertThat(importing(account, "STRONG", session(UUID.randomUUID(), "2025-06-30T17:56:00Z", "2025-06-30T18:58:00Z", noReps)))
+                .as("a set without reps").hasStatus(400);
+        assertThat(importing(account, "STRONG", session(UUID.randomUUID(), "2025-06-30T17:56:00Z", "2025-06-30T18:58:00Z",
+                set("bench_press", "WORKING", 80, 101)))).as("reps over the limit").hasStatus(400);
+        assertThat(count(account, "training.workout")).isZero();
     }
 
     @Test

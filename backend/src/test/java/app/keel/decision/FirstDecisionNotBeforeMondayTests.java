@@ -77,8 +77,8 @@ class FirstDecisionNotBeforeMondayTests {
         AccountId imported = ready();
         importWeighIns(imported);
         importSessionThisWeek(imported);
-        answer(own);
-        answer(imported);
+        assertThat(answer(own)).hasStatusOk();
+        assertThat(answer(imported)).hasStatusOk();
 
         assertThat(map(send(imported, "GET", "/v1/consistency", null))).isEqualTo(map(send(own, "GET", "/v1/consistency", null)));
         assertThat(send(imported, "GET", "/v1/first-weeks", null).getResponse().getContentAsString())
@@ -113,9 +113,8 @@ class FirstDecisionNotBeforeMondayTests {
 
     /** A session from another app's export, done this week. */
     private void importSessionThisWeek(AccountId account) {
-        Instant now = Instant.now();
-        Instant started = LocalDate.now(ZoneOffset.UTC).with(DayOfWeek.MONDAY).atStartOfDay(ZoneOffset.UTC).toInstant().plus(1, ChronoUnit.HOURS);
-        Instant start = started.isAfter(now) ? now.minus(2, ChronoUnit.HOURS) : started;
+        // Monday 00:00 in the account's zone (UTC): this week whatever the hour the test runs.
+        Instant start = LocalDate.now(ZoneOffset.UTC).with(DayOfWeek.MONDAY).atStartOfDay(ZoneOffset.UTC).toInstant();
         assertThat(send(account, "POST", "/v1/workout-imports", Map.of("source", "STRONG", "workouts", List.of(Map.of(
                 "clientId", UUID.randomUUID(), "startedAt", start.toString(), "endedAt", start.plus(1, ChronoUnit.HOURS).toString(),
                 "sets", List.of(Map.of("exerciseId", "bench_press", "setType", "WORKING", "loadKg", 80, "reps", 8)))))))
