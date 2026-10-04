@@ -2614,6 +2614,43 @@ tasks:
     refs: ["arastirma/ham/H1-olcum.md#2.5", "arastirma/ham/H1-olcum.md#2.6", "plan/kararlar/ADR-036-bildirimler.md"]
     learn: ["Yerel dosya depolama", "Pencere mantığı"]
 
+  - id: K-617
+    title: "Jeton reddinde ilerleme fotoğrafları silinmez; başka hesap girerse silinir (ADR-055 #101)"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-614]
+    why: "60 gün açılmayan uygulamada tek kopya fotoğraflar (Day 1 dahil) uyarısız gidiyordu; Levent (A) seçti"
+    acceptance:
+      - "Elle çıkış ve hesap silme fotoğrafları siler (şimdiki gibi, çıkış öncesi uyarı)"
+      - "Sunucunun yenileme jetonunu reddetmesi fotoğrafları silmez; oturumsuz başlangıç da silmez"
+      - "Fotoğrafların hesabı telefonda tutulur (opak kimlik, sağlık verisi değil); sonraki girişte başka hesapsa fotoğraflar silinir, aynı hesapsa kalır"
+      - "Hesap kimliği bilinmeyen eski kurulumda (K-614 öncesi kayıt yok) ilk girişte fotoğraflar o hesaba sayılır"
+    tests:
+      - "PhotoOwnerTests"
+    refs: ["plan/kararlar/ADR-055-m6-cevaplari.md", "plan/kararlar/ADR-030-m3-cevaplari.md"]
+    learn: ["Oturum sonu türleri", "Cihazda veri sahipliği"]
+
+  - id: K-618
+    title: "İlerleme fotoğrafları cihaz yedeğinden hariç (isExcludedFromBackup, ADR-055 #97)"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-308, K-614]
+    why: "Onboarding 'never uploaded' diyor; iOS belge klasörünü iCloud yedeğine katıyor (V1); Levent (c) seçti"
+    acceptance:
+      - "progress-photos klasörü (ve içindeki her dosya) NSURLIsExcludedFromBackupKey ile işaretli; ince yerel modül (ADR-047 yolu)"
+      - "Cihazda doğrulandı (K-308 derlemesi); Expo Go'da yok yolu"
+      - "Metin bundan sonra 'never uploaded. Not to us, not to anyone' iddiasını doğru söyler"
+    tests:
+      - "PhotoBackupTests"
+    refs: ["plan/kararlar/ADR-055-m6-cevaplari.md", "plan/kararlar/ADR-047-cihaz-ustu-model.md"]
+    learn: ["iOS dosya özellikleri", "Yerel Expo modülü"]
+
   - id: K-601
     title: "Rehberli ilerleme fotoğrafı (cihazda): çekim ekranı (depolama ve pencere K-614)"
     milestone: M6

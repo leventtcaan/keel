@@ -808,6 +808,8 @@ eşleme ekranı (#124). Biçim kaynağı `arastirma/ham/H13` — Strong/Hevy sü
 | K-612 paylaşım kartı: `share/card.ts` (kayıt, son karar, güç e1RM ilk→son hafta, kilo yalnız açılırsa), `ShareCard` (SVG, toDataURL), `shareImage` (önbellek → paylaşım sayfası → sil), `app/share.tsx`, İlerleme girişi, `share-forbidden.json` | ⏳ dal `mobile/127-share-card` — RED kart 6, görüntü 3, ekran 5, giriş 1; tipografi bekçisi kart boyutlarını yakaladı → `tokens.type.share*`. **İnceleme:** (85) "last 90 days" etiketi sayılarla uyuşmuyor (ilk nokta 90 gün önce değil) → "since {date}"; (82) Android'de `Share.share({url})` url'yi atar (iOS önce; not); (85) tarama G/Ç'yi yapan ServicesProvider bloğunu görmüyor; (80) son karar kapatılamıyor, güvenlik/LEA kararları ("Your plan pauses here", hızlı kayıp) karta gidebilir → ürün/sağlık sorusu 104; (80) SVG içeriğini söylemiyor. Altında: toDataURL geri çağırmazsa düğme kilitli, çevrimdışı "nothing yet" der, kilo yoksa anahtar anlamsız, kullanılmayan `share.hideWeight`. Mutasyon: 61'de 28 yaşadı (sıra/temizlik, ref, ikinci paylaşım, hata sıfırlama, trend sorgusu, tek nokta, lift seçimi, lb, wrap sınırı, ServicesProvider bağlantısı) | — | — |
 
 ## Session sonunda Levent'e sorulacaklar
+**87-104 → ADR-055 (4 Eki, M6 Part 4 Bitiş; AskUserQuestion — hepsi önerilen).** İş doğuranlar: 89 metin, 100 eski test, 97 metin + K-618 (K-308 sonrası), 101 → K-617, 104 kalıcı.
+
 **M6 Part 4 (102-) — 4 Eki:**
 104. **(sağlık/ürün, K-612)** Paylaşım kartında "Latest call" satırı: güvenlik kararları ("Your plan pauses here", hızlı kayıp, düşük enerji) da karta
     girebilir — sağlık sinyali herkese açılır; hızlı kayıp kilo yönünü kilo anahtarı kapalıyken de söyler. Seçenekler: (a) **önerim** güvenlik/düşük
