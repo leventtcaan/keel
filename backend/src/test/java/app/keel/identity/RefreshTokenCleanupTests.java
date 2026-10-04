@@ -1,0 +1,196 @@
+package app.keel.identity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.shared.AccountId;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.BooleanSupplier;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.scheduling.config.CronTask;
+import org.springframework.scheduling.config.ScheduledTask;
+import org.springframework.scheduling.config.ScheduledTaskHolder;
+import org.springframework.scheduling.config.TaskExecutionOutcome;
+import org.springframework.scheduling.support.CronExpression;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * Expired refresh tokens are deleted each night (K-810, GDPR Art. 5(1)(e)): one past its expiry can never be used again,
+ * so it is data kept for no purpose. A revoked one that has not expired stays: a copy of it coming back is how a stolen
+ * token is caught, and the whole family stops working (K-203). The night as the scheduler runs it logs a failure
+ * without its message (V3).
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import({PostgresTestConfiguration.class, RefreshTokenCleanupTests.Broken.class})
+@ExtendWith(OutputCaptureExtension.class)
+class RefreshTokenCleanupTests {
+
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+    // Long before any other test's tokens (they expire weeks from now): the cut here reaches only this test's own.
+    private static final Instant NIGHT = Instant.parse("2020-06-15T03:00:00Z");
+    static final String SECRET = "weigh-in 82.4 kg";
+    private static final Duration PATIENCE = Duration.ofSeconds(10);
+
+    @Autowired
+    @Qualifier("refreshTokenCleanup")
+    RefreshTokenCleanup cleanup;
+
+    @Autowired
+    @Qualifier("brokenTokenCleanup")
+    RefreshTokenCleanup broken;
+
+    @Autowired
+    JdbcClient jdbc;
+
+    @Autowired
+    MockMvcTester mvc;
+
+    @Autowired
+    RefreshTokens tokens;
+
+    @Autowired
+    ScheduledTaskHolder scheduler;
+
+    @Autowired
+    Environment environment;
+
+    @Autowired
+    ApplicationContext context;
+
+    @Test
+    void anExpiredTokenGoesAndAnUnexpiredOneStaysRevokedOrNot() {
+        AccountId account = account();
+        String live = token(account, NIGHT.plusSeconds(60), null);
+        String revoked = token(account, NIGHT.plusSeconds(60), NIGHT.minusSeconds(3600));
+        String expired = token(account, NIGHT.minusSeconds(1), null);
+        String expiredAndRevoked = token(account, NIGHT.minusSeconds(1), NIGHT.minusSeconds(3600));
+
+        cleanup.cleanUp(NIGHT);
+
+        assertThat(hashes(account)).containsExactlyInAnyOrder(live, revoked).doesNotContain(expired, expiredAndRevoked);
+    }
+
+    @Test
+    void aRevokedTokenKeptThroughTheNightStillCatchesAStolenCopy() throws Exception {
+        AccountId account = account();
+        String stolen = tokens.start(account);
+        String rotated = tokens.rotate(stolen).refreshToken(); // the phone renewed: the first token is revoked, not expired
+
+        cleanup.cleanUp(Instant.now());
+
+        assertThat(refresh(stolen)).as("the copy").isEqualTo(401);
+        assertThat(refresh(rotated)).as("the family stopped working").isEqualTo(401);
+    }
+
+    @Test
+    void itRunsOnceADay() {
+        String cron = environment.getProperty("keel.session.token-cleanup");
+        ZoneId zone = ZoneId.of(environment.getProperty("keel.session.token-cleanup-zone"));
+
+        assertThat(nightlyTasks()).isNotEmpty().allSatisfy(task -> assertThat(task.getExpression()).isEqualTo(cron));
+        ZonedDateTime run = CronExpression.parse(cron).next(ZonedDateTime.of(2026, 10, 5, 0, 0, 0, 0, zone));
+        assertThat(CronExpression.parse(cron).next(run)).isEqualTo(run.plusDays(1));
+    }
+
+    @Test
+    void theSchedulersNightDeletesAndLogsAFailureWithoutItsMessage(CapturedOutput log) {
+        // The failure's message does hold the value, so its absence from the log below means something.
+        assertThatThrownBy(() -> broken.cleanUp(NIGHT)).hasStackTraceContaining(SECRET);
+        AccountId account = account();
+        String expired = token(account, Instant.now().minusSeconds(60), null);
+
+        // As the scheduler runs them — the real night and the broken one: each returns at once (run as a listener is,
+        // through BackgroundFailures), so nothing reaches the scheduler's own handler, which would log the message.
+        for (CronTask task : nightlyTasks()) {
+            assertThatCode(task.getRunnable()::run).doesNotThrowAnyException();
+            assertThat(task.getLastExecutionOutcome().status()).isEqualTo(TaskExecutionOutcome.Status.SUCCESS);
+        }
+
+        String line = "task=" + RefreshTokenCleanup.class.getName() + "#nightly";
+        await(() -> !hashes(account).contains(expired) && log.getAll().contains(line));
+        assertThat(hashes(account)).doesNotContain(expired);
+        assertThat(log).contains("failure").contains(line).doesNotContain(SECRET);
+    }
+
+    private List<CronTask> nightlyTasks() {
+        return scheduler.getScheduledTasks().stream().map(ScheduledTask::getTask).filter(CronTask.class::isInstance).map(CronTask.class::cast)
+                .filter(task -> task.toString().equals(RefreshTokenCleanup.class.getName() + ".nightly")).toList();
+    }
+
+    /** An account that exists: its token rows need it. */
+    private AccountId account() {
+        AccountId account = TestSessions.newAccount();
+        TestSessions.bearer(context, account);
+        return account;
+    }
+
+    /** A stored token row as the cleanup sees it; its hash stands for it. */
+    private String token(AccountId account, Instant expiresAt, Instant revokedAt) {
+        String hash = UUID.randomUUID().toString();
+        jdbc.sql("""
+                insert into identity.refresh_token (id, account_id, family_id, token_hash, expires_at, created_at, revoked_at)
+                values (gen_random_uuid(), :account, gen_random_uuid(), :hash, :expires, :expires, :revoked)""")
+                .param("account", account.value()).param("hash", hash).param("expires", expiresAt.atOffset(ZoneOffset.UTC))
+                .param("revoked", revokedAt == null ? null : revokedAt.atOffset(ZoneOffset.UTC)).update();
+        return hash;
+    }
+
+    private List<String> hashes(AccountId account) {
+        return jdbc.sql("select token_hash from identity.refresh_token where account_id = :account").param("account", account.value())
+                .query(String.class).list();
+    }
+
+    private int refresh(String token) throws Exception {
+        return mvc.post().uri("/v1/auth/refresh").contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(Map.of("refreshToken", token))).exchange().getResponse().getStatus();
+    }
+
+    private static void await(BooleanSupplier done) {
+        Instant deadline = Instant.now().plus(PATIENCE);
+        while (!done.getAsBoolean() && Instant.now().isBefore(deadline)) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
+    /** A second cleanup whose database cannot be reached, with a value in the failure's message. */
+    @TestConfiguration(proxyBeanMethods = false)
+    static class Broken {
+
+        @Bean
+        RefreshTokenCleanup brokenTokenCleanup() {
+            return new RefreshTokenCleanup(JdbcClient.create(new DriverManagerDataSource("jdbc:keel-none:" + SECRET)), Clock.systemUTC());
+        }
+    }
+}
