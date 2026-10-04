@@ -184,8 +184,11 @@ class AccountDataTests {
         // The day's use of the coach (K-508): a count, the user's.
         assertThat((java.util.List<Map<String, Object>>) ((Map<String, Object>) sections.get("subscription")).get("dailyUses")).singleElement()
                 .satisfies(use -> assertThat(use).containsEntry("use", "COACH_MESSAGE").containsEntry("used", 1).containsKey("day"));
-        // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
-        assertThat(body).doesNotContainIgnoringCase("fatProxy");
+        // The engine's internal fat estimate is in the user's own export, as the call kept it (ADR-063 #1, GDPR Art. 15): an
+        // input of the rules, never shown as a number in the app (U4 holds for every screen and text).
+        assertThat((List<Map<String, Object>>) decision.get("calls")).singleElement()
+                .satisfies(call -> assertThat((Map<String, Object>) call.get("snapshot")).containsKeys("fatProxyPct", "fatProxyHighPct", "fatProxyEnergyPct")
+                        .extractingByKey("fatProxyPct").as("the fixture's waist and look make an estimate").isNotNull());
         // A call's reasons go out with the kind of source only (K-523, ADR-041 #72): no research path, even to the user.
         assertThat(body).doesNotContain("arastirma/");
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.

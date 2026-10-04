@@ -79,12 +79,9 @@ class DecisionAccountData implements AccountDataExport {
                 entry.put("planBefore", call.planBefore());
                 entry.put("planAfter", call.planAfter());
             }
-            // U4: the fat estimate is an engine input and never leaves as a number, not even in the user's own export.
-            Map<String, Object> snapshot = json.convertValue(call.snapshot(), Map.class);
-            snapshot.remove("fatProxyPct");
-            snapshot.remove("fatProxyHighPct");
-            snapshot.remove("fatProxyEnergyPct");
-            entry.put("snapshot", snapshot);
+            // As the call kept it, the engine's internal fat estimate included (ADR-063 #1, GDPR Art. 15): the user's own data, in
+            // the file they asked for. It is never shown as a number in the app (U4).
+            entry.put("snapshot", json.convertValue(call.snapshot(), Map.class));
             return entry;
         }).toList());
         // Each with the day the user last said it still was (K-525): their answer, so theirs to take.

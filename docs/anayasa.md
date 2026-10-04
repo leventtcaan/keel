@@ -25,6 +25,7 @@ tarihi. **"Henüz karar yok, veri yetersiz" geçerli bir çıktıdır.** Bir sef
 *Kaynak:* `03-guray-karar-omurgasi.md` §2.4 · `04-faz3-urun.md` Ö-1, Ö-25.
 
 **U4 · Yağ yüzdesi sayısı hiçbir yerde gösterilmez.** Yağ oranı motorda yalnız görsel/bel proxy'siyle iç değişkendir.
+Kapsam: uygulamanın her ekranı, bildirimi ve metni; kullanıcının istediği ham dışa aktarma dosyası bunun dışında (GDPR erişim hakkı — ADR-063 #1).
 *Gerekçe:* yağ yüzdesi değişimi izlenemiyor (R² 0,23-0,25), yağ kütlesi izlenebiliyor (R² 0,75-0,86); Güray da sayı
 vermiyor. *Kaynak:* `ham/H1-olcum.md` · `03-guray-karar-omurgasi.md` §8.
 

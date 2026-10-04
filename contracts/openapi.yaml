@@ -8,7 +8,7 @@ info:
     - The Decision is the engine's Decision field for field (U3). Actions are a tagged union on `type`.
     - Every calorie estimate is a range, `KcalRange` / `KcalBalance` (U5). A target and a decision's step may be one
       number (U5); a device's own reading is passed through as given.
-    - The engine's fat estimate never appears, in any form (U4). Error messages never carry health data (V3).
+    - The engine's fat estimate never appears, in any form (U4) — except as the stored snapshot in the user's own export (/v1/account/export, ADR-063 #1). Error messages never carry health data (V3).
     Conventions: everything but health and sign-in is under /v1 and needs a session. Records the phone creates
     offline carry a `clientId` (a UUID the phone makes): sending one twice stores it once and answers 200 with the
     stored record instead of 201. Days are `date` (the user's local calendar day); moments are `date-time` with offset.

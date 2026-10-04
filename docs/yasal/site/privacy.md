@@ -59,7 +59,8 @@ Health data is a special category under the GDPR (Art. 9). The app keeps it only
 - your meals and saved recipes, with the calorie and macro ranges estimated when you logged them;
 - your plan (phase, daily calorie and step targets), and every weekly call with the data it was made from, so you can see
   why it was made and undo it. Each call also keeps an internal estimate the rules computed from your waist and the look you
-  picked; it is never shown as a number in the app or the export — if you ask, we send it to you;
+  picked — an input of the rules, not a measurement. The app never shows it as a number; your data export includes it, as
+  each call kept it;
 - what you told the app about your life (travelling, sick, pain, busy, new gym), with dates;
 - your answers to the coach's questions (for example about hunger or missed sessions).
 
