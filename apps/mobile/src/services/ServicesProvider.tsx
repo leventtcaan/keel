@@ -15,7 +15,8 @@ import { apiBaseUrl } from '@/api/config';
 import type { HealthAccess } from '@/health/health';
 import { healthKitAccess, healthKitWrite } from '@/health/healthKit';
 import { syncActivityDays } from '@/health/activitySync';
-import { syncHealthWeights } from '@/health/weightSync';
+import { bothHealthConsents } from '@/health/consent';
+import { importHealthWeights, syncHealthWeights } from '@/health/weightSync';
 import { deviceAlerts, deviceNotifications } from '@/notifications/deviceNotifications';
 import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
@@ -37,6 +38,11 @@ export type PhoneServices = AppServices & {
    * the server (K-404). How many weigh-ins were new, and today's steps as Health counts them.
    */
   syncHealth(): Promise<{ weighIns: number; stepsToday: number | null }>;
+  /**
+   * Apple Health's older weigh-ins, once, when the user asks in Settings (K-616): how many were new, or 'consent' when
+   * the two consents are not both given (nothing is read then).
+   */
+  importHealthWeights(): Promise<number | 'consent'>;
   /** The account's data as a JSON file, handed to the share sheet (K-309). */
   exportData(): Promise<void>;
 };
@@ -76,13 +82,20 @@ async function build(): Promise<PhoneServices> {
     health,
     syncHealth: async () => {
       // Both consents, asked once for the two reads (K-402, K-404).
-      const both = (await services.consents.granted('HEALTH_DATA')) && (await services.consents.granted('APPLE_HEALTH'));
+      const both = await bothHealthConsents(services.consents);
       const consented = async () => both;
       const now = new Date();
       const weighIns = await syncHealthWeights({ health, queue: services.queue, consented, now });
       const { stepsToday } = await syncActivityDays({ health, api: services.api, kv: Storage, consented, now });
       return { weighIns, stepsToday };
     },
+    importHealthWeights: () =>
+      importHealthWeights({
+        health,
+        queue: services.queue,
+        consented: () => bothHealthConsents(services.consents),
+        now: new Date(),
+      }),
     exportData: () =>
       exportAccount({
         api: services.api,

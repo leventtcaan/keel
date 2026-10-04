@@ -6,6 +6,7 @@ import { act, render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
 
+import { healthParams } from '@/health/params';
 import { ServicesProvider, useAppServices, useSignedIn, useUnits } from '@/services/ServicesProvider';
 
 jest.mock('expo-secure-store', () => {
@@ -35,6 +36,18 @@ jest.mock('expo-apple-authentication', () => ({ isAvailableAsync: async () => tr
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'u' }));
 jest.mock('@/api/config', () => ({ apiBaseUrl: () => 'https://api.example.test' }));
 jest.mock('@/sync/autoSync', () => ({ startAutoSync: () => () => {}, deviceTriggers: {} }));
+// Apple Health as a test one: available, its weigh-in read recorded (K-616).
+const mockReadWeights = jest.fn(async (_from: Date, _to: Date) => [] as { id: string; at: string; kg: number }[]);
+jest.mock('@/health/healthKit', () => ({
+  healthKitAccess: () => ({
+    available: true,
+    requestRead: async () => {},
+    readWeights: (from: Date, to: Date) => mockReadWeights(from, to),
+    readDailyTotals: async () => [],
+    readSleep: async () => [],
+  }),
+  healthKitWrite: () => jest.requireActual<typeof import('@/health/health')>('@/health/health').healthWriteUnavailable,
+}));
 
 let services: ReturnType<typeof useAppServices> | null = null;
 
@@ -82,4 +95,30 @@ test('the unit system reaches the screen, and a change re-renders it', async () 
     await services!.units.set(other);
   });
   expect(screen.getByText(new RegExp(` ${other}$`))).toBeOnTheScreen();
+});
+
+test('the import reads Apple Health only with both consents, the year before the regular read (K-616)', async () => {
+  // Offline: the consents are what the phone last knew (consentState), set here by remembering them.
+  global.fetch = jest.fn(async () => {
+    throw new TypeError('Network request failed');
+  });
+  await render(
+    <ServicesProvider>
+      <Probe />
+    </ServicesProvider>,
+  );
+  await act(async () => {});
+  await services!.consents.remember('HEALTH_DATA', 'GRANTED');
+
+  expect(await services!.importHealthWeights()).toBe('consent');
+  expect(await services!.syncHealth()).toMatchObject({ weighIns: 0 }); // the regular read asks the same two (K-402)
+  expect(mockReadWeights).not.toHaveBeenCalled();
+
+  await services!.consents.remember('APPLE_HEALTH', 'GRANTED');
+  const before = Date.now();
+  expect(await services!.importHealthWeights()).toBe(0);
+  const [from, to] = mockReadWeights.mock.calls[0];
+  const day = 24 * 3600 * 1000;
+  expect(Math.round((before - to.getTime()) / day)).toBe(healthParams.weightReadDays);
+  expect(Math.round((before - from.getTime()) / day)).toBe(healthParams.weightImportDays);
 });

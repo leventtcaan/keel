@@ -10,6 +10,8 @@ function param<T>(key: string): T {
 
 export const healthParams = {
   weightReadDays: param<number>('health_weight_read_days'),
+  weightImportDays: param<number>('health_weight_import_days'),
   chartDays: param<number>('weigh_in_chart_days'),
+  historyDays: param<number>('weigh_in_history_days'),
   activityReadDays: param<number>('health_activity_read_days'),
 };

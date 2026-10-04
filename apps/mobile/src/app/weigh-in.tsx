@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { Chip } from '@/components/Chip';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { grantConsent } from '@/consent/consents';
@@ -42,10 +43,13 @@ export default function WeighInScreen() {
   const saving = useRef(false); // two taps at once must not save twice
 
   // The window is fixed when the screen opens: the chart's days and "the first 14 days" are counted from that moment.
-  const [{ now, today, from }] = useState(() => {
+  const [{ now, today }] = useState(() => {
     const opened = Date.now();
-    return { now: opened, today: localDay(new Date(opened)), from: localDay(new Date(opened - (healthParams.chartDays - 1) * DAY_MS)) };
+    return { now: opened, today: localDay(new Date(opened)) };
   });
+  // The last weeks the decisions read, or the year — the history brought in (K-616) is there to be seen (ADR-018 §3).
+  const [range, setRange] = useState<Range>('weeks');
+  const from = localDay(new Date(now - ((range === 'year' ? healthParams.historyDays : healthParams.chartDays) - 1) * DAY_MS));
 
   useEffect(() => {
     void consents.granted('HEALTH_DATA').then((granted) => setStep(granted ? 'entry' : 'consent'));
@@ -100,7 +104,10 @@ export default function WeighInScreen() {
   };
 
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
-  const firstDay = history?.weighIns.reduce<string | null>((first, w) => (first === null || w.measuredAt < first ? w.measuredAt : first), null);
+  // The first 14 days are the user's own: weigh-ins brought in from before do not end them (U8, ADR-053).
+  const firstDay = history?.weighIns
+    .filter((w) => w.source !== 'IMPORT')
+    .reduce<string | null>((first, w) => (first === null || w.measuredAt < first ? w.measuredAt : first), null);
   const early = firstDay != null && now - Date.parse(firstDay) < onboardingParams.noInterpretationDays * DAY_MS;
 
   const consentStep =
@@ -135,7 +142,8 @@ export default function WeighInScreen() {
   const chart =
     step === 'entry' && history !== null && history.weighIns.length > 0 ? (
       <View style={styles.part}>
-        <Text style={[styles.label, { color: color.muted }]}>{t('weighIn.chart.title')}</Text>
+        <Text style={[styles.label, { color: color.muted }]}>{t(range === 'year' ? 'weighIn.chart.yearTitle' : 'weighIn.chart.title')}</Text>
+        <RangeChoice range={range} onChange={setRange} />
         <WeightChart from={from} to={today} weighIns={history.weighIns} trend={history.trend} />
         {early && <Text style={[styles.small, { color: color.muted }]}>{t('weighIn.earlyNote')}</Text>}
       </View>
@@ -153,7 +161,19 @@ export default function WeighInScreen() {
   );
 }
 
+type Range = 'weeks' | 'year';
+
+function RangeChoice({ range, onChange }: { range: Range; onChange: (range: Range) => void }) {
+  return (
+    <View style={styles.choice}>
+      <Chip label={t('weighIn.chart.weeks')} selected={range === 'weeks'} onPress={() => onChange('weeks')} />
+      <Chip label={t('weighIn.chart.year')} selected={range === 'year'} onPress={() => onChange('year')} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  choice: { flexDirection: 'row', gap: tokens.space.sm },
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
   part: { gap: tokens.space.sm },

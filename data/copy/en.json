@@ -612,6 +612,9 @@
     },
     "chart": {
       "title": "Last four weeks",
+      "yearTitle": "Last year",
+      "weeks": "4 weeks",
+      "year": "Year",
       "spoken": "Weigh-ins faint, the 7-day trend in bold"
     },
     "earlyNote": "Two weeks of weigh-ins before the trend says much. Keep weighing; the line fills in."
@@ -1653,6 +1656,20 @@
       "refused": "Apple Health didn't allow it. You can allow it in the Health app.",
       "unavailable": "Adding to Apple Health works in the app's device build.",
       "failed": "Couldn't change this. Try again."
+    },
+    "import": {
+      "title": "Bring in your history",
+      "note": "Older weigh-ins join your weigh-in history right away. They never change a call: calls read only what the app records itself.",
+      "weighIns": "Weigh-ins from Apple Health",
+      "weighInsHint": "The year before the last week. Read when you tap, never on its own.",
+      "import": "Import",
+      "importLabel": "Import {what}",
+      "found": "{count} older weigh-ins found. See them on Weigh-in under Year once they're sent.",
+      "foundOne": "1 older weigh-in found. See it on Weigh-in under Year once it's sent.",
+      "noneNew": "Nothing new to bring in.",
+      "needsConsent": "This needs the health data and Apple Health consents above.",
+      "failed": "Couldn't read Apple Health. Try again.",
+      "unavailable": "Bringing in Apple Health history works in the app's device build."
     },
     "consents": {
       "title": "Your data and consents",

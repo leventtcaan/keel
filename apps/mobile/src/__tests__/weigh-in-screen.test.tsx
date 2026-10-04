@@ -169,6 +169,39 @@ test('after 14 days of weigh-ins, no early note', async () => {
   expect(screen.queryByText(t('weighIn.earlyNote'))).toBeNull();
 });
 
+test('the year: the chart reads a year back and says so; the four weeks again, four weeks (K-616)', async () => {
+  mockAnswers = {
+    '/v1/weigh-ins': ok([{ id: 'a', clientId: 'a', measuredAt: '2026-03-02T05:00:00Z', kg: 88.1, source: 'IMPORT' }]),
+    '/v1/weight-trend': ok([{ day: '2026-03-02', kg: 88.1 }]),
+  };
+  await show();
+  expect(screen.getByText(t('weighIn.chart.title'))).toBeOnTheScreen();
+
+  await press(t('weighIn.chart.year'));
+
+  const asked = (n: number) => (mockServices.api.GET.mock.calls[n][1] as { params: { query: { from: string; to: string } } }).params.query;
+  const last = mockServices.api.GET.mock.calls.length - 1;
+  expect(asked(last)).toEqual({ from: '2025-10-02', to: '2026-10-01' }); // 365 days, today included
+  expect(screen.getByText(t('weighIn.chart.yearTitle'))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('weighIn.chart.year') })).toBeSelected();
+
+  await press(t('weighIn.chart.weeks'));
+  expect(asked(mockServices.api.GET.mock.calls.length - 1)).toEqual({ from: '2026-09-04', to: '2026-10-01' });
+});
+
+test('weigh-ins brought in from before do not end the first 14 days (U8, ADR-053)', async () => {
+  mockAnswers = {
+    '/v1/weigh-ins': ok([
+      { id: 'a', clientId: 'a', measuredAt: '2026-09-10T05:00:00Z', kg: 82.6, source: 'IMPORT' },
+      { id: 'b', clientId: 'b', measuredAt: '2026-09-28T05:00:00Z', kg: 82.0, source: 'MANUAL' },
+    ]),
+    '/v1/weight-trend': ok([{ day: '2026-09-28', kg: 82.0 }]),
+  };
+  await show();
+
+  expect(screen.getByText(t('weighIn.earlyNote'))).toBeOnTheScreen();
+});
+
 test('a weigh-in typed and kept is handed on for Apple Health, as kept (K-412)', async () => {
   await show();
   await type('82,4');
