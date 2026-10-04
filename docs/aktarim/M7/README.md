@@ -11,3 +11,4 @@
 3. K-705 telefon için abonelik durumu (`K-705.md`, ADR-056 Ek 1) — sözleşme önce, `active` vs `status`, `appUserId`, sabit saatli test
 4. K-702 paywall, satın alma, geri yükleme, iptal (`K-702.md`, ADR-057) — port, tembel configure + UUID, teyit döngüsü, deneme dili, iptal Apple'da, 403 → See plans
 5. K-706 onboarding sonunda zorunlu paywall (`K-706.md`, ADR-058 › 107) — kapı servisi, son cevap, soğuk başlangıç, korumalı rotalar, 5.1.1(v)
+6. K-707 deneme hatırlatması (`K-707.md`, ADR-058 › 105) — fatura bildirimi vs üç tür, kendi kimliği, sabit saat, kapının okuması, izin

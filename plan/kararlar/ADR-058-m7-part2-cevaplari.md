@@ -24,6 +24,10 @@ Denemedeki kullanıcı isterse ("Remind me before it ends") deneme bitmeden
 (dinlenme sayacı emsali): kendi kimliğiyle kurulur, hatırlatma planının temizliği ona dokunmaz; izni kullanıcının dokunuşu ister. Sunucuya,
 üçüncü tarafa veri gitmez. Deneme ACTIVE'e döner ya da iptal edilirse kaldırılır; çıkışta unutulur. Paywall'ın deneme satırları bunu söyler
 ("if you'd like one" — izin vermeyene söz verilmez).
+Uygulama (agent, inceleme sonrası): bildirim telefonun kendi gününde, deneme bitiminden `trial_reminder_days_before` gün önce
+`trial_reminder_hour`'da çalar (satın alma saatini miras almaz — 01:30'da çalmaz); kapının her sunucu okuması (her açılış, her giriş)
+hatırlatmayı denemeye uydurur (Apple'ın sayfasında ya da iOS Ayarları'nda iptal edilen deneme bir sonraki açılışta hatırlatmasını
+kaybeder); iOS bildirimleri kapatılınca hatırlatma kalkar (söz verilmez); çok geç kalınca teklif görünmez.
 
 ## Sonuçlar
 - Yeni görevler: **K-706** (kapı: telefonda `SubscriptionGate`, kök düzende korumalı grup; çevrimdışında son bilinen cevap — uçak modu kapıyı

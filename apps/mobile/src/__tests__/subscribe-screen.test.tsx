@@ -39,7 +39,7 @@ const mockServices = {
   purchases: mockStore,
   gate: mockGate,
   report: () => {},
-  trialReminder: { keep: async () => {}, when: async () => null, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
+  trialReminder: { keep: async () => {}, when: async () => null, canRemind: () => true, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
   // The account section (K-309): its own behaviour is settings-screen.test.tsx.
   exportData: jest.fn(async () => {}),
   deleteAccount: jest.fn(async () => {}),

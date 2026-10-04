@@ -171,9 +171,11 @@ export async function createAppServices({
   // The program's week off reaches the reminders whenever the program is read (ADR-037 › 51b); they report their own failures.
   const training = createTrainingCache(kv, (program) => void reminders.keepRestUntil(program?.restUntil ?? null));
   const photos = createPhotoLibrary(photoFiles);
-  const gate = await createSubscriptionGate({ kv, api, purchases, links, report });
   // iOS is asked only on the user's tap ("Remind me before it ends"), through the reminders' own access.
   const trialReminder = createTrialReminder({ kv, alerts, ask: () => notifications.request(), now });
+  // Each answer the gate reads (every start, every sign-in) lets the trial reminder follow it: a trial cancelled anywhere —
+  // in Apple's sheet, in iOS Settings — loses its reminder at the next start (K-707 review).
+  const gate = await createSubscriptionGate({ kv, api, purchases, links, report, onRead: (read) => void trialReminder.keep(read).catch(reportName) });
   // Signed in already at the app's start: the kept answer routes at once, this one corrects it — and with nothing kept and no
   // answer (offline), the cold start opens the gate rather than lock the app with nothing to lift it (K-706).
   if (await session.isSignedIn()) void gate.refresh({ openWithoutAnswer: true });

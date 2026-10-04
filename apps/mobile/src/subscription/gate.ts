@@ -9,6 +9,7 @@
  * links (Apple 3.1.2, ADR-057 D3) nothing can be sold, so the gate is never closed — a development build is not locked.
  */
 import type { ApiClient } from '@/api/client';
+import type { components } from '@/api/schema';
 import { load } from '@/today/today';
 import type { KeyValue } from '@/units/preference';
 
@@ -16,13 +17,21 @@ import { type LegalLink, legalComplete } from './links';
 import type { SubscriptionStore } from './store';
 
 export type GateState = 'unknown' | 'required' | 'open';
-type Options = { kv: KeyValue; api: ApiClient; purchases: SubscriptionStore; links: LegalLink[]; report: (problem: { name: string }) => void };
+type Options = {
+  kv: KeyValue;
+  api: ApiClient;
+  purchases: SubscriptionStore;
+  links: LegalLink[];
+  report: (problem: { name: string }) => void;
+  /** Each subscription the server answers with, for what follows it on the phone (the trial reminder, K-707). */
+  onRead?: (subscription: components['schemas']['Subscription']) => void;
+};
 
 const KEY = 'subscription.gate';
 
 export type SubscriptionGate = Awaited<ReturnType<typeof createSubscriptionGate>>;
 
-export async function createSubscriptionGate({ kv, api, purchases, links, report }: Options) {
+export async function createSubscriptionGate({ kv, api, purchases, links, report, onRead }: Options) {
   const sells = purchases.available && legalComplete(links);
   const kept = sells ? await kv.getItemAsync(KEY) : null;
   let state: GateState = !sells ? 'open' : kept === 'required' || kept === 'open' ? kept : 'unknown';
@@ -60,6 +69,7 @@ export async function createSubscriptionGate({ kv, api, purchases, links, report
         if (state === 'unknown' && openWithoutAnswer) become('open');
         return false;
       }
+      onRead?.(read.value);
       const next: GateState = read.value.status === undefined && !read.value.active ? 'required' : 'open';
       await kv.setItemAsync(KEY, next);
       if (startedIn !== generation) {

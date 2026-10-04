@@ -49,6 +49,8 @@ export function TrialReminderOffer({ subscription }: { subscription?: Subscripti
   }, [api, report, subscription, trialReminder]);
 
   if (shown === null || shown.subscription.status !== 'TRIAL') return null;
+  // Too late for one (the trial ends sooner than it would come), and none set: no offer that would do nothing.
+  if (shown.at === null && !trialReminder.canRemind(shown.subscription)) return null;
   const words = (key: string, tone: 'text' | 'muted' = 'text', values?: Record<string, string>) => (
     <Text style={[styles.note, { color: color[tone] }]}>{t(key, values)}</Text>
   );

@@ -12,4 +12,5 @@ export const subscriptionParams = {
   confirmAttempts: param<number>('subscription_confirm_attempts'),
   confirmIntervalMs: param<number>('subscription_confirm_interval_ms'),
   trialReminderDaysBefore: param<number>('trial_reminder_days_before'),
+  trialReminderHour: param<number>('trial_reminder_hour'),
 };

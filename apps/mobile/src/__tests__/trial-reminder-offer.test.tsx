@@ -22,7 +22,7 @@ let mockGranted = true;
 const mockSet: string[] = [];
 const mockReport = jest.fn();
 let mockKv = memoryKv();
-const mockAlerts = {
+const mockAlerts: { permission: () => Promise<{ granted: boolean; canAskAgain: boolean }>; alertAt: (id: string) => Promise<void>; cancel: (id: string) => Promise<void> } = {
   permission: async () => ({ granted: mockGranted, canAskAgain: false }),
   alertAt: async (id: string) => void mockSet.push(id),
   cancel: async () => {},
@@ -88,6 +88,20 @@ test('no subscription given (the paywall after a purchase): read from the server
   await show();
   expect(mockGET).toHaveBeenCalledWith('/v1/subscription');
   expect(screen.getByRole('button', { name: t('subscription.reminder.ask') })).toBeOnTheScreen();
+});
+
+test('the trial already over (renewed): a reminder asked for earlier goes as soon as this reads it', async () => {
+  await mockReminder.remind(TRIAL);
+  const cancelled: string[] = [];
+  mockAlerts.cancel = async (id: string) => void cancelled.push(id);
+  await show({ ...TRIAL, status: 'ACTIVE' });
+  expect(cancelled).toEqual(['trial']);
+  expect(await mockReminder.when()).toBeNull();
+});
+
+test('too late for a reminder (the trial ends sooner): no offer that would do nothing', async () => {
+  await show({ ...TRIAL, accessUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
+  expect(screen.queryByRole('button', { name: t('subscription.reminder.ask') })).toBeNull();
 });
 
 test('a reminder that cannot be set says so and is reported by name', async () => {

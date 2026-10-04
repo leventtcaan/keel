@@ -287,6 +287,35 @@ test('the trial reminder (K-707) goes with the session: cancelled at sign-out, u
   expect(await services.trialReminder.when()).toBeNull();
 });
 
+test("the trial reminder asks iOS through the permission sheet — reading the permission alone would refuse every new install", async () => {
+  const notifications = {
+    permission: async () => ({ granted: false, canAskAgain: true }),
+    request: async () => ({ granted: true, canAskAgain: false }),
+    replace: async () => {},
+    clear: async () => {},
+  };
+  const alerts = { permission: async () => ({ granted: true, canAskAgain: false }), alertAt: async () => {}, cancel: async () => {} };
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv: memoryKv(), locale: 'en-US', alerts, notifications });
+  const trial = { active: true, appUserId: 'x', status: 'TRIAL' as const, accessUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() };
+  expect(await services.trialReminder.remind(trial)).toBe('set');
+});
+
+test('each time the gate reads the subscription, a trial reminder follows it — a trial cancelled anywhere loses its reminder at the next start', async () => {
+  const links = [
+    { key: 'subscription.terms', url: 'https://example.test/terms' },
+    { key: 'subscription.privacy', url: 'https://example.test/privacy' },
+  ];
+  const cancelled: string[] = [];
+  const alerts = { permission: async () => ({ granted: true, canAskAgain: false }), alertAt: async () => {}, cancel: async (id: string) => void cancelled.push(id) };
+  const kv = memoryKv();
+  kv.items.set('subscription.trialReminder', '2026-10-09T12:00:00.000Z'); // asked for during the trial
+  const fake = server(200); // the server's answer has no TRIAL status any more
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: fake.fetch, report: () => {}, kv, locale: 'en-US', purchases: { ...storeUnavailable, available: true }, links, alerts });
+  await services.session.signIn(SESSION);
+  await settle();
+  expect(cancelled).toEqual(['trial']);
+});
+
 test('without the store or the legal links in the build, the gate is open (a development build is not locked)', async () => {
   const { services } = await setup();
   expect(services.gate.current()).toBe('open');

@@ -25,15 +25,20 @@ type Options = {
 
 const ID = 'trial';
 const KEY = 'subscription.trialReminder';
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type TrialReminder = ReturnType<typeof createTrialReminder>;
 
 export function createTrialReminder({ kv, alerts, ask, now }: Options) {
-  /** When the reminder for this trial would come; none when it is not a trial or the moment has passed. */
+  /**
+   * When the reminder for this trial would come: the phone's own day `trial_reminder_days_before` days before the end, at
+   * `trial_reminder_hour` — never the hour the trial happened to start (K-707 review). None when it is not a trial or the
+   * moment has passed.
+   */
   const momentFor = (subscription: Subscription): Date | null => {
     if (subscription.status !== 'TRIAL' || subscription.accessUntil === undefined) return null;
-    const at = new Date(new Date(subscription.accessUntil).getTime() - subscriptionParams.trialReminderDaysBefore * DAY_MS);
+    const at = new Date(subscription.accessUntil);
+    at.setDate(at.getDate() - subscriptionParams.trialReminderDaysBefore);
+    at.setHours(subscriptionParams.trialReminderHour, 0, 0, 0);
     return at.getTime() > now().getTime() ? at : null;
   };
 
@@ -55,6 +60,9 @@ export function createTrialReminder({ kv, alerts, ask, now }: Options) {
   return {
     when,
 
+    /** Whether a reminder for this subscription could still come: the offer shows only then (no button that does nothing). */
+    canRemind: (subscription: Subscription): boolean => momentFor(subscription) !== null,
+
     /** The user's tap: iOS asked, the reminder set. 'too_late' when it would come after now (or this is not a trial). */
     remind: async (subscription: Subscription): Promise<'set' | 'refused' | 'too_late'> => {
       const at = momentFor(subscription);
@@ -64,12 +72,15 @@ export function createTrialReminder({ kv, alerts, ask, now }: Options) {
       return 'set';
     },
 
-    /** Each time the phone reads the subscription: a reminder asked for follows the trial, or goes with it. */
+    /**
+     * Each time the phone reads the subscription: a reminder asked for follows the trial, or goes with it — and goes too when iOS
+     * no longer allows notifications, so nothing is promised that iOS will not deliver (K-707 review).
+     */
     keep: async (subscription: Subscription): Promise<void> => {
       const kept = await when();
       if (kept === null) return; // nothing asked for: a reminder is the user's choice
       const at = momentFor(subscription);
-      if (at === null || subscription.accessUntil === undefined) return remove();
+      if (at === null || subscription.accessUntil === undefined || !(await alerts.permission()).granted) return remove();
       if (at.getTime() !== kept.getTime()) await set(at, subscription.accessUntil);
     },
 

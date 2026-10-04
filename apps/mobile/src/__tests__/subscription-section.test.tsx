@@ -48,7 +48,7 @@ const mockServices = {
     return mockStore;
   },
   report: (problem: { name: string }) => mockReport(problem.name),
-  trialReminder: { keep: async () => {}, when: async () => null, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
+  trialReminder: { keep: async () => {}, when: async () => null, canRemind: () => true, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));

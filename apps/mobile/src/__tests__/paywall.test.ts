@@ -204,6 +204,7 @@ test('the wait is the parameter file\'s, read as written', () => {
     confirmAttempts: value('subscription_confirm_attempts'),
     confirmIntervalMs: value('subscription_confirm_interval_ms'),
     trialReminderDaysBefore: value('trial_reminder_days_before'),
+    trialReminderHour: value('trial_reminder_hour'),
   });
 });
 
