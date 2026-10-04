@@ -2855,14 +2855,14 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-615, K-304]
     why: "Rakipten geçişin en ucuz yolu (ADR-018)"
     acceptance:
       - "Strong ve Hevy CSV'si telefonda ayrıştırılır; yalnız H13'te doğrulanan sütunlar; tanınmayan başlık reddedilir; dosya sunucuya gitmez"
       - "Hareket eşleme ekranı: düşük güvende tek dokunuş alternatif (U5); kendi hareketim ya da atla"
       - "Strong birimi ve dambıl yükü (tek/toplam) kullanıcıya sorulur, tahmin edilmez"
-      - "Geçmiş hemen görünür (güç grafiği); yalnız sağlık rızasıyla gönderilir, kaynakla işaretli"
+      - "Geçmiş hemen görünür (antrenman listesi, hareket geçmişi; güç grafiği RIR ister — ADR-055 #102); yalnız sağlık rızasıyla gönderilir, kaynakla işaretli"
     tests:
       - "ImportTests"
       - "Dosyanın ağa gitmediğini gösteren test"
