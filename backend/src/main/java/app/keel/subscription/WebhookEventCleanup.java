@@ -12,9 +12,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * Applied RevenueCat events go after the retention (K-814, GDPR Art. 5(1)(e)). An event's record exists so a second
- * delivery of it is not applied twice; RevenueCat retries for about two and a half hours, and an event delivered again
- * after its record is gone cannot take the state back (SubscriptionState.next keeps the newer). Kept longer, it is only
- * one more line in the user's export.
+ * delivery of it is not applied twice. RevenueCat's own retries end within about two and a half hours; a delivery later
+ * than the retention (its dashboard's manual retry) is weighed again, and an event older than the current state cannot
+ * take it back (SubscriptionState.next). Only one from the very same moment as the state could, which needs two events
+ * in one millisecond and a manual retry a month on (ADR-056 Ek 2). Kept longer, it is one more line in the export.
  */
 @Component
 class WebhookEventCleanup {

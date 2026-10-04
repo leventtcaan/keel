@@ -120,7 +120,8 @@ keel:
     quota-cleanup: "0 15 18 * * *"
     quota-cleanup-zone: UTC
     # Applied RevenueCat events are kept only to ignore a second delivery (K-814): RevenueCat's retries end within about
-    # 2.5 hours (5, 10, 20, 40, 80 minutes — its webhook docs); 30 days is far past that. Deleted each night.
+    # 2.5 hours (5, 10, 20, 40, 80 minutes — its webhook docs); 30 days is far past that. A later manual retry is weighed
+    # again, and only a strictly older event is ignored by the state (ADR-056 Ek 2). Deleted each night.
     event-retention: 30d
     event-cleanup: "0 30 4 * * *"
     event-cleanup-zone: UTC

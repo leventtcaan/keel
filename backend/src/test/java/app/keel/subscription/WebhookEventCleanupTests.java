@@ -41,8 +41,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 /**
  * Applied RevenueCat events go after the retention (K-814, GDPR Art. 5(1)(e)). An event is kept only so a second delivery
- * of it is not applied twice; RevenueCat's retries end within hours, and an event that comes back after its record is
- * gone cannot move the state back anyway (SubscriptionState.next, ADR-056). The night as the scheduler runs it logs a
+ * of it is not applied twice; RevenueCat's retries end within hours, and an older event that comes back after its record
+ * is gone cannot move the state back (SubscriptionState.next, ADR-056 Ek 2). The night as the scheduler runs it logs a
  * failure without its message (V3).
  */
 @SpringBootTest
@@ -107,6 +107,7 @@ class WebhookEventCleanupTests {
         assertThat(events(account)).as("both older than the retention").isEmpty();
         assertThat(TestWebhooks.send(mvc, context, first).getResponse().getStatus()).isEqualTo(200);
 
+        assertThat(events(account)).as("weighed again, not ignored as known").containsExactly((String) first.get("id"));
         assertThat(state(account)).isEqualTo(state);
     }
 
