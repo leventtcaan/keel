@@ -109,3 +109,10 @@
 - Actions dakikası bitti → Levent repoyu **public** yaptı. Disk 3,4 GB, simülatör yok. Sorular 94-96.
 - Sıradaki: M6 Part 3 (K-604, K-601, K-602) — `plan/oturum-promptlari/M6-part3.md`; aktarım M6 1-10 bekliyor.
 
+
+## 2026-10-04 · M6 Part 3 (Efor ve fotoğraf) — toplu mod
+- K-604 #347 güç grafiği (haftanın en iyi e1RM'i, etiket = gerçek değer, iki pencere); K-614 #349 fotoğraf kütüphanesi yalnız cihazda + 4 haftalık pencere (K-601'den bölündü); K-601 #350 rehberli çekim (soluk son fotoğraf, çerçeve, eğim, zamanlayıcı, galeri); K-602 #351 karşılaştırma çıpası.
+- İnceleme ve mutasyon her görevde gerçek hata buldu: yarım ilk hafta "haftanın en iyisi"; 30 Şubat; silinemeyen klasör uygulamayı açmıyordu; çift dokunuş iki fotoğraf + çift geri; kaydırmada fotoğraf/başlık ters.
+- CI: soğuk ilk render 5 sn'yi aşıyordu (ölçüldü, `beforeAll`), saat dilimi fikstürleri yerel öğleden. Yeni bağımlılık `expo-sensors` (`motionPermission: false`).
+- Disk 2,3 GB, sunucu yok → simülatör turu yok. Sorular 97-101 (97 iCloud yedeği, 101 jeton reddinde silme — veri kararı).
+- Sıradaki: M6 Part 4 (K-609, K-612, M6 çıkışı) — `plan/oturum-promptlari/M6-part4.md`; aktarım M6 1-14 bekliyor.
