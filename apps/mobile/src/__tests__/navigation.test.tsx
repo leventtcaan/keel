@@ -91,6 +91,13 @@ test.each(['required', 'unknown'] as const)(
   },
 );
 
+test.each(['/ledger', '/what-if'])('a link straight to %s does not get around the gate (K-706 review)', async (url) => {
+  mockGate = 'required';
+  const router = renderRouter(APP, { initialUrl: url });
+  await router;
+  expect(router.getPathname()).toBe('/subscribe');
+});
+
 const APP = path.resolve(__dirname, '../app');
 
 test('the tabs are Today, Train, Food, Progress, in that order', () => {

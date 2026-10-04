@@ -9,6 +9,7 @@ import type { components } from '@/api/schema';
 import { createSubscriptionGate } from '@/subscription/gate';
 import type { SubscriptionStore } from '@/subscription/store';
 import { storeUnavailable } from '@/subscription/store';
+import type { KeyValue } from '@/units/preference';
 
 import { memoryKv } from './support/profileServer';
 
@@ -38,7 +39,7 @@ const reported: string[] = [];
 const report = (problem: { name: string }) => void reported.push(problem.name);
 beforeEach(() => (reported.length = 0));
 
-async function gate(api: ReturnType<typeof server>['api'], kv = memoryKv(), purchases = STORE, links = LINKS) {
+async function gate(api: ReturnType<typeof server>['api'], kv: KeyValue = memoryKv(), purchases = STORE, links = LINKS) {
   return createSubscriptionGate({ kv, api, purchases, links, report });
 }
 
@@ -89,9 +90,19 @@ test('a subscriber offline is not locked out: the kept open answer stays', async
 
 test('the first start offline, nothing kept: open — never a lock with no answer to lift it; the failure is reported by name', async () => {
   const g = await gate(server('offline').api);
-  await g.refresh();
+  expect(await g.refresh({ openWithoutAnswer: true })).toBe(false);
   expect(g.current()).toBe('open');
   expect(reported).toEqual(['NoConnection']);
+});
+
+test('after a sign-in (not a cold start), no answer keeps it unknown — the gate screen asks again; it never opens by failing', async () => {
+  const g = await gate(server('offline', 500, NEVER).api);
+  expect(await g.refresh()).toBe(false);
+  expect(g.current()).toBe('unknown');
+  expect(await g.refresh()).toBe(false);
+  expect(g.current()).toBe('unknown');
+  expect(await g.refresh()).toBe(true);
+  expect(g.current()).toBe('required');
 });
 
 test.each([
@@ -122,6 +133,27 @@ test('sign-out forgets the answer: the next account is asked afresh', async () =
   await g.forget();
   expect(g.current()).toBe('unknown');
   expect((await gate(server('offline').api, kv)).current()).toBe('unknown');
+});
+
+test('a build that does not sell stays open after a sign-out too (the next account never waits on a question nobody asks)', async () => {
+  const g = await gate(server(NEVER).api, memoryKv(), storeUnavailable);
+  await g.forget();
+  expect(g.current()).toBe('open');
+});
+
+test('a sign-out that lands while the answer is being kept: the answer does not outlive the sign-out', async () => {
+  const kv = memoryKv();
+  let release: () => void = () => {};
+  const held = { ...kv, setItemAsync: (key: string, value: string) => new Promise<void>((resolve) => (release = () => void kv.setItemAsync(key, value).then(resolve))) };
+  const g = await gate(server(NEVER).api, held);
+  const asking = g.refresh();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const leaving = g.forget();
+  release();
+  await asking;
+  await leaving;
+  expect(g.current()).toBe('unknown');
+  expect(kv.items.has('subscription.gate')).toBe(false);
 });
 
 test("an answer that arrives after a sign-out is not the next account's", async () => {

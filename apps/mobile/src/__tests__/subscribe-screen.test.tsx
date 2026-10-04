@@ -22,7 +22,8 @@ const PLANS: Plan[] = [{ id: '$rc_annual', period: 'annual', price: '$59.99', pr
 let mockAnswers: unknown[] = [];
 const mockGET = jest.fn(async () => (mockAnswers.length > 1 ? mockAnswers.shift() : mockAnswers[0]));
 let mockGateState: GateState = 'required';
-const mockGate = { refresh: jest.fn(async () => {}), current: () => mockGateState, subscribe: () => () => {} };
+let mockAnswered = true;
+const mockGate = { refresh: jest.fn(async () => mockAnswered), current: () => mockGateState, subscribe: () => () => {} };
 const mockStore: SubscriptionStore = {
   available: true,
   identify: jest.fn(async () => {}),
@@ -63,6 +64,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAnswers = [ok(NONE)];
   mockGateState = 'required';
+  mockAnswered = true;
 });
 
 async function show() {
@@ -87,31 +89,77 @@ test('the account is reachable without paying: export, delete, sign out (App Rev
   expect(screen.getByRole('button', { name: t('settings.signOut.title') })).toBeOnTheScreen();
 });
 
-test('bought and seen on the server: the gate asks again, and the tabs open', async () => {
+test('bought and seen on the server: said, and Continue lets the gate ask again (the tabs open) — not before', async () => {
   mockAnswers = [ok(NONE), ok(TRIAL)];
   await show();
   await press(t('subscription.startTrial'));
   expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
-  expect(mockGate.refresh).toHaveBeenCalled();
+  expect(mockGate.refresh).not.toHaveBeenCalled();
+  await press(t('subscription.continue'));
+  expect(mockGate.refresh).toHaveBeenCalledTimes(1);
 });
 
-test('restored and seen: the gate asks again', async () => {
+test('restored and seen: Continue lets the gate ask again', async () => {
   mockAnswers = [ok(NONE), ok(NONE), ok(TRIAL)];
   await show();
   await press(t('subscription.restore'));
-  expect(mockGate.refresh).toHaveBeenCalled();
+  expect(mockGate.refresh).not.toHaveBeenCalled();
+  await press(t('subscription.continue'));
+  expect(mockGate.refresh).toHaveBeenCalledTimes(1);
 });
 
-test('already subscribed on the server (bought on another phone): the gate asks again at once', async () => {
+test('already subscribed on the server (bought on another phone): Continue', async () => {
   mockAnswers = [ok(TRIAL)];
   await show();
-  expect(mockGate.refresh).toHaveBeenCalled();
+  await press(t('subscription.continue'));
+  expect(mockGate.refresh).toHaveBeenCalledTimes(1);
+});
+
+test('bought, seen only on looking again: Continue', async () => {
+  mockAnswers = [ok(NONE)];
+  await show();
+  await press(t('subscription.startTrial'));
+  expect(screen.getByText(t('subscription.waiting'))).toBeOnTheScreen();
+  mockAnswers = [ok(TRIAL)];
+  await press(t('subscription.lookAgain'));
+  await press(t('subscription.continue'));
+  expect(mockGate.refresh).toHaveBeenCalledTimes(1);
+});
+
+test('opened offline, tried again and already subscribed: Continue', async () => {
+  mockAnswers = [{ error: { code: 'INTERNAL', message: 'x' }, response: new Response(null, { status: 500 }) }];
+  await show();
+  mockAnswers = [ok(TRIAL)];
+  await press(t('subscription.tryAgain'));
+  await press(t('subscription.continue'));
+  expect(mockGate.refresh).toHaveBeenCalledTimes(1);
+});
+
+test('the screen drawn again (a theme change) does not open the plans again — a purchase in progress stays', async () => {
+  await show();
+  await screen.rerender(
+    <ThemeProvider scheme="dark">
+      <SubscribeScreen />
+    </ThemeProvider>,
+  );
+  await act(async () => {});
+  expect(mockStore.plans).toHaveBeenCalledTimes(1);
 });
 
 test('not known yet: it asks the gate, says it is checking, and shows no plans', async () => {
   mockGateState = 'unknown';
   await show();
-  expect(mockGate.refresh).toHaveBeenCalled();
+  expect(mockGate.refresh).toHaveBeenCalledTimes(1);
   expect(screen.getByText(t('subscription.checking'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('subscription.startTrial') })).toBeNull();
+});
+
+test('not known, and no answer: says so, and asks again on request — the gate never opens by failing', async () => {
+  mockGateState = 'unknown';
+  mockAnswered = false;
+  await show();
+  expect(screen.getByText(t('subscription.checkFailed'))).toBeOnTheScreen();
+  mockAnswered = true;
+  await press(t('subscription.tryAgain'));
+  expect(mockGate.refresh).toHaveBeenCalledTimes(2);
 });

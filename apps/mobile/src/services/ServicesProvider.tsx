@@ -23,6 +23,7 @@ import type { OnboardingState } from '@/onboarding/profileStatus';
 import { devicePhotoFiles } from '@/photos/photoFiles';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import type { GateState } from '@/subscription/gate';
+import { useGateState } from '@/subscription/useGate';
 import { configuredLegalLinks } from '@/subscription/links';
 import { revenueCatStore } from '@/subscription/revenueCat';
 import { keychainStorage } from '@/session/keychain';
@@ -82,10 +83,7 @@ async function build(): Promise<PhoneServices> {
     purchases: revenueCatStore({ report: reportProblem }), // not available in Expo Go or without the SDK key; set up only when first needed (ADR-057 D1)
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
-  if (await services.session.isSignedIn()) {
-    services.profile.refresh().catch(() => undefined);
-    void services.gate.refresh(); // the kept answer routes at once; this one corrects it (K-706)
-  }
+  if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);
   startAutoSync(services.queue.drainInBackground, deviceTriggers);
   // The quiet spell starts again from each open, and iOS's answer is read afresh (K-410); for the app's life.
   trackOpens(services.reminders.opened, services.session.isSignedIn, (listener) => {
@@ -188,8 +186,7 @@ export function useOnboarding(): OnboardingState {
 
 /** Whether the account meets the paywall before the tabs (K-706); the root layout routes on it. */
 export function useSubscriptionGate(): GateState {
-  const { gate } = useAppServices();
-  return useSyncExternalStore(gate.subscribe, gate.current);
+  return useGateState(useAppServices().gate);
 }
 
 export function useSignedIn(): boolean {

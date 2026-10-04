@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useAppServices, useSubscriptionGate } from '@/services/ServicesProvider';
 import { AccountSection } from '@/settings/AccountSection';
@@ -19,15 +20,25 @@ export default function SubscribeScreen() {
   const { gate } = useAppServices();
   const state = useSubscriptionGate();
   const { color } = useTheme();
+  const [unanswered, setUnanswered] = useState(false);
 
+  // Not known: ask (the gate reports its own failures). No answer is said, with a way to ask again — the gate never opens
+  // by failing after a sign-in (K-706 review).
+  const ask = useCallback(() => gate.refresh().then((answered) => setUnanswered(!answered)), [gate]);
   useEffect(() => {
-    if (state === 'unknown') void gate.refresh(); // it reports its own failures; with no answer it opens
-  }, [gate, state]);
+    if (state === 'unknown') void ask();
+  }, [ask, state]);
+  const again = () => {
+    setUnanswered(false);
+    void ask();
+  };
 
   if (state !== 'required') {
+    const retry = unanswered ? <Button label={t('subscription.tryAgain')} variant="ghost" onPress={again} /> : null;
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]}>
-        <Text style={[styles.text, { color: color.muted }]}>{t('subscription.checking')}</Text>
+        <Text style={[styles.text, { color: color.muted }]}>{t(unanswered ? 'subscription.checkFailed' : 'subscription.checking')}</Text>
+        {retry}
       </SafeAreaView>
     );
   }

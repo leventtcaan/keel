@@ -33,8 +33,8 @@ function stepOf(opened: Opened): Step {
 
 type Props = {
   /**
-   * The gate after onboarding (K-706, ADR-058 #1): no way to close it; once the server sees the subscription, `onActive` lets
-   * the gate ask again and the tabs open.
+   * The gate after onboarding (K-706, ADR-058 #1): no way to close it; once the server sees the subscription, "Continue" calls
+   * `onActive` and the gate asks again (the tabs open) — on a tap, never by itself, so the moment is said first.
    */
   required?: boolean;
   onActive?: () => void;
@@ -59,25 +59,17 @@ export function Paywall({ required = false, onActive }: Props) {
   useEffect(() => {
     let live = true; // an answer after the screen closed changes nothing
     void opening().then((opened) => {
-      if (!live) return;
-      setStep(opened);
-      if (opened.at === 'active') onActive?.(); // already subscribed (on another phone, say): the gate asks again
+      if (live) setStep(opened);
     });
     return () => {
       live = false;
     };
-  }, [opening, onActive]);
+  }, [opening]);
   const open = async () => {
     setStep({ at: 'loading' });
-    const opened = await opening();
-    setStep(opened);
-    if (opened.at === 'active') onActive?.();
+    setStep(await opening());
   };
-  /** The server sees the subscription: said, and the gate (if this is one) asks again. */
-  const activate = () => {
-    setStep({ at: 'active' });
-    onActive?.();
-  };
+  const activate = () => setStep({ at: 'active' });
 
   const busy = (on: 'buying' | 'restoring' | null, note: Note | null = null) =>
     setStep((now) => (now.at === 'plans' ? { ...now, busy: on, note } : now));
@@ -140,7 +132,13 @@ export function Paywall({ required = false, onActive }: Props) {
       </View>
     );
   } else if (step.at === 'active') {
-    body = text(t('subscription.active'));
+    const onward = required ? <Button label={t('subscription.continue')} onPress={() => onActive?.()} /> : null;
+    body = (
+      <View style={styles.part}>
+        {text(t('subscription.active'))}
+        {onward}
+      </View>
+    );
   } else if (step.at === 'waiting') {
     const look = <Button label={t('subscription.lookAgain')} variant="ghost" onPress={() => void lookAgain()} />;
     body = (

@@ -253,6 +253,27 @@ test('the subscription gate (K-706): asked at sign-in, forgotten at sign-out', a
   expect(services.gate.current()).toBe('unknown');
 });
 
+test('signed in already when the app starts: the gate is asked at once — and with no answer and nothing kept, it opens', async () => {
+  const links = [
+    { key: 'subscription.terms', url: 'https://example.test/terms' },
+    { key: 'subscription.privacy', url: 'https://example.test/privacy' },
+  ];
+  const storage = memoryStorage();
+  await storage.save(SESSION);
+  const fake = server(200);
+  const store = { ...storeUnavailable, available: true };
+  const services = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: fake.fetch, report: () => {}, kv: memoryKv(), locale: 'en-US', purchases: store, links });
+  await settle();
+  expect(fake.seen.some((seen) => seen.path === '/v1/subscription')).toBe(true);
+  expect(services.gate.current()).toBe('required');
+
+  const offline = server(200);
+  offline.goOffline();
+  const cold = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: offline.fetch, report: () => {}, kv: memoryKv(), locale: 'en-US', purchases: store, links });
+  await settle();
+  expect(cold.gate.current()).toBe('open');
+});
+
 test('without the store or the legal links in the build, the gate is open (a development build is not locked)', async () => {
   const { services } = await setup();
   expect(services.gate.current()).toBe('open');

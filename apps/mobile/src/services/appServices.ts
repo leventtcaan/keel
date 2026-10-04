@@ -169,6 +169,9 @@ export async function createAppServices({
   const training = createTrainingCache(kv, (program) => void reminders.keepRestUntil(program?.restUntil ?? null));
   const photos = createPhotoLibrary(photoFiles);
   const gate = await createSubscriptionGate({ kv, api, purchases, links, report });
+  // Signed in already at the app's start: the kept answer routes at once, this one corrects it — and with nothing kept and no
+  // answer (offline), the cold start opens the gate rather than lock the app with nothing to lift it (K-706).
+  if (await session.isSignedIn()) void gate.refresh({ openWithoutAnswer: true });
   // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
   if (!(await session.isSignedIn())) {
     await profile.forget();

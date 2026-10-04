@@ -45,24 +45,29 @@ export async function createSubscriptionGate({ kv, api, purchases, links, report
       return () => listeners.delete(listener);
     },
 
-    /** Asks the server; no answer keeps the kept one, and with none kept opens the gate (reported by name). */
-    refresh: async (): Promise<void> => {
-      if (!sells) return;
+    /**
+     * Asks the server; true when it answered. No answer keeps the kept one (reported by name). With nothing kept, only the
+     * app's cold start (`openWithoutAnswer`) opens the gate — never a lock with no answer to lift it; after a sign-in it stays
+     * unknown and the gate screen asks again (a failed request must not let a new account past the paywall, K-706 review).
+     */
+    refresh: async ({ openWithoutAnswer = false }: { openWithoutAnswer?: boolean } = {}): Promise<boolean> => {
+      if (!sells) return true;
       const startedIn = generation;
       const read = await load(() => api.GET('/v1/subscription'));
-      if (startedIn !== generation) return;
+      if (startedIn !== generation) return false;
       if (read.state !== 'ready') {
         report({ name: read.state === 'failed' ? read.problem : 'SubscriptionUnread' });
-        if (state === 'unknown') become('open');
-        return;
+        if (state === 'unknown' && openWithoutAnswer) become('open');
+        return false;
       }
       const next: GateState = read.value.status === undefined && !read.value.active ? 'required' : 'open';
       await kv.setItemAsync(KEY, next);
       if (startedIn !== generation) {
         await kv.removeItemAsync(KEY); // signed out while it was written: the write landed after the sign-out's removal
-        return;
+        return false;
       }
       become(next);
+      return true;
     },
 
     /** Sign-out: the answer belongs to the account; the next one is asked afresh. */
