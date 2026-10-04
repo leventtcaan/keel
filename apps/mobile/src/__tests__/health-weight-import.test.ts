@@ -27,7 +27,7 @@ function queue(isNew = true) {
   return { records, record: jest.fn(async (record: unknown) => (records.push(record), isNew)), drain: jest.fn(async () => {}) };
 }
 
-test('a year back, ending where the regular read begins: each weigh-in marked IMPORT, by its Health id', async () => {
+test('a year back, ending where the regular read begins: each weigh-in marked IMPORT, by its Health id, sent in the background', async () => {
   const h = health([OLD]);
   const q = queue();
 
@@ -37,7 +37,8 @@ test('a year back, ending where the regular read begins: each weigh-in marked IM
   expect(q.records).toEqual([
     { kind: 'weighIn', body: { clientId: 'b1c2d3e4-0000-4000-8000-00000000000a', measuredAt: OLD.at, kg: 88.12, source: 'IMPORT' } },
   ]);
-  expect(q.drain).toHaveBeenCalledTimes(1);
+  // Not waited for: the queue sends a year of them in the background (K-616 review — a minute-long tap otherwise).
+  expect(q.drain).not.toHaveBeenCalled();
   expect(h.asked).toHaveLength(1);
   expect(NOW.getTime() - h.asked[0].from.getTime()).toBe(healthParams.weightImportDays * DAY);
   expect(NOW.getTime() - h.asked[0].to.getTime()).toBe(HEALTH_WEIGHT_READ_DAYS * DAY);

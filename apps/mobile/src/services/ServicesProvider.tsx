@@ -15,6 +15,7 @@ import { apiBaseUrl } from '@/api/config';
 import type { HealthAccess } from '@/health/health';
 import { healthKitAccess, healthKitWrite } from '@/health/healthKit';
 import { syncActivityDays } from '@/health/activitySync';
+import { bothHealthConsents } from '@/health/consent';
 import { importHealthWeights, syncHealthWeights } from '@/health/weightSync';
 import { deviceAlerts, deviceNotifications } from '@/notifications/deviceNotifications';
 import { trackOpens } from '@/notifications/reminders';
@@ -81,7 +82,7 @@ async function build(): Promise<PhoneServices> {
     health,
     syncHealth: async () => {
       // Both consents, asked once for the two reads (K-402, K-404).
-      const both = (await services.consents.granted('HEALTH_DATA')) && (await services.consents.granted('APPLE_HEALTH'));
+      const both = await bothHealthConsents(services.consents);
       const consented = async () => both;
       const now = new Date();
       const weighIns = await syncHealthWeights({ health, queue: services.queue, consented, now });
@@ -92,7 +93,7 @@ async function build(): Promise<PhoneServices> {
       importHealthWeights({
         health,
         queue: services.queue,
-        consented: async () => (await services.consents.granted('HEALTH_DATA')) && (await services.consents.granted('APPLE_HEALTH')),
+        consented: () => bothHealthConsents(services.consents),
         now: new Date(),
       }),
     exportData: () =>

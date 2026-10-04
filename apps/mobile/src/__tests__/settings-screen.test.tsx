@@ -106,7 +106,7 @@ test("Gyms opens the user's gyms (K-421)", async () => {
 test('the sections are there, and nothing is in the warn colour until a destructive step asks', async () => {
   await show();
   expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
-  for (const key of ['units.title', 'consents.title', 'account.title', 'export.title', 'delete.title', 'signOut.title']) {
+  for (const key of ['units.title', 'consents.title', 'import.title', 'account.title', 'export.title', 'delete.title', 'signOut.title']) {
     expect(screen.getAllByText(t(`settings.${key}`)).length).toBeGreaterThan(0);
   }
   expect(warnButtons()).toEqual([]);

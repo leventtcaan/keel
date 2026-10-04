@@ -89,6 +89,28 @@ test('a failure is said, by name only to the report', async () => {
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'HealthReadError' });
 });
 
+test('a second import says only its own outcome, not the last one beside it', async () => {
+  mockServices.importHealthWeights.mockResolvedValueOnce(3).mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'HealthReadError' }));
+  await show();
+
+  await importWeighIns();
+  await importWeighIns();
+
+  expect(screen.queryByText(t('settings.import.found', { count: 3 }))).toBeNull();
+  expect(screen.getByText(t('settings.import.failed'))).toBeOnTheScreen();
+});
+
+test('while it reads, the button is off', async () => {
+  let finish: (n: number) => void = () => {};
+  mockServices.importHealthWeights.mockImplementationOnce(() => new Promise<number>((resolve) => (finish = resolve)));
+  await show();
+
+  await importWeighIns();
+  expect(screen.getByRole('button', { name: t('settings.import.importLabel', { what: what() }) })).toBeDisabled();
+  await act(async () => finish(0));
+  expect(screen.getByRole('button', { name: t('settings.import.importLabel', { what: what() }) })).toBeEnabled();
+});
+
 test('a second tap while it reads does nothing', async () => {
   let finish: (n: number) => void = () => {};
   mockServices.importHealthWeights.mockImplementationOnce(() => new Promise<number>((resolve) => (finish = resolve)));

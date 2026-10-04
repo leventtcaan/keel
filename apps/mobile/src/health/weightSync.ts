@@ -25,23 +25,31 @@ type Deps = {
 /** How many weigh-ins were new on the phone. */
 export async function syncHealthWeights(deps: Deps): Promise<number> {
   const from = new Date(deps.now.getTime() - HEALTH_WEIGHT_READ_DAYS * DAY_MS);
-  return readAndRecord(deps, from, deps.now, 'APPLE_HEALTH');
+  return readAndRecord(deps, from, deps.now, 'APPLE_HEALTH', true);
 }
 
 /**
  * The older weigh-ins, brought in once from Settings (K-616, ADR-018 §3): health_weight_import_days back, up to where the
- * regular read begins — the two never read the same sample, so none is stored twice under two sources. Marked IMPORT:
- * the trend shows them, the engine never reads them (ADR-053). How many were new on the phone, or 'consent' when the two
- * consents are not both given (nothing is read then).
+ * regular read begins. A sample an earlier regular read already stored stays as it was: the clientId (its Health id) is
+ * kept once, on the phone and on the server, and the first source stands. Marked IMPORT: the history shows them, the
+ * engine never reads them (ADR-053). Not waited for while they are sent — a year is hundreds of requests, and the queue
+ * sends them in the background (a failure there is the queue's to report, not "Apple Health couldn't be read"). How many
+ * were new on the phone, or 'consent' when the two consents are not both given (nothing is read then).
  */
 export async function importHealthWeights(deps: Deps): Promise<number | 'consent'> {
   // Asked by the user, so a missing consent is said (Settings names the two), not answered with "nothing new".
   if (deps.health.available && !(await deps.consented())) return 'consent';
   const to = new Date(deps.now.getTime() - HEALTH_WEIGHT_READ_DAYS * DAY_MS);
-  return readAndRecord(deps, new Date(deps.now.getTime() - healthParams.weightImportDays * DAY_MS), to, 'IMPORT');
+  return readAndRecord(deps, new Date(deps.now.getTime() - healthParams.weightImportDays * DAY_MS), to, 'IMPORT', false);
 }
 
-async function readAndRecord({ health, queue, consented }: Deps, from: Date, to: Date, source: 'APPLE_HEALTH' | 'IMPORT'): Promise<number> {
+async function readAndRecord(
+  { health, queue, consented }: Deps,
+  from: Date,
+  to: Date,
+  source: 'APPLE_HEALTH' | 'IMPORT',
+  waitForSending: boolean,
+): Promise<number> {
   if (!health.available || !(await consented())) return 0;
   const weights = await health.readWeights(from, to);
   let added = 0;
@@ -54,7 +62,6 @@ async function readAndRecord({ health, queue, consented }: Deps, from: Date, to:
     });
     if (isNew) added++;
   }
-  if (added > 0) await queue.drain();
+  if (added > 0 && waitForSending) await queue.drain();
   return added;
 }
-

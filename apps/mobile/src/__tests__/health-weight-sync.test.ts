@@ -5,6 +5,7 @@
  */
 import type { HealthAccess, HealthWeight } from '@/health/health';
 import { HEALTH_WEIGHT_READ_DAYS, syncHealthWeights } from '@/health/weightSync';
+import { onboardingParams } from '@/onboarding/params';
 
 const NOW = new Date('2026-10-01T09:00:00Z');
 const SAMPLE: HealthWeight = { id: 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F', at: '2026-10-01T05:12:00.000Z', kg: 81.4359 };
@@ -70,4 +71,13 @@ test('read again, a sample already on the phone is not counted again (the queue 
   const q = { ...queue(), record: jest.fn(async () => false) };
   expect(await syncHealthWeights({ health: health([SAMPLE]).access, queue: q, consented: async () => true, now: NOW })).toBe(0);
   expect(q.drain).not.toHaveBeenCalled();
+});
+
+test('the heaviest weight a body may have is kept; over it is not', async () => {
+  const q = queue();
+  const weights = [
+    { ...SAMPLE, id: 'A0000000-0000-4000-8000-000000000003', kg: onboardingParams.weighInMaxKg },
+    { ...SAMPLE, id: 'A0000000-0000-4000-8000-000000000004', kg: onboardingParams.weighInMaxKg + 0.01 },
+  ];
+  expect(await syncHealthWeights({ health: health(weights).access, queue: q, consented: async () => true, now: NOW })).toBe(1);
 });
