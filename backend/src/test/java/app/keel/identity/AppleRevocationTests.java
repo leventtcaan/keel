@@ -99,6 +99,8 @@ class AppleRevocationTests {
         FAKE.requests.clear();
         FAKE.tokenStatus = 200;
         FAKE.revokeStatus = 200;
+        FAKE.error = "invalid_grant";
+        FAKE.tokenBody = null;
     }
 
     @Test
@@ -155,6 +157,52 @@ class AppleRevocationTests {
     }
 
     @Test
+    void appleRefusingOurOwnCredentialsIsOursNotTheRequests() throws Exception {
+        // invalid_client: the Team ID, the key or the app's id is wrong — a server set up wrong, not a bad code; said as an
+        // error of ours (500, logged at ERROR by SafeLog), so a revocation that never works is seen.
+        AccountId account = account("apple." + UUID.randomUUID());
+        FAKE.tokenStatus = 400;
+        FAKE.error = "invalid_client";
+
+        assertThat(revoke(account, CODE)).hasStatus(500);
+        assertThat(FAKE.requests).extracting(Request::path).containsExactly("/auth/token");
+    }
+
+    @Test
+    void theRevocationRefusingOurCredentialsIsOursToo() throws Exception {
+        String subject = "apple." + UUID.randomUUID();
+        AccountId account = account(subject);
+        FAKE.idToken = APPLE.signed(subject, Instant.now(), claims -> claims);
+        FAKE.revokeStatus = 400;
+        FAKE.error = "invalid_client";
+
+        assertThat(revoke(account, CODE)).hasStatus(500);
+    }
+
+    @Test
+    void anAnswerNotAsDocumentedRevokesNothing() throws Exception {
+        String subject = "apple." + UUID.randomUUID();
+        AccountId account = account(subject);
+        for (String body : List.of("{\"id_token\":\"" + APPLE.signed(subject, Instant.now(), claims -> claims) + "\"}", "{\"refresh_token\":\"rt\"}",
+                "not json", "[]", "{\"refresh_token\":\"\",\"id_token\":\"x\"}")) {
+            FAKE.requests.clear();
+            FAKE.tokenBody = body;
+
+            assertThat(revoke(account, CODE)).as(body).hasStatus(503);
+            assertThat(FAKE.requests).as(body).extracting(Request::path).containsExactly("/auth/token");
+        }
+    }
+
+    @Test
+    void theTokenEndpointDownIsTryAgainLater() throws Exception {
+        AccountId account = account("apple." + UUID.randomUUID());
+        FAKE.tokenStatus = 502;
+
+        assertThat(revoke(account, CODE)).hasStatus(503);
+        assertThat(FAKE.requests).extracting(Request::path).containsExactly("/auth/token");
+    }
+
+    @Test
     void appleDownIsTryAgainLater() throws Exception {
         String subject = "apple." + UUID.randomUUID();
         AccountId account = account(subject);
@@ -207,6 +255,8 @@ class AppleRevocationTests {
         volatile String idToken = "";
         volatile int tokenStatus = 200;
         volatile int revokeStatus = 200;
+        volatile String error = "invalid_grant";
+        volatile String tokenBody = null;
 
         FakeApple() throws IOException {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -214,14 +264,21 @@ class AppleRevocationTests {
                 String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
                 String path = exchange.getRequestURI().getPath();
                 requests.add(new Request(path, body));
+                // Apple reads a form, as its documentation's requests send one.
+                if (!"application/x-www-form-urlencoded".equals(exchange.getRequestHeaders().getFirst("Content-Type"))) {
+                    exchange.sendResponseHeaders(415, -1);
+                    exchange.close();
+                    return;
+                }
                 byte[] answer = new byte[0];
                 int status = path.equals("/auth/token") ? tokenStatus : revokeStatus;
                 if (path.equals("/auth/token") && status == 200) {
-                    answer = JSON.writeValueAsBytes(Map.of("access_token", "at-" + UUID.randomUUID(), "token_type", "Bearer", "expires_in", 3600,
-                            "refresh_token", REFRESH, "id_token", idToken));
+                    answer = tokenBody != null ? tokenBody.getBytes(StandardCharsets.UTF_8)
+                            : JSON.writeValueAsBytes(Map.of("access_token", "at-" + UUID.randomUUID(), "token_type", "Bearer", "expires_in", 3600,
+                                    "refresh_token", REFRESH, "id_token", idToken));
                     exchange.getResponseHeaders().add("Content-Type", "application/json");
                 } else if (status == 400) {
-                    answer = "{\"error\":\"invalid_grant\"}".getBytes(StandardCharsets.UTF_8);
+                    answer = ("{\"error\":\"" + error + "\"}").getBytes(StandardCharsets.UTF_8);
                     exchange.getResponseHeaders().add("Content-Type", "application/json");
                 }
                 exchange.sendResponseHeaders(status, answer.length == 0 ? -1 : answer.length);

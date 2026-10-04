@@ -71,6 +71,15 @@ class AppleClientSecretTests {
     }
 
     @Test
+    void aKeyKeptOnOneLineWithEscapedLineEndsReads() throws Exception {
+        // An environment file holds one line: the PEM's line ends written as \n (Docker --env-file, GitHub secrets pasted so).
+        KeyPair keys = keys();
+        String oneLine = p8(keys).replace("\n", "\\n");
+
+        assertThat(AppleClientSecret.parse(oneLine).getS()).isEqualTo(((java.security.interfaces.ECPrivateKey) keys.getPrivate()).getS());
+    }
+
+    @Test
     void somethingElseIsRefusedWithoutItsContentInTheMessage() {
         assertThatThrownBy(() -> AppleClientSecret.parse("-----BEGIN PRIVATE KEY-----\nbm90LWEta2V5\n-----END PRIVATE KEY-----"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageNotContaining("bm90LWEta2V5");

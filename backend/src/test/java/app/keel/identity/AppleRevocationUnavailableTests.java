@@ -17,9 +17,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Without the developer account's key (development, a server not set up): revocation is unavailable, said as such, and
- * the account is deleted all the same (K-812, ADR-062, V6).
+ * the account is deleted all the same (K-812, ADR-062, V6). The settings are emptied here, so a developer's own key in the
+ * environment does not turn this test.
  */
-@SpringBootTest
+@SpringBootTest(properties = {"keel.apple.revocation.team-id=", "keel.apple.revocation.key-id=", "keel.apple.revocation.private-key="})
 @AutoConfigureMockMvc
 @Import(PostgresTestConfiguration.class)
 class AppleRevocationUnavailableTests {
