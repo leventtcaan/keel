@@ -3100,7 +3100,7 @@ tasks:
     module: legal
     type: docs
     size: M
-    status: todo
+    status: done
     depends_on: [K-214]
     why: "Yayın ve TestFlight dış test öncesi zorunlu"
     acceptance:
@@ -3135,7 +3135,7 @@ tasks:
     module: legal
     type: docs
     size: S
-    status: todo
+    status: done
     depends_on: [K-801]
     why: "Klinik terim kullanmamak yaş derecelendirmesini de korur"
     acceptance:
@@ -3185,7 +3185,7 @@ tasks:
     module: legal
     type: docs
     size: S
-    status: todo
+    status: done
     depends_on: [K-503]
     why: "Sağlık verisi dışarı gidiyorsa işleyici şartları ve veri saklama politikası belli olmalı"
     acceptance:
@@ -3220,7 +3220,7 @@ tasks:
     module: consent
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-204]
     why: "Rıza metni antrenman kaydını sağlık verisi sayıyor ama geri çekmede silmiyor; ADR-007/ADR-026 saymıyor — metin kendi içinde çelişiyor (ADR-059 #2)"
     acceptance:
@@ -3239,7 +3239,7 @@ tasks:
     module: mobile
     type: chore
     size: S
-    status: todo
+    status: done
     depends_on: [K-801, K-702]
     why: "İki yasal adres yoksa paywall satmaz ve zorunlu paywall kapısı açık kalır (ADR-057 D3, ADR-058); adresler GitHub Pages'te (ADR-059 #3)"
     acceptance:

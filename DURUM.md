@@ -6,6 +6,7 @@ guncelleme: 2026-10-04
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M8 Part 1 (Metinler ve envanter) BİTTİ (4 Eki)** — ADR-059 (+ Ek 1), ADR-060; K-801 #375, K-808 #377, K-806 #378, K-809 #379, K-803 #380, #381; yasal sayfalar canlı (`leventtcaan.github.io/keel/`). Disk 20 GB (Docker budandı). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-5. Açık: iletişim adresi (Levent). Sıradaki: M8 Part 2 (`plan/oturum-promptlari/M8-part2.md`).
 **M7 KAPANDI (4 Eki, kod)** — Part 2: K-705 #368, K-702 #369, K-706 #372, K-707 #373 (auto-merge); ADR-056 Ek 1, ADR-057, ADR-058 (105-107 Levent: zorunlu paywall, iOS'ta duraklatma yok, deneme hatırlatması). Cihaz/sandbox ve mağaza kurulumu Levent'te (K-308, RevenueCat, ASC). Aktarım bekliyor: M7 (`docs/aktarim/M7/README.md` 1-6). **Disk 1,5 GB** → Levent. Sıradaki koşu **M8 · Uyum ve yasal** (`plan/oturum-promptlari/M8.md`, `M8-part1.md`).
 **M7 Part 1 (Yetki sunucuda) BİTTİ (4 Eki)** — ADR-056; K-701 #364, K-703 #366 birleşti; K-704 (REST tazeleme, RevenueCat hesabı sonrası) ve K-705 (durum ucu, Part 2) açıldı; para/mağaza hazır değil (ADR-012 Ek 1). Aktarım bekliyor: `docs/aktarim/M7/README.md` 1-2. Sıradaki: M7 Part 2 (`plan/oturum-promptlari/M7-part2.md`).
 **M6 KAPANDI (4 Eki, kod)** — Part 4: K-615 #354, K-616 #356, K-609 #357, K-612 #358, ADR-055 metinleri #361, K-617 #362; ADR-053/054/055; sorular 87-104 cevaplı (ADR-055). Açık: K-618 (fotoğraf yedekten hariç, K-308 sonrası). Aktarım bekliyor: M6 (`docs/aktarim/M6/README.md` 1-19). **Disk 1,2 GB** (Docker 17 GB + başka uygulamaların önbellekleri — Levent). Sıradaki koşu **M7 · Abonelik** (`plan/oturum-promptlari/M7.md`, `M7-part1.md`).
@@ -674,7 +675,7 @@ Ortak talimat `plan/oturum-promptlari/M8.md`. Part prompt'ları `M8-part1.md`, `
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Metinler ve envanter | K-801, K-806, K-803 · yasal URL | ⏳ sürüyor (4 Eki) |
+| 1 · Metinler ve envanter | K-801, K-806, K-803 · yasal URL (+ K-808, K-809) | ✅ bitti (4 Eki) — aktarım bekliyor (README 1-5) |
 | 2 · Denetimler ve teslim | K-802, K-804, K-807 · M8 çıkışı · M9 prompt'ları | bekliyor |
 
 **Part 1 başı (4 Eki):** senkron tamam — M7 ÇIKIŞ git ile tutarlı (#368, #369, #372, #373 birleşik; açık PR yok; worktree yalnız `../keel-main`;
@@ -688,10 +689,30 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-801 metinler + envanter — ADR-060; envanter 37 tablo, sütun düzeyinde göçlere bağlı, katı SQL okuyucu; politika/şartlar/feragatname `docs/yasal/site/`; sayfalar U4/U6 + kişi adı taramasında (`legalNegations`); Pages (önce iki kontrol, PR'da derleme). İnceleme: olgu denetimi 15 (14 metin düzeltmesi, 1 yanlış: döngü cevabı saklanmıyor), test analizi 11 boşluk kapatıldı; mutasyon 6/6 + 9/9; envanter 22/22, `npm run check` 2520/2520. **Pages açıldı** (`leventtcaan.github.io/keel/`) | ✅ birleşti (64ba326, dört kontrol yeşil; Pages `main`'den dağıtıldı, üç adres 200) | #375 | `M8/K-801.md` |
-| K-809 yasal adresler `eas.json`'da (#376) — RED 7 → 8/8; `main`'e taşındı | ⏳ inceleme | — | `M8/K-809.md` |
-| K-806 AI sağlayıcı şartları — üç aday resmî metinden (4 Eki), politika: yalnız eğitim yok + sıfır saklama; RED 1 | ⏳ inceleme | — | `M8/K-806.md` |
-| K-803 App Privacy etiketi + yaş anketi taslağı (9+; ASC'ye M10) — RED 3+1, 27 test | ⏳ inceleme (K-806'ya yığılı) | — | `M8/K-803.md` |
-| K-808 sağlık rızası metni (soru 57), sürüm 3 — mobil RED 1; sunucu RED CI'da | ⏳ RED CI'da | #377 | `M8/K-808.md` |
+| K-809 yasal adresler yalnız mağaza derlemesinde (`eas.json › production.env`); test adresi sayfanın permalink'ine bağlar. İnceleme: dev-client `eas.json` env'ini okumaz → çıkarıldı | ✅ birleşti | #379 | `M8/K-809.md` |
+| K-806 AI sağlayıcı şartları — üç aday resmî metinden (4 Eki); politika: yalnız eğitim yok + sıfır saklama, istisnalar adıyla yazılacak. İnceleme: alıntılar canlı sayfayla doğru; OpenAI cümlesi tam, ZDR istisnası (işaretlenen görsel) | ✅ birleşti | #378 | `M8/K-806.md` |
+| K-803 App Privacy etiketi + yaş anketi (9+ hesaplanır, **18+ override zorunlu** — Apple, şartlar 18+). İnceleme: Usage Data eklendi, "Medical" cevabı açık (M10) | ✅ birleşti | #380 | `M8/K-803.md` |
+| K-808 sağlık rızası metni (soru 57), sürüm 3 — RED CI'da (sunucu 2018/1, mobil 1); inceleme: metin geri çekmede silinen her şeyi ve içe aktarmayı söyler | ✅ birleşti | #377 | `M8/K-808.md` |
+| ADR-059 Ek 1 — sorumlu adı + sunucu bölgesi sayfalarda; kişi adı istisnası hiç çalışmıyordu (`plain()` alt çizgiyi siliyordu) → düzeltildi | ⏳ auto-merge | #381 | — |
+
+**Part 1 ÇIKIŞ (4 Eki):**
+- **Birleşen:** K-801 #375 · K-808 #377 · K-806 #378 · K-809 #379 · K-803 #380 · ADR-059 Ek 1 #381 (auto-merge). `main`'e doğrudan: ADR-059 (+ Ek 1),
+  ADR-060, K-808/K-809 kartları, K-805 → M11, M8-part2 güncellemesi, aktarım README 1-5. **Pages canlı:** `https://leventtcaan.github.io/keel/`
+  (`privacy/`, `terms/`, `health/` → 200). Worktree'ler: kalıcı `../keel-main` + bu part'ın `../keel-k806`, `../keel-k808`, `../keel-k809`
+  (dalları birleşti; `worktree remove` Part 2 başında, `branch -D` yasak — zararsız).
+- **Kontrol çıktısı:** envanter testi 27/27 (`python3 tools/test_veri_envanteri.py`); mobil `npm run check` 145 takım 2520+ yeşil; CI dört kontrol
+  yeşil (#375-#380; sunucu 2018 test). Mutasyon: K-801 6/6 + 9/9.
+- **Kalan iş:** iletişim adresi (Levent açacak → `docs/yasal/site/_config.yml › contact_email`; dış TestFlight ve lansmandan önce şart).
+  Envanterin yedi açığı + telefon anahtarları → Part 2 (K-802, K-804; `M8-part2.md`'de). ASC beyanları M10 (`docs/yasal/app-store-beyanlari.md`).
+- **Part 2'nin bilmesi gerekenler:**
+  - Envanter tek kaynak: `docs/yasal/veri-envanteri.json`; yeni tablo/sütun/izin/eklenti/Health türü/bağımlılık envantere ve politikaya girmeden
+    CI kırmızı. K-802'nin "her tabloya yaz, sil, hiçbiri kalmasın" testi `erased_by` içinde `account_deletion` olan tabloları okuyabilir.
+  - `event_publication` düzelince: politika `#data-technical` "we are changing this" cümlesi ve envanterde `erased_by` güncellenir (test bağlar).
+  - Yasal sayfalar `main`'e PR'sız girebilir ama Pages iş akışı yayından önce envanter + yasaklı ifade taramasını koşar.
+  - AI bölümü `keel.coach.provider`'a kilitli: sağlayıcı `fake` değilse politika onu adıyla anmalı (test).
+  - Kararsız mobil test (bir kez, adı yakalanmadı) — görülürse `--verbose`.
+- **Yeni sorular / cevaplar:** başta 6 (ADR-059), sonda 5 (ADR-059 Ek 1) — hepsi cevaplı. Açık: GDPR Md. 27 temsilci (M10), "Medical or Treatment
+  Information" cevabı (M10, ASC'de), iletişim adresi.
 
 **Envanterin bulduğu açıklar → K-802 (Part 2) kabul kriterine eklenecek:**
 1. `event_publication` tamamlanan olayları silmiyor (completion-mode update) → silinen hesabın UUID'si süresiz kalıyor (V1). Politika bunu dürüstçe
