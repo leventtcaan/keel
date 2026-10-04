@@ -38,7 +38,7 @@ yapılandırmadan okunur. RevenueCat'in webhook'u (resmî doküman, 4 Eki okundu
    (anonim `$RCAnonymousID`, silinmiş hesap) → 200, hiçbir şey saklanmaz. Silmeyle yarış: `privacy` ikinci geçişi (K-214) sonradan
    yazılanı da siler.
 4. **Hangi olay:** yalnız `entitlement_ids` yapılandırılmış yetkiyi (`keel.subscription.revenuecat.entitlement`, öneri `premium`)
-   içerenler ve `environment` izinli listede olanlar (`environments`; şimdilik `PRODUCTION`, `SANDBOX` — TestFlight satın alımları
+   içerenler ve `environment` izinli listede olanlar (alan yoksa izinsiz sayılır — 500 değil 200) (`environments`; şimdilik `PRODUCTION`, `SANDBOX` — TestFlight satın alımları
    sandbox'tır; **mağaza yayınında SANDBOX çıkarılır**, M9 kontrol listesi). `TRANSFER` yetki taşımaz, ayrıca işlenir (madde 6).
    Gerisi (TEST, PRODUCT_CHANGE, INVOICE_ISSUANCE, deneyler, sanal para…) 200 + yok sayılır.
 5. **Durum makinesi (saf, `SubscriptionState.next`):** durum = (`status`, `accessUntil`, `lastEventAt`). **Erişim yalnız
