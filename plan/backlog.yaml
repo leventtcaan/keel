@@ -3119,7 +3119,7 @@ tasks:
     module: privacy
     type: test
     size: S
-    status: doing
+    status: done
     depends_on: [K-214]
     why: "V6 ve App Store hesap silme şartı"
     acceptance:
@@ -3259,23 +3259,42 @@ tasks:
       - "Derleme zamanı ortam değişkenleri (EXPO_PUBLIC_*)"
 
   - id: K-810
-    title: "Veri en aza indirme: eski yenileme jetonları ve webhook olayları süreli silinir"
+    title: "Veri en aza indirme: süresi geçmiş yenileme jetonları gece silinir"
     milestone: M8
     module: identity
     type: feature
     size: S
+    status: doing
+    depends_on: [K-802]
+    why: "Envanter açığı 5: süresi geçmiş yenileme jetonları hesap yaşarken hiç silinmiyor (GDPR Md. 5(1)(e) saklama sınırı). İptal edilmiş ama süresi dolmamış satır yeniden kullanım tespiti için kalır"
+    acceptance:
+      - "Süresi geçmiş yenileme jetonu her gece silinir; iptal edilmiş ama süresi dolmamış olan kalır (yeniden kullanım tespiti)"
+      - "Zamanlama yapılandırmada (K2); hata mesajı loga düşmez (V3)"
+      - "Envanter erased_by time + kept_for, politika süreyi söyler (test bağlar)"
+    tests:
+      - "RefreshTokenCleanupTests (DB, CI)"
+    refs: ["docs/yasal/veri-envanteri.json", "plan/kararlar/ADR-011-kimlik-dogrulama.md"]
+    learn:
+      - "Saklama sınırı ve zamanlanmış temizlik; jeton rotasyonu ve yeniden kullanım tespiti"
+
+  - id: K-814
+    title: "Veri en aza indirme: işlenmiş RevenueCat olayları süreli silinir"
+    milestone: M8
+    module: subscription
+    type: feature
+    size: S
     status: todo
     depends_on: [K-802]
-    why: "Envanter açığı 5: süresi geçmiş/iptal edilmiş yenileme jetonları ve işlenmiş webhook_event satırları hesap yaşarken hiç silinmiyor (GDPR Md. 5(1)(e) saklama sınırı)"
+    why: "Envanter açığı 5: webhook_event (olay kimliği, tür, zaman) hesap yaşarken hiç silinmiyor. RevenueCat 5 denemeyi ~155 dakikada bitirir; eski bir olay tekrar gelse durum makinesi geri götürmez (ADR-056)"
     acceptance:
-      - "Süresi geçmiş ya da iptal edilmiş yenileme jetonu bir süre sonra silinir; süre data/parameters'ta ya da yapılandırmada, kodda değil (K2)"
-      - "İşlenmiş webhook_event satırı tekrar koruması penceresinden sonra silinir"
-      - "Envanter erased_by + kept_for ve politika süreyi söyler (test bağlar)"
+      - "İşlenmiş webhook_event satırı saklama süresinden sonra her gece silinir; süre yapılandırmada (K2)"
+      - "Silinmiş bir olay tekrar gelirse durum geri gitmez (test)"
+      - "Envanter erased_by time + kept_for, politika süreyi söyler"
     tests:
-      - "Temizlik testleri (DB, CI)"
-    refs: ["docs/yasal/veri-envanteri.json", "plan/kararlar/ADR-056-yetki-sunucuda.md"]
+      - "WebhookEventCleanupTests (DB, CI)"
+    refs: ["docs/yasal/veri-envanteri.json", "plan/kararlar/ADR-056-yetki-sunucuda.md", "https://www.revenuecat.com/docs/integrations/webhooks"]
     learn:
-      - "Saklama sınırı ve zamanlanmış temizlik"
+      - "Tekrar koruması (idempotency) penceresi"
 
   - id: K-811
     title: "Silme onayı aboneliği söyler; öğün fotoğrafı telefonda kalmaz"
