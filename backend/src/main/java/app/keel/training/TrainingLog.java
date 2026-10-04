@@ -47,7 +47,7 @@ public class TrainingLog {
     public List<Instant> workoutStarts(AccountId account, Instant from, Instant to) {
         return jdbc.sql("""
                 select w.started_at from training.workout w
-                where w.account_id = :account and w.imported_from is null and w.started_at >= :from and w.started_at < :to
+                where w.account_id = :account and w.started_at >= :from and w.started_at < :to
                   and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type <> 'WARM_UP')
                 order by w.started_at""")
                 .param("account", account.value()).param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
@@ -61,7 +61,7 @@ public class TrainingLog {
     public Optional<Instant> lastSessionBefore(AccountId account, Instant before) {
         return jdbc.sql("""
                 select max(w.started_at) as last from training.workout w
-                where w.account_id = :account and w.imported_from is null and w.started_at < :before
+                where w.account_id = :account and w.started_at < :before
                   and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type <> 'WARM_UP')""")
                 .param("account", account.value()).param("before", before.atOffset(ZoneOffset.UTC))
                 .query((row, n) -> Optional.ofNullable(row.getObject("last", OffsetDateTime.class)).map(OffsetDateTime::toInstant)).single();
@@ -74,7 +74,7 @@ public class TrainingLog {
         return jdbc.sql("""
                 select w.started_at, s.load_kg, s.reps, s.rir, s.side from training.workout_set s
                 join training.workout w on w.id = s.workout_id
-                where s.account_id = :account and s.exercise_id = :exercise and s.set_type = 'WORKING' and w.imported_from is null
+                where s.account_id = :account and s.exercise_id = :exercise and s.set_type = 'WORKING'
                   and w.started_at >= :from and w.started_at < :to
                 order by w.started_at, s.seq""")
                 .param("account", account.value()).param("exercise", exerciseId)

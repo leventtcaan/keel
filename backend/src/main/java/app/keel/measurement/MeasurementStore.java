@@ -76,7 +76,7 @@ class MeasurementStore {
     /** The latest weigh-in's weight, whenever it was; not an imported one (ADR-053). */
     Optional<BigDecimal> latestKg(AccountId account) {
         return jdbc.sql("""
-                select kg from measurement.weigh_in where account_id = :account and source <> 'IMPORT'
+                select kg from measurement.weigh_in where account_id = :account
                 order by measured_at desc, id desc limit 1""")
                 .param("account", account.value()).query(BigDecimal.class).optional();
     }
