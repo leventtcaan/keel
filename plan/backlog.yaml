@@ -3156,14 +3156,17 @@ tasks:
     module: repo
     type: test
     size: S
-    status: todo
+    status: doing
     depends_on: [K-302]
     why: "Yayından önce U4, U6, K2'nin mekanik kontrolü"
     acceptance:
       - "CI'da metin, kod ve mağaza metinleri taranır"
+      - "Mağaza metni taslağı (data/copy/store.en.json) U4/U6 + kişi adı + Apple uzunluk sınırlarıyla taranır"
+      - "Tek komut (tools/anayasa-denetimi.sh) bütün anayasa taramalarını koşar; bir tarama komuttan düşerse CI kırmızı"
+      - "Her rota bir korumalı grupta (Stack.Protected); korumasız rota testte kırmızı"
     tests:
-      - "ConstitutionAuditTests"
-    refs: ["docs/anayasa.md"]
+      - "forbidden-phrases.test.ts › store texts · routes-protected.test.ts · tools/test_anayasa_denetimi.py"
+    refs: ["docs/anayasa.md", "plan/kararlar/ADR-061-anayasa-denetimi.md"]
     learn: ["Statik analiz"]
 
   - id: K-805
@@ -3310,6 +3313,24 @@ tasks:
     refs: ["https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens", "plan/kararlar/ADR-011-kimlik-dogrulama.md"]
     learn:
       - "OAuth jeton iptali, ES256 istemci sırrı"
+
+  - id: K-813
+    title: "Telefonun kv anahtarları veri envanterine bağlı"
+    milestone: M8
+    module: mobile
+    type: test
+    size: S
+    status: todo
+    depends_on: [K-801]
+    why: "Envanter sunucu tablolarını sütun düzeyinde bağlıyor ama telefonda saklanan ayarları yalnız düz metinle sayıyor (M8 Part 1 test analizi, puan 6; ADR-061 #5)"
+    acceptance:
+      - "Envanterin phone.stored kayıtları kullandıkları kv anahtarlarını listeler"
+      - "Telefon kodundaki her kv okuma/yazma çağrısının anahtarı envanterde, envanterdeki her anahtar kodda (iki yönlü, AST ile)"
+    tests:
+      - "Mobil: kv anahtarları ↔ envanter"
+    refs: ["plan/kararlar/ADR-061-anayasa-denetimi.md", "docs/yasal/veri-envanteri.json"]
+    learn:
+      - "TypeScript derleyici API'siyle statik analiz"
 
 # ───────────────────────────── M9 · Beta ─────────────────────────────
   - id: K-901
