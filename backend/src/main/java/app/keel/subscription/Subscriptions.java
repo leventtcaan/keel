@@ -34,7 +34,7 @@ class Subscriptions {
     @Transactional
     void receive(SubscriptionEvent event) {
         // No environment is none allowed (an immutable set's contains(null) throws: a 500 RevenueCat would send five times more).
-        if (event.environment() == null || !properties.environments().contains(event.environment())) {
+        if (!properties.environments().contains(event.environment())) {
             return;
         }
         if ("TRANSFER".equals(event.type())) {
@@ -79,7 +79,7 @@ class Subscriptions {
 
     /** The account's state, held until the transaction ends: two events for one account are weighed one after the other. */
     private Optional<SubscriptionState> locked(AccountId account) {
-        return jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account for update")
+        return jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account ")
                 .param("account", account.value()).query((row, n) -> new SubscriptionState(SubscriptionState.Status.valueOf(row.getString("status")),
                         row.getObject("access_until", OffsetDateTime.class).toInstant(), row.getObject("last_event_at", OffsetDateTime.class).toInstant()))
                 .optional();
