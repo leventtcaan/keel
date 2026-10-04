@@ -4,7 +4,8 @@
  *
  * The answers are only counted here and then dropped: nothing stores or sends them. What stays is the result, on this phone
  * only (expo-sqlite/kv-store) and with no reason written — "unavailable", never what was answered (V4). A result of
- * "unavailable" is final on this phone: recording "clear" after it changes nothing, so the gate cannot be answered around.
+ * "unavailable" is final on this phone: recording "clear" after it changes nothing, and sign-out keeps it, so the gate
+ * cannot be answered around. "clear" goes at sign-out: the next person to sign in is asked.
  */
 import params from '../../../../data/parameters/projection.json';
 import { regionOf } from '@/units/units';
@@ -55,6 +56,16 @@ export async function createProjectionAccess({ kv, locale }: { kv: KeyValue; loc
       if (current === 'unavailable') return;
       await kv.setItemAsync(KEY, result);
       current = result;
+    },
+
+    /**
+     * Sign-out (ADR-050, question 94): "clear" goes — whoever signs in next answers for themselves — and "unavailable"
+     * stays, so signing out never re-opens the gate.
+     */
+    signedOut: async (): Promise<void> => {
+      if (current !== 'clear') return;
+      await kv.removeItemAsync(KEY);
+      current = 'not-asked';
     },
 
     /** The support link for this phone's region, or none. */

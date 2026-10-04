@@ -1800,6 +1800,7 @@
       "yes": "Yes",
       "no": "No",
       "continue": "Continue",
+      "failed": "Couldn't save that on this phone. Try again.",
       "source": "The questions are the SCOFF questionnaire (BMJ, 1999)."
     },
     "unavailable": {

@@ -54,8 +54,8 @@ export type AppServices = {
   queue: SyncQueue;
   units: UnitsPreference;
   /**
-   * The SCOFF gate's result for the shape projection (K-607, ADR-050), on this phone only. Kept at sign-out on purpose: it
-   * protects the person holding the phone, and signing out must not re-open a gate answered "unavailable".
+   * The SCOFF gate's result for the shape projection (K-607, ADR-050), on this phone only. At sign-out "unavailable" stays
+   * (signing out must not re-open the gate) and "clear" goes (the next person is asked).
    */
   projection: ProjectionAccess;
   /** Whether this account has finished onboarding (K-306). */
@@ -161,6 +161,7 @@ export async function createAppServices({
     reminders.forget().catch(reportError); // and the reminders: nothing scheduled for an account that left (K-410)
     state.forget().catch(reportError); // and a state declared: sickness and pain are health data (K-518)
     opens.forget().catch(reportError); // and the days the app was opened (K-521)
+    projection.signedOut().catch(reportError); // and a SCOFF "clear" — never an "unavailable" (K-607, ADR-050)
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's

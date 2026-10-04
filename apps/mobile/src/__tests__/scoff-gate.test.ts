@@ -79,6 +79,54 @@ describe('what the phone keeps', () => {
     expect((await createProjectionAccess({ kv, locale: 'tr-TR' })).current()).toBe('clear');
   });
 
+  test('on the same phone session too: "off" is not overwritten (review finding)', async () => {
+    const kv = memoryKv();
+    const access = await createProjectionAccess({ kv, locale: 'en-US' });
+
+    await access.record('unavailable');
+    expect(access.current()).toBe('unavailable');
+    await access.record('clear');
+
+    expect(access.current()).toBe('unavailable');
+    expect(kv.stored.get('projection.access')).toBe('unavailable');
+  });
+
+  test('"clear" can still become "off": a later answer of two or more yes counts', async () => {
+    const kv = memoryKv();
+    const access = await createProjectionAccess({ kv, locale: 'en-US' });
+
+    await access.record('clear');
+    await access.record('unavailable');
+
+    expect(access.current()).toBe('unavailable');
+    expect(kv.stored.get('projection.access')).toBe('unavailable');
+  });
+
+  test('a write that fails changes nothing and reaches the caller', async () => {
+    const kv = memoryKv();
+    kv.setItemAsync.mockRejectedValueOnce(new Error('disk full'));
+    const access = await createProjectionAccess({ kv, locale: 'en-US' });
+
+    await expect(access.record('clear')).rejects.toThrow('disk full');
+    expect(access.current()).toBe('not-asked');
+  });
+
+  test('sign-out forgets "clear" — the next person is asked — and keeps "off" (ADR-050 question 94)', async () => {
+    const cleared = memoryKv();
+    const clear = await createProjectionAccess({ kv: cleared, locale: 'en-US' });
+    await clear.record('clear');
+    await clear.signedOut();
+    expect(clear.current()).toBe('not-asked');
+    expect(cleared.stored.has('projection.access')).toBe(false);
+
+    const kept = memoryKv();
+    const off = await createProjectionAccess({ kv: kept, locale: 'en-US' });
+    await off.record('unavailable');
+    await off.signedOut();
+    expect(off.current()).toBe('unavailable');
+    expect(kept.stored.get('projection.access')).toBe('unavailable');
+  });
+
   test('something else in the store is read as not asked', async () => {
     const kv = memoryKv(new Map([['projection.access', 'yes please']]));
     expect((await createProjectionAccess({ kv, locale: 'en-US' })).current()).toBe('not-asked');

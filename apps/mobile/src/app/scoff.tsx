@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,16 +38,31 @@ export default function ScoffScreen() {
 }
 
 function Questions({ projection, onOff }: { projection: ProjectionAccess; onOff: () => void }) {
+  const { report } = useAppServices();
   const { color } = useTheme();
   const [answers, setAnswers] = useState<(boolean | null)[]>(SCOFF_QUESTIONS.map(() => null));
+  const [failed, setFailed] = useState(false);
+  // A ref, not state: a second tap in the same frame must see the first one (review finding: two closes).
+  const busy = useRef(false);
   const complete = answers.every((answer) => answer !== null);
 
   const choose = (index: number, yes: boolean) => setAnswers((now) => now.map((answer, i) => (i === index ? yes : answer)));
 
   const carryOn = async () => {
-    if (!complete) return;
+    if (!complete || busy.current) return;
+    busy.current = true;
+    setFailed(false);
     const result = scoffResult(answers as boolean[]);
-    await projection.record(result);
+    try {
+      await projection.record(result);
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' }); // by name only (V3)
+      busy.current = false;
+      // Two or more yes: the projection is not offered on this screen even if the phone could not keep it.
+      if (result === 'unavailable') onOff();
+      else setFailed(true);
+      return;
+    }
     if (result === 'unavailable') onOff();
     else router.back();
   };
@@ -58,6 +73,7 @@ function Questions({ projection, onOff }: { projection: ProjectionAccess; onOff:
       {SCOFF_QUESTIONS.map((question, index) => (
         <Question key={question} text={t(`projection.scoff.${question}`)} answer={answers[index]} onAnswer={(yes) => choose(index, yes)} />
       ))}
+      {failed && <Failed />}
       <Button label={t('projection.scoff.continue')} disabled={!complete} onPress={() => void carryOn()} />
       <Text style={[styles.note, { color: color.muted }]}>{t('projection.scoff.source')}</Text>
     </ScrollView>
@@ -90,6 +106,11 @@ function Unavailable({ projection }: { projection: ProjectionAccess }) {
       <Button label={t('projection.unavailable.done')} onPress={() => router.back()} />
     </ScrollView>
   );
+}
+
+function Failed() {
+  const { color } = useTheme();
+  return <Text style={[styles.text, { color: color.warn }]}>{t('projection.scoff.failed')}</Text>;
 }
 
 function SupportLink({ region, url }: { region: string; url: string }) {
