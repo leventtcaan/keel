@@ -3302,7 +3302,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-309]
     why: "Envanter açıkları 3 ve 6: Apple silme onayında aboneliğin Apple'da süreceğini söylemeyi istiyor; öğün fotoğrafı gönderildikten sonra sistem önbelleğinde kalıyor (V1)"
     acceptance:
