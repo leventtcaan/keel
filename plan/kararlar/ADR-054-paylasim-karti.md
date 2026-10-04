@@ -1,5 +1,5 @@
 # ADR-054 · Paylaşım kartı: yalnız kelimeler, telefonda yapılır, kilo ve güvenlik kararları varsayılan dışarıda (K-612)
-- **Durum:** KABUL (agent, teknik — ADR-019); güvenlik kararlarının dışarıda tutulması **geçici**, soru 104 Levent'te
+- **Durum:** KABUL (agent, teknik — ADR-019); güvenlik kararlarının dışarıda tutulması Levent'in kararı (ADR-055 #104)
 - **Tarih:** 2026-10-04 · **Karar veren:** agent
 
 ## Bağlam
@@ -15,9 +15,8 @@ kütüphanesine (K-614) dokunmaz; sayılar gerçek değer (K-604 gibi).
 2. **Görüntü telefonda:** kart SVG (react-native-svg, kurulu) → `toDataURL` → PNG base64 → önbellek dosyası → paylaşım sayfası → dosya her durumda
    silinir (K-309 dışa aktarma kalıbı). Uygulama görüntüyü hiçbir yere göndermez; nereye gideceğini kullanıcı seçer. Yeni bağımlılık yok.
 3. **Sabit palet:** karar kartının koyu zemini (ADR-016 renkleri), temadan bağımsız — bir görüntü.
-4. **Güvenlik kararları karta girmez (geçici):** son karar `share_withheld_rules` kurallarından birine dayanıyorsa ya da `safety` ise satır çıkmaz.
-   Bu kararlar sağlık sinyali taşır ("Your plan pauses here", hızlı kayıp — kilo anahtarı kapalıyken bile kilo yönünü söyler). En korumacı seçenek;
-   Levent'in cevabı (soru 104) gelene kadar.
+4. **Güvenlik kararları karta girmez (Levent, ADR-055 #104):** son karar `share_withheld_rules` kurallarından birine dayanıyorsa ya da `safety` ise satır çıkmaz.
+   Bu kararlar sağlık sinyali taşır ("Your plan pauses here", hızlı kayıp — kilo anahtarı kapalıyken bile kilo yönünü söyler).
 
 ## D1 · Sayılar ve listeler
 | Parametre | Değer | Neden |

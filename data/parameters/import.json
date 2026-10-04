@@ -7,6 +7,30 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-053-gecmis-ice-aktarma.md#D1",
       "note": "How many imported sessions the phone sends in one request (K-609, K-615): the contract's WorkoutImport maxItems and the server's keel.training.import.max-workouts, kept equal by ImportLimitsMirrorTests. Small enough that one request stays quick on a slow connection, large enough that a year of sessions (~200) is ten requests."
+    },
+    {
+      "key": "import_sets_per_session_max",
+      "value": 200,
+      "unit": "sets",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-053-gecmis-ice-aktarma.md#D1",
+      "note": "The most sets of one session the phone sends (K-609): the contract's ImportedWorkout.sets maxItems and the server's keel.training.import.max-sets, kept equal by ImportLimitsMirrorTests. A real session is far under it; past it the first ones go and the rest are counted as left out."
+    },
+    {
+      "key": "import_match_suggest_min",
+      "value": 0.5,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-053-gecmis-ice-aktarma.md#D1",
+      "note": "How alike a file's move name must be to a catalog name or alias to be offered for it (K-609): the share of words the two have in common (Dice: twice the shared words over both counts). 0.5 offers 'Squat (Dumbbell)' the barbell squat (one of two words) and nothing that shares no word. Never a match by itself: only a name whose words are the catalog's exactly is matched without the user (U5)."
+    },
+    {
+      "key": "import_match_suggestions",
+      "value": 3,
+      "unit": "moves",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-053-gecmis-ice-aktarma.md#D1",
+      "note": "How many catalog moves are offered for a name not matched (K-609): one tap each; more is a list to read, and 'Other' opens the whole catalog."
     }
   ]
 }

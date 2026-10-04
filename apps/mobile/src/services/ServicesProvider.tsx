@@ -46,6 +46,11 @@ export type PhoneServices = AppServices & {
   importHealthWeights(): Promise<number | 'consent'>;
   /** The share card made on this phone (K-612), as a PNG in base64, handed to the share sheet; the app sends it nowhere. */
   shareImage(base64: string): Promise<void>;
+  /**
+   * The system's file picker for another app's export (K-609): the chosen file's text, read on the phone; null when none
+   * was chosen. The file goes nowhere from here (import/formats.ts reads it).
+   */
+  importFile: { pick(): Promise<string | null> };
   /** The account's data as a JSON file, handed to the share sheet (K-309). */
   exportData(): Promise<void>;
 };
@@ -100,6 +105,12 @@ async function build(): Promise<PhoneServices> {
         now: new Date(),
       }),
     shareImage: deviceShareImage(services.report),
+    importFile: {
+      pick: async () => {
+        const picked = await File.pickFileAsync();
+        return picked.canceled ? null : picked.result.text();
+      },
+    },
     exportData: () =>
       exportAccount({
         api: services.api,
