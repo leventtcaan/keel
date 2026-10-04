@@ -21,6 +21,8 @@ public class Entitlements {
     }
 
     public boolean active(AccountId account, Instant now) {
-        return false; // Skeleton (RED commit)
+        return jdbc.sql("select access_until from subscription.subscription where account_id = :account").param("account", account.value())
+                .query((row, n) -> row.getObject("access_until", OffsetDateTime.class).toInstant()).optional()
+                .map(until -> now.isBefore(until)).orElse(false);
     }
 }
