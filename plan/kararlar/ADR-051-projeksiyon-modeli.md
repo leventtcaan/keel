@@ -35,7 +35,10 @@ birincil kaynakta var mı, keel'in verisiyle çalışır mı, ne kadar yanılır
   — makale "12,7") 5 MJ/gün eksikle 180 günde **80 ± 1 kg**'a iner, 10,9 MJ/günde 2 yıl **80 ± 1,5**'te kalır; başparmak kuralı
   (100 kJ/gün ≈ 1 kg, fazla kilolu yetişkin) **1 ± 0,25 kg**; Şekil 2B'nin yönü (daha çok yağ → daha çok ve daha yavaş kayıp); kadın, aynı
   harcamada daha çok verir (Jackson). Özellik testleri: bakımda ağırlık sabit (1e-6), az yemek hiçbir gün daha ağır yapmaz, sabit
-  açıkta yalnız iner, fazlada yalnız çıkar.
+  açıkta yalnız iner, fazlada yalnız çıkar. **Makalenin kendi doğrusallaştırması** (eş. 11-15): küçük (10 kJ/gün) açıkta model τ'yu %1,
+  kalıcı kaybı (doku + glikojen suyu + sıvı dengesi) %2 içinde verir. İlk haftalar (yayımlanmış sayı yok) sabitleyici testle korunur.
+  İnceleme sonrası: imkânsız alım (negatif/NaN) ve PAL < 1/(1 − βTEF) reddedilir; `engine`'de `java.lang.Math`'in makineye bağlı
+  fonksiyonları yasak (`EnginePurityTests`). Mutasyon: 39 mutanttan 37'si testlerle, `Math.log` saflık kuralıyla ölür.
 - **Şekil 2A farkı (bilerek kayda):** makale "~75 kg plato" diyor ama adamın boyunu/yaşını vermiyor. Şekil 3'ün adamıyla model **78,1 kg**
   veriyor; 170-185 cm / 23-55 yaş aralığında 75,1-78,7 kg, yarı süre 0,74-0,94 yıl, %95'i 2,9-3,8 yıl. Test bu yüzden her makul kişiyi
   şeklin kendi ±4 kg bandında ve zamanlamada sınar. Ders: kişinin boyu/yaşı bile birkaç kg fark ettiriyor → aralık şart.

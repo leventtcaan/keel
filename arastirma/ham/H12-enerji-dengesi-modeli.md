@@ -51,7 +51,8 @@ Forbes eğrisiyle ayrılır) — projeksiyon kas kazanımı vaat edemez.
 - **Başlangıç yağ kütlesi** bilinmiyorsa Jackson ve ark. 2002 regresyonu (BW kg, H metre, yaş yıl):
   - Erkek: F = BW/100 · [**0,14**·yaş + **37,31**·ln(BW/H²) − **103,94**]
   - Kadın: F = BW/100 · [**0,14**·yaş + **39,96**·ln(BW/H²) − **102,01**]
-- Başlangıç yağsız doku = BW − F − ECF − glikojen ve suyu.
+- Başlangıç yağsız doku = BW − F − ECF − glikojen ve suyu. (keel ECF'yi başlangıçtan **fark** olarak izler ve başlangıç ECF'sini
+  yağsız dokunun içinde bırakır — eşdeğer: ağırlık aynı toplam, bölüşüm yalnız F'yi okur, fazladan γL·ECF0 sabiti K'ya girer.)
 - **keel notu (U4):** F modelin içinde kalır; hiçbir çıktıya, loga ya da ekrana yazılmaz.
 
 ## M5 · Enerji harcaması (ek s. 2-3, denklem 5-9)
@@ -64,7 +65,8 @@ Forbes eğrisiyle ayrılır) — projeksiyon kas kazanımı vaat edemez.
 - TEF = βTEF · ΔEI, βTEF = **0,1** (6)
 - τAT · dAT/dt = βAT · ΔEI − AT, βAT = **0,14**, τAT = **14 gün** (7)
 - Fiziksel aktivite: δ = [(1 − βTEF) · PAL − 1] · RMR / BW (8); RMR Mifflin-St Jeor (`H6-baslangic-kalori.md` A1 ile aynı
-  formül), PAL = toplam harcama / RMR. Sedanter varsayılan PAL 1,5.
+  formül), PAL = toplam harcama / RMR. Sedanter varsayılan PAL 1,5. **Sınır:** PAL < 1/(1 − βTEF) ≈ 1,11'de δ negatif olur
+  (aktivite eksi enerji harcar) — kaynak oraya uzanmıyor; keel modeli orada çalıştırmaz (inceleme bulgusu, 4 Eki).
 - EE, dF/dt ve dL/dt'ye bağlı olduğu için kapalı biçim (9):
   `EE = [K + γF·F + γL·L + δ·BW + TEF + AT + (EI − ρG·dG/dt)·X] / (1 + X)`, X = p·ηL/ρL + (1 − p)·ηF/ρF
 

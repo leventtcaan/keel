@@ -2,7 +2,9 @@ package app.keel.engine;
 
 import static app.keel.engine.EngineFixtures.parameters;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
+import static org.assertj.core.api.Assertions.withinPercentage;
 
 import java.math.BigDecimal;
 import net.jqwik.api.ForAll;
@@ -22,6 +24,10 @@ class EnergyBalanceModelTests {
     private static final int YEAR = 365;
     // Hall's sedentary person: total expenditure 1.5 × resting (web appendix eq. 8).
     private static final double SEDENTARY_PAL = 1.5;
+    // theFirstWeeksAsTheyAreToday: the model's own values on 4 Oct 2026 (characterisation).
+    private static final double DAY_1 = 99.29367629101705;
+    private static final double DAY_7 = 98.16664265860435;
+    private static final double DAY_28 = 95.56803110914063;
 
     // The paper's simulated man (figure 3): 100 kg, 180 cm, 23 years old, sedentary.
     private static final EnergyBalanceModel.Start MAN = sedentary(Sex.MALE, 100, 180, 23);
@@ -43,7 +49,7 @@ class EnergyBalanceModelTests {
 
         assertThat(weights[180]).isCloseTo(80, within(1.0));
         for (int day = 180; day < weights.length; day++) {
-            assertThat(weights[day]).as("day %d", day).isCloseTo(80, within(1.5));
+            assertThat(weights[day]).as("day %d", day).isCloseTo(80, within(1.0));
         }
     }
 
@@ -90,7 +96,51 @@ class EnergyBalanceModelTests {
         EnergyBalanceModel.Start overweight = sedentary(Sex.MALE, 85, 180, 40);
         double[] weights = constantCut(overweight, kcal(100), 10 * YEAR);
 
-        assertThat(overweight.weightKg() - weights[10 * YEAR]).isCloseTo(1.0, within(0.25));
+        double total = overweight.weightKg() - weights[10 * YEAR];
+
+        assertThat(total).isCloseTo(1.0, within(0.25));
+        // "with half of the weight change being achieved in about 1 year and 95% of the weight change in about 3 years".
+        assertThat(firstDayLosing(weights, 0.5 * total)).isBetween((int) (0.7 * YEAR), (int) (1.4 * YEAR));
+        assertThat(firstDayLosing(weights, 0.95 * total)).isBetween((int) (2.3 * YEAR), 4 * YEAR);
+    }
+
+    @Test
+    void aSmallDeficitFollowsThePapersOwnLinearisation() {
+        // Web appendix pp. 4-5 (H12 M6): once glycogen, fluid and adaptation settle, weight follows
+        // dBW/dt = ΔEI/ρ − (BW − BW0)/τ, so it settles at ΔEI/ε and approaches it with τ (eq. 11-15). A deficit small enough
+        // that α = 10.4 kg / F0 stays put makes this exact for the tissue part; the fast part settles at its own
+        // equilibria (eq. 1: G = G0·√(EI/EIb); eq. 2: ECF − ECF0 = −ξCI·(1 − EI/EIb) / ξNa). The constants are the
+        // paper's, written out here, so a wrong value in projection.yaml is caught too.
+        EnergyBalanceModel.Start overweight = sedentary(Sex.MALE, 85, 180, 40);
+        double deficitKj = 10;
+        double weight = overweight.weightKg();
+        double fat = weight / 100 * (0.14 * 40 + 37.31 * Math.log(weight / (1.8 * 1.8)) - 103.94);
+        double alpha = 10.4 / fat;
+        double restingKj = overweight.restingKcal() * KJ_PER_KCAL;
+        double delta = ((1 - 0.1) * SEDENTARY_PAL - 1) * restingKj / weight;
+        double tau = (750 + 39_500 + alpha * (960 + 7_600)) / (13 + delta + alpha * (92 + delta));
+        double tissue = deficitKj * (1 - 0.1 - 0.14) * (1 + alpha) / (13 + alpha * 92 + delta * (1 + alpha));
+        double ratio = 1 - deficitKj / (overweight.maintenanceKcal() * KJ_PER_KCAL);
+        double fast = (1 + 2.7) * 0.5 * (1 - Math.sqrt(ratio)) + 4_000 * (1 - ratio) / 3_000;
+
+        double[] weights = constantCut(overweight, kcal(deficitKj), 20 * YEAR);
+        double settled = weights[20 * YEAR];
+        double measuredTau = YEAR / Math.log((weights[YEAR] - settled) / (weights[2 * YEAR] - settled));
+
+        assertThat(weight - settled).isCloseTo(tissue + fast, withinPercentage(2));
+        assertThat(measuredTau).isCloseTo(tau, withinPercentage(1));
+    }
+
+    @Test
+    void theFirstWeeksAsTheyAreToday() {
+        // Characterisation, not a published value: the first weeks are the water and glycogen phase (eq. 1-2) and the
+        // adaptation's 14 days (eq. 7), which no published number pins (H12 BULUNAMADI). Pinned so a change to them is a
+        // decision, not an accident; ADR-051's "start settled on the plan" depends on this phase.
+        double[] weights = constantCut(MAN, kcal(5000), 28);
+
+        assertThat(weights[1]).isCloseTo(DAY_1, within(1e-6));
+        assertThat(weights[7]).isCloseTo(DAY_7, within(1e-6));
+        assertThat(weights[28]).isCloseTo(DAY_28, within(1e-6));
     }
 
     // ── the model's own properties ──────────────────────────────────────────────────────────────────────────
@@ -159,7 +209,81 @@ class EnergyBalanceModelTests {
         double[] weights = constantCut(MAN, 500, 28);
 
         assertThat(weights).hasSize(29);
-        assertThat(weights[0]).isEqualTo(100.0);
+        assertThat(weights[0]).isCloseTo(100.0, within(1e-9));
+    }
+
+    // ── what the model refuses ──────────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void anIntakeThatCannotBeEatenIsRefusedByDay() {
+        // Review finding: a negative or missing intake ran on silently into negative glycogen and then NaN weights.
+        for (double impossible : new double[] {-50, Double.NaN, Double.POSITIVE_INFINITY}) {
+            assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(MAN, day -> day == 3 ? impossible : 2500, 10, parameters(Sex.MALE)))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("day 3");
+        }
+    }
+
+    @Test
+    void zeroIntakeIsAPossibleDay() {
+        // A fasting day is food intake of 0, not an error.
+        double[] weights = EnergyBalanceModel.weightsKg(MAN, day -> 0, 3, parameters(Sex.MALE));
+
+        assertThat(weights[3]).isLessThan(weights[0]);
+    }
+
+    @Test
+    void maintenanceTooCloseToRestingEnergyIsOutsideTheModel() {
+        // Eq. 8: physical activity δ = [(1 − βTEF) × PAL − 1] × RMR / BW is negative under PAL 1 / (1 − 0.1) ≈ 1.11 — no
+        // source supports running the model there (review finding).
+        EnergyBalanceModel.Start almostResting = new EnergyBalanceModel.Start(Sex.MALE, MAN.profile(), MAN.weightKg(), MAN.restingKcal(),
+                MAN.restingKcal() * 1.05);
+
+        assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(almostResting, day -> 2000, 10, parameters(Sex.MALE)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("activity");
+    }
+
+    @Test
+    void theParametersMustBeThePersonsSex() {
+        assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(MAN, day -> 2000, 10, parameters(Sex.FEMALE)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void eachDayIsEatenOnThatDay() {
+        // Intake for day d moves the weight from day d to day d + 1, and no other.
+        double cut = MAN.maintenanceKcal() - kcal(5000);
+        double[] firstDayOnly = EnergyBalanceModel.weightsKg(MAN, day -> day == 0 ? cut : MAN.maintenanceKcal(), 2, parameters(Sex.MALE));
+        double[] secondDayOnly = EnergyBalanceModel.weightsKg(MAN, day -> day == 1 ? cut : MAN.maintenanceKcal(), 2, parameters(Sex.MALE));
+        double[] everyDay = constantCut(MAN, kcal(5000), 2);
+
+        assertThat(firstDayOnly[1]).isCloseTo(everyDay[1], within(1e-12));
+        assertThat(secondDayOnly[1]).isCloseTo(MAN.weightKg(), within(1e-12));
+        assertThat(secondDayOnly[2]).isLessThan(secondDayOnly[1]);
+    }
+
+    @Test
+    void zeroDaysIsTheStartingWeightAlone() {
+        assertThat(constantCut(MAN, 500, 0)).containsExactly(100.0);
+        assertThatThrownBy(() -> constantCut(MAN, 500, -1)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void aStartThatIsNotAPersonIsRefused() {
+        Profile profile = MAN.profile();
+        assertThatThrownBy(() -> new EnergyBalanceModel.Start(Sex.MALE, profile, 0, 2000, 3000)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new EnergyBalanceModel.Start(Sex.MALE, profile, Double.NaN, 2000, 3000))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new EnergyBalanceModel.Start(Sex.MALE, profile, 80, 0, 3000)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new EnergyBalanceModel.Start(Sex.MALE, profile, 80, 2000, 1999)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new EnergyBalanceModel.Start(null, profile, 80, 2000, 3000)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new EnergyBalanceModel.Start(Sex.MALE, null, 80, 2000, 3000)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void aBodyOutsideTheStartingFatRegressionIsRefused() {
+        // Jackson 2002 turns negative near BMI 14 in a young man (H12 M4): a starting fat under 0 is not a body.
+        assertThatThrownBy(() -> constantCut(sedentary(Sex.MALE, 45, 180, 18), 500, 10))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("outside the model");
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────

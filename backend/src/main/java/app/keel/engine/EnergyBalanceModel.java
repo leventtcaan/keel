@@ -64,7 +64,12 @@ public final class EnergyBalanceModel {
         weights[0] = body.weight(state);
         double step = 1.0 / STEPS_PER_DAY;
         for (int day = 0; day < days; day++) {
-            double intakeKj = intakeKcalOnDay.applyAsDouble(day) * KJ_PER_KCAL;
+            double intakeKcal = intakeKcalOnDay.applyAsDouble(day);
+            // 0 is a fasting day; under 0, or not a number, is a bug in the caller — the model would run into negative glycogen.
+            if (!(intakeKcal >= 0) || !Double.isFinite(intakeKcal)) {
+                throw new IllegalArgumentException("intake on day " + day + " is not an amount that can be eaten: " + intakeKcal);
+            }
+            double intakeKj = intakeKcal * KJ_PER_KCAL;
             for (int i = 0; i < STEPS_PER_DAY; i++) {
                 state = body.rungeKuttaStep(state, intakeKj, step);
             }
@@ -80,7 +85,9 @@ public final class EnergyBalanceModel {
         private static final int FAT = 0;
         private static final int LEAN = 1;
         private static final int GLYCOGEN = 2;
-        // Extracellular fluid, as the change from the start (L ≈ kg): the starting amount is inside lean tissue (H12 M4).
+        // Extracellular fluid, as the change from the start (L ≈ kg). H12 M4 subtracts the starting amount from lean tissue;
+        // here it stays inside lean tissue instead. The same thing: weight is the same sum, the fat/lean split reads only fat,
+        // and the extra γL × starting fluid is a constant that K absorbs.
         private static final int FLUID = 3;
         private static final int ADAPTATION = 4;
 
@@ -144,6 +151,11 @@ public final class EnergyBalanceModel {
             double resting = start.restingKcal() * KJ_PER_KCAL;
             // δ = [(1 − βTEF) × PAL − 1] × RMR / BW (eq. 8), PAL = maintenance / resting.
             activity = ((1 - thermicEffect) * (maintenance / resting) - 1) * resting / weight;
+            // Negative under maintenance / resting = 1 / (1 − βTEF), about 1.11: activity cannot spend less than nothing, and
+            // the model's sources do not reach there.
+            if (activity < 0) {
+                throw new IllegalArgumentException("maintenance is too close to resting energy for the model's physical activity term");
+            }
             // Energy balance at the start (H12 M5): K = EIb − γF·F0 − γL·L0 − δ·BW0.
             constant = maintenance - fatResting * startFat - leanResting * startLean - activity * weight;
             // kG = CIb / G_init² keeps glycogen still at the starting intake (eq. 1).
