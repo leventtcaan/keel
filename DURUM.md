@@ -687,8 +687,11 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-801 metinler + envanter — ADR-060; envanter 37 tablo, sütun düzeyinde göçlere bağlı, katı SQL okuyucu; politika/şartlar/feragatname `docs/yasal/site/`; sayfalar U4/U6 + kişi adı taramasında (`legalNegations`); Pages (önce iki kontrol, PR'da derleme). İnceleme: olgu denetimi 15 (14 metin düzeltmesi, 1 yanlış: döngü cevabı saklanmıyor), test analizi 11 boşluk kapatıldı; mutasyon 6/6 + 9/9; envanter 22/22, `npm run check` 2520/2520. **Pages açıldı** (`leventtcaan.github.io/keel/`) | ⏳ auto-merge | #375 | `M8/K-801.md` |
-| K-809 yasal adresler `eas.json`'da (#376) — K-801'e yığılı; RED 7 → 8/8 | ⏳ #375'i bekliyor | — | — |
+| K-801 metinler + envanter — ADR-060; envanter 37 tablo, sütun düzeyinde göçlere bağlı, katı SQL okuyucu; politika/şartlar/feragatname `docs/yasal/site/`; sayfalar U4/U6 + kişi adı taramasında (`legalNegations`); Pages (önce iki kontrol, PR'da derleme). İnceleme: olgu denetimi 15 (14 metin düzeltmesi, 1 yanlış: döngü cevabı saklanmıyor), test analizi 11 boşluk kapatıldı; mutasyon 6/6 + 9/9; envanter 22/22, `npm run check` 2520/2520. **Pages açıldı** (`leventtcaan.github.io/keel/`) | ✅ birleşti (64ba326, dört kontrol yeşil; Pages `main`'den dağıtıldı, üç adres 200) | #375 | `M8/K-801.md` |
+| K-809 yasal adresler `eas.json`'da (#376) — RED 7 → 8/8; `main`'e taşındı | ⏳ inceleme | — | `M8/K-809.md` |
+| K-806 AI sağlayıcı şartları — üç aday resmî metinden (4 Eki), politika: yalnız eğitim yok + sıfır saklama; RED 1 | ⏳ inceleme | — | `M8/K-806.md` |
+| K-803 App Privacy etiketi + yaş anketi taslağı (9+; ASC'ye M10) — RED 3+1, 27 test | ⏳ inceleme (K-806'ya yığılı) | — | `M8/K-803.md` |
+| K-808 sağlık rızası metni (soru 57), sürüm 3 — mobil RED 1; sunucu RED CI'da | ⏳ RED CI'da | #377 | `M8/K-808.md` |
 
 **Envanterin bulduğu açıklar → K-802 (Part 2) kabul kriterine eklenecek:**
 1. `event_publication` tamamlanan olayları silmiyor (completion-mode update) → silinen hesabın UUID'si süresiz kalıyor (V1). Politika bunu dürüstçe
@@ -703,7 +706,9 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 7. `FakeLanguageModel` son 100 isteği (soru, öğün notu, fotoğraf) bellekte tutuyor; üretimde `provider: fake` kalmamalı (M9 kontrol listesi).
 8. **Levent'e soru:** her kararın `snapshot`'ında motorun iç yağ tahmini (`fatProxy*`) saklanıyor, dışa aktarmadan U4 gereği çıkarılıyor. GDPR Md. 15 (erişim) ↔ U4:
    dışa aktarmaya girsin mi (sayı olarak, açıklamalı) yoksa saklanmasın mı? Politika şu an "saklanır, hiçbir yerde sayı olarak gösterilmez, dışa aktarmada da" diyor.
-9. Telefon anahtarlarının (kv-store, `const KEY`) envantere bağlanması → K-804 (test analizi, puan 6).
+9. **Kararsız test gözlemi:** K-808 dalında ilk `npm run check` 1 kırmızı verdi, 3 tekrarda yeniden üretilemedi (adı yakalanmadı; M6'daki soğuk render
+   zaman aşımı olabilir). Tekrar görülürse `--verbose` çıktısıyla adı alınacak.
+10. Telefon anahtarlarının (kv-store, `const KEY`) envantere bağlanması → K-804 (test analizi, puan 6).
 **M9'a (K-901) politikanın verdiği sözler:** HTTPS; sunucu bölgesi politikada yazılı olmalı; yedek ve ters vekil günlüğü saklama süresi politikaya eklenmeden
 yedek açılmaz (politika şu an yedekten söz etmiyor).
 
