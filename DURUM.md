@@ -764,6 +764,20 @@ pozitifte yeniden deneme yok; H2 §4.3 tam eşik seti.
 | K-604 efor grafiği: `progress/strength.ts` (haftanın en iyi e1RM'i, pencere 90 günün içindeki ilk pazartesiden — her hafta tam, halka = aynı yük + aynı tekrar + daha çok RIR), `chartScale.ts` (etiket = çizginin gerçek en az/en çoğu, kendi yüksekliğinde), `StrengthChart`/`StrengthSection` (VoiceOver halkaları söyler), İlerleme sekmesi gerçek ekran (projeksiyon girişi korundu; `Placeholder` silindi); parametreler `evaluation_window_days` (ayna, ayna testinin anahtar listesinde), `effort_call_window_weeks` (2, 03 §5) | ⏳ #347 auto-merge; RED 10+205+8; inceleme 2 önemli (yarım ilk hafta → pazartesiye hizalı; halkalar VoiceOver'da) + katalog okunmamış metni; test analizi 23/30 yaşayan → testler, yeniden 21/22 (kalan eşdeğer); ayna kontrol mutantı kırmızı; **K1 notu:** kendi birleşmemiş testimde pencere sınırı + sözlü etiket beklentisi incelemeyle değişti; 2032/2032 | #347 | `M6/K-604.md` |
 
 ## Session sonunda Levent'e sorulacaklar
+**M6 Part 3 (97-) — 4 Eki:**
+97. **(veri dışarı/V1, K-614)** İlerleme fotoğrafları uygulamanın **belge klasöründe** (`progress-photos/`). iOS bu klasörü kullanıcının **iCloud/cihaz
+    yedeğine** dahil eder; kurulu `expo-file-system` 57'de "yedekten hariç" ayarı yok. Onboarding metni "never uploaded. Not to us, not to anyone."
+    Seçenekler: (a) belge klasörü — kalıcı, kullanıcının kendi yedeğine girer (şimdiki); (b) önbellek — yedeğe girmez ama iOS yer darlığında
+    **silebilir** (fotoğraf kaybı); (c) K-308 sonrası küçük yerel modülle `isExcludedFromBackup` (ADR-047'deki ince modül yoluna eklenir). Önerim (c),
+    o zamana kadar (a) + metni "never uploaded by this app" yönünde netleştirmek. Hangisi?
+98. **(veri, K-614)** Fotoğraflar yalnız telefonda olduğundan **çıkışta silinmeleri kalıcı kayıp**. Uyguladığım: hesaba ait her şey gibi çıkışta ve
+    hesap silinince silinir (sonraki hesap görmesin, sağlık verisi); fotoğraf varsa Ayarlar çıkıştan önce **söyler** ("only on this phone. Signing
+    out deletes them from it"). Alternatif: dışa aktarma (fotoğrafları Fotoğraflar'a kaydet) önermek. Onay mı?
+99. **(ürün, ADR-036, K-614)** 4 haftalık fotoğraf penceresi **bildirim değil, İlerleme kartı** (üç bildirim türü bütçesi, Levent 29 Eyl). İstersen:
+    pencere açıkken pazartesi check-in bildiriminin metnine bir cümle (yeni tür değil) ya da dördüncü tür. Hangisi?
+100. **(K1, bilgi)** `copy-keys.test.ts › every tab placeholder has a title and a note` artık eskidi (hiçbir sekme placeholder değil, `Placeholder`
+    silindi). Beklenti değişmesin diye `screens.progress.note` anahtarı (kullanılmayan) duruyor. Testi ve dört kullanılmayan notu silebilir miyim?
+
 **M6 Part 2 (94-) — 4 Eki:**
 94. **(sağlık, ADR-050 dışı durum, K-607)** Aynı telefonda başka hesap açılınca: ADR-050 "bir kez sorulur" diyor. İnceleme: A "clear" çıkıp çıkış yaparsa
     B hiç taranmadan projeksiyonu açabilir. Uyguladığım (daha sıkı): çıkışta **"clear" unutulur** (sonraki kişi sorulur), **"unavailable" kalır** (kapı
