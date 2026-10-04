@@ -243,6 +243,20 @@ test('the SCOFF result: "off" stays on the phone at sign-out, "clear" goes (K-60
   expect(cleared.items.has('projection.access')).toBe(false);
 });
 
+test('the projection switch and what it showed go with the session (K-606)', async () => {
+  const kv = memoryKv();
+  kv.items.set('projection.access', 'clear');
+  const { services } = await setup(server(404), memoryStorage(), kv);
+  await services.session.signIn(SESSION);
+  expect(await services.projectionSwitch.turnOn(services.projection)).toBe(true);
+  await services.projectionSwitch.remember({ low: 78, high: 84 });
+  await services.signOut();
+  await settle();
+  expect(kv.items.has('projection.on')).toBe(false);
+  expect(kv.items.has('projection.last')).toBe(false);
+  expect(services.projectionSwitch.on()).toBe(false);
+});
+
 test("the support link follows the phone's region (K-607)", async () => {
   const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch,
     report: () => {}, kv: memoryKv(), locale: 'en-GB' });

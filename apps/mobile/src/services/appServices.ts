@@ -12,6 +12,7 @@ import { type HealthWriting, createHealthWriting } from '@/health/healthWrite';
 import { notificationsUnavailable } from '@/notifications/notificationAccess';
 import { type NotificationAccess, type Reminders, createReminders } from '@/notifications/reminders';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
+import { type ProjectionSwitch, createProjectionSwitch } from '@/projection/projection';
 import { type ProjectionAccess, createProjectionAccess } from '@/projection/scoff';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { type StateService, createStateService } from '@/state/stateService';
@@ -58,6 +59,8 @@ export type AppServices = {
    * (signing out must not re-open the gate) and "clear" goes (the next person is asked).
    */
   projection: ProjectionAccess;
+  /** The shape projection's switch and what it last showed (K-606): off unless turned on; forgotten at sign-out. */
+  projectionSwitch: ProjectionSwitch;
   /** Whether this account has finished onboarding (K-306). */
   profile: ProfileStatus;
   /** Records the server does not have yet; a sign-out drops them, so the screen warns first (K-309). */
@@ -114,6 +117,7 @@ export async function createAppServices({
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
   const projection = await createProjectionAccess({ kv, locale });
+  const projectionSwitch = await createProjectionSwitch({ kv });
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   // A state the user declared quiets the reminders while it is in force (K-518, ADR-036 #7); each change plans again.
   const state = createStateService({ api, kv, now, onChange: () => void reminders.refresh() });
@@ -162,6 +166,7 @@ export async function createAppServices({
     state.forget().catch(reportError); // and a state declared: sickness and pain are health data (K-518)
     opens.forget().catch(reportError); // and the days the app was opened (K-521)
     projection.signedOut().catch(reportError); // and a SCOFF "clear" — never an "unavailable" (K-607, ADR-050)
+    projectionSwitch.forget().catch(reportError); // and the projection's switch and what it showed (K-606)
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
@@ -173,6 +178,7 @@ export async function createAppServices({
     queue,
     units,
     projection,
+    projectionSwitch,
     profile,
     consents,
     training,

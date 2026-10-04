@@ -52,6 +52,7 @@ function AppStack() {
         <Stack.Screen name="why" />
         <Stack.Screen name="state" options={{ presentation: 'modal' }} />
         <Stack.Screen name="scoff" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="projection" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'needed'}>
         <Stack.Screen name="onboarding" />
