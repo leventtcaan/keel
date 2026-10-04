@@ -92,6 +92,16 @@ class DecisionController {
         return decisions.whatIf(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
+    /**
+     * Contract Projection (K-613, U12, ADR-052): where the weight goes in six months if the plan is kept 60 %, 80 % or 95 % of
+     * the time — the energy balance model's numbers, each a range, only toward the goal. The phone draws it; it is off by
+     * default and behind the SCOFF gate on the phone (ADR-050), which never reaches the server.
+     */
+    @GetMapping("/v1/projection")
+    Map<String, Object> projection(AccountId account) {
+        return decisions.projection(account);
+    }
+
     @PostMapping("/v1/decisions/{id}/apply")
     PlanTargets apply(AccountId account, @PathVariable UUID id) {
         return decisions.apply(account, id);

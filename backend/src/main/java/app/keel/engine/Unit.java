@@ -67,6 +67,9 @@ public enum Unit {
     MG_PER_ML("mg_per_ml", Kind.FRACTION, Bound.POSITIVE),
     MG_PER_L_PER_DAY("mg_per_l_per_day", Kind.FRACTION, Bound.POSITIVE),
     MG_PER_DAY("mg_per_day", Kind.FRACTION, Bound.POSITIVE),
+    KJ_PER_DAY("kj_per_day", Kind.FRACTION, Bound.POSITIVE),
+    // Body mass index (the projection's gates, K-613).
+    KG_PER_M2("kg_per_m2", Kind.FRACTION, Bound.POSITIVE),
     // Terms of the starting body fat regression (Jackson 2002): inside the model only, never shown (U4). The constant
     // term is negative.
     PERCENT_PER_YEAR_INTERNAL_ONLY("percent_per_year_internal_only", Kind.FRACTION, Bound.POSITIVE),

@@ -121,3 +121,63 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
     note: "τAT: adaptif termogenezin zaman ölçeği (ek s. 3, denklem 7)."
+
+  # ── Şekil projeksiyonu (K-613, ADR-052): kapılar, senaryolar, aralık ──
+  - key: projection_min_age
+    value: 18
+    unit: years
+    tag: urun
+    source: "arastirma/ham/H2-projeksiyon.md#4.3"
+    note: "18 yaş altında projeksiyon yok (sektör pratiği + ergen risk profili; ADR-050). Uygulama zaten yetişkin ister; motor yine de bakar."
+  - key: projection_loss_min_bmi
+    value: 20
+    unit: kg_per_m2
+    tag: urun
+    source: "arastirma/ham/H2-projeksiyon.md#4.3"
+    note: "BMI 20'nin altında zayıflama yönü kapalı; kas kazanımı yönü açık (ADR-050)."
+  - key: projection_min_bmi
+    value: 18.5
+    unit: kg_per_m2
+    tag: literatur
+    source: "arastirma/ham/H2-projeksiyon.md#4.3"
+    note: "Aralığının alt ucu BMI 18,5'in altına inen zayıflama senaryosu üretilmez (tehlikeli hedefi normalleştirmeme, ADR-050). 18,5 DSÖ'nün zayıf sınırı."
+  - key: projection_min_span_days
+    value: 28
+    unit: days
+    tag: urun
+    source: "arastirma/ham/H2-projeksiyon.md#4.6"
+    note: "İlk 4 hafta / 2 ölçümden önce yok (U12): ilk ve son tartı en az 28 gün arayla. İlk 2-3 haftada dışarıdan görülen değişim yok (H1)."
+  - key: projection_horizon_weeks
+    value: 26
+    unit: weeks
+    tag: urun
+    source: "arastirma/ham/H2-projeksiyon.md#4.2"
+    note: "Projeksiyonun ufku: H2'nin örneği '6 ay sonra tahmini'. Daha uzun ufukta aralık modelin kendi belirsizliğiyle genişler (H12 M7-2)."
+  - key: projection_adherence_low
+    value: 0.6
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H2-projeksiyon.md#4.4"
+    note: "Üç senaryonun ilki: planın %60'ı tutulur — günlerin %60'ında planın kalorisi, kalanında bakım (ADR-052). Davranış, sonuç değil."
+  - key: projection_adherence_mid
+    value: 0.8
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H2-projeksiyon.md#4.4"
+  - key: projection_adherence_high
+    value: 0.95
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H2-projeksiyon.md#4.4"
+  - key: projection_maintenance_uncertainty_kj_per_day
+    value: 1000
+    unit: kj_per_day
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M7"
+    note: "Başlangıç harcamasının belirsizliği ±1 MJ/gün (Hall 2011 şekil 2A, kesik eğriler): aralığın iki ucu bakım bu kadar düşük ve yüksekken modelin verdiği ağırlık."
+  - key: projection_error_floor_kg
+    value: 2.5
+    unit: kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M8"
+    note: "Aralık hiçbir zaman bundan dar değil: gözetimli çalışmalarda bile kısa vadeli ortalama mutlak hata 1,7-2,5 kg (Dent 2023'ün aktardığı); üst ucu."

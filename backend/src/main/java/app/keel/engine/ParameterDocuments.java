@@ -60,7 +60,12 @@ final class ParameterDocuments {
             // warning line the app warns, under adequate is the normal fat-loss band.
             new Order(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, ParameterKey.EA_WARNING_KCAL_PER_KG_FFM, true),
             new Order(ParameterKey.EA_WARNING_KCAL_PER_KG_FFM, ParameterKey.EA_ADEQUATE_KCAL_PER_KG_FFM, true),
-            new Order(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, ParameterKey.EA_ADEQUATE_KCAL_PER_KG_FFM, true));
+            new Order(ParameterKey.LEA_THRESHOLD_KCAL_PER_KG_FFM, ParameterKey.EA_ADEQUATE_KCAL_PER_KG_FFM, true),
+            // The projection's three scenarios are three different behaviours, in order (K-613); the loss gate's BMI is
+            // above the lowest BMI any scenario may reach.
+            new Order(ParameterKey.PROJECTION_ADHERENCE_LOW, ParameterKey.PROJECTION_ADHERENCE_MID, true),
+            new Order(ParameterKey.PROJECTION_ADHERENCE_MID, ParameterKey.PROJECTION_ADHERENCE_HIGH, true),
+            new Order(ParameterKey.PROJECTION_MIN_BMI, ParameterKey.PROJECTION_LOSS_MIN_BMI, true));
 
     private static final Map<String, ParameterKey> KEYS_BY_YAML = Arrays.stream(ParameterKey.values())
             .collect(Collectors.toUnmodifiableMap(ParameterKey::yamlKey, Function.identity()));

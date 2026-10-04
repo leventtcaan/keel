@@ -21,6 +21,7 @@ import app.keel.engine.Phase;
 import app.keel.engine.PhaseGate;
 import app.keel.engine.Profile;
 import app.keel.engine.SafetyNet;
+import app.keel.engine.ShapeProjection;
 import app.keel.engine.Sex;
 import app.keel.engine.Snapshot;
 import app.keel.engine.TrainingStatus;
@@ -597,6 +598,38 @@ class DecisionService {
                         "decision", SourceView.sent(DecisionJson.of(scenario.decision()))))
                 .toList();
         return Optional.of(Map.of("example", true, "scenarios", scenarios));
+    }
+
+    /**
+     * The shape projection (K-613, ADR-052): the engine's numbers on today's trend weight and the plan in force — health data,
+     * behind the consent. Before a plan with a calorie target there is nothing to project yet. Not shown: the reason by name.
+     */
+    Map<String, Object> projection(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        Optional<CallStore.Plan> plan = calls.plan(account);
+        if (plan.isEmpty()) {
+            return notShown(ShapeProjection.Closed.TOO_EARLY);
+        }
+        Week week = week(account);
+        CallStore.Plan inForce = withEstimate(plan.get(), week);
+        if (inForce.targetKcal() == null) {
+            return notShown(ShapeProjection.Closed.TOO_EARLY);
+        }
+        ShapeProjection.Facts facts = new ShapeProjection.Facts(week.today(), week.sex(), week.body(),
+                week.profile().activity().map(activity -> ActivityLevel.valueOf(activity.name())), inForce.phase(), new WeightSeries(week.weights()),
+                inForce.targetKcal(), week.safetyHold());
+        return switch (ShapeProjection.of(facts, week.parameters())) {
+            case ShapeProjection.NotShown(ShapeProjection.Closed why) -> notShown(why);
+            case ShapeProjection.Shown shown -> Map.of("shown", true, "todayKg", shown.todayKg(), "direction", shown.direction().name(),
+                    "on", shown.on().toString(), "scenarios", shown.scenarios().stream()
+                            .map(scenario -> Map.<String, Object>of("adherence", scenario.adherence(), "lowKg", scenario.lowKg(), "kg", scenario.kg(),
+                                    "highKg", scenario.highKg()))
+                            .toList());
+        };
+    }
+
+    private static Map<String, Object> notShown(ShapeProjection.Closed why) {
+        return Map.of("shown", false, "reason", why.name());
     }
 
     /** What the call read, from its own stored snapshot (K-519): read with the parameters for the sex it was made for. */
