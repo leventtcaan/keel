@@ -15,7 +15,7 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Loaded, load, weekdayDate } from '@/today/today';
-import { type UnitSystem, formatWeight, weightInput } from '@/units/units';
+import { type UnitSystem, weightInput } from '@/units/units';
 
 type Projection = components['schemas']['Projection'];
 type Scenario = NonNullable<Projection['scenarios']>[number];
@@ -32,12 +32,13 @@ const FIGURE_SHARE = 0.8;
  * there when it moved away from the goal, never a reason to blame (H2 §4.5).
  */
 export default function ProjectionScreen() {
-  const { api, projection, projectionSwitch } = useAppServices();
+  const { api, projection, projectionSwitch, report } = useAppServices();
   const { color } = useTheme();
   const [on, setOn] = useState(projectionSwitch.on());
   const [access, setAccess] = useState(projection.current());
   const [read, setRead] = useState<Loaded<Projection> | null>(null);
   const [note, setNote] = useState<Note | null>(null);
+  const [failed, setFailed] = useState(false);
   // Set when the switch sent the person to the questions; read when the screen is back in focus.
   const asked = useRef(false);
 
@@ -46,8 +47,8 @@ export default function ProjectionScreen() {
       setAccess(projection.current());
       if (!asked.current) return;
       asked.current = false;
-      void projectionSwitch.turnOn(projection).then((turned) => turned && setOn(true));
-    }, [projection, projectionSwitch]),
+      void projectionSwitch.turnOn().then((turned) => turned && setOn(true), (error: unknown) => reportByName(report, error));
+    }, [projection, projectionSwitch, report]),
   );
 
   useEffect(() => {
@@ -59,29 +60,37 @@ export default function ProjectionScreen() {
       const value = loaded.state === 'ready' ? loaded.value : null;
       const followed = value?.shown ? figureScenario(value.scenarios ?? []) : undefined;
       if (value?.direction === undefined || followed === undefined) return;
-      const seen: Seen = { low: followed.lowKg, high: followed.highKg };
+      const seen: Seen = { adherence: followed.adherence, kg: followed.kg, low: followed.lowKg, high: followed.highKg };
       setNote(updateNote(projectionSwitch.lastSeen(), seen, value.direction));
-      await projectionSwitch.remember(seen);
+      // Not kept: the same update is said again next time — reported, never in the way.
+      await projectionSwitch.remember(seen).catch((error: unknown) => reportByName(report, error));
     });
     return () => {
       live = false;
     };
-  }, [api, on, projectionSwitch]);
+  }, [api, on, projectionSwitch, report]);
 
   const flip = async (wanted: boolean) => {
-    if (!wanted) {
-      await projectionSwitch.turnOff();
-      setOn(false);
-      setRead(null);
-      setNote(null);
-      return;
+    setFailed(false);
+    try {
+      if (!wanted) {
+        await projectionSwitch.turnOff();
+        setOn(false);
+        setRead(null);
+        setNote(null);
+        return;
+      }
+      if (projection.current() === 'not-asked') {
+        asked.current = true;
+        router.push('/scoff');
+        return;
+      }
+      if (await projectionSwitch.turnOn()) setOn(true);
+    } catch (error) {
+      // Turning it off must work any time (H2 §4.3): when the phone could not, it is said, and the switch shows the truth.
+      reportByName(report, error);
+      setFailed(true);
     }
-    if (projection.current() === 'not-asked') {
-      asked.current = true;
-      router.push('/scoff');
-      return;
-    }
-    if (await projectionSwitch.turnOn(projection)) setOn(true);
   };
 
   return (
@@ -109,6 +118,7 @@ export default function ProjectionScreen() {
             />
           </View>
         </Card>
+        {failed && <Failed />}
         {on ? <Body read={read} note={note} onOff={() => void flip(false)} /> : <Off />}
       </ScrollView>
     </SafeAreaView>
@@ -117,6 +127,15 @@ export default function ProjectionScreen() {
 
 function figureScenario(scenarios: Scenario[]): Scenario | undefined {
   return scenarios.find((scenario) => scenario.adherence === FIGURE_SHARE) ?? scenarios[Math.floor(scenarios.length / 2)];
+}
+
+function reportByName(report: (problem: { name: string }) => void, error: unknown) {
+  report({ name: error instanceof Error ? error.name : 'Unknown' }); // by name only (V3)
+}
+
+function Failed() {
+  const { color } = useTheme();
+  return <Text style={[styles.text, { color: color.warn }]}>{t('projection.view.saveFailed')}</Text>;
 }
 
 function Off() {
@@ -140,25 +159,25 @@ function Body({ read, note, onOff }: { read: Loaded<Projection> | null; note: No
   return (
     <>
       {note !== null && <Update note={note} units={units} onOff={onOff} />}
-      {followed !== undefined && (
-        <Figure todayKg={value.todayKg} scenario={followed} direction={value.direction} units={units} />
-      )}
+      {followed !== undefined && <Figure todayKg={value.todayKg} scenario={followed} direction={value.direction} />}
+      {/* Next to the figure, not small print (H2 §4.2). */}
+      <Text style={[styles.text, { color: color.text }]}>{t('projection.view.disclaimer')}</Text>
       {value.scenarios.map((scenario) => (
         <ScenarioRow key={scenario.adherence} scenario={scenario} date={date} units={units} />
       ))}
-      <Text style={[styles.small, { color: color.muted }]}>{t('projection.view.disclaimer')}</Text>
     </>
   );
 }
 
-function Figure({ todayKg, scenario, direction, units }: { todayKg: number; scenario: Scenario; direction: 'LOSS' | 'GAIN'; units: UnitSystem }) {
+function Figure({ todayKg, scenario, direction }: { todayKg: number; scenario: Scenario; direction: 'LOSS' | 'GAIN' }) {
   const { color } = useTheme();
   const pct = Math.round(scenario.adherence * PERCENT);
   return (
     <View style={styles.figure}>
       <Silhouette factor={widthFactor(todayKg, scenario.kg, direction)} />
       <Text style={[styles.small, { color: color.muted }]}>{t('projection.view.now')}</Text>
-      <Text style={[styles.small, { color: color.accent }]}>{t('projection.view.at', { weight: formatWeight(scenario.kg, units), pct })}</Text>
+      {/* The behaviour, never a single weight: the weight is an estimate, shown as a range below (U5). */}
+      <Text style={[styles.small, { color: color.accent }]}>{t('projection.view.at', { pct })}</Text>
     </View>
   );
 }

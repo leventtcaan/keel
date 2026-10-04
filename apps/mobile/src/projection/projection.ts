@@ -7,13 +7,17 @@
  * last stays on the phone only to say an update ("78–84 → 79–85 kg") — the model speaking, never "you missed" (H2 §4.5).
  * Turning it off, or signing out, forgets it.
  */
+import params from '../../../../data/parameters/projection.json';
 import type { KeyValue } from '@/units/preference';
 
 import type { ProjectionAccess } from './scoff';
 
 export type Direction = 'LOSS' | 'GAIN';
-/** A scenario's range as last shown, in kg. */
-export type Seen = { low: number; high: number };
+/** The scenario the figure follows, as last shown: its share of planned days, its middle number and its range, in kg. */
+export type Seen = { adherence: number; kg: number; low: number; high: number };
+
+type Parameter = { key: string; value: unknown };
+const UPDATE_MIN_KG = (params.parameters as Parameter[]).find((p) => p.key === 'projection_update_min_kg')?.value as number;
 
 const ON = 'projection.on';
 const LAST = 'projection.last';
@@ -27,21 +31,27 @@ export function widthFactor(todayKg: number, kg: number, direction: Direction): 
   return direction === 'LOSS' ? Math.min(1, factor) : Math.max(1, factor);
 }
 
-/** What changed since it was last shown, or nothing; "away" when the range moved away from the goal. */
+/**
+ * What changed since it was last shown, or nothing. Only the same scenario is compared, and only a move of the middle number
+ * of at least projection_update_min_kg counts (the scale's noise is not news). "Away" reads the middle number too: the end of
+ * the range that would pass today's weight is clamped there by the server (ADR-052 §5) and would hide a move.
+ */
 export function updateNote(last: Seen | null, now: Seen, direction: Direction): { from: Seen; to: Seen; away: boolean } | null {
-  if (last === null || (last.low === now.low && last.high === now.high)) return null;
-  const away = direction === 'LOSS' ? now.high > last.high : now.low < last.low;
+  if (last === null || last.adherence !== now.adherence || Math.abs(now.kg - last.kg) < UPDATE_MIN_KG) return null;
+  const away = direction === 'LOSS' ? now.kg > last.kg : now.kg < last.kg;
   return { from: last, to: now, away };
 }
 
 const isSeen = (value: unknown): value is Seen =>
-  typeof value === 'object' && value !== null && Number.isFinite((value as Seen).low) && Number.isFinite((value as Seen).high);
+  typeof value === 'object' &&
+  value !== null &&
+  (['adherence', 'kg', 'low', 'high'] as const).every((key) => Number.isFinite((value as Seen)[key]));
 
 function read(text: string | null): Seen | null {
   if (text === null) return null;
   try {
     const parsed: unknown = JSON.parse(text);
-    return isSeen(parsed) ? { low: parsed.low, high: parsed.high } : null;
+    return isSeen(parsed) ? { adherence: parsed.adherence, kg: parsed.kg, low: parsed.low, high: parsed.high } : null;
   } catch {
     return null;
   }
@@ -49,7 +59,7 @@ function read(text: string | null): Seen | null {
 
 export type ProjectionSwitch = Awaited<ReturnType<typeof createProjectionSwitch>>;
 
-export async function createProjectionSwitch({ kv }: { kv: KeyValue }) {
+export async function createProjectionSwitch({ kv, access }: { kv: KeyValue; access: ProjectionAccess }) {
   let on = (await kv.getItemAsync(ON)) === 'true';
   let last = read(await kv.getItemAsync(LAST));
 
@@ -61,12 +71,15 @@ export async function createProjectionSwitch({ kv }: { kv: KeyValue }) {
   };
 
   return {
-    /** Synchronous, for rendering. */
-    on: (): boolean => on,
+    /**
+     * Synchronous, for rendering. On only while the gate says "clear" too: a kept "on" whose gate went (a sign-out cut short,
+     * another person, ADR-050) reads as off — the gate is checked where the switch is read, not only where it is set.
+     */
+    on: (): boolean => on && access.current() === 'clear',
     lastSeen: (): Seen | null => last,
 
     /** On only after the SCOFF gate said "clear" on this phone (ADR-050); false otherwise, and nothing changes. */
-    turnOn: async (access: ProjectionAccess): Promise<boolean> => {
+    turnOn: async (): Promise<boolean> => {
       if (access.current() !== 'clear') return false;
       await kv.setItemAsync(ON, 'true');
       on = true;

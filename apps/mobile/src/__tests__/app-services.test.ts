@@ -248,13 +248,22 @@ test('the projection switch and what it showed go with the session (K-606)', asy
   kv.items.set('projection.access', 'clear');
   const { services } = await setup(server(404), memoryStorage(), kv);
   await services.session.signIn(SESSION);
-  expect(await services.projectionSwitch.turnOn(services.projection)).toBe(true);
-  await services.projectionSwitch.remember({ low: 78, high: 84 });
+  expect(await services.projectionSwitch.turnOn()).toBe(true);
+  await services.projectionSwitch.remember({ adherence: 0.8, kg: 81, low: 78, high: 84 });
   await services.signOut();
   await settle();
   expect(kv.items.has('projection.on')).toBe(false);
   expect(kv.items.has('projection.last')).toBe(false);
   expect(services.projectionSwitch.on()).toBe(false);
+});
+
+test('a start with no session forgets the projection switch too (K-606)', async () => {
+  const kv = memoryKv();
+  kv.items.set('projection.on', 'true');
+  kv.items.set('projection.last', '{"adherence":0.8,"kg":81,"low":78,"high":84}');
+  await setup(server(404), memoryStorage(), kv);
+  expect(kv.items.has('projection.on')).toBe(false);
+  expect(kv.items.has('projection.last')).toBe(false);
 });
 
 test("the support link follows the phone's region (K-607)", async () => {

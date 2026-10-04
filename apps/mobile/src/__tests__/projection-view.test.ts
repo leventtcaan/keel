@@ -34,71 +34,91 @@ describe('the figure only ever goes toward the goal', () => {
 });
 
 describe('an update is said without blame', () => {
-  const seen = (low: number, high: number): Seen => ({ low, high });
+  const seen = (kg: number, adherence = 0.8): Seen => ({ adherence, kg, low: kg - 3.5, high: kg + 3.4 });
 
-  test('nothing to say the first time, or when nothing moved', () => {
-    expect(updateNote(null, seen(78, 84), 'LOSS')).toBeNull();
-    expect(updateNote(seen(78, 84), seen(78, 84), 'LOSS')).toBeNull();
+  test('nothing to say the first time, or when the middle number barely moved (the scale\'s noise)', () => {
+    expect(updateNote(null, seen(84), 'LOSS')).toBeNull();
+    expect(updateNote(seen(84), seen(84), 'LOSS')).toBeNull();
+    expect(updateNote(seen(84), seen(84.4), 'LOSS')).toBeNull();
+    expect(updateNote(seen(84), seen(83.6), 'LOSS')).toBeNull();
   });
 
-  test('a cut whose range moved up is "away", one that moved down is not', () => {
-    expect(updateNote(seen(78, 84), seen(79, 85), 'LOSS')).toEqual({ from: seen(78, 84), to: seen(79, 85), away: true });
-    expect(updateNote(seen(78, 84), seen(77.5, 83), 'LOSS')).toEqual({ from: seen(78, 84), to: seen(77.5, 83), away: false });
+  test('judged by the middle number: a cut that moved up is "away", one that moved down is not', () => {
+    expect(updateNote(seen(84), seen(85), 'LOSS')).toEqual({ from: seen(84), to: seen(85), away: true });
+    expect(updateNote(seen(84), seen(83), 'LOSS')?.away).toBe(false);
+    // The high end clamped at today's weight does not hide a move away (review finding).
+    const clamped = (kg: number): Seen => ({ adherence: 0.8, kg, low: kg - 3.5, high: 90 });
+    expect(updateNote(clamped(86), clamped(87), 'LOSS')?.away).toBe(true);
   });
 
-  test('a bulk whose range moved down is "away"', () => {
-    expect(updateNote(seen(70, 74), seen(69, 73), 'GAIN')?.away).toBe(true);
-    expect(updateNote(seen(70, 74), seen(71, 75), 'GAIN')?.away).toBe(false);
+  test('a bulk whose middle moved down is "away"', () => {
+    expect(updateNote(seen(70), seen(69), 'GAIN')?.away).toBe(true);
+    expect(updateNote(seen(70), seen(71), 'GAIN')?.away).toBe(false);
+  });
+
+  test('another scenario is not compared: 95 % against 80 % says nothing', () => {
+    expect(updateNote(seen(84, 0.8), seen(86, 0.95), 'LOSS')).toBeNull();
   });
 });
+
+const SEEN: Seen = { adherence: 0.8, kg: 81, low: 78, high: 84 };
 
 describe('the switch', () => {
   test('off unless turned on', async () => {
     const kv = memoryKv();
-    const toggle = await createProjectionSwitch({ kv });
+    const toggle = await createProjectionSwitch({ kv, access: await createProjectionAccess({ kv, locale: 'en-US' }) });
     expect(toggle.on()).toBe(false);
+  });
+
+  test('a kept "on" without the gate\'s "clear" reads as off (review finding: a sign-out cut short)', async () => {
+    for (const gate of [null, 'unavailable']) {
+      const kv = memoryKv(new Map([['projection.on', 'true'], ...(gate === null ? [] : [['projection.access', gate] as [string, string]])]));
+      const toggle = await createProjectionSwitch({ kv, access: await createProjectionAccess({ kv, locale: 'en-US' }) });
+      expect(toggle.on()).toBe(false);
+    }
   });
 
   test('turns on only once the SCOFF gate says clear', async () => {
     const kv = memoryKv();
-    const toggle = await createProjectionSwitch({ kv });
     const access = await createProjectionAccess({ kv, locale: 'en-US' });
+    const toggle = await createProjectionSwitch({ kv, access });
 
-    expect(await toggle.turnOn(access)).toBe(false); // not asked yet
+    expect(await toggle.turnOn()).toBe(false); // not asked yet
     await access.record('unavailable');
-    expect(await toggle.turnOn(access)).toBe(false);
+    expect(await toggle.turnOn()).toBe(false);
     expect(toggle.on()).toBe(false);
 
     const other = memoryKv();
     const clear = await createProjectionAccess({ kv: other, locale: 'en-US' });
     await clear.record('clear');
-    const otherToggle = await createProjectionSwitch({ kv: other });
-    expect(await otherToggle.turnOn(clear)).toBe(true);
-    expect((await createProjectionSwitch({ kv: other })).on()).toBe(true);
+    const otherToggle = await createProjectionSwitch({ kv: other, access: clear });
+    expect(await otherToggle.turnOn()).toBe(true);
+    expect((await createProjectionSwitch({ kv: other, access: clear })).on()).toBe(true);
   });
 
   test('off forgets what was shown; so does sign-out', async () => {
     const kv = memoryKv(new Map([['projection.access', 'clear']]));
     const access = await createProjectionAccess({ kv, locale: 'en-US' });
-    const toggle = await createProjectionSwitch({ kv });
-    await toggle.turnOn(access);
-    await toggle.remember({ low: 78, high: 84 });
-    expect(toggle.lastSeen()).toEqual({ low: 78, high: 84 });
+    const toggle = await createProjectionSwitch({ kv, access });
+    await toggle.turnOn();
+    await toggle.remember(SEEN);
+    expect(toggle.lastSeen()).toEqual(SEEN);
 
     await toggle.turnOff();
     expect(toggle.on()).toBe(false);
     expect(toggle.lastSeen()).toBeNull();
     expect([...kv.stored.keys()]).toEqual(['projection.access']);
 
-    await toggle.turnOn(access);
-    await toggle.remember({ low: 78, high: 84 });
+    await toggle.turnOn();
+    await toggle.remember(SEEN);
     await toggle.forget();
     expect(toggle.on()).toBe(false);
     expect(toggle.lastSeen()).toBeNull();
   });
 
-  test('a kept "last seen" that is not two numbers is read as none', async () => {
-    const kv = memoryKv(new Map([['projection.on', 'true'], ['projection.last', '{"low":"x"}']]));
-    expect((await createProjectionSwitch({ kv })).lastSeen()).toBeNull();
+  test('a kept "last seen" that is not four numbers is read as none', async () => {
+    const kv = memoryKv(new Map([['projection.access', 'clear'], ['projection.on', 'true'], ['projection.last', '{"low":"x"}']]));
+    const access = await createProjectionAccess({ kv, locale: 'en-US' });
+    expect((await createProjectionSwitch({ kv, access })).lastSeen()).toBeNull();
   });
 });

@@ -9,6 +9,14 @@
       "note": "SCOFF (Morgan, Reid & Lacey, BMJ 1999;319:1467; ADR-050): one point per yes; 2 or more is a likely case, and the shape projection is not shown (K-607). The answers are never stored; only the result stays on the phone."
     },
     {
+      "key": "projection_update_min_kg",
+      "value": 0.5,
+      "unit": "kg",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#3.4",
+      "note": "The shape projection says an update only when its middle number moved at least this much since it was last shown (K-606): above the scale's day-to-day noise (SD 0.42 kg, weight_daily_noise_sd_kg), so a single weigh-in does not read as news, nor as a reason to turn it off."
+    },
+    {
       "key": "eating_support_links",
       "value": {
         "US": "https://anad.org/get-support/eating-disorders-helpline/",

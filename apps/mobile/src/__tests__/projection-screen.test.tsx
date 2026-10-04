@@ -30,12 +30,16 @@ let mockServices: Record<string, unknown> = {};
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
 let stored: Map<string, string>;
+let removalFails = false;
 const kv = {
   getItemAsync: async (key: string) => stored.get(key) ?? null,
   setItemAsync: async (key: string, value: string) => {
     stored.set(key, value);
   },
-  removeItemAsync: async (key: string) => stored.delete(key),
+  removeItemAsync: async (key: string) => {
+    if (removalFails) throw Object.assign(new Error('disk'), { name: 'StorageFailed' });
+    return stored.delete(key);
+  },
 };
 
 const SHOWN: Projection = {
@@ -50,13 +54,11 @@ const SHOWN: Projection = {
   ],
 };
 
+const mockReport = jest.fn();
+
 async function show() {
-  mockServices = {
-    api: { GET: mockGET },
-    report: () => {},
-    projection: await createProjectionAccess({ kv, locale: 'en-US' }),
-    projectionSwitch: await createProjectionSwitch({ kv }),
-  };
+  const access = await createProjectionAccess({ kv, locale: 'en-US' });
+  mockServices = { api: { GET: mockGET }, report: mockReport, projection: access, projectionSwitch: await createProjectionSwitch({ kv, access }) };
   await render(
     <ThemeProvider scheme="light">
       <ProjectionScreen />
@@ -80,6 +82,7 @@ async function flip() {
 beforeEach(() => {
   jest.clearAllMocks();
   stored = new Map();
+  removalFails = false;
   mockFocus = null;
   mockAnswer = SHOWN;
 });
@@ -126,6 +129,34 @@ test('on: the figure, three scenarios as ranges by the date, and the calculation
   expect(screen.getByText(`${t('format.range', { low: 80.6, high: 87.5 })} ${t('units.kgUnit')}`)).toBeOnTheScreen();
   expect(screen.getAllByText(t('projection.view.by', { date: 'Sun, Apr 4' }))).toHaveLength(3);
   expect(screen.getByText(t('projection.view.disclaimer'))).toBeOnTheScreen();
+  // An estimate is a range (U5): the figure's caption names the behaviour, never a single weight.
+  expect(screen.queryByText(/84\.1/)).toBeNull();
+  expect(screen.getByText(t('projection.view.at', { pct: 80 }))).toBeOnTheScreen();
+});
+
+test('a kept "on" without the questions answered "clear" is off: nothing read, nothing drawn', async () => {
+  for (const gate of [null, 'unavailable']) {
+    stored = new Map([['projection.on', 'true'], ...(gate === null ? [] : [['projection.access', gate] as [string, string]])]);
+    await show();
+    expect(screen.getByLabelText(t('projection.view.switch')).props.value).toBe(false);
+    expect(screen.queryByTestId('projection-figure')).toBeNull();
+  }
+  expect(mockGET).not.toHaveBeenCalled();
+});
+
+test('turning it off when the phone cannot forget: said, reported by name, still on', async () => {
+  stored.set('projection.access', 'clear');
+  stored.set('projection.on', 'true');
+  await show();
+  removalFails = true;
+
+  await act(async () => {
+    fireEvent(screen.getByLabelText(t('projection.view.switch')), 'valueChange', false);
+  });
+
+  expect(screen.getByText(t('projection.view.saveFailed'))).toBeOnTheScreen();
+  expect(mockReport).toHaveBeenCalledWith({ name: 'StorageFailed' });
+  expect(screen.getByLabelText(t('projection.view.switch')).props.value).toBe(true);
 });
 
 test('not shown: the reason in plain words', async () => {
@@ -141,10 +172,10 @@ test('not shown: the reason in plain words', async () => {
 test('an update away from the goal: said as the model, with two ways from there', async () => {
   stored.set('projection.access', 'clear');
   stored.set('projection.on', 'true');
-  stored.set('projection.last', JSON.stringify({ low: 79.6, high: 86.5 }));
+  stored.set('projection.last', JSON.stringify({ adherence: 0.8, kg: 83.0, low: 79.5, high: 86.4 }));
   await show();
 
-  const from = `${t('format.range', { low: 79.6, high: 86.5 })} ${t('units.kgUnit')}`;
+  const from = `${t('format.range', { low: 79.5, high: 86.4 })} ${t('units.kgUnit')}`;
   const to = `${t('format.range', { low: 80.6, high: 87.5 })} ${t('units.kgUnit')}`;
   expect(screen.getByText(t('projection.view.updated', { from, to }))).toBeOnTheScreen();
   expect(screen.getByText(t('projection.view.options'))).toBeOnTheScreen();
@@ -160,11 +191,12 @@ test('an update away from the goal: said as the model, with two ways from there'
 test('an update toward the goal is said, with no options to pick', async () => {
   stored.set('projection.access', 'clear');
   stored.set('projection.on', 'true');
-  stored.set('projection.last', JSON.stringify({ low: 81.6, high: 88.5 }));
+  stored.set('projection.last', JSON.stringify({ adherence: 0.8, kg: 85.1, low: 81.6, high: 88.5 }));
   await show();
 
+  expect(screen.getByText(/^Updated with your latest weeks/)).toBeOnTheScreen();
   expect(screen.queryByText(t('projection.view.options'))).toBeNull();
-  expect(JSON.parse(stored.get('projection.last') ?? '')).toEqual({ low: 80.6, high: 87.5 });
+  expect(JSON.parse(stored.get('projection.last') ?? '')).toEqual({ adherence: 0.8, kg: 84.1, low: 80.6, high: 87.5 });
 });
 
 test('turned off: what was shown is forgotten and nothing more is read', async () => {

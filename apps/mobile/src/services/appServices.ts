@@ -117,7 +117,7 @@ export async function createAppServices({
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
   const projection = await createProjectionAccess({ kv, locale });
-  const projectionSwitch = await createProjectionSwitch({ kv });
+  const projectionSwitch = await createProjectionSwitch({ kv, access: projection });
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   // A state the user declared quiets the reminders while it is in force (K-518, ADR-036 #7); each change plans again.
   const state = createStateService({ api, kv, now, onChange: () => void reminders.refresh() });
@@ -143,6 +143,7 @@ export async function createAppServices({
     await profile.forget();
     await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
     await kv.removeItemAsync(FIGURE); // and the profile's sex (ADR-037 › 49)
+    await projectionSwitch.forget(); // and the projection's switch and what it showed (K-606)
   }
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
