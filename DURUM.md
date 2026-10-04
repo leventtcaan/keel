@@ -686,7 +686,7 @@ opak hesap kimliği + SDK'nın zorunlu verisi **onaylı** → ADR-012 Ek 1.
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-701 RevenueCat webhook ve yetki | ⏳ | | |
+| K-701 RevenueCat webhook ve yetki — RED commit taslak #364 (CI); test analizi: HATA environment yoksa 500 (Set.copyOf.contains(null)); boşluklar: var olan satırda kilit, RevenueCatEvents alan eşlemesi (saf test), KnownAccounts kanonik (var olan hesap), çoklu TRANSFER kaynağı, gövde sınırı (Content-Length'sız, tam sınır), imza ayrıştırmadan önce (401 > 400), başlık mutantları (iki t sırası, v1 ilk, bilinmeyen alan, 20 hane), dışa aktarma lastEventAt/sıra/boş, Clock ile imzala | ⏳ | #364 | |
 | K-703 premium uçlarda yetki | bekliyor | | |
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
