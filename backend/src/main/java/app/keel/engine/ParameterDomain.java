@@ -6,6 +6,7 @@ import java.util.Locale;
 public enum ParameterDomain {
     MEASUREMENT,
     NUTRITION,
+    PROJECTION,
     SAFETY,
     TRAINING,
     WINDOWS;

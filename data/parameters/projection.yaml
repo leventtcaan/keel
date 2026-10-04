@@ -1,0 +1,123 @@
+# Projeksiyonun enerji dengesi modeli (K-605, ADR-051): Hall 2011 Lancet web eki, denklem 1-9.
+# Değerler yayımlanmış model sabitleri; değiştirmek modeli değiştirir (yayımlanmış örneklerle karşılaştırma testi kırılır).
+parameters:
+  - key: energy_model_glycogen_mj_per_kg
+    value: 17.6
+    unit: mj_per_kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M2"
+    note: "ρG, glikojenin enerji yoğunluğu (ek s. 1, denklem 1)."
+  - key: energy_model_glycogen_start_kg
+    value: 0.5
+    unit: kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M2"
+    note: "G_init: başlangıçta ~500 g glikojen (ek s. 1)."
+  - key: energy_model_glycogen_water_g_per_g
+    value: 2.7
+    unit: g_per_g
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M2"
+    note: "Her gram glikojenle depolanan su (McBride 1941, ek s. 1)."
+  - key: energy_model_carb_energy_share
+    value: 0.5
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M2"
+    note: "Alımın karbonhidrattan gelen payı; keel bunu modele vermiyor. Pay sabit kabul edilince kararlı glikojen yalnız alım oranına bağlıdır, pay yalnız glikojenin hızını (saatler-günler) değiştirir — haftalar ölçeğindeki projeksiyonda etkisi yok denecek kadar az (H12 M2 notu). Birincil kaynakta NIH-BWP'nin varsayılanı bulunamadı."
+  - key: energy_model_sodium_mg_per_ml
+    value: 3.22
+    unit: mg_per_ml
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M3"
+    note: "[Na], hücre dışı sodyum yoğunluğu (ek s. 1, denklem 2)."
+  - key: energy_model_sodium_clearance_mg_per_l_per_day
+    value: 3000
+    unit: mg_per_l_per_day
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M3"
+    note: "ξNa (ek s. 1, denklem 2)."
+  - key: energy_model_carb_sodium_mg_per_day
+    value: 4000
+    unit: mg_per_day
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M3"
+    note: "ξCI: karbonhidrat alımı değişiminin böbrekten sodyum atımına etkisi (ek s. 1, denklem 2). Diyet sodyumu değişimi bilinmiyor → 0 (ADR-051)."
+  - key: energy_model_fat_mj_per_kg
+    value: 39.5
+    unit: mj_per_kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M4"
+    note: "ρF, bir kg yağ dokusu değişiminin enerjisi (ek s. 2, denklem 3; Hall 2008 IJO)."
+  - key: energy_model_lean_mj_per_kg
+    value: 7.6
+    unit: mj_per_kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M4"
+    note: "ρL, bir kg yağsız doku değişiminin enerjisi (ek s. 2, denklem 3)."
+  - key: energy_model_forbes_kg
+    value: 10.4
+    unit: kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M4"
+    note: "Forbes sabiti: dL/dF = 10,4 kg / F; enerji bölüşümü p = C/(C+F), C = 10,4 × ρL/ρF (ek s. 2)."
+  - key: energy_model_start_fat_pct_per_year
+    value: 0.14
+    unit: percent_per_year_internal_only
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M4"
+    note: "Jackson 2002, başlangıç yağ kütlesinin yaş terimi (ek s. 2, denklem 4). Yalnız modelin içinde; yağ sayısı hiçbir çıktıda yok (U4)."
+  - key: energy_model_start_fat_pct_per_ln_bmi
+    by_sex: {male: 37.31, female: 39.96}
+    unit: percent_per_ln_bmi_internal_only
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M4"
+    note: "Jackson 2002, ln(BMI) terimi (ek s. 2, denklem 4). U4: yalnız modelin içinde."
+  - key: energy_model_start_fat_pct_offset
+    by_sex: {male: -103.94, female: -102.01}
+    unit: percent_offset_internal_only
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M4"
+    note: "Jackson 2002, sabit terim (ek s. 2, denklem 4). U4: yalnız modelin içinde."
+  - key: energy_model_fat_resting_kj_per_kg_per_day
+    value: 13
+    unit: kj_per_kg_per_day
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
+    note: "γF: dinlenme metabolizmasının yağ kütlesine göre eğimi (Nelson 1992, ek s. 2, denklem 5)."
+  - key: energy_model_lean_resting_kj_per_kg_per_day
+    value: 92
+    unit: kj_per_kg_per_day
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
+    note: "γL: dinlenme metabolizmasının yağsız kütleye göre eğimi (ek s. 2, denklem 5)."
+  - key: energy_model_fat_synthesis_kj_per_kg
+    value: 750
+    unit: kj_per_kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
+    note: "ηF: yağ sentezinin biyokimyasal verimi (Hall 2010, ek s. 2)."
+  - key: energy_model_lean_synthesis_kj_per_kg
+    value: 960
+    unit: kj_per_kg
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
+    note: "ηL: protein sentezinin biyokimyasal verimi (ek s. 2)."
+  - key: energy_model_thermic_effect_ratio
+    value: 0.1
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
+    note: "βTEF: besinin termik etkisi, alım değişiminin %10'u (ek s. 3, denklem 6)."
+  - key: energy_model_adaptive_ratio
+    value: 0.14
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
+    note: "βAT: adaptif termogenez, alım değişiminin %14'ü (Hall & Jordan 2008, ek s. 3, denklem 7)."
+  - key: energy_model_adaptive_days
+    value: 14
+    unit: days
+    tag: literatur
+    source: "arastirma/ham/H12-enerji-dengesi-modeli.md#M5"
+    note: "τAT: adaptif termogenezin zaman ölçeği (ek s. 3, denklem 7)."
