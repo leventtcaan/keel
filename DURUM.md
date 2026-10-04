@@ -686,8 +686,8 @@ opak hesap kimliği + SDK'nın zorunlu verisi **onaylı** → ADR-012 Ek 1.
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-701 RevenueCat webhook ve yetki — RED commit taslak #364 (CI); test analizi: HATA environment yoksa 500 (Set.copyOf.contains(null)); boşluklar: var olan satırda kilit, RevenueCatEvents alan eşlemesi (saf test), KnownAccounts kanonik (var olan hesap), çoklu TRANSFER kaynağı, gövde sınırı (Content-Length'sız, tam sınır), imza ayrıştırmadan önce (401 > 400), başlık mutantları (iki t sırası, v1 ilk, bilinmeyen alan, 20 hane), dışa aktarma lastEventAt/sıra/boş, Clock ile imzala | ⏳ | #364 | |
-| K-703 premium uçlarda yetki | bekliyor | | |
+| K-701 RevenueCat webhook ve yetki — RED v1 GEÇERSİZ (bağlam açılmadı: `@Bean revenueCatWebhook` kontrolcü bean adıyla çakıştı; iki inceleme ajanı da kaçırdı) → zincir bean'i `revenueCatWebhookChain`, RED v2 commit'i. İnceleme + test analizi: HATA environment yoksa 500 → düzeltildi; 9 mutant saf testlerle öldü (başlık, olay alanları, yapılandırma, gövde sınırı — `RevenueCatWebhookReadingTests`), kontrol mutantı yaşadı. **Mutasyon betiği temel koşuyu doğrulamalı** (`RevenueCat*Tests` deseni DB testini de seçiyordu → ilk "öldü"ler geçersizdi). | ⏳ | #364 | `M7/K-701.md` |
+| K-703 premium uçlarda yetki — **Part 2 notu:** telefon tanımadığı 403'ü "failed" gösteriyor (`coach/conversation.ts`, `food/photo.ts` yalnız CONSENT_REQUIRED'ı ayırıyor) → K-702 ENTITLEMENT_REQUIRED'ı paywall'a çevirmeli | bekliyor | | |
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` … `M6-part4.md`.
