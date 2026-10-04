@@ -32,8 +32,17 @@ jest.mock('expo-sqlite/kv-store', () => {
     },
   };
 });
-jest.mock('expo-apple-authentication', () => ({ isAvailableAsync: async () => true, signInAsync: jest.fn() }));
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'u' }));
+jest.mock('expo-apple-authentication', () => ({
+  isAvailableAsync: async () => true,
+  signInAsync: jest.fn(async () => ({ identityToken: 'apple-jwt', authorizationCode: null, user: 'apple-user-001' })),
+}));
+jest.mock('expo-crypto', () => ({
+  randomUUID: () => 'u',
+  CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+  getRandomBytes: (n: number) => new Uint8Array(n),
+  digestStringAsync: async (_algorithm: string, text: string) =>
+    jest.requireActual<typeof import('node:crypto')>('node:crypto').createHash('sha256').update(text).digest('hex'),
+}));
 jest.mock('@/api/config', () => ({ apiBaseUrl: () => 'https://api.example.test' }));
 jest.mock('@/sync/autoSync', () => ({ startAutoSync: () => () => {}, deviceTriggers: {} }));
 // Apple Health as a test one: available, its weigh-in read recorded (K-616).
@@ -121,4 +130,29 @@ test('the import reads Apple Health only with both consents, the year before the
   const day = 24 * 3600 * 1000;
   expect(Math.round((before - to.getTime()) / day)).toBe(healthParams.weightReadDays);
   expect(Math.round((before - from.getTime()) / day)).toBe(healthParams.weightImportDays);
+});
+
+test('a sign-in with Apple settles whose the progress photos are (ADR-055 #101)', async () => {
+  global.fetch = jest.fn(async (input: RequestInfo | URL) =>
+    new URL(input instanceof Request ? input.url : String(input)).pathname === '/v1/auth/apple'
+      ? new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', accessTokenExpiresAt: '2026-09-30T12:15:00Z', newAccount: false }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      : new Response(null, { status: 404 }),
+  );
+  await render(
+    <ServicesProvider>
+      <Probe />
+    </ServicesProvider>,
+  );
+  await act(async () => {});
+
+  await act(async () => {
+    expect(await services!.signInWithApple()).toMatchObject({ kind: 'signedIn' });
+  });
+
+  const kv = jest.requireMock<{ default: { getItemAsync(key: string): Promise<string | null> } }>('expo-sqlite/kv-store').default;
+  const sha = jest.requireActual<typeof import('node:crypto')>('node:crypto').createHash('sha256').update('apple-user-001').digest('hex');
+  expect(await kv.getItemAsync('photos.owner')).toBe(sha);
 });

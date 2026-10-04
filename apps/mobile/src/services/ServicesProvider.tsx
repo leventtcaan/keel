@@ -85,7 +85,8 @@ async function build(): Promise<PhoneServices> {
   const health = healthKitAccess(); // not available in Expo Go (no native module)
   return {
     ...services,
-    signInWithApple: () => signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session }),
+    signInWithApple: () =>
+      signInWithApple({ apple: AppleAuthentication, nonce: deviceNonce, api: services.api, session: services.session, claimPhotos: services.claimPhotos }),
     appleAvailable: () => AppleAuthentication.isAvailableAsync(),
     health,
     syncHealth: async () => {

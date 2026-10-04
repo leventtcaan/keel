@@ -52,6 +52,9 @@ type Deps = {
   now?: () => Date;
 };
 
+/** Whose the progress photos on this phone are: the SHA-256 of the account's Apple user id (ADR-055 › 101). */
+const PHOTO_OWNER = 'photos.owner';
+
 export type AppServices = {
   session: SessionManager;
   api: ApiClient;
@@ -69,6 +72,13 @@ export type AppServices = {
   /** Records the server does not have yet; a sign-out drops them, so the screen warns first (K-309). */
   pendingCount(): Promise<number>;
   signOut(): Promise<void>;
+  /**
+   * After a sign-in (ADR-055 › 101): `owner` is the account's Apple user id as its SHA-256. The progress photos on this
+   * phone belong to the owner kept; another account signing in has them deleted first. None kept (photos from before
+   * K-617, or none at all): this account becomes the owner. Rejects when another account's photos cannot be deleted —
+   * the owner kept stays, and the sign-in keeps no session (appleSignIn.ts: fail closed).
+   */
+  claimPhotos(owner: string): Promise<void>;
   deleteAccount(): Promise<void>;
   /**
    * Withdraws the health data consent, confirming that the server deletes what it covered (K-231), then forgets the
@@ -151,14 +161,20 @@ export async function createAppServices({
     await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
     await kv.removeItemAsync(FIGURE); // and the profile's sex (ADR-037 › 49)
     await projectionSwitch.forget(); // and the projection's switch and what it showed (K-606)
-    // And progress photos: health data, on this phone only (K-614). A folder that can't be deleted is reported; the app still starts.
-    await photos.forget().catch(reportName);
+    // Not the progress photos (ADR-055 › 101): the only copy, and the person may be the same one coming back; whose they
+    // are is settled at the next sign-in (claimPhotos).
   }
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
   // deleted: the phone cannot tell which) — the records go with it: they belong to the account that made them, and
   // the next person to sign in on this phone must not inherit them (contract: DELETE /v1/account).
   const reportError = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
+  // The user's sign-out and the account's deletion: the photos and whose they were. A folder that cannot be deleted is
+  // reported by name; the sign-out is still done.
+  const forgetPhotos = async () => {
+    await photos.forget().catch(reportError);
+    await kv.removeItemAsync(PHOTO_OWNER).catch(reportError);
+  };
   session.subscribe((signedIn) => {
     if (signedIn) {
       // One read of the profile answers both: has this account finished onboarding (K-306), and its own unit choice
@@ -180,9 +196,8 @@ export async function createAppServices({
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
-    // And the progress photos (K-614): health data kept on this phone only — the next account must not see them. Settings
-    // says so before a sign-out (AccountSection).
-    photos.forget().catch(reportError);
+    // Not the progress photos (ADR-055 › 101): a refused refresh token (60 days away) would take the only copy, Day 1 too.
+    // The user's sign-out and the account's deletion delete them (below); another account signing in does (claimPhotos).
   });
 
   return {
@@ -220,6 +235,7 @@ export async function createAppServices({
       // the phone forgets what it can — a token left in the keychain is refused at the next start, which clears it.
       await session.signOut().catch(reportError);
       await store.clear().catch(reportError);
+      await forgetPhotos(); // the account is gone: its photos too (K-614)
     },
     withdrawHealthData: async () => {
       await withdrawConsent(api, 'HEALTH_DATA', true);
@@ -235,6 +251,11 @@ export async function createAppServices({
     workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
     mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
     forgetRecord: store.forgetClient,
+    claimPhotos: async (owner: string) => {
+      const kept = await kv.getItemAsync(PHOTO_OWNER);
+      if (kept !== null && kept !== owner) await photos.forget();
+      await kv.setItemAsync(PHOTO_OWNER, owner);
+    },
     signOut: async () => {
       const refreshToken = await session.refreshToken();
       // The phone forgets first, so the user is signed out at once even on a slow network. The records are cleared
@@ -242,7 +263,13 @@ export async function createAppServices({
       try {
         await session.signOut();
       } finally {
-        await store.clear();
+        try {
+          await store.clear();
+        } finally {
+          // The user signed out: their progress photos go with them (K-614; Settings says so first), and so does the
+          // owner — even if the records could not be cleared.
+          await forgetPhotos();
+        }
       }
       if (refreshToken === null) return;
       try {

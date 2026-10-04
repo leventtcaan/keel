@@ -15,16 +15,20 @@ export type AppleAuth = {
   signInAsync(options: { requestedScopes: never[]; nonce: string }): Promise<{
     identityToken: string | null;
     authorizationCode: string | null;
+    user: string;
   }>;
 };
 
 export type Nonce = { raw(): string; hash(raw: string): Promise<string> };
 
-/** `failed.reason`: APPLE — Apple's side; REFUSED — our server said no; NO_ANSWER — no connection. */
+/**
+ * `failed.reason`: APPLE — Apple's side; REFUSED — our server said no; NO_ANSWER — no connection; PHONE — this phone could
+ * not make its progress photos this account's (ADR-055 › 101), so no session was kept.
+ */
 export type SignInResult =
-  | { kind: 'signedIn'; newAccount: boolean }
+  | { kind: 'signedIn'; newAccount: boolean; owner: string }
   | { kind: 'canceled' }
-  | { kind: 'failed'; reason: 'APPLE' | 'REFUSED' | 'NO_ANSWER' };
+  | { kind: 'failed'; reason: 'APPLE' | 'REFUSED' | 'NO_ANSWER' | 'PHONE' };
 
 const NONCE_BYTES = 32;
 const CANCELED = 'ERR_REQUEST_CANCELED';
@@ -35,9 +39,19 @@ export const deviceNonce: Nonce = {
   hash: (raw) => digestStringAsync(CryptoDigestAlgorithm.SHA256, raw),
 };
 
-type Options = { apple: AppleAuth; nonce: Nonce; api: ApiClient; session: SessionManager };
+type Options = {
+  apple: AppleAuth;
+  nonce: Nonce;
+  api: ApiClient;
+  session: SessionManager;
+  /**
+   * Makes this phone's progress photos the signing-in account's (ADR-055 › 101): another account's are deleted first. Run
+   * before the session is kept, and a failure keeps it out — no account is ever signed in beside photos not its own.
+   */
+  claimPhotos?: (owner: string) => Promise<void>;
+};
 
-export async function signInWithApple({ apple, nonce, api, session }: Options): Promise<SignInResult> {
+export async function signInWithApple({ apple, nonce, api, session, claimPhotos = async () => {} }: Options): Promise<SignInResult> {
   const raw = nonce.raw();
   let credential: Awaited<ReturnType<AppleAuth['signInAsync']>>;
   try {
@@ -62,6 +76,13 @@ export async function signInWithApple({ apple, nonce, api, session }: Options): 
   }
   if (answer.data === undefined) return { kind: 'failed', reason: 'REFUSED' };
   const { accessToken, accessTokenExpiresAt, refreshToken, newAccount } = answer.data;
+  // Whose this phone's progress photos are (ADR-055 › 101): Apple's user id for this app, kept only as its SHA-256.
+  const owner = await nonce.hash(credential.user);
+  try {
+    await claimPhotos(owner);
+  } catch {
+    return { kind: 'failed', reason: 'PHONE' };
+  }
   await session.signIn({ accessToken, accessTokenExpiresAt, refreshToken });
-  return { kind: 'signedIn', newAccount };
+  return { kind: 'signedIn', newAccount, owner };
 }
