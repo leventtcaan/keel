@@ -3156,7 +3156,7 @@ tasks:
     module: repo
     type: test
     size: S
-    status: doing
+    status: done
     depends_on: [K-302]
     why: "Yayından önce U4, U6, K2'nin mekanik kontrolü"
     acceptance:
@@ -3264,7 +3264,7 @@ tasks:
     module: identity
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-802]
     why: "Envanter açığı 5: süresi geçmiş yenileme jetonları hesap yaşarken hiç silinmiyor (GDPR Md. 5(1)(e) saklama sınırı). İptal edilmiş ama süresi dolmamış satır yeniden kullanım tespiti için kalır"
     acceptance:
@@ -3283,7 +3283,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-802]
     why: "Envanter açığı 5: webhook_event (olay kimliği, tür, zaman) hesap yaşarken hiç silinmiyor. RevenueCat 5 denemeyi ~155 dakikada bitirir; eski bir olay tekrar gelse durum makinesi geri götürmez (ADR-056)"
     acceptance:
