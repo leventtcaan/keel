@@ -64,6 +64,20 @@ test('Day 1 beside the latest, front, side by side: each with its day, and the t
   expect(screen.getByText(t('compare.onPhone'))).toBeOnTheScreen();
 });
 
+test('side by side, VoiceOver reads each photo by its caption: which one and its day (K-807)', async () => {
+  await show();
+  expect(screen.getByTestId('compare-past').props).toMatchObject({
+    accessible: true,
+    accessibilityRole: 'image',
+    accessibilityLabel: t('compare.caption', { label: t('compare.day1'), date: 'Jul 6' }),
+  });
+  expect(screen.getByTestId('compare-latest').props).toMatchObject({
+    accessible: true,
+    accessibilityRole: 'image',
+    accessibilityLabel: t('compare.caption', { label: t('compare.latest'), date: 'Oct 5' }),
+  });
+});
+
 test('the past point is the user pick: the photo day before the latest', async () => {
   await show();
   await press(t('compare.earlier.other', { count: 5 }));

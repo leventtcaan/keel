@@ -51,6 +51,9 @@ export default function CompareScreen() {
   // A pick this pose doesn't have falls back to Day 1, which every comparison has.
   const past = pair === null ? null : (pair.anchors.find((a) => a.kind === picked) ?? pair.anchors[0]);
 
+  // The captions, shown under the photos and given to them as their names (K-807).
+  const pastCaption = past === null ? '' : t('compare.caption', { label: anchorLabel(past), date: shortDate(past.takenOn) });
+  const latestCaption = pair === null ? '' : t('compare.caption', { label: t('compare.latest'), date: shortDate(pair.latest.takenOn) });
   // Built outside the JSX below (the raw-text guard reads JSX children).
   const body =
     checks === null ? null : pair === null || past === null ? (
@@ -67,14 +70,14 @@ export default function CompareScreen() {
           <Chip label={t('compare.sideBySide')} selected={!sliding} onPress={() => setSliding(false)} />
           <Chip label={t('compare.slide')} selected={sliding} onPress={() => setSliding(true)} />
         </View>
-        {sliding ? <Slide past={past.uri} latest={pair.latest.uri} /> : <SideBySide past={past.uri} latest={pair.latest.uri} />}
+        {sliding ? (
+          <Slide past={past.uri} latest={pair.latest.uri} />
+        ) : (
+          <SideBySide past={{ uri: past.uri, caption: pastCaption }} latest={{ uri: pair.latest.uri, caption: latestCaption }} />
+        )}
         <View style={styles.captions}>
-          <Text style={[styles.small, styles.caption, { color: color.text }]}>
-            {t('compare.caption', { label: anchorLabel(past), date: shortDate(past.takenOn) })}
-          </Text>
-          <Text style={[styles.small, styles.caption, { color: color.text }]}>
-            {t('compare.caption', { label: t('compare.latest'), date: shortDate(pair.latest.takenOn) })}
-          </Text>
+          <Text style={[styles.small, styles.caption, { color: color.text }]}>{pastCaption}</Text>
+          <Text style={[styles.small, styles.caption, { color: color.text }]}>{latestCaption}</Text>
         </View>
         <Text style={[styles.text, { color: color.textSecondary }]}>{gap('compare.between', past)}</Text>
       </>
@@ -97,11 +100,16 @@ export default function CompareScreen() {
   );
 }
 
-function SideBySide({ past, latest }: { past: string; latest: string }) {
+type Shown = { uri: string; caption: string };
+
+/** Each photo named by its caption for VoiceOver (K-807): which one, and the day it was taken. */
+function SideBySide({ past, latest }: { past: Shown; latest: Shown }) {
   return (
     <View style={styles.row}>
-      <Image testID="compare-past" source={{ uri: past }} resizeMode="cover" style={styles.half} />
-      <Image testID="compare-latest" source={{ uri: latest }} resizeMode="cover" style={styles.half} />
+      <Image testID="compare-past" accessible accessibilityRole="image" accessibilityLabel={past.caption} source={{ uri: past.uri }}
+        resizeMode="cover" style={styles.half} />
+      <Image testID="compare-latest" accessible accessibilityRole="image" accessibilityLabel={latest.caption} source={{ uri: latest.uri }}
+        resizeMode="cover" style={styles.half} />
     </View>
   );
 }
