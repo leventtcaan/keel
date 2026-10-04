@@ -1131,7 +1131,8 @@
     "User Content › Photos or Videos",
     "Health & Fitness › Health"
    ],
-   "note": "Not active: provider chosen at launch (K-533); consent cannot be given today (no third-party-ai config)."
+   "note": "Not active: provider chosen at launch (K-533); consent cannot be given today (no third-party-ai config).",
+   "terms": "docs/yasal/ai-saglayici-sartlari.md (K-806): candidates' training and retention terms, read 2026-10-04; condition ADR-041 #71 (no training, zero data retention)"
   }
  ]
 }
