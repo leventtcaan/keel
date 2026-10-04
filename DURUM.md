@@ -742,7 +742,7 @@ ayrık HEAD = `origin/main` (87fc154). Part 1 worktree'leri (`keel-k806/808/809`
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-802 envantere bağlı uçtan uca silme + dışa aktarma; `event_publication` işlenince silinir | sürüyor | — | — |
+| K-802 envantere bağlı uçtan uca silme + dışa aktarma; `event_publication` işlenince silinir. RED CI'da (`event_publication.serialized_event`=14) → yeşil. Test analizi: 8+ yok; kapatılacak: başarısız yayın tutulur/yeniden denemede silinir (7), dışa aktarma tablo düzeyinde `export_key` (6), V34 gerçek satırla (5), kimlik taraması her sütun + apple_subject (4). Ayrıca #386: `AdherenceApiTests` gece yarısı hatası (İstanbul Pazartesi 00:11) | sürüyor | #385 | — |
 
 ## M7 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `M7-part2.md`.
