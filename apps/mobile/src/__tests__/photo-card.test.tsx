@@ -103,3 +103,22 @@ test('a delete that fails says so and is reported by name', async () => {
   expect(screen.getByText(t('photos.deleteFailed'))).toBeOnTheScreen();
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'FileSystemError' });
 });
+
+test('a retry that works clears the failure', async () => {
+  mockChecks = [check('2026-09-20')];
+  mockServices.photos.forget.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'FileSystemError' }));
+  await show('over');
+  await fireEvent.press(screen.getByRole('button', { name: t('photos.delete') }));
+  await fireEvent.press(screen.getByRole('button', { name: t('photos.deleteConfirm') }));
+  expect(screen.getByText(t('photos.deleteFailed'))).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: t('photos.delete') }));
+  await fireEvent.press(screen.getByRole('button', { name: t('photos.deleteConfirm') }));
+  expect(screen.queryByText(t('photos.deleteFailed'))).toBeNull();
+});
+
+test('a folder that cannot be read: reported by name, no card rather than a wrong one', async () => {
+  mockServices.photos.checks.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'FileSystemError' }));
+  await show('over');
+  expect(mockServices.report).toHaveBeenCalledWith({ name: 'FileSystemError' });
+  expect(screen.queryByTestId('photo-card')).toBeNull();
+});

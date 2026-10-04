@@ -381,6 +381,22 @@ describe('export, delete, sign out', () => {
     expect(mockServices.report).toHaveBeenCalledWith({ name: 'SqliteError' });
   });
 
+  test('entries waiting, no photos: no word about photos (K-614)', async () => {
+    mockServices.pendingCount.mockResolvedValueOnce(3);
+    await show();
+    await press(t('settings.signOut.title'));
+    expect(screen.queryByText(t('settings.signOut.photos'))).toBeNull();
+  });
+
+  test('when the phone cannot read its photos, it does not sign out blind either (K-614)', async () => {
+    mockServices.photos.photos.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'FileSystemError' }));
+    await show();
+    await press(t('settings.signOut.title'));
+    expect(mockServices.signOut).not.toHaveBeenCalled();
+    expect(screen.getByText(t('settings.serverError'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'FileSystemError' });
+  });
+
   test('deleting offline says it is the connection', async () => {
     mockServices.deleteAccount.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }));
     await show();

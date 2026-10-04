@@ -68,18 +68,26 @@ let mockHistory: Loaded<Schemas['Workout'][]>;
 let mockRecords: LocalRecord[] = [];
 let mockData: TrainData;
 // The first eight weeks' week (K-614: the first photo is due in week 4); the strength reads go through the training cache.
-let mockFirstWeeks: { status: number; week?: number; code?: string } = { status: 404 };
-const mockServices = {
-  api: {
-    GET: jest.fn(async (path: string) => {
-      if (path !== '/v1/first-weeks') throw new Error(`unexpected ${path}`);
-      const { status, week, code } = mockFirstWeeks;
+let mockFirstWeeks: { status: number; week?: number; code?: string; offline?: boolean } = { status: 404 };
+/** Every call to the API client, whatever its method: the tab asks for the week, never anything about a photo. */
+const mockApiCalls: string[] = [];
+const mockApi = new Proxy(
+  {},
+  {
+    get: (_target, method: string) => async (path: string) => {
+      mockApiCalls.push(`${method} ${path}`);
+      const { status, week, code, offline } = mockFirstWeeks;
+      if (offline) throw new TypeError('Network request failed');
       return week === undefined
         ? { error: { code: code ?? 'NOT_FOUND', message: 'x' }, response: new Response(null, { status }) }
         : { data: { week, risk: [], readsRisk: false, training: true }, response: new Response(null, { status }) };
-    }),
+    },
   },
-  photos: { checks: jest.fn(async () => []), forget: jest.fn(async () => {}) },
+);
+let mockPhotoChecks: { takenOn: string; photos: { front?: string } }[] = [];
+const mockServices = {
+  api: mockApi,
+  photos: { checks: jest.fn(async () => mockPhotoChecks), forget: jest.fn(async () => {}) },
   training: { read: async () => mockData, own: async () => [], history: jest.fn(async () => mockHistory) },
   workoutRecords: async () => mockRecords,
   report: jest.fn(),
@@ -115,6 +123,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockUnits = 'METRIC';
   mockFirstWeeks = { status: 404 };
+  mockApiCalls.length = 0;
+  mockPhotoChecks = [];
   mockRecords = [];
   mockHistory = { state: 'ready', value: WORKOUTS };
   mockData = { program: { state: 'none' }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
@@ -320,7 +330,26 @@ describe('photos (K-614)', () => {
   });
 
   test('the only thing the tab asks the server for itself is the week; nothing about a photo', async () => {
+    mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
     await show();
-    expect(mockServices.api.GET.mock.calls.map(([path]) => path)).toEqual(['/v1/first-weeks']);
+    expect(mockApiCalls).toEqual(['GET /v1/first-weeks']);
+  });
+
+  test('week 4 of the first weeks: the first photo is due', async () => {
+    mockFirstWeeks = { status: 200, week: 4 };
+    await show();
+    expect(screen.getByText(t('photos.firstDue'))).toBeOnTheScreen();
+  });
+
+  test('offline: the week is unknown, not over', async () => {
+    mockFirstWeeks = { status: 0, offline: true };
+    await show();
+    expect(screen.getByText(t('photos.anytime'))).toBeOnTheScreen();
+  });
+
+  test('with photos, the window counts from the last one to today: open since four weeks after it', async () => {
+    mockPhotoChecks = [{ takenOn: '2026-08-01', photos: { front: 'file:///docs/2026-08-01-front.jpg' } }];
+    await show();
+    expect(screen.getByText(t('photos.open', { date: 'Aug 29' }))).toBeOnTheScreen();
   });
 });

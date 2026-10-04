@@ -151,7 +151,8 @@ export async function createAppServices({
     await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
     await kv.removeItemAsync(FIGURE); // and the profile's sex (ADR-037 › 49)
     await projectionSwitch.forget(); // and the projection's switch and what it showed (K-606)
-    await photos.forget(); // and progress photos: health data, on this phone only (K-614)
+    // And progress photos: health data, on this phone only (K-614). A folder that can't be deleted is reported; the app still starts.
+    await photos.forget().catch(reportName);
   }
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account

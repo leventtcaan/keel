@@ -41,7 +41,13 @@ export type PhotoLibrary = {
   forget(): Promise<void>;
 };
 
-const NAME = /^(\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01]))-(front|side)\.jpg$/;
+const NAME = /^(\d{4}-\d{2}-\d{2})-(front|side)\.jpg$/;
+
+/** A day the calendar has: 2026-02-30 reads back as March 2nd, so it is not one. */
+function isCalendarDay(day: string): boolean {
+  const time = Date.parse(`${day}T00:00:00Z`);
+  return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === day;
+}
 
 export function photoName(takenOn: string, pose: Pose): string {
   return `${takenOn}-${pose}.jpg`;
@@ -51,7 +57,7 @@ export function createPhotoLibrary(files: PhotoFiles): PhotoLibrary {
   async function photos(): Promise<ProgressPhoto[]> {
     return (await files.names())
       .map((name) => NAME.exec(name))
-      .filter((match): match is RegExpExecArray => match !== null)
+      .filter((match): match is RegExpExecArray => match !== null && isCalendarDay(match[1]))
       .map(([name, takenOn, pose]) => ({ takenOn, pose: pose as Pose, uri: files.uriOf(name) }))
       .sort((a, b) => a.takenOn.localeCompare(b.takenOn) || POSES.indexOf(a.pose) - POSES.indexOf(b.pose));
   }
@@ -70,7 +76,7 @@ export function createPhotoLibrary(files: PhotoFiles): PhotoLibrary {
     async add(from, takenOn, pose) {
       const name = photoName(takenOn, pose);
       // A name the list would not read back is a photo lost in the folder.
-      if (!NAME.test(name)) throw new Error(`not a calendar day: ${takenOn}`);
+      if (!NAME.test(name) || !isCalendarDay(takenOn)) throw new Error('not a calendar day');
       await files.keep(from, name);
       return { takenOn, pose, uri: files.uriOf(name) };
     },

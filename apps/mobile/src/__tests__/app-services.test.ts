@@ -303,6 +303,57 @@ test('a start with no session deletes photos left on the phone (a backup restore
   expect([...folder.names]).toEqual([]);
 });
 
+test('a start with a session keeps the photos: only a start with none deletes them (K-614)', async () => {
+  const folder = photoFolder(['2026-10-07-front.jpg']);
+  const storage = memoryStorage();
+  await storage.save(SESSION);
+  await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: server(404).fetch, report: () => {}, kv: memoryKv(),
+    locale: 'en-US', photoFiles: folder.files });
+  expect([...folder.names]).toEqual(['2026-10-07-front.jpg']);
+});
+
+test('a refused refresh ends the session: the photos go too, as every record does (K-614)', async () => {
+  const folder = photoFolder(['2026-10-07-front.jpg']);
+  const fake = server(401);
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: fake.fetch, report: () => {},
+    kv: memoryKv(), locale: 'en-US', photoFiles: folder.files });
+  await services.session.signIn(SESSION);
+  await services.photos.add('file:///cache/a.jpg', '2026-10-08', 'front');
+  await services.api.GET('/v1/profile'); // 401 → refresh → 401
+  await settle();
+  expect([...folder.names]).toEqual([]);
+});
+
+test('the account deleted (202): its photos are deleted from the phone (K-614)', async () => {
+  const folder = photoFolder();
+  const fetch = jest.fn(async (request: Request) => new Response(null, { status: request.method === 'DELETE' ? 202 : 404 }));
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {},
+    kv: memoryKv(), locale: 'en-US', photoFiles: folder.files });
+  await services.session.signIn(SESSION);
+  await services.photos.add('file:///cache/a.jpg', '2026-10-07', 'front');
+  await services.deleteAccount();
+  await settle();
+  expect([...folder.names]).toEqual([]);
+});
+
+test('photos that cannot be deleted at sign-out are reported by name, the sign-out still done (K-614)', async () => {
+  const folder = photoFolder(['2026-10-07-front.jpg']);
+  const report = jest.fn();
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch, report,
+    kv: memoryKv(), locale: 'en-US', photoFiles: { ...folder.files, clear: async () => {
+      throw Object.assign(new Error('locked'), { name: 'FileSystemError' });
+    } } }).catch(() => null);
+  // The start with no session tried too: reported, the services still built.
+  expect(services).not.toBeNull();
+  expect(report).toHaveBeenCalledWith({ name: 'FileSystemError' });
+  report.mockClear();
+  await services!.session.signIn(SESSION);
+  await services!.signOut();
+  await settle();
+  expect(await services!.session.isSignedIn()).toBe(false);
+  expect(report).toHaveBeenCalledWith({ name: 'FileSystemError' });
+});
+
 test('with no photos folder (tests, a phone without one) the library is empty and keeps nothing', async () => {
   const { services } = await setup(server(404));
   expect(await services.photos.photos()).toEqual([]);

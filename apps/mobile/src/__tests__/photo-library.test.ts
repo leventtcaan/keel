@@ -27,7 +27,19 @@ test('a photo is named by its day and pose', () => {
 });
 
 test('the photos are the folder files that are photos, oldest first, front before side', async () => {
-  const { files } = folder(['2026-10-07-side.jpg', '2026-09-09-front.jpg', 'notes.txt', '2026-10-07-front.jpg', '2026-13-40-front.jpg', '2026-10-07-back.jpg']);
+  const { files } = folder([
+    '2026-10-07-side.jpg',
+    '2026-09-09-front.jpg',
+    'notes.txt',
+    '2026-10-07-front.jpg',
+    '2026-13-01-front.jpg', // no month 13
+    '2026-10-40-front.jpg', // no day 40
+    '2026-02-30-front.jpg', // no 30 February
+    '2026-10-07-back.jpg',
+    '2026-10-07-front.jpg.tmp',
+    'x2026-10-07-front.jpg',
+    '2026-10-07-front.JPG',
+  ]);
   expect(await createPhotoLibrary(files).photos()).toEqual([
     { takenOn: '2026-09-09', pose: 'front', uri: 'file:///docs/progress-photos/2026-09-09-front.jpg' },
     { takenOn: '2026-10-07', pose: 'front', uri: 'file:///docs/progress-photos/2026-10-07-front.jpg' },
@@ -65,6 +77,7 @@ test('adding moves the taken file into the folder under its name; the same day a
 test('a day that is not a calendar day is refused, nothing kept', async () => {
   const { files, kept } = folder();
   await expect(createPhotoLibrary(files).add('file:///cache/a.jpg', '2026-10-7', 'front')).rejects.toThrow();
+  await expect(createPhotoLibrary(files).add('file:///cache/a.jpg', '2026-02-30', 'front')).rejects.toThrow();
   expect(kept).toEqual([]);
 });
 
