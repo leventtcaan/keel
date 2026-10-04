@@ -113,7 +113,7 @@ const show = () =>
 const COLD_START_MS = 30_000;
 beforeAll(async () => {
   reset();
-  (await show()).unmount();
+  await (await show()).unmount();
 }, COLD_START_MS);
 const sets = () => mockRecord.mock.calls.map(([outbound]) => outbound).filter((o) => o.kind === 'set');
 
