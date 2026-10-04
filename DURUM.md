@@ -674,7 +674,7 @@ Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` �
 | 1 · Geçmiş ve sinyaller | K-535, K-534, K-608, K-603, K-611, K-610 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 87-93 |
 | 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-613 (K-606'dan bölündü), K-606 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 94-96 |
 | 3 · Efor ve fotoğraf | K-604, K-614 (K-601'den bölündü), K-601, K-602 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 97-101 |
-| 4 · İçe aktarma, paylaşım, teslim | K-609, K-612 · M6 çıkışı · M7 prompt'ları | — |
+| 4 · İçe aktarma, paylaşım, teslim | K-615, K-616, K-609 (bölündü), K-612 · M6 çıkışı · M7 prompt'ları | ⏳ sürüyor (4 Eki) |
 
 **Part 1 başı (3 Eki):** senkron tamam — M5 ÇIKIŞ git ile tutarlı (K-514 #327, K-408 #328, K-515 #329 birleşik; açık PR yok; worktree
 yalnız kalıcı `../keel-main`; `M5-part4-devam`/`M6-*-devam` yok). Ana checkout ayrık HEAD bir commit gerideydi → `origin/main`. Bağımlılıklar
@@ -792,6 +792,16 @@ pozitifte yeniden deneme yok; H2 §4.3 tam eşik seti.
   - Telefon tuzakları (yeni): RNTL 14'te `render` ve `unmount` **asenkron** (`await`); react-native-svg metni Jest ağacında `TSpan › content`'te (`getByText` görmez);
     `process.env.TZ` Jest içinde atanınca etkisiz — saat dilimi testini yerel saatten kur.
 - **Yeni sorular:** 97-101 (aşağıda) — 97 (iCloud/Android yedeği), 101 (60 günde jeton reddi tek kopyayı siler) **veri kararı**, önce bunlar.
+
+**Part 4 başı (4 Eki):** senkron tamam — Part 3 ÇIKIŞ git ile tutarlı (#347, #349, #350, #351 birleşik; açık PR yok; worktree yalnız `../keel-main`;
+`M6-*-devam` yok). Ana checkout ayrık HEAD 2 commit gerideydi → `origin/main` (936beb5). **K-308 hâlâ `doing`** → Health okuması (K-616) kod + test + Expo Go yolu.
+Disk **2,3 GB** (önbellekler zaten boş; Docker sanal diski 17 GB, soru 80) → Gradle yalnız hedefli saf testler, simülatör yok. Dependabot: aynı 3 geçişli uyarı.
+Sorular 97/101 cevapsız → Bitiş 2'de.
+**K-609 bölündü (teknik, ADR-053):** K-615 sunucu (#352: toplu uç + kaynak işareti + motor içe aktarılanı okumaz), K-616 Health kilo geçmişi (#353), K-609 CSV +
+eşleme ekranı (#124). Biçim kaynağı `arastirma/ham/H13` — Strong/Hevy sütun **yayımlamıyor**; gerçek dosya/örnek satırla doğrulanan varyantlar okunur.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
 
 ## Session sonunda Levent'e sorulacaklar
 **M6 Part 3 (97-) — 4 Eki:**

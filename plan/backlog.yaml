@@ -2774,26 +2774,66 @@ tasks:
     refs: ["arastirma/ham/I1-onboarding-aliskanlik.md"]
     learn: ["Zaman serisi görselleştirme"]
 
-  - id: K-609
-    title: "Geçmiş içe aktarma: Apple Health kilo, Strong/Hevy CSV"
+  - id: K-615
+    title: "İçe aktarılan geçmiş: kaynakla işaretli, görülür, karara girmez — toplu antrenman ucu (K-609'dan bölündü)"
     milestone: M6
-    module: measurement
+    module: training
     type: feature
     size: M
     status: todo
-    depends_on: [K-206, K-210, K-304]
+    depends_on: [K-206, K-210]
+    why: "ADR-018 §3, ADR-053: içe aktarılan veriyle hemen karar yok (U8); güvenlik ağı ve antrenman durumu içe aktarılanı okumamalı"
+    acceptance:
+      - "POST /v1/workout-imports: en çok import_workouts_per_request bitmiş seans, source STRONG|HEVY, tek transaction, seans clientId tekrarı atlanır, sağlık rızası şart"
+      - "Workout.source sözleşmede (LOGGED|STRONG|HEVY); listede görünür; ilerleme/Health'e yazma tetiklenmez"
+      - "Motor okumaları içe aktarılanı okumaz (IMPORT kilo, içe aktarılan seans); kilo trendi hepsini gösterir"
+      - "İçe aktarma kararı değiştirmez; ilk karar en erken ilk pazartesi"
+    tests:
+      - "FirstDecisionNotBeforeMondayTests"
+      - "WorkoutImportApiTests"
+    refs: ["plan/kararlar/ADR-053-gecmis-ice-aktarma.md", "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md", "arastirma/ham/H13-ice-aktarma-bicimleri.md"]
+    learn: ["Toplu yazma ve idempotency", "Kaynak işaretiyle okuma ayrımı"]
+
+  - id: K-616
+    title: "Apple Health kilo geçmişini içe aktarma (telefon, K-609'dan bölündü)"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-615]
+    why: "Geçmişi olan kullanıcıyı iki hafta bekletmemek (ADR-018 §3); trend hemen görünür"
+    acceptance:
+      - "Ayarlar'dan bir kez: health_weight_import_days öncesinden eşitleme penceresinin başına kadar okunur, source IMPORT, clientId Health kimliği"
+      - "Yalnız iki rızayla (sağlık verisi + Apple Health); Expo Go'da yok yolu"
+      - "Kaç tartı eklendiği söylenir; ikinci kez aynısını eklemez"
+    tests:
+      - "HealthWeightImportTests"
+    refs: ["plan/kararlar/ADR-053-gecmis-ice-aktarma.md"]
+    learn: ["Tek seferlik okuma vs düzenli eşitleme"]
+
+  - id: K-609
+    title: "Strong/Hevy CSV içe aktarma ve hareket eşleme ekranı (telefon; sunucu K-615, kilo K-616)"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-615, K-304]
     why: "Rakipten geçişin en ucuz yolu (ADR-018)"
     acceptance:
-      - "Apple Health kilo geçmişi ve Strong/Hevy CSV içe aktarılır"
-      - "Hareket eşleme ekranı: düşük güvende tek dokunuş alternatif (U5)"
-      - "Geçmiş trend hemen görünür; ilk karar en erken ilk pazartesi"
+      - "Strong ve Hevy CSV'si telefonda ayrıştırılır; yalnız H13'te doğrulanan sütunlar; tanınmayan başlık reddedilir; dosya sunucuya gitmez"
+      - "Hareket eşleme ekranı: düşük güvende tek dokunuş alternatif (U5); kendi hareketim ya da atla"
+      - "Strong birimi ve dambıl yükü (tek/toplam) kullanıcıya sorulur, tahmin edilmez"
+      - "Geçmiş hemen görünür (güç grafiği); yalnız sağlık rızasıyla gönderilir, kaynakla işaretli"
     tests:
       - "ImportTests"
-      - "FirstDecisionNotBeforeMondayTests"
-    refs: ["plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md", "arastirma/ham/L3-ozellik-boslugu.md"]
+      - "Dosyanın ağa gitmediğini gösteren test"
+    refs: ["plan/kararlar/ADR-053-gecmis-ice-aktarma.md", "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md", "arastirma/ham/H13-ice-aktarma-bicimleri.md", "arastirma/ham/L3-ozellik-boslugu.md"]
     learn:
       - "Veri içe aktarma"
       - "Eşleme belirsizliği"
+
   - id: K-610
     title: "'Kararı ne değiştirir?' önizleyicisi"
     milestone: M6
