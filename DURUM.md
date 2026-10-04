@@ -669,6 +669,22 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
   - Disk: yerelde `DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test` saf testleri hızlı koşar, DB testleri Docker'sız düşer (sayımı ayır).
 - **Sorular:** 86 → ADR-048 #5 (önce buton, sonra intent). Açık: 57 (rıza metni hukuki bakış, yayından önce).
 
+## M8 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat `plan/oturum-promptlari/M8.md`. Part prompt'ları `M8-part1.md`, `M8-part2.md`.
+
+| Part | Görevler | Durum |
+|---|---|---|
+| 1 · Metinler ve envanter | K-801, K-806, K-803 · yasal URL | ⏳ sürüyor (4 Eki) |
+| 2 · Denetimler ve teslim | K-802, K-804, K-807 · M8 çıkışı · M9 prompt'ları | bekliyor |
+
+**Part 1 başı (4 Eki):** senkron tamam — M7 ÇIKIŞ git ile tutarlı (#368, #369, #372, #373 birleşik; açık PR yok; worktree yalnız `../keel-main`;
+`*-devam.md` yok). Ana checkout ayrık HEAD = `origin/main` (6028e6b). Bağımlılıklar `done` (K-214, K-503; K-803 ← K-801 bu part'ta).
+Dependabot: aynı 3 geçişli uyarı (braces, node-forge, decode-uri-component). **Disk 1,5 GB** (bizim önbellekler ~270 MB; temizlenecek
+büyük önbellek yok) → Levent'e soruldu. K-308 hâlâ `doing`.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+
 ## M7 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `M7-part2.md`.
 
