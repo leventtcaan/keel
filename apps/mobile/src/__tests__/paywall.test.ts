@@ -54,18 +54,27 @@ function store(overrides: Partial<SubscriptionStore> = {}): SubscriptionStore & 
 
 const waits: number[] = [];
 const wait = async (ms: number) => void waits.push(ms);
-beforeEach(() => (waits.length = 0));
+const reported: string[] = [];
+const report = (problem: { name: string }) => void reported.push(problem.name);
+const LINKS = [
+  { key: 'subscription.terms', url: 'https://example.test/terms' },
+  { key: 'subscription.privacy', url: 'https://example.test/privacy' },
+];
+beforeEach(() => {
+  waits.length = 0;
+  reported.length = 0;
+});
 
 describe('opening the paywall', () => {
   test('the store is identified as the account the server names, then shows its plans', async () => {
     const fake = store();
-    expect(await openPaywall({ api: server(NONE).api, store: fake })).toEqual({ state: 'plans', plans: PLANS });
+    expect(await openPaywall({ api: server(NONE).api, store: fake, report, links: LINKS })).toEqual({ state: 'plans', plans: PLANS });
     expect(fake.calls).toEqual([`identify ${ID}`, 'plans']);
   });
 
   test('already active on the server: nothing to sell, the store is not asked for plans', async () => {
     const fake = store();
-    expect(await openPaywall({ api: server(TRIAL).api, store: fake })).toEqual({ state: 'subscribed', subscription: TRIAL });
+    expect(await openPaywall({ api: server(TRIAL).api, store: fake, report, links: LINKS })).toEqual({ state: 'subscribed', subscription: TRIAL });
     expect(fake.plans).not.toHaveBeenCalled();
   });
 
@@ -73,25 +82,37 @@ describe('opening the paywall', () => {
     'the server not answering (%s): no purchase can be tied to the account, so none is offered',
     async (_, answer) => {
       const fake = store();
-      expect(await openPaywall({ api: server(answer).api, store: fake })).toEqual({ state: 'offline' });
+      expect(await openPaywall({ api: server(answer).api, store: fake, report, links: LINKS })).toEqual({ state: 'offline' });
       expect(fake.identify).not.toHaveBeenCalled();
     },
   );
 
   test('not in this build: said so, and the server is not even asked', async () => {
     const { api, asked } = server(NONE);
-    expect(await openPaywall({ api, store: storeUnavailable })).toEqual({ state: 'unavailable' });
+    expect(await openPaywall({ api, store: storeUnavailable, report, links: LINKS })).toEqual({ state: 'unavailable' });
     expect(asked).toEqual([]);
   });
 
-  test('a store with no plans, or one that fails, says it cannot show them', async () => {
-    expect(await openPaywall({ api: server(NONE).api, store: store({ plans: async () => [] }) })).toEqual({ state: 'failed' });
+  test('a store with no plans, or one that fails, says it cannot show them — and says why, by name, to the developer', async () => {
+    expect(await openPaywall({ api: server(NONE).api, store: store({ plans: async () => [] }), report, links: LINKS })).toEqual({ state: 'failed' });
     const failing = store({
       plans: async () => {
-        throw new Error('offerings');
+        throw Object.assign(new Error('x'), { name: 'StoreError_10' });
       },
     });
-    expect(await openPaywall({ api: server(NONE).api, store: failing })).toEqual({ state: 'failed' });
+    expect(await openPaywall({ api: server(NONE).api, store: failing, report, links: LINKS })).toEqual({ state: 'failed' });
+    expect(reported).toEqual(['NoPlans', 'StoreError_10']);
+  });
+
+  test.each([
+    ['none', []],
+    ['only the terms', LINKS.slice(0, 1)],
+  ])('without both legal links in the build (%s), nothing is sold (Apple 3.1.2): said, the store not asked', async (_, links) => {
+    const fake = store();
+    const { api, asked } = server(NONE);
+    expect(await openPaywall({ api, store: fake, report, links })).toEqual({ state: 'incomplete' });
+    expect(fake.identify).not.toHaveBeenCalled();
+    expect(asked).toEqual([]);
   });
 });
 
@@ -123,15 +144,24 @@ describe('after a purchase, the server is asked until it sees it', () => {
     expect(asked).toEqual([]);
   });
 
-  test('a purchase that fails throws by name; the server is not asked', async () => {
-    const { api, asked } = server(TRIAL);
+  test('a purchase that fails throws by name after one look at the server — not the whole wait', async () => {
+    const { api, asked } = server(NONE);
     const failing = store({
       buy: async () => {
-        throw Object.assign(new Error('x'), { name: 'PurchaseFailed' });
+        throw Object.assign(new Error('x'), { name: 'PurchaseFailed_2' });
       },
     });
-    await expect(subscribe({ api, store: failing, wait }, '$rc_annual')).rejects.toMatchObject({ name: 'PurchaseFailed' });
-    expect(asked).toEqual([]);
+    await expect(subscribe({ api, store: failing, wait }, '$rc_annual')).rejects.toMatchObject({ name: 'PurchaseFailed_2' });
+    expect(asked).toEqual(['/v1/subscription']);
+  });
+
+  test('a purchase that "fails" after Apple charged (RevenueCat could not send the receipt): the server already has it — active', async () => {
+    const failing = store({
+      buy: async () => {
+        throw Object.assign(new Error('x'), { name: 'PurchaseFailed_10' });
+      },
+    });
+    expect(await subscribe({ api: server(TRIAL).api, store: failing, wait }, '$rc_annual')).toBe('active');
   });
 
   test('confirmActive stops at the first active answer', async () => {
@@ -165,6 +195,12 @@ describe('restoring', () => {
     await expect(restorePurchases({ api: server('offline').api, store: fake, wait })).rejects.toMatchObject({ name: 'NoConnection' });
     expect(fake.restore).not.toHaveBeenCalled();
   });
+});
+
+test('the wait is the parameter file\'s, read as written', () => {
+  const file = jest.requireActual('../../../../data/parameters/subscription.json') as { parameters: { key: string; value: number }[] };
+  const value = (key: string) => file.parameters.find((p) => p.key === key)?.value;
+  expect(subscriptionParams).toEqual({ confirmAttempts: value('subscription_confirm_attempts'), confirmIntervalMs: value('subscription_confirm_interval_ms') });
 });
 
 test("load tells the subscription's 403 apart from the consent's (K-703: ENTITLEMENT_REQUIRED opens the way to the plans)", async () => {

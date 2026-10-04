@@ -9,6 +9,7 @@ import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { load } from '@/today/today';
 
+import type { LegalLink } from './links';
 import { subscriptionParams } from './params';
 import type { Bought, Plan, SubscriptionStore } from './store';
 
@@ -24,6 +25,8 @@ export type Opened =
   | { state: 'offline' }
   /** Purchases are not in this build (Expo Go, no SDK key). */
   | { state: 'unavailable' }
+  /** The build has the store but not both legal links: nothing is sold without them (Apple 3.1.2, ADR-057 D3). */
+  | { state: 'incomplete' }
   /** The store could not show its plans. */
   | { state: 'failed' };
 
@@ -40,16 +43,25 @@ async function identify({ api, store }: Deps): Promise<Subscription> {
   return read.value;
 }
 
-export async function openPaywall(deps: Deps): Promise<Opened> {
+const LEGAL = ['subscription.terms', 'subscription.privacy'];
+const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
+
+export async function openPaywall(
+  deps: Deps & { report: (problem: { name: string }) => void; links: LegalLink[] },
+): Promise<Opened> {
   if (!deps.store.available) return { state: 'unavailable' };
+  if (!LEGAL.every((key) => deps.links.some((link) => link.key === key))) return { state: 'incomplete' };
   const read = await readSubscription(deps.api);
   if (read.state !== 'ready') return { state: 'offline' };
   if (read.value.active) return { state: 'subscribed', subscription: read.value };
   try {
     await deps.store.identify(read.value.appUserId);
     const plans = await deps.store.plans();
+    // No current offering in RevenueCat, or one without these plans: a set-up problem, said to the developer by name.
+    if (plans.length === 0) deps.report({ name: 'NoPlans' });
     return plans.length === 0 ? { state: 'failed' } : { state: 'plans', plans };
-  } catch {
+  } catch (error) {
+    deps.report({ name: nameOf(error) });
     return { state: 'failed' };
   }
 }
@@ -67,7 +79,16 @@ export async function confirmActive(api: ApiClient, waitFor: Wait): Promise<bool
 
 /** Apple's sheet for the plan (the store was identified when the paywall opened), then the server's word. */
 export async function subscribe(deps: Deps & { wait: Wait }, planId: string): Promise<Exclude<Bought, 'bought'> | 'active' | 'waiting'> {
-  const bought = await deps.store.buy(planId);
+  let bought: Bought;
+  try {
+    bought = await deps.store.buy(planId);
+  } catch (error) {
+    // A purchase can fail after Apple charged (RevenueCat could not send the receipt): one look at the server before saying it
+    // did not go through — not the whole wait, which a real failure would make the user sit through.
+    const read = await readSubscription(deps.api);
+    if (read.state === 'ready' && read.value.active) return 'active';
+    throw error;
+  }
   if (bought !== 'bought') return bought;
   return (await confirmActive(deps.api, deps.wait)) ? 'active' : 'waiting';
 }

@@ -41,6 +41,8 @@ Mağaza "tamam" dese de erişim sunucunun sözüdür (ADR-012). Webhook birkaç 
 `GET /v1/subscription`'ı `subscription_confirm_attempts` kez, `subscription_confirm_interval_ms` arayla sorar
 (`data/parameters/subscription.json`; 12 × 5 sn = 1 dk). Aktif görünce "abonesin"; görünmezse "App Store onayladı, bize ulaşması bir
 dakika sürebilir" + "tekrar bak" düğmesi — hata değil, satın alma yeniden istenmez. Geri yükleme de aynı teyidi yapar.
+**Başarısız satın alma** (inceleme): Apple ücreti aldıktan sonra da düşebilir (RevenueCat makbuzu gönderemedi) → sunucuya **bir kez**
+bakılır; aktifse "abonesin", değilse hata + "App Store ücret aldıysa Restore purchases getirir".
 
 ### D3 · Fiyat ve deneme dili mağazadan, metin en.json'dan
 Planlar `getOfferings().current`'ın `annual` ve `monthly` paketleri; fiyat yalnız `priceString` / `pricePerMonthString` (mağazanın
@@ -48,17 +50,25 @@ yerel biçimi; kodda fiyat ve para birimi hesabı yok, K2). Deneme süresi `intr
 `INTRO_ELIGIBILITY_STATUS_ELIGIBLE` iken** — denemesini kullanmış birine "7 gün ücretsiz" demek yanıltır (Apple 3.1.2). Sayfada:
 plan adı, süre, fiyat, deneme sonrası ne zaman ne kadar çekileceği, otomatik yenileme, nasıl iptal edileceği, Kullanım Şartları ve
 Gizlilik Politikası bağlantıları (adresler yapılandırmadan: `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_PRIVACY_URL`; metinleri M8,
-K-801). Prototipteki "Day 5 we remind you" satırı **yok**: hatırlatma yapılmıyor; söz verilmez (soru 105).
+K-801). **İki bağlantı da yoksa satış yok** (inceleme): mağaza derlemede olsa bile paywall "bu derlemede satın alma kurulmadı" der
+(`incomplete`), mağazaya sorulmaz — Apple 3.1.2'ye takılan bir sürüm çıkmaz. Prototipteki "Day 5 we remind you" satırı **yok**: hatırlatma yapılmıyor; söz verilmez (soru 105).
 
 ### D4 · İptal Apple'ın sayfasında, iki dokunuşta
 Ayarlar › Abonelik: durum (deneme · şu tarihte yenilenir · iptal edildi, şu tarihe kadar · ödeme sorunu · süresi doldu) + **"Cancel or
 change plan"** → `showManageSubscriptions` (Apple'ın sayfası; orada "Cancel Subscription"). Karanlık desen yok: vazgeçirme ekranı,
-"emin misin", kayıp korkusu yok (U7, Noom). Duraklat düğmesi iOS'ta **yok** (yukarıda; soru 106).
+"emin misin", kayıp korkusu yok (U7, Noom). Duraklat düğmesi iOS'ta **yok** (yukarıda; soru 106). Bölüm Ayarlar her görünür olduğunda (paywall üstünde kapanınca) ve Apple'ın
+sayfasından dönünce sunucuyu yeniden okur. `showManageSubscriptions`'ın sayfa kapanınca mı açılınca mı çözüldüğü tiplerde yazmıyor
+`[doğrulanmadı]` → cihaz adımı (K-308 sonrası).
 
 ### D5 · ENTITLEMENT_REQUIRED paywall'a götürür, zorla açmaz
 `load` (`today/today.ts`) 403 `ENTITLEMENT_REQUIRED`'ı `subscription` durumu olarak ayırır; koç ve öğün (kelime, fotoğraf) bunu
 "bu bir abonelik ister" + **"See plans"** düğmesi olarak gösterir; paywall kullanıcı dokununca açılır. Motorun kendi sözleri, kayıt
 ve karar kartı aboneliksiz çalışır (ADR-056 #10). "Kredi" kelimesi yok.
+
+### D6 · Hatalar adıyla, kod RevenueCat'in
+SDK hataları `StoreError_<kod>`, satın alma `PurchaseFailed_<kod>` (PURCHASES_ERROR_CODE — sayı, kullanıcı verisi yok); mesaj ne
+gösterilir ne loglanır (V3). Mağaza planları göstermezse `NoPlans`, deneme uygunluğu okunamazsa `TrialEligibilityUnread`, anahtar var ama
+SDK yoksa `StoreModuleMissing` raporlanır — yanlış kurulmuş bir pano kullanıcının bağlantı sorunu gibi görünmez (inceleme).
 
 ## Alternatifler ve neden o değil
 | Alternatif | Neden değil |

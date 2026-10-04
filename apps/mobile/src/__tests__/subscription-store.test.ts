@@ -61,7 +61,10 @@ function sdk(options: { annual?: Package | null; monthly?: Package | null; eligi
 
 const KEY = 'appl_public_test_key';
 const ID = '0b6f2a8e-1c3d-4e5f-8a9b-0c1d2e3f4a5b';
-const make = (fake = sdk(), key: string | undefined = KEY) => revenueCatStore({ load: () => fake, inExpoGo: () => false, apiKey: key });
+const reported: string[] = [];
+const report = (problem: { name: string }) => void reported.push(problem.name);
+beforeEach(() => (reported.length = 0));
+const make = (fake = sdk(), key: string | undefined = KEY) => revenueCatStore({ load: () => fake, inExpoGo: () => false, apiKey: key, report });
 
 test('in Expo Go the SDK is not even loaded: its stand-ins would look like real purchases', () => {
   const load = jest.fn(() => sdk());
@@ -83,8 +86,10 @@ test('an SDK that cannot be loaded (no native module) is not available', () => {
     },
     inExpoGo: () => false,
     apiKey: KEY,
+    report,
   });
   expect(store.available).toBe(false);
+  expect(reported).toEqual(['StoreModuleMissing']); // a build with the key and no SDK is a broken build: said, not hidden
 });
 
 test('loading is not setting up: nothing reaches RevenueCat until an account is identified', () => {
@@ -145,12 +150,13 @@ test.each([
   expect((await store.plans())[0].trial).toBeNull();
 });
 
-test('eligibility that cannot be read promises no trial; the plans still show', async () => {
+test('eligibility that cannot be read promises no trial and is reported; the plans still show', async () => {
   const store = make(sdk({ eligibility: new Error('offline') }));
   await store.identify(ID);
   const plans = await store.plans();
   expect(plans.map((plan) => plan.trial)).toEqual([null, null]);
   expect(plans).toHaveLength(2);
+  expect(reported).toEqual(['TrialEligibilityUnread']);
 });
 
 test('an introductory price that is not free is not a free trial', async () => {
@@ -195,11 +201,51 @@ test('buying takes the package from the plans shown; backing out and waiting for
   expect(await pending.buy('$rc_monthly')).toBe('pending');
 });
 
-test('any other failure of a purchase throws by name, never with the store message', async () => {
+test("any other failure of a purchase throws by name, with RevenueCat's code — never the store's message (V3)", async () => {
   const store = make(sdk({ buy: { code: '2', message: 'There was a problem with the App Store.' } }));
   await store.identify(ID);
   await store.plans();
-  await expect(store.buy('$rc_annual')).rejects.toMatchObject({ name: 'PurchaseFailed' });
+  const failure = await store.buy('$rc_annual').catch((error: Error) => error);
+  expect(failure).toMatchObject({ name: 'PurchaseFailed_2' });
+  expect((failure as Error).message).not.toContain('App Store');
+});
+
+test("the SDK's other failures are named by RevenueCat's code too, never its message", async () => {
+  const fake = sdk();
+  fake.getOfferings.mockRejectedValueOnce({ code: '10', message: 'network down for someone@example.com' });
+  const store = make(fake);
+  await store.identify(ID);
+  const failure = await store.plans().catch((error: Error) => error);
+  expect(failure).toMatchObject({ name: 'StoreError_10' });
+  expect((failure as Error).message).not.toContain('example.com');
+  fake.logOut.mockRejectedValueOnce(new Error('anonymous'));
+  await expect(store.forget()).rejects.toMatchObject({ name: 'StoreError' });
+});
+
+test('signing the same account in again after a sign-out logs it in (never an anonymous id); a second forget asks nothing; the plans shown before are gone', async () => {
+  const fake = sdk();
+  const store = make(fake);
+  await store.identify(ID);
+  await store.plans();
+  await store.forget();
+  await store.forget();
+  await expect(store.plans()).rejects.toMatchObject({ name: 'NotIdentified' });
+  await store.identify(ID);
+  await expect(store.buy('$rc_annual')).rejects.toMatchObject({ name: 'UnknownPlan' });
+  expect(fake.calls.filter((call) => !call.startsWith('buy'))).toEqual([`configure ${ID}`, 'logOut', `logIn ${ID}`]);
+});
+
+test('managing before the account is identified asks nothing of the SDK', async () => {
+  const fake = sdk();
+  await expect(make(fake).manage()).rejects.toMatchObject({ name: 'NotIdentified' });
+  expect(fake.showManageSubscriptions).not.toHaveBeenCalled();
+});
+
+test('a trial in a unit not known here promises no trial', async () => {
+  const odd = { ...ANNUAL, product: { ...ANNUAL.product, introPrice: { price: 0, periodUnit: 'FORTNIGHT', periodNumberOfUnits: 1, cycles: 1 } } };
+  const store = make(sdk({ annual: odd }));
+  await store.identify(ID);
+  expect((await store.plans())[0].trial).toBeNull();
 });
 
 test('a plan that was not shown cannot be bought', async () => {

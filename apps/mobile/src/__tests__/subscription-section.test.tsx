@@ -27,10 +27,22 @@ const mockGET = jest.fn(async (_path: string) => {
   return answer;
 });
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockPush(...args) } }));
+// Settings coming back into view (the paywall closed over it): the focus effect runs again.
+let mockFocus: () => void = () => {};
+jest.mock('expo-router', () => {
+  const { useEffect } = jest.requireActual('react');
+  return {
+    router: { push: (...args: unknown[]) => mockPush(...args) },
+    useFocusEffect: (effect: () => void) => {
+      mockFocus = effect;
+      useEffect(() => effect(), [effect]);
+    },
+  };
+});
 let mockStore: SubscriptionStore;
 const mockApi = { GET: mockGET };
-const mockServices = { api: mockApi, get purchases() { return mockStore; }, report: () => {} };
+const mockReport = jest.fn();
+const mockServices = { api: mockApi, get purchases() { return mockStore; }, report: (problem: { name: string }) => mockReport(problem.name) };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
 
@@ -128,4 +140,43 @@ test('the subscription not read: says so; nothing to press that would act under 
   expect(screen.getByText(t('settings.subscription.failed'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('settings.subscription.manage') })).toBeNull();
   expect(screen.queryByRole('button', { name: t('subscription.restore') })).toBeNull();
+});
+
+test.each(['BILLING_ISSUE', 'PAUSED'] as const)(
+  '%s past its access: still something on the App Store to cancel or change — the way there, not the plans',
+  async (status) => {
+    await show(sub(status, false));
+    expect(screen.getByRole('button', { name: t('settings.subscription.manage') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('subscription.seePlans') })).toBeNull();
+  },
+);
+
+test('back from the plans (Settings in view again): the subscription is read again — bought there, shown here', async () => {
+  await show({ active: false, appUserId: ID });
+  expect(screen.getByText(t('settings.subscription.none'))).toBeOnTheScreen();
+  mockAnswers = [ok(sub('TRIAL', true))];
+  await act(async () => mockFocus());
+  expect(screen.getByText('Free trial until Oct 11, 2026.')).toBeOnTheScreen();
+});
+
+test("back from Apple's page: read again — a cancellation made there shows here", async () => {
+  await show(sub('ACTIVE', true), sub('CANCELLED', true));
+  await press(t('settings.subscription.manage'));
+  expect(screen.getByText("Cancelled. Yours until Oct 11, 2026; it won't renew.")).toBeOnTheScreen();
+});
+
+test("Apple's page that cannot be opened says so and is reported by name", async () => {
+  mockStore = { ...store(), manage: jest.fn(async () => Promise.reject(Object.assign(new Error('x'), { name: 'StoreError_2' }))) };
+  await show(sub('ACTIVE', true));
+  await press(t('settings.subscription.manage'));
+  expect(screen.getByText(t('settings.subscription.manageFailed'))).toBeOnTheScreen();
+  expect(mockReport).toHaveBeenCalledWith('StoreError_2');
+});
+
+test('a restore that fails says so and is reported by name', async () => {
+  mockStore = { ...store(), restore: jest.fn(async () => Promise.reject(Object.assign(new Error('x'), { name: 'StoreError_10' }))) };
+  await show({ active: false, appUserId: ID });
+  await press(t('subscription.restore'));
+  expect(screen.getByText(t('subscription.restoreFailed'))).toBeOnTheScreen();
+  expect(mockReport).toHaveBeenCalledWith('StoreError_10');
 });

@@ -38,24 +38,45 @@ const ELIGIBLE = 2;
 const UNITS: Record<string, NonNullable<Plan['trial']>['unit']> = { DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year' };
 
 const named = (name: string, message: string) => Object.assign(new Error(message), { name });
+/** RevenueCat's error code (PURCHASES_ERROR_CODE: a number as a string, no user data in it); none when the failure carries none. */
+const codeOf = (error: unknown): string | null => {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && /^\d+$/.test(code) ? code : null;
+};
+/** By name only (V3): the SDK's message is not ours to show or log; its code says which failure it was. */
+const storeError = (error: unknown) => {
+  const code = codeOf(error);
+  return named(code === null ? 'StoreError' : `StoreError_${code}`, 'the App Store could not be asked');
+};
+/** An SDK call whose failure is named by its code (StoreError_<code>). */
+async function sdkCall<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    throw storeError(error);
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const loadSdk = () => (require('react-native-purchases') as { default: Sdk }).default;
 
-type Deps = { load?: () => unknown; inExpoGo?: () => boolean; apiKey?: string };
+type Deps = { load?: () => unknown; inExpoGo?: () => boolean; apiKey?: string; report?: (problem: { name: string }) => void };
 
 export function revenueCatStore({
   load = loadSdk,
   inExpoGo = isRunningInExpoGo,
   // The static read is what Expo inlines at build time (as EXPO_PUBLIC_API_URL in api/config.ts).
   apiKey = process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY,
+  report = () => {},
 }: Deps = {}): SubscriptionStore {
   if (inExpoGo() || apiKey === undefined || apiKey.trim() === '') return storeUnavailable;
   let sdk: Sdk;
   try {
     sdk = load() as Sdk;
   } catch {
-    return storeUnavailable; // no native module in this build
+    // The key is in the build but the SDK is not: a broken build, said by name — the user is told purchases are not here.
+    report({ name: 'StoreModuleMissing' });
+    return storeUnavailable;
   }
   const key = apiKey.trim();
   let configured = false;
@@ -83,7 +104,7 @@ export function revenueCatStore({
         sdk.configure({ apiKey: key, appUserID: appUserId });
         configured = true;
       } else if (account !== appUserId) {
-        await sdk.logIn(appUserId);
+        await sdkCall(() => sdk.logIn(appUserId));
       }
       account = appUserId;
     },
@@ -91,19 +112,21 @@ export function revenueCatStore({
       shown = new Map();
       if (!configured || account === null) return;
       account = null;
-      await sdk.logOut();
+      await sdkCall(() => sdk.logOut());
     },
     plans: async () => {
       identified();
-      const current = (await sdk.getOfferings()).current;
+      const current = (await sdkCall(() => sdk.getOfferings())).current;
       const packages = [
         ['annual', current?.annual ?? null],
         ['monthly', current?.monthly ?? null],
       ].filter((entry): entry is [Plan['period'], Package] => entry[1] !== null);
-      // Eligibility that cannot be read promises no trial; the plans still show (Apple's sheet states the real terms).
-      const eligibility = await sdk
-        .checkTrialOrIntroductoryPriceEligibility(packages.map(([, pkg]) => pkg.product.identifier))
-        .catch(() => ({}) as Record<string, { status: number }>);
+      // Eligibility that cannot be read promises no trial (Apple's sheet states the real terms) and is reported: a check that
+      // always failed would take the trial off every paywall without anyone knowing.
+      const eligibility = await sdk.checkTrialOrIntroductoryPriceEligibility(packages.map(([, pkg]) => pkg.product.identifier)).catch(() => {
+        report({ name: 'TrialEligibilityUnread' });
+        return {} as Record<string, { status: number }>;
+      });
       shown = new Map(packages.map(([, pkg]) => [pkg.identifier, pkg]));
       return packages.map(([period, pkg]) => ({
         id: pkg.identifier,
@@ -121,20 +144,20 @@ export function revenueCatStore({
         await sdk.purchasePackage(pkg);
         return 'bought';
       } catch (error) {
-        const code = (error as { code?: unknown } | null)?.code;
+        const code = codeOf(error);
         if (code === CANCELLED) return 'cancelled';
         if (code === PENDING) return 'pending';
-        // By name only: the store's message is not ours to show or log (V3).
-        throw named('PurchaseFailed', `the purchase failed (${typeof code === 'string' ? code : 'no code'})`);
+        // By name and code only: the store's message is not ours to show or log (V3).
+        throw named(code === null ? 'PurchaseFailed' : `PurchaseFailed_${code}`, 'the purchase did not go through');
       }
     },
     restore: async () => {
       identified();
-      await sdk.restorePurchases();
+      await sdkCall(() => sdk.restorePurchases());
     },
     manage: async () => {
       identified();
-      await sdk.showManageSubscriptions();
+      await sdkCall(() => sdk.showManageSubscriptions());
     },
   };
 }

@@ -39,14 +39,14 @@ function stepOf(opened: Opened): Step {
  * (D5): from a feature that needs it, or Settings.
  */
 export default function PaywallScreen() {
-  const { api, purchases } = useAppServices();
+  const { api, purchases, report } = useAppServices();
   const { color } = useTheme();
   const [step, setStep] = useState<Step>({ at: 'loading' });
-  const links = configuredLegalLinks();
+  const [links] = useState(configuredLegalLinks);
   // One purchase or restore at a time: a second tap while Apple's sheet is up does nothing (a ref both taps share).
   const running = useRef(false);
 
-  const opening = useCallback(() => openPaywall({ api, store: purchases }).then(stepOf), [api, purchases]);
+  const opening = useCallback(() => openPaywall({ api, store: purchases, report, links }).then(stepOf), [api, purchases, report, links]);
   useEffect(() => {
     let live = true; // an answer after the screen closed changes nothing
     void opening().then((opened) => {
@@ -73,7 +73,8 @@ export default function PaywallScreen() {
       if (outcome === 'active') setStep({ at: 'active' });
       else if (outcome === 'waiting') setStep({ at: 'waiting', looking: false });
       else busy(null, outcome === 'pending' ? 'pending' : null);
-    } catch {
+    } catch (error) {
+      report({ name: nameOf(error) });
       busy(null, 'purchaseFailed');
     } finally {
       running.current = false;
@@ -87,7 +88,8 @@ export default function PaywallScreen() {
     try {
       if ((await restorePurchases({ api, store: purchases, wait })) === 'active') setStep({ at: 'active' });
       else busy(null, 'restoreWaiting');
-    } catch {
+    } catch (error) {
+      report({ name: nameOf(error) });
       busy(null, 'restoreFailed');
     } finally {
       running.current = false;
@@ -108,8 +110,8 @@ export default function PaywallScreen() {
   if (step.at === 'loading') {
     body = text(t('subscription.loading'), 'muted');
   } else if (step.at === 'closed') {
-    // Not in the build cannot change by trying again; no connection and a store that failed can.
-    const retryable = step.why !== 'unavailable';
+    // Not in the build (or not set up in it) cannot change by trying again; no connection and a store that failed can.
+    const retryable = step.why === 'offline' || step.why === 'failed';
     const tryAgain = <Button label={t('subscription.tryAgain')} variant="ghost" onPress={() => void open()} />;
     body = (
       <View style={styles.part}>
@@ -134,7 +136,7 @@ export default function PaywallScreen() {
     const legal =
       links.length === 0 ? null : (
         <View style={styles.links}>
-          {links.map((link) => linkButton(link.key, link.url))}
+          {links.map((link) => linkButton(link.key, link.url, report))}
         </View>
       );
     body = (
@@ -172,10 +174,13 @@ export default function PaywallScreen() {
   );
 }
 
-/** A legal link set in the build (links.ts): opened in the browser. */
-function linkButton(key: string, url: string) {
-  return <Button key={key} label={t(key)} variant="ghost" size="sm" onPress={() => void Linking.openURL(url)} />;
+/** A legal link set in the build (links.ts): opened in the browser; one that cannot be opened is reported by name. */
+function linkButton(key: string, url: string, report: (problem: { name: string }) => void) {
+  const open = () => void Linking.openURL(url).catch((error: unknown) => report({ name: nameOf(error) }));
+  return <Button key={key} label={t(key)} variant="ghost" size="sm" onPress={open} />;
 }
+
+const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },

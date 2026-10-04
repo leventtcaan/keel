@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -49,15 +49,18 @@ export function SubscriptionSection() {
     () => load(() => api.GET('/v1/subscription')).then((loaded): Read => (loaded.state === 'ready' ? { state: 'ready', subscription: loaded.value } : { state: 'failed' })),
     [api],
   );
-  useEffect(() => {
-    let live = true; // an answer after Settings closed changes nothing
-    void reading().then((first) => {
-      if (live) setRead(first);
-    });
-    return () => {
-      live = false;
-    };
-  }, [reading]);
+  // Read whenever Settings comes into view: the paywall closes over it, so a purchase made there shows here (K-702 review).
+  useFocusEffect(
+    useCallback(() => {
+      let live = true; // an answer after Settings went out of view changes nothing
+      void reading().then((now) => {
+        if (live) setRead(now);
+      });
+      return () => {
+        live = false;
+      };
+    }, [reading]),
+  );
   const refresh = async () => setRead(await reading());
 
   const note = (words: string, tone: 'text' | 'muted' = 'muted') => <Text style={[styles.note, { color: color[tone] }]}>{words}</Text>;
@@ -74,6 +77,7 @@ export function SubscriptionSection() {
       async () => {
         await purchases.identify(subscription.appUserId);
         await purchases.manage();
+        await refresh(); // back from Apple's page: a cancellation or a change made there shows here
       },
       {},
       'settings.subscription.manageFailed',

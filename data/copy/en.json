@@ -1406,6 +1406,7 @@
   },
   "coach": {
     "subscription": "Questions to the coach come with a subscription. This week's call and its reasons are here without one.",
+    "mealSubscription": "Reading a meal from your words comes with a subscription. You can still log it by name.",
     "entry": "Ask the coach",
     "answer": {
       "call": "This week's call stands as it is. What changes it is new data, not a different answer.",
@@ -1747,6 +1748,7 @@
     "loading": "Loading the plans…",
     "unavailable": "Purchases work in the App Store build of the app, not in this one.",
     "offline": "No connection right now, so nothing can be bought. Try again in a moment.",
+    "incomplete": "Purchases aren't set up in this build yet.",
     "failed": "The App Store couldn't show the plans. Try again in a moment.",
     "tryAgain": "Try again",
     "buying": "Waiting for the App Store…",
@@ -1755,7 +1757,7 @@
     "waiting": "The App Store confirmed it. It can take a minute to reach us.",
     "lookAgain": "Check again",
     "pending": "Waiting for approval. Access starts once the purchase is approved.",
-    "purchaseFailed": "The purchase didn't go through. Try again in a moment.",
+    "purchaseFailed": "The purchase didn't go through. If the App Store charged you anyway, Restore purchases brings it here.",
     "restoreWaiting": "Nothing restored for this Apple ID yet. If you subscribed with it, it can take a minute to reach us.",
     "restoreFailed": "Couldn't restore purchases. Try again in a moment."
   },

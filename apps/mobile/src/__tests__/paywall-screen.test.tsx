@@ -36,12 +36,17 @@ jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: () => 
 let mockStore: SubscriptionStore;
 // One api for the screen's life, as the app's services are built once (a new one each render would open the paywall again).
 const mockApi = { GET: mockGET };
-const mockServices = { api: mockApi, get purchases() { return mockStore; }, report: () => {} };
+const mockReport = jest.fn();
+const mockServices = { api: mockApi, get purchases() { return mockStore; }, report: (problem: { name: string }) => mockReport(problem.name) };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 // No real waiting between the looks at the server.
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
 const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
-let mockLinks = [{ key: 'subscription.terms', url: 'https://example.test/terms' }];
+const BOTH = [
+  { key: 'subscription.terms', url: 'https://example.test/terms' },
+  { key: 'subscription.privacy', url: 'https://example.test/privacy' },
+];
+let mockLinks = BOTH;
 jest.mock('@/subscription/links', () => ({ configuredLegalLinks: () => mockLinks }));
 
 function store(overrides: Partial<SubscriptionStore> = {}): SubscriptionStore {
@@ -61,7 +66,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAnswers = [ok(NONE)];
   mockStore = store();
-  mockLinks = [{ key: 'subscription.terms', url: 'https://example.test/terms' }];
+  mockLinks = BOTH;
 });
 
 async function show() {
@@ -183,19 +188,94 @@ test('no connection: nothing can be bought; trying again asks again', async () =
   expect(screen.getByRole('button', { name: t('subscription.startTrial') })).toBeOnTheScreen();
 });
 
-test('not in this build (Expo Go): said so, with a way out', async () => {
+test('not in this build (Expo Go): said so, with a way out and nothing to try again', async () => {
   mockStore = storeUnavailable;
   await show();
   expect(screen.getByText(t('subscription.unavailable'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('subscription.tryAgain') })).toBeNull();
   await press(t('subscription.close'));
   expect(mockBack).toHaveBeenCalled();
 });
 
-test('the legal links set in the build open; one not set is not shown', async () => {
+test('the legal links open in the browser', async () => {
   await show();
   await press(t('subscription.terms'));
   expect(openURL).toHaveBeenCalledWith('https://example.test/terms');
-  expect(screen.queryByRole('button', { name: t('subscription.privacy') })).toBeNull();
+  await press(t('subscription.privacy'));
+  expect(openURL).toHaveBeenCalledWith('https://example.test/privacy');
+});
+
+test('a link that cannot be opened is reported by name, not left unhandled', async () => {
+  openURL.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoBrowser' }));
+  await show();
+  await press(t('subscription.terms'));
+  expect(mockReport).toHaveBeenCalledWith('NoBrowser');
+});
+
+test('a build without both legal links sells nothing (Apple 3.1.2): said, no button to buy', async () => {
+  mockLinks = BOTH.slice(0, 1);
+  await show();
+  expect(screen.getByText(t('subscription.incomplete'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('subscription.startTrial') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('subscription.tryAgain') })).toBeNull();
+});
+
+test('two taps before the screen redraws open one purchase sheet', async () => {
+  await show();
+  const button = screen.getByRole('button', { name: t('subscription.startTrial') });
+  await act(async () => {
+    fireEvent.press(button);
+    fireEvent.press(button);
+  });
+  expect(mockStore.buy).toHaveBeenCalledTimes(1);
+});
+
+test('two taps on restore restore once', async () => {
+  await show();
+  const button = screen.getByRole('button', { name: t('subscription.restore') });
+  await act(async () => {
+    fireEvent.press(button);
+    fireEvent.press(button);
+  });
+  expect(mockStore.restore).toHaveBeenCalledTimes(1);
+});
+
+test('backing out of Apple’s sheet says nothing went wrong (U7: no blame for changing one’s mind)', async () => {
+  mockStore = store({ buy: jest.fn(async () => 'cancelled' as const) });
+  await show();
+  await press(t('subscription.startTrial'));
+  expect(screen.queryByText(t('subscription.purchaseFailed'))).toBeNull();
+});
+
+test('a purchase that fails is reported by name', async () => {
+  mockStore = store({
+    buy: jest.fn(async () => {
+      throw Object.assign(new Error('x'), { name: 'PurchaseFailed_2' });
+    }),
+  });
+  await show();
+  await press(t('subscription.startTrial'));
+  expect(mockReport).toHaveBeenCalledWith('PurchaseFailed_2');
+});
+
+test('a restore that fails says so and is reported by name; the plans stay', async () => {
+  mockStore = store({
+    restore: jest.fn(async () => {
+      throw Object.assign(new Error('x'), { name: 'StoreError_10' });
+    }),
+  });
+  await show();
+  await press(t('subscription.restore'));
+  expect(screen.getByText(t('subscription.restoreFailed'))).toBeOnTheScreen();
+  expect(mockReport).toHaveBeenCalledWith('StoreError_10');
+  expect(screen.getByRole('button', { name: t('subscription.startTrial') })).toBeOnTheScreen();
+});
+
+test('a store that could not show its plans can be tried again; "not in this build" cannot', async () => {
+  mockStore = store({ plans: jest.fn(async () => []) });
+  await show();
+  expect(screen.getByText(t('subscription.failed'))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('subscription.tryAgain') })).toBeOnTheScreen();
 });
 
 test('there is always a way out of the plans', async () => {

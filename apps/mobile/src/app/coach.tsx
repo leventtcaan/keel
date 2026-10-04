@@ -180,6 +180,9 @@ const PROBLEMS = {
   failed: { words: 'coach.failed', way: 'coach.retry' },
 } as const;
 
+/** A meal in words without a subscription says its own line: logging the meal by name still works (ADR-057 D5). */
+const wordsOf = (kind: keyof typeof PROBLEMS, mode: Mode, words: string) => (kind === 'subscription' && mode === 'meal' ? 'coach.mealSubscription' : words);
+
 /** Where a problem's button goes: Settings for the consent, the plans for the subscription (K-702, opened only on a tap). */
 const WAYS = { consent: '/settings', subscription: '/paywall' } as const;
 
@@ -199,7 +202,7 @@ function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string
     const go = kind === 'failed' ? () => onRetry(message.text, message.mode) : () => router.push(WAYS[kind]);
     return (
       <View style={styles.coach}>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t(problem.words)}</Text>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t(wordsOf(message.problem, message.mode, problem.words))}</Text>
         <Button label={t(problem.way)} variant="ghost" size="sm" onPress={go} />
       </View>
     );

@@ -361,11 +361,12 @@ describe('a meal in words (K-504 draft)', () => {
     expect(takeMeal()).toEqual([{ foodId: 'fdc-8', name: 'Bread, whole wheat, toasted', quantity: 1, unit: 'slice' }]);
   });
 
-  test('a meal in words without a subscription: the same line and the way to the plans', async () => {
+  test('a meal in words without a subscription: its own line (logging by name still works) and the way to the plans', async () => {
     mockParsed = refused(403, 'ENTITLEMENT_REQUIRED');
     await show();
     await tellMeal('two eggs');
-    expect(screen.getByText(t('coach.subscription'))).toBeOnTheScreen();
+    expect(screen.getByText(t('coach.mealSubscription'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('coach.subscription'))).toBeNull();
     await press(t('subscription.seePlans'));
     expect(mockPush).toHaveBeenCalledWith('/paywall');
   });
