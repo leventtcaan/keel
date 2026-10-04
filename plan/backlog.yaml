@@ -3208,7 +3208,7 @@ tasks:
     module: mobile
     type: test
     size: M
-    status: todo
+    status: doing
     depends_on: [K-301]
     why: "Featuring formu erişilebilirliği soruyor; koyu mod ve Dynamic Type hiçbir görevde yoktu (L3 P12)"
     acceptance:
@@ -3302,7 +3302,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-309]
     why: "Envanter açıkları 3 ve 6: Apple silme onayında aboneliğin Apple'da süreceğini söylemeyi istiyor; öğün fotoğrafı gönderildikten sonra sistem önbelleğinde kalıyor (V1)"
     acceptance:
@@ -3320,7 +3320,7 @@ tasks:
     module: identity
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-802]
     why: "Envanter açığı 2: Apple, Sign in with Apple kullanan uygulamanın silmede REST API ile jetonu iptal etmesini istiyor; yetki kodu alınıyor ama değiş tokuş edilmiyor"
     acceptance:
