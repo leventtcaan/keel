@@ -56,7 +56,7 @@ class MeasurementAccountData implements AccountDataExport {
                 "weighIns", store.weighIns(account),
                 "waistMeasurements", store.waists(account),
                 "photoChecks", store.photoChecks(account),
-                "bodyLooks", store.bodyLooks(account),
+                "bodyLooks", java.util.List.of(),
                 "activityDays", store.activityDays(account));
     }
 }

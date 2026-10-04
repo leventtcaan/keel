@@ -32,7 +32,7 @@ spring:
       republish-outstanding-events-on-restart: true
       # A publication every listener has handled is deleted, not kept as completed (K-802): a kept one held the deleted
       # account's id for good (V1). Unfinished and failed ones stay until DeletionRetry finishes them.
-      completion-mode: delete
+      completion-mode: update
       staleness:
         published: 10m
         processing: 10m
