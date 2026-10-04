@@ -8,6 +8,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
+import { useReduceMotion } from '@/theme/useReduceMotion';
 import { tokens } from '@/theme/tokens';
 
 import { foodParams } from './params';
@@ -21,6 +22,7 @@ const FOOD_BARCODES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const;
  * worn label: the number can be typed. Nothing is recorded or kept; the picture never leaves the camera view (V1).
  */
 export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => void; onClose: () => void }) {
+  const reduceMotion = useReduceMotion();
   const { color } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [typed, setTyped] = useState('');
@@ -72,7 +74,7 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
     ) : null;
 
   return (
-    <Modal animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal animationType={reduceMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <ScreenTitle>{t('meal.barcode.title')}</ScreenTitle>

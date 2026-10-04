@@ -91,29 +91,17 @@ describe.each(Object.entries(palettes))('%s accent and warning as text', (_, p) 
 });
 
 test('nothing inside the decision block is drawn in the warning colour: there it would fall under 4.5:1', () => {
-  // inverse() keeps the warning's colour (a warning looks the same everywhere), so it may not appear on the block — in the
-  // block's own code nor in anything a screen puts inside it.
+  // inverse() keeps the warning's colour (a warning looks the same everywhere), so it may not appear on the block. A file
+  // that puts something in the block builds it in variables too (the raw-text guard), so the whole file is held to it.
   const fs = jest.requireActual<typeof import('fs')>('fs');
   const path = jest.requireActual<typeof import('path')>('path');
-  const ts = jest.requireActual<typeof import('typescript')>('typescript');
   const walk = (dir: string): string[] =>
     fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
       e.isDirectory() ? (e.name === '__tests__' ? [] : walk(path.join(dir, e.name))) : /\.tsx$/.test(e.name) ? [path.join(dir, e.name)] : [],
     );
-  const inside: string[] = [];
-  for (const file of walk(path.resolve(__dirname, '..'))) {
-    const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-    const visit = (node: import('typescript').Node) => {
-      if (ts.isJsxElement(node) && ['InverseSurface', 'DecisionBlock'].includes(node.openingElement.tagName.getText(source))) {
-        inside.push(node.children.map((child) => child.getText(source)).join(''));
-      }
-      ts.forEachChild(node, visit);
-    };
-    visit(source);
-  }
-  expect(inside.length).toBeGreaterThan(0);
-  expect(inside.filter((jsx) => /color\.warn|variant=["']warn["']/.test(jsx))).toEqual([]);
-  // Its own code: the block draws its parts itself.
-  expect(fs.readFileSync(path.resolve(__dirname, '../components/DecisionBlock.tsx'), 'utf8')).not.toMatch(/color\.warn|variant=["']warn["']/);
+  const block = walk(path.resolve(__dirname, '..')).filter((file) => /<(DecisionBlock|InverseSurface)\b|function DecisionBlock\b/.test(fs.readFileSync(file, 'utf8')));
+  expect(block.length).toBeGreaterThan(2);
+  const warned = block.filter((file) => /color\.warn|['"]warn['"]/.test(fs.readFileSync(file, 'utf8')));
+  expect(warned.map((file) => path.relative(path.resolve(__dirname, '..'), file))).toEqual([]);
   for (const [, p] of Object.entries(palettes)) expect(contrast(p.warn, inverse(p).background)).toBeLessThan(4.5);
 });

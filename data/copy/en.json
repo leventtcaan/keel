@@ -278,6 +278,9 @@
     "setsOne": "1 set",
     "setOf": "Set {number} of {count}",
     "setNumber": "Set {number}",
+    "setDone": "Set {number}, done",
+    "setToDo": "Set {number}, to do",
+    "doneMark": "✓",
     "allDone": "All sets done",
     "finish": "Finish workout",
     "form": {
