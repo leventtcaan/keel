@@ -51,14 +51,28 @@ public final class EnergyBalanceModel {
      * d (0 = the first day), in kcal a day.
      */
     public static double[] weightsKg(Start start, IntToDoubleFunction intakeKcalOnDay, int days, Parameters parameters) {
+        return weightsKg(start, start.maintenanceKcal(), intakeKcalOnDay, days, parameters);
+    }
+
+    /**
+     * The same, for someone who has eaten {@code settledOnKcal} a day long enough that glycogen, extracellular fluid and
+     * adaptive thermogenesis have settled on it (they settle within weeks, eq. 1, 2, 7) — someone partway through a diet
+     * (ADR-051 §4). They start at their equilibria for that intake, so the water already lost is not lost again; the weight
+     * is still {@code start.weightKg()}. Settled on maintenance, this is the usual start.
+     */
+    public static double[] weightsKg(Start start, double settledOnKcal, IntToDoubleFunction intakeKcalOnDay, int days,
+            Parameters parameters) {
         Objects.requireNonNull(intakeKcalOnDay, "intakeKcalOnDay");
+        if (!(settledOnKcal >= 0) || !Double.isFinite(settledOnKcal)) {
+            throw new IllegalArgumentException("the settled intake is not an amount that can be eaten: " + settledOnKcal);
+        }
         if (days < 0) {
             throw new IllegalArgumentException("days must be 0 or more");
         }
         if (parameters.sex() != start.sex()) {
             throw new IllegalArgumentException("parameters are for " + parameters.sex() + ", the person is " + start.sex());
         }
-        Body body = new Body(start, parameters);
+        Body body = new Body(start, settledOnKcal * KJ_PER_KCAL, parameters);
         double[] state = body.startingState();
         double[] weights = new double[days + 1];
         weights[0] = body.weight(state);
@@ -111,12 +125,15 @@ public final class EnergyBalanceModel {
         private final double startFat;
         private final double startLean;
         private final double startGlycogen;
+        private final double settledGlycogen;
+        private final double settledFluid;
+        private final double settledAdaptation;
         private final double maintenance;
         private final double activity;
         private final double constant;
         private final double glycogenRate;
 
-        Body(Start start, Parameters p) {
+        Body(Start start, double settledKj, Parameters p) {
             glycogenEnergy = p.number(ParameterKey.ENERGY_MODEL_GLYCOGEN_MJ_PER_KG) * KJ_PER_MJ;
             glycogenWater = p.number(ParameterKey.ENERGY_MODEL_GLYCOGEN_WATER_G_PER_G);
             fatEnergy = p.number(ParameterKey.ENERGY_MODEL_FAT_MJ_PER_KG) * KJ_PER_MJ;
@@ -142,12 +159,21 @@ public final class EnergyBalanceModel {
                     + p.number(ParameterKey.ENERGY_MODEL_START_FAT_PCT_PER_LN_BMI) * StrictMath.log(weight / (heightM * heightM))
                     + p.number(ParameterKey.ENERGY_MODEL_START_FAT_PCT_OFFSET));
             startGlycogen = p.number(ParameterKey.ENERGY_MODEL_GLYCOGEN_START_KG);
-            startLean = weight - startFat - (1 + glycogenWater) * startGlycogen;
+            maintenance = start.maintenanceKcal() * KJ_PER_KCAL;
+            // Settled on an intake (ADR-051 §4): each fast quantity at its equilibrium for it — eq. 1 at dG/dt = 0, eq. 2 at
+            // dECF/dt = 0 (no sodium change), eq. 7 at dAT/dt = 0. The carbohydrate share is constant, so CI/CIb = EI/EIb.
+            double ratio = settledKj / maintenance;
+            settledGlycogen = startGlycogen * StrictMath.sqrt(ratio);
+            settledFluid = -p.number(ParameterKey.ENERGY_MODEL_CARB_SODIUM_MG_PER_DAY) * (1 - ratio)
+                    / p.number(ParameterKey.ENERGY_MODEL_SODIUM_CLEARANCE_MG_PER_L_PER_DAY);
+            settledAdaptation = adaptiveRatio * (settledKj - maintenance);
+            // The weight today is the weight given: lean tissue is what is left once fat, glycogen and its water, and the
+            // fluid change are counted.
+            startLean = weight - startFat - (1 + glycogenWater) * settledGlycogen - settledFluid;
             if (!(startFat > 0) || !(startLean > 0)) {
                 throw new IllegalArgumentException("the starting body composition is outside the model (weight " + weight + " kg)");
             }
 
-            maintenance = start.maintenanceKcal() * KJ_PER_KCAL;
             double resting = start.restingKcal() * KJ_PER_KCAL;
             // δ = [(1 − βTEF) × PAL − 1] × RMR / BW (eq. 8), PAL = maintenance / resting.
             activity = ((1 - thermicEffect) * (maintenance / resting) - 1) * resting / weight;
@@ -163,7 +189,7 @@ public final class EnergyBalanceModel {
         }
 
         double[] startingState() {
-            return new double[] {startFat, startLean, startGlycogen, 0, 0};
+            return new double[] {startFat, startLean, settledGlycogen, settledFluid, settledAdaptation};
         }
 
         double weight(double[] s) {

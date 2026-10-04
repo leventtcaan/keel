@@ -143,6 +143,55 @@ class EnergyBalanceModelTests {
         assertThat(weights[28]).isCloseTo(DAY_28, within(1e-6));
     }
 
+    // ── starting partway through a diet (ADR-051 §4) ────────────────────────────────────────────────────────
+
+    @Test
+    void settledOnMaintenanceIsTheSameAsTheUsualStart() {
+        double cut = MAN.maintenanceKcal() - kcal(2000);
+        double[] usual = EnergyBalanceModel.weightsKg(MAN, day -> cut, 60, parameters(Sex.MALE));
+        double[] settled = EnergyBalanceModel.weightsKg(MAN, MAN.maintenanceKcal(), day -> cut, 60, parameters(Sex.MALE));
+
+        for (int day = 0; day <= 60; day++) {
+            assertThat(settled[day]).as("day %d", day).isCloseTo(usual[day], within(1e-12));
+        }
+    }
+
+    @Test
+    void settledOnTheCutTheWaterIsAlreadyGoneAndTheFirstDayFollowsTheSecondPhase() {
+        // Someone weeks into a cut has lost the glycogen water and fluid already (eq. 1-2) and adapted (eq. 7): starting
+        // settled, the first day moves at the second phase's own slope, dBW/dt = ΔEI/ρ (eq. 12, 14), not the first days'.
+        double deficitKj = 5000;
+        double cut = MAN.maintenanceKcal() - kcal(deficitKj);
+        double weight = MAN.weightKg();
+        double fat = weight / 100 * (0.14 * 23 + 37.31 * Math.log(weight / (1.8 * 1.8)) - 103.94);
+        double alpha = 10.4 / fat;
+        double rho = (750 + 39_500 + alpha * 960 + alpha * 7_600) / ((1 - 0.24) * (1 + alpha));
+
+        double[] settled = EnergyBalanceModel.weightsKg(MAN, cut, day -> cut, 2, parameters(Sex.MALE));
+        double[] fresh = constantCut(MAN, kcal(deficitKj), 2);
+
+        assertThat(settled[0]).isCloseTo(weight, within(1e-9));
+        assertThat(weight - settled[1]).isCloseTo(deficitKj / rho, withinPercentage(3));
+        assertThat(weight - fresh[1]).isGreaterThan(3 * (weight - settled[1]));
+    }
+
+    @Test
+    void settledOnTheCutEatingMoreBringsSomeWaterBack() {
+        // Settled on the cut, then eating maintenance again: glycogen and fluid refill — the first day goes up.
+        double cut = MAN.maintenanceKcal() - kcal(5000);
+        double[] weights = EnergyBalanceModel.weightsKg(MAN, cut, day -> MAN.maintenanceKcal(), 3, parameters(Sex.MALE));
+
+        assertThat(weights[1]).isGreaterThan(weights[0]);
+    }
+
+    @Test
+    void aSettledIntakeThatCannotBeEatenIsRefused() {
+        assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(MAN, -1, day -> 2000, 3, parameters(Sex.MALE)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> EnergyBalanceModel.weightsKg(MAN, Double.NaN, day -> 2000, 3, parameters(Sex.MALE)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     // ── the model's own properties ──────────────────────────────────────────────────────────────────────────
 
     @Property(tries = 60)
