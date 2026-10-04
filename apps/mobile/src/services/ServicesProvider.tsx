@@ -22,6 +22,7 @@ import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { devicePhotoFiles } from '@/photos/photoFiles';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
+import { revenueCatStore } from '@/subscription/revenueCat';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
 import { deviceShareImage } from '@/share/deviceShare';
@@ -57,6 +58,9 @@ export type PhoneServices = AppServices & {
 
 const DATABASE = 'keel.db';
 
+/** By name only (V3): a message can quote a record, and records carry health data. */
+const reportProblem = (problem: { name: string }) => console.warn('sync problem:', problem.name);
+
 async function build(): Promise<PhoneServices> {
   const db = await openDatabaseAsync(DATABASE);
   // Write-ahead log: reads do not wait for the queue's writes (the setting expo-sqlite's guide recommends).
@@ -65,14 +69,14 @@ async function build(): Promise<PhoneServices> {
     baseUrl: apiBaseUrl(),
     storage: keychainStorage(SecureStore),
     db,
-    // By name only: a message can quote a record, and records carry health data (V3).
-    report: (problem) => console.warn('sync problem:', problem.name),
+    report: reportProblem,
     kv: Storage,
     locale: Intl.DateTimeFormat().resolvedOptions().locale,
     notifications: deviceNotifications(), // local only: no push token, nothing to a server (K-410)
     alerts: deviceAlerts(), // the rest timer's (K-411)
     healthWrite: healthKitWrite(), // not available in Expo Go (no native module)
     photoFiles: devicePhotoFiles(), // progress photos: a folder on this phone, never uploaded (K-614, V1)
+    purchases: revenueCatStore({ report: reportProblem }), // not available in Expo Go or without the SDK key; set up only when first needed (ADR-057 D1)
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);

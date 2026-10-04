@@ -31,6 +31,8 @@ export interface PhotoTools {
 export type PhotoRead =
   | { state: 'ready'; draft: components['schemas']['MealDraft'] }
   | { state: 'consent' }
+  /** Reading photos needs a subscription (403 ENTITLEMENT_REQUIRED, K-703): the way to the plans (K-702). */
+  | { state: 'subscription' }
   | { state: 'cancelled' }
   | { state: 'denied' }
   | { state: 'failed' };
@@ -66,5 +68,6 @@ export async function readMealPhoto(
   if (shrunk.width > foodParams.photoMaxSide || shrunk.height > foodParams.photoMaxSide) return { state: 'failed' };
   const draft = await load(() => services.api.POST('/v1/meals/photo', { body: { image: shrunk.base64 } }));
   if (draft.state === 'consent') return { state: 'consent' };
+  if (draft.state === 'subscription') return { state: 'subscription' };
   return draft.state === 'ready' ? { state: 'ready', draft: draft.value } : { state: 'failed' };
 }

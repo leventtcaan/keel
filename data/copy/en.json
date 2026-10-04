@@ -583,6 +583,7 @@
     }
   },
   "mealPhoto": {
+    "subscription": "Reading a meal from a photo comes with a subscription. You can still log it by name.",
     "title": "Meal from a photo",
     "intro": "Take or choose a photo of your meal. It's made smaller and sent without its location, only to find the foods. The numbers come from the food database, and you confirm each food.",
     "camera": "Take a photo",
@@ -1404,6 +1405,8 @@
     "rangeSpoken": "between {low} and {high}"
   },
   "coach": {
+    "subscription": "Questions to the coach come with a subscription. This week's call and its reasons are here without one.",
+    "mealSubscription": "Reading a meal from your words comes with a subscription. You can still log it by name.",
     "entry": "Ask the coach",
     "answer": {
       "call": "This week's call stands as it is. What changes it is new data, not a different answer.",
@@ -1694,7 +1697,89 @@
       "body": "One quiet week doesn't undo what you've built. When you're ready, one short session picks it back up."
     }
   },
+  "subscription": {
+    "seePlans": "See plans",
+    "title": "Subscribe",
+    "titleTrial": "Try it free for {trial}",
+    "includes": "A subscription lets the coach answer your questions and read meals from your words and photos. Your log, your weekly call and its reasons work with or without one.",
+    "plan": {
+      "annual": "Yearly",
+      "monthly": "Monthly",
+      "annualPrice": "{price} a year",
+      "annualPerMonth": "{perMonth} a month, billed once a year",
+      "monthlyPrice": "{price} a month",
+      "monthlyBilled": "Billed every month",
+      "selectLabel": "{plan}, {price}"
+    },
+    "trial": {
+      "day": "{count}-day free trial",
+      "week": "{count}-week free trial",
+      "month": "{count}-month free trial",
+      "year": "{count}-year free trial"
+    },
+    "trialSpan": {
+      "day": "{count} days",
+      "week": "{count} weeks",
+      "month": "{count} months",
+      "year": "{count} years"
+    },
+    "trialSpanOne": {
+      "day": "1 day",
+      "week": "1 week",
+      "month": "1 month",
+      "year": "1 year"
+    },
+    "today": "Today: full access, nothing charged.",
+    "after": {
+      "annual": "When the trial ends: {price} a year, renewing every year until you cancel.",
+      "monthly": "When the trial ends: {price} a month, renewing every month until you cancel."
+    },
+    "renews": {
+      "annual": "{price} a year, renewing every year until you cancel.",
+      "monthly": "{price} a month, renewing every month until you cancel."
+    },
+    "cancelNote": "Charged to your Apple ID. Cancel anytime in Settings, then Subscription, at least 24 hours before it renews, and you won't be charged again. What you've paid for stays yours until its end.",
+    "startTrial": "Start free trial",
+    "subscribe": "Subscribe",
+    "restore": "Restore purchases",
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy",
+    "close": "Close",
+    "loading": "Loading the plans…",
+    "unavailable": "Purchases work in the App Store build of the app, not in this one.",
+    "offline": "No connection right now, so nothing can be bought. Try again in a moment.",
+    "incomplete": "Purchases aren't set up in this build yet.",
+    "failed": "The App Store couldn't show the plans. Try again in a moment.",
+    "tryAgain": "Try again",
+    "buying": "Waiting for the App Store…",
+    "confirming": "Confirming your subscription…",
+    "active": "You're subscribed. The coach and meal reading are on.",
+    "waiting": "The App Store confirmed it. It can take a minute to reach us.",
+    "lookAgain": "Check again",
+    "pending": "Waiting for approval. Access starts once the purchase is approved.",
+    "purchaseFailed": "The purchase didn't go through. If the App Store charged you anyway, Restore purchases brings it here.",
+    "restoreWaiting": "Nothing restored for this Apple ID yet. If you subscribed with it, it can take a minute to reach us.",
+    "restoreFailed": "Couldn't restore purchases. Try again in a moment."
+  },
   "settings": {
+    "subscription": {
+      "title": "Subscription",
+      "none": "Not subscribed. Your log, your weekly call and its reasons work without one.",
+      "status": {
+        "TRIAL": "Free trial until {date}.",
+        "ACTIVE": "Renews on {date}.",
+        "CANCELLED": "Cancelled. Yours until {date}; it won't renew.",
+        "BILLING_ISSUE": "The App Store couldn't charge your payment method. Access stays until {date} while it tries again.",
+        "PAUSED": "Paused.",
+        "EXPIRED": "Ended on {date}.",
+        "REFUNDED": "Refunded."
+      },
+      "manage": "Cancel or change plan",
+      "manageNote": "Opens your App Store subscription, where you can cancel or switch plans.",
+      "unavailable": "Managing the subscription works in the App Store build of the app.",
+      "failed": "Couldn't read your subscription. Try again in a moment.",
+      "manageFailed": "Couldn't open your App Store subscription. Try again in a moment."
+    },
     "title": "Settings",
     "entry": "Settings",
     "serverError": "Something went wrong on our side. Try again in a moment.",

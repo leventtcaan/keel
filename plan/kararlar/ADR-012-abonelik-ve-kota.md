@@ -7,7 +7,7 @@ Fiyat kararı: $59,99/yıl · $12,99/ay · 7 gün kartlı deneme · ücretsiz ka
 (`arastirma/05-faz4-pazarlama.md` §7). Başabaş 4 abone. Kota: günde 25 koçluk mesajı + 10 fotoğraf analizi.
 
 ## Karar
-- **Satın alma: RevenueCat** (`react-native-purchases` 10.10.2) üzerinden StoreKit. Abonelik durumu backend'e
+- **Satın alma: RevenueCat** (`react-native-purchases`; kurulu 10.11.0 — Ek 1) üzerinden StoreKit. Abonelik durumu backend'e
   RevenueCat webhook'u ile gelir; yetki (entitlement) kontrolü **sunucuda** yapılır.
 - **Kota sunucuda:** günlük sayaç (kullanıcı + gün); limitler `data/parameters/quota.yaml`. Kota bitince uygulama
   deterministik modda çalışmaya devam eder, kullanıcıya "kredi" kelimesi hiç gösterilmez.
@@ -43,4 +43,5 @@ Yetkisiz kullanıcının koç çağrısının reddedildiği test; kota sınırı
   kaçınılmaz parçası; Levent bunu da onayladı. Gizlilik politikasında madde: M8 (K-801). Webhook'la gelen olaydan sunucu yalnız durumun
   gerektirdiğini saklar (ADR-056).
 - **Sürüm:** `react-native-purchases` 10.10.2 yazılı ama doğrulanmadı; Part 2'de `npx expo install` ile Expo SDK 57 uyumu çözülür, sürüm
-  `package.json`'dan okunup buraya yazılır (K6).
+  `package.json`'dan okunup buraya yazılır (K6). **Çözüldü (K-702, 4 Eki):** `npx expo install react-native-purchases` → **10.11.0**
+  (paket Expo'nun `bundledNativeModules` listesinde yok; npm'in en yenisi; eş bağımlılık `react-native >= 0.73`, kurulu 0.86.3). Ayrıntı ADR-057.

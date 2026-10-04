@@ -57,6 +57,7 @@ function AppStack() {
         <Stack.Screen name="compare" />
         <Stack.Screen name="share" />
         <Stack.Screen name="import" />
+        <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'needed'}>
         <Stack.Screen name="onboarding" />

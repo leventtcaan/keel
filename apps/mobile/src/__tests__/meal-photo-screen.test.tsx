@@ -156,6 +156,16 @@ test('the server’s consent answer: the consent step, the camera gone', async (
   expect(screen.queryByRole('button', { name: t('mealPhoto.camera') })).toBeNull();
 });
 
+test('the server’s subscription answer (K-703): why, and the way to the plans — the camera gone', async () => {
+  mockAnswer = { error: { code: 'ENTITLEMENT_REQUIRED', message: 'x' }, response: new Response(null, { status: 403 }) };
+  await show();
+  await press(t('mealPhoto.camera'));
+  expect(screen.getByText(t('mealPhoto.subscription'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('mealPhoto.camera') })).toBeNull();
+  await press(t('subscription.seePlans'));
+  expect(mockPush).toHaveBeenCalledWith('/paywall');
+});
+
 test('while it reads, it says so and nothing can be taken again (a second tap would use a second analysis)', async () => {
   let answer: (value: Answer) => void = () => {};
   mockPOST.mockImplementationOnce(() => new Promise<Answer>((resolve) => (answer = resolve)));

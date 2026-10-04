@@ -28,7 +28,7 @@ type Message =
   | { from: 'user'; text: string }
   | { from: 'coach'; said: Said; standard: boolean }
   | { from: 'coach'; meal: Schemas['MealDraft'] }
-  | { from: 'coach'; problem: 'consent' | 'failed'; text: string; mode: Mode };
+  | { from: 'coach'; problem: 'consent' | 'subscription' | 'failed'; text: string; mode: Mode };
 
 /** A message with its own id: a retry removes one, and a draft's picks must stay with their draft (K-509 review). */
 type Kept = Message & { id: number };
@@ -176,8 +176,15 @@ export default function CoachScreen() {
 
 const PROBLEMS = {
   consent: { words: 'coach.consent', way: 'today.consent.open' },
+  subscription: { words: 'coach.subscription', way: 'subscription.seePlans' },
   failed: { words: 'coach.failed', way: 'coach.retry' },
 } as const;
+
+/** A meal in words without a subscription says its own line: logging the meal by name still works (ADR-057 D5). */
+const wordsOf = (kind: keyof typeof PROBLEMS, mode: Mode, words: string) => (kind === 'subscription' && mode === 'meal' ? 'coach.mealSubscription' : words);
+
+/** Where a problem's button goes: Settings for the consent, the plans for the subscription (K-702, opened only on a tap). */
+const WAYS = { consent: '/settings', subscription: '/paywall' } as const;
 
 function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string, to: Mode) => void }) {
   const { color } = useTheme();
@@ -189,12 +196,13 @@ function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string
     );
   }
   if ('problem' in message) {
-    // Without the consent, the way to Settings; with no answer, the same words again.
+    // Without the consent, the way to Settings; without a subscription, the way to the plans; with no answer, the same words again.
     const problem = PROBLEMS[message.problem];
-    const go = message.problem === 'failed' ? () => onRetry(message.text, message.mode) : () => router.push('/settings');
+    const kind = message.problem;
+    const go = kind === 'failed' ? () => onRetry(message.text, message.mode) : () => router.push(WAYS[kind]);
     return (
       <View style={styles.coach}>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t(problem.words)}</Text>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t(wordsOf(message.problem, message.mode, problem.words))}</Text>
         <Button label={t(problem.way)} variant="ghost" size="sm" onPress={go} />
       </View>
     );

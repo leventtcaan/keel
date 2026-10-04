@@ -36,7 +36,9 @@ export default function LedgerScreen() {
   const page = useCallback(
     async (before: string | null, kept: Decision[]) => {
       const loaded = await load(() => api.GET('/v1/decisions', before === null ? undefined : { params: { query: { before } } }));
-      if (loaded.state !== 'ready') return loaded.state === 'none' ? { state: 'none' as const } : { state: loaded.state };
+      // The ledger needs no subscription (ADR-056 #10): that answer here would be the server's mistake.
+      if (loaded.state !== 'ready')
+        return loaded.state === 'none' ? { state: 'none' as const } : { state: loaded.state === 'consent' ? ('consent' as const) : ('failed' as const) };
       const calls = [...kept, ...loaded.value.items];
       return calls.length === 0 ? { state: 'none' as const } : { state: 'ready' as const, calls, next: loaded.value.next ?? null };
     },

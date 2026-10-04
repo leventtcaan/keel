@@ -12,6 +12,10 @@ type Schemas = components['schemas'];
 const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-12' };
 const date = (day: string) => `on ${day}`;
 
+test("why this call, when the server answered the subscription's 403 (it never should — the call needs none): one more call not read", () => {
+  expect(chipAnswer('today.chips.why', { state: 'subscription' }, date)).toEqual({ lines: [{ key: 'coach.chip.unread' }] });
+});
+
 describe('linesOf', () => {
   test("a classified message: the topic's sentence, the rule's sentence, and that the call stands until its next look", () => {
     const answer: Schemas['CoachAnswer'] = { mode: 'MODEL', topic: 'HUNGER', rule: 'cut_step', call: CALL };

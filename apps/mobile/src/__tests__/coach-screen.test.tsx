@@ -217,6 +217,16 @@ test('without the AI consent: one line and the way to Settings', async () => {
   expect(mockPush).toHaveBeenCalledWith('/settings');
 });
 
+test('without a subscription (K-703): one line and the way to the plans — never opened by itself', async () => {
+  mockSent = refused(403, 'ENTITLEMENT_REQUIRED');
+  await show();
+  await send('Why?');
+  expect(screen.getByText(t('coach.subscription'))).toBeOnTheScreen();
+  expect(mockPush).not.toHaveBeenCalled();
+  await press(t('subscription.seePlans'));
+  expect(mockPush).toHaveBeenCalledWith('/paywall');
+});
+
 test('no answer: says so, and the same message is sent again on retry', async () => {
   mockSent = 'offline';
   await show();
@@ -349,6 +359,16 @@ describe('a meal in words (K-504 draft)', () => {
     expect(screen.getByRole('button', { name: 'Bread, whole wheat, toasted' })).toHaveProp('accessibilityState', expect.objectContaining({ selected: true }));
     await press(t('coach.meal.log'));
     expect(takeMeal()).toEqual([{ foodId: 'fdc-8', name: 'Bread, whole wheat, toasted', quantity: 1, unit: 'slice' }]);
+  });
+
+  test('a meal in words without a subscription: its own line (logging by name still works) and the way to the plans', async () => {
+    mockParsed = refused(403, 'ENTITLEMENT_REQUIRED');
+    await show();
+    await tellMeal('two eggs');
+    expect(screen.getByText(t('coach.mealSubscription'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('coach.subscription'))).toBeNull();
+    await press(t('subscription.seePlans'));
+    expect(mockPush).toHaveBeenCalledWith('/paywall');
   });
 
   test('without the consents: the consent line; no answer: retry reads the meal again', async () => {
