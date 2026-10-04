@@ -1,0 +1,79 @@
+/**
+ * The share card's words (K-612, L3 Y5): a record and a call, never a body. The weeks on track since the first call
+ * (K-608: never reset, one off week forgiven), the latest call by its title (not a "not yet"), a lift's estimated max
+ * from the strength chart's own numbers (K-604, first and last week of its window), and the weight trend only when the
+ * user turns it on (off by default). No body-fat number (U4), no photo or body (U12, V1), no blame (U7) — the copy is
+ * checked against data/copy/forbidden-phrases.json and share-forbidden.json.
+ */
+import type { components } from '@/api/schema';
+import { t } from '@/copy';
+import { strengthMoves, strengthPoints } from '@/progress/strength';
+import type { Session } from '@/train/history';
+import { workoutParams } from '@/train/params';
+import { exerciseName } from '@/train/program';
+import type { Move } from '@/train/trainData';
+import { type UnitSystem, formatLoad, formatWeight } from '@/units/units';
+
+type Schemas = components['schemas'];
+
+export type CardFacts = {
+  consistency: Schemas['Consistency'] | null;
+  latestCall: Schemas['Decision'] | null;
+  /** The strength chart's lift: its name, its first and last week's best estimated max in kg. */
+  strength: { move: string; fromKg: number; toKg: number } | null;
+  /** The weight trend's first and last value in the same window, in kg. */
+  weight: { fromKg: number; toKg: number } | null;
+};
+
+export type CardText = { heading: string; lines: string[]; footer: string };
+
+/** The strength chart's window (K-604, evaluation_window_days): the lift's and the weight's numbers come from it. */
+const DAYS = workoutParams.evaluationWindowDays;
+
+export function cardText({ consistency, latestCall, strength, weight }: CardFacts, units: UnitSystem, showWeight: boolean): CardText {
+  const lines: string[] = [];
+  const record = consistency?.record;
+  if (record !== undefined && record.countedWeeks > 0) {
+    lines.push(t('share.card.record', { onTrack: record.onTrackWeeks, counted: record.countedWeeks }));
+    if (record.forgivenWeeks > 0) {
+      lines.push(t(record.forgivenWeeks === 1 ? 'share.card.forgiven' : 'share.card.forgivenMany', { count: record.forgivenWeeks }));
+    }
+  }
+  if (latestCall !== null && latestCall.action.type !== 'NO_DECISION_YET') {
+    lines.push(t('share.card.call', { call: t(`${latestCall.copyKey}.title`) }));
+  }
+  if (strength !== null) {
+    lines.push(
+      t('share.card.strength', { move: strength.move, days: DAYS, from: formatLoad(strength.fromKg, units), to: formatLoad(strength.toKg, units) }),
+    );
+  }
+  if (showWeight && weight !== null) {
+    lines.push(t('share.card.weight', { days: DAYS, from: formatWeight(weight.fromKg, units), to: formatWeight(weight.toKg, units) }));
+  }
+  return { heading: t('share.card.heading'), lines, footer: t('share.card.footer') };
+}
+
+/** The lift the strength chart shows first (the most weeks), when it has two weeks to compare; its real estimates. */
+export function strengthFact(moves: ReadonlyMap<string, Move>, sessions: Session[], today: string): CardFacts['strength'] {
+  const lift = strengthMoves(moves, sessions, today)[0];
+  if (lift === undefined) return null;
+  const points = strengthPoints(lift, sessions, today);
+  if (points.length < 2) return null;
+  return { move: exerciseName(lift, moves), fromKg: points[0].kg, toKg: points[points.length - 1].kg };
+}
+
+/** A line broken at spaces into pieces of at most `max` characters; a single longer word stays whole. */
+export function wrap(text: string, max: number): string[] {
+  const pieces: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    if (line === '') line = word;
+    else if (line.length + 1 + word.length <= max) line += ` ${word}`;
+    else {
+      pieces.push(line);
+      line = word;
+    }
+  }
+  if (line !== '') pieces.push(line);
+  return pieces;
+}

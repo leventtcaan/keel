@@ -598,6 +598,29 @@
     "denied": "The camera isn't allowed for this app. You can allow it in the iPhone's Settings, or choose a photo instead.",
     "failed": "That photo couldn't be read. Try again, or log the meal by name."
   },
+  "share": {
+    "open": "Share your progress",
+    "openNote": "A card with your weeks and your latest call. Made on this phone; you choose where it goes.",
+    "title": "Share your progress",
+    "note": "Made on this phone and handed to the share sheet. No photo, no body, no body fat.",
+    "showWeight": "Show weight trend",
+    "hideWeight": "Hide weight trend",
+    "weightNote": "Off unless you turn it on.",
+    "share": "Share",
+    "nothing": "Nothing to share yet: a week on track or a lift with two weeks of sets puts something on the card.",
+    "failed": "Couldn't make the card. Try again.",
+    "spoken": "Your share card",
+    "card": {
+      "heading": "My training, week by week",
+      "record": "{onTrack} of {counted} weeks on track",
+      "forgiven": "{count} forgiven week used",
+      "forgivenMany": "{count} forgiven weeks used",
+      "call": "Latest call: {call}",
+      "strength": "{move}, last {days} days: estimated max {from} → {to}",
+      "weight": "Weight trend, last {days} days: {from} → {to}",
+      "footer": "Calls made by rules, from my own data."
+    }
+  },
   "weighIn": {
     "title": "Weigh-in",
     "label": "Weight ({unit})",

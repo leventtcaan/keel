@@ -1,0 +1,33 @@
+{
+  "note": "Phrases no share card may carry (K-612, arastirma/ham/L3-ozellik-boslugu.md Y5: a call or a record, never a body; U12: no body image; U4 is data/copy/forbidden-phrases.json). Each pattern proves itself on its examples.",
+  "rules": [
+    {
+      "id": "before-after",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md",
+      "pattern": "\\bbefore\\s*(and|&|/|-|vs\\.?)?\\s*after\\b|\\bthen\\s*(and|&|/|vs\\.?)\\s*now\\b",
+      "examples": ["Before and after", "before/after", "Before & After", "then vs now"],
+      "nonExamples": ["Before your first call", "after the first week", "Weigh in before breakfast"]
+    },
+    {
+      "id": "transformation",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md",
+      "pattern": "\\btransform\\w*|\\bglow[\\s-]*up\\b|\\bnew\\s+(me|body)\\b",
+      "examples": ["My transformation", "12-week transform", "glow up", "new body"],
+      "nonExamples": ["A new week", "Your trend"]
+    },
+    {
+      "id": "body-display",
+      "source": "docs/anayasa.md#U12",
+      "pattern": "\\b(shredded|shred|ripped|beach\\s*body|bikini\\s*body|six[\\s-]*pack|abs\\s+(pic|photo|shot)|body\\s*(pic|photo|shot|check))\\b",
+      "examples": ["Getting shredded", "Ripped in 12 weeks", "beach body", "six-pack", "body check"],
+      "nonExamples": ["Bodyweight move", "Weeks on track"]
+    },
+    {
+      "id": "blame",
+      "source": "docs/anayasa.md#U7",
+      "pattern": "\\b(failed|cheat(ed|ing)?|lazy|no\\s+excuses|streak\\s+(lost|broken))\\b",
+      "examples": ["I failed 1 week", "cheat day", "no excuses", "streak broken"],
+      "nonExamples": ["1 forgiven week used", "11 of 12 weeks on track"]
+    }
+  ]
+}
