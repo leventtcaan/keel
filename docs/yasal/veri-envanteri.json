@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "updated": "2026-10-04",
+  "apple_data_types": { "source": "https://developer.apple.com/app-store/app-privacy-details/ (2026-10-04)", "types": ["Health & Fitness › Health"] },
+  "server": [],
+  "phone": { "permissions": [], "stored": [] },
+  "outbound": []
+}
