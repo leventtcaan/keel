@@ -5,7 +5,9 @@ import app.keel.decision.CallReader;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.subscription.Entitlements;
 import app.keel.subscription.Quota;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +24,8 @@ import tools.jackson.databind.json.JsonMapper;
  * {@link TopicReply} reads it as exactly that. The call itself goes with every answer as it stands; the coach never
  * changes it. When the model's reply cannot be used, or is not asked for, the answer is the engine's own words (the
  * deterministic mode).
+ *
+ * <p>The model is asked only with an active subscription (K-703): without one, ENTITLEMENT_REQUIRED.
  *
  * <p>Not asked of the model: when there is no call yet, and for a call only the engine may tell ({@link CallFacts#tellable}:
  * the safety label, a call waiting for the cycle question — V4, what is behind it is never told by anyone — and the
@@ -51,13 +55,17 @@ class Explanation {
 
     private final CallReader calls;
     private final Quota quota;
+    private final Entitlements entitlements;
+    private final Clock clock;
     private final CoachModel model;
     private final TopicReply reply;
     private final String instructions;
 
-    Explanation(CallReader calls, Quota quota, CoachModel model, CoachProperties properties) {
+    Explanation(CallReader calls, Quota quota, Entitlements entitlements, Clock clock, CoachModel model, CoachProperties properties) {
         this.calls = calls;
         this.quota = quota;
+        this.entitlements = entitlements;
+        this.clock = clock;
         this.model = model;
         this.reply = new TopicReply(properties.maxReplyChars());
         this.instructions = CoachInstructions.read("explain.md");
@@ -72,6 +80,11 @@ class Explanation {
         Call told = new Call(call.id(), call.copyKey(), call.nextReview());
         if (!call.tellable()) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, CALL_WORDS, told));
+        }
+        // The model is what the subscription pays for (K-703, ADR-056 #10): without one, refused before the consents are
+        // looked at and anything is counted. The engine's own words above need none.
+        if (!entitlements.active(account, clock.instant())) {
+            throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
         }
         // Without the consent the model would not be asked: refused before anything is counted.
         if (!model.mayAsk(account, Purpose.EXPLAIN)) {

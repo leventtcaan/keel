@@ -4,9 +4,11 @@ import app.keel.nutrition.FoodFinder;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.subscription.Entitlements;
 import app.keel.subscription.Quota;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +61,8 @@ class MealDraft {
 
     private final CoachModel model;
     private final Quota quota;
+    private final Entitlements entitlements;
+    private final Clock clock;
     private final FoodFinder foods;
     private final MealProperties properties;
     private final MealReplyCheck check;
@@ -69,9 +73,12 @@ class MealDraft {
 
     private final MealPhoto photo;
 
-    MealDraft(CoachModel model, Quota quota, FoodFinder foods, MealProperties properties, PhotoProperties photoProperties) {
+    MealDraft(CoachModel model, Quota quota, Entitlements entitlements, Clock clock, FoodFinder foods, MealProperties properties,
+            PhotoProperties photoProperties) {
         this.model = model;
         this.quota = quota;
+        this.entitlements = entitlements;
+        this.clock = clock;
         this.foods = foods;
         this.properties = properties;
         int maxItems = Math.min(properties.maxItems(), foods.maxItems());
@@ -98,9 +105,15 @@ class MealDraft {
                 Certainty.ESTIMATED);
     }
 
-    /** The consents, then what is sent ({@code sent}, which may refuse it), then the day's use, then the model. */
+    /**
+     * The subscription (K-703: the model is what it pays for — without one, ENTITLEMENT_REQUIRED and the user searches as
+     * always), the consents, then what is sent ({@code sent}, which may refuse it), then the day's use, then the model.
+     */
     private Draft draft(AccountId account, Purpose purpose, Quota.Use use, String system, Supplier<Turn> sent, MealReplyCheck reading,
             Certainty certainty) {
+        if (!entitlements.active(account, clock.instant())) {
+            throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
+        }
         foods.requireMealConsent(account);
         if (!model.mayAsk(account, purpose)) {
             throw new ApiException(ErrorCode.CONSENT_REQUIRED);
