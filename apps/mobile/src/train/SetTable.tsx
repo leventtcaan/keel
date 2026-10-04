@@ -12,8 +12,8 @@ import type { ExercisePlan } from './workout';
 type Schemas = components['schemas'];
 
 /**
- * A move's rows (prototype 2.4): the set's number (with its side for a one-sided move), today — done, or the suggestion
- * faint — and last time. The row under way is outlined.
+ * A move's rows (prototype 2.4): the set's number (with its side for a one-sided move; a done set marked), today — done,
+ * or the suggestion faint — and last time. The row under way is outlined.
  */
 export function SetTable({ plan, move }: { plan: ExercisePlan; move: Schemas['Exercise'] }) {
   const { color } = useTheme();
@@ -42,7 +42,12 @@ export function SetTable({ plan, move }: { plan: ExercisePlan; move: Schemas['Ex
               { backgroundColor: color.surface },
               index === plan.current && { borderColor: color.text, borderWidth: tokens.border.outline },
             ]}>
-            <Text style={[styles.number, styles.value, { color: row.done === null ? color.muted : color.accent }]}>{label}</Text>
+            {/* Done is said by a mark and in words as well as by colour (K-807, Differentiate Without Color Alone). */}
+            <Text
+              accessibilityLabel={t(row.done === null ? 'workout.setToDo' : 'workout.setDone', { number: label })}
+              style={[styles.number, styles.value, { color: row.done === null ? color.muted : color.accent }]}>
+              {row.done === null ? label : `${label} ${t('workout.doneMark')}`}
+            </Text>
             <Text style={[styles.cell, styles.value, { color: row.done === null ? color.muted : color.text }]}>
               {today === null ? '–' : setText(today, move, units)}
             </Text>

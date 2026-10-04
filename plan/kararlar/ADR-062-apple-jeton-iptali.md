@@ -54,3 +54,17 @@ Orta: saklama yoluna geçilirse giriş akışı ve şema değişir; uç nokta ka
 ## Doğrulama
 Sahte Apple sunucusuyla: doğru form alanları, geçerli ES256 istemci sırrı, `sub` eşleşmezse iptal yok, anahtar yoksa 503, Apple hata verirse
 hesap silmesi etkilenmez; mobilde Apple sayfası kapatılınca silme sürer.
+
+## Ek 1 (2026-10-05, K-812 incelemesi) — yer, bağımlılık, hata kodları
+- **Yer:** uç nokta ve iptal akışı **privacy**'de (`AppleRevocationController`, `AppleRevocation`): `/v1/account` privacy'nin, ve ağa yalnız privacy
+  çıkabilir (`EgressRuleTests`). identity, Apple'ı bilen kısmı açık bir cephe olarak verir (`identity.AppleAccounts`: uygulama kimliği, istemci sırrı,
+  Apple adresi, `id_token`'ın kimin olduğu, hesabın Apple kimliği). Yeni modül bağı **privacy → identity** (döngü yok: consent → identity,
+  privacy → consent); ADR-015 tablosu güncellendi.
+- **Çıkış:** `EgressGate.postForm` (JDK `HttpClient`, yönlendirme izlenmez, zaman aşımı `keel.privacy.egress-timeout`) **paket içi**: başka modül form
+  gönderemez; veri taşıyan her çağrı `send`/`sendToAi` denetiminden geçer.
+- **Hata kodları:** yeni kod yok. Apple'ın 400'ü OAuth hatasına göre: `invalid_grant` → 400 `VALIDATION_FAILED` (kod kötü/başkasının); diğerleri
+  (`invalid_client`, `unauthorized_client`…) → 500 `INTERNAL` (bizim kurulumumuz yanlış — sessiz kalmasın); Apple'a ulaşılamaz/5xx/belgelenmemiş
+  yanıt → 503 `SERVICE_UNAVAILABLE`; anahtar yok → 503. Üretimde "anahtar yok" olamaz (M9 üretim profili denetimi), bu yüzden telefonun ikisini
+  ayırması gerekmez.
+- **Açık:** uç noktada hız sınırı yok (her istek bir ES256 imzası + Apple'a iki çağrı) → **K-817** (M9).
+- `.p8` tek satırda `\n` kaçışlarıyla da okunur (ortam dosyaları).

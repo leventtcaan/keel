@@ -136,7 +136,9 @@ export default function PhotoCaptureScreen() {
   ) : null;
   const ghostImage =
     ghost === null ? null : (
-      <Image testID="capture-ghost" source={{ uri: ghost }} resizeMode="cover" style={[StyleSheet.absoluteFill, { opacity: photoParams.ghostOpacity }]} />
+      // Decorative for VoiceOver (K-807): a faint copy of the last photo to line the body up with, not a photo to read.
+      <Image testID="capture-ghost" accessible={false} source={{ uri: ghost }} resizeMode="cover"
+        style={[StyleSheet.absoluteFill, { opacity: photoParams.ghostOpacity }]} />
     );
   // Not known yet (the hook's first answer): neither the camera nor "off".
   const access = granted || permission === null ? null : permission.canAskAgain === false ? (
@@ -187,7 +189,9 @@ function Finder({ children }: { children: ReactNode }) {
   return (
     <View testID="capture-finder" style={[styles.finder, { backgroundColor: color.background }]}>
       {children}
-      <Svg testID="capture-frame" style={StyleSheet.absoluteFill} viewBox={`0 0 ${FRAME.width} ${FRAME.height}`} pointerEvents="none">
+      {/* The framing guide: decorative for VoiceOver (K-807); the screen's text says how to stand. */}
+      <Svg testID="capture-frame" accessible={false} style={StyleSheet.absoluteFill} viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
+        pointerEvents="none">
         {CORNERS.map((d) => (
           <Path key={d} d={d} fill="none" stroke={color.accent} strokeWidth={GUIDE_WIDTH} />
         ))}

@@ -80,3 +80,28 @@ describe.each(Object.entries(palettes))('%s decision block', (_, p) => {
     expect(contrast(p.accentInk, p.decisionBackground)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+// K-807 (Accessibility Nutrition Labels › Sufficient Contrast): the accent and the warning are text too — "in use" on a
+// gym, a failed save — on the page, in both themes.
+describe.each(Object.entries(palettes))('%s accent and warning as text', (_, p) => {
+  test.each(['accent', 'warn'] as const)('%s reaches 4.5:1 on background and surface', (ink) => {
+    expect(contrast(p[ink], p.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p[ink], p.surface)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+test('nothing inside the decision block is drawn in the warning colour: there it would fall under 4.5:1', () => {
+  // inverse() keeps the warning's colour (a warning looks the same everywhere), so it may not appear on the block. A file
+  // that puts something in the block builds it in variables too (the raw-text guard), so the whole file is held to it.
+  const fs = jest.requireActual<typeof import('fs')>('fs');
+  const path = jest.requireActual<typeof import('path')>('path');
+  const walk = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? (e.name === '__tests__' ? [] : walk(path.join(dir, e.name))) : /\.tsx$/.test(e.name) ? [path.join(dir, e.name)] : [],
+    );
+  const block = walk(path.resolve(__dirname, '..')).filter((file) => /<(DecisionBlock|InverseSurface)\b|function DecisionBlock\b/.test(fs.readFileSync(file, 'utf8')));
+  expect(block.length).toBeGreaterThan(2);
+  const warned = block.filter((file) => /color\.warn|['"]warn['"]/.test(fs.readFileSync(file, 'utf8')));
+  expect(warned.map((file) => path.relative(path.resolve(__dirname, '..'), file))).toEqual([]);
+  for (const [, p] of Object.entries(palettes)) expect(contrast(p.warn, inverse(p).background)).toBeLessThan(4.5);
+});

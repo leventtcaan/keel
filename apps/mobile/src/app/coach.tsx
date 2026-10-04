@@ -15,6 +15,7 @@ import { DraftPicks, anyMatched } from '@/food/DraftPicks';
 import { handOffMeal, type HandedMeal } from '@/food/handoff';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
+import { useReduceMotion } from '@/theme/useReduceMotion';
 import { tokens } from '@/theme/tokens';
 import { CoachChips } from '@/today/CoachChips';
 import { labelKey, load, localDay, programToday, weekdayDate, type TodayData } from '@/today/today';
@@ -152,6 +153,7 @@ export default function CoachScreen() {
 
   // The newest message in sight; the box above the keyboard (iOS lifts the view, Android resizes the window).
   const scroll = useRef<ScrollView>(null);
+  const reduceMotion = useReduceMotion();
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -159,7 +161,7 @@ export default function CoachScreen() {
           <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
           {today !== null && <CoachChips keys={coachChips(today, day)} onChip={onChip} />}
         </View>
-        <ScrollView ref={scroll} contentContainerStyle={styles.body} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
+        <ScrollView ref={scroll} contentContainerStyle={styles.body} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: !reduceMotion })}>
           {messages.map((message) => (
             <Bubble key={message.id} message={message} onRetry={(words, to) => void send(words, to, true)} />
           ))}
