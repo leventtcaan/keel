@@ -3054,9 +3054,9 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-702, K-306]
-    why: "ADR-058 #1 (Levent): ücretsiz katman yok (ADR-012); hiç abone olmamış hesap deneme başlatmadan sekmelere geçmez"
+    why: "ADR-058 › 107 (Levent): ücretsiz katman yok (ADR-012); hiç abone olmamış hesap deneme başlatmadan sekmelere geçmez"
     acceptance:
       - "Hiç abone olmamış hesap (sunucuda durumu yok) onboarding'den sonra paywall'a gelir; kapatma yok, Restore ve yasal bağlantılar var"
       - "Sunucuda bir durumu olan hesap (biten abonelik dahil) kapıya takılmaz: deterministik mod (K-703)"
@@ -3077,9 +3077,9 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-702, K-411]
-    why: "ADR-058 #3 (Levent): deneme bitmeden haber ver (Noom dersi); fatura bildirimi, ADR-036'nın üç türünden sayılmaz"
+    why: "ADR-058 › 105 (Levent): deneme bitmeden haber ver (Noom dersi); fatura bildirimi, ADR-036'nın üç türünden sayılmaz"
     acceptance:
       - "Denemedeki kullanıcı 'Remind me before it ends' der → izin istenir → deneme bitiminden trial_reminder_days_before gün önce yerel bildirim"
       - "Hatırlatma planının yeniden kurulması ona dokunmaz (kendi kimliği); deneme ACTIVE'e döner ya da iptal edilirse kaldırılır; çıkışta unutulur"
