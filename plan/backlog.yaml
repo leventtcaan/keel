@@ -3283,7 +3283,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-802]
     why: "Envanter açığı 5: webhook_event (olay kimliği, tür, zaman) hesap yaşarken hiç silinmiyor. RevenueCat 5 denemeyi ~155 dakikada bitirir; eski bir olay tekrar gelse durum makinesi geri götürmez (ADR-056)"
     acceptance:
@@ -3339,7 +3339,7 @@ tasks:
     module: mobile
     type: test
     size: S
-    status: todo
+    status: doing
     depends_on: [K-801]
     why: "Envanter sunucu tablolarını sütun düzeyinde bağlıyor ama telefonda saklanan ayarları yalnız düz metinle sayıyor (M8 Part 1 test analizi, puan 6; ADR-061 #5)"
     acceptance:
