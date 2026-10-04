@@ -27,4 +27,9 @@ public final class TestSessions {
                 .param("id", account.value()).param("subject", "test." + account.value()).update();
         return "Bearer " + context.getBean(SessionTokens.class).issue(account).token();
     }
+
+    /** A refresh token of the account's, as a sign-in would give the phone; the account must exist. */
+    public static String refreshToken(ApplicationContext context, AccountId account) {
+        return context.getBean(RefreshTokens.class).start(account);
+    }
 }
