@@ -670,7 +670,7 @@ Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` �
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Geçmiş ve sinyaller | K-535, K-534, K-608, K-603, K-611, K-610 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 87-93 |
-| 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-606 | — |
+| 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-606 | 🔨 sürüyor (4 Eki) — ADR-050 KABUL, K-605 #342 |
 | 3 · Efor ve fotoğraf | K-604, K-601, K-602 | — |
 | 4 · İçe aktarma, paylaşım, teslim | K-609, K-612 · M6 çıkışı · M7 prompt'ları | — |
 
@@ -709,6 +709,20 @@ yalnız kalıcı `../keel-main`; `M5-part4-devam`/`M6-*-devam` yok). Ana checkou
   - Telefon tuzakları: yeni ekranda `.expo/types/router.d.ts` sil; metin bekçisi JSX içindeki dizgileri metin sayar → koşullu düğmeleri küçük
     bileşene al; test sahtesi `useAppServices` sabit nesne dönmeli (yoksa efekt döngüsü).
 - **Yeni sorular:** 87-93 (aşağıda). **Part 2 başında sorulacak sağlık kapısı** (M6.md): aşağıda "Part 2 sağlık kapısı".
+
+**Part 2 başı (4 Eki):** senkron tamam — Part 1 ÇIKIŞ git ile tutarlı (#333-#341 birleşik, açık PR yok, worktree yalnız `../keel-main`, `main` temiz;
+ana checkout ayrık HEAD → `origin/main`). Bağımlılıklar `done` (K-103, K-306). Disk **9,3 GB**. Dependabot: aynı 3 geçişli uyarı.
+**Sağlık kapısı cevaplandı → ADR-050 KABUL** (dördünde önerilen): SCOFF (Morgan 1999 BMJ 319:1467, **doğrulandı**; doğrulama örneklemi 18-40 kadın)
+orijinal + "6 kg (one stone)"; pozitifte nötr cümle + bölge linki (US ANAD, GB Beat; D1'de doğrulanmış URL); cevap saklanmaz, sonuç yalnız cihazda,
+pozitifte yeniden deneme yok; H2 §4.3 tam eşik seti.
+**Ortam notları:** (1) `git push/pull` osxkeychain'de takılıyor → `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push`.
+(2) Kabuktaki Node 20 → telefon testleri `node:sqlite` bulamıyor; **Node 22** ile koş (CI 22): `PATH=~/.nvm/versions/node/v22.14.0/bin:$PATH npm run check`.
+(3) Paralel iş için worktree `../keel-k607` (node_modules ana checkout'a sembolik bağ; orada `npm install` yok).
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-605 spike: Hall 2011 enerji dengesi modeli → **ADR-051** + `arastirma/ham/H12` (denklem 1-9 birincil kaynaktan; "±1,7-2,5 kg" yanlış okunmuştu: gözetimli çalışmaların kısa vadeli MAE'si — gerçek hayatta hata zamanla büyür → aralık modelin belirsizliğinden + taban). `engine/EnergyBalanceModel` saf (RK4, StrictMath), `projection.yaml` 20 parametre (yeni alan PROJECTION) | ⏳ #342 auto-merge; RED 8; yayımlanmış örnekler (Şekil 3 80±1, kural 1±0,25, 2B yönü, 2A ±4 bandı — Şekil 3 adamıyla 78,1 kg kayıtlı) + **makalenin doğrusallaştırması** (τ %1, kalıcı kayıp %2); inceleme: negatif/NaN alım (85), PAL<1,11 (80) → reddedilir; test analizi: ilk haftalar/η/τAT testsizdi → doğrusallaştırma + sabitleyici; `Math.log` yasağı (`EnginePurityTests`); mutasyon 37/39 + saflık kuralı | #342 | `M6/K-605.md` |
+| K-607 SCOFF kapısı (telefon): `projection/scoff.ts` (sonuç, bölge linki, cihaz bayrağı `projection.access`, "unavailable" kesin), `app/scoff.tsx`, `projection.json` (eşik 2, linkler), `en.json › projection` | 🔨 dal `mobile/72-scoff` (worktree `../keel-k607`), commit 1881ba0; jest 1753/1753; inceleme sürüyor | — | — |
 
 ## Session sonunda Levent'e sorulacaklar
 **M6 Part 1 (87-93) — 4 Eki:**
