@@ -3214,6 +3214,25 @@ tasks:
     learn:
       - "Erişilebilirlik"
 
+  - id: K-808
+    title: "Sağlık rızası metni koda uyar (soru 57)"
+    milestone: M8
+    module: consent
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-204]
+    why: "Rıza metni antrenman kaydını sağlık verisi sayıyor ama geri çekmede silmiyor; ADR-007/ADR-026 saymıyor — metin kendi içinde çelişiyor (ADR-059 #2)"
+    acceptance:
+      - "consent.health_data.body antrenman kaydını sağlık verisi saymaz; geri çekmede neyin silinip neyin kaldığını doğru söyler (koddan)"
+      - "Metin sürümü artar (telefon ve sunucu aynı sürümü yazar); eski sürümle verilmiş rıza kayıtları değişmez"
+      - "Gizlilik politikasıyla aynı sınıflama (docs/yasal/site/privacy.md)"
+    tests:
+      - "Sunucu: kayıtlı sürüm yapılandırmadakiyle aynı; mobil: rıza ekranı yeni metni ve sürümü gönderir; yasaklı ifade taraması"
+    refs: ["plan/kararlar/ADR-059-m8-basi-cevaplari.md", "plan/kararlar/ADR-007-gizlilik-ve-riza.md"]
+    learn:
+      - "Rızanın kanıtı: metin sürümü (GDPR Md. 7(1))"
+
 # ───────────────────────────── M9 · Beta ─────────────────────────────
   - id: K-901
     title: "VPS dağıtımı: Docker Compose, HTTPS, yedek"
