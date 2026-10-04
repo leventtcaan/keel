@@ -2680,14 +2680,34 @@ tasks:
     refs: ["arastirma/ham/H2-projeksiyon.md"]
     learn: ["Fizyolojik modelleme", "Diferansiyel denklem sezgisi"]
 
+  - id: K-613
+    title: "Projeksiyonun motoru ve ucu: kapılar, üç senaryo, aralık, yalnız ileri yön (K-606'dan bölündü)"
+    milestone: M6
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-605]
+    why: "Projeksiyonun sayısı motordan (U1); telefon yalnız çizer (K-606)"
+    acceptance:
+      - "Kapılar motorda: 18 yaş altı, BMI<20'de zayıflama yönü, ilk 4 hafta / 2 ölçüm (ilk ve son tartı ≥28 gün arayla), yön yoksa (bakım) yok"
+      - "%60/%80/%95 uyum senaryoları EnergyBalanceModel'den; başlangıç plana oturmuş (ADR-051 §4); aralık başlangıç harcaması ±1 MJ/gün + taban"
+      - "Yalnız ileri yön: aralığın hedefe ters ucu bugünkü kiloda durur; haftada >%1 kayıp ve BMI 18,5 altı senaryo üretilmez"
+      - "GET /v1/projection sözleşmede; yağ sayısı yok (U4), sağlık verisi rızası ister"
+    tests:
+      - "ProjectionGateTests"
+      - "ForwardOnlyTests"
+    refs: ["arastirma/ham/H2-projeksiyon.md", "arastirma/ham/H12-enerji-dengesi-modeli.md", "docs/anayasa.md#U12"]
+    learn: ["Güvenli tasarım", "Belirsizliği aralıkla göstermek"]
+
   - id: K-606
-    title: "Şekil projeksiyonu: üç senaryo + aralık + dışlama"
+    title: "Şekil projeksiyonu (telefon): açma, SCOFF, siluet, senaryolar, suçlamasız güncelleme"
     milestone: M6
     module: mobile
     type: feature
-    size: L
+    size: M
     status: todo
-    depends_on: [K-605, K-607]
+    depends_on: [K-605, K-607, K-613]
     why: "Motivasyon için dürüst hedef görseli (U12)"
     acceptance:
       - "Yüzsüz parametrik siluet; %60/%80/%95 senaryoları aralıkla"
