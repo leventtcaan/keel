@@ -6,6 +6,7 @@ guncelleme: 2026-10-04
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M7 KAPANDI (4 Eki, kod)** — Part 2: K-705 #368, K-702 #369, K-706 #372, K-707 #373 (auto-merge); ADR-056 Ek 1, ADR-057, ADR-058 (105-107 Levent: zorunlu paywall, iOS'ta duraklatma yok, deneme hatırlatması). Cihaz/sandbox ve mağaza kurulumu Levent'te (K-308, RevenueCat, ASC). Aktarım bekliyor: M7 (`docs/aktarim/M7/README.md` 1-6). **Disk 1,5 GB** → Levent. Sıradaki koşu **M8 · Uyum ve yasal** (`plan/oturum-promptlari/M8.md`, `M8-part1.md`).
 **M7 Part 1 (Yetki sunucuda) BİTTİ (4 Eki)** — ADR-056; K-701 #364, K-703 #366 birleşti; K-704 (REST tazeleme, RevenueCat hesabı sonrası) ve K-705 (durum ucu, Part 2) açıldı; para/mağaza hazır değil (ADR-012 Ek 1). Aktarım bekliyor: `docs/aktarim/M7/README.md` 1-2. Sıradaki: M7 Part 2 (`plan/oturum-promptlari/M7-part2.md`).
 **M6 KAPANDI (4 Eki, kod)** — Part 4: K-615 #354, K-616 #356, K-609 #357, K-612 #358, ADR-055 metinleri #361, K-617 #362; ADR-053/054/055; sorular 87-104 cevaplı (ADR-055). Açık: K-618 (fotoğraf yedekten hariç, K-308 sonrası). Aktarım bekliyor: M6 (`docs/aktarim/M6/README.md` 1-19). **Disk 1,2 GB** (Docker 17 GB + başka uygulamaların önbellekleri — Levent). Sıradaki koşu **M7 · Abonelik** (`plan/oturum-promptlari/M7.md`, `M7-part1.md`).
 **M6 Part 3 (Efor ve fotoğraf) BİTTİ (4 Eki)** — K-604 #347, K-614 #349 (K-601'den bölündü), K-601 #350, K-602 #351 birleşti; aktarım bekliyor (`docs/aktarim/M6/README.md` 11-14); sorular 97-101 (97 ve 101 veri kararı). Simülatör turu yok (disk 2,3 GB, sunucu yok). Sıradaki: M6 Part 4 (`plan/oturum-promptlari/M6-part4.md`).
@@ -674,7 +675,7 @@ Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Yetki sunucuda | K-701, K-703 (+ K-704, K-705 açıldı) | ✅ bitti (4 Eki) — aktarım bekliyor (README 1-2) |
-| 2 · Paywall ve teslim | K-705, K-702 · M7 çıkışı · M8 prompt'ları | ⏳ sürüyor (4 Eki) |
+| 2 · Paywall ve teslim | K-705, K-702 (+ K-706, K-707 — ADR-058) · M7 çıkışı · M8 prompt'ları | ✅ bitti (4 Eki) — aktarım bekliyor (README 3-6) |
 
 **Part 1 başı (4 Eki):** senkron tamam — M6 ÇIKIŞ git ile tutarlı (#354, #356, #357, #358, #361, #362 birleşik; açık PR yok; worktree yalnız
 kalıcı `../keel-main`; `*-devam.md` yok). Ana checkout ayrık HEAD = `origin/main` (cf83dc5). Bağımlılıklar `done` (K-203, K-508, K-306).
@@ -723,11 +724,37 @@ Dependabot: aynı 3 geçişli uyarı.
 | K-705 `GET /v1/subscription` — sözleşme önce (d96d11e), `appUserId` eklendi (telefon hesabın UUID'sini başka yoldan bilmiyor); ADR-056 Ek 1. RED CI'da 6 assertion (2013 test); inceleme temiz; test analizi 3 boşluk → sabit saatli saf test (`Instant.now()` mutantı öldü), ek süre, okuma yazmaz; birleşti (cd718c3, üç CI yeşil) | ✅ birleşti | #368 | `M7/K-705.md` |
 | K-702 paywall — `react-native-purchases` 10.11.0 (`npx expo install`; Expo listesinde yok → npm en yenisi); ADR-057 (port, tembel configure + UUID, teyit 12×5 sn, deneme dili yalnız ELIGIBLE, iptal Apple sayfasında, ENTITLEMENT_REQUIRED → "See plans", iki yasal bağlantı yoksa satış yok, hatalar `StoreError_<kod>`). Yerel RED'ler 70 (assertion). İnceleme 3 ajan: 3 + 6 bulgu + 8 yaşayan mutant → düzeltildi; mutasyon 6/6 öldü. `npm run check` 139 takım 2447/2447. Üretim kodu ~720 satır (bölmek ölü rota/erişilemez paywall bırakırdı; gerekçe PR'da). **Bulgu:** App Store'da duraklatma yok → soru 106. Simülatör yok (disk) | ✅ birleşti | #369 | `M7/K-702.md` |
 | K-706 onboarding sonunda zorunlu paywall (ADR-058 #1) — `subscription/gate.ts` (son cevap telefonda; "cevapsızsa açık" yalnız soğuk başlangıçta), `app/subscribe.tsx` (paywall `required` + hesap bölümü, 5.1.1(v)), "Continue" (kendiliğinden geçiş yok), `ledger`/`what-if` korumalı gruba (main'de korumasızdı); `PaywallView.tsx` (macOS harf çakışması). İnceleme 2 bulgu + 7 yaşayan mutant + yeniden render hatası → düzeltildi; mutasyon 7/7. `npm run check` 142 takım 2480/2480 | ✅ birleşti | #372 | `M7/K-706.md` |
-| K-707 deneme hatırlatması (ADR-058 › 105) — `subscription/trialReminder.ts` (kimlik `trial`, `AlertAccess` — hatırlatma planının önekli temizliği dokunmaz; izin dokunuşta; ACTIVE/iptal → kalkar; bitiş kayarsa kayar; çıkışta yalnız kuruluysa iptal), `TrialReminderOffer.tsx` (paywall "abonesin" adımı + Ayarlar), paywall deneme satırı "if you'd like one" (parametre `trial_reminder_days_before` = 2); ADR-058 kararları başlıklara bölündü (parametre çapası). `npm run check` 144 takım 2503/2503. İnceleme ajanları çalışıyor | ⏳ | #373 | `M7/K-707.md` |
+| K-707 deneme hatırlatması (ADR-058 › 105) — `subscription/trialReminder.ts` (kimlik `trial`, `AlertAccess` — hatırlatma planının önekli temizliği dokunmaz; izin dokunuşta; ACTIVE/iptal → kalkar; bitiş kayarsa kayar; çıkışta yalnız kuruluysa iptal), `TrialReminderOffer.tsx` (paywall "abonesin" adımı + Ayarlar), paywall deneme satırı "if you'd like one" (parametre `trial_reminder_days_before` = 2); ADR-058 kararları başlıklara bölündü (parametre çapası). `npm run check` 144 takım 2503/2503. İnceleme: 3 bulgu + saat → düzeltildi; 4 yaşayan mutant → testler; mutasyon 7/7. `npm run check` 145 takım 2514/2514 | ⏳ auto-merge | #373 | `M7/K-707.md` |
 
 **Part 2 soruları → ADR-058 (Levent, üçünde önerilen):** 107 onboarding sonunda **zorunlu** paywall, aboneliği biten deterministik modda → **K-706**
 (#370); 106 iOS'ta duraklat düğmesi yok (K-702 kabul kriteri + prototip düzeltildi); 105 deneme bitmeden isteğe bağlı yerel hatırlatma — fatura
 bildirimi, ADR-036'nın üç türünden sayılmaz → **K-707** (#371). Sıra: K-706 → K-707 → M7 çıkışı.
+
+**Part 2 ÇIKIŞ = M7 ÇIKIŞ (4 Eki):**
+- **Birleşen:** K-705 #368 · K-702 #369 · K-706 #372 · K-707 #373 (auto-merge açık; CI'da). `main`'e doğrudan: ADR-056 Ek 1, ADR-057, ADR-058, ADR-012 sürüm
+  düzeltmesi, K-706/K-707 kartları (#370, #371), prototip 1.11/5.2 "Pause" düzeltmesi, M8 prompt'ları (`M8.md`, `M8-part1.md`, `M8-part2.md`). Açık PR: yalnız
+  #373 (auto-merge). Worktree yalnız kalıcı `../keel-main`. Yerel artık dallar (squash birleşti, `branch -D` yasak — zararsız).
+- **M7 çıkış kriterleri (yol-haritasi, `main`'de çıktıyla kontrol edildi):** RevenueCat ✅ (webhook `RevenueCatWebhook`/`WebhookSignature`; telefon
+  `react-native-purchases` 10.11.0, `subscription/revenueCat.ts`) · paywall ✅ (`app/paywall.tsx`, `app/subscribe.tsx`, `PaywallView.tsx`) · sunucu tarafı yetki ✅
+  (`Entitlements.active`, 403 ENTITLEMENT_REQUIRED, `GET /v1/subscription`) · kota bağlantısı ✅ (`Explanation`: yetki → rıza → kota → model) · iptal görünür ✅
+  ("Cancel or change plan" → Apple'ın sayfası; paywall iptal notu). Duraklatma: iOS'ta yok → düğme yok (ADR-058 › 106, Levent). Kodda fiyat yok (yalnız
+  `store.ts`'te bir yorumda örnek dize — değer değil).
+- **Eksik / dışa bağlı:** sandbox satın alma, geri yükleme, iptal **cihazda görülmedi** — K-308 (Levent) + RevenueCat hesabı/projesi, ASC abonelik grubu +
+  ürünler + 7 gün deneme, Paid Applications, sandbox hesabı (hepsi Levent; ADR-012 Ek 1). K-704 (REST tazeleme) RevenueCat gizli anahtarı bekliyor. Yasal
+  bağlantılar (`EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_PRIVACY_URL`) M8'de — o zamana kadar paywall "kurulmadı" der ve kapı açık kalır (bilerek).
+  `showManageSubscriptions`'ın ne zaman çözüldüğü `[doğrulanmadı]`, deneme bildiriminin çaldığı → cihaz. Simülatör turu yok (disk).
+- **Kontrol çıktısı:** mobil `npm run check` (Node 22) **145 takım, 2514/2514** (K-707 dalında); sunucu K-705 CI'da yeşil (2013+ test), saf + mimari yerelde yeşil.
+- **M8'in bilmesi gerekenler:**
+  - Yasal URL'ler iki yerde şart: paywall satışı (`subscription/links.ts` `legalComplete`) ve kapı (`gate.ts` — iki bağlantı yoksa kapı hep açık). Mağaza
+    derlemesinde ikisi de ayarlanmalı (M9 kontrol listesi), yoksa zorunlu paywall devre dışı kalır.
+  - Gizlilik politikası: RevenueCat (opak UUID + SDK verisi, ADR-012 Ek 1; SDK yalnız paywall/abonelik ayarı açılınca yapılandırılır — ADR-057 D1); deneme
+    hatırlatması telefonda (veri gitmez); hesap silme kapı ekranından da (5.1.1(v)).
+  - Kapı ekranı (`app/subscribe.tsx`) hesap bölümünü taşır — K-802 uçtan uca silme bu yolu da kapsamalı.
+  - `ledger`/`what-if` korumasızdı (main'de), K-706'da korumalı gruba alındı — K-804 denetimine "her rota bir korumalı grupta" kuralı eklenebilir.
+  - Hata adları: `StoreError_<kod>`, `PurchaseFailed_<kod>`, `NoPlans`, `TrialEligibilityUnread`, `StoreModuleMissing`, `SubscriptionUnread` (V3, yalnız ad).
+  - macOS dosya sistemi harf duyarsız: aynı klasörde `X.tsx` + `x.ts` aynı modül sayılır (`PaywallView.tsx` dersi).
+  - Disk **1,5 GB** (oturumda 4,6 → 1,4; bizim önbellekler ~400 MB, temizlendi; `~/Library/Caches` 4,5 GB başka uygulamaların) — **M8 başında Levent'e**.
+- **Sorular:** 105-107 cevaplandı → ADR-058. Yeni soru yok. Açık: 80 (Docker/disk), 57 (rıza metni hukuki — M8 Part 1 0a).
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` … `M6-part4.md`.

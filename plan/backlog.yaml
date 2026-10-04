@@ -3077,7 +3077,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-702, K-411]
     why: "ADR-058 › 105 (Levent): deneme bitmeden haber ver (Noom dersi); fatura bildirimi, ADR-036'nın üç türünden sayılmaz"
     acceptance:
