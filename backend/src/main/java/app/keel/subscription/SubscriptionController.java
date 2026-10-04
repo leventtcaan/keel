@@ -3,6 +3,7 @@ package app.keel.subscription;
 import app.keel.shared.AccountId;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,11 +16,11 @@ class SubscriptionController {
 
     /** Contract Subscription. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record SubscriptionView(boolean active, SubscriptionState.Status status, Instant accessUntil) {
+    record SubscriptionView(boolean active, UUID appUserId, SubscriptionState.Status status, Instant accessUntil) {
     }
 
     @GetMapping("/v1/subscription")
     SubscriptionView read(AccountId account) {
-        return new SubscriptionView(false, null, null);
+        return new SubscriptionView(false, null, null, null);
     }
 }

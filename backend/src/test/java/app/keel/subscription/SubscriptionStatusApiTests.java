@@ -24,7 +24,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The subscription over the API (K-705, ADR-056 addendum 1): what the server keeps from RevenueCat's events, read only —
- * active from accessUntil alone, the status for the app to tell; an account that never subscribed is 200 and inactive,
+ * active from accessUntil alone, the status for the app to tell, the id RevenueCat must know the account by; an account that never subscribed is 200 and inactive,
  * not an error; one account never sees another's.
  */
 @SpringBootTest
@@ -67,7 +67,7 @@ class SubscriptionStatusApiTests {
 
         Map<String, Object> subscription = read(get(account));
 
-        assertThat(subscription).isEqualTo(Map.of("active", false));
+        assertThat(subscription).as("inactive, and the id to buy under").isEqualTo(Map.of("active", false, "appUserId", account.value().toString()));
         assertThat(jdbc.sql("select count(*) from subscription.subscription where account_id = :account").param("account", account.value())
                 .query(Integer.class).single()).as("reading changes nothing").isZero();
     }
@@ -124,8 +124,9 @@ class SubscriptionStatusApiTests {
         TestWebhooks.subscribe(mvc, context, subscribed);
         AccountId other = account();
 
-        assertThat(read(get(subscribed))).containsEntry("active", true).containsEntry("status", "ACTIVE");
-        assertThat(read(get(other))).isEqualTo(Map.of("active", false));
+        assertThat(read(get(subscribed))).containsEntry("active", true).containsEntry("status", "ACTIVE")
+                .containsEntry("appUserId", subscribed.value().toString());
+        assertThat(read(get(other))).isEqualTo(Map.of("active", false, "appUserId", other.value().toString()));
     }
 
     @Test
