@@ -10,9 +10,16 @@ import { has } from '@/copy';
 
 type Schemas = components['schemas'];
 
-/** ready · none yet (404) · the health data consent is needed (403 CONSENT_REQUIRED) · failed, by name only (V3). */
+/**
+ * ready · none yet (404) · the health data consent is needed (403 CONSENT_REQUIRED) · a subscription is needed (403
+ * ENTITLEMENT_REQUIRED, K-703: the way to the plans, K-702) · failed, by name only (V3).
+ */
 export type Loaded<T> =
-  { state: 'ready'; value: T } | { state: 'none' } | { state: 'consent' } | { state: 'failed'; problem: 'NoConnection' | 'ServerError' };
+  | { state: 'ready'; value: T }
+  | { state: 'none' }
+  | { state: 'consent' }
+  | { state: 'subscription' }
+  | { state: 'failed'; problem: 'NoConnection' | 'ServerError' };
 
 export type TodayData = {
   consistency: Loaded<Schemas['Consistency']>;
@@ -48,6 +55,7 @@ export async function load<T>(request: () => Promise<Answer<T>>): Promise<Loaded
   if (answer.data !== undefined) return { state: 'ready', value: answer.data };
   if (answer.response.status === 404) return { state: 'none' };
   if (answer.response.status === 403 && answer.error?.code === 'CONSENT_REQUIRED') return { state: 'consent' };
+  if (answer.response.status === 403 && answer.error?.code === 'ENTITLEMENT_REQUIRED') return { state: 'subscription' };
   return { state: 'failed', problem: 'ServerError' };
 }
 

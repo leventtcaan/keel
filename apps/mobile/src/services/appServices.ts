@@ -16,6 +16,7 @@ import { type ProjectionSwitch, createProjectionSwitch } from '@/projection/proj
 import { type ProjectionAccess, createProjectionAccess } from '@/projection/scoff';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { type StateService, createStateService } from '@/state/stateService';
+import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
 import { type Opens, createOpens } from '@/today/opens';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
@@ -49,6 +50,8 @@ type Deps = {
   healthWrite?: HealthWriteAccess;
   /** The progress photos' folder on the phone (K-614, photoFiles.ts); none where there is none (tests). */
   photoFiles?: PhotoFiles;
+  /** The App Store through RevenueCat (K-702, revenueCat.ts); none where there is none (Expo Go, tests). */
+  purchases?: SubscriptionStore;
   now?: () => Date;
 };
 
@@ -111,6 +114,8 @@ export type AppServices = {
   opens: Opens;
   /** Progress photos, on this phone only (K-614, V1). */
   photos: PhotoLibrary;
+  /** The App Store's side of the subscription (K-702); whether it is on is the server's answer (GET /v1/subscription). */
+  purchases: SubscriptionStore;
 };
 
 export async function createAppServices({
@@ -125,6 +130,7 @@ export async function createAppServices({
   alerts = alertsUnavailable,
   healthWrite = healthWriteUnavailable,
   photoFiles = noPhotoFiles,
+  purchases = storeUnavailable,
   now = () => new Date(),
 }: Deps): Promise<AppServices> {
   const session = createSessionManager({ storage, refresh: refreshWithServer({ baseUrl, fetch }) });
@@ -196,6 +202,7 @@ export async function createAppServices({
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
+    purchases.forget().catch(reportError); // and the App Store's account: the next person's purchases are not this account's (K-702)
     // Not the progress photos (ADR-055 › 101): a refused refresh token (60 days away) would take the only copy, Day 1 too.
     // The user's sign-out and the account's deletion delete them (below); another account signing in does (claimPhotos).
   });
@@ -215,6 +222,7 @@ export async function createAppServices({
     state,
     opens,
     photos,
+    purchases,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     healthWriting,

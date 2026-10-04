@@ -130,11 +130,15 @@ describe('readMealPhoto (PhotoLogTests)', () => {
     expect(s.POST).not.toHaveBeenCalled();
   });
 
-  it('the server’s answers: its consent answer, offline, refused', async () => {
+  it('the server’s answers: its consent answer, offline, the subscription’s answer, refused', async () => {
     const consent = services(true, refused(403, 'CONSENT_REQUIRED'));
     await expect(readMealPhoto({ api: consent.api, consents: consent.consents }, tools(), 'camera')).resolves.toEqual({ state: 'consent' });
     const offline = services(true, 'offline');
     await expect(readMealPhoto({ api: offline.api, consents: offline.consents }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
+    const unsubscribed = services(true, refused(403, 'ENTITLEMENT_REQUIRED'));
+    await expect(readMealPhoto({ api: unsubscribed.api, consents: unsubscribed.consents }, tools(), 'camera')).resolves.toEqual({
+      state: 'subscription',
+    });
     const bad = services(true, refused(400, 'VALIDATION_FAILED'));
     await expect(readMealPhoto({ api: bad.api, consents: bad.consents }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
   });

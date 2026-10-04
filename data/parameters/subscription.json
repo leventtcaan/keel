@@ -1,0 +1,20 @@
+{
+  "parameters": [
+    {
+      "key": "subscription_confirm_attempts",
+      "value": 12,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-057-paywall-telefonda.md#D2",
+      "note": "After a purchase or a restore the phone asks the server this many times whether access is on (K-702): the store's webhook reaches the server seconds to a minute later. With subscription_confirm_interval_ms, about a minute; past it the screen says it can take a minute and offers to look again."
+    },
+    {
+      "key": "subscription_confirm_interval_ms",
+      "value": 5000,
+      "unit": "ms",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-057-paywall-telefonda.md#D2",
+      "note": "The wait between two of those questions."
+    }
+  ]
+}

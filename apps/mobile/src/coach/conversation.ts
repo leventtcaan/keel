@@ -69,7 +69,8 @@ export function chipAnswer(chip: string, decision: Loaded<Schemas['Decision']>, 
   if (chip === 'today.chips.why') {
     if (decision.state === 'none') return { lines: [{ key: 'coach.answer.no_call' }] };
     if (decision.state === 'consent') return { lines: [{ key: 'today.consent.body' }] };
-    if (decision.state === 'failed') return { lines: [{ key: 'coach.chip.unread' }] };
+    // The call needs no subscription (ADR-056 #10): that answer here is one more call not read.
+    if (decision.state === 'failed' || decision.state === 'subscription') return { lines: [{ key: 'coach.chip.unread' }] };
     const call = decision.value;
     const reasons = call.safety === true ? [] : call.reasons.map((reason) => `decision.rule.${reason.rule}`).filter((key) => has(key));
     return {
@@ -89,12 +90,15 @@ function stands(nextReview: string, date: DayWords): Line {
 export type Asked =
   | { state: 'ready'; said: Said; standard: boolean }
   | { state: 'consent' }
+  /** The model's answer needs a subscription (403 ENTITLEMENT_REQUIRED, K-703): the way to the plans (K-702). */
+  | { state: 'subscription' }
   | { state: 'failed' };
 
 /** A message to the coach: its answer said from the copy, the engine's own words marked as such; or why there is none. */
 export async function ask(api: ApiClient, text: string, date: DayWords): Promise<Asked> {
   const answer = await load(() => api.POST('/v1/coach/messages', { body: { text } }));
   if (answer.state === 'consent') return { state: 'consent' };
+  if (answer.state === 'subscription') return { state: 'subscription' };
   if (answer.state !== 'ready') return { state: 'failed' };
   const { value } = answer;
   // A topic not about the call shows no card either: nothing says the call stands after "your doctor comes first" (U6).
@@ -102,11 +106,12 @@ export async function ask(api: ApiClient, text: string, date: DayWords): Promise
   return { state: 'ready', said: { lines: linesOf(value, date), call: aboutTheCall ? value.call : undefined }, standard: value.mode === 'DETERMINISTIC' };
 }
 
-export type Read = { state: 'ready'; draft: Schemas['MealDraft'] } | { state: 'consent' } | { state: 'failed' };
+export type Read = { state: 'ready'; draft: Schemas['MealDraft'] } | { state: 'consent' } | { state: 'subscription' } | { state: 'failed' };
 
 /** A meal in words, read into a draft (K-504): the database's foods for each, nothing of what they hold (U1). */
 export async function readMeal(api: ApiClient, text: string): Promise<Read> {
   const draft = await load(() => api.POST('/v1/meals/parse', { body: { text } }));
   if (draft.state === 'consent') return { state: 'consent' };
+  if (draft.state === 'subscription') return { state: 'subscription' };
   return draft.state === 'ready' ? { state: 'ready', draft: draft.value } : { state: 'failed' };
 }

@@ -10,13 +10,14 @@ import { ConsentsSection } from '@/settings/ConsentsSection';
 import { HealthWriteSection } from '@/settings/HealthWriteSection';
 import { ImportSection } from '@/settings/ImportSection';
 import { RemindersSection } from '@/settings/RemindersSection';
+import { SubscriptionSection } from '@/settings/SubscriptionSection';
 import { UnitsSection } from '@/settings/UnitsSection';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * Settings (K-309, prototype 5.2), opened from Today. The reminders (K-410) sit after the units; the subscription
- * (K-702) joins when it exists.
+ * Settings (K-309, prototype 5.2), opened from Today. The reminders (K-410) sit after the units; the subscription (K-702)
+ * after the data and consents, before the account.
  */
 export default function SettingsScreen() {
   const { color } = useTheme();
@@ -33,6 +34,7 @@ export default function SettingsScreen() {
         <ConsentsSection />
         <HealthWriteSection />
         <ImportSection />
+        <SubscriptionSection />
         <AccountSection />
       </ScrollView>
     </SafeAreaView>

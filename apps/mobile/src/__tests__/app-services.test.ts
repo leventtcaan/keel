@@ -3,6 +3,7 @@
  * store and the queue that sends with it. Real SQL (node:sqlite), a fake server.
  */
 import { createAppServices } from '@/services/appServices';
+import { storeUnavailable } from '@/subscription/store';
 import type { StoredSession } from '@/session/session';
 import { localDay } from '@/today/today';
 
@@ -220,6 +221,35 @@ test('the days the app was opened go with the session: forgotten at sign-out (K-
   await services.signOut();
   await settle();
   expect(kv.items.has('keel.opens')).toBe(false);
+});
+
+test("the App Store's account goes with the session (K-702): the next person's purchases are not this account's", async () => {
+  const forgets: string[] = [];
+  const store = { ...storeUnavailable, available: true, forget: async () => void forgets.push('forget') };
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: () => {}, kv: memoryKv(), locale: 'en-US', purchases: store });
+  expect(services.purchases).toBe(store);
+  await services.session.signIn(SESSION);
+  expect(forgets).toEqual([]);
+  await services.signOut();
+  await settle();
+  expect(forgets).toEqual(['forget']);
+});
+
+test("a store that cannot forget (RevenueCat refusing a log-out) is reported by name; the sign-out is still done", async () => {
+  const reported: string[] = [];
+  const store = {
+    ...storeUnavailable,
+    available: true,
+    forget: async () => {
+      throw Object.assign(new Error('x'), { name: 'StoreLogOut' });
+    },
+  };
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server().fetch, report: (problem) => void reported.push(problem.name), kv: memoryKv(), locale: 'en-US', purchases: store });
+  await services.session.signIn(SESSION);
+  await services.signOut();
+  await settle();
+  expect(reported).toContain('StoreLogOut');
+  expect(await services.session.isSignedIn()).toBe(false);
 });
 
 test('the SCOFF result: "off" stays on the phone at sign-out, "clear" goes (K-607, ADR-050)', async () => {

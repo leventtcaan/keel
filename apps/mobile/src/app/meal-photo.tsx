@@ -14,8 +14,8 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-/** Where the screen is: the consent asked about, ready to take one, reading it, or what came back. */
-type Step = { at: 'checking' } | { at: 'consent' } | { at: 'choose'; note: 'denied' | 'failed' | null } | { at: 'reading' } | { at: 'draft'; read: Extract<PhotoRead, { state: 'ready' }> };
+/** Where the screen is: the consent asked about, a subscription needed, ready to take one, reading it, or what came back. */
+type Step = { at: 'checking' } | { at: 'consent' } | { at: 'subscription' } | { at: 'choose'; note: 'denied' | 'failed' | null } | { at: 'reading' } | { at: 'draft'; read: Extract<PhotoRead, { state: 'ready' }> };
 
 /**
  * A meal from a photo (K-408, ADR-046). The AI consent first: without it, why and the way to Settings — nothing is
@@ -42,6 +42,7 @@ export default function MealPhotoScreen() {
     const read = await readMealPhoto({ api, consents }, photoTools, source);
     if (read.state === 'ready') return setStep({ at: 'draft', read });
     if (read.state === 'consent') return setStep({ at: 'consent' });
+    if (read.state === 'subscription') return setStep({ at: 'subscription' });
     setStep({ at: 'choose', note: read.state === 'cancelled' ? null : read.state });
   };
   const log = (items: HandedMeal) => {
@@ -56,6 +57,14 @@ export default function MealPhotoScreen() {
       <View style={styles.part}>
         {line('mealPhoto.consent')}
         <Button label={t('today.consent.open')} variant="ghost" onPress={() => router.push('/settings')} />
+      </View>
+    );
+  } else if (step.at === 'subscription') {
+    // Opened only on a tap (ADR-057 D5); logging by name works without a subscription.
+    body = (
+      <View style={styles.part}>
+        {line('mealPhoto.subscription')}
+        <Button label={t('subscription.seePlans')} variant="ghost" onPress={() => router.push('/paywall')} />
       </View>
     );
   } else if (step.at === 'choose') {
