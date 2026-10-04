@@ -56,3 +56,5 @@ jobs:
         run: python3 tools/test_clip.py
       - name: Language model check script (K-511)
         run: python3 tools/test_llm_eval.py
+      - name: Data inventory matches the migrations and the privacy policy (K-801, ADR-060)
+        run: python3 tools/test_veri_envanteri.py
