@@ -16,3 +16,6 @@
 8. K-607 SCOFF kapısı (`K-607.md`, ADR-050) — cevap saklanmaz, sonuç cihazda, "unavailable" kesin, bölge linki
 9. K-613 projeksiyonun sayıları (`K-613.md`, ADR-052) — kapılar, gün payı senaryosu, aralık, yalnız ileri, oturmuş başlangıç
 10. K-606 projeksiyon ekranı (`K-606.md`) — anahtar + SCOFF, figür, suçlamasız güncelleme
+
+## Aktarım sırası (Part 3 · Efor ve fotoğraf)
+11. K-604 efor grafiği ve iki pencere (`K-604.md`) — haftanın en iyi e1RM'i, halka, gerçek değerli etiket, pazartesiye hizalı pencere
