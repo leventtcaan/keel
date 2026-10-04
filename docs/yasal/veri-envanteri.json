@@ -1159,8 +1159,8 @@
  "outbound": [
   {
    "recipient": "Apple",
-   "data": "Sign in with Apple: Apple gives us a stable user id for this app; no name, no email is asked. Our server fetches Apple's public keys only.",
-   "when": "sign-in",
+   "data": "Sign in with Apple: Apple gives us a stable user id for this app; no name, no email is asked. Our server fetches Apple's public keys. When you delete your account, our server sends Apple a one-time code from a fresh Sign in with Apple, signed with our developer key, and asks Apple to end this app's sign-in for you (K-812, ADR-062); nothing Apple answers is kept.",
+   "when": "sign-in; account deletion",
    "basis": "contract",
    "active": true,
    "policy": "recipients",

@@ -149,6 +149,8 @@ keel:
     sweep-every: 1m
     retry-after: 1m
     retry-every: 5m
+    # A call out through EgressGate (K-812: Apple's /auth/token and /auth/revoke) gives up after this long, connecting or answering.
+    egress-timeout: 10s
   # The language model the coach uses (K-503, ADR-004, ADR-042): an adapter the server has, the model, the output limit
   # and the provider's list prices per million tokens. "fake" until a provider is chosen (K-511; ADR-041: no real call,
   # no spending yet) — it sends nothing anywhere. The AI consent names the provider (keel.consent.third-party-ai).

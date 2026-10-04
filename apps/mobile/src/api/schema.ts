@@ -93,6 +93,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/account/apple-revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End Sign in with Apple for this app, before the account is deleted
+         * @description K-812, ADR-062. The phone asks Apple for a fresh authorization code (Sign in with Apple again) and sends it here just
+         *     before DELETE /v1/account. The server trades it at Apple's /auth/token, checks the identity token is this account's,
+         *     and revokes the refresh token at /auth/revoke. Nothing of Apple's is kept. Whatever this answers, the phone goes on
+         *     with the deletion (V6): 400 the code is not good or not this account's; 503 revocation is not set up or Apple did not
+         *     answer.
+         */
+        post: operations["revokeAppleSignIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/account/export": {
         parameters: {
             query?: never;
@@ -1306,6 +1330,10 @@ export interface components {
              *     (K-214; Apple's rule on deleting accounts that use Sign in with Apple — verified in K-203).
              */
             authorizationCode?: string;
+        };
+        AppleRevocationRequest: {
+            /** @description Sign in with Apple's authorization code from a sign-in just made; single use, valid five minutes. */
+            authorizationCode: string;
         };
         RefreshRequest: {
             refreshToken: string;
@@ -2643,6 +2671,29 @@ export interface operations {
              *     from this answer on, its tokens get 401 — the phone signs out and drops its offline queue.
              */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    revokeAppleSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppleRevocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Apple revoked this app's sign-in for the person */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
