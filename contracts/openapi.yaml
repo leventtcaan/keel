@@ -1161,6 +1161,25 @@ paths:
                 $ref: "#/components/schemas/WhatIf"
         default:
           $ref: "#/components/responses/Error"
+  /v1/projection:
+    get:
+      tags: [decision]
+      operationId: getProjection
+      description: |
+        The shape projection's numbers (K-613, U12, ADR-050, ADR-052): where the weight goes by `on` (projection_horizon_weeks
+        from today) if the plan is kept 60 %, 80 % or 95 % of the time — the energy balance model (Hall 2011, ADR-051), each a
+        range, only toward the goal (the end of a range that would go the other way stops at today's weight). Never a fat
+        number (U4). The phone keeps it off by default and asks the SCOFF questions first; that answer never reaches here.
+        Not shown → `shown: false` and the reason by name. CONSENT_REQUIRED without the HEALTH_DATA consent.
+      responses:
+        "200":
+          description: The scenarios, or why there are none
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projection"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/decisions/{id}/apply:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2922,6 +2941,51 @@ components:
                     enum: [HOLDING, DROPPING]
               decision:
                 $ref: "#/components/schemas/ExampleCall"
+    Projection:
+      type: object
+      required: [shown]
+      properties:
+        shown:
+          type: boolean
+        reason:
+          type: string
+          description: |
+            Only when not shown. UNDER_AGE · SAFETY_HOLD (the safety net holds the plan, U13) · TOO_EARLY (no plan yet, or first
+            and last weigh-in under 28 days apart) · NO_RECENT_WEIGHT (none this week) · NO_DIRECTION (the plan does not move
+            toward a goal by at least 100 kcal a day) · LOW_BMI_LOSS (under BMI 20 losing is not projected) · OUTSIDE_MODEL (a body the
+            energy balance model does not reach) · NO_SAFE_SCENARIO (every scenario would lose
+            faster than the weekly cap or reach under BMI 18.5).
+          enum: [UNDER_AGE, SAFETY_HOLD, TOO_EARLY, NO_RECENT_WEIGHT, NO_DIRECTION, LOW_BMI_LOSS, OUTSIDE_MODEL, NO_SAFE_SCENARIO]
+        todayKg:
+          type: number
+          description: Only when shown. Today's trend weight (7-day mean), at most 1 decimal.
+        direction:
+          type: string
+          enum: [LOSS, GAIN]
+          description: Only when shown.
+        "on":
+          type: string
+          format: date
+          description: Only when shown. The day the scenarios are for.
+        scenarios:
+          type: array
+          description: Only when shown; one to three, in order of the share kept. A scenario that would not be safe is left out.
+          items:
+            type: object
+            required: [adherence, lowKg, kg, highKg]
+            properties:
+              adherence:
+                type: number
+                description: The share of the time the plan is kept (0.6, 0.8, 0.95) — a behaviour, never a promised result.
+              lowKg:
+                type: number
+                description: At most 1 decimal.
+              kg:
+                type: number
+                description: The model's number, at most 1 decimal.
+              highKg:
+                type: number
+                description: At most 1 decimal.
     ExampleCall:
       type: object
       description: The engine's call on an example week — a Decision without an id, a day or an application (never kept).
