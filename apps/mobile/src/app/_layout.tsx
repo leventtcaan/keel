@@ -3,7 +3,7 @@ import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
-import { ServicesProvider, useOnboarding, useSignedIn } from '@/services/ServicesProvider';
+import { ServicesProvider, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 
@@ -22,17 +22,19 @@ export const unstable_settings = { anchor: '(tabs)' };
 // (tabs)/_layout.tsx; the app opens on the first one, Today. Signed out, the only screen is sign-in (K-305): when the
 // session ends (sign-out, a refused refresh) the guarded screens leave the history and sign-in takes their place.
 // Signed in without a profile, the only screens are onboarding's (K-306); not known yet, the one that asks the server.
+// Onboarded but never subscribed, the only screen is the gate (K-706, ADR-058 #1); not known yet, the gate asks.
 function AppStack() {
   const { color } = useTheme();
   const signedIn = useSignedIn();
   const onboarding = useOnboarding();
+  const gate = useSubscriptionGate();
   // Mounted only once the services are ready (ServicesProvider renders nothing before).
   useEffect(() => {
     void SplashScreen.hideAsync();
   }, []);
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
-      <Stack.Protected guard={signedIn && onboarding === 'done'}>
+      <Stack.Protected guard={signedIn && onboarding === 'done' && gate === 'open'}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings" />
@@ -58,6 +60,9 @@ function AppStack() {
         <Stack.Screen name="share" />
         <Stack.Screen name="import" />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && onboarding === 'done' && gate !== 'open'}>
+        <Stack.Screen name="subscribe" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'needed'}>
         <Stack.Screen name="onboarding" />

@@ -20,6 +20,7 @@ import { ThemeProvider } from '@/theme/theme';
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 // The services need a phone (SQLite, keychain); the session state is what navigation reads from them (K-305).
 let mockSignedIn = true;
+let mockGate: 'unknown' | 'required' | 'open' = 'open';
 const mockHealthWriteOff = { workouts: false, weighIns: false };
 const mockRemindersOff = { enabled: false, cue: '' };
 const mockServices = {
@@ -57,11 +58,16 @@ const mockServices = {
   healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
   state: { keep: async () => {}, current: async () => null }, // Today keeps the state it read (K-518); Train reads it (K-528)
   opens: { previous: async () => null }, // Today counts its open (K-521)
+  // The gate screen (K-706): it asks the gate when not known; the store is not in this build. Its account section counts.
+  gate: { refresh: async () => {} },
+  purchases: { available: false },
+  pendingCount: async () => 0,
 };
 jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,
   useSignedIn: () => mockSignedIn,
   useOnboarding: () => 'done', // this file is about a finished account; onboarding-flow.test.tsx is about the rest
+  useSubscriptionGate: () => mockGate,
   // One object for the life of the test, as the real services are built once per process: a screen may depend on it.
   useAppServices: () => mockServices,
   useUnits: () => 'METRIC',
@@ -69,7 +75,21 @@ jest.mock('@/services/ServicesProvider', () => ({
 
 beforeEach(() => {
   mockSignedIn = true;
+  mockGate = 'open';
 });
+
+test.each(['required', 'unknown'] as const)(
+  'the gate after onboarding (K-706) %s: the only screen is the gate — no tabs, no way around it',
+  async (gate) => {
+    mockGate = gate;
+    const router = renderRouter(APP, { initialUrl: '/' });
+    await router;
+    expect(router.getPathname()).toBe('/subscribe');
+    expect(screen.queryByRole('header', { name: t('screens.today.title') })).toBeNull();
+    await act(async () => appRouter.push('/settings'));
+    expect(router.getPathname()).toBe('/subscribe');
+  },
+);
 
 const APP = path.resolve(__dirname, '../app');
 

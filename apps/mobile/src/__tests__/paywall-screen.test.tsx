@@ -47,7 +47,7 @@ const BOTH = [
   { key: 'subscription.privacy', url: 'https://example.test/privacy' },
 ];
 let mockLinks = BOTH;
-jest.mock('@/subscription/links', () => ({ configuredLegalLinks: () => mockLinks }));
+jest.mock('@/subscription/links', () => ({ ...jest.requireActual('@/subscription/links'), configuredLegalLinks: () => mockLinks }));
 
 function store(overrides: Partial<SubscriptionStore> = {}): SubscriptionStore {
   return {

@@ -22,6 +22,8 @@ import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { devicePhotoFiles } from '@/photos/photoFiles';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
+import type { GateState } from '@/subscription/gate';
+import { configuredLegalLinks } from '@/subscription/links';
 import { revenueCatStore } from '@/subscription/revenueCat';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
@@ -76,10 +78,14 @@ async function build(): Promise<PhoneServices> {
     alerts: deviceAlerts(), // the rest timer's (K-411)
     healthWrite: healthKitWrite(), // not available in Expo Go (no native module)
     photoFiles: devicePhotoFiles(), // progress photos: a folder on this phone, never uploaded (K-614, V1)
+    links: configuredLegalLinks(), // without both, nothing is sold and the gate stays open (ADR-057 D3, K-706)
     purchases: revenueCatStore({ report: reportProblem }), // not available in Expo Go or without the SDK key; set up only when first needed (ADR-057 D1)
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
-  if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);
+  if (await services.session.isSignedIn()) {
+    services.profile.refresh().catch(() => undefined);
+    void services.gate.refresh(); // the kept answer routes at once; this one corrects it (K-706)
+  }
   startAutoSync(services.queue.drainInBackground, deviceTriggers);
   // The quiet spell starts again from each open, and iOS's answer is read afresh (K-410); for the app's life.
   trackOpens(services.reminders.opened, services.session.isSignedIn, (listener) => {
@@ -178,6 +184,12 @@ export function useUnits(): UnitSystem {
 export function useOnboarding(): OnboardingState {
   const { profile } = useAppServices();
   return useSyncExternalStore(profile.subscribe, profile.current);
+}
+
+/** Whether the account meets the paywall before the tabs (K-706); the root layout routes on it. */
+export function useSubscriptionGate(): GateState {
+  const { gate } = useAppServices();
+  return useSyncExternalStore(gate.subscribe, gate.current);
 }
 
 export function useSignedIn(): boolean {

@@ -235,6 +235,29 @@ test("the App Store's account goes with the session (K-702): the next person's p
   expect(forgets).toEqual(['forget']);
 });
 
+test('the subscription gate (K-706): asked at sign-in, forgotten at sign-out', async () => {
+  const links = [
+    { key: 'subscription.terms', url: 'https://example.test/terms' },
+    { key: 'subscription.privacy', url: 'https://example.test/privacy' },
+  ];
+  const fake = server(200); // every answer is a body without a subscription status: never subscribed
+  const store = { ...storeUnavailable, available: true };
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: fake.fetch, report: () => {}, kv: memoryKv(), locale: 'en-US', purchases: store, links });
+  expect(services.gate.current()).toBe('unknown');
+  await services.session.signIn(SESSION);
+  await settle();
+  expect(fake.seen.some((seen) => seen.path === '/v1/subscription')).toBe(true);
+  expect(services.gate.current()).toBe('required');
+  await services.signOut();
+  await settle();
+  expect(services.gate.current()).toBe('unknown');
+});
+
+test('without the store or the legal links in the build, the gate is open (a development build is not locked)', async () => {
+  const { services } = await setup();
+  expect(services.gate.current()).toBe('open');
+});
+
 test("a store that cannot forget (RevenueCat refusing a log-out) is reported by name; the sign-out is still done", async () => {
   const reported: string[] = [];
   const store = {

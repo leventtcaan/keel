@@ -33,6 +33,7 @@ jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => (mockServicesReady ? children : null),
   useSignedIn: () => true,
   useOnboarding: () => 'done',
+  useSubscriptionGate: () => 'open', // the gate (K-706) is navigation.test.tsx's
 }));
 
 const fonts = useFonts as jest.Mock;

@@ -25,5 +25,8 @@ Play; ADR-056 `SUBSCRIPTION_PAUSED`'ı Play'e özgü yazıyor; ADR-057). Prototi
 ## Sonuçlar
 - Yeni görevler: **K-706** (kapı: telefonda `SubscriptionGate`, kök düzende korumalı grup; çevrimdışında son bilinen cevap — uçak modu kapıyı
   açmaz, abonenin kilidini de kapatmaz), **K-707** (hatırlatma: `AlertAccess` kalıbı, parametre `trial_reminder_days_before`).
+- K-706 uygulaması (agent): kapı ekranı (`app/subscribe.tsx`) paywall'ın yanında **hesap bölümünü** de taşır — dışa aktarma, hesap silme,
+  çıkış: App Review 5.1.1(v) silmeyi uygulama içinde ister ve ödeme yapmadan ulaşılabilmelidir. Kapı servisi `subscription/gate.ts`;
+  ilk açılışta cevap yoksa (`unknown`) kapı ekranı sorar ve bekler.
 - K-702 kabul kriteri: "Duraklat ve iptal iki dokunuşta" → "İptal iki dokunuşta (iOS'ta duraklatma yok — ADR-058)".
 - Prototip 1.11 ve 5.2: "Pause" satırları kaldırıldı; "Day 5" satırı K-707'nin diliyle.
