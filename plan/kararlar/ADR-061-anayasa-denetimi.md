@@ -58,3 +58,13 @@ Düşük: bir betik, bir veri dosyası, iki test.
 
 ## Doğrulama
 `tools/anayasa-denetimi.sh` yerelde yeşil; bir mutant (mağaza metnine yasaklı ifade, korumasız rota, listeden düşen tarama) kırmızı.
+
+## Ek 1 (2026-10-05, K-804 incelemesi)
+- Komut sunucuda mimari paketin yanında **DB'siz koç metin testlerini** de koşar (`ForbiddenWords`, `MealReplyCheck`, `NoCaloriesFromModel`,
+  `PhotoAnalysisSchema`); liste testi bunları dosyalardan bulur (ifade listelerini okuyan, `@SpringBootTest`'siz testler).
+- Mobil liste ⇔ ilk satırı `// constitution-audit` olan takımlar (iki yönlü); kuralları/tarayıcıları okuyan her takım işaretli olmak zorunda.
+- Rota testi: ekranın **doğrudan** ebeveyni `Stack.Protected` (araya giren parça router'ca görülmez); ana koruma dışındaki gruplar sabit
+  (`subscribe`, `onboarding`, `checking`, `sign-in`); her klasörün kendi `_layout`'u var; expo-router'ın ürettiği `_sitemap` kapalı
+  (`app.json › expo-router › sitemap: false`).
+- Mağaza metni Guideline 2.3'e göre düzeltildi: fotoğraf "this app never uploads them" (iCloud yedeği, ADR-055 #97), deneme "any free trial you're
+  eligible for" (ADR-057 D3).
