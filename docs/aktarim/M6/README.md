@@ -19,3 +19,4 @@
 
 ## Aktarım sırası (Part 3 · Efor ve fotoğraf)
 11. K-604 efor grafiği ve iki pencere (`K-604.md`) — haftanın en iyi e1RM'i, halka, gerçek değerli etiket, pazartesiye hizalı pencere
+12. K-614 fotoğraf kütüphanesi ve pencere (`K-614.md`) — yalnız cihazda klasör, gerçek takvim günü, açık kalan pencere, ağa gitmediğinin üç kanıtı
