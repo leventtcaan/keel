@@ -1787,5 +1787,28 @@
     "saveFailed": "This gym couldn't be saved. Try again when you're online.",
     "deleteFailed": "This gym couldn't be deleted. Try again when you're online.",
     "unitNote": "The gym's weights, as its plates and dumbbells are marked:"
+  },
+  "projection": {
+    "scoff": {
+      "title": "Before the shape projection",
+      "intro": "Five yes-or-no questions about eating. Your answers aren't saved or sent anywhere.",
+      "q1": "Do you make yourself sick because you feel uncomfortably full?",
+      "q2": "Do you worry you have lost control over how much you eat?",
+      "q3": "Have you recently lost more than 6 kg (one stone) in a 3-month period?",
+      "q4": "Do you believe yourself to be fat when others say you are too thin?",
+      "q5": "Would you say that food dominates your life?",
+      "yes": "Yes",
+      "no": "No",
+      "continue": "Continue",
+      "source": "The questions are the SCOFF questionnaire (BMJ, 1999)."
+    },
+    "unavailable": {
+      "title": "The shape projection isn't shown",
+      "body": "From your answers, the shape projection stays off on this phone. Everything else works as before.",
+      "support": "If eating or your body has been on your mind a lot, talking to a doctor or someone who works with eating can help.",
+      "open": "Open {name}",
+      "done": "Done"
+    },
+    "support": { "US": "ANAD's helpline", "GB": "Beat" }
   }
 }

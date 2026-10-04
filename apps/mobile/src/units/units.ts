@@ -130,6 +130,11 @@ export function heightCmFromImperial(feet: number, inches: number): number {
 // ── the default before the user chooses ──────────────────────────────────────────────────────────────────────
 /** From a BCP 47 locale ("en-US", "zh-Hans-US"): the region subtag is the two-letter one. */
 export function defaultSystem(locale: string): UnitSystem {
-  const region = locale.split(/[-_]/).find((part, index) => index > 0 && /^[A-Z]{2}$/.test(part));
+  const region = regionOf(locale);
   return region !== undefined && P.imperialRegions.includes(region) ? 'IMPERIAL' : 'METRIC';
+}
+
+/** The region of a BCP 47 locale ("en-US" → "US"), or none ("en"). */
+export function regionOf(locale: string): string | undefined {
+  return locale.split(/[-_]/).find((part, index) => index > 0 && /^[A-Z]{2}$/.test(part));
 }

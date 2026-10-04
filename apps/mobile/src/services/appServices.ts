@@ -12,6 +12,7 @@ import { type HealthWriting, createHealthWriting } from '@/health/healthWrite';
 import { notificationsUnavailable } from '@/notifications/notificationAccess';
 import { type NotificationAccess, type Reminders, createReminders } from '@/notifications/reminders';
 import { type ProfileStatus, createProfileStatus } from '@/onboarding/profileStatus';
+import { type ProjectionAccess, createProjectionAccess } from '@/projection/scoff';
 import { type SessionManager, type SessionStorage, createSessionManager, refreshWithServer } from '@/session/session';
 import { type StateService, createStateService } from '@/state/stateService';
 import { localDay } from '@/today/today';
@@ -52,6 +53,11 @@ export type AppServices = {
   api: ApiClient;
   queue: SyncQueue;
   units: UnitsPreference;
+  /**
+   * The SCOFF gate's result for the shape projection (K-607, ADR-050), on this phone only. Kept at sign-out on purpose: it
+   * protects the person holding the phone, and signing out must not re-open a gate answered "unavailable".
+   */
+  projection: ProjectionAccess;
   /** Whether this account has finished onboarding (K-306). */
   profile: ProfileStatus;
   /** Records the server does not have yet; a sign-out drops them, so the screen warns first (K-309). */
@@ -107,6 +113,7 @@ export async function createAppServices({
   const store = await openRecordStore(db);
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
+  const projection = await createProjectionAccess({ kv, locale });
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
   // A state the user declared quiets the reminders while it is in force (K-518, ADR-036 #7); each change plans again.
   const state = createStateService({ api, kv, now, onChange: () => void reminders.refresh() });
@@ -164,6 +171,7 @@ export async function createAppServices({
     api,
     queue,
     units,
+    projection,
     profile,
     consents,
     training,
