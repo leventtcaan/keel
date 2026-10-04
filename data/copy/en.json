@@ -598,6 +598,67 @@
     "denied": "The camera isn't allowed for this app. You can allow it in the iPhone's Settings, or choose a photo instead.",
     "failed": "That photo couldn't be read. Try again, or log the meal by name."
   },
+  "import": {
+    "title": "Bring in workouts",
+    "intro": "Export your workouts from Strong or Hevy, then choose the file here.",
+    "privacy": "The file stays on this phone. Only the sets you match to a move are sent, marked as brought in. They show in your history and never change a call.",
+    "needsConsent": "Bringing in workouts needs the health data consent. You can give it in Settings.",
+    "choose": "Choose a file",
+    "chooseAnother": "Choose another file",
+    "unknown": "This isn't a Strong or Hevy export we can read. Export it again from the app, in English, and choose it without editing it.",
+    "empty": "There are no sets in this file.",
+    "summary": "From {app} · sessions: {sessions} · sets: {sets}",
+    "rowsLeftOut": "Rows that aren't sets we can bring in (no reps, like a timed hold, or a date we can't read): {count}",
+    "apps": {
+      "STRONG": "Strong",
+      "HEVY": "Hevy"
+    },
+    "unit": {
+      "title": "What unit are the weights in?",
+      "note": "Strong's file doesn't say. It's the unit set in Strong when you exported. Pick one to go on.",
+      "kg": "kg",
+      "lb": "lb"
+    },
+    "dumbbells": {
+      "title": "How does this file count dumbbells?",
+      "note": "Here a dumbbell move is logged with one dumbbell's weight.",
+      "one": "One dumbbell",
+      "both": "Both together"
+    },
+    "moves": "Your moves",
+    "sets": "Sets: {count}",
+    "matched": "As {move}",
+    "notMatched": "Not brought in",
+    "unsure": "Not sure which move this is. Pick one, or leave it out:",
+    "pickLabel": "Bring in {file} as {move}",
+    "other": "Other",
+    "otherLabel": "Choose another move for {file}",
+    "skip": "Leave out",
+    "skipLabel": "Don't bring in {file}",
+    "search": "Search moves",
+    "own": "My own move",
+    "ownLabel": "Make {file} one of my own moves",
+    "back": "Back",
+    "send": "Bring in {count} sessions",
+    "sendOne": "Bring in 1 session",
+    "nothing": "Nothing to bring in yet: match at least one move.",
+    "unitFirst": "Pick the unit the weights are in first.",
+    "loadingMoves": "Reading the moves list…",
+    "noMoves": "Couldn't read the moves list. Open this again when you're online.",
+    "sending": "Sending {done} of {of}…",
+    "done": "{count} sessions brought in.",
+    "doneOne": "1 session brought in.",
+    "already": "Already here from before: {count}",
+    "skipped": "Sets of moves you left out, kept in the file only: {count}. Bringing the same file in again won't add them to sessions already here.",
+    "leftOut": "Sets that couldn't come in (a load the move can't take, or over the limits): {count}",
+    "close": "Done",
+    "failed": {
+      "NoConnection": "No connection. Try again: what was sent stays, and it won't come in twice.",
+      "ConsentRequired": "The health data consent isn't given any more. Nothing more was sent.",
+      "ImportRefused": "The server didn't take this. Try again later.",
+      "other": "Something went wrong. Try again."
+    }
+  },
   "weighIn": {
     "title": "Weigh-in",
     "label": "Weight ({unit})",
@@ -1669,7 +1730,11 @@
       "noneNew": "Nothing new to bring in.",
       "needsConsent": "This needs the health data and Apple Health consents above.",
       "failed": "Couldn't read Apple Health. Try again.",
-      "unavailable": "Bringing in Apple Health history works in the app's device build."
+      "unavailable": "Bringing in Apple Health history works in the app's device build.",
+      "workouts": "Workouts from Strong or Hevy",
+      "workoutsHint": "From the app's CSV export. The file stays on this phone.",
+      "open": "Choose",
+      "workoutsLabel": "Bring in workouts from Strong or Hevy"
     },
     "consents": {
       "title": "Your data and consents",

@@ -15,6 +15,8 @@ const mockServices = {
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockPush(...args) } }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -130,4 +132,20 @@ test('where Apple Health cannot be read (Expo Go), it says so and offers nothing
 
   expect(screen.getByText(t('settings.import.unavailable'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('settings.import.importLabel', { what: what() }) })).toBeNull();
+});
+
+test('workouts from Strong or Hevy open their own screen (K-609)', async () => {
+  await show();
+
+  await fireEvent.press(screen.getByRole('button', { name: t('settings.import.workoutsLabel') }));
+
+  expect(mockPush).toHaveBeenCalledWith('/import');
+});
+
+test('where Apple Health cannot be read, workouts can still be brought in: a file needs no HealthKit', async () => {
+  mockServices.health.available = false;
+  await show();
+
+  expect(screen.getByText(t('settings.import.unavailable'))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('settings.import.workoutsLabel') })).toBeOnTheScreen();
 });
