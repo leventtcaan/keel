@@ -7,7 +7,7 @@ package app.keel.consent;
  */
 public final class ConsentTextVersions {
 
-    public static final String HEALTH_DATA = "2-draft";
+    public static final String HEALTH_DATA = "3";
     public static final String APPLE_HEALTH = "1-draft";
     public static final String THIRD_PARTY_AI = "1-draft";
 

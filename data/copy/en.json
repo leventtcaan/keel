@@ -1069,9 +1069,9 @@
   },
   "consent": {
     "health_data": {
-      "version": "2-draft",
+      "version": "3",
       "title": "Your health data, for your coaching",
-      "body": "Your weight, waist, sleep, check-in answers and food and training logs are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time. You can also withdraw this consent in Settings: everything above except your training log is then deleted for good, with your past calls and the foods you avoid, and the calls stop until you allow it again."
+      "body": "Your weight, waist, sleep, meals, check-in answers and the foods you avoid are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time. You can also withdraw this consent in Settings: everything above is then deleted for good, with your past calls, except your training log, which isn't health data and stays; the calls stop until you allow it again."
     },
     "apple_health": {
       "version": "1-draft",
