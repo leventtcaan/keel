@@ -2630,7 +2630,7 @@ tasks:
       - "Hesap kimliği bilinmeyen eski kurulumda (K-614 öncesi kayıt yok) ilk girişte fotoğraflar o hesaba sayılır"
     tests:
       - "PhotoOwnerTests"
-    refs: ["plan/kararlar/ADR-055-m6-cevaplari.md", "plan/kararlar/ADR-030-m3-cevaplari.md"]
+    refs: ["plan/kararlar/ADR-055-m6-cevaplari.md", "plan/kararlar/ADR-030-m3-sonu-cevaplari.md"]
     learn: ["Oturum sonu türleri", "Cihazda veri sahipliği"]
 
   - id: K-618
@@ -2648,7 +2648,7 @@ tasks:
       - "Metin bundan sonra 'never uploaded. Not to us, not to anyone' iddiasını doğru söyler"
     tests:
       - "PhotoBackupTests"
-    refs: ["plan/kararlar/ADR-055-m6-cevaplari.md", "plan/kararlar/ADR-047-cihaz-ustu-model.md"]
+    refs: ["plan/kararlar/ADR-055-m6-cevaplari.md", "plan/kararlar/ADR-047-cihaz-ustu-katman.md"]
     learn: ["iOS dosya özellikleri", "Yerel Expo modülü"]
 
   - id: K-601
