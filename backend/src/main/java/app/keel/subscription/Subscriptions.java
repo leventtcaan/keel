@@ -2,6 +2,8 @@ package app.keel.subscription;
 
 import app.keel.identity.KnownAccounts;
 import app.keel.shared.AccountId;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -77,12 +79,21 @@ class Subscriptions {
                 .param("at", utc(next.lastEventAt())).update();
     }
 
+    /** The account's state as kept, read only (K-705); none for an account that never subscribed. */
+    Optional<SubscriptionState> kept(AccountId account) {
+        return jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account")
+                .param("account", account.value()).query((row, n) -> state(row)).optional();
+    }
+
     /** The account's state, held until the transaction ends: two events for one account are weighed one after the other. */
     private Optional<SubscriptionState> locked(AccountId account) {
         return jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account for update")
-                .param("account", account.value()).query((row, n) -> new SubscriptionState(SubscriptionState.Status.valueOf(row.getString("status")),
-                        row.getObject("access_until", OffsetDateTime.class).toInstant(), row.getObject("last_event_at", OffsetDateTime.class).toInstant()))
-                .optional();
+                .param("account", account.value()).query((row, n) -> state(row)).optional();
+    }
+
+    private static SubscriptionState state(ResultSet row) throws SQLException {
+        return new SubscriptionState(SubscriptionState.Status.valueOf(row.getString("status")), row.getObject("access_until", OffsetDateTime.class).toInstant(),
+                row.getObject("last_event_at", OffsetDateTime.class).toInstant());
     }
 
     private static OffsetDateTime utc(Instant instant) {

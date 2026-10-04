@@ -110,6 +110,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The user's subscription as the server keeps it, from the store's events
+         * @description What the paywall and the settings screen show (K-705): whether the subscription is active and what kind of state it is.
+         *     Read only from what the server keeps of RevenueCat's events (ADR-056) — never from the phone; a purchase the store
+         *     has not told the server about yet (its webhook comes 5-60 seconds later) is not here yet, so the phone asks again
+         *     for a short while after a purchase. No price: prices are the store's (ADR-012, K2). An account that never
+         *     subscribed is not an error: 200, `active: false` and the id to buy under. Reading never changes anything.
+         */
+        get: operations["getSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/profile": {
         parameters: {
             query?: never;
@@ -1213,6 +1237,35 @@ export interface components {
             code: string;
             /** @description English, safe to show to the user. */
             message: string;
+        };
+        /**
+         * @description The user's subscription (K-705, ADR-056 #5). Access is `active` alone — the server's own answer, from `accessUntil`;
+         *     `status` only says what kind of state it is, for the app to tell. Without a subscription ever kept: `active` and
+         *     `appUserId` only.
+         */
+        Subscription: {
+            /**
+             * Format: uuid
+             * @description The id the store must know this account's purchases by — RevenueCat's app user id (ADR-056 #3): the account's
+             *     opaque id, nothing else of the user. The phone logs in to RevenueCat with it before a purchase; a purchase made
+             *     under another id never reaches this account.
+             */
+            appUserId: string;
+            /** @description Whether the subscription pays for the coach's model and the meal photo now. */
+            active: boolean;
+            /**
+             * @description Only when a subscription was ever kept. TRIAL (the free week) · ACTIVE · CANCELLED (will not renew; paid until
+             *     accessUntil) · BILLING_ISSUE (the store could not charge; access until the grace period's end) · PAUSED · EXPIRED ·
+             *     REFUNDED.
+             * @enum {string}
+             */
+            status?: "TRIAL" | "ACTIVE" | "CANCELLED" | "BILLING_ISSUE" | "PAUSED" | "EXPIRED" | "REFUNDED";
+            /**
+             * Format: date-time
+             * @description Only with `status`. The moment access ends (or ended): a trial's or a period's end, a cancelled subscription's
+             *     last paid moment, the moment an expiry or a refund took it away.
+             */
+            accessUntil?: string;
         };
         /** @description An energy estimate, kcal a day or a meal, as a range (U5). low ≤ high. */
         KcalRange: {
@@ -2614,6 +2667,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccountExport"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription, or that there is none */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subscription"];
                 };
             };
             default: components["responses"]["Error"];

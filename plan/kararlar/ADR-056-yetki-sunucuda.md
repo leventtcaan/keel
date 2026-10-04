@@ -94,3 +94,13 @@ değişmez, yinelenen olay bir kez, eski olay geri götürmez, bilinmeyen hesap 
 - **K-704:** RevenueCat REST tazelemesi (`GET /v1/subscribers/{id}`) — webhook'tan sonra ve TRANSFER alıcısı için; RevenueCat hesabı
   ve gizli API anahtarı (Levent) sonrası.
 - M9 kontrol listesi: `environments`'tan SANDBOX çıkar.
+
+## Ek 1 · K-705 telefonun okuduğu durum (agent, 4 Eki)
+- **`GET /v1/subscription`** (sözleşmede, `Subscription`): `active` (zorunlu; sunucunun cevabı, `accessUntil`'den — madde 5),
+  `appUserId` (zorunlu; hesabın opak UUID'si — telefon RevenueCat'e `logIn`'i bununla yapar, madde 3; telefon başka yoldan
+  bilmiyor: oturum cevabında yok, jetonun içi telefonun işi değil), `status` + `accessUntil` yalnız hesabın bir durumu varsa. Hiç abone olmamış hesap → **200 + `active: false`** (hata değil; telefon
+  paywall'u buna bakarak gösterir). Fiyat yok (ADR-012, K2). Uç yalnız okur.
+- `status` enum'u `SubscriptionState.Status` ile birebir (test: `SubscriptionContractTests`); yeni bir durum sözleşmeye de girmeden olmaz.
+- Webhook gecikmesi (5-60 sn) sunucuda çözülmez: satın almadan sonra telefon bu ucu kısa süre yeniden sorar (K-702). Alternatif — telefonun
+  RevenueCat SDK'sından okuduğu `CustomerInfo`'yu göstermek — reddedildi: yetki istemciye güvenilmez (ADR-012); paywall "aktif" deyip
+  koç 403 dönerse kullanıcı çelişki görür. K-704 (REST tazelemesi) gelince gecikme kısalır, uç değişmez.
