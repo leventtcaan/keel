@@ -5,3 +5,8 @@
 
 ## Aktarım sırası (Part 1 · Metinler ve envanter)
 1. K-801 veri envanteri ve yasal metinler (`K-801.md`, ADR-059, ADR-060) — envanter koddan, sütun düzeyinde bağ, katı SQL okuyucu, GDPR Md. 13, olumsuzlama istisnası, Pages
+2. K-806 AI sağlayıcısının saklama/eğitim şartları (`K-806.md`, ADR-044, ADR-041 #71) — ZDR vs eğitim yok, işleyen (processor), istisnalar
+3. K-803 App Store gizlilik etiketi + yaş anketi (`K-803.md`) — Apple'ın "collect" tanımı, 9+ hesaplanır / 18+ zorunlu override, Usage Data
+4. K-809 yasal adresler mağaza derlemesinde (`K-809.md`, ADR-057 D3) — `EXPO_PUBLIC_*` derleme anında, dev-client neden okumaz
+5. K-808 sağlık rızası metni koda uyar (`K-808.md`, ADR-059 #2, soru 57) — metin sürümü, GDPR Md. 7(1), K1
+
