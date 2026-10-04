@@ -288,6 +288,21 @@ class InventoryMatchesTheMigrations(unittest.TestCase):
         self.assertEqual("handled" in registry["erased_by"], mode is not None and mode.group(1) == "delete")
         self.assertIn("handled", registry["erased_by"])
 
+    def test_the_refresh_tokens_retention_is_the_servers(self):
+        # K-810: how long a refresh token is kept, said in the inventory and the policy, from the server's own settings —
+        # its lifetime (keel.session.refresh-ttl) and the night's run (keel.session.expired-cleanup).
+        config = SERVER_CONFIG.read_text(encoding="utf-8")
+        days = re.search(r"^    refresh-ttl:\s*(\d+)d\s*$", config, re.M).group(1)
+        minute, hour = re.search(r'^    expired-cleanup:\s*"0 (\d+) (\d+) \* \* \*"', config, re.M).groups()
+        zone = re.search(r"^    expired-cleanup-zone:\s*(\S+)", config, re.M).group(1)
+        entry = next(e for e in inventory()["server"] if e["table"] == "identity.refresh_token")
+        self.assertIn("time", entry["erased_by"])
+        self.assertIn(f"{days} days", entry["kept_for"])
+        self.assertIn(f"{int(hour):02d}:{int(minute):02d} {zone}", entry["kept_for"])
+        account = _section(PRIVACY.read_text(encoding="utf-8"), "data-account")
+        self.assertIn(f"{days} days", account)
+        self.assertIn("the night after", account)
+
 
 def _section(markdown, anchor):
     """The text under the heading with this id, up to the next heading of the same or a higher level."""
