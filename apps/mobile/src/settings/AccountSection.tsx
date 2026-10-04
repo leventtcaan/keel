@@ -11,15 +11,16 @@ import { Confirm } from './Confirm';
 import { Section } from './Section';
 import { useAction } from './useAction';
 
-type Asking = null | 'delete' | { pending: number };
+type Asking = null | 'delete' | { pending: number; photos: boolean };
 
 /**
  * The account: export (K-214, a JSON file), delete (App Review 5.1.1(v): in the app; asks first), sign out (warns when
- * entries have not reached the server: a sign-out drops them, K-304). The rows are neutral; the warn colour is only on
+ * entries have not reached the server: a sign-out drops them, K-304; and when progress photos are on the phone: they are
+ * only there, and go with the account, K-614). The rows are neutral; the warn colour is only on
  * a confirming step (ADR-016).
  */
 export function AccountSection() {
-  const { exportData, deleteAccount, signOut, pendingCount } = useAppServices();
+  const { exportData, deleteAccount, signOut, pendingCount, photos } = useAppServices();
   const { color } = useTheme();
   const [asking, setAsking] = useState<Asking>(null);
   const { busy, problem, run } = useAction();
@@ -29,8 +30,8 @@ export function AccountSection() {
   // Counting what is waiting is part of the action: if the phone cannot tell, it does not sign out blind.
   const leave = () =>
     void run(async () => {
-      const pending = await pendingCount();
-      if (pending > 0) setAsking({ pending });
+      const [pending, kept] = await Promise.all([pendingCount(), photos.photos()]);
+      if (pending > 0 || kept.length > 0) setAsking({ pending, photos: kept.length > 0 });
       else await signOut();
     }, {});
 
@@ -49,7 +50,10 @@ export function AccountSection() {
   const signOutQuestion =
     asking !== null && asking !== 'delete' ? (
       <Confirm
-        body={t('settings.signOut.pending', { count: asking.pending })}
+        body={[
+          ...(asking.pending > 0 ? [t('settings.signOut.pending', { count: asking.pending })] : []),
+          ...(asking.photos ? [t('settings.signOut.photos')] : []),
+        ]}
         confirmLabel={t('settings.signOut.confirm')}
         keepLabel={t('settings.signOut.keep')}
         onConfirm={() => void run(signOut, {})}

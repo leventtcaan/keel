@@ -19,6 +19,7 @@ import { syncHealthWeights } from '@/health/weightSync';
 import { deviceAlerts, deviceNotifications } from '@/notifications/deviceNotifications';
 import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
+import { devicePhotoFiles } from '@/photos/photoFiles';
 import { type SignInResult, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
@@ -57,6 +58,7 @@ async function build(): Promise<PhoneServices> {
     notifications: deviceNotifications(), // local only: no push token, nothing to a server (K-410)
     alerts: deviceAlerts(), // the rest timer's (K-411)
     healthWrite: healthKitWrite(), // not available in Expo Go (no native module)
+    photoFiles: devicePhotoFiles(), // progress photos: a folder on this phone, never uploaded (K-614, V1)
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);

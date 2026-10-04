@@ -35,6 +35,8 @@ const mockServices = {
   units: { set: jest.fn(async (_system: string) => 'profile' as const) },
   health: { available: true, requestRead: jest.fn(async () => {}) },
   pendingCount: jest.fn(async () => 0),
+  // Progress photos on this phone (K-614): none unless a test puts some.
+  photos: { photos: jest.fn(async (): Promise<{ takenOn: string; pose: string; uri: string }[]> => []) },
   signOut: jest.fn(async () => {}),
   deleteAccount: jest.fn(async () => {}),
   exportData: jest.fn(async () => {}),
@@ -341,6 +343,26 @@ describe('export, delete, sign out', () => {
     expect(mockServices.signOut).toHaveBeenCalledTimes(1);
   });
 
+  test('progress photos on this phone: signing out says they go with it, first (K-614)', async () => {
+    mockServices.photos.photos.mockResolvedValueOnce([{ takenOn: '2026-10-07', pose: 'front', uri: 'file:///docs/a.jpg' }]);
+    await show();
+    await press(t('settings.signOut.title'));
+    expect(mockServices.signOut).not.toHaveBeenCalled();
+    expect(screen.getByText(t('settings.signOut.photos'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('settings.signOut.pending', { count: 0 }))).toBeNull();
+    await press(t('settings.signOut.confirm'));
+    expect(mockServices.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  test('entries waiting and photos: both said', async () => {
+    mockServices.pendingCount.mockResolvedValueOnce(2);
+    mockServices.photos.photos.mockResolvedValueOnce([{ takenOn: '2026-10-07', pose: 'front', uri: 'file:///docs/a.jpg' }]);
+    await show();
+    await press(t('settings.signOut.title'));
+    expect(screen.getByText(t('settings.signOut.pending', { count: 2 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('settings.signOut.photos'))).toBeOnTheScreen();
+  });
+
   test('"Stay signed in" keeps the session and the entries', async () => {
     mockServices.pendingCount.mockResolvedValue(3);
     await show();
@@ -357,6 +379,22 @@ describe('export, delete, sign out', () => {
     expect(mockServices.signOut).not.toHaveBeenCalled();
     expect(screen.getByText(t('settings.serverError'))).toBeOnTheScreen();
     expect(mockServices.report).toHaveBeenCalledWith({ name: 'SqliteError' });
+  });
+
+  test('entries waiting, no photos: no word about photos (K-614)', async () => {
+    mockServices.pendingCount.mockResolvedValueOnce(3);
+    await show();
+    await press(t('settings.signOut.title'));
+    expect(screen.queryByText(t('settings.signOut.photos'))).toBeNull();
+  });
+
+  test('when the phone cannot read its photos, it does not sign out blind either (K-614)', async () => {
+    mockServices.photos.photos.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'FileSystemError' }));
+    await show();
+    await press(t('settings.signOut.title'));
+    expect(mockServices.signOut).not.toHaveBeenCalled();
+    expect(screen.getByText(t('settings.serverError'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'FileSystemError' });
   });
 
   test('deleting offline says it is the connection', async () => {

@@ -67,8 +67,27 @@ const WORKOUTS = [
 let mockHistory: Loaded<Schemas['Workout'][]>;
 let mockRecords: LocalRecord[] = [];
 let mockData: TrainData;
+// The first eight weeks' week (K-614: the first photo is due in week 4); the strength reads go through the training cache.
+let mockFirstWeeks: { status: number; week?: number; code?: string; offline?: boolean } = { status: 404 };
+/** Every call to the API client, whatever its method: the tab asks for the week, never anything about a photo. */
+const mockApiCalls: string[] = [];
+const mockApi = new Proxy(
+  {},
+  {
+    get: (_target, method: string) => async (path: string) => {
+      mockApiCalls.push(`${method} ${path}`);
+      const { status, week, code, offline } = mockFirstWeeks;
+      if (offline) throw new TypeError('Network request failed');
+      return week === undefined
+        ? { error: { code: code ?? 'NOT_FOUND', message: 'x' }, response: new Response(null, { status }) }
+        : { data: { week, risk: [], readsRisk: false, training: true }, response: new Response(null, { status }) };
+    },
+  },
+);
+let mockPhotoChecks: { takenOn: string; photos: { front?: string } }[] = [];
 const mockServices = {
-  api: {},
+  api: mockApi,
+  photos: { checks: jest.fn(async () => mockPhotoChecks), forget: jest.fn(async () => {}) },
   training: { read: async () => mockData, own: async () => [], history: jest.fn(async () => mockHistory) },
   workoutRecords: async () => mockRecords,
   report: jest.fn(),
@@ -103,6 +122,9 @@ afterAll(() => jest.useRealTimers());
 beforeEach(() => {
   jest.clearAllMocks();
   mockUnits = 'METRIC';
+  mockFirstWeeks = { status: 404 };
+  mockApiCalls.length = 0;
+  mockPhotoChecks = [];
   mockRecords = [];
   mockHistory = { state: 'ready', value: WORKOUTS };
   mockData = { program: { state: 'none' }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
@@ -286,4 +308,48 @@ test('a picked lift gone from the next read: the first lift shown, no crash', as
   mockHistory = { state: 'ready', value: [workout('2026-09-28', [set('squat', 100, 5, 1)])] };
   await act(async () => mockFocus?.());
   expect(screen.getByTestId('strength-latest')).toHaveTextContent('120 kg');
+});
+
+describe('photos (K-614)', () => {
+  test('the photos card, with the first photo due in week 4 while the first weeks run', async () => {
+    mockFirstWeeks = { status: 200, week: 2 };
+    await show();
+    expect(screen.getByTestId('photo-card')).toBeOnTheScreen();
+    expect(screen.getByText(t('photos.first', { week: 4 }))).toBeOnTheScreen();
+  });
+
+  test('the first weeks over (404): the first photo is due', async () => {
+    await show();
+    expect(screen.getByText(t('photos.firstDue'))).toBeOnTheScreen();
+  });
+
+  test('no health consent: the week is unknown, the photo offered without being called due', async () => {
+    mockFirstWeeks = { status: 403, code: 'CONSENT_REQUIRED' };
+    await show();
+    expect(screen.getByText(t('photos.anytime'))).toBeOnTheScreen();
+  });
+
+  test('the only thing the tab asks the server for itself is the week; nothing about a photo', async () => {
+    mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
+    await show();
+    expect(mockApiCalls).toEqual(['GET /v1/first-weeks']);
+  });
+
+  test('week 4 of the first weeks: the first photo is due', async () => {
+    mockFirstWeeks = { status: 200, week: 4 };
+    await show();
+    expect(screen.getByText(t('photos.firstDue'))).toBeOnTheScreen();
+  });
+
+  test('offline: the week is unknown, not over', async () => {
+    mockFirstWeeks = { status: 0, offline: true };
+    await show();
+    expect(screen.getByText(t('photos.anytime'))).toBeOnTheScreen();
+  });
+
+  test('with photos, the window counts from the last one to today: open since four weeks after it', async () => {
+    mockPhotoChecks = [{ takenOn: '2026-08-01', photos: { front: 'file:///docs/2026-08-01-front.jpg' } }];
+    await show();
+    expect(screen.getByText(t('photos.open', { date: 'Aug 29' }))).toBeOnTheScreen();
+  });
 });
