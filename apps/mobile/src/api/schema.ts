@@ -961,6 +961,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The shape projection's numbers (K-613, U12, ADR-050, ADR-052): where the weight goes by `on` (projection_horizon_weeks
+         *     from today) if the plan is kept 60 %, 80 % or 95 % of the time — the energy balance model (Hall 2011, ADR-051), each a
+         *     range, only toward the goal (the end of a range that would go the other way stops at today's weight). Never a fat
+         *     number (U4). The phone keeps it off by default and asks the SCOFF questions first; that answer never reaches here.
+         *     Not shown → `shown: false` and the reason by name. CONSENT_REQUIRED without the HEALTH_DATA consent.
+         */
+        get: operations["getProjection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions/{id}/apply": {
         parameters: {
             query?: never;
@@ -1978,6 +2001,40 @@ export interface components {
                     training: "HOLDING" | "DROPPING";
                 };
                 decision: components["schemas"]["ExampleCall"];
+            }[];
+        };
+        Projection: {
+            shown: boolean;
+            /**
+             * @description Only when not shown. UNDER_AGE · SAFETY_HOLD (the safety net holds the plan, U13) · TOO_EARLY (no plan yet, or first
+             *     and last weigh-in under 28 days apart) · NO_RECENT_WEIGHT (none this week) · NO_DIRECTION (the plan does not move
+             *     toward a goal) · LOW_BMI_LOSS (under BMI 20 losing is not projected) · NO_SAFE_SCENARIO (every scenario would lose
+             *     faster than the weekly cap or reach under BMI 18.5).
+             * @enum {string}
+             */
+            reason?: "UNDER_AGE" | "SAFETY_HOLD" | "TOO_EARLY" | "NO_RECENT_WEIGHT" | "NO_DIRECTION" | "LOW_BMI_LOSS" | "NO_SAFE_SCENARIO";
+            /** @description Only when shown. Today's trend weight (7-day mean), at most 1 decimal. */
+            todayKg?: number;
+            /**
+             * @description Only when shown.
+             * @enum {string}
+             */
+            direction?: "LOSS" | "GAIN";
+            /**
+             * Format: date
+             * @description Only when shown. The day the scenarios are for.
+             */
+            on?: string;
+            /** @description Only when shown; one to three, in order of the share kept. A scenario that would not be safe is left out. */
+            scenarios?: {
+                /** @description The share of the time the plan is kept (0.6, 0.8, 0.95) — a behaviour, never a promised result. */
+                adherence: number;
+                /** @description At most 1 decimal. */
+                lowKg: number;
+                /** @description The model's number, at most 1 decimal. */
+                kg: number;
+                /** @description At most 1 decimal. */
+                highKg: number;
             }[];
         };
         /** @description The engine's call on an example week — a Decision without an id, a day or an application (never kept). */
@@ -3666,6 +3723,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WhatIf"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getProjection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The scenarios, or why there are none */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Projection"];
                 };
             };
             default: components["responses"]["Error"];
