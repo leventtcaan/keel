@@ -1,0 +1,14 @@
+{
+  "_about": "App Store listing text, draft (K-804, ADR-061). No product name until M10; keyword choice and localisation are M10's (ASO). Scanned like en.json: U4, U6, person names, and Apple's limits below.",
+  "limits": {
+    "_source": "developer.apple.com/help/app-store-connect/reference/app-information/app-information (name, subtitle) and .../platform-version-information (promotional text, description, keywords), checked 2026-10-05",
+    "subtitle": 30,
+    "promotionalText": 170,
+    "description": 4000,
+    "keywordsBytes": 100
+  },
+  "subtitle": "The coach that makes the call",
+  "promotionalText": "Log your training, food and weight. Each week the plan changes on what you logged: calories, steps, loads. Every call shows its reason.",
+  "description": "Everything else shows you the data. This one makes the call.\n\nLog your workouts, meals and weigh-ins. Once a week you get one decision: keep the plan, or change calories, steps or training loads. Each call says what it looked at, which rule it followed, how sure it is, and when it will look again. When there isn't enough data yet, it says so instead of guessing.\n\nTRAINING\n• Sets, reps and reps in reserve, logged in seconds, offline too.\n• Next session's targets set from your last one: reps climb within the range, then the weight goes up a step.\n• A lighter week when the numbers say you need one.\n• Your gyms and their equipment, so every target is a weight you can actually load.\n• Bring in past workouts from another app's export.\n\nFOOD\n• Search foods, scan a barcode, or reuse your own recipes.\n• Estimates come as ranges, never a single made-up number.\n• Photo estimates of a meal are optional, and only after you say yes to the provider by name.\n\nPROGRESS\n• Weight as a trend over weeks, not day-to-day noise.\n• Strength over time, move by move.\n• Progress photos stay on your phone and are never uploaded.\n\nTHE COACH\n• Ask why. The coach explains the call in plain words.\n• Push back if you like: a call changes when your data changes, not when you insist.\n\nYOUR DATA\n• Reads steps, sleep, weight and active energy from Apple Health, only if you allow it.\n• Export everything, or delete your account and everything with it, from Settings.\n• No streaks to keep, no guilt for a missed day.\n\nSubscription required after the free trial; price and trial length are shown in the app before you subscribe. Manage or cancel any time in your Apple ID settings.",
+  "keywords": "workout log,training plan,calorie counter,macros,weight tracker,progressive overload,gym coach"
+}
