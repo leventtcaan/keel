@@ -25,6 +25,7 @@ import { type Opens, createOpens } from '@/today/opens';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
+import { noPhotoCache, type PhotoCache } from '@/food/photo';
 import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } from '@/photos/library';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
@@ -53,6 +54,8 @@ type Deps = {
   healthWrite?: HealthWriteAccess;
   /** The progress photos' folder on the phone (K-614, photoFiles.ts); none where there is none (tests). */
   photoFiles?: PhotoFiles;
+  /** The meal photos' cache folders (K-811, photoTools.ts); none where there are none (tests). */
+  photoCache?: PhotoCache;
   /** The App Store through RevenueCat (K-702, revenueCat.ts); none where there is none (Expo Go, tests). */
   purchases?: SubscriptionStore;
   /** The Terms of Use and Privacy Policy set in the build (links.ts): without both nothing is sold, and the gate stays open. */
@@ -139,6 +142,7 @@ export async function createAppServices({
   alerts = alertsUnavailable,
   healthWrite = healthWriteUnavailable,
   photoFiles = noPhotoFiles,
+  photoCache = noPhotoCache,
   purchases = storeUnavailable,
   links = [],
   now = () => new Date(),
@@ -223,6 +227,7 @@ export async function createAppServices({
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     gate.forget().catch(reportError); // and whether this account met the paywall: the next one is asked afresh (K-706)
+    photoCache.clear().catch(reportError); // and a meal photo's files a read cut short left in the cache (K-811, V1)
     purchases.forget().catch(reportError); // and the App Store's account: the next person's purchases are not this account's (K-702)
     // Not the progress photos (ADR-055 › 101): a refused refresh token (60 days away) would take the only copy, Day 1 too.
     // The user's sign-out and the account's deletion delete them (below); another account signing in does (claimPhotos).

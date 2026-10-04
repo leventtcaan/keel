@@ -1107,3 +1107,43 @@ test("opening without a session drops the profile's sex left on the phone (a bac
   expect(kv.items.has('profile.figure')).toBe(false);
   expect(await services.bodyFigure()).toBe('male');
 });
+
+describe("the meal photos' leftovers go with the session (K-811, V1)", () => {
+  // Each read deletes its own files (meal-photo.test.ts); a read cut short (the app closed mid-way) leaves its files in
+  // the cache, and those go when the session ends: sign-out, the account deleted, a refused refresh.
+  const cache = () => ({ clear: jest.fn(async () => {}) });
+
+  test('signed out: the cache cleared', async () => {
+    const photoCache = cache();
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch,
+      report: () => {}, kv: memoryKv(), locale: 'en-US', photoCache });
+    await services.session.signIn(SESSION);
+    expect(photoCache.clear).not.toHaveBeenCalled();
+    await services.signOut();
+    await settle();
+    expect(photoCache.clear).toHaveBeenCalled();
+  });
+
+  test('the account deleted: the cache cleared', async () => {
+    const photoCache = cache();
+    const fetch = jest.fn(async (request: Request) => new Response(null, { status: request.method === 'DELETE' ? 202 : 404 }));
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {},
+      kv: memoryKv(), locale: 'en-US', photoCache });
+    await services.session.signIn(SESSION);
+    await services.deleteAccount();
+    await settle();
+    expect(photoCache.clear).toHaveBeenCalled();
+  });
+
+  test('a cache that cannot be cleared is reported by name; the sign-out still done', async () => {
+    const report = jest.fn();
+    const photoCache = { clear: jest.fn(async () => Promise.reject(Object.assign(new Error('/private/var/x'), { name: 'FileSystemError' }))) };
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch, report,
+      kv: memoryKv(), locale: 'en-US', photoCache });
+    await services.session.signIn(SESSION);
+    await services.signOut();
+    await settle();
+    expect(await services.session.isSignedIn()).toBe(false);
+    expect(report).toHaveBeenCalledWith({ name: 'FileSystemError' });
+  });
+});

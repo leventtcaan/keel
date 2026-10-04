@@ -56,24 +56,25 @@ describe('fitWithin (ResizeTests)', () => {
 });
 
 describe('readMealPhoto (PhotoLogTests)', () => {
-  const tools = (over: Partial<PhotoTools> = {}): PhotoTools & { pick: jest.Mock; shrink: jest.Mock } =>
+  const tools = (over: Partial<PhotoTools> = {}): PhotoTools & { pick: jest.Mock; shrink: jest.Mock; discard: jest.Mock } =>
     ({
       pick: jest.fn(async () => ({ uri: 'file:///photo.heic' })),
-      shrink: jest.fn(async () => ({ base64: 'AAAA', width: 1024, height: 768 })),
+      shrink: jest.fn(async () => ({ base64: 'AAAA', width: 1024, height: 768, uri: 'file:///shrunk.jpg' })),
+      discard: jest.fn(async () => {}),
       ...over,
-    }) as PhotoTools & { pick: jest.Mock; shrink: jest.Mock };
+    }) as PhotoTools & { pick: jest.Mock; shrink: jest.Mock; discard: jest.Mock };
   const services = (granted: boolean, answer: Answer | 'offline' = ok(DRAFT)) => {
     const POST = jest.fn(async () => {
       if (answer === 'offline') throw new TypeError('Network request failed');
       return answer;
     });
-    return { api: { POST } as never, consents: { granted: jest.fn(async () => granted) }, POST };
+    return { api: { POST } as never, consents: { granted: jest.fn(async () => granted) }, report: jest.fn(), POST };
   };
 
   it('without the AI consent nothing is taken and nothing is sent', async () => {
     const s = services(false);
     const t = tools();
-    await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'camera')).resolves.toEqual({ state: 'consent' });
+    await expect(readMealPhoto({ api: s.api, consents: s.consents, report: s.report }, t, 'camera')).resolves.toEqual({ state: 'consent' });
     expect(s.consents.granted).toHaveBeenCalledWith('THIRD_PARTY_AI');
     expect(t.pick).not.toHaveBeenCalled();
     expect(t.shrink).not.toHaveBeenCalled();
@@ -84,14 +85,14 @@ describe('readMealPhoto (PhotoLogTests)', () => {
     const s = services(true);
     s.consents.granted.mockRejectedValueOnce(new Error('keychain'));
     const t = tools();
-    await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'library')).resolves.toEqual({ state: 'consent' });
+    await expect(readMealPhoto({ api: s.api, consents: s.consents, report: s.report }, t, 'library')).resolves.toEqual({ state: 'consent' });
     expect(s.POST).not.toHaveBeenCalled();
   });
 
   it('with it: taken, shrunk to 1024 as a JPEG, sent as base64, the draft back', async () => {
     const s = services(true);
     const t = tools();
-    await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'library')).resolves.toEqual({ state: 'ready', draft: DRAFT });
+    await expect(readMealPhoto({ api: s.api, consents: s.consents, report: s.report }, t, 'library')).resolves.toEqual({ state: 'ready', draft: DRAFT });
     expect(t.pick).toHaveBeenCalledWith('library');
     expect(t.shrink).toHaveBeenCalledWith('file:///photo.heic', foodParams.photoMaxSide, foodParams.photoQuality);
     expect(s.POST).toHaveBeenCalledWith('/v1/meals/photo', { body: { image: 'AAAA' } });
@@ -100,7 +101,7 @@ describe('readMealPhoto (PhotoLogTests)', () => {
   it('cancelled: nothing sent', async () => {
     const s = services(true);
     const t = tools({ pick: jest.fn(async () => null) });
-    await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'camera')).resolves.toEqual({ state: 'cancelled' });
+    await expect(readMealPhoto({ api: s.api, consents: s.consents, report: s.report }, t, 'camera')).resolves.toEqual({ state: 'cancelled' });
     expect(t.shrink).not.toHaveBeenCalled();
     expect(s.POST).not.toHaveBeenCalled();
   });
@@ -108,7 +109,7 @@ describe('readMealPhoto (PhotoLogTests)', () => {
   it('the camera not allowed: said so, nothing sent', async () => {
     const s = services(true);
     const t = tools({ pick: jest.fn(async () => 'denied' as const) });
-    await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'camera')).resolves.toEqual({ state: 'denied' });
+    await expect(readMealPhoto({ api: s.api, consents: s.consents, report: s.report }, t, 'camera')).resolves.toEqual({ state: 'denied' });
     expect(t.shrink).not.toHaveBeenCalled();
     expect(s.POST).not.toHaveBeenCalled();
   });
@@ -118,28 +119,80 @@ describe('readMealPhoto (PhotoLogTests)', () => {
     [700, 1025],
   ])('a shrunk photo still over the limit (%i × %i) is never sent', async (width, height) => {
     const s = services(true);
-    const t = tools({ shrink: jest.fn(async () => ({ base64: 'AAAA', width, height })) });
-    await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'camera')).resolves.toEqual({ state: 'failed' });
+    const t = tools({ shrink: jest.fn(async () => ({ base64: 'AAAA', width, height, uri: 'file:///shrunk.jpg' })) });
+    await expect(readMealPhoto({ api: s.api, consents: s.consents, report: s.report }, t, 'camera')).resolves.toEqual({ state: 'failed' });
     expect(s.POST).not.toHaveBeenCalled();
   });
 
   it('a photo that cannot be read or shrunk is a failure, not a crash', async () => {
     const s = services(true);
     const t = tools({ shrink: jest.fn(async () => Promise.reject(new Error('decode'))) });
-    await expect(readMealPhoto({ api: s.api, consents: s.consents }, t, 'camera')).resolves.toEqual({ state: 'failed' });
+    await expect(readMealPhoto({ api: s.api, consents: s.consents, report: s.report }, t, 'camera')).resolves.toEqual({ state: 'failed' });
     expect(s.POST).not.toHaveBeenCalled();
   });
 
   it('the server’s answers: its consent answer, offline, the subscription’s answer, refused', async () => {
     const consent = services(true, refused(403, 'CONSENT_REQUIRED'));
-    await expect(readMealPhoto({ api: consent.api, consents: consent.consents }, tools(), 'camera')).resolves.toEqual({ state: 'consent' });
+    await expect(readMealPhoto({ api: consent.api, consents: consent.consents, report: consent.report }, tools(), 'camera')).resolves.toEqual({ state: 'consent' });
     const offline = services(true, 'offline');
-    await expect(readMealPhoto({ api: offline.api, consents: offline.consents }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
+    await expect(readMealPhoto({ api: offline.api, consents: offline.consents, report: offline.report }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
     const unsubscribed = services(true, refused(403, 'ENTITLEMENT_REQUIRED'));
-    await expect(readMealPhoto({ api: unsubscribed.api, consents: unsubscribed.consents }, tools(), 'camera')).resolves.toEqual({
+    await expect(readMealPhoto({ api: unsubscribed.api, consents: unsubscribed.consents, report: unsubscribed.report }, tools(), 'camera')).resolves.toEqual({
       state: 'subscription',
     });
     const bad = services(true, refused(400, 'VALIDATION_FAILED'));
-    await expect(readMealPhoto({ api: bad.api, consents: bad.consents }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
+    await expect(readMealPhoto({ api: bad.api, consents: bad.consents, report: bad.report }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
+  });
+});
+
+describe('nothing of the photo stays on the phone (K-811, V1)', () => {
+  const PICKED = 'file:///cache/ImagePicker/a.jpg';
+  const SHRUNK = 'file:///cache/ImageManipulator/b.jpg';
+  const tools = (over: Partial<PhotoTools> = {}): PhotoTools & { discard: jest.Mock } => ({
+    pick: jest.fn(async () => ({ uri: PICKED })),
+    shrink: jest.fn(async () => ({ base64: 'AAAA', width: 1024, height: 768, uri: SHRUNK })),
+    discard: jest.fn(async (_uri: string) => {}),
+    ...over,
+  }) as PhotoTools & { discard: jest.Mock };
+  const services = (answer: Answer | 'offline' = ok(DRAFT)) => ({
+    api: { POST: jest.fn(async () => (answer === 'offline' ? Promise.reject(new TypeError('Network request failed')) : answer)) } as never,
+    consents: { granted: jest.fn(async () => true) },
+    report: jest.fn(),
+  });
+
+  it.each([
+    ['sent and read', ok(DRAFT)],
+    ['refused', refused(403, 'ENTITLEMENT_REQUIRED')],
+    ['offline', 'offline' as const],
+  ])('%s: the picked file and the shrunk one are deleted', async (_, answer) => {
+    const t = tools();
+    await readMealPhoto(services(answer), t, 'camera');
+    expect(t.discard.mock.calls.map(([uri]: [string]) => uri).sort()).toEqual([PICKED, SHRUNK].sort());
+  });
+
+  it('too big to send: both deleted, nothing sent', async () => {
+    const t = tools({ shrink: jest.fn(async () => ({ base64: 'AAAA', width: 2000, height: 10, uri: SHRUNK })) });
+    await expect(readMealPhoto(services(), t, 'camera')).resolves.toEqual({ state: 'failed' });
+    expect(t.discard.mock.calls.map(([uri]: [string]) => uri).sort()).toEqual([PICKED, SHRUNK].sort());
+  });
+
+  it('a photo that could not be shrunk: the picked file deleted', async () => {
+    const t = tools({ shrink: jest.fn(async () => Promise.reject(new Error('decode'))) });
+    await expect(readMealPhoto(services(), t, 'camera')).resolves.toEqual({ state: 'failed' });
+    expect(t.discard.mock.calls).toEqual([[PICKED]]);
+  });
+
+  it('nothing picked: nothing to delete', async () => {
+    const t = tools({ pick: jest.fn(async () => null) });
+    await readMealPhoto(services(), t, 'library');
+    expect(t.discard).not.toHaveBeenCalled();
+  });
+
+  it('a file that cannot be deleted is reported by name; the draft still comes back', async () => {
+    const s = services();
+    const t = tools({ discard: jest.fn(async () => Promise.reject(Object.assign(new Error('/private/var/x.jpg'), { name: 'FileBusy' }))) });
+    await expect(readMealPhoto(s, t, 'camera')).resolves.toEqual({ state: 'ready', draft: DRAFT });
+    expect(s.report).toHaveBeenCalledWith({ name: 'FileBusy' });
+    expect(JSON.stringify(s.report.mock.calls)).not.toContain('/private/var');
   });
 });

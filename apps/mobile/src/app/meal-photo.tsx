@@ -25,7 +25,7 @@ type Step = { at: 'checking' } | { at: 'consent' } | { at: 'subscription' } | { 
  * range and its one gram question are the database's (U1, U5), with why a photo needs the gram.
  */
 export default function MealPhotoScreen() {
-  const { api, consents } = useAppServices();
+  const { api, consents, report } = useAppServices();
   const { color } = useTheme();
   const [step, setStep] = useState<Step>({ at: 'checking' });
 
@@ -39,7 +39,7 @@ export default function MealPhotoScreen() {
 
   const take = async (source: PhotoSource) => {
     setStep({ at: 'reading' });
-    const read = await readMealPhoto({ api, consents }, photoTools, source);
+    const read = await readMealPhoto({ api, consents, report }, photoTools, source);
     if (read.state === 'ready') return setStep({ at: 'draft', read });
     if (read.state === 'consent') return setStep({ at: 'consent' });
     if (read.state === 'subscription') return setStep({ at: 'subscription' });
