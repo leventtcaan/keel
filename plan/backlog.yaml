@@ -3388,6 +3388,24 @@ tasks:
     learn:
       - "WCAG 1.4.11 metin dışı kontrast"
 
+  - id: K-818
+    title: "İç yağ tahmini kullanıcının dışa aktarmasında (ADR-063 #1)"
+    milestone: M8
+    module: decision
+    type: feature
+    size: S
+    status: doing
+    depends_on: [K-802]
+    why: "GDPR Md. 15: çıkarımla üretilen kişisel veri erişim hakkı kapsamında; Levent dışa aktarmaya girmesini seçti. U4 arayüz için aynen geçerli"
+    acceptance:
+      - "Dışa aktarmada her kararın snapshot'ı motorun iç tahminini (fatProxy*) kaydedildiği gibi içerir"
+      - "Uygulamanın hiçbir yüzünde sayı olarak yok (mevcut U4 testleri yeşil); politika ve envanter yeni durumu söyler"
+    tests:
+      - "AccountDataTests (DB, CI)"
+    refs: ["plan/kararlar/ADR-063-m8-part2-cevaplari.md", "docs/anayasa.md#U4"]
+    learn:
+      - "GDPR erişim hakkı ve çıkarımla üretilen veri"
+
 # ───────────────────────────── M9 · Beta ─────────────────────────────
   - id: K-901
     title: "VPS dağıtımı: Docker Compose, HTTPS, yedek"

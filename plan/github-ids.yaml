@@ -1156,6 +1156,12 @@ tasks:
     item: PVTI_lAHOCKkQ2c4BlAgHzg-gVbM
     project_fields_synced: true
     url: https://github.com/leventtcaan/keel/issues/399
+  K-818:
+    hash: e99d06e8b2d917a2
+    issue: 401
+    item: PVTI_lAHOCKkQ2c4BlAgHzg-gdaU
+    project_fields_synced: true
+    url: https://github.com/leventtcaan/keel/issues/401
   K-901:
     hash: 0a6b2b8055b00ea8
     issue: 83
