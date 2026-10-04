@@ -3212,11 +3212,11 @@ tasks:
     depends_on: [K-301]
     why: "Featuring formu erişilebilirliği soruyor; koyu mod ve Dynamic Type hiçbir görevde yoktu (L3 P12)"
     acceptance:
-      - "Dynamic Type en büyük boyutta taşma yok"
-      - "VoiceOver ile ana görevler tamamlanır"
-      - "App Store Accessibility Nutrition Label cevapları gerekçeli"
+      - "Kaynakta denetlenebilen kurallar testte: rol/etiket, görsel adı, metin ölçeği kapatılamaz/kesilemez, Reduce Motion, VoiceOver'ın ulaşamadığı kontrol yok; kontrast iki temada"
+      - "App Store Accessibility Nutrition Label cevapları gerekçeli; cihaz isteyenler işaretlenmez"
+      - "Cihaz kriterleri (Dynamic Type en büyük boyutta taşma yok, VoiceOver ile ana görevler) K-815'e ayrıldı (K-308 sonrası)"
     tests:
-      - "Erişilebilirlik kontrol kaydı"
+      - "accessibility.test.ts, contrast.test.ts, set-table.test.tsx, reduce-motion.test.tsx"
     refs: ["arastirma/ham/L3-ozellik-boslugu.md", "plan/kararlar/ADR-016-gorsel-dil-rubin.md"]
     learn:
       - "Erişilebilirlik"
@@ -3350,6 +3350,43 @@ tasks:
     refs: ["plan/kararlar/ADR-061-anayasa-denetimi.md", "docs/yasal/veri-envanteri.json"]
     learn:
       - "TypeScript derleyici API'siyle statik analiz"
+
+  - id: K-815
+    title: "Erişilebilirlik cihaz turu: Dynamic Type en büyük boyut + VoiceOver ile ortak görevler"
+    milestone: M9
+    module: mobile
+    type: test
+    size: M
+    status: todo
+    depends_on: [K-308, K-807]
+    why: "K-807'nin cihaz isteyen iki kriteri; oturumlu ekranlar Apple girişi ister (simülatörde Apple hesabı yok)"
+    acceptance:
+      - "AX5'te ortak görevler (giriş, kayıt, karar + Why, koç, paywall, ayarlar › abonelik iptali/dışa aktarma/silme): kesilen, üst üste binen, taşan metin yok"
+      - "VoiceOver ile aynı görevler baştan sona; koç cevabı ve kaydetme hataları duyurulur (announceForAccessibility)"
+      - "Reduce Motion, Bold Text + Increase Contrast + Reduce Transparency, Grayscale turları; sonuç docs/yasal/app-store-beyanlari.md › 3'e işlenir"
+    tests:
+      - "Cihaz kaydı (ekran görüntüleri + kontrol listesi)"
+    refs: ["docs/yasal/app-store-beyanlari.md", "plan/kararlar/ADR-061-anayasa-denetimi.md"]
+    learn:
+      - "Erişilebilirlik cihaz testi"
+
+  - id: K-816
+    title: "Metin dışı kontrast 3:1: alan kutusu, çip kenarı, seçili satır"
+    milestone: M9
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-807]
+    why: "Apple Sufficient Contrast metin dışı öğeler için 3:1 öneriyor; alan kutusu 1.12, çip kenarı 1.27-1.34, seçili hareket satırı 1.12 (K-807 inceleme). Görsel dil belirteci (ADR-016) → Levent onayı"
+    acceptance:
+      - "Kontrolleri ve durumları belirten sınır/dolgu iki temada ≥3:1 (contrast.test.ts)"
+      - "Görsel dil değişikliği prototipte gösterildi, Levent onayladı"
+    tests:
+      - "contrast.test.ts"
+    refs: ["plan/kararlar/ADR-016-gorsel-dil-rubin.md", "docs/yasal/app-store-beyanlari.md"]
+    learn:
+      - "WCAG 1.4.11 metin dışı kontrast"
 
 # ───────────────────────────── M9 · Beta ─────────────────────────────
   - id: K-901
