@@ -39,6 +39,10 @@ export const photoTools: PhotoTools = {
   },
 
   async discard(uri) {
+    // Only a copy in this app's cache: a picker that ever handed back the library's own file (an Android content://, a
+    // document) would otherwise lose the user's photo.
+    const cache = Paths.cache.uri.endsWith('/') ? Paths.cache.uri : `${Paths.cache.uri}/`;
+    if (!uri.startsWith(cache)) return;
     const file = new File(uri);
     if (file.exists) file.delete();
   },
@@ -55,9 +59,16 @@ const CACHE_FOLDERS = ['ImagePicker', 'ImageManipulator'];
 
 export const devicePhotoCache: PhotoCache = {
   async clear() {
+    // Each folder tried, one failing or not; the first failure told after.
+    let failure: unknown = null;
     for (const name of CACHE_FOLDERS) {
-      const folder = new Directory(Paths.cache, name);
-      if (folder.exists) folder.delete();
+      try {
+        const folder = new Directory(Paths.cache, name);
+        if (folder.exists) folder.delete();
+      } catch (error) {
+        failure ??= error;
+      }
     }
+    if (failure !== null) throw failure;
   },
 };

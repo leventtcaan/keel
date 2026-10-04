@@ -41,7 +41,7 @@ export function AccountSection() {
       else await signOut();
     }, {});
 
-  // Read when asked, not before: a subscription bought a minute ago counts. Not read is not "none" (Apple's guidance).
+  // Read when asked, not when Settings opened: the latest the server knows. Not read is not "none" (Apple's guidance).
   const askToDelete = () =>
     void run(async () => {
       const read = await load(() => api.GET('/v1/subscription'));

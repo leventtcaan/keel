@@ -26,6 +26,7 @@ jest.mock('expo-image-picker', () => ({
 jest.mock('expo-image-manipulator', () => ({ ImageManipulator: { manipulate: jest.fn() }, SaveFormat: { JPEG: 'jpeg', PNG: 'png' } }));
 const mockDeleted: string[] = [];
 const mockExisting = new Set<string>();
+const mockFailing = new Set<string>();
 jest.mock('expo-file-system', () => {
   const path = (parts: unknown[]) => parts.map((part) => (typeof part === 'string' ? part : (part as { uri: string }).uri)).join('/');
   class Entry {
@@ -37,6 +38,7 @@ jest.mock('expo-file-system', () => {
       return mockExisting.has(this.uri);
     }
     delete() {
+      if (mockFailing.has(this.uri)) throw new Error('locked');
       mockDeleted.push(this.uri);
     }
   }
@@ -49,6 +51,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockDeleted.length = 0;
   mockExisting.clear();
+  mockFailing.clear();
 });
 
 describe('pick', () => {
@@ -128,6 +131,27 @@ describe('nothing left behind (K-811)', () => {
     await photoTools.discard('file:///Caches/ImageManipulator/a.jpg');
     await photoTools.discard('file:///Caches/ImagePicker/gone.jpg');
     expect(mockDeleted).toEqual(['file:///Caches/ImageManipulator/a.jpg']);
+  });
+
+  it('a file outside the cache is never deleted: only the copies this app wrote', async () => {
+    mockExisting.add('file:///Library/original.jpg');
+    mockExisting.add('content://media/external/images/1');
+    await photoTools.discard('file:///Library/original.jpg');
+    await photoTools.discard('content://media/external/images/1');
+    expect(mockDeleted).toEqual([]);
+  });
+
+  it('folders not there: nothing deleted, no error', async () => {
+    await expect(devicePhotoCache.clear()).resolves.toBeUndefined();
+    expect(mockDeleted).toEqual([]);
+  });
+
+  it('one folder that cannot be deleted does not keep the other; the failure is still told', async () => {
+    mockExisting.add('file:///Caches/ImagePicker');
+    mockExisting.add('file:///Caches/ImageManipulator');
+    mockFailing.add('file:///Caches/ImagePicker');
+    await expect(devicePhotoCache.clear()).rejects.toThrow();
+    expect(mockDeleted).toEqual(['file:///Caches/ImageManipulator']);
   });
 
   it("at the session's end, the picker's and the manipulator's cache folders go", async () => {

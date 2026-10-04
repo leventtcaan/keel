@@ -6,7 +6,7 @@
  * and sent. What comes back is the server's draft of the database's foods, grams by eye marked as estimated (U1, U5).
  * Nothing of the photo is kept (K-811, V1): the picker's copy and the shrunk file are written to the app's cache, and both
  * are deleted once the photo is read — sent or not. One that cannot be deleted is reported by name; what is left goes when
- * the session ends (photoCache.ts).
+ * the session ends (photoTools.ts › devicePhotoCache).
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';

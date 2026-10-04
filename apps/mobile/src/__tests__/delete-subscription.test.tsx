@@ -16,9 +16,10 @@ type Subscription = components['schemas']['Subscription'];
 const ID = '0b6f2a8e-1c3d-4e5f-8a9b-0c1d2e3f4a5b';
 const UNTIL = '2026-10-11T12:00:00Z';
 
-let mockAnswer: Subscription | 'offline' = { appUserId: ID, active: false };
+let mockAnswer: Subscription | 'offline' | 500 = { appUserId: ID, active: false };
 const mockGET = jest.fn(async (_path: string) => {
   if (mockAnswer === 'offline') throw new TypeError('Network request failed');
+  if (mockAnswer === 500) return { error: { code: 'INTERNAL' }, response: new Response(null, { status: 500 }) };
   return { data: mockAnswer, response: new Response(null, { status: 200 }) };
 });
 let mockStore: SubscriptionStore & { calls: string[] };
@@ -55,7 +56,7 @@ beforeEach(() => {
   mockStore = store();
 });
 
-async function askToDelete(answer: Subscription | 'offline') {
+async function askToDelete(answer: Subscription | 'offline' | 500) {
   mockAnswer = answer;
   await render(
     <ThemeProvider scheme="light">
@@ -72,6 +73,7 @@ test.each<[string, Subscription]>([
   ['running', { appUserId: ID, active: true, status: 'ACTIVE', accessUntil: UNTIL }],
   ['in its trial', { appUserId: ID, active: true, status: 'TRIAL', accessUntil: UNTIL }],
   ['with a payment problem', { appUserId: ID, active: false, status: 'BILLING_ISSUE', accessUntil: UNTIL }],
+  ['paused (it resumes)', { appUserId: ID, active: false, status: 'PAUSED', accessUntil: UNTIL }],
 ])('a subscription %s: Apple goes on billing, said before the deletion, with its page one tap away', async (_, subscription) => {
   await askToDelete(subscription);
   expect(mockGET).toHaveBeenCalledWith('/v1/subscription');
@@ -101,8 +103,8 @@ test.each<[string, Subscription]>([
   expect(manage()).toBeNull();
 });
 
-test('the phone cannot tell (offline): it says so anyway, without the button it cannot back', async () => {
-  await askToDelete('offline');
+test.each<['offline' | 500]>([['offline'], [500]])('the phone cannot tell (%s): it says so anyway, without the button it cannot back', async (answer) => {
+  await askToDelete(answer);
   expect(billing()).toBeOnTheScreen();
   expect(manage()).toBeNull();
   await act(async () => fireEvent.press(screen.getByText(t('settings.delete.confirm'))));
