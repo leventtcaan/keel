@@ -2990,7 +2990,7 @@ tasks:
     acceptance:
       - "Fiyatlar mağazadan okunur, kodda yok"
       - "Satın alma geri yükleme"
-      - "Duraklat ve iptal iki dokunuşta bulunur"
+      - "İptal iki dokunuşta bulunur (iOS'ta duraklatma yok — ADR-058)"
     tests:
       - "PaywallTests (mock StoreKit)"
     refs: ["arastirma/05-faz4-pazarlama.md#7", "plan/kararlar/ADR-012-abonelik-ve-kota.md"]
@@ -3049,6 +3049,50 @@ tasks:
     learn: ["Sunucu doğruluğu, istemci görünümü"]
 
 # ───────────────────────────── M8 · Uyum ve yasal ─────────────────────────────
+
+  - id: K-706
+    title: "Onboarding sonunda zorunlu paywall; aboneliği biten deterministik modda"
+    milestone: M7
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-702, K-306]
+    why: "ADR-058 #1 (Levent): ücretsiz katman yok (ADR-012); hiç abone olmamış hesap deneme başlatmadan sekmelere geçmez"
+    acceptance:
+      - "Hiç abone olmamış hesap (sunucuda durumu yok) onboarding'den sonra paywall'a gelir; kapatma yok, Restore ve yasal bağlantılar var"
+      - "Sunucuda bir durumu olan hesap (biten abonelik dahil) kapıya takılmaz: deterministik mod (K-703)"
+      - "Satın alma ya da geri yükleme sunucuda görülünce sekmeler açılır"
+      - "Mağaza derlemede yoksa ya da yasal bağlantılar eksikse kapı kapanmaz; çevrimdışında son bilinen cevap"
+    tests:
+      - "subscription-gate.test.ts"
+      - "navigation.test.tsx (kapı)"
+    refs:
+      - plan/kararlar/ADR-058-m7-part2-cevaplari.md
+      - plan/kararlar/ADR-057-paywall-telefonda.md
+    learn:
+      - "Korumalı rota ile kapı"
+
+  - id: K-707
+    title: "Deneme bitmeden isteğe bağlı yerel hatırlatma"
+    milestone: M7
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-702, K-411]
+    why: "ADR-058 #3 (Levent): deneme bitmeden haber ver (Noom dersi); fatura bildirimi, ADR-036'nın üç türünden sayılmaz"
+    acceptance:
+      - "Denemedeki kullanıcı 'Remind me before it ends' der → izin istenir → deneme bitiminden trial_reminder_days_before gün önce yerel bildirim"
+      - "Hatırlatma planının yeniden kurulması ona dokunmaz (kendi kimliği); deneme ACTIVE'e döner ya da iptal edilirse kaldırılır; çıkışta unutulur"
+      - "Paywall deneme satırı hatırlatmayı isteğe bağlı diye söyler; izin yoksa söz yok"
+    tests:
+      - "trial-reminder.test.ts"
+    refs:
+      - plan/kararlar/ADR-058-m7-part2-cevaplari.md
+      - plan/kararlar/ADR-036-bildirimler.md
+    learn:
+      - "Yerel bildirim kimliği ve yaşam döngüsü"
   - id: K-801
     title: "Gizlilik politikası, kullanım şartları, sağlık feragatnamesi"
     milestone: M8
