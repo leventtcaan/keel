@@ -20,3 +20,4 @@
 11. K-811 silme onayında abonelik + öğün fotoğrafı dosyaları (`K-811.md`) — Apple silme rehberi, seçici kopyası, `finally`
 12. K-807 erişilebilirlik denetimi + Besin Etiketi taslağı (`K-807.md`) — VoiceOver/RN erişilebilirlik ağacı, WCAG kontrastı, Dynamic Type
 13. K-812 Apple jetonu iptali — sunucu (`K-812.md`, ADR-062) — OAuth kod değişimi, ES256 istemci sırrı, tek çıkış kapısı
+14. K-818 iç yağ tahmini dışa aktarmada (`K-818.md`, ADR-063) — GDPR Md. 15 ↔ U4

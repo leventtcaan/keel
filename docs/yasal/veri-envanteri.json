@@ -881,7 +881,7 @@
    "app_privacy": [
     "Health & Fitness › Health"
    ],
-   "note": "The stored snapshot keeps the engine's internal fat estimate (fatProxy*), left out of the export (U4, DecisionAccountData); never the cycle answer (ADR-020 L-1, StoredSnapshotTests)."
+   "note": "The stored snapshot keeps the engine's internal fat estimate (fatProxy*), in the user's export as kept (ADR-063 #1), never shown as a number in the app (U4); never the cycle answer (ADR-020 L-1, StoredSnapshotTests)."
   },
   {
    "table": "decision.declared_state",
