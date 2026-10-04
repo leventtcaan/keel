@@ -1734,6 +1734,23 @@
     "openLabel": "{exercise}: history",
     "loadFailed": "This exercise's history couldn't load. Try again when you're online."
   },
+  "photos": {
+    "title": "Photos",
+    "first": "Your first photo is due in week {week}. Same spot, same light, every time.",
+    "firstDue": "Your first photo is due. It becomes Day 1.",
+    "anytime": "Take your first photo when you're ready. It becomes Day 1.",
+    "next": "Next photo from {date}. Weekly changes are too small to see.",
+    "open": "Photo window open since {date}. Same spot, same light, morning.",
+    "count": {
+      "one": "{count} photo day on this phone. Never uploaded.",
+      "other": "{count} photo days on this phone. Never uploaded."
+    },
+    "delete": "Delete all photos",
+    "deleteBody": "This deletes every progress photo on this phone. There's no other copy.",
+    "deleteConfirm": "Delete photos",
+    "deleteKeep": "Keep them",
+    "deleteFailed": "Couldn't delete the photos. Try again."
+  },
   "sessionEdit": {
     "title": "Edit session",
     "deleteSpoken": "Delete {set}",
