@@ -37,6 +37,17 @@ test('the health data text says a withdrawal deletes the data it covers (K-429, 
   expect(consentVersion('HEALTH_DATA')).not.toBe('1-draft');
 });
 
+test('the health data text classes data as the code does: the training log is not health data (K-808, ADR-059 #2)', () => {
+  // ADR-007/ADR-026: training needs no consent and stays when it is withdrawn, so the opening sentence, which says what
+  // the health data is, must not name it (question 57); the privacy policy uses the same classing.
+  const [opening] = t('consent.health_data.body').split('.');
+  expect(opening).toMatch(/health data/i);
+  expect(opening).not.toMatch(/training/i);
+  expect(t('consent.health_data.body')).toMatch(/training log[^.]*(isn't|is not) health data/i);
+  // A new text is a new version (GDPR Art. 7(1)); no longer a draft (ADR-059 #1).
+  expect(consentVersion('HEALTH_DATA')).toBe('3');
+});
+
 function server(status = 200) {
   const seen: { method: string; path: string; body: unknown }[] = [];
   const fetch = jest.fn(async (request: Request) => {

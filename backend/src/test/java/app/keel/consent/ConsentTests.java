@@ -105,6 +105,8 @@ class ConsentTests {
         assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
                 .satisfies(c -> assertThat(c).containsEntry("status", "GRANTED").containsEntry("textVersion", "1-draft"));
         assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "1-draft"))).hasStatus(400);
+        // K-808 (ADR-059 #2): neither is a yes to 2-draft, which called the training log health data.
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "2-draft"))).hasStatus(400);
         assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
     }
