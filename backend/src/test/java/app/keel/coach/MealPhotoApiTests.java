@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
+import app.keel.subscription.TestWebhooks;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.io.ByteArrayInputStream;
@@ -159,6 +160,8 @@ class MealPhotoApiTests {
         // The AI consent names the data (V2): agreeing to send a meal note is not agreeing to send a photo. The server
         // takes a grant only with today's list, so a consent that left the photo out is one given to another text.
         AccountId account = TestSessions.newAccount();
+        TestSessions.bearer(context, account); // the account row, for the subscription below
+        TestWebhooks.subscribe(mvc, context, account); // what is tested here is the consent, not the subscription (K-703)
         healthConsent(account);
         jdbc.sql("""
                 insert into consent.consent_event (id, account_id, kind, action, text_version, provider, data_types, occurred_at)
@@ -176,6 +179,8 @@ class MealPhotoApiTests {
     void withoutTheConsentAPhotoIsNotEvenLookedAt() throws Exception {
         // The consent first (K-514 review): a user who has not agreed gets the consent's answer, not a verdict on the photo.
         AccountId account = TestSessions.newAccount();
+        TestSessions.bearer(context, account); // the account row, for the subscription below
+        TestWebhooks.subscribe(mvc, context, account); // what is tested here is the consent, not the subscription (K-703)
         healthConsent(account);
 
         assertThat(post(account, Map.of("image", Base64.getEncoder().encodeToString("not a picture".getBytes())))).hasStatus(403);
@@ -244,6 +249,8 @@ class MealPhotoApiTests {
 
     private AccountId ready() {
         AccountId account = TestSessions.newAccount();
+        TestSessions.bearer(context, account); // the account row, for the subscription below
+        TestWebhooks.subscribe(mvc, context, account); // what is tested here is the consent, not the subscription (K-703)
         healthConsent(account);
         aiConsent(account, List.of("meal photo", "meal note", "coach question"));
         return account;

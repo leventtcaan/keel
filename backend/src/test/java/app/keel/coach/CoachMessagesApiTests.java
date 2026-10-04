@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
+import app.keel.subscription.TestWebhooks;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.time.LocalDate;
@@ -328,6 +329,8 @@ class CoachMessagesApiTests {
     /** A user with both consents and a profile, weighed in: no call yet. */
     private AccountId ready() {
         AccountId account = TestSessions.newAccount();
+        TestSessions.bearer(context, account); // the account row, for the subscription below
+        TestWebhooks.subscribe(mvc, context, account); // what is tested here is the consent, not the subscription (K-703)
         send(account, "/v1/consents/HEALTH_DATA", "PUT", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "/v1/consents/THIRD_PARTY_AI", "PUT", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", "Example AI",
                 "dataTypes", List.of("meal photo", "meal note", "coach question")));
