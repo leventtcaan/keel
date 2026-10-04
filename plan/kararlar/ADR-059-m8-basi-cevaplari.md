@@ -1,5 +1,5 @@
 # ADR-059 · M8 başı cevapları: hukuki inceleme yok, soru 57, yasal metinler GitHub Pages'te, ASC ve vergi sonra
-- **Durum:** KABUL (Levent, 2026-10-04)
+- **Durum:** KABUL (Levent, 2026-10-04) · kısmen değişti → ADR-063 (iç yağ tahmini kullanıcının dışa aktarmasında)
 - **Tarih:** 2026-10-04 · **Karar veren:** Levent (öneren: agent)
 
 ## Bağlam

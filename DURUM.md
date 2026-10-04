@@ -726,7 +726,7 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 5. Yenileme jetonları (iptal/süresi geçmiş) ve `webhook_event` hesap yaşarken hiç temizlenmiyor (veri en aza indirme).
 6. Telefonda öğün fotoğrafı dosyaları sistem önbelleğinde bırakılıyor (`food/photo.ts`, `photoTools.ts`).
 7. `FakeLanguageModel` son 100 isteği (soru, öğün notu, fotoğraf) bellekte tutuyor; üretimde `provider: fake` kalmamalı (M9 kontrol listesi).
-8. **Levent'e soru:** her kararın `snapshot`'ında motorun iç yağ tahmini (`fatProxy*`) saklanıyor, dışa aktarmadan U4 gereği çıkarılıyor. GDPR Md. 15 (erişim) ↔ U4:
+8. **CEVAPLANDI (ADR-063 #1, K-818 #402):** her kararın `snapshot`'ında motorun iç yağ tahmini (`fatProxy*`) saklanıyor, dışa aktarmadan U4 gereği çıkarılıyor. GDPR Md. 15 (erişim) ↔ U4:
    dışa aktarmaya girsin mi (sayı olarak, açıklamalı) yoksa saklanmasın mı? Politika şu an "saklanır, hiçbir yerde sayı olarak gösterilmez, dışa aktarmada da" diyor.
 9. **Kararsız test gözlemi:** K-808 dalında ilk `npm run check` 1 kırmızı verdi, 3 tekrarda yeniden üretilemedi (adı yakalanmadı; M6'daki soğuk render
    zaman aşımı olabilir). Tekrar görülürse `--verbose` çıktısıyla adı alınacak.
