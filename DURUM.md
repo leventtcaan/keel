@@ -736,8 +736,8 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 **Part 2 ÇIKIŞ = M8 ÇIKIŞ (5 Eki):**
 - **Birleşen:** K-802 #385 · #386 (AdherenceApiTests gece yarısı) · K-804 #389 · K-810 #391 · K-814 #392 · K-811 #393 · K-813 #394 · K-807 #395 ·
   K-812 #398 (sunucu) + #400 (mobil) · K-818 #402. `main`'e doğrudan: ADR-061 (+ Ek 1), ADR-062 (+ Ek 1), ADR-063, ADR-056 Ek 2, ADR-015 tablo satırı,
-  K-810…K-818 kartları, M9 prompt'ları (`plan/oturum-promptlari/M9.md`, `M9-part1..3.md`), aktarım README 6-14. Worktree: yalnız `../keel-main`
-  (+ `../keel-k812m`, `../keel-k818` birleşince kaldırılır). Açık PR: yok (auto-merge'dekiler hariç).
+  K-810…K-818 kartları, M9 prompt'ları (`plan/oturum-promptlari/M9.md`, `M9-part1..3.md`), aktarım README 6-14. Worktree: yalnız `../keel-main`.
+  Açık PR: yok. Ana checkout ayrık HEAD = `origin/main` (43fe480).
 - **M8 çıkış kriterleri (yol-haritasi) — kanıt:** (1) politika/şartlar/feragatname canlı: `privacy/`, `terms/`, `health/` → 200, "Last updated: 5 October 2026"
   (hukuki inceleme yok — ADR-059). (2) silme + dışa aktarma uçtan uca: `EndToEndDeletionTests` (envantere bağlı; kimlik ve Apple kimliği hiçbir sütunda
   kalmaz; jetonlar 401; her `exported` tablo `export_key` yolunda) + Apple iptali (K-812) + telefon (K-811, K-813 çıkış testi). (3) gizlilik etiketi + yaş
@@ -778,7 +778,7 @@ ayrık HEAD = `origin/main` (87fc154). Part 1 worktree'leri (`keel-k806/808/809`
 | K-813 telefon kv anahtarları ↔ envanter (AST, sözcüksel kapsam, 26 anahtar; `kv` kaçışları/anahtarsız metotlar/başka yerde içe aktarma kırmızı) + çıkışta yalnız `projection.access` (önce doldur → başlat → 500). İnceleme: 6 kaçış yolu + boşa geçen çıkış testi + politikada Health içeriği → kapatıldı | auto-merge | #394 | `M8/K-813.md` |
 | K-807 erişilebilirlik: kaynakta kurallar (`accessibility.test.ts`), kontrast eklemeleri, karşılaştırma fotoğrafları adlandı; Besin Etiketi taslağı (`app-store-beyanlari.md › 3`: 4 Evet, 3 cihaz bekliyor, Captions uygulanamaz, Audio Descriptions hayır). **Simülatör/cihaz turu yok** (oturumlu ekranlar Apple girişi ister — K-308); kontrol listesi beyan dosyasında | inceleme: Sufficient Contrast metin dışı 1.1–1.3 (alan, çip kenarı, seçili satır) → "Evet" değil; set satırı yalnız renkle (DWCA); Reduce Motion gerekçesi yanlış (coach `scrollToEnd animated`, barkod `Modal slide`); kural delikleri (erişilebilir ata düğmeyi gizler, `Text onPress`, ham `TextInput/Switch`, warn değişkende); 2 kabul kriteri cihaz → K-815'e bölünecek. Düzeltiliyor | #395 | `M8/K-807.md` |
 | K-812 Apple jetonu iptali — sunucu #398 (ADR-062 + Ek 1, privacy'de, `invalid_grant`/`invalid_client`, `postForm` paket içi; hız sınırı → K-817) + mobil #400 (silmeden önce taze kod; ağ hatası/vazgeçme silmeyi durdurmaz, adıyla rapor; metin "Apple ekranını kapatmak silmeyi durdurmaz"). Levent: silmede yeniden onay (ADR-063 #2) | ✅ birleşti | #398, #400 | `M8/K-812.md` |
-| K-818 iç yağ tahmini kullanıcının dışa aktarmasında (ADR-063 #1); test beklentisi kararla değişti; politika + envanter + anayasa U4 kapsam notu. RED CI → yeşil | auto-merge | #402 | `M8/K-818.md` |
+| K-818 iç yağ tahmini kullanıcının dışa aktarmasında (ADR-063 #1); test beklentisi kararla değişti; politika + envanter + anayasa U4 kapsam notu. RED CI → yeşil. İnceleme: sözleşme başlığı ve ADR-059 eski kuralı söylüyordu → düzeltildi; test değer ister | ✅ birleşti | #402 | `M8/K-818.md` |
 
 ## M7 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `M7-part2.md`.
