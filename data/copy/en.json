@@ -1834,8 +1834,9 @@
         "SAFETY_HOLD": "Not while the plan is on hold.",
         "TOO_EARLY": "It shows after four weeks of weigh-ins.",
         "NO_RECENT_WEIGHT": "Weigh in this week to see it.",
-        "NO_DIRECTION": "Your plan holds your weight now, so there's nowhere to project.",
+        "NO_DIRECTION": "Your plan is close to maintenance now, so there's nowhere to project.",
         "LOW_BMI_LOSS": "At your weight, the projection doesn't show losing.",
+        "OUTSIDE_MODEL": "The model behind the projection doesn't reach your measurements, so it isn't shown.",
         "NO_SAFE_SCENARIO": "None of the scenarios stays within the plan's pace and range, so none is shown."
       }
     }

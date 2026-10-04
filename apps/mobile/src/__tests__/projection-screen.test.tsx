@@ -8,7 +8,10 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import ProgressScreen from '@/app/(tabs)/progress';
 import ProjectionScreen from '@/app/projection';
 import type { components } from '@/api/schema';
-import { t } from '@/copy';
+import * as fs from 'fs';
+import * as path from 'path';
+
+import { has, t } from '@/copy';
 import { createProjectionSwitch } from '@/projection/projection';
 import { type ProjectionAccess, createProjectionAccess } from '@/projection/scoff';
 import { ThemeProvider } from '@/theme/theme';
@@ -227,4 +230,12 @@ test('Progress leads to it', async () => {
     fireEvent.press(screen.getByRole('button', { name: t('projection.view.title') }));
   });
   expect(mockPush).toHaveBeenCalledWith('/projection');
+});
+
+test('every reason the contract can give has words', () => {
+  const contract = fs.readFileSync(path.resolve(__dirname, '../../../../contracts/openapi.yaml'), 'utf8');
+  const reasons = /enum: \[(UNDER_AGE[^\]]*)\]/.exec(contract)?.[1].split(',').map((reason) => reason.trim()) ?? [];
+
+  expect(reasons).toContain('OUTSIDE_MODEL');
+  reasons.forEach((reason) => expect(has(`projection.view.reason.${reason}`)).toBe(true));
 });
