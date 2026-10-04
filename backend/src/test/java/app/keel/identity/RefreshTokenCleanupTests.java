@@ -111,8 +111,8 @@ class RefreshTokenCleanupTests {
 
     @Test
     void itRunsOnceADay() {
-        String cron = environment.getProperty("keel.session.token-cleanup");
-        ZoneId zone = ZoneId.of(environment.getProperty("keel.session.token-cleanup-zone"));
+        String cron = environment.getProperty("keel.session.expired-cleanup");
+        ZoneId zone = ZoneId.of(environment.getProperty("keel.session.expired-cleanup-zone"));
 
         assertThat(nightlyTasks()).isNotEmpty().allSatisfy(task -> assertThat(task.getExpression()).isEqualTo(cron));
         ZonedDateTime run = CronExpression.parse(cron).next(ZonedDateTime.of(2026, 10, 5, 0, 0, 0, 0, zone));

@@ -48,8 +48,8 @@ keel:
     access-ttl: 15m
     refresh-ttl: 60d
     # Expired refresh tokens are deleted each night (K-810); revoked ones stay until they expire, to catch a stolen copy.
-    token-cleanup: "0 45 3 * * *"
-    token-cleanup-zone: UTC
+    expired-cleanup: "0 45 3 * * *"
+    expired-cleanup-zone: UTC
   # What any request may ask for (ADR-024 §13): a longer range is a client bug or an abuse, not a need (the engine
   # reads 90 days at most, evaluation_window_days); years outside a life's data would break the store or the arithmetic.
   api:

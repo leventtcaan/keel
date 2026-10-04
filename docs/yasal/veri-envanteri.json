@@ -108,12 +108,14 @@
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,
    "erased_by": [
-    "account_deletion"
+    "account_deletion",
+    "time"
    ],
+   "kept_for": "until it expires (60 days after it was issued; a used one is revoked, then kept to its expiry to catch a stolen copy), then the nightly cleanup (RefreshTokenCleanup, 03:45 UTC)",
    "exported": false,
    "policy": "data-account",
    "app_privacy": [],
-   "note": "Revoked or expired rows are not purged while the account exists (RefreshTokens.java)."
+   "note": "Expired rows go each night (K-810); revoked unexpired rows stay for reuse detection (RefreshTokens.rotate)."
   },
   {
    "table": "consent.consent_event",
