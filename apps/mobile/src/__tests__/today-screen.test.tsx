@@ -143,7 +143,7 @@ beforeAll(() => {
 });
 afterAll(() => jest.useRealTimers());
 
-beforeEach(() => {
+function reset() {
   jest.clearAllMocks();
   mockPost = ok({});
   mockAnswers = {
@@ -166,7 +166,8 @@ beforeEach(() => {
       proteinG: 160,
     }),
   };
-});
+}
+beforeEach(reset);
 
 async function show() {
   await render(
@@ -176,6 +177,15 @@ async function show() {
   );
   await act(async () => {});
 }
+
+// The screen's first render loads and compiles what it draws: past Jest's 5 s on CI's runner (three runs, 4 Oct). Paid
+// once here, under its own budget, so no test carries it; each test still has 5 s.
+const COLD_START_MS = 30_000;
+beforeAll(async () => {
+  reset();
+  await show();
+  screen.unmount();
+}, COLD_START_MS);
 const press = async (name: string) => {
   await fireEvent.press(screen.getByRole('button', { name }));
   await act(async () => {});
