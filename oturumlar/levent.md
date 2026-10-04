@@ -101,3 +101,11 @@
 - takıldım: inceleme her görevde gerçek hata buldu — en ciddileri: K-610 örneği bayat plandan kuruyordu ve 73 kg altında güvenlik ağına değiyordu; K-534 notu tekrardan çıkarıyordu (teknik kapısı yanlış not); K-608 sayısı geri düşebiliyordu; K-603 spine'la çelişebiliyordu; Docker yanıtsız, DB testleri CI'da (kontrol mutantları taslak PR'larla)
 - sıradaki: Levent dönünce Part 1 aktarımı (docs/aktarim/M6/README.md 1-6); sorular 87-93; Part 2 başında sağlık kapısı (SCOFF, destek kaynağı, saklamama, eşikler)
 - AI: bütün kod, test, ADR, metin agent; ürün/sağlık soruları Levent'e (87-93 + sağlık kapısı)
+
+## 2026-10-04 · M6 Part 2 (Projeksiyon, sağlık kapılı) — toplu mod
+- Sağlık kapısı → ADR-050 (Levent KABUL, dördünde önerilen): SCOFF BMJ 1999 doğrulandı; cevap saklanmaz, sonuç cihazda; bölge linki; H2 tam eşik seti.
+- K-605 Hall 2011 modeli motorda (ADR-051, H12): yayımlanmış örnekler + makalenin doğrusallaştırması; "±1,7-2,5 kg" yanlış okunmuştu → aralık modelin belirsizliğinden.
+- K-607 SCOFF ekranı #344 · K-613 projeksiyonun sayıları + `/v1/projection` #345 (ADR-052) · K-606 ekran #346. İncelemeler 500'ler, kayan nokta BMI, kapısız anahtar yakaladı.
+- Actions dakikası bitti → Levent repoyu **public** yaptı. Disk 3,4 GB, simülatör yok. Sorular 94-96.
+- Sıradaki: M6 Part 3 (K-604, K-601, K-602) — `plan/oturum-promptlari/M6-part3.md`; aktarım M6 1-10 bekliyor.
+

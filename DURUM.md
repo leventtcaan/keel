@@ -6,6 +6,7 @@ guncelleme: 2026-10-03
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M6 Part 2 (Projeksiyon, sağlık kapılı) BİTTİ (4 Eki)** — ADR-050 (sağlık kapısı, Levent KABUL), ADR-051, ADR-052; K-605 #342, K-607 #344, K-613 #345 (K-606'dan bölündü), K-606 #346 birleşti; aktarım bekliyor (`docs/aktarim/M6/README.md` 7-10); sorular 94-96. **Repo public** (CI dakikası bitti, Levent'in kararı). Sıradaki: M6 Part 3 (`plan/oturum-promptlari/M6-part3.md`).
 **M6 Part 1 (Geçmiş ve sinyaller) BİTTİ (4 Eki)** — K-535, K-534, K-608, K-603, K-611, K-610 birleşti (#333-#341); aktarım bekliyor (`docs/aktarim/M6/README.md` 1-6); sorular 87-93; Part 2 başında sağlık kapısı soruları. Sıradaki: M6 Part 2 (`plan/oturum-promptlari/M6-part2.md`).
 **M5 KAPANDI (3 Eki, kod)** — Part 4: K-514 #327, K-408 #328, K-515 #329 (cihazsız kısım), spike ADR-047/048; cihaz adımları (K-308 → K-510, K-515, K-426) Levent'te. Sıradaki koşu **M6** (`plan/oturum-promptlari/M6.md`, `M6-part1.md`). Aktarım bekliyor: M5 (`docs/aktarim/M5/README.md` 1-35). 73, 78-85 → ADR-045 (hepsi önerilen; ADR-044 KABUL); K-308 yok → K-510/K-515 kod + ADR taslağı; disk: Levent Docker'ı temizleyecek (soru 80), o zamana kadar DB testi CI'da, simülatör beklemede.
 **M5 Part 3 (Koç yüzü + sağlayıcı) BİTTİ (3 Eki)** — ADR-043 (koç sınıflandırır, cümle yazmaz) + 11 görev birleşti (#314-#325); aktarım bekliyor (`docs/aktarim/M5/README.md` 20-30). Simülatör turu **disk yüzünden ertelendi** (soru 80). Sorular 78-85.
@@ -670,7 +671,7 @@ Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` �
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Geçmiş ve sinyaller | K-535, K-534, K-608, K-603, K-611, K-610 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 87-93 |
-| 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-606 | 🔨 sürüyor (4 Eki) — ADR-050 KABUL, K-605 #342 |
+| 2 · Projeksiyon (sağlık kapılı) | K-605, K-607, K-613 (K-606'dan bölündü), K-606 | ✅ bitti (4 Eki) — aktarım bekliyor; sorular 94-96 |
 | 3 · Efor ve fotoğraf | K-604, K-601, K-602 | — |
 | 4 · İçe aktarma, paylaşım, teslim | K-609, K-612 · M6 çıkışı · M7 prompt'ları | — |
 
@@ -721,11 +722,33 @@ pozitifte yeniden deneme yok; H2 §4.3 tam eşik seti.
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-605 spike: Hall 2011 enerji dengesi modeli → **ADR-051** + `arastirma/ham/H12` (denklem 1-9 birincil kaynaktan; "±1,7-2,5 kg" yanlış okunmuştu: gözetimli çalışmaların kısa vadeli MAE'si — gerçek hayatta hata zamanla büyür → aralık modelin belirsizliğinden + taban). `engine/EnergyBalanceModel` saf (RK4, StrictMath), `projection.yaml` 20 parametre (yeni alan PROJECTION) | ⏳ #342 auto-merge; RED 8; yayımlanmış örnekler (Şekil 3 80±1, kural 1±0,25, 2B yönü, 2A ±4 bandı — Şekil 3 adamıyla 78,1 kg kayıtlı) + **makalenin doğrusallaştırması** (τ %1, kalıcı kayıp %2); inceleme: negatif/NaN alım (85), PAL<1,11 (80) → reddedilir; test analizi: ilk haftalar/η/τAT testsizdi → doğrusallaştırma + sabitleyici; `Math.log` yasağı (`EnginePurityTests`); mutasyon 37/39 + saflık kuralı | #342 | `M6/K-605.md` |
+| K-605 spike: Hall 2011 enerji dengesi modeli → **ADR-051** + `arastirma/ham/H12` (denklem 1-9 birincil kaynaktan; "±1,7-2,5 kg" yanlış okunmuştu: gözetimli çalışmaların kısa vadeli MAE'si — gerçek hayatta hata zamanla büyür → aralık modelin belirsizliğinden + taban). `engine/EnergyBalanceModel` saf (RK4, StrictMath), `projection.yaml` 20 parametre (yeni alan PROJECTION) | ✅ #342 birleşti; RED 8; yayımlanmış örnekler (Şekil 3 80±1, kural 1±0,25, 2B yönü, 2A ±4 bandı — Şekil 3 adamıyla 78,1 kg kayıtlı) + **makalenin doğrusallaştırması** (τ %1, kalıcı kayıp %2); inceleme: negatif/NaN alım (85), PAL<1,11 (80) → reddedilir; test analizi: ilk haftalar/η/τAT testsizdi → doğrusallaştırma + sabitleyici; `Math.log` yasağı (`EnginePurityTests`); mutasyon 37/39 + saflık kuralı | #342 | `M6/K-605.md` |
 | K-607 SCOFF kapısı (telefon): `projection/scoff.ts` (sonuç, bölge linki, cihaz bayrağı `projection.access`, "unavailable" kesin, çıkışta "clear" gider), `app/scoff.tsx`, `projection.json` (eşik 2, linkler), `en.json › projection` | ✅ #344 birleşti (3 CI yeşil); RED 31+7; inceleme: çift dokunuş iki `back` (85), yazma hatası sessiz (80), "clear" sonraki hesaba taşınıyor (80 → soru 94); test analizi 5 eksik → eklendi; mutasyon 5/5 + kontrol; jest 1764/1764 | #344 | `M6/K-607.md` |
-| K-605 | ✅ #342 birleşti | #342 | `M6/K-605.md` |
-| K-613 projeksiyonun motoru + ucu (K-606'dan bölündü, #343) → **ADR-052**: oturmuş başlangıç, `ShapeProjection` (kapılar + `SAFETY_HOLD` + `OUTSIDE_MODEL`, en az 100 kcal yön, BMI ondalıkta, senaryo = gün payı, aralık bakım ±1 MJ + 2,5 kg, yalnız ileri, haftalık tavan, BMI 18,5), `GET /v1/projection` | ⏳ #345 auto-merge (CI'da DB testleri); RED 3+12+API 4; inceleme 3 bulgu + test analizi 15 yaşayan mutant + 2 gerçek hata → hepsi kapandı; mutasyon 4/4; özellikler 3 koşuda kararlı | #345 | `M6/K-613.md` |
-| K-606 projeksiyon ekranı (telefon, #71): anahtar (varsayılan kapalı, SCOFF'tan geçer, okunurken de kapıya bakar), yüzsüz figür (yalnız ileri), üç senaryo aralıkla, feragatname figürün yanında, suçlamasız güncelleme (0,5 kg eşiği, aynı senaryo), İlerleme girişi | 🔨 dal `mobile/71-projection` (K-613'ün üstünde, #345 birleşince `main`'e taşınıp PR); inceleme 6 bulgu → kapandı; mutasyon 6/6 + kontrol; 1789/1789 | — | `M6/K-606.md` |
+| K-613 projeksiyonun motoru + ucu (K-606'dan bölündü, #343) → **ADR-052**: oturmuş başlangıç, `ShapeProjection` (kapılar + `SAFETY_HOLD` + `OUTSIDE_MODEL`, en az 100 kcal yön, BMI ondalıkta, senaryo = gün payı, aralık bakım ±1 MJ + 2,5 kg, yalnız ileri, haftalık tavan, BMI 18,5), `GET /v1/projection` | ✅ #345 birleşti (DB testleri dahil 3 CI yeşil); RED 3+12+API 4; inceleme 3 bulgu + test analizi 15 yaşayan mutant + 2 gerçek hata → hepsi kapandı; mutasyon 4/4; özellikler 3 koşuda kararlı | #345 | `M6/K-613.md` |
+| K-606 projeksiyon ekranı (telefon, #71): anahtar (varsayılan kapalı, SCOFF'tan geçer, okunurken de kapıya bakar), yüzsüz figür (yalnız ileri), üç senaryo aralıkla, feragatname figürün yanında, suçlamasız güncelleme (0,5 kg eşiği, aynı senaryo), İlerleme girişi | ✅ #346 birleşti; inceleme 6 bulgu → kapandı; mutasyon 6/6 + kontrol; 1789/1789 | — | `M6/K-606.md` |
+
+**Part 2 ÇIKIŞ (4 Eki):**
+- **Birleşen:** K-605 #342 · K-607 #344 · K-613 #345 · K-606 #346 (auto-merge, üç CI yeşil). `main`'e doğrudan: ADR-050 (+ D1 destek linkleri), backlog bölmesi
+  (K-613 #343), DURUM. Açık PR yok. Worktree yalnız kalıcı `../keel-main` (`keel-k606/-k607/-k613` silindi). Yerel artık dal: `engine/70-energy-balance-model`
+  (squash'la birleşti; guard `branch -D`'yi engeller, kalabilir).
+- **Kontrol çıktısı:** mobil `npm run check` 108 takım **1789/1789** (Node 22); sunucu saf testler yeşil (motor + mimari; K-605 sonunda tam takım 1881 test, 431'i
+  Docker'sız düşen DB testi → CI'da yeşil). Mutasyon: K-605 37/39 + saflık kuralı, K-607 5/5, K-613 4/4 (+ analizcinin 45'lik koşusu), K-606 6/6.
+- **Backlog:** K-605, K-607, K-613, K-606 `done`; sync ✅.
+- **Ortam:** (1) **Repo public** (4 Eki): Actions dakikası bitmişti ($0 bütçe → işler başlamıyor, dal koruması PR'ları kilitliyordu); Levent riskleri okuyup
+  public'i seçti (hafıza `repo-public`). Dal koruması aynı (üç kontrol). (2) `git push/pull` osxkeychain'de takılır → `git -c credential.helper=
+  -c 'credential.helper=!gh auth git-credential' …`. (3) Telefon testleri **Node 22** (`PATH=~/.nvm/versions/node/v22.14.0/bin:$PATH`); kabuktaki 20'de
+  `node:sqlite` yok. (4) Disk **3,4 GB** (önbellekler temizlendi; Docker sanal diski 17 GB, soru 80) → simülatör turu yine yok; K-606 ekranı yalnız testle doğrulandı.
+- **Part 3'ün bilmesi gerekenler:**
+  - İlerleme sekmesi hâlâ `Placeholder`; içinde **projeksiyon girişi** var (`Placeholder` artık `children` alır, `projection/ProjectionEntry.tsx`). Part 3 sekmeyi
+    kurarken bu girişi korumalı. `react-native-svg` artık kullanılıyor (`projection/Silhouette.tsx`) ve Jest'te çalışıyor — K-604 grafikleri de onunla çizilebilir.
+  - Cihazda saklanan küçük ayar kalıbı: `expo-sqlite/kv-store` (`KeyValue`), çıkışta unutulacaksa `appServices` çıkış dinleyicisine, oturumsuz başlangıçta
+    da temizlenecekse oradaki bloğa ekle. SCOFF bayrağı (`projection.access`) **bilerek** çıkışta "unavailable" kalır.
+  - "Ağa gitmediğini gösteren test" kalıbı: K-607 ekran testi (`scoff-screen.test.tsx`) hem `api` sahtesinin hem `global.fetch`'in hiç çağrılmadığını
+    `afterEach`'te doğrular — K-601 (fotoğraf yalnız cihazda) için aynısı.
+  - Koşullu JSX içindeki dize props metin bekçisine takılır → küçük bileşene al (K-607 `SupportLink`, K-606 `Failed`/`Options`).
+  - Motor: `EnergyBalanceModel` (Hall 2011) + `ShapeProjection` saf; `engine`'de `java.lang.Math`'in makineye bağlı fonksiyonları yasak (`StrictMath`).
+    Yeni parametre alanı `PROJECTION` (`projection.yaml`), telefon parametreleri `projection.json`.
+- **Yeni sorular:** 94-96 (aşağıda).
 
 ## Session sonunda Levent'e sorulacaklar
 **M6 Part 2 (94-) — 4 Eki:**

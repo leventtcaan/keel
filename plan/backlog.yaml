@@ -2669,7 +2669,7 @@ tasks:
     module: engine
     type: spike
     size: M
-    status: todo
+    status: done
     depends_on: [K-103]
     why: "Projeksiyon sayıları valide bir modelden gelmeli (ADR-003, U12)"
     acceptance:
@@ -2686,7 +2686,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-605]
     why: "Projeksiyonun sayısı motordan (U1); telefon yalnız çizer (K-606)"
     acceptance:
@@ -2706,7 +2706,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-605, K-607, K-613]
     why: "Motivasyon için dürüst hedef görseli (U12)"
     acceptance:
@@ -2726,7 +2726,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-306]
     why: "Projeksiyonun güvenlik kapısı"
     acceptance:
