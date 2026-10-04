@@ -306,6 +306,14 @@ class PolicyMatchesTheInventory(unittest.TestCase):
                 body = [line for line in _section(policy, anchor).splitlines() if line.strip() and not line.startswith("#")]
                 self.assertTrue(body)
 
+    def test_the_ai_section_states_the_providers_terms(self):
+        # K-806, ADR-041 #71: a provider is used only if its terms say it doesn't train on what it gets and keeps none of it;
+        # the terms it is held to are read in docs/yasal/ai-saglayici-sartlari.md.
+        section = " ".join(_section(PRIVACY.read_text(encoding="utf-8"), "ai").split())
+        self.assertIn("doesn't train", section)
+        self.assertIn("zero data retention", section)
+        self.assertTrue((ROOT / "docs/yasal/ai-saglayici-sartlari.md").is_file())
+
     def test_the_ai_section_says_what_the_server_does(self):
         provider, name = _coach_provider()
         ai = [f for f in inventory()["outbound"] if f["policy"] == "ai"]
