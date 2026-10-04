@@ -8,7 +8,8 @@ import { tokens } from '@/theme/tokens';
 type Props = {
   /** Already translated. */
   title?: string;
-  body: string;
+  /** One paragraph, or several (a sign-out with entries waiting and photos on the phone says both). */
+  body: string | readonly string[];
   confirmLabel: string;
   keepLabel: string;
   onConfirm: () => void;
@@ -28,7 +29,11 @@ export function Confirm({ title, body, confirmLabel, keepLabel, onConfirm, onKee
   return (
     <View style={[styles.box, { borderColor: color.line }]}>
       {heading}
-      <Text style={[styles.body, { color: color.textSecondary }]}>{body}</Text>
+      {(typeof body === 'string' ? [body] : body).map((paragraph) => (
+        <Text key={paragraph} style={[styles.body, { color: color.textSecondary }]}>
+          {paragraph}
+        </Text>
+      ))}
       {aside}
       <Button label={confirmLabel} variant="warn" onPress={onConfirm} disabled={busy} />
       <Button label={keepLabel} variant="ghost" onPress={onKeep} disabled={busy} />

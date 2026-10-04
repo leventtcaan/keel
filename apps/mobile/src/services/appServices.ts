@@ -21,6 +21,7 @@ import { type Opens, createOpens } from '@/today/opens';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
+import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } from '@/photos/library';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
 import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
@@ -46,6 +47,8 @@ type Deps = {
   alerts?: AlertAccess;
   /** Writing to Apple Health (K-412); none where there is none (Expo Go, tests). */
   healthWrite?: HealthWriteAccess;
+  /** The progress photos' folder on the phone (K-614, photoFiles.ts); none where there is none (tests). */
+  photoFiles?: PhotoFiles;
   now?: () => Date;
 };
 
@@ -96,6 +99,8 @@ export type AppServices = {
   state: StateService;
   /** The days the app was opened, on the phone only (K-521, ADR-041 #66). */
   opens: Opens;
+  /** Progress photos, on this phone only (K-614, V1). */
+  photos: PhotoLibrary;
 };
 
 export async function createAppServices({
@@ -109,6 +114,7 @@ export async function createAppServices({
   notifications = notificationsUnavailable,
   alerts = alertsUnavailable,
   healthWrite = healthWriteUnavailable,
+  photoFiles = noPhotoFiles,
   now = () => new Date(),
 }: Deps): Promise<AppServices> {
   const session = createSessionManager({ storage, refresh: refreshWithServer({ baseUrl, fetch }) });
@@ -138,12 +144,14 @@ export async function createAppServices({
   const consents = createConsentState({ api, kv });
   // The program's week off reaches the reminders whenever the program is read (ADR-037 › 51b); they report their own failures.
   const training = createTrainingCache(kv, (program) => void reminders.keepRestUntil(program?.restUntil ?? null));
+  const photos = createPhotoLibrary(photoFiles);
   // No session, nothing to know: a "done" kept here belongs to no one (a backup restored onto a new phone).
   if (!(await session.isSignedIn())) {
     await profile.forget();
     await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
     await kv.removeItemAsync(FIGURE); // and the profile's sex (ADR-037 › 49)
     await projectionSwitch.forget(); // and the projection's switch and what it showed (K-606)
+    await photos.forget(); // and progress photos: health data, on this phone only (K-614)
   }
 
   // Whatever ends the session — sign-out, or the server refusing the refresh token (expired, reused, the account
@@ -171,6 +179,9 @@ export async function createAppServices({
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
+    // And the progress photos (K-614): health data kept on this phone only — the next account must not see them. Settings
+    // says so before a sign-out (AccountSection).
+    photos.forget().catch(reportError);
   });
 
   return {
@@ -187,6 +198,7 @@ export async function createAppServices({
     reminders,
     state,
     opens,
+    photos,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     healthWriting,

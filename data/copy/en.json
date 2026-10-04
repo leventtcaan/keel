@@ -1702,6 +1702,7 @@
     "signOut": {
       "title": "Sign out",
       "pending": "{count} entries haven't reached our server yet and will be lost if you sign out now.",
+      "photos": "Your progress photos are only on this phone. Signing out deletes them from it.",
       "confirm": "Sign out anyway",
       "keep": "Stay signed in"
     },
