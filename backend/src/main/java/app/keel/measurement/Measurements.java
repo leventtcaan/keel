@@ -37,19 +37,32 @@ public class Measurements {
         return profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
     }
 
-    /** One weigh-in per local day from {@code from} to {@code to}, both included: that day's first. */
+    /**
+     * One weigh-in per local day from {@code from} to {@code to}, both included: that day's first. What the engine and
+     * the tallies read: an imported weigh-in (IMPORT) is not among them — imported history is seen, not decided on (K-615,
+     * ADR-053).
+     */
     public List<WeighIn> dailyWeights(AccountId account, LocalDate from, LocalDate to) {
+        return daily(account, from, to, false);
+    }
+
+    /** The same days with the imported history too: for the trend the user sees (K-616). */
+    List<WeighIn> dailyWeightsWithImported(AccountId account, LocalDate from, LocalDate to) {
+        return daily(account, from, to, true);
+    }
+
+    private List<WeighIn> daily(AccountId account, LocalDate from, LocalDate to, boolean imported) {
         ZoneId zone = zoneOf(account);
         Map<LocalDate, WeighIn> firstOfDay = new LinkedHashMap<>();
         for (MeasurementStore.WeighIn weighIn : store.weighIns(account, from.atStartOfDay(zone).toInstant(),
-                to.plusDays(1).atStartOfDay(zone).toInstant())) {
+                to.plusDays(1).atStartOfDay(zone).toInstant(), imported)) {
             LocalDate day = weighIn.measuredAt().atZone(zone).toLocalDate();
             firstOfDay.putIfAbsent(day, new WeighIn(day, weighIn.kg()));
         }
         return new ArrayList<>(firstOfDay.values());
     }
 
-    /** The last weight the user gave, however long ago (the targets' macros, K-216). */
+    /** The last weight the user gave, however long ago (the targets' macros, K-216); not an imported one (ADR-053). */
     public Optional<BigDecimal> latestWeightKg(AccountId account) {
         return store.latestKg(account);
     }

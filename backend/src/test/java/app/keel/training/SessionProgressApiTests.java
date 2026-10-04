@@ -142,6 +142,25 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void anImportedSessionDoesNotEndTheBreak() throws Exception {
+        // ADR-053: a session imported from another app's export is seen, never read — two days ago in Strong is not the
+        // training log the break is measured from, so the three-week-old targets are still stepped back.
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/consents/HEALTH_DATA", Map.of("textVersion", app.keel.consent.ConsentTextVersions.HEALTH_DATA));
+        String old = start(account, Instant.now().minus(java.time.Duration.ofDays(22)));
+        sets(account, old, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, old, List.of())).hasStatusOk();
+        Instant twoDaysAgo = Instant.now().minus(java.time.Duration.ofDays(2));
+        assertThat(send("POST", account, "/v1/workout-imports", Map.of("source", "STRONG", "workouts", List.of(Map.of("clientId", UUID.randomUUID(),
+                "startedAt", twoDaysAgo.toString(), "endedAt", twoDaysAgo.plusSeconds(3600).toString(),
+                "sets", List.of(Map.of("exerciseId", "bench_press", "setType", "WORKING", "loadKg", 62.5, "reps", 10)))))))
+                .hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").subtract(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+        assertThat(map(send("GET", account, "/v1/program", null))).containsEntry("backAfterBreak", true);
+    }
+
+    @Test
     void aMachineTheGymSaysNothingAboutStepsBackByTheEnginesNumber() throws Exception {
         // The gym has plates but no stack step: it says nothing of a machine's loads — the engine's step, not the last load.
         AccountId account = TestSessions.newAccount();

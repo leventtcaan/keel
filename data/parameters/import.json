@@ -1,0 +1,12 @@
+{
+  "parameters": [
+    {
+      "key": "import_workouts_per_request",
+      "value": 20,
+      "unit": "sessions",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-053-gecmis-ice-aktarma.md#D1",
+      "note": "How many imported sessions the phone sends in one request (K-609, K-615): the contract's WorkoutImport maxItems and the server's keel.training.import.max-workouts, kept equal by ImportLimitsMirrorTests. Small enough that one request stays quick on a slow connection, large enough that a year of sessions (~200) is ten requests."
+    }
+  ]
+}

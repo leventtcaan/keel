@@ -22,9 +22,15 @@ class WorkoutStore {
     /**
      * {@code note}s are the user's own words (K-422): kept and handed back, never logged (V3). {@code uncleanExerciseIds}:
      * the finish's answer on form (G6 K-31), kept so a target derived again after an edit holds them as the finish did
-     * (K-432).
+     * (K-432). {@code importedFrom}: the app a session imported from another app's export came from (K-615); none for
+     * a session logged in the app.
      */
-    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<String> uncleanExerciseIds) {
+    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<String> uncleanExerciseIds,
+            ImportSource importedFrom) {
+    }
+
+    /** A set of an imported session as the file had it: no reps in reserve, side or note (K-615). */
+    record ImportedSet(String exerciseId, SetType setType, BigDecimal loadKg, int reps) {
     }
 
     record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps, Integer rir, Side side,
@@ -48,6 +54,32 @@ class WorkoutStore {
                 .param("at", startedAt.atOffset(ZoneOffset.UTC)).param("day", programDayId).update();
         return new Stored<>(jdbc.sql("select * from training.workout where account_id = :account and client_id = :client")
                 .param("account", account.value()).param("client", clientId).query((row, n) -> workout(row)).single(), created == 1);
+    }
+
+    /**
+     * An imported session, finished, with its sets in the order given; false (nothing written) when its clientId is
+     * already stored — a retry, or a clientId the app already used. Each set gets its own clientId: the file has none.
+     */
+    boolean importSession(AccountId account, UUID clientId, Instant startedAt, Instant endedAt, ImportSource source, List<ImportedSet> sets) {
+        UUID id = UUID.randomUUID();
+        int created = jdbc.sql("""
+                insert into training.workout (id, account_id, client_id, started_at, ended_at, imported_from)
+                values (:id, :account, :client, :start, :end, :source) on conflict (account_id, client_id) do nothing""")
+                .param("id", id).param("account", account.value()).param("client", clientId)
+                .param("start", startedAt.atOffset(ZoneOffset.UTC)).param("end", endedAt.atOffset(ZoneOffset.UTC)).param("source", source.name())
+                .update();
+        if (created == 0) {
+            return false;
+        }
+        for (ImportedSet set : sets) {
+            jdbc.sql("""
+                    insert into training.workout_set (id, workout_id, account_id, client_id, exercise_id, set_type, load_kg, reps)
+                    values (:id, :workout, :account, :client, :exercise, :type, :load, :reps)""")
+                    .param("id", UUID.randomUUID()).param("workout", id).param("account", account.value()).param("client", UUID.randomUUID())
+                    .param("exercise", set.exerciseId()).param("type", set.setType().name()).param("load", set.loadKg()).param("reps", set.reps())
+                    .update();
+        }
+        return true;
     }
 
     Optional<Workout> find(AccountId account, UUID id) {
@@ -109,9 +141,11 @@ class WorkoutStore {
 
     private static Workout workout(ResultSet row) throws SQLException {
         OffsetDateTime ended = row.getObject("ended_at", OffsetDateTime.class);
+        String importedFrom = row.getString("imported_from");
         return new Workout(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
                 row.getObject("started_at", OffsetDateTime.class).toInstant(), ended == null ? null : ended.toInstant(),
-                row.getObject("program_day_id", UUID.class), row.getString("note"), List.of((String[]) row.getArray("unclean_exercise_ids").getArray()));
+                row.getObject("program_day_id", UUID.class), row.getString("note"), List.of((String[]) row.getArray("unclean_exercise_ids").getArray()),
+                importedFrom == null ? null : ImportSource.valueOf(importedFrom));
     }
 
     private static LoggedSet loggedSet(ResultSet row) throws SQLException {

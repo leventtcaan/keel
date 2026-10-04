@@ -69,6 +69,11 @@ keel:
     max-day-name: 60
     # A note on a set or a session (K-422): a few sentences ("left shoulder pinched on the last rep"), not a diary.
     max-note: 500
+    # Sessions from another app's export (K-615, ADR-053): the contract's maxItems and the phone's import_workouts_per_request
+    # (data/parameters/import.json) — kept equal by ImportLimitsMirrorTests. A real session has well under 200 sets.
+    import:
+      max-workouts: 20
+      max-sets: 200
     # A move of the user's own (K-424, ADR-035): a name like the catalog's, and enough of them for any gym's odd machines.
     custom-exercise:
       max-name: 60
