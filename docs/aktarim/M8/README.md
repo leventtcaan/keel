@@ -15,3 +15,4 @@
 6. K-802 silme + dışa aktarma uçtan uca, envantere bağlı (`K-802.md`) — `completion-mode`, "hiçbir sütunda" taraması, başarısız yayın, V34 testi, `export_key`
 7. K-804 anayasa denetimi tek komut, mağaza metni, rota koruması (`K-804.md`, ADR-061) — expo-router rota kaydı, `_sitemap`, Guideline 2.3
 8. K-810 yenileme jetonu ailesi gece silinir (`K-810.md`) — rotasyon, yeniden kullanım tespiti, saklama sınırı
+9. K-814 RevenueCat olay kayıtları 30 gün (`K-814.md`) — idempotency penceresi, durum makinesi
