@@ -687,6 +687,21 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
+| K-801 metinler + envanter — ADR-060; envanter 37 tablo, sütun düzeyinde göçlere bağlı (`tools/test_veri_envanteri.py`, CI Tooling); politika/şartlar/feragatname `docs/yasal/site/`; yasal sayfalar U4/U6 taramasında (`legalNegations`); Pages iş akışı. RED 4 + 4 assertion; mutasyon 6/6; `npm run check` 2518/2518 | ⏳ inceleme | #375 | — |
+
+**Envanterin bulduğu açıklar → K-802 (Part 2) kabul kriterine eklenecek:**
+1. `event_publication` tamamlanan olayları silmiyor (completion-mode update) → silinen hesabın UUID'si süresiz kalıyor (V1). Politika bunu dürüstçe
+   söylüyor ("we are changing this"); düzeltme: `spring.modulith.events.completion-mode: delete` ya da süreli temizlik + test.
+2. Sign in with Apple jetonu silmede **iptal edilmiyor** (yetki kodu alınıyor ama değiş tokuş edilmiyor, `AuthController`). Apple: "Apps that support
+   Sign in with Apple should use the Sign in with Apple REST API to revoke user tokens" (developer.apple.com/support/offering-account-deletion-in-your-app,
+   4 Eki). Apple istemci sırrı (anahtar) Levent'te → tasarım + sır.
+3. Silme onayı aboneliğin Apple'da süreceğini söylemiyor (`settings.delete.confirmBody`); Apple aynı sayfada bunu istiyor.
+4. RevenueCat'teki müşteri kaydı silmede silinmiyor (REST gizli anahtarı, K-704 ile).
+5. Yenileme jetonları (iptal/süresi geçmiş) ve `webhook_event` hesap yaşarken hiç temizlenmiyor (veri en aza indirme).
+6. Telefonda öğün fotoğrafı dosyaları sistem önbelleğinde bırakılıyor (`food/photo.ts`, `photoTools.ts`).
+7. `FakeLanguageModel` son 100 isteği (soru, öğün notu, fotoğraf) bellekte tutuyor; üretimde `provider: fake` kalmamalı (M9 kontrol listesi).
+**M9'a (K-901) politikanın verdiği sözler:** HTTPS; sunucu bölgesi politikada yazılı olmalı; yedek ve ters vekil günlüğü saklama süresi politikaya eklenmeden
+yedek açılmaz (politika şu an yedekten söz etmiyor).
 
 ## M7 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `M7-part2.md`.
