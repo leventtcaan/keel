@@ -41,10 +41,10 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Expired refresh tokens are deleted each night (K-810, GDPR Art. 5(1)(e)): one past its expiry can never be used again,
- * so it is data kept for no purpose. A revoked one that has not expired stays: a copy of it coming back is how a stolen
- * token is caught, and the whole family stops working (K-203). The night as the scheduler runs it logs a failure
- * without its message (V3).
+ * A refresh token family goes the night after its last token expires (K-810, GDPR Art. 5(1)(e)): then nobody can use it,
+ * and it is data kept for no purpose. Until then every token of it stays, revoked or expired: a copy of an old one coming
+ * back is how a stolen token is caught, and the whole family stops working (K-203). The night as the scheduler runs it
+ * logs a failure without its message (V3).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -110,6 +110,37 @@ class RefreshTokenCleanupTests {
     }
 
     @Test
+    void anExpiredTokenOfAFamilyStillInUseStaysToCatchAStolenCopy() throws Exception {
+        // Each renewal gives the new token its own 60 days, so a family's old tokens expire while its newest still works. A
+        // thief who renewed first holds the live one; the phone coming back with the old copy, weeks later, is the catch.
+        AccountId account = account();
+        String stolen = tokens.start(account);
+        String thiefs = tokens.rotate(stolen).refreshToken();
+        jdbc.sql("update identity.refresh_token set expires_at = now() - interval '1 day' where account_id = :account and revoked_at is not null")
+                .param("account", account.value()).update();
+
+        cleanup.cleanUp(Instant.now());
+
+        assertThat(refresh(stolen)).as("the old copy").isEqualTo(401);
+        assertThat(refresh(thiefs)).as("the family stopped working").isEqualTo(401);
+    }
+
+    @Test
+    void aFamilyGoesWholeOnceEveryTokenOfItExpired() {
+        AccountId account = account();
+        UUID done = UUID.randomUUID();
+        UUID inUse = UUID.randomUUID();
+        String doneOld = token(account, done, NIGHT.minusSeconds(7200), NIGHT.minusSeconds(3600));
+        String doneLast = token(account, done, NIGHT.minusSeconds(1), null);
+        String inUseOld = token(account, inUse, NIGHT.minusSeconds(7200), NIGHT.minusSeconds(3600));
+        String inUseLast = token(account, inUse, NIGHT.plusSeconds(60), null);
+
+        cleanup.cleanUp(NIGHT);
+
+        assertThat(hashes(account)).containsExactlyInAnyOrder(inUseOld, inUseLast).doesNotContain(doneOld, doneLast);
+    }
+
+    @Test
     void itRunsOnceADay() {
         String cron = environment.getProperty("keel.session.expired-cleanup");
         ZoneId zone = ZoneId.of(environment.getProperty("keel.session.expired-cleanup-zone"));
@@ -125,6 +156,8 @@ class RefreshTokenCleanupTests {
         assertThatThrownBy(() -> broken.cleanUp(NIGHT)).hasStackTraceContaining(SECRET);
         AccountId account = account();
         String expired = token(account, Instant.now().minusSeconds(60), null);
+        String live = token(account, Instant.now().plusSeconds(3600), null);
+        String revoked = token(account, Instant.now().plusSeconds(3600), Instant.now().minusSeconds(60));
 
         // As the scheduler runs them — the real night and the broken one: each returns at once (run as a listener is,
         // through BackgroundFailures), so nothing reaches the scheduler's own handler, which would log the message.
@@ -135,7 +168,7 @@ class RefreshTokenCleanupTests {
 
         String line = "task=" + RefreshTokenCleanup.class.getName() + "#nightly";
         await(() -> !hashes(account).contains(expired) && log.getAll().contains(line));
-        assertThat(hashes(account)).doesNotContain(expired);
+        assertThat(hashes(account)).as("the night as the scheduler runs it cuts at now, no later").containsExactlyInAnyOrder(live, revoked);
         assertThat(log).contains("failure").contains(line).doesNotContain(SECRET);
     }
 
@@ -151,13 +184,17 @@ class RefreshTokenCleanupTests {
         return account;
     }
 
-    /** A stored token row as the cleanup sees it; its hash stands for it. */
+    /** A stored token row, alone in its family, as the cleanup sees it; its hash stands for it. */
     private String token(AccountId account, Instant expiresAt, Instant revokedAt) {
+        return token(account, UUID.randomUUID(), expiresAt, revokedAt);
+    }
+
+    private String token(AccountId account, UUID family, Instant expiresAt, Instant revokedAt) {
         String hash = UUID.randomUUID().toString();
         jdbc.sql("""
                 insert into identity.refresh_token (id, account_id, family_id, token_hash, expires_at, created_at, revoked_at)
-                values (gen_random_uuid(), :account, gen_random_uuid(), :hash, :expires, :expires, :revoked)""")
-                .param("account", account.value()).param("hash", hash).param("expires", expiresAt.atOffset(ZoneOffset.UTC))
+                values (gen_random_uuid(), :account, :family, :hash, :expires, :expires, :revoked)""")
+                .param("account", account.value()).param("family", family).param("hash", hash).param("expires", expiresAt.atOffset(ZoneOffset.UTC))
                 .param("revoked", revokedAt == null ? null : revokedAt.atOffset(ZoneOffset.UTC)).update();
         return hash;
     }
