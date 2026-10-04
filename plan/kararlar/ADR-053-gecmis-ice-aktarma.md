@@ -18,7 +18,7 @@ Biçimler: `arastirma/ham/H13-ice-aktarma-bicimleri.md` (üreticiler sütun yay�
 ## Karar
 1. **İçe aktarılan geçmiş görülür, karara girmez.** Motorun ve kural okumalarının hepsi (karar, check-in soruları, ilk 8 hafta,
    uyum/tutarlılık, antrenman durumu, projeksiyon) içe aktarılanı okumaz: kilo `source = IMPORT` dışarıda (`Measurements.dailyWeights`,
-   `latestWeightKg`), antrenman `source <> LOGGED` dışarıda (`TrainingLog`). Ekranlar (kilo trendi, tartı listesi, antrenman listesi →
+   `latestWeightKg`), içe aktarılan seans (`imported_from` dolu) dışarıda (`TrainingLog`'un üç sorgusu). Ekranlar (kilo trendi, tartı listesi, antrenman listesi →
    telefondaki güç grafiği K-604) hepsini gösterir. Böylece içe aktarma **hiçbir kararı değiştirmez**: aynı hesap, aynı kendi verisi,
    içe aktarmalı ve içe aktarmasız → aynı çağrılar (`FirstDecisionNotBeforeMondayTests`).
 2. **Kilo geçmişi (K-616):** Apple Health'ten bir kez, kullanıcı isteyince (Ayarlar). Okunan aralık `health_weight_import_days`
@@ -29,7 +29,8 @@ Biçimler: `arastirma/ham/H13-ice-aktarma-bicimleri.md` (üreticiler sütun yay�
    seans (20; sözleşmede `maxItems`), her biri bitmiş (`startedAt`, `endedAt`), `source` STRONG | HEVY, setleri katalog ya da kişinin
    kendi hareketiyle. Tek transaction; seans `clientId`'si tekrar gelirse atlanır (yeniden deneme güvenli). **Sağlık rızası şart**
    (antrenman kaydı V3 listesinde değil ama içe aktarma toplu geçmiş; talimat). İlerleme (K-217), Health'e yazma (K-412), bildirim
-   tetiklenmez. `Workout.source` sözleşmede (LOGGED | STRONG | HEVY).
+   tetiklenmez. Seans `training.workout.imported_from` (STRONG | HEVY; uygulamada kaydedilen seansta boş) ile işaretli;
+   sözleşmede `Workout.importedFrom` yalnız içe aktarılan seansta bulunur.
 4. **Dosya telefonda ayrıştırılır**, sunucuya gitmez. Okunan: yalnız H13'te doğrulanan sütunlar; notlar, RPE, mesafe, süre okunmaz.
    Tanınmayan başlık → dosya reddedilir (sütun tahmini yok). Strong'da ağırlık birimi dosyada yok → kullanıcı seçer; dambıl yükünün
    tek mi toplam mı olduğu dosyada yok → kullanıcı bir kez seçer (H13 B4); taraf bilinmez → **saklanmaz** (`side` yok) — yalnız
@@ -38,6 +39,14 @@ Biçimler: `arastirma/ham/H13-ice-aktarma-bicimleri.md` (üreticiler sütun yay�
    takma adlarla (`en.json › exercises.<id>.aliases`) ve kişinin kendi hareketleriyle karşılaştırılır. Güven **yüksek** (ad ya da takma
    ad birebir, ekipman çelişmiyor) → eşlenmiş gelir, değiştirilebilir; **düşük** → en yakın üç seçenek tek dokunuşla, ya da "my own
    move" (K-424) ya da atla (U5: belirsizlik gizlenmez). Eşikler `data/parameters/import.json` (`urun`).
+
+## D1 · Sayılar (hepsi `urun`, kaynaksız seçim — U14 etiketi)
+| Parametre | Değer | Neden |
+|---|---|---|
+| `import_workouts_per_request` (`import.json`; sunucu `keel.training.import.max-workouts`; sözleşme `maxItems`) | 20 | Bir istek yavaş bağlantıda da kısa kalır; bir yıllık geçmiş (~200 seans) on istek. Üç yer `ImportLimitsMirrorTests` ile eşit |
+| Seans başına set (`max-sets`, sözleşme `maxItems`) | 200 | Gerçek bir seans bunun çok altında; fazlası dosya hatası sayılır |
+| `health_weight_import_days` (`health.json`) | 365 | Trend ve alışkanlık için bir yıl yeter; ömür boyu geçmiş gerekmez. Düzenli okumanın (`health_weight_read_days`) başladığı yerde biter |
+| Eşleme eşikleri (`import.json`, K-609) | K-609'da | Ad benzerliğinin "yüksek güven" sınırı; düşükte kullanıcı seçer (U5) |
 
 ## Neden
 - Kaynak işaretiyle dışlamak, "ilk karar ilk pazartesiden önce gelmez"i bir tarih kuralından daha güçlü verir: içe aktarma kararı
@@ -64,9 +73,9 @@ geçmişi projeksiyonun "oturmuş başlangıç" sayacını öne çekmez (U12 ilk
 Düşük: dışlama iki okuma yerinde (`Measurements`, `TrainingLog`); kaynak sütunu kalır.
 
 ## Etkilenen
-V32 (`training.workout.source`), `training/TrainingLog`, `training/WorkoutStore`, `training/WorkoutController` (yeni uç),
+V32 (`training.workout.imported_from`), `training/TrainingLog`, `training/WorkoutStore`, `training/WorkoutController` (yeni uç),
 `measurement/Measurements`, `measurement/MeasurementStore`, `measurement/MeasurementController` (trend hepsini okur),
-sözleşme (`Workout.source`, `WorkoutImport`), telefon `src/import/`, `data/parameters/import.json`, `health.json`, H13.
+sözleşme (`Workout.importedFrom`, `WorkoutImport`), ADR-015 (training → consent), telefon `src/import/`, `data/parameters/import.json`, `health.json`, H13.
 
 ## Doğrulama
 `FirstDecisionNotBeforeMondayTests` (aynı çağrılar, ilk çağrı NO_DECISION_YET), `WorkoutImportApiTests`, `WeightTrend` içe aktarılanı
