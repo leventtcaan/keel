@@ -2,7 +2,19 @@ package app.keel.privacy;
 
 import app.keel.consent.ConsentGate;
 import app.keel.shared.AccountId;
+import app.keel.shared.ApiException;
+import app.keel.shared.ErrorCode;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
@@ -20,10 +32,50 @@ public class EgressGate {
         APPLE_ACCOUNT
     }
 
-    private final ConsentGate consents;
+    /** What the other side answered: its status and its body, as text. */
+    record Answer(int status, String body) {
 
-    EgressGate(ConsentGate consents) {
+        boolean ok() {
+            return status >= 200 && status < 300;
+        }
+    }
+
+    private final ConsentGate consents;
+    private final Duration timeout;
+    private final HttpClient http;
+
+    EgressGate(ConsentGate consents, PrivacyProperties properties) {
         this.consents = consents;
+        this.timeout = properties.egressTimeout();
+        this.http = HttpClient.newBuilder().connectTimeout(timeout).followRedirects(HttpClient.Redirect.NEVER).build();
+    }
+
+    /**
+     * A form posted to {@code destination} (K-812: Apple's REST API), answered whatever its status; no answer at all is
+     * SERVICE_UNAVAILABLE. The form is not logged: it carries credentials. Package-private: only this module's own callers
+     * (AppleRevocation) post; another module's data goes out through send/sendToAi and their checks (K-812 review).
+     */
+    Answer postForm(Destination destination, URI uri, Map<String, String> form) {
+        if (destination == Destination.THIRD_PARTY_AI) {
+            throw new IllegalArgumentException("a call to an AI names its provider: sendToAi");
+        }
+        String body = form.entrySet().stream().map(field -> encode(field.getKey()) + "=" + encode(field.getValue()))
+                .collect(Collectors.joining("&"));
+        HttpRequest request = HttpRequest.newBuilder(uri).timeout(timeout).header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Accept", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
+        try {
+            HttpResponse<String> answer = http.send(request, HttpResponse.BodyHandlers.ofString());
+            return new Answer(answer.statusCode(), answer.body());
+        } catch (IOException unreachable) {
+            throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE, unreachable);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE, interrupted);
+        }
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     /** A call that carries no data for an AI. The AI goes through {@link #sendToAi}, which names the provider. */

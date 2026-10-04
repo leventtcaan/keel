@@ -66,6 +66,25 @@ class AppleIdentityVerifier {
         return new AppleIdentity(token.getSubject());
     }
 
+    /**
+     * The subject of an identity token Apple's /auth/token answered our server with (K-812): signature, issuer, audience and
+     * expiry as at sign-in, no nonce — it came from Apple directly, in exchange for a single-use code, not from a phone.
+     */
+    String subjectOf(String identityToken) {
+        Jwt token;
+        try {
+            token = decoder.decode(identityToken);
+        } catch (BadJwtException refused) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        } catch (JwtException unreachable) {
+            throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE, unreachable);
+        }
+        if (token.getSubject() == null || token.getSubject().isBlank()) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
+        return token.getSubject();
+    }
+
     /** SHA-256 of the raw nonce, lowercase hex — what the phone put in Apple's request. */
     static String hash(String rawNonce) {
         try {

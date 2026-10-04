@@ -182,7 +182,9 @@ fixed, published rules. Every call shows "Why this call": the data it used and t
 ## Your rights {#rights}
 
 - **Access and portability:** Settings › Export my data gives you your data as one file.
-- **Erasure:** Settings › Delete account deletes your account and all its data from our server, and clears the phone.
+- **Erasure:** Settings › Delete account deletes your account and all its data from our server, and clears the phone. It
+  also asks Apple to end Sign in with Apple for this app (you confirm with Apple once more); if that step can't be done,
+  you can end it yourself: Settings › your name › Sign in with Apple › this app › Delete (support.apple.com/102571).
   Deleting the account doesn't cancel an App Store subscription: cancel it in Settings › Subscriptions on your iPhone.
 - **Withdraw consent** at any time in Settings, without affecting what was done before.
 - **Rectification, restriction, objection:** most data you can edit in the app; for anything else write to

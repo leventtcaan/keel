@@ -43,6 +43,13 @@ keel:
     client-id: ${KEEL_APPLE_CLIENT_ID}
     issuer: https://appleid.apple.com
     jwks-uri: https://appleid.apple.com/auth/keys
+    # Revoking Sign in with Apple when an account is deleted (K-812, ADR-062): Team ID, the .p8 key's id and the key (PEM)
+    # from the environment (V5). Not set (development): revocation answers "unavailable" and the deletion goes on.
+    revocation:
+      team-id: ${KEEL_APPLE_TEAM_ID}
+      key-id: ${KEEL_APPLE_KEY_ID}
+      private-key: ${KEEL_APPLE_PRIVATE_KEY}
+      base-uri: https://appleid.apple.com
   session:
     secret: ${KEEL_SESSION_SECRET}
     access-ttl: 15m
@@ -142,6 +149,8 @@ keel:
     sweep-every: 1m
     retry-after: 1m
     retry-every: 5m
+    # A call out through EgressGate (K-812: Apple's /auth/token and /auth/revoke) gives up after this long, connecting or answering.
+    egress-timeout: 10s
   # The language model the coach uses (K-503, ADR-004, ADR-042): an adapter the server has, the model, the output limit
   # and the provider's list prices per million tokens. "fake" until a provider is chosen (K-511; ADR-041: no real call,
   # no spending yet) — it sends nothing anywhere. The AI consent names the provider (keel.consent.third-party-ai).

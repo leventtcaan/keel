@@ -8,5 +8,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * failed module deletions are resent every {@code retryEvery} once they are {@code retryAfter} old.
  */
 @ConfigurationProperties("keel.privacy")
-record PrivacyProperties(Duration secondPassAfter, Duration sweepEvery, Duration retryAfter, Duration retryEvery) {
+record PrivacyProperties(Duration secondPassAfter, Duration sweepEvery, Duration retryAfter, Duration retryEvery, Duration egressTimeout) {
 }

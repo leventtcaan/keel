@@ -126,6 +126,28 @@ paths:
             from this answer on, its tokens get 401 — the phone signs out and drops its offline queue.
         default:
           $ref: "#/components/responses/Error"
+  /v1/account/apple-revocation:
+    post:
+      tags: [account]
+      operationId: revokeAppleSignIn
+      summary: End Sign in with Apple for this app, before the account is deleted
+      description: |
+        K-812, ADR-062. The phone asks Apple for a fresh authorization code (Sign in with Apple again) and sends it here just
+        before DELETE /v1/account. The server trades it at Apple's /auth/token, checks the identity token is this account's,
+        and revokes the refresh token at /auth/revoke. Nothing of Apple's is kept. Whatever this answers, the phone goes on
+        with the deletion (V6): 400 the code is not good or not this account's; 503 revocation is not set up or Apple did not
+        answer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppleRevocationRequest"
+      responses:
+        "204":
+          description: Apple revoked this app's sign-in for the person
+        default:
+          $ref: "#/components/responses/Error"
   /v1/account/export:
     get:
       tags: [account]
@@ -1656,6 +1678,14 @@ components:
           description: |
             Apple's one-time code, exchanged on the server for the refresh token that account deletion must revoke
             (K-214; Apple's rule on deleting accounts that use Sign in with Apple — verified in K-203).
+    AppleRevocationRequest:
+      type: object
+      required: [authorizationCode]
+      properties:
+        authorizationCode:
+          type: string
+          minLength: 1
+          description: Sign in with Apple's authorization code from a sign-in just made; single use, valid five minutes.
     RefreshRequest:
       type: object
       required: [refreshToken]
