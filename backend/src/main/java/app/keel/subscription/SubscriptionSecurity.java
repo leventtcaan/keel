@@ -19,7 +19,7 @@ class SubscriptionSecurity {
 
     @Bean
     @Order(0)
-    SecurityFilterChain revenueCatWebhook(HttpSecurity http) throws Exception {
+    SecurityFilterChain revenueCatWebhookChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(RevenueCatWebhook.PATH)
                 .csrf(csrf -> csrf.disable())

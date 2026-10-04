@@ -105,7 +105,10 @@ class RevenueCatWebhookTests {
         MvcTestResult withSession = mvc.post().uri(RevenueCatWebhook.PATH).header("Authorization", TestSessions.bearer(context, account))
                 .contentType(MediaType.APPLICATION_JSON).content(body).exchange();
 
-        assertThat(List.of(unsigned, wrong, withSession)).allSatisfy(result -> {
+        // Nothing is read before the signature: an unsigned body that is no event is 401, not 400.
+        MvcTestResult unsignedGarbage = mvc.post().uri(RevenueCatWebhook.PATH).contentType(MediaType.APPLICATION_JSON).content("not json").exchange();
+
+        assertThat(List.of(unsigned, wrong, withSession, unsignedGarbage)).allSatisfy(result -> {
             assertThat(result.getResponse().getStatus()).isEqualTo(401);
             assertThat(result.getResponse().getContentAsString()).contains("UNAUTHENTICATED");
         });
@@ -172,6 +175,35 @@ class RevenueCatWebhookTests {
     }
 
     @Test
+    void anAccountOfOursNamedInAnotherFormIsNotOurs() {
+        AccountId account = account();
+        Map<String, Object> upper = TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now, monthLater);
+        upper.put("app_user_id", account.value().toString().toUpperCase());
+        Map<String, Object> braced = TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now, monthLater);
+        braced.put("app_user_id", " " + account.value());
+        Map<String, Object> none = TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now, monthLater);
+        none.remove("app_user_id");
+
+        assertThat(List.of(send(upper), send(braced), send(none))).allSatisfy(result -> assertThat(result.getResponse().getStatus()).isEqualTo(200));
+        assertThat(rows("subscription.subscription", account)).isZero();
+        assertThat(rows("subscription.webhook_event", account)).isZero();
+    }
+
+    @Test
+    void anEventWithoutAStoreEnvironmentIsWeighedAsNoneAllowed() {
+        AccountId account = account();
+        Map<String, Object> noEnvironment = TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now, monthLater);
+        noEnvironment.remove("environment");
+        Map<String, Object> nullEnvironment = TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now, monthLater);
+        nullEnvironment.put("environment", null);
+
+        // 200, not a 500 RevenueCat would send five more times: the event says nothing the server keeps.
+        assertThat(List.of(send(noEnvironment), send(nullEnvironment))).allSatisfy(result -> assertThat(result.getResponse().getStatus()).isEqualTo(200));
+        assertThat(rows("subscription.subscription", account)).isZero();
+        assertThat(rows("subscription.webhook_event", account)).isZero();
+    }
+
+    @Test
     void anEventOfAnotherEntitlementOrStoreEnvironmentOrOfNoInterestChangesNothing() {
         AccountId account = account();
         Map<String, Object> other = TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now, monthLater);
@@ -202,8 +234,44 @@ class RevenueCatWebhookTests {
         assertThat(send(transfer).getResponse().getStatus()).isEqualTo(200);
 
         assertThat(entitlements.active(from, now)).isFalse();
+        assertThat(rows("subscription.webhook_event", from)).as("the purchase and the transfer").isEqualTo(2);
         // The account it went to gets access with its own next event (ADR-056 #6; K-704 refreshes at once).
         assertThat(entitlements.active(to, now)).isFalse();
+    }
+
+    @Test
+    void aTransferFromSeveralAccountsTakesAccessFromEachAndOneWithoutSourcesFromNone() {
+        AccountId first = account();
+        AccountId second = account();
+        send(TestWebhooks.event(id(), "INITIAL_PURCHASE", first, now.minusSeconds(60), monthLater));
+        send(TestWebhooks.event(id(), "INITIAL_PURCHASE", second, now.minusSeconds(60), monthLater));
+        Map<String, Object> noSources = transfer(id(), null);
+        Map<String, Object> both = transfer(id(), List.of(first.value().toString(), "$RCAnonymousID:x", second.value().toString()));
+
+        assertThat(send(noSources).getResponse().getStatus()).isEqualTo(200);
+        assertThat(entitlements.active(first, now)).as("a transfer from no one changes no one").isTrue();
+        assertThat(send(both).getResponse().getStatus()).isEqualTo(200);
+
+        assertThat(List.of(first, second)).allSatisfy(account -> {
+            assertThat(entitlements.active(account, now)).isFalse();
+            // One event, two accounts: the key is the event and the account.
+            assertThat(jdbc.sql("select count(*) from subscription.webhook_event where event_id = :id and account_id = :account")
+                    .param("id", both.get("id")).param("account", account.value()).query(Integer.class).single()).isEqualTo(1);
+        });
+    }
+
+    private Map<String, Object> transfer(String id, List<String> from) {
+        Map<String, Object> transfer = new java.util.LinkedHashMap<>();
+        transfer.put("id", id);
+        transfer.put("type", "TRANSFER");
+        transfer.put("event_timestamp_ms", now.toEpochMilli());
+        if (from != null) {
+            transfer.put("transferred_from", from);
+        }
+        transfer.put("transferred_to", List.of(UUID.randomUUID().toString()));
+        transfer.put("environment", "PRODUCTION");
+        transfer.put("store", "APP_STORE");
+        return transfer;
     }
 
     @Test
@@ -245,15 +313,56 @@ class RevenueCatWebhookTests {
     }
 
     @Test
+    void twoEventsAtOnceForAnAccountThatHasAStateAreWeighedOneAfterTheOther() throws Exception {
+        List<AccountId> accounts = new ArrayList<>();
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        try {
+            List<CompletableFuture<MvcTestResult>> sent = new ArrayList<>();
+            for (int i = 0; i < 12; i++) {
+                AccountId account = account();
+                accounts.add(account);
+                send(TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now.minusSeconds(120), monthLater));
+                Map<String, Object> earlierRefund = TestWebhooks.event(id(), "CANCELLATION", account, now.minusSeconds(60), monthLater);
+                earlierRefund.put("cancel_reason", "CUSTOMER_SUPPORT");
+                Map<String, Object> laterRenewal = TestWebhooks.event(id(), "RENEWAL", account, now, monthLater);
+                sent.add(CompletableFuture.supplyAsync(() -> send(laterRenewal), pool));
+                sent.add(CompletableFuture.supplyAsync(() -> send(earlierRefund), pool));
+            }
+            for (CompletableFuture<MvcTestResult> each : sent) {
+                assertThat(each.get().getResponse().getStatus()).isEqualTo(200);
+            }
+        } finally {
+            pool.shutdown();
+        }
+
+        assertThat(accounts).allSatisfy(account -> assertThat(entitlements.active(account, now)).isTrue());
+    }
+
+    @Test
+    void theExportOfAnAccountWithoutASubscriptionSaysSo() {
+        AccountId account = account();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> exported = (Map<String, Object>) data.export(account);
+        assertThat(exported).containsEntry("subscription", null);
+        assertThat((List<?>) exported.get("subscriptionEvents")).isEmpty();
+    }
+
+    @Test
     void theSubscriptionGoesWithTheAccountAndIsInItsExport() {
         AccountId account = account();
+        Instant later = now.plusSeconds(60);
+        Map<String, Object> cancel = TestWebhooks.event(id(), "CANCELLATION", account, later, monthLater);
+        cancel.put("cancel_reason", "UNSUBSCRIBE");
+        send(cancel); // arrives first, happened later
         send(TestWebhooks.event(id(), "INITIAL_PURCHASE", account, now, monthLater));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> exported = (Map<String, Object>) data.export(account);
-        assertThat((Map<String, Object>) exported.get("subscription")).containsEntry("status", "ACTIVE")
-                .containsEntry("accessUntil", monthLater.toString());
-        assertThat((List<Object>) exported.get("subscriptionEvents")).containsExactly(Map.of("type", "INITIAL_PURCHASE", "at", now.toString()));
+        assertThat((Map<String, Object>) exported.get("subscription")).isEqualTo(Map.of(
+                "status", "CANCELLED", "accessUntil", monthLater.toString(), "lastEventAt", later.toString()));
+        assertThat((List<Object>) exported.get("subscriptionEvents")).containsExactly(Map.of("type", "INITIAL_PURCHASE", "at", now.toString()),
+                Map.of("type", "CANCELLATION", "at", later.toString()));
 
         data.on(new app.keel.shared.AccountDeletionRequested(account));
 

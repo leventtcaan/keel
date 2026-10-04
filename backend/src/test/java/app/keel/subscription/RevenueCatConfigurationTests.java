@@ -33,6 +33,11 @@ class RevenueCatConfigurationTests {
         assertThatIllegalStateException().as("a store that is none").isThrownBy(() -> new RevenueCatProperties("s", FIVE_MINUTES, "premium",
                 Set.of("PRODUCTION", "STAGING"), 65536));
         assertThatIllegalStateException().as("no body").isThrownBy(() -> new RevenueCatProperties("s", FIVE_MINUTES, "premium", BOTH, 0));
+        assertThatIllegalStateException().as("a negative tolerance").isThrownBy(() -> new RevenueCatProperties("s", Duration.ofMinutes(-5), "premium", BOTH, 65536));
+        assertThatIllegalStateException().as("no tolerance at all").isThrownBy(() -> new RevenueCatProperties("s", null, "premium", BOTH, 65536));
+        assertThatIllegalStateException().as("an entitlement unset").isThrownBy(() -> new RevenueCatProperties("s", FIVE_MINUTES, null, BOTH, 65536));
+        assertThatIllegalStateException().as("environments unset").isThrownBy(() -> new RevenueCatProperties("s", FIVE_MINUTES, "premium", null, 65536));
+        assertThatIllegalStateException().as("max body unset").isThrownBy(() -> new RevenueCatProperties("s", FIVE_MINUTES, "premium", BOTH, null));
     }
 
     @Test

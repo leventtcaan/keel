@@ -106,6 +106,20 @@ class SubscriptionStateTests {
     }
 
     @Test
+    void aCancellationOrABillingIssueWithoutAnEndSaysNothing() {
+        SubscriptionEvent cancelled = new SubscriptionEvent("e", "CANCELLATION", AT, "user", List.of(PREMIUM), "NORMAL", null, null,
+                "UNSUBSCRIBE", null, "PRODUCTION", null);
+        SubscriptionEvent billing = new SubscriptionEvent("e", "BILLING_ISSUE", AT, "user", List.of(PREMIUM), "NORMAL", null, null, null,
+                null, "PRODUCTION", null);
+        SubscriptionEvent paused = new SubscriptionEvent("e", "SUBSCRIPTION_PAUSED", AT, "user", List.of(PREMIUM), "NORMAL", null, null,
+                null, null, "PRODUCTION", null);
+
+        assertThat(SubscriptionState.of(cancelled, PREMIUM)).isEmpty();
+        assertThat(SubscriptionState.of(billing, PREMIUM)).isEmpty();
+        assertThat(SubscriptionState.of(paused, PREMIUM)).isEmpty();
+    }
+
+    @Test
     void theAccountATransferTookFromHasNoAccessFromThatMoment() {
         assertThat(SubscriptionState.transferredAway(AT)).isEqualTo(new SubscriptionState(Status.EXPIRED, AT, AT));
     }

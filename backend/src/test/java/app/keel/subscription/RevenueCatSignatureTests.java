@@ -98,6 +98,12 @@ class RevenueCatSignatureTests {
         assertThat(WebhookSignature.verify(header(t, ""), BODY, SECRET, NOW, TOLERANCE)).as("empty signature").isFalse();
         assertThat(WebhookSignature.verify("t=" + t + ",t=" + (t - 999) + ",v1=" + good, BODY, SECRET, NOW, TOLERANCE)).as("two times").isFalse();
         assertThat(WebhookSignature.verify("t=" + Long.MAX_VALUE + ",v1=" + good, BODY, SECRET, NOW, TOLERANCE)).as("a time past any clock").isFalse();
+        // Two times, the stale one first: a second t is refused, not read over the first.
+        assertThat(WebhookSignature.verify("t=" + (t - 999) + ",t=" + t + ",v1=" + good, BODY, SECRET, NOW, TOLERANCE)).as("two times, stale first").isFalse();
+        // More digits than a long holds: refused, never an exception (a 500 RevenueCat would send five more times).
+        assertThat(WebhookSignature.verify("t=" + "9".repeat(20) + ",v1=" + good, BODY, SECRET, NOW, TOLERANCE)).as("20 digits").isFalse();
+        assertThat(WebhookSignature.verify("t,v1=" + good, BODY, SECRET, NOW, TOLERANCE)).as("a bare t").isFalse();
+        assertThat(WebhookSignature.verify("t=-" + t + ",v1=" + good, BODY, SECRET, NOW, TOLERANCE)).as("a sign").isFalse();
     }
 
     @Test
@@ -107,5 +113,16 @@ class RevenueCatSignatureTests {
 
         assertThat(WebhookSignature.verify("t=" + t + ",v1=" + other + ",v1=" + sign(SECRET, t, BODY), BODY, SECRET, NOW, TOLERANCE)).isTrue();
         assertThat(WebhookSignature.verify(" t=" + t + ", v1=" + sign(SECRET, t, BODY), BODY, SECRET, NOW, TOLERANCE)).as("spaces after commas").isTrue();
+        // Ours first, another after it: still ours (any, not the last).
+        assertThat(WebhookSignature.verify("t=" + t + ",v1=" + sign(SECRET, t, BODY) + ",v1=" + other, BODY, SECRET, NOW, TOLERANCE)).as("ours first").isTrue();
+    }
+
+    @Test
+    void aFieldOfAnotherSchemeIsLeftAlone() {
+        long t = NOW.getEpochSecond();
+
+        // A scheme RevenueCat may add later (v0, v2…) must not break the webhook while v1 is ours.
+        assertThat(WebhookSignature.verify("t=" + t + ",v0=xyz,v1=" + sign(SECRET, t, BODY), BODY, SECRET, NOW, TOLERANCE)).isTrue();
+        assertThat(WebhookSignature.verify("t=" + t + ",v0=" + sign(SECRET, t, BODY), BODY, SECRET, NOW, TOLERANCE)).as("only another scheme").isFalse();
     }
 }

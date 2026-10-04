@@ -2,6 +2,7 @@ package app.keel.subscription;
 
 import app.keel.shared.AccountId;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,7 +54,8 @@ public final class TestWebhooks {
     }
 
     static MvcTestResult sendRaw(MockMvcTester mvc, ApplicationContext context, byte[] body) {
-        long t = Instant.now().getEpochSecond();
+        // The server's own clock: the one it checks the signature's moment against.
+        long t = context.getBean(Clock.class).instant().getEpochSecond();
         String signature = RevenueCatSignatureTests.sign(context.getBean(RevenueCatProperties.class).secret(), t, body);
         return mvc.post().uri(RevenueCatWebhook.PATH).header(WebhookSignature.HEADER, "t=" + t + ",v1=" + signature)
                 .contentType(MediaType.APPLICATION_JSON).content(body).exchange();
