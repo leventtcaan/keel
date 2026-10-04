@@ -34,6 +34,8 @@ Paket kimliği: `dev.leventtcaan.keel` (geçici, `app.config.ts`; `KEEL_IOS_BUND
    uygulama kaydı yoksa EAS oluşturur) → App Store Connect › TestFlight › dahili test grubu (Levent).
    Store derlemesinde JS gömülüdür: `EXPO_PUBLIC_API_URL` EAS ortamında olmalı
    (`eas env:create --environment production --name EXPO_PUBLIC_API_URL --value <adres> --visibility plaintext`).
+   Yasal adresler (`EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_PRIVACY_URL`) gizli değil: `eas.json › build.<profil>.env`'de (K-809, ADR-060);
+   ürün adı/alan adı gelince (M10) orada ve `docs/yasal/site/_config.yml`'de değişir.
    Sunucu henüz yayında değil (M9) → TestFlight derlemesi açılır, giriş sunucuya ulaşamaz.
 
 ## Bilinen sınırlar

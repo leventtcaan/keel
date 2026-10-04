@@ -3,7 +3,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_TERMS_URL": "https://leventtcaan.github.io/keel/terms/",
+        "EXPO_PUBLIC_PRIVACY_URL": "https://leventtcaan.github.io/keel/privacy/"
+      }
     },
     "development-simulator": {
       "extends": "development",
@@ -11,7 +15,11 @@
     },
     "production": {
       "distribution": "store",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_TERMS_URL": "https://leventtcaan.github.io/keel/terms/",
+        "EXPO_PUBLIC_PRIVACY_URL": "https://leventtcaan.github.io/keel/privacy/"
+      }
     }
   },
   "submit": {

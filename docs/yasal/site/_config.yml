@@ -1,6 +1,7 @@
 # The legal pages, published to GitHub Pages by .github/workflows/pages.yml (ADR-059 #3, ADR-060).
 # Values the pages show come from here; the ones the product owner gives are marked until then (DURUM › M8 ilerleme).
 title: Legal
+url: https://leventtcaan.github.io
 baseurl: /keel
 last_updated: "4 October 2026"
 controller_name: "[name to be added before launch]"
