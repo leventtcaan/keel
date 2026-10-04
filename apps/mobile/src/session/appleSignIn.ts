@@ -90,12 +90,9 @@ export async function signInWithApple({ apple, nonce, api, session, claimPhotos 
 /** A fresh authorization code from Apple, asked for when it is needed (K-812). */
 export type AppleReauth = { code(): Promise<string | null> };
 
-/** Where there is no Apple (tests, a phone without it): no code, and the deletion goes on without ending the sign-in. */
-export const noAppleReauth: AppleReauth = { code: async () => null };
-
 /**
  * Apple's sheet once more, at the account's deletion (K-812, ADR-062): its authorization code lets our server end Sign in
- * with Apple for this app — Apple asks apps to revoke on deletion. A nonce as at sign-in (Apple wants one), no scopes. The
+ * with Apple for this app — Apple asks apps to revoke on deletion. A nonce as at sign-in (the server checks none here), no scopes. The
  * sheet closed, or no code: null, and the deletion goes on. Apple failing another way: thrown, for the caller to report.
  */
 export function appleReauthorization(apple: AppleAuth, nonce: Nonce): AppleReauth {
