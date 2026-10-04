@@ -1742,11 +1742,11 @@
     "next": "Next photo from {date}. Weekly changes are too small to see.",
     "open": "Photo window open since {date}. Same spot, same light, morning.",
     "count": {
-      "one": "{count} photo day on this phone. Never uploaded.",
-      "other": "{count} photo days on this phone. Never uploaded."
+      "one": "{count} photo day on this phone. keel never uploads them.",
+      "other": "{count} photo days on this phone. keel never uploads them."
     },
     "delete": "Delete all photos",
-    "deleteBody": "This deletes every progress photo on this phone. There's no other copy.",
+    "deleteBody": "This deletes every progress photo keel keeps on this phone. keel has no other copy.",
     "deleteConfirm": "Delete photos",
     "deleteKeep": "Keep them",
     "deleteFailed": "Couldn't delete the photos. Try again."
