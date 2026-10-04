@@ -74,6 +74,10 @@ final class AccountFixture {
         send(account, "PUT", "/v1/state", Map.of("kind", "SICK"));
         // A day's use of the coach (K-508): a count, the account's.
         assertThat(context.getBean(app.keel.subscription.Quota.class).take(account, app.keel.subscription.Quota.Use.COACH_MESSAGE)).isPresent();
+        // A subscription from RevenueCat's webhook (K-701): the state and the event that made it, the account's.
+        java.time.Instant now = java.time.Instant.now();
+        assertThat(app.keel.subscription.TestWebhooks.send(mvc, context, app.keel.subscription.TestWebhooks.event("evt-" + UUID.randomUUID(),
+                "INITIAL_PURCHASE", account, now, now.plus(java.time.Duration.ofDays(7)))).getResponse().getStatus()).isEqualTo(200);
         // An answer to the coach's own question (K-512): health data, as the answers to the check-in are.
         send(account, "POST", "/v1/prompts/loads_dropped/answers", Map.of("key", "2026-09-28", "choice", "OK"));
         // This week's check-in (Mondays, UTC): the plan and the call (K-212).

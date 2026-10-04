@@ -6,6 +6,8 @@ spring:
     username: keel
 # Local sign-in: a placeholder bundle ID until the real one is set; the session key is still from the environment:
 # export KEEL_SESSION_SECRET=$(openssl rand -base64 32)
+# and RevenueCat's webhook signing secret (any value locally; the real one is in RevenueCat's dashboard, ADR-056):
+# export KEEL_REVENUECAT_WEBHOOK_SECRET=$(openssl rand -hex 32)
 keel:
   apple:
     client-id: app.keel.local

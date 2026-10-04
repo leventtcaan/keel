@@ -113,6 +113,16 @@ keel:
   subscription:
     quota-cleanup: "0 15 18 * * *"
     quota-cleanup-zone: UTC
+    # RevenueCat's webhook (K-701, ADR-056): the signing secret from the environment (V5; no secret, no start); 5 minutes
+    # either way of our clock (the docs' example tolerance); an event is a few KB. The entitlement and the store
+    # environments: ADR-012 addendum 1 — "premium" is a proposal until RevenueCat is set up; SANDBOX (TestFlight's
+    # purchases) goes at the store launch.
+    revenuecat:
+      webhook-secret: ${KEEL_REVENUECAT_WEBHOOK_SECRET}
+      signature-tolerance: 5m
+      entitlement: premium
+      environments: [PRODUCTION, SANDBOX]
+      max-body-bytes: 65536
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:
