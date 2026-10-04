@@ -2593,24 +2593,45 @@ tasks:
     learn: []
 
 # ───────────────────────────── M6 · İlerleme ─────────────────────────────
+  - id: K-614
+    title: "İlerleme fotoğrafı kütüphanesi (yalnız cihazda) ve 4 haftalık pencere (K-601'den bölündü)"
+    milestone: M6
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-301]
+    why: "Fotoğraf hiçbir zaman ağa gitmez (V1); hatırlatma sabit gün değil pencere (H1 §2.5) — çekim ekranı (K-601) ve çıpa (K-602) buna dayanır"
+    acceptance:
+      - "Fotoğraflar uygulamanın belge klasöründe (expo-file-system), poz başına (ön/yan) gün adıyla; aynı gün aynı poz yenisiyle değişir"
+      - "Hepsini silme (onboarding sözü: 'Delete them here and they're gone'); çıkışta ve hesap silinince cihazdan silinir"
+      - "Pencere: son fotoğraftan photo_interval_weeks sonra açılır ve çekilene kadar açık kalır; ilk fotoğraf ilk sekiz haftanın 4. haftasında (ya da akış bitmişse) — suçlama/kaçırma dili yok (U7)"
+      - "Hatırlatma uygulama içinde (İlerleme kartı); bildirim türü eklenmez (ADR-036 üç tür) — bildirim sorusu Levent'e"
+    tests:
+      - "PhotoLibraryTests"
+      - "PhotoWindowTests"
+      - "Fotoğrafın ağa gitmediğini gösteren test (fetch, API istemcisi, File.upload hiç çağrılmaz; kaynak taraması)"
+    refs: ["arastirma/ham/H1-olcum.md#2.5", "arastirma/ham/H1-olcum.md#2.6", "plan/kararlar/ADR-036-bildirimler.md"]
+    learn: ["Yerel dosya depolama", "Pencere mantığı"]
+
   - id: K-601
-    title: "Rehberli ilerleme fotoğrafı (cihazda)"
+    title: "Rehberli ilerleme fotoğrafı (cihazda): çekim ekranı (depolama ve pencere K-614)"
     milestone: M6
     module: mobile
     type: feature
     size: M
     status: todo
-    depends_on: [K-301]
+    depends_on: [K-301, K-614]
     why: "Poz normalizasyonu hatayı ~%50 azaltır (Wong 2021)"
     acceptance:
       - "Önceki fotoğrafın soluk silueti, eğim göstergesi, çerçeve kılavuzu"
-      - "Fotoğraf yalnız cihazda saklanır (V1)"
-      - "4 haftada bir hatırlatma, sabit gün değil pencere"
+      - "Fotoğraf yalnız cihazda saklanır (V1) — K-614 kütüphanesine"
+      - "Ön + yan iki poz (H1 §2.4); kamera yoksa (simülatör) galeriden seçme yolu"
     tests:
       - "CaptureFlowTests"
       - "Fotoğrafın ağa gitmediğini gösteren test"
-    refs: ["arastirma/ham/H1-olcum.md", "arastirma/ham/I2-etkilesim-modeli.md#8.8"]
-    learn: ["Kamera API", "Sensör (eğim)", "Yerel dosya depolama"]
+    refs: ["arastirma/ham/H1-olcum.md#2.4", "arastirma/ham/I2-etkilesim-modeli.md#8.8"]
+    learn: ["Kamera API", "Sensör (eğim)"]
 
   - id: K-602
     title: "Karşılaştırma çıpası"
@@ -2619,7 +2640,7 @@ tasks:
     type: feature
     size: S
     status: todo
-    depends_on: [K-601]
+    depends_on: [K-601, K-614]
     why: "İnsan dünü hatırlar, başlangıcı hatırlamaz (Levent, 10 Eyl)"
     acceptance:
       - "Day 1 / N hafta önce / bugün seçici"
