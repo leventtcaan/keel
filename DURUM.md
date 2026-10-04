@@ -693,10 +693,10 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 | K-806 AI sağlayıcı şartları — üç aday resmî metinden (4 Eki); politika: yalnız eğitim yok + sıfır saklama, istisnalar adıyla yazılacak. İnceleme: alıntılar canlı sayfayla doğru; OpenAI cümlesi tam, ZDR istisnası (işaretlenen görsel) | ✅ birleşti | #378 | `M8/K-806.md` |
 | K-803 App Privacy etiketi + yaş anketi (9+ hesaplanır, **18+ override zorunlu** — Apple, şartlar 18+). İnceleme: Usage Data eklendi, "Medical" cevabı açık (M10) | ✅ birleşti | #380 | `M8/K-803.md` |
 | K-808 sağlık rızası metni (soru 57), sürüm 3 — RED CI'da (sunucu 2018/1, mobil 1); inceleme: metin geri çekmede silinen her şeyi ve içe aktarmayı söyler | ✅ birleşti | #377 | `M8/K-808.md` |
-| ADR-059 Ek 1 — sorumlu adı + sunucu bölgesi sayfalarda; kişi adı istisnası hiç çalışmıyordu (`plain()` alt çizgiyi siliyordu) → düzeltildi | ⏳ auto-merge | #381 | — |
+| ADR-059 Ek 1 — sorumlu adı + sunucu bölgesi sayfalarda; kişi adı istisnası hiç çalışmıyordu (`plain()` alt çizgiyi siliyordu) → düzeltildi | ✅ birleşti | #381 | — |
 
 **Part 1 ÇIKIŞ (4 Eki):**
-- **Birleşen:** K-801 #375 · K-808 #377 · K-806 #378 · K-809 #379 · K-803 #380 · ADR-059 Ek 1 #381 (auto-merge). `main`'e doğrudan: ADR-059 (+ Ek 1),
+- **Birleşen:** K-801 #375 · K-808 #377 · K-806 #378 · K-809 #379 · K-803 #380 · ADR-059 Ek 1 #381. `main`'e doğrudan: ADR-059 (+ Ek 1),
   ADR-060, K-808/K-809 kartları, K-805 → M11, M8-part2 güncellemesi, aktarım README 1-5. **Pages canlı:** `https://leventtcaan.github.io/keel/`
   (`privacy/`, `terms/`, `health/` → 200). Worktree'ler: kalıcı `../keel-main` + bu part'ın `../keel-k806`, `../keel-k808`, `../keel-k809`
   (dalları birleşti; `worktree remove` Part 2 başında, `branch -D` yasak — zararsız).
