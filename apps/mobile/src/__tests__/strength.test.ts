@@ -23,8 +23,12 @@ const set = (exerciseId: string, loadKg: number, reps: number, rir?: number, set
   reps,
   ...(rir === undefined ? {} : { rir }),
 });
-// Noon UTC: the same calendar day on any phone from UTC−11 to UTC+11.
-const session = (day: string, sets: NewSet[]): Session => ({ clientId: `w${(n += 1)}`, startedAt: `${day}T12:00:00Z`, sets });
+// Noon on the phone's own clock: that calendar day in any time zone.
+const localNoon = (day: string) => {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d, 12).toISOString();
+};
+const session = (day: string, sets: NewSet[]): Session => ({ clientId: `w${(n += 1)}`, startedAt: localNoon(day), sets });
 
 describe('the windows', () => {
   test('a week starts on Monday', () => {
@@ -185,18 +189,11 @@ describe('the lifts it draws', () => {
 });
 
 describe('the day is the phone calendar day', () => {
-  const zone = process.env.TZ;
-  // A phone in Istanbul (UTC+3): 00:30 on Monday Oct 5 is 21:30 on Sunday in UTC.
-  beforeAll(() => {
-    process.env.TZ = 'Europe/Istanbul';
-  });
-  afterAll(() => {
-    if (zone === undefined) delete process.env.TZ;
-    else process.env.TZ = zone;
-  });
-
-  test('a session just after midnight on Monday is in Monday week', () => {
-    const early = { clientId: 'early', startedAt: '2026-10-04T21:30:00Z', sets: [set('bench', 50, 5, 1)] };
-    expect(strengthPoints('bench', [early], TODAY).map((p) => p.week)).toEqual(['2026-10-05']);
+  // Built from the phone's own clock, so the test holds in any time zone: in Istanbul (UTC+3) 00:30 on Monday is still
+  // Sunday in UTC, and a day read from the UTC string would put the session in the week before.
+  test('a session just after midnight on Monday is in Monday week; one just before, in the week before', () => {
+    const at = (hour: number, day: number) => ({ clientId: `t${day}`, startedAt: new Date(2026, 9, day, hour, 30).toISOString(), sets: [set('bench', 50, 5, 1)] });
+    expect(strengthPoints('bench', [at(0, 5)], TODAY).map((p) => p.week)).toEqual(['2026-10-05']);
+    expect(strengthPoints('bench', [at(23, 4)], TODAY).map((p) => p.week)).toEqual(['2026-09-28']);
   });
 });

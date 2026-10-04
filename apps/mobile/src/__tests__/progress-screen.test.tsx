@@ -42,11 +42,16 @@ const set = (exerciseId: string, loadKg: number, reps: number, rir?: number) => 
   reps,
   ...(rir === undefined ? {} : { rir }),
 });
+// Noon on the phone's own clock: that calendar day in any time zone.
+const localNoon = (day: string) => {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d, 12).toISOString();
+};
 const workout = (day: string, sets: ReturnType<typeof set>[]): Schemas['Workout'] => ({
   id: `w-${day}`,
   clientId: `c-${day}`,
-  startedAt: `${day}T12:00:00Z`,
-  endedAt: `${day}T13:00:00Z`,
+  startedAt: localNoon(day),
+  endedAt: localNoon(day),
   sets,
 });
 // Bench: 96 → 98.7 → 102 → 104 (estimated 1RM: 80 kg for 5 at RIR 1 is 80 × 36/30 = 96). The week of Sep 14 is the same
@@ -189,7 +194,7 @@ test('the projection way in stays on the tab and opens the projection (K-606)', 
 
 test('the server not reachable: what is on this phone, said so', async () => {
   mockHistory = { state: 'failed', problem: 'NoConnection' };
-  const finished = { kind: 'workout', clientId: 'local', seq: 1, state: 'PENDING', body: { clientId: 'local', startedAt: '2026-09-30T12:00:00Z' } };
+  const finished = { kind: 'workout', clientId: 'local', seq: 1, state: 'PENDING', body: { clientId: 'local', startedAt: localNoon('2026-09-30') } };
   const local = { kind: 'set', clientId: 'ls', parentClientId: 'local', seq: 2, state: 'PENDING', body: set('bench_press', 80, 5, 1) };
   mockRecords = [finished, local] as unknown as LocalRecord[];
   await show();
