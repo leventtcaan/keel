@@ -187,7 +187,8 @@ class AccountDataTests {
         // The engine's internal fat estimate is in the user's own export, as the call kept it (ADR-063 #1, GDPR Art. 15): an
         // input of the rules, never shown as a number in the app (U4 holds for every screen and text).
         assertThat((List<Map<String, Object>>) decision.get("calls")).singleElement()
-                .satisfies(call -> assertThat((Map<String, Object>) call.get("snapshot")).containsKeys("fatProxyPct", "fatProxyHighPct", "fatProxyEnergyPct"));
+                .satisfies(call -> assertThat((Map<String, Object>) call.get("snapshot")).containsKeys("fatProxyPct", "fatProxyHighPct", "fatProxyEnergyPct")
+                        .extractingByKey("fatProxyPct").as("the fixture's waist and look make an estimate").isNotNull());
         // A call's reasons go out with the kind of source only (K-523, ADR-041 #72): no research path, even to the user.
         assertThat(body).doesNotContain("arastirma/");
         // The AI consent is the provider and the data it may send (V2): both halves of what the user agreed to.
