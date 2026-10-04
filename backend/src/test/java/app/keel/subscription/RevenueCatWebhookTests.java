@@ -339,17 +339,17 @@ class RevenueCatWebhookTests {
     }
 
     @Test
-    void theExportOfAnAccountWithoutASubscriptionSaysSo() {
+    void theExportOfAnAccountWithoutASubscriptionHasNoPartForIt() {
         AccountId account = account();
 
+        // The export shows what is kept (as the daily uses do, QuotaCleanupTests): nothing kept, no entry.
         @SuppressWarnings("unchecked")
         Map<String, Object> exported = (Map<String, Object>) data.export(account);
-        assertThat(exported).containsEntry("subscription", null);
-        assertThat((List<?>) exported.get("subscriptionEvents")).isEmpty();
+        assertThat(exported).doesNotContainKeys("subscription", "subscriptionEvents");
     }
 
     @Test
-    void theSubscriptionGoesWithTheAccountAndIsInItsExport() {
+    void theSubscriptionGoesWithTheAccountAndIsInItsExport() throws Exception {
         AccountId account = account();
         Instant later = now.plusSeconds(60);
         Map<String, Object> cancel = TestWebhooks.event(id(), "CANCELLATION", account, later, monthLater);
@@ -364,7 +364,12 @@ class RevenueCatWebhookTests {
         assertThat((List<Object>) exported.get("subscriptionEvents")).containsExactly(Map.of("type", "INITIAL_PURCHASE", "at", now.toString()),
                 Map.of("type", "CANCELLATION", "at", later.toString()));
 
+        // The listener runs after its own commit, on another thread (ApplicationModuleListener): waited for, a few seconds at most.
         data.on(new app.keel.shared.AccountDeletionRequested(account));
+        long until = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+        while ((rows("subscription.subscription", account) > 0 || rows("subscription.webhook_event", account) > 0) && System.nanoTime() < until) {
+            Thread.sleep(50);
+        }
 
         assertThat(rows("subscription.subscription", account)).isZero();
         assertThat(rows("subscription.webhook_event", account)).isZero();

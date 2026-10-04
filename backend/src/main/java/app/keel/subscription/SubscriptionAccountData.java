@@ -6,6 +6,7 @@ import app.keel.shared.AccountId;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -47,21 +48,25 @@ class SubscriptionAccountData implements AccountDataExport {
                     entry.put("used", row.getInt("used"));
                     return entry;
                 }).list());
-        section.put("subscription", jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account")
+        // What is kept, nothing more: an account without a subscription has no part for it (no empty entries).
+        jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account")
                 .param("account", account.value()).query((row, n) -> {
                     Map<String, Object> entry = new LinkedHashMap<>();
                     entry.put("status", row.getString("status"));
                     entry.put("accessUntil", row.getObject("access_until", OffsetDateTime.class).toInstant().toString());
                     entry.put("lastEventAt", row.getObject("last_event_at", OffsetDateTime.class).toInstant().toString());
                     return entry;
-                }).optional().orElse(null));
-        section.put("subscriptionEvents", jdbc.sql("select type, event_at from subscription.webhook_event where account_id = :account order by event_at, type")
+                }).optional().ifPresent(subscription -> section.put("subscription", subscription));
+        List<Map<String, Object>> events = jdbc.sql("select type, event_at from subscription.webhook_event where account_id = :account order by event_at, type")
                 .param("account", account.value()).query((row, n) -> {
                     Map<String, Object> entry = new LinkedHashMap<>();
                     entry.put("type", row.getString("type"));
                     entry.put("at", row.getObject("event_at", OffsetDateTime.class).toInstant().toString());
                     return entry;
-                }).list());
+                }).list();
+        if (!events.isEmpty()) {
+            section.put("subscriptionEvents", events);
+        }
         return section;
     }
 }
