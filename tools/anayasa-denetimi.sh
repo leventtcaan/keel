@@ -21,6 +21,7 @@ MOBILE_SUITES=(
   share-card.test.ts
   parameters.test.ts
   routes-protected.test.ts
+  kv-keys.test.ts
 )
 (cd apps/mobile && npx --no-install jest --ci "${MOBILE_SUITES[@]/#/src/__tests__/}")
 

@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-10-04",
+ "updated": "2026-10-05",
  "about": "Every piece of data the product keeps or sends, derived from the code (K-801, ADR-060). tools/test_veri_envanteri.py binds it to the migrations, the app's permissions, plugins, Apple Health types and dependencies, the server's AI provider setting, and the privacy policy.",
  "apple_data_types": {
   "source": "https://developer.apple.com/app-store/app-privacy-details/ (2026-10-04)",
@@ -1035,8 +1035,11 @@
   ],
   "stored": [
    {
-    "what": "Progress photos (Documents/progress-photos), never uploaded; part of the phone's own iCloud Backup until K-618",
-    "policy": "data-photos"
+    "what": "Progress photos (Documents/progress-photos), never uploaded; part of the phone's own iCloud Backup until K-618; and whose account they belong to",
+    "policy": "data-photos",
+    "kv_keys": [
+     "photos.owner"
+    ]
    },
    {
     "what": "Session tokens in the Keychain (this device only)",
@@ -1047,8 +1050,38 @@
     "policy": "data-on-phone"
    },
    {
-    "what": "Settings and states on the phone: units, consents, reminders and your reminder sentence, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache",
-    "policy": "data-on-phone"
+    "what": "Settings and states on the phone: units, consents, reminders and your reminder sentence, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), Apple Health write switches and which Apple Health days were sent, onboarding done, the profile's sex (for the muscle map's figure), the last days the app was opened (never sent: a long gap, reminders' timing)",
+    "policy": "data-on-phone",
+    "kv_keys": [
+     "consent.*",
+     "health.activityDaysSent",
+     "healthWrite.weighIns",
+     "healthWrite.workouts",
+     "keel.opens",
+     "onboarded",
+     "profile.figure",
+     "projection.access",
+     "projection.last",
+     "projection.on",
+     "reminders.cue",
+     "reminders.enabled",
+     "reminders.lastOpened",
+     "reminders.restUntil",
+     "reminders.schedule",
+     "state.current",
+     "subscription.gate",
+     "subscription.trialReminder",
+     "train.exercises",
+     "train.gym",
+     "train.history",
+     "train.own",
+     "train.program",
+     "train.setup",
+     "units"
+    ],
+    "survives_sign_out": [
+     "projection.access"
+    ]
    },
    {
     "what": "Local notifications (reminders, rest timer, trial reminder) — no push token",

@@ -128,7 +128,10 @@ Health stays in Apple Health (you can delete it in the Health app).
 
 To work offline, the app keeps a copy of what you log until it is sent, and keeps your settings and reminders on the
 phone: units, consents, reminders (including the sentence you wrote for them), your declared state, the result of the
-eating-pattern check (your answers are never stored), progress projections and a trial reminder if you asked for one.
+eating-pattern check (your answers are never stored), progress projections and a trial reminder if you asked for one. It
+also keeps a copy of your program, exercises, gym and training history for training offline; your Apple Health switches
+and which days' steps it already sent; whether you finished setting up; the sex in your profile, to draw the muscle map;
+and the last days you opened the app (never sent), to notice a long gap and to time reminders.
 Your session is kept in the iPhone Keychain, on this device only. Notifications are local: the app has no push service.
 Signing out or deleting your account clears all of this from the phone, with one exception: if the eating-pattern check
 said projections aren't available, that result stays on the phone, so signing out doesn't reopen them.
