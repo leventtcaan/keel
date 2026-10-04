@@ -7,6 +7,7 @@ import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import app.keel.subscription.TestWebhooks;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -70,7 +71,9 @@ class EntitlementGuardTests {
             assertThat(code(refused)).isEqualTo("ENTITLEMENT_REQUIRED");
         }
         assertThat(fake.requests()).isEmpty();
-        assertThat(used(account)).isZero();
+        // Not taken and given back: not even a row.
+        assertThat(jdbc.sql("select count(*) from subscription.daily_use where account_id = :a").param("a", account.value())
+                .query(Integer.class).single()).isZero();
     }
 
     @Test
@@ -80,6 +83,13 @@ class EntitlementGuardTests {
         TestSessions.bearer(context, account);
 
         assertThat(List.of(parse(account), photo(account))).allSatisfy(refused -> assertThat(code(refused)).isEqualTo("ENTITLEMENT_REQUIRED"));
+        // The coach too: a call to tell, the health consent, but neither the AI consent nor a subscription.
+        AccountId withCall = withACall();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", withCall.value())
+                .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
+        assertThat(code(ask(withCall))).isEqualTo("ENTITLEMENT_REQUIRED");
         // A photo that is no photo is not even looked at.
         MvcTestResult notAPhoto = send(account, "/v1/meals/photo", Map.of("image", Base64.getEncoder().encodeToString("not a picture".getBytes())));
         assertThat(code(notAPhoto)).isEqualTo("ENTITLEMENT_REQUIRED");
@@ -100,19 +110,62 @@ class EntitlementGuardTests {
     void aSubscriptionThatEndedOrWasRefundedPaysForNothingMore() throws Exception {
         AccountId expired = withACall();
         AccountId refunded = withACall();
-        Instant now = Instant.now();
-        TestWebhooks.send(mvc, context, TestWebhooks.event("evt-" + UUID.randomUUID(), "INITIAL_PURCHASE", expired, now.minus(Duration.ofDays(40)),
-                now.minus(Duration.ofDays(10))));
-        TestWebhooks.subscribe(mvc, context, refunded);
-        Map<String, Object> refund = TestWebhooks.event("evt-" + UUID.randomUUID(), "CANCELLATION", refunded, now.plusMillis(1),
+        AccountId endingSoon = withACall();
+        Instant now = context.getBean(Clock.class).instant();
+        // Ended an hour ago; bought a minute ago and refunded a second ago (the refund after the purchase, both past);
+        // and one that ends in an hour, which still pays — the time asked about is now, not a day off either way.
+        assertThat(TestWebhooks.send(mvc, context, TestWebhooks.event("evt-" + UUID.randomUUID(), "INITIAL_PURCHASE", expired,
+                now.minus(Duration.ofDays(30)), now.minus(Duration.ofHours(1))))).hasStatusOk();
+        assertThat(TestWebhooks.send(mvc, context, TestWebhooks.event("evt-" + UUID.randomUUID(), "INITIAL_PURCHASE", refunded,
+                now.minusSeconds(60), now.plus(Duration.ofDays(30))))).hasStatusOk();
+        Map<String, Object> refund = TestWebhooks.event("evt-" + UUID.randomUUID(), "CANCELLATION", refunded, now.minusSeconds(1),
                 now.plus(Duration.ofDays(30)));
         refund.put("cancel_reason", "CUSTOMER_SUPPORT");
-        TestWebhooks.send(mvc, context, refund);
+        assertThat(TestWebhooks.send(mvc, context, refund)).hasStatusOk();
+        assertThat(TestWebhooks.send(mvc, context, TestWebhooks.event("evt-" + UUID.randomUUID(), "INITIAL_PURCHASE", endingSoon,
+                now.minus(Duration.ofDays(30)), now.plus(Duration.ofHours(1))))).hasStatusOk();
         fake.answer("{\"topic\":\"WHY\"}");
 
         assertThat(code(ask(expired))).isEqualTo("ENTITLEMENT_REQUIRED");
         assertThat(code(ask(refunded))).isEqualTo("ENTITLEMENT_REQUIRED");
         assertThat(fake.requests()).isEmpty();
+        assertThat(ask(endingSoon)).hasStatusOk();
+        assertThat(fake.requests()).hasSize(1);
+    }
+
+    @Test
+    void atTheDailyLimitWithoutASubscriptionItIsStillThePaywall() throws Exception {
+        // The subscription before the day's count: past the limit an unsubscribed user is not told "tomorrow" (or given
+        // an empty draft) — and no use is taken and given back, so not even a row is written.
+        AccountId account = withACall();
+        AccountId fresh = withACall();
+        for (String use : List.of("COACH_MESSAGE", "PHOTO_ANALYSIS")) {
+            jdbc.sql("insert into subscription.daily_use (account_id, day, use, used) values (:a, :day, :use, 1000)").param("a", account.value())
+                    .param("day", java.time.LocalDate.now(java.time.ZoneOffset.UTC)).param("use", use).update();
+        }
+
+        for (MvcTestResult refused : List.of(ask(account), parse(account), photo(account), ask(fresh), parse(fresh), photo(fresh))) {
+            assertThat(code(refused)).isEqualTo("ENTITLEMENT_REQUIRED");
+        }
+        assertThat(jdbc.sql("select count(*) from subscription.daily_use where account_id = :a").param("a", fresh.value())
+                .query(Integer.class).single()).isZero();
+    }
+
+    @Test
+    void aCallTheEngineAloneTellsNeedsNoSubscription() throws Exception {
+        // The safety label (V4): never the model's to tell, so nothing is paid for — the call as it stands.
+        AccountId account = withACall();
+        jdbc.sql("update decision.weekly_call set decision = decision || '{\"safety\": true}'::jsonb where account_id = :a")
+                .param("a", account.value()).update();
+
+        MvcTestResult answer = ask(account);
+
+        assertThat(answer).hasStatusOk();
+        assertThat(JSON.readValue(answer.getResponse().getContentAsString(), Map.class)).containsEntry("mode", "DETERMINISTIC")
+                .containsEntry("copyKey", "coach.answer.call").containsKey("call");
+        assertThat(fake.requests()).isEmpty();
+        // A call that is not there is still not found, subscription or not.
+        assertThat(send(account, "/v1/coach/messages", Map.of("text", "Why?", "decisionId", UUID.randomUUID()))).hasStatus(404);
     }
 
     @Test
