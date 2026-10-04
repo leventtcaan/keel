@@ -108,12 +108,14 @@ class AppleRevocationTests {
         String subject = "apple." + UUID.randomUUID();
         AccountId account = account(subject);
         FAKE.idToken = APPLE.signed(subject, Instant.now(), claims -> claims);
+        // This test's own code: another test's failure prints its request, and that print is no log of ours.
+        String code = "c0de-" + UUID.randomUUID();
 
-        assertThat(revoke(account, CODE)).hasStatus(204);
+        assertThat(revoke(account, code)).hasStatus(204);
 
         assertThat(FAKE.requests).extracting(Request::path).containsExactly("/auth/token", "/auth/revoke");
         Map<String, String> token = FAKE.requests.get(0).form();
-        assertThat(token).containsEntry("grant_type", "authorization_code").containsEntry("code", CODE)
+        assertThat(token).containsEntry("grant_type", "authorization_code").containsEntry("code", code)
                 .containsEntry("client_id", AppleTestTokens.CLIENT_ID);
         Map<String, String> revoke = FAKE.requests.get(1).form();
         assertThat(revoke).containsEntry("token", REFRESH).containsEntry("token_type_hint", "refresh_token")
@@ -124,7 +126,7 @@ class AppleRevocationTests {
             assertThat(secret.getJWTClaimsSet().getSubject()).isEqualTo(AppleTestTokens.CLIENT_ID);
         }
         // Nothing of Apple's is written down: not the code, not the tokens, not the secret.
-        assertThat(log).doesNotContain(CODE).doesNotContain(REFRESH).doesNotContain(FAKE.requests.get(0).form().get("client_secret"));
+        assertThat(log).doesNotContain(code).doesNotContain(REFRESH).doesNotContain(FAKE.requests.get(0).form().get("client_secret"));
     }
 
     @Test
