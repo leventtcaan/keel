@@ -12,7 +12,7 @@ the app's code: every table our server keeps is listed in a data inventory that 
 
 **The short version.** We keep only what the coaching needs. Your progress photos never leave your phone. We don't ask Apple
 for your name or email. We never sell your data, never use it for ads, and don't track you across other apps or websites.
-You can export everything or delete your account in Settings at any time.
+You can export your data or delete your account in Settings at any time.
 
 ## Who is responsible {#controller}
 
@@ -26,7 +26,8 @@ No data protection officer has been appointed.
 - **Your Apple user id for this app.** Sign in with Apple gives us a stable id that only this app sees. We ask Apple for no
   name and no email. We keep the id and when the account was made.
 - **Your sessions.** When you sign in we issue tokens; the server keeps only a one-way fingerprint (SHA-256) of each
-  refresh token, so a copy of our database can't be used to sign in. A session lasts up to 60 days.
+  refresh token, so a copy of our database can't be used to sign in. Sign-in tokens last 15 minutes and are renewed
+  with the refresh token; a session ends after 60 days without use, when you sign out, or when you delete your account.
 
 *Why:* to run your account (contract). *How long:* until you delete your account.
 
@@ -54,9 +55,13 @@ Health data is a special category under the GDPR (Art. 9). The app keeps it only
 - a day's steps, sleep minutes and active energy, if you connect Apple Health;
 - your meals and saved recipes, with the calorie and macro ranges estimated when you logged them;
 - your plan (phase, daily calorie and step targets), and every weekly call with the data it was made from, so you can see
-  why it was made and undo it;
+  why it was made and undo it. Each call also keeps an internal estimate the rules computed from your waist and the look you
+  picked; it is never shown as a number anywhere, including the export;
 - what you told the app about your life (travelling, sick, pain, busy, new gym), with dates;
 - your answers to the coach's questions (for example about hunger or missed sessions).
+
+When energy intake looks too low, the app may ask whether your period has stopped. The answer is used for that week's
+call only and is **never kept**.
 
 *Why:* to make your weekly calls and show your progress — nothing else. *How long:* until you withdraw the consent or delete
 your account, whichever comes first. Withdrawing deletes all of the above for good (a second pass a few minutes later
@@ -68,24 +73,24 @@ Your workouts and sets (move, set type, load, reps, reps in reserve, side, super
 history, lighter weeks and weeks off applied by a call, your gyms and their equipment, and moves you added yourself.
 
 *Why:* to coach your training (contract). The training log doesn't count as health data and doesn't need the health data
-consent, so withdrawing that consent leaves it in place. *How long:* until you delete your account.
+consent, so withdrawing that consent leaves it in place. Importing past sessions from another app does need it, because
+the import can carry body weight; imported sessions then stay in the training log like the rest. *How long:* until you delete your account.
 
 ### Your subscription {#data-subscription}
 
 - **Subscription state:** status (trial, active, cancelled…), until when you have access, when it last changed, and which
   RevenueCat events were applied (id, type, time), so none is applied twice. No price, country or payment data.
-- **Daily use:** how many coach messages and meal photo analyses you used that day — a count, no content. Cleared every
-  night after your day ends.
+- **Daily use:** how many coach messages and meal photo analyses you used each day — a count, no content. A day's count
+  is kept through the following day, then deleted by a nightly cleanup (at most about three days).
 
-*Why:* to give you what you paid for and keep the daily limits fair (contract). *How long:* the state until you delete your
-account; daily counts until the next nightly cleanup.
+*Why:* to give you what you paid for and keep the daily limits fair (contract). *How long:* the state until you delete your account; daily counts as above.
 
 ### Technical records {#data-technical}
 
 - When you delete your account or withdraw the health data consent, a short-lived record (only a random account number,
   which consent, and when) drives a second deletion pass; it is removed after that pass, about 10 minutes later.
-- Our server passes "account deleted" and "consent withdrawn" messages between its parts through an internal event log, so
-  a deletion survives a restart. Each entry holds only the random account number. These entries are currently kept after
+- Our server passes "account deleted" messages between its parts through an internal event log, so a deletion survives
+  a restart. Each entry holds only the random account number. These entries are currently kept after
   they are handled; we are changing this so they are removed once handled.
 - Our server's logs record each request's route, status and timing. They never record your account, what you sent, or any
   health data.
@@ -100,8 +105,8 @@ The food database comes from USDA FoodData Central (public domain). It holds no 
 
 ### Apple Health {#data-apple-health}
 
-If you connect Apple Health (a separate consent, on top of the health data consent), the app reads steps, sleep, body
-weight and active energy. It does not read heart data, cycle data, medications, health records or location. If you turn it
+If you connect Apple Health (a separate consent, on top of the health data consent), the app reads steps, sleep, body weight and active energy. It also asks for access to workouts logged in other apps, which
+it doesn't read yet. It does not read heart data, cycle data, medications, health records or location from Apple Health. If you turn it
 on in Settings, it writes your logged workouts and weigh-ins to Apple Health. Withdrawing the Apple Health consent stops
 reading; what was already sent to our server stays under the health data consent above, and what was written to Apple
 Health stays in Apple Health (you can delete it in the Health app).
@@ -109,8 +114,8 @@ Health stays in Apple Health (you can delete it in the Health app).
 ### Photos and the camera {#data-photos}
 
 - **Progress photos stay on your phone.** They are stored in the app's own folder, never uploaded, and only what you
-  conclude from them (better, same or worse) is sent. If your phone is backed up to iCloud, that backup is between you and
-  Apple and may include them.
+  conclude from them (better, same or worse) is sent. If your phone is backed up to iCloud, that backup is between you and Apple and may include them.
+  Signing out or deleting your account deletes them from the phone, so save the ones you want first.
 - The camera is used for barcodes, meal photos and progress photos; the photo library to pick a meal or progress photo.
   The microphone is never used.
 - A meal photo is sent only when you choose to analyze it, and only once the AI coach is active (see below).
@@ -130,7 +135,8 @@ said projections aren't available, that result stays on the phone, so signing ou
   Store, under Apple's own privacy policy.
 - **RevenueCat** (RevenueCat, Inc., United States) — handles subscriptions for us. It receives your account's random id (no
   name, no email, no health data) and, from its software in the app, your App Store purchase record, store country and
-  currency, device and iOS version, and IP address. It is set up only when you open the plans or subscription settings.
+  currency, device and iOS version, and IP address. It is set up when the plans are shown (every new account sees them after onboarding) and when you restore or
+  manage a subscription.
   Transfers from the EU rely on the EU Standard Contractual Clauses in RevenueCat's data processing terms.
 - **Contabo** (Contabo GmbH, Germany) — our hosting provider: the server and database run on its hardware. Server
   location: {{ site.server_region }}.
@@ -153,8 +159,7 @@ You can withdraw the AI consent at any time in Settings.
 ## How the weekly call is made {#automated-calls}
 
 Once a week the app computes a call — keep going, adjust calories or steps, lighten training, and so on — from your logs by
-fixed, published rules. Every call shows "Why this call": the data it used and the rules behind it. You decide whether to
-apply it, and you can undo it. The app can also say it has no call yet when the data isn't enough.
+fixed, published rules. Every call shows "Why this call": the data it used and the rules behind it. You decide whether to apply it, and you can undo most calls (a safety stop can't be undone). The app can also say it has no call yet when the data isn't enough.
 
 ## Your rights {#rights}
 

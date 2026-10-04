@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "updated": "2026-10-04",
- "about": "Every piece of data the product keeps or sends, derived from the code (K-801, ADR-060). tools/test_veri_envanteri.py binds it to the migrations, the app's permissions, the privacy policy and the App Store label draft.",
+ "about": "Every piece of data the product keeps or sends, derived from the code (K-801, ADR-060). tools/test_veri_envanteri.py binds it to the migrations, the app's permissions, plugins, Apple Health types and dependencies, the server's AI provider setting, and the privacy policy.",
  "apple_data_types": {
   "source": "https://developer.apple.com/app-store/app-privacy-details/ (2026-10-04)",
   "types": [
@@ -47,7 +47,7 @@
    "table": "public.event_publication",
    "module": "shared",
    "class": "technical",
-   "purpose": "Module events (account deletion, consent withdrawal) kept until every module has handled them, so a deletion survives a restart.",
+   "purpose": "Account-deletion events kept until every module has handled them, so a deletion survives a restart.",
    "columns": [
     "id",
     "listener_id",
@@ -94,7 +94,7 @@
    "table": "identity.refresh_token",
    "module": "identity",
    "class": "account",
-   "purpose": "Signed-in sessions, stored only as SHA-256 hashes of the refresh tokens (60 days).",
+   "purpose": "Signed-in sessions, stored only as SHA-256 hashes of the refresh tokens; a session ends after 60 days without use (refresh-ttl), at sign-out or with the account.",
    "columns": [
     "id",
     "account_id",
@@ -321,7 +321,8 @@
    "policy": "data-training",
    "app_privacy": [
     "Health & Fitness › Fitness"
-   ]
+   ],
+   "note": "Importing past sessions (Strong/Hevy) needs HEALTH_DATA (WorkoutImportController); withdrawing it keeps them."
   },
   {
    "table": "training.workout_set",
@@ -852,7 +853,8 @@
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
-   ]
+   ],
+   "note": "The stored snapshot keeps the engine's internal fat estimate (fatProxy*), left out of the export (U4, DecisionAccountData); never the cycle answer (ADR-020 L-1, StoredSnapshotTests)."
   },
   {
    "table": "decision.declared_state",
@@ -925,7 +927,7 @@
    "exported": true,
    "policy": "data-subscription",
    "app_privacy": [],
-   "kept_for": "until the next nightly cleanup after your day ends"
+   "kept_for": "through the following day, then the nightly cleanup (QuotaCleanup, 18:15 UTC): at most about three days"
   },
   {
    "table": "subscription.subscription",
@@ -1027,7 +1029,63 @@
   "health_write": [
    "Workout",
    "BodyMass"
-  ]
+  ],
+  "info_plist": [],
+  "plugins": [
+   "@kingstinct/react-native-healthkit",
+   "expo-camera",
+   "expo-image-picker",
+   "expo-router",
+   "expo-secure-store",
+   "expo-sensors",
+   "expo-splash-screen",
+   "expo-sqlite"
+  ],
+  "dependencies": {
+   "@expo-google-fonts/barlow-condensed": null,
+   "@expo/ui": null,
+   "@kingstinct/react-native-healthkit": null,
+   "expo": null,
+   "expo-apple-authentication": "Apple",
+   "expo-camera": null,
+   "expo-constants": null,
+   "expo-crypto": null,
+   "expo-dev-client": null,
+   "expo-device": null,
+   "expo-file-system": null,
+   "expo-font": null,
+   "expo-glass-effect": null,
+   "expo-image": null,
+   "expo-image-manipulator": null,
+   "expo-image-picker": null,
+   "expo-linking": null,
+   "expo-network": null,
+   "expo-notifications": null,
+   "expo-router": null,
+   "expo-secure-store": null,
+   "expo-sensors": null,
+   "expo-splash-screen": null,
+   "expo-sqlite": null,
+   "expo-status-bar": null,
+   "expo-symbols": null,
+   "expo-system-ui": null,
+   "expo-web-browser": null,
+   "openapi-fetch": "our server",
+   "react": null,
+   "react-dom": null,
+   "react-native": null,
+   "react-native-body-highlighter": null,
+   "react-native-gesture-handler": null,
+   "react-native-nitro-modules": null,
+   "react-native-purchases": "RevenueCat",
+   "react-native-reanimated": null,
+   "react-native-safe-area-context": null,
+   "react-native-screens": null,
+   "react-native-svg": null,
+   "react-native-web": null,
+   "react-native-worklets": null
+  },
+  "dependencies_note": "Where each runtime dependency sends data off the phone, if anywhere; null = nowhere (on-device). expo-notifications is used for local notifications only (no push token)."
  },
  "outbound": [
   {
@@ -1041,8 +1099,8 @@
   },
   {
    "recipient": "RevenueCat",
-   "data": "Your account's random id; the RevenueCat SDK also receives the App Store purchase record, store country and currency, device and iOS version, and IP address.",
-   "when": "when the paywall or subscription settings open",
+   "data": "Your account's random id; the RevenueCat SDK also receives the App Store purchase record, store country and currency, device and iOS version, and IP address. [SDK data list from ADR-012 Ek 1; RevenueCat's privacy guide (4 Oct 2026) says it collects purchase history]",
+   "when": "when the plans are shown (every new account after onboarding — K-706 gate), on restore and on manage subscription",
    "basis": "contract",
    "active": true,
    "policy": "recipients",

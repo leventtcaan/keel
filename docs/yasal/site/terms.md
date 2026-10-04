@@ -35,8 +35,7 @@ before you start. You decide whether to apply a call; you are responsible for ho
 - **Refunds** are handled by Apple under its own rules: request one at reportaproblem.apple.com. We can't issue refunds
   ourselves.
 - Deleting your account doesn't cancel your subscription — cancel it with Apple too.
-- If your subscription ends, your logs, history and the weekly calls stay available; the coach's messages and meal photo
-  analysis stop. Some features have a fair daily limit, shown in the app.
+- If your subscription ends, your logs, history and the weekly calls stay available; the coach's answers, and reading meals you describe or photograph, stop. Some features have a fair daily limit, shown in the app.
 
 ## Your data {#data}
 

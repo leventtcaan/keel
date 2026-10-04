@@ -1,11 +1,15 @@
 # The legal pages (docs/yasal/site) on GitHub Pages: ADR-059 #3, ADR-060. GitHub's own Jekyll starter workflow
 # (actions/starter-workflows › pages/jekyll-gh-pages.yml), built from that folder only; actions pinned to a commit like ci.yml.
+# Docs may reach main without a PR (CLAUDE.md), so the build runs the two checks the pages answer to — the data inventory
+# and the forbidden-phrase scan — before anything is published. A pull request builds the pages; only main deploys them.
 name: Legal pages
 
 on:
   push:
     branches: [main]
-    paths: ["docs/yasal/site/**", ".github/workflows/pages.yml"]
+    paths: ["docs/yasal/**", "data/copy/forbidden-phrases.json", ".github/workflows/pages.yml"]
+  pull_request:
+    paths: ["docs/yasal/**", "data/copy/forbidden-phrases.json", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -23,14 +27,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Data inventory matches the code and the privacy policy (K-801)
+        run: python3 tools/test_veri_envanteri.py
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: No forbidden phrase or person's name in the pages (K-801)
+        working-directory: apps/mobile
+        run: npm ci && npx jest src/__tests__/forbidden-phrases.test.ts
+      - if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1.0.13
         with:
           source: ./docs/yasal/site
           destination: ./_site
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

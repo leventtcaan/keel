@@ -62,24 +62,43 @@ test('the scan reads every string in en.json', () => {
 });
 
 describe('legal texts (K-801, ADR-060)', () => {
-  // The published pages (docs/yasal/site): a health notice must say what the app does not do, so only the sentences in
-  // legalNegations — each a negation, each standing in a page — are taken out before the same rules run.
+  // The published site (docs/yasal/site): every page and the config whose values the pages show. A health notice must say
+  // what the app does not do, so only the sentences in legalNegations — each a negation of the very phrase a rule catches,
+  // each standing in a page — are taken out before the same rules run. Emphasis and tags are dropped first, so markup
+  // can't split a word the rules would catch.
   const dir = path.join(ROOT, 'docs/yasal/site');
-  const flat = (text: string) => text.replace(/\s+/g, ' ');
-  const pages = fs
-    .readdirSync(dir)
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => [name, flat(fs.readFileSync(path.join(dir, name), 'utf8'))] as const);
+  const walk = (d: string): string[] =>
+    fs.readdirSync(d, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory()) return walk(full);
+      return /\.(md|html|ya?ml)$/.test(entry.name) ? [full] : [];
+    });
+  const plain = (text: string) =>
+    text
+      .replace(/<[^>]+>/g, '')
+      .replace(/&[a-z]+;|&#\d+;/g, '')
+      .replace(/[*_`]/g, '')
+      .replace(/\s+/g, ' ');
+  const pages = walk(dir).map((file) => [path.relative(dir, file), plain(fs.readFileSync(file, 'utf8'))] as const);
   const negations = (forbidden as { legalNegations?: string[] }).legalNegations ?? [];
 
-  test('reads the pages', () => {
-    expect(pages.map(([name]) => name)).toEqual(expect.arrayContaining(['privacy.md', 'terms.md', 'health.md']));
+  test('reads every page and the config', () => {
+    expect(pages.map(([name]) => name).sort()).toEqual(['_config.yml', 'health.md', 'index.md', 'privacy.md', 'terms.md']);
   });
 
-  test.each(negations)('"%s" is a negation, needed, and stands in a page', (sentence) => {
-    expect(sentence).toMatch(/\b(not|never|no)\b/i);
-    expect(forbidden.rules.some((rule) => regex(rule).test(sentence))).toBe(true);
+  test.each(negations)('"%s" negates what the rules catch, and stands in a page', (sentence) => {
+    const hits = forbidden.rules.flatMap((rule) => [...sentence.matchAll(new RegExp(rule.pattern, 'gi'))]);
+    expect(hits.length).toBeGreaterThan(0);
+    for (const hit of hits) {
+      // The negation governs the hit: it stands before it in the same clause.
+      const clause = sentence.slice(0, hit.index).split(/[.;:!?]/).pop() ?? '';
+      expect(clause).toMatch(/\b(not|never|no)\b(?!\s+only)/i);
+    }
     expect(pages.some(([, text]) => text.includes(sentence))).toBe(true);
+  });
+
+  test('the negations are listed once each', () => {
+    expect(new Set(negations).size).toBe(negations.length);
   });
 
   test('no page contains a forbidden phrase outside those sentences', () => {
@@ -88,6 +107,16 @@ describe('legal texts (K-801, ADR-060)', () => {
       return forbidden.rules
         .filter((rule) => regex(rule).test(rest))
         .map((rule) => `${name} (${rule.rule} ${rule.id}): ${rest.match(regex(rule))?.[0]}`);
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  test('no page names a person (K-523)', () => {
+    // The controller's name, the law asks for, comes from _config.yml's controller_name only (ADR-060 #6).
+    const names = forbidden.personNames;
+    const offenders = pages.flatMap(([name, text]) => {
+      const scanned = name === '_config.yml' ? text.replace(/controller_name: "[^"]*"/, '') : text;
+      return (scanned.match(new RegExp(names.pattern, 'g')) ?? []).map((m) => `${name}: ${m}`);
     });
     expect(offenders).toEqual([]);
   });
