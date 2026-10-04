@@ -13,3 +13,4 @@
 
 ## Aktarım sırası (Part 2 · Denetimler ve teslim)
 6. K-802 silme + dışa aktarma uçtan uca, envantere bağlı (`K-802.md`) — `completion-mode`, "hiçbir sütunda" taraması, başarısız yayın, V34 testi, `export_key`
+7. K-804 anayasa denetimi tek komut, mağaza metni, rota koruması (`K-804.md`, ADR-061) — expo-router rota kaydı, `_sitemap`, Guideline 2.3

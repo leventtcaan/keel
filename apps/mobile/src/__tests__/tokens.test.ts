@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * Colour values live only in src/theme/tokens.ts (ADR-014, K2).
  * Any hex, rgb()/hsl(), PlatformColor() or named colour elsewhere in src fails this test.
