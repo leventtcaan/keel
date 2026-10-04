@@ -21,3 +21,4 @@
 11. K-604 efor grafiği ve iki pencere (`K-604.md`) — haftanın en iyi e1RM'i, halka, gerçek değerli etiket, pazartesiye hizalı pencere
 12. K-614 fotoğraf kütüphanesi ve pencere (`K-614.md`) — yalnız cihazda klasör, gerçek takvim günü, açık kalan pencere, ağa gitmediğinin üç kanıtı
 13. K-601 rehberli çekim (`K-601.md`) — soğan kabuğu, eğim matematiği, tek dokunuş tek fotoğraf, izin metni
+14. K-602 karşılaştırma çıpası (`K-602.md`) — kullanıcının seçtiği geçmiş nokta, aynı poz, yan yana/kaydırma, before/after yok
