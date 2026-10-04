@@ -1035,7 +1035,7 @@
   ],
   "stored": [
    {
-    "what": "Progress photos (Documents/progress-photos), never uploaded; part of the phone's own iCloud Backup until K-618; and whose account they belong to",
+    "what": "Progress photos (Documents/progress-photos), never uploaded; part of the phone's own iCloud Backup until K-618; and whose account they belong to (SHA-256 of the Apple user id)",
     "policy": "data-photos",
     "kv_keys": [
      "photos.owner"
@@ -1050,7 +1050,7 @@
     "policy": "data-on-phone"
    },
    {
-    "what": "Settings and states on the phone: units, consents, reminders and your reminder sentence, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), Apple Health write switches and which Apple Health days were sent, onboarding done, the profile's sex (for the muscle map's figure), the last days the app was opened (never sent: a long gap, reminders' timing)",
+    "what": "Settings and states on the phone: units, consents, reminders and your reminder sentence, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), Apple Health write switches and the steps, sleep and active energy of the recent days sent (up to 28, so none is sent twice), onboarding done, whether the account met the subscription screen, the profile's sex (for the muscle map's figure), the last days the app was opened (never sent: a long gap, reminders' timing)",
     "policy": "data-on-phone",
     "kv_keys": [
      "consent.*",
