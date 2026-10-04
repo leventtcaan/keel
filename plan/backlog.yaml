@@ -2620,7 +2620,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-614]
     why: "60 gün açılmayan uygulamada tek kopya fotoğraflar (Day 1 dahil) uyarısız gidiyordu; Levent (A) seçti"
     acceptance:
@@ -2912,7 +2912,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-608]
     why: "Kanalla köprü; before/after değil (L3 Y5)"
     acceptance:

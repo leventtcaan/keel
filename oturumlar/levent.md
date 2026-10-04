@@ -116,3 +116,11 @@
 - CI: soğuk ilk render 5 sn'yi aşıyordu (ölçüldü, `beforeAll`), saat dilimi fikstürleri yerel öğleden. Yeni bağımlılık `expo-sensors` (`motionPermission: false`).
 - Disk 2,3 GB, sunucu yok → simülatör turu yok. Sorular 97-101 (97 iCloud yedeği, 101 jeton reddinde silme — veri kararı).
 - Sıradaki: M6 Part 4 (K-609, K-612, M6 çıkışı) — `plan/oturum-promptlari/M6-part4.md`; aktarım M6 1-14 bekliyor.
+
+## 2026-10-04 · M6 Part 4 (İçe aktarma, paylaşım, teslim) — toplu mod
+- yaptım: K-609 bölündü → K-615 #354 (sunucu: toplu uç, içe aktarılan motorca okunmaz), K-616 #356 (Health kilo geçmişi + tartı "Year"), K-609 #357 (Strong/Hevy CSV, eşleme), K-612 #358 (paylaşım kartı), K-617 #362 (jeton reddinde fotoğraf kalır), metinler #361; M6 çıkışı; M7 prompt'ları
+- karar: ADR-053 (içe aktarılan görülür, karara girmez), ADR-054 (kart), ADR-055 (87-104 Levent: hepsi önerilen); H13 (Strong/Hevy biçimleri gerçek dosyalardan — üreticiler yayımlamıyor)
+- takıldım: içe aktarılan 3 haftalık kayıp ilk gün kalori kararı veriyordu (RED); "Assisted" barfiks emin eşleşiyordu; başarısız sahiplenme eski fotoğrafları gösteriyordu; RIR'sız set güç grafiğinde yok; disk 839 MB → 1,2 GB
+- sıradaki: Levent dönünce M6 Part 4 aktarımı (README 15-19; Part 1-3: 1-14); disk (Docker, önbellekler); K-308; sonra M7 Part 1
+- AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion, 87-104)
+
