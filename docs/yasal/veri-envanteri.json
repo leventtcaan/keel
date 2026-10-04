@@ -62,12 +62,12 @@
    "basis": "legitimate interest (Art. 6(1)(f)): keeping deletion and delivery reliable",
    "gated_by": null,
    "erased_by": [
-    "never"
+    "handled"
    ],
    "exported": false,
    "policy": "data-technical",
    "app_privacy": [],
-   "note": "Completed rows are kept (completion-mode update) and hold the deleted account's random id; purge belongs to K-802 (V1, ADR-023)."
+   "note": "A row is deleted once every listener has handled it (completion-mode delete, K-802); an unfinished or failed one stays until DeletionRetry finishes it. Holds only the deleted account's random id."
   },
   {
    "table": "identity.account",

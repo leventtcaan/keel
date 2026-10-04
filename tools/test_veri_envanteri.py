@@ -35,7 +35,7 @@ HEALTH_SCHEMAS = {"measurement", "nutrition", "decision"}
 REQUIRED_SECTIONS = {"controller", "recipients", "ai", "automated-calls", "rights", "age", "security", "changes"}
 
 CLASSES = {"health", "training", "account", "subscription", "technical", "reference"}
-ERASED_BY = {"account_deletion", "withdraw:HEALTH_DATA", "withdraw:APPLE_HEALTH", "withdraw:THIRD_PARTY_AI", "time", "never"}
+ERASED_BY = {"account_deletion", "withdraw:HEALTH_DATA", "withdraw:APPLE_HEALTH", "withdraw:THIRD_PARTY_AI", "time", "handled", "never"}
 NOT_A_COLUMN = {"primary", "unique", "check", "constraint", "foreign", "exclude"}
 NOT_A_TABLE_BODY = {"like"}  # create table … (like other): its columns are another table's
 
@@ -274,6 +274,14 @@ class InventoryMatchesTheMigrations(unittest.TestCase):
             if "account_id" in created[entry["table"]]:
                 with self.subTest(table=entry["table"]):
                     self.assertIn("account_deletion", entry["erased_by"])
+
+    def test_the_event_registry_is_erased_as_the_server_completes_it(self):
+        # "handled" means deleted once every listener has handled it: Modulith's completion-mode delete (K-802). The update
+        # mode keeps completed publications, each with a deleted account's id.
+        mode = re.search(r"^      completion-mode:\s*(\S+)", SERVER_CONFIG.read_text(encoding="utf-8"), re.M)
+        registry = next(e for e in inventory()["server"] if e["table"] == "public.event_publication")
+        self.assertEqual("handled" in registry["erased_by"], mode is not None and mode.group(1) == "delete")
+        self.assertIn("handled", registry["erased_by"])
 
 
 def _section(markdown, anchor):

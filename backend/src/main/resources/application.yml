@@ -30,6 +30,9 @@ spring:
       # this long and resent by DeletionRetry (K-214 review); on a restart every unfinished one is resent at once.
       # Module listeners are deletes and upserts: running one twice changes nothing.
       republish-outstanding-events-on-restart: true
+      # A publication every listener has handled is deleted, not kept as completed (K-802): a kept one held the deleted
+      # account's id for good (V1). Unfinished and failed ones stay until DeletionRetry finishes them.
+      completion-mode: delete
       staleness:
         published: 10m
         processing: 10m
