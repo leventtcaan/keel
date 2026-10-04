@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * Every copy key used in the app exists in data/copy/en.json (K2, ADR-010).
  * Catches t('literal.key') and template keys built from a known prefix, e.g. t(`screens.${screen}.title`)

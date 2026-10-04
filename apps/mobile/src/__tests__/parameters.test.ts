@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * The parameters the phone reads (data/parameters/*.json, ADR-029) keep the same provenance rule as the engine's YAML
  * (anayasa U14, data/parameters/README.md): every value has a unit, a tag and a source that exists — the file, and the

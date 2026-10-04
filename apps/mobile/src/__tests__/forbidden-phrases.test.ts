@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * No user-facing text breaks U4 (no body-fat number) or U6 (no medical language). The phrase list is data
  * (data/copy/forbidden-phrases.json, K2); every pattern proves itself against its examples before it is trusted.
@@ -7,6 +8,7 @@ import * as path from 'path';
 
 import en from '../../../../data/copy/en.json';
 import forbidden from '../../../../data/copy/forbidden-phrases.json';
+import store from '../../../../data/copy/store.en.json';
 
 type Json = { [key: string]: string | Json };
 type Rule = (typeof forbidden.rules)[number];
@@ -124,6 +126,48 @@ describe('legal texts (K-801, ADR-060)', () => {
     const config = 'title: Legal\ncontroller_name: "Levent X"\nnote: Levent\n';
     expect(withoutController(config)).not.toContain('Levent X');
     expect(plain(withoutController(config))).toMatch(new RegExp(forbidden.personNames.pattern));
+  });
+});
+
+describe('store texts (K-804, ADR-061)', () => {
+  // The App Store listing is product text too: the same rules as en.json, no exception for negations (a listing has no
+  // reason to name what the app is not), no person, and Apple's lengths.
+  const fields = ['subtitle', 'promotionalText', 'description', 'keywords'] as const;
+  const texts = fields.map((field) => [field, store[field]] as const);
+
+  test.each(texts)('%s is written', (_, text) => {
+    expect(text.trim().length).toBeGreaterThan(0);
+  });
+
+  test.each(texts)('%s carries no forbidden phrase', (_, text) => {
+    expect(forbidden.rules.filter((rule) => regex(rule).test(text)).map((rule) => `${rule.id}: ${text.match(regex(rule))?.[0]}`)).toEqual(
+      [],
+    );
+  });
+
+  test.each(texts)('%s names no person', (_, text) => {
+    expect(text.match(new RegExp(forbidden.personNames.pattern, 'g'))).toBeNull();
+  });
+
+  test("the limits are Apple's, not numbers to tune", () => {
+    // External facts (limits._source); a limit raised in the file would let any text through.
+    expect(store.limits).toEqual({ _source: store.limits._source, subtitle: 30, promotionalText: 170, description: 4000, keywordsBytes: 100 });
+  });
+
+  test.each(texts)('%s puts no currency on the daily limit (ADR-012)', (_, text) => {
+    expect(text.match(new RegExp(forbidden.quotaWords.pattern, 'gi'))).toBeNull();
+  });
+
+  test("each fits Apple's limit: characters, and bytes for the keywords", () => {
+    expect([...store.subtitle].length).toBeLessThanOrEqual(store.limits.subtitle);
+    expect([...store.promotionalText].length).toBeLessThanOrEqual(store.limits.promotionalText);
+    expect([...store.description].length).toBeLessThanOrEqual(store.limits.description);
+    expect(Buffer.byteLength(store.keywords, 'utf8')).toBeLessThanOrEqual(store.limits.keywordsBytes);
+  });
+
+  test('every field of the file is scanned', () => {
+    // A field added to the listing (whatsNew, a name) is scanned too, or this fails.
+    expect(Object.keys(store).filter((key) => !key.startsWith('_') && key !== 'limits').sort()).toEqual([...fields].sort());
   });
 });
 

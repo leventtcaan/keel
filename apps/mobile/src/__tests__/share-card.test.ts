@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * The share card's words (K-612, L3 Y5): a record and a call, never a body — the weeks on track, the latest call, a lift's
  * estimated max from its real values (K-604), and the weight trend only when the user turns it on (off by default). No

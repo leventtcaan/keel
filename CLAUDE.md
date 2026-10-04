@@ -100,4 +100,5 @@ Yeni konuda ilk hamle kod değildir: **araştır → planla → karar ver (ADR) 
 ## Komutlar
 - Backend: `cd backend && ./gradlew build` (yalnız wrapper) · testler `./gradlew test`
 - Mobil: `cd apps/mobile && npm run check` (typecheck + lint + test)
+- Anayasa denetimi (U4, U6, K2, envanter, mimari): `tools/anayasa-denetimi.sh` (ADR-061)
 - Backlog → GitHub: `python3 tools/sync_backlog.py --dry-run` sonra `--apply`
