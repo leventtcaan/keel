@@ -1,0 +1,23 @@
+{
+  "parameters": [
+    {
+      "key": "scoff_unavailable_from",
+      "value": 2,
+      "unit": "count",
+      "tag": "literatur",
+      "source": "arastirma/ham/H2-projeksiyon.md#4.3",
+      "note": "SCOFF (Morgan, Reid & Lacey, BMJ 1999;319:1467; ADR-050): one point per yes; 2 or more is a likely case, and the shape projection is not shown (K-607). The answers are never stored; only the result stays on the phone."
+    },
+    {
+      "key": "eating_support_links",
+      "value": {
+        "US": "https://anad.org/get-support/eating-disorders-helpline/",
+        "GB": "https://www.beateatingdisorders.org.uk/get-information-and-support/get-help-for-myself/"
+      },
+      "unit": "url_by_region",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-050-projeksiyon-saglik-kapisi.md#D1",
+      "note": "Shown after a SCOFF result of 2 or more, by the phone's region (ISO 3166 code from the device locale); any other region gets the neutral sentence alone. Checked HTTP 200 on 2026-10-04; check again before each store release."
+    }
+  ]
+}

@@ -222,6 +222,33 @@ test('the days the app was opened go with the session: forgotten at sign-out (K-
   expect(kv.items.has('keel.opens')).toBe(false);
 });
 
+test('the SCOFF result: "off" stays on the phone at sign-out, "clear" goes (K-607, ADR-050)', async () => {
+  const kept = memoryKv();
+  const first = await setup(server(404), memoryStorage(), kept);
+  await first.services.session.signIn(SESSION);
+  await first.services.projection.record('unavailable');
+  await first.services.signOut();
+  await settle();
+  expect(kept.items.get('projection.access')).toBe('unavailable');
+  // A start with no session does not clear it either.
+  const again = await setup(server(404), memoryStorage(), kept);
+  expect(again.services.projection.current()).toBe('unavailable');
+
+  const cleared = memoryKv();
+  const second = await setup(server(404), memoryStorage(), cleared);
+  await second.services.session.signIn(SESSION);
+  await second.services.projection.record('clear');
+  await second.services.signOut();
+  await settle();
+  expect(cleared.items.has('projection.access')).toBe(false);
+});
+
+test("the support link follows the phone's region (K-607)", async () => {
+  const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: server(404).fetch,
+    report: () => {}, kv: memoryKv(), locale: 'en-GB' });
+  expect(services.projection.support()?.region).toBe('GB');
+});
+
 test('a declared state goes with the session: forgotten at sign-out (K-518)', async () => {
   const kv = memoryKv();
   const { services } = await setup(server(404), memoryStorage(), kv);
