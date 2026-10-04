@@ -44,6 +44,16 @@ public final class TestWebhooks {
         return event;
     }
 
+    /** The account subscribed, as RevenueCat would tell it: a purchase from now for 30 days (K-703's tests of what it pays for). */
+    public static void subscribe(MockMvcTester mvc, ApplicationContext context, AccountId account) {
+        Instant now = context.getBean(Clock.class).instant();
+        MvcTestResult sent = send(mvc, context, event("evt-" + java.util.UUID.randomUUID(), "INITIAL_PURCHASE", account, now,
+                now.plus(java.time.Duration.ofDays(30))));
+        if (sent.getResponse().getStatus() != 200) {
+            throw new IllegalStateException("subscribing failed: " + sent.getResponse().getStatus());
+        }
+    }
+
     public static MvcTestResult send(MockMvcTester mvc, ApplicationContext context, Map<String, Object> event) {
         return sendRaw(mvc, context, body(event));
     }

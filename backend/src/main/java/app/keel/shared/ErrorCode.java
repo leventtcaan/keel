@@ -9,6 +9,7 @@ public enum ErrorCode {
     VALIDATION_FAILED(400, "Something in the request isn't valid."),
     UNAUTHENTICATED(401, "Please sign in again."),
     CONSENT_REQUIRED(403, "This needs your consent first."),
+    ENTITLEMENT_REQUIRED(403, "This is part of the subscription."),
     FORBIDDEN(403, "That isn't available to this account."),
     NOT_FOUND(404, "We couldn't find that."),
     METHOD_NOT_ALLOWED(405, "That action isn't supported here."),

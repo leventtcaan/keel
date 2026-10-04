@@ -1309,6 +1309,9 @@ paths:
         about a call carries the call as it stands: the coach explains, it never changes it (U1, U2). Unknown decisionId:
         404. Daily limit: coach_messages_per_day (data/parameters/quota.yaml, the user's day; K-508) — past it the answer
         is the engine's words (DETERMINISTIC, copyKey coach.answer.daily_limit), never an error and nothing to buy.
+        Subscription (K-703, ADR-056): a question the model would be asked needs an active subscription — without one,
+        403 ENTITLEMENT_REQUIRED before the consents are looked at, and nothing is counted or sent. The engine's own words
+        (no call yet, a call only the engine tells) need none; nor do the call, the log and every other route.
       requestBody:
         required: true
         content:
@@ -1336,7 +1339,9 @@ paths:
         the meal note (V2) — without either, 403 CONSENT_REQUIRED and nothing is sent. The foods are the database's: sure when a food holds every word the model gave, otherwise the
         foods of each word, one tap away (U5), or none. Nothing is logged: the app estimates with /v1/food-estimates and
         logs with /v1/meals once the user confirms. A reply off its schema, or past the day's limit
-        (coach_messages_per_day, K-508), gives an empty DETERMINISTIC draft: the user searches.
+        (coach_messages_per_day, K-508), gives an empty DETERMINISTIC draft: the user searches. Needs an active
+        subscription (K-703): without one, 403 ENTITLEMENT_REQUIRED before anything else, nothing counted or sent — the
+        user searches and logs as always.
       requestBody:
         required: true
         content:
@@ -1366,7 +1371,8 @@ paths:
         is sent. Every amount is grams with certainty ESTIMATED: the app sends it as it is to /v1/food-estimates, whose
         range is wide for an estimate and whose gram question narrows it (U5). Nothing is logged until the user confirms
         with /v1/meals. A reply off its schema, or past the day's photo analyses (photo_analyses_per_day), gives an empty
-        DETERMINISTIC draft: the user searches.
+        DETERMINISTIC draft: the user searches. Needs an active subscription (K-703): without one, 403
+        ENTITLEMENT_REQUIRED before the photo is read, nothing counted or sent.
       requestBody:
         required: true
         content:
@@ -1521,7 +1527,9 @@ components:
       properties:
         code:
           type: string
-          description: Stable machine-readable code, e.g. VALIDATION_FAILED, NOT_FOUND, CONSENT_REQUIRED.
+          description: |
+            Stable machine-readable code, e.g. VALIDATION_FAILED, NOT_FOUND, CONSENT_REQUIRED, ENTITLEMENT_REQUIRED (403: the
+            subscription pays for this — the coach's model and the meal photo; the rest of the app works without it).
         message:
           type: string
           description: English, safe to show to the user.

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
+import app.keel.subscription.TestWebhooks;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.time.LocalDate;
@@ -154,6 +155,8 @@ class MealParseApiTests {
     @Test
     void withoutTheAiConsentToSendTheMealNothingIsSent() throws Exception {
         AccountId account = TestSessions.newAccount();
+        TestSessions.bearer(context, account); // the account row, for the subscription below
+        TestWebhooks.subscribe(mvc, context, account); // what is tested here is the consent, not the subscription (K-703)
         healthConsent(account);
         fake.answer("{\"items\":[{\"food\":\"zkrice\",\"quantity\":200,\"unit\":\"g\"}]}");
 
@@ -215,6 +218,8 @@ class MealParseApiTests {
 
     private AccountId ready() {
         AccountId account = TestSessions.newAccount();
+        TestSessions.bearer(context, account); // the account row, for the subscription below
+        TestWebhooks.subscribe(mvc, context, account); // what is tested here is the consent, not the subscription (K-703)
         healthConsent(account);
         assertThat(mvc.put().uri("/v1/consents/THIRD_PARTY_AI").header("Authorization", TestSessions.bearer(context, account))
                 .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI,
