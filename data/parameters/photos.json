@@ -25,6 +25,14 @@
       "note": "The self-timer (prototype 4.1 '10 s timer'): H1 2.4 asks for a fixed distance with the camera at chest height, so the phone stands and the user steps back into the frame. Product choice."
     },
     {
+      "key": "photo_level_update_ms",
+      "value": 200,
+      "unit": "milliseconds",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "How often the capture screen reads the accelerometer for its level (K-601): five times a second follows a hand without redrawing on every sensor tick. Product choice."
+    },
+    {
       "key": "photo_jpeg_quality",
       "value": 0.9,
       "unit": "ratio",

@@ -1716,8 +1716,8 @@
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
     "healthWrite": "keel adds to Apple Health only what you turn on in Settings: the workouts you finish, the weigh-ins you type. It writes nothing else.",
-    "camera": "To read the barcode on a food pack, or to take a photo of a meal you want to log. No video or sound is recorded.",
-    "photos": "To choose a photo of a meal you want to log. Only the photo you pick is used."
+    "camera": "To read the barcode on a food pack, to take a photo of a meal you want to log, or to take your progress photos, which stay on this phone. No video or sound is recorded.",
+    "photos": "To choose a photo of a meal you want to log, or a progress photo. Only the photo you pick is used."
   },
   "history": {
     "records": "Records",
@@ -1745,11 +1745,33 @@
       "one": "{count} photo day on this phone. keel never uploads them.",
       "other": "{count} photo days on this phone. keel never uploads them."
     },
+    "take": "Take photos",
     "delete": "Delete all photos",
     "deleteBody": "This deletes every progress photo keel keeps on this phone. keel has no other copy.",
     "deleteConfirm": "Delete photos",
     "deleteKeep": "Keep them",
     "deleteFailed": "Couldn't delete the photos. Try again."
+  },
+  "capture": {
+    "title": "Photo",
+    "pose": {
+      "front": "Front · {step} of {total}",
+      "side": "Side · {step} of {total}"
+    },
+    "guide": "Same spot, same light, morning.",
+    "ghost": "The faded photo is your last one. Line up with it.",
+    "onPhone": "Kept on this phone only. Never uploaded.",
+    "level": "Level {degrees}°",
+    "levelOk": "Hold steady",
+    "levelOff": "Straighten the phone",
+    "timer": "{seconds} s timer",
+    "counting": "Taking the photo in a moment",
+    "shutter": "Take photo",
+    "library": "Choose from library",
+    "allow": "Allow camera",
+    "denied": "The camera is off for keel. Turn it on in iOS Settings, or choose a photo from your library.",
+    "failed": "Couldn't keep that photo on this phone. Try again.",
+    "close": "Close"
   },
   "sessionEdit": {
     "title": "Edit session",

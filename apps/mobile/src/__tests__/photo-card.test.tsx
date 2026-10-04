@@ -21,6 +21,17 @@ const mockServices = {
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
+const mockPush = jest.fn();
+let mockFocus: (() => void) | null = null;
+jest.mock('expo-router', () => ({
+  router: { push: (to: unknown) => mockPush(to) },
+  // Read on focus: back from taking photos, the card shows them (K-601).
+  useFocusEffect: (effect: () => void) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    mockFocus = effect;
+    React.useEffect(effect, [effect]);
+  },
+}));
 
 const fetchSpy = jest.fn();
 beforeEach(() => {
@@ -121,4 +132,11 @@ test('a folder that cannot be read: reported by name, no card rather than a wron
   await show('over');
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'FileSystemError' });
   expect(screen.queryByTestId('photo-card')).toBeNull();
+test('"Take photos" opens the guided capture (K-601); coming back, the card reads the folder again', async () => {
+  await show('over');
+  await fireEvent.press(screen.getByRole('button', { name: t('photos.take') }));
+  expect(mockPush).toHaveBeenCalledWith('/photo-capture');
+  mockChecks = [check('2026-10-07')];
+  await act(async () => mockFocus?.());
+  expect(screen.getByText(t('photos.next', { date: 'Nov 4' }))).toBeOnTheScreen();
 });
