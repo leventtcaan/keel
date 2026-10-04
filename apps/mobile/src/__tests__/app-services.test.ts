@@ -870,6 +870,72 @@ describe('deleting the account (K-309, K-214)', () => {
     expect(await services.pendingCount()).toBe(0);
   });
 
+  describe('Sign in with Apple ended first (K-812, ADR-062)', () => {
+    function revocationServer(revocation: number | 'offline') {
+      const seen: { call: string; body: string }[] = [];
+      const fetch = jest.fn(async (request: Request) => {
+        seen.push({ call: `${request.method} ${request.url.slice(BASE.length)}`, body: await request.text() });
+        if (request.url.endsWith('/v1/account/apple-revocation')) {
+          if (revocation === 'offline') throw new TypeError('Network request failed');
+          return new Response(null, { status: revocation });
+        }
+        if (request.url.endsWith('/v1/account')) return new Response(null, { status: 202 });
+        return new Response(JSON.stringify({ code: 'NOT_FOUND', message: 'x' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+      });
+      return { fetch, seen };
+    }
+    async function deleting(revocation: number | 'offline', code: () => Promise<string | null>) {
+      const fake = revocationServer(revocation);
+      const report = jest.fn();
+      const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch: fake.fetch, report,
+        kv: memoryKv(), locale: 'en-US', appleReauth: { code } });
+      await services.session.signIn(SESSION);
+      await settle();
+      fake.seen.length = 0;
+      await services.deleteAccount();
+      return { calls: fake.seen.map((s) => s.call), bodies: fake.seen.map((s) => s.body), report, services };
+    }
+
+    test("a fresh code from Apple goes to the server before the deletion: after it, the session is refused", async () => {
+      const { calls, bodies, services } = await deleting(204, async () => 'fresh-code');
+      expect(calls).toEqual(['POST /v1/account/apple-revocation', 'DELETE /v1/account']);
+      expect(JSON.parse(bodies[0])).toEqual({ authorizationCode: 'fresh-code' });
+      expect(await services.session.isSignedIn()).toBe(false);
+    });
+
+    test("the user closes Apple's sheet: the account is deleted all the same", async () => {
+      const { calls, report } = await deleting(204, async () => null);
+      expect(calls).toEqual(['DELETE /v1/account']);
+      expect(report).not.toHaveBeenCalled();
+    });
+
+    test('Apple failing on the phone: told by name, the account deleted', async () => {
+      const { calls, report } = await deleting(204, async () => Promise.reject(Object.assign(new Error('fresh-code?'), { name: 'AppleFailed' })));
+      expect(calls).toEqual(['DELETE /v1/account']);
+      expect(report).toHaveBeenCalledWith({ name: 'AppleReauthFailed' });
+    });
+
+    test('no answer to the revocation (a slow Apple, a dropped line): told by name, the account deleted all the same', async () => {
+      const { calls, report, services } = await deleting('offline', async () => 'fresh-code');
+      expect(calls).toEqual(['POST /v1/account/apple-revocation', 'DELETE /v1/account']);
+      expect(report).toHaveBeenCalledWith({ name: 'AppleRevocationNoAnswer' });
+      expect(await services.session.isSignedIn()).toBe(false);
+    });
+
+    test('Apple failing with no name of its own (expo CodedError): told as AppleReauthFailed', async () => {
+      const { report } = await deleting(204, async () => Promise.reject(Object.assign(new Error('x'), { code: 'ERR_REQUEST_FAILED' })));
+      expect(report).toHaveBeenCalledWith({ name: 'AppleReauthFailed' });
+    });
+
+    test.each([400, 500, 503])('the server not revoking (%i): told by name, never the code; the account deleted', async (status) => {
+      const { calls, report, services } = await deleting(status, async () => 'fresh-code');
+      expect(calls).toEqual(['POST /v1/account/apple-revocation', 'DELETE /v1/account']);
+      expect(report).toHaveBeenCalledWith({ name: 'AppleRevocationRefused' });
+      expect(JSON.stringify(report.mock.calls)).not.toContain('fresh-code');
+      expect(await services.session.isSignedIn()).toBe(false);
+    });
+  });
+
   test('offline, nothing is forgotten: the account still exists, and so do the entries waiting for it', async () => {
     const fetch = jest.fn(async () => {
       throw new TypeError('Network request failed');
