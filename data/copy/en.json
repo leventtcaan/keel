@@ -1071,7 +1071,7 @@
     "health_data": {
       "version": "3",
       "title": "Your health data, for your coaching",
-      "body": "Your weight, waist, sleep, meals, check-in answers and the foods you avoid are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time. You can also withdraw this consent in Settings: everything above is then deleted for good, with your past calls, except your training log, which isn't health data and stays; the calls stop until you allow it again."
+      "body": "Your weight, waist, steps, sleep and active energy, what you conclude from your progress photos and the look you pick, your meals and recipes, your plan and check-in answers, what you tell the app about being sick, in pain or away, and the foods you avoid are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time. Importing past workouts from another app also needs this consent, as they can carry your weight. You can also withdraw this consent in Settings: everything above is then deleted for good, with your past calls, except your training log, which isn't health data and stays; the calls stop until you allow it again."
     },
     "apple_health": {
       "version": "1-draft",
