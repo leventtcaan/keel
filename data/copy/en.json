@@ -1746,6 +1746,7 @@
       "other": "{count} photo days on this phone. keel never uploads them."
     },
     "take": "Take photos",
+    "compare": "Compare",
     "delete": "Delete all photos",
     "deleteBody": "This deletes every progress photo keel keeps on this phone. keel has no other copy.",
     "deleteConfirm": "Delete photos",
@@ -1771,6 +1772,29 @@
     "allow": "Allow camera",
     "denied": "The camera is off for keel. Turn it on in iOS Settings, or choose a photo from your library.",
     "failed": "Couldn't keep that photo on this phone. Try again.",
+    "close": "Close"
+  },
+  "compare": {
+    "title": "Compare",
+    "with": "Compare with",
+    "day1": "Day 1",
+    "earlier": {
+      "one": "{count} week earlier",
+      "other": "{count} weeks earlier"
+    },
+    "latest": "Latest",
+    "caption": "{label} · {date}",
+    "between": {
+      "one": "{count} week between them",
+      "other": "{count} weeks between them"
+    },
+    "front": "Front",
+    "side": "Side",
+    "sideBySide": "Side by side",
+    "slide": "Slide",
+    "slider": "Slide between the two photos",
+    "empty": "Two photo days in the same pose make a comparison.",
+    "onPhone": "Both photos are on this phone only.",
     "close": "Close"
   },
   "sessionEdit": {

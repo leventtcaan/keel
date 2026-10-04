@@ -142,3 +142,13 @@ test('"Take photos" opens the guided capture (K-601); coming back, the card read
   await act(async () => mockFocus?.());
   expect(screen.getByText(t('photos.next', { date: 'Nov 4' }))).toBeOnTheScreen();
 });
+
+test('two photo days or more: "Compare" opens the comparison (K-602); one day, no way to it', async () => {
+  mockChecks = [check('2026-09-20')];
+  await show('over');
+  expect(screen.queryByRole('button', { name: t('photos.compare') })).toBeNull();
+  mockChecks = [check('2026-08-20'), check('2026-09-20')];
+  await act(async () => mockFocus?.());
+  await fireEvent.press(screen.getByRole('button', { name: t('photos.compare') }));
+  expect(mockPush).toHaveBeenCalledWith('/compare');
+});

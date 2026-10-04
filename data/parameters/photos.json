@@ -33,6 +33,14 @@
       "note": "How often the capture screen reads the accelerometer for its level (K-601): five times a second follows a hand without redrawing on every sensor tick. Product choice."
     },
     {
+      "key": "compare_slide_step",
+      "value": 0.1,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "arastirma/01-urun-ilkeleri.md#15",
+      "note": "How far one VoiceOver swipe moves the slide comparison's divide (K-602): a tenth of the width. Dragging moves it freely. Product choice."
+    },
+    {
       "key": "photo_jpeg_quality",
       "value": 0.9,
       "unit": "ratio",

@@ -104,10 +104,16 @@ export function PhotoCard({ today, flowWeek }: Props) {
       <Text style={[styles.text, { color: color.textSecondary }]}>{windowText(photoWindow(last, today, flowWeek))}</Text>
       {count}
       <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />
+      {checks.length >= 2 && <CompareLink />}
       {deleting}
       {failed && <Text style={[styles.text, { color: color.text }]}>{t('photos.deleteFailed')}</Text>}
     </Card>
   );
+}
+
+/** The way to the comparison anchor (K-602): only with two photo days to set side by side. */
+function CompareLink() {
+  return <Button label={t('photos.compare')} variant="ghost" size="sm" onPress={() => router.push('/compare')} />;
 }
 
 const styles = StyleSheet.create({
