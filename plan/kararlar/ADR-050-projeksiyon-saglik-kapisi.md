@@ -31,6 +31,15 @@ erkeklerde ve başka yaşlarda aynı doğrulukta olduğu bu kaynakta gösterilme
    yönü açık) · hedef kilo BMI<18,5'e denk geliyorsa reddeder ve gerekçesini söyler · haftada vücut ağırlığının %1'inden hızlı kayıp
    senaryosu üretilmez · özellik **varsayılan kapalı**, kullanıcı bilinçli açar, kapatabilir. Ek (U12): ilk 4 hafta / 2 ölçümden önce yok.
 
+## D1 · Destek kaynakları (doğrulandı 4 Eki 2026)
+Uygulamanın gösterdiği kuruluşlar ve linkleri; değerler `data/parameters/projection.json › eating_support_links`. Kuruluşun tam adı
+gösterilmez (ANAD'ın açılımı hastalık adı içerir — U6); yalnız kısa ad ve link.
+| Bölge (cihaz) | Kuruluş | Link | Kontrol |
+|---|---|---|---|
+| US | ANAD — ücretsiz yardım hattı, hafta içi | `https://anad.org/get-support/eating-disorders-helpline/` | HTTP 200, 4 Eki |
+| GB | Beat | `https://www.beateatingdisorders.org.uk/get-information-and-support/get-help-for-myself/` | HTTP 200, 4 Eki |
+| diğer (TR dahil) | — | — | yalnız nötr cümle |
+
 ## Neden
 - Orijinal metin: doğrulanmış olan odur; çeviri ya da yeniden yazım ölçeği değiştirir. Birim notu anlamı değiştirmez (1 stone = 6,35 kg).
 - Bölge linki: ABD hattı TR kullanıcısına yaramaz; doğrulayamadığımız kuruluşu göstermek yanlış yönlendirme olur → nötr cümle.
