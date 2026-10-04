@@ -119,6 +119,37 @@ class SubscriptionStatusApiTests {
     }
 
     @Test
+    void aBillingIssueKeepsAccessThroughTheGracePeriod() throws Exception {
+        // The store could not charge, the period is over, the grace period is not: still active (ADR-056 #5).
+        AccountId account = account();
+        Instant grace = now().plus(Duration.ofDays(16));
+        Map<String, Object> issue = TestWebhooks.event(id(), "BILLING_ISSUE", account, now(), now().minus(Duration.ofHours(1)));
+        issue.put("grace_period_expiration_at_ms", grace.toEpochMilli());
+        send(issue);
+
+        assertThat(read(get(account))).containsEntry("active", true).containsEntry("status", "BILLING_ISSUE")
+                .containsEntry("accessUntil", grace.toString());
+    }
+
+    @Test
+    void readingAKeptSubscriptionChangesNothingOfIt() throws Exception {
+        // A read that touched the row (its last event's moment) would make the next real event look older than it.
+        AccountId account = account();
+        TestWebhooks.subscribe(mvc, context, account);
+        Map<String, Object> before = row(account);
+
+        read(get(account));
+        read(get(account));
+
+        assertThat(row(account)).isEqualTo(before);
+    }
+
+    private Map<String, Object> row(AccountId account) {
+        return jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account")
+                .param("account", account.value()).query().singleRow();
+    }
+
+    @Test
     void oneAccountNeverSeesAnothersSubscription() throws Exception {
         AccountId subscribed = account();
         TestWebhooks.subscribe(mvc, context, subscribed);
