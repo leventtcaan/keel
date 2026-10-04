@@ -998,8 +998,10 @@
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,
    "erased_by": [
-    "account_deletion"
+    "account_deletion",
+    "time"
    ],
+   "kept_for": "30 days after the event, then the nightly cleanup (WebhookEventCleanup, 04:30 UTC)",
    "exported": true,
    "export_key": "subscriptionEvents",
    "policy": "data-subscription",
