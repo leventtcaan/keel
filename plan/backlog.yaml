@@ -2966,7 +2966,7 @@ tasks:
     module: subscription
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-203]
     why: "Yetki sunucuda (ADR-012)"
     acceptance:
@@ -3002,7 +3002,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-701, K-508]
     why: "Deneme bitmiş kullanıcı premium özelliği çağıramaz"
     acceptance:

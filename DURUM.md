@@ -686,7 +686,7 @@ opak hesap kimliği + SDK'nın zorunlu verisi **onaylı** → ADR-012 Ek 1.
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-701 RevenueCat webhook ve yetki — ADR-056; RED v1 geçersiz (bean adı çakışması) → RED v2 12 assertion; uygulama CI'da 2 kırmızı (dışa aktarma boş bölüm, asenkron silme dinleyicisi) → 8ca3d7a; kontrol mutantı #365 üçü öldü, kapatıldı; inceleme + test analizi işlendi; auto-merge açık | ⏳ CI | #364 | `M7/K-701.md` |
+| K-701 RevenueCat webhook ve yetki — ADR-056; RED v1 geçersiz (bean adı çakışması) → RED v2 12 assertion; uygulama CI'da 2 kırmızı (dışa aktarma boş bölüm, asenkron silme dinleyicisi) → 8ca3d7a; kontrol mutantı #365 üçü öldü, kapatıldı; inceleme + test analizi işlendi; birleşti (2d29812, üç CI yeşil) | ✅ birleşti | #364 | `M7/K-701.md` |
 | K-703 premium uçlarda yetki — worktree `../keel-k703`, dal `subscription/76-premium-guard` (#364'e yığılı; birleşince `git rebase --onto origin/main ee08865`); RED commit 019f627 taslak #366'da CI'da; uygulama 64f0814; inceleme: iade testi zamanı (düzeltildi), test analizi 6 mutant → a54828f. **Part 2 notu:** telefon tanımadığı 403'ü "failed" gösteriyor (`coach/conversation.ts`, `food/photo.ts`) → K-702 ENTITLEMENT_REQUIRED'ı paywall'a çevirmeli | ⏳ | #366 | `M7/K-703.md` |
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
