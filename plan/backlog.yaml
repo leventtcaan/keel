@@ -3025,6 +3025,7 @@ tasks:
       - "Webhook işlendikten sonra hesabın yetkisi REST'ten tazelenir; REST cevabı durumu geri götürmez"
       - "TRANSFER alıcısı hesap, sonraki olayı beklemeden yetkisini alır"
       - "Gizli API anahtarı ortam değişkeninden; repoda, logda yok (V5)"
+      - "Hesap silinince RevenueCat'teki müşteri kaydı da silinir (M8 envanter açığı 4; REST uç noktası resmî dokümandan doğrulanır)"
     tests:
       - "RevenueCatRefreshTests (sahte HTTP)"
     refs: ["plan/kararlar/ADR-056-yetki-sunucuda.md"]
@@ -3118,15 +3119,18 @@ tasks:
     module: privacy
     type: test
     size: S
-    status: todo
+    status: doing
     depends_on: [K-214]
     why: "V6 ve App Store hesap silme şartı"
     acceptance:
       - "Uygulama içinden hesap silme; tüm modüllerde veri kalmaz"
       - "Veri dışa aktarma dosyası kullanıcıya verilir"
+      - "Tek test gerçek sunucuda: envanterde (docs/yasal/veri-envanteri.json) erased_by account_deletion diyen her tabloya veri yazılır, hesap silinir, hiçbirinde o hesabın satırı kalmaz; erişim ve yenileme jetonu 401"
+      - "Dışa aktarma envanterde exported diyen her tablonun modül bölümünü içerir"
+      - "event_publication işlenen olayı siler (silinen hesabın kimliği kalmaz — envanter açığı 1); politika ve envanter buna göre"
     tests:
       - "EndToEndDeletionTests"
-    refs: ["docs/anayasa.md#V6"]
+    refs: ["docs/anayasa.md#V6", "docs/yasal/veri-envanteri.json", "plan/kararlar/ADR-060-veri-envanteri-ve-yasal-metinler.md"]
     learn: ["Uçtan uca test"]
 
   - id: K-803
@@ -3250,6 +3254,62 @@ tasks:
     refs: ["plan/kararlar/ADR-057-paywall-telefonda.md", "plan/kararlar/ADR-060-veri-envanteri-ve-yasal-metinler.md"]
     learn:
       - "Derleme zamanı ortam değişkenleri (EXPO_PUBLIC_*)"
+
+  - id: K-810
+    title: "Veri en aza indirme: eski yenileme jetonları ve webhook olayları süreli silinir"
+    milestone: M8
+    module: identity
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-802]
+    why: "Envanter açığı 5: süresi geçmiş/iptal edilmiş yenileme jetonları ve işlenmiş webhook_event satırları hesap yaşarken hiç silinmiyor (GDPR Md. 5(1)(e) saklama sınırı)"
+    acceptance:
+      - "Süresi geçmiş ya da iptal edilmiş yenileme jetonu bir süre sonra silinir; süre data/parameters'ta ya da yapılandırmada, kodda değil (K2)"
+      - "İşlenmiş webhook_event satırı tekrar koruması penceresinden sonra silinir"
+      - "Envanter erased_by + kept_for ve politika süreyi söyler (test bağlar)"
+    tests:
+      - "Temizlik testleri (DB, CI)"
+    refs: ["docs/yasal/veri-envanteri.json", "plan/kararlar/ADR-056-yetki-sunucuda.md"]
+    learn:
+      - "Saklama sınırı ve zamanlanmış temizlik"
+
+  - id: K-811
+    title: "Silme onayı aboneliği söyler; öğün fotoğrafı telefonda kalmaz"
+    milestone: M8
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-309]
+    why: "Envanter açıkları 3 ve 6: Apple silme onayında aboneliğin Apple'da süreceğini söylemeyi istiyor; öğün fotoğrafı gönderildikten sonra sistem önbelleğinde kalıyor (V1)"
+    acceptance:
+      - "Silme onayı, abonelik varsa Apple'da süreceğini ve nereden iptal edileceğini söyler (metin en.json'da)"
+      - "Öğün fotoğrafı gönderildikten ya da vazgeçildikten sonra dosyası silinir; çıkış/silmede kalanlar da silinir"
+    tests:
+      - "Mobil: onay metni, fotoğraf dosyası silinir"
+    refs: ["https://developer.apple.com/support/offering-account-deletion-in-your-app"]
+    learn:
+      - "Uygulama önbellek dizini ve dosya yaşam döngüsü"
+
+  - id: K-812
+    title: "Hesap silmede Sign in with Apple jetonu iptal edilir"
+    milestone: M8
+    module: identity
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-802]
+    why: "Envanter açığı 2: Apple, Sign in with Apple kullanan uygulamanın silmede REST API ile jetonu iptal etmesini istiyor; yetki kodu alınıyor ama değiş tokuş edilmiyor"
+    acceptance:
+      - "Silmeden önce telefon Apple'dan taze yetki kodu alır; sunucu kodu jetona çevirir ve iptal eder (Apple REST, resmî dokümandan)"
+      - "İstemci sırrı (.p8 anahtarından imzalı JWT) ortamdan; repoda, logda yok (V5). Anahtar yoksa iptal atlanır ve bu görünür; yayın profili anahtarsız açılmaz (M9)"
+      - "Apple'a ulaşılamazsa silme yine olur (V6); iptal denemesi kaydı hesap kimliği tutmaz"
+    tests:
+      - "AppleRevocationTests (sahte HTTP) + mobil silme akışı"
+    refs: ["https://developer.apple.com/documentation/sign_in_with_apple/revoke_tokens", "plan/kararlar/ADR-011-kimlik-dogrulama.md"]
+    learn:
+      - "OAuth jeton iptali, ES256 istemci sırrı"
 
 # ───────────────────────────── M9 · Beta ─────────────────────────────
   - id: K-901

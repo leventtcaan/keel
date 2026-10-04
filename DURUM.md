@@ -676,7 +676,7 @@ Ortak talimat `plan/oturum-promptlari/M8.md`. Part prompt'ları `M8-part1.md`, `
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Metinler ve envanter | K-801, K-806, K-803 · yasal URL (+ K-808, K-809) | ✅ bitti (4 Eki) — aktarım bekliyor (README 1-5) |
-| 2 · Denetimler ve teslim | K-802, K-804, K-807 · M8 çıkışı · M9 prompt'ları | bekliyor |
+| 2 · Denetimler ve teslim | K-802, K-804, K-807 (+ K-810, K-811, K-812) · M8 çıkışı · M9 prompt'ları | sürüyor (5 Eki) |
 
 **Part 1 başı (4 Eki):** senkron tamam — M7 ÇIKIŞ git ile tutarlı (#368, #369, #372, #373 birleşik; açık PR yok; worktree yalnız `../keel-main`;
 `*-devam.md` yok). Ana checkout ayrık HEAD = `origin/main` (6028e6b). Bağımlılıklar `done` (K-214, K-503; K-803 ← K-801 bu part'ta).
@@ -732,6 +732,17 @@ risk › Riskler); soru 57 → rıza metni koda uyar (antrenman kaydı kapsam d�
 10. Telefon anahtarlarının (kv-store, `const KEY`) envantere bağlanması → K-804 (test analizi, puan 6).
 **M9'a (K-901) politikanın verdiği sözler:** HTTPS; sunucu bölgesi politikada yazılı olmalı; yedek ve ters vekil günlüğü saklama süresi politikaya eklenmeden
 yedek açılmaz (politika şu an yedekten söz etmiyor).
+
+**Part 2 başı (5 Eki):** senkron tamam — Part 1 ÇIKIŞ git ile tutarlı (#375, #377-#381 birleşik; açık PR yok; `*-devam.md` yok). Ana checkout
+ayrık HEAD = `origin/main` (87fc154). Part 1 worktree'leri (`keel-k806/808/809`) kaldırıldı; kalan yalnız `../keel-main`. Bağımlılıklar `done`
+(K-214, K-302, K-301). Dependabot: aynı 3 geçişli uyarı. **Disk 17 GB.** İletişim adresi hâlâ açık (Levent).
+**Envanter açıklarının görevlere bölünmesi (agent, ADR-019 — bir görev = bir modül):** 1 → K-802 kabulü (#78) · 2 → **K-812** #384 (SIWA iptali; kod
+şimdi, `.p8` anahtarı Levent'te) · 3 + 6 → **K-811** #383 (mobil) · 4 → K-704 kabulü (#363, RevenueCat gizli anahtarıyla) · 5 → **K-810** #382 ·
+7 → M9 kontrol listesi · 8 (fatProxy dışa aktarma) → Bitiş'te Levent'e soru · 10 → K-804.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-802 envantere bağlı uçtan uca silme + dışa aktarma; `event_publication` işlenince silinir | sürüyor | — | — |
 
 ## M7 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `M7-part2.md`.
