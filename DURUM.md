@@ -6,7 +6,7 @@ guncelleme: 2026-10-04
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M7 Part 1 (Yetki sunucuda) SÜRÜYOR (4 Eki)** — K-701, K-703; para/mağaza hazır değil (ADR-012 Ek 1); ayrıntı `## M7 ilerleme`.
+**M7 Part 1 (Yetki sunucuda) BİTTİ (4 Eki)** — ADR-056; K-701 #364, K-703 #366 birleşti; K-704 (REST tazeleme, RevenueCat hesabı sonrası) ve K-705 (durum ucu, Part 2) açıldı; para/mağaza hazır değil (ADR-012 Ek 1). Aktarım bekliyor: `docs/aktarim/M7/README.md` 1-2. Sıradaki: M7 Part 2 (`plan/oturum-promptlari/M7-part2.md`).
 **M6 KAPANDI (4 Eki, kod)** — Part 4: K-615 #354, K-616 #356, K-609 #357, K-612 #358, ADR-055 metinleri #361, K-617 #362; ADR-053/054/055; sorular 87-104 cevaplı (ADR-055). Açık: K-618 (fotoğraf yedekten hariç, K-308 sonrası). Aktarım bekliyor: M6 (`docs/aktarim/M6/README.md` 1-19). **Disk 1,2 GB** (Docker 17 GB + başka uygulamaların önbellekleri — Levent). Sıradaki koşu **M7 · Abonelik** (`plan/oturum-promptlari/M7.md`, `M7-part1.md`).
 **M6 Part 3 (Efor ve fotoğraf) BİTTİ (4 Eki)** — K-604 #347, K-614 #349 (K-601'den bölündü), K-601 #350, K-602 #351 birleşti; aktarım bekliyor (`docs/aktarim/M6/README.md` 11-14); sorular 97-101 (97 ve 101 veri kararı). Simülatör turu yok (disk 2,3 GB, sunucu yok). Sıradaki: M6 Part 4 (`plan/oturum-promptlari/M6-part4.md`).
 **M6 Part 2 (Projeksiyon, sağlık kapılı) BİTTİ (4 Eki)** — ADR-050 (sağlık kapısı, Levent KABUL), ADR-051, ADR-052; K-605 #342, K-607 #344, K-613 #345 (K-606'dan bölündü), K-606 #346 birleşti; aktarım bekliyor (`docs/aktarim/M6/README.md` 7-10); sorular 94-96. **Repo public** (CI dakikası bitti, Levent'in kararı). Sıradaki: M6 Part 3 (`plan/oturum-promptlari/M6-part3.md`).
@@ -673,8 +673,8 @@ Ortak talimat `plan/oturum-promptlari/M7.md`. Part prompt'ları `M7-part1.md`, `
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Yetki sunucuda | K-701, K-703 | ⏳ sürüyor (4 Eki) |
-| 2 · Paywall ve teslim | K-702 · M7 çıkışı · M8 prompt'ları | bekliyor |
+| 1 · Yetki sunucuda | K-701, K-703 (+ K-704, K-705 açıldı) | ✅ bitti (4 Eki) — aktarım bekliyor (README 1-2) |
+| 2 · Paywall ve teslim | K-705, K-702 · M7 çıkışı · M8 prompt'ları | bekliyor |
 
 **Part 1 başı (4 Eki):** senkron tamam — M6 ÇIKIŞ git ile tutarlı (#354, #356, #357, #358, #361, #362 birleşik; açık PR yok; worktree yalnız
 kalıcı `../keel-main`; `*-devam.md` yok). Ana checkout ayrık HEAD = `origin/main` (cf83dc5). Bağımlılıklar `done` (K-203, K-508, K-306).
@@ -687,7 +687,32 @@ opak hesap kimliği + SDK'nın zorunlu verisi **onaylı** → ADR-012 Ek 1.
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-701 RevenueCat webhook ve yetki — ADR-056; RED v1 geçersiz (bean adı çakışması) → RED v2 12 assertion; uygulama CI'da 2 kırmızı (dışa aktarma boş bölüm, asenkron silme dinleyicisi) → 8ca3d7a; kontrol mutantı #365 üçü öldü, kapatıldı; inceleme + test analizi işlendi; birleşti (2d29812, üç CI yeşil) | ✅ birleşti | #364 | `M7/K-701.md` |
-| K-703 premium uçlarda yetki — worktree `../keel-k703`, dal `subscription/76-premium-guard` (#364'e yığılı; birleşince `git rebase --onto origin/main ee08865`); RED commit 019f627 taslak #366'da CI'da; uygulama 64f0814; inceleme: iade testi zamanı (düzeltildi), test analizi 6 mutant → a54828f. **Part 2 notu:** telefon tanımadığı 403'ü "failed" gösteriyor (`coach/conversation.ts`, `food/photo.ts`) → K-702 ENTITLEMENT_REQUIRED'ı paywall'a çevirmeli | ⏳ | #366 | `M7/K-703.md` |
+| K-703 premium uçlarda yetki — sözleşme önce, 403 ENTITLEMENT_REQUIRED; kapı rızadan, fotoğraftan, kotadan önce; motorun sözleri ve geri kalan uçlar serbest. #364'e yığılı başladı, birleşince `main`'e taşındı. RED CI'da 4 assertion; inceleme: iade testi zamanı; test analizi 6 mutant → testler | ✅ birleşti | #366 | `M7/K-703.md` |
+
+**Part 1 ÇIKIŞ (4 Eki):**
+- **Birleşen:** K-701 #364 (2d29812) · K-703 #366 (6db9b54) — ikisi de üç CI yeşil (DB testleri dahil; #366'da 2003+ test). Kontrol mutantı #365 kapatıldı
+  (üç mutant öldü). `main`'e doğrudan: ADR-056, ADR-012 Ek 1, K-704 + K-705 (backlog + issue), M7-part2 prompt güncellemesi, aktarım `docs/aktarim/M7/`
+  (README 1-2). Açık PR yok. Worktree yalnız kalıcı `../keel-main`. Yerel artık dallar (squash birleşti): `subscription/74-revenuecat-webhook`,
+  `subscription/76-premium-guard`, `mut/74-webhook` (`branch -D` git_guard'da yasak — zararsız).
+- **Kontrol çıktısı:** birleşmiş ağaçta saf + mimari testler 135/135 (Docker'sız); tam takım CI'da yeşil. Mobil yalnız üretilen `schema.ts` yorumları
+  değişti (CI Mobile yeşil).
+- **Kalan iş:** yok (Part 1 kapsamı tamam). K-704 Levent'in RevenueCat hesabını bekliyor.
+- **Part 2'nin bilmesi gerekenler:**
+  - Telefon sunucunun **403 `ENTITLEMENT_REQUIRED`**'ını bugün "failed" gösteriyor (`apps/mobile/src/coach/conversation.ts`, `food/photo.ts` yalnız
+    CONSENT_REQUIRED'ı ayırıyor) → K-702 paywall'u açmalı. Sıra sunucuda: yetki → rıza → kota → model (`coach/Explanation.java`, `MealDraft.draft`).
+  - RevenueCat `appUserID` = hesabın UUID'si (kanonik, küçük harf); değilse sunucu olayı yok sayar (`identity/KnownAccounts`). `logIn` girişten sonra,
+    `logOut` çıkışta.
+  - Webhook 5-60 sn gecikir → satın alma sonrası durum K-705 ucundan kısa süre yeniden sorulur. Erişim yalnız `accessUntil`'den (`SubscriptionState`).
+  - Yerelde ve CI'da sunucu `KEEL_REVENUECAT_WEBHOOK_SECRET` ister (yoksa açılmaz); test değeri `src/test/resources/config/application.yml`.
+    Telefonda RevenueCat'in **public** SDK anahtarı da yapılandırmadan (Expo config / env), kodda değil.
+  - Test yardımcısı `app.keel.subscription.TestWebhooks` (`subscribe`, `event`, `send`) — koçla ilgili her yeni sunucu testinde hesap abone edilmeli.
+  - Dersler: (1) mutasyon betiği temel koşuyu doğrulamalı — test deseni DB'li sınıfı seçerse her mutant "öldü" görünür; (2) `@Bean` metot adı bir
+    bileşen sınıfının bean adıyla çakışabilir (bağlam açılmaz — RED değil istisna); (3) `@ApplicationModuleListener` asenkron — testte beklenir;
+    (4) yığılı dal: squash birleşmeden sonra `git rebase --onto origin/main <eski taban ucu>`; (5) push sandbox'ta osxkeychain'e erişemiyor →
+    `git -c credential.helper= -c credential.helper='!gh auth git-credential' push`.
+  - Disk 4,6 GB (simülatör dyld önbelleği silindi, ilk açılışta ~3 GB yeniden üretir → simülatör turu öncesi Levent'e). K-308 hâlâ `doing`.
+- **Yeni sorular:** yok (para/mağaza kapısı Part 1 başında cevaplandı → ADR-012 Ek 1). Açık: 80 (Docker/disk), 57 (rıza metni hukuki bakış);
+  RevenueCat hesabı + ASC ürünleri + Paid Applications + sandbox hesabı Levent'te (Part 2'nin cihaz adımları için).
 
 ## M6 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M6.md`. Part prompt'ları `M6-part1.md` … `M6-part4.md`.

@@ -3002,7 +3002,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-701, K-508]
     why: "Deneme bitmiş kullanıcı premium özelliği çağıramaz"
     acceptance:

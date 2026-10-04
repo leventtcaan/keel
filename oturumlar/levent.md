@@ -124,3 +124,10 @@
 - sıradaki: Levent dönünce M6 Part 4 aktarımı (README 15-19; Part 1-3: 1-14); disk (Docker, önbellekler); K-308; sonra M7 Part 1
 - AI: bütün kod, test, ADR, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion, 87-104)
 
+## 2026-10-04 · M7 Part 1 (Yetki sunucuda) — toplu mod
+- yaptım: ADR-056; K-701 #364 (RevenueCat webhook'u HMAC imzalı, olay → saf durum makinesi, tekil + geri götürmez, `Entitlements.active`, V33, silme/dışa aktarma), K-703 #366 (koç ve öğün uçları 403 ENTITLEMENT_REQUIRED, kapı rızadan/kotadan önce); K-704, K-705 açıldı
+- karar: HMAC (sabit başlık değil), webhook `/v1` dışı + sözleşme dışı, erişim yalnız `accessUntil`, SANDBOX yayında çıkar; para/mağaza hiçbiri hazır değil → ADR-012 Ek 1 (Levent: RevenueCat'e opak kimlik onaylı)
+- takıldım: RED v1 geçersizdi (bean adı çakışması — ajanlar kaçırdı, CI yakaladı); mutasyon betiği DB testini seçiyordu → temel kontrolü eklendi; ortam alanı yoksa 500; iade testi satın almadan önce damgalıydı; disk 1,1 → 4,5 GB (simülatör önbelleği)
+- sıradaki: Levent dönünce M7 Part 1 aktarımı (docs/aktarim/M7/README.md 1-2); sonra M7 Part 2 (K-705, K-702) — `plan/oturum-promptlari/M7-part2.md`
+- AI: bütün kod, test, ADR, prompt agent; para/veri soruları Levent (AskUserQuestion, Part 1 başı)
+
