@@ -244,6 +244,11 @@ class InventoryMatchesTheMigrations(unittest.TestCase):
                 self.assertTrue(set(entry["erased_by"]) <= ERASED_BY, entry["erased_by"])
                 self.assertTrue(entry["erased_by"])
                 self.assertIsInstance(entry["exported"], bool)
+                # Where in the module's export section the table's rows are (K-802): a dotted path, "[]" for each element
+                # of a list. EndToEndDeletionTests requires it to be filled for an account with data everywhere.
+                self.assertEqual("export_key" in entry, entry["exported"])
+                if entry["exported"]:
+                    self.assertRegex(entry["export_key"], r"^[a-zA-Z]+(\[\])?(\.[a-zA-Z]+(\[\])?)*$")
                 if "time" in entry["erased_by"]:
                     self.assertTrue(entry.get("kept_for", "").strip(), "a time-based purge says how long")
 
