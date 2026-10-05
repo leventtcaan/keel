@@ -3525,6 +3525,22 @@ tasks:
       - "ProductionProfileTests (prod YAML'ı), LanguageModelConfigurationTests, AppleAccountsProductionTests (saf)"
     refs: ["plan/kararlar/ADR-064-m9-basi-cevaplari.md", "plan/kararlar/ADR-062-apple-jeton-iptali.md", "plan/oturum-promptlari/M9.md"]
     learn: ["Spring profilleri", "Başlangıçta hızlı başarısız olma (fail fast)"]
+  - id: K-908
+    title: "/health hazır olmayı söyler: açılış işleri (FDC içe aktarma) bitmeden 503"
+    milestone: M9
+    module: shared
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-901]
+    why: "K-901 güvenlik incelemesi I2: Spring web sunucusu ApplicationRunner'lardan önce açılır; /health 200 derken içe aktarma sürüyor olabilir, sonra çökerse release.sh bunu ancak 30 sn içinde görür"
+    acceptance:
+      - "/health ReadinessState.ACCEPTING_TRAFFIC olana kadar 503 (sözleşmede 503 yanıtı); sonra 200"
+      - "release.sh yerleşme beklemesi bu sayede kısalır (yorum ve süre güncellenir)"
+    tests:
+      - "HealthController testi (ApplicationAvailability ile), sözleşme testi"
+    refs: ["plan/kararlar/ADR-065-vps-kurulumu.md", "deploy/release.sh"]
+    learn: ["Spring Boot availability (liveness/readiness)"]
   - id: K-536
     title: "Kilitten kilo girişi: parametreli Siri/Shortcuts intent'i (uygulamayı açmadan)"
     milestone: M9
