@@ -1,4 +1,4 @@
-# M9 · Part 2 — DEVAM (6 Eki gece, haftalık kullanım %97'de durdu)
+# M9 · Part 2 — DEVAM (6 Eki gece; güncel: 02:45)
 
 ```
 oturum-baslat. Toplu mod (hafıza: toplu-mod-aktarim, baglam-devri, tas-partlara-bolme). M9 Part 2'nin DEVAMI.
@@ -34,3 +34,9 @@ Ortak talimat plan/oturum-promptlari/M9.md; Part 2 kapsamı M9-part2.md. Hafıza
    "tamamlanmış olabilir" koruması yok) · `food/ItemRows.tsx:37-50` ("0" ilk karakter; `recipeGone` durum, açılışta duyurulur).
    Çözüm: koruma ya da `TextField`'a `announce={false}`.
 - API: `announceForAccessibilityWithOptions` kurulu (queue/priority, iOS 17+ priority) — gerek görülmedi.
+
+## GÜNCEL (02:45) — yukarıdakilerin yerine geçer
+- #409 K-618 **birleşti** (simülatör `xattr` kanıtı PR'da); worktree kaldırıldı. #410 K-815: 3 bulgu düzeltildi (oluş kimliği, tarama, `announceProblem`),
+  mutantlar 12/12, **auto-merge açık** — birleşmediyse CI'a bak. Aktarım dosyaları yazıldı (README 4-6).
+- Kalan (Levent'le): mağaza derlemesi → `ascAppId` → TestFlight dahili → cihaz listesi (madde 8 = K-618 cihaz teyidi, 14-18 = K-815 turu, 19 silme
+  en son) → K-308/K-903/K-618/K-815 `done` + `sync_backlog`. İletişim adresi → dış TestFlight. Sonra Part 2 ÇIKIŞ + Part 3 prompt'u.
