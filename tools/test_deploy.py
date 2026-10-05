@@ -474,6 +474,10 @@ class ContinuousDeployment(unittest.TestCase):
             with self.subTest(uses=uses):
                 self.assertRegex(uses, r"@[0-9a-f]{40}$")
 
+    def test_the_ci_key_can_run_the_forced_command_only(self):
+        authorize = (DEPLOY / "authorize-ci.sh").read_text()
+        self.assertIn('restrict,command=\\"/opt/keel/deploy/ci-deploy.sh\\"', authorize)
+
     def test_an_older_commit_is_not_deployed_over_a_newer_one(self):
         self.assertIn("git merge-base --is-ancestor", self.workflow)
 

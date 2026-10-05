@@ -80,7 +80,14 @@ if [[ ${1:-} == --rollback ]]; then
   docker tag "$previous" keel-backend:current
   docker tag "$current" keel-backend:previous
   "$kc" up -d
-  healthy && { echo "rolled back"; exit 0; }
+  if healthy; then
+    swap="$home/release-current.swap"
+    cp "$home/release-previous" "$swap" 2>/dev/null || : > "$swap"
+    cp "$home/release-current" "$home/release-previous" 2>/dev/null || true
+    mv "$swap" "$home/release-current"
+    echo "rolled back"
+    exit 0
+  fi
   echo "the rolled-back image did not answer /health" >&2
   exit 1
 fi
@@ -96,6 +103,9 @@ apply_host_files || true
 "$kc" up -d --remove-orphans
 apply_caddyfile
 if healthy; then
+  # What runs, by name, for the next deploy (ci-deploy.sh released: an older commit is not put over a newer one).
+  if [[ -n $current && $current != "$new" && -f $home/release-current ]]; then cp "$home/release-current" "$home/release-previous"; fi
+  echo "$image" > "$home/release-current"
   echo "released $image"
   prune
   exit 0

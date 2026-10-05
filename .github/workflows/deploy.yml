@@ -1,9 +1,73 @@
+# Continuous deployment (K-902, ADR-066): after CI passed on a push to main, that commit's image is built here, shipped
+# to the VPS over SSH and released (deploy/release.sh puts the old one back if /health does not answer). No registry: the
+# image goes as `docker save | gzip` down the SSH pipe, so it is published nowhere. The key can run only
+# deploy/ci-deploy.sh (its forced command); the host key is pinned. The repository is public: nothing here prints a value.
 name: Deploy
+
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    name: Deploy to the VPS
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    env:
+      COMMIT: ${{ github.event.workflow_run.head_sha }}
     steps:
-      - run: |
-          true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: SSH to the VPS (the CI key, the pinned host key)
+        env:
+          DEPLOY_KEY: ${{ secrets.KEEL_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.KEEL_DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.KEEL_DEPLOY_HOST }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User keel\n  IdentityFile ~/.ssh/deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking=yes\n  BatchMode yes\n' "$HOST" > ~/.ssh/config
+
+      - name: Only a commit newer than what runs
+        id: newer
+        run: |
+          released=$(ssh vps released)
+          if [ -n "$released" ] && ! git merge-base --is-ancestor "$released" "$COMMIT"; then
+            echo "skip: $COMMIT is not newer than the running $released"
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the image
+        if: steps.newer.outputs.deploy == 'true'
+        run: |
+          docker build -f deploy/backend.Dockerfile -t "keel-backend:$COMMIT" .
+          docker image ls "keel-backend:$COMMIT" --format 'image {{.ID}} {{.Size}}'
+
+      - name: The commit's deploy/ to the VPS
+        if: steps.newer.outputs.deploy == 'true'
+        run: |
+          git archive --format=tar "$COMMIT" deploy | ssh vps files "$COMMIT"
+
+      - name: Ship the image and release it
+        if: steps.newer.outputs.deploy == 'true'
+        run: |
+          docker save "keel-backend:$COMMIT" | gzip | ssh vps image "$COMMIT"
