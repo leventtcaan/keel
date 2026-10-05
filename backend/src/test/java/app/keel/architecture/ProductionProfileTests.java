@@ -2,81 +2,60 @@ package app.keel.architecture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
-import org.yaml.snakeyaml.Yaml;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.env.Environment;
 
 /**
- * What the server runs with on the VPS (K-907): application.yml with application-prod.yml over it, as Spring reads them
- * with SPRING_PROFILES_ACTIVE=prod. Production is on (the Apple key and a real-or-off coach are then required at start,
- * AppleAccountsProductionTests, LanguageModelConfigurationTests); the coach is off and the AI consent cannot be given
- * (ADR-064 #5: no fake, which keeps requests in memory — M8 inventory gap 7); TestFlight's SANDBOX purchases still count
- * during the beta (ADR-056 #4: it goes at the store launch, M10 — this test changes with that decision).
+ * What the server runs with (K-907), read by Spring itself from the application's own files (spring.config.location: the
+ * classpath root only, not the tests' config/application.yml). Production is what a server is unless a profile says
+ * otherwise: forgetting SPRING_PROFILES_ACTIVE fails closed — the Apple key and a real-or-off coach are then required and
+ * the base's fake coach stops the start (ProductionStartTests). The VPS runs `prod`: the coach is off and the AI consent
+ * cannot be given (ADR-064 #5; the fake keeps requests in memory — M8 inventory gap 7); TestFlight's SANDBOX purchases still
+ * count in the beta (ADR-056 #4: it goes at the store launch, M10 — this test changes with that decision).
  */
 class ProductionProfileTests {
 
-    private static final Path RESOURCES = Path.of("src/main/resources");
+    /** The application's files as a server reads them, under these profiles. */
+    static ApplicationContextRunner server(String... profiles) {
+        return new ApplicationContextRunner().withInitializer(new ConfigDataApplicationContextInitializer())
+                .withPropertyValues("spring.config.location=classpath:/", "spring.profiles.active=" + String.join(",", profiles));
+    }
 
-    @Test
-    void developmentIsNotProduction() throws IOException {
-        assertThat(at(load("application.yml"), "keel.production")).isEqualTo(false);
+    private static void environment(ApplicationContextRunner runner, Consumer<Environment> check) {
+        runner.run(context -> check.accept(context.getEnvironment()));
     }
 
     @Test
-    void productionIsOn() throws IOException {
-        assertThat(at(production(), "keel.production")).isEqualTo(true);
+    void withoutAProfileItIsProduction() {
+        environment(server(), env -> assertThat(env.getProperty("keel.production", Boolean.class)).isTrue());
     }
 
     @Test
-    void theCoachIsOffAndTheAiConsentCannotBeGiven() throws IOException {
-        Map<String, Object> prod = production();
-
-        assertThat(at(prod, "keel.coach.provider")).isEqualTo("off");
-        assertThat(at(prod, "keel.coach.provider-name")).isEqualTo("none");
-        assertThat(at(prod, "keel.consent.third-party-ai")).as("no provider to consent to").isNull();
+    void localDevelopmentAndTheTestsAreNot() {
+        environment(server("local"), env -> assertThat(env.getProperty("keel.production", Boolean.class)).isFalse());
+        // The tests' own config/application.yml, read where Spring reads it by default.
+        environment(new ApplicationContextRunner().withInitializer(new ConfigDataApplicationContextInitializer()),
+                env -> assertThat(env.getProperty("keel.production", Boolean.class)).isFalse());
     }
 
     @Test
-    void testFlightPurchasesCountDuringTheBeta() throws IOException {
-        assertThat(at(production(), "keel.subscription.revenuecat.environments")).isEqualTo(List.of("PRODUCTION", "SANDBOX"));
+    void theVpsProfileIsProductionWithTheCoachOffAndNoAiConsent() {
+        environment(server("prod"), env -> {
+            assertThat(env.getProperty("keel.production", Boolean.class)).isTrue();
+            assertThat(env.getProperty("keel.coach.provider")).isEqualTo("off");
+            assertThat(env.getProperty("keel.coach.provider-name")).isEqualTo("none");
+            assertThat(env.getProperty("keel.consent.third-party-ai.provider")).as("no provider to consent to").isNull();
+        });
     }
 
-    private static Map<String, Object> production() throws IOException {
-        return merge(load("application.yml"), load("application-prod.yml"));
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> load(String name) throws IOException {
-        try (InputStream in = Files.newInputStream(RESOURCES.resolve(name))) {
-            Map<String, Object> loaded = new Yaml().load(in);
-            return loaded == null ? Map.of() : loaded;
-        }
-    }
-
-    /** A profile's file over the base, key by key; a list or a value replaces, as Spring's property sources do. */
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> merge(Map<String, Object> base, Map<String, Object> over) {
-        Map<String, Object> merged = new LinkedHashMap<>(base);
-        over.forEach((key, value) -> merged.merge(key, value, (was, now) -> was instanceof Map<?, ?> a && now instanceof Map<?, ?> b
-                ? merge((Map<String, Object>) a, (Map<String, Object>) b) : now));
-        return merged;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Object at(Map<String, Object> yaml, String path) {
-        Object node = yaml;
-        for (String key : path.split("\\.")) {
-            if (!(node instanceof Map<?, ?> map)) {
-                return null;
-            }
-            node = ((Map<String, Object>) map).get(key);
-        }
-        return node;
+    @Test
+    void testFlightPurchasesCountDuringTheBeta() {
+        environment(server("prod"), env -> assertThat(Binder.get(env).bind("keel.subscription.revenuecat.environments", Bindable.listOf(String.class)).get())
+                .containsExactly("PRODUCTION", "SANDBOX"));
     }
 }
