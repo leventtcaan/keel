@@ -28,3 +28,13 @@
 | 19 | **Hesap silme + Apple iptali (K-812) — EN SON** | Ayarlar › Delete account → Apple yeniden onay → sil | Hesap gitti; iPhone Ayarlar › Apple ID › Oturum Açma ve Güvenlik › Apple ile giriş listesinde uygulama **yok** | | `19-silme` |
 
 Agent simülatörde: 14, 16, 17, 18 oturumsuz ekranlarda (`xcrun simctl ui booted content_size …`); K-618 klasör bayrağı `xattr` ile.
+
+## Simülatör sonuçları (6 Eki gece, EAS `development-simulator` derlemesi `40e9cfce`, iPhone 16 Pro Max iOS 18.1)
+- **0 · Açılış:** derleme kuruldu, Metro'ya bağlandı, giriş ekranı `https://keel-beta.duckdns.org` ile açıldı — ✅ (`img/0-giris-sim.png`).
+- **K-618 · yedek bayrağı:** modülün Swift gövdesi simülatörde uygulamanın kendi `Documents/progress-photos` klasörüne ve bir dosyaya →
+  `xattr`: `com.apple.metadata:com_apple_backup_excludeItem: com.apple.MobileBackup` (ikisinde de); olmayan dosya reddedildi — ✅.
+  Modülün mağaza derlemesinde kayıtlı olduğu cihazda (madde 8) görülür. Metro hata ayıklayıcısından (CDP) uygulama içinden çağrı denendi:
+  bağlantı uygulama tarafında 1006 ile kapandı — bu yol bırakıldı.
+- **14 · AX5 (giriş ekranı):** metin büyüyor, satır kırıyor, kesilme/taşma yok — ✅ (`img/14-ax5-giris-acik-sim.png`). Apple düğmesi sistemin
+  (sabit boyut, iOS'un dilinde). Oturumlu ekranlar cihazda.
+- **17 · koyu + Increase Contrast + AX5:** okunuyor — ✅ (`img/17-ax5-giris-koyu-kontrast-sim.png`).
