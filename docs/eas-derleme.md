@@ -35,7 +35,9 @@ Paket kimliği: `dev.leventtcaan.keel` (geçici, `app.config.ts`; `KEEL_IOS_BUND
    Store derlemesinde JS gömülüdür: `EXPO_PUBLIC_API_URL` EAS'in `production` ortamında — **yapıldı (6 Eki):**
    `https://keel-beta.duckdns.org` (düz metin, sır değil; `eas env:list --environment production`). `eas.json › build.production.environment`
    bu ortamı açıkça seçer. İlk derleme Levent'in terminalinde: `eas build -p ios --profile production --auto-submit` (Apple girişi + 2FA;
-   EAS dağıtım sertifikasını, profili, App Store Connect kaydını ve gönderim anahtarını kurar). Sonrakiler etkileşimsiz:
+   EAS dağıtım sertifikasını, profili, App Store Connect kaydını ve gönderim anahtarını kurar). Sonra App Store Connect kaydının sayısal
+   Apple ID'si `eas.json › submit.production.ios.ascAppId`'e girer (sır değil) — o olmadan etkileşimsiz gönderim düşer (eas-cli 20.3
+   `IosSubmitCommand`: "Set ascAppId in the submit profile"). Ondan sonra derlemeler etkileşimsiz:
    `eas build -p ios --profile production --auto-submit --non-interactive`.
    Şifreleme beyanı `app.json › ios.config.usesNonExemptEncryption: false` (yalnız işletim sisteminin HTTPS/Keychain'i) → TestFlight her
    derlemede ihracat sorusu sormaz.
