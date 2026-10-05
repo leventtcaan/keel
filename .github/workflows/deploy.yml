@@ -52,6 +52,9 @@ jobs:
           if [ -n "$released" ] && ! git merge-base --is-ancestor "$released" "$COMMIT"; then
             echo "skip: $COMMIT is not newer than the running $released"
             echo "deploy=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$released" ] && git diff --quiet "$released" "$COMMIT" -- backend data deploy; then
+            echo "skip: nothing the server runs changed since $released"
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
           else
             echo "deploy=true" >> "$GITHUB_OUTPUT"
           fi

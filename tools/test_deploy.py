@@ -481,6 +481,10 @@ class ContinuousDeployment(unittest.TestCase):
     def test_an_older_commit_is_not_deployed_over_a_newer_one(self):
         self.assertIn("git merge-base --is-ancestor", self.workflow)
 
+    def test_a_commit_that_changes_nothing_the_server_runs_is_not_deployed(self):
+        # Plans and documents go to main directly (CLAUDE.md › Git): they restart nothing.
+        self.assertIn('git diff --quiet "$released" "$COMMIT" -- backend data deploy', self.workflow)
+
 
 class CiDeployCommand(unittest.TestCase):
     """deploy/ci-deploy.sh, the CI key's forced command (authorized_keys), run for real against stand-ins."""
