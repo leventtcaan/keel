@@ -1,0 +1,84 @@
+# Continuous deployment (K-902, ADR-066): after CI passed on a push to main, that commit's image is built here and sent
+# with its commit id over SSH — nothing else. The server's forced command (deploy/ci-deploy.sh, root's) fetches main
+# itself, takes deploy/ from that commit, loads the image only under that one tag, and releases it (release.sh puts the
+# old one back if /health does not answer). No registry: the image is published nowhere. The host key is pinned. The
+# repository is public: nothing here prints a value.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# bash -eo pipefail: a broken pipe (docker save | ssh) fails the step.
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to the VPS
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    env:
+      COMMIT: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: SSH to the VPS (the CI key, the pinned host key)
+        env:
+          DEPLOY_KEY: ${{ secrets.KEEL_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.KEEL_DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.KEEL_DEPLOY_HOST }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User keel\n  IdentityFile ~/.ssh/deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking=yes\n  BatchMode yes\n' "$HOST" > ~/.ssh/config
+
+      - name: Only a commit newer than what runs, that changes what the server runs
+        id: newer
+        run: |
+          released=$(ssh vps released)
+          deploy=true
+          if [ -n "$released" ]; then
+            status=0
+            git merge-base --is-ancestor "$released" "$COMMIT" || status=$?
+            if [ "$status" -eq 1 ]; then
+              echo "skip: $COMMIT is not newer than the running $released"
+              deploy=false
+            elif [ "$status" -ne 0 ]; then
+              echo "the running commit $released is not in this repository" >&2
+              exit 1
+            elif git diff --quiet "$released" "$COMMIT" -- backend data deploy; then
+              echo "skip: nothing the server runs changed since $released"
+              deploy=false
+            fi
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+      - name: Build the image
+        if: steps.newer.outputs.deploy == 'true'
+        run: |
+          docker build -f deploy/backend.Dockerfile -t "keel-backend:$COMMIT" .
+          docker image ls "keel-backend:$COMMIT" --format 'image {{.ID}} {{.Size}}'
+
+      - name: Send the image and the commit id; the server releases it
+        if: steps.newer.outputs.deploy == 'true'
+        run: |
+          docker save "keel-backend:$COMMIT" | gzip | ssh vps deploy "$COMMIT"

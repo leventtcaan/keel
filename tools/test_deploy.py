@@ -279,7 +279,7 @@ class Release(unittest.TestCase):
         (self.home / "bin").mkdir()
         (self.home / "etc/systemd/system").mkdir(parents=True)
         (self.home / "etc/systemd/journald.conf.d").mkdir(parents=True)
-        for name in ("release.sh", "Caddyfile", "keel-backup.service", "keel-backup.timer", "journald-keel.conf"):
+        for name in ("release.sh", "Caddyfile", "keel-backup.service", "keel-backup.timer", "journald-keel.conf", "ci-deploy.sh"):
             (self.home / "deploy" / name).write_bytes((DEPLOY / name).read_bytes())
         (self.home / ".env").write_text("KEEL_DOMAIN=example.org\n")
         self.log = self.home / "calls.log"
@@ -287,7 +287,11 @@ class Release(unittest.TestCase):
         self.state.write_text(json.dumps({"tags": {}}))
         self.stub("docker", self.DOCKER)
         self.stub("curl", '#!/bin/sh\n[ -e "$FAKE_HOME/down" ] && exit 22; exit 0\n')
-        self.stub("sudo", '#!/bin/sh\necho "sudo $*" >> "$FAKE_HOME/calls.log"; "$@"\n')
+        # sudo: logged, then run without the owner flags (the test is not root).
+        self.stub("sudo", '#!/bin/bash\necho "sudo $*" >> "$FAKE_HOME/calls.log"\nargs=(); skip=0; for a in "$@"; do '
+                          'if ((skip)); then skip=0; continue; fi; case $a in -o|-g) skip=1;; *) args+=("$a");; esac; done; "${args[@]}"\n')
+        self.stub("flock", "#!/bin/sh\nexit 0\n")  # the server's util-linux; one release at a time is its job
+        (self.home / "lib").mkdir()
         self.stub("systemctl", '#!/bin/sh\necho "systemctl $*" >> "$FAKE_HOME/calls.log"\n')
         kc = self.home / "deploy/kc"
         kc.write_text('#!/bin/sh\necho "kc $*" >> "$FAKE_HOME/calls.log"\n')
@@ -314,7 +318,7 @@ class Release(unittest.TestCase):
         if down:
             (self.home / "down").write_text("")
         env = {"PATH": f"{self.home / 'bin'}:/usr/bin:/bin", "FAKE_STATE": str(self.state), "FAKE_HOME": str(self.home), "KEEL_HOME": str(self.home),
-               "KEEL_ETC": str(self.home / "etc"), "KEEL_RELEASE_WAIT": "5", "KEEL_RELEASE_SETTLE": "0", "KEEL_RELEASE_POLL": "0"}
+               "KEEL_ETC": str(self.home / "etc"), "KEEL_LIB": str(self.home / "lib"), "KEEL_RELEASE_WAIT": "5", "KEEL_RELEASE_SETTLE": "0", "KEEL_RELEASE_POLL": "0"}
         return subprocess.run(["bash", str(self.home / "deploy/release.sh"), *args], env=env, capture_output=True, text=True)
 
     def test_a_first_release_has_no_previous(self):
@@ -368,11 +372,26 @@ class Release(unittest.TestCase):
         self.run_release("keel-backend:old")
         self.assertIn("up -d --force-recreate --no-deps caddy", self.log.read_text())
 
+    def test_one_release_at_a_time(self):
+        self.assertIn("flock", (DEPLOY / "release.sh").read_text())
+
+    def test_what_runs_is_written_down_for_the_next_deploy(self):
+        self.run_release("keel-backend:old")
+        self.run_release("keel-backend:new")
+        self.assertEqual((self.home / "release-current").read_text().strip(), "keel-backend:new")
+        self.run_release("keel-backend:newer", down=True)
+        self.assertEqual((self.home / "release-current").read_text().strip(), "keel-backend:new", "a failed release changes nothing")
+        self.run_release("--rollback")
+        self.assertEqual((self.home / "release-current").read_text().strip(), "keel-backend:old")
+
     def test_host_files_reach_the_host_when_they_change(self):
         self.run_release("keel-backend:new")
         self.assertEqual((self.home / "etc/systemd/journald.conf.d/zz-keel.conf").read_text(), (DEPLOY / "journald-keel.conf").read_text())
         self.assertTrue((self.home / "etc/systemd/system/keel-backup.timer").is_file())
         self.assertIn("systemctl daemon-reload", self.log.read_text())
+        forced = self.home / "lib/ci-deploy"
+        self.assertEqual(forced.read_bytes(), (DEPLOY / "ci-deploy.sh").read_bytes())
+        self.assertTrue(forced.stat().st_mode & 0o111)
 
 
 class TheLiveRunsFindings(unittest.TestCase):
@@ -432,6 +451,154 @@ class TheLiveRunsFindings(unittest.TestCase):
             self.assertEqual(out.split(), ["public.u|0", "s.t|2"])
         finally:
             subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+
+class ContinuousDeployment(unittest.TestCase):
+    """K-902: a merge to main → CI green → image → the VPS, through a key that can do only that."""
+
+    def setUp(self):
+        self.workflow = (ROOT / ".github/workflows/deploy.yml").read_text()
+
+    def test_it_runs_only_after_ci_passed_on_a_push_to_main(self):
+        self.assertRegex(self.workflow, r"(?ms)^on:\n  workflow_run:\n    workflows: \[CI\]\n    types: \[completed\]\n    branches: \[main\]\n")
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", self.workflow)
+        self.assertIn("github.event.workflow_run.event == 'push'", self.workflow)
+        self.assertIn("ref: ${{ github.event.workflow_run.head_sha }}", self.workflow, "the commit CI tested, not main's newest")
+
+    def test_one_at_a_time_never_cancelled_halfway(self):
+        self.assertRegex(self.workflow, r"(?m)^concurrency:\n  group: deploy\n  cancel-in-progress: false$")
+
+    def test_its_secrets_live_in_the_production_environment_and_reach_no_command_line(self):
+        self.assertIn("environment: production", self.workflow)
+        self.assertRegex(self.workflow, r"(?m)^permissions:\n  contents: read$")
+        runs = re.findall(r"(?ms)^ +run: \|\n(.*?)(?=^ +- |\Z)", self.workflow)
+        self.assertTrue(runs)
+        for run in runs:
+            self.assertNotIn("${{", run, "contexts and secrets go through env:, never pasted into a script")
+            self.assertNotIn("set -x", run)
+        self.assertEqual(sorted(set(re.findall(r"secrets\.([A-Z_]+)", self.workflow))), ["KEEL_DEPLOY_SSH_KEY"])
+        self.assertEqual(sorted(set(re.findall(r"vars\.([A-Z_]+)", self.workflow))), ["KEEL_DEPLOY_HOST", "KEEL_DEPLOY_KNOWN_HOSTS"])
+        self.assertIn("StrictHostKeyChecking=yes", self.workflow, "the server's key is pinned")
+
+    def test_actions_are_pinned_to_a_commit(self):
+        for uses in re.findall(r"uses: (\S+)", self.workflow):
+            with self.subTest(uses=uses):
+                self.assertRegex(uses, r"@[0-9a-f]{40}$")
+
+    def test_the_ci_key_can_run_the_forced_command_only_from_a_place_it_cannot_write(self):
+        authorize = (DEPLOY / "authorize-ci.sh").read_text()
+        self.assertIn('restrict,command=\\"/usr/local/lib/keel/ci-deploy\\"', authorize)
+        self.assertIn("sudo install -o root -g root -m 755", authorize)
+        self.assertIn("host_file ci-deploy.sh \"$lib/ci-deploy\" 755", (DEPLOY / "release.sh").read_text(), "a merged change reaches it, as root's")
+
+    def test_the_runner_sends_an_image_and_a_commit_id_only(self):
+        self.assertNotIn("git archive", self.workflow)
+        self.assertIn('| ssh vps deploy "$COMMIT"', self.workflow)
+
+    def test_every_step_stops_on_a_broken_pipe(self):
+        self.assertRegex(self.workflow, r"(?m)^defaults:\n  run:\n    shell: bash$")
+
+    def test_an_unreadable_running_commit_fails_the_job_instead_of_skipping(self):
+        self.assertRegex(self.workflow, r"merge-base --is-ancestor[^\n]*\|\| status=\$\?")
+        self.assertIn('[ "$status" -eq 1 ]', self.workflow)
+
+    def test_an_older_commit_is_not_deployed_over_a_newer_one(self):
+        self.assertIn("git merge-base --is-ancestor", self.workflow)
+
+    def test_a_commit_that_changes_nothing_the_server_runs_is_not_deployed(self):
+        # Plans and documents go to main directly (CLAUDE.md › Git): they restart nothing.
+        self.assertIn('git diff --quiet "$released" "$COMMIT" -- backend data deploy', self.workflow)
+
+
+class CiDeployCommand(unittest.TestCase):
+    """deploy/ci-deploy.sh, the CI key's forced command, run for real: a local git repository stands in for GitHub, stand-ins
+    for docker and release.sh record what is called. The CI key sends only an image and a commit id (K-902 security review)."""
+
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp())
+        (self.home / "bin").mkdir()
+        self.log = self.home / "calls.log"
+        self.log.write_text("")
+        self.stub("docker", '#!/bin/sh\necho "docker $*" >> "$FAKE_HOME/calls.log"; cat >/dev/null; exit 0\n')
+        # The "GitHub" repository: main with two commits, and a branch that is not main.
+        self.origin = self.home / "origin"
+        self.git("init", "-q", "-b", "main", str(self.origin))
+        self.first = self.commit("one")
+        self.second = self.commit("two")
+        self.git("-C", str(self.origin), "checkout", "-q", "-b", "elsewhere")
+        self.stray = self.commit("stray")
+        self.git("-C", str(self.origin), "checkout", "-q", "main")
+
+    def git(self, *args):
+        return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], check=True, capture_output=True, text=True).stdout.strip()
+
+    def commit(self, marker):
+        deploy = self.origin / "deploy"
+        deploy.mkdir(exist_ok=True)
+        (deploy / "marker").write_text(marker)
+        release = deploy / "release.sh"
+        release.write_text(f'#!/bin/sh\necho "release {marker} $*" >> "$FAKE_HOME/calls.log"\n')
+        release.chmod(0o755)
+        self.git("-C", str(self.origin), "add", "-A")
+        self.git("-C", str(self.origin), "commit", "-q", "-m", marker)
+        return self.git("-C", str(self.origin), "rev-parse", "HEAD")
+
+    def stub(self, name, text):
+        path = self.home / "bin" / name
+        path.write_text(text)
+        path.chmod(0o755)
+
+    def image(self, *tags):
+        """`docker save | gzip` of an image with these tags: what matters is its manifest."""
+        folder = Path(tempfile.mkdtemp())
+        (folder / "manifest.json").write_text(json.dumps([{"Config": "c.json", "RepoTags": list(tags), "Layers": []}]))
+        tar = subprocess.run(["tar", "-c", "-C", str(folder), "manifest.json"], capture_output=True, check=True).stdout
+        return subprocess.run(["gzip", "-c"], input=tar, capture_output=True, check=True).stdout
+
+    def run_command(self, command, stdin=b""):
+        env = {"PATH": f"{self.home / 'bin'}:/usr/bin:/bin:/opt/homebrew/bin", "FAKE_HOME": str(self.home), "KEEL_HOME": str(self.home),
+               "KEEL_REPOSITORY": str(self.origin), "SSH_ORIGINAL_COMMAND": command}
+        return subprocess.run(["bash", str(DEPLOY / "ci-deploy.sh")], env=env, input=stdin, capture_output=True)
+
+    def calls(self):
+        return self.log.read_text().splitlines()
+
+    def test_anything_but_its_two_commands_is_refused_before_anything_runs(self):
+        sha = self.second
+        for command in ("", "bash", "deploy", "deploy 123", f"deploy {sha} extra", f"deploy {sha};id", "deploy $(id)",
+                        f"deploy {sha.upper()}", "released x", f"files {sha}", f"image {sha}"):
+            with self.subTest(command=command):
+                self.assertNotEqual(self.run_command(command).returncode, 0)
+        self.assertEqual(self.calls(), [], "nothing was called")
+
+    def test_released_names_only_a_commit(self):
+        self.assertEqual(self.run_command("released").stdout, b"")
+        (self.home / "release-current").write_text(f"keel-backend:{self.second}\n")
+        self.assertEqual(self.run_command("released").stdout.decode().strip(), self.second)
+        (self.home / "release-current").write_text("keel-backend:previous\n")
+        self.assertNotEqual(self.run_command("released").returncode, 0, "a name that is not a commit is an error, not a skip")
+
+    def test_deploy_takes_deploy_from_main_on_the_server_and_releases_with_it(self):
+        result = self.run_command(f"deploy {self.second}", self.image(f"keel-backend:{self.second}"))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.home / "deploy/marker").read_text(), "two")
+        self.assertEqual(self.calls(), ["docker load -q -i " + str(self.home / ".incoming-image.tar"), f"release two keel-backend:{self.second}"])
+
+    def test_a_commit_not_on_main_is_refused(self):
+        self.assertNotEqual(self.run_command(f"deploy {self.stray}", self.image(f"keel-backend:{self.stray}")).returncode, 0)
+        self.assertNotEqual(self.run_command(f"deploy {'a' * 40}", self.image(f"keel-backend:{'a' * 40}")).returncode, 0)
+        self.assertEqual(self.calls(), [])
+        self.assertFalse((self.home / "deploy").exists())
+
+    def test_an_older_commit_than_the_running_one_is_refused(self):
+        (self.home / "release-current").write_text(f"keel-backend:{self.second}\n")
+        self.assertNotEqual(self.run_command(f"deploy {self.first}", self.image(f"keel-backend:{self.first}")).returncode, 0)
+        self.assertEqual(self.calls(), [])
+
+    def test_an_image_carrying_any_other_tag_is_not_loaded(self):
+        for tags in ([f"keel-backend:{self.second}", "keel-backend:previous"], ["keel-backend:current"], [], [f"keel-backend:{self.first}"]):
+            with self.subTest(tags=tags):
+                self.assertNotEqual(self.run_command(f"deploy {self.second}", self.image(*tags)).returncode, 0)
+        self.assertEqual(self.calls(), [])
 
 
 if __name__ == "__main__":
