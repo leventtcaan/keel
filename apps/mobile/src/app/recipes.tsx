@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -97,7 +98,7 @@ export default function RecipesScreen() {
         </Pressable>
         <ScreenTitle>{t('recipes.title')}</ScreenTitle>
         {body}
-        {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+        {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         <Button label={t('recipes.new')} onPress={() => router.push('/recipe')} />
       </ScrollView>
     </SafeAreaView>

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -50,7 +51,7 @@ export function ImportSection() {
       <Text style={[styles.note, { color: color.muted }]}>{t('settings.import.note')}</Text>
       {weighIns}
       {outcome !== null && <Said text={said(outcome)} />}
-      {problem !== null && <Said text={problem} />}
+      {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
       {/* A file needs no HealthKit: workouts can be brought in in any build (K-609). */}
       <Row label={t('settings.import.workouts')} hint={t('settings.import.workoutsHint')}>
         <Button

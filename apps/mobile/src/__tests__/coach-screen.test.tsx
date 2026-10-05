@@ -4,6 +4,7 @@
  * engine's own words marked as such; the plan never changed from here (applying a call is Today's).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 
 import CoachScreen from '@/app/coach';
 import type { components } from '@/api/schema';
@@ -388,3 +389,40 @@ describe('a meal in words (K-504 draft)', () => {
 function allText(): string {
   return screen.toJSON() === null ? '' : JSON.stringify(screen.toJSON());
 }
+
+// K-815: VoiceOver hears only what it is on; the wait, the answer and a failure appear below it, so they are announced.
+const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+
+test('VoiceOver hears the wait, then the answer in its own words (K-815)', async () => {
+  mockSent = ok({ mode: 'MODEL', topic: 'HUNGER', rule: 'cut_step', call: CALL });
+  await show();
+  announced.mockClear();
+  await send('I am starving');
+  const words = announced.mock.calls.map(([line]) => line);
+  expect(words[0]).toBe(t('coach.thinking'));
+  expect(words[1]).toContain(t('coach.topic.hunger'));
+  expect(words[1]).toContain(t('decision.rule.cut_step'));
+  expect(words).toHaveLength(2);
+});
+
+test('VoiceOver hears an answer that did not come, and a missing consent (K-815)', async () => {
+  mockSent = 'offline';
+  await show();
+  announced.mockClear();
+  await send('Why?');
+  expect(announced).toHaveBeenLastCalledWith(t('coach.failed'));
+  mockSent = refused(403, 'CONSENT_REQUIRED');
+  await press(t('coach.retry'));
+  expect(announced).toHaveBeenLastCalledWith(t('coach.consent'));
+});
+
+test("VoiceOver hears a chip's answer, and the engine's mark on it (K-815)", async () => {
+  mockSent = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.daily_limit', call: CALL });
+  await show();
+  announced.mockClear();
+  await press(t('today.chips.why'));
+  expect(announced).toHaveBeenCalledTimes(1);
+  expect(announced.mock.calls[0][0]).toContain(t('decision.rule.cut_step'));
+  await send('Why?');
+  expect(announced.mock.calls.at(-1)?.[0]).toContain(t('coach.standard'));
+});

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -95,7 +96,7 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
       <View style={styles.reasons}>
         <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t('today.call.oneThing')}</Text>
         <Button label={t('today.call.apply')} size="sm" onPress={() => void apply()} disabled={busy} />
-        {failed?.read === decision ? <Text style={[styles.small, { color: color.decisionMuted }]}>{t(failed.key)}</Text> : null}
+        {failed?.read === decision ? <ProblemText style={[styles.small, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null}
       </View>
     ) : (
       <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t(state === 'UNDONE' ? 'today.call.undone' : appliedKey(decision.copyKey))}</Text>

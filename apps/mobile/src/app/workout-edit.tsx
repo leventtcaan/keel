@@ -166,6 +166,7 @@ export default function WorkoutEditScreen() {
                 asking={confirming === s.id}
                 busy={busy}
                 problem={problem !== null && problem.at === s.id ? problem.text : null}
+                problemOccurrence={problem}
                 set={s}
                 onAsk={setConfirming}
                 onKeep={() => setConfirming(null)}
@@ -199,6 +200,7 @@ export default function WorkoutEditScreen() {
           onChange={(change) => setTyped({ key: entryKey, entry: { ...entry, ...change } })}
           onLog={() => void add()}
           problem={problem !== null && problem.at === ADD ? problem.text : null}
+          problemOccurrence={problem}
           busy={busy}
         />
       </Card>

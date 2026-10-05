@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -17,6 +18,13 @@ type Props = {
   /** Shown under the field; `problem` replaces it when there is one (in the text colour: warn is for real warnings, ADR-016). */
   hint?: string;
   problem?: string | null;
+  /** Which showing of the problem this is (`useProblem`): the same words shown again are said again (K-815). */
+  problemOccurrence?: unknown;
+  /**
+   * False for a field checked as it is typed: its problem comes and goes with each key, and saying it would cut off VoiceOver's
+   * own echo of the key. It is still in the field's hint, read when VoiceOver is on the field.
+   */
+  announceProblem?: boolean;
   keyboardType?: TextInputProps['keyboardType'];
   maxLength?: number;
   /** A few sentences rather than a short answer (a note). */
@@ -26,7 +34,7 @@ type Props = {
 };
 
 /** A labelled field for a short answer: a number, a year, a time — or, multiline, a note. */
-export function TextField({ label, value, onChangeText, suffix, hint, problem, keyboardType, maxLength, multiline = false, onSearch }: Props) {
+export function TextField({ label, value, onChangeText, suffix, hint, problem, problemOccurrence, announceProblem = true, keyboardType, maxLength, multiline = false, onSearch }: Props) {
   const { color } = useTheme();
   const note = problem ?? hint;
   return (
@@ -48,7 +56,15 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, k
         />
         {suffix !== undefined && <Text style={[styles.suffix, { color: color.muted }]}>{suffix}</Text>}
       </View>
-      {note !== undefined && note !== null && <Text style={[styles.note, { color: problem ? color.text : color.muted }]}>{note}</Text>}
+      {problem && !announceProblem ? (
+        <Text style={[styles.note, { color: color.text }]}>{problem}</Text>
+      ) : problem ? (
+        <ProblemText style={[styles.note, { color: color.text }]} occurrence={problemOccurrence}>
+          {problem}
+        </ProblemText>
+      ) : (
+        hint !== undefined && <Text style={[styles.note, { color: color.muted }]}>{hint}</Text>
+      )}
     </View>
   );
 }

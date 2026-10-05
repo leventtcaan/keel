@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Chip } from '@/components/Chip';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
@@ -17,14 +18,17 @@ export function UnitsSection() {
   const { color } = useTheme();
   const { problem, run } = useAction();
   const choose = (next: UnitSystem) => void run(() => units.set(next).then(() => undefined), {}, 'settings.units.failed');
-  const note = problem ?? t('settings.units.note');
   return (
     <Section title={t('settings.units.title')}>
       <View style={styles.row}>
         <Chip label={t('settings.units.metric')} selected={system === 'METRIC'} onPress={() => choose('METRIC')} />
         <Chip label={t('settings.units.imperial')} selected={system === 'IMPERIAL'} onPress={() => choose('IMPERIAL')} />
       </View>
-      <Text style={[styles.note, { color: problem === null ? color.muted : color.text }]}>{note}</Text>
+      {problem === null ? (
+        <Text style={[styles.note, { color: color.muted }]}>{t('settings.units.note')}</Text>
+      ) : (
+        <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>
+      )}
     </Section>
   );
 }

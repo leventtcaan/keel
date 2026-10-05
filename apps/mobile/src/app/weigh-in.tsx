@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText, useProblem } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -37,7 +38,7 @@ export default function WeighInScreen() {
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [text, setText] = useState('');
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem, occurrence] = useProblem();
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<{ weighIns: Schemas['WeighIn'][]; trend: Schemas['TrendPoint'][] } | null>(null);
   const saving = useRef(false); // two taps at once must not save twice
@@ -115,7 +116,11 @@ export default function WeighInScreen() {
       <View style={styles.part}>
         <Text style={[styles.heading, { color: color.text }]}>{t('consent.health_data.title')}</Text>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('consent.health_data.body')}</Text>
-        {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+        {problem !== null && (
+          <ProblemText style={[styles.text, { color: color.text }]} occurrence={occurrence}>
+            {problem}
+          </ProblemText>
+        )}
         <Button label={t('weighIn.consent.allow')} onPress={() => void allow()} disabled={busy} />
         <Button label={t('weighIn.consent.notNow')} variant="ghost" onPress={() => router.back()} disabled={busy} />
       </View>
@@ -133,6 +138,7 @@ export default function WeighInScreen() {
           suffix={unit}
           hint={t('weighIn.note')}
           problem={problem}
+          problemOccurrence={occurrence}
           keyboardType="decimal-pad"
           maxLength={6}
         />

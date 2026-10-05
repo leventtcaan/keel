@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { t } from '@/copy';
@@ -63,7 +64,9 @@ export function PromptCard({ read }: { read: { state: 'ready'; value: Prompt[] }
           ))}
         </View>
       )}
-      {failed !== null ? <Text style={[styles.text, { color: color.textSecondary }]}>{t(failed)}</Text> : null}
+      {failed !== null ? <ProblemText style={[styles.text, { color: color.textSecondary }]} occurrence={here}>
+          {t(failed)}
+        </ProblemText> : null}
     </Card>
   );
 }

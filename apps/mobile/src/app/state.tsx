@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { OptionCard } from '@/components/OptionCard';
@@ -57,7 +58,7 @@ export default function StateScreen() {
     }
   }
 
-  const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{t(problem)}</Text>;
+  const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{t(problem)}</ProblemText>;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>

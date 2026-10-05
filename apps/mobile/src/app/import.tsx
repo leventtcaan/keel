@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -172,6 +173,12 @@ function Note({ text }: { text: string }) {
   return <Text style={[styles.text, { color: color.textSecondary }]}>{text}</Text>;
 }
 
+/** A send that failed: as a note, and said to VoiceOver (K-815). */
+function ProblemNote({ text }: { text: string }) {
+  const { color } = useTheme();
+  return <ProblemText style={[styles.text, { color: color.textSecondary }]}>{text}</ProblemText>;
+}
+
 const INTRO = { start: 'import.intro', unknown: 'import.unknown', empty: 'import.empty' } as const;
 
 function Start({ stage, moves, onChoose }: { stage: 'start' | 'unknown' | 'empty'; moves: 'loading' | 'failed' | 'ready'; onChoose: () => void }) {
@@ -218,7 +225,7 @@ function SendPart({
   const count = built?.sessions ?? 0;
   return (
     <View style={styles.part}>
-      {problem !== null && <Note text={problem} />}
+      {problem !== null && <ProblemNote text={problem} />}
       {progress !== null && <Note text={t('import.sending', { done: progress.done, of: progress.of })} />}
       {built === null ? (
         <Note text={t('import.unitFirst')} />

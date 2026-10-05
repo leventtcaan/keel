@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -24,6 +25,8 @@ type Props = {
   onChange: (change: Partial<Entry>) => void;
   onLog: () => void;
   problem: string | null;
+  /** Which showing of the problem this is: the same failure again is said again (K-815). */
+  problemOccurrence?: unknown;
   busy: boolean;
 };
 
@@ -31,7 +34,7 @@ type Props = {
  * The row under way (B §6.5: one tap per set): the weight and the reps, filled with the suggestion; the RIR picked
  * (0, 1, 2, 3+); one button logs it. A bodyweight move has no weight to type; a weighted one types what is added.
  */
-export function SetEntry({ move, index, side, entry, onChange, onLog, problem, busy }: Props) {
+export function SetEntry({ move, index, side, entry, onChange, onLog, problem, problemOccurrence, busy }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
@@ -51,7 +54,11 @@ export function SetEntry({ move, index, side, entry, onChange, onLog, problem, b
     );
   const last = workoutParams.rirChoices.length - 1;
   const label = side === 'BOTH' ? t('workout.log', { number }) : t('workout.logSide', { number, side: t(`workout.sideName.${side}`) });
-  const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{problem}</Text>;
+  const said = problem === null ? null : (
+      <ProblemText style={[styles.text, { color: color.text }]} occurrence={problemOccurrence}>
+        {problem}
+      </ProblemText>
+    );
   // Closed until asked for: one tap stays one tap.
   const noteField =
     entry.note === null ? (

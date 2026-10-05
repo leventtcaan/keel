@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 
 import type Svg from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -125,7 +126,7 @@ function trendChange(points: Schemas['TrendPoint'][]): CardFacts['weight'] {
 
 function Failed() {
   const { color } = useTheme();
-  return <Text style={[styles.text, { color: color.text }]}>{t('share.failed')}</Text>;
+  return <ProblemText style={[styles.text, { color: color.text }]}>{t('share.failed')}</ProblemText>;
 }
 
 const styles = StyleSheet.create({

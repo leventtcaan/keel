@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import type { HealthWriteSettings } from '@/health/healthWrite';
@@ -71,7 +72,7 @@ export function HealthWriteSection() {
       {(refused || ROWS.some((row) => healthWriting.shown(row.which) === 'refused')) && (
         <Text style={[styles.note, { color: color.text }]}>{t('settings.healthWrite.refused')}</Text>
       )}
-      {problem !== null && <Text style={[styles.note, { color: color.text }]}>{problem}</Text>}
+      {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
     </Section>
   );
 }

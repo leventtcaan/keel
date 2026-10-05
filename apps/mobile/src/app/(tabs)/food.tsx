@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CoachEntry } from '@/components/CoachEntry';
@@ -93,7 +94,7 @@ export default function FoodScreen() {
     ) : null;
   const offered = data === null ? [] : data.offers.filter((meal) => !hidden.has(meal.id));
   const offers = offered.length > 0 ? <RepeatOffers offers={offered} busy={repeating} onRepeat={(meal) => void repeat(meal)} /> : null;
-  const repeatNote = repeatProblem !== null ? <Text style={[styles.text, { color: color.text }]}>{repeatProblem}</Text> : null;
+  const repeatNote = repeatProblem !== null ? <ProblemText style={[styles.text, { color: color.text }]}>{repeatProblem}</ProblemText> : null;
 
   return (
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the coach bar sits above it.

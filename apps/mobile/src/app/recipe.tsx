@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -130,7 +131,7 @@ export default function RecipeScreen() {
       <View style={styles.part}>
         <Text style={[styles.heading, { color: color.text }]}>{t('consent.health_data.title')}</Text>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('consent.health_data.body')}</Text>
-        {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+        {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         <Button label={t('meal.consent.allow')} onPress={() => void allow()} disabled={busy} />
         <Button label={t('meal.consent.notNow')} variant="ghost" onPress={() => router.back()} disabled={busy} />
       </View>
@@ -155,7 +156,7 @@ export default function RecipeScreen() {
         {shown !== null && <EstimateTitle />}
         {shown !== null && <EstimateCard estimate={shown} question={null} />}
         {missingNotes}
-        {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+        {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         <Button label={t('recipe.save')} onPress={() => void save()} disabled={busy} />
       </View>
     ) : null;
