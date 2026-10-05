@@ -347,7 +347,8 @@ class PolicyMatchesTheInventory(unittest.TestCase):
         self.anchors = policy_anchors(PRIVACY.read_text(encoding="utf-8"))
         data = inventory()
         self.referenced = ([e["policy"] for e in data["server"]] + [p["policy"] for p in data["phone"]["permissions"]]
-                           + [s["policy"] for s in data["phone"]["stored"]] + [o["policy"] for o in data["outbound"]])
+                           + [s["policy"] for s in data["phone"]["stored"]] + [o["policy"] for o in data["outbound"]]
+                           + [o["policy"] for o in data["operations"]])
 
     def test_every_entry_points_at_a_section(self):
         self.assertEqual(sorted(set(self.referenced) - set(self.anchors)), [])
@@ -393,6 +394,39 @@ class PolicyMatchesTheInventory(unittest.TestCase):
         else:
             self.assertNotIn("not active", section)
             self.assertIn(name, section)
+
+
+class OperationsMatchTheServer(unittest.TestCase):
+    """Backups and logs (K-901, ADR-065): the inventory and the policy state deploy/retention.env's numbers."""
+
+    def setUp(self):
+        self.days = {k: int(v) for k, v in re.findall(r"^([A-Z_]+)=(\d+)$", (ROOT / "deploy/retention.env").read_text(), re.M)}
+        self.operations = {o["name"]: o for o in inventory()["operations"]}
+        self.policy = PRIVACY.read_text(encoding="utf-8")
+
+    def test_each_names_the_files_that_do_it(self):
+        for operation in self.operations.values():
+            for source in operation["source"]:
+                with self.subTest(source=source):
+                    self.assertTrue((ROOT / source).is_file())
+
+    def test_backups_are_kept_as_long_as_the_scripts_keep_them(self):
+        server, mac = self.days["BACKUP_KEEP_DAYS_SERVER"], self.days["BACKUP_KEEP_DAYS_MAC"]
+        self.assertEqual(self.operations["database backups"]["kept_for"],
+                         f"{server} days on the server, {mac} days on the controller's computer, then deleted")
+        section = " ".join(_section(self.policy, "data-backups").split())
+        self.assertIn(f"on the server for {server} days", section)
+        self.assertIn(f"in Turkey, for {mac} days", section)
+        self.assertIn(f"gone from the backups within {mac} days", section)
+        self.assertIn("encrypted on our server before it is stored", section)
+        self.assertIn("an account deleted after it would come back", section, "what a restore does to a deletion")
+
+    def test_logs_are_kept_as_long_as_journald_keeps_them(self):
+        logs = self.days["LOG_KEEP_DAYS"]
+        self.assertEqual(self.operations["server logs"]["kept_for"], f"{logs} days, then deleted")
+        section = " ".join(_section(self.policy, "data-technical").split())
+        self.assertIn(f"Logs are deleted after {logs} days", section)
+        self.assertIn("keeps no access log", section)
 
 
 class PermissionsMatchTheApp(unittest.TestCase):

@@ -1,0 +1,9 @@
+# The daily encrypted database backup (K-901, ADR-065): deploy/backup.sh.
+[Unit]
+Description=keel database backup (encrypted)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/keel/deploy/backup.sh

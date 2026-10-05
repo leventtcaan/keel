@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "updated": "2026-10-05",
- "about": "Every piece of data the product keeps or sends, derived from the code (K-801, ADR-060). tools/test_veri_envanteri.py binds it to the migrations, the app's permissions, plugins, Apple Health types and dependencies, the server's AI provider setting, and the privacy policy.",
+ "about": "Every piece of data the product keeps or sends, derived from the code (K-801, ADR-060). tools/test_veri_envanteri.py binds it to the migrations, the app's permissions, plugins, Apple Health types and dependencies, the server's AI provider setting, the server's backup and log retention (deploy/), and the privacy policy.",
  "apple_data_types": {
   "source": "https://developer.apple.com/app-store/app-privacy-details/ (2026-10-04)",
   "types": [
@@ -1232,5 +1232,33 @@
    "Contests",
    "Loot Boxes"
   ]
- }
+ },
+ "operations": [
+  {
+   "name": "database backups",
+   "data": "A copy of every table above, made once a day (pg_dump), encrypted on the server before it is written (age; the private key is only on the controller's computer — the server cannot read a backup).",
+   "where": "our server (Contabo, Germany), then pulled to the controller's own computer (Turkey)",
+   "kept_for": "7 days on the server, 14 days on the controller's computer, then deleted",
+   "basis": "legitimate interest (Art. 6(1)(f)): restoring the service after a failure; security of processing (Art. 32)",
+   "source": [
+    "deploy/backup.sh",
+    "deploy/mac/pull-backups.sh",
+    "deploy/retention.env"
+   ],
+   "policy": "data-backups"
+  },
+  {
+   "name": "server logs",
+   "data": "Each request's route, status and timing, never the account, what was sent, or health data (V3). The web server in front keeps no access log; its error messages can hold an IP address.",
+   "where": "our server (Contabo, Germany)",
+   "kept_for": "14 days, then deleted",
+   "basis": "legitimate interest (Art. 6(1)(f)): keeping the service running",
+   "source": [
+    "deploy/journald-keel.conf",
+    "deploy/Caddyfile",
+    "deploy/retention.env"
+   ],
+   "policy": "data-technical"
+  }
+ ]
 }

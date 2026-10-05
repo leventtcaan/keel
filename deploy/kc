@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# docker compose for the keel project on the VPS (K-901): /opt/keel is the project directory (its .env, fdc/, deploy/).
+exec docker compose --project-directory /opt/keel -f /opt/keel/deploy/compose.yaml "$@"
