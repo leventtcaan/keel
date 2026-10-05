@@ -265,7 +265,11 @@ class Release(unittest.TestCase):
         if a[0] == "images":
             print("\\n".join(t for t in state["tags"] if t.startswith("keel-backend:"))); sys.exit(0)
         if a[0] == "inspect":
-            print("running 0"); sys.exit(0)
+            # A backend that crashes after /health answered restarts: each look sees one more restart.
+            crashing = os.path.join(os.environ["FAKE_HOME"], "crashing")
+            restarts = int(open(crashing).read() or 0) + 1 if os.path.exists(crashing) else 0
+            if os.path.exists(crashing): open(crashing, "w").write(str(restarts))
+            print(f"running {restarts}"); sys.exit(0)
         sys.exit(0)  # prune
         ''')
 
@@ -340,6 +344,13 @@ class Release(unittest.TestCase):
         self.assertNotEqual(self.run_release("keel-backend:new", down=True).returncode, 0)
         tags = self.tags()
         self.assertEqual((tags["keel-backend:current"], tags["keel-backend:previous"]), ("sha256:old", "sha256:older"))
+
+    def test_a_backend_that_restarts_after_answering_fails_the_release(self):
+        # I2: /health answers before the start's own work is done; a crash after it shows as a restart.
+        self.run_release("keel-backend:old")
+        (self.home / "crashing").write_text("")
+        self.assertNotEqual(self.run_release("keel-backend:new").returncode, 0)
+        self.assertEqual(self.tags()["keel-backend:current"], "sha256:old")
 
     def test_a_rollback_swaps_so_it_can_be_undone(self):
         self.run_release("keel-backend:old")
