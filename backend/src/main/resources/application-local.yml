@@ -9,5 +9,7 @@ spring:
 # and RevenueCat's webhook signing secret (any value locally; the real one is in RevenueCat's dashboard, ADR-056):
 # export KEEL_REVENUECAT_WEBHOOK_SECRET=$(openssl rand -hex 32)
 keel:
+  # Development: the fake coach model and no Sign in with Apple key are allowed (K-907).
+  production: false
   apple:
     client-id: app.keel.local

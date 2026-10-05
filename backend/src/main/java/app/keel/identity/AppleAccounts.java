@@ -8,6 +8,7 @@ import java.net.URI;
 import java.security.interfaces.ECPrivateKey;
 import java.time.Clock;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
@@ -27,12 +28,18 @@ public class AppleAccounts {
     private final Clock clock;
     private final ECPrivateKey key;
 
-    AppleAccounts(AppleRevocationProperties revocation, AppleProperties apple, AppleIdentityVerifier verifier, Accounts accounts, Clock clock) {
+    AppleAccounts(AppleRevocationProperties revocation, AppleProperties apple, AppleIdentityVerifier verifier, Accounts accounts, Clock clock,
+            @Value("${keel.production}") boolean production) {
         this.revocation = revocation;
         this.apple = apple;
         this.verifier = verifier;
         this.accounts = accounts;
         this.clock = clock;
+        // In production a deletion must end the Apple sign-in too (ADR-062 #3, K-907): no key, no start.
+        if (production && !revocation.configured()) {
+            throw new IllegalStateException("In production (keel.production) Sign in with Apple revocation needs KEEL_APPLE_TEAM_ID, KEEL_APPLE_KEY_ID and "
+                    + "KEEL_APPLE_PRIVATE_KEY (ADR-062)");
+        }
         // Read once, at start: a key that is set but does not read stops the server here, not at someone's deletion.
         this.key = revocation.configured() ? AppleClientSecret.parse(revocation.privateKey()) : null;
     }

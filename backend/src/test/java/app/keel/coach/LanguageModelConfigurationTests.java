@@ -11,7 +11,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 /**
  * Which language model answers is configuration (K-503, ADR-004, ADR-042): the provider, the model, the output limit and
  * the prices come from keel.coach, never from code (K2). Until a provider is chosen (K-511, ADR-041) the only one is the
- * fake; a name the server does not know stops it from starting rather than calling nobody knows what.
+ * fake; a name the server does not know stops it from starting rather than calling nobody knows what. In production
+ * (keel.production, K-907) the fake does not start — it keeps the last requests in memory (M8 inventory gap 7) — and
+ * "off" is the coach without a model: nothing goes anywhere, nothing is kept (ADR-064 #5).
  */
 class LanguageModelConfigurationTests {
 
@@ -24,13 +26,31 @@ class LanguageModelConfigurationTests {
 
     @Test
     void theFakeProviderIsTheFake() {
-        assertThat(LanguageModelConfiguration.languageModel(properties("fake"))).isInstanceOf(FakeLanguageModel.class);
+        assertThat(LanguageModelConfiguration.languageModel(properties("fake"), false)).isInstanceOf(FakeLanguageModel.class);
     }
 
     @Test
     void aProviderTheServerDoesNotKnowStopsItFromStarting() {
-        assertThatIllegalStateException().isThrownBy(() -> LanguageModelConfiguration.languageModel(properties("acme")))
+        assertThatIllegalStateException().isThrownBy(() -> LanguageModelConfiguration.languageModel(properties("acme"), false))
                 .withMessageContaining("acme").withMessageContaining("fake");
+    }
+
+    @Test
+    void inProductionTheFakeDoesNotStart() {
+        assertThatIllegalStateException().isThrownBy(() -> LanguageModelConfiguration.languageModel(properties("fake"), true))
+                .withMessageContaining("fake").withMessageContaining("production");
+    }
+
+    @Test
+    void offIsAModelThatNeverAnswersAndKeepsNothing() {
+        LanguageModel off = LanguageModelConfiguration.languageModel(properties("off"), true);
+        assertThat(off).isInstanceOf(OffLanguageModel.class);
+        assertThat(LanguageModelConfiguration.languageModel(properties("off"), false)).isInstanceOf(OffLanguageModel.class);
+
+        // Never called while no AI consent can be given; if it were, it fails as a provider that is down — no reply made up.
+        ModelRequest request = new ModelRequest(Purpose.EXPLAIN, "m", 400, "system", java.util.List.of(Turn.user("why?")));
+        assertThatIllegalStateException().isThrownBy(() -> off.complete(request)).withMessageContaining("off");
+        assertThat(OffLanguageModel.class.getDeclaredFields()).as("keeps nothing of a request").isEmpty();
     }
 
     @Test
@@ -69,7 +89,7 @@ class LanguageModelConfigurationTests {
                         "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note", "keel.coach.data-types.photo-meal=meal photo",
                         "keel.coach.max-question-chars=2000", "keel.coach.max-reply-chars=400")
                 .run(context -> assertThat(context).hasFailed().getFailure().rootCause().hasMessageContaining("max-output"));
-        runner.withPropertyValues("keel.coach.provider=fake", "keel.coach.provider-name=Example AI", "keel.coach.model=m", "keel.coach.max-output=300",
+        runner.withPropertyValues("keel.production=false", "keel.coach.provider=fake", "keel.coach.provider-name=Example AI", "keel.coach.model=m", "keel.coach.max-output=300",
                         "keel.coach.input-price-per-million=0.10", "keel.coach.output-price-per-million=0.40",
                         "keel.coach.data-types.explain=coach question", "keel.coach.data-types.parse-meal=meal note", "keel.coach.data-types.photo-meal=meal photo",
                         "keel.coach.max-question-chars=2000", "keel.coach.max-reply-chars=400")

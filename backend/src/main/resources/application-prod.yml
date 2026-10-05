@@ -1,0 +1,12 @@
+# The server on the VPS (K-907, K-901): SPRING_PROFILES_ACTIVE=prod, over application.yml. Secrets and the database come
+# from the environment as everywhere (V5); here only what production changes. ProductionProfileTests reads this file.
+keel:
+  # As without a profile (application.yml), stated here too: a missing Sign in with Apple key (AppleAccounts) or the fake
+  # coach model (LanguageModelConfiguration) stops the start.
+  production: true
+  # The AI is off in the beta (ADR-064 #5): the coach says what the engine wrote. keel.consent.third-party-ai stays unset,
+  # so no AI consent can be given and no call can go. TestFlight's SANDBOX purchases still count (application.yml; ADR-056 #4).
+  coach:
+    provider: "off"
+    provider-name: none
+    model: none

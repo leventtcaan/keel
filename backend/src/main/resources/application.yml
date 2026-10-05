@@ -39,6 +39,10 @@ spring:
 # Identity (K-203, ADR-011). The app's bundle ID and the session key come from the environment (V5); Apple's issuer
 # and key set are Apple's published values. Access tokens live minutes, refresh tokens weeks.
 keel:
+  # A server is production unless a profile says otherwise (K-907): production needs the Sign in with Apple key
+  # (ADR-062 #3) and a coach model that is real or off — never the fake below, which keeps requests in memory. So a server
+  # started without a profile does not start (fails closed); the VPS runs `prod`, development `local`, the tests their own.
+  production: true
   apple:
     client-id: ${KEEL_APPLE_CLIENT_ID}
     issuer: https://appleid.apple.com

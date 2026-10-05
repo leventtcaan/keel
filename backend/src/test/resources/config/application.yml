@@ -1,6 +1,8 @@
 # Test-only values (loaded next to the main application.yml, tests only). Not secrets: a made-up bundle ID and a
 # session key that signs nothing outside these tests.
 keel:
+  # Tests are development: the fake model, and Apple's key only where a test sets it (K-907).
+  production: false
   apple:
     client-id: app.keel.test
   session:
