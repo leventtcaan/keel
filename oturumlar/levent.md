@@ -153,3 +153,9 @@
 - sıradaki: Levent dönünce M8 Part 2 aktarımı (docs/aktarim/M8/README.md 6-14; Part 1: 1-5); iletişim adresi; sonra M9 Part 1 (`plan/oturum-promptlari/M9-part1.md`)
 - AI: bütün kod, test, ADR, metin, prompt agent; ürün/sağlık/veri soruları Levent (AskUserQuestion, Bitiş'te 4)
 
+## 2026-10-06 · M9 Part 1 (Sunucu ayakta) — toplu mod + Levent'le canlı kurulum
+- yaptım: ADR-064 (dış kapılar), K-907 #404 (üretim profili, fail closed), K-901 #405 (Compose + Caddy + şifreli yedek + prova), K-902 #407 (CI → VPS, zorunlu komut); Contabo yeniden kurulum, DuckDNS, Apple App ID + anahtar (Chrome'da birlikte); sunucu canlı
+- karar: Dokploy/Appwrite yok; yedek Mac'e (age, rrsync -ro); ADR-065/066 (+ Ek 1); CI yalnız imaj + commit, sunucu `main`'i kendisi çeker
+- takıldım: profil unutulunca sessiz geliştirme modu; ilk CI tasarımı anahtarı root yapıyordu; canlı koşu: iç içe `$$`, psql hatada 0, openrsync, pipefail/SIGPIPE, 1 GB bellek dar — hepsi testle kapandı
+- sıradaki: Levent dönünce M9 Part 1 aktarımı (docs/aktarim/M9/README.md 1-3); iki soru (geri yüklemede silinen hesap, yedek Türkiye'de); sonra M9 Part 2 (`plan/oturum-promptlari/M9-part2.md`)
+- AI: bütün kod, test, ADR, betik agent; para/hesap/sır adımları Levent (Contabo parolası, Apple girişi, .p8 indirme, GitHub sırrı)

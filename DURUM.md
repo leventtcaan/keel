@@ -1,12 +1,12 @@
 ---
-guncelleme: 2026-10-04
+guncelleme: 2026-10-06
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**M9 Part 1 (Sunucu ayakta) SÜRÜYOR (5 Eki)** — ADR-064 (dış kapılar). Hafıza: `## M9 ilerleme`.
+**M9 Part 1 (Sunucu ayakta) BİTTİ (6 Eki)** — sunucu canlı `https://keel-beta.duckdns.org/health`; K-907 #404, K-901 #405, K-902 #407 (CI → VPS otomatik); ADR-064, ADR-065 (+ Ek 1), ADR-066 (+ Ek 1). Aktarım bekliyor: `docs/aktarim/M9/README.md` 1-3. Sıradaki: M9 Part 2 (`plan/oturum-promptlari/M9-part2.md`).
 **M8 KAPANDI (5 Eki, kod)** — Part 2: K-802 #385, K-804 #389, K-810 #391, K-814 #392, K-811 #393, K-813 #394, K-807 #395, K-812 #398 + #400, K-818 #402 (+ #386); ADR-061, ADR-062, ADR-063 (Levent: fatProxy dışa aktarmada, silmede Apple yeniden onayı, kontrast M9'da prototiple). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-14. Açık: iletişim adresi (Levent). Cihaz işleri (K-308 → K-815, K-618…) ve sırlar (Apple `.p8`, RevenueCat) M9'da. Sıradaki koşu **M9 · Beta** (`plan/oturum-promptlari/M9.md`, `M9-part1.md`).
 **M8 Part 1 (Metinler ve envanter) BİTTİ (4 Eki)** — ADR-059 (+ Ek 1), ADR-060; K-801 #375, K-808 #377, K-806 #378, K-809 #379, K-803 #380, #381; yasal sayfalar canlı (`leventtcaan.github.io/keel/`). Disk 20 GB (Docker budandı). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-5. Açık: iletişim adresi (Levent). Sıradaki: M8 Part 2 (`plan/oturum-promptlari/M8-part2.md`).
 **M7 KAPANDI (4 Eki, kod)** — Part 2: K-705 #368, K-702 #369, K-706 #372, K-707 #373 (auto-merge); ADR-056 Ek 1, ADR-057, ADR-058 (105-107 Levent: zorunlu paywall, iOS'ta duraklatma yok, deneme hatırlatması). Cihaz/sandbox ve mağaza kurulumu Levent'te (K-308, RevenueCat, ASC). Aktarım bekliyor: M7 (`docs/aktarim/M7/README.md` 1-6). **Disk 1,5 GB** → Levent. Sıradaki koşu **M8 · Uyum ve yasal** (`plan/oturum-promptlari/M8.md`, `M8-part1.md`).
@@ -677,7 +677,7 @@ Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `
 
 | Part | Görevler | Durum |
 |---|---|---|
-| 1 · Sunucu ayakta | üretim profili, K-901, K-902 | ▶ sürüyor (5 Eki) |
+| 1 · Sunucu ayakta | K-907, K-901, K-902 | ✅ bitti (6 Eki) — aktarım bekliyor (README 1-3) |
 | 2 · TestFlight ve cihaz | K-903, K-308 kapanış, K-815, K-618 | bekliyor |
 | 3 · Kohort ve göstergeler | K-904, K-905, K-906, K-816 | bekliyor |
 
@@ -690,8 +690,36 @@ Levent anahtarı üretip VPS'e tanıtacak (temiz kurulum önerildi); alan adı *
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-907 üretim profili — sunucu varsayılan **üretim** (profil unutulursa açılmaz: taban dosyadaki sahte koç + üretim); `prod`: koç `off` (`OffLanguageModel`, alanı yok), AI rızası tanımsız, SANDBOX kalır; Apple anahtarı yoksa açılmaz. İnceleme: profil unutulunca sessizce geliştirme modu (82) → fail closed; `@Value` anahtarı kaybolunca 14 test yeşil kalıyordu (8) → gerçek yükleme testleri (`ConfigDataApplicationContextInitializer`); mutantlar 4+1+3 | ✅ birleşti | #404 | `M9/K-907.md` |
-| K-901 VPS — **CANLI** `https://keel-beta.duckdns.org/health` → HTTP/2 200 (Let's Encrypt, 3 Oca 2027'ye kadar, HSTS; HTTP → 308). Contabo yeniden kuruldu (Ubuntu 24.04.5, 4 vCPU, 7,8 GB, 72 GB), SSH yalnız anahtar + root kapalı (doğrulandı). İlk sürüm: 0 yeniden başlama, FDC 8.169 besin; ilk yedek → Mac → **geri yükleme provası 38 tablo / 22.817 satır eşit**. Canlı koşu 3 hata buldu (iç içe `$$`, `psql` hatada 0, openrsync + pipefail/SIGPIPE) + bellek 918/1024 MB → 1,5 GB; CI'da gerçek PostgreSQL testi. Güvenlik incelemesi 2 kritik + 9 önemli → kapandı | ✅ birleşti | #405 | — |
-| K-902 CI'dan dağıtım — `deploy.yml` (CI başarılı → o commit, Environment `production`, `shell: bash`); CI **yalnız imaj + commit** gönderir; sunucu `main`'i kendisi çeker, commit `main`'de ve çalışandan yeni değilse reddeder, `deploy/`'u o commit'ten alır, imajı tek etiketle yükler; zorunlu komut root'a ait `/usr/local/lib/keel/ci-deploy` (ADR-066 + Ek 1). İnceleme: ilk tasarımda CI anahtarı = root (98, koşturularak kanıtlandı) → yeniden tasarım; sahte etiket (82), geçersiz `released` sessiz atlama (80) → kapandı; `test_deploy.py` 54, mutantlar. **Sunucu + GitHub sırrı bekliyor** | ▶ taslak PR (#405 üstünde) | #407 | — |
+| K-901 VPS — **CANLI** `https://keel-beta.duckdns.org/health` → HTTP/2 200 (Let's Encrypt, 3 Oca 2027'ye kadar, HSTS; HTTP → 308). Contabo yeniden kuruldu (Ubuntu 24.04.5, 4 vCPU, 7,8 GB, 72 GB), SSH yalnız anahtar + root kapalı (doğrulandı). İlk sürüm: 0 yeniden başlama, FDC 8.169 besin; ilk yedek → Mac → **geri yükleme provası 38 tablo / 22.817 satır eşit**. Canlı koşu 3 hata buldu (iç içe `$$`, `psql` hatada 0, openrsync + pipefail/SIGPIPE) + bellek 918/1024 MB → 1,5 GB; CI'da gerçek PostgreSQL testi. Güvenlik incelemesi 2 kritik + 9 önemli → kapandı | ✅ birleşti | #405 | `M9/K-901.md` |
+| K-902 CI'dan dağıtım — CI yalnız imaj + commit gönderir; sunucu `main`'i kendisi çeker, `deploy/`'u o commit'ten alır; zorunlu komut root'a ait (ADR-066 + Ek 1: ilk tasarımda CI anahtarı = root, koşturularak kanıtlandı → yeniden tasarım). **Canlı:** CI anahtarıyla kabuk/`files`/`main` dışı commit reddedildi; #407 birleşmesi → Deploy koşusu `805150a`'yı yayına aldı (0 yeniden başlama); doküman commit'i atlandı | ✅ birleşti | #407 | `M9/K-902.md` |
+
+**Part 1 ÇIKIŞ (6 Eki):**
+- **Birleşen:** K-907 #404 · K-901 #405 · K-902 #407. `main`'e doğrudan: ADR-064, ADR-065 (+ Ek 1), ADR-066 (+ Ek 1), K-907/K-908 kartları,
+  aktarım `docs/aktarim/M9/` README 1-3 + `K-907.md`, `K-901.md`, `K-902.md`. Worktree: yalnız `../keel-main`. Açık PR: yok.
+- **Çıkış kriterleri — kanıt:** (1) `https://keel-beta.duckdns.org/health` → HTTP/2 200 `{"status":"UP"}`, Let's Encrypt `CN=keel-beta.duckdns.org`
+  (3 Oca 2027'ye kadar, Caddy yeniler), HSTS, HTTP → 308. (2) Yedekten geri yüklenmiş kopya: `restore-drill.sh` → 38 tablo / 22.817 satır yedeğin
+  sayımıyla eşit. (3) `main`'e birleşme → dağıtım: #407 → Deploy koşusu 37384587795 `805150a`'yı yayına aldı; 37384692867 doküman commit'ini atladı.
+- **Sunucu (Levent'le, 6 Eki gece):** Contabo yeniden kuruldu (Ubuntu 24.04.5, 4 vCPU, 7,8 GB, 72 GB, IP aynı); SSH yalnız anahtar, root kapalı
+  (`~/.ssh/config`: `keel-vps` → keel, `keel-backup` → yalnız yedek okuma); DuckDNS `keel-beta`; Apple App ID `dev.leventtcaan.keel` (Sign in with
+  Apple, primary) + anahtar (Key ID dosya adında, `.p8` `~/.keel-secrets/`, 600); `.env` `init-env.sh` ile (değerler sohbete girmedi); yedek anahtarı
+  `~/.keel-backup/age-key.txt` (Levent parola yöneticisine kopyalayacak); Mac'te saatlik çekme (launchd, `../keel-main/deploy/mac`). GitHub
+  Environment `production`: sır `KEEL_DEPLOY_SSH_KEY` (Levent), değişkenler `KEEL_DEPLOY_HOST`, `KEEL_DEPLOY_KNOWN_HOSTS`.
+- **Kaynak/maliyet:** boşta bellek ~1,8 / 7,8 GB (backend 1,1 / 1,5 GB sınır — 1 GB'ta 918 MB'ta duruyordu), disk 5,7 / 72 GB; imaj 511 MB
+  (sunucuda yalnız `current` + `previous`), yedek ~374 KB (Mac'te en çok 14 → ~5 MB). Ek aylık maliyet **0** (DuckDNS, Let's Encrypt, Actions public,
+  yedek Mac'te); Contabo VPS mevcut abonelik. İleride yedek Contabo Object Storage'a (~2,49 €/ay) taşınabilir (tek betik) — 100 MB'a yaklaşınca.
+- **Kalan iş:** K-908 (`/health` hazırlık, 503 açılış bitene kadar). RevenueCat webhook sırrı **geçici rastgele** (K-704'te gerçeğiyle değişir:
+  `/opt/keel/.env` + `kc up -d`). İletişim adresi (Part 2, dış TestFlight'tan önce). Levent: eski App ID'leri (kirpici, lure, selfcutspike) isterse
+  kendisi siler (XC Wildcard'a dokunulmaz).
+- **Part 2'nin bilmesi gerekenler:**
+  - Uygulamanın API adresi `https://keel-beta.duckdns.org` (EAS profillerine girecek). Bundle ID `dev.leventtcaan.keel` Apple'da kayıtlı; Sign in
+    with Apple sunucuda **canlı** (`KEEL_APPLE_CLIENT_ID` = bundle ID) — giriş akışı cihazda gerçek sunucuyla denenebilir.
+  - Sunucu `prod` profilinde: koç AI **kapalı** (`off`), SANDBOX satın almaları sayılır. Kod birleşince CI kendisi dağıtır (Actions › Deploy);
+    `deploy/` değişikliği de CI ile gider (sunucu `main`'den alır). Elle: `deploy/deploy.sh`, geri alma `release.sh --rollback`.
+  - Sunucuya erişim: `ssh keel-vps` (Levent'in anahtarı ajanda; ajan boşsa `ssh-add --apple-use-keychain ~/.ssh/keel_vps`). Günlük:
+    `ssh keel-vps 'sudo journalctl CONTAINER_NAME=keel-backend-1 --since today'`.
+  - Mac'te `rsync` 3 (Homebrew) ve `age` kurulu; macOS'un `/usr/bin/rsync`'i openrsync'tir, rrsync reddeder.
+- **Yeni sorular (Levent):** (a) Geri yüklemede, yedekten sonra silinen hesap geri gelir (politika söylüyor) — kabul mü, yoksa silme kayıtlarını
+  yedekten ayrı tutan küçük bir iş mi? (b) Şifreli yedekler Türkiye'de, senin Mac'inde (politika söylüyor; sunucu AB'de) — kabul mü?
 
 -----
 ## M8 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)

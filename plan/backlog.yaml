@@ -3431,7 +3431,7 @@ tasks:
     module: infra
     type: chore
     size: S
-    status: todo
+    status: done
     depends_on: [K-901, K-010]
     why: "Elle dağıtım hatasını kaldırmak"
     acceptance:
