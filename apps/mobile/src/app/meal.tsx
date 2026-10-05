@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -227,7 +228,7 @@ export default function MealScreen() {
       <View style={styles.part}>
         <Text style={[styles.heading, { color: color.text }]}>{t('consent.health_data.title')}</Text>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('consent.health_data.body')}</Text>
-        {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+        {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         <Button label={t('meal.consent.allow')} onPress={() => void allow()} disabled={busy} />
         <Button label={t('meal.consent.notNow')} variant="ghost" onPress={() => router.back()} disabled={busy} />
       </View>
@@ -267,7 +268,7 @@ export default function MealScreen() {
 
         {shown !== null && <EstimateCard estimate={shown} question={question} />}
         {fromPhoto && question !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('meal.photo.why')}</Text>}
-        {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+        {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
         <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
         {deleting}

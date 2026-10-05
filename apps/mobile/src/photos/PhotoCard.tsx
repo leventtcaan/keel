@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { t } from '@/copy';
@@ -107,7 +108,7 @@ export function PhotoCard({ today, flowWeek }: Props) {
       <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />
       {POSES.some((pose) => comparison(checks, pose) !== null) && <CompareLink />}
       {deleting}
-      {failed && <Text style={[styles.text, { color: color.text }]}>{t('photos.deleteFailed')}</Text>}
+      {failed && <ProblemText style={[styles.text, { color: color.text }]}>{t('photos.deleteFailed')}</ProblemText>}
     </Card>
   );
 }

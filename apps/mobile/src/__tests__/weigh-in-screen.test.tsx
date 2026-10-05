@@ -5,6 +5,7 @@
  * 14 days no word on the trend (U8).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 
 import WeighInScreen from '@/app/weigh-in';
 import { t } from '@/copy';
@@ -223,4 +224,14 @@ test('a weigh-in the phone could not keep is not handed on', async () => {
   await type('82,4');
   await press(t('weighIn.save'));
   expect(mockServices.healthWriting.weighInSaved).not.toHaveBeenCalled();
+});
+
+test('a weigh-in the phone could not keep: said on screen and to VoiceOver (K-815)', async () => {
+  const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+  mockServices.queue.record.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
+  await show();
+  await type('82,4');
+  await press(t('weighIn.save'));
+  expect(screen.getByText(t('weighIn.saveFailed'))).toBeOnTheScreen();
+  expect(announced).toHaveBeenCalledWith(t('weighIn.saveFailed'));
 });

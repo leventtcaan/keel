@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -48,7 +49,11 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, k
         />
         {suffix !== undefined && <Text style={[styles.suffix, { color: color.muted }]}>{suffix}</Text>}
       </View>
-      {note !== undefined && note !== null && <Text style={[styles.note, { color: problem ? color.text : color.muted }]}>{note}</Text>}
+      {problem ? (
+        <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>
+      ) : (
+        hint !== undefined && <Text style={[styles.note, { color: color.muted }]}>{hint}</Text>
+      )}
     </View>
   );
 }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -135,7 +136,7 @@ function reportByName(report: (problem: { name: string }) => void, error: unknow
 
 function Failed() {
   const { color } = useTheme();
-  return <Text style={[styles.text, { color: color.warn }]}>{t('projection.view.saveFailed')}</Text>;
+  return <ProblemText style={[styles.text, { color: color.warn }]}>{t('projection.view.saveFailed')}</ProblemText>;
 }
 
 function Off() {

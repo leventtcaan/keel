@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
@@ -41,7 +42,7 @@ export function SetLine({ set, line, asking, busy, problem, onAsk, onKeep, onDel
       disabled={busy}
     />
   );
-  const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{problem}</Text>;
+  const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>;
   return (
     <View style={styles.set}>
       <View style={styles.row}>

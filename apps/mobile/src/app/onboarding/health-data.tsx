@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
@@ -82,7 +83,7 @@ export default function HealthDataStep() {
   );
   const actions = (
     <View style={styles.actions}>
-      {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+      {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
       {choices}
     </View>
   );

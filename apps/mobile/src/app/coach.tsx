@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
+import { announce } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, readMeal, type Said } from '@/coach/conversation';
@@ -96,15 +97,9 @@ export default function CoachScreen() {
       if (today === null) return;
       const planned = today.program.state === 'ready' ? programToday(today.program.value, day) : null;
       const session = planned?.kind === 'session' ? planned.day.id : undefined;
-      setMessages((said) => [
-        ...said,
-        { from: 'user', text: t(key) },
-        {
-          from: 'coach',
-          said: chipAnswer(key, today.decision, weekdayDate, session),
-          standard: false,
-        },
-      ]);
+      const answer: Message = { from: 'coach', said: chipAnswer(key, today.decision, weekdayDate, session), standard: false };
+      setMessages((said) => [...said, { from: 'user', text: t(key) }, answer]);
+      announce(spokenOf(answer));
     },
     [today, day, setMessages],
   );
@@ -131,6 +126,7 @@ export default function CoachScreen() {
     if (words.trim() === '' || busy.current) return;
     busy.current = true;
     setWaiting(true);
+    announce(t('coach.thinking'));
     setMode('ask');
     setMessages((said) => (again ? said.filter((message) => !('problem' in message && message.text === words)) : [...said, { from: 'user', text: words }]));
     const answer: Message =
@@ -142,6 +138,7 @@ export default function CoachScreen() {
     busy.current = false;
     setWaiting(false);
     setMessages((said) => [...said, answer]);
+    announce(spokenOf(answer));
   };
 
   const submit = () => {
@@ -187,6 +184,27 @@ const wordsOf = (kind: keyof typeof PROBLEMS, mode: Mode, words: string) => (kin
 
 /** Where a problem's button goes: Settings for the consent, the plans for the subscription (K-702, opened only on a tap). */
 const WAYS = { consent: '/settings', subscription: '/paywall' } as const;
+
+/** A food the meal reader found, in the user's words and measure. */
+const mealItem = (item: Schemas['MealDraft']['items'][number]) =>
+  t('coach.meal.item', { food: item.food, quantity: String(item.amount.quantity), unit: item.amount.unit });
+
+/**
+ * What VoiceOver says when a coach message arrives (K-815): the words its bubble shows, in order — the answer appears below
+ * where VoiceOver is, so it would go unheard. The call's card and the buttons are there to be found; they are not read out.
+ */
+function spokenOf(message: Message): string {
+  if (message.from === 'user') return message.text;
+  if ('problem' in message) return t(wordsOf(message.problem, message.mode, PROBLEMS[message.problem].words));
+  if ('meal' in message) {
+    const { items } = message.meal;
+    if (items.length === 0) return t('coach.meal.unread');
+    return items.map(mealItem).join(' ');
+  }
+  const { said, standard } = message;
+  const words = [...(said.heading === undefined ? [] : [t(said.heading)]), ...said.lines.map((line) => t(line.key, line.values))];
+  return [...words, ...(standard ? [t('coach.standard')] : [])].join(' ');
+}
 
 function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string, to: Mode) => void }) {
   const { color } = useTheme();
@@ -248,7 +266,7 @@ function MealSaid({ draft }: { draft: Schemas['MealDraft'] }) {
     <View style={styles.coach}>
       <DraftPicks
         draft={draft}
-        describe={(item) => t('coach.meal.item', { food: item.food, quantity: String(item.amount.quantity), unit: item.amount.unit })}
+        describe={mealItem}
         onLog={log}
       />
       <ByName shown={!anyMatched(draft)} />

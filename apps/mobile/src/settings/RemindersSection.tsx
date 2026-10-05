@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, Linking, StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
@@ -81,7 +82,7 @@ export function RemindersSection() {
         disabled={busy || cue.trim() === settings.cue}
         onPress={saveCue}
       />
-      {problem !== null && <Text style={[styles.note, { color: color.text }]}>{problem}</Text>}
+      {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
     </Section>
   );
 }

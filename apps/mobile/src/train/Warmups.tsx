@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
@@ -43,7 +44,7 @@ export function Warmups({ move, warmups, done, gym, onLog, problem, busy }: Prop
   });
   const next =
     done < warmups.length ? <Button label={t('workout.warmup.log', { number: done + 1 })} variant="ghost" onPress={onLog} disabled={busy} /> : null;
-  const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{problem}</Text>;
+  const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>;
   return (
     <View style={styles.block}>
       <Text style={[styles.label, { color: color.text }]}>{t('workout.warmup.title')}</Text>

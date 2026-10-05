@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
@@ -103,7 +104,7 @@ export function AccountSection() {
       {deleteQuestion}
       <Button label={t('settings.signOut.title')} variant="ghost" onPress={leave} disabled={busy} />
       {signOutQuestion}
-      {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+      {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
     </Section>
   );
 }

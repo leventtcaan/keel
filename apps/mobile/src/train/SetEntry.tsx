@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -51,7 +52,7 @@ export function SetEntry({ move, index, side, entry, onChange, onLog, problem, b
     );
   const last = workoutParams.rirChoices.length - 1;
   const label = side === 'BOTH' ? t('workout.log', { number }) : t('workout.logSide', { number, side: t(`workout.sideName.${side}`) });
-  const said = problem === null ? null : <Text style={[styles.text, { color: color.text }]}>{problem}</Text>;
+  const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>;
   // Closed until asked for: one tap stays one tap.
   const noteField =
     entry.note === null ? (

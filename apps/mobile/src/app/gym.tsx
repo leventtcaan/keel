@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -102,7 +103,7 @@ export default function GymScreen() {
     const filled = rackOf(rack.lightest, rack.heaviest, rack.step);
     if (filled !== null) change({ dumbbells: filled });
   };
-  const machinesProblem = problem === 'machines' ? <Text style={[styles.text, { color: color.text }]}>{problemOf('machines')}</Text> : null;
+  const machinesProblem = problem === 'machines' ? <ProblemText style={[styles.text, { color: color.text }]}>{t('gym.problem.machines')}</ProblemText> : null;
   const deleteButton =
     read !== null && read !== 'failed' && read.exists ? (
       <Button label={t('gym.delete')} variant="ghost" onPress={() => void remove()} disabled={busy} />
@@ -178,7 +179,7 @@ export default function GymScreen() {
           problem={problemOf('stackStep')}
         />
         {machines}
-        {said !== null && <Text style={[styles.text, { color: color.text }]}>{said}</Text>}
+        {said !== null && <ProblemText style={[styles.text, { color: color.text }]}>{said}</ProblemText>}
         <Button label={t('gym.save')} onPress={() => void save()} disabled={busy} />
         {deleteButton}
       </>

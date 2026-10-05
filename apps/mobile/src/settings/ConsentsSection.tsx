@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import {
   CONSENT_COPY,
@@ -183,7 +184,7 @@ export function ConsentsSection() {
   return (
     <Section title={t('settings.consents.title')}>
       {rows}
-      {problem !== null && <Text style={[styles.text, { color: color.text }]}>{problem}</Text>}
+      {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
       {reloadFailed}
     </Section>
   );
