@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -51,7 +52,7 @@ export function StateCard({ state, onChanged }: Props) {
   }
 
   const note =
-    said === null || said.identity !== identity ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{t(said.key)}</Text>;
+    said === null || said.identity !== identity ? null : <ProblemText style={[styles.text, { color: color.textSecondary }]}>{t(said.key)}</ProblemText>;
   if (state?.state === 'ready') {
     const kind = t(`state.kind.${state.value.kind.toLowerCase()}.name`);
     return (

@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
+import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
@@ -104,7 +105,7 @@ export function SubscriptionSection() {
       {!manageable && plansButton}
       {purchases.available && restoreButton}
       {restoreWaiting && note(t('subscription.restoreWaiting'), 'text')}
-      {problem !== null && note(problem, 'text')}
+      {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
     </Section>
   );
 }

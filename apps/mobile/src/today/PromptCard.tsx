@@ -64,7 +64,9 @@ export function PromptCard({ read }: { read: { state: 'ready'; value: Prompt[] }
           ))}
         </View>
       )}
-      {failed !== null ? <ProblemText style={[styles.text, { color: color.textSecondary }]}>{t(failed)}</ProblemText> : null}
+      {failed !== null ? <ProblemText style={[styles.text, { color: color.textSecondary }]} occurrence={here}>
+          {t(failed)}
+        </ProblemText> : null}
     </Card>
   );
 }

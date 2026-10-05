@@ -7,6 +7,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line, Path } from 'react-native-svg';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -154,7 +155,7 @@ export default function PhotoCaptureScreen() {
   ) : null;
   const ghostNote = ghost === null ? null : <Text style={[styles.small, { color: color.muted }]}>{t('capture.ghost')}</Text>;
   const countingNote = counting ? <Text style={[styles.small, { color: color.muted }]}>{t('capture.counting')}</Text> : null;
-  const failure = failed ? <Text style={[styles.text, { color: color.text }]}>{t('capture.failed')}</Text> : null;
+  const failure = failed ? <ProblemText style={[styles.text, { color: color.text }]}>{t('capture.failed')}</ProblemText> : null;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>

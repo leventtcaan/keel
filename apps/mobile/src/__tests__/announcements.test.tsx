@@ -4,12 +4,12 @@
  * A problem's line says itself when it appears and when its words change, not at every redraw; a field's problem too, its
  * hint not. And no screen draws a problem as a plain Text (source scan), so a new screen cannot leave one unheard.
  */
-import { render, screen } from '@testing-library/react-native';
+import { act, render, screen } from '@testing-library/react-native';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AccessibilityInfo } from 'react-native';
 
-import { ProblemText, announce } from '@/components/ProblemText';
+import { ProblemText, announce, useProblem } from '@/components/ProblemText';
 import { TextField } from '@/components/TextField';
 import { ThemeProvider } from '@/theme/theme';
 
@@ -49,6 +49,38 @@ test("a field's problem is said; its hint is not", async () => {
   expect(said.mock.calls).toEqual([["Couldn't save it on this phone."]]);
 });
 
+test('the same words shown again are said again: a new occurrence (React would not redraw the same words)', async () => {
+  const view = await render(<ProblemText occurrence={1}>{'No connection.'}</ProblemText>);
+  await view.rerender(<ProblemText occurrence={2}>{'No connection.'}</ProblemText>);
+  expect(said).toHaveBeenCalledTimes(2);
+});
+
+test('useProblem: each set is a new occurrence, so the same failure twice is said twice; null clears', async () => {
+  let set: (words: string | null) => void = () => {};
+  function Screen() {
+    const [problem, setProblem, occurrence] = useProblem();
+    set = setProblem;
+    return problem === null ? null : <ProblemText occurrence={occurrence}>{problem}</ProblemText>;
+  }
+  await render(<Screen />);
+  await act(async () => set("Couldn't save it on this phone."));
+  await act(async () => set("Couldn't save it on this phone."));
+  expect(said).toHaveBeenCalledTimes(2);
+  await act(async () => set(null));
+  expect(screen.queryByText("Couldn't save it on this phone.")).toBeNull();
+});
+
+test('a field checked as it is typed keeps its problem on screen and in its hint, unsaid', async () => {
+  await render(
+    <ThemeProvider scheme="light">
+      <TextField label="Usual time" value="7" onChangeText={() => {}} problem="Use a time like 07:30." announceProblem={false} />
+    </ThemeProvider>,
+  );
+  expect(screen.getByText('Use a time like 07:30.')).toBeOnTheScreen();
+  expect(screen.getByLabelText('Usual time').props.accessibilityHint).toBe('Use a time like 07:30.');
+  expect(said).not.toHaveBeenCalled();
+});
+
 /** Every .tsx under a folder, its subfolders included. */
 function screens(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -57,13 +89,30 @@ function screens(dir: string): string[] {
     return entry.name.endsWith('.tsx') ? [full] : [];
   });
 }
-/** A problem drawn as a plain Text: its words in a variable named for a problem, or a save failure's own key. */
-const PLAIN = /<Text\b[^>]*>\s*\{\s*(?:(?:t\(\s*)?(?:SAID\[\s*)?(?:problem|failed)\b[^}]*|said)\}\s*<\/Text>|<Text\b[^>]*>\s*\{\s*(?:t\(\s*'[\w.]+\.(?:saveFailed|finishFailed|deleteFailed)'|problemOf\()/;
+/**
+ * A problem drawn as a plain Text: its words in a variable named for a problem (`problem`, `repeatProblem`…, `failed`, a bare
+ * `said`), handed to a note helper, or an action's failure key. Read failures (`*.loadFailed`, `today.failed`…) are a screen's
+ * own state, shown on opening with their retry — not announced, so not listed.
+ */
+const ACTION_FAILURES = ['saveFailed', 'finishFailed', 'deleteFailed', 'capture.failed', 'share.failed', 'projection.scoff.failed'];
+const PLAIN = new RegExp(
+  [
+    String.raw`<Text\b[^>]*>\s*\{\s*(?:(?:t\(\s*)?(?:SAID\[\s*)?(?:\w*[pP]roblem|failed)\b[^}]*|said)\}\s*<\/Text>`,
+    String.raw`<Text\b[^>]*>\s*\{\s*(?:t\(\s*'(?:[\w.]+\.)?(?:${ACTION_FAILURES.map((key) => key.replace(/\./g, '\\.')).join('|')})'|problemOf\()`,
+    String.raw`\bnote\(\s*\w*[pP]roblem\b`,
+    String.raw`<(?!Problem)\w+\s+text=\{\s*\w*[pP]roblem\s*\}`,
+  ].join('|'),
+);
+
+/** Plain on purpose, with the reason: nothing else may be. */
+const UNSAID: Record<string, string> = {
+  'components/TextField.tsx': "a field checked as it is typed (announceProblem={false}): said, it would cut off VoiceOver's echo of each key",
+};
 
 test('no screen draws a problem as a plain Text: it would go unheard', () => {
   const SRC = path.resolve(__dirname, '..');
   const plain = screens(SRC).filter((file) => PLAIN.test(fs.readFileSync(file, 'utf8')));
-  expect(plain.map((file) => path.relative(SRC, file))).toEqual([]);
+  expect(plain.map((file) => path.relative(SRC, file)).filter((file) => !(file in UNSAID))).toEqual([]);
 });
 
 test('the scan catches the ways a problem is drawn', () => {
@@ -75,6 +124,14 @@ test('the scan catches the ways a problem is drawn', () => {
   expect(caught('<Text style={x}>{t(failed)}</Text>')).toBe(true);
   expect(caught("<Text style={x}>{t('projection.view.saveFailed')}</Text>")).toBe(true);
   expect(caught("<Text style={x}>{problemOf('machines')}</Text>")).toBe(true);
+  expect(caught('<Text style={x}>{repeatProblem}</Text>')).toBe(true);
+  expect(caught("<Text style={x}>{t('capture.failed')}</Text>")).toBe(true);
+  expect(caught("{problem !== null && note(problem, 'text')}")).toBe(true);
+  expect(caught('<Said text={problem} />')).toBe(true);
+  expect(caught('<ProblemNote text={problem} />')).toBe(false);
+  // A read that failed is the screen's own state, shown on opening with its retry: not announced.
+  expect(caught("<Text style={x}>{t('gyms.loadFailed')}</Text>")).toBe(false);
+  expect(caught("<Text style={x}>{t('today.failed')}</Text>")).toBe(false);
   expect(caught('<ProblemText style={x}>{problem}</ProblemText>')).toBe(false);
   expect(caught('<Text style={x}>{said}</Text>')).toBe(true);
   expect(caught("<Text style={x}>{t('weighIn.note')}</Text>")).toBe(false);

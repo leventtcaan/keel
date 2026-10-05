@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ProblemText } from '@/components/ProblemText';
+import { ProblemText, useProblem } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -43,7 +43,7 @@ export function OwnMoveForm({ name: typed, catalog, onPick, onSave, onBack }: Pr
   const { color } = useTheme();
   const [answers, setAnswers] = useState<OwnAnswers>({ name: typed, kind: null, equipment: null, added: null, unilateral: null });
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem, occurrence] = useProblem();
   const clientId = useRef<string | null>(null);
   // Two taps in one frame, before `busy` disables the button, send it once.
   const saving = useRef(false);
@@ -111,7 +111,11 @@ export function OwnMoveForm({ name: typed, catalog, onPick, onSave, onBack }: Pr
         { label: t('ownMove.yes'), on: answers.unilateral === true, pick: () => set({ unilateral: true }) },
         { label: t('ownMove.no'), on: answers.unilateral === false, pick: () => set({ unilateral: false }) },
       ])}
-      {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
+      {problem !== null && (
+        <ProblemText style={[styles.text, { color: color.text }]} occurrence={occurrence}>
+          {problem}
+        </ProblemText>
+      )}
       <Button label={t('ownMove.save')} onPress={() => void save()} disabled={body === null || busy} />
       <Button label={t('ownMove.back')} variant="ghost" size="sm" onPress={onBack} disabled={busy} />
     </View>

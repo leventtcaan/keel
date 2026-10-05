@@ -16,6 +16,8 @@ type Props = {
   asking: boolean;
   busy: boolean;
   problem: string | null;
+  /** Which showing of the problem this is: the same failure again is said again (K-815). */
+  problemOccurrence?: unknown;
   onAsk: (id: string) => void;
   onKeep: () => void;
   onDelete: (set: Schemas['LoggedSet']) => void;
@@ -25,7 +27,7 @@ type Props = {
  * A set of a past session with its delete, asked once more (ADR-016: warn only to confirm). Asked, the spot the delete
  * was in keeps the set: a second tap there — a double tap — keeps it, never deletes it (review).
  */
-export function SetLine({ set, line, asking, busy, problem, onAsk, onKeep, onDelete }: Props) {
+export function SetLine({ set, line, asking, busy, problem, problemOccurrence, onAsk, onKeep, onDelete }: Props) {
   const { color } = useTheme();
   const action = asking ? (
     <View style={styles.row}>
@@ -42,7 +44,11 @@ export function SetLine({ set, line, asking, busy, problem, onAsk, onKeep, onDel
       disabled={busy}
     />
   );
-  const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>;
+  const said = problem === null ? null : (
+      <ProblemText style={[styles.text, { color: color.text }]} occurrence={problemOccurrence}>
+        {problem}
+      </ProblemText>
+    );
   return (
     <View style={styles.set}>
       <View style={styles.row}>

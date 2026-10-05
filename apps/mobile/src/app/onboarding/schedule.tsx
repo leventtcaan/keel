@@ -80,6 +80,7 @@ export default function ScheduleStep() {
         maxLength={TIME_LENGTH}
         hint={t('onboarding.schedule.timeHint')}
         problem={timeProblem}
+        announceProblem={false}
       />
       <PlanNote days={draft.trainingDays.length} last={draft.sessionsLastMonth} />
     </StepFrame>

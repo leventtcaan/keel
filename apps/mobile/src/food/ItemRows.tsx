@@ -48,6 +48,7 @@ export function ItemRows({ items, known, recipes, onChange, onRemove }: Props) {
               value={item.quantity}
               onChangeText={(quantity) => onChange(index, { quantity })}
               problem={issueText}
+              announceProblem={false}
               keyboardType="decimal-pad"
               maxLength={foodParams.amountMaxChars}
             />

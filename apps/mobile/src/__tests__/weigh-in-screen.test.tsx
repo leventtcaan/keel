@@ -235,3 +235,14 @@ test('a weigh-in the phone could not keep: said on screen and to VoiceOver (K-81
   expect(screen.getByText(t('weighIn.saveFailed'))).toBeOnTheScreen();
   expect(announced).toHaveBeenCalledWith(t('weighIn.saveFailed'));
 });
+
+test('the same failure twice is said twice: the problem is cleared before each try (K-815 review)', async () => {
+  const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+  const failure = Object.assign(new Error('disk'), { name: 'StoreFailed' });
+  mockServices.queue.record.mockRejectedValueOnce(failure).mockRejectedValueOnce(failure);
+  await show();
+  await type('82,4');
+  await press(t('weighIn.save'));
+  await press(t('weighIn.save'));
+  expect(announced.mock.calls.filter(([words]) => words === t('weighIn.saveFailed'))).toHaveLength(2);
+});

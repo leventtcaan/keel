@@ -20,6 +20,8 @@ type Props = {
   gym: GymWeights | undefined;
   onLog: () => void;
   problem: string | null;
+  /** Which showing of the problem this is: the same failure again is said again (K-815). */
+  problemOccurrence?: unknown;
   busy: boolean;
 };
 
@@ -27,7 +29,7 @@ type Props = {
  * The move's warm-ups before its first work set (K-417, G1 K-17): each load with its plates a side when the gym in use
  * is known; the ones logged marked, and one tap logs the next — a warm-up, no RIR to pick, it is nowhere near failure.
  */
-export function Warmups({ move, warmups, done, gym, onLog, problem, busy }: Props) {
+export function Warmups({ move, warmups, done, gym, onLog, problem, problemOccurrence, busy }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const rows = warmups.map((warmup, index) => {
@@ -44,7 +46,11 @@ export function Warmups({ move, warmups, done, gym, onLog, problem, busy }: Prop
   });
   const next =
     done < warmups.length ? <Button label={t('workout.warmup.log', { number: done + 1 })} variant="ghost" onPress={onLog} disabled={busy} /> : null;
-  const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>;
+  const said = problem === null ? null : (
+      <ProblemText style={[styles.text, { color: color.text }]} occurrence={problemOccurrence}>
+        {problem}
+      </ProblemText>
+    );
   return (
     <View style={styles.block}>
       <Text style={[styles.label, { color: color.text }]}>{t('workout.warmup.title')}</Text>

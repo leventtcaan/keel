@@ -271,7 +271,7 @@ export default function WorkoutScreen() {
       setBusy(false);
     }
   };
-  const finishProblem = problem !== null && problem.row === FINISH ? <ProblemText style={[styles.text, { color: color.text }]}>{problem.text}</ProblemText> : null;
+  const finishProblem = problem !== null && problem.row === FINISH ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
 
   // Progress is the plan's: a move outside it is not one of the day's count.
   const movesDone = plans.filter((p, i) => entries[i]?.planned !== undefined && p !== null && p.rows.some((r) => r.done !== null)).length;
@@ -379,6 +379,7 @@ export default function WorkoutScreen() {
         onChange={setEntry}
         onLog={() => void log()}
         problem={said}
+        problemOccurrence={problem}
         busy={busy}
       />
     );
@@ -409,6 +410,7 @@ export default function WorkoutScreen() {
         gym={data?.gym}
         onLog={() => void logWarmup()}
         problem={problem !== null && problem.row === warmupKey ? problem.text : null}
+        problemOccurrence={problem}
         busy={busy}
       />
     );

@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
@@ -110,7 +111,7 @@ function Unavailable({ projection }: { projection: ProjectionAccess }) {
 
 function Failed() {
   const { color } = useTheme();
-  return <Text style={[styles.text, { color: color.warn }]}>{t('projection.scoff.failed')}</Text>;
+  return <ProblemText style={[styles.text, { color: color.warn }]}>{t('projection.scoff.failed')}</ProblemText>;
 }
 
 function SupportLink({ region, url }: { region: string; url: string }) {

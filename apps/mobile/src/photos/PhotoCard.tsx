@@ -48,7 +48,8 @@ export function PhotoCard({ today, flowWeek }: Props) {
   const { color } = useTheme();
   const [checks, setChecks] = useState<PhotoCheck[] | null>(null);
   const [asking, setAsking] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // A count, not a flag: a second failure is a new showing, said again (K-815).
+  const [failures, setFailures] = useState(0);
 
   const read = useCallback(
     () =>
@@ -69,9 +70,9 @@ export function PhotoCard({ today, flowWeek }: Props) {
     setAsking(false);
     try {
       await photos.forget();
-      setFailed(false);
+      setFailures(0);
     } catch (error) {
-      setFailed(true);
+      setFailures((n) => n + 1);
       report({ name: error instanceof Error ? error.name : 'Unknown' });
     }
     await read();
@@ -108,7 +109,11 @@ export function PhotoCard({ today, flowWeek }: Props) {
       <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />
       {POSES.some((pose) => comparison(checks, pose) !== null) && <CompareLink />}
       {deleting}
-      {failed && <ProblemText style={[styles.text, { color: color.text }]}>{t('photos.deleteFailed')}</ProblemText>}
+      {failures > 0 && (
+        <ProblemText style={[styles.text, { color: color.text }]} occurrence={failures}>
+          {t('photos.deleteFailed')}
+        </ProblemText>
+      )}
     </Card>
   );
 }
