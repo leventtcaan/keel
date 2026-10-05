@@ -368,6 +368,15 @@ class Release(unittest.TestCase):
         self.run_release("keel-backend:old")
         self.assertIn("up -d --force-recreate --no-deps caddy", self.log.read_text())
 
+    def test_what_runs_is_written_down_for_the_next_deploy(self):
+        self.run_release("keel-backend:old")
+        self.run_release("keel-backend:new")
+        self.assertEqual((self.home / "release-current").read_text().strip(), "keel-backend:new")
+        self.run_release("keel-backend:newer", down=True)
+        self.assertEqual((self.home / "release-current").read_text().strip(), "keel-backend:new", "a failed release changes nothing")
+        self.run_release("--rollback")
+        self.assertEqual((self.home / "release-current").read_text().strip(), "keel-backend:old")
+
     def test_host_files_reach_the_host_when_they_change(self):
         self.run_release("keel-backend:new")
         self.assertEqual((self.home / "etc/systemd/journald.conf.d/zz-keel.conf").read_text(), (DEPLOY / "journald-keel.conf").read_text())
@@ -432,6 +441,93 @@ class TheLiveRunsFindings(unittest.TestCase):
             self.assertEqual(out.split(), ["public.u|0", "s.t|2"])
         finally:
             subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+
+class ContinuousDeployment(unittest.TestCase):
+    """K-902: a merge to main → CI green → image → the VPS, through a key that can do only that."""
+
+    def setUp(self):
+        self.workflow = (ROOT / ".github/workflows/deploy.yml").read_text()
+
+    def test_it_runs_only_after_ci_passed_on_a_push_to_main(self):
+        self.assertRegex(self.workflow, r"(?ms)^on:\n  workflow_run:\n    workflows: \[CI\]\n    types: \[completed\]\n    branches: \[main\]\n")
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", self.workflow)
+        self.assertIn("github.event.workflow_run.event == 'push'", self.workflow)
+        self.assertIn("ref: ${{ github.event.workflow_run.head_sha }}", self.workflow, "the commit CI tested, not main's newest")
+
+    def test_one_at_a_time_never_cancelled_halfway(self):
+        self.assertRegex(self.workflow, r"(?m)^concurrency:\n  group: deploy\n  cancel-in-progress: false$")
+
+    def test_its_secrets_live_in_the_production_environment_and_reach_no_command_line(self):
+        self.assertIn("environment: production", self.workflow)
+        self.assertRegex(self.workflow, r"(?m)^permissions:\n  contents: read$")
+        runs = re.findall(r"(?ms)^ +run: \|\n(.*?)(?=^ +- |\Z)", self.workflow)
+        self.assertTrue(runs)
+        for run in runs:
+            self.assertNotIn("${{", run, "contexts and secrets go through env:, never pasted into a script")
+            self.assertNotIn("set -x", run)
+        self.assertEqual(sorted(set(re.findall(r"secrets\.([A-Z_]+)", self.workflow))), ["KEEL_DEPLOY_SSH_KEY"])
+        self.assertEqual(sorted(set(re.findall(r"vars\.([A-Z_]+)", self.workflow))), ["KEEL_DEPLOY_HOST", "KEEL_DEPLOY_KNOWN_HOSTS"])
+        self.assertIn("StrictHostKeyChecking=yes", self.workflow, "the server's key is pinned")
+
+    def test_actions_are_pinned_to_a_commit(self):
+        for uses in re.findall(r"uses: (\S+)", self.workflow):
+            with self.subTest(uses=uses):
+                self.assertRegex(uses, r"@[0-9a-f]{40}$")
+
+    def test_an_older_commit_is_not_deployed_over_a_newer_one(self):
+        self.assertIn("git merge-base --is-ancestor", self.workflow)
+
+
+class CiDeployCommand(unittest.TestCase):
+    """deploy/ci-deploy.sh, the CI key's forced command (authorized_keys), run for real against stand-ins."""
+
+    SHA = "0123456789abcdef0123456789abcdef01234567"
+
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp())
+        (self.home / "deploy").mkdir()
+        (self.home / "bin").mkdir()
+        (self.home / "deploy/ci-deploy.sh").write_bytes((DEPLOY / "ci-deploy.sh").read_bytes())
+        self.log = self.home / "calls.log"
+        self.log.write_text("")
+        for name in ("docker", "release"):
+            path = self.home / ("bin/docker" if name == "docker" else "deploy/release.sh")
+            path.write_text(f'#!/bin/sh\necho "{name} $*" >> "$FAKE_HOME/calls.log"; cat >/dev/null; exit 0\n')
+            path.chmod(0o755)
+
+    def run_command(self, command, stdin=b""):
+        env = {"PATH": f"{self.home / 'bin'}:/usr/bin:/bin", "FAKE_HOME": str(self.home), "KEEL_HOME": str(self.home), "SSH_ORIGINAL_COMMAND": command}
+        return subprocess.run(["bash", str(self.home / "deploy/ci-deploy.sh")], env=env, input=stdin, capture_output=True)
+
+    def test_anything_but_its_three_commands_is_refused_before_anything_runs(self):
+        for command in ("", "bash", "image", "image 123", f"image {self.SHA} extra", f"image {self.SHA};id", f"image $(id)",
+                        f"files {self.SHA.upper()}", "released x", f"rm {self.SHA}"):
+            with self.subTest(command=command):
+                self.assertNotEqual(self.run_command(command).returncode, 0)
+        self.assertEqual(self.log.read_text(), "", "nothing was called")
+
+    def test_released_names_the_commit_in_service(self):
+        self.assertEqual(self.run_command("released").stdout, b"")
+        (self.home / "release-current").write_text(f"keel-backend:{self.SHA}\n")
+        self.assertEqual(self.run_command("released").stdout.decode().strip(), self.SHA)
+
+    def test_image_loads_then_releases_that_commit(self):
+        result = self.run_command(f"image {self.SHA}", stdin=subprocess.run(["gzip", "-c"], input=b"tar", capture_output=True).stdout)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.log.read_text().splitlines(), ["docker load -q", f"docker image inspect keel-backend:{self.SHA}",
+                                                             f"release keel-backend:{self.SHA}"])
+
+    def test_files_replace_deploy_with_the_commits_and_nothing_else(self):
+        payload = self.home / "payload"
+        (payload / "deploy").mkdir(parents=True)
+        (payload / "deploy/marker").write_text("new")
+        (payload / "stray").write_text("x")
+        tar = subprocess.run(["tar", "-c", "-C", str(payload), "deploy"], capture_output=True).stdout
+        self.assertEqual(self.run_command(f"files {self.SHA}", stdin=tar).returncode, 0)
+        self.assertEqual((self.home / "deploy/marker").read_text(), "new")
+        self.assertFalse((self.home / "deploy/release.sh").exists(), "deploy/ is the commit's, whole")
+        bad = subprocess.run(["tar", "-c", "-C", str(payload), "deploy", "stray"], capture_output=True).stdout
+        self.assertNotEqual(self.run_command(f"files {self.SHA}", stdin=bad).returncode, 0, "only deploy/ comes in")
 
 
 if __name__ == "__main__":
