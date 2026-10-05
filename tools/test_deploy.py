@@ -279,7 +279,7 @@ class Release(unittest.TestCase):
         (self.home / "bin").mkdir()
         (self.home / "etc/systemd/system").mkdir(parents=True)
         (self.home / "etc/systemd/journald.conf.d").mkdir(parents=True)
-        for name in ("release.sh", "Caddyfile", "keel-backup.service", "keel-backup.timer", "journald-keel.conf"):
+        for name in ("release.sh", "Caddyfile", "keel-backup.service", "keel-backup.timer", "journald-keel.conf", "ci-deploy.sh"):
             (self.home / "deploy" / name).write_bytes((DEPLOY / name).read_bytes())
         (self.home / ".env").write_text("KEEL_DOMAIN=example.org\n")
         self.log = self.home / "calls.log"
@@ -287,7 +287,11 @@ class Release(unittest.TestCase):
         self.state.write_text(json.dumps({"tags": {}}))
         self.stub("docker", self.DOCKER)
         self.stub("curl", '#!/bin/sh\n[ -e "$FAKE_HOME/down" ] && exit 22; exit 0\n')
-        self.stub("sudo", '#!/bin/sh\necho "sudo $*" >> "$FAKE_HOME/calls.log"; "$@"\n')
+        # sudo: logged, then run without the owner flags (the test is not root).
+        self.stub("sudo", '#!/bin/bash\necho "sudo $*" >> "$FAKE_HOME/calls.log"\nargs=(); skip=0; for a in "$@"; do '
+                          'if ((skip)); then skip=0; continue; fi; case $a in -o|-g) skip=1;; *) args+=("$a");; esac; done; "${args[@]}"\n')
+        self.stub("flock", "#!/bin/sh\nexit 0\n")  # the server's util-linux; one release at a time is its job
+        (self.home / "lib").mkdir()
         self.stub("systemctl", '#!/bin/sh\necho "systemctl $*" >> "$FAKE_HOME/calls.log"\n')
         kc = self.home / "deploy/kc"
         kc.write_text('#!/bin/sh\necho "kc $*" >> "$FAKE_HOME/calls.log"\n')
@@ -314,7 +318,7 @@ class Release(unittest.TestCase):
         if down:
             (self.home / "down").write_text("")
         env = {"PATH": f"{self.home / 'bin'}:/usr/bin:/bin", "FAKE_STATE": str(self.state), "FAKE_HOME": str(self.home), "KEEL_HOME": str(self.home),
-               "KEEL_ETC": str(self.home / "etc"), "KEEL_RELEASE_WAIT": "5", "KEEL_RELEASE_SETTLE": "0", "KEEL_RELEASE_POLL": "0"}
+               "KEEL_ETC": str(self.home / "etc"), "KEEL_LIB": str(self.home / "lib"), "KEEL_RELEASE_WAIT": "5", "KEEL_RELEASE_SETTLE": "0", "KEEL_RELEASE_POLL": "0"}
         return subprocess.run(["bash", str(self.home / "deploy/release.sh"), *args], env=env, capture_output=True, text=True)
 
     def test_a_first_release_has_no_previous(self):
@@ -385,6 +389,9 @@ class Release(unittest.TestCase):
         self.assertEqual((self.home / "etc/systemd/journald.conf.d/zz-keel.conf").read_text(), (DEPLOY / "journald-keel.conf").read_text())
         self.assertTrue((self.home / "etc/systemd/system/keel-backup.timer").is_file())
         self.assertIn("systemctl daemon-reload", self.log.read_text())
+        forced = self.home / "lib/ci-deploy"
+        self.assertEqual(forced.read_bytes(), (DEPLOY / "ci-deploy.sh").read_bytes())
+        self.assertTrue(forced.stat().st_mode & 0o111)
 
 
 class TheLiveRunsFindings(unittest.TestCase):
@@ -481,7 +488,7 @@ class ContinuousDeployment(unittest.TestCase):
         authorize = (DEPLOY / "authorize-ci.sh").read_text()
         self.assertIn('restrict,command=\\"/usr/local/lib/keel/ci-deploy\\"', authorize)
         self.assertIn("sudo install -o root -g root -m 755", authorize)
-        self.assertIn("ci-deploy.sh lib/ci-deploy", (DEPLOY / "release.sh").read_text(), "a merged change reaches it, as root's")
+        self.assertIn("host_file ci-deploy.sh \"$lib/ci-deploy\" 755", (DEPLOY / "release.sh").read_text(), "a merged change reaches it, as root's")
 
     def test_the_runner_sends_an_image_and_a_commit_id_only(self):
         self.assertNotIn("git archive", self.workflow)
@@ -491,7 +498,7 @@ class ContinuousDeployment(unittest.TestCase):
         self.assertRegex(self.workflow, r"(?m)^defaults:\n  run:\n    shell: bash$")
 
     def test_an_unreadable_running_commit_fails_the_job_instead_of_skipping(self):
-        self.assertRegex(self.workflow, r"merge-base --is-ancestor[^\n]*\n[^\n]*status=\$\?")
+        self.assertRegex(self.workflow, r"merge-base --is-ancestor[^\n]*\|\| status=\$\?")
         self.assertIn('[ "$status" -eq 1 ]', self.workflow)
 
     def test_an_older_commit_is_not_deployed_over_a_newer_one(self):

@@ -1,7 +1,8 @@
-# Continuous deployment (K-902, ADR-066): after CI passed on a push to main, that commit's image is built here, shipped
-# to the VPS over SSH and released (deploy/release.sh puts the old one back if /health does not answer). No registry: the
-# image goes as `docker save | gzip` down the SSH pipe, so it is published nowhere. The key can run only
-# deploy/ci-deploy.sh (its forced command); the host key is pinned. The repository is public: nothing here prints a value.
+# Continuous deployment (K-902, ADR-066): after CI passed on a push to main, that commit's image is built here and sent
+# with its commit id over SSH — nothing else. The server's forced command (deploy/ci-deploy.sh, root's) fetches main
+# itself, takes deploy/ from that commit, loads the image only under that one tag, and releases it (release.sh puts the
+# old one back if /health does not answer). No registry: the image is published nowhere. The host key is pinned. The
+# repository is public: nothing here prints a value.
 name: Deploy
 
 on:
@@ -12,6 +13,11 @@ on:
 
 permissions:
   contents: read
+
+# bash -eo pipefail: a broken pipe (docker save | ssh) fails the step.
+defaults:
+  run:
+    shell: bash
 
 concurrency:
   group: deploy
@@ -45,19 +51,26 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           printf 'Host vps\n  HostName %s\n  User keel\n  IdentityFile ~/.ssh/deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking=yes\n  BatchMode yes\n' "$HOST" > ~/.ssh/config
 
-      - name: Only a commit newer than what runs
+      - name: Only a commit newer than what runs, that changes what the server runs
         id: newer
         run: |
           released=$(ssh vps released)
-          if [ -n "$released" ] && ! git merge-base --is-ancestor "$released" "$COMMIT"; then
-            echo "skip: $COMMIT is not newer than the running $released"
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-          elif [ -n "$released" ] && git diff --quiet "$released" "$COMMIT" -- backend data deploy; then
-            echo "skip: nothing the server runs changed since $released"
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          deploy=true
+          if [ -n "$released" ]; then
+            status=0
+            git merge-base --is-ancestor "$released" "$COMMIT" || status=$?
+            if [ "$status" -eq 1 ]; then
+              echo "skip: $COMMIT is not newer than the running $released"
+              deploy=false
+            elif [ "$status" -ne 0 ]; then
+              echo "the running commit $released is not in this repository" >&2
+              exit 1
+            elif git diff --quiet "$released" "$COMMIT" -- backend data deploy; then
+              echo "skip: nothing the server runs changed since $released"
+              deploy=false
+            fi
           fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
 
       - name: Build the image
         if: steps.newer.outputs.deploy == 'true'
@@ -65,12 +78,7 @@ jobs:
           docker build -f deploy/backend.Dockerfile -t "keel-backend:$COMMIT" .
           docker image ls "keel-backend:$COMMIT" --format 'image {{.ID}} {{.Size}}'
 
-      - name: The commit's deploy/ to the VPS
+      - name: Send the image and the commit id; the server releases it
         if: steps.newer.outputs.deploy == 'true'
         run: |
-          git archive --format=tar "$COMMIT" deploy | ssh vps files "$COMMIT"
-
-      - name: Ship the image and release it
-        if: steps.newer.outputs.deploy == 'true'
-        run: |
-          docker save "keel-backend:$COMMIT" | gzip | ssh vps image "$COMMIT"
+          docker save "keel-backend:$COMMIT" | gzip | ssh vps deploy "$COMMIT"

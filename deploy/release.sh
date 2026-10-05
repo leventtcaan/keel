@@ -9,10 +9,14 @@
 set -euo pipefail
 home=${KEEL_HOME:-/opt/keel}
 etc=${KEEL_ETC:-/etc}
+lib=${KEEL_LIB:-/usr/local/lib/keel}
 kc="$home/deploy/kc"
 wait_seconds=${KEEL_RELEASE_WAIT:-300} # the first start imports FoodData Central (minutes); later ones take seconds
 settle_seconds=${KEEL_RELEASE_SETTLE:-30}
 poll_seconds=${KEEL_RELEASE_POLL:-5}
+# One release at a time (CI and a deploy by hand could meet).
+exec 9>"$home/.release.lock"
+flock -w 900 9 || { echo "another release is running" >&2; exit 1; }
 domain=$(sed -nE "s/^KEEL_DOMAIN=['\"]?([a-z0-9.-]+)['\"]?$/\1/p" "$home/.env")
 [[ -n $domain ]] || { echo "no KEEL_DOMAIN in $home/.env" >&2; exit 1; }
 
@@ -35,17 +39,19 @@ healthy() {
 
 # A file of deploy/ that lives outside the compose project: copied when it changed (it is root's, hence sudo).
 host_file() {
-  local from="$home/deploy/$1" to="$etc/$2"
+  local from="$home/deploy/$1" to="$2" mode=${3:-644}
   cmp -s "$from" "$to" 2>/dev/null && return 1
-  sudo install -m 644 "$from" "$to"
+  sudo install -o root -g root -m "$mode" "$from" "$to"
 }
 
 apply_host_files() {
   local units=0
-  host_file keel-backup.service systemd/system/keel-backup.service && units=1
-  host_file keel-backup.timer systemd/system/keel-backup.timer && units=1
+  host_file keel-backup.service "$etc/systemd/system/keel-backup.service" && units=1
+  host_file keel-backup.timer "$etc/systemd/system/keel-backup.timer" && units=1
   if ((units)); then sudo systemctl daemon-reload; sudo systemctl enable --now keel-backup.timer; fi
-  if host_file journald-keel.conf systemd/journald.conf.d/zz-keel.conf; then sudo systemctl restart systemd-journald; fi
+  if host_file journald-keel.conf "$etc/systemd/journald.conf.d/zz-keel.conf"; then sudo systemctl restart systemd-journald; fi
+  # The CI key's forced command (K-902), root's so the key cannot change it; only a release of main updates it.
+  if [[ -d $lib ]]; then host_file ci-deploy.sh "$lib/ci-deploy" 755 || true; fi
 }
 
 # Caddy reads its file through a bind mount of a file deploy.sh replaced: recreate it when the file changed.

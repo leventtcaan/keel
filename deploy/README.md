@@ -17,7 +17,7 @@ backend (`prod` profile, K-907) and Caddy (HTTPS, the only open ports). Everythi
 | `mac/pull-backups.sh`, `mac/install-pull.sh` | The Mac pulls the encrypted backups hourly while awake (out of Time Machine); a notification when the newest is over 26 h old |
 | `restore-drill.sh` | Restores the newest backup into a throwaway database and compares every table's row count with the counts the backup took |
 | `fetch-fdc.sh` | Downloads FoodData Central's releases (ADR-008) for the backend to import |
-| `ci-deploy.sh`, `authorize-ci.sh` | The CI key's only command on the server (K-902); letting that key in |
+| `ci-deploy.sh`, `authorize-ci.sh` | The CI key's only command on the server, installed root's (K-902); letting that key in |
 
 ## First setup (once)
 On the Mac (`~/.ssh/config` has `keel-vps` → root at first, `keel` after provisioning; `keel-backup` → the backup user):
@@ -33,14 +33,16 @@ On the Mac (`~/.ssh/config` has `keel-vps` → root at first, `keel` after provi
 6. `deploy/deploy.sh` · `deploy/mac/install-pull.sh` · after the first backup: `deploy/restore-drill.sh`
 
 ## Continuous deployment (K-902, ADR-066)
-`.github/workflows/deploy.yml`: CI green on a push to `main` → that commit's image is built on GitHub's runner → `deploy/` and
-the image (`docker save | gzip`, no registry) go down SSH → `release.sh`. A commit older than the running one is skipped.
-Once, on the Mac:
+`.github/workflows/deploy.yml`: CI green on a push to `main` → that commit's image is built on GitHub's runner → the image
+(`docker save | gzip`, no registry) and the commit id go down SSH to the CI key's only command, `/usr/local/lib/keel/ci-deploy`
+(root's; `ci-deploy.sh`). The server fetches `main` itself, requires the commit on it and not older than what runs, takes
+`deploy/` from that commit, loads the image only under that one tag, and releases it. A stolen CI key can put a forged image
+in service (it would read `.env` and the database) but cannot run anything else or reach the host.
+Once, on the Mac, after the first deploy:
 1. `ssh-keygen -t ed25519 -N '' -C keel-ci-deploy -f ~/.ssh/keel_ci_deploy` · `deploy/authorize-ci.sh ~/.ssh/keel_ci_deploy.pub`
-2. GitHub, environment `production`: secret `KEEL_DEPLOY_SSH_KEY` = `gh secret set KEEL_DEPLOY_SSH_KEY --env production < ~/.ssh/keel_ci_deploy`
-   (then delete the local private file: the server and GitHub are the only places it needs to be); variables
-   `KEEL_DEPLOY_HOST` (the domain) and `KEEL_DEPLOY_KNOWN_HOSTS` (`ssh-keyscan -t ed25519 <domain>`, checked against
-   `ssh keel-vps 'ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub'`).
+2. GitHub, environment `production`: secret `KEEL_DEPLOY_SSH_KEY` = `gh secret set KEEL_DEPLOY_SSH_KEY --env production < ~/.ssh/keel_ci_deploy`,
+   then delete the local private file; variables `KEEL_DEPLOY_HOST` (the domain) and `KEEL_DEPLOY_KNOWN_HOSTS`
+   (`ssh-keyscan -t ed25519 <domain>`, checked against `ssh keel-vps 'ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub'`).
 
 ## Every day
 - **Deploy:** CI does it on every merge to `main` (Actions › Deploy); by hand: `deploy/deploy.sh [commit]`.
