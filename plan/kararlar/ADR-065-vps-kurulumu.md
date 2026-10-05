@@ -62,3 +62,16 @@ Düşük: Compose dosyası her VPS'e taşınır; yedek hedefi tek betikte.
 ## Doğrulama
 `tools/test_deploy.py` (imajlar sürüm+özetle, postgres sürümü katalogla aynı, port yayımlanmayan servisler, sürelerin politika ve envanterle
 aynı olması); `https://<alan>/health` 200; geri yükleme provası çıktısı (satır sayıları eşit).
+
+## Ek 1 (5 Eki) — güvenlik incelemesinden sonra
+- **Günlük yalnız journald'da:** Ubuntu journald'ı rsyslog'a aktarıyor (`/var/log/syslog`, haftalarca) → rsyslog kaldırılır; drop-in
+  `zz-keel.conf` adıyla Ubuntu'nun `syslog.conf`'undan sonra uygulanır (`ForwardToSyslog=no`), `MaxFileSec=1day` (yaş silmesi yalnız
+  kapanmış dosyada çalışır; varsayılan bir ay). PostgreSQL `log_error_verbosity=terse`, `log_min_error_statement=panic` (satır ve sorgu
+  günlüğe girmez, V3).
+- **SSH sertleştirmesi ayrı adım (`harden-ssh.sh`):** önce Mac'ten `keel` olarak anahtarla giriş + `sudo` denenir, sonra root/parola kapanır.
+- **`release.sh`:** imaj kimliğiyle karşılaştırır (aynı imaj yeniden → `previous` korunur), başarısızlıkta `current`/`previous` eski hâline
+  döner, geri alma ikisini takas eder; Caddyfile değişince Caddy yeniden yaratılır; systemd/journald dosyaları değişince ana makineye kopyalanır;
+  yalnız `current`/`previous` kalır. `/health` canlılıktır, hazırlık değil → 30 sn yerleşme beklemesi; kalıcı çözüm **K-908**.
+- **Yedek:** her yedeğin yanında o anki tablo sayımları (`.counts`, kişisel veri değil); prova bunlarla karşılaştırır (canlı veri 02:30'dan sonra
+  değişir). Mac kopyaları Time Machine dışında (`tmutil addexclusion`) — yoksa 14 gün sözünü aşarlar; en yeni yedek 26 saatten eskiyse bildirim.
+- **`init-env.sh`:** Compose'un `.env` okuyucusunun değiştireceği karakterleri reddeder. `/opt/keel/fdc` 755 (kapsayıcı kullanıcısı okur).
