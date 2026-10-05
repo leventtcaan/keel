@@ -721,6 +721,17 @@ Levent anahtarı üretip VPS'e tanıtacak (temiz kurulum önerildi); alan adı *
 - **Yeni sorular (Levent):** (a) Geri yüklemede, yedekten sonra silinen hesap geri gelir (politika söylüyor) — kabul mü, yoksa silme kayıtlarını
   yedekten ayrı tutan küçük bir iş mi? (b) Şifreli yedekler Türkiye'de, senin Mac'inde (politika söylüyor; sunucu AB'de) — kabul mü?
 
+**Part 2 başı (6 Eki):** senkron tamam — Part 1 ÇIKIŞ git ile tutarlı (#404, #405, #407 birleşik; açık PR yok; worktree yalnız `../keel-main`;
+`M9-part*-devam.md` yok); sunucu `/health` → `UP`. Disk 12 GB. Dependabot: aynı 3 geçişli uyarı. Bağımlılıklar: K-801, K-807, K-614 `done`; K-308 `doing`
+(bu part kapatır). Xcode 16.1 yerelde (EAS bulutta derler). **Levent (AskUserQuestion):** `eas init` agent yapar → `@leventcan/keel`
+(`542a7ab1-…`); ilk mağaza derlemesi Levent'in terminalinde (Apple girişi); iletişim adresi **yeni açılacak** (o zamana kadar dış TestFlight yok);
+iPhone bu session'da yanında. Widget (K-515 `doing`) ve Live Activity (K-426 `todo`) native hedefleri **henüz yok** → cihaz listesinde "kapsam dışı".
+RevenueCat hesabı yok → mağaza "kullanılamaz", kapı açık (ADR-058 #107); sandbox satın alma maddesi K-704 ile.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+| K-903 (1/2) EAS projesi + `EXPO_PUBLIC_API_URL` EAS `production` ortamında + `usesNonExemptEncryption: false` | inceleme | #408 | — |
+
 -----
 ## M8 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M8.md`. Part prompt'ları `M8-part1.md`, `M8-part2.md`.
