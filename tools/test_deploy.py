@@ -375,5 +375,62 @@ class Release(unittest.TestCase):
         self.assertIn("systemctl daemon-reload", self.log.read_text())
 
 
+class TheLiveRunsFindings(unittest.TestCase):
+    """What the first real run on the VPS found (6 Oct): each finding is a test."""
+
+    def test_the_table_counts_query_is_written_once_and_never_nests_dollar_quotes(self):
+        # The first backup wrote an empty .counts: $$…$$ inside $$…$$ closed early, and psql still exited 0.
+        query = (DEPLOY / "table-counts.sql").read_text()
+        self.assertNotIn("$$", query, "one tag per level: $f$ outside, $s$ inside")
+        self.assertIn("\\gexec", query)
+        for script in ("backup.sh", "restore-drill.sh"):
+            with self.subTest(script=script):
+                text = (DEPLOY / script).read_text()
+                self.assertIn("table-counts.sql", text)
+                self.assertNotIn("select format(", text, "the query lives in table-counts.sql only")
+
+    def test_every_psql_stops_on_the_first_error(self):
+        for script in ("backup.sh", "restore-drill.sh"):
+            text = (DEPLOY / script).read_text()
+            for call in re.findall(r"psql[^\n]*", text):
+                with self.subTest(script=script, call=call):
+                    self.assertIn("-v ON_ERROR_STOP=1", call)
+
+    def test_an_empty_count_fails_the_backup(self):
+        self.assertRegex((DEPLOY / "backup.sh").read_text(), r"\[\[ -s [^\]]*counts\.part\" \]\]")
+
+    def test_the_mac_pulls_with_rsync_3_not_openrsync(self):
+        # macOS's /usr/bin/rsync is openrsync (protocol 29); the server's rrsync refuses its command line.
+        pull = (DEPLOY / "mac/pull-backups.sh").read_text()
+        self.assertIn("/opt/homebrew/bin/rsync", pull)
+        self.assertIn("version 3", pull)
+        self.assertNotRegex(pull, r"(?m)^rsync ")
+
+    def test_the_backend_has_room_above_its_idle_memory(self):
+        # Idle after the first start: 918 MiB of a 1 GiB limit (the JVM keeps what it took).
+        limit = compose()["services"]["backend"]["mem_limit"]
+        self.assertGreaterEqual(int(limit), 1536 * 1024 * 1024)
+
+    @unittest.skipUnless(os.environ.get("CI") or subprocess.run(["docker", "info"], capture_output=True).returncode == 0,
+                         "needs a Docker daemon (CI has one)")
+    def test_the_table_counts_query_runs_on_the_real_postgresql(self):
+        image = re.search(r"image: (postgres:\S+)", (DEPLOY / "compose.yaml").read_text()).group(1)
+        name = "keel-counts-test"
+        subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+        subprocess.run(["docker", "run", "-d", "--rm", "--name", name, "-e", "POSTGRES_HOST_AUTH_METHOD=trust", image], check=True, capture_output=True)
+        try:
+            for _ in range(60):
+                if subprocess.run(["docker", "exec", name, "pg_isready", "-h", "127.0.0.1", "-q"]).returncode == 0:
+                    break
+                subprocess.run(["sleep", "1"])
+            setup = "create schema s; create table s.t (x int); insert into s.t values (1), (2); create table public.u (y int);"
+            subprocess.run(["docker", "exec", name, "psql", "-h", "127.0.0.1", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-c", setup], check=True, capture_output=True)
+            out = subprocess.run(["docker", "exec", "-i", name, "psql", "-h", "127.0.0.1", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-At"],
+                                 input=(DEPLOY / "table-counts.sql").read_text(), capture_output=True, text=True, check=True).stdout
+            self.assertEqual(out.split(), ["public.u|0", "s.t|2"])
+        finally:
+            subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+
+
 if __name__ == "__main__":
     unittest.main()
