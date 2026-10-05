@@ -39,6 +39,7 @@ spring:
 # Identity (K-203, ADR-011). The app's bundle ID and the session key come from the environment (V5); Apple's issuer
 # and key set are Apple's published values. Access tokens live minutes, refresh tokens weeks.
 keel:
+  production: false
   apple:
     client-id: ${KEEL_APPLE_CLIENT_ID}
     issuer: https://appleid.apple.com

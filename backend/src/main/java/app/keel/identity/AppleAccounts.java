@@ -8,6 +8,7 @@ import java.net.URI;
 import java.security.interfaces.ECPrivateKey;
 import java.time.Clock;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +28,8 @@ public class AppleAccounts {
     private final Clock clock;
     private final ECPrivateKey key;
 
-    AppleAccounts(AppleRevocationProperties revocation, AppleProperties apple, AppleIdentityVerifier verifier, Accounts accounts, Clock clock) {
+    AppleAccounts(AppleRevocationProperties revocation, AppleProperties apple, AppleIdentityVerifier verifier, Accounts accounts, Clock clock,
+            @Value("${keel.production}") boolean production) {
         this.revocation = revocation;
         this.apple = apple;
         this.verifier = verifier;
