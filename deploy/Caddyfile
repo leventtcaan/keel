@@ -1,0 +1,14 @@
+# The reverse proxy (K-901, ADR-065). Caddy gets and renews the HTTPS certificate itself (Let's Encrypt) and sends plain
+# HTTP to HTTPS. No `log` directive: Caddy keeps no access log (the privacy policy says so; tools/test_deploy.py checks).
+{$KEEL_DOMAIN} {
+	# A meal photo is at most 2.5 MB, sent as base64 JSON (keel.coach.photo.max-bytes): 5 MB covers it with room.
+	request_body {
+		max_size 5MB
+	}
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	reverse_proxy backend:8080
+}

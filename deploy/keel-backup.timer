@@ -1,0 +1,10 @@
+# Every day at 02:30 UTC; a run missed while the server was off runs at the next start (Persistent).
+[Unit]
+Description=keel database backup, daily
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

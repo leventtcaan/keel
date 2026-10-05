@@ -98,9 +98,23 @@ the import can carry body weight; imported sessions then stay in the training lo
   a restart. Each entry holds only the random account number, and is removed as soon as every part has handled it
   (usually within seconds; one that failed is retried, then removed).
 - Our server's logs record each request's route, status and timing. They never record your account, what you sent, or any
-  health data.
+  health data. The web server in front of it keeps no access log; its error messages can include an IP address. Logs are
+  deleted after 14 days.
 
 *Why:* to make deletions reliable and keep the service running (legitimate interest, GDPR Art. 6(1)(f)).
+
+### Backups {#data-backups}
+
+Once a day, a copy of the whole database is made and encrypted on our server before it is stored; the server itself
+can't read it. Encrypted copies are kept on the server for 7 days and on the controller's own computer, in Turkey, for 14
+days, and then deleted. So what you delete, or your whole account, is gone from the backups within 14 days.
+
+A backup is used only to restore the service after a failure. A restore brings the database back as it was when the backup
+was made: anything done after it is lost, and an account deleted after it would come back. If that ever happens, delete it
+again in Settings, or write to {{ site.contact_email }}.
+
+*Why:* to restore the service after a failure and keep your data safe (legitimate interest, GDPR Art. 6(1)(f); security of
+processing, Art. 32). *How long:* 7 days on the server, 14 days on the controller's computer.
 
 ### Data that isn't about you {#data-reference}
 
@@ -198,7 +212,7 @@ The app is for adults: you must be 18 or older to use it.
 
 ## Security {#security}
 
-Data travels encrypted (HTTPS). Tokens on the phone are kept in the Keychain; refresh tokens on the server only as
+Data travels encrypted (HTTPS), and backups are encrypted before they are stored. Tokens on the phone are kept in the Keychain; refresh tokens on the server only as
 fingerprints. Health data never appears in logs or error reports.
 
 ## Changes {#changes}

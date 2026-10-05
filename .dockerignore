@@ -1,0 +1,9 @@
+# Only what deploy/backend.Dockerfile copies (data/, backend/) goes to the build; never local secrets or builds.
+*
+!data/
+!backend/
+backend/build/
+backend/.gradle/
+backend/bin/
+**/.env
+**/*.env
