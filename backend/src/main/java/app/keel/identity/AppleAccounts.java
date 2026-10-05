@@ -35,6 +35,11 @@ public class AppleAccounts {
         this.verifier = verifier;
         this.accounts = accounts;
         this.clock = clock;
+        // In production a deletion must end the Apple sign-in too (ADR-062 #3, K-907): no key, no start.
+        if (production && !revocation.configured()) {
+            throw new IllegalStateException("In production (keel.production) Sign in with Apple revocation needs KEEL_APPLE_TEAM_ID, KEEL_APPLE_KEY_ID and "
+                    + "KEEL_APPLE_PRIVATE_KEY (ADR-062)");
+        }
         // Read once, at start: a key that is set but does not read stops the server here, not at someone's deletion.
         this.key = revocation.configured() ? AppleClientSecret.parse(revocation.privateKey()) : null;
     }

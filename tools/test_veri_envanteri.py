@@ -28,6 +28,7 @@ APP_JSON = ROOT / "apps/mobile/app.json"
 LABEL_DRAFT = ROOT / "docs/yasal/app-store-beyanlari.md"
 PACKAGE = ROOT / "apps/mobile/package.json"
 HEALTHKIT = ROOT / "apps/mobile/src/health/healthKit.ts"
+SERVER_PROD_CONFIG = ROOT / "backend/src/main/resources/application-prod.yml"
 SERVER_CONFIG = ROOT / "backend/src/main/resources/application.yml"
 # The schemas whose account rows are health data and go with the HEALTH_DATA consent — the backend's own list
 # (ConsentWithdrawalDeletionTests.HEALTH_SCHEMAS).
@@ -325,11 +326,17 @@ def _section(markdown, anchor):
     return rest[:nxt.start()] if nxt else rest
 
 
+def _coach_setting(path, key):
+    text = path.read_text(encoding="utf-8")
+    if "\n  coach:\n" not in text:
+        return None
+    m = re.search(rf"^    {key}:\s*(\S+)", text[text.index("\n  coach:\n"):], re.M)
+    return m.group(1).strip("\"'") if m else None
+
+
 def _coach_provider():
-    """keel.coach.provider and provider-name from the server's configuration."""
-    text = SERVER_CONFIG.read_text(encoding="utf-8")
-    coach = text[text.index("\n  coach:\n"):]
-    return (re.search(r"^    provider:\s*(\S+)", coach, re.M).group(1), re.search(r"^    provider-name:\s*(\S+)", coach, re.M).group(1))
+    """keel.coach.provider and provider-name as the deployed server runs them (K-907): application-prod.yml over application.yml."""
+    return tuple(_coach_setting(SERVER_PROD_CONFIG, key) or _coach_setting(SERVER_CONFIG, key) for key in ("provider", "provider-name"))
 
 
 class PolicyMatchesTheInventory(unittest.TestCase):
@@ -375,8 +382,10 @@ class PolicyMatchesTheInventory(unittest.TestCase):
         ai = [f for f in inventory()["outbound"] if f["policy"] == "ai"]
         self.assertEqual(len(ai), 1)
         section = " ".join(_section(PRIVACY.read_text(encoding="utf-8"), "ai").split())
-        self.assertEqual(ai[0]["active"], provider != "fake")
-        if provider == "fake":
+        # "fake" (development) and "off" (the beta, ADR-064 #5) send nothing anywhere.
+        inactive = provider in ("fake", "off")
+        self.assertEqual(ai[0]["active"], not inactive)
+        if inactive:
             self.assertIn("This is not active yet", section)
         else:
             self.assertNotIn("not active", section)

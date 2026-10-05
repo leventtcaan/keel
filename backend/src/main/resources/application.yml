@@ -39,6 +39,8 @@ spring:
 # Identity (K-203, ADR-011). The app's bundle ID and the session key come from the environment (V5); Apple's issuer
 # and key set are Apple's published values. Access tokens live minutes, refresh tokens weeks.
 keel:
+  # The VPS runs with SPRING_PROFILES_ACTIVE=prod (application-prod.yml, K-907): production then needs the Sign in with
+  # Apple key (ADR-062 #3) and a coach model that is real or off — never the fake, which keeps requests in memory.
   production: false
   apple:
     client-id: ${KEEL_APPLE_CLIENT_ID}
