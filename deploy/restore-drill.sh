@@ -23,9 +23,7 @@ ssh "$host" "for _ in \$(seq 1 60); do docker exec $drill pg_isready -h 127.0.0.
 
 age -d -i "$key" "$backup" | ssh "$host" "docker exec -i $drill pg_restore -h 127.0.0.1 -U keel -d keel --no-owner --exit-on-error"
 
-counts='select format($$select %L || $$|$$ || count(*) from %I.%I$$, schemaname || $$.$$ || tablename, schemaname, tablename)
-  from pg_tables where schemaname not in ($$pg_catalog$$, $$information_schema$$) order by 1 \gexec'
-restored=$(ssh "$host" "docker exec -i $drill psql -h 127.0.0.1 -U keel -d keel -At" <<<"$counts")
+restored=$(ssh "$host" "docker exec -i $drill psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U keel -d keel -At" < "$(git rev-parse --show-toplevel)/deploy/table-counts.sql")
 echo "tables: $(wc -l <<<"$restored" | tr -d ' ') restored, $(wc -l < "$expected" | tr -d ' ') in the backup's counts; rows: $(awk -F'|' '{s+=$2} END {print s+0}' <<<"$restored")"
 if diff "$expected" <(echo "$restored"); then
   echo "restore drill: every table and its row count equal the backup's"

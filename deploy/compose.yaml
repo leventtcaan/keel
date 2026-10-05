@@ -47,8 +47,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # The heap is 75% of this (deploy/backend.Dockerfile); PostgreSQL and Caddy share the rest.
-    mem_limit: 1g
+    # The heap is 75% of this (deploy/backend.Dockerfile); PostgreSQL and Caddy share the rest. At 1g the idle server
+    # sat at 918 MiB after its first start (the JVM keeps what it took): 1.5g leaves room for a heavy request.
+    mem_limit: 1536m
     # Internal to reach PostgreSQL; edge to be reached by Caddy and to call Apple (sign-in keys, revocation).
     networks: [internal, edge]
     <<: *logging

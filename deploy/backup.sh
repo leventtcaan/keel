@@ -15,10 +15,9 @@ trap 'rm -f "$part" "$dir/.keel-$stamp.counts.part"' EXIT
 find "$dir" -name '.keel-*.part' -type f -mmin +60 -delete
 
 # Every table's row count, taken just before the dump: the restore drill compares with these, not with the live database
-# (which moves on after 02:30). Table names and counts only — nothing about anyone.
-counts='select format($$select %L || $$|$$ || count(*) from %I.%I$$, schemaname || $$.$$ || tablename, schemaname, tablename)
-  from pg_tables where schemaname not in ($$pg_catalog$$, $$information_schema$$) order by 1 \gexec'
-/opt/keel/deploy/kc exec -T postgres psql -U keel -d keel -At <<<"$counts" > "$dir/.keel-$stamp.counts.part"
+# (which moves on after 02:30). Table names and counts only — nothing about anyone. Empty means it failed.
+/opt/keel/deploy/kc exec -T postgres psql -v ON_ERROR_STOP=1 -U keel -d keel -At < /opt/keel/deploy/table-counts.sql > "$dir/.keel-$stamp.counts.part"
+[[ -s "$dir/.keel-$stamp.counts.part" ]] || { echo "no table counts" >&2; exit 1; }
 
 # pipefail: a failing pg_dump fails the backup instead of writing an empty file.
 /opt/keel/deploy/kc exec -T postgres pg_dump -U keel -d keel --format=custom | age -R /opt/keel/backup-recipient.txt > "$part"
