@@ -368,6 +368,9 @@ class Release(unittest.TestCase):
         self.run_release("keel-backend:old")
         self.assertIn("up -d --force-recreate --no-deps caddy", self.log.read_text())
 
+    def test_one_release_at_a_time(self):
+        self.assertIn("flock", (DEPLOY / "release.sh").read_text())
+
     def test_what_runs_is_written_down_for_the_next_deploy(self):
         self.run_release("keel-backend:old")
         self.run_release("keel-backend:new")
@@ -474,9 +477,22 @@ class ContinuousDeployment(unittest.TestCase):
             with self.subTest(uses=uses):
                 self.assertRegex(uses, r"@[0-9a-f]{40}$")
 
-    def test_the_ci_key_can_run_the_forced_command_only(self):
+    def test_the_ci_key_can_run_the_forced_command_only_from_a_place_it_cannot_write(self):
         authorize = (DEPLOY / "authorize-ci.sh").read_text()
-        self.assertIn('restrict,command=\\"/opt/keel/deploy/ci-deploy.sh\\"', authorize)
+        self.assertIn('restrict,command=\\"/usr/local/lib/keel/ci-deploy\\"', authorize)
+        self.assertIn("sudo install -o root -g root -m 755", authorize)
+        self.assertIn("ci-deploy.sh lib/ci-deploy", (DEPLOY / "release.sh").read_text(), "a merged change reaches it, as root's")
+
+    def test_the_runner_sends_an_image_and_a_commit_id_only(self):
+        self.assertNotIn("git archive", self.workflow)
+        self.assertIn('| ssh vps deploy "$COMMIT"', self.workflow)
+
+    def test_every_step_stops_on_a_broken_pipe(self):
+        self.assertRegex(self.workflow, r"(?m)^defaults:\n  run:\n    shell: bash$")
+
+    def test_an_unreadable_running_commit_fails_the_job_instead_of_skipping(self):
+        self.assertRegex(self.workflow, r"merge-base --is-ancestor[^\n]*\n[^\n]*status=\$\?")
+        self.assertIn('[ "$status" -eq 1 ]', self.workflow)
 
     def test_an_older_commit_is_not_deployed_over_a_newer_one(self):
         self.assertIn("git merge-base --is-ancestor", self.workflow)
@@ -487,55 +503,95 @@ class ContinuousDeployment(unittest.TestCase):
 
 
 class CiDeployCommand(unittest.TestCase):
-    """deploy/ci-deploy.sh, the CI key's forced command (authorized_keys), run for real against stand-ins."""
-
-    SHA = "0123456789abcdef0123456789abcdef01234567"
+    """deploy/ci-deploy.sh, the CI key's forced command, run for real: a local git repository stands in for GitHub, stand-ins
+    for docker and release.sh record what is called. The CI key sends only an image and a commit id (K-902 security review)."""
 
     def setUp(self):
         self.home = Path(tempfile.mkdtemp())
-        (self.home / "deploy").mkdir()
         (self.home / "bin").mkdir()
-        (self.home / "deploy/ci-deploy.sh").write_bytes((DEPLOY / "ci-deploy.sh").read_bytes())
         self.log = self.home / "calls.log"
         self.log.write_text("")
-        for name in ("docker", "release"):
-            path = self.home / ("bin/docker" if name == "docker" else "deploy/release.sh")
-            path.write_text(f'#!/bin/sh\necho "{name} $*" >> "$FAKE_HOME/calls.log"; cat >/dev/null; exit 0\n')
-            path.chmod(0o755)
+        self.stub("docker", '#!/bin/sh\necho "docker $*" >> "$FAKE_HOME/calls.log"; cat >/dev/null; exit 0\n')
+        # The "GitHub" repository: main with two commits, and a branch that is not main.
+        self.origin = self.home / "origin"
+        self.git("init", "-q", "-b", "main", str(self.origin))
+        self.first = self.commit("one")
+        self.second = self.commit("two")
+        self.git("-C", str(self.origin), "checkout", "-q", "-b", "elsewhere")
+        self.stray = self.commit("stray")
+        self.git("-C", str(self.origin), "checkout", "-q", "main")
+
+    def git(self, *args):
+        return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], check=True, capture_output=True, text=True).stdout.strip()
+
+    def commit(self, marker):
+        deploy = self.origin / "deploy"
+        deploy.mkdir(exist_ok=True)
+        (deploy / "marker").write_text(marker)
+        release = deploy / "release.sh"
+        release.write_text(f'#!/bin/sh\necho "release {marker} $*" >> "$FAKE_HOME/calls.log"\n')
+        release.chmod(0o755)
+        self.git("-C", str(self.origin), "add", "-A")
+        self.git("-C", str(self.origin), "commit", "-q", "-m", marker)
+        return self.git("-C", str(self.origin), "rev-parse", "HEAD")
+
+    def stub(self, name, text):
+        path = self.home / "bin" / name
+        path.write_text(text)
+        path.chmod(0o755)
+
+    def image(self, *tags):
+        """`docker save | gzip` of an image with these tags: what matters is its manifest."""
+        folder = Path(tempfile.mkdtemp())
+        (folder / "manifest.json").write_text(json.dumps([{"Config": "c.json", "RepoTags": list(tags), "Layers": []}]))
+        tar = subprocess.run(["tar", "-c", "-C", str(folder), "manifest.json"], capture_output=True, check=True).stdout
+        return subprocess.run(["gzip", "-c"], input=tar, capture_output=True, check=True).stdout
 
     def run_command(self, command, stdin=b""):
-        env = {"PATH": f"{self.home / 'bin'}:/usr/bin:/bin", "FAKE_HOME": str(self.home), "KEEL_HOME": str(self.home), "SSH_ORIGINAL_COMMAND": command}
-        return subprocess.run(["bash", str(self.home / "deploy/ci-deploy.sh")], env=env, input=stdin, capture_output=True)
+        env = {"PATH": f"{self.home / 'bin'}:/usr/bin:/bin:/opt/homebrew/bin", "FAKE_HOME": str(self.home), "KEEL_HOME": str(self.home),
+               "KEEL_REPOSITORY": str(self.origin), "SSH_ORIGINAL_COMMAND": command}
+        return subprocess.run(["bash", str(DEPLOY / "ci-deploy.sh")], env=env, input=stdin, capture_output=True)
 
-    def test_anything_but_its_three_commands_is_refused_before_anything_runs(self):
-        for command in ("", "bash", "image", "image 123", f"image {self.SHA} extra", f"image {self.SHA};id", f"image $(id)",
-                        f"files {self.SHA.upper()}", "released x", f"rm {self.SHA}"):
+    def calls(self):
+        return self.log.read_text().splitlines()
+
+    def test_anything_but_its_two_commands_is_refused_before_anything_runs(self):
+        sha = self.second
+        for command in ("", "bash", "deploy", "deploy 123", f"deploy {sha} extra", f"deploy {sha};id", "deploy $(id)",
+                        f"deploy {sha.upper()}", "released x", f"files {sha}", f"image {sha}"):
             with self.subTest(command=command):
                 self.assertNotEqual(self.run_command(command).returncode, 0)
-        self.assertEqual(self.log.read_text(), "", "nothing was called")
+        self.assertEqual(self.calls(), [], "nothing was called")
 
-    def test_released_names_the_commit_in_service(self):
+    def test_released_names_only_a_commit(self):
         self.assertEqual(self.run_command("released").stdout, b"")
-        (self.home / "release-current").write_text(f"keel-backend:{self.SHA}\n")
-        self.assertEqual(self.run_command("released").stdout.decode().strip(), self.SHA)
+        (self.home / "release-current").write_text(f"keel-backend:{self.second}\n")
+        self.assertEqual(self.run_command("released").stdout.decode().strip(), self.second)
+        (self.home / "release-current").write_text("keel-backend:previous\n")
+        self.assertNotEqual(self.run_command("released").returncode, 0, "a name that is not a commit is an error, not a skip")
 
-    def test_image_loads_then_releases_that_commit(self):
-        result = self.run_command(f"image {self.SHA}", stdin=subprocess.run(["gzip", "-c"], input=b"tar", capture_output=True).stdout)
+    def test_deploy_takes_deploy_from_main_on_the_server_and_releases_with_it(self):
+        result = self.run_command(f"deploy {self.second}", self.image(f"keel-backend:{self.second}"))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.log.read_text().splitlines(), ["docker load -q", f"docker image inspect keel-backend:{self.SHA}",
-                                                             f"release keel-backend:{self.SHA}"])
+        self.assertEqual((self.home / "deploy/marker").read_text(), "two")
+        self.assertEqual(self.calls(), ["docker load -q -i " + str(self.home / ".incoming-image.tar"), f"release two keel-backend:{self.second}"])
 
-    def test_files_replace_deploy_with_the_commits_and_nothing_else(self):
-        payload = self.home / "payload"
-        (payload / "deploy").mkdir(parents=True)
-        (payload / "deploy/marker").write_text("new")
-        (payload / "stray").write_text("x")
-        tar = subprocess.run(["tar", "-c", "-C", str(payload), "deploy"], capture_output=True).stdout
-        self.assertEqual(self.run_command(f"files {self.SHA}", stdin=tar).returncode, 0)
-        self.assertEqual((self.home / "deploy/marker").read_text(), "new")
-        self.assertFalse((self.home / "deploy/release.sh").exists(), "deploy/ is the commit's, whole")
-        bad = subprocess.run(["tar", "-c", "-C", str(payload), "deploy", "stray"], capture_output=True).stdout
-        self.assertNotEqual(self.run_command(f"files {self.SHA}", stdin=bad).returncode, 0, "only deploy/ comes in")
+    def test_a_commit_not_on_main_is_refused(self):
+        self.assertNotEqual(self.run_command(f"deploy {self.stray}", self.image(f"keel-backend:{self.stray}")).returncode, 0)
+        self.assertNotEqual(self.run_command(f"deploy {'a' * 40}", self.image(f"keel-backend:{'a' * 40}")).returncode, 0)
+        self.assertEqual(self.calls(), [])
+        self.assertFalse((self.home / "deploy").exists())
+
+    def test_an_older_commit_than_the_running_one_is_refused(self):
+        (self.home / "release-current").write_text(f"keel-backend:{self.second}\n")
+        self.assertNotEqual(self.run_command(f"deploy {self.first}", self.image(f"keel-backend:{self.first}")).returncode, 0)
+        self.assertEqual(self.calls(), [])
+
+    def test_an_image_carrying_any_other_tag_is_not_loaded(self):
+        for tags in ([f"keel-backend:{self.second}", "keel-backend:previous"], ["keel-backend:current"], [], [f"keel-backend:{self.first}"]):
+            with self.subTest(tags=tags):
+                self.assertNotEqual(self.run_command(f"deploy {self.second}", self.image(*tags)).returncode, 0)
+        self.assertEqual(self.calls(), [])
 
 
 if __name__ == "__main__":
