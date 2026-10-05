@@ -731,7 +731,8 @@ RevenueCat hesabı yok → mağaza "kullanılamaz", kapı açık (ADR-058 #107);
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
 | K-903 (1/2) EAS projesi + `EXPO_PUBLIC_API_URL` EAS `production` ortamında + `usesNonExemptEncryption: false` | ✅ birleşti (inceleme: etkileşimsiz gönderim `ascAppId` ister → runbook) | #408 | — |
-| K-618 fotoğraflar yedekten hariç — yerel modül `apps/mobile/modules/backup-exclusion` (Swift `isExcludedFromBackup`), `photoFiles.ts` klasör + her dosya; metin/politika/envanter tam söz; 5 mutant ölü (biri test eklenince). Worktree `../keel-k618`. EAS simülatör derlemesi `40e9cfce` (Swift derleme kanıtı + `xattr`) | inceleme | #409 | — |
+| K-618 fotoğraflar yedekten hariç — yerel modül `apps/mobile/modules/backup-exclusion` (Swift `isExcludedFromBackup`), `photoFiles.ts` klasör + her dosya; metin/politika/envanter tam söz; 5 mutant ölü (biri test eklenince). Worktree `../keel-k618`. EAS simülatör derlemesi `40e9cfce` (Swift derleme kanıtı + `xattr`). İnceleme: Android'de modül yok + Auto Backup açık → rapor yalnız iOS; **Android yarısı açık soru** (Android derlemesi yok) | inceleme | #409 | — |
+| K-815 (1/2) VoiceOver duyuruları — `ProblemText`/`announce` (22 hata satırı + `TextField` + koç: bekleme, cevap, çip); düz `Text` hata satırı kaynak taramasında yakalanır; 8 mutant ölü. Worktree `../keel-k815`. Cihaz turu (2/2) TestFlight'ta | inceleme | #410 | — |
 
 -----
 ## M8 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
