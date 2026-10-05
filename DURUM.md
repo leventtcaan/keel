@@ -6,6 +6,7 @@ guncelleme: 2026-10-04
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**M9 Part 1 (Sunucu ayakta) SÜRÜYOR (5 Eki)** — ADR-064 (dış kapılar). Hafıza: `## M9 ilerleme`.
 **M8 KAPANDI (5 Eki, kod)** — Part 2: K-802 #385, K-804 #389, K-810 #391, K-814 #392, K-811 #393, K-813 #394, K-807 #395, K-812 #398 + #400, K-818 #402 (+ #386); ADR-061, ADR-062, ADR-063 (Levent: fatProxy dışa aktarmada, silmede Apple yeniden onayı, kontrast M9'da prototiple). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-14. Açık: iletişim adresi (Levent). Cihaz işleri (K-308 → K-815, K-618…) ve sırlar (Apple `.p8`, RevenueCat) M9'da. Sıradaki koşu **M9 · Beta** (`plan/oturum-promptlari/M9.md`, `M9-part1.md`).
 **M8 Part 1 (Metinler ve envanter) BİTTİ (4 Eki)** — ADR-059 (+ Ek 1), ADR-060; K-801 #375, K-808 #377, K-806 #378, K-809 #379, K-803 #380, #381; yasal sayfalar canlı (`leventtcaan.github.io/keel/`). Disk 20 GB (Docker budandı). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-5. Açık: iletişim adresi (Levent). Sıradaki: M8 Part 2 (`plan/oturum-promptlari/M8-part2.md`).
 **M7 KAPANDI (4 Eki, kod)** — Part 2: K-705 #368, K-702 #369, K-706 #372, K-707 #373 (auto-merge); ADR-056 Ek 1, ADR-057, ADR-058 (105-107 Levent: zorunlu paywall, iOS'ta duraklatma yok, deneme hatırlatması). Cihaz/sandbox ve mağaza kurulumu Levent'te (K-308, RevenueCat, ASC). Aktarım bekliyor: M7 (`docs/aktarim/M7/README.md` 1-6). **Disk 1,5 GB** → Levent. Sıradaki koşu **M8 · Uyum ve yasal** (`plan/oturum-promptlari/M8.md`, `M8-part1.md`).
@@ -671,6 +672,25 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
   - Disk: yerelde `DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test` saf testleri hızlı koşar, DB testleri Docker'sız düşer (sayımı ayır).
 - **Sorular:** 86 → ADR-048 #5 (önce buton, sonra intent). Açık: 57 (rıza metni hukuki bakış, yayından önce).
 
+## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
+
+| Part | Görevler | Durum |
+|---|---|---|
+| 1 · Sunucu ayakta | üretim profili, K-901, K-902 | ▶ sürüyor (5 Eki) |
+| 2 · TestFlight ve cihaz | K-903, K-308 kapanış, K-815, K-618 | bekliyor |
+| 3 · Kohort ve göstergeler | K-904, K-905, K-906, K-816 | bekliyor |
+
+**Part 1 başı (5 Eki):** senkron tamam — M8 ÇIKIŞ git ile tutarlı (#385-#402 birleşik; açık PR yok; worktree yalnız `../keel-main`; `*-devam.md` yok).
+Ana checkout ayrık HEAD → `origin/main`. Bağımlılıklar `done` (K-202, K-010). Dependabot: aynı 3 geçişli uyarı. **Disk 16 GB.**
+**Dış kapılar → ADR-064 (Levent):** Contabo VPS (`31.220.90.52`, Almanya) — Mac'te SSH anahtarı yoktu → `~/.ssh/config › keel-vps` yazıldı,
+Levent anahtarı üretip VPS'e tanıtacak (temiz kurulum önerildi); alan adı **ücretsiz alt alan** (DuckDNS, Levent açar); yedek **Levent'in Mac'ine
+çekilir** (`age` şifreli, üçüncü taraf yok); Apple Developer **aktif** (`.p8` Levent'te); koç AI **kapalı** başlar; Dokploy/Appwrite **yok**.
+
+| Görev | Durum | PR | Aktarım |
+|---|---|---|---|
+
+-----
 ## M8 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M8.md`. Part prompt'ları `M8-part1.md`, `M8-part2.md`.
 
