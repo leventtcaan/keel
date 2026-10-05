@@ -3513,7 +3513,7 @@ tasks:
     module: infra
     type: chore
     size: S
-    status: doing
+    status: done
     depends_on: [K-812, K-503]
     why: "M8 envanter açığı 7 (FakeLanguageModel son 100 isteği bellekte tutar) + ADR-062 #3 (anahtarsız iptal yok) + ADR-064 #5 (AI beta'da kapalı)"
     acceptance:
