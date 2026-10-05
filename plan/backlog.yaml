@@ -3528,7 +3528,7 @@ tasks:
   - id: K-908
     title: "/health hazır olmayı söyler: açılış işleri (FDC içe aktarma) bitmeden 503"
     milestone: M9
-    module: shared
+    module: backend
     type: feature
     size: S
     status: todo
