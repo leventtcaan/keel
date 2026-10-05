@@ -14,6 +14,13 @@ read -rp "Path to the Sign in with Apple .p8 file: " p8
 [[ -f $p8 ]] || { echo "no file at $p8" >&2; exit 1; }
 read -rsp "RevenueCat webhook secret (Enter: a random one until RevenueCat is set up): " revenuecat; echo
 
+# Compose's .env reader cuts an unquoted value at " #" and expands "$": refuse what it would change, instead of a server
+# that quietly rejects every webhook (security review I8).
+[[ $domain =~ ^[a-z0-9.-]+$ ]] || { echo "the domain: lower-case letters, digits, dots and dashes only" >&2; exit 1; }
+for value in "${client_id:-x}" "$team_id" "$key_id" "${revenuecat:-x}"; do
+  [[ $value =~ ^[A-Za-z0-9._~+/=-]+$ ]] || { echo "a value holds a character the .env file would change; nothing written" >&2; exit 1; }
+done
+
 {
   printf "KEEL_DOMAIN=%s\n" "$domain"
   printf "KEEL_DB_PASSWORD=%s\n" "$(openssl rand -hex 32)"

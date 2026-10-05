@@ -125,7 +125,7 @@ class TheImage(unittest.TestCase):
 class Retention(unittest.TestCase):
     def test_the_numbers_are_written_once(self):
         days = retention()
-        self.assertEqual(set(days), {"BACKUP_KEEP_DAYS_SERVER", "BACKUP_KEEP_DAYS_MAC", "LOG_KEEP_DAYS"})
+        self.assertEqual(set(days), {"BACKUP_KEEP_DAYS_SERVER", "BACKUP_KEEP_DAYS_MAC", "BACKUP_ALERT_HOURS", "LOG_KEEP_DAYS"})
         self.assertLessEqual(days["BACKUP_KEEP_DAYS_SERVER"], days["BACKUP_KEEP_DAYS_MAC"])
 
     def test_journald_keeps_the_logs_that_long(self):
@@ -169,10 +169,10 @@ class Scripts(unittest.TestCase):
                     self.assertIn("set -euo pipefail", script.read_text())
 
     def test_ssh_by_key_only_and_never_as_root(self):
-        provision = (DEPLOY / "provision.sh").read_text()
+        harden = (DEPLOY / "harden-ssh.sh").read_text()
         for line in ("PasswordAuthentication no", "KbdInteractiveAuthentication no", "PermitRootLogin no"):
-            self.assertIn(line, provision)
-        self.assertIn("sshd -t", provision, "a broken config is caught before the restart")
+            self.assertIn(line, harden)
+        self.assertIn("sshd -t", harden, "a broken config is caught before the restart")
 
     def test_the_backup_user_can_only_read_the_backups(self):
         self.assertIn('restrict,command=\\"$rrsync -ro /var/backups/keel\\"', (DEPLOY / "provision.sh").read_text())
@@ -280,7 +280,7 @@ class Release(unittest.TestCase):
         (self.home / ".env").write_text("KEEL_DOMAIN=example.org\n")
         self.log = self.home / "calls.log"
         self.state = self.home / "state.json"
-        self.state.write_text(json.dumps({"tags": {"keel-backend:new": "sha256:new", "keel-backend:old": "sha256:old", "keel-backend:older": "sha256:older"}}))
+        self.state.write_text(json.dumps({"tags": {}}))
         self.stub("docker", self.DOCKER)
         self.stub("curl", '#!/bin/sh\n[ -e "$FAKE_HOME/down" ] && exit 22; exit 0\n')
         self.stub("sudo", '#!/bin/sh\necho "sudo $*" >> "$FAKE_HOME/calls.log"; "$@"\n')
@@ -297,7 +297,15 @@ class Release(unittest.TestCase):
     def tags(self):
         return json.loads(self.state.read_text())["tags"]
 
+    def load(self, tag):
+        """An image arrives just before its release (built by deploy.sh, loaded by K-902)."""
+        state = json.loads(self.state.read_text())
+        state["tags"][tag] = "sha256:" + tag.split(":")[1]
+        self.state.write_text(json.dumps(state))
+
     def run_release(self, *args, down=False):
+        if args and args[0].startswith("keel-backend:"):
+            self.load(args[0])
         (self.home / "down").unlink(missing_ok=True)
         if down:
             (self.home / "down").write_text("")
@@ -311,11 +319,14 @@ class Release(unittest.TestCase):
         self.assertNotIn("keel-backend:previous", self.tags())
 
     def test_a_release_keeps_what_was_current_as_previous_and_prunes_the_rest(self):
+        self.run_release("keel-backend:older")
         self.run_release("keel-backend:old")
+        self.load("keel-backend:stale")  # built once, never released
         self.assertEqual(self.run_release("keel-backend:new").returncode, 0)
         tags = self.tags()
         self.assertEqual((tags["keel-backend:current"], tags["keel-backend:previous"]), ("sha256:new", "sha256:old"))
         self.assertNotIn("keel-backend:older", tags, "images neither current nor previous are removed (disk)")
+        self.assertNotIn("keel-backend:stale", tags)
 
     def test_releasing_the_current_image_again_keeps_the_previous(self):
         self.run_release("keel-backend:old")

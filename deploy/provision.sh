@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Prepares a fresh Ubuntu LTS VPS once, as root (K-901, ADR-065). deploy/README.md › "First setup" says when to run it:
 #   ssh keel-vps 'bash /opt/keel/deploy/provision.sh "<the Mac's backup-pull public key>"'
-# Safe to run again. It locks root out of SSH at the end, so it first checks that the keel user can log in with a key.
+# Safe to run again. It does not touch SSH's own settings: deploy/harden-ssh.sh does, from the Mac, once a key login as
+# keel has worked.
 set -euo pipefail
 
 backup_pubkey=${1:?usage: provision.sh "<ssh-ed25519 public key of the Mac's backup pull>"}
 [[ $EUID -eq 0 ]] || { echo "run as root" >&2; exit 1; }
+# keel gets root's keys: without one, keel could not log in at all.
+[[ -s /root/.ssh/authorized_keys ]] || { echo "no key in /root/.ssh/authorized_keys: add yours first (ssh-copy-id)" >&2; exit 1; }
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
@@ -51,13 +54,19 @@ echo "restrict,command=\"$rrsync -ro /var/backups/keel\" $backup_pubkey" > /home
 chown keel-backup:keel-backup /home/keel-backup/.ssh/authorized_keys
 chmod 600 /home/keel-backup/.ssh/authorized_keys
 
-# /opt/keel: the compose project (deploy/ synced in, .env written by init-env.sh, fdc/ by fetch-fdc.sh).
-install -d -m 750 -o keel -g keel /opt/keel /opt/keel/fdc
+# /opt/keel: the compose project (deploy/ synced in, .env written by init-env.sh, fdc/ by fetch-fdc.sh). fdc/ is read
+# through a bind mount by the backend's user (uid 10001, backend.Dockerfile), neither owner nor group: 755 (public data).
+install -d -m 750 -o keel -g keel /opt/keel
+install -d -m 755 -o keel -g keel /opt/keel/fdc
 chown -R keel:keel /opt/keel/deploy
 
-# Logs: every container's goes to journald (compose.yaml); journald keeps LOG_KEEP_DAYS (retention.env).
+# Logs: every container's goes to journald (compose.yaml) and only there; kept LOG_KEEP_DAYS (retention.env). Ubuntu
+# forwards journald to rsyslog (/var/log/syslog, rotated over weeks): rsyslog goes, and our drop-in comes after Ubuntu's
+# syslog.conf (drop-ins apply in name order) so ForwardToSyslog=no wins. release.sh keeps it in step later.
+apt-get -y purge rsyslog
+rm -f /var/log/syslog /var/log/syslog.* /var/log/kern.log* /var/log/auth.log*
 install -d /etc/systemd/journald.conf.d
-install -m 644 /opt/keel/deploy/journald-keel.conf /etc/systemd/journald.conf.d/keel.conf
+install -m 644 /opt/keel/deploy/journald-keel.conf /etc/systemd/journald.conf.d/zz-keel.conf
 systemctl restart systemd-journald
 
 # The daily backup (02:30 UTC): deploy/backup.sh through a systemd timer.
@@ -73,13 +82,4 @@ ufw allow 80/tcp
 ufw allow 443/tcp
 ufw allow 443/udp
 ufw --force enable
-
-# SSH by key only, and never as root. A file sorted before cloud-init's 50-cloud-init.conf wins (sshd takes the first value).
-cat > /etc/ssh/sshd_config.d/10-keel.conf <<'CONF'
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-PermitRootLogin no
-CONF
-sshd -t
-systemctl restart ssh
-echo "provisioned: log in as keel from now on (ssh keel-vps)"
+echo "provisioned. Next, from the Mac: deploy/harden-ssh.sh (SSH by key only, no root)"
