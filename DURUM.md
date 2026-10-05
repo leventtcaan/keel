@@ -683,7 +683,7 @@ Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `
 
 **Part 1 başı (5 Eki):** senkron tamam — M8 ÇIKIŞ git ile tutarlı (#385-#402 birleşik; açık PR yok; worktree yalnız `../keel-main`; `*-devam.md` yok).
 Ana checkout ayrık HEAD → `origin/main`. Bağımlılıklar `done` (K-202, K-010). Dependabot: aynı 3 geçişli uyarı. **Disk 16 GB.**
-**Dış kapılar → ADR-064 (Levent):** Contabo VPS (`31.220.90.52`, Almanya) — Mac'te SSH anahtarı yoktu → `~/.ssh/config › keel-vps` yazıldı,
+**Dış kapılar → ADR-064 (Levent):** Contabo VPS (Almanya; IP yalnız `~/.ssh/config`te, repoda değil) — Mac'te SSH anahtarı yoktu → `~/.ssh/config › keel-vps` yazıldı,
 Levent anahtarı üretip VPS'e tanıtacak (temiz kurulum önerildi); alan adı **ücretsiz alt alan** (DuckDNS, Levent açar); yedek **Levent'in Mac'ine
 çekilir** (`age` şifreli, üçüncü taraf yok); Apple Developer **aktif** (`.p8` Levent'te); koç AI **kapalı** başlar; Dokploy/Appwrite **yok**.
 
