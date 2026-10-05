@@ -20,3 +20,17 @@ Ortak talimat plan/oturum-promptlari/M9.md; Part 2 kapsamı M9-part2.md. Hafıza
 - **Cihaz kontrol listesi** `docs/aktarim/M9/cihaz-kontrol-listesi.md` (20 madde, silme en sonda) — TestFlight derlemesi gelince Levent'le.
 - Kalan: aktarım dosyaları `docs/aktarim/M9/K-903.md`, `K-618.md`, `K-815.md` + README 4-6; Part 2 ÇIKIŞ; Part 3 prompt'u.
 - Açık soru (Levent): K-618'in Android yarısı (Auto Backup açık; Android derlemesi yok).
+
+## #410 inceleme bulguları (6 Eki gece — düzeltilmedi, TDD ile sıradaki iş; auto-merge AÇMA)
+1. **Kritik — tekrar eden hata duyurulmuyor:** `ProblemText` yalnız ilk görünüş/metin değişince söylüyor; şu ekranlar denemeden önce
+   problemi temizlemiyor: `weigh-in.tsx:83-104`, `gym.tsx:62-93` (`said` hiç null'lanmıyor), `workout.tsx` `log`/`logWarmup`/`finish`
+   (174-272), `train/OwnMoveForm.tsx:57-63`, `photos/PhotoCard.tsx:68-77`, `today/PromptCard.tsx:35-50`. Çözüm önerisi: `ProblemText`'e
+   `attempt` (sayaç) prop'u, efekt bağımlılığına; ya da her denemede temizle + `await`'siz yollarda `key` ile yeniden bağla. İkinci hatanın testi.
+2. **Taramanın kaçırdığı eylem hataları:** `(tabs)/food.tsx:96` repeatNote · `photo-capture.tsx:157` · `share.tsx:128` · `scoff.tsx:113` ·
+   `import.tsx:221` (`<Note text={problem}>`) · `settings/SubscriptionSection.tsx:107` · `settings/ImportSection.tsx:53,88` ·
+   `settings/UnitsSection.tsx:27` (`useAction` problem) · `today/StateCard.tsx:47,54` (`today.state.failed` = geri dönme eylemi hatası).
+   Taramayı genişlet (`*Problem`, `useAction().problem`, `failed|Failed` ile biten anahtarlar).
+3. **Yazarken doğrulanan alanlar her tuşta duyuruyor:** `onboarding/schedule.tsx:40,82` (ilk rakamda timeInvalid; `about.tsx:34`'teki
+   "tamamlanmış olabilir" koruması yok) · `food/ItemRows.tsx:37-50` ("0" ilk karakter; `recipeGone` durum, açılışta duyurulur).
+   Çözüm: koruma ya da `TextField`'a `announce={false}`.
+- API: `announceForAccessibilityWithOptions` kurulu (queue/priority, iOS 17+ priority) — gerek görülmedi.
