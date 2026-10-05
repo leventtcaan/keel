@@ -3414,7 +3414,7 @@ tasks:
     type: chore
     size: M
     status: todo
-    depends_on: [K-202]
+    depends_on: [K-202, K-907]
     why: "Sıfır ek maliyetle barındırma (ADR-013)"
     acceptance:
       - "Backend + PostgreSQL + ters vekil Compose ile ayakta, HTTPS"
@@ -3507,6 +3507,24 @@ tasks:
       - "Backlog'da beta kaynaklı görevler"
     refs: []
     learn: ["Geri bildirimi önceliklendirme"]
+  - id: K-907
+    title: "Üretim profili: eksik sır, Apple iptal anahtarı ya da sahte AI sağlayıcısıyla sunucu açılmaz"
+    milestone: M9
+    module: infra
+    type: chore
+    size: S
+    status: doing
+    depends_on: [K-812, K-503]
+    why: "M8 envanter açığı 7 (FakeLanguageModel son 100 isteği bellekte tutar) + ADR-062 #3 (anahtarsız iptal yok) + ADR-064 #5 (AI beta'da kapalı)"
+    acceptance:
+      - "application-prod.yml: keel.production true; koç sağlayıcısı 'off' (hiçbir yere göndermez, hiçbir şey saklamaz); AI rızası tanımsız (verilemez)"
+      - "keel.production true iken: koç sağlayıcısı 'fake' → sunucu açılmaz; Apple iptal anahtarı (Team ID, Key ID, .p8) eksik → sunucu açılmaz"
+      - "Eksik oturum anahtarı, veritabanı ve RevenueCat sırrı zaten açılmayı durdurur (mevcut testler yeşil)"
+      - "SANDBOX beta boyunca kabul edilir (TestFlight satın almaları; ADR-056 #4 — mağaza yayınında çıkar, M10)"
+    tests:
+      - "ProductionProfileTests (prod YAML'ı), LanguageModelConfigurationTests, AppleAccountsProductionTests (saf)"
+    refs: ["plan/kararlar/ADR-064-m9-basi-cevaplari.md", "plan/kararlar/ADR-062-apple-jeton-iptali.md", "plan/oturum-promptlari/M9.md"]
+    learn: ["Spring profilleri", "Başlangıçta hızlı başarısız olma (fail fast)"]
   - id: K-536
     title: "Kilitten kilo girişi: parametreli Siri/Shortcuts intent'i (uygulamayı açmadan)"
     milestone: M9
