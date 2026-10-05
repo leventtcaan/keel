@@ -100,6 +100,95 @@ test('names are the folder files, not its folders', async () => {
   expect(await devicePhotoFiles().names()).toEqual(['2026-10-07-front.jpg']);
 });
 
+/** The backup exclusion (K-618): what it was asked to mark, in order; a uri in `refuse` throws as iOS would. */
+function fakeBackup(refuse: string[] = []) {
+  const marked: string[] = [];
+  return {
+    marked,
+    exclude(uri: string) {
+      if (refuse.includes(uri)) throw new Error('The file couldn’t be saved.');
+      marked.push(uri);
+    },
+  };
+}
+const ourBuild = () => false;
+
+test('a kept photo is left out of backups, and so is its folder (K-618)', async () => {
+  const backup = fakeBackup();
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  mockDisk.set('file:///cache/Camera/a.jpg', 'file');
+  await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
+  expect(backup.marked).toEqual([FOLDER, `${FOLDER}/2026-10-07-front.jpg`]);
+});
+
+test('the first listing leaves the folder and every photo already there out of backups, once (photos kept before K-618)', async () => {
+  mockDisk.set(FOLDER, 'dir');
+  mockDisk.set(`${FOLDER}/2026-09-01-front.jpg`, 'file');
+  mockDisk.set(`${FOLDER}/2026-09-01-side.jpg`, 'file');
+  mockDisk.set(`${FOLDER}/thumbs`, 'dir');
+  const backup = fakeBackup();
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  expect(await files.names()).toHaveLength(2);
+  expect(backup.marked).toEqual([FOLDER, `${FOLDER}/2026-09-01-front.jpg`, `${FOLDER}/2026-09-01-side.jpg`]);
+  await files.names();
+  expect(backup.marked).toHaveLength(3); // not again in this run of the app
+});
+
+test('no folder yet: the listing marks nothing, and the first kept photo marks the new folder', async () => {
+  const backup = fakeBackup();
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  await files.names();
+  expect(backup.marked).toEqual([]);
+  mockDisk.set('file:///cache/Camera/a.jpg', 'file');
+  await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
+  expect(backup.marked).toEqual([FOLDER, `${FOLDER}/2026-10-07-front.jpg`]);
+});
+
+test('a refused exclusion is reported by name; the photo stays kept, and the next listing tries again', async () => {
+  const report = jest.fn();
+  const refuse = [`${FOLDER}/2026-10-07-front.jpg`];
+  const backup = fakeBackup(refuse);
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild, report });
+  mockDisk.set('file:///cache/Camera/a.jpg', 'file');
+  await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
+  expect(report).toHaveBeenCalledWith({ name: 'BackupExclusionFailed' });
+  expect(JSON.stringify(report.mock.calls)).not.toContain('2026'); // the name only: no file, no day (V3)
+  expect(await files.names()).toEqual(['2026-10-07-front.jpg']);
+  refuse.length = 0;
+  await files.names();
+  expect(backup.marked).toContain(`${FOLDER}/2026-10-07-front.jpg`);
+  backup.marked.length = 0;
+  await files.names();
+  expect(backup.marked).toEqual([]); // swept once it succeeded
+});
+
+test('after a clean sweep, a photo whose exclusion is refused is tried again at the next listing', async () => {
+  mockDisk.set(FOLDER, 'dir');
+  mockDisk.set(`${FOLDER}/2026-09-01-front.jpg`, 'file');
+  const refuse = [`${FOLDER}/2026-10-07-front.jpg`];
+  const backup = fakeBackup(refuse);
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  await files.names(); // swept: the folder and the September photo
+  mockDisk.set('file:///cache/Camera/a.jpg', 'file');
+  await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
+  refuse.length = 0;
+  await files.names();
+  expect(backup.marked).toContain(`${FOLDER}/2026-10-07-front.jpg`);
+});
+
+test('without the module: in Expo Go quietly; in our own build it is a broken build, reported by name — photos kept either way', async () => {
+  for (const [inExpoGo, reported] of [[() => true, []], [ourBuild, [[{ name: 'BackupExclusionMissing' }]]]] as const) {
+    mockDisk.clear();
+    const report = jest.fn();
+    const files = devicePhotoFiles({ backup: null, inExpoGo, report });
+    mockDisk.set('file:///cache/Camera/a.jpg', 'file');
+    await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
+    await files.names();
+    expect(await files.names()).toEqual(['2026-10-07-front.jpg']);
+    expect(report.mock.calls).toEqual(reported); // once, not at every call
+  }
+});
+
 test('clear deletes the folder and every photo in it; with no folder it does nothing', async () => {
   const files = devicePhotoFiles();
   await files.clear();
@@ -121,7 +210,7 @@ function sources(dir: string): string[] {
 const uncommented = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const code = (file: string) => uncommented(fs.readFileSync(file, 'utf8'));
 /** What a file under src/photos may import: nothing that talks to a server. */
-const ALLOWED = [/^react$/, /^react-native$/, /^react-native-svg$/, /^react-native-safe-area-context$/, /^expo-file-system$/, /^expo-router$/,
+const ALLOWED = [/^react$/, /^expo$/, /^(\.\.\/)+modules\/backup-exclusion$/, /^react-native$/, /^react-native-svg$/, /^react-native-safe-area-context$/, /^expo-file-system$/, /^expo-router$/,
   /^expo-camera$/, /^expo-image-picker$/, /^expo-sensors$/, /^@\/components\//, /^@\/copy$/, /^@\/theme\//, /^@\/settings\/Confirm$/,
   /^@\/services\/ServicesProvider$/, /^@\/onboarding\/params$/, /^@\/train\/program$/, /^@\/photos\//, /^\.\//,
   /^(\.\.\/)+data\/parameters\/[a-z]+\.json$/];
@@ -131,8 +220,13 @@ const LOCAL_DAY_ONLY = /^import \{ localDay \} from '@\/today\/today';$/m;
 const NETWORK = /\bapi\b|\bfetch\b|XMLHttpRequest|WebSocket|sendBeacon|EventSource|upload|axios/i;
 
 const PHOTOS = path.resolve(__dirname, '../photos');
-/** Every file that handles a progress photo: the photos folder, the capture screen (K-601) and the comparison (K-602). */
-const HANDLERS = () => [...sources(PHOTOS), ...['photo-capture.tsx', 'compare.tsx'].map((name) => path.resolve(__dirname, '../app', name))];
+/** Every file that handles a progress photo: the photos folder, the capture screen (K-601), the comparison (K-602), the backup exclusion (K-618). */
+const HANDLERS = () => [
+  ...sources(PHOTOS),
+  ...['photo-capture.tsx', 'compare.tsx'].map((name) => path.resolve(__dirname, '../app', name)),
+  // The backup exclusion's JS face (K-618): it is handed the photos' uris.
+  path.resolve(__dirname, '../../modules/backup-exclusion/index.ts'),
+];
 
 test('no file that handles a photo can reach the network: it imports nothing that does, and names no way to', () => {
   const imports = HANDLERS().flatMap((file) => {

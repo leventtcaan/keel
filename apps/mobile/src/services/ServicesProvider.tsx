@@ -79,7 +79,7 @@ async function build(): Promise<PhoneServices> {
     notifications: deviceNotifications(), // local only: no push token, nothing to a server (K-410)
     alerts: deviceAlerts(), // the rest timer's (K-411)
     healthWrite: healthKitWrite(), // not available in Expo Go (no native module)
-    photoFiles: devicePhotoFiles(), // progress photos: a folder on this phone, never uploaded (K-614, V1)
+    photoFiles: devicePhotoFiles({ report: reportProblem }), // progress photos: a folder on this phone, never uploaded, left out of backups (K-614, K-618, V1)
     photoCache: devicePhotoCache, // a meal photo's leftovers, cleared when the session ends (K-811, V1)
     appleReauth: appleReauthorization(AppleAuthentication, deviceNonce), // Sign in with Apple ended at deletion (K-812)
     links: configuredLegalLinks(), // without both, nothing is sold and the gate stays open (ADR-057 D3, K-706)

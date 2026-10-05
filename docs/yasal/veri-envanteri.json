@@ -1035,7 +1035,7 @@
   ],
   "stored": [
    {
-    "what": "Progress photos (Documents/progress-photos), never uploaded; part of the phone's own iCloud Backup until K-618; and whose account they belong to (SHA-256 of the Apple user id)",
+    "what": "Progress photos (Documents/progress-photos), never uploaded and left out of the phone's iCloud and computer backups (K-618); and whose account they belong to (SHA-256 of the Apple user id)",
     "policy": "data-photos",
     "kv_keys": [
      "photos.owner"

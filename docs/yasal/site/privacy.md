@@ -133,7 +133,7 @@ Health stays in Apple Health (you can delete it in the Health app).
 ### Photos and the camera {#data-photos}
 
 - **Progress photos stay on your phone.** They are stored in the app's own folder, never uploaded, and only what you
-  conclude from them (better, same or worse) is sent. If your phone is backed up to iCloud, that backup is between you and Apple and may include them.
+  conclude from them (better, same or worse) is sent. They are left out of your phone's iCloud and computer backups too, so a new phone starts without them.
   Signing out or deleting your account deletes them from the phone, so save the ones you want first. To know whose they
   are, the phone keeps a one-way fingerprint (SHA-256) of your Apple user id for this app.
 - The camera is used for barcodes, meal photos and progress photos; the photo library to pick a meal or progress photo.
