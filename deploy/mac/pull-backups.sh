@@ -11,7 +11,8 @@ install -d -m 700 "$dest"
 tmutil addexclusion "$dest"
 # rsync 3 (brew install rsync): macOS's /usr/bin/rsync is openrsync, whose command line the server's rrsync refuses.
 rsync=${KEEL_RSYNC:-/opt/homebrew/bin/rsync}
-"$rsync" --version 2>/dev/null | head -1 | grep -q "version 3" || { echo "needs rsync 3 at $rsync (brew install rsync)" >&2; exit 1; }
+version=$("$rsync" --version 2>/dev/null || true) # not piped into head: under pipefail its early close fails rsync
+[[ $version == *"version 3."* ]] || { echo "needs rsync 3 at $rsync (brew install rsync)" >&2; exit 1; }
 "$rsync" -rt --include='keel-*.dump.age' --include='keel-*.counts' --exclude='*' keel-backup: "$dest/"
 find "$dest" -name 'keel-*' -type f -mmin +$((BACKUP_KEEP_DAYS_MAC * 24 * 60)) -delete
 

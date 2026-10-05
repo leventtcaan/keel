@@ -405,6 +405,8 @@ class TheLiveRunsFindings(unittest.TestCase):
         self.assertIn("/opt/homebrew/bin/rsync", pull)
         self.assertIn("version 3", pull)
         self.assertNotRegex(pull, r"(?m)^rsync ")
+        # Under pipefail, `rsync --version | head -1` fails: head closes the pipe early and rsync dies of SIGPIPE.
+        self.assertNotRegex(pull, r"--version[^\n]*\| *head")
 
     def test_the_backend_has_room_above_its_idle_memory(self):
         # Idle after the first start: 918 MiB of a 1 GiB limit (the JVM keeps what it took).
