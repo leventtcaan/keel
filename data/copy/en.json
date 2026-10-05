@@ -1640,7 +1640,7 @@
       "title": "Your photos stay on your phone",
       "local": {
         "title": "Processed on this device.",
-        "body": "This app never uploads progress photos. Not to us, not to anyone."
+        "body": "Progress photos are never uploaded. Not to us, not to anyone."
       },
       "cadence": {
         "title": "One photo every {weeks} weeks.",
@@ -1944,8 +1944,8 @@
     "next": "Next photo from {date}. Weekly changes are too small to see.",
     "open": "Photo window open since {date}. Same spot, same light, morning.",
     "count": {
-      "one": "{count} photo day on this phone. This app never uploads them.",
-      "other": "{count} photo days on this phone. This app never uploads them."
+      "one": "{count} photo day on this phone. Never uploaded, not even to backups.",
+      "other": "{count} photo days on this phone. Never uploaded, not even to backups."
     },
     "take": "Take photos",
     "compare": "Compare",
@@ -1963,7 +1963,7 @@
     },
     "guide": "Same spot, same light, morning.",
     "ghost": "The faded photo is your last one. Line up with it.",
-    "onPhone": "Kept on this phone. This app never uploads them.",
+    "onPhone": "Kept on this phone only. Never uploaded.",
     "level": "Level {degrees}°",
     "levelOk": "Hold steady",
     "levelOff": "Straighten the phone",
