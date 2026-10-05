@@ -26,7 +26,7 @@ günlükleri herkese açık). ADR-065: VPS'te `release.sh` (sağlık ucu, geri a
 - **Geri alma:** `ssh keel-vps /opt/keel/deploy/release.sh --rollback` (ADR-065); CI geri almaz — başarısız sürümü `release.sh` zaten geri koyar.
 
 ## Neden
-Zorunlu komut, `keel`'in fiilen root olmasını CI anahtarı için etkisizleştirir: anahtar çalınsa yapılabilecek tek şey bu repodaki bir
+**(Ek 1: bu paragraf yanlıştı — aşağıya bak.)** Zorunlu komut, `keel`'in fiilen root olmasını CI anahtarı için etkisizleştirir: anahtar çalınsa yapılabilecek tek şey bu repodaki bir
 commit'in imajını dağıtmak — ki imaj da saldırganın elinden çıkar: **kalan risk** sahte bir imaj (`image <commit>` stdin'den gelir). Bu,
 anahtarın sızmasının gerçek bedeli; anahtar yalnız `production` ortamında, korunan `main`'den tetiklenen işe açık.
 
@@ -47,3 +47,20 @@ Düşük: iş akışı tek dosya; elle `deploy/deploy.sh` her zaman çalışır.
 ## Doğrulama
 `tools/test_deploy.py` (tetik, eşzamanlılık, sırların yolu, sabitlenmiş eylemler, zorunlu komutun reddettikleri — gerçek koşu); ilk başarılı
 Deploy koşusu (Actions) ve `https://<alan>/health`.
+
+## Ek 1 (5 Eki) — güvenlik incelemesi: ilk tasarım CI anahtarını root yapıyordu
+**Yanlış olan:** "Zorunlu komut, `keel`'in fiilen root olmasını CI anahtarı için etkisizleştirir" — değildi. `files <commit>` istemciden gelen
+tar'la `deploy/`'u (zorunlu komutun kendisi, `release.sh`, `compose.yaml` dahil) değiştiriyordu; commit kimliği tar'la hiç karşılaştırılmıyordu.
+Çalınan anahtar: `files` ile kendi `ci-deploy.sh`'ini koyar → sonraki bağlantıda istediği komut → `sudo` → root (inceleme bunu koşturdu).
+**Şimdi:**
+- CI yalnız **imaj + commit kimliği** gönderir (`deploy <commit>`); `files` yok.
+- Sunucu `main`'i **kendisi** herkese açık repodan çeker (`/opt/keel/source.git`); commit `main`'de ve çalışandan yeni değilse reddeder
+  (sıra denetimi artık koşucuya güvenmez); `deploy/`'u o commit'ten alır — yani çalışan her betik gözden geçmiş `main` kodudur.
+- Zorunlu komut root'a ait `/usr/local/lib/keel/ci-deploy` (`keel` yazamaz); `release.sh` `main` sürümüyle günceller.
+- İmaj tar'ı yüklenmeden önce `manifest.json`: tam bir imaj, etiketi yalnız `keel-backend:<commit>` (ikinci etiket `previous`/`current`'ı
+  saldırganın imajına çevirebilirdi).
+- `released` yalnız 40 hex döner; iş akışı `merge-base` çıkış kodunu ayırır (1 → atla, başka → iş kırmızı).
+- `release.sh` `flock` ile tek seferde bir; iş akışı `shell: bash` (pipefail).
+**Kalan risk (açıkça):** çalınan CI anahtarıyla sahte bir imaj dağıtılabilir — o kapsayıcı `.env`'i (DB parolası, Apple anahtarı, oturum
+anahtarı) ve veritabanındaki **bütün kullanıcı verisini** okur; ana makineye erişemez. Önlem: anahtar yalnız `production` ortamında; sızarsa
+`authorized_keys`'ten silinir, sırlar döndürülür.
