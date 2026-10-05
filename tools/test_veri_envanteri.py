@@ -330,7 +330,10 @@ def _coach_setting(path, key):
     text = path.read_text(encoding="utf-8")
     if "\n  coach:\n" not in text:
         return None
-    m = re.search(rf"^    {key}:\s*(\S+)", text[text.index("\n  coach:\n"):], re.M)
+    coach = text[text.index("\n  coach:\n") + 1:]
+    end = re.search(r"^  \S", coach[1:], re.M)  # the next setting at keel's level ends the coach's section
+    coach = coach[:end.start() + 1] if end else coach
+    m = re.search(rf"^    {key}:\s*(\S+)", coach, re.M)
     return m.group(1).strip("\"'") if m else None
 
 
