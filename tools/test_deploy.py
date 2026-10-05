@@ -9,9 +9,11 @@ exactly what the server reads; the retention numbers live only in deploy/retenti
     python3 tools/test_deploy.py
 """
 import json
+import os
 import re
 import subprocess
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -184,6 +186,172 @@ class Scripts(unittest.TestCase):
         self.assertNotIn('printf "KEEL_', outside)
         self.assertIn("read -rsp", text, "the RevenueCat secret is not echoed while typed")
         self.assertIn("umask 077", text)
+
+class TheReviewsFindings(unittest.TestCase):
+    """K-901 security review (5 Oct): each finding is a test."""
+
+    def test_the_container_user_can_read_the_food_data(self):
+        # C1: the backend runs as uid 10001 (backend.Dockerfile), neither owner nor group of the bind mount.
+        provision = (DEPLOY / "provision.sh").read_text()
+        self.assertRegex(provision, r"install -d -m 755 [^\n]*/opt/keel/fdc")
+        self.assertNotRegex(provision, r"install -d -m 750 [^\n]*/opt/keel/fdc")
+
+    def test_journald_is_the_only_log_and_drops_old_entries_daily(self):
+        # C2: Ubuntu forwards journald to rsyslog (/var/log/syslog, weeks); the live journal file rotates monthly.
+        conf = (DEPLOY / "journald-keel.conf").read_text()
+        self.assertIn("ForwardToSyslog=no", conf)
+        self.assertIn("MaxFileSec=1day", conf)
+        provision = (DEPLOY / "provision.sh").read_text()
+        target = re.search(r"/etc/systemd/journald\.conf\.d/(\S+\.conf)", provision).group(1)
+        self.assertGreater(target, "syslog.conf", "drop-ins apply in name order; ours must come after Ubuntu's syslog.conf")
+        self.assertIn("purge rsyslog", provision)
+        self.assertIn("rm -f /var/log/syslog", provision)
+
+    def test_postgresql_logs_no_row_and_no_statement(self):
+        # I1: a failed insert's DETAIL holds the row (health values); the statement holds what was sent.
+        command = compose()["services"]["postgres"].get("command") or []
+        self.assertIn("log_error_verbosity=terse", command)
+        self.assertIn("log_min_error_statement=panic", command)
+
+    def test_ssh_is_hardened_only_after_a_key_login_worked(self):
+        # I9: provision.sh copies keys but cannot know the Mac holds one; hardening is its own step, run after a check.
+        self.assertNotIn("PermitRootLogin no", (DEPLOY / "provision.sh").read_text())
+        harden = (DEPLOY / "harden-ssh.sh").read_text()
+        self.assertIn("PermitRootLogin no", harden)
+        self.assertIn("ssh -o BatchMode=yes", harden, "it logs in as keel with a key before closing anything")
+
+    def test_init_env_refuses_values_compose_would_mangle(self):
+        # I8: an unquoted $ or ' #' cuts the value in compose's .env parser.
+        self.assertIn("^[A-Za-z0-9._~+/=-]+$", (DEPLOY / "init-env.sh").read_text())
+        self.assertIn("^[a-z0-9.-]+$", (DEPLOY / "init-env.sh").read_text(), "the domain too")
+
+    def test_the_mac_copies_stay_out_of_time_machine_and_a_stale_backup_is_told(self):
+        # I5, I6.
+        pull = (DEPLOY / "mac/pull-backups.sh").read_text()
+        self.assertIn("tmutil addexclusion", pull)
+        self.assertIn("BACKUP_ALERT_HOURS", pull)
+        self.assertIn("osascript", pull)
+
+    def test_the_drill_compares_with_the_counts_taken_at_the_backup(self):
+        # I7: live counts move after 02:30; the backup writes its own counts beside it.
+        self.assertIn(".counts", (DEPLOY / "backup.sh").read_text())
+        drill = (DEPLOY / "restore-drill.sh").read_text()
+        self.assertIn(".counts", drill)
+        self.assertIn("pg_isready -h 127.0.0.1", drill, "the image's first, socket-only server is not the real one")
+        self.assertRegex(drill, r"--tmpfs /var/lib/postgresql:size=")
+        self.assertIn("--memory", drill)
+
+
+class Release(unittest.TestCase):
+    """deploy/release.sh run for real against stand-ins for docker, curl, compose and sudo (I2, I3, I4)."""
+
+    DOCKER = textwrap.dedent('''\
+        #!/usr/bin/env python3
+        import json, os, sys
+        state_file = os.environ["FAKE_STATE"]
+        state = json.load(open(state_file))
+        a = sys.argv[1:]
+        def save(): json.dump(state, open(state_file, "w"))
+        def resolve(name): return state["tags"].get(name) or (name if name in state["tags"].values() else None)
+        if a[:2] == ["image", "inspect"]:
+            ref = resolve(a[-1])
+            if not ref: sys.exit(1)
+            if "-f" in a: print(ref)
+            sys.exit(0)
+        if a[0] == "tag":
+            state["tags"][a[2]] = resolve(a[1]); save(); sys.exit(0)
+        if a[0] == "rmi":
+            state["tags"].pop(a[-1], None); save(); sys.exit(0)
+        if a[0] == "images":
+            print("\\n".join(t for t in state["tags"] if t.startswith("keel-backend:"))); sys.exit(0)
+        if a[0] == "inspect":
+            print("running 0"); sys.exit(0)
+        sys.exit(0)  # prune
+        ''')
+
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp())
+        (self.home / "deploy").mkdir()
+        (self.home / "bin").mkdir()
+        (self.home / "etc/systemd/system").mkdir(parents=True)
+        (self.home / "etc/systemd/journald.conf.d").mkdir(parents=True)
+        for name in ("release.sh", "Caddyfile", "keel-backup.service", "keel-backup.timer", "journald-keel.conf"):
+            (self.home / "deploy" / name).write_bytes((DEPLOY / name).read_bytes())
+        (self.home / ".env").write_text("KEEL_DOMAIN=example.org\n")
+        self.log = self.home / "calls.log"
+        self.state = self.home / "state.json"
+        self.state.write_text(json.dumps({"tags": {"keel-backend:new": "sha256:new", "keel-backend:old": "sha256:old", "keel-backend:older": "sha256:older"}}))
+        self.stub("docker", self.DOCKER)
+        self.stub("curl", '#!/bin/sh\n[ -e "$FAKE_HOME/down" ] && exit 22; exit 0\n')
+        self.stub("sudo", '#!/bin/sh\necho "sudo $*" >> "$FAKE_HOME/calls.log"; "$@"\n')
+        self.stub("systemctl", '#!/bin/sh\necho "systemctl $*" >> "$FAKE_HOME/calls.log"\n')
+        kc = self.home / "deploy/kc"
+        kc.write_text('#!/bin/sh\necho "kc $*" >> "$FAKE_HOME/calls.log"\n')
+        kc.chmod(0o755)
+
+    def stub(self, name, text):
+        path = self.home / "bin" / name
+        path.write_text(text)
+        path.chmod(0o755)
+
+    def tags(self):
+        return json.loads(self.state.read_text())["tags"]
+
+    def run_release(self, *args, down=False):
+        (self.home / "down").unlink(missing_ok=True)
+        if down:
+            (self.home / "down").write_text("")
+        env = {"PATH": f"{self.home / 'bin'}:/usr/bin:/bin", "FAKE_STATE": str(self.state), "FAKE_HOME": str(self.home), "KEEL_HOME": str(self.home),
+               "KEEL_ETC": str(self.home / "etc"), "KEEL_RELEASE_WAIT": "5", "KEEL_RELEASE_SETTLE": "0", "KEEL_RELEASE_POLL": "0"}
+        return subprocess.run(["bash", str(self.home / "deploy/release.sh"), *args], env=env, capture_output=True, text=True)
+
+    def test_a_first_release_has_no_previous(self):
+        self.assertEqual(self.run_release("keel-backend:new").returncode, 0)
+        self.assertEqual(self.tags()["keel-backend:current"], "sha256:new")
+        self.assertNotIn("keel-backend:previous", self.tags())
+
+    def test_a_release_keeps_what_was_current_as_previous_and_prunes_the_rest(self):
+        self.run_release("keel-backend:old")
+        self.assertEqual(self.run_release("keel-backend:new").returncode, 0)
+        tags = self.tags()
+        self.assertEqual((tags["keel-backend:current"], tags["keel-backend:previous"]), ("sha256:new", "sha256:old"))
+        self.assertNotIn("keel-backend:older", tags, "images neither current nor previous are removed (disk)")
+
+    def test_releasing_the_current_image_again_keeps_the_previous(self):
+        self.run_release("keel-backend:old")
+        self.run_release("keel-backend:new")
+        self.run_release("keel-backend:new")
+        self.assertEqual(self.tags()["keel-backend:previous"], "sha256:old")
+
+    def test_a_failed_release_leaves_current_and_previous_as_they_were(self):
+        self.run_release("keel-backend:older")
+        self.run_release("keel-backend:old")
+        self.assertNotEqual(self.run_release("keel-backend:new", down=True).returncode, 0)
+        tags = self.tags()
+        self.assertEqual((tags["keel-backend:current"], tags["keel-backend:previous"]), ("sha256:old", "sha256:older"))
+
+    def test_a_rollback_swaps_so_it_can_be_undone(self):
+        self.run_release("keel-backend:old")
+        self.run_release("keel-backend:new")
+        self.assertEqual(self.run_release("--rollback").returncode, 0)
+        tags = self.tags()
+        self.assertEqual((tags["keel-backend:current"], tags["keel-backend:previous"]), ("sha256:old", "sha256:new"))
+
+    def test_caddy_is_recreated_when_its_file_changed_and_only_then(self):
+        self.run_release("keel-backend:old")
+        self.log.write_text("")
+        self.run_release("keel-backend:new")
+        self.assertNotIn("--force-recreate", self.log.read_text())
+        (self.home / "deploy/Caddyfile").write_text("changed\n")
+        self.run_release("keel-backend:old")
+        self.assertIn("up -d --force-recreate --no-deps caddy", self.log.read_text())
+
+    def test_host_files_reach_the_host_when_they_change(self):
+        self.run_release("keel-backend:new")
+        self.assertEqual((self.home / "etc/systemd/journald.conf.d/zz-keel.conf").read_text(), (DEPLOY / "journald-keel.conf").read_text())
+        self.assertTrue((self.home / "etc/systemd/system/keel-backup.timer").is_file())
+        self.assertIn("systemctl daemon-reload", self.log.read_text())
+
 
 if __name__ == "__main__":
     unittest.main()
