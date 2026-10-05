@@ -3413,7 +3413,7 @@ tasks:
     module: infra
     type: chore
     size: M
-    status: todo
+    status: done
     depends_on: [K-202, K-907]
     why: "Sıfır ek maliyetle barındırma (ADR-013)"
     acceptance:
