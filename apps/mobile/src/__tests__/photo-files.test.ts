@@ -106,16 +106,18 @@ function fakeBackup(refuse: string[] = []) {
   return {
     marked,
     exclude(uri: string) {
-      if (refuse.includes(uri)) throw new Error('The file couldn’t be saved.');
+      // iOS's own message names the file: what must never reach a report (V3).
+      if (refuse.includes(uri)) throw new Error(`The file “${uri.split('/').pop()}” couldn’t be saved because you don’t have permission.`);
       marked.push(uri);
     },
   };
 }
 const ourBuild = () => false;
+const onIos = 'ios' as const;
 
 test('a kept photo is left out of backups, and so is its folder (K-618)', async () => {
   const backup = fakeBackup();
-  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild, platform: onIos });
   mockDisk.set('file:///cache/Camera/a.jpg', 'file');
   await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
   expect(backup.marked).toEqual([FOLDER, `${FOLDER}/2026-10-07-front.jpg`]);
@@ -127,7 +129,7 @@ test('the first listing leaves the folder and every photo already there out of b
   mockDisk.set(`${FOLDER}/2026-09-01-side.jpg`, 'file');
   mockDisk.set(`${FOLDER}/thumbs`, 'dir');
   const backup = fakeBackup();
-  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild, platform: onIos });
   expect(await files.names()).toHaveLength(2);
   expect(backup.marked).toEqual([FOLDER, `${FOLDER}/2026-09-01-front.jpg`, `${FOLDER}/2026-09-01-side.jpg`]);
   await files.names();
@@ -136,7 +138,7 @@ test('the first listing leaves the folder and every photo already there out of b
 
 test('no folder yet: the listing marks nothing, and the first kept photo marks the new folder', async () => {
   const backup = fakeBackup();
-  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild, platform: onIos });
   await files.names();
   expect(backup.marked).toEqual([]);
   mockDisk.set('file:///cache/Camera/a.jpg', 'file');
@@ -148,11 +150,11 @@ test('a refused exclusion is reported by name; the photo stays kept, and the nex
   const report = jest.fn();
   const refuse = [`${FOLDER}/2026-10-07-front.jpg`];
   const backup = fakeBackup(refuse);
-  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild, report });
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild, platform: onIos, report });
   mockDisk.set('file:///cache/Camera/a.jpg', 'file');
   await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
   expect(report).toHaveBeenCalledWith({ name: 'BackupExclusionFailed' });
-  expect(JSON.stringify(report.mock.calls)).not.toContain('2026'); // the name only: no file, no day (V3)
+  expect(report.mock.calls).toEqual([[{ name: 'BackupExclusionFailed' }]]); // the name only: not iOS's message, which names the file (V3)
   expect(await files.names()).toEqual(['2026-10-07-front.jpg']);
   refuse.length = 0;
   await files.names();
@@ -167,7 +169,7 @@ test('after a clean sweep, a photo whose exclusion is refused is tried again at 
   mockDisk.set(`${FOLDER}/2026-09-01-front.jpg`, 'file');
   const refuse = [`${FOLDER}/2026-10-07-front.jpg`];
   const backup = fakeBackup(refuse);
-  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild });
+  const files = devicePhotoFiles({ backup, inExpoGo: ourBuild, platform: onIos });
   await files.names(); // swept: the folder and the September photo
   mockDisk.set('file:///cache/Camera/a.jpg', 'file');
   await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
@@ -176,11 +178,45 @@ test('after a clean sweep, a photo whose exclusion is refused is tried again at 
   expect(backup.marked).toContain(`${FOLDER}/2026-10-07-front.jpg`);
 });
 
+test('one photo iOS refuses does not stop the sweep: every other photo is still left out', async () => {
+  mockDisk.set(FOLDER, 'dir');
+  mockDisk.set(`${FOLDER}/2026-09-01-front.jpg`, 'file');
+  mockDisk.set(`${FOLDER}/2026-10-01-front.jpg`, 'file');
+  const backup = fakeBackup([FOLDER, `${FOLDER}/2026-09-01-front.jpg`]);
+  await devicePhotoFiles({ backup, inExpoGo: ourBuild, platform: onIos }).names();
+  expect(backup.marked).toEqual([`${FOLDER}/2026-10-01-front.jpg`]);
+});
+
+test('Android: the module is iOS only (no Android build yet; its own backup is an open question), so nothing is reported there', async () => {
+  const report = jest.fn();
+  const files = devicePhotoFiles({ backup: null, inExpoGo: ourBuild, platform: 'android', report });
+  mockDisk.set('file:///cache/Camera/a.jpg', 'file');
+  await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
+  expect(report).not.toHaveBeenCalled();
+});
+
+test('the JS asks for the module by the name the Swift gives it: else our own build finds none and says so only in a log', () => {
+  const dir = path.resolve(__dirname, '../../modules/backup-exclusion');
+  const asked = /requireOptionalNativeModule<\w+>\('(\w+)'\)/.exec(fs.readFileSync(path.join(dir, 'index.ts'), 'utf8'))?.[1];
+  const named = /Name\("(\w+)"\)/.exec(fs.readFileSync(path.join(dir, 'ios/BackupExclusionModule.swift'), 'utf8'))?.[1];
+  const config = JSON.parse(fs.readFileSync(path.join(dir, 'expo-module.config.json'), 'utf8')) as { apple: { modules: string[] } };
+  expect(asked).toBe('BackupExclusion');
+  expect(named).toBe(asked);
+  expect(config.apple.modules).toEqual(['BackupExclusionModule']);
+});
+
+test('the Swift side, which is handed the photos, has no way to the network either', () => {
+  const swift = path.resolve(__dirname, '../../modules/backup-exclusion/ios/BackupExclusionModule.swift');
+  const body = fs.readFileSync(swift, 'utf8').replace(/\/\/.*$/gm, '');
+  expect(body).toContain('isExcludedFromBackup');
+  expect(/URLSession|NSURLConnection|upload|CKContainer|NWConnection|import Network/i.test(body)).toBe(false);
+});
+
 test('without the module: in Expo Go quietly; in our own build it is a broken build, reported by name — photos kept either way', async () => {
   for (const [inExpoGo, reported] of [[() => true, []], [ourBuild, [[{ name: 'BackupExclusionMissing' }]]]] as const) {
     mockDisk.clear();
     const report = jest.fn();
-    const files = devicePhotoFiles({ backup: null, inExpoGo, report });
+    const files = devicePhotoFiles({ backup: null, inExpoGo, platform: onIos, report });
     mockDisk.set('file:///cache/Camera/a.jpg', 'file');
     await files.keep('file:///cache/Camera/a.jpg', '2026-10-07-front.jpg');
     await files.names();

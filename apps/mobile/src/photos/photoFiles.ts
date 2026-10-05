@@ -8,6 +8,7 @@
  */
 import { isRunningInExpoGo } from 'expo';
 import { Directory, File, Paths } from 'expo-file-system';
+import { Platform } from 'react-native';
 
 import { type BackupExclusion, backupExclusion } from '../../modules/backup-exclusion';
 import type { PhotoFiles } from './library';
@@ -18,11 +19,18 @@ type Deps = {
   /** Our own local module (modules/backup-exclusion); null where it is not (Expo Go). */
   backup?: BackupExclusion | null;
   inExpoGo?: () => boolean;
+  /** The module is iOS only; Android's own backup (Auto Backup) is an open question, with no Android build yet. */
+  platform?: typeof Platform.OS;
   /** A problem, by name only (V3): never a file or a day. */
   report?: (problem: { name: string }) => void;
 };
 
-export function devicePhotoFiles({ backup = backupExclusion(), inExpoGo = isRunningInExpoGo, report = () => {} }: Deps = {}): PhotoFiles {
+export function devicePhotoFiles({
+  backup = backupExclusion(),
+  inExpoGo = isRunningInExpoGo,
+  platform = Platform.OS,
+  report = () => {},
+}: Deps = {}): PhotoFiles {
   const folder = () => new Directory(Paths.document, FOLDER);
   const photoFiles = (dir: Directory) => dir.list().filter((entry): entry is File => entry instanceof File);
   let missingReported = false;
@@ -32,8 +40,8 @@ export function devicePhotoFiles({ backup = backupExclusion(), inExpoGo = isRunn
   /** Leaves each uri out of backups; false when one could not be. A photo is kept either way — losing it is worse. */
   const leaveOut = (uris: string[]): boolean => {
     if (backup === null) {
-      // Expo Go never carries our module; our own build without it is a broken build, said once.
-      if (!inExpoGo() && !missingReported) report({ name: 'BackupExclusionMissing' });
+      // Expo Go never carries our module; our own iOS build without it is a broken build, said once.
+      if (platform === 'ios' && !inExpoGo() && !missingReported) report({ name: 'BackupExclusionMissing' });
       missingReported = true;
       return false;
     }
