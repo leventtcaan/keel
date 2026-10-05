@@ -730,7 +730,8 @@ RevenueCat hesabı yok → mağaza "kullanılamaz", kapı açık (ADR-058 #107);
 
 | Görev | Durum | PR | Aktarım |
 |---|---|---|---|
-| K-903 (1/2) EAS projesi + `EXPO_PUBLIC_API_URL` EAS `production` ortamında + `usesNonExemptEncryption: false` | inceleme | #408 | — |
+| K-903 (1/2) EAS projesi + `EXPO_PUBLIC_API_URL` EAS `production` ortamında + `usesNonExemptEncryption: false` | ✅ birleşti (inceleme: etkileşimsiz gönderim `ascAppId` ister → runbook) | #408 | — |
+| K-618 fotoğraflar yedekten hariç — yerel modül `apps/mobile/modules/backup-exclusion` (Swift `isExcludedFromBackup`), `photoFiles.ts` klasör + her dosya; metin/politika/envanter tam söz; 5 mutant ölü (biri test eklenince). Worktree `../keel-k618`. EAS simülatör derlemesi `40e9cfce` (Swift derleme kanıtı + `xattr`) | inceleme | #409 | — |
 
 -----
 ## M8 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
