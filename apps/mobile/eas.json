@@ -11,6 +11,7 @@
     },
     "production": {
       "distribution": "store",
+      "environment": "production",
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_TERMS_URL": "https://leventtcaan.github.io/keel/terms/",

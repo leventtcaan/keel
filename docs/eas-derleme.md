@@ -21,8 +21,8 @@ Paket kimliği: `dev.leventtcaan.keel` (geçici, `app.config.ts`; `KEEL_IOS_BUND
 `KEEL_APPLE_CLIENT_ID` aynı olmalı.
 
 ## Adımlar (sırayla)
-1. **EAS projesi** (Expo hesabı, bir kez): `cd apps/mobile && eas init` → çıkan proje kimliği `app.json › expo.extra.eas.projectId`
-   olarak eklenir (sır değil) ve commit'lenir.
+1. **EAS projesi** (Expo hesabı, bir kez) — **yapıldı (6 Eki, K-903):** `@leventcan/keel`, kimlik `app.json › expo.extra.eas.projectId`
+   (sır değil). `eas init` expo-router'ın çözülmüş `extra.router` ayarını da app.json'a yazar; o kopya silindi (eklenti zaten kurar).
 2. **Simülatör derlemesi** (bulutta, Apple hesabı yok): `eas build -p ios --profile development-simulator` →
    `eas build:run -p ios --latest` (indirir, simülatöre kurar) → `npx expo start --dev-client`. Beklenen: onboarding'in
    Apple Health adımında "Connect" görünür, Apple'ın izin sayfası açılır.
@@ -32,13 +32,19 @@ Paket kimliği: `dev.leventtcaan.keel` (geçici, `app.config.ts`; `KEEL_IOS_BUND
    Beklenen (K-308 kabul): Apple ile giriş sayfası ve HealthKit izin sayfası **gerçek cihazda** görülür.
 5. **TestFlight** (dahili): `eas build -p ios --profile production` → `eas submit -p ios --latest` (App Store Connect'te
    uygulama kaydı yoksa EAS oluşturur) → App Store Connect › TestFlight › dahili test grubu (Levent).
-   Store derlemesinde JS gömülüdür: `EXPO_PUBLIC_API_URL` EAS ortamında olmalı
-   (`eas env:create --environment production --name EXPO_PUBLIC_API_URL --value <adres> --visibility plaintext`).
+   Store derlemesinde JS gömülüdür: `EXPO_PUBLIC_API_URL` EAS'in `production` ortamında — **yapıldı (6 Eki):**
+   `https://keel-beta.duckdns.org` (düz metin, sır değil; `eas env:list --environment production`). `eas.json › build.production.environment`
+   bu ortamı açıkça seçer. İlk derleme Levent'in terminalinde: `eas build -p ios --profile production --auto-submit` (Apple girişi + 2FA;
+   EAS dağıtım sertifikasını, profili, App Store Connect kaydını ve gönderim anahtarını kurar). Sonra App Store Connect kaydının sayısal
+   Apple ID'si `eas.json › submit.production.ios.ascAppId`'e girer (sır değil) — o olmadan etkileşimsiz gönderim düşer (eas-cli 20.3
+   `IosSubmitCommand`: "Set ascAppId in the submit profile"). Ondan sonra derlemeler etkileşimsiz:
+   `eas build -p ios --profile production --auto-submit --non-interactive`.
+   Şifreleme beyanı `app.json › ios.config.usesNonExemptEncryption: false` (yalnız işletim sisteminin HTTPS/Keychain'i) → TestFlight her
+   derlemede ihracat sorusu sormaz.
    Yasal adresler (`EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_PRIVACY_URL`) gizli değil: `eas.json › build.production.env`'de (K-809, ADR-060; geliştirme istemcisi yerelde `.env`'den okur);
    ürün adı/alan adı gelince (M10) orada ve `docs/yasal/site/_config.yml`'de değişir.
-   Sunucu henüz yayında değil (M9) → TestFlight derlemesi açılır, giriş sunucuya ulaşamaz.
+   Sunucu canlı (M9 Part 1, `https://keel-beta.duckdns.org/health`); `prod` profilinde koç AI kapalı, SANDBOX satın almaları sayılır.
+   RevenueCat anahtarı (`EXPO_PUBLIC_REVENUECAT_APPLE_KEY`) yokken mağaza "kullanılamaz" olur ve abonelik kapısı kapanmaz (ADR-058 #107).
 
 ## Bilinen sınırlar
-- Cihazdan Apple ile girişin **uçtan uca** bitmesi çalışan bir sunucu ister (Docker bu Mac'te açılmıyor; yayın M9).
-  Diyalog görünür, `/v1/auth/apple` çağrısı sunucu adresine gider.
 - `eas build:run` derlemeyi indirir (~yüzlerce MB); disk 5 GB altındaysa önce temizlik.
