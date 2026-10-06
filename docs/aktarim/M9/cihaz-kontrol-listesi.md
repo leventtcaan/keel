@@ -38,3 +38,31 @@ Agent simülatörde: 14, 16, 17, 18 oturumsuz ekranlarda (`xcrun simctl ui boote
 - **14 · AX5 (giriş ekranı):** metin büyüyor, satır kırıyor, kesilme/taşma yok — ✅ (`img/14-ax5-giris-acik-sim.png`). Apple düğmesi sistemin
   (sabit boyut, iOS'un dilinde). Oturumlu ekranlar cihazda.
 - **17 · koyu + Increase Contrast + AX5:** okunuyor — ✅ (`img/17-ax5-giris-koyu-kontrast-sim.png`).
+
+## Cihaz sonuçları (7 Eki gece, iPhone 11 · iOS 18.6.2 · EAS development build `c9e4678f`, JS `main` `3507e91`, sunucu `prod`)
+Ekran görüntüleri kablodan (`pymobiledevice3 developer dvt screenshot`, `~/.venvs/pmd3`, tünel `sudo … remote tunneld`); kanıtın bir kısmı sunucu günlüğü
+(yol + durum kodu; hesap kimliği yok).
+
+| # | Sonuç | Kanıt |
+|---|---|---|
+| 0 Kurulum | ✅ development build `devicectl` ile kuruldu, Metro'ya bağlandı | — |
+| 1 Apple ile giriş | ✅ `POST /v1/auth/apple` 200 → `GET /v1/profile` 404 → onboarding → `PUT /v1/profile` 200 | sunucu günlüğü |
+| 2 HealthKit izni + okuma | ✅ izin sayfası açıldı (Levent); Today'de adım 2/2, tartı, "steps fell" kartı Health verisinden; `PUT /v1/activity-days` ×29 | `img/2-today-health-okuma.png` |
+| 3 Abonelik kapısı | ✅ RevenueCat anahtarı yok → kapı açık | — |
+| 4 Kayıt → sunucu | ✅ `POST /v1/weigh-ins` 201, Today "Weigh-in done 70.0 kg" | `img/4-tarti-kaydi.png` |
+| 5 Health'e yazma | ✅ yalnız "Ağırlık" yazma izni, metin `permissions.healthWrite`; yeni tartı Sağlık'ta keel kaynaklı (Levent gördü) | `img/5-health-yazma-izni.png` |
+| 6 Barkod | ✅ kamera izni (metin bizim), barkod okundu → `POST /v1/foods/barcode-lookup` 404: **ürün FDC'de yok** (Türk paketli ürünleri — beta kohortunun yerine göre önemli) | `img/6-kamera-izni.png`, `img/6-barkod-sonuc.png` |
+| 7 Öğün fotoğrafı | ⚠️ çökme yok, ama **çıkmaz sokak**: "needs the AI consent… give it in Settings" — prod'da bu rıza yok → K-909 (koç da aynı, `POST /v1/coach/messages` 403) | `img/7-ogun-foto.png` |
+| 8 İlerleme fotoğrafı (K-618) | ✅ ön + yan; "1 photo day on this phone. Never uploaded, not even to backups."; Metro'da `BackupExclusionMissing/Failed` yok | `img/8-ilerleme-foto.png` |
+| 9 Paylaşım kartı | ⏸ yeni hesapta paylaşılacak yok ("Nothing to share yet"); UX: boş sayfaya giden düğme | `img/9-paylasim-karti.png` |
+| 10 Çıkış (K-617) | ⏸ yeni tasarımdan sonra (ADR-067) | — |
+| 14 AX5 | ❌ başlıklar kelime ortasından bölünüyor (WEIGH-/IN, SETTING/S, PROGRE/SS); Today'de "Settings" düğmesi taşıyor; koçta çipler notun üstüne biniyor; "Ask the coach" çubuğu ekranın ¼'ü. Gövde metni, düğmeler, alanlar ✅ | `img/14-ax5-*.png` |
+| 15 VoiceOver | ✅ düğmeler ad + rol; koç cevapları duyuruluyor (K-815). Not: "Log a meal in words" çipinin cevabı `announce` çağırmıyor (kod incelemesi) | `img/15-vo-*.png` |
+| 16 Reduce Motion | ⏸ yeni tasarımdan sonra | — |
+| 17 Kalın + Kontrast + Saydamlık (açık tema) | ❌ Kalın Metin tek satır etiketlerin sonunu kesiyor ("Log a mea", "Your recipe:", "Just moved les", "This week's cal") → K-910. Kontrast okunur ✅ | `img/17-kontrast-acik-*.png` |
+| 18 Gri tonlama | ✅ seçili çip dolu/çerçeveli, seçili sekme kutulu, karar durumu kelimeyle | `img/18-gri-*.png` |
+| 19 Hesap silme + Apple iptali | ⏸ yeni tasarımdan sonra (ADR-067); silme akışı sunucuda testli (K-802, K-812) | — |
+| 11-13 | — kapsam dışı / RevenueCat bekliyor | — |
+
+**Levent'in genel değerlendirmesi:** "isteğimin uzağında", onboarding karmaşık, koyu tema iç karartıcı (açık tema iPhone ayarıyla geliyor — uygulama içi seçici yok),
+metin çok ve düz, "test ederken bile ne nerede anlamıyorum" → **ADR-067: UI/UX revizyonu, M9 Part 3'ten önce.**
