@@ -169,7 +169,7 @@
 
 ## 2026-10-07 · Faz 5 Part 1 (ürünün yüzü — araştırma) — kod yok
 - yaptım: M0 rakip listesi (Apple top grossing, 4 ülke; Levent onayladı); R1 Meta reklam istihbaratı (Apify resmî aktör, 13 sayfa, ~420 reklam, 60 videonun ilk saniyeleri, 2,39 $); R2-R4 üç paralel alt ajanla (akış, tutundurma, sosyal döngü); sentez `arastirma/06-faz5-yuz.md`; Part 2 prompt'u
-- karar: Levent — rakip kümesi olduğu gibi, reklam videolarını indirip analiz etme izni (sonra silindi); ADR yok, 13 ADR adayı 06 §7'de (prototipi etkileyenler Part 2 başında)
+- karar: Levent — rakip kümesi olduğu gibi, video izni (sonra silindi); **ADR-069** ürün yönü: odak ağırlık, başlangıç kararı, 3 sekme + "+", kesimi agent'a bıraktı (koç çubuğu, projeksiyon, tarifler, beslenme sekmesi…); #413 ascAppId; rapor artifact
 - takıldım: paylaşılan tarayıcı panelinde ajanla sekme çakışması (→ tabId); aktör Ladder'da sayfa kimliğini düşürdü (→ sayfa URL'si); Noom/WW reklamları yaş kapılı; TikTok Creative Center girişsiz yalnız ilk 3
 - sıradaki: Faz 5 Part 2 — ekran envanteri + bütün ekranların artifact prototipi (`plan/oturum-promptlari/UIUX-part2.md`); TestFlight teyidi → `ascAppId`
 - AI: bütün araştırma, tarama, analiz ve sentez agent (R2-R4 alt ajan, agent denetledi); Levent rakip listesini ve video iznini onayladı
