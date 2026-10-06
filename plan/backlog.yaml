@@ -1274,7 +1274,7 @@ tasks:
     module: mobile
     type: chore
     size: S
-    status: doing
+    status: done
     depends_on: [K-007]
     why: "HealthKit, Sign in with Apple ve kamera Expo Go'da çalışmaz; M3-M4 testleri bloke olmasın (L3 P5)"
     acceptance:
@@ -2639,7 +2639,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-308, K-614]
     why: "Onboarding 'never uploaded' diyor; iOS belge klasörünü iCloud yedeğine katıyor (V1); Levent (c) seçti"
     acceptance:
@@ -3719,3 +3719,33 @@ tasks:
       - "ADR-041 #66: 'uygulama açılmaması' sinyali telefonda kalır; açılış günü sunucuya gönderilmez"
       - "ADR-041 #72: metni agent yazar (ürün sesi, kaynağa sadık); kişi adı yok"
       - "ADR-041 #55: tutma e1RM eşdeğerliğiyle biter — biriken tekrarlar ağır yükü aralığın altında yapılabilir kılınca sıçrar (Epley, H3 B15); K-414 testinin 35×13 beklentisi K1 onaylı"
+  - id: K-909
+    title: "AI kapalıyken öğün fotoğrafı ve koç rıza istemesin: 'şu an kullanılamıyor' desin"
+    milestone: M9
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-907]
+    why: "Cihaz turu (7 Eki): prod'da AI rızası tanımsız (K-907), ama öğün fotoğrafı ve koç 'AI consent needed — give it in Settings' diyor; Ayarlar'da böyle bir rıza yok → çıkmaz sokak"
+    acceptance:
+      - "Sunucu AI'ı kapalı bildirirken (rıza türü yok / koç off) öğün fotoğrafı ve koç 'kullanılamıyor' der, Ayarlar'a göndermez"
+      - "Rıza verilebilir olduğunda bugünkü yol aynen kalır"
+    tests: ["meal-photo ve coach ekran testleri (rıza türü yok durumu)"]
+    refs: [plan/kararlar/ADR-067-uiux-revizyonu-once.md, docs/aktarim/M9/cihaz-kontrol-listesi.md]
+    learn: ["Özellik bayrağını sunucudan okumak"]
+  - id: K-910
+    title: "Kalın Metin (Bold Text) tek satırlık etiketlerin sonunu kesmesin"
+    milestone: M9
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-807]
+    why: "Cihaz turu (7 Eki): iOS Kalın Metin açıkken düğme/çip etiketleri son harflerini kaybediyor ('Log a mea', 'Your recipe:', karar kartında 'This week's cal')"
+    acceptance:
+      - "Kalın Metin açıkken ortak ekranlarda kesilen etiket yok (cihazda, iki tema)"
+      - "Nedeni kurulu React Native sürümünde doğrulanmış; düzeltme testle korunuyor"
+    tests: ["cihaz kaydı + mümkünse birim testi"]
+    refs: [plan/kararlar/ADR-067-uiux-revizyonu-once.md, docs/aktarim/M9/img/17-kontrast-acik-food.png]
+    learn: ["iOS metin ölçümü ve Dynamic Type"]
