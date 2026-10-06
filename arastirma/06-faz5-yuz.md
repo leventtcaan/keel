@@ -149,5 +149,5 @@ U1-U6 dokunulmaz (ADR-068 madde 3). Aşağıdakiler ya diğer kuralları zorluyo
 (M2 "Levent'in telefonunda").
 
 ## 10 · Sıradaki
-Ayrı session: **ekran envanteri** (bugünkü 30+ rota, `apps/mobile/src/app/`) → **bütün ekranların tıklanabilir artifact prototipi**
+Ayrı session: **ekran envanteri** (bugün 43 ekran, `apps/mobile/src/app/`) → **bütün ekranların tıklanabilir artifact prototipi**
 (bu dosyanın §3-§6'sına göre) → Levent telefonda gezer, "kalsın/gitsin" der → görsel dil ADR'si (ADR-016'nın yerine) ve §7 ADR'leri → kod.

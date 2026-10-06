@@ -1,0 +1,72 @@
+# Faz 5 · Rota — ürünün yeni yüzü (KABUL → ADR-069)
+
+- **Tarih:** 2026-10-07 · **Durum:** KABUL (ADR-069) · **Dayanak:** `arastirma/06-faz5-yuz.md` + `arastirma/ham/M0-M4` · cihaz turu (ADR-067)
+- **Bu dosya ne:** araştırmanın ürüne çevrilmiş hâli. Kes / değiştir / ekle / kalsın listesi ve sıra. Her madde kanıta bağlı (dosya + bölüm).
+  Ekran çizimi değil: ekranlar prototipte çizilir, bu liste prototipin brifidir.
+- **Kanıtın sınırı (dürüst kalibrasyon):** R1 neyin **sattığını** ölçer, neyin **tuttuğunu** ölçmez (vekil ölçü, yalnız ABD, harcama yok). R2'deki rakip
+  ekranlarının çoğu pazarlama görseli. Ürünü henüz senden başka kimse kullanmadı. → Yön **yüksek güvenle**, ayrıntı **orta güvenle**. Ayrıntıyı
+  prototip + 5 saniye testi doğrular. Rota yalnız reklam verisinden çizilmez: R1 vaadi ve anı, R2 akışı, R3 tutmayı, R4 paylaşımı belirler.
+
+## 1 · Yön (tek cümle)
+
+**Keel, salonda ne yapacağını tahmin etmekten yorulmuş insanın haftalık kararını veren ve nedenini gösteren uygulamadır.**
+Rakiplerin sattığı acı bu (M1 §0.1, §6); rakiplerin göstermediği şey neden (M1 §6, M4 §5-A). Ürünün her ekranı ya bu kararı besler (kayıt) ya
+gösterir (karar) ya da paylaştırır (kart). Gerisi ana yüzeyden iner.
+
+## 2 · Kes — ana yüzeyden kaldır (kod silinmez; gizlenir ya da birleşir)
+
+| Ne | Neden | Kanıt |
+|---|---|---|
+| Today'deki **"Ask the coach" çubuğu** ve koç çipleri | Kahraman öğeyle yarışıyor; AI üretimde kapalı → çıkmaz sokak (K-909). Koç, kararın içinde "neden"e soru olarak kalır | M2 çıkarım 3; I2 B1 (keyhole); cihaz #7 |
+| **Projeksiyon + SCOFF** ekranları (v1 yüzünden) | Varsayılan kapalı (U12), tarihli kullanılamaz; rakiplerin "aha"sı bizde kurulamıyor; karmaşıklık | M2 K15, gerilim; M3 gerilim (etki kanıtı yok); ADR-069 |
+| **What-if** ve **Karar geçmişi** ayrı ekranları | "Neden"in ikinci katmanına birleşir: "bunu ne değiştirir" tek satır + geçmiş bağlantısı | M2 çıkarım 4 (Runna şablonu) |
+| **Tarifler** (v1 yüzünden) | Beslenme derinliği; kategori hızı ödüllendiriyor (öğün 2-3 dokunuş); odak ağırlık | M2 K9, çıkarım 7; ADR-069 |
+| **Beslenme sekmesi** | Odak ağırlık (ADR-069); ağırlık uygulamalarının normu 3 sekme + giriş. Öğün "+"tan, kalan bütçe (aralık) "Bu hafta"da tek satır, hedefler İlerleme'de | M2 K9, K10; Fitbod/Hevy 3 sekme |
+| Onboarding **photos** ekranı (hiçbir şey sormuyor) ve **foods** (isteğe bağlı) | Ekran başına değer; foto izni ilk foto gününde zaten isteniyor | M2 çıkarım 2, 9 |
+| Onboarding'deki **Apple Health** ekranı | İzin ilk kullanıldığı ana taşınır | M2 K4, çıkarım 9 |
+| Ekranlardaki **paragraflar** (her yerde) | Kullanıcı ~%20 okur; Today ~105 kelime vs rakip 25-50 | M3 §7.1; M2 kelime tablosu |
+| AI kapalıyken **öğün fotoğrafı** girişi | Çıkmaz sokak; AI açılınca geri gelir | cihaz #7, K-909 |
+
+## 3 · Değiştir
+
+| Ne | Nasıl | Kanıt |
+|---|---|---|
+| **Onboarding** (10 → ~7 adım) | goal · program · schedule · about · activity · [sağlık verisi rızası — yasal, kalır] → **"Planın hazırlanıyor"** → **başlangıç kararı** → paywall (deneme zaman çizelgesi + hatırlatma). Ekran başına ≤25 kelime | M2 K1-K3, çıkarım 1-2; M1 §9 |
+| **Today** | Tek kahraman: **bu haftanın kararı** (etiket + check-in geri sayımı). Altında hafta şeridi (haftalık tutarlılık, U7) ve tek **"+"**. İlk görünüm ≤40 kelime | M2 K7-K9, çıkarım 3, 5; M3 §7 |
+| **Kayıt** | Hepsi "+"tan: tartı ≤4, öğün 2-3, set 1 dokunuş (önceki dolu, tek ✓) | M2 K9, K11, çıkarım 7 |
+| **Pazartesi check-in + "Neden"** | Tek akış: durum etiketi · gerekçe maddeleri · sayılan veri · küçük grafik · güven + sonraki tarih (U3) · "bunu ne değiştirir" · **Paylaş** | M2 çıkarım 4; M4 çıkarım 4 |
+| **Dönüş** ("hayat araya girdi", `state`) | Suçlamasız karşılama + boşluğa göre kademeli seçenek; pazartesi yeni başlangıç | M3 §5, çıkarım 3 |
+| **Paylaşım kartı** | Karar kartı (9:16, 3 sn'de okunur) + tutarlılık + PR; şeffaf çıkartma biçimi; varsayılanda kilo/yağ/foto/kalori yok | M4 çıkarım 1-5; M1 çıkarım 2 |
+| **Tema** | Açık varsayılan + uygulama içi seçici; tek vurgu; beslenmede tarafsız renk | M2 K17, çıkarım 6; M3 çıkarım 11 |
+| **Bütün metin** (`data/copy/en.json`) | Baştan yazılır: etiket + sayı + tek satır neden; gerekçe bir dokunuşla | M3 §7; M2 çıkarım 2 |
+| **Sekmeler** | **3 sekme: "Bu hafta" · Antrenman · İlerleme + tek "+"** (tartı, öğün, antrenman başlat). Salon/ekipman, içe aktarma, durum modu, yiyecek kısıtı ayarlarda | M2 K10; ADR-069 |
+
+## 4 · Ekle
+- **"Planın hazırlanıyor" + başlangıç kararı** ekranı (onboarding'in aha'sı) — M2 K1-K2.
+- **Haftalık karar kartı** (paylaşılabilir; reklamdaki 3 saniyelik an) — M1 §5, M4 §5-A.
+- **Hafta şeridi** (Pzt-Paz, haftalık tutarlılık) — M2 K8.
+- Sonra (v1.x): widget "bu hafta X/Y + bugünün tek eylemi" — M3 çıkarım 10; 12 haftalık dönem özeti — M4 çıkarım 3.
+
+## 5 · Kalsın (masa bahsi — iyi çalışıyor, yalnız yüzü değişir)
+Antrenman kaydı (önceki değer, dinlenme sayacı, süperset), tartı, HealthKit okuma/yazma, barkod, foto gizliliği (K-618), içe aktarma (Strong/Hevy,
+ayarlarda), salon/ekipman (ayarlarda), VoiceOver, motor ve U3 karar yapısı, haftalık tutarlılık (U7), sunucu.
+
+## 6 · Reklam ↔ ürün (aynı vaat)
+Bize açık kanca aileleri: **karar yükü skeci** (en uzun yaşayan aile), **itiraf/POV**, **uygulama demosu** (karar kartı 3 sn), **faydalı içerik**
+(RIR, deload, "neden bu hafta tut"). Kapalı: önce/sonra, üretilmiş beden, yağ %, ilaç (U4, U6, U12; 05 §3.1). — M1 §5, §10-11.
+
+## 7 · Sıra
+1. **Çatal kararları** (Levent, bu dosyanın §8'i) → bu dosya KABUL, ürün yönü ADR'si.
+2. **Prototip** (Faz 5 Part 2): bütün ekranların yeni yüzü, tıklanabilir artifact; açık + koyu; gerçek İngilizce metin.
+3. **Test:** Levent telefonda ekran ekran (ADR-069 #5; dış test bu turda yok).
+4. **ADR'ler:** görsel dil (ADR-016'nın yerine) + 06 §7 adayları.
+5. **Yeni kilometre taşı** (yol haritası: "M9 ara · Yeni yüz"): metin, onboarding, Today, "+", check-in/neden, tema, kesilenler — görev kartları
+   kabul kriteriyle, kod.
+6. TestFlight → **M9 Part 3 (beta)** → organik içerik (05 §3) aynı vaatle.
+
+## 8 · Çatallar — Levent'in kararı (7 Eki, AskUserQuestion)
+- **Odak:** salonda ağırlık çalışan (önerilen).
+- **Kesilecekler:** "tamamen sana bırakıyorum… rasyonel ve acımasız olarak indir" → §2'deki liste agent'ın kararı (ADR-069 #3).
+- **Onboarding aha'sı:** başlangıç kararı (önerilen; anayasa değişmez).
+- **Test:** yalnız Levent.
+- **Part 2 başında sorulacak kalanlar:** B4 (1. hafta anı), B11 (kararı kabul/ret), B13 (deneme/paywall teklifi), B8+B10 (paylaşım kartı içeriği).
