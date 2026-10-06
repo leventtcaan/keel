@@ -1419,6 +1419,7 @@ olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
 - `org.gradle.warning.mode=fail`: her Gradle deprecation CI'da kırmızı.
 
 ## Levent'i bekleyen (acil değil)
+- **M10: Claude Startups başvurusu** (6 Eki duyuru; 1.000 $ API kredisi 6 ayda yanar, 1 yıl Claude Team, ortak indirimleri, Applied AI ofis saatleri). Şart: alan adıyla eşleşen şirket e-postası → ürün adı/alan adı (M10) sonrası. Krediyi koç sağlayıcısı netleşmeden alma (V2).
 - **Design eklentisi** (claude.ai kataloğu, `design-critique`): CLI'dan kurulamıyor, karttan bir tık. Kurulmazsa
   `frontend-design` + kendi eleştiri turum yeterli.
 - **Expo MCP girişi:** `expo` eklentisinin MCP sunucusu (`mcp.expo.dev`) Expo hesabıyla giriş ister; EAS derlemesi
