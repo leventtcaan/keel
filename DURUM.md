@@ -6,6 +6,7 @@ guncelleme: 2026-10-07
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**Faz 5 Part 2 SÜRÜYOR (7 Eki) — prototip Levent'in değerlendirmesinde.** Çatallar cevaplandı (B4 davranıştan tek ayar · B11 varsayılan uygulanır · B13 sert + 7 gün deneme · B8+B10 karar + tutarlılık + gerçek set; dördü önerilen → `plan/faz5-rota.md` §8). Envanter `prototip/envanter.md` (43 → 31 erişilebilir + 4 yeni; 13 ekran iner). Prototip yayında: https://claude.ai/artifact/RzN9fM7BLhDrHjUMntmkXK (kaynak `prototip/yeni-yuz.html`; 29 ekran, iki senaryo, açık/koyu, Rubin/Saha). Levent'in kararları artifact veritabanında: `ArtifactData list` → koleksiyon `verdicts` (belge kimliği ekran, `.d1`/`.w12` senaryo eki; `genel` genel not). Sıradaki: değerlendirmeleri oku → işle → **aynı dosya yolundan** yeniden yayınla (URL korunur) → onay → görsel dil ADR'si + 06 §7 ADR'leri + "M9 ara · Yeni yüz" görev kartları.
 **Yön kararı verildi → ADR-069 (7 Eki, Levent):** odak salonda ağırlık çalışan, vaat "haftanın kararı ve nedeni"; onboarding aha = başlangıç kararı; 3 sekme (Bu hafta · Antrenman · İlerleme) + tek "+"; yüzeyden inenler (kesimi Levent bana bıraktı): koç çubuğu, projeksiyon+SCOFF, tarifler, beslenme sekmesi, what-if/geçmiş ayrı ekranı, 4 onboarding ekranı, paragraflar. Rota `plan/faz5-rota.md`; test yalnız Levent.
 **Faz 5 Part 1 (araştırma) BİTTİ (7 Eki) → sıradaki Faz 5 Part 2 · yeni yüzün tıklanabilir prototipi** (`plan/oturum-promptlari/UIUX-part2.md`, kod yok; envanter + prototip ADR-069 iskeletiyle). Sentez `arastirma/06-faz5-yuz.md`; ham `arastirma/ham/M0-M4`. Apify 2,39 / 5 $ (döngü 5 Kas). 13 ADR adayı (06 §7): B7 cevaplandı (başlangıç kararı); B4, B11, B13, B8+B10 Part 2 başında Levent'e. TestFlight'a düştü (Levent, 7 Eki); `ascAppId` `6819852276` → #413 birleşti (mağaza derlemeleri artık etkileşimsiz). K-903 kapanışı: TestFlight'tan cihaza kurulum teyidi (Levent). Faz 5 raporu (artifact): https://claude.ai/artifact/EwXQjThT6LGLhFe5hFWokR. Ayrıntı: "Faz 5 ilerleme".
 **M9 Part 2 (TestFlight ve cihaz) KAPANDI (7 Eki) → M9 ara · UI/UX revizyonu (ADR-067, Levent: Part 3 ertelendi).** Uygulama gerçek iPhone'da gerçek sunucuyla çalıştı (giriş, HealthKit, kamera, K-618, VoiceOver); deneyim çalışmadı. #408, #409, #410; K-308, K-618 `done`; K-909, K-910 yeni. Sıradaki: **Faz 5 · ürünün yüzü (ADR-068)** — önce araştırma (reklam istihbaratı/Apify, akış kıyası, tutundurma, sosyal döngü), sonra prototip: `plan/oturum-promptlari/UIUX.md`. Apify hazır (7 Eki): `leventcan`, FREE, aylık 5 $ kredi; anahtar `~/.keel-secrets/apify-token` (600, doğrulandı). Mağaza derlemesi 1.0.0 (2) bitti; TestFlight gönderimi EAS ücretsiz sırasında "in queue" (7 Eki ~01:00, Levent expo.dev › submissions). Sonraki oturum: düştü mü bak → `ascAppId` (ASC › App Information › Apple ID) → `eas.json › submit.production.ios`, K-903 kapanır. Takılı kalırsa: `.ipa` indir → Transporter ile Levent yükler.
@@ -703,6 +704,17 @@ Prompt'lar: `plan/oturum-promptlari/UIUX.md` (Part 1, araştırma) · `UIUX-part
   karar kartı 9:16'da 3 sn'de okunmalı (06 §5); "üründe kişi adı yok" ve U10 (isimsiz ses) geçerli.
 
 -----
+**Part 2 (7 Eki) — envanter + prototip:**
+| Adım | Durum | Not |
+|---|---|---|
+| 0 Çatallar (AskUserQuestion) | ✅ | B4, B11, B13, B8+B10 → hepsi önerilen; `faz5-rota.md` §8. B1, B3, B9, B12 session sonunda |
+| 1 Envanter | ✅ | `prototip/envanter.md`; örnek kişinin sayıları motorun kendi formülünden (`InitialTarget`: 2.916 kcal bakım, 2.479-3.353, 14 gün gözlem) |
+| 2 Prototip | ✅ yayında | `prototip/yeni-yuz.html` → artifact (db `verdicts`). Kelime sayımı ilk görünümde, canlı; hepsi hedefte (Bu hafta 34/40 · 39/40 ilk gün, onboarding 20-24/25, başlangıç kararı 40/40, karar 57/60, 1. hafta kararı 59/60, kart 25/25) |
+| 3 Levent telefonda | ⏳ | Her ekranda "Değerlendir" → kalsın/değiştir/gitsin + not |
+| 4 ADR'ler + görev kartları | — | görsel dil (ADR-016 yerine), 06 §7, M9 ara |
+
+Prototipte verilen tasarım kararları (Levent görür, beğenmezse değişir): "+" sekme çubuğunun yanında ayrı daire (iOS 26 ayrık sekme düğmesi; NativeTabs'te uygulanabilirliği [doğrulanmadı]); "Life got in the way" "+" içinde ikincil satır; karar bloğu zeminin tersi (koyu temada açık blok); vurgu yalnız birincil eylem + kararın sayısı; tema seçici Ayarlar'da (Light/Dark/System, varsayılan Light). Not: Pazartesi kaydolan kişide 7 günlük deneme ilk kararın olduğu gün biter (karar sabah, ücret kayıt saatinde) — fiyat/deneme ADR'sinde yazılacak.
+
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
 

@@ -69,4 +69,16 @@ Bize açık kanca aileleri: **karar yükü skeci** (en uzun yaşayan aile), **it
 - **Kesilecekler:** "tamamen sana bırakıyorum… rasyonel ve acımasız olarak indir" → §2'deki liste agent'ın kararı (ADR-069 #3).
 - **Onboarding aha'sı:** başlangıç kararı (önerilen; anayasa değişmez).
 - **Test:** yalnız Levent.
-- **Part 2 başında sorulacak kalanlar:** B4 (1. hafta anı), B11 (kararı kabul/ret), B13 (deneme/paywall teklifi), B8+B10 (paylaşım kartı içeriği).
+- **Part 2 başında (7 Eki, AskUserQuestion — dördünde önerilen):**
+  - **B4 · 1. hafta anı → davranıştan tek ayar.** İlk pazartesi check-in'i kilo trendine bakmaz (U8 yerinde); planlanan/yapılan seans ve tutan
+    günlerden **tek** plan ayarı verir ("3 planlandı, 2 oldu, Pzt/Per → gelecek hafta 2 gün, Pzt/Per" ya da "hepsi oldu → aynı plan"). U15'in
+    1. hafta anı böyle karşılanır. Kaynak: Güray "uyum < %50 → kaloriye dokunma, önce uyumu çöz" (03 §, satır 164) + M3 çıkarım 4. Yeni motor
+    kuralı → `kural-ekle` (kod session'ında).
+  - **B11 · kabul/ret → varsayılan uygulanır.** Pazartesi kararı plana kendiliğinden girer; tek ikincil seçenek "Bu hafta eski planla devam".
+    Reddetmek kararı değiştirmez (U2), sonraki haftanın verisine "uygulanmadı" diye girer. Güvenlik durağı (U13) reddedilemez.
+  - **B13 · teklif → sert paywall + 7 gün deneme** (ADR-058 kalır). Deneme ≥7 gün: ilk pazartesi kararı ücretten önce düşer. Paywall deneme
+    zaman çizelgesi gösterir (bugün erişim · hatırlatma · ücret günü). Fiyat ayrı karar (M10).
+  - **B8 + B10 · paylaşım kartı → karar + tutarlılık + gerçek set.** Bu haftanın kararı (büyük), tek satır neden, "11 / 12 weeks", haftanın en
+    iyi seti gerçek değer olarak ("100 kg × 5"). Kilo yok (anahtar da yok); yağ %, foto, beden, kalori yok; tahmini max (e1RM) kartta yok.
+    U4 pazarlamayı ve kartı da kapsar.
+- **Session sonunda (B1, B3, B9, B12):** prototip onayından sonra.
