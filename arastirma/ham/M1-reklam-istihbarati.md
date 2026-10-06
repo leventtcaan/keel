@@ -9,7 +9,7 @@
 
 ## 0 · Özet
 
-1. **Kategorinin en çok kullanılan acısı "tahmin etmek / ne yapacağını bilmemek".** Fitbod (salonda kafası karışan adam skeci, 577 ve 558 gündür
+1. **Kategorinin en çok kullanılan acısı "tahmin etmek / ne yapacağını bilmemek".** Fitbod (salonda kafası karışan adam skeci, 577, 358 ve 296 gündür
    yayında), Ladder ("spor salonunda ne yapacağımı düşünmek istemedim"), Gymverse ("Your plan. Not a template."), BetterMe ("done with the guessing"),
    Cal AI ("without guessing"). **Bizim tezimiz ("makes the call") kategorinin en çok para harcanan acısının tam üstünde**, ama herkes "plan sende"
    diyor; **neden**i gösteren yok. Fark buradan gelir: kararı kim veriyor ve gerekçesini gösteriyor mu? (K6 §6.2 ile aynı yön.)
@@ -106,18 +106,22 @@ Gün = 7 Eki − reklamın başlangıç tarihi. Örneklem = gösterime göre ilk
 
 ## 5 · Kanca — videonun ilk 3 saniyesi (60 video) [RESMÎ kare/döküm, sınıflama [ÇIKARIM]]
 
-| Kanca ailesi | Kim, kaç video (ilk 10 içinden) | İlk saniyede ne var | Uzun ömürlü mü? |
+| Kanca ailesi | Kim, kaç video (gösterime göre ilk N'den) | İlk saniyede ne var | Uzun ömürlü mü? |
 |---|---|---|---|
-| **Karar yükü / kafa karışıklığı** | Fitbod 3 (skeç: salonda ne yapacağını bilmeyen kişiye biri uygulamayı gösteriyor), Gymverse 1, Ladder 2 (meşgul anne, "rutini düşünmek istemedim") | Salonda kararsız bir yüz; ekranda kelime kelime altyazı | **Evet**: Fitbod'un 577, 558 ve 358 günlük reklamları bu ailede |
-| **Dönüşüm (önce/sonra)** | Cal AI 2 ("350 lbs'tan 217 lbs'a"), MacroFactor 1 (kreatör, ekranda yağ yüzdesi), BetterMe çoğu (beden odaklı) | Çıplak gövde + ekranda iki sayı | Evet: Cal AI'nin 175-176 günlük reklamları |
+| **Karar yükü / kafa karışıklığı** | Fitbod 3 (skeç: salonda ne yapacağını bilmeyen kişiye biri uygulamayı gösteriyor), Ladder 2 (meşgul anne, "rutini düşünmek istemedim"), Gymverse 1 | Salonda kararsız bir yüz; ekranda kelime kelime altyazı | **Evet**: Fitbod'un 577, 358 ve 296 günlük reklamları bu ailede |
+| **Dönüşüm / beden** | BetterMe 4 (beden bölgesi; birinde "üretken YZ kullanıldı" etiketi), Cal AI 2 ("350 lbs'tan 217 lbs'a"), MacroFactor 2 (kreatör; birinde ekranda yağ yüzdesi), Ladder 1 ("45 günde") | Çıplak gövde + ekranda iki sayı | Evet: Cal AI'nin 175-176 günlük reklamları |
 | **Otorite / haber** | Cal AI 2 (TV haber kesiti: "genç girişimci diyeti çözdü") | Haber spikeri + kanal logosu | Evet (175-176 gün) |
-| **İtiraf / POV** | Cal AI 2 ("kalorini sayma, sorun bu"; ne kadar yediğini bilmiyorsun), MFP 1 ("göz kararı yiyordum") | Yemek yiyen kişi + ekranda "POV:" | Orta (116-141 gün) |
-| **Oyun / meydan okuma** | Cal AI 1 (öğünün kalorisini tahmin et, bilirsen 100 $), MFP 1 (hepsi 150 kalori: cips mi, patlamış mısır mı) | Tabak + soru | Orta |
-| **Uygulama demosu** | Cal AI 2 (yemek pişiriyor → tarıyor), Fitbod 1 (kas grubunu seç → 6 hareket hazır) | Ekranda telefon, 3. saniyede uygulama | Orta |
-| **Faydalı içerik (reklam = içerik)** | Fitbod 4 (günün antrenmanı 3×10, takip et), MacroFactor 3 (RIR göstergesi, haftada ne kadar kilo vermeli, ne yiyorum) | Hareket eden beden + set/tekrar yazısı | Fitbod'da evet (144-189 gün) |
-| **Ünlü / kimlik** | Ladder 6 (Hilary Duff, Mel B, "hemşireyken formda kalmak", "programım herkese göre değil") | Tanınan yüz ya da meslek kıyafeti | Evet (90-167 gün) |
-| **Plan ızgarası + şarkı** | BetterMe 4 (aynı kreatif: set/tekrar ızgarası + "tahmin etmeye son" şarkısı + pazartesi listesi) | 9'lu egzersiz ızgarası, "2×15" | Evet (140 gün, çok kopya) |
-| **Kreatör karşılaştırması** | MacroFactor kreatörü (iyi-daha iyi-en iyi: MFP "iyi", MacroFactor "en iyi") | Kreatör + renkli etiket | Yeni (7 gün) |
+| **İtiraf / POV** | Cal AI 2 ("kalorini sayma, sorun bu"), MyFitnessPal 2 ("göz kararı yiyordum"), MacroFactor 1 | Konuşan yüz ya da yemek yiyen kişi + "POV:" | Orta (116-175 gün) |
+| **Oyun / meydan okuma** | Cal AI 1 (öğünün kalorisini tahmin et, bilirsen 100 $), MyFitnessPal 1 (hepsi 150 kalori) | Tabak + soru | Orta |
+| **Uygulama demosu** | Cal AI 2 (yemek pişiriyor → tarıyor), Fitbod 2 (kas grubunu seç → 6 hareket hazır; "uygulamayı aç, ayarla") | Ekranda telefon, 3. saniyede uygulama | Orta (Fitbod'da 558 gün) |
+| **Faydalı içerik (reklam = içerik)** | Fitbod 5 (günün antrenmanı 3×10, takip et), MacroFactor 3 (RIR göstergesi, haftada ne kadar kilo, ne yiyorum), MyFitnessPal 1 (hazırlık tarifi) | Hareket eden beden + set/tekrar yazısı | Fitbod'da evet (86-189 gün) |
+| **Ünlü / kimlik** | Ladder 7 (Hilary Duff ve tepki videoları, "hemşireyken formda kalmak", "programım herkese göre değil") | Tanınan yüz ya da meslek kıyafeti | Evet (36-167 gün) |
+| **Plan ızgarası + şarkı** | BetterMe 6 (aynı kreatif ailesi: set/tekrar ızgarası + "tahmin etmeye son" şarkısı + pazartesi listesi) | 9'lu egzersiz ızgarası, "2×15" | Evet (140 gün, çok kopya) |
+| **Mizah** | Cal AI 1 (diyetteyken fast food skeci), Gymverse 1 (retro "fitness akımları ölür" + ömür boyu erişim) | Kostüm/abartı | Cal AI'de evet (175 gün) |
+| **Motivasyon / yaşam** | MyFitnessPal 2 (ortak marka: dinlenme günü rutini), Gymverse 2 ("motivasyon ilerlemeden gelir") | Sinematik çekim, sabah rutini | Hayır (4-22 gün) |
+| **Kreatör karşılaştırması** | MacroFactor kreatörü 3 (iyi-daha iyi-en iyi: MFP "iyi", MacroFactor "en iyi") + 1 diğer | Kreatör + renkli etiket | Yeni (7 gün) |
+
+Toplam 60 video: Cal AI 10 · Fitbod 10 · Ladder 10 · BetterMe 10 · MacroFactor 6 + kreatör 4 · MyFitnessPal 6 · Gymverse 4.
 
 **Ortak biçim (60 videonun neredeyse hepsi):** 9:16 dikey; ilk karede yüz ya da beden var; altyazı kelime kelime büyük harfle basılıyor; profesyonel
 stüdyo yok (Gymverse ve Ladder'ın ünlü çekimleri hariç); süre çoğunlukla 15-50 sn; ilk 10 saniyede müzik ya da doğrudan konuşma var.
@@ -146,8 +150,9 @@ Ayrıca "Actor portrayal… Results may vary" uyarısı ekranda.
 ## 8 · Yayında kalma — kim kazanıyor [RESMÎ gün, yorum [ÇIKARIM]]
 En çok gösterilen ilk 10 reklamın yaşı (gün): Fitbod 86-577 · Cal AI 106-176 · Ladder 36-167 · BetterMe 12-140 (iki kreatif ailesi) · MacroFactor 27-62 ·
 MFP 4-46 · Gymverse 5-22.
-- **Fitbod**'un kazananları **bir yıldan uzun** yayında (577, 558, 358 gün) ve üçü de "salonda kafası karışık kişi" skeci. Kategorinin en uzun yaşayan
-  reklamları karar yükü acısını kullanıyor.
+- **Fitbod**'un kazananları **bir yıla yakın ya da daha uzun** yayında: "salonda kafası karışık kişi" skeci 577, 358 ve 296 gün; uygulama demosu
+  558 gün. En uzun reklam (594 gün) ilk 10'un dışında kaldığı için videosu incelenmedi. İncelenen videolar içinde en uzun
+  yaşayan aile karar yükü.
 - **Cal AI**'nin ilk 10'unun hepsi 3-6 aydır yayında: dönüşüm, haber kesiti ve itiraf/POV aileleri.
 - **Gymverse** ve **MFP**'nin reklamları genç; ya sık yenileniyor ya da uzun yaşayan kazananları yok. Bu ayrım bu veriden yapılamıyor.
 

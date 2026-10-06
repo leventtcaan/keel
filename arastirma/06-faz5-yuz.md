@@ -34,7 +34,7 @@ ve gerekçesi.**
 
 ## 2 · Biz ne getiriyoruz — fark tek yerde
 
-**Kategorinin kanıtlanmış acısı bizim tezimiz:** Fitbod'un bir yıldan uzun süredir yayında olan reklamları "salonda ne yapacağını bilmeyen kişi"
+**Kategorinin kanıtlanmış acısı bizim tezimiz:** Fitbod'un en uzun yaşayan reklamlarından üçü (577, 358, 296 gün) "salonda ne yapacağını bilmeyen kişi"
 skeci; Ladder "ne yapacağımı düşünmek istemedim" diyor; Gymverse "Your plan, not a template"; BetterMe "done with the guessing" (M1 §5, §8).
 Acıyı kimse yeni keşfetmiyor; **çözümün biçimi** boş:
 
