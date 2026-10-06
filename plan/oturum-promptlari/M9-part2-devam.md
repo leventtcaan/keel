@@ -1,3 +1,5 @@
+> **KAPANDI (7 Eki):** Part 2 bitti, sonuçlar DURUM › Part 2 ÇIKIŞ. Bu dosya tarih için duruyor.
+
 # M9 · Part 2 — DEVAM (6 Eki gece; güncel: 02:45)
 
 ```

@@ -6,7 +6,7 @@ guncelleme: 2026-10-06
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
-**▶ DEVAM NOKTASI (6 Eki gece):** M9 Part 2 — agent'ın cihazsız işi bitti (#408, #409 birleşti; #410 birleşti). Bekleyen Levent'te: mağaza derlemesi (Apple girişi) → TestFlight → cihaz listesi; iletişim adresi. Devam: `plan/oturum-promptlari/M9-part2-devam.md`.
+**M9 Part 2 (TestFlight ve cihaz) KAPANDI (7 Eki) → M9 ara · UI/UX revizyonu (ADR-067, Levent: Part 3 ertelendi).** Uygulama gerçek iPhone'da gerçek sunucuyla çalıştı (giriş, HealthKit, kamera, K-618, VoiceOver); deneyim çalışmadı. #408, #409, #410; K-308, K-618 `done`; K-909, K-910 yeni. Sıradaki: `plan/oturum-promptlari/UIUX.md`. Mağaza derlemesi 1.0.0 (2) bitti, TestFlight gönderimi EAS sırasındaydı (teyit et).
 **M9 Part 1 (Sunucu ayakta) BİTTİ (6 Eki)** — sunucu canlı `https://keel-beta.duckdns.org/health`; K-907 #404, K-901 #405, K-902 #407 (CI → VPS otomatik); ADR-064, ADR-065 (+ Ek 1), ADR-066 (+ Ek 1). Aktarım bekliyor: `docs/aktarim/M9/README.md` 1-3. Sıradaki: M9 Part 2 (`plan/oturum-promptlari/M9-part2.md`).
 **M8 KAPANDI (5 Eki, kod)** — Part 2: K-802 #385, K-804 #389, K-810 #391, K-814 #392, K-811 #393, K-813 #394, K-807 #395, K-812 #398 + #400, K-818 #402 (+ #386); ADR-061, ADR-062, ADR-063 (Levent: fatProxy dışa aktarmada, silmede Apple yeniden onayı, kontrast M9'da prototiple). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-14. Açık: iletişim adresi (Levent). Cihaz işleri (K-308 → K-815, K-618…) ve sırlar (Apple `.p8`, RevenueCat) M9'da. Sıradaki koşu **M9 · Beta** (`plan/oturum-promptlari/M9.md`, `M9-part1.md`).
 **M8 Part 1 (Metinler ve envanter) BİTTİ (4 Eki)** — ADR-059 (+ Ek 1), ADR-060; K-801 #375, K-808 #377, K-806 #378, K-809 #379, K-803 #380, #381; yasal sayfalar canlı (`leventtcaan.github.io/keel/`). Disk 20 GB (Docker budandı). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-5. Açık: iletişim adresi (Levent). Sıradaki: M8 Part 2 (`plan/oturum-promptlari/M8-part2.md`).
@@ -679,8 +679,8 @@ Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `
 | Part | Görevler | Durum |
 |---|---|---|
 | 1 · Sunucu ayakta | K-907, K-901, K-902 | ✅ bitti (6 Eki) — aktarım bekliyor (README 1-3) |
-| 2 · TestFlight ve cihaz | K-903, K-308 kapanış, K-815, K-618 | bekliyor |
-| 3 · Kohort ve göstergeler | K-904, K-905, K-906, K-816 | bekliyor |
+| 2 · TestFlight ve cihaz | K-903, K-308 kapanış, K-815, K-618 | ✅ bitti (7 Eki) — K-903/K-815 kısmen; UI/UX revizyonu araya girdi (ADR-067) |
+| 3 · Kohort ve göstergeler | K-904, K-905, K-906, K-816 | ertelendi (ADR-067) — UI/UX revizyonundan sonra |
 
 **Part 1 başı (5 Eki):** senkron tamam — M8 ÇIKIŞ git ile tutarlı (#385-#402 birleşik; açık PR yok; worktree yalnız `../keel-main`; `*-devam.md` yok).
 Ana checkout ayrık HEAD → `origin/main`. Bağımlılıklar `done` (K-202, K-010). Dependabot: aynı 3 geçişli uyarı. **Disk 16 GB.**
@@ -693,6 +693,21 @@ Levent anahtarı üretip VPS'e tanıtacak (temiz kurulum önerildi); alan adı *
 | K-907 üretim profili — sunucu varsayılan **üretim** (profil unutulursa açılmaz: taban dosyadaki sahte koç + üretim); `prod`: koç `off` (`OffLanguageModel`, alanı yok), AI rızası tanımsız, SANDBOX kalır; Apple anahtarı yoksa açılmaz. İnceleme: profil unutulunca sessizce geliştirme modu (82) → fail closed; `@Value` anahtarı kaybolunca 14 test yeşil kalıyordu (8) → gerçek yükleme testleri (`ConfigDataApplicationContextInitializer`); mutantlar 4+1+3 | ✅ birleşti | #404 | `M9/K-907.md` |
 | K-901 VPS — **CANLI** `https://keel-beta.duckdns.org/health` → HTTP/2 200 (Let's Encrypt, 3 Oca 2027'ye kadar, HSTS; HTTP → 308). Contabo yeniden kuruldu (Ubuntu 24.04.5, 4 vCPU, 7,8 GB, 72 GB), SSH yalnız anahtar + root kapalı (doğrulandı). İlk sürüm: 0 yeniden başlama, FDC 8.169 besin; ilk yedek → Mac → **geri yükleme provası 38 tablo / 22.817 satır eşit**. Canlı koşu 3 hata buldu (iç içe `$$`, `psql` hatada 0, openrsync + pipefail/SIGPIPE) + bellek 918/1024 MB → 1,5 GB; CI'da gerçek PostgreSQL testi. Güvenlik incelemesi 2 kritik + 9 önemli → kapandı | ✅ birleşti | #405 | `M9/K-901.md` |
 | K-902 CI'dan dağıtım — CI yalnız imaj + commit gönderir; sunucu `main`'i kendisi çeker, `deploy/`'u o commit'ten alır; zorunlu komut root'a ait (ADR-066 + Ek 1: ilk tasarımda CI anahtarı = root, koşturularak kanıtlandı → yeniden tasarım). **Canlı:** CI anahtarıyla kabuk/`files`/`main` dışı commit reddedildi; #407 birleşmesi → Deploy koşusu `805150a`'yı yayına aldı (0 yeniden başlama); doküman commit'i atlandı | ✅ birleşti | #407 | `M9/K-902.md` |
+
+**Part 2 ÇIKIŞ (7 Eki):**
+- **Birleşen:** #408 (K-903 yapılandırma: EAS projesi `@leventcan/keel`, `EXPO_PUBLIC_API_URL` EAS `production`, `usesNonExemptEncryption: false`), #409 (K-618),
+  #410 (K-815 kod yarısı). Açık PR yok; worktree yalnız `../keel-main`. Backlog: K-308, K-618 `done`; K-903, K-815 `doing`; yeni K-909, K-910 (sync uygulandı).
+- **Apple/EAS (Levent'le, 7 Eki):** ASC kaydı **"keel (42901f)"** (ad alınmıştı; M10'da değişir), TestFlight dahili grubu "Team (Expo)" (Levent), dağıtım
+  sertifikası yeniden kullanıldı (lure/kirpici ile ortak, Haz 2027), App Store profili + ad hoc profil, EAS gönderim anahtarı `D6H29K9QVT` yeniden kullanıldı;
+  cihaz "Levent iPhone 11" (UDID EAS'te). Mağaza derlemesi `c2e831d5` 1.0.0 (2) FINISHED; `--auto-submit` gönderimi ~1 saat "waiting for an available
+  submitter"daydı — **TestFlight'a düştüğünü teyit et**; düşünce `ascAppId` → `eas.json › submit.production.ios` (runbook). Development build `c9e4678f`
+  iPhone'a `devicectl` ile kuruldu.
+- **Cihaz turu:** `docs/aktarim/M9/cihaz-kontrol-listesi.md › Cihaz sonuçları` — giriş, HealthKit okuma/yazma, kamera/barkod, K-618, VoiceOver ✅; AX5 başlık kırma +
+  taşma ❌, Kalın Metin kesmesi ❌ (K-910), AI kapalıyken rıza çıkmaz sokağı ⚠️ (K-909), FDC'de Türk ürünleri yok; 10/16/19 yeni tasarımdan sonra.
+- **Araçlar (Mac):** `~/.venvs/pmd3` (pymobiledevice3 11.23.0) — iPhone ekranını kablodan çeker; önce Levent `sudo ~/.venvs/pmd3/bin/pymobiledevice3 remote tunneld`.
+  Development build Metro'ya kendiliğinden bağlanmaz: `xcrun devicectl device process launch --payload-url "exp+keel://expo-development-client/?url=http%3A%2F%2F<Mac IP>%3A8081"`;
+  gezinme `--payload-url keel:///<rota>` (**`--terminate-existing` kullanma**, bağlantı kopar).
+- **Açık sorular (Levent):** K-618 Android yarısı; iletişim adresi (dış TestFlight); Part 1'in iki sorusu (geri yüklemede silinen hesap, yedek Türkiye'de).
 
 **Part 1 ÇIKIŞ (6 Eki):**
 - **Birleşen:** K-907 #404 · K-901 #405 · K-902 #407. `main`'e doğrudan: ADR-064, ADR-065 (+ Ek 1), ADR-066 (+ Ek 1), K-907/K-908 kartları,
