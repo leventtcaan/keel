@@ -1,18 +1,19 @@
-# M9 ara · UI/UX revizyonu (ADR-067) — session prompt'u
+# Faz 5 · Ürünün yüzü (ADR-067, ADR-068) — session prompt'u
 
 ```
-oturum-baslat. Bu session M9 ara durağı: UI/UX revizyonu (ADR-067). Hafıza DURUM.md › "## M9 ilerleme" (Part 2 ÇIKIŞ) ve
-"Levent'i bekleyen" › UI/UX geri bildirimi. Önce oku: plan/kararlar/ADR-067-uiux-revizyonu-once.md, ADR-016 (görsel dil), prototip/,
-docs/aktarim/M9/cihaz-kontrol-listesi.md (cihaz sonuçları + img/). Kod yazma; bu session'ın çıktısı onaylanmış tasarım.
+oturum-baslat. Bu session Faz 5 · ürünün yüzü (ADR-068). Kod yok. Hafıza DURUM.md (Şu an + M9 Part 2 ÇIKIŞ) ve hafıza arayuz-once-prototip.
+Önce oku: ADR-067, ADR-068, arastirma/05-faz4-pazarlama.md (§3-6), arastirma/ham/E, F, I1, I2, K6, L2, L3 (yalnız özet bölümleri),
+docs/aktarim/M9/cihaz-kontrol-listesi.md (cihaz sonuçları).
 
-Sırayla:
-1) Levent'e sor (AskUserQuestion, tek seferde): sevdiği/örnek aldığı 2-3 uygulama; tema (açık varsayılan mı, uygulama içi seçici mi);
-   onboarding'de neyin şart olduğu; ton (ne kadar az metin). Cevaplar ADR taslağına.
-2) Ekran envanteri: apps/mobile/src/app altındaki her rota — amacı, metin miktarı (kelime), aksiyon sayısı, cihazda görülen sorun
-   (img/ bağlantısı), öneri (kalsın / birleşsin / gitsin). Tek tablo, docs/tasarim/ekran-envanteri.md.
-3) Bütün ekranların tıklanabilir artifact prototipi (Artifact quickstart "design"; telefonda gezilebilir): onboarding → Today → kayıt
-   (tartı/set/öğün) → karar + Why → koç → Progress → Ayarlar. Gerçek metinler data/copy/en.json'dan, kısaltılmış öneriyle.
-4) Levent telefonda gezer, ekran ekran "kalsın/gitsin/değişsin" der; tur tur güncelle. Onaylanınca: görsel dil ADR'si (ADR-016'nın yerine/eki),
-   metin değişiklik listesi, görev kartları (backlog) — sonra kod (ayrı session'lar, görev görev).
-Kişi adı yok (hafıza urunde-kisi-adi-yok), U4/U6 kuralları prototipte de geçerli. Aktarım yok; Bitiş: DURUM + sıradaki adım.
+Sırayla (her hat ayrı dosya, her iddia kaynaklı — U14, K6):
+0) Rakip listesi: kategori (makro/kalori, antrenman günlüğü, AI koç, kilo) — global İngilizce top grossing + en çok reklam verenler.
+   Levent'e tek seferde göster, eklesin/çıkarsın.
+1) R1 Reklam istihbaratı → arastirma/ham/M1-reklam-istihbarati.md. Apify anahtarı ~/.keel-secrets/apify-token (asla yazdırma).
+   Önce Apify'da Meta Ad Library aktörünü seç (resmî sayfadan doğrula), 1 rakiple deneme taraması + maliyet ölçümü → Levent'e;
+   sonra tümü. Ölçüler: yayında kalma süresi, varyant sayısı, kanca, vaat, format, CTA.
+2) R2 Akış kıyası → M2-akis-kiyasi.md (App Store ekran görüntüleri, resmî tanıtım videoları, gerekirse Levent'in telefonunda kurulum).
+3) R3 Tutundurma → M3-tutundurma.md. R4 Sosyal döngü → M4-sosyal-dongu.md.
+4) Sentez arastirma/06-faz5-yuz.md: ne alışkın, biz ne getiriyoruz, ne kadar az metin, hangi akış; anayasayla çelişenler ayrı liste (ADR adayı).
+5) Sonra (ayrı session): ekran envanteri + bütün ekranların artifact prototipi → Levent telefonda onaylar → görsel dil ADR'si → kod.
+Paralel araştırma için deep-research / alt ajanlar kullanılabilir; bulgular önce dosyaya. Bitiş: DURUM + sıradaki tek adım.
 ```
