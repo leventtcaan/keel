@@ -76,6 +76,11 @@ App Store gizlilik etiketleri ve yaş derecelendirmesi · yasaklı ifade taramas
 öncü göstergeler (ilk değere kadar süre, 2. hafta retention, "plan değişti" anını gören %) · geri bildirim döngüsü.
 **Öğrenme:** Docker, dağıtım, gözlemlenebilirlik, ürün metrikleri.
 
+## M9 ara · UI/UX revizyonu (ADR-067)
+M9 Part 2 ile Part 3 arasında. **Çıkış:** ekran envanteri (her ekran: amaç, metin miktarı, karar) · bütün ekranların tıklanabilir artifact
+prototipi, Levent telefonda onayladı · görsel dil ADR'si (ADR-016'nın yerine/ekinde; açık/koyu tema seçimi dahil) · onboarding sadeleşti ·
+uygulamada metin azaldı · revizyon koda geçti ve TestFlight'ta cihazda gezildi. Sonra M9 Part 3 (beta kohortu).
+
 ## M10 · Lansman
 **Çıkış:** ürün adı + marka kontrolü · ASO (başlık/alt başlık/keyword, 3 yerelleştirme hilesi) · ilk 2 ekran görüntüsü mesajı
 taşıyor · LLM'in çıkarabileceği açıklama (GEO) · Custom Product Pages · Featuring başvurusu (≥3 hafta önce) · yorum cevap
