@@ -159,3 +159,10 @@
 - takıldım: profil unutulunca sessiz geliştirme modu; ilk CI tasarımı anahtarı root yapıyordu; canlı koşu: iç içe `$$`, psql hatada 0, openrsync, pipefail/SIGPIPE, 1 GB bellek dar — hepsi testle kapandı
 - sıradaki: Levent dönünce M9 Part 1 aktarımı (docs/aktarim/M9/README.md 1-3); iki soru (geri yüklemede silinen hesap, yedek Türkiye'de); sonra M9 Part 2 (`plan/oturum-promptlari/M9-part2.md`)
 - AI: bütün kod, test, ADR, betik agent; para/hesap/sır adımları Levent (Contabo parolası, Apple girişi, .p8 indirme, GitHub sırrı)
+
+## 2026-10-06/07 · M9 Part 2 (TestFlight ve cihaz) — toplu mod + Levent'le canlı cihaz turu
+- yaptım: #408 EAS projesi + sunucu adresi; #409 K-618 (yerel Swift modülü, simülatörde `xattr` kanıtı); #410 K-815 VoiceOver duyuruları (inceleme: tekrar eden hata → oluş kimliği); mağaza derlemesi 1.0.0 (2) + ASC kaydı + development build iPhone'da; cihaz turu (giriş, HealthKit, kamera, K-618, VoiceOver ✅)
+- karar: ADR-067 (Levent) — UI/UX revizyonu beta kohortundan önce, M9 Part 3 ertelendi; K-909, K-910 yeni
+- takıldım: CDP ile simülatörde uygulama içi çağrı (1006); `--terminate-existing` development build'i Metro'dan kopardı; EAS gönderim sırası ~1 saat; Levent'in ilk gerçek deneyimi: "insanlar kullanmaz"
+- sıradaki: TestFlight'a düştüğünü teyit + `ascAppId`; sonra UI/UX revizyonu (`plan/oturum-promptlari/UIUX.md`) — önce Levent'in örnek uygulamaları, ekran envanteri, artifact prototip
+- AI: bütün kod, test, ADR, kayıt agent; Apple girişi/2FA, sudo, cihazda dokunuşlar ve ürün kararı Levent
