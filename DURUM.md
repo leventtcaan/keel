@@ -1,11 +1,12 @@
 ---
-guncelleme: 2026-10-06
+guncelleme: 2026-10-07
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
 ## Şu an
+**Faz 5 Part 1 (araştırma) BİTTİ (7 Eki) → sıradaki Faz 5 Part 2 · ekran envanteri + bütün ekranların artifact prototipi** (`plan/oturum-promptlari/UIUX-part2.md`, kod yok). Sentez `arastirma/06-faz5-yuz.md`; ham `arastirma/ham/M0-M4`. Apify 2,39 / 5 $ (döngü 5 Kas). 13 ADR adayı (06 §7) — prototipi etkileyenler (B4, B7, B11, B13, B8+B10) Part 2 başında Levent'e. Açık: TestFlight düştü mü → `ascAppId` (K-903). Ayrıntı: "Faz 5 ilerleme".
 **M9 Part 2 (TestFlight ve cihaz) KAPANDI (7 Eki) → M9 ara · UI/UX revizyonu (ADR-067, Levent: Part 3 ertelendi).** Uygulama gerçek iPhone'da gerçek sunucuyla çalıştı (giriş, HealthKit, kamera, K-618, VoiceOver); deneyim çalışmadı. #408, #409, #410; K-308, K-618 `done`; K-909, K-910 yeni. Sıradaki: **Faz 5 · ürünün yüzü (ADR-068)** — önce araştırma (reklam istihbaratı/Apify, akış kıyası, tutundurma, sosyal döngü), sonra prototip: `plan/oturum-promptlari/UIUX.md`. Apify hazır (7 Eki): `leventcan`, FREE, aylık 5 $ kredi; anahtar `~/.keel-secrets/apify-token` (600, doğrulandı). Mağaza derlemesi 1.0.0 (2) bitti; TestFlight gönderimi EAS ücretsiz sırasında "in queue" (7 Eki ~01:00, Levent expo.dev › submissions). Sonraki oturum: düştü mü bak → `ascAppId` (ASC › App Information › Apple ID) → `eas.json › submit.production.ios`, K-903 kapanır. Takılı kalırsa: `.ipa` indir → Transporter ile Levent yükler.
 **M9 Part 1 (Sunucu ayakta) BİTTİ (6 Eki)** — sunucu canlı `https://keel-beta.duckdns.org/health`; K-907 #404, K-901 #405, K-902 #407 (CI → VPS otomatik); ADR-064, ADR-065 (+ Ek 1), ADR-066 (+ Ek 1). Aktarım bekliyor: `docs/aktarim/M9/README.md` 1-3. Sıradaki: M9 Part 2 (`plan/oturum-promptlari/M9-part2.md`).
 **M8 KAPANDI (5 Eki, kod)** — Part 2: K-802 #385, K-804 #389, K-810 #391, K-814 #392, K-811 #393, K-813 #394, K-807 #395, K-812 #398 + #400, K-818 #402 (+ #386); ADR-061, ADR-062, ADR-063 (Levent: fatProxy dışa aktarmada, silmede Apple yeniden onayı, kontrast M9'da prototiple). Aktarım bekliyor: `docs/aktarim/M8/README.md` 1-14. Açık: iletişim adresi (Levent). Cihaz işleri (K-308 → K-815, K-618…) ve sırlar (Apple `.p8`, RevenueCat) M9'da. Sıradaki koşu **M9 · Beta** (`plan/oturum-promptlari/M9.md`, `M9-part1.md`).
@@ -673,6 +674,34 @@ o zamana kadar DB testleri CI'da, simülatör turu (Part 3'ten ertelenen) yer a�
   - Disk: yerelde `DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test` saf testleri hızlı koşar, DB testleri Docker'sız düşer (sayımı ayır).
 - **Sorular:** 86 → ADR-048 #5 (önce buton, sonra intent). Açık: 57 (rıza metni hukuki bakış, yayından önce).
 
+## Faz 5 · ürünün yüzü ilerleme (ADR-067, ADR-068 — tek doğru kaynak)
+Prompt'lar: `plan/oturum-promptlari/UIUX.md` (Part 1, araştırma) · `UIUX-part2.md` (Part 2, envanter + prototip).
+
+**Part 1 başı (7 Eki):** senkron — yerel checkout `3507e91`'de kalmıştı, `origin/main` `b1e099c`'ye alındı (ayrık HEAD); açık PR yok; worktree yalnız
+`../keel-main`; Dependabot aynı 3 geçişli uyarı; disk 14 GB. M9 Part 2 ÇIKIŞ git ile tutarlı.
+
+| Hat | Dosya | Durum | Öne çıkan |
+|---|---|---|---|
+| 0 Rakip listesi | `ham/M0-rakip-listesi.md` | ✅ Levent onayladı (olduğu gibi) | Apple top grossing H&F (US/GB/AU/CA, 6 Eki) → 14 çekirdek + komşular; GLP-1 kapsam dışı |
+| R1 Reklam (Meta, ABD) | `ham/M1-reklam-istihbarati.md` | ✅ | Aktör `apify/facebook-ads-scraper` (resmî, 0,0058 $/reklam); 13 sayfa toplam + ~420 reklam + 60 videonun ilk saniyeleri (Levent izni; videolar silindi). En çok para harcanan acı "tahmin etmek"; gerekçe gösteren yok. Fitbod 810 / Cal AI 639 aktif reklam; Hevy, Lose It!, Bevel 0. MacroFactor'a hukuk bürosu soruşturması (deneme → yıllık ücret) |
+| R2 Akış | `ham/M2-akis-kiyasi.md` | ✅ (alt ajan) | 9/12: sorular → "plan hazırlanıyor" → somut sayı → paywall; bizde "Wait". Today ~105 kelime vs rakip 25-50. Karar ekranı şablonu Runna. Beslenme/koç açık tema |
+| R3 Tutundurma | `ham/M3-tutundurma.md` | ✅ (alt ajan) | Haftalık + onarılabilir seri (U7 lehine); geri döneni ödüllendirmek +%27; ~%20 okunur. K5 yıllık kayıp kıyası geçersiz (06 §8) |
+| R4 Sosyal | `ham/M4-sosyal-dongu.md` | ✅ (alt ajan) | Hevy Stories +%12 kurulum; kartta kilo/yağ/foto yok; karar kartının rakipte karşılığı yok. TikTok Creative Center girişsiz yalnız ilk 3 |
+| Sentez | `06-faz5-yuz.md` | ✅ | Alışkanlıklara uy (akış, yoğunluk, kayıt hızı); fark tek yerde: haftanın kararı + gerekçesi. Hedef: Today ≤40, onboarding ekranı ≤25 kelime |
+
+**Part 1 ÇIKIŞ (7 Eki):**
+- **main'e (doküman):** `e35698a` (M0, M1, M3), `1d2e9ee` (M4), `a3101f9` (M2), sentez + bu kayıt (`docs(durum)`). Kod yok, PR yok.
+- **Ham veri (depoda değil):** `~/.keel-research/apify/` (reklam JSON'ları, dökümler) ve `~/.keel-research/tg-*.json` (top grossing). Apify'da 7 gün sonra silinir.
+- **Araçlar:** Apify anahtarı `~/.keel-secrets/apify-token` (yazdırılmadı); Ad Library girişsiz yerleşik tarayıcıda; `ffmpeg` + `whisper-cli`
+  (`~/whisper.cpp/models/ggml-base.en.bin`). **Ders:** paralel ajanlar aynı tarayıcı panelini paylaşıyor → her ajana kendi sekmesi + her çağrıda `tabId`.
+  Aktör `view_all_page_id` URL'sinde kimliği düşürebiliyor (Ladder) → sayfa URL'si (`facebook.com/<ad>`) ile yeniden koş; hata kaydı da ücretli.
+- **Levent'e (Part 2 başında, AskUserQuestion):** 06 §7 — B4 (1. hafta anı), B7 (onboarding sonu aha), B11 (kabul/ret), B13 (deneme/paywall teklifi),
+  B8+B10 (paylaşım kartı içeriği); kalanlar (B1, B3, B9, B12) session sonunda. Telefon kurulumu isteğe bağlı: MacroFactor check-in ekranı (7 gün deneme,
+  ödeme yöntemi → Levent kararı), Cal AI paywall, Bevel ilk gün (ödemesiz).
+- **Part 2'nin bilmesi gerekenler:** rota sayısı 32 (`apps/mobile/src/app/`); prototip artifact (skill `artifact-design`), açık varsayılan + koyu;
+  karar kartı 9:16'da 3 sn'de okunmalı (06 §5); "üründe kişi adı yok" ve U10 (isimsiz ses) geçerli.
+
+-----
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
 
