@@ -1419,6 +1419,7 @@ olanlar M5 Part 1 başında). Aşağıdaki liste kayıt içindir.
 - `org.gradle.warning.mode=fail`: her Gradle deprecation CI'da kırmızı.
 
 ## Levent'i bekleyen (acil değil)
+- **UI/UX geri bildirimi (7 Eki, ilk gerçek cihaz deneyimi — Levent):** "isteğimin uzağında"; onboarding sekansında karmaşa; koyu tema iç karartıcı, açık tema nerede bilinmiyor (uygulama iPhone ayarını izliyor, uygulama içi seçici yok — ADR-016); yazılar çok fazla ve çok düz, "insanlar kullanmaz". Kırpılacak ve düzeltilecek çok iş var. → Cihaz turundan sonra ayrı bir UI/UX revizyon oturumu: ekran ekran envanter, metin azaltma, onboarding sadeleştirme, tema seçimi; görsel dil ADR-016 yeniden ele alınır (Levent onayı).
 - **M10: Claude Startups başvurusu** (6 Eki duyuru; 1.000 $ API kredisi 6 ayda yanar, 1 yıl Claude Team, ortak indirimleri, Applied AI ofis saatleri). Şart: alan adıyla eşleşen şirket e-postası → ürün adı/alan adı (M10) sonrası. Krediyi koç sağlayıcısı netleşmeden alma (V2).
 - **Design eklentisi** (claude.ai kataloğu, `design-critique`): CLI'dan kurulamıyor, karttan bir tık. Kurulmazsa
   `frontend-design` + kendi eleştiri turum yeterli.
