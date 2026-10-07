@@ -40,6 +40,10 @@ class WorkoutStore {
     record Stored<T>(T record, boolean created) {
     }
 
+    /** A workout with the account it is of: what a read across accounts gives (SessionAutoClose). */
+    record Owned(AccountId account, Workout workout) {
+    }
+
     private final JdbcClient jdbc;
 
     WorkoutStore(JdbcClient jdbc) {
@@ -111,6 +115,22 @@ class WorkoutStore {
                 where id = :id and account_id = :account""")
                 .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("note", note).param("unclean", uncleanExerciseIds.stream().sorted().toArray(String[]::new))
                 .param("id", id).param("account", account.value()).update();
+    }
+
+    /**
+     * Every session still open that started at or before {@code startedBy}, of every account, oldest first (ADR-075 #5).
+     * An imported session is never open (importSession).
+     */
+    List<Owned> unfinishedStartedBy(Instant startedBy) {
+        return jdbc.sql("select * from training.workout where ended_at is null and started_at <= :by order by started_at, id")
+                .param("by", startedBy.atOffset(ZoneOffset.UTC))
+                .query((row, n) -> new Owned(new AccountId(row.getObject("account_id", UUID.class)), workout(row))).list();
+    }
+
+    /** Ends a session still open; false, and nothing written, when it was finished meanwhile — that finish stays. */
+    boolean closeIfOpen(AccountId account, UUID id, Instant endedAt) {
+        return jdbc.sql("update training.workout set ended_at = :at where id = :id and account_id = :account and ended_at is null")
+                .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("id", id).param("account", account.value()).update() == 1;
     }
 
     Stored<LoggedSet> log(AccountId account, UUID workout, LoggedSet set) {
