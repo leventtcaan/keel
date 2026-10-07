@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.engine.BodyRegion;
 import app.keel.engine.LiftKind;
 import app.keel.engine.LiftSession;
+import app.keel.engine.RepositoryParameters;
+import app.keel.engine.Sex;
 import app.keel.engine.Progression;
 import app.keel.engine.ProgressionStep;
 import app.keel.engine.Reason;
@@ -152,6 +154,18 @@ class NextTargetsTests {
         assertThat(NextTargets.session(LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, List.of(set("0", 12, 1)), 1, true))
                 .as("no load to progress: a bodyweight move without added load").isEmpty();
         assertThat(NextTargets.session(LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, List.of(), 1, true)).isEmpty();
+    }
+
+    @Test
+    void aFirstSessionsCalibratedLoadBecomesTheTarget() {
+        // K-960 (ADR-075 #3, G6 K-40): no target yet; the sets with 2+ reps left (an old 3+ among them) took the next set a
+        // step heavier. The load found is the day's top: the next session starts there, the light sets before it unread.
+        List<TrainingLog.WorkSet> sets = List.of(set("40", 10, 3), set("40", 10, 2), set("42.5", 9, 1), set("42.5", 8, 0));
+        LiftSession found = NextTargets.session(LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, sets, 1, true).orElseThrow();
+
+        assertThat(found.loadKg()).isEqualByComparingTo("42.5");
+        assertThat(NextTargets.after(found, Progression.next(found, RepositoryParameters.forSex(Sex.MALE)), false, 2))
+                .contains(new NextTargets.Target(new BigDecimal("42.5"), 9));
     }
 
     private static Progression step(ProgressionStep step) {

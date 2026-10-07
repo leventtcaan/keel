@@ -1,6 +1,6 @@
 /**
  * The session (K-405, prototype 2.4, B §6.5): the day's moves, the move under way with its rows — the server's next
- * target faint, last time beside it — and one tap logs the set as suggested, with the RIR picked (0, 1, 2, 3+). A rest
+ * target faint, last time beside it — and one tap logs the set as suggested, with the RIR picked (0, 1, 2+). A rest
  * timer after each set (G1 K-49: 2-3 min). Finishing asks whether each move's form was clean (G6 K-31). Everything goes
  * through the phone's queue (K-304), so it all works offline.
  */
@@ -154,13 +154,13 @@ test('the move under way opens its history and records (K-415)', async () => {
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise-history', params: { exercise: 'bench_press' } });
 });
 
-test('what is typed and the RIR picked are what is logged; 3+ is logged as 3', async () => {
+test('what is typed and the RIR picked are what is logged; 2+ is logged as 2 (ADR-075 #2)', async () => {
   await show();
   await fireEvent.changeText(await screen.findByLabelText('Weight (kg)'), '60');
   await fireEvent.changeText(screen.getByLabelText('Reps'), '5');
-  await fireEvent.press(screen.getByText('3+'));
+  await fireEvent.press(screen.getByText('2+'));
   await fireEvent.press(screen.getByText('Log set 1'));
-  expect(sets()[0].body).toMatchObject({ loadKg: 60, reps: 5, rir: 3 });
+  expect(sets()[0].body).toMatchObject({ loadKg: 60, reps: 5, rir: 2 });
 });
 
 test('a note goes with the set it was written for, and the next set starts without one (K-422)', async () => {

@@ -11,6 +11,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import { workoutParams } from './params';
+import { rirChoice } from './session';
 
 type Schemas = components['schemas'];
 /** `note` null: the note field is closed (one tap stays one tap); a string, open with what is typed. */
@@ -32,7 +33,7 @@ type Props = {
 
 /**
  * The row under way (B §6.5: one tap per set): the weight and the reps, filled with the suggestion; the RIR picked
- * (0, 1, 2, 3+); one button logs it. A bodyweight move has no weight to type; a weighted one types what is added.
+ * (0, 1, 2+); one button logs it. A bodyweight move has no weight to type; a weighted one types what is added.
  */
 export function SetEntry({ move, index, side, entry, onChange, onLog, problem, problemOccurrence, busy }: Props) {
   const { color } = useTheme();
@@ -89,7 +90,7 @@ export function SetEntry({ move, index, side, entry, onChange, onLog, problem, p
       <Text style={[styles.small, { color: color.muted }]}>{t('workout.rir.label', { number })}</Text>
       <View style={styles.rir}>
         {workoutParams.rirChoices.map((rir, i) => (
-          <Chip key={rir} label={i === last ? t('workout.rir.more') : String(rir)} selected={entry.rir === rir} onPress={() => onChange({ rir })} />
+          <Chip key={rir} label={i === last ? t('workout.rir.more') : String(rir)} selected={rirChoice(entry.rir) === rir} onPress={() => onChange({ rir })} />
         ))}
       </View>
       {noteField}

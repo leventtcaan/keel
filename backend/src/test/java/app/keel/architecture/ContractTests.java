@@ -77,6 +77,22 @@ class ContractTests {
     }
 
     @Test
+    void thePlannedExerciseTheServerSendsIsTheContractsFieldForField() throws Exception {
+        // K-960 (ADR-075 #3): the in-session table rides on the program the phone keeps for the gym, offline.
+        Map<String, Object> planned = map(schemas().get("PlannedExercise"));
+        Class<?> sent = Class.forName("app.keel.training.ProgramController$PlannedExercise");
+        Class<?> best = Class.forName("app.keel.training.ProgramController$BestSet");
+
+        assertThat(properties(planned).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(sent));
+        assertThat(properties(map(properties(planned).get("lastBestSet"))).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(best));
+        assertThat(properties(planned).keySet()).contains("lighterLoadKg", "heavierLoadKg", "lastBestSet", "nextLoadAtTopKg", "calibrationStepKg");
+    }
+
+    private static List<String> componentNames(Class<?> record) {
+        return Arrays.stream(record.getRecordComponents()).map(RecordComponent::getName).toList();
+    }
+
+    @Test
     void reasonAndSourceAreTheEnginesRecords() throws IOException {
         Map<String, Object> schemas = schemas();
 

@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { type GymWeights, platesFor, platesPerSide, round } from '@/train/loadSteps';
+import { type GymWeights, platesFor, platesPerSide, round, within } from '@/train/loadSteps';
 
 type Case = {
   case: string;
@@ -19,10 +19,12 @@ type Case = {
   expect: number | string;
 };
 type PlateCase = { case: string; baseKg: number; platesKg: number[]; totalKg: number; expect: number[] | null };
+type WithinCase = Pick<Case, 'case' | 'equipment' | 'exerciseId' | 'gym'> & { fromKg: number; toKg: number; expect: number | null | 'UNKNOWN' };
 
 const fixture = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../../contracts/fixtures/load-steps.json'), 'utf8')) as {
   round: Case[];
   platesPerSide: PlateCase[];
+  within: WithinCase[];
 };
 
 const gym = (g: Case['gym']): GymWeights => ({
@@ -43,6 +45,14 @@ test.each(fixture.round.map((c) => [c.case, c] as const))('%s', (_name, c) => {
   if (c.expect === 'NO_HEAVIER') expect(result).toEqual({ kind: 'noHeavier' });
   else if (c.expect === 'TOO_FAR') expect(result).toEqual({ kind: 'tooFar', kg: c.tooFarKg });
   else if (c.expect === 'UNKNOWN') expect(result).toEqual({ kind: 'unknown' });
+  else expect(result).toEqual({ kind: 'to', kg: c.expect });
+});
+
+// K-960 (ADR-075 Ek 1): the phone's calibration step agrees with the server's in-session table, never past the step.
+test.each(fixture.within.map((c) => [c.case, c] as const))('one step: %s', (_name, c) => {
+  const result = within(c.equipment as never, c.exerciseId, gym(c.gym), c.fromKg, c.toKg);
+  if (c.expect === 'UNKNOWN') expect(result).toEqual({ kind: 'unknown' });
+  else if (c.expect === null) expect(result).toEqual({ kind: 'none' });
   else expect(result).toEqual({ kind: 'to', kg: c.expect });
 });
 

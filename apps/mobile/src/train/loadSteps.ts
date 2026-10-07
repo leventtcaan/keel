@@ -96,6 +96,40 @@ function stack(step: number, target: number): number[] {
  * nothing about this equipment.
  */
 export function round(equipment: Equipment, exerciseId: string, gym: GymWeights, lastKg: number, targetKg: number, maxJump?: number): Rounding {
+  const { scale, loads } = made(equipment, exerciseId, gym, targetKg);
+  const last = scale.units(lastKg);
+  const target = scale.target(targetKg);
+  if (loads.length === 0) return { kind: 'unknown' };
+  const heavier = loads.filter((load) => load > last);
+  if (heavier.length === 0) return { kind: 'noHeavier' };
+  const nearest = heavier.reduce((best, load) => {
+    const [d, bestD] = [Math.abs(load - target), Math.abs(best - target)];
+    return d < bestD || (d === bestD && load < best) ? load : best;
+  });
+  if (maxJump !== undefined && nearest - last > maxJump * (target - last)) return { kind: 'tooFar', kg: scale.kg(nearest) };
+  return { kind: 'to', kg: scale.kg(nearest) };
+}
+
+/** A move of at most one step: a load, none the gym makes there, or no word on this equipment. */
+export type Within = { kind: 'to'; kg: number } | { kind: 'none' } | { kind: 'unknown' };
+
+/**
+ * A move of at most one step (K-960, ADR-075 Ek 1; the backend's LoadSteps.within): the load the gym makes between
+ * `fromKg` (excluded) and `toKg` (included) nearest `toKg` — the heaviest when `toKg` is over, the lightest when under.
+ * none when it makes nothing there; unknown when it says nothing about this equipment.
+ */
+export function within(equipment: Equipment, exerciseId: string, gym: GymWeights, fromKg: number, toKg: number): Within {
+  const { scale, loads } = made(equipment, exerciseId, gym, toKg);
+  if (loads.length === 0) return { kind: 'unknown' };
+  const from = scale.units(fromKg);
+  const to = scale.target(toKg);
+  const between = loads.filter((load) => (to > from ? load > from && load <= to : load < from && load >= to));
+  if (between.length === 0) return { kind: 'none' };
+  return { kind: 'to', kg: scale.kg(to > from ? Math.max(...between) : Math.min(...between)) };
+}
+
+/** The loads a gym makes for an equipment, around a target, on the scale its weights were entered in. */
+function made(equipment: Equipment, exerciseId: string, gym: GymWeights, targetKg: number): { scale: Scale; loads: number[] } {
   const stepKg = gym.machineStepsKg[exerciseId] ?? gym.stackStepKg;
   let scale: Scale;
   switch (equipment) {
@@ -116,7 +150,6 @@ export function round(equipment: Equipment, exerciseId: string, gym: GymWeights,
       scale = scaleOf([...gym.platesKg, ...gym.dumbbellsKg]);
       break;
   }
-  const last = scale.units(lastKg);
   const target = scale.target(targetKg);
   const plates = gym.platesKg.map((kg) => scale.units(kg));
   let loads: number[];
@@ -138,15 +171,7 @@ export function round(equipment: Equipment, exerciseId: string, gym: GymWeights,
       loads = [...plateLoads(0, 1, plates, target), ...gym.dumbbellsKg.map((kg) => scale.units(kg))];
       break;
   }
-  if (loads.length === 0) return { kind: 'unknown' };
-  const heavier = loads.filter((load) => load > last);
-  if (heavier.length === 0) return { kind: 'noHeavier' };
-  const nearest = heavier.reduce((best, load) => {
-    const [d, bestD] = [Math.abs(load - target), Math.abs(best - target)];
-    return d < bestD || (d === bestD && load < best) ? load : best;
-  });
-  if (maxJump !== undefined && nearest - last > maxJump * (target - last)) return { kind: 'tooFar', kg: scale.kg(nearest) };
-  return { kind: 'to', kg: scale.kg(nearest) };
+  return { scale, loads };
 }
 
 /** The plates on each side that make `totalKg` over `baseKg`: the fewest, heavier first on a tie, as stored. Null when none do. */

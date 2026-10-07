@@ -143,7 +143,7 @@ test('a forgotten set is added to one of the moves, on the server, and the sessi
   await show();
   await act(async () => fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '82.5'));
   await act(async () => fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '6'));
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: '2' })));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: '2+' })));
   const reads = mockGET.mock.calls.length;
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 2 }) })));
   expect(mockPOST).toHaveBeenCalledWith('/v1/workouts/{id}/sets', {

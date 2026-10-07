@@ -1,5 +1,5 @@
 {
-  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest load the gym can make that is heavier than the last; a tie goes to the lighter; NO_HEAVIER when the gym has nothing heavier (only a finite list can end: dumbbells, or a bodyweight move's dumbbells without plates); UNKNOWN when the gym says nothing about this equipment. A gym whose weights were entered in lb (each on the quarter-pound grid, at least one not a multiple of 0.05 kg) is counted in hundredths of a lb, and a load goes back to kg as the app converts a typed lb load (round(lb x 0.45359237, 2)): 140 lb is 63.5, whatever plates make it. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made. maxJump (K-430, ADR-037 #38), when given: the nearest heavier load is taken only within that many of the engine's steps (target - last) over the last; further, TOO_FAR with that load (tooFarKg) — the load stays and the reps go up until the sets at the last are worth the bottom of the range there (Epley, ADR-041 #55; the caller's). Without it (a warm-up), no limit.",
+  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest load the gym can make that is heavier than the last; a tie goes to the lighter; NO_HEAVIER when the gym has nothing heavier (only a finite list can end: dumbbells, or a bodyweight move's dumbbells without plates); UNKNOWN when the gym says nothing about this equipment. A gym whose weights were entered in lb (each on the quarter-pound grid, at least one not a multiple of 0.05 kg) is counted in hundredths of a lb, and a load goes back to kg as the app converts a typed lb load (round(lb x 0.45359237, 2)): 140 lb is 63.5, whatever plates make it. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made. maxJump (K-430, ADR-037 #38), when given: the nearest heavier load is taken only within that many of the engine's steps (target - last) over the last; further, TOO_FAR with that load (tooFarKg) — the load stays and the reps go up until the sets at the last are worth the bottom of the range there (Epley, ADR-041 #55; the caller's). Without it (a warm-up), no limit. within (K-960, ADR-075 #3 and Ek 1): a move of at most one step from fromKg (excluded) to toKg (included) -> the load the gym makes there nearest toKg: the heaviest when toKg is over fromKg, the lightest when under; null when it makes none there; UNKNOWN when the gym says nothing about this equipment. The in-session heavier load and the phone's calibration never go past the step.",
   "round": [
     {
       "case": "dumbbells by 2 kg: +2.5 becomes the 22",
@@ -873,6 +873,143 @@
         20.41,
         1.13
       ]
+    }
+  ],
+  "within": [
+    {
+      "case": "a rack of 10, 11, 13: one step up from 10 is 11, not the nearer-to-12.5 13",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          11,
+          13
+        ],
+        "machines": {}
+      },
+      "fromKg": 10,
+      "toKg": 12.5,
+      "expect": 11
+    },
+    {
+      "case": "a sparse rack: nothing over 16 within 2.5",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          12,
+          14,
+          16,
+          20
+        ],
+        "machines": {}
+      },
+      "fromKg": 16,
+      "toKg": 18.5,
+      "expect": null
+    },
+    {
+      "case": "one step down on a rack: the lightest within it",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          12,
+          14,
+          16,
+          20
+        ],
+        "machines": {}
+      },
+      "fromKg": 14,
+      "toKg": 11.5,
+      "expect": 12
+    },
+    {
+      "case": "a bar with 1.25s makes the step",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "fromKg": 60,
+      "toKg": 62.5,
+      "expect": 62.5
+    },
+    {
+      "case": "pairs of 5 only: nothing within 2.5",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [
+          20,
+          10,
+          5
+        ],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "fromKg": 60,
+      "toKg": 62.5,
+      "expect": null
+    },
+    {
+      "case": "a stack by 5: a 5 kg step is the next plate",
+      "equipment": "CABLE",
+      "exerciseId": "lat_pulldown",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "stackStepKg": 5,
+        "machines": {}
+      },
+      "fromKg": 40,
+      "toKg": 45,
+      "expect": 45
+    },
+    {
+      "case": "a stack by 5: nothing within 2.5",
+      "equipment": "CABLE",
+      "exerciseId": "lat_pulldown",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "stackStepKg": 5,
+        "machines": {}
+      },
+      "fromKg": 40,
+      "toKg": 42.5,
+      "expect": null
+    },
+    {
+      "case": "a bar and no plates: unknown",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "barKg": 20,
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "fromKg": 60,
+      "toKg": 62.5,
+      "expect": "UNKNOWN"
     }
   ]
 }

@@ -2,6 +2,7 @@ package app.keel.training;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Sex;
@@ -53,6 +54,9 @@ class SessionProgressApiTests {
 
     @Autowired
     TrainingCalls calls;
+
+    @Autowired
+    TrainingLog log;
 
     @Autowired
     Clock clock;
@@ -137,6 +141,91 @@ class SessionProgressApiTests {
 
         assertThat(next(account, 0)).isEqualTo(target(57.5, 8));
         assertThat(map(send("GET", account, "/v1/program", null))).doesNotContainKey("backAfterBreak");
+    }
+
+    @Test
+    void theProgramCarriesTheInSessionTableAsTheGymMakesIt() throws Exception {
+        // K-960 (ADR-075 #3): the phone picks in the gym, offline, from what the server worked out: one load step either way
+        // from the target as the gym makes it and never further (the rack has no 18: nothing heavier than 16 within 2.5),
+        // the last session's best set, and the load once every set is at the top (16 → 20 is within the jump limit).
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "barKg", 20,
+                "platesKg", List.of(20, 10, 5, 2.5, 1.25), "dumbbellsKg", List.of(10, 12, 14, 16, 20), "machines", List.of()));
+        String workout = start(account, recently);
+        set(account, workout, "bench_press", 60, 8, 1, "BOTH");
+        set(account, workout, "bench_press", 60, 8, 0, "BOTH");
+        set(account, workout, "bench_press", 60, 7, 0, "BOTH");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 16, 9, "LEFT");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 16, 9, "RIGHT");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        Map<String, Object> bench = planned(account, 0);
+        assertThat(next(account, 0)).isEqualTo(target(60, 8));
+        assertThat(kg(bench.get("lighterLoadKg"))).isEqualByComparingTo("57.5");
+        assertThat(kg(bench.get("heavierLoadKg"))).isEqualByComparingTo("62.5");
+        assertThat(kg(bench.get("nextLoadAtTopKg"))).isEqualByComparingTo("62.5");
+        assertThat((Map<String, Object>) bench.get("lastBestSet")).containsEntry("reps", 8).containsEntry("rir", 0);
+        assertThat(kg(((Map<String, Object>) bench.get("lastBestSet")).get("loadKg"))).isEqualByComparingTo("60");
+
+        Map<String, Object> row = planned(account, 3);
+        assertThat(kg(row.get("lighterLoadKg"))).isEqualByComparingTo("14");
+        assertThat(row).doesNotContainKey("heavierLoadKg");
+        assertThat(kg(row.get("nextLoadAtTopKg"))).isEqualByComparingTo("20");
+
+        assertThat(planned(account, 1)).as("squat: no session yet, nothing to start from")
+                .doesNotContainKeys("lighterLoadKg", "heavierLoadKg", "lastBestSet", "nextLoadAtTopKg");
+        // ADR-075 Ek 1: calibration only where there is no target — the squat's lower-body step, none on the bench.
+        assertThat(kg(planned(account, 1).get("calibrationStepKg"))).isEqualByComparingTo(step(ParameterKey.LOAD_INCREMENT_LOWER_KG));
+        assertThat(bench).doesNotContainKey("calibrationStepKg");
+    }
+
+    @Test
+    void theLastSessionIsEachMovesLatestBeforeTodayWithItsWorkingSetsOnly() throws Exception {
+        // K-960 review: "Beat last time" is the move's last session, even when an older one was heavier; a warm-up, a drop
+        // set and a set to failure are not working sets (SetType); an imported session is seen, not read (K-615, ADR-053).
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
+        Instant now = Instant.now();
+        String older = start(account, now.minus(java.time.Duration.ofDays(6)));
+        set(account, older, "bench_press", 80, 8, 1, "BOTH");
+        set(account, older, "squat", 100, 6, 1, "BOTH");
+        String newer = start(account, now.minus(java.time.Duration.ofDays(4)));
+        set(account, newer, "bench_press", 40, 10, null, "BOTH", "WARM_UP");
+        set(account, newer, "bench_press", 60, 8, 1, "BOTH");
+        set(account, newer, "bench_press", 60, 7, 0, "BOTH");
+        set(account, newer, "bench_press", 65, 4, null, "BOTH", "FAILURE");
+        set(account, newer, "bench_press", 50, 10, null, "BOTH", "DROP");
+        Map<String, Object> importedSet = new HashMap<>(Map.of("exerciseId", "bench_press", "setType", "WORKING", "loadKg", 100, "reps", 5));
+        assertThat(send("POST", account, "/v1/workout-imports", Map.of("source", "STRONG", "workouts", List.of(Map.of("clientId", UUID.randomUUID(),
+                "startedAt", now.minus(java.time.Duration.ofDays(2)).toString(), "endedAt", now.minus(java.time.Duration.ofDays(2)).plusSeconds(3600).toString(),
+                "sets", List.of(importedSet)))))).hasStatusOk();
+
+        Map<String, List<TrainingLog.WorkSet>> last = log.lastSessions(account, now.minus(java.time.Duration.ofDays(1)));
+
+        assertThat(last.get("bench_press")).extracting(set -> set.loadKg().intValue(), TrainingLog.WorkSet::reps)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(60, 8), org.assertj.core.groups.Tuple.tuple(60, 7));
+        assertThat(last.get("squat")).as("the squat's last session is the older one").extracting(TrainingLog.WorkSet::reps).containsExactly(6);
+        assertThat(log.lastSessions(account, now.minus(java.time.Duration.ofDays(5))).get("bench_press")).as("before the newer session")
+                .extracting(set -> set.loadKg().intValue()).containsExactly(80);
+    }
+
+    @Test
+    void aFirstSessionsCalibratedLoadIsTheTargetAndTheTableStartsFromIt() throws Exception {
+        // K-960 (ADR-075 #3, G6 K-40): no target, so the phone offered the heavier load after sets with 2+ reps left (an old
+        // 3+ among them). At the finish the load found is the target, and the next session's table starts from it.
+        AccountId account = withAProgram();
+        String workout = start(account, recently);
+        set(account, workout, "bench_press", 40, 10, 3, "BOTH");
+        set(account, workout, "bench_press", 40, 10, 2, "BOTH");
+        set(account, workout, "bench_press", 42.5, 9, 1, "BOTH");
+        set(account, workout, "bench_press", 42.5, 8, 0, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        Map<String, Object> bench = planned(account, 0);
+        assertThat(next(account, 0)).isEqualTo(target(42.5, 9));
+        assertThat(kg(bench.get("lighterLoadKg"))).isEqualByComparingTo("40");
+        assertThat(kg(bench.get("heavierLoadKg"))).isEqualByComparingTo("45");
+        assertThat((Map<String, Object>) bench.get("lastBestSet")).containsEntry("reps", 9).containsEntry("rir", 1);
     }
 
     @Test

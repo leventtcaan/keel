@@ -180,6 +180,21 @@ final class LoadSteps {
     }
 
     /**
+     * A move of at most one step (K-960): the load the gym makes between {@code fromKg} (excluded) and {@code toKg}
+     * (included) that is nearest {@code toKg} — the heaviest when {@code toKg} is over, the lightest when it is under.
+     * Empty when it makes none there, or says nothing about this equipment ({@link #knows}: the caller decides).
+     */
+    static Optional<BigDecimal> within(ExerciseCatalog.Equipment equipment, String exerciseId, GymStore.Gym gym, BigDecimal fromKg,
+            BigDecimal toKg) {
+        // Made around the farther end: a stack's two multiples about it, every plate load up to past it.
+        Made made = made(equipment, exerciseId, gym, toKg);
+        long from = made.scale().units(fromKg);
+        long to = made.scale().target(toKg);
+        Stream<Long> between = made.loads().stream().filter(load -> to > from ? load > from && load <= to : load < from && load >= to);
+        return (to > from ? between.max(Long::compare) : between.min(Long::compare)).map(made.scale()::kg);
+    }
+
+    /**
      * The plates on each side that make {@code totalKg} over {@code baseKg} (the bar; 0 for a sled): the fewest, heavier
      * first on a tie, heaviest first in the list, each as the gym has it stored. Empty when no pair of plates makes it.
      */

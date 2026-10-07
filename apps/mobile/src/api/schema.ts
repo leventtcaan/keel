@@ -1824,6 +1824,42 @@ export interface components {
              *     a break shows another target.
              */
             rackEnds?: boolean;
+            /**
+             * @description The in-session table (K-960, ADR-075 #3), worked out on the server so the phone only picks a value in the gym,
+             *     offline. "Too heavy?" (G1 decision #61): one load step (the region's, H3 B4) under the load the session starts
+             *     from (nextLoadKg, else lastBestSet.loadKg) as the current gym makes it (ADR-032) — the lightest it makes within
+             *     the step, and where it makes none inside the step, its next load down. Absent with no load to start from, or
+             *     nothing lighter (the bottom of the rack or the bar).
+             */
+            lighterLoadKg?: number;
+            /**
+             * @description The counterpart of lighterLoadKg: one load step over the load the session starts from, the heaviest the current
+             *     gym makes within that step, never past it. Absent with no load to start from, or nothing heavier inside the
+             *     step. First-session calibration on a move with no nextLoadKg does not use it: see calibrationStepKg.
+             */
+            heavierLoadKg?: number;
+            /**
+             * @description First-session calibration on a move with no nextLoadKg (K-960, ADR-075 Ek 1): the region's load step (H3 B4).
+             *     After a set logged with calibration_rir_min reps left or more (2+), the phone offers the load just logged plus
+             *     this step, rounded to the gym with the shared load steps (the warm-ups' path, K-417). Present only while the
+             *     move has no nextLoadKg.
+             */
+            calibrationStepKg?: number;
+            /**
+             * @description The best working set of this move's last session before today (heaviest, then most reps, then fewest left):
+             *     "Beat last time". Absent before the move's first session.
+             */
+            lastBestSet?: {
+                loadKg: number;
+                reps: number;
+                rir?: number;
+            };
+            /**
+             * @description The load the next session gets once every set reaches the top of the range (double progression, K-109), as
+             *     the gym makes it: "2 more and it's 105 kg". Absent with no nextLoadKg, on a move not load-tracked, while the
+             *     load is held, or where no heavier load is in reach.
+             */
+            nextLoadAtTopKg?: number;
         };
         /** @description min < max (a range to climb in, double progression); max at most 100. */
         RepRange: {

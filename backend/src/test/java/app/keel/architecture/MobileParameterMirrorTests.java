@@ -44,6 +44,24 @@ class MobileParameterMirrorTests {
         });
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void theRirPickersLastChoiceIsTheCalibrationThreshold() throws IOException {
+        // K-960 (ADR-075 #2-#3, G6 K-40): the picker's last choice reads "2+" and is the set that calls for a heavier next
+        // set on a move without a target; an old 3+ is in it too (the phone shows any RIR from there as its last choice).
+        Map<String, Object> workout = JsonMapper.builder().build().readValue(Files.readString(PARAMETERS.resolve("workout.json")), Map.class);
+        List<Integer> choices = ((List<Map<String, Object>>) workout.get("parameters")).stream().filter(p -> "rir_choices".equals(p.get("key")))
+                .map(p -> (List<Integer>) p.get("value")).findFirst().orElseThrow();
+        Map<String, Object> engine = values(".yaml", file -> {
+            try (Reader reader = Files.newBufferedReader(file)) {
+                return new Yaml().<Map<String, Object>>load(reader);
+            }
+        });
+
+        assertThat(choices).containsExactly(0, 1, 2);
+        assertThat(choices.getLast()).isEqualTo(engine.get("calibration_rir_min"));
+    }
+
     private interface Reading {
         Map<String, Object> read(Path file) throws IOException;
     }

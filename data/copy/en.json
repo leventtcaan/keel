@@ -272,7 +272,7 @@
     "saveFailed": "That set couldn't be saved on the phone. Try again.",
     "rir": {
       "label": "Set {number} · reps left in the tank",
-      "more": "3+"
+      "more": "2+"
     },
     "rest": {
       "label": "Rest · {min}-{max}",
