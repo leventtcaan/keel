@@ -51,10 +51,12 @@ public final class ExerciseCatalog {
 
     private final Map<String, Exercise> byId;
     private final Map<String, Region> regions;
+    private final Set<String> arms;
 
-    private ExerciseCatalog(Map<String, Exercise> byId, Map<String, Region> regions) {
+    private ExerciseCatalog(Map<String, Exercise> byId, Map<String, Region> regions, Set<String> arms) {
         this.byId = byId;
         this.regions = regions;
+        this.arms = arms;
     }
 
     /** The catalog from its files (file name → parsed YAML); IllegalArgumentException naming the first problem. */
@@ -79,6 +81,10 @@ public final class ExerciseCatalog {
         Map<String, Region> regions = new java.util.HashMap<>();
         Set<Object> setupFields = Set.copyOf((List<Object>) vocabulary.getOrDefault("setup_fields", List.of()));
         ((Map<String, Object>) vocabulary.get("muscles")).forEach((muscle, region) -> regions.put(muscle, value(Region.class, region, "muscles.yaml")));
+        Set<String> arms = Set.copyOf((List<String>) vocabulary.getOrDefault("arm_muscles", List.of()));
+        for (String arm : arms) {
+            require(regions.containsKey(arm), "muscles.yaml: arm " + arm + " is not a muscle");
+        }
         List<Exercise> moves = new ArrayList<>();
         filesByName.forEach((file, document) -> {
             Map<String, Object> move = (Map<String, Object>) document;
@@ -119,7 +125,12 @@ public final class ExerciseCatalog {
                 require(byId.containsKey(alternative), move.id() + ": alternative " + alternative + " is not in the catalog");
             }
         }
-        return new ExerciseCatalog(byId, Map.copyOf(regions));
+        return new ExerciseCatalog(byId, Map.copyOf(regions), arms);
+    }
+
+    /** The muscles with their own weekly minimum, arm_weekly_sets_min (data/muscles.yaml arm_muscles; G1 K-61). */
+    public Set<String> armMuscles() {
+        return arms;
     }
 
     public List<Exercise> all() {

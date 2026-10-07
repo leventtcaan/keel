@@ -61,6 +61,8 @@ public enum Unit {
     STEPS_PER_DAY("steps_per_day", Kind.WHOLE, Bound.POSITIVE),
     // How many reference looks the user picks from (K-224).
     LEVELS("levels", Kind.WHOLE, Bound.POSITIVE),
+    // How many suggestions the program review shows at most (K-955, ADR-073 #2).
+    SUGGESTIONS("suggestions", Kind.WHOLE, Bound.POSITIVE),
 
     // The projection's energy balance model (Hall 2011, H12 M2-M5): published constants in the model's own units.
     MJ_PER_KG("mj_per_kg", Kind.FRACTION, Bound.POSITIVE),

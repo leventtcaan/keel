@@ -18,3 +18,6 @@ muscles:
   calves: lower
   # Lower back: the limit in free rows and Romanian deadlifts (Güray G1 K-58, Ç-9).
   erectors: lower
+# Muscles with their own weekly minimum of work sets (arm_weekly_sets_min, Güray G1 K-61: biceps and triceps 6-8 a week,
+# split over two sessions). The program review (K-955) reads it through the catalog.
+arm_muscles: [biceps, triceps]

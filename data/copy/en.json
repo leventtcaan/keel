@@ -833,6 +833,12 @@
       "not_toward_goal": "Your weight trend isn't moving toward your goal, so the plan changes.",
       "observing": "Starting calories are an estimate; the first weeks find your real maintenance.",
       "performance_red_flag": "When your lifts fall, food doesn't go lower until training holds again.",
+      "program_arm_weekly_sets_min": "Biceps and triceps have their own weekly minimum of work sets, best split over two sessions.",
+      "program_days_max": "Past a handful of training days a week, the extra days cost recovery without adding growth.",
+      "program_frequency": "Each muscle is trained twice a week: the growth signal from one session fades after about two days.",
+      "program_rep_range": "Compound lifts stay in a moderate rep range and isolation moves a little higher: very low reps strain the joints, very high ones add nothing.",
+      "program_weekly_sets_max": "The first sets of the week do most of the growing; past a point, more sets mostly add fatigue.",
+      "program_weekly_sets_min": "A muscle needs a minimum of work sets each week before it has a reason to grow.",
       "plan_missed": "Planned sessions fell short of the plan several weeks in a row.",
       "plan_target_needed": "A change needs your current daily target to say how much.",
       "plateau": "When a lift stalls, the weight holds while the reps catch up.",
@@ -2144,5 +2150,35 @@
     "judgeEyebrow": "Progress",
     "judgeTitle": "Judged over {days} days",
     "judgeNote": "The whole line. Flat weeks inside it are normal."
+  },
+  "review": {
+    "too_many_days": {
+      "title": "Train {to} days a week, not {from}",
+      "body": "Coaching rule: {to} training days a week is the most that pays off. Your lightest day's moves go to the other days."
+    },
+    "too_many_sets": {
+      "title": "{muscle}: {to} sets a week, not {from}",
+      "body": "Coaching rule: the first work sets do most of the growing and fatigue builds fast after them. The extra sets come off, biggest moves first."
+    },
+    "too_few_sets": {
+      "title": "{muscle}: {to} sets a week, not {from}",
+      "body": "Coaching rule: a muscle needs at least {min} work sets a week to grow. Isolation sets top it up."
+    },
+    "too_few_arm_sets": {
+      "title": "{muscle}: {to} sets a week, not {from}",
+      "body": "Coaching rule: biceps and triceps need at least {min} work sets a week, split over two sessions. Isolation sets top it up."
+    },
+    "once_a_week": {
+      "title": "{muscle} on {to} days a week",
+      "body": "Coaching rule: train each muscle on {to} days a week. One session's growth signal fades after about two days, so part of the work moves to another day."
+    },
+    "rep_range_compound": {
+      "title": "{exercise}: {toMin}-{toMax} reps",
+      "body": "Coaching rule: compound lifts work best at {toMin}-{toMax} reps. Lower reps strain joints and tendons without adding growth."
+    },
+    "rep_range_isolation": {
+      "title": "{exercise}: {toMin}-{toMax} reps",
+      "body": "Coaching rule: isolation moves work best at {toMin}-{toMax} reps. Going far past that adds time, not growth."
+    }
   }
 }
