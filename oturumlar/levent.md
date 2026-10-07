@@ -173,3 +173,11 @@
 - takıldım: paylaşılan tarayıcı panelinde ajanla sekme çakışması (→ tabId); aktör Ladder'da sayfa kimliğini düşürdü (→ sayfa URL'si); Noom/WW reklamları yaş kapılı; TikTok Creative Center girişsiz yalnız ilk 3
 - sıradaki: Faz 5 Part 2 — ekran envanteri + bütün ekranların artifact prototipi (`plan/oturum-promptlari/UIUX-part2.md`); TestFlight teyidi → `ascAppId`
 - AI: bütün araştırma, tarama, analiz ve sentez agent (R2-R4 alt ajan, agent denetledi); Levent rakip listesini ve video iznini onayladı
+
+## 2026-10-07 · Faz 5 Part 2 (yeni yüzün prototipi, tur 1 + tur 2) — kod yok
+- yaptım: çatallar (B4, B11, B13, B8+B10 → faz5-rota §8); envanter `prototip/envanter.md`; prototip tur 1 (29 ekran, db'li değerlendirme); Levent'in 35 notu → tur 2: M1 tam okuma, 3 alt ajan (M2/05, M3/M4, Strava/IG), renk ölçümü M5 (426 + 134 görsel), prototip v2, `prototip/tur2-strateji.md`
+- karar: Levent — dört çatalda önerilen; renk verisi indirme izni; cinsiyet iki seçenek; paylaşım Strava kalıbı. Agent (öneri, onayda) — teklif iki ritim, onboarding hazır antrenmanla biter, katman 2 kalkar, turkuaz, koyu seans ekranı
+- takıldım: Levent'in hükmü "yeterli değil": tur 1 kararı öne koyup satan anı (hazır antrenman) gömdü; v1 kartları zayıf; paylaşım çocuksu; karar ekranında çift ilerleme mantık hatası (75 → 72.5 yanlış) yakalandı; CSS sınıf çakışması (.plan)
+- sıradaki: Levent tur 2'yi gezer (sabah) → `verdicts-r2` → işle → onay → görsel dil ADR'si + 06 §7 ADR'leri + "M9 ara · Yeni yüz" görev kartları
+- AI: bütün araştırma, ölçüm, tasarım, prototip kodu ve metin agent (3 alt ajan, agent denetledi); Levent değerlendirdi ve dört ürün sorusunu cevapladı
+
