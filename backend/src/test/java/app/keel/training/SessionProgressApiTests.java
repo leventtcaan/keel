@@ -9,6 +9,7 @@ import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,7 +41,6 @@ import tools.jackson.databind.json.JsonMapper;
 class SessionProgressApiTests {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final Instant MONDAY_EVENING = Instant.parse("2026-09-28T17:00:00Z");
 
     @Autowired
     MockMvcTester mvc;
@@ -53,10 +54,24 @@ class SessionProgressApiTests {
     @Autowired
     TrainingCalls calls;
 
+    @Autowired
+    Clock clock;
+
+    /**
+     * A recent session's start: two days before now on the server's clock — before today, and well inside
+     * return_step_back_after_weeks (K-531), so no target is stepped back for a break whatever the day the tests run.
+     */
+    private Instant recently;
+
+    @BeforeEach
+    void twoDaysAgo() {
+        recently = clock.instant().minus(java.time.Duration.ofDays(2));
+    }
+
     @Test
     void everyPlannedSetAtTheTopAddsTheRegionsStepFromTheBottomOfTheRange() throws Exception {
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         sets(account, workout, "squat", 3, 100, 10, "BOTH");
 
@@ -71,7 +86,7 @@ class SessionProgressApiTests {
         // K-531 (ADR-043 #75, G7 K-72): the targets came from a session three weeks and more ago — one of the region's steps
         // under the last load, from the bottom of the range; the program says why.
         AccountId account = withAProgram();
-        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(22)));
+        String workout = start(account, clock.instant().minus(java.time.Duration.ofDays(22)));
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         sets(account, workout, "squat", 3, 100, 10, "BOTH");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
@@ -84,7 +99,7 @@ class SessionProgressApiTests {
     @Test
     void aShorterBreakChangesNothing() throws Exception {
         AccountId account = withAProgram();
-        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(19)));
+        String workout = start(account, clock.instant().minus(java.time.Duration.ofDays(19)));
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
 
@@ -100,7 +115,7 @@ class SessionProgressApiTests {
         AccountId account = withAProgram();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "barKg", 20,
                 "platesKg", List.of(20, 10, 5), "dumbbellsKg", List.of(10, 20), "machines", List.of()));
-        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(30)));
+        String workout = start(account, clock.instant().minus(java.time.Duration.ofDays(30)));
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "LEFT");
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "RIGHT");
@@ -113,10 +128,10 @@ class SessionProgressApiTests {
     @Test
     void aSessionBackEndsTheBreakItsTargetsAreTheUsualOnes() throws Exception {
         AccountId account = withAProgram();
-        String before = start(account, Instant.now().minus(java.time.Duration.ofDays(25)));
+        String before = start(account, clock.instant().minus(java.time.Duration.ofDays(25)));
         sets(account, before, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, before, List.of())).hasStatusOk();
-        String back = start(account, Instant.now().minus(java.time.Duration.ofHours(2)));
+        String back = start(account, clock.instant().minus(java.time.Duration.ofHours(2)));
         sets(account, back, "bench_press", 3, 57.5, 7, "BOTH");
         assertThat(finish(account, back, List.of())).hasStatusOk();
 
@@ -129,11 +144,11 @@ class SessionProgressApiTests {
         // ADR-043 #75: the break is the training log's. A session two days ago with no program day (or another day of the
         // program) was training: the day's three-week-old targets are not stepped back, and nothing says "back after a break".
         AccountId account = withAProgram();
-        String old = start(account, Instant.now().minus(java.time.Duration.ofDays(22)));
+        String old = start(account, clock.instant().minus(java.time.Duration.ofDays(22)));
         sets(account, old, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, old, List.of())).hasStatusOk();
         MvcTestResult free = send("POST", account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt",
-                Instant.now().minus(java.time.Duration.ofDays(2)).toString()));
+                clock.instant().minus(java.time.Duration.ofDays(2)).toString()));
         assertThat(free).hasStatus(201);
         set(account, (String) map(free).get("id"), "squat", 100, 8, 1, "BOTH");
 
@@ -147,10 +162,10 @@ class SessionProgressApiTests {
         // training log the break is measured from, so the three-week-old targets are still stepped back.
         AccountId account = withAProgram();
         send("PUT", account, "/v1/consents/HEALTH_DATA", Map.of("textVersion", app.keel.consent.ConsentTextVersions.HEALTH_DATA));
-        String old = start(account, Instant.now().minus(java.time.Duration.ofDays(22)));
+        String old = start(account, clock.instant().minus(java.time.Duration.ofDays(22)));
         sets(account, old, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, old, List.of())).hasStatusOk();
-        Instant twoDaysAgo = Instant.now().minus(java.time.Duration.ofDays(2));
+        Instant twoDaysAgo = clock.instant().minus(java.time.Duration.ofDays(2));
         assertThat(send("POST", account, "/v1/workout-imports", Map.of("source", "STRONG", "workouts", List.of(Map.of("clientId", UUID.randomUUID(),
                 "startedAt", twoDaysAgo.toString(), "endedAt", twoDaysAgo.plusSeconds(3600).toString(),
                 "sets", List.of(Map.of("exerciseId", "bench_press", "setType", "WORKING", "loadKg", 62.5, "reps", 10)))))))
@@ -171,7 +186,7 @@ class SessionProgressApiTests {
                 List.of(own("machine_chest_press", 8, 12))))))).hasStatusOk();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "barKg", 20,
                 "platesKg", List.of(20, 10, 5), "dumbbellsKg", List.of(), "machines", List.of()));
-        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(25)));
+        String workout = start(account, clock.instant().minus(java.time.Duration.ofDays(25)));
         sets(account, workout, "machine_chest_press", 3, 50, 10, "BOTH");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
 
@@ -185,7 +200,7 @@ class SessionProgressApiTests {
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "barKg", 20,
                 "platesKg", List.of(20, 10, 5, 2.5), "dumbbellsKg", List.of(18, 20, 22, 24), "machines", List.of()));
         // The week before, then this week: both in the past, as a finish cannot end before its start (endedAt is now).
-        String workout = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        String workout = start(account, recently.minus(java.time.Duration.ofDays(7)));
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         sets(account, workout, "one_arm_dumbbell_row", 3, 20, 12, "LEFT");
         sets(account, workout, "one_arm_dumbbell_row", 3, 20, 12, "RIGHT");
@@ -196,7 +211,7 @@ class SessionProgressApiTests {
         assertThat(next(account, 3)).isEqualTo(target(22, 8));
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
                 "dumbbellsKg", List.of(10, 20), "machines", List.of()));
-        String nextWeek = start(account, MONDAY_EVENING);
+        String nextWeek = start(account, recently);
         sets(account, nextWeek, "one_arm_dumbbell_row", 3, 20, 12, "LEFT");
         sets(account, nextWeek, "one_arm_dumbbell_row", 3, 20, 12, "RIGHT");
         assertThat(finish(account, nextWeek, List.of())).hasStatusOk();
@@ -210,7 +225,7 @@ class SessionProgressApiTests {
         AccountId account = withAProgram();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
                 "dumbbellsKg", List.of(10, 20), "machines", List.of()));
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "LEFT");
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, 12, "RIGHT");
 
@@ -227,7 +242,7 @@ class SessionProgressApiTests {
         int ceiling = 12 + parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.REP_CEILING_ABOVE_RANGE);
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
                 "dumbbellsKg", List.of(10, 20), "machines", List.of()));
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, ceiling, "LEFT");
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, ceiling, "RIGHT");
 
@@ -245,7 +260,7 @@ class SessionProgressApiTests {
         int past = 12 + parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.REP_CEILING_ABOVE_RANGE) + 1;
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "platesKg", List.of(),
                 "dumbbellsKg", List.of(10, 12, 14), "machines", List.of()));
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, past, "LEFT");
         sets(account, workout, "one_arm_dumbbell_row", 3, 10, past, "RIGHT");
 
@@ -264,7 +279,7 @@ class SessionProgressApiTests {
                 List.of(own("pull_up", 8, 12))))))).hasStatusOk();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "platesKg", List.of(10),
                 "dumbbellsKg", List.of(), "machines", List.of()));
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "pull_up", 3, 10, 12, "BOTH");
 
         assertThat(finish(account, workout, List.of())).hasStatusOk();
@@ -280,7 +295,7 @@ class SessionProgressApiTests {
                 List.of(own("lat_pulldown", 8, 12))))))).hasStatusOk();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "platesKg", List.of(),
                 "dumbbellsKg", List.of(), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "lat_pulldown", "stepKg", 7))));
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "lat_pulldown", 3, 35, 12, "BOTH");
 
         assertThat(finish(account, workout, List.of())).hasStatusOk();
@@ -300,7 +315,7 @@ class SessionProgressApiTests {
                 List.of(own("lat_pulldown", 8, 12))))))).hasStatusOk();
         send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "platesKg", List.of(),
                 "dumbbellsKg", List.of(), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "lat_pulldown", "stepKg", 7))));
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "lat_pulldown", 3, 35, 16, "BOTH");
 
         assertThat(finish(account, workout, List.of())).hasStatusOk();
@@ -311,7 +326,7 @@ class SessionProgressApiTests {
     @Test
     void addingRepsReadsTheSetsBackAndAnUnsetRirIsThePlannedOne() throws Exception {
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         set(account, workout, "bench_press", 60, 8, 1, "BOTH");
         set(account, workout, "bench_press", 60, 9, null, "BOTH");
         set(account, workout, "bench_press", 60, 9, 1, "BOTH");
@@ -325,7 +340,7 @@ class SessionProgressApiTests {
     void aLighterLastSetOrAWarmUpAtTheTopDoesNotCountAsAPlannedSet() throws Exception {
         // Two at 60 × 10 and the third at 57.5: not every planned set at the top — the load is repeated at the top.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         set(account, workout, "bench_press", 60, 3, null, "BOTH", "WARM_UP");
         sets(account, workout, "bench_press", 2, 60, 10, "BOTH");
         set(account, workout, "bench_press", 57.5, 10, 1, "BOTH");
@@ -338,7 +353,7 @@ class SessionProgressApiTests {
     @Test
     void uncleanFormHoldsTheLoadAndTheReps() throws Exception {
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
 
         assertThat(finish(account, workout, List.of("bench_press"))).hasStatusOk();
@@ -348,14 +363,14 @@ class SessionProgressApiTests {
 
     @Test
     void aHoldBegunAfterTheWorkoutStillHoldsTheNextSession() throws Exception {
-        // Sunday's workout added load; Monday's check-in holds it (K-110): the program shows the last load at the top.
+        // A workout three days ago added load; yesterday's check-in holds it (K-110): the program shows the last load at the top.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING.minusSeconds(86_400));
+        String workout = start(account, recently.minusSeconds(86_400));
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         finish(account, workout, List.of());
         assertThat(next(account, 0).getFirst()).isEqualTo(kg(new BigDecimal("60").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG))));
 
-        calls.holdLoad(account, UUID.randomUUID(), LocalDate.now(ZoneOffset.UTC).minusDays(1));
+        calls.holdLoad(account, UUID.randomUUID(), LocalDate.now(clock).minusDays(1));
 
         assertThat(next(account, 0)).isEqualTo(target(60, 10));
     }
@@ -364,7 +379,7 @@ class SessionProgressApiTests {
     void theSameMoveTwiceInADayKeepsATargetEach() throws Exception {
         // 3 × 100 × 10 on bench: the 6-10 row adds load; the 10-12 row (the same sets, at its bottom) adds a rep.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 3, 100, 10, "BOTH");
 
         finish(account, workout, List.of());
@@ -377,7 +392,7 @@ class SessionProgressApiTests {
     void aOneSidedMoveFollowsItsWeakerSide() throws Exception {
         // Left 3 × 20 × 12 (top), right 3 × 17.5 × 10: the right arm decides — 17.5 for 11, not 22.5 for both.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "one_arm_dumbbell_row", 3, 20, 12, "LEFT");
         sets(account, workout, "one_arm_dumbbell_row", 3, 17.5, 10, "RIGHT");
 
@@ -389,9 +404,9 @@ class SessionProgressApiTests {
     @Test
     void anOlderWorkoutFinishedLateDoesNotRollTheTargetBack() throws Exception {
         AccountId account = withAProgram();
-        String older = start(account, MONDAY_EVENING.minusSeconds(7 * 86_400));
+        String older = start(account, recently.minusSeconds(7 * 86_400));
         sets(account, older, "bench_press", 3, 55, 10, "BOTH");
-        String newer = start(account, MONDAY_EVENING);
+        String newer = start(account, recently);
         sets(account, newer, "bench_press", 3, 60, 10, "BOTH");
         finish(account, newer, List.of());
 
@@ -403,7 +418,7 @@ class SessionProgressApiTests {
     @Test
     void aRefusedFinishChangesNothing() throws Exception {
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
 
         assertThat(finish(account, workout, List.of("no_such_move"))).hasStatus(400);
@@ -419,7 +434,7 @@ class SessionProgressApiTests {
         // K-432 (ADR-037 #48): a set logged by mistake and deleted is data corrected (U2); the target is derived again —
         // two of three planned sets at the top repeat the load at the top of the range.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
         assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("60").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
@@ -432,7 +447,7 @@ class SessionProgressApiTests {
     @Test
     void aForgottenSetAddedToTheLastFinishedSessionCountsForTheTarget() throws Exception {
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 2, 60, 10, "BOTH");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
         assertThat(next(account, 0)).isEqualTo(target(60, 10));
@@ -446,7 +461,7 @@ class SessionProgressApiTests {
     void everySetOfAMoveDeletedFromTheSessionItsTargetCameFromLeavesNoTarget() throws Exception {
         // The target came from sets that are gone: none is left standing on deleted data.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         sets(account, workout, "squat", 3, 100, 10, "BOTH");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
@@ -462,10 +477,10 @@ class SessionProgressApiTests {
     @Test
     void editingAnOlderSessionLeavesTheTargetTheNewerOneSet() throws Exception {
         AccountId account = withAProgram();
-        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        String older = start(account, recently.minus(java.time.Duration.ofDays(7)));
         sets(account, older, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, older, List.of())).hasStatusOk();
-        String newer = start(account, MONDAY_EVENING);
+        String newer = start(account, recently);
         sets(account, newer, "bench_press", 2, 62.5, 8, "BOTH");
         assertThat(finish(account, newer, List.of())).hasStatusOk();
         List<Object> set = next(account, 0);
@@ -480,7 +495,7 @@ class SessionProgressApiTests {
     void aMoveWhoseFormWasNotCleanStaysHeldWhenItsSessionIsEdited() throws Exception {
         // The finish's answer is kept with the workout (G6 K-31): derived again, the held move is still held.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
         sets(account, workout, "squat", 3, 100, 10, "BOTH");
         assertThat(finish(account, workout, List.of("bench_press"))).hasStatusOk();
@@ -495,17 +510,17 @@ class SessionProgressApiTests {
     @Test
     void aSessionSaysWhetherItsEditsMoveTheTargets() throws Exception {
         AccountId account = withAProgram();
-        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        String older = start(account, recently.minus(java.time.Duration.ofDays(7)));
         sets(account, older, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, older, List.of())).hasStatusOk();
         // The newer session sets every move's target: none is left for an edit of the older one to move.
-        String newer = start(account, MONDAY_EVENING);
+        String newer = start(account, recently);
         sets(account, newer, "bench_press", 3, 60, 10, "BOTH");
         sets(account, newer, "squat", 3, 100, 10, "BOTH");
         sets(account, newer, "one_arm_dumbbell_row", 3, 20, 10, "LEFT");
         sets(account, newer, "one_arm_dumbbell_row", 3, 20, 10, "RIGHT");
         assertThat(finish(account, newer, List.of())).hasStatusOk();
-        String unfinished = start(account, MONDAY_EVENING.plus(java.time.Duration.ofHours(1)));
+        String unfinished = start(account, recently.plus(java.time.Duration.ofHours(1)));
 
         assertThat(map(send("GET", account, "/v1/workouts/" + newer, null))).containsEntry("setsNextTargets", true);
         assertThat(map(send("GET", account, "/v1/workouts/" + older, null))).containsEntry("setsNextTargets", false);
@@ -517,10 +532,10 @@ class SessionProgressApiTests {
         // Per move (K-432 review): the newer session has no bench, so bench's target is still the older session's —
         // correcting that session's bench corrects the target; squat's came from the newer one and stays.
         AccountId account = withAProgram();
-        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        String older = start(account, recently.minus(java.time.Duration.ofDays(7)));
         sets(account, older, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, older, List.of())).hasStatusOk();
-        String newer = start(account, MONDAY_EVENING);
+        String newer = start(account, recently);
         sets(account, newer, "squat", 3, 100, 10, "BOTH");
         assertThat(finish(account, newer, List.of())).hasStatusOk();
         List<Object> squat = next(account, 1);
@@ -536,7 +551,7 @@ class SessionProgressApiTests {
     void aSessionWhoseMoveHasNoTargetYetSetsOneWhenTheMoveIsAdded() throws Exception {
         // The forgotten bench of the last session: no target came from it, yet adding the sets makes one — so it says so.
         AccountId account = withAProgram();
-        String workout = start(account, MONDAY_EVENING);
+        String workout = start(account, recently);
         sets(account, workout, "squat", 3, 100, 10, "BOTH");
         assertThat(finish(account, workout, List.of())).hasStatusOk();
         assertThat(map(send("GET", account, "/v1/workouts/" + workout, null))).containsEntry("setsNextTargets", true);
@@ -549,10 +564,10 @@ class SessionProgressApiTests {
     @Test
     void theListSaysItForEachSession() throws Exception {
         AccountId account = withAProgram();
-        String older = start(account, MONDAY_EVENING.minus(java.time.Duration.ofDays(7)));
+        String older = start(account, recently.minus(java.time.Duration.ofDays(7)));
         sets(account, older, "bench_press", 3, 60, 10, "BOTH");
         assertThat(finish(account, older, List.of())).hasStatusOk();
-        String newer = start(account, MONDAY_EVENING);
+        String newer = start(account, recently);
         for (String move : List.of("bench_press", "squat", "one_arm_dumbbell_row")) {
             sets(account, newer, move, 3, 20, 10, "one_arm_dumbbell_row".equals(move) ? "LEFT" : "BOTH");
         }
@@ -562,7 +577,8 @@ class SessionProgressApiTests {
         assertThat(finish(account, newer, List.of())).hasStatusOk();
 
         Map<String, Object> listed = ((List<Map<String, Object>>) JSON.readValue(send("GET", account,
-                "/v1/workouts?from=2026-09-01&to=2026-09-30", null).getResponse().getContentAsString(), List.class)).stream()
+                "/v1/workouts?from=" + LocalDate.ofInstant(recently.minus(java.time.Duration.ofDays(7)), ZoneOffset.UTC) + "&to="
+                + LocalDate.ofInstant(recently, ZoneOffset.UTC), null).getResponse().getContentAsString(), List.class)).stream()
                 .collect(java.util.stream.Collectors.toMap(w -> (String) w.get("id"), w -> w.get("setsNextTargets")));
 
         assertThat(listed).containsEntry(newer, true).containsEntry(older, false);
@@ -616,7 +632,8 @@ class SessionProgressApiTests {
     }
 
     private MvcTestResult finish(AccountId account, String workout, List<String> unclean) {
-        return send("POST", account, "/v1/workouts/" + workout + "/finish", Map.of("endedAt", Instant.now().toString(), "uncleanExerciseIds", unclean));
+        return send("POST", account, "/v1/workouts/" + workout + "/finish",
+                Map.of("endedAt", clock.instant().toString(), "uncleanExerciseIds", unclean));
     }
 
     /** The day's planned move at this position, as the program shows it today. */
