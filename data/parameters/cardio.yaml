@@ -22,7 +22,7 @@ parameters:
     unit: sessions_per_week
     tag: tecrube
     source: "arastirma/ham/guray/G2-kilo-verme.md#K-32"
-    note: "KRD24: bulk döneminde haftada 2-3 gün × 20-30 dk; varsayılan bandın altı (ADR-074 #1). İlk iki antrenman gününe, ağırlıktan sonra."
+    note: "KRD24: bulk döneminde haftada 2-3 gün × 20-30 dk; varsayılan bandın altı (ADR-074 #1). İlk iki antrenman gününe, ağırlıktan sonra; antrenman günü sayısını aşmaz, off güne konmaz (ADR-074 #1 off gün dolgusunu yalnız yağ kaybına verir; K-36)."
   - key: cardio_minutes_build
     value: 20
     unit: minutes

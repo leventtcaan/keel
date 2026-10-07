@@ -13,6 +13,7 @@ import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -57,7 +58,10 @@ class CardioPrescriptionTests {
         Set<DayOfWeek> four = EnumSet.of(MONDAY, TUESDAY, THURSDAY, FRIDAY);
         Set<DayOfWeek> five = EnumSet.range(MONDAY, FRIDAY);
         Set<DayOfWeek> six = EnumSet.range(MONDAY, SATURDAY);
+        Set<DayOfWeek> seven = EnumSet.allOf(DayOfWeek.class);
         return Stream.of(
+                // No training days: all three on off days, the first on Monday, the next as far from the others as the week allows.
+                Arguments.of(Phase.CUT, EnumSet.noneOf(DayOfWeek.class), 30, List.of(s(MONDAY, O), s(THURSDAY, O), s(SATURDAY, O))),
                 // 1 day: two sessions short of 3 go to off days, the furthest from any busy day, earliest on a tie.
                 Arguments.of(Phase.CUT, one, 30, List.of(s(MONDAY, A), s(THURSDAY, O), s(SATURDAY, O))),
                 Arguments.of(Phase.CUT, two, 30, List.of(s(MONDAY, A), s(THURSDAY, A), s(SATURDAY, O))),
@@ -68,7 +72,10 @@ class CardioPrescriptionTests {
                 // 6 days: at most 5, on the week's first five training days; Saturday stays weights only.
                 Arguments.of(Phase.CUT, six, 30,
                         List.of(s(MONDAY, A), s(TUESDAY, A), s(WEDNESDAY, A), s(THURSDAY, A), s(FRIDAY, A))),
-                Arguments.of(Phase.BULK, one, 20, List.of(s(MONDAY, A), s(THURSDAY, O))),
+                Arguments.of(Phase.CUT, seven, 30,
+                        List.of(s(MONDAY, A), s(TUESDAY, A), s(WEDNESDAY, A), s(THURSDAY, A), s(FRIDAY, A))),
+                // A gaining phase never uses an off day (ADR-074 #1 gives the off-day fill to fat loss only; K-36).
+                Arguments.of(Phase.BULK, one, 20, List.of(s(MONDAY, A))),
                 Arguments.of(Phase.BULK, two, 20, List.of(s(MONDAY, A), s(THURSDAY, A))),
                 Arguments.of(Phase.BULK, three, 20, List.of(s(MONDAY, A), s(WEDNESDAY, A))),
                 Arguments.of(Phase.BULK, four, 20, List.of(s(MONDAY, A), s(TUESDAY, A))),
@@ -109,6 +116,24 @@ class CardioPrescriptionTests {
     }
 
     @Test
+    void aGainingWeekWithoutTrainingDaysHasNoCardio() {
+        assertThat(CardioPrescription.forWeek(Phase.BULK, EnumSet.noneOf(DayOfWeek.class), DESK, Optional.empty(), P)).isEmpty();
+    }
+
+    @Test
+    void withTheVeryActiveFlagOffVeryActiveWorkGetsTheSameWeek() {
+        Parameters flagOff = withNoneVeryActive(false);
+        Set<DayOfWeek> two = EnumSet.of(MONDAY, THURSDAY);
+
+        for (Phase phase : Phase.values()) {
+            assertThat(CardioPrescription.forWeek(phase, two, Optional.of(ActivityLevel.VERY_ACTIVE), Optional.empty(), flagOff))
+                    .contains(CardioPrescription.forWeek(phase, two, DESK, Optional.empty(), flagOff).orElseThrow());
+        }
+        assertThat(CardioPrescription.forWeek(Phase.CUT, two, Optional.of(ActivityLevel.VERY_ACTIVE), Optional.empty(), flagOff)
+                .orElseThrow().sessions()).containsExactly(s(MONDAY, A), s(THURSDAY, A), s(SATURDAY, O));
+    }
+
+    @Test
     void theCutBandIsReadFromTheParameters() {
         assertThat(sessionCount(CUT_MIN - 1)).isEqualTo(CUT_MIN);
         assertThat(sessionCount(CUT_MIN)).isEqualTo(CUT_MIN);
@@ -120,10 +145,11 @@ class CardioPrescriptionTests {
 
     @Test
     void belowTheBandOnlyTheMissingSessionsGoToOffDays() {
-        CardioPrescription below = generated(Phase.CUT, firstDays(CUT_MIN - 1), DESK);
+        // Monday and Tuesday busy: Friday is the free day furthest from both (Wednesday 1, Thursday 2, Friday 3, Saturday 2).
+        CardioPrescription below = generated(Phase.CUT, EnumSet.of(MONDAY, TUESDAY), DESK);
         CardioPrescription at = generated(Phase.CUT, firstDays(CUT_MIN), DESK);
 
-        assertThat(below.sessions()).filteredOn(session -> session.placement() == O).hasSize(1);
+        assertThat(below.sessions()).containsExactly(s(MONDAY, A), s(TUESDAY, A), s(FRIDAY, O));
         assertThat(at.sessions()).allSatisfy(session -> assertThat(session.placement()).isEqualTo(A));
     }
 
@@ -192,6 +218,16 @@ class CardioPrescriptionTests {
         // Off days have no weights to protect.
         assertThat(CardioPrescription.user(AFTER_LIFT_LINE + 1, List.of(s(MONDAY, O))).afterLiftOverLine(P)).isFalse();
         assertThat(CardioPrescription.AFTER_LIFT_LINE.source().reference()).isEqualTo("arastirma/ham/guray/G2-kilo-verme.md#K-35");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Parameters withNoneVeryActive(boolean on) {
+        Map<String, Object> documents = ParametersLoaderTests.repositoryDocuments();
+        List<Map<String, Object>> cardio =
+                (List<Map<String, Object>>) ((Map<String, Object>) documents.get("cardio.yaml")).get("parameters");
+        cardio.stream().filter(parameter -> "cardio_none_very_active".equals(parameter.get("key")))
+                .forEach(parameter -> parameter.put("value", on));
+        return ParameterSet.fromDocuments(documents).forSex(Sex.MALE);
     }
 
     private static int sessionCount(int trainingDays) {

@@ -78,10 +78,17 @@ class CardioPrescriptionProperties {
     @Property
     void aMuscleGainWeekHasTheBuildDose(@ForAll("trainingDays") Set<DayOfWeek> days, @ForAll("activity") Optional<ActivityLevel> activity) {
         Assume.that(activity.filter(level -> level == ActivityLevel.VERY_ACTIVE).isEmpty());
-        CardioPrescription build = CardioPrescription.forWeek(Phase.BULK, days, activity, Optional.empty(), P).orElseThrow();
+        Optional<CardioPrescription> build = CardioPrescription.forWeek(Phase.BULK, days, activity, Optional.empty(), P);
 
-        assertThat(build.sessions()).hasSize(P.wholeNumber(ParameterKey.CARDIO_SESSIONS_BUILD));
-        assertThat(build.minutes()).isEqualTo(P.wholeNumber(ParameterKey.CARDIO_MINUTES_BUILD));
+        assertThat(build.map(prescription -> prescription.sessions().size()).orElse(0))
+                .isEqualTo(Math.min(P.wholeNumber(ParameterKey.CARDIO_SESSIONS_BUILD), days.size()));
+        build.ifPresent(prescription -> assertThat(prescription.minutes()).isEqualTo(P.wholeNumber(ParameterKey.CARDIO_MINUTES_BUILD)));
+    }
+
+    @Property
+    void aGainingWeekNeverUsesAnOffDay(@ForAll("trainingDays") Set<DayOfWeek> days, @ForAll("activity") Optional<ActivityLevel> activity) {
+        CardioPrescription.forWeek(Phase.BULK, days, activity, Optional.empty(), P).ifPresent(build -> assertThat(build.sessions())
+                .allSatisfy(session -> assertThat(session.placement()).isEqualTo(CardioPlacement.AFTER_LIFT)));
     }
 
     @Property

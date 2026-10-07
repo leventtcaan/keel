@@ -68,7 +68,10 @@ final class ParameterDocuments {
             new Order(ParameterKey.PROJECTION_MIN_BMI, ParameterKey.PROJECTION_LOSS_MIN_BMI, true),
             // The fat-loss cardio band and the pace band are ranges (G2 K-32, K-33).
             new Order(ParameterKey.CARDIO_SESSIONS_CUT_MIN, ParameterKey.CARDIO_SESSIONS_CUT_MAX, false),
-            new Order(ParameterKey.CARDIO_HR_MIN_BPM, ParameterKey.CARDIO_HR_MAX_BPM, true));
+            new Order(ParameterKey.CARDIO_HR_MIN_BPM, ParameterKey.CARDIO_HR_MAX_BPM, true),
+            // The default session never runs past the after-lifting line it would itself be flagged for (G2 K-35).
+            new Order(ParameterKey.CARDIO_MINUTES_CUT, ParameterKey.CARDIO_AFTER_LIFT_MAX_MINUTES, false),
+            new Order(ParameterKey.CARDIO_MINUTES_BUILD, ParameterKey.CARDIO_AFTER_LIFT_MAX_MINUTES, false));
 
     private static final Map<String, ParameterKey> KEYS_BY_YAML = Arrays.stream(ParameterKey.values())
             .collect(Collectors.toUnmodifiableMap(ParameterKey::yamlKey, Function.identity()));

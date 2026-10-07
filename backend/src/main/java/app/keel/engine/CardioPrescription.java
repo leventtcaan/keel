@@ -16,8 +16,8 @@ import java.util.Set;
  * <p>The default ({@link #forWeek}) rests on the solo cardio source only (G2 KRD24 via K-32, K-35, K-36, K-46; K-31 from
  * KV24 for the length); the podcast's "at least one, typically two" is not used, its speaker is unclear (G2 header
  * warning 1). A fat-loss phase gets as many sessions as training days within cardio_sessions_cut_min..max, a muscle-gain
- * phase cardio_sessions_build. A week with fewer training days than sessions puts the rest on off days (K-36: cardio on an
- * off day, if any, at a very low pace). Very active work has no default (K-46). The user's own prescription is returned
+ * phase cardio_sessions_build, at most one per training day. A fat-loss week with fewer training days than sessions puts
+ * the rest on off days (K-36: cardio on an off day, if any, at a very low pace); a gaining week never does. Very active work has no default (K-46). The user's own prescription is returned
  * as it is: the engine never overwrites it (ADR-074 #4). Pure: the phase and the days come in (ADR-003).
  */
 public record CardioPrescription(CardioOrigin origin, int minutes, List<CardioSession> sessions, List<Reason> reasons) {
@@ -66,7 +66,8 @@ public record CardioPrescription(CardioOrigin origin, int minutes, List<CardioSe
 
     /**
      * This week's prescription: the user's own if they set one, else the default for the phase and the training days,
-     * or none for very active work. {@code activity} absent is not very active: the default applies.
+     * or none for very active work or a gaining week without training days. {@code activity} absent is not very active:
+     * the default applies.
      */
     public static Optional<CardioPrescription> forWeek(Phase phase, Set<DayOfWeek> trainingDays, Optional<ActivityLevel> activity,
             Optional<CardioPrescription> userSet, Parameters parameters) {
@@ -88,13 +89,18 @@ public record CardioPrescription(CardioOrigin origin, int minutes, List<CardioSe
         int count = cut
                 ? Math.clamp(training.size(), parameters.wholeNumber(ParameterKey.CARDIO_SESSIONS_CUT_MIN),
                         parameters.wholeNumber(ParameterKey.CARDIO_SESSIONS_CUT_MAX))
-                : parameters.wholeNumber(ParameterKey.CARDIO_SESSIONS_BUILD);
+                // A gaining phase only follows the weights, so it has no more sessions than training days (ADR-074 #1
+                // gives the off-day fill to fat loss only; K-36: an off day stays off).
+                : Math.min(parameters.wholeNumber(ParameterKey.CARDIO_SESSIONS_BUILD), training.size());
+        if (count == 0) {
+            return Optional.empty();
+        }
         int minutes = parameters.wholeNumber(cut ? ParameterKey.CARDIO_MINUTES_CUT : ParameterKey.CARDIO_MINUTES_BUILD);
 
         List<CardioSession> sessions = new ArrayList<>();
         // After the weights on the week's first training days (EnumSet iterates Monday to Sunday).
         training.stream().limit(count).forEach(day -> sessions.add(new CardioSession(day, CardioPlacement.AFTER_LIFT)));
-        // The rest on off days, each the furthest from any busy day, earliest on a tie, so a cardio day sits between
+        // A fat-loss week's rest on off days, each the furthest from any busy day, earliest on a tie, so a cardio day sits between
         // rest days where the week allows (K-36: off days are for recovery).
         Set<DayOfWeek> busy = EnumSet.copyOf(training);
         while (sessions.size() < count) {
