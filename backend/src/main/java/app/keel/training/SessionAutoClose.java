@@ -1,8 +1,10 @@
 package app.keel.training;
 
+import app.keel.shared.SafeLog;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,6 +31,16 @@ class SessionAutoClose {
 
     private static final String FILE = "data/parameters/workout.json";
     private static final String KEY = "unfinished_session_close_hours";
+    /** The task a later failure is logged under: SafeLog names a background task by its method. */
+    private static final Method CLOSE_DUE;
+
+    static {
+        try {
+            CLOSE_DUE = SessionAutoClose.class.getDeclaredMethod("closeDue", Instant.class);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     private final WorkoutStore workouts;
     private final SessionProgress progress;
@@ -54,7 +66,8 @@ class SessionAutoClose {
      * Closes every session, of any account, still open {@code closeAfter} after it started — each on its own account, in
      * its own transaction (SessionProgress.closeUnfinished), so one the user finishes meanwhile is left as they finished
      * it. Run again, it finds nothing more to do. A session that cannot be closed keeps no later one open: the rest are
-     * closed, then its failure is raised.
+     * closed, then the first failure is raised (to BackgroundFailures, when scheduled); each later one is logged as it
+     * happens — by type and code location, never its message (V3).
      */
     void closeDue(Instant now) {
         RuntimeException failed = null;
@@ -65,7 +78,7 @@ class SessionAutoClose {
                 if (failed == null) {
                     failed = failure;
                 } else {
-                    failed.addSuppressed(failure);
+                    SafeLog.backgroundFailure(CLOSE_DUE, failure);
                 }
             }
         }

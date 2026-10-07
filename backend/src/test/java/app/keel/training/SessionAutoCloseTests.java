@@ -16,6 +16,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,8 +26,11 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -33,6 +39,10 @@ import tools.jackson.databind.json.JsonMapper;
  * them (K-217). The end it gets is its start: sets carry no times, so no later end is known, and a session hours long
  * would be one the user never trained (the import's rule for an end not given, K-615). The time comes in as an argument;
  * the scheduler is off in the tests (keel.training.session-auto-close: "-"). One day, own program: bench 3 × 6-10.
+ *
+ * <p>closeDue closes every due session of the database these tests share, other classes' leftovers too: each test
+ * asserts only on the accounts it made. A set logged while a close is under way never misses it (WorkoutStore.findForWrite):
+ * the two races are forced with a held transaction, and the waiting side is seen in pg_stat_activity.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -56,6 +66,18 @@ class SessionAutoCloseTests {
 
     @Autowired
     SessionAutoClose autoClose;
+
+    @Autowired
+    WorkoutStore store;
+
+    @Autowired
+    SessionProgress progress;
+
+    @Autowired
+    PlatformTransactionManager transactions;
+
+    @Autowired
+    JdbcClient jdbc;
 
     @Test
     void anUnfinishedSessionClosesAfterTheHoursAndItsTargetsAreSetAsAFinishSetsThem() throws Exception {
@@ -137,6 +159,84 @@ class SessionAutoCloseTests {
         set(account, workout, 60, 10);
 
         assertThat(next(account)).isEqualTo(List.of(kg(new BigDecimal("60").add(step())), 6));
+    }
+
+    @Test
+    void aSetLoggedWhileTheCloseIsUnderWayWaitsForItAndCountsForTheTarget() throws Exception {
+        // The close has ended the session and set its target from two sets, not yet committed. The third set's request
+        // waits for it, then sees a finished session and derives the target again: all three planned sets at the top.
+        AccountId account = withAProgram();
+        String workout = start(account, STARTED);
+        set(account, workout, 60, 10);
+        set(account, workout, 60, 10);
+        WorkoutStore.Workout open = store.find(account, UUID.fromString(workout)).orElseThrow();
+        CountDownLatch closed = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CompletableFuture<Void> closing = CompletableFuture.runAsync(() -> new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            progress.closeUnfinished(account, open, open.startedAt());
+            closed.countDown();
+            await(release);
+        }));
+        assertThat(closed.await(10, TimeUnit.SECONDS)).isTrue();
+
+        CompletableFuture<Void> logging = CompletableFuture.runAsync(() -> set(account, workout, 60, 10));
+        awaitBlocked(logging);
+        release.countDown();
+        closing.join();
+        logging.join();
+
+        assertThat(next(account)).isEqualTo(List.of(kg(new BigDecimal("60").add(step())), 6));
+    }
+
+    @Test
+    void aCloseWhileASetIsBeingLoggedWaitsForItAndCountsTheSet() throws Exception {
+        // The set's request holds the session, as WorkoutController.log does, and has written the third set, not yet
+        // committed. The close waits for it, then sets the target from all three.
+        AccountId account = withAProgram();
+        String workout = start(account, STARTED);
+        set(account, workout, 60, 10);
+        set(account, workout, 60, 10);
+        UUID id = UUID.fromString(workout);
+        CountDownLatch logged = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CompletableFuture<Void> logging = CompletableFuture.runAsync(() -> new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            store.findForWrite(account, id).orElseThrow();
+            store.log(account, id, new WorkoutStore.LoggedSet(null, UUID.randomUUID(), "bench_press", SetType.WORKING, new BigDecimal("60"), 10,
+                    1, Side.BOTH, null, id, null));
+            logged.countDown();
+            await(release);
+        }));
+        assertThat(logged.await(10, TimeUnit.SECONDS)).isTrue();
+        WorkoutStore.Workout open = store.find(account, id).orElseThrow();
+
+        CompletableFuture<Void> closing = CompletableFuture.runAsync(() -> progress.closeUnfinished(account, open, open.startedAt()));
+        awaitBlocked(closing);
+        release.countDown();
+        logging.join();
+        closing.join();
+
+        assertThat(workout(account, workout)).containsEntry("endedAt", STARTED.toString());
+        assertThat(next(account)).isEqualTo(List.of(kg(new BigDecimal("60").add(step())), 6));
+    }
+
+    /** Until the other side waits on a lock, or is done without waiting (the race lost); at most 10 s. */
+    private void awaitBlocked(CompletableFuture<?> other) throws InterruptedException {
+        for (int i = 0; i < 100 && !other.isDone(); i++) {
+            if (jdbc.sql("select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()")
+                    .query(Long.class).single() > 0) {
+                return;
+            }
+            Thread.sleep(100);
+        }
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
     private AccountId withAProgram() {

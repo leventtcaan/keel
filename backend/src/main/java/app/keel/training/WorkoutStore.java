@@ -91,6 +91,16 @@ class WorkoutStore {
                 .param("id", id).param("account", account.value()).query((row, n) -> workout(row)).optional();
     }
 
+    /**
+     * The workout, held until the transaction ends (FOR SHARE), for a change of its sets. A close or a finish (an update
+     * of the row) waits for the change, or the change waits for it and reads it: so the targets either side derives see
+     * the set — a set's own insert locks the row only FOR KEY SHARE, which an update of a non-key column never waits for.
+     */
+    Optional<Workout> findForWrite(AccountId account, UUID id) {
+        return jdbc.sql("select * from training.workout where id = :id and account_id = :account for share")
+                .param("id", id).param("account", account.value()).query((row, n) -> workout(row)).optional();
+    }
+
     List<Workout> between(AccountId account, Instant from, Instant to) {
         return jdbc.sql("""
                 select * from training.workout where account_id = :account and started_at >= :from and started_at < :to
