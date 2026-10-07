@@ -15,8 +15,7 @@ description: keel'de bir backlog görevine (K-ID, ör. K-012) başlarken kullan.
 1. **Görev kartını oku:** başlık, `why`, `acceptance`, `tests`, `refs`, `learn`.
    `refs` içindeki araştırma dosyasının yalnız ilgili bölümünü aç.
 2. **Dal:** `git switch -c <module>/<issue>-<kisa-ad>` (issue numarası backlog kaydındaki `issue` alanı).
-3. **Ön aktarım** (skill `aktarim`, aşama 1): bu görev projenin neresinde · neden şimdi · hangi kavramlar ·
-   hangi dosyalar değişecek · hedef seviye ve basamak listesi. Levent "devam" demeden koda geçme.
+3. **Ön aktarım yok** (ADR-079): görev kartı ve ilgili ADR okunduysa doğrudan teste geç. Levent "anlat" derse skill `aktarim`.
 4. **Test önce** (skill `test-driven-development`): her kabul kriteri için test. `pending` etiketli hazır spesifikasyon
    testi varsa etiketi kaldır, testin kırmızı olduğunu **çıktıyla göster.**
    **Geçerli RED:** test beklenen assertion ile kırmızı; derleme hatası ya da exception RED sayılmaz. İlk koşuda yeşilse

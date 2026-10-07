@@ -1,11 +1,11 @@
 # M9 · Part 3 — Kohort ve göstergeler (session prompt'u)
 
-> Part 2 bittikten (ve aktarıldıktan) sonra, yeni session `~/Projects/keel` klasöründen açılır.
+> M9a (yeni yüz, K-984) bittikten sonra, yeni session `~/Projects/keel` klasöründen açılır.
 
 ```
-oturum-baslat. Bu session toplu modda çalışır (hafıza: toplu-mod-aktarim, baglam-devri, tas-partlara-bolme).
+oturum-baslat. Bu session toplu modda çalışır (hafıza: toplu-mod, baglam-devri, tas-partlara-bolme).
 M9 üç part hâlinde yapılıyor; bu PART 3 (son). Ortak talimat plan/oturum-promptlari/M9.md — önce onu oku ve harfiyen uygula.
-Hafıza DURUM.md › "## M9 ilerleme"de; sohbete güvenme. Part'ı baştan sona uygularsın, aktarıma BAŞLAMAZSIN.
+Hafıza DURUM.md › "## M9 ilerleme"de; sohbete güvenme. Part'ı baştan sona uygularsın; aktarım yok (ADR-079).
 
 Başta:
 0) Senkron: "Part 2 ÇIKIŞ" git ile doğru mu? Dış TestFlight onaylandı mı?
@@ -27,5 +27,5 @@ Bitiş:
 3) M10 · Lansman part prompt'larını bu yapının kalıbıyla yaz (M10 kapıları: ürün adı + marka kontrolü, ASO, ASC beyanları — gizlilik etiketi, yaş,
    erişilebilirlik; SANDBOX'ı ortamlardan çıkar; mağaza metni `data/copy/store.en.json` ürün adıyla). Commit.
 4) DURUM › M9 ilerleme › "Part 3 ÇIKIŞ = M9 ÇIKIŞ"; kısa Türkçe özet + M10 Part 1 prompt'u ver.
-Session KAPANMAYACAK: döndüğümde Part 3'ü aktarırsın (docs/aktarim/M9/).
+Bitiş: Part 3 ÇIKIŞ + kısa özet + M10 prompt'u.
 ```

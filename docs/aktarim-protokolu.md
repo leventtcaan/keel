@@ -10,7 +10,10 @@
 - **Terminoloji İngilizce kalır** (contract, endpoint, schema, test…); anlatım Türkçe; terim ilk geçtiğinde yanına kısa
   Türkçe açıklama.
 
-## Üç aşamalı sıra (her görev)
+> **ADR-079 (7 Eki 2026):** görev başına aktarım kalktı. Bu standart artık proje sonundaki kod analizinde ve Levent'in istediği anlatımlarda
+> uygulanır; aşağıdaki "her görev" sırası geliştirme döngüsünde çalışmaz.
+
+## Üç aşamalı sıra (her görev — ADR-079'dan beri yalnız analizde)
 1. **Ön aktarım** — koda geçmeden: bu görev projenin neresinde, neden şimdi; yazılacak kodun kavramları basitten başlayarak.
 2. **Uygulama** — test önce, sonra kod.
 3. **Referanslı son aktarım** — yazılanın üzerinden dosya dosya, tıklanabilir `dosya:satır` bağlantılarıyla.

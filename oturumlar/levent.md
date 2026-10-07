@@ -196,3 +196,4 @@
 - takıldım: tur 3'ün iki varsayılanı yanlış kaynaktaydı (kardiyo 2 × 30 konuşmacısı belirsiz podcast; "3 değil 2 gün" Güray'ın 3 gün tabanının altı) → Levent'e kanıtla soruldu; "aralığın altı → hafiflet" için kaynak yok; hamstring örneği K-11'e aykırıydı; Meta önce/sonra politikası doğrulanamadı
 - sıradaki: M9a Part 1 · Temel + motor (`plan/oturum-promptlari/YENI-YUZ-kod.md` › Part 1 prompt'u)
 - AI: bütün ADR, kural listesi, kart ve prompt agent (3 alt ajan kod/kaynak haritası); Levent 9 soruyu cevapladı ve ürün ADR'lerini onayladı
+- ek (7 Eki): ADR-079 (Levent) — görev başına aktarım kalktı, odak ürünü kaliteyle bitirmek; öğrenme proje sonunda kod analiziyle. gorev-baslat/kapat, aktarim skill'i, CLAUDE.md, protokol, ADR-019 #9, YENI-YUZ-kod.md, M9 prompt'ları ve hafıza (toplu-mod-aktarim → toplu-mod) güncellendi

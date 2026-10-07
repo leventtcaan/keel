@@ -35,7 +35,7 @@ projede her PR ve her teknik iznin Levent'i beklemesi akışı durduruyordu. Oto
 8. **Mekanik kapılar:** `.claude/hooks/git_guard.py` (PreToolUse/Bash: main'e force push, `reset --hard`, `clean -f`,
    `branch -D`, `--no-verify`, AI imzası, dal korumasını silme → blok; `tools/test_git_guard.py` CI'da zorunlu kontrol)
    · `.githooks/commit-msg` · CI action'ları commit SHA'sına sabit.
-9. **Öğrenme bozulmaz:** ön/son aktarım (`docs/aktarim-protokolu.md`) aynen sürer. Levent PR'ı onaylamasa da her
+9. **[ADR-079 ile değişti: görev başına aktarım yok, öğrenme proje sonunda kod analiziyle.]** **Öğrenme bozulmaz:** ön/son aktarım (`docs/aktarim-protokolu.md`) aynen sürer. Levent PR'ı onaylamasa da her
    görevin aktarımını alır; "vibe coder değil" hedefi değişmedi.
 
 ## Neden

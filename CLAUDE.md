@@ -12,7 +12,8 @@ Tez: *"Everything else shows you the data. This one makes the call."* — ayrın
 Levent: Akdeniz Üniversitesi CSE son sınıf. **Vibe coder değil.** Her satırı ve kararı anlatabilmeli, savunabilmeli.
 - Seviyesi bu projenin her alanında **sıfır** kabul edilir; "biliyorsundur" yok, "biliyor musun?" var.
 - **Kodu, testi, teknik kararı sen eksiksiz yazarsın.** `TODO(human)` yok; Levent'ten kod beklenmez.
-- Öğrenme **anlatımla** olur → `docs/aktarim-protokolu.md` (skill: `aktarim`). Uygulama işinde zorunlu.
+- Öğrenme **en sonda, bitmiş kodun analiziyle** olur (ADR-079): geliştirmede görev başına aktarım yok, kalite kapıları aynen. Levent
+  "anlat" derse skill `aktarim` (`docs/aktarim-protokolu.md`).
 - **Yetki (ADR-019):** teknik işte sen karar verir, uygular, birleştirirsin. Levent'i bekleyen: ürün kapsamı, para,
   sağlık/regülasyon, kullanıcı verisinin dışarı gitmesi, hesap/sır, mağaza yayını, kişisel iş.
 - **Tahmin etme, sor.** Ürün/kapsam kararı Levent'indir. Levent yanlışsa bunu kanıtla söyle; hak vermek için hak verme.

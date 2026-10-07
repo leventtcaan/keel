@@ -22,17 +22,17 @@
 ## Senkron kuralı (her part'ın SONUNDA)
 `DURUM.md › ## M9a ilerleme` altına **"Part N ÇIKIŞ (tarih)"**: birleşen görevler + PR no · açık PR/worktree · kalan iş · sonraki part'ın bilmesi
 gereken teknik kararlar (dosya yolu ile) · yeni sorular. Backlog `status` + `python3 tools/sync_backlog.py --apply`. `main`'e commit + push. Kısa Türkçe
-özet ver, sonraki part'ın prompt'unu ver ve dur (aktarım yok; hafıza: toplu-mod-aktarim).
+özet ver, sonraki part'ın prompt'unu ver ve dur (hafıza: toplu-mod).
 
 ## Bağlam koruması (hafıza: baglam-devri, tas-partlara-bolme)
 Her görev bitince DURUM tablosu; bağlam dolmaya yaklaşırsa görev sınırında dur, yarım işi dalında commit + push, `YENI-YUZ-partN-devam.md` + DURUM ›
 DEVAM NOKTASI. Arka plan ajanı paneli paylaşırsa her ajana kendi sekmesi, her çağrıda `tabId` (hafıza: paralel-ajan-tarayici).
 
-## Her görev döngüsü (M9.md ile aynı — değiştirme)
+## Her görev döngüsü (ADR-079: aktarımsız; kalite kapıları değişmez)
 gorev-baslat → test önce (geçerli RED: assertion) → kod → `npm run check` (Node 22) / saf testler (`DOCKER_HOST=tcp://127.0.0.1:1 ./gradlew test
 --tests ...`; DB testleri CI'da) → `tools/anayasa-denetimi.sh` → ekranlarda simülatörde kendin doğrula (iki tema; odak modu koyu) ve prototiple yan
-yana karşılaştır → pr-review-toolkit (code-reviewer + pr-test-analyzer) → bulgular TDD ile → `docs/aktarim/M9a/<K-ID>.md` + README → PR
-`gh pr merge --auto --squash` (inceleme bitmeden auto-merge yok) → DURUM › M9a ilerleme.
+yana karşılaştır → pr-review-toolkit (code-reviewer + pr-test-analyzer) → bulgular TDD ile → PR (gövdede K10 özeti + kabul ↔ test)
+`gh pr merge --auto --squash` (inceleme bitmeden auto-merge yok) → DURUM › M9a ilerleme. **Aktarım dosyası yok (ADR-079);** token koda gider.
 
 ## Kararlar ve sınırlar
 - **Prototip değil ADR kazanır.** Prototipten bilerek ayrılan değerler (ADR-071): kardiyo örnek kişide **3 × 30 dk** (ADR-074), 1. hafta "3 değil 2 gün"
@@ -50,9 +50,9 @@ yana karşılaştır → pr-review-toolkit (code-reviewer + pr-test-analyzer) �
 
 ## Part 1 prompt'u
 ```
-oturum-baslat. Bu session toplu modda çalışır (hafıza: toplu-mod-aktarim, baglam-devri, tas-partlara-bolme).
+oturum-baslat. Bu session toplu modda çalışır (hafıza: toplu-mod, baglam-devri, tas-partlara-bolme).
 M9a (yeni yüz) dört part; bu PART 1 · Temel + motor. Ortak talimat plan/oturum-promptlari/YENI-YUZ-kod.md — önce onu oku ve harfiyen uygula.
-Hafıza DURUM.md › "## M9a ilerleme"de (yoksa aç); sohbete güvenme. Part'ı baştan sona uygularsın, aktarıma BAŞLAMAZSIN.
+Hafıza DURUM.md › "## M9a ilerleme"de (yoksa aç); sohbete güvenme. Part'ı baştan sona uygularsın; aktarım yok (ADR-079), odak ürünü kaliteyle bitirmek.
 Önce oku: ADR-069..078, plan/yeni-yuz-kurallar.md, plan/backlog.yaml › M9a kartları.
 Sıra: K-951 → K-952 → K-953 → K-954 → K-955 (kural-ekle R1) → K-958 (R2) → K-960 (R3; aralık altı kaynak araması) → K-961 → K-962 (R4) → K-963.
 Bitiş: "Part 1 ÇIKIŞ" + kısa Türkçe özet + Part 2 prompt'u. Session KAPANMAYACAK.

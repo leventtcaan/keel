@@ -12,13 +12,13 @@ description: keel'de bir görev bittiğinde kullan. "Görev bitti", "testler ye�
 2. **Kendi incelemen:** diff'i baştan oku. Hardcode (K2), uydurma API (K6), görev dışı değişiklik (K4), silinen/
    gevşetilen test (K1) var mı? Varsa düzelt ya da Levent'e söyle. Sonra ikinci göz:
    `/pr-review-toolkit:review-pr tests errors` (test boşluğu + sessiz hata). Bulguyu düzelt ya da neden düzeltmediğini yaz.
-3. **Son aktarım** (skill `aktarim`, aşama 3): dosya dosya, iş mantığında satır satır, `dosya:satır` bağlantılı.
-   Kapanış: bütün resim paragrafı + soru bankası. Levent kendi cümleleriyle anlatır.
-4. **K10 özeti** (≤5 satır): ne değişti · neden · alternatif · hangi test neyi kanıtlıyor · kontrol edilmesi gereken satır.
+3. **Son aktarım yok** (ADR-079): ayrı aktarım dosyası ve Apple Notes notu yazılmaz. Öğrenme proje sonunda bitmiş kodun analiziyle.
+4. **K10 özeti** (≤5 satır, PR gövdesinde — sonraki analizin hammaddesi): ne değişti · neden · alternatif · hangi test neyi kanıtlıyor ·
+   kontrol edilmesi gereken satır.
 5. **Commit + PR:** `feat(<module>): <başlık> (#<issue>)`. PR gövdesi: özet, kabul kriterleri ↔ testler, "AI kullanımı:
-   AI agent kodu ve testleri yazdı; son aktarım Levent'e yapıldı" — **araç adı, imza, Co-Authored-By yok.**
+   AI agent kodu ve testleri yazdı" — **araç adı, imza, Co-Authored-By yok.**
    Yeni bağımlılık/şema/modül sınırı/sözleşme varsa gerekçe + alternatif. Sonra `gh pr merge --auto --squash`;
    CI yeşil olunca GitHub birleştirir (ADR-019). Kırmızıysa düzelt, testi değiştirme (K1).
 6. **Backlog:** `plan/backlog.yaml` → görevin `status: done`; `python3 tools/sync_backlog.py --apply` (issue kapanır,
    Project kartı Done'a geçer).
-7. **Not:** aktarım tamamlandıysa Apple Notes (Keel klasörü). Sonra `oturum-kapat`.
+7. Sonra `oturum-kapat` (görev sınırında; toplu modda part bitince).

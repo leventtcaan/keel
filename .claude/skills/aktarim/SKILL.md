@@ -1,11 +1,12 @@
 ---
 name: aktarim
-description: keel'de Levent'e kod, kavram ya da mimari anlatırken kullan. Her görevin ön aktarımı ve son aktarımında, "bunu anlat", "nasıl çalışıyor", "neden böyle", "anlamadım", "satır satır geç" dendiğinde ya da yeni bir kavram (Spring, Expo, test, veritabanı…) ilk kez ortaya çıktığında mutlaka kullan.
+description: keel'de Levent'e kod, kavram ya da mimari anlatırken kullan. Proje sonundaki kod analizinde (ADR-079), "bunu anlat", "nasıl çalışıyor", "neden böyle", "anlamadım", "satır satır geç" dendiğinde kullan. Geliştirme döngüsünde kendiliğinden çalışmaz.
 ---
 
 # Aktarım
 
-Tam standart: `docs/aktarim-protokolu.md` — önce onu oku.
+Tam standart: `docs/aktarim-protokolu.md` — önce onu oku. **Görev başına zorunlu değil (ADR-079):** geliştirmede yalnız Levent
+isterse; asıl kullanım proje sonunda bitmiş kodun modül modül analizi.
 
 ## Kısa kontrol listesi
 - [ ] Hedef seviye ve **basamak listesi** gösterildi mi? Basamak 0 gündelik bilgi mi?

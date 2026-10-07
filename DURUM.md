@@ -9,6 +9,8 @@ guncelleme: 2026-10-07
 Faz 5 kapandı. ADR-070..078 **KABUL** (Levent); ADR-016 → 070, ADR-054 → 076 yerini aldı; ADR-058 ve ADR-018'e Ek 1; anayasa U7'ye telafi tanımı.
 Kod kilometre taşı **M9a · Yeni yüz**: K-951..K-984 + K-910 (GitHub'da, proje 2). Kurallar `plan/yeni-yuz-kurallar.md`.
 **Sıradaki session: M9a Part 1 · Temel + motor** → prompt `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 1 prompt'u" (skill `oturum-baslat`).
+**ADR-079 (7 Eki, Levent): görev başına aktarım yok** — token ürünü kaliteyle bitirmeye; öğrenme proje sonunda bitmiş kodun analiziyle (biriken
+"Aktarım bekliyor" listeleri M8, M9 oraya girer). Skill'ler, CLAUDE.md, prompt'lar ve hafıza (`toplu-mod`) güncellendi.
 Levent'i bekleyen: K-983 (App Store Connect 2 haftalık deneme, Part 2 başı) · K-976 Facebook App ID (Part 4) · pazarlama kuralı (Apify raporlarıyla, sonra).
 
 ## Şu an
