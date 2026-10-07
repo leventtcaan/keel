@@ -182,7 +182,7 @@ class WorkoutController {
     @PostMapping("/v1/workouts/{id}/sets")
     @Transactional
     ResponseEntity<LoggedSet> log(AccountId account, @PathVariable UUID id, @RequestBody NewSet set) {
-        WorkoutStore.Workout workout = owned(account, id);
+        WorkoutStore.Workout workout = held(account, id);
         // A catalog move, or one of the user's own (K-424): the same set rules either way.
         Optional<ExerciseCatalog.Exercise> move = set.exerciseId() == null ? Optional.empty()
                 : catalog.find(set.exerciseId()).or(() -> customs.find(account, set.exerciseId()).map(CustomExerciseStore.CustomExercise::asExercise));
@@ -207,7 +207,7 @@ class WorkoutController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
     void deleteSet(AccountId account, @PathVariable UUID id, @PathVariable UUID setId) {
-        WorkoutStore.Workout workout = owned(account, id);
+        WorkoutStore.Workout workout = held(account, id);
         if (!store.deleteSet(account, id, setId)) {
             throw new ApiException(ErrorCode.NOT_FOUND);
         }
@@ -216,6 +216,15 @@ class WorkoutController {
 
     private WorkoutStore.Workout owned(AccountId account, UUID id) {
         return store.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
+    /**
+     * The workout held for a change of its sets until the request's transaction ends (WorkoutStore.findForWrite): a close
+     * by itself (SessionAutoClose) or a finish under way is waited for and read finished, so the set derives the targets
+     * again — or it waits for the set, and its targets count it.
+     */
+    private WorkoutStore.Workout held(AccountId account, UUID id) {
+        return store.findForWrite(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
     private Workout read(AccountId account, WorkoutStore.Workout workout) {

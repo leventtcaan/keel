@@ -68,6 +68,17 @@ class SessionProgress {
     }
 
     /**
+     * Closes a session left unfinished (ADR-075 #5, SessionAutoClose) and sets the targets it gives, together — as a finish
+     * does; nothing when the user finished it meanwhile. No answer on form was given, so nothing is held for it.
+     */
+    @Transactional
+    void closeUnfinished(AccountId account, WorkoutStore.Workout workout, Instant endedAt) {
+        if (workouts.closeIfOpen(account, workout.id(), endedAt)) {
+            retarget(account, workout, Set.copyOf(workout.uncleanExerciseIds()));
+        }
+    }
+
+    /**
      * A finished session's sets were edited (K-432, ADR-037 #48: data corrected, U2): its targets are derived again from
      * what it holds now, with the finish's answer on form. A target a newer session set stays (setNext keeps the newest);
      * one this session set for a move none of whose sets are left is gone. A session under way waits for its finish.

@@ -238,6 +238,20 @@ class ConsistencyTests {
         assertThat(Consistency.weekStartOf(lateSundayUtc, ZoneId.of("America/New_York"))).isEqualTo(LocalDate.of(2026, 10, 19));
     }
 
+    @Test
+    void aSessionLoggedLateCountsInTheWeekItStartedIn() {
+        // ADR-071 #3, ADR-075 #5: late logging is no make-up (U7) — it is the week's own record. A session started Sunday
+        // 20:00 in Istanbul and filled in on Tuesday (or closed by itself a day later, unfinished_session_close_hours) is
+        // the week that ended on that Sunday: the start is the moment read, never the moment it was written down.
+        ZoneId istanbul = ZoneId.of("Europe/Istanbul");
+        Instant startedSundayEvening = Instant.parse("2026-10-04T17:00:00Z");
+        Instant filledInTuesday = Instant.parse("2026-10-06T09:00:00Z");
+
+        assertThat(Consistency.weekStartOf(startedSundayEvening, istanbul)).isEqualTo(LocalDate.of(2026, 9, 28));
+        assertThat(Consistency.weekStartOf(filledInTuesday, istanbul)).as("the week it was written down in, not read")
+                .isEqualTo(LocalDate.of(2026, 10, 5));
+    }
+
     @Property
     boolean everyMomentFallsInTheMondayWeekThatContainsItsHomeDate(@ForAll("moments") Instant moment, @ForAll("zones") ZoneId home) {
         LocalDate weekStart = Consistency.weekStartOf(moment, home);
