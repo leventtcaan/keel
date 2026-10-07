@@ -10,11 +10,17 @@ import { type GymWeights, round } from './loadSteps';
 
 type Equipment = components['schemas']['Equipment'];
 
-/** The load just logged plus the step, as the gym makes it; null when the gym makes nothing heavier. */
+/** A suggestion is never more than one step over the load logged, as the server's heavierLoadKg (K-960). */
+const ONE_STEP = 1;
+
+/**
+ * The load just logged plus the step, as the gym makes it; null when the gym makes nothing heavier within that one step
+ * (a sparse rack, 16 then 20 on a 2.5 step: no suggestion rather than a jump).
+ */
 export function calibrationNext(loggedKg: number, stepKg: number, gym: GymWeights | null, equipment: Equipment, exerciseId: string): number | null {
   const target = Math.round((loggedKg + stepKg) * 100) / 100;
   if (gym === null) return target;
-  const rounding = round(equipment, exerciseId, gym, loggedKg, target);
+  const rounding = round(equipment, exerciseId, gym, loggedKg, target, ONE_STEP);
   switch (rounding.kind) {
     case 'to':
       return rounding.kg;
