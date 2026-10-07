@@ -12,6 +12,8 @@ test('RUBİN is gone from both palettes (ADR-070 replaces ADR-016)', () => {
 });
 
 test('the turquoise accent: a fill on light, the bright one on dark and on the black block (ADR-070 #1)', () => {
+  // One shade under ADR-070's #007C8C: the accent is text too, and #007C8C is 4.42:1 on the surface (ADR-070 Ek 1).
+  expect(palettes.light.accent).toBe('#007684');
   expect(palettes.light.onAccent).toBe('#FFFFFF');
   expect(palettes.dark.accent).toBe('#35D7CF');
   expect(palettes.dark.onAccent).toBe('#061212');

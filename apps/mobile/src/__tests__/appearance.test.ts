@@ -66,3 +66,13 @@ test('sign-out forgets the choice: the next person starts on Light', async () =>
   expect(appearance.current()).toBe('light');
   expect(heard).toHaveBeenCalledTimes(1);
 });
+
+test('a choice the phone could not keep changes nothing, and the caller hears why', async () => {
+  const kv = { ...memoryKv(), setItemAsync: async () => Promise.reject(new Error('disk full')) };
+  const appearance = await createAppearance({ kv });
+  const heard = jest.fn();
+  appearance.subscribe(heard);
+  await expect(appearance.set('dark')).rejects.toThrow('disk full');
+  expect(appearance.current()).toBe('light');
+  expect(heard).not.toHaveBeenCalled();
+});

@@ -2,6 +2,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { type ReactNode, useEffect } from 'react';
+import { Appearance } from 'react-native';
 
 import { ServicesProvider, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
@@ -79,9 +80,16 @@ function AppStack() {
   );
 }
 
-/** The person's appearance choice, once the services can read it (ADR-070 #3). */
+/**
+ * The person's appearance choice, once the services can read it (ADR-070 #3). iOS is told the same, so its own parts
+ * (status bar, tab bar, sheets, keyboard) match the page; 'unspecified' lets it follow the phone again.
+ */
 function ChosenTheme({ children }: { children: ReactNode }) {
-  return <ThemeProvider appearance={useAppearance()}>{children}</ThemeProvider>;
+  const appearance = useAppearance();
+  useEffect(() => {
+    Appearance.setColorScheme(appearance === 'system' ? 'unspecified' : appearance);
+  }, [appearance]);
+  return <ThemeProvider appearance={appearance}>{children}</ThemeProvider>;
 }
 
 export default function RootLayout() {

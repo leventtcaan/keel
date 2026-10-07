@@ -62,9 +62,11 @@ taraması), paylaşım çıkartması (ADR-076), ADR-016 (YERİNİ ALDI → ADR-0
 `contrast.test.ts` iki temada ve odak modunda dolgu üstü metin ≥4,5:1 · `tokens.test.ts` renk literali yalnız token dosyasında · tema seçici
 testi (Light/Dark/System, varsayılan Light, oturum ekranı her zaman koyu) · copy testi: `en.json`'da "—" ve "–" yok.
 
-## Ek 1 · Metin olarak turkuaz bir ton koyu (K-951, 2026-10-07, agent, teknik)
+## Ek 1 · Metin olarak turkuaz bir ton koyu (K-951, 2026-10-07, agent; **Levent onayı bekliyor**: marka rengi)
 Vurgu yalnız dolgu değil, metin de ("in use", bağlantılar, rekor). `#007C8C` yüzeyde (`#F1F3F3`) 4,42:1 veriyor (AA altı) ve koyu temada açık
 karar bloğunda (`#F1F4F4`) 4,46:1. Tek token korunarak açık vurgu ve koyu temanın blok içi vurgusu **`#007684`** oldu: beyaz metin üstünde
 5,35:1, yüzeyde 4,80:1, açık blokta 4,84:1, yumuşak zeminde (`#DDF3F4`) 4,64:1. Göz için fark yok; iki ayrı token (dolgu/metin) 20 dosyaya
 dokunacaktı. Koyu temada `decisionText` zeminle aynı (`#0E1010`): sayfadaki seçili çip blok renkleriyle çizilir (`Chip`).
 Tema tercihi telefonda (`appearance` anahtarı, veri envanteri) ve oturum kapanınca silinir: sonraki kişi Light ile başlar.
+Uygulama seçimi iOS'a da bildirir (`Appearance.setColorScheme`; System → `unspecified`): durum çubuğu, sekme çubuğu ve sayfalar sayfayla aynı
+temada. Levent `#007C8C`'yi dolgu için korumak isterse ayrı bir metin token'ı eklenir (vurgu metni ~20 dosyada).

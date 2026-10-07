@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/Chip';
 import { ProblemText } from '@/components/ProblemText';

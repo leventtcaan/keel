@@ -26,7 +26,9 @@ const mockServices = {
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
-  useAppearance: () => mockServices.appearance.current(),
+  // Subscribed, as the real hook is: a tap shows at once.
+  useAppearance: () =>
+    jest.requireActual<typeof import('react')>('react').useSyncExternalStore(mockServices.appearance.subscribe, mockServices.appearance.current),
 }));
 
 beforeEach(() => {
@@ -51,8 +53,18 @@ test('three choices, Light selected until the person picks', async () => {
   expect(screen.getByRole('button', { name: t('settings.appearance.system') }).props.accessibilityState).toMatchObject({ selected: false });
 });
 
-test('a tap keeps the choice', async () => {
+test('a tap keeps the choice, and the selection moves at once', async () => {
   await show();
-  await fireEvent.press(screen.getByRole('button', { name: t('settings.appearance.system') }));
-  expect(mockServices.appearance.set).toHaveBeenCalledWith('system');
+  await fireEvent.press(screen.getByRole('button', { name: t('settings.appearance.dark') }));
+  expect(mockServices.appearance.set).toHaveBeenCalledWith('dark');
+  expect(screen.getByRole('button', { name: t('settings.appearance.dark') }).props.accessibilityState).toMatchObject({ selected: true });
+  expect(screen.getByRole('button', { name: t('settings.appearance.light') }).props.accessibilityState).toMatchObject({ selected: false });
+});
+
+test('a choice that could not be kept says so, and the old one stays selected', async () => {
+  mockServices.appearance.set.mockRejectedValueOnce(new Error('disk full'));
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: t('settings.appearance.dark') }));
+  expect(await screen.findByText(t('settings.appearance.failed'))).toBeTruthy();
+  expect(screen.getByRole('button', { name: t('settings.appearance.light') }).props.accessibilityState).toMatchObject({ selected: true });
 });
