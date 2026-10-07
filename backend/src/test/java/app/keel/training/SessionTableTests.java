@@ -78,6 +78,15 @@ class SessionTableTests {
     }
 
     @Test
+    void aMoveWithoutATargetCarriesTheRegionsStepForCalibrationAndOnlyThen() {
+        // ADR-075 Ek 1 (G6 K-40, H3 B4): the phone adds the step to the load just logged and rounds it to the gym.
+        assertThat(SessionTable.calibrationStep(Optional.empty(), BodyRegion.UPPER, P)).hasValueSatisfying(kg -> assertThat(kg).isEqualByComparingTo("2.5"));
+        assertThat(SessionTable.calibrationStep(Optional.empty(), BodyRegion.LOWER, P)).hasValueSatisfying(kg -> assertThat(kg).isEqualByComparingTo("5"));
+        assertThat(SessionTable.calibrationStep(Optional.of(new NextTargets.Target(new BigDecimal("60"), 8)), BodyRegion.UPPER, P))
+                .as("a target: the session starts from it, no calibration").isEmpty();
+    }
+
+    @Test
     void theNextLoadOnceEverySetIsAtTheTopIsTheDoubleProgressions() {
         NextTargets.Target bench = new NextTargets.Target(new BigDecimal("60"), 8);
         NextTargets.Target squat = new NextTargets.Target(new BigDecimal("100"), 7);

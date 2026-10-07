@@ -85,7 +85,7 @@ class ContractTests {
 
         assertThat(properties(planned).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(sent));
         assertThat(properties(map(properties(planned).get("lastBestSet"))).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(best));
-        assertThat(properties(planned).keySet()).contains("lighterLoadKg", "heavierLoadKg", "lastBestSet", "nextLoadAtTopKg");
+        assertThat(properties(planned).keySet()).contains("lighterLoadKg", "heavierLoadKg", "lastBestSet", "nextLoadAtTopKg", "calibrationStepKg");
     }
 
     private static List<String> componentNames(Class<?> record) {

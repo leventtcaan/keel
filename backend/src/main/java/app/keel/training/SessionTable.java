@@ -34,6 +34,15 @@ final class SessionTable {
                 : ParameterKey.LOAD_INCREMENT_LOWER_KG));
     }
 
+    /**
+     * The first-session calibration's step (ADR-075 Ek 1): the region's, only on a move with no target. The phone adds it
+     * to the load just logged after a set with calibration_rir_min reps left or more and rounds it to the gym (the shared
+     * load steps, as warm-ups) — no load to start from is known here before the user types one.
+     */
+    static Optional<BigDecimal> calibrationStep(Optional<NextTargets.Target> target, BodyRegion region, Parameters parameters) {
+        return target.isPresent() ? Optional.empty() : Optional.of(Decimals.plain(stepKg(region, parameters)));
+    }
+
     /** One step over {@code fromKg}: the heaviest load the gym makes at most a step over it; the step itself where it says nothing. */
     static Optional<BigDecimal> heavier(ExerciseCatalog.Equipment equipment, String exerciseId, Optional<GymStore.Gym> gym, BigDecimal fromKg,
             BigDecimal stepKg) {

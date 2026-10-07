@@ -155,6 +155,9 @@ class SessionProgressApiTests {
 
         assertThat(planned(account, 1)).as("squat: no session yet, nothing to start from")
                 .doesNotContainKeys("lighterLoadKg", "heavierLoadKg", "lastBestSet", "nextLoadAtTopKg");
+        // ADR-075 Ek 1: calibration only where there is no target — the squat's lower-body step, none on the bench.
+        assertThat(kg(planned(account, 1).get("calibrationStepKg"))).isEqualByComparingTo(step(ParameterKey.LOAD_INCREMENT_LOWER_KG));
+        assertThat(bench).doesNotContainKey("calibrationStepKg");
     }
 
     @Test
