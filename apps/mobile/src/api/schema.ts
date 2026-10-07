@@ -2116,6 +2116,12 @@ export interface components {
              */
             readTrendKg?: number;
             application: components["schemas"]["Application"];
+            /**
+             * @description Whether "Keep last week's plan" may be offered now (K-963, ADR-077 #3), decided by the server: the latest call,
+             *     PENDING or APPLIED, and not resting on the safety net (U13; the phone does not know its rules). False for a
+             *     call that changes nothing, an older one, one undone or already declined. POST /v1/decisions/{id}/decline.
+             */
+            declinable: boolean;
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did

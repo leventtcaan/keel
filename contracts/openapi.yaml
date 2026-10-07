@@ -3008,7 +3008,7 @@ components:
           minimum: 0
     Decision:
       type: object
-      required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, application]
+      required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, application, declinable]
       properties:
         id:
           type: string
@@ -3043,6 +3043,12 @@ components:
             ledger can say what came after it — never why. Absent when the call read no window.
         application:
           $ref: "#/components/schemas/Application"
+        declinable:
+          type: boolean
+          description: |
+            Whether "Keep last week's plan" may be offered now (K-963, ADR-077 #3), decided by the server: the latest call,
+            PENDING or APPLIED, and not resting on the safety net (U13; the phone does not know its rules). False for a
+            call that changes nothing, an older one, one undone or already declined. POST /v1/decisions/{id}/decline.
     DecisionBasis:
       type: object
       description: |
