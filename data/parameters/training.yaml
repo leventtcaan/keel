@@ -5,6 +5,12 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G1-antrenman.md#K-5"
     note: "Çalışma setleri RIR 0-1. Eski arşivde RIR 1-2 (G6 K-40) — 2026 görüşü geçerli."
+  - key: calibration_rir_min
+    value: 2
+    unit: reps_in_reserve
+    tag: tecrube
+    source: "arastirma/ham/guray/G6-eski-arsiv.md#K-40"
+    note: "İlk seans kalibrasyonu (K-960, ADR-075 #3): hedef kilosu olmayan harekette bu kadar ya da daha çok tekrar cepte kalan set (telefonda '2+'), sonraki sete bir basamak ağır (PlannedExercise.heavierLoadKg) önerir. G6 K-40: rezervde 2'den fazla kalan set çalışma seti sayılmaz; G1 K-5 hedef 0-1 (target_rir_max). '2+' seçeneği eski 3+ kayıtlarını da kapsar. Telefonun rir_choices son seçeneği bu değerdir (MobileParameterMirrorTests)."
   - key: e1rm_epley_divisor
     value: 30
     unit: reps

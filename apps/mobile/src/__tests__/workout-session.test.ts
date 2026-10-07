@@ -3,7 +3,8 @@
  * place in the session, and the set body the queue sends — the row's side, a bodyweight move's 0, the RIR picked.
  */
 import type { components } from '@/api/schema';
-import { buildSet, exerciseStatus, parseEntry, restText, setText } from '@/train/session';
+import { workoutParams } from '@/train/params';
+import { buildSet, exerciseStatus, parseEntry, restText, rirChoice, setText } from '@/train/session';
 import type { ExercisePlan } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -73,6 +74,11 @@ test("the set the queue sends: a working set with the row's side and the RIR pic
     side: 'BOTH',
   });
   expect(buildSet('c2', row, 'LEFT', { loadKg: 20, reps: 12 }, 3)).toMatchObject({ side: 'LEFT', rir: 3 });
+});
+
+test('the RIR picker is 0, 1 and 2+; an older set logged as 3 or more shows as 2+ (K-960, ADR-075 #2)', () => {
+  expect(workoutParams.rirChoices).toEqual([0, 1, 2]);
+  expect([0, 1, 2, 3, 5].map(rirChoice)).toEqual([0, 1, 2, 2, 2]);
 });
 
 test('a set with a note keeps the words without their outer spaces; only spaces is no note (K-422)', () => {

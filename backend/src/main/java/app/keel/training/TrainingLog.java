@@ -6,8 +6,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
@@ -65,6 +68,29 @@ public class TrainingLog {
                   and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type <> 'WARM_UP')""")
                 .param("account", account.value()).param("before", before.atOffset(ZoneOffset.UTC))
                 .query((row, n) -> Optional.ofNullable(row.getObject("last", OffsetDateTime.class)).map(OffsetDateTime::toInstant)).single();
+    }
+
+    /**
+     * Each move's working sets in its last session started before {@code before} (K-960: "Beat last time"), by move, in
+     * the order they were done. A move outside the catalog (the user's own) is left out: a program has none.
+     */
+    Map<String, List<WorkSet>> lastSessions(AccountId account, Instant before) {
+        return jdbc.sql("""
+                with done as (
+                    select s.exercise_id, w.started_at, s.load_kg, s.reps, s.rir, s.side, s.seq from training.workout_set s
+                    join training.workout w on w.id = s.workout_id
+                    where s.account_id = :account and s.set_type = 'WORKING' and w.imported_from is null and w.started_at < :before)
+                select d.exercise_id, d.started_at, d.load_kg, d.reps, d.rir, d.side from done d
+                where d.started_at = (select max(l.started_at) from done l where l.exercise_id = d.exercise_id)
+                order by d.exercise_id, d.seq""")
+                .param("account", account.value()).param("before", before.atOffset(ZoneOffset.UTC))
+                .query((row, n) -> new WorkSet(row.getString("exercise_id"), row.getObject("started_at", OffsetDateTime.class).toInstant(), null,
+                        Decimals.plain(row.getBigDecimal("load_kg")), row.getInt("reps"), row.getObject("rir", Integer.class),
+                        row.getString("side") == null ? null : Side.valueOf(row.getString("side"))))
+                .list().stream()
+                .flatMap(set -> catalog.find(set.exerciseId())
+                        .map(exercise -> new WorkSet(set.exerciseId(), set.at(), exercise.load(), set.loadKg(), set.reps(), set.rir(), set.side())).stream())
+                .collect(Collectors.groupingBy(WorkSet::exerciseId, LinkedHashMap::new, Collectors.toList()));
     }
 
     /** The working sets of a move in workouts started in [from, to), in the order they were done. */

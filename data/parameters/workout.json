@@ -20,13 +20,20 @@
       "value": [
         0,
         1,
-        2,
-        3
+        2
       ],
       "unit": "reps_in_reserve",
-      "tag": "urun",
-      "source": "arastirma/ham/B-antrenman.md#6.5",
-      "note": "The quick RIR picker (B 6.5: one tap per set): 0, 1, 2 and 3+. The last choice means 3 or more and is logged as 3; work sets aim at 0-1 (target_rir_max, G1 K-5), so anything past 3 says the same thing: further from failure than planned."
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G6-eski-arsiv.md#K-40",
+      "note": "The quick RIR picker (ADR-075 #2; B 6.5: one tap per set): 0, 1 and 2+. The last choice means 2 or more and is logged as 2: work sets aim at 0-1 (target_rir_max, G1 K-5) and a set with more than 2 left is no work set (G6 K-40), so 3+ told nothing the decision used. An older set logged as 3 shows as 2+. The last choice is calibration_rir_min (MobileParameterMirrorTests)."
+    },
+    {
+      "key": "calibration_rir_min",
+      "value": 2,
+      "unit": "reps_in_reserve",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G6-eski-arsiv.md#K-40",
+      "note": "The same as training.yaml (K-960, ADR-075 #3): on a move with no target, a set logged with this many reps left or more (2+) is offered the server's heavierLoadKg for the next set. MobileParameterMirrorTests keeps the two equal."
     },
     {
       "key": "set_max_load_kg",

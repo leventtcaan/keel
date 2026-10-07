@@ -125,6 +125,58 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void theProgramCarriesTheInSessionTableAsTheGymMakesIt() throws Exception {
+        // K-960 (ADR-075 #3): the phone picks in the gym, offline, from what the server worked out: one load step either way
+        // from the target as the gym makes it and never further (the rack has no 18: nothing heavier than 16 within 2.5),
+        // the last session's best set, and the load once every set is at the top (16 → 20 is within the jump limit).
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Home", "current", true, "barKg", 20,
+                "platesKg", List.of(20, 10, 5, 2.5, 1.25), "dumbbellsKg", List.of(10, 12, 14, 16, 20), "machines", List.of()));
+        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(2)));
+        set(account, workout, "bench_press", 60, 8, 1, "BOTH");
+        set(account, workout, "bench_press", 60, 8, 0, "BOTH");
+        set(account, workout, "bench_press", 60, 7, 0, "BOTH");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 16, 9, "LEFT");
+        sets(account, workout, "one_arm_dumbbell_row", 3, 16, 9, "RIGHT");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        Map<String, Object> bench = planned(account, 0);
+        assertThat(next(account, 0)).isEqualTo(target(60, 8));
+        assertThat(kg(bench.get("lighterLoadKg"))).isEqualByComparingTo("57.5");
+        assertThat(kg(bench.get("heavierLoadKg"))).isEqualByComparingTo("62.5");
+        assertThat(kg(bench.get("nextLoadAtTopKg"))).isEqualByComparingTo("62.5");
+        assertThat((Map<String, Object>) bench.get("lastBestSet")).containsEntry("reps", 8).containsEntry("rir", 0);
+        assertThat(kg(((Map<String, Object>) bench.get("lastBestSet")).get("loadKg"))).isEqualByComparingTo("60");
+
+        Map<String, Object> row = planned(account, 3);
+        assertThat(kg(row.get("lighterLoadKg"))).isEqualByComparingTo("14");
+        assertThat(row).doesNotContainKey("heavierLoadKg");
+        assertThat(kg(row.get("nextLoadAtTopKg"))).isEqualByComparingTo("20");
+
+        assertThat(planned(account, 1)).as("squat: no session yet, nothing to start from")
+                .doesNotContainKeys("lighterLoadKg", "heavierLoadKg", "lastBestSet", "nextLoadAtTopKg");
+    }
+
+    @Test
+    void aFirstSessionsCalibratedLoadIsTheTargetAndTheTableStartsFromIt() throws Exception {
+        // K-960 (ADR-075 #3, G6 K-40): no target, so the phone offered the heavier load after sets with 2+ reps left (an old
+        // 3+ among them). At the finish the load found is the target, and the next session's table starts from it.
+        AccountId account = withAProgram();
+        String workout = start(account, Instant.now().minus(java.time.Duration.ofDays(2)));
+        set(account, workout, "bench_press", 40, 10, 3, "BOTH");
+        set(account, workout, "bench_press", 40, 10, 2, "BOTH");
+        set(account, workout, "bench_press", 42.5, 9, 1, "BOTH");
+        set(account, workout, "bench_press", 42.5, 8, 0, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        Map<String, Object> bench = planned(account, 0);
+        assertThat(next(account, 0)).isEqualTo(target(42.5, 9));
+        assertThat(kg(bench.get("lighterLoadKg"))).isEqualByComparingTo("40");
+        assertThat(kg(bench.get("heavierLoadKg"))).isEqualByComparingTo("45");
+        assertThat((Map<String, Object>) bench.get("lastBestSet")).containsEntry("reps", 9).containsEntry("rir", 1);
+    }
+
+    @Test
     void aSessionOfAnyKindSinceEndsTheBreakTheAccountsNotADays() throws Exception {
         // ADR-043 #75: the break is the training log's. A session two days ago with no program day (or another day of the
         // program) was training: the day's three-week-old targets are not stepped back, and nothing says "back after a break".

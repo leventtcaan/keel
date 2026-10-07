@@ -19,7 +19,7 @@ import { SupersetLine } from '@/train/SupersetLink';
 import { exerciseName, shortDate } from '@/train/program';
 import { supersetPartners } from '@/train/superset';
 import { type Move, movesOf } from '@/train/trainData';
-import { buildSet, parseEntry, setText } from '@/train/session';
+import { buildSet, parseEntry, rirChoice, setText } from '@/train/session';
 import { weightInput } from '@/units/units';
 
 type Schemas = components['schemas'];
@@ -81,7 +81,7 @@ export default function WorkoutEditScreen() {
       : {
           load: last === undefined ? '' : weightInput(last.loadKg, units),
           reps: last === undefined ? '' : String(last.reps),
-          rir: last?.rir ?? 0,
+          rir: rirChoice(last?.rir ?? 0),
           note: null,
         };
 

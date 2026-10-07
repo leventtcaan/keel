@@ -83,6 +83,14 @@ export function noteOf(text: string | undefined): string | null {
   return words === '' ? null : words;
 }
 
+/**
+ * The picker's choice a logged RIR falls in (ADR-075 #2): the last choice is that many or more ("2+"), so an older set
+ * logged as 3 from the 3+ choice is in it.
+ */
+export function rirChoice(rir: number): number {
+  return Math.min(rir, workoutParams.rirChoices[workoutParams.rirChoices.length - 1]);
+}
+
 /** A work set with the row's side, the RIR picked and its note, if any. */
 export function buildSet(
   clientId: string,

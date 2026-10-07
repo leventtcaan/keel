@@ -1,6 +1,7 @@
 package app.keel.training;
 
 import app.keel.engine.BodyRegion;
+import app.keel.engine.LiftKind;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
@@ -22,6 +23,7 @@ import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -56,11 +58,28 @@ class ProgramController {
 
     /**
      * Contract PlannedExercise; {@code sets} is this week's (a deload lowers it, K-217), {@code baseSets} the program's;
-     * {@code rackEnds} true only when the target shown stopped at the ceiling (K-534), absent otherwise.
+     * {@code rackEnds} true only when the target shown stopped at the ceiling (K-534), absent otherwise. The in-session
+     * table (K-960, ADR-075 #3) — {@code lighterLoadKg}, {@code heavierLoadKg}, {@code lastBestSet},
+     * {@code nextLoadAtTopKg} — each absent where there is none (SessionTable).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record PlannedExercise(String exerciseId, int baseSets, int sets, Reps reps, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
-            Boolean rackEnds) {
+            Boolean rackEnds, BigDecimal lighterLoadKg, BigDecimal heavierLoadKg, BestSet lastBestSet, BigDecimal nextLoadAtTopKg) {
+    }
+
+    /** Contract PlannedExercise.lastBestSet: the best working set of the move's last session before today (K-960). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record BestSet(BigDecimal loadKg, int reps, Integer rir) {
+
+        static BestSet of(TrainingLog.WorkSet set) {
+            return new BestSet(set.loadKg(), set.reps(), set.rir());
+        }
+    }
+
+    /** A move's in-session options (K-960); null where there is none. */
+    private record Table(BigDecimal lighterKg, BigDecimal heavierKg, BigDecimal nextAtTopKg) {
+
+        static final Table NONE = new Table(null, null, null);
     }
 
     /** Contract ProgramDay: {@code nameKey} for a generated day, {@code name} for the user's own. */
@@ -170,12 +189,18 @@ class ProgramController {
         Optional<LocalDate> lastSession = log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant())
                 .map(started -> started.atZone(zone).toLocalDate());
         Back back = new Back(today, zone, parametersFor(account), gyms.current(account), lastSession);
+        // "Beat last time" is the last session before today's, as the break is (a session under way is not its own last time).
+        Map<String, List<TrainingLog.WorkSet>> lastSessions = log.lastSessions(account, today.atStartOfDay(zone).toInstant());
         List<ProgramDay> days = program.days().stream().map(day -> new ProgramDay(day.id(), day.nameKey(), day.name(), day.weekday(),
                 day.exercises().stream().map(planned -> {
                     Optional<NextTargets.Target> next = next(planned, held, back);
-                    return new PlannedExercise(planned.exerciseId(), planned.sets(), TrainingChanges.sets(planned.sets(), lighter),
+                    int thisWeeksSets = TrainingChanges.sets(planned.sets(), lighter);
+                    Optional<TrainingLog.WorkSet> best = SessionTable.best(lastSessions.getOrDefault(planned.exerciseId(), List.of()));
+                    Table table = table(planned, next, best, held, thisWeeksSets, back);
+                    return new PlannedExercise(planned.exerciseId(), planned.sets(), thisWeeksSets,
                             new Reps(planned.repMin(), planned.repMax()), planned.targetRir(), next.map(NextTargets.Target::loadKg).orElse(null),
-                            next.map(NextTargets.Target::reps).orElse(null), next.filter(NextTargets.Target::rackEnds).map(target -> Boolean.TRUE).orElse(null));
+                            next.map(NextTargets.Target::reps).orElse(null), next.filter(NextTargets.Target::rackEnds).map(target -> Boolean.TRUE).orElse(null),
+                            table.lighterKg(), table.heavierKg(), best.map(BestSet::of).orElse(null), table.nextAtTopKg());
                 }).toList())).toList();
         boolean backAfterBreak = program.days().stream().flatMap(day -> day.exercises().stream()).anyMatch(planned -> afterBreak(planned, back));
         // backAfterBreak: some target shown a step lighter today — the account's break, not one program day's.
@@ -229,6 +254,31 @@ class ProgramController {
         }
         return Optional.of(NextTargets.shown(new NextTargets.Target(planned.nextLoadKg(), planned.nextReps(), planned.nextRackEnds()), planned.lastLoadKg(),
                 new RepRange(planned.repMin(), planned.repMax()), held));
+    }
+
+    /**
+     * The in-session table of a planned move (K-960, ADR-075 #3), worked out here so the phone only picks in the gym:
+     * a step either way from the load the session starts at — the target shown, else the last session's best set — as the
+     * gym in use makes it, and the load once every set is at the top (only from a target). None on a bodyweight move.
+     */
+    private Table table(ProgramStore.PlannedExercise planned, Optional<NextTargets.Target> next, Optional<TrainingLog.WorkSet> best, boolean held,
+            int thisWeeksSets, Back back) {
+        return catalog.find(planned.exerciseId()).filter(exercise -> exercise.load() != ExerciseCatalog.Load.BODYWEIGHT).map(exercise -> {
+            Parameters p = back.parameters();
+            LiftKind kind = LiftKind.valueOf(exercise.kind().name());
+            BodyRegion region = BodyRegion.valueOf(catalog.region(exercise.muscles().getFirst()).name());
+            BigDecimal step = SessionTable.stepKg(region, p);
+            Optional<BigDecimal> from = next.map(NextTargets.Target::loadKg).or(() -> best.map(TrainingLog.WorkSet::loadKg)).filter(kg -> kg.signum() > 0);
+            // A jump limit only where the set's load is all the load moved (K-430), as a finished session's target has.
+            BigDecimal maxJump = LoadSteps.wholeLoad(exercise.equipment()) ? BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS)) : null;
+            Optional<BigDecimal> atTop = next.flatMap(target -> SessionTable.nextAtTop(kind, region, new RepRange(planned.repMin(), planned.repMax()),
+                    target, thisWeeksSets, planned.targetRir(), held, load -> back.gym()
+                            .map(gym -> LoadSteps.round(exercise.equipment(), exercise.id(), gym, target.loadKg(), load, maxJump))
+                            .orElse(new LoadSteps.Rounding.Unknown()), p));
+            return new Table(from.flatMap(kg -> SessionTable.lighter(exercise.equipment(), exercise.id(), back.gym(), kg, step)).orElse(null),
+                    from.flatMap(kg -> SessionTable.heavier(exercise.equipment(), exercise.id(), back.gym(), kg, step)).orElse(null),
+                    atTop.orElse(null));
+        }).orElse(Table.NONE);
     }
 
     private static void require(boolean valid) {
