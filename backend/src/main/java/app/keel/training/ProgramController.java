@@ -103,11 +103,19 @@ class ProgramController {
     /**
      * Contract Program, with the deload ladder's calls in force today (K-217): a lighter week, a week off
      * ({@code restUntil}), the load held ({@code loadHeldSince}); back after a long break (K-531), a target a step lighter
-     * ({@code backAfterBreak}, absent otherwise).
+     * ({@code backAfterBreak}, absent otherwise); the program reviewed as it is now (K-956).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Program(UUID id, ProgramStore.Source source, List<ProgramDay> days, DeloadWeek deload, LocalDate restUntil,
-            LocalDate loadHeldSince, Boolean backAfterBreak) {
+            LocalDate loadHeldSince, Boolean backAfterBreak, ProgramReviews.Review review) {
+    }
+
+    /** Contract ReviewApply. */
+    record ReviewApply(String reviewId, List<String> suggestionIds) {
+    }
+
+    /** Contract ReviewUndo: no change, every change in force. */
+    record ReviewUndo(UUID changeId) {
     }
 
     private final ProgramStore store;
@@ -122,10 +130,12 @@ class ProgramController {
     private final GymStore gyms;
     private final TrainingLog log;
     private final StartingWeightReps startingWeightReps;
+    private final ProgramReviews reviews;
 
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
             WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log,
-            StartingWeightReps startingWeightReps) {
+            StartingWeightReps startingWeightReps, ProgramReviews reviews) {
+        this.reviews = reviews;
         this.startingWeightReps = startingWeightReps;
         this.gyms = gyms;
         this.log = log;
@@ -211,6 +221,27 @@ class ProgramController {
         return view(account, store.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
     }
 
+    /** The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions, and the review's changes in force. */
+    @GetMapping("/v1/program/review")
+    ProgramReviews.Review review(AccountId account) {
+        ProgramStore.Program program = store.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return reviews.review(account, program, parametersFor(account));
+    }
+
+    /** The suggestions the user picked from the review {@code reviewId} names (ADR-073 #3), each a change of its own. */
+    @PostMapping("/v1/program/review/apply")
+    Program applyReview(AccountId account, @RequestBody ReviewApply request) {
+        List<String> picks = request.suggestionIds();
+        require(request.reviewId() != null && picks != null && !picks.isEmpty() && !picks.contains(null) && Set.copyOf(picks).size() == picks.size());
+        return view(account, reviews.apply(account, request.reviewId(), picks, parametersFor(account)));
+    }
+
+    /** "N changes applied · Undo" (ADR-073 #3): one change, or every change in force. */
+    @PostMapping("/v1/program/review/undo")
+    Program undoReview(AccountId account, @RequestBody ReviewUndo request) {
+        return view(account, reviews.undo(account, Optional.ofNullable(request.changeId()), parametersFor(account)));
+    }
+
     /**
      * The engine's parameters for this user. The training ones have one value for both sexes; the profile's sex is used
      * when there is one, so a sex-specific parameter added later reads the right value.
@@ -250,7 +281,7 @@ class ProgramController {
         return new Program(program.id(), program.source(), days, lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null),
-                backAfterBreak ? Boolean.TRUE : null);
+                backAfterBreak ? Boolean.TRUE : null, reviews.review(account, program, back.parameters()));
     }
 
     /**

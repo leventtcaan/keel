@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Training's part of the user's data (K-214): every workout with its sets, the program (K-211), what each program asked
- * (K-535) and its calls (K-217), the gyms (K-414), the user's own moves (K-424).
+ * (K-535) and its calls (K-217), the review's changes to it (K-956), the gyms (K-414), the user's own moves (K-424).
  */
 @Component
 class TrainingAccountData implements AccountDataExport {
@@ -22,8 +22,11 @@ class TrainingAccountData implements AccountDataExport {
     private final TrainingCalls calls;
     private final GymStore gyms;
     private final CustomExerciseStore customs;
+    private final ReviewChangeStore reviewChanges;
 
-    TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs, TrainingCalls calls, GymStore gyms, CustomExerciseStore customs) {
+    TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs, TrainingCalls calls, GymStore gyms, CustomExerciseStore customs,
+            ReviewChangeStore reviewChanges) {
+        this.reviewChanges = reviewChanges;
         this.customs = customs;
         this.calls = calls;
         this.gyms = gyms;
@@ -39,7 +42,7 @@ class TrainingAccountData implements AccountDataExport {
         jdbc.sql("delete from training.workout where account_id = :account").param("account", deletion.account().value()).update();
         // The program's days and moves go with it (on delete cascade); by account too, as for sets.
         // A gym's weights and machines go with it (on delete cascade); by account too.
-        for (String table : new String[] {"program_change", "program_history", "planned_exercise", "program_day", "program", "gym_weight", "gym_machine", "gym",
+        for (String table : new String[] {"program_change", "program_review_change", "program_history", "planned_exercise", "program_day", "program", "gym_weight", "gym_machine", "gym",
             "custom_exercise"}) {
             jdbc.sql("delete from training." + table + " where account_id = :account").param("account", deletion.account().value()).update();
         }
@@ -58,6 +61,7 @@ class TrainingAccountData implements AccountDataExport {
         programs.current(account).ifPresent(program -> training.put("program", program));
         training.put("programHistory", programs.history(account));
         training.put("programChanges", calls.changes(account));
+        training.put("programReviewChanges", reviewChanges.all(account));
         training.put("gyms", gyms.all(account));
         training.put("customExercises", customs.all(account));
         return training;
