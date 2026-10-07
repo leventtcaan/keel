@@ -15,7 +15,7 @@ void SplashScreen.preventAutoHideAsync();
 // A failure while starting (no database, no server address) is shown with a way to try again, not a crash.
 export { ErrorBoundary } from 'expo-router';
 
-// The tabs always sit under a screen a link opens straight (keel://weigh-in); without an anchor it would be the only
+// The tabs always sit under a screen a link opens straight (keel://settings); without an anchor it would be the only
 // screen, with no tab bar and nothing to go back to.
 export const unstable_settings = { anchor: '(tabs)' };
 

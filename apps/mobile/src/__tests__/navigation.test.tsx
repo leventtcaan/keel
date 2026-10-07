@@ -177,6 +177,37 @@ test.each(RETIRED.map((name) => `/${name}`))('a link straight to %s opens This w
   expect(screen.getByRole('header', { name: t('screens.today.title') })).toBeOnTheScreen();
 });
 
+test('opened cold from a link (keel://settings), the tabs are underneath (the anchor)', async () => {
+  const router = renderRouter(APP, { initialUrl: '/settings' });
+  await router;
+  expect(router.getPathname()).toBe('/settings');
+  expect(appRouter.canGoBack()).toBe(true);
+  await act(async () => {
+    appRouter.back();
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/');
+});
+
+test('"+" then "Life got in the way" opens the state sheet in its place; back returns to the tab', async () => {
+  const router = renderRouter(APP, { initialUrl: '/train' });
+  await router;
+  await fireEvent.press(screen.getAllByRole('button', { name: t('plus.entry') })[1]);
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  await fireEvent.press(screen.getByRole('button', { name: t('plus.life') }));
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/state');
+  await act(async () => {
+    appRouter.back();
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/train');
+});
+
 test.each(['/', '/train', '/coach'])('signed out, the app opens on sign-in, even from %s', async (url) => {
   mockSignedIn = false;
   const router = renderRouter(APP, { initialUrl: url });

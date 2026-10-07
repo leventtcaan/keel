@@ -2,7 +2,7 @@
  * The "+" sheet (K-953, prototype #plus): log a weigh-in, a meal, today's workout, or say life got in the way. The workout
  * is today's session by name, a workout under way is continued, and with nothing planned today the Train tab opens.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
 import PlusScreen from '@/app/plus';
@@ -90,13 +90,32 @@ test("the workout is today's session, by name, and starts it", async () => {
   expect(mockReplace).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'a' } });
 });
 
-test('a workout under way is continued, not started again', async () => {
+test('a workout under way is continued, not started again, and the tile names that workout', async () => {
+  // Monday's workout left open; today (Tuesday) plans Upper A.
+  mockData = {
+    program: { state: 'ready', value: { ...PROGRAM, days: [...PROGRAM.days, { ...PROGRAM.days[0], id: 'b', nameKey: 'lower_a', weekday: 'MONDAY' }] } },
+    exercises: { state: 'none' },
+    kept: false,
+  };
   mockRecords = [
-    { kind: 'workout', clientId: 'w1', seq: 1, state: 'sent', body: { startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' } } as unknown as LocalRecord,
+    { kind: 'workout', clientId: 'w1', seq: 1, state: 'sent', body: { startedAt: '2026-09-28T08:00:00Z', programDayId: 'b' } } as unknown as LocalRecord,
   ];
   await show();
-  await fireEvent.press(await screen.findByRole('button', { name: `${t('plus.workout')}, ${t('programDays.upper_a.name')}` }));
+  await fireEvent.press(await screen.findByRole('button', { name: `${t('plus.workout')}, ${t('programDays.lower_a.name')}` }));
   expect(mockReplace).toHaveBeenCalledWith('/workout');
+});
+
+test('before the program is read, the workout tile waits instead of guessing', async () => {
+  let release: (value: TrainData) => void = () => {};
+  mockServices.training.read.mockImplementationOnce(() => new Promise<TrainData>((resolve) => (release = resolve)));
+  await show();
+  const tile = screen.getByRole('button', { name: t('plus.workout') });
+  expect(tile).toBeDisabled();
+  await fireEvent.press(tile);
+  expect(mockReplace).not.toHaveBeenCalled();
+  expect(mockDismissTo).not.toHaveBeenCalled();
+  await act(async () => release(mockData));
+  expect(await screen.findByRole('button', { name: `${t('plus.workout')}, ${t('programDays.upper_a.name')}` })).toBeEnabled();
 });
 
 test('nothing planned today: the workout opens the Train tab', async () => {

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -14,7 +15,7 @@ import { dayName } from '@/train/program';
 import { activeWorkout } from '@/train/workout';
 
 type Schemas = components['schemas'];
-type Tile = { key: string; detail: string | null; onPress: () => void };
+type Tile = { key: string; detail: string | null; onPress: () => void; waiting?: boolean };
 
 /**
  * The "+" sheet (K-953, ADR-069 #4, prototype #plus): log a weigh-in, a meal, today's workout, or say life got in the way.
@@ -33,8 +34,12 @@ export default function PlusScreen() {
 
   const today = data?.program == null ? null : programToday(data.program, day);
   const session: Schemas['ProgramDay'] | null = today?.kind === 'session' ? today.day : null;
+  // A workout under way is the one the tile opens, so it is the one the tile names (it may be another day's).
+  const active = data?.active ?? null;
+  const shown = active !== null ? (data?.program?.days.find((d) => d.id === active.programDayId) ?? null) : session;
   const workout = () => {
-    if (data?.active != null) router.replace('/workout');
+    if (data === null) return; // not read yet: which workout is not known
+    if (active !== null) router.replace('/workout');
     else if (session !== null) router.replace({ pathname: '/workout', params: { day: session.id } });
     else router.dismissTo('/train');
   };
@@ -42,11 +47,11 @@ export default function PlusScreen() {
   const tiles: Tile[] = [
     { key: 'plus.weighIn', detail: null, onPress: () => router.replace('/weigh-in') },
     { key: 'plus.meal', detail: null, onPress: () => router.replace('/meal') },
-    { key: 'plus.workout', detail: session === null ? null : dayName(session), onPress: workout },
+    { key: 'plus.workout', detail: shown === null ? null : dayName(shown), onPress: workout, waiting: data === null },
   ];
 
   return (
-    <View style={[styles.sheet, { backgroundColor: color.background }]}>
+    <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: color.background }]}>
       <ScreenTitle>{t('plus.title')}</ScreenTitle>
       <View style={styles.tiles}>
         {tiles.map((tile) => (
@@ -54,6 +59,8 @@ export default function PlusScreen() {
             key={tile.key}
             accessibilityRole="button"
             accessibilityLabel={tile.detail === null ? t(tile.key) : `${t(tile.key)}, ${tile.detail}`}
+            accessibilityState={{ disabled: tile.waiting === true }}
+            disabled={tile.waiting === true}
             onPress={tile.onPress}
             style={({ pressed }) => [styles.tile, { backgroundColor: color.surface }, pressed && styles.pressed]}>
             <Text style={[styles.tileLabel, { color: color.text }]}>{t(tile.key)}</Text>
@@ -70,7 +77,7 @@ export default function PlusScreen() {
         style={({ pressed }) => [styles.row, { borderColor: color.line }, pressed && styles.pressed]}>
         <Text style={[styles.rowLabel, { color: color.text }]}>{t('plus.life')}</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 
