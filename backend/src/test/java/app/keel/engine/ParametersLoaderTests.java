@@ -331,6 +331,18 @@ class ParametersLoaderTests {
     }
 
     @Test
+    void failsWhenTheDefaultCardioWouldRunPastItsOwnAfterLiftingLine() {
+        // The default session never triggers the "longer than cardio_after_lift_max_minutes" note it ships with (G2 K-35).
+        Map<String, Object> cut = repositoryDocuments();
+        entry(cut, "cardio.yaml", "cardio_minutes_cut").put("value", 45); // the line is 30
+        Map<String, Object> build = repositoryDocuments();
+        entry(build, "cardio.yaml", "cardio_minutes_build").put("value", 45);
+
+        assertProblem(cut, "cardio.yaml", "cardio_minutes_cut", "cardio_after_lift_max_minutes");
+        assertProblem(build, "cardio.yaml", "cardio_minutes_build", "cardio_after_lift_max_minutes");
+    }
+
+    @Test
     void failsWhenAnActivityFactorIsUnderOneOrOutOfOrder() {
         // Total expenditure is never under resting (PAL ≥ 1), and the levels run from least to most active.
         Map<String, Object> underOne = repositoryDocuments();

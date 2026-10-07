@@ -49,6 +49,10 @@ public enum Unit {
     SETS_PER_WEEK("sets_per_week", Kind.WHOLE, Bound.POSITIVE),
     SESSIONS_PER_WEEK("sessions_per_week", Kind.WHOLE, Bound.POSITIVE),
     DAYS_PER_WEEK("days_per_week", Kind.WHOLE, Bound.POSITIVE),
+    // A cardio session's length (G2 K-31, K-35).
+    MINUTES("minutes", Kind.WHOLE, Bound.POSITIVE),
+    // Heart rate (the cardio pace band, G2 K-33).
+    BEATS_PER_MINUTE("beats_per_minute", Kind.WHOLE, Bound.POSITIVE),
     // 0 is a real target here: a set taken to failure.
     REPS_IN_RESERVE("reps_in_reserve", Kind.WHOLE, Bound.ZERO_OR_MORE),
     // A count of repetitions (e1RM formula terms, H3 B15).
