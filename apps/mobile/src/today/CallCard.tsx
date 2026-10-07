@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -64,7 +63,6 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
           <Text style={[styles.small, { color: color.decisionMuted }]}>{t(`today.call.source.${line.tag}`)}</Text>
         </View>
       ))}
-      <Button label={t('today.call.data')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/why', params: { id: decision.id } })} />
     </View>
   ) : null;
   const variant = variantOf(decision);

@@ -15,12 +15,12 @@ void SplashScreen.preventAutoHideAsync();
 // A failure while starting (no database, no server address) is shown with a way to try again, not a crash.
 export { ErrorBoundary } from 'expo-router';
 
-// The tabs always sit under the coach, even when a link (keel://coach) opens the app straight on it; without an anchor
-// the coach would be the only screen, with no tab bar and nothing to go back to.
+// The tabs always sit under a screen a link opens straight (keel://settings); without an anchor it would be the only
+// screen, with no tab bar and nothing to go back to.
 export const unstable_settings = { anchor: '(tabs)' };
 
-// Root stack: the tabs, and the coach as a sheet over whichever tab opened it (K-307). The tabs themselves are in
-// (tabs)/_layout.tsx; the app opens on the first one, Today. Signed out, the only screen is sign-in (K-305): when the
+// Root stack: the tabs, and the "+" sheet over whichever tab opened it (K-953). The tabs themselves are in
+// (tabs)/_layout.tsx; the app opens on the first one, This week. Signed out, the only screen is sign-in (K-305): when the
 // session ends (sign-out, a refused refresh) the guarded screens leave the history and sign-in takes their place.
 // Signed in without a profile, the only screens are onboarding's (K-306); not known yet, the one that asks the server.
 // Onboarded but never subscribed, the only screen is the gate (K-706, ADR-058 › 107); not known yet, the gate asks.
@@ -37,13 +37,10 @@ function AppStack() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
       <Stack.Protected guard={signedIn && onboarding === 'done' && gate === 'open'}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="plus" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
         <Stack.Screen name="settings" />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="meal" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="meal-photo" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="recipes" />
-        <Stack.Screen name="recipe" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
         <Stack.Screen name="workout-summary" />
         <Stack.Screen name="exercise-history" />
@@ -52,17 +49,25 @@ function AppStack() {
         <Stack.Screen name="gyms" />
         <Stack.Screen name="gym" />
         <Stack.Screen name="check-in" />
-        <Stack.Screen name="why" />
         <Stack.Screen name="state" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="scoff" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="projection" />
         <Stack.Screen name="photo-capture" options={{ presentation: 'modal' }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="share" />
         <Stack.Screen name="import" />
+        <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+      </Stack.Protected>
+      {/* Taken off the surface (ADR-069 #3, navigation/tabs RETIRED): the code stays, nothing opens them, a link neither. */}
+      <Stack.Protected guard={false}>
+        <Stack.Screen name="food" />
+        <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="meal-photo" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="recipes" />
+        <Stack.Screen name="recipe" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="why" />
+        <Stack.Screen name="scoff" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="projection" />
         <Stack.Screen name="ledger" />
         <Stack.Screen name="what-if" />
-        <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'done' && gate !== 'open'}>
         <Stack.Screen name="subscribe" />
