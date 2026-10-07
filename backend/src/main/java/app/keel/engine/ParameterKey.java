@@ -115,6 +115,7 @@ public enum ParameterKey {
     PLATEAU_SESSIONS(ParameterDomain.TRAINING, Unit.SESSIONS),
     OVERTRAINING_MISSED_PLAN_WEEKS(ParameterDomain.TRAINING, Unit.WEEKS),
     TRAINING_DAYS_MIN(ParameterDomain.WINDOWS, Unit.DAYS_PER_WEEK),
+    TRAINING_DAYS_IDEAL_MIN(ParameterDomain.WINDOWS, Unit.DAYS_PER_WEEK),
     MISSED_SESSIONS_IN_A_ROW(ParameterDomain.WINDOWS, Unit.SESSIONS),
     HUNGER_QUESTION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     FIRST_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS),

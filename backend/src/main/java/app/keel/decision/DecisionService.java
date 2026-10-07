@@ -10,7 +10,9 @@ import app.keel.engine.Decision;
 import app.keel.engine.DecisionPipeline;
 import app.keel.engine.DeclaredContext;
 import app.keel.engine.EnergyBudget;
+import app.keel.engine.Experience;
 import app.keel.engine.FatEstimate;
+import app.keel.engine.FirstWeekAdjustment;
 import app.keel.engine.FirstWeeks;
 import app.keel.engine.InitialTarget;
 import app.keel.engine.MiniCutGate;
@@ -43,6 +45,7 @@ import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -51,6 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -115,7 +119,12 @@ class DecisionService {
     /** What the week's check-in reads: the user's calendar, body and parameters, and what the data already says. */
     private record Week(ProfileFacts profile, LocalDate today, LocalDate weekOf, Sex sex, Parameters parameters, Profile body,
             List<WeighIn> weights, CheckIn dataSays, Optional<FatEstimate.Estimate> fatEstimate, Optional<BigDecimal> fatForEnergy,
-            boolean safetyHold, Optional<DeclaredContext> declared, OptionalInt waistSpanDays) {
+            boolean safetyHold, Optional<DeclaredContext> declared, OptionalInt waistSpanDays, Optional<FirstWeekAdjustment.Week> firstWeek) {
+
+        Week withFirstWeek(Optional<FirstWeekAdjustment.Week> week) {
+            return new Week(profile, today, weekOf, sex, parameters, body, weights, dataSays, fatEstimate, fatForEnergy, safetyHold, declared,
+                    waistSpanDays, week);
+        }
     }
 
     /** The fat estimate's inputs: the latest look and the waist's RFM (K-224). */
@@ -126,10 +135,11 @@ class DecisionService {
     @Transactional(readOnly = true)
     CheckInView currentCheckIn(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        Week week = week(account);
-        if (taken(account, week.weekOf())) {
-            return new CheckInView(week.weekOf(), List.of(), true);
+        Week read = week(account);
+        if (taken(account, read.weekOf())) {
+            return new CheckInView(read.weekOf(), List.of(), true);
         }
+        Week week = closingTheFirstWeek(account, read);
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
         // the estimate a plan without a target would get.
         CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
@@ -171,10 +181,11 @@ class DecisionService {
         if (replay.isPresent()) {
             return replay.get();
         }
-        Week week = week(account);
-        if (!weekOf.equals(week.weekOf()) || taken(account, weekOf)) {
+        Week read = week(account);
+        if (!weekOf.equals(read.weekOf()) || taken(account, weekOf)) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
+        Week week = closingTheFirstWeek(account, read);
         Answers.Read answers;
         try {
             answers = Answers.read(answered, week.sex());
@@ -203,9 +214,9 @@ class DecisionService {
         }
         Optional<Consistency.WindowCount> counted = counted(account, week, plan);
         CheckIn dataSays = dataSays(week, counted);
-        // Appetite is the user's answer (K-227): no data says it.
+        // Appetite and how the first week felt are the user's answers (K-227, ADR-077 #4): no data says them.
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
-                dataSays.adherence(), answers.checkIn().appetite());
+                dataSays.adherence(), answers.checkIn().appetite(), week1Feel(answers.checkIn().week1Feel(), week.firstWeek().isPresent()));
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
@@ -242,7 +253,32 @@ class DecisionService {
                 FatEstimate.of(fat.fromLook(), fat.fromWaist()), FatEstimate.forEnergy(fat.fromLook(), fat.fromWaist(), p),
                 SafetyHolds.from(calls.outcomes(account)),
                 // A state declared on a day of this check-in week (K-516, ADR-038).
-                states.latest(account, today.minusDays(DAYS_PER_WEEK - 1L), today), WaistTrend.spanDays(waists));
+                states.latest(account, today.minusDays(DAYS_PER_WEEK - 1L), today), WaistTrend.spanDays(waists), Optional.empty());
+    }
+
+    /**
+     * How the first week felt, as the call reads it: only the check-in that closes the first week reads it; sent in any
+     * other week it is taken (a question shown is never refused) but neither read nor kept.
+     */
+    static CheckIn.Week1Feel week1Feel(CheckIn.Week1Feel answered, boolean closesTheFirstWeek) {
+        return closesTheFirstWeek ? answered : CheckIn.Week1Feel.UNKNOWN;
+    }
+
+    /**
+     * The week with the first week's facts when its check-in closes it (K-962, ADR-077 #4): the program's weekdays, the
+     * profile's when it puts none on a weekday (K-527); the sessions from the logs; the experience from the profile.
+     */
+    private Week closingTheFirstWeek(AccountId account, Week week) {
+        ZoneId zone = week.profile().timeZone();
+        LocalDate began = accounts.began(account).atZone(zone).toLocalDate();
+        if (!week.weekOf().equals(FirstWeekFacts.closingCheckIn(began, week.profile().checkInDay()))) {
+            return week;
+        }
+        Set<DayOfWeek> programDays = statuses.programDays(account);
+        Set<DayOfWeek> trainingDays = programDays.isEmpty() ? week.profile().trainingDays() : programDays;
+        return week.withFirstWeek(FirstWeekFacts.of(began, week.profile().checkInDay(), week.weekOf(), trainingDays,
+                logs.sessionDays(account, zone, began, week.weekOf()), planned.perWeek(account, week.profile()),
+                week.profile().experience().map(experience -> Experience.valueOf(experience.name()))));
     }
 
     /**
@@ -303,11 +339,13 @@ class DecisionService {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         // The plan's target is what the calorie ladder moves (K-216); what training burns is not known yet.
-        return new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()),
+        Snapshot snapshot = new Snapshot(week.today(), week.sex(), plan.phase(), plan.planStart(), new WeightSeries(week.weights()),
                 week.fatEstimate().map(FatEstimate.Estimate::lowerPct), Optional.ofNullable(plan.targetKcal()).map(EnergyBudget::exerciseUnknown),
                 menstrualLossReported, checkIn, Optional.of(week.body()), plan.observingMaintenance(), plan.phaseStart(), training,
                 week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.safetyHold(), cycleResolved, Optional.ofNullable(plan.miniCutUntil()),
                 week.fatForEnergy(), week.declared());
+        // The check-in that closes the first week: its call comes from the sessions (K-962).
+        return week.firstWeek().map(snapshot::withFirstWeek).orElse(snapshot);
     }
 
     /**
@@ -353,11 +391,16 @@ class DecisionService {
         return new CallStore.Plan(plan.phase(), plan.phaseStart(), start, estimate, true, plan.stepsPerDay());
     }
 
-    /** Whether the call changes the plan (applied by K-216): a pause, "continue" or advice changes nothing. */
+    /**
+     * Whether the call changes the plan (applied by K-216): a pause, "continue" or advice changes nothing; nor do the first
+     * week's training-day calls, whose day the user picks.
+     */
     static CallStore.Application application(Decision decision) {
         return switch (decision.action()) {
             case app.keel.engine.Action.NoDecisionYet _, app.keel.engine.Action.Continue _, app.keel.engine.Action.FixTraining _,
                  app.keel.engine.Action.FixRecovery _, app.keel.engine.Action.FixAdherence _ -> CallStore.Application.NOT_NEEDED;
+            // The first week's training days: the user picks the day (ADR-077 #4), with the training days, not through apply.
+            case app.keel.engine.Action.AddTrainingDay _, app.keel.engine.Action.MoveMissedSessions _ -> CallStore.Application.NOT_NEEDED;
             default -> CallStore.Application.PENDING;
         };
     }

@@ -55,21 +55,32 @@ final class CheckInQuestions {
                 choices(kind).forEach(choice -> toTry.add(answered(checkIn, kind, choice)));
             });
         }
-        // Appetite (K-227, G7 K-102): the engine never waits for it — a long bulk simply goes on — but only the user can
-        // say it has gone. Asked when that answer would change the call, after the engine's own questions and inside the
-        // budget.
-        if (asked.size() < budget && !engine.apply(dataSays.withAppetite(CheckIn.Appetite.GONE)).equals(engine.apply(dataSays))) {
-            asked.add(Answers.Kind.APPETITE);
+        // Answers the engine never waits for, which only the user can give: appetite (K-227, G7 K-102: a long bulk simply
+        // goes on, but only the user can say the appetite has gone) and how the first week felt (ADR-077 #4: the plan stays
+        // unless "I could do more" adds a day). Asked when an answer would change the call, after the engine's own
+        // questions and inside the budget.
+        for (Answers.Kind own : List.of(Answers.Kind.APPETITE, Answers.Kind.WEEK1_FEEL)) {
+            if (asked.size() < budget && changesTheCall(engine, dataSays, own)) {
+                asked.add(own);
+            }
         }
         return List.copyOf(asked.subList(0, Math.min(budget, asked.size())));
     }
 
+    /** Whether some answer to this question gives another call than leaving it unanswered. */
+    private static boolean changesTheCall(Function<CheckIn, Decision> engine, CheckIn dataSays, Answers.Kind kind) {
+        Decision unanswered = engine.apply(dataSays);
+        return choices(kind).stream().anyMatch(choice -> !engine.apply(answered(dataSays, kind, choice)).equals(unanswered));
+    }
+
     /**
      * Whether an answer of this kind is taken: a question the engine can wait for, asked this week or not — the cycle
-     * question, whose answer is a woman's (Answers), appetite (K-227), and whether a declared state is still so (K-516).
+     * question, whose answer is a woman's (Answers), appetite (K-227), whether a declared state is still so (K-516), and how
+     * the first week felt (ADR-077 #4: read only by the call that closes it).
      */
     static boolean answerable(Answers.Kind kind) {
-        return kind == Answers.Kind.CYCLE_STOPPED || kind == Answers.Kind.APPETITE || kind == Answers.Kind.STATE_STILL || Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
+        return kind == Answers.Kind.CYCLE_STOPPED || kind == Answers.Kind.APPETITE || kind == Answers.Kind.STATE_STILL || kind == Answers.Kind.WEEK1_FEEL
+                || Arrays.stream(WeeklySpine.Missing.values()).anyMatch(missing -> missing.name().equals(kind.name()));
     }
 
     /** Whether the cycle question is asked (V4, ADR-020 L-1): a woman whose plan is in the low energy band. */
@@ -138,6 +149,7 @@ final class CheckInQuestions {
             case CYCLE_STOPPED -> Answers.Cycle.values();
             case APPETITE -> CheckIn.Appetite.values();
             case STATE_STILL -> Answers.StillSo.values();
+            case WEEK1_FEEL -> CheckIn.Week1Feel.values();
             default -> throw new IllegalArgumentException(kind + " is not a question the engine waits for");
         };
         return Arrays.stream(values).map(Enum::name).filter(name -> !name.equals("UNKNOWN")).toList();
@@ -145,11 +157,10 @@ final class CheckInQuestions {
 
     private static CheckIn answered(CheckIn checkIn, Answers.Kind kind, String choice) {
         return switch (kind) {
-            case TRAINING -> new CheckIn(checkIn.look(), CheckIn.Training.valueOf(choice), checkIn.recovery(), checkIn.waist(),
-                    checkIn.adherence(), checkIn.appetite());
-            case RECOVERY -> new CheckIn(checkIn.look(), checkIn.training(), CheckIn.Recovery.valueOf(choice), checkIn.waist(),
-                    checkIn.adherence(), checkIn.appetite());
+            case TRAINING -> checkIn.withTraining(CheckIn.Training.valueOf(choice));
+            case RECOVERY -> checkIn.withRecovery(CheckIn.Recovery.valueOf(choice));
             case APPETITE -> checkIn.withAppetite(CheckIn.Appetite.valueOf(choice));
+            case WEEK1_FEEL -> checkIn.withWeek1Feel(CheckIn.Week1Feel.valueOf(choice));
             default -> throw new IllegalArgumentException(kind + " is not a question the engine waits for");
         };
     }

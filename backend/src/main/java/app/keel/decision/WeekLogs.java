@@ -99,6 +99,12 @@ class WeekLogs {
         return new FirstWeeks.UserWeek(sessions, loggedDays(account, from), !states.days(account, from, to).isEmpty());
     }
 
+    /** The days with a session from {@code from} up to the day before {@code until}, on the user's calendar (K-962). */
+    Set<LocalDate> sessionDays(AccountId account, ZoneId zone, LocalDate from, LocalDate until) {
+        return training.workoutStarts(account, from.atStartOfDay(zone).toInstant(), until.atStartOfDay(zone).toInstant()).stream()
+                .map(started -> started.atZone(zone).toLocalDate()).collect(Collectors.toSet());
+    }
+
     /** The days food was logged in the seven from {@code from}. */
     int loggedDays(AccountId account, LocalDate from) {
         return meals.proteinByDay(account, from, from.plusDays(DAYS_PER_WEEK - 1L)).size();

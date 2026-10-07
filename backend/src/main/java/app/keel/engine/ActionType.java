@@ -18,5 +18,7 @@ public enum ActionType {
     DELOAD,
     FULL_REST_WEEK,
     MINI_CUT,
-    CHANGE_PHASE
+    CHANGE_PHASE,
+    ADD_TRAINING_DAY,
+    MOVE_MISSED_SESSIONS
 }

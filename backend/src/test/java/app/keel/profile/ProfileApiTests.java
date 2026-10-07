@@ -165,8 +165,11 @@ class ProfileApiTests {
 
         assertThat(read(put(account, experienced))).isEqualTo(experienced);
         assertThat(read(get(account))).isEqualTo(experienced);
+        // The first week's "add a day" reads it (ADR-077 #4).
+        assertThat(profiles.of(account).orElseThrow().experience()).contains(Experience.Y1_3);
 
         assertThat(read(put(account, onboarding()))).isEqualTo(onboarding()).doesNotContainKey("experience");
+        assertThat(profiles.of(account).orElseThrow().experience()).isEmpty();
         for (String bad : List.of("EXPERT", "new")) {
             Map<String, Object> profile = onboarding();
             profile.put("experience", bad);

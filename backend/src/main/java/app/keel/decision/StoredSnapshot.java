@@ -4,6 +4,8 @@ import app.keel.engine.CheckIn;
 import app.keel.engine.Consistency;
 import app.keel.engine.DeclaredContext;
 import app.keel.engine.EnergyBudget;
+import app.keel.engine.Experience;
+import app.keel.engine.FirstWeekAdjustment;
 import app.keel.engine.Phase;
 import app.keel.engine.Profile;
 import app.keel.engine.Sex;
@@ -13,6 +15,7 @@ import app.keel.engine.WeighIn;
 import app.keel.engine.WeightSeries;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -26,12 +29,21 @@ import java.util.OptionalInt;
  * review), made on its one. {@code safetyHold} null: a call kept before K-229, made without a hold. {@code miniCutUntil}
  * null: not on a mini cut, or a call kept before K-227. {@code fatProxyEnergyPct} null: no estimate, or a call kept before
  * K-230, made with the lower for the low-energy rule too. {@code context} null: no state declared that week, or a call kept
- * before K-516 (health data in the call's own record, deleted with it).
+ * before K-516 (health data in the call's own record, deleted with it). {@code firstWeek} null: any call but the one that
+ * closes the first week, or one kept before K-962.
  */
 record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, List<Weight> weights, BigDecimal fatProxyPct,
         Energy energy, Answered checkIn, Body profile, boolean observingMaintenance, LocalDate phaseStart, Training training,
         BigDecimal fatProxyHighPct, Boolean safetyHold, LocalDate miniCutUntil, BigDecimal fatProxyEnergyPct,
-        @JsonInclude(JsonInclude.Include.NON_NULL) DeclaredContext context) {
+        @JsonInclude(JsonInclude.Include.NON_NULL) DeclaredContext context, @JsonInclude(JsonInclude.Include.NON_NULL) FirstWeek firstWeek) {
+
+    /** Without the first week's facts: any call but the one that closes it. */
+    StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart, List<Weight> weights, BigDecimal fatProxyPct, Energy energy,
+            Answered checkIn, Body profile, boolean observingMaintenance, LocalDate phaseStart, Training training, BigDecimal fatProxyHighPct,
+            Boolean safetyHold, LocalDate miniCutUntil, BigDecimal fatProxyEnergyPct, DeclaredContext context) {
+        this(today, sex, phase, planStart, weights, fatProxyPct, energy, checkIn, profile, observingMaintenance, phaseStart, training, fatProxyHighPct,
+                safetyHold, miniCutUntil, fatProxyEnergyPct, context, null);
+    }
 
     record Weight(LocalDate date, BigDecimal kg) {
     }
@@ -44,23 +56,36 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
      * {@code adherenceDone} of {@code adherencePlanned}: what {@code adherence} was made of (K-526) — kept by calls made
      * since; null for an older call, never made up from the ratio.
      */
-    /** {@code waistSpanDays}: days between the window's first and last waist reading (K-603); none on a call kept before. */
+    /**
+     * {@code waistSpanDays}: days between the window's first and last waist reading (K-603); none on a call kept before.
+     * {@code week1Feel}: how the first week felt (ADR-077 #4), kept only when answered.
+     */
     record Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
             CheckIn.Appetite appetite, @JsonInclude(JsonInclude.Include.NON_NULL) Integer adherenceDone,
-            @JsonInclude(JsonInclude.Include.NON_NULL) Integer adherencePlanned, @JsonInclude(JsonInclude.Include.NON_NULL) Integer waistSpanDays) {
+            @JsonInclude(JsonInclude.Include.NON_NULL) Integer adherencePlanned, @JsonInclude(JsonInclude.Include.NON_NULL) Integer waistSpanDays,
+            @JsonInclude(JsonInclude.Include.NON_NULL) CheckIn.Week1Feel week1Feel) {
+
+        Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
+                CheckIn.Appetite appetite, Integer adherenceDone, Integer adherencePlanned, Integer waistSpanDays) {
+            this(look, training, recovery, waist, adherence, appetite, adherenceDone, adherencePlanned, waistSpanDays, null);
+        }
 
         Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
                 CheckIn.Appetite appetite) {
-            this(look, training, recovery, waist, adherence, appetite, null, null, null);
+            this(look, training, recovery, waist, adherence, appetite, null, null, null, null);
         }
 
         Answered(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, BigDecimal adherence,
                 CheckIn.Appetite appetite, Integer adherenceDone, Integer adherencePlanned) {
-            this(look, training, recovery, waist, adherence, appetite, adherenceDone, adherencePlanned, null);
+            this(look, training, recovery, waist, adherence, appetite, adherenceDone, adherencePlanned, null, null);
         }
     }
 
     record Body(int ageYears, int heightCm) {
+    }
+
+    /** The first week the call closed (K-962): its counts, its missed weekdays, and the experience; null when not asked. */
+    record FirstWeek(int planned, int done, int trainingDays, List<DayOfWeek> missed, Experience experience) {
     }
 
     record Training(int stalledSessions, int weeksLoadHeld, int monthsStalled, boolean restedLastWeek, boolean loadsBelowLastWeek,
@@ -93,13 +118,16 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                         ? energy.exerciseKcalPerDay().getAsInt() : null)).orElse(null),
                 new Answered(in.look(), in.training(), in.recovery(), in.waist(), in.adherence().orElse(null), in.appetite(),
                         adherenceCount.map(Consistency.WindowCount::done).orElse(null), adherenceCount.map(Consistency.WindowCount::planned).orElse(null),
-                        waistSpanDays.isPresent() ? waistSpanDays.getAsInt() : null),
+                        waistSpanDays.isPresent() ? waistSpanDays.getAsInt() : null,
+                        in.week1Feel() == CheckIn.Week1Feel.UNKNOWN ? null : in.week1Feel()),
                 snapshot.profile().map(profile -> new Body(profile.ageYears(), profile.heightCm())).orElse(null),
                 snapshot.observingMaintenance(), snapshot.phaseStart(),
                 snapshot.training().map(training -> new Training(training.stalledSessions(), training.weeksLoadHeld(), training.monthsStalled(),
                         training.restedLastWeek(), training.loadsBelowLastWeek(), training.weeksPlanMissed())).orElse(null),
                 snapshot.fatProxyHighPct().orElse(null), snapshot.safetyHold(), snapshot.miniCutUntil().orElse(null),
-                snapshot.fatProxyEnergyPct().orElse(null), snapshot.context().orElse(null));
+                snapshot.fatProxyEnergyPct().orElse(null), snapshot.context().orElse(null),
+                snapshot.firstWeek().map(week -> new FirstWeek(week.planned(), week.done(), week.trainingDays(), week.missed(),
+                        week.experience().orElse(null))).orElse(null));
     }
 
     /** The Snapshot again; the cycle answer as not reported (never kept). */
@@ -110,7 +138,7 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                         : new EnergyBudget(e.targetKcal(), e.exerciseKcalPerDay())),
                 false,
                 new CheckIn(checkIn.look(), checkIn.training(), checkIn.recovery(), checkIn.waist(), Optional.ofNullable(checkIn.adherence()),
-                        checkIn.appetite()),
+                        checkIn.appetite(), Optional.ofNullable(checkIn.week1Feel()).orElse(CheckIn.Week1Feel.UNKNOWN)),
                 Optional.ofNullable(profile).map(body -> new Profile(body.ageYears(), body.heightCm())), observingMaintenance, phaseStart,
                 Optional.ofNullable(training).map(t -> new TrainingStatus(t.stalledSessions(), t.weeksLoadHeld(), t.monthsStalled(),
                         t.restedLastWeek(), t.loadsBelowLastWeek(), t.weeksPlanMissed())),
@@ -119,6 +147,9 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 // Kept since K-229; a call kept before it was made without a hold. The answer that ends one is never kept.
                 Boolean.TRUE.equals(safetyHold), false, Optional.ofNullable(miniCutUntil),
                 // Kept since K-230; a call kept before it read the lower for the low-energy rule too.
-                Optional.ofNullable(fatProxyEnergyPct).or(() -> Optional.ofNullable(fatProxyPct)), Optional.ofNullable(context));
+                Optional.ofNullable(fatProxyEnergyPct).or(() -> Optional.ofNullable(fatProxyPct)), Optional.ofNullable(context),
+                // Kept since K-962, on the call that closes the first week only.
+                Optional.ofNullable(firstWeek).map(week -> new FirstWeekAdjustment.Week(week.planned(), week.done(), week.trainingDays(),
+                        week.missed(), Optional.ofNullable(week.experience()))));
     }
 }

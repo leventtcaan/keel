@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import app.keel.engine.CheckIn;
 import app.keel.engine.Consistency;
 import app.keel.engine.EnergyBudget;
+import app.keel.engine.Experience;
+import app.keel.engine.FirstWeekAdjustment;
 import app.keel.engine.Phase;
 import app.keel.engine.Profile;
 import app.keel.engine.Sex;
@@ -14,6 +16,7 @@ import app.keel.engine.TrainingStatus;
 import app.keel.engine.WeighIn;
 import app.keel.engine.WeightSeries;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +48,20 @@ class StoredSnapshotTests {
 
         assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(declared)), StoredSnapshot.class).toSnapshot()).isEqualTo(declared);
         assertThat(JSON.writeValueAsString(StoredSnapshot.of(full(false)))).doesNotContain("context");
+    }
+
+    @Test
+    void theFirstWeekAndHowItFeltAreKeptSoTheCallComesOutTheSame() throws Exception {
+        // K-962: the call that closes the first week reads its sessions and the feel answer; made again, it must read them
+        // again. Any other call keeps neither.
+        Snapshot closing = full(false).withCheckIn(full(false).checkIn().withWeek1Feel(CheckIn.Week1Feel.COULD_DO_MORE))
+                .withFirstWeek(new FirstWeekAdjustment.Week(3, 2, 3, List.of(DayOfWeek.WEDNESDAY), Optional.of(Experience.UNDER_1Y)));
+        Snapshot unknownExperience = full(false).withFirstWeek(new FirstWeekAdjustment.Week(2, 2, 2, List.of(), Optional.empty()));
+
+        assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(closing)), StoredSnapshot.class).toSnapshot()).isEqualTo(closing);
+        assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(unknownExperience)), StoredSnapshot.class).toSnapshot())
+                .isEqualTo(unknownExperience);
+        assertThat(JSON.writeValueAsString(StoredSnapshot.of(full(false)))).doesNotContain("firstWeek").doesNotContain("week1Feel");
     }
 
     @Test

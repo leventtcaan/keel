@@ -15,6 +15,8 @@ import java.util.Optional;
  *   <li>A state the user declared this week (K-516): the call waits.</li>
  *   <li>Training going wrong — a plan missed two weeks running, or last week's loads lost (G7 K-68/K-70/K-73): the coaching
  *       tree fixes training before any food decision.</li>
+ *   <li>The call that closes the first week (K-962, ADR-077 #4): one training adjustment from the sessions, no weight read,
+ *       before the ladder's rungs.</li>
  *   <li>Maintenance being observed (G2 K-8) · not enough weight data (U8): nothing about food yet.</li>
  *   <li>Phase gate (K-105) · mini cut (G7 K-102).</li>
  *   <li>The weekly spine (K-106); a calorie call goes through the ladder (K-107) with Mifflin resting energy as BMR
@@ -82,6 +84,13 @@ public final class DecisionPipeline {
         Optional<Decision> ladder = snapshot.training().flatMap(status -> DeloadLadder.check(status, snapshot, parameters));
         if (ladder.isPresent() && trainingGoingWrong(ladder.get())) {
             return Outcome.before(ladder.get());
+        }
+        // The call that closes the first week reads sessions, not the scale (K-962, ADR-077 #4; U8): no food or weight call
+        // that week, whatever the data, and no rung of the ladder either; training going wrong has already spoken above.
+        Optional<Decision> firstWeek = snapshot.firstWeek()
+                .flatMap(week -> FirstWeekAdjustment.decide(week, snapshot.checkIn().week1Feel(), snapshot.today(), parameters));
+        if (firstWeek.isPresent()) {
+            return Outcome.before(firstWeek.get());
         }
         Optional<Decision> notYet = InitialTarget.observing(snapshot, parameters).or(() -> DataSufficiency.check(snapshot, parameters));
         if (notYet.isPresent()) {

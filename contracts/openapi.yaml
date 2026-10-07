@@ -1024,8 +1024,10 @@ paths:
         from a woman: asked in the low energy band or when the call would wait for it after a hard stop, never kept, a
         man's is VALIDATION_FAILED. STATE_STILL (YES/NO, K-516): asked once a state has been declared on a day of each of the
         last state_still_after_paused_weeks weeks and is in force today; NO ends it yesterday (this week, declared, still
-        waits). Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from the data, the rest are read
-        with their own questions later.
+        waits). WEEK1_FEEL (TOO_MUCH/ABOUT_RIGHT/COULD_DO_MORE, ADR-077 #4): asked at the call that closes the first week,
+        only when COULD_DO_MORE would change it (every planned session done, not a beginner, fewer training days than the
+        ideal), inside the week's budget. Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from the
+        data, the rest are read with their own questions later.
       requestBody:
         required: true
         content:
@@ -1814,7 +1816,8 @@ components:
       type: string
       description: |
         How long the user has trained (ADR-072 #3): it changes what the onboarding asks and how many hints the app shows,
-        never an engine rule. Absent on a profile made before it was asked.
+        and one engine rule: the first week's "add a day" is only for someone not just starting (ADR-077 #4); absent, the
+        engine does not suggest it. Absent on a profile made before it was asked.
       enum: [NEW, UNDER_1Y, Y1_3, Y3_PLUS]
     Weekday:
       type: string
@@ -2897,8 +2900,8 @@ components:
       type: string
       description: |
         What the engine can be missing (its CheckIn) plus the scales the app asks with. Adherence is not asked: it is the
-        week's consistency, counted from the logs (ADR-020 L-6).
-      enum: [TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED, STATE_STILL]
+        week's consistency, counted from the logs (ADR-020 L-6). WEEK1_FEEL: "How did week 1 feel?" (ADR-077 #4).
+      enum: [TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED, STATE_STILL, WEEK1_FEEL]
     Question:
       type: object
       required: [kind, format, copyKey, reasonCopyKey]
@@ -3218,6 +3221,10 @@ components:
             appetite:
               type: string
               enum: [NORMAL, GONE]
+            week1Feel:
+              type: string
+              description: How the first week felt (ADR-077 #4), on the call that closes it, so the screen can say it back.
+              enum: [TOO_MUCH, ABOUT_RIGHT, COULD_DO_MORE]
         training:
           type: object
           description: Where the most-stalled compound lift stood (K-110).
@@ -3345,7 +3352,8 @@ components:
         Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,
         undoneAt once undone. DECLINED (K-963, ADR-077 #3): last week's plan was kept and the call stays on record, not
         applied; declinedAt while it is, and appliedAt with it when it had been applied before. Used after all, it is
-        APPLIED again.
+        APPLIED again. The first week's training-day calls (ADD_TRAINING_DAY, MOVE_MISSED_SESSIONS) are NOT_NEEDED and
+        not declinable: the days are the user's to pick, with the training days, not through apply (ADR-077 Ek 1).
       required: [state]
       properties:
         state:
@@ -3438,6 +3446,8 @@ components:
         - $ref: "#/components/schemas/FullRestWeek"
         - $ref: "#/components/schemas/MiniCut"
         - $ref: "#/components/schemas/ChangePhase"
+        - $ref: "#/components/schemas/AddTrainingDay"
+        - $ref: "#/components/schemas/MoveMissedSessions"
       discriminator:
         propertyName: type
         mapping:
@@ -3455,6 +3465,8 @@ components:
           FULL_REST_WEEK: "#/components/schemas/FullRestWeek"
           MINI_CUT: "#/components/schemas/MiniCut"
           CHANGE_PHASE: "#/components/schemas/ChangePhase"
+          ADD_TRAINING_DAY: "#/components/schemas/AddTrainingDay"
+          MOVE_MISSED_SESSIONS: "#/components/schemas/MoveMissedSessions"
     NoDecisionYet:
       type: object
       description: Not enough data, or the window is not full — said, not guessed (U3).
@@ -3563,6 +3575,37 @@ components:
           const: CHANGE_PHASE
         to:
           $ref: "#/components/schemas/Phase"
+    AddTrainingDay:
+      type: object
+      description: |
+        The first week's call (ADR-077 #4): every planned session done and "I could do more", so one more training day a
+        week. `toDays` is the new count, one more than the user's and never below training_days_min; `idealDays` is
+        training_days_ideal_min, the count it moves toward, for the words. Which day is the user's to pick.
+      required: [type, toDays, idealDays]
+      properties:
+        type:
+          const: ADD_TRAINING_DAY
+        toDays:
+          type: integer
+          minimum: 1
+        idealDays:
+          type: integer
+          minimum: 1
+    MoveMissedSessions:
+      type: object
+      description: |
+        The first week's call (ADR-077 #4): most of the week's sessions didn't happen, so the days that were missed move
+        to days that fit; the number of training days stays. `missed` are the planned weekdays without a session, in the
+        week's order; the user picks where they go.
+      required: [type, missed]
+      properties:
+        type:
+          const: MOVE_MISSED_SESSIONS
+        missed:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Weekday"
     Targets:
       type: object
       description: |
