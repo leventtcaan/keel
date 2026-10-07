@@ -209,3 +209,19 @@ describe('csv, more edges', () => {
     expect(parseCsv('a\rb')).toEqual([['a\rb']]);
   });
 });
+
+describe('the routine names, for the program draft only (K-957, ADR-073 Ek 1)', () => {
+  test("asked for, each session carries its name in the file: Strong's Workout Name, Hevy's title", () => {
+    const strong = readExport(fixture('strong.csv'), { routines: true });
+    const hevy = readExport(fixture('hevy.csv'), { routines: true });
+
+    expect(strong.kind === 'read' && strong.sessions.map((s) => s.routine)).toEqual(['Training Title', 'Legs, then arms']);
+    expect(hevy.kind === 'read' && hevy.sessions.map((s) => s.routine)).toEqual(['Push', 'Push']);
+  });
+
+  test('not asked for, the read is the same as before: no session has a name', () => {
+    const read = readExport(fixture('hevy.csv'));
+
+    expect(read.kind === 'read' && read.sessions.every((s) => !('routine' in s))).toBe(true);
+  });
+});

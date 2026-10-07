@@ -2,12 +2,14 @@
  * Another app's export, read on the phone (K-609, ADR-053 §4). Neither Strong nor Hevy publishes its columns; the forms
  * here are the ones seen in real exports (arastirma/ham/H13 B2, B3) and nothing else is read — a header not among them is
  * "unknown", never guessed at. Only what a set needs is kept: the move's name as the file has it, warm-up or not, the
- * weight in the file's unit, the reps. Notes, RPE, distance, time and the session's name stay in the file.
+ * weight in the file's unit, the reps. Notes, RPE, distance and time stay in the file; the session's name too, unless the
+ * program draft asks for it (K-957, ADR-073 Ek 1): then each session carries it as `routine`, for the draft on this phone only.
  */
 import { parseCsv } from './csv';
 
 export type FileSet = { name: string; warmUp: boolean; weight: number; reps: number };
-export type FileSession = { startedAt: Date; endedAt: Date; sets: FileSet[] };
+/** `routine`: the session's name in the file (its routine; '' when it has none), only when asked for. */
+export type FileSession = { startedAt: Date; endedAt: Date; sets: FileSet[]; routine?: string };
 export type ExportSource = 'STRONG' | 'HEVY';
 /** The weight unit the file is in; null when the file does not say (Strong) and the user is asked. */
 export type FileUnit = 'kg' | 'lb' | null;
@@ -25,7 +27,7 @@ const HEVY_LB = HEVY_KG.map((column) => (column === 'weight_kg' ? 'weight_lbs' :
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 type Row = Record<string, string>;
-type Form = { source: ExportSource; unit: FileUnit; session: (row: Row) => { key: string; startedAt: Date; endedAt: Date } | null; set: (row: Row) => Omit<FileSet, 'reps'> & { reps: string } };
+type Form = { source: ExportSource; unit: FileUnit; session: (row: Row) => { key: string; startedAt: Date; endedAt: Date; routine: string } | null; set: (row: Row) => Omit<FileSet, 'reps'> & { reps: string } };
 
 const strong: Form = {
   source: 'STRONG',
@@ -34,7 +36,7 @@ const strong: Form = {
     const startedAt = strongDate(row['Date']);
     if (startedAt === null) return null;
     const seconds = duration(row['Duration']);
-    return { key: row['Date'], startedAt, endedAt: new Date(startedAt.getTime() + (seconds ?? 0) * 1000) };
+    return { key: row['Date'], startedAt, endedAt: new Date(startedAt.getTime() + (seconds ?? 0) * 1000), routine: row['Workout Name'].trim() };
   },
   set: (row) => ({ name: row['Exercise Name'].trim(), warmUp: false, weight: weight(row['Weight']), reps: row['Reps'] }),
 };
@@ -47,7 +49,12 @@ function hevy(unit: 'kg' | 'lb'): Form {
       const startedAt = hevyDate(row['start_time']);
       if (startedAt === null) return null;
       const end = hevyDate(row['end_time']);
-      return { key: `${row['title']}\u0000${row['start_time']}`, startedAt, endedAt: end !== null && end >= startedAt ? end : startedAt };
+      return {
+        key: `${row['title']}\u0000${row['start_time']}`,
+        startedAt,
+        endedAt: end !== null && end >= startedAt ? end : startedAt,
+        routine: row['title'].trim(),
+      };
     },
     set: (row) => ({
       name: row['exercise_title'].trim(),
@@ -58,7 +65,7 @@ function hevy(unit: 'kg' | 'lb'): Form {
   };
 }
 
-export function readExport(text: string): ExportRead {
+export function readExport(text: string, keep: { routines?: boolean } = {}): ExportRead {
   let rows: string[][];
   try {
     rows = parseCsv(text);
@@ -81,7 +88,12 @@ export function readExport(text: string): ExportRead {
       leftOut++;
       continue;
     }
-    const kept = sessions.get(session.key) ?? { startedAt: session.startedAt, endedAt: session.endedAt, sets: [] };
+    const kept = sessions.get(session.key) ?? {
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      sets: [],
+      ...(keep.routines === true ? { routine: session.routine } : {}),
+    };
     kept.sets.push({ ...set, reps });
     sessions.set(session.key, kept);
   }

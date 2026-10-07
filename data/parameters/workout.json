@@ -253,6 +253,38 @@
       "tag": "urun",
       "source": "plan/yeni-yuz-kurallar.md#R6",
       "note": "Product choice, no source (ADR-075 #5): a session left with \"Fill in the rest later\" stays open this long after it started, then the server closes it and sets its targets as a finish does (SessionAutoClose). A day leaves the evening and the next morning to fill it in; sets added after the close still count (K-432). The server reads this file as it is: one value, no mirror."
+    },
+    {
+      "key": "program_days_max",
+      "value": 7,
+      "unit": "days",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#OwnProgram",
+      "note": "OwnProgram.days maxItems: the most days the user's own program has (a day's weekday used once). The program draft keeps the routines done most (K-957)."
+    },
+    {
+      "key": "program_day_moves_max",
+      "value": 20,
+      "unit": "moves",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#OwnProgram",
+      "note": "OwnProgram exercises maxItems, the server's keel.training.max-day-exercises: the most moves of one day of the user's own program."
+    },
+    {
+      "key": "program_move_sets_max",
+      "value": 20,
+      "unit": "sets",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#OwnProgram",
+      "note": "OwnProgram sets maximum, the server's keel.training.max-planned-sets: the most sets planned for one move."
+    },
+    {
+      "key": "program_day_name_max_chars",
+      "value": 60,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#OwnProgram",
+      "note": "OwnProgram day name maxLength, the server's keel.training.max-day-name (counted in UTF-16 units there): a longer routine name is cut to fit in the draft (K-957)."
     }
   ]
 }
