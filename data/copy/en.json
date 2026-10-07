@@ -8,15 +8,23 @@
     "offline": "No connection. Sign-in needs one, just this once.",
     "unavailable": "Sign in with Apple isn't available on this device."
   },
+  "plus": {
+    "entry": "Log something",
+    "title": "Log",
+    "weighIn": "Weigh-in",
+    "meal": "Meal",
+    "workout": "Workout",
+    "life": "Life got in the way"
+  },
   "tabs": {
-    "today": "Today",
+    "today": "This week",
     "train": "Train",
     "food": "Food",
     "progress": "Progress"
   },
   "screens": {
     "today": {
-      "title": "Today"
+      "title": "This week"
     },
     "train": {
       "title": "Train"

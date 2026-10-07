@@ -354,12 +354,10 @@ test('offline: it says so, and trying again reads again', async () => {
   expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
 });
 
-test("the coach's chips come from the day; one opens the coach on that chip (K-509)", async () => {
+test("the coach's chips are off This week (ADR-069 #3, K-953; were K-509)", async () => {
   await show();
-  expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
-  expect(screen.getByRole('button', { name: t('today.chips.swap') })).toBeOnTheScreen();
-  await press(t('today.chips.why'));
-  expect(mockPush).toHaveBeenCalledWith({ pathname: '/coach', params: { chip: 'today.chips.why' } });
+  expect(screen.queryByRole('button', { name: t('today.chips.why') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('today.chips.swap') })).toBeNull();
 });
 
 test('back on Today after giving the consent in Settings, it reads again and shows the number (K-401 review)', async () => {
@@ -804,11 +802,11 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
   });
 });
 
-test('"Why this call" leads on to the data behind it: its own page, for this call', async () => {
+test('"Why this call" opens in place and leads to no retired page (ADR-069 #3, K-953)', async () => {
   await show();
   await press(t('today.call.why'));
-  await press(t('today.call.data'));
-  expect(mockPush).toHaveBeenCalledWith({ pathname: '/why', params: { id: 'd1' } });
+  expect(screen.queryByRole('button', { name: t('today.call.data') })).toBeNull();
+  expect(mockPush).not.toHaveBeenCalledWith(expect.objectContaining({ pathname: '/why' }));
 });
 
 describe('the first eight weeks (K-521)', () => {
