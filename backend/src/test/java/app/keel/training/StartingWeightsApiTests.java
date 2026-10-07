@@ -23,10 +23,10 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Starting weights (ADR-072 #5, contract /v1/program/starting-weights): the load an experienced user gives for a move is
- * its first target in the program, on every day it is planned, rounded to the gym in use (ADR-032), from the bottom of the
- * range. A move without one has no target; none is derived. Own program: Monday bench 6-10, squat 6-10, lateral raise
- * 12-15; Thursday bench 10-12, one-arm row 8-12.
+ * Starting weights (ADR-072 #5, contract /v1/program/starting-weights): the load an experienced user lifts about 8 times
+ * (onboarding.json › starting_weight_reps) is its move's first target, from the bottom of the range, on every day whose
+ * range starts at 8 or under, rounded to the gym in use (ADR-032). A move or a day without one has no target; none is
+ * derived. Own program: Monday bench 6-10, squat 6-10, lateral raise 12-15; Thursday bench 10-12, one-arm row 8-12.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -43,16 +43,19 @@ class StartingWeightsApiTests {
     ApplicationContext context;
 
     @Test
-    void eachWeightGivenIsItsMovesFirstTargetOnEveryDayFromTheBottomOfTheRange() throws Exception {
+    void eachWeightGivenIsItsMovesFirstTargetFromTheBottomOfTheRangeWhereAnEightRepLoadFits() throws Exception {
+        // Bench is planned twice: 6-10 takes the load lifted about 8 times; 10-12 does not (too heavy for 10 reps) and finds
+        // its load in the first session. The row's 8-12 starts at 8: it takes it.
         AccountId account = withAProgram();
 
-        MvcTestResult answer = send("PUT", account, URI, weights(Map.of("exerciseId", "bench_press", "kg", 80)));
+        MvcTestResult answer = send("PUT", account, URI, weights(Map.of("exerciseId", "bench_press", "kg", 80),
+                Map.of("exerciseId", "one_arm_dumbbell_row", "kg", 24)));
 
         assertThat(answer).hasStatusOk();
         assertThat(targets(map(answer))).isEqualTo(targets(map(send("GET", account, "/v1/program", null))));
         assertThat(targets(map(answer))).containsExactly(
                 List.of("bench_press", kg(80), 6), List.of("squat"), List.of("lateral_raise"),
-                List.of("bench_press", kg(80), 10), List.of("one_arm_dumbbell_row"));
+                List.of("bench_press"), List.of("one_arm_dumbbell_row", kg(24), 8));
     }
 
     @Test
@@ -78,7 +81,7 @@ class StartingWeightsApiTests {
         send("PUT", account, URI, weights(Map.of("exerciseId", "bench_press", "kg", 70)));
 
         assertThat(targets(map(send("GET", account, "/v1/program", null)))).containsExactly(List.of("bench_press", kg(70), 6), List.of("squat"),
-                List.of("lateral_raise"), List.of("bench_press", kg(70), 10), List.of("one_arm_dumbbell_row"));
+                List.of("lateral_raise"), List.of("bench_press"), List.of("one_arm_dumbbell_row"));
         assertThat(send("PUT", account, URI, weights())).hasStatusOk();
         assertThat(targets(map(send("GET", account, "/v1/program", null)))).allSatisfy(move -> assertThat(move).hasSize(1));
     }
@@ -86,7 +89,8 @@ class StartingWeightsApiTests {
     @Test
     void aTargetASessionSetIsNeverChangedByAStartingWeight() throws Exception {
         AccountId account = withAProgram();
-        send("PUT", account, URI, weights(Map.of("exerciseId", "squat", "kg", 100)));
+        assertThat(send("PUT", account, URI, weights(Map.of("exerciseId", "squat", "kg", 100)))).hasStatusOk();
+        assertThat(targets(map(send("GET", account, "/v1/program", null))).get(1)).isEqualTo(List.of("squat", kg(100), 6));
         String workout = start(account);
         for (int i = 0; i < 3; i++) {
             assertThat(send("POST", account, "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "squat",
@@ -100,6 +104,32 @@ class StartingWeightsApiTests {
 
         assertThat(fromTheSession).isEqualTo(List.of("squat", kg(90), 8));
         assertThat(targets(map(send("GET", account, "/v1/program", null))).get(1)).isEqualTo(fromTheSession);
+    }
+
+    @Test
+    void aFirstSessionWithoutTheMoveKeepsItsStartingWeight() throws Exception {
+        // The squat skipped on the day: its target is still the load the user gave, for the next session that has it.
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, URI, weights(Map.of("exerciseId", "squat", "kg", 100)))).hasStatusOk();
+        String workout = start(account);
+        assertThat(send("POST", account, "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
+                "setType", "WORKING", "loadKg", 60, "reps", 8, "rir", 1, "side", "BOTH"))).hasStatus(201);
+
+        assertThat(send("POST", account, "/v1/workouts/" + workout + "/finish", Map.of("endedAt", Instant.now().toString(),
+                "uncleanExerciseIds", List.of()))).hasStatusOk();
+
+        assertThat(targets(map(send("GET", account, "/v1/program", null))).get(1)).isEqualTo(List.of("squat", kg(100), 6));
+    }
+
+    @Test
+    void aNewProgramStartsWithoutTheStartingWeightsOfTheOldOne() throws Exception {
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, URI, weights(Map.of("exerciseId", "squat", "kg", 100)))).hasStatusOk();
+
+        MvcTestResult generated = send("POST", account, "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "WEDNESDAY", "FRIDAY")));
+
+        assertThat(generated).hasStatusOk();
+        assertThat(targets(map(generated))).isNotEmpty().allSatisfy(move -> assertThat(move).hasSize(1));
     }
 
     @Test

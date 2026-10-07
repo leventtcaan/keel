@@ -36,6 +36,12 @@ class TrainingConfiguration {
         return ExerciseCatalog.of(files, vocabulary);
     }
 
+    /** The reps a starting weight is asked for (ADR-072 #5), from the onboarding's parameter file. */
+    @Bean
+    StartingWeightReps startingWeightReps() {
+        return StartingWeightReps.fromClasspath();
+    }
+
     /** The program templates (K-211, data/programs), checked against the catalog as they load. */
     @Bean
     ProgramTemplates programTemplates(ExerciseCatalog catalog) throws IOException {

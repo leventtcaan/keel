@@ -22,6 +22,14 @@
       "note": "The onboarding asks how many days (2 to 5) and places them itself (ADR-072 #4); the user moves them any time. Two days only as the user's choice: the engine never proposes fewer than three (ADR-071 #8)."
     },
     {
+      "key": "starting_weight_reps",
+      "value": 8,
+      "unit": "reps",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "ADR-072 #3, #5: an experienced user is asked the load they lift about this many times. The server reads it too: the load is a first target only on a day whose rep range starts at this or under; a day starting higher finds its load in the first session."
+    },
+    {
       "key": "adult_min_year_gap",
       "value": 19,
       "unit": "years",

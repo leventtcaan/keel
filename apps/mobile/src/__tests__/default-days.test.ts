@@ -23,6 +23,7 @@ test.each(offeredDayCounts)('%i days: that many weekdays, each once, in the orde
   expect(days).toHaveLength(count);
   expect(days).toEqual(WEEK.filter((day) => days.includes(day)));
   expect(count).toBeLessThanOrEqual(onboardingParams.maxTrainingDays);
+  expect(WEEK.filter((day) => !days.includes(day)).length).toBeGreaterThanOrEqual(1);
 });
 
 test('a count the onboarding does not offer has no days, and the days handed out are a copy', () => {

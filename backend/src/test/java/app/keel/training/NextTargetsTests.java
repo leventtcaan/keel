@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 class NextTargetsTests {
 
     private static final RepRange SIX_TO_TEN = new RepRange(6, 10);
+    /** The reps the onboarding asks a starting weight for (onboarding.json › starting_weight_reps). */
+    private static final int ASKED_REPS = 8;
     private static final LiftSession BENCH = new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, new BigDecimal("80"),
             List.of(new SetResult(8, 2), new SetResult(7, 1), new SetResult(7, 1)), true);
 
@@ -103,22 +105,32 @@ class NextTargetsTests {
         GymStore.Gym gym = new GymStore.Gym(null, "Test", true, new BigDecimal("20"), List.of(new BigDecimal("10"), new BigDecimal("5"),
                 new BigDecimal("2.5")), List.of(new BigDecimal("18"), new BigDecimal("20"), new BigDecimal("22")), null, java.util.Map.of());
 
-        assertThat(NextTargets.starting(new BigDecimal("81"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.of(gym)))
-                .isEqualTo(new NextTargets.Target(new BigDecimal("80"), 6));
-        assertThat(NextTargets.starting(new BigDecimal("12"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.of(gym)))
-                .as("lighter than the bar: the bar").isEqualTo(new NextTargets.Target(new BigDecimal("20"), 6));
-        assertThat(NextTargets.starting(new BigDecimal("21"), new RepRange(8, 12), ExerciseCatalog.Equipment.DUMBBELL, "one_arm_dumbbell_row",
-                java.util.Optional.of(gym))).as("a tie goes to the lighter").isEqualTo(new NextTargets.Target(new BigDecimal("20"), 8));
+        assertThat(NextTargets.starting(new BigDecimal("81"), ASKED_REPS, SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press",
+                java.util.Optional.of(gym))).contains(new NextTargets.Target(new BigDecimal("80"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("12"), ASKED_REPS, SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press",
+                java.util.Optional.of(gym))).as("lighter than the bar: the bar").contains(new NextTargets.Target(new BigDecimal("20"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("21"), ASKED_REPS, new RepRange(8, 12), ExerciseCatalog.Equipment.DUMBBELL,
+                "one_arm_dumbbell_row", java.util.Optional.of(gym))).as("a tie goes to the lighter").contains(new NextTargets.Target(new BigDecimal("20"), 8));
     }
 
     @Test
     void withoutAGymOrWordOnTheEquipmentTheStartingWeightIsAsGiven() {
         GymStore.Gym noBar = new GymStore.Gym(null, "Test", true, null, List.of(), List.of(), null, java.util.Map.of());
 
-        assertThat(NextTargets.starting(new BigDecimal("81.25"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.empty()))
-                .isEqualTo(new NextTargets.Target(new BigDecimal("81.25"), 6));
-        assertThat(NextTargets.starting(new BigDecimal("81.25"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.of(noBar)))
-                .isEqualTo(new NextTargets.Target(new BigDecimal("81.25"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("81.25"), ASKED_REPS, SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press",
+                java.util.Optional.empty())).contains(new NextTargets.Target(new BigDecimal("81.25"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("81.25"), ASKED_REPS, SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press",
+                java.util.Optional.of(noBar))).contains(new NextTargets.Target(new BigDecimal("81.25"), 6));
+    }
+
+    @Test
+    void aStartingWeightIsATargetOnlyWhereTheRangeStartsAtTheRepsItWasGivenFor() {
+        // The load lifted about 8 times is no target for a 10-12 day: too heavy for the bottom of that range. That day finds
+        // the load in its first session, as a move left out does (ADR-072 #5); nothing is derived for it.
+        assertThat(NextTargets.starting(new BigDecimal("80"), ASKED_REPS, new RepRange(ASKED_REPS, 12), ExerciseCatalog.Equipment.BARBELL,
+                "bench_press", java.util.Optional.empty())).contains(new NextTargets.Target(new BigDecimal("80"), ASKED_REPS));
+        assertThat(NextTargets.starting(new BigDecimal("80"), ASKED_REPS, new RepRange(ASKED_REPS + 1, 12), ExerciseCatalog.Equipment.BARBELL,
+                "bench_press", java.util.Optional.empty())).isEmpty();
     }
 
     @Test

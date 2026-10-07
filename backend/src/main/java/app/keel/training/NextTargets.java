@@ -139,15 +139,20 @@ final class NextTargets {
     /**
      * A starting weight as the move's first target (ADR-072 #5): the load the user gave as the gym in use makes it — the
      * nearest load it has (ADR-032; a tie to the lighter), the load as given where there is no gym or no word on this
-     * equipment — from the bottom of the range, where a new load starts (as an added load does, K-217).
+     * equipment — from the bottom of the range, where a new load starts (as an added load does, K-217). The load was given
+     * for {@code askedReps}: a range starting higher is too many reps for it, so none — found in the first session.
      */
-    static Target starting(BigDecimal kg, RepRange range, ExerciseCatalog.Equipment equipment, String exerciseId, Optional<GymStore.Gym> gym) {
+    static Optional<Target> starting(BigDecimal kg, int askedReps, RepRange range, ExerciseCatalog.Equipment equipment, String exerciseId,
+            Optional<GymStore.Gym> gym) {
+        if (range.min() > askedReps) {
+            return Optional.empty();
+        }
         BigDecimal load = gym.map(inUse -> switch (LoadSteps.round(equipment, exerciseId, inUse, BigDecimal.ZERO, kg)) {
             case LoadSteps.Rounding.To(BigDecimal made) -> made;
             case LoadSteps.Rounding.TooFar(BigDecimal made) -> made;
             case LoadSteps.Rounding.NoHeavier(), LoadSteps.Rounding.Unknown() -> kg;
         }).orElse(kg);
-        return new Target(load, range.min());
+        return Optional.of(new Target(load, range.min()));
     }
 
     /** A one-sided move's target: the side that did less decides (each side is its own set, SetRules). */
