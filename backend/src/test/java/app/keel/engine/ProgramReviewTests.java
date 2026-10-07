@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import app.keel.engine.ProgramReview.AddExercise;
+import app.keel.engine.ProgramReview.Catalog;
 import app.keel.engine.ProgramReview.Day;
 import app.keel.engine.ProgramReview.Finding;
 import app.keel.engine.ProgramReview.Move;
@@ -16,11 +17,14 @@ import app.keel.engine.ProgramReview.SetSets;
 import app.keel.engine.ProgramReview.Suggestion;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -31,8 +35,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 /**
  * Program review (K-955, ADR-073 #2): days over training_days_max come down to it (G6 K-36), a muscle over weekly_sets_max is
  * trimmed to weekly_sets_trim_to (G1 K-11), one under weekly_sets_min (arms: arm_weekly_sets_min, G1 K-61) is topped up with
- * the caller's isolation move, a muscle trained on one day is split over two (G1 K-22), and a rep range outside K-21 is set to
- * it. Thresholds come from the parameter files; the expected suggestions and their diffs on the fixture program are literal.
+ * the caller's isolation move, a muscle trained on one day is split (G1 K-22), and a rep range outside K-21 is set to it.
+ * Every session a diff touches stays within sets_per_session_per_muscle_min/max (G1 K-10). Thresholds come from the
+ * parameter files; the expected suggestions and their diffs on the fixture program are literal.
  */
 class ProgramReviewTests {
 
@@ -42,16 +47,31 @@ class ProgramReviewTests {
     private static final int WEEKLY_MIN = P.wholeNumber(ParameterKey.WEEKLY_SETS_MIN);
     private static final int ARM_MIN = P.wholeNumber(ParameterKey.ARM_WEEKLY_SETS_MIN);
     private static final int SESSION_MAX = P.wholeNumber(ParameterKey.SETS_PER_SESSION_PER_MUSCLE_MAX);
+    private static final int FREQUENCY = P.wholeNumber(ParameterKey.FREQUENCY_PER_MUSCLE_PER_WEEK);
     private static final int MAX_SUGGESTIONS = P.wholeNumber(ParameterKey.REVIEW_MAX_SUGGESTIONS);
     private static final int C_MIN = P.wholeNumber(ParameterKey.REP_RANGE_COMPOUND_MIN);
     private static final int C_MAX = P.wholeNumber(ParameterKey.REP_RANGE_COMPOUND_MAX);
     private static final int I_MIN = P.wholeNumber(ParameterKey.REP_RANGE_ISOLATION_MIN);
     private static final int I_MAX = P.wholeNumber(ParameterKey.REP_RANGE_ISOLATION_MAX);
 
-    /** The caller's isolation move per muscle (from the catalog); none for upper_back on purpose. */
+    /** The caller's isolation move per muscle (from the catalog); none for upper_back or lats on purpose. */
     static final Map<String, String> CANDIDATES = Map.of("hamstrings", "seated_leg_curl", "biceps", "dumbbell_curl",
             "triceps", "triceps_pushdown", "chest", "cable_fly", "calves", "seated_calf_raise", "quads", "leg_extension",
             "side_delts", "lateral_raise", "rear_delts", "reverse_pec_deck");
+
+    /** The arm muscles as data/muscles.yaml marks them (the catalog reads the same list). */
+    @SuppressWarnings("unchecked")
+    static final Set<String> ARMS = Set.copyOf((List<String>) muscles().get("arm_muscles"));
+
+    static final Catalog CATALOG = new Catalog(CANDIDATES, ARMS);
+
+    private static Map<String, Object> muscles() {
+        try (Reader reader = Files.newBufferedReader(Path.of("../data/muscles.yaml"))) {
+            return ParametersLoaderTests.strictYaml().load(reader);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     // ── fixture ──────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -90,6 +110,13 @@ class ProgramReviewTests {
         return days;
     }
 
+    /** The same full-body day {@code days} times: chest, quads and upper back at 2 sets each. */
+    static List<List<Move>> fullBody(int days) {
+        return IntStream.range(0, days).mapToObj(day -> (List<Move>) new ArrayList<>(List.of(compound("bench_press", "chest", 2),
+                compound("squat", "quads", 2), compound("seated_row", "upper_back", 2))))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
     static Program program(List<List<Move>> days) {
         return new Program(days.stream().map(Day::new).toList());
     }
@@ -107,7 +134,7 @@ class ProgramReviewTests {
     }
 
     static List<Suggestion> review(List<List<Move>> days) {
-        return ProgramReview.review(program(days), CANDIDATES, P);
+        return ProgramReview.review(program(days), CATALOG, P);
     }
 
     static List<Suggestion> of(List<Suggestion> suggestions, Finding finding) {
@@ -121,17 +148,38 @@ class ProgramReviewTests {
         assertThat(review(upperLower())).isEmpty();
     }
 
+    @Test
+    void anEmptyProgramAndAnEmptyDayHaveNoSuggestion() {
+        assertThat(review(new ArrayList<>())).isEmpty();
+        List<List<Move>> week = upperLower();
+        week.add(2, new ArrayList<>());
+        assertThat(review(week)).isEmpty();
+    }
+
     // ── 1 · days ─────────────────────────────────────────────────────────────────────────────────────────────────
 
     @ParameterizedTest
     @ValueSource(ints = {-1, 0, 1})
     void daysAreFlaggedOnlyAboveTheMaximum(int offset) {
         int days = DAYS_MAX + offset;
-        List<List<Move>> week = IntStream.range(0, days).mapToObj(day -> (List<Move>) new ArrayList<>(List.of(
-                compound("bench_press", "chest", 2), compound("squat", "quads", 2), compound("seated_row", "upper_back", 2))))
-                .collect(Collectors.toCollection(ArrayList::new));
+        assertThat(of(review(fullBody(days)), Finding.TOO_MANY_DAYS)).as(days + " days").hasSize(offset > 0 ? 1 : 0);
+    }
 
-        assertThat(of(review(week), Finding.TOO_MANY_DAYS)).as(days + " days").hasSize(offset > 0 ? 1 : 0);
+    @Test
+    void emptyDaysAreNotTrainingDays() {
+        // Six days, three of them with no moves: three training days.
+        List<List<Move>> week = fullBody(DAYS_MAX + 1 - 3);
+        for (int i = 0; i < 3; i++) {
+            week.add(new ArrayList<>());
+        }
+        assertThat(of(review(week), Finding.TOO_MANY_DAYS)).isEmpty();
+
+        // Six training days and an empty one: "6, not 7", and the empty day stays as it is.
+        List<List<Move>> seven = fullBody(DAYS_MAX + 1);
+        seven.add(new ArrayList<>());
+        Suggestion days = of(review(seven), Finding.TOO_MANY_DAYS).getFirst();
+        assertThat(days.numbers()).isEqualTo(Map.of("from", 6, "to", 5));
+        assertThat(ProgramReview.apply(program(seven), days).days()).hasSize(6).last().satisfies(day -> assertThat(day.moves()).isEmpty());
     }
 
     @Test
@@ -145,15 +193,27 @@ class ProgramReviewTests {
         assertThat(suggestion.rule()).isEqualTo(new RuleId("program_days_max"));
         assertThat(suggestion.source()).isEqualTo(new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-36", SourceTag.EXPERIENCE));
         assertThat(suggestion.muscle()).isEmpty();
-        // Days 4 and 5 both total 4 sets: the later goes. Neither day trains side or rear delts, so each move goes to the
-        // lightest day (8 sets: day 1, then day 3 once day 1 has 10).
+        // Days 4 and 5 both total 4 sets: the later goes. Neither day 0-3 trains side or rear delts, so each muscle's work goes
+        // to the lightest of them (8 sets: day 1, then day 3 once day 1 has 10).
         assertThat(suggestion.changes()).containsExactly(new RemoveDay(5),
-                new MoveExercise(5, 0, 1, "cable_lateral_raise", 2), new MoveExercise(5, 1, 3, "reverse_pec_deck", 2));
+                new MoveExercise(5, 0, 1, "cable_lateral_raise", 2, 2), new MoveExercise(5, 1, 3, "reverse_pec_deck", 2, 2));
 
         Program after = ProgramReview.apply(program(sixDays()), suggestion);
         assertThat(after.days()).hasSize(5);
         assertThat(after.days().get(1).moves().getLast().exercise()).isEqualTo("cable_lateral_raise");
         assertThat(after.days().get(3).moves().getLast().exercise()).isEqualTo("reverse_pec_deck");
+    }
+
+    @Test
+    void aMoveTheTargetDayAlreadyHasIsMergedIntoItNotRepeated() {
+        // Six identical days: day 5 goes, and each of its moves joins the same move on the lightest day.
+        Suggestion days = of(review(fullBody(DAYS_MAX + 1)), Finding.TOO_MANY_DAYS).getFirst();
+
+        assertThat(days.changes()).containsExactly(new RemoveDay(5), new SetSets(0, 0, "bench_press", 2, 4),
+                new SetSets(1, 1, "squat", 2, 4), new SetSets(2, 2, "seated_row", 2, 4), new RemoveExercise(5, 0, "bench_press"),
+                new RemoveExercise(5, 1, "squat"), new RemoveExercise(5, 2, "seated_row"));
+        Program after = ProgramReview.apply(program(fullBody(DAYS_MAX + 1)), days);
+        assertThat(after.days()).allSatisfy(day -> assertThat(day.moves().stream().map(Move::exercise).distinct()).hasSize(day.moves().size()));
     }
 
     @Test
@@ -199,7 +259,7 @@ class ProgramReviewTests {
     }
 
     @Test
-    void whenOneSetPerMoveIsStillTooMuchTheLastMovesOfTheWeekGo() {
+    void whenOneSetPerMoveIsStillTooMuchTheLastMovesOfTheWeekGoAndNoSessionDropsUnderItsMinimum() {
         List<List<Move>> week = upperLower();
         // Sixteen one-set chest moves at the end of day 3 (positions 3 to 18) plus the week's two chest moves at 3: 22 sets.
         for (int i = 0; i < 16; i++) {
@@ -209,12 +269,11 @@ class ProgramReviewTests {
         Suggestion trim = of(review(week), Finding.TOO_MANY_SETS).getFirst();
         Program after = ProgramReview.apply(program(week), trim);
 
-        // Both presses down to one set (4 of the 10), then the last six moves of the week go.
-        assertThat(trim.changes()).contains(new SetSets(0, 0, "bench_press", 3, 1), new SetSets(2, 0, "dumbbell_bench_press", 3, 1),
-                new RemoveExercise(3, 18, "pec_deck"), new RemoveExercise(3, 13, "pec_deck"))
-                .doesNotContain(new RemoveExercise(3, 12, "pec_deck")).hasSize(8);
-        assertThat(after.days().stream().flatMap(d -> d.moves().stream()).filter(m -> m.muscle().equals("chest"))
-                .mapToInt(Move::sets).sum()).isEqualTo(12);
+        // The presses keep a session's minimum (2), then the last eight moves of the week go.
+        assertThat(trim.changes()).contains(new SetSets(0, 0, "bench_press", 3, 2), new SetSets(2, 0, "dumbbell_bench_press", 3, 2),
+                new RemoveExercise(3, 18, "pec_deck"), new RemoveExercise(3, 11, "pec_deck"))
+                .doesNotContain(new RemoveExercise(3, 10, "pec_deck")).hasSize(10);
+        assertThat(after.weekly("chest")).isEqualTo(12);
     }
 
     // ── 3 · too few sets ─────────────────────────────────────────────────────────────────────────────────────────
@@ -240,6 +299,14 @@ class ProgramReviewTests {
     }
 
     @Test
+    void theArmMinimumAppliesOnlyToTheMusclesTheCatalogMarks() {
+        List<List<Move>> week = upperLower();
+        set(week, 2, 3, move -> sets(move, ARM_MIN - 1 - 3));
+
+        assertThat(of(ProgramReview.review(program(week), new Catalog(CANDIDATES, Set.of()), P), Finding.TOO_FEW_SETS)).isEmpty();
+    }
+
+    @Test
     void hamstringsAtThreeAreToppedUpToFourWithTheIsolationMoveOnTheLightestDayThatTrainsThem() {
         List<List<Move>> week = upperLower();
         set(week, 3, 1, move -> sets(move, 1));
@@ -249,7 +316,7 @@ class ProgramReviewTests {
         assertThat(topUps).hasSize(1);
         Suggestion topUp = topUps.getFirst();
         assertThat(topUp.muscle()).contains("hamstrings");
-        assertThat(topUp.numbers()).isEqualTo(Map.of("from", 3, "to", 4));
+        assertThat(topUp.numbers()).isEqualTo(Map.of("from", 3, "to", 4, "min", 4));
         assertThat(topUp.copyKey()).isEqualTo(new CopyKey("review.too_few_sets"));
         assertThat(topUp.rule()).isEqualTo(new RuleId("program_weekly_sets_min"));
         assertThat(topUp.source()).isEqualTo(new Source("arastirma/ham/guray/G1-antrenman.md#K-11", SourceTag.EXPERIENCE));
@@ -265,12 +332,38 @@ class ProgramReviewTests {
         Suggestion topUp = of(review(week), Finding.TOO_FEW_SETS).getFirst();
 
         assertThat(topUp.muscle()).contains("biceps");
-        assertThat(topUp.numbers()).isEqualTo(Map.of("from", 5, "to", 6));
+        assertThat(topUp.numbers()).isEqualTo(Map.of("from", 5, "to", 6, "min", 6));
         assertThat(topUp.copyKey()).isEqualTo(new CopyKey("review.too_few_arm_sets"));
         assertThat(topUp.rule()).isEqualTo(new RuleId("program_arm_weekly_sets_min"));
         assertThat(topUp.source()).isEqualTo(new Source("arastirma/ham/guray/G1-antrenman.md#K-61", SourceTag.EXPERIENCE));
         // Days 0 (14 sets) and 2 (13 sets) train biceps; day 2 already does the dumbbell curl, so it gets one more set.
         assertThat(topUp.changes()).containsExactly(new SetSets(2, 3, "dumbbell_curl", 2, 3));
+    }
+
+    @Test
+    void bicepsAtFiveOnAFullDayGetANewSessionOfAtLeastTheSessionMinimum() {
+        // Biceps only on day 0, at the session maximum: the missing set can't go there, and a one-set session elsewhere would
+        // be under sets_per_session_per_muscle_min, so the lightest other day gets two (7 a week).
+        List<List<Move>> week = upperLower();
+        set(week, 0, 3, move -> sets(move, 5));
+        week.get(2).remove(3);
+
+        Suggestion topUp = of(ProgramReview.findings(program(week), CATALOG, P), Finding.TOO_FEW_SETS).getFirst();
+
+        assertThat(topUp.numbers()).isEqualTo(Map.of("from", 5, "to", 7, "min", 6));
+        assertThat(topUp.changes()).containsExactly(new AddExercise(1, isolation("dumbbell_curl", "biceps", 2)));
+    }
+
+    @Test
+    void bicepsAtFourOnOneDayGoUpOnASecondDayRatherThanBySingleSets() {
+        List<List<Move>> week = upperLower();
+        set(week, 0, 3, move -> sets(move, 4));
+        week.get(2).remove(3);
+
+        Suggestion topUp = of(ProgramReview.findings(program(week), CATALOG, P), Finding.TOO_FEW_SETS).getFirst();
+
+        assertThat(topUp.numbers()).isEqualTo(Map.of("from", 4, "to", 6, "min", 6));
+        assertThat(topUp.changes()).containsExactly(new AddExercise(1, isolation("dumbbell_curl", "biceps", 2)));
     }
 
     @Test
@@ -284,16 +377,15 @@ class ProgramReviewTests {
 
     @Test
     void aMuscleTheProgramNeverTrainsIsOutOfScope() {
-        // No lats, glutes or forearms in the fixture: nothing to top up.
-        assertThat(review(upperLower())).noneMatch(s -> s.muscle().filter(m -> m.equals("lats")).isPresent());
-    }
+        // Hamstrings under the minimum is a finding; lats, with a candidate move but no move in the program, is not.
+        List<List<Move>> week = upperLower();
+        set(week, 3, 1, move -> sets(move, 1));
+        Map<String, String> withLats = new HashMap<>(CANDIDATES);
+        withLats.put("lats", "lat_pulldown");
 
-    @Test
-    void theArmMusclesAreMusclesOfTheCatalog() throws IOException {
-        try (Reader reader = Files.newBufferedReader(Path.of("../data/muscles.yaml"))) {
-            Map<String, Object> muscles = ParametersLoaderTests.strictYaml().<Map<String, Map<String, Object>>>load(reader).get("muscles");
-            assertThat(muscles).containsKeys(ProgramReview.ARM_MUSCLES.toArray(String[]::new));
-        }
+        List<Suggestion> findings = ProgramReview.findings(program(week), new Catalog(withLats, ARMS), P);
+
+        assertThat(findings).extracting(s -> s.muscle().orElse("")).contains("hamstrings").doesNotContain("lats");
     }
 
     // ── 4 · once a week ──────────────────────────────────────────────────────────────────────────────────────────
@@ -319,7 +411,7 @@ class ProgramReviewTests {
         assertThat(splits).hasSize(1);
         Suggestion split = splits.getFirst();
         assertThat(split.muscle()).contains("calves");
-        assertThat(split.numbers()).isEqualTo(Map.of("from", 1, "to", 2));
+        assertThat(split.numbers()).isEqualTo(Map.of("from", 1, "to", FREQUENCY));
         assertThat(split.copyKey()).isEqualTo(new CopyKey("review.once_a_week"));
         assertThat(split.rule()).isEqualTo(new RuleId("program_frequency"));
         assertThat(split.source()).isEqualTo(new Source("arastirma/ham/guray/G1-antrenman.md#K-22", SourceTag.EXPERIENCE));
@@ -335,7 +427,17 @@ class ProgramReviewTests {
 
         Suggestion split = of(review(week), Finding.ONCE_A_WEEK).getFirst();
 
-        assertThat(split.changes()).containsExactly(new MoveExercise(1, 3, 3, "seated_calf_raise", 3));
+        assertThat(split.changes()).containsExactly(new MoveExercise(1, 3, 3, "seated_calf_raise", 3, 3));
+    }
+
+    @Test
+    void whenNeitherHalvingNorAWholeMoveKeepsBothSessionsAtTheirMinimumThereIsNoFinding() {
+        // Calves 3 + 1 on day 1: half of 3 is one set, and moving either move leaves one set behind.
+        List<List<Move>> week = upperLower();
+        week.get(3).remove(2);
+        week.get(1).add(isolation("seated_calf_raise", "calves", 1));
+
+        assertThat(of(ProgramReview.findings(program(week), CATALOG, P), Finding.ONCE_A_WEEK)).isEmpty();
     }
 
     @Test
@@ -377,6 +479,19 @@ class ProgramReviewTests {
             assertThat(s.rule()).isEqualTo(new RuleId("program_rep_range"));
             assertThat(s.source()).isEqualTo(new Source("arastirma/ham/guray/G1-antrenman.md#K-21", SourceTag.EXPERIENCE));
         });
+    }
+
+    @Test
+    void anExerciseOnTwoDaysIsOneSuggestionWithOneChangePerDay() {
+        List<List<Move>> week = upperLower();
+        set(week, 0, 0, move -> reps(move, 3, 5));
+        week.get(2).set(0, reps(compound("bench_press", "chest", 3), 3, 5));
+
+        List<Suggestion> ranges = of(review(week), Finding.REP_RANGE);
+
+        assertThat(ranges).hasSize(1);
+        assertThat(ranges.getFirst().changes()).containsExactly(new SetRepRange(0, 0, "bench_press", 3, 5, 6, 10),
+                new SetRepRange(2, 0, "bench_press", 3, 5, 6, 10));
     }
 
     // ── priority and the cap ─────────────────────────────────────────────────────────────────────────────────────
@@ -434,22 +549,30 @@ class ProgramReviewTests {
     }
 
     @Test
-    void applyingASuggestionToAnotherProgramIsRefused() {
-        List<List<Move>> week = upperLower();
-        set(week, 0, 0, move -> reps(move, 3, 5));
-        Suggestion range = of(review(week), Finding.REP_RANGE).getFirst();
-
-        List<List<Move>> other = upperLower();
-        other.get(0).remove(0);
-        assertThatIllegalArgumentException().isThrownBy(() -> ProgramReview.apply(program(other), range));
-    }
-
-    @Test
     void anAppliedSuggestionChangesOnlyWhatItsDiffSays() {
         List<List<Move>> week = upperLower();
         set(week, 0, 0, move -> reps(move, 3, 5));
         Suggestion range = of(review(week), Finding.REP_RANGE).getFirst();
 
         assertThat(ProgramReview.apply(program(week), range)).isEqualTo(program(upperLower()));
+    }
+
+    @Test
+    void aDiffThatDoesNotMatchTheProgramIsRefused() {
+        Program week = program(upperLower());
+        List<ProgramReview.Change> wrong = List.of(new SetRepRange(0, 0, "barbell_row", 6, 10, 6, 10),
+                new SetSets(0, 0, "bench_press", 4, 2), new MoveExercise(1, 0, 0, "squat", 4, 4), new RemoveDay(1),
+                new RemoveExercise(9, 0, "squat"), new AddExercise(4, isolation("cable_fly", "chest", 2)), new SetSets(0, 9, "bench_press", 3, 2));
+
+        for (ProgramReview.Change change : wrong) {
+            Suggestion suggestion = new Suggestion(Finding.REP_RANGE, java.util.Optional.empty(), java.util.Optional.empty(), Map.of(),
+                    ProgramReview.REP_RANGE, ProgramReview.REP_RANGE_SOURCE, new CopyKey("review.rep_range_compound"), List.of(change));
+            assertThatIllegalArgumentException().as(change.toString()).isThrownBy(() -> ProgramReview.apply(week, suggestion));
+        }
+    }
+
+    @Test
+    void aMoveWithoutSetsIsRefusedSoCallersLeaveItOut() {
+        assertThatIllegalArgumentException().isThrownBy(() -> compound("bench_press", "chest", 0));
     }
 }

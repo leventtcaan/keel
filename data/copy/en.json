@@ -2150,15 +2150,15 @@
     },
     "too_few_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: a muscle needs at least {to} work sets a week to grow. One isolation move tops it up."
+      "body": "Coaching rule: a muscle needs at least {min} work sets a week to grow. One isolation move tops it up."
     },
     "too_few_arm_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: biceps and triceps need at least {to} work sets a week, split over two sessions. One isolation move tops it up."
+      "body": "Coaching rule: biceps and triceps need at least {min} work sets a week, split over two sessions. One isolation move tops it up."
     },
     "once_a_week": {
-      "title": "{muscle} twice a week",
-      "body": "Coaching rule: train each muscle twice a week. One session's growth signal fades after about two days, so part of the work moves to another day."
+      "title": "{muscle} on {to} days a week",
+      "body": "Coaching rule: train each muscle on {to} days a week. One session's growth signal fades after about two days, so part of the work moves to another day."
     },
     "rep_range_compound": {
       "title": "{exercise}: {toMin}-{toMax} reps",
