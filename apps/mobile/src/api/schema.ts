@@ -614,6 +614,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/program/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The current program reviewed against the coaching rules, with the review's changes in force
+         * @description ADR-073 #2-#3. The user picks any of the suggestions, or none: "Keep mine as is" sends nothing and changes nothing.
+         *     The same review rides on every Program the server answers (`Program.review`), so it runs again whenever the
+         *     program changes. No current program: NOT_FOUND.
+         */
+        get: operations["getProgramReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/program/review/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply the suggestions the user picked; the program keeps its source
+         * @description In the review's order, one change each, each kept in the change log with the program before and after it. The
+         *     review runs again after each: a later pick an earlier one already fixed is not applied, and one whose fix moved
+         *     applies the fix the review holds now. A move the change leaves keeps its next target (a starting weight or a
+         *     session's), except a move whose rep range changed: its target was for the old range. A GENERATED program stays
+         *     GENERATED (ADR-073 #4). CONFLICT (409), nothing changed: the program is not the one `reviewId` names (it changed
+         *     since the review; fetch it again), or a suggestion id the review does not hold now. NOT_FOUND without a program.
+         */
+        post: operations["applyProgramReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/program/review/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo one applied change, or all of them ("N changes applied · Undo")
+         * @description With `changeId`, that change: the program as it was before it, with the changes applied after it applied again (one
+         *     the undone change made unneeded is dropped). Without, every change in force: the program as it was before the first.
+         *     Moves keep their next targets as in apply. An undone change stays in the log, no longer in force; undone twice, or
+         *     nothing to undo, nothing changes. NOT_FOUND: no program, or no such change. CONFLICT (409), nothing changed: the
+         *     program changed another way since its last change.
+         */
+        post: operations["undoProgramReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/gyms": {
         parameters: {
             query?: never;
@@ -1736,7 +1807,8 @@ export interface components {
         /**
          * @description The program as it is this week: the deload ladder's calls in force today on the user's calendar (K-217) — a
          *     lighter week (`deload`, the sets of each exercise lowered), a week off (`restUntil`), the load held since a day
-         *     (`loadHeldSince`: no load is added until the next rung).
+         *     (`loadHeldSince`: no load is added until the next rung). `review`: the program as it is now, reviewed (K-956); this
+         *     server always sends it.
          */
         Program: {
             deload?: components["schemas"]["DeloadWeek"];
@@ -1757,6 +1829,57 @@ export interface components {
             /** @enum {string} */
             source: "GENERATED" | "OWN";
             days: components["schemas"]["ProgramDay"][];
+            review?: components["schemas"]["ProgramReview"];
+        };
+        /**
+         * @description The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
+         *     days, too many sets, too few sets, once a week, rep range). `id` names the program as reviewed (its moves, sets,
+         *     rep ranges and day order; not names or weekdays): an apply names it. `applied`: the review's changes in force,
+         *     oldest first.
+         */
+        ProgramReview: {
+            id: string;
+            suggestions: components["schemas"]["ReviewSuggestion"][];
+            applied: components["schemas"]["AppliedReviewChange"][];
+        };
+        /**
+         * @description A finding with its fix. `id` is the finding and what it is about, the same while the program is. The words are the
+         *     app's: data/copy/en.json › `copyKey` (title, body), with `numbers` as its placeholders and the muscle's or the
+         *     move's name; `reason` is the coaching rule.
+         */
+        ReviewSuggestion: {
+            id: string;
+            /** @enum {string} */
+            finding: "TOO_MANY_DAYS" | "TOO_MANY_SETS" | "TOO_FEW_SETS" | "ONCE_A_WEEK" | "REP_RANGE";
+            /** @description The muscle (data/muscles.yaml) a sets or frequency finding is about. */
+            muscle?: string;
+            /** @description The move a rep range finding is about. */
+            exerciseId?: string;
+            numbers: {
+                [key: string]: number;
+            };
+            copyKey: string;
+            reason: components["schemas"]["Reason"];
+        };
+        /** @description A suggestion applied to the program, as it was shown when applied. */
+        AppliedReviewChange: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            appliedAt: string;
+            suggestion: components["schemas"]["ReviewSuggestion"];
+        };
+        ReviewApply: {
+            /** @description ProgramReview.id of the review the user picked from. */
+            reviewId: string;
+            suggestionIds: string[];
+        };
+        ReviewUndo: {
+            /**
+             * Format: uuid
+             * @description AppliedReviewChange.id; absent to undo every change in force.
+             */
+            changeId?: string;
         };
         /** @description A lighter week in force (K-217); ends on its own after `until`. */
         DeloadWeek: {
@@ -3568,6 +3691,77 @@ export interface operations {
         };
         responses: {
             /** @description The program with the starting weights as targets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getProgramReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramReview"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    applyProgramReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewApply"];
+            };
+        };
+        responses: {
+            /** @description The program with the changes, reviewed again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    undoProgramReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewUndo"];
+            };
+        };
+        responses: {
+            /** @description The program after the undo, reviewed again */
             200: {
                 headers: {
                     [name: string]: unknown;
