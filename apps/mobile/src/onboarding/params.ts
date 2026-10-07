@@ -10,6 +10,24 @@ function param<T>(key: string): T {
   return found.value as T;
 }
 
+type Weekday = components['schemas']['Weekday'];
+
+const DAY_SETS = param<Record<string, Weekday[]>>('default_day_sets');
+
+/**
+ * The weekdays the app places a chosen number of training days on (ADR-072 #4, default_day_sets); the user moves them
+ * any time. None for a count the onboarding does not offer.
+ */
+export function defaultTrainingDays(count: number): Weekday[] | undefined {
+  const days = DAY_SETS[String(count)];
+  return days === undefined ? undefined : [...days];
+}
+
+/** The day counts the onboarding offers, fewest first. */
+export const offeredDayCounts: number[] = Object.keys(DAY_SETS)
+  .map(Number)
+  .sort((a, b) => a - b);
+
 export const onboardingParams = {
   maxTrainingDays: param<number>('max_training_days'),
   adultMinYearGap: param<number>('adult_min_year_gap'),
