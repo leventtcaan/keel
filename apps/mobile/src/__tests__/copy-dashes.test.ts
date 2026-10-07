@@ -17,7 +17,8 @@ function texts(tree: unknown, prefix = ''): [string, string][] {
   return [];
 }
 
-const DASH = /[–—]/;
+// En and em dash, and their look-alikes (figure dash, horizontal bar).
+const DASH = /[\u2012\u2013\u2014\u2015]/;
 
 test('the check sees both dashes', () => {
   expect(DASH.test('6–10')).toBe(true);

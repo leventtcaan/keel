@@ -500,7 +500,7 @@
     },
     "save": "Save recipe",
     "needsConnection": "Saving a recipe needs a connection. Try again when you're online.",
-    "refused": "That recipe couldn't be saved. Check the ingredients' amounts. With many recipes kept, delete one you don't use.",
+    "refused": "That recipe couldn't be saved. Check the ingredients' amounts. If you keep many recipes, delete one you don't use.",
     "savedEarlier": "An earlier save of this recipe went through, so your changes since weren't kept. Delete it from your recipes and enter it again."
   },
   "meal": {
@@ -893,7 +893,7 @@
       },
       "fat_estimate_needed": {
         "title": "A lower target needs one more check first.",
-        "body": "Before calories go down, the coach needs a rough read of your body shape. It keeps a lower target from leaving your body short of energy. Add it and the call follows; nothing else waits."
+        "body": "Before calories go down, the coach needs a rough read of your body shape. That read keeps a lower target from leaving your body short of energy. Add it and the call follows; nothing else waits."
       },
       "cycle_check_needed": {
         "title": "One question before any cut.",
@@ -921,11 +921,11 @@
       "applied": "Applied. Your step goal has changed from today.",
       "bmr_floor": {
         "title": "Food stays where it is. Movement goes up.",
-        "body": "Another calorie cut would take you under what your body needs at rest. More daily steps keep things moving without eating less, a gentler push than another cut."
+        "body": "Another calorie cut would take you under what your body needs at rest. More daily steps keep things moving without eating less. It's a gentler push than another cut."
       },
       "carb_squeeze": {
         "title": "Food stays where it is. Movement goes up.",
-        "body": "A lower target would leave too little room for protein and the carbs your training runs on. More daily steps keep things moving without eating less, a gentler push than another cut."
+        "body": "A lower target would leave too little room for protein and the carbs your training runs on. More daily steps keep things moving without eating less. It's a gentler push than another cut."
       }
     },
     "hard_stop": {

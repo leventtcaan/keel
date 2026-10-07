@@ -49,9 +49,9 @@ export function SetTable({ plan, move }: { plan: ExercisePlan; move: Schemas['Ex
               {row.done === null ? label : `${label} ${t('workout.doneMark')}`}
             </Text>
             <Text style={[styles.cell, styles.value, { color: row.done === null ? color.muted : color.text }]}>
-              {today === null ? '–' : setText(today, move, units)}
+              {today === null ? '-' : setText(today, move, units)}
             </Text>
-            <Text style={[styles.cell, styles.last, { color: color.muted }]}>{row.last === null ? '–' : setText(row.last, move, units)}</Text>
+            <Text style={[styles.cell, styles.last, { color: color.muted }]}>{row.last === null ? '-' : setText(row.last, move, units)}</Text>
           </View>
         );
       })}

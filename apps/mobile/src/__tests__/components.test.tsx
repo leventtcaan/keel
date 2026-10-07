@@ -213,7 +213,7 @@ describe('TextField (K-416)', () => {
         <TextField label="Reps" value="" onChangeText={() => {}} keyboardType="number-pad" />
       </ThemeProvider>,
     );
-    expect(screen.getByLabelText('Reps').props).toMatchObject({ placeholder: '–', placeholderTextColor: palettes.light.muted });
+    expect(screen.getByLabelText('Reps').props).toMatchObject({ placeholder: '-', placeholderTextColor: palettes.light.muted });
   });
 
   test('a field for words has no dash', async () => {
