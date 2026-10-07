@@ -110,3 +110,52 @@ Kalan 06 §7 soruları (B1, B3, B9, B12) bu turun onayından sonra.
   somut ödül zararlı (d=−0,28). Ekran buna göre: rozet/XP yok, gerçek set ve haftanın bağı var.
 - "Kararı veren uygulama" tek seans düzeyinde artık özgün değil (Hevy Trainer, Fitbod). Fark: birden çok veri kaynağından haftalık karar ve gerekçesi.
 - Dış kullanıcı testi yok (ADR-069 #5); 5 saniye testi hâlâ yapılmadı.
+
+---
+
+# Tur 3 (7 Eki öğleden sonra) — "kullanıcı da karar verir"
+
+**Levent'in tur 2 hükmü** (`verdicts-r2`, 37 kayıt): "kesinlikle çok daha iyi ama mükemmelden uzak". Ana eksik **kullanıcının işe karışabilmesi**:
+uygulama öneriyor ama dayatıyor; kendi programı olanı dinlemiyor, değerlendirip ikna etmiyor; yeni başlayan ile tecrübeliyi ayırmıyor; kardiyo yok.
+Ölçüt deterministik mükemmellik değil, **kullanıcı davranışı ve satılabilirlik**.
+
+**Cevaplar (AskUserQuestion):** renk **turkuaz** · deneme "ilk karar + 3 gün" · geç kayıt **sayar** · kardiyo **Güray'ı dinle**.
+- **Deneme, doğrulama:** App Store ücretsiz deneme süreleri sabit: 3 gün, 1 hafta, 2 hafta, 1-2-3-6 ay, 1 yıl
+  ([Apple, introductory offers](https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-up-introductory-offers-for-auto-renewable-subscriptions/)).
+  Kişiye göre değişen süre kurulamaz. Niyeti ("herkes ücretten önce ilk kararı ve ardından en az 3 günü görsün") karşılayan en kısa sabit süre
+  **2 hafta** (ilk karar en geç 7. gün; ücrete ≥4 gün). Prototipte 2 hafta. **Levent onayı bekliyor** (para).
+- **Kardiyo:** G2 K-29..K-36. Ç-4'te en yeni kaynak (YAG25, Nis 2025) esas: yağ kaybında **haftada 2 × 30 dk**, düşük tempo (konuşma testi,
+  ~110 nabız, K-33), ağırlıktan **sonra** (K-35; öncesinde asla), HIIT yok (K-34), 30 dk ≈ 300 kcal ideal doz (K-31). Bulk'ta 2-3 × 20-30 dk
+  (KRD24). Çok aktif işte azalır (K-32 koşulu). Off gün tercihen tam dinlenme (K-36).
+- **Yakılan kalori:** Apple Watch'un ölçtüğü aktif enerji (HealthKit, K-404 zaten okuyor) gösterilir, "Apple Watch" etiketiyle. Saatsiz kullanıcı
+  için tahmin formülü kaynak ister (MET, araştırmada yok) → şimdilik gösterilmez.
+
+**Tur 3'te ne değişti (prototip sürüm 3):**
+
+| Alan | Değişiklik | Dayanak |
+|---|---|---|
+| Onboarding | Deneyim sorusu (yeni / <1 yıl / 1-3 / 3+); tecrübeli için çalışma ağırlıkları (atlanabilir); yeni başlayan ağırlıklarını 1. seansta bulur | Levent genel notu; G1 K-5 (RIR) |
+| Kendi programı (akış 1b) | İçe aktar (Strong/Hevy) ya da gir → **program incelemesi**: 6 gün (K-36), göğüs 18 set (K-11 üst bant), hamstring 4 set (K-11 alt bant) → 3 öneri, her biri aç/kapa; "Use mine with 3 changes" / "Keep mine as is" | Levent: "programımı değerlendirmedi, ikna etmeye çalışmadı" |
+| Antrenman (sekme) | Her harekette değiştir; "Change": kısa sürüm, meşgul salon, taşı, atla; "Edit": günler, hareketler, kardiyo, split, yeniden kur; kardiyo satırı | Levent: dayatma yok, özgürlük |
+| Oturum | Dinlenme üstte, hiçbir düğmeyi kapatmaz, son sette çıkmaz; duraklat; bitir / sonra doldur / at; seti düzelt; set ve hareket atla; her setten sonra analiz ("+1 rep vs last time. 2 more and it's 105 kg."); 1. seansta "2+ kaldıysa ağırlaştır"; sonda kardiyo | Levent; çift ilerleme, G1 K-5, G1 #61, G2 K-35 |
+| Antrenman sonu | Animasyonlu "Workout complete"; dakika, kaldırılan toplam kilo (+%6), set, Apple Watch kalorisi; rekor; ne arttı; kas haritası; hafta 3/3; "Share your workout" | Levent: "başardım" anı; M3 bilgi veren geri bildirim |
+| Paylaşım | "The call" kalktı. Çıkartmalar: antrenman, rekor, seri, gelişim; fotoğraf ya da **video** arka plan; hareketli sayılar; Story, TikTok | Levent: insan gibi, pazarlama, video |
+| Karar / 1. hafta | Paylaş kalktı. Karar: "Got it" + "Keep last week's plan". 1. hafta: "Sounds right" / "Change it" (3 gün kalsın, 2 gün benim seçimim) | Levent; B11 |
+| Check-in (1. hafta) | "How did week 1 feel?" sorusu; karar onu da okur | Levent: zayıf cümle |
+| İlerleme (ilk gün) | Tıklanabilir hedefler (kalori, protein öğünlere; adım Apple Health'e; kardiyo programa) + kas haritası (planlanan) + kilitli güç önizlemesi + tartı noktaları | Levent: "en kötü ekran" |
+| Dönüş | Seçenekli: hafif başla (önerilen, G7 K-72) / kaldığım yerden / yeniden kur | Levent: öner, dayatma |
+| Duraklat | Modern ikonlu döşemeler | Levent |
+| Görsel | Oynat rozeti yalnız tıklanabilir yerde (hareket görseli → nasıl yapılır) | Levent: "video izlenecek sanıyorum" |
+
+**Kod tarafına eklenen işler (tur 2 listesine ek):**
+- **Program incelemesi** (yeni motor yeteneği): kas başına haftalık set bandı (K-11: 4-15, hedef ~10), sıklık (K-22: 2×), gün sayısı (K-36),
+  tekrar aralığı (K-21) → öneri listesi; kullanıcı her birini uygular ya da reddeder. `kural-ekle` + ADR.
+- **Kardiyo reçetesi**: G2 K-29..K-36 parametre dosyasına (`cardio_sessions_per_week_cut` 2 · dakika 30 · sonrası sınırı 30 dk), aktivite
+  düzeyine göre azalma. `kural-ekle`.
+- **Başlangıç ağırlığı kalibrasyonu**: 1. seansta RIR'a göre set set ağırlaştır/hafiflet (G1 K-5, G1 #61). `kural-ekle`.
+- **Set analizi satırı**: çift ilerlemenin mevcut çıktısından (kaç tekrar kaldı, kaç kilo sonra) üretilir; yeni kural değil, sunum.
+- **Geç kayıt haftayı sayar** (B1b, Levent): U7 yorumu ADR'ye; "telafi" (eksiği fazlasıyla ödetmek) yasak kalır.
+- **Deneyim alanı** profile (sözleşme değişikliği) → ADR.
+- **Apple Watch aktif enerji** antrenman özetinde (K-404'ün okuduğu veri; yeni okuma: antrenman penceresi).
+
+**Hâlâ Levent'te:** 2 haftalık deneme onayı · Meta App ID (Story) · 06 §7 kalanları (B1, B3, B9, B12).

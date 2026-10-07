@@ -181,3 +181,10 @@
 - sıradaki: Levent tur 2'yi gezer (sabah) → `verdicts-r2` → işle → onay → görsel dil ADR'si + 06 §7 ADR'leri + "M9 ara · Yeni yüz" görev kartları
 - AI: bütün araştırma, ölçüm, tasarım, prototip kodu ve metin agent (3 alt ajan, agent denetledi); Levent değerlendirdi ve dört ürün sorusunu cevapladı
 
+## 2026-10-07 · Faz 5 Part 2 · tur 3 (kullanıcı da karar verir) — kod yok
+- yaptım: tur 2'nin 37 değerlendirmesi okundu; 4 soru (renk, deneme, geç kayıt, kardiyo); Apple deneme süreleri doğrulandı (sabit → 2 hafta); Güray kardiyo kuralları (G2 K-29..K-36) ve Apple Health aktif enerjisi (K-404) kaynak olarak bulundu; prototip v3 (yeni: deneyim, kendi programı + inceleme, başlangıç ağırlıkları, bugünü/programı değiştir, kardiyo, oturum duraklat/sonra doldur/düzelt/analiz, kutlama + kas haritası, video paylaşım, 1. hafta onayla/değiştir)
+- karar: Levent — turkuaz; geç kayıt sayar; kardiyo Güray; deneme "ilk karar + 3 gün" (agent: kurulamaz, 2 hafta önerildi, onay bekliyor)
+- takıldım: iki CSS sınıf çakışması daha (.sw); gecikmeli "both" animasyonları arka planda öğeleri görünmez bırakıyordu → animasyon görünür durumdan başlar; dinlenme sayacı yapışkan kabın içindeydi
+- sıradaki: Levent tur 3'ü gezer → `verdicts-r3` → işle → onay → ADR'ler (görsel dil, program incelemesi, kardiyo, geç kayıt, deneme) + "M9 ara · Yeni yüz" görev kartları
+- AI: araştırma, doğrulama, tasarım, prototip kodu ve metin agent; Levent değerlendirdi ve 4 soruyu cevapladı
+

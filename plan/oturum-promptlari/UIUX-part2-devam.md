@@ -19,3 +19,14 @@ Sıra:
 
 Kural hatırlatmaları: arayüzde em/en dash yok (aralık "610 to 720"); kişi adı yok; U1-U7; motor gerçekleri: tekrar aralığı bileşik 6-10,
 izolasyon 8-12, RIR 0-1, çift ilerleme (üstte +2,5/+5 kg), plato 3 seans, başlangıç kalorisi = bakım + 14/28 gün gözlem.
+
+## Tur 3 (7 Eki öğleden sonra) — Levent'in tur 2 değerlendirmesi (`verdicts-r2`, 37 kayıt) ve cevapları
+Genel: "çok daha iyi ama mükemmelden uzak": **kullanıcının işe karışabilmesi eksik** (dayatma yok, öner + bırak), yeni başlayan da tecrübeli de
+kapsansın, **kendi programı olan akışı yok** (program dayatıldı; programı değerlendirip ikna etmeli), **kardiyo yok**. Satılabilirlik ve davranış.
+Cevaplar: renk **turkuaz** · deneme "ilk karar + 3 gün" (Apple sabit süre → **2 hafta** en yakın, onay iste) · geç kayıt **sayar** (B1b) ·
+kardiyo **Güray'ı dinle** (G2 K-29..K-36; Ç-4'te en yeni kaynak YAG25: tipik 2 seans, 30 dk ≈ 300 kcal, ağırlıktan sonra ≤20-30 dk, LISS ~110 nabız).
+Tur 3 işleri: deneyim sorusu · kendi programı akışı (içe aktar/gir → **program incelemesi**: K-36 6 gün, K-11 set aralığı, K-22 sıklık; uygula/benimki kalsın)
+· başlangıç ağırlıkları (tecrübeli girer, yeni başlayan 1. seansta bulur) · oynat rozeti yalnız tıklanabilir yerde · kardiyo plana/antrenmana/ilerlemeye
+· oturum: dinlenme düğmeleri kapatmaz, duraklat, sonra gir, seti düzenle, hareket başına analiz satırı · oturum sonu kutlama (hacim, Apple Watch
+kalorisi, rekor, kas haritası) · paylaşım: "the call" yok, antrenman/rekor/seri/gelişim + foto/video · 1. hafta kararında paylaş yok, onayla/değiştir ·
+ilk gün İlerleme: tıklanabilir hedefler + kas haritası + kilitli önizleme · duraklat ekranı modern · dönüş seçenekli · check-in 1. hafta sorusu.
