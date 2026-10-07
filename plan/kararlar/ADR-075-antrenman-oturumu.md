@@ -85,3 +85,6 @@ Karar: sunucu yalnız bu hareketler için `calibrationStepKg` (bölgenin yük ba
 telefon girilen kiloya ekler ve ısınma setlerinin kullandığı ortak `loadSteps.round` ile salona yuvarlar (ADR-032, K-417). Ne zaman önerileceği
 (`calibration_rir_min`, G6 K-40) ve ne kadar (bir basamak) parametre/sunucu kaynaklı kalır; telefon kural seçmez, yalnız salonun ağırlığına
 yuvarlar. Reddedilen: sunucunun her hareket için salonun bütün kilo merdivenini göndermesi (yük ağır, sınır gerekir).
+"Too heavy?" için hafif seçenek her zaman bulunur (inceleme, 7 Eki): salonun basamak içindeki en ağır hafif kilosu, basamak içinde yoksa
+salonun bir alt basamağı (başlangıcın altındaki en ağır kilo); yalnız rafın/barın dibinde yok. Ağır seçenek bir basamakla sınırlı kalır
+(aşmak risk). İzolasyon hareketleri hiç hedef almadığı için her seans kalibrasyon basamağı taşır; "hedef kilosu yokken" tanımına uygun.
