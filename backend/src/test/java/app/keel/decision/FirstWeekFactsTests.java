@@ -31,19 +31,54 @@ class FirstWeekFactsTests {
     }
 
     @Test
-    void plannedDoneAndMissedOnTheUsersCalendar() {
-        // Planned Wednesday and Friday (Monday is not in the week); Friday's session done, and one on Saturday.
+    void theSignupDayIsNotPlannedSoWednesdayNeverDidntHappen() {
+        // Signed up on a Wednesday, a Mon/Wed/Fri plan, Friday done: the week planned Friday only, and it happened.
         Optional<FirstWeekAdjustment.Week> week = FirstWeekFacts.of(WEDNESDAY, DayOfWeek.MONDAY, NEXT_MONDAY, MON_WED_FRI,
+                Set.of(WEDNESDAY.plusDays(2)), 3, EXPERIENCED);
+
+        assertThat(week).contains(new FirstWeekAdjustment.Week(1, 1, 3, List.of(), EXPERIENCED));
+    }
+
+    @Test
+    void aSessionOnTheSignupDayCountsAsPlannedAndDone() {
+        // Done on the day the account began, planned or not: it counts, and so does the day.
+        Optional<FirstWeekAdjustment.Week> week = FirstWeekFacts.of(WEDNESDAY, DayOfWeek.MONDAY, NEXT_MONDAY, Set.of(DayOfWeek.FRIDAY),
+                Set.of(WEDNESDAY), 1, EXPERIENCED);
+
+        assertThat(week).contains(new FirstWeekAdjustment.Week(2, 1, 1, List.of(DayOfWeek.FRIDAY), EXPERIENCED));
+    }
+
+    @Test
+    void plannedDoneAndMissedOnTheUsersCalendar() {
+        // Begun on a Tuesday: Wednesday and Friday planned; Friday's session done, and one on Saturday.
+        LocalDate tuesday = WEDNESDAY.minusDays(1);
+        Optional<FirstWeekAdjustment.Week> week = FirstWeekFacts.of(tuesday, DayOfWeek.MONDAY, NEXT_MONDAY, MON_WED_FRI,
                 Set.of(WEDNESDAY.plusDays(2), WEDNESDAY.plusDays(3)), 3, EXPERIENCED);
 
         assertThat(week).contains(new FirstWeekAdjustment.Week(2, 2, 3, List.of(DayOfWeek.WEDNESDAY), EXPERIENCED));
     }
 
     @Test
+    void begunTheDayBeforeTheCheckInNothingIsPlanned() {
+        // A Sunday signup with a Monday check-in: no day after the signup day in the week, so nothing to adjust.
+        LocalDate sunday = NEXT_MONDAY.minusDays(1);
+
+        assertThat(FirstWeekFacts.of(sunday, DayOfWeek.MONDAY, NEXT_MONDAY, MON_WED_FRI, Set.of(), 3, EXPERIENCED).map(FirstWeekAdjustment.Week::planned))
+                .contains(0);
+    }
+
+    @Test
+    void theNamesOfExperienceAreTheProfilesOwn() {
+        // DecisionService maps the profile's answer to the engine's by name (ADR-072 #3).
+        assertThat(java.util.Arrays.stream(Experience.values()).map(Enum::name).toList())
+                .isEqualTo(java.util.Arrays.stream(app.keel.profile.Experience.values()).map(Enum::name).toList());
+    }
+
+    @Test
     void missedDaysComeInTheWeeksOrderNotTheWeekdays() {
-        // Begun on a Friday, check-in Thursday: Friday comes before Monday and Wednesday.
-        LocalDate friday = LocalDate.of(2026, 10, 9);
-        Optional<FirstWeekAdjustment.Week> week = FirstWeekFacts.of(friday, DayOfWeek.THURSDAY, LocalDate.of(2026, 10, 15), MON_WED_FRI, Set.of(),
+        // Begun on a Thursday, check-in Thursday: Friday comes before Monday and Wednesday.
+        LocalDate thursday = LocalDate.of(2026, 10, 8);
+        Optional<FirstWeekAdjustment.Week> week = FirstWeekFacts.of(thursday, DayOfWeek.THURSDAY, LocalDate.of(2026, 10, 15), MON_WED_FRI, Set.of(),
                 3, Optional.empty());
 
         assertThat(week.map(FirstWeekAdjustment.Week::missed)).contains(List.of(DayOfWeek.FRIDAY, DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY));

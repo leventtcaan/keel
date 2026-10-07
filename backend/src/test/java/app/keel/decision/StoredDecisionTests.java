@@ -69,7 +69,7 @@ class StoredDecisionTests {
 
         assertThat(kept.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("WEDNESDAY", "FRIDAY")));
         assertThat(DecisionJson.action(kept)).isEqualTo(moved);
-        Action added = new Action.AddTrainingDay(4);
+        Action added = new Action.AddTrainingDay(3, 4);
         assertThat(DecisionJson.action(DecisionJson.of(new Decision(added, List.of(new Reason(new RuleId("first_week_add_day"), REDS)),
                 Confidence.MEDIUM, LocalDate.of(2026, 10, 5), new CopyKey("decision.add_training_day.first_week_add_day"))))).isEqualTo(added);
     }

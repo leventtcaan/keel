@@ -1030,6 +1030,10 @@
         "title": "Same plan for week 2.",
         "body": "Most of your sessions happened, and that's what the first week is for. Weight and food come later, once the scale has enough mornings to say something."
       },
+      "first_week_too_much": {
+        "title": "Same plan for week 2.",
+        "body": "You said week 1 felt like a lot, and every session still happened. The plan stays as it is: the same days, nothing added."
+      },
       "toward_goal": {
         "title": "Keep going exactly as you are.",
         "body": "Your weight is moving the right way and nothing says it needs help. Changing a plan that works only adds noise."
@@ -1089,7 +1093,8 @@
       "label": "One more day",
       "first_week_add_day": {
         "title": "Add one training day.",
-        "body": "Every session happened and you said you could do more. One more day a week puts you where training works best. Pick the day that suits you."
+        "body": "Every session happened and you said you could do more. Pick the day that suits you.",
+        "toward": "One more day a week moves you toward {idealDays} days, where training works best."
       }
     },
     "move_missed_sessions": {

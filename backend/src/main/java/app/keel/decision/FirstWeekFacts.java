@@ -12,7 +12,8 @@ import java.util.Set;
 /**
  * The first week as the call that closes it reads it (K-962, ADR-077 #4). The first week runs from the account's first
  * day to the day before the first check-in day after it — so the first call comes on day seven at the latest (ADR-071
- * #1) — and the check-in of that day closes it. Planned: the training weekdays on those days; done: the days with a
+ * #1) — and the check-in of that day closes it. The signup day is not planned: the plan was only just made. Planned: the
+ * training weekdays after it, and the signup day itself only when a session was done on it; done: the days with a
  * session, a day off's included; missed: the planned days without one, in the week's order.
  */
 final class FirstWeekFacts {
@@ -31,10 +32,11 @@ final class FirstWeekFacts {
         if (!weekOf.equals(closingCheckIn(began, checkInDay))) {
             return Optional.empty();
         }
-        List<LocalDate> days = began.datesUntil(weekOf).toList();
-        List<LocalDate> planned = days.stream().filter(day -> trainingDays.contains(day.getDayOfWeek())).toList();
-        int done = (int) days.stream().filter(sessionDays::contains).count();
+        List<LocalDate> after = began.plusDays(1).datesUntil(weekOf).toList();
+        List<LocalDate> planned = after.stream().filter(day -> trainingDays.contains(day.getDayOfWeek())).toList();
+        int signupDay = sessionDays.contains(began) ? 1 : 0;
+        int done = (int) after.stream().filter(sessionDays::contains).count() + signupDay;
         List<DayOfWeek> missed = planned.stream().filter(day -> !sessionDays.contains(day)).map(LocalDate::getDayOfWeek).toList();
-        return Optional.of(new FirstWeekAdjustment.Week(planned.size(), done, daysPerWeek, missed, experience));
+        return Optional.of(new FirstWeekAdjustment.Week(planned.size() + signupDay, done, daysPerWeek, missed, experience));
     }
 }

@@ -133,13 +133,14 @@ public sealed interface Action {
 
     /**
      * The first week's call (ADR-077 #4, G6 K-36): every planned session done and "I could do more", so one more training
-     * day a week. {@code toDays} is the new count; which day is the user's to pick.
+     * day a week. {@code toDays} is the new count; {@code idealDays} the count it moves toward (training_days_ideal_min),
+     * for the words; which day is the user's to pick.
      */
-    record AddTrainingDay(int toDays) implements Action {
+    record AddTrainingDay(int toDays, int idealDays) implements Action {
 
         public AddTrainingDay {
-            if (toDays < 1) {
-                throw new IllegalArgumentException("A training week has at least one day, was " + toDays);
+            if (toDays < 1 || toDays > idealDays) {
+                throw new IllegalArgumentException("One more day is at least one and at most the ideal " + idealDays + ", was " + toDays);
             }
         }
     }

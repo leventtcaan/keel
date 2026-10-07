@@ -183,7 +183,7 @@ class DecisionPipelineOrderTests {
         Snapshot flatCut = user(Phase.CUT, weekly("80.0", "80.0", "80.0"));
 
         assertThat(DecisionPipeline.decide(firstDays, MALE).action()).as("no first week: not yet").isEqualTo(new Action.NoDecisionYet());
-        assertThat(DecisionPipeline.decide(firstDays.withFirstWeek(allDone), MALE).action()).isEqualTo(new Action.AddTrainingDay(4));
+        assertThat(DecisionPipeline.decide(firstDays.withFirstWeek(allDone), MALE).action()).isEqualTo(new Action.AddTrainingDay(4, 4));
         assertThat(DecisionPipeline.decide(flatCut, MALE).action()).as("a weight call otherwise").isEqualTo(new Action.AdjustCalories(-500));
         assertThat(DecisionPipeline.decide(flatCut.withFirstWeek(allDone), MALE).action()).isEqualTo(new Action.Continue());
         assertThat(DecisionPipeline.windowRead(flatCut.withFirstWeek(allDone), MALE)).as("no weekly mean read").isFalse();
@@ -200,6 +200,30 @@ class DecisionPipelineOrderTests {
         assertThat(DecisionPipeline.decide(firstDays.withMenstrualLossReported(true), FEMALE).action()).isEqualTo(new Action.HardStop());
         assertThat(DecisionPipeline.decide(firstDays.withContext(DeclaredContext.SICK), FEMALE).reasons().getFirst().rule())
                 .isEqualTo(StateMode.DECLARED_CONTEXT);
+    }
+
+    // ADR-077 #4 review: in the first week the order is safety net, mini cut's end, declared week, training going wrong,
+    // the first week's call, and only then the ladder's rungs.
+    @Test
+    void theMiniCutsEndAndTrainingGoingWrongComeBeforeTheFirstWeeksCall() {
+        FirstWeekAdjustment.Week allDone = new FirstWeekAdjustment.Week(3, 3, 3, List.of(), Optional.of(Experience.Y1_3));
+        Snapshot lastDay = user(Phase.CUT, weekly("80.0", "79.6", "79.2")).withMiniCutUntil(TODAY).withFirstWeek(allDone);
+        Snapshot goingWrong = user(Phase.CUT, weekly("80.0", "79.6", "79.2")).withTraining(PLAN_MISSED).withFirstWeek(allDone);
+
+        assertThat(DecisionPipeline.decide(lastDay, MALE).action()).isEqualTo(new Action.ChangePhase(Phase.BULK));
+        assertThat(DecisionPipeline.decide(goingWrong, MALE).action()).isEqualTo(new Action.FullRestWeek());
+    }
+
+    @Test
+    void theFirstWeeksCallComesBeforeALadderRung() {
+        FirstWeekAdjustment.Week allDone = new FirstWeekAdjustment.Week(3, 3, 3, List.of(), Optional.of(Experience.Y1_3));
+        Snapshot plateau = user(Phase.BULK, weekly("70.0", "70.5", "71.0"))
+                .withTraining(new TrainingStatus(MALE.wholeNumber(ParameterKey.PLATEAU_SESSIONS), 0, 0, false));
+
+        assertThat(DecisionPipeline.decide(plateau, MALE).action()).as("a rung otherwise").isEqualTo(new Action.StopLoadIncrease());
+        assertThat(DecisionPipeline.decide(plateau.withFirstWeek(allDone), MALE).action()).isEqualTo(new Action.Continue());
+        assertThat(DecisionPipeline.decide(plateau.withFirstWeek(allDone), MALE).reasons().getFirst().rule())
+                .isEqualTo(FirstWeekAdjustment.FIRST_WEEK_ON_TRACK);
     }
 
     // A first week that planned no session has nothing to adjust: the call is the "not yet" it was.

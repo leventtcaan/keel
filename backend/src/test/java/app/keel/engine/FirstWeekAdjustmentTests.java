@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,11 +46,24 @@ class FirstWeekAdjustmentTests {
     }
 
     @Test
-    void tooMuchOrNotAnsweredKeepsThePlanToo() {
+    void tooMuchKeepsThePlanAndIsSaidBack() {
+        // The feel answer is reflected (ADR-077 #4): "too much" has its own words, the plan stays all the same (U7).
         Week allDone = week(3, 3, 3, List.of(), ONE_TO_THREE_YEARS);
+        Decision tooMuch = decide(allDone, Week1Feel.TOO_MUCH);
 
-        assertThat(decide(allDone, Week1Feel.TOO_MUCH).action()).isEqualTo(new Action.Continue());
-        assertThat(decide(allDone, Week1Feel.UNKNOWN).action()).as("not asked or not answered").isEqualTo(new Action.Continue());
+        assertThat(tooMuch.action()).isEqualTo(new Action.Continue());
+        assertThat(tooMuch.reasons()).extracting(Reason::rule).containsExactly(new RuleId("first_week_on_track"));
+        assertThat(tooMuch.copyKey()).isEqualTo(new CopyKey("decision.continue.first_week_too_much"));
+        assertThat(decide(allDone, Week1Feel.UNKNOWN)).as("not answered: the about-right words").isEqualTo(decide(allDone, Week1Feel.ABOUT_RIGHT));
+    }
+
+    @Test
+    void whereTheFeelIsNotAskedAnAnswerIsNotRead() {
+        // A beginner is not asked; an answer sent all the same changes neither the call nor its words.
+        Week beginner = week(3, 3, 3, List.of(), Optional.of(Experience.NEW));
+
+        assertThat(decide(beginner, Week1Feel.TOO_MUCH)).isEqualTo(decide(beginner, Week1Feel.UNKNOWN));
+        assertThat(decide(beginner, Week1Feel.UNKNOWN).copyKey()).isEqualTo(new CopyKey("decision.continue.first_week_on_track"));
     }
 
     @Test
@@ -86,7 +100,7 @@ class FirstWeekAdjustmentTests {
     void everySessionDoneAndCouldDoMoreAddsADayBelowTheIdeal() {
         Decision call = decide(week(3, 3, IDEAL - 1, List.of(), ONE_TO_THREE_YEARS), Week1Feel.COULD_DO_MORE);
 
-        assertThat(call.action()).isEqualTo(new Action.AddTrainingDay(IDEAL));
+        assertThat(call.action()).isEqualTo(new Action.AddTrainingDay(IDEAL, IDEAL));
         assertThat(call.reasons()).extracting(Reason::rule).containsExactly(new RuleId("first_week_add_day"));
         assertThat(call.reasons().getFirst().source()).isEqualTo(new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-36", SourceTag.EXPERIENCE));
         assertThat(call.copyKey()).isEqualTo(new CopyKey("decision.add_training_day.first_week_add_day"));
@@ -114,7 +128,7 @@ class FirstWeekAdjustmentTests {
     @ParameterizedTest
     @EnumSource(value = Experience.class, names = {"UNDER_1Y", "Y1_3", "Y3_PLUS"})
     void anyoneNotStartingOutGetsTheAddedDay(Experience experience) {
-        assertThat(decide(week(3, 3, 3, List.of(), Optional.of(experience)), Week1Feel.COULD_DO_MORE).action()).isEqualTo(new Action.AddTrainingDay(4));
+        assertThat(decide(week(3, 3, 3, List.of(), Optional.of(experience)), Week1Feel.COULD_DO_MORE).action()).isEqualTo(new Action.AddTrainingDay(4, IDEAL));
     }
 
     @Test
@@ -127,7 +141,7 @@ class FirstWeekAdjustmentTests {
     @Test
     void anExtraSessionCountsAsAllDone() {
         // A session on a day off is still a session: done over planned is all of it.
-        assertThat(decide(week(3, 4, 3, List.of(), ONE_TO_THREE_YEARS), Week1Feel.COULD_DO_MORE).action()).isEqualTo(new Action.AddTrainingDay(4));
+        assertThat(decide(week(3, 4, 3, List.of(), ONE_TO_THREE_YEARS), Week1Feel.COULD_DO_MORE).action()).isEqualTo(new Action.AddTrainingDay(4, IDEAL));
     }
 
     @Test
@@ -135,7 +149,7 @@ class FirstWeekAdjustmentTests {
         // ADR-071 #8: two days are only the user's own choice; one more lands on the floor, not under it.
         Action added = decide(week(2, 2, 2, List.of(), ONE_TO_THREE_YEARS), Week1Feel.COULD_DO_MORE).action();
 
-        assertThat(added).isEqualTo(new Action.AddTrainingDay(3));
+        assertThat(added).isEqualTo(new Action.AddTrainingDay(3, IDEAL));
         assertThat(((Action.AddTrainingDay) added).toDays()).isGreaterThanOrEqualTo(FLOOR);
     }
 
@@ -172,12 +186,14 @@ class FirstWeekAdjustmentTests {
     @Test
     void movingNeedsAMissedDay() {
         assertThatThrownBy(() -> new Action.MoveMissedSessions(List.of())).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Action.AddTrainingDay(0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Action.AddTrainingDay(0, 4)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Action.AddTrainingDay(5, 4)).as("past the ideal").isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void everyCallHasItsWordsAndItsRuleSentence() {
         List<Decision> calls = List.of(decide(week(3, 3, 3, List.of(), ONE_TO_THREE_YEARS), Week1Feel.ABOUT_RIGHT),
+                decide(week(3, 3, 3, List.of(), ONE_TO_THREE_YEARS), Week1Feel.TOO_MUCH),
                 decide(week(3, 3, 3, List.of(), ONE_TO_THREE_YEARS), Week1Feel.COULD_DO_MORE),
                 decide(week(3, 1, 3, List.of(DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), ONE_TO_THREE_YEARS), Week1Feel.UNKNOWN));
         for (Decision call : calls) {
@@ -186,6 +202,10 @@ class FirstWeekAdjustmentTests {
         // The missed days are said back ("Wednesday didn't happen"), the feel answer too ("You said you could do more").
         assertThat(EngineFixtures.copyGroup(new CopyKey("decision.move_missed_sessions.first_week_move_missed")).get("missed"))
                 .asString().contains("{days}");
+        // The added day points toward the ideal, never calling the new count itself ideal (2 to 3 is still one day).
+        Map<String, Object> added = EngineFixtures.copyGroup(new CopyKey("decision.add_training_day.first_week_add_day"));
+        assertThat(added.get("toward")).asString().contains("{idealDays}");
+        assertThat(String.join(" ", added.get("title").toString(), added.get("body").toString())).doesNotContain("works best");
     }
 
     private static Decision decide(Week week, Week1Feel feel) {

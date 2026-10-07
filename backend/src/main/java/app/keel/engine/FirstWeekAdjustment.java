@@ -19,8 +19,10 @@ import java.util.Optional;
  *   <li>Every planned session done, "I could do more", not starting out, and fewer days than training_days_ideal_min:
  *       one more day (G6 K-36: 4-5 ideal, three enough for a beginner). Without the experience answer it is not added:
  *       the rule is only for someone known not to be starting out (ADR-072 #3).</li>
- *   <li>Otherwise the same plan.</li>
+ *   <li>Otherwise the same plan; "too much" is said back in its own words.</li>
  * </ul>
+ *
+ * <p>The feel answer is read only where its question is asked ({@link #feelCounts}).
  *
  * <p>The engine never proposes fewer days than training_days_min, nor fewer than the user has (G6 K-36, G7 K-79, ADR-071
  * #8): an added day lands on that floor at least; the other two calls keep the user's own count, two days included.
@@ -72,13 +74,20 @@ public final class FirstWeekAdjustment {
             return Optional.empty();
         }
         if (!onTrack(week, parameters)) {
-            return Optional.of(call(new Action.MoveMissedSessions(week.missed()), FIRST_WEEK_MOVE_MISSED, ADHERENCE_FIRST, "move_missed_sessions", today));
+            return Optional.of(call(new Action.MoveMissedSessions(week.missed()), FIRST_WEEK_MOVE_MISSED, ADHERENCE_FIRST,
+                    "decision.move_missed_sessions.first_week_move_missed", today));
         }
-        if (feel == CheckIn.Week1Feel.COULD_DO_MORE && feelCounts(week, parameters)) {
+        // The answer is read only where the question is asked: anywhere else it changes nothing, words included.
+        CheckIn.Week1Feel read = feelCounts(week, parameters) ? feel : CheckIn.Week1Feel.UNKNOWN;
+        if (read == CheckIn.Week1Feel.COULD_DO_MORE) {
+            int ideal = parameters.wholeNumber(ParameterKey.TRAINING_DAYS_IDEAL_MIN);
             int toDays = Math.max(week.trainingDays() + 1, parameters.wholeNumber(ParameterKey.TRAINING_DAYS_MIN));
-            return Optional.of(call(new Action.AddTrainingDay(toDays), FIRST_WEEK_ADD_DAY, DAYS, "add_training_day", today));
+            return Optional.of(call(new Action.AddTrainingDay(toDays, ideal), FIRST_WEEK_ADD_DAY, DAYS, "decision.add_training_day.first_week_add_day",
+                    today));
         }
-        return Optional.of(call(new Action.Continue(), FIRST_WEEK_ON_TRACK, ON_TRACK, "continue", today));
+        // "Too much" is said back in its own words; the plan stays all the same (U7: nothing to make up, nothing taken away).
+        String words = read == CheckIn.Week1Feel.TOO_MUCH ? "decision.continue.first_week_too_much" : "decision.continue.first_week_on_track";
+        return Optional.of(call(new Action.Continue(), FIRST_WEEK_ON_TRACK, ON_TRACK, words, today));
     }
 
     /**
@@ -99,7 +108,6 @@ public final class FirstWeekAdjustment {
 
     // One week of sessions, counted, not estimated: more than a guess, less than a window of weeks (MEDIUM).
     private static Decision call(Action action, RuleId rule, Source source, String words, LocalDate today) {
-        return new Decision(action, List.of(new Reason(rule, source)), Confidence.MEDIUM, today.plusDays(DAYS_PER_WEEK),
-                new CopyKey("decision." + words + "." + rule.value()));
+        return new Decision(action, List.of(new Reason(rule, source)), Confidence.MEDIUM, today.plusDays(DAYS_PER_WEEK), new CopyKey(words));
     }
 }

@@ -113,7 +113,7 @@ class ApplyDecisionTests {
     void theFirstWeeksTrainingDayCallsChangeNothingHereAndAreNotPending() {
         // K-962, ADR-077 #4: the user picks the day, with the training days; the call itself is not applied.
         Reason days = new Reason(new RuleId("first_week_add_day"), new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-36", SourceTag.EXPERIENCE));
-        for (Action action : List.of(new Action.AddTrainingDay(4), new Action.MoveMissedSessions(List.of(DayOfWeek.WEDNESDAY)))) {
+        for (Action action : List.of(new Action.AddTrainingDay(4, 4), new Action.MoveMissedSessions(List.of(DayOfWeek.WEDNESDAY)))) {
             assertThat(PlanChange.after(CUT, action, TODAY, P, Optional.empty())).as(action.type().name()).isEmpty();
             Decision call = new Decision(action, List.of(days), Confidence.MEDIUM, TODAY.plusDays(7), new CopyKey("decision.add_training_day.first_week_add_day"));
             assertThat(DecisionService.application(call)).as(action.type().name()).isEqualTo(CallStore.Application.NOT_NEEDED);

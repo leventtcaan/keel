@@ -216,7 +216,7 @@ class DecisionService {
         CheckIn dataSays = dataSays(week, counted);
         // Appetite and how the first week felt are the user's answers (K-227, ADR-077 #4): no data says them.
         CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
-                dataSays.adherence(), answers.checkIn().appetite(), answers.checkIn().week1Feel());
+                dataSays.adherence(), answers.checkIn().appetite(), week1Feel(answers.checkIn().week1Feel(), week.firstWeek().isPresent()));
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
@@ -254,6 +254,14 @@ class DecisionService {
                 SafetyHolds.from(calls.outcomes(account)),
                 // A state declared on a day of this check-in week (K-516, ADR-038).
                 states.latest(account, today.minusDays(DAYS_PER_WEEK - 1L), today), WaistTrend.spanDays(waists), Optional.empty());
+    }
+
+    /**
+     * How the first week felt, as the call reads it: only the check-in that closes the first week reads it; sent in any
+     * other week it is taken (a question shown is never refused) but neither read nor kept.
+     */
+    static CheckIn.Week1Feel week1Feel(CheckIn.Week1Feel answered, boolean closesTheFirstWeek) {
+        return closesTheFirstWeek ? answered : CheckIn.Week1Feel.UNKNOWN;
     }
 
     /**

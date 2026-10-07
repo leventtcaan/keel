@@ -24,7 +24,7 @@ final class Actions {
                 new Action.FullRestWeek(),
                 new Action.MiniCut(4, 6),
                 new Action.ChangePhase(Phase.CUT),
-                new Action.AddTrainingDay(4),
+                new Action.AddTrainingDay(4, 4),
                 new Action.MoveMissedSessions(List.of(java.time.DayOfWeek.WEDNESDAY)));
     }
 }

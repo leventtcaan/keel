@@ -32,8 +32,10 @@ class FirstWeekAdjustmentProperties {
     void aProposedDayCountIsNeverUnderTheFloorNorUnderTheUsersOwn(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
         FirstWeekAdjustment.decide(week, feel, MONDAY, P).map(Decision::action).ifPresent(action -> {
             Statistics.collect(action.type());
-            if (action instanceof Action.AddTrainingDay(int toDays)) {
-                assertThat(toDays).isGreaterThanOrEqualTo(FLOOR).isGreaterThan(week.trainingDays());
+            if (action instanceof Action.AddTrainingDay(int toDays, int idealDays)) {
+                // One day more, never under the floor; toward the ideal, never past it.
+                assertThat(toDays).isGreaterThanOrEqualTo(FLOOR).isGreaterThan(week.trainingDays()).isLessThanOrEqualTo(idealDays);
+                assertThat(idealDays).isEqualTo(P.wholeNumber(ParameterKey.TRAINING_DAYS_IDEAL_MIN));
             } else {
                 // The same plan, or the same days with the missed ones moved: never a day count of their own.
                 assertThat(action).isInstanceOfAny(Action.Continue.class, Action.MoveMissedSessions.class);
@@ -53,6 +55,7 @@ class FirstWeekAdjustmentProperties {
     @Property
     void theFeelChangesOnlyTheAddADayRow(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
         Optional<Decision> answered = FirstWeekAdjustment.decide(week, feel, MONDAY, P);
+        Optional<Decision> unanswered = FirstWeekAdjustment.decide(week, Week1Feel.UNKNOWN, MONDAY, P);
         boolean added = answered.map(Decision::action).filter(Action.AddTrainingDay.class::isInstance).isPresent();
         Statistics.collect(added ? "adds a day" : "the call without the answer");
 
@@ -60,7 +63,12 @@ class FirstWeekAdjustmentProperties {
             assertThat(feel).isEqualTo(Week1Feel.COULD_DO_MORE);
             assertThat(FirstWeekAdjustment.feelCounts(week, P)).as("asked").isTrue();
         } else {
-            assertThat(answered).isEqualTo(FirstWeekAdjustment.decide(week, Week1Feel.UNKNOWN, MONDAY, P));
+            // The same call; only its words may say "too much" back, and only where it was asked.
+            assertThat(answered.map(Decision::action)).isEqualTo(unanswered.map(Decision::action));
+            assertThat(answered.map(Decision::reasons)).isEqualTo(unanswered.map(Decision::reasons));
+            if (!(feel == Week1Feel.TOO_MUCH && FirstWeekAdjustment.feelCounts(week, P))) {
+                assertThat(answered).isEqualTo(unanswered);
+            }
         }
         assertThat(added).as("asked and I could do more is the added day").isEqualTo(FirstWeekAdjustment.feelCounts(week, P) && feel == Week1Feel.COULD_DO_MORE);
     }

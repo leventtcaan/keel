@@ -135,6 +135,16 @@ class DecisionBasisTests {
     }
 
     @Test
+    void howTheFirstWeekFeltIsShownSoTheScreenCanSayItBack() {
+        // K-962, ADR-077 #4: the answer the first week's call read; none on any other call.
+        StoredSnapshot.Answered felt = new StoredSnapshot.Answered(CheckIn.Look.UNKNOWN, CheckIn.Training.UNKNOWN, CheckIn.Recovery.UNKNOWN,
+                CheckIn.Waist.UNKNOWN, null, CheckIn.Appetite.UNKNOWN, null, null, null, CheckIn.Week1Feel.TOO_MUCH);
+
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(6), List.of(new StoredSnapshot.Weight(TODAY, new BigDecimal("82.0"))), felt), MALE).answers().week1Feel()).isEqualTo(CheckIn.Week1Feel.TOO_MUCH);
+        assertThat(DecisionBasis.of(snapshot(TODAY.minusDays(60), weeks("82.0", "81.5", "81.0")), MALE).answers().week1Feel()).isNull();
+    }
+
+    @Test
     void whereTrainingStandsAndAStateDeclared() {
         StoredSnapshot base = snapshot(TODAY.minusDays(60), weeks("82.0", "81.5", "81.0"));
         StoredSnapshot.Training training = new StoredSnapshot.Training(3, 1, 0, false, true, 0);

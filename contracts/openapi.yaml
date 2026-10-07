@@ -3221,6 +3221,10 @@ components:
             appetite:
               type: string
               enum: [NORMAL, GONE]
+            week1Feel:
+              type: string
+              description: How the first week felt (ADR-077 #4), on the call that closes it, so the screen can say it back.
+              enum: [TOO_MUCH, ABOUT_RIGHT, COULD_DO_MORE]
         training:
           type: object
           description: Where the most-stalled compound lift stood (K-110).
@@ -3575,12 +3579,16 @@ components:
       type: object
       description: |
         The first week's call (ADR-077 #4): every planned session done and "I could do more", so one more training day a
-        week. `toDays` is the new count, never under the engine's floor of three; which day is the user's to pick.
-      required: [type, toDays]
+        week. `toDays` is the new count, one more than the user's and never below training_days_min; `idealDays` is
+        training_days_ideal_min, the count it moves toward, for the words. Which day is the user's to pick.
+      required: [type, toDays, idealDays]
       properties:
         type:
           const: ADD_TRAINING_DAY
         toDays:
+          type: integer
+          minimum: 1
+        idealDays:
           type: integer
           minimum: 1
     MoveMissedSessions:

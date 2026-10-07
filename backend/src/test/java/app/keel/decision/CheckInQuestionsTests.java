@@ -54,7 +54,7 @@ class CheckInQuestionsTests {
     // "I could do more" adds the day whatever else is answered; otherwise training, then recovery, as the spine asks them.
     private static final Function<CheckIn, Decision> SPINE_AND_FEEL = checkIn -> {
         if (checkIn.week1Feel() == CheckIn.Week1Feel.COULD_DO_MORE) {
-            return call(new Action.AddTrainingDay(4), "first_week_add_day");
+            return call(new Action.AddTrainingDay(4, 4), "first_week_add_day");
         }
         if (checkIn.training() == CheckIn.Training.UNKNOWN) {
             return call(new Action.NoDecisionYet(), "check_in_needed_training");
@@ -68,7 +68,7 @@ class CheckInQuestionsTests {
     @Test
     void theFeelIsAskedWhenAnAnswerWouldChangeTheCall() {
         Function<CheckIn, Decision> firstWeek = checkIn -> checkIn.week1Feel() == CheckIn.Week1Feel.COULD_DO_MORE
-                ? call(new Action.AddTrainingDay(4), "first_week_add_day") : call(new Action.Continue(), "first_week_on_track");
+                ? call(new Action.AddTrainingDay(4, 4), "first_week_add_day") : call(new Action.Continue(), "first_week_on_track");
 
         assertThat(CheckInQuestions.needed(firstWeek, CheckIn.NONE, 2)).containsExactly(Answers.Kind.WEEK1_FEEL);
         assertThat(CheckInQuestions.needed(checkIn -> call(new Action.Continue(), "first_week_on_track"), CheckIn.NONE, 2))
@@ -129,6 +129,17 @@ class CheckInQuestionsTests {
                 Sex.MALE));
         assertThatIllegalArgumentException().isThrownBy(() -> Answers.read(List.of(new Answers.Answer(Answers.Kind.WEEK1_FEEL, null, "EASY", null)),
                 Sex.MALE));
+    }
+
+    @Test
+    void anAnswerInAnotherWeekIsNotReadNorKept() throws Exception {
+        // Taken (a question shown is never refused), but only the check-in that closes the first week reads it.
+        assertThat(DecisionService.week1Feel(CheckIn.Week1Feel.COULD_DO_MORE, false)).isEqualTo(CheckIn.Week1Feel.UNKNOWN);
+        assertThat(DecisionService.week1Feel(CheckIn.Week1Feel.COULD_DO_MORE, true)).isEqualTo(CheckIn.Week1Feel.COULD_DO_MORE);
+        Snapshot later = new Snapshot(MONDAY, Sex.MALE, Phase.CUT, MONDAY.minusDays(20), new WeightSeries(List.of()))
+                .withCheckIn(CheckIn.NONE.withWeek1Feel(DecisionService.week1Feel(CheckIn.Week1Feel.TOO_MUCH, false)));
+
+        assertThat(tools.jackson.databind.json.JsonMapper.builder().build().writeValueAsString(StoredSnapshot.of(later))).doesNotContain("week1Feel");
     }
 
     /** The questions DecisionPipeline asks on day seven of a new account, closing this first week (none: another week). */

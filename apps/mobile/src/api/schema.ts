@@ -2250,6 +2250,11 @@ export interface components {
                 waist?: "DOWN" | "FLAT" | "UP";
                 /** @enum {string} */
                 appetite?: "NORMAL" | "GONE";
+                /**
+                 * @description How the first week felt (ADR-077
+                 * @enum {string}
+                 */
+                week1Feel?: "TOO_MUCH" | "ABOUT_RIGHT" | "COULD_DO_MORE";
             };
             /** @description Where the most-stalled compound lift stood (K-110). */
             training?: {
@@ -2493,7 +2498,8 @@ export interface components {
         };
         /**
          * @description The first week's call (ADR-077 #4): every planned session done and "I could do more", so one more training day a
-         *     week. `toDays` is the new count, never under the engine's floor of three; which day is the user's to pick.
+         *     week. `toDays` is the new count, one more than the user's and never below training_days_min; `idealDays` is
+         *     training_days_ideal_min, the count it moves toward, for the words. Which day is the user's to pick.
          */
         AddTrainingDay: {
             /**
@@ -2502,6 +2508,7 @@ export interface components {
              */
             type: "ADD_TRAINING_DAY";
             toDays: number;
+            idealDays: number;
         };
         /**
          * @description The first week's call (ADR-077 #4): most of the week's sessions didn't happen, so the days that were missed move

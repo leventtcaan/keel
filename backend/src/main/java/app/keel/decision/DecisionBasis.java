@@ -49,7 +49,8 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
 
     /** The answers given; one left open is null (not shown). */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Answers(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, CheckIn.Appetite appetite) {
+    record Answers(CheckIn.Look look, CheckIn.Training training, CheckIn.Recovery recovery, CheckIn.Waist waist, CheckIn.Appetite appetite,
+            CheckIn.Week1Feel week1Feel) {
     }
 
     static DecisionBasis of(StoredSnapshot snapshot, Parameters parameters) {
@@ -70,7 +71,9 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
         return new DecisionBasis(snapshot.phase(), weeks, change(weeks), answered.adherence(), count,
                 new Answers(given(answered.look(), CheckIn.Look.UNKNOWN), given(answered.training(), CheckIn.Training.UNKNOWN),
                         given(answered.recovery(), CheckIn.Recovery.UNKNOWN), given(answered.waist(), CheckIn.Waist.UNKNOWN),
-                        given(answered.appetite(), CheckIn.Appetite.UNKNOWN)),
+                        given(answered.appetite(), CheckIn.Appetite.UNKNOWN),
+                        // How the first week felt (K-962), so the screen can say it back; kept only on that call.
+                        given(answered.week1Feel(), CheckIn.Week1Feel.UNKNOWN)),
                 snapshot.training(), snapshot.context(), signals.isEmpty() ? null : signals);
     }
 
