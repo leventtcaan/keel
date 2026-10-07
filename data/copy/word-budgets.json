@@ -6,17 +6,32 @@
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/sign-in.tsx",
+      "keys": [
+        "app.name",
+        "welcome.examplesLabel",
+        ["welcome.examples.hold", "welcome.examples.rep", "welcome.examples.lighter", "welcome.examples.eat"],
+        "welcome.headline",
+        "welcome.lead"
+      ],
+      "notFirstView": ["signIn.failed", "signIn.offline", "signIn.unavailable"]
     },
     {
       "screen": "ob-goal",
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
+      "file": "src/app/onboarding/index.tsx",
+      "keys": [
+        "onboarding.goal.title",
+        "onboarding.recommended",
+        "onboarding.goal.decide_for_me.title",
+        "onboarding.goal.decide_for_me.body",
+        "onboarding.goal.lose_fat.title",
+        "onboarding.goal.build_muscle.title",
+        "onboarding.goal.note",
+        "onboarding.signOut"
+      ],
       "notFirstView": []
     },
     {
@@ -24,8 +39,15 @@
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
+      "file": "src/app/onboarding/experience.tsx",
+      "keys": [
+        "onboarding.experience.title",
+        "onboarding.experience.why",
+        "onboarding.experience.NEW",
+        "onboarding.experience.UNDER_1Y",
+        "onboarding.experience.Y1_3",
+        "onboarding.experience.Y3_PLUS"
+      ],
       "notFirstView": []
     },
     {
@@ -33,8 +55,15 @@
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
+      "file": "src/app/onboarding/program.tsx",
+      "keys": [
+        "onboarding.program.title",
+        "onboarding.recommended",
+        "onboarding.program.build_one_for_me.title",
+        "onboarding.program.build_one_for_me.body",
+        "onboarding.program.bring_my_own.title",
+        "onboarding.program.bring_my_own.body"
+      ],
       "notFirstView": []
     },
     {
@@ -60,9 +89,17 @@
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/days.tsx",
+      "keys": [
+        "onboarding.days.title",
+        "onboarding.days.why",
+        "onboarding.days.unit",
+        "onboarding.days.unit",
+        "onboarding.days.unit",
+        "onboarding.days.unit",
+        "onboarding.days.note"
+      ],
+      "notFirstView": ["onboarding.days.label"]
     },
     {
       "screen": "ob-consent",

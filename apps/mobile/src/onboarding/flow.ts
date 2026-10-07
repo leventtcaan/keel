@@ -1,0 +1,88 @@
+/**
+ * The onboarding's route (ADR-072 #2): one question per screen, in an order that branches on two answers. The new lifter
+ * and the experienced one answer the same questions until the starting weights, which only the experienced are asked
+ * (#3, #5); someone who brings a program has it brought in and reviewed instead of choosing days (ADR-073). Pure: the
+ * screens, the step indicator and the tests share it.
+ */
+import type { components } from '@/api/schema';
+
+type Schemas = components['schemas'];
+
+/** The answers the route turns on; the draft carries them (draft.ts). */
+export type Answers = {
+  experience: Schemas['Experience'] | null;
+  programChoice: Schemas['Profile']['programChoice'] | null;
+  healthConsent: 'granted' | 'declined' | null;
+};
+
+export type Branch = 'newLifter' | 'experienced' | 'ownProgram';
+
+export type Question =
+  | 'goal'
+  | 'experience'
+  | 'program'
+  | 'ownProgram'
+  | 'review'
+  | 'days'
+  | 'consent'
+  | 'about'
+  | 'activity'
+  | 'weights';
+
+/** Bringing a program decides the branch whatever the experience; otherwise "just starting" (or no answer yet) is new. */
+export function branchOf({ experience, programChoice }: Pick<Answers, 'experience' | 'programChoice'>): Branch {
+  if (programChoice === 'BRING_MY_OWN') return 'ownProgram';
+  return experience !== null && experience !== 'NEW' ? 'experienced' : 'newLifter';
+}
+
+const START: Question[] = ['goal', 'experience', 'program'];
+const YOU: Question[] = ['consent', 'about', 'activity'];
+const BRANCHES: Record<Branch, readonly Question[]> = {
+  newLifter: [...START, 'days', ...YOU],
+  experienced: [...START, 'days', ...YOU, 'weights'],
+  ownProgram: [...START, 'ownProgram', 'review', ...YOU, 'weights'],
+};
+
+/** Every question of a branch, in order, whether or not its screen is built yet. */
+export function questionsOf(branch: Branch): readonly Question[] {
+  return BRANCHES[branch];
+}
+
+/**
+ * The steps that have a screen (each one a route, StepFrame's ROUTES). Until #ob-consent, #ob-about and #ob-activity are
+ * rebuilt (K-966, second part) the walk still ends as it always has: the foods to avoid, photos, what to expect, and Apple
+ * Health, which saves the profile.
+ */
+export const SCREENS = [
+  'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity', 'foods', 'photos', 'expectations', 'appleHealth',
+] as const;
+export type Step = (typeof SCREENS)[number];
+
+const isStep = (question: Question): question is Question & Step => (SCREENS as readonly string[]).includes(question);
+
+/**
+ * A question without its screen yet is asked by the screen that asks it today, or skipped: the starting weights join
+ * with K-967; bringing a program and its review with K-968, and until then the days are asked as they always were.
+ */
+const STAND_IN: Record<Exclude<Question, Step>, Step | null> = {
+  ownProgram: 'days',
+  review: null,
+  weights: null,
+};
+
+/** The screens this user goes through, in order. */
+export function walk(answers: Answers): Step[] {
+  const steps = questionsOf(branchOf(answers)).flatMap((question) => {
+    const step = isStep(question) ? question : STAND_IN[question];
+    return step === null ? [] : [step];
+  });
+  const tail: Step[] = answers.healthConsent === 'granted' ? ['foods'] : [];
+  return [...new Set<Step>([...steps, ...tail, 'photos', 'expectations', 'appleHealth'])];
+}
+
+/** The step after this one for these answers; none after the last, or from a step this walk does not have. */
+export function nextStep(step: Step, answers: Answers): Step | null {
+  const steps = walk(answers);
+  const at = steps.indexOf(step);
+  return at < 0 ? null : (steps[at + 1] ?? null);
+}

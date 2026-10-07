@@ -2,20 +2,8 @@
  * The onboarding draft (K-306): what the user has answered so far, whether a step can be left, and the profile it
  * becomes. Pure — no screen, no network — so every rule is checked here, fast.
  */
-import {
-  STEPS,
-  avoidList,
-  birthYearProblem,
-  emptyDraft,
-  heightCm,
-  lighterThanLastMonth,
-  stepComplete,
-  stepsFor,
-  toProfile,
-  toggleDay,
-  usualTime,
-  type Draft,
-} from '@/onboarding/draft';
+import { avoidList, birthYearProblem, emptyDraft, heightCm, stepComplete, toProfile, type Draft } from '@/onboarding/draft';
+import { SCREENS } from '@/onboarding/flow';
 import { onboardingParams } from '@/onboarding/params';
 
 const THIS_YEAR = 2026;
@@ -24,9 +12,9 @@ function complete(overrides: Partial<Draft> = {}): Draft {
   return {
     ...emptyDraft,
     goal: 'DECIDE_FOR_ME',
+    experience: 'Y1_3',
     programChoice: 'BUILD_ONE_FOR_ME',
     trainingDays: ['MONDAY', 'THURSDAY'],
-    sessionsLastMonth: 'FOUR',
     height: { cm: '178', feet: '', inches: '' },
     birthYear: '1994',
     sex: 'FEMALE',
@@ -39,101 +27,39 @@ function complete(overrides: Partial<Draft> = {}): Draft {
 const CONTEXT = { units: 'METRIC' as const, timeZone: 'Europe/Istanbul', thisYear: THIS_YEAR };
 
 describe('steps', () => {
-  // K-312 put the health consent before the first health question, and Apple Health last (prototype 1.8).
-  test('in the prototype order, the health consent before any health question, Apple Health last', () => {
-    expect(STEPS).toEqual([
-      'goal', 'program', 'schedule', 'healthData', 'about', 'activity', 'foods', 'photos', 'expectations', 'appleHealth',
-    ]);
-  });
-
-  test('without the health consent, the foods step is not in the walk; with it, it is', () => {
-    expect(stepsFor(complete({ healthConsent: 'declined' }))).not.toContain('foods');
-    expect(stepsFor(complete({ healthConsent: null }))).not.toContain('foods');
-    expect(stepsFor(complete({ healthConsent: 'granted' }))).toEqual(STEPS);
-  });
-
-  test('at most 12 screens (I1 F1), with the look (K-313) and the AI consent (K-511) still to come', () => {
-    expect(STEPS.length + 2).toBeLessThanOrEqual(12);
-  });
-
+  // The order and the branches are the route's (onboarding-route.test.ts); here, what each step needs to be left.
   test('an empty draft can leave only the steps that ask nothing', () => {
-    const open = STEPS.filter((step) => stepComplete(step, emptyDraft, 'METRIC', THIS_YEAR));
+    const open = SCREENS.filter((step) => stepComplete(step, emptyDraft, 'METRIC', THIS_YEAR));
     expect(open).toEqual(['foods', 'photos', 'expectations', 'appleHealth']);
   });
 
   test('the consent step is answered either way, but answered', () => {
-    expect(stepComplete('healthData', complete({ healthConsent: null }), 'METRIC', THIS_YEAR)).toBe(false);
-    expect(stepComplete('healthData', complete({ healthConsent: 'declined' }), 'METRIC', THIS_YEAR)).toBe(true);
+    expect(stepComplete('consent', complete({ healthConsent: null }), 'METRIC', THIS_YEAR)).toBe(false);
+    expect(stepComplete('consent', complete({ healthConsent: 'declined' }), 'METRIC', THIS_YEAR)).toBe(true);
   });
 
   test('a complete draft can leave every step', () => {
-    expect(STEPS.filter((step) => !stepComplete(step, complete(), 'METRIC', THIS_YEAR))).toEqual([]);
+    expect(SCREENS.filter((step) => !stepComplete(step, complete(), 'METRIC', THIS_YEAR))).toEqual([]);
   });
 
   test('"decide for me" is an answer like the others (K-222)', () => {
     expect(stepComplete('goal', { ...emptyDraft, goal: 'DECIDE_FOR_ME' }, 'METRIC', THIS_YEAR)).toBe(true);
   });
+
+  test.each(['NEW', 'UNDER_1Y', 'Y1_3', 'Y3_PLUS'] as const)('the experience: %s is an answer (ADR-072 #3)', (experience) => {
+    expect(stepComplete('experience', { ...emptyDraft, experience }, 'METRIC', THIS_YEAR)).toBe(true);
+    expect(stepComplete('experience', emptyDraft, 'METRIC', THIS_YEAR)).toBe(false);
+  });
 });
 
-describe('training days (ADR-027 #15: at most 6, the seventh is rest)', () => {
+describe('training days: one question, how many (ADR-072 #4)', () => {
   test('the limit is 6, as the program contract allows', () => {
     expect(onboardingParams.maxTrainingDays).toBe(6);
   });
 
-  test('days come back in week order, whatever order they were tapped in', () => {
-    expect(toggleDay(toggleDay([], 'FRIDAY'), 'MONDAY')).toEqual(['MONDAY', 'FRIDAY']);
-  });
-
-  test('tapping a chosen day removes it', () => {
-    expect(toggleDay(['MONDAY', 'FRIDAY'], 'MONDAY')).toEqual(['FRIDAY']);
-  });
-
-  test('with six chosen, a seventh is not added', () => {
-    const six = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
-    expect(toggleDay([...six], 'SUNDAY')).toEqual(six);
-  });
-
-  test('with six chosen, one can still be removed', () => {
-    const six = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
-    expect(toggleDay([...six], 'MONDAY')).toHaveLength(5);
-  });
-
-  test('the schedule needs at least one day and last month\'s sessions', () => {
-    expect(stepComplete('schedule', complete({ trainingDays: [] }), 'METRIC', THIS_YEAR)).toBe(false);
-    expect(stepComplete('schedule', complete({ sessionsLastMonth: null }), 'METRIC', THIS_YEAR)).toBe(false);
-  });
-});
-
-describe('what last month says about the plan (I1: start near what you already do)', () => {
-  // Even at the top of its answer, every week of the month, is last month fewer sessions than the plan asks?
-  test.each([
-    ['NONE_OR_ONE', 1, true],
-    ['TWO_TO_THREE', 1, true],
-    ['FOUR', 1, false],
-    ['FOUR', 2, true],
-    ['FIVE_OR_MORE', 6, false],
-  ] as const)('%s last month, %i days planned → lighter: %s', (last, days, lighter) => {
-    expect(lighterThanLastMonth(last, days)).toBe(lighter);
-  });
-});
-
-describe('usual training time (optional, HH:mm)', () => {
-  test.each([
-    ['', null],
-    ['18:30', '18:30'],
-    ['7:05', '07:05'],
-    [' 06:00 ', '06:00'],
-  ])('"%s" → %s', (typed, time) => {
-    expect(usualTime(typed)).toBe(time);
-  });
-
-  test.each(['24:00', '18:60', '1830', 'six', '18:3'])('"%s" is not a time', (typed) => {
-    expect(usualTime(typed)).toBeUndefined();
-  });
-
-  test('a time that is not one keeps the schedule step closed; no time at all does not', () => {
-    expect(stepComplete('schedule', complete({ usualTrainingTime: '25:00' }), 'METRIC', THIS_YEAR)).toBe(false);
-    expect(stepComplete('schedule', complete({ usualTrainingTime: '' }), 'METRIC', THIS_YEAR)).toBe(true);
+  test('the days step needs only the days placed: last month and a usual time are no longer asked', () => {
+    expect(stepComplete('days', complete({ trainingDays: [] }), 'METRIC', THIS_YEAR)).toBe(false);
+    expect(stepComplete('days', { ...emptyDraft, trainingDays: ['MONDAY', 'THURSDAY'] }, 'METRIC', THIS_YEAR)).toBe(true);
   });
 });
 
@@ -238,17 +164,16 @@ describe('health answers, only with the consent (ADR-027 #14, ADR-030 #25)', () 
 
 describe('the profile the draft becomes', () => {
   test('every answer in the contract\'s shape; the check-in day is the parameter; the units are the user\'s', () => {
-    expect(toProfile(complete({ usualTrainingTime: '7:30' }), CONTEXT)).toEqual({
+    expect(toProfile(complete(), CONTEXT)).toEqual({
       goal: 'DECIDE_FOR_ME',
       sex: 'FEMALE',
       heightCm: 178,
       birthYear: 1994,
       activityLevel: 'LOW_ACTIVE',
+      experience: 'Y1_3',
       programChoice: 'BUILD_ONE_FOR_ME',
       schedule: {
         trainingDays: ['MONDAY', 'THURSDAY'],
-        usualTrainingTime: '07:30',
-        sessionsLastMonth: 'FOUR',
         checkInDay: onboardingParams.checkInDay,
         timeZone: 'Europe/Istanbul',
       },
@@ -260,8 +185,9 @@ describe('the profile the draft becomes', () => {
     expect(onboardingParams.checkInDay).toBe('MONDAY');
   });
 
-  test('no time typed: the field is left out, not sent empty', () => {
+  test('neither last month\'s sessions nor a usual time goes out: no longer asked (ADR-072 #4)', () => {
     expect(toProfile(complete(), CONTEXT).schedule).not.toHaveProperty('usualTrainingTime');
+    expect(toProfile(complete(), CONTEXT).schedule).not.toHaveProperty('sessionsLastMonth');
   });
 
   test('imperial: the height goes in centimetres', () => {
@@ -272,5 +198,6 @@ describe('the profile the draft becomes', () => {
   test('an incomplete draft is not turned into a profile', () => {
     expect(() => toProfile(complete({ sex: null }), CONTEXT)).toThrow();
     expect(() => toProfile(complete({ birthYear: '2010' }), CONTEXT)).toThrow();
+    expect(() => toProfile(complete({ experience: null }), CONTEXT)).toThrow();
   });
 });

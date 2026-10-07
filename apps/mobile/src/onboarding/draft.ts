@@ -1,47 +1,31 @@
 /**
  * The onboarding draft (K-306): the answers so far, kept as typed (text fields stay text until the end, so a half-typed
  * "17" is not rejected mid-word), the rule for leaving each step, and the profile the finished draft becomes.
- * Pure: the screens and the tests share it.
+ * Pure: the screens and the tests share it. The order of the steps is the route's (flow.ts).
  */
 import type { components } from '@/api/schema';
 import { type UnitSystem, heightCmFromImperial, parseWaistCm, parseWeightKg, roundTo } from '@/units/units';
 
+import { type Step, walk } from './flow';
 import { onboardingParams as P } from './params';
 
 type Schemas = components['schemas'];
 export type Weekday = Schemas['Weekday'];
-export type SessionsLastMonth = NonNullable<Schemas['Schedule']['sessionsLastMonth']>;
 export type Profile = Schemas['Profile'];
-
-/**
- * Every step, in the prototype's order (prototip/keel-prototype.html, section 1). The health consent comes before the
- * first health question (about you asks the weight), and Apple Health is last (1.8). The reference look (K-313) and the
- * AI consent (K-511) join later; with them the walk stays within 12 screens (I1 F1).
- */
-export const STEPS = [
-  'goal', 'program', 'schedule', 'healthData', 'about', 'activity', 'foods', 'photos', 'expectations', 'appleHealth',
-] as const;
-
-/** The steps this user walks: the foods to avoid may be health data (an allergy), so only with the consent (#14). */
-export function stepsFor(draft: Draft): Step[] {
-  return STEPS.filter((step) => step !== 'foods' || draft.healthConsent === 'granted');
-}
 
 /** The foods typed, one per comma or line, trimmed; empty and repeated ones dropped. */
 export function avoidList(typed: string): string[] {
   return [...new Set(typed.split(/[,\n]/).map((food) => food.trim()).filter((food) => food !== ''))];
 }
-export type Step = (typeof STEPS)[number];
 
 export const WEEK: readonly Weekday[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
 export type Draft = {
   goal: Profile['goal'] | null;
+  experience: Schemas['Experience'] | null;
   programChoice: Profile['programChoice'] | null;
+  /** Placed by the app from the number of days chosen (ADR-072 #4, default_day_sets). */
   trainingDays: Weekday[];
-  sessionsLastMonth: SessionsLastMonth | null;
-  /** As typed; empty when not given (it is optional). */
-  usualTrainingTime: string;
   /** Metric fills `cm`, imperial `feet` and `inches`; only the fields of the units shown count. */
   height: { cm: string; feet: string; inches: string };
   birthYear: string;
@@ -56,10 +40,9 @@ export type Draft = {
 
 export const emptyDraft: Draft = {
   goal: null,
+  experience: null,
   programChoice: null,
   trainingDays: [],
-  sessionsLastMonth: null,
-  usualTrainingTime: '',
   height: { cm: '', feet: '', inches: '' },
   birthYear: '',
   sex: null,
@@ -70,42 +53,6 @@ export const emptyDraft: Draft = {
   avoid: '',
   ids: { weighIn: '', waist: '' },
 };
-
-/** Adds or removes a day, in week order. A day past the limit is not added: the seventh stays rest (ADR-027 #15). */
-export function toggleDay(days: Weekday[], day: Weekday): Weekday[] {
-  const chosen = new Set(days);
-  if (chosen.has(day)) chosen.delete(day);
-  else if (chosen.size < P.maxTrainingDays) chosen.add(day);
-  return WEEK.filter((d) => chosen.has(d));
-}
-
-/**
- * The most sessions each answer allows in a month — the answers' own bounds, not a tunable number; "5+" has none.
- * A month holds at least four weeks, so the plan asks at least 4 × days a month.
- */
-const MOST_LAST_MONTH: Record<SessionsLastMonth, number> = {
-  NONE_OR_ONE: 1,
-  TWO_TO_THREE: 3,
-  FOUR: 4,
-  FIVE_OR_MORE: Infinity,
-};
-const WEEKS_IN_A_MONTH_AT_LEAST = 4;
-
-/** Even at the top of their answer, did they train less last month than the plan asks? (I1: start near what you do.) */
-export function lighterThanLastMonth(last: SessionsLastMonth, days: number): boolean {
-  return MOST_LAST_MONTH[last] < days * WEEKS_IN_A_MONTH_AT_LEAST;
-}
-
-/** "HH:mm" (the contract's pattern) · null when nothing is typed · undefined when it is not a time. */
-export function usualTime(typed: string): string | null | undefined {
-  const text = typed.trim();
-  if (text === '') return null;
-  const match = /^(\d{1,2}):(\d{2})$/.exec(text);
-  if (match === null) return undefined;
-  const [hours, minutes] = [Number(match[1]), Number(match[2])];
-  if (hours > 23 || minutes > 59) return undefined;
-  return `${String(hours).padStart(2, '0')}:${match[2]}`;
-}
 
 export type BirthYearProblem = 'missing' | 'not_a_year' | 'too_young';
 
@@ -145,15 +92,13 @@ export function stepComplete(step: Step, draft: Draft, system: UnitSystem, thisY
   switch (step) {
     case 'goal':
       return draft.goal !== null;
+    case 'experience':
+      return draft.experience !== null;
     case 'program':
       return draft.programChoice !== null;
-    case 'schedule':
-      return (
-        draft.trainingDays.length > 0 &&
-        draft.sessionsLastMonth !== null &&
-        usualTime(draft.usualTrainingTime) !== undefined
-      );
-    case 'healthData':
+    case 'days':
+      return draft.trainingDays.length > 0;
+    case 'consent':
       return draft.healthConsent !== null;
     case 'about':
       return (
@@ -195,10 +140,10 @@ type Context = { units: UnitSystem; timeZone: string; thisYear: number };
 
 /** The profile to PUT. Throws on a draft that is not complete: the screens only offer "finish" once it is. */
 export function toProfile(draft: Draft, { units, timeZone, thisYear }: Context): Profile {
-  const incomplete = stepsFor(draft).find((step) => !stepComplete(step, draft, units, thisYear));
+  const incomplete = walk(draft).find((step) => !stepComplete(step, draft, units, thisYear));
   if (incomplete !== undefined) throw new Error(`onboarding step ${incomplete} is not complete`);
-  // Checked by stepComplete above; the non-null reads below cannot fail.
-  const time = usualTime(draft.usualTrainingTime);
+  // Checked by stepComplete above; the non-null reads below cannot fail. Last month's sessions and a usual time are no
+  // longer asked, so none goes out (ADR-072 #4).
   const avoid = draft.healthConsent === 'granted' ? avoidList(draft.avoid) : [];
   return {
     goal: draft.goal!,
@@ -206,11 +151,10 @@ export function toProfile(draft: Draft, { units, timeZone, thisYear }: Context):
     heightCm: heightCm(draft.height, units)!,
     birthYear: Number(draft.birthYear.trim()),
     activityLevel: draft.activityLevel!,
+    experience: draft.experience!,
     programChoice: draft.programChoice!,
     schedule: {
       trainingDays: draft.trainingDays,
-      ...(time ? { usualTrainingTime: time } : {}),
-      sessionsLastMonth: draft.sessionsLastMonth!,
       checkInDay: P.checkInDay,
       timeZone,
     },

@@ -1,36 +1,31 @@
-import { StyleSheet, Text } from 'react-native';
-
 import { OptionCard } from '@/components/OptionCard';
 import { t } from '@/copy';
-import type { Profile } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
-import { StepFrame } from '@/onboarding/StepFrame';
-import { useTheme } from '@/theme/theme';
-import { tokens } from '@/theme/tokens';
+import { StepFrame, useChoose } from '@/onboarding/StepFrame';
 
-// Both are supported, chosen here (product decision, 29 Sep; K-205).
-const CHOICES: { value: Profile['programChoice']; key: string }[] = [
-  { value: 'BRING_MY_OWN', key: 'bring_my_own' },
-  { value: 'BUILD_ONE_FOR_ME', key: 'build_one_for_me' },
-];
-
+/**
+ * #ob-program: a program built for them is recommended (ADR-072 #2); bringing their own opens the own-program branch,
+ * where it is brought in and reviewed (ADR-073, flow.ts). Both are supported (K-205).
+ */
 export default function ProgramStep() {
-  const { draft, update } = useDraft();
-  const { color } = useTheme();
+  const { draft } = useDraft();
+  const choose = useChoose('program');
   return (
-    <StepFrame step="program" title={t('onboarding.program.title')}>
-      {CHOICES.map(({ value, key }) => (
-        <OptionCard
-          key={value}
-          title={t(`onboarding.program.${key}.title`)}
-          body={t(`onboarding.program.${key}.body`)}
-          selected={draft.programChoice === value}
-          onPress={() => update({ programChoice: value })}
-        />
-      ))}
-      <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.program.note')}</Text>
+    <StepFrame step="program" title={t('onboarding.program.title')} chosen>
+      <OptionCard
+        hero
+        title={t('onboarding.program.build_one_for_me.title')}
+        tag={t('onboarding.recommended')}
+        body={t('onboarding.program.build_one_for_me.body')}
+        selected={draft.programChoice === 'BUILD_ONE_FOR_ME'}
+        onPress={() => choose({ programChoice: 'BUILD_ONE_FOR_ME' })}
+      />
+      <OptionCard
+        title={t('onboarding.program.bring_my_own.title')}
+        body={t('onboarding.program.bring_my_own.body')}
+        selected={draft.programChoice === 'BRING_MY_OWN'}
+        onPress={() => choose({ programChoice: 'BRING_MY_OWN' })}
+      />
     </StepFrame>
   );
 }
-
-const styles = StyleSheet.create({ note: { fontSize: tokens.type.bodySmall } });

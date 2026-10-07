@@ -2,6 +2,17 @@
   "app": {
     "name": "keel"
   },
+  "welcome": {
+    "headline": "Stop guessing in the gym.",
+    "lead": "Every Monday your plan adjusts, and tells you why.",
+    "examplesLabel": "Example calls",
+    "examples": {
+      "hold": "Hold the weight",
+      "rep": "Add one rep",
+      "lighter": "Lighter week",
+      "eat": "Eat a little more"
+    }
+  },
   "signIn": {
     "note": "One tap with your Apple ID. We keep no name and no email.",
     "failed": "Sign-in didn't go through. Try again.",
@@ -1553,11 +1564,11 @@
     "lbUnit": "lb"
   },
   "onboarding": {
-    "progress": "{step} of {total}",
-    "count": "{step}/{total}",
+    "progress": "Step {step} of {total}",
     "back": "Back",
     "backMark": "‹",
     "continue": "Continue",
+    "recommended": "Recommended",
     "saveFailed": "Couldn't save your answers. Check your connection and try again.",
     "checking": {
       "title": "One moment",
@@ -1567,36 +1578,46 @@
       "serverError": "Our server couldn't answer just now. Try again in a moment."
     },
     "goal": {
-      "title": "What do you want?",
+      "title": "What's the goal?",
+      "decide_for_me": {
+        "title": "Decide for me",
+        "body": "We read your numbers and pick."
+      },
       "lose_fat": {
-        "title": "Lose fat",
-        "body": "Bring your weight down and keep your strength."
+        "title": "Lose fat"
       },
       "build_muscle": {
-        "title": "Build muscle",
-        "body": "Add size and strength at a steady pace."
+        "title": "Build muscle"
       },
-      "decide_for_me": {
-        "title": "Not sure, decide for me",
-        "body": "We read your numbers and pick the phase."
-      },
-      "note": "You can change this later. When your data says it's time to switch phase, we'll tell you and show why."
+      "note": "You can change it later."
+    },
+    "experience": {
+      "title": "How long have you been lifting?",
+      "why": "It sets your starting weights, and how much we explain.",
+      "NEW": "Just starting",
+      "UNDER_1Y": "Under a year",
+      "Y1_3": "1-3 years",
+      "Y3_PLUS": "3+ years"
     },
     "program": {
-      "title": "Do you already follow a program?",
-      "bring_my_own": {
-        "title": "Yes, I'll bring mine",
-        "body": "Enter your split once. Food and weekly calls adjust around it."
-      },
+      "title": "Want us to build your program?",
       "build_one_for_me": {
-        "title": "No, build one for me",
-        "body": "A plan sized to the days you really have."
+        "title": "Build it for me",
+        "body": "Fits your days. Adjusts every week."
       },
-      "note": "Either way, calls use the same rules. You can switch at any time."
+      "bring_my_own": {
+        "title": "I have my own",
+        "body": "We review it."
+      }
+    },
+    "days": {
+      "title": "How many days a week?",
+      "why": "Pick what you can keep.",
+      "unit": "days",
+      "label": "{count} days",
+      "note": "We place the days. Move them anytime."
     },
     "schedule": {
-      "title": "When can you train?",
-      "days": "Days that could work",
       "dayName": {
         "MONDAY": "Monday",
         "TUESDAY": "Tuesday",
@@ -1605,32 +1626,7 @@
         "FRIDAY": "Friday",
         "SATURDAY": "Saturday",
         "SUNDAY": "Sunday"
-      },
-      "dayShort": {
-        "MONDAY": "M",
-        "TUESDAY": "T",
-        "WEDNESDAY": "W",
-        "THURSDAY": "T",
-        "FRIDAY": "F",
-        "SATURDAY": "S",
-        "SUNDAY": "S"
-      },
-      "restDay": "{max} days at most, so your week keeps a rest day.",
-      "lastMonth": "Sessions last month",
-      "sessions": {
-        "NONE_OR_ONE": "0-1",
-        "TWO_TO_THREE": "2-3",
-        "FOUR": "4",
-        "FIVE_OR_MORE": "5+"
-      },
-      "time": "Usual training time",
-      "timeHint": "Optional. Reminders follow your own session time.",
-      "timeInvalid": "Type a time like 18:30.",
-      "planTitle": "What we'll plan",
-      "plan": "{days} days fit your week. We'll plan for {days}.",
-      "planOne": "One day fits your week. We'll plan for one.",
-      "lighter": "That's more than last month. Starting near what you already do keeps the plan going, and you can change your days at any time.",
-      "addLater": "Add a day once {days} feels easy."
+      }
     },
     "healthData": {
       "allow": "Allow",

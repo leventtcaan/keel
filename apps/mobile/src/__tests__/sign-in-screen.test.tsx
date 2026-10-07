@@ -1,11 +1,15 @@
 /**
- * The sign-in screen (K-305): the Apple button, and what the user sees when it does not go through. Leaving the Apple
- * sheet is not an error. Navigation after sign-in is the root layout's (Stack.Protected), not this screen's.
+ * The sign-in screen, #welcome (K-305, ADR-072 #1-#2): the promise, example calls, the Apple button, and what the user sees
+ * when it does not go through. Leaving the Apple sheet is not an error. Navigation after sign-in is the root layout's
+ * (Stack.Protected), not this screen's.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 
 import SignInScreen from '@/app/sign-in';
 import { t } from '@/copy';
+import { EXAMPLE_CALLS } from '@/onboarding/ExampleCalls';
+import { onboardingParams } from '@/onboarding/params';
 import { ThemeProvider } from '@/theme/theme';
 
 const mockServices = {
@@ -42,10 +46,54 @@ beforeEach(() => {
   mockServices.appleAvailable.mockResolvedValue(true);
 });
 
-test('shows the product name and the Apple button', async () => {
+test('says the promise, with the product name and the Apple button (ADR-072 #1)', async () => {
   await show();
-  expect(screen.getByRole('header', { name: t('app.name') })).toBeOnTheScreen();
+  expect(screen.getByRole('header', { name: t('welcome.headline') })).toBeOnTheScreen();
+  expect(t('welcome.headline')).toBe('Stop guessing in the gym.');
+  expect(screen.getByText(t('welcome.lead'))).toBeOnTheScreen();
+  expect(screen.getByText(t('app.name'))).toBeOnTheScreen();
   expect(screen.getByTestId('apple-button')).toBeOnTheScreen();
+});
+
+describe('example calls', () => {
+  const shown = () => EXAMPLE_CALLS.filter((key) => screen.queryByText(t(key)) !== null);
+
+  afterEach(() => jest.useRealTimers());
+
+  test('one at a time, each in turn, then the first again and they rest: no endless motion', async () => {
+    jest.useFakeTimers();
+    await show();
+    expect(screen.getByText(t('welcome.examplesLabel'))).toBeOnTheScreen();
+    expect(shown()).toEqual([EXAMPLE_CALLS[0]]);
+    for (const key of [...EXAMPLE_CALLS.slice(1), EXAMPLE_CALLS[0]]) {
+      await act(async () => {
+        jest.advanceTimersByTime(onboardingParams.welcomeExampleMs);
+      });
+      expect(shown()).toEqual([key]);
+    }
+    // Not a whole number of rounds: an endless rotation would be showing another one now.
+    await act(async () => {
+      jest.advanceTimersByTime(onboardingParams.welcomeExampleMs * (EXAMPLE_CALLS.length + 1));
+    });
+    expect(shown()).toEqual([EXAMPLE_CALLS[0]]);
+  });
+
+  test('with Reduce Motion on, the first stays and nothing turns', async () => {
+    jest.useFakeTimers();
+    jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockResolvedValueOnce(true);
+    await show();
+    for (let turn = 0; turn < EXAMPLE_CALLS.length; turn++) {
+      await act(async () => {
+        jest.advanceTimersByTime(onboardingParams.welcomeExampleMs);
+      });
+      expect(shown()).toEqual([EXAMPLE_CALLS[0]]);
+    }
+  });
+
+  test('never "2 days, not 3": the engine does not propose fewer than three days (ADR-071 #8)', () => {
+    expect(EXAMPLE_CALLS.length).toBeGreaterThan(1);
+    for (const key of EXAMPLE_CALLS) expect(t(key)).not.toMatch(/\b2 days|not 3|fewer days/i);
+  });
 });
 
 test('pressing the button signs in with Apple', async () => {
