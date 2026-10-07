@@ -157,6 +157,37 @@ class ProfileApiTests {
     }
 
     @Test
+    void theExperienceIsKeptAndAProfileWithoutItStaysValid() throws Exception {
+        // ADR-072 #3: asked in the new onboarding; a profile made before it has none and is read back as it was.
+        AccountId account = consenting();
+        Map<String, Object> experienced = onboarding();
+        experienced.put("experience", "Y1_3");
+
+        assertThat(read(put(account, experienced))).isEqualTo(experienced);
+        assertThat(read(get(account))).isEqualTo(experienced);
+
+        assertThat(read(put(account, onboarding()))).isEqualTo(onboarding()).doesNotContainKey("experience");
+        for (String bad : List.of("EXPERT", "new")) {
+            Map<String, Object> profile = onboarding();
+            profile.put("experience", bad);
+            assertThat(put(account, profile)).as(bad).hasStatus(400).bodyJson().extractingPath("$.code").isEqualTo("VALIDATION_FAILED");
+        }
+    }
+
+    @Test
+    void theQuestionsTheOnboardingNoLongerAsksAreNotNeeded() throws Exception {
+        // ADR-072 #4: no "sessions last month", no "usual time" — the schedule is the days, the check-in day and the zone.
+        AccountId account = consenting();
+        Map<String, Object> profile = onboarding();
+        profile.put("experience", "NEW");
+        profile.put("schedule", Map.of("trainingDays", List.of("MONDAY", "WEDNESDAY", "FRIDAY"), "checkInDay", "MONDAY",
+                "timeZone", "Europe/Istanbul"));
+
+        assertThat(read(put(account, profile))).isEqualTo(profile);
+        assertThat(read(get(account))).isEqualTo(profile);
+    }
+
+    @Test
     void aMissingRequiredFieldIsAValidationError() {
         Map<String, Object> profile = onboarding();
         profile.remove("sex");

@@ -245,6 +245,14 @@
       "tag": "tecrube",
       "source": "arastirma/03-guray-karar-omurgasi.md#5",
       "note": "The decision window the strength chart marks apart from the evaluation window (03 §5.2: decisions 1-2 weeks, evaluation 3 months, shown apart so weekly noise is not read as progress). Two, the longer end: the engine's training signals read about as far (plateau_sessions, 3 sessions at 2 a week; overtraining_missed_plan_weeks, 2). Display only; no call reads it."
+    },
+    {
+      "key": "unfinished_session_close_hours",
+      "value": 24,
+      "unit": "hours",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "Product choice, no source (ADR-075 #5): a session left with \"Fill in the rest later\" stays open this long after it started, then the server closes it and sets its targets as a finish does (SessionAutoClose). A day leaves the evening and the next morning to fill it in; sets added after the close still count (K-432). The server reads this file as it is: one value, no mirror."
     }
   ]
 }

@@ -165,6 +165,24 @@ class ProgramStore {
     }
 
     /**
+     * The starting weights as first targets (ADR-072 #5), in place of the ones given before: a target no session set
+     * ({@code next_from} null) is a starting weight. One a session set is never changed — setNext replaces a starting
+     * weight, never the other way round. {@code targets} by planned exercise id.
+     */
+    @Transactional
+    void replaceStarting(AccountId account, Map<UUID, NextTargets.Target> targets) {
+        jdbc.sql("""
+                update training.planned_exercise set next_load_kg = null, next_reps = null, next_rack_ends = false, last_load_kg = null
+                where account_id = :account and next_from is null and next_load_kg is not null""")
+                .param("account", account.value()).update();
+        targets.forEach((plannedId, target) -> jdbc.sql("""
+                update training.planned_exercise set next_load_kg = :load, next_reps = :reps
+                where account_id = :account and id = :id and next_from is null""")
+                .param("account", account.value()).param("id", plannedId).param("load", target.loadKg()).param("reps", target.reps())
+                .update());
+    }
+
+    /**
      * The target that came from the session started at {@code from} is gone: none of its sets of the move are left (K-432).
      * A target from another session stays.
      */

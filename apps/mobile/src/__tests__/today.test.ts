@@ -34,6 +34,7 @@ const DECISION: Schemas['Decision'] = {
   nextReview: '2026-10-05',
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
+  declinable: false,
 };
 
 const PROGRAM: Schemas['Program'] = {

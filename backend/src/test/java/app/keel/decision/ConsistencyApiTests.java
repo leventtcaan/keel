@@ -211,6 +211,35 @@ class ConsistencyApiTests {
     }
 
     @Test
+    void aSessionBackDatedOrFilledInLaterCountsInTheWeekItStarted() throws Exception {
+        // ADR-071 #3, ADR-075 #5: every week here is logged after it ended. Monday's session is back-dated and finished;
+        // Sunday evening's is "filled in later" — its set comes now and it is never finished. Both are the week they
+        // started in: two sessions and three weigh-ins of four are 5 of 6, on track. Without Sunday's, 4 of 6 is not.
+        AccountId account = consenting();
+        LocalDate today = LocalDate.now(ISTANBUL);
+        LocalDate began = today.minusDays(30);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+        int weeks = 0;
+        for (LocalDate week = began.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)); week.plusDays(6).isBefore(today); week = week.plusWeeks(1)) {
+            weeks++;
+            String monday = workout(account, "WORKING", week.atTime(12, 0).atZone(ISTANBUL).toInstant());
+            send(account, "POST", "/v1/workouts/" + monday + "/finish", Map.of("endedAt", Instant.now().toString(), "uncleanExerciseIds", List.of()));
+            workout(account, "WORKING", week.plusDays(6).atTime(20, 0).atZone(ISTANBUL).toInstant());
+            for (int day : new int[] {0, 1, 2}) {
+                send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
+                        week.plusDays(day).atTime(8, 0).atZone(ISTANBUL).toInstant().toString(), "kg", 82.0, "source", "MANUAL"));
+            }
+        }
+
+        Map<String, Object> record = (Map<String, Object>) read(get(account)).get("record");
+
+        assertThat(weeks).as("weeks over since the plan began").isGreaterThanOrEqualTo(3);
+        assertThat(record).containsEntry("countedWeeks", weeks).containsEntry("onTrackWeeks", weeks);
+    }
+
+    @Test
     void beforeTheFirstCallNothingIsPlannedYet() {
         AccountId account = consenting();
 
@@ -288,10 +317,11 @@ class ConsistencyApiTests {
         workout(account, setType, Instant.now().minusSeconds(1));
     }
 
-    private void workout(AccountId account, String setType, Instant startedAt) throws Exception {
+    /** A workout started then, with one set of this type — or none; its id. */
+    private String workout(AccountId account, String setType, Instant startedAt) throws Exception {
         MvcTestResult started = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", startedAt.toString()));
+        String id = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
         if (setType != null) {
-            String id = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
             // A set to failure has no reps in reserve to give (K-218): none is sent.
             Map<String, Object> set = new java.util.HashMap<>(Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
                     "setType", setType, "loadKg", 60, "reps", 8));
@@ -300,6 +330,7 @@ class ConsistencyApiTests {
             }
             send(account, "POST", "/v1/workouts/" + id + "/sets", set);
         }
+        return id;
     }
 
     private MvcTestResult send(AccountId account, String method, String uri, Object body) {

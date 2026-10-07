@@ -1,0 +1,281 @@
+{
+  "note": "Words on each new-face screen's first view (ADR-069 #4, ADR-072 #9, ADR-077 #3, ADR-078 #5), counted as the prototype counted them: a word has a letter; numbers and {placeholders} are not words. Budgets are the prototype's targets (prototip/yeni-yuz.html, each screen's t:); copy-budget.test.ts holds the table to the prototype and every built screen to its budget. task: the backlog task that builds the screen; once it is done the screen must list its keys. file: the screen's route file; every copy key it uses is in keys or in notFirstView. keys: the copy keys of the first view; a list inside the list is one of several texts shown in the same place, and the longest counts. Legal lines (Terms, Privacy, Restore, Account) go in notFirstView: ADR-072 #9 leaves them out.",
+  "screens": [
+    {
+      "screen": "welcome",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-goal",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-exp",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-program",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-own",
+      "budget": 30,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-968",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-review",
+      "budget": 75,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-968",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-days",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-consent",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-about",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-activity",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "task": "K-966",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-weights",
+      "budget": 30,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-967",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-preparing",
+      "budget": 20,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-967",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "ob-plan",
+      "budget": 55,
+      "source": "ADR-072 #9",
+      "task": "K-967",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "paywall",
+      "budget": 70,
+      "source": "ADR-072 #9",
+      "task": "K-967",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "home",
+      "budget": 40,
+      "source": "ADR-069 #4",
+      "task": "K-969",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "home-mon",
+      "budget": 40,
+      "source": "ADR-069 #4",
+      "task": "K-969",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "train",
+      "budget": 55,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-970",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "summary",
+      "budget": 55,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-974",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "progress",
+      "budget": 50,
+      "source": "ADR-078 #5",
+      "task": "K-979",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "plus",
+      "budget": 15,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-953",
+      "file": "src/app/plus.tsx",
+      "keys": [
+        "plus.title",
+        "plus.weighIn",
+        "plus.meal",
+        "plus.workout",
+        "plus.life"
+      ],
+      "notFirstView": []
+    },
+    {
+      "screen": "weigh",
+      "budget": 15,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-980",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "health-jit",
+      "budget": 30,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-980",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "meal",
+      "budget": 25,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-980",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "barcode",
+      "budget": 10,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-980",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "checkin",
+      "budget": 30,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-978",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "call",
+      "budget": 45,
+      "source": "ADR-077 #3",
+      "task": "K-978",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "week1",
+      "budget": 45,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-978",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "share",
+      "budget": 25,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-975",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "return",
+      "budget": 45,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-981",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
+      "screen": "life",
+      "budget": 30,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-981",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    }
+  ]
+}

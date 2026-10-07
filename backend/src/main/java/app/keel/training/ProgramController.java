@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,13 @@ class ProgramController {
     }
 
     record OwnProgram(List<OwnDay> days) {
+    }
+
+    /** Contract StartingWeights: a move's load the user knows, in kg. */
+    record StartingWeight(String exerciseId, BigDecimal kg) {
+    }
+
+    record StartingWeights(List<StartingWeight> weights) {
     }
 
     /**
@@ -113,9 +121,12 @@ class ProgramController {
     private final Clock clock;
     private final GymStore gyms;
     private final TrainingLog log;
+    private final StartingWeightReps startingWeightReps;
 
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
-            WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log) {
+            WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log,
+            StartingWeightReps startingWeightReps) {
+        this.startingWeightReps = startingWeightReps;
         this.gyms = gyms;
         this.log = log;
         this.calls = calls;
@@ -168,6 +179,36 @@ class ProgramController {
             }).toList());
         }).toList();
         return view(account, store.replace(account, ProgramStore.Source.OWN, days));
+    }
+
+    /**
+     * The loads an experienced user knows (ADR-072 #5): each is its move's first target on every day the move is planned
+     * with a range starting at or under the reps the load was given for, as the gym in use makes it, replacing those given
+     * before. Only a move of the program whose load the engine progresses (an isolation move has no target, Progression),
+     * each once; a move or a day left out has no target, none is derived.
+     */
+    @PutMapping("/v1/program/starting-weights")
+    Program startingWeights(AccountId account, @RequestBody StartingWeights request) {
+        require(request.weights() != null && !request.weights().contains(null));
+        ProgramStore.Program program = store.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        Parameters p = parametersFor(account);
+        Optional<GymStore.Gym> gym = gyms.current(account);
+        Set<String> given = new HashSet<>();
+        Map<UUID, NextTargets.Target> targets = new HashMap<>();
+        for (StartingWeight weight : request.weights()) {
+            require(weight.exerciseId() != null && given.add(weight.exerciseId()) && weight.kg() != null && weight.kg().signum() > 0
+                    && limits.load(weight.kg()));
+            ExerciseCatalog.Exercise exercise = catalog.find(weight.exerciseId()).orElse(null);
+            require(exercise != null
+                    && !(exercise.kind() == ExerciseCatalog.Kind.ISOLATION && p.flag(ParameterKey.LOAD_PROGRESSION_COMPOUND_ONLY)));
+            List<ProgramStore.PlannedExercise> planned = program.days().stream().flatMap(day -> day.exercises().stream())
+                    .filter(move -> move.exerciseId().equals(exercise.id())).toList();
+            require(!planned.isEmpty());
+            planned.forEach(move -> NextTargets.starting(weight.kg(), startingWeightReps.reps(), new RepRange(move.repMin(), move.repMax()),
+                    exercise.equipment(), exercise.id(), gym).ifPresent(target -> targets.put(move.id(), target)));
+        }
+        store.replaceStarting(account, targets);
+        return view(account, store.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
     }
 
     /**

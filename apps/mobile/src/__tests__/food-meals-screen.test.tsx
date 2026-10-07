@@ -5,7 +5,7 @@
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
-import FoodScreen from '@/app/(tabs)/food';
+import FoodScreen from '@/app/food';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import type { LocalRecord } from '@/sync/store';

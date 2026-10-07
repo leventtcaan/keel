@@ -122,7 +122,7 @@ test("the day's moves, and the move under way with the server's target faint and
   expect(await screen.findByText('Upper A')).toBeTruthy();
   expect(screen.getAllByText('Bench press').length).toBeGreaterThan(0);
   expect(screen.getByText('3 sets')).toBeTruthy(); // the bench, before any set
-  expect(screen.getByText('Target RIR 0–1')).toBeTruthy();
+  expect(screen.getByText('Target RIR 0-1')).toBeTruthy();
   expect(screen.getAllByText('62.5 kg × 6').length).toBe(3);
   expect(screen.getByText('57.5 kg × 8')).toBeTruthy();
 });
@@ -138,7 +138,7 @@ test('one tap logs the set as suggested, with the target RIR, under the workout;
     },
   ]);
   expect(await screen.findByText('Log set 2')).toBeTruthy();
-  expect(screen.getByText('Rest · 2:00–3:00')).toBeTruthy();
+  expect(screen.getByText('Rest · 2:00-3:00')).toBeTruthy();
   expect(screen.getByText('Set 2 of 3')).toBeTruthy();
 });
 

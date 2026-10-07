@@ -72,6 +72,36 @@ parameters:
     unit: sessions_per_week
     tag: tecrube
     source: "arastirma/ham/guray/G1-antrenman.md#K-22"
+  - key: training_days_max
+    value: 5
+    unit: days_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G6-eski-arsiv.md#K-36"
+    note: "Program incelemesi (K-955, ADR-073 #2): 4-5 gün ideal, 6-7 önerilmez (G6 K-36). Üç kaynak aynı yönde: G7 K-79 '5'ten fazlasını tolere edememeniz lazım', G2 K-36 'haftada 6-7 gün ağırlık antrenmanı asla önerilmiyor'. Üstündeki program bu sayıya indirilir; günü en az setli gün birleşir."
+  - key: weekly_sets_max
+    value: 15
+    unit: sets_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-11"
+    note: "Program incelemesi (K-955): kas başına haftalık üst sınır 'seviyeye göre 12-15' (K-11); [ASR şüpheli '1015']. Birincil kasa göre sayılır (ProgramTemplateTests ile aynı). Üstü işaretlenir, eşitlik işaretlenmez."
+  - key: weekly_sets_trim_to
+    value: 12
+    unit: sets_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-11"
+    note: "Program incelemesi (K-955): weekly_sets_max aşılınca kırpma hedefi; K-11 üst bandının alt ucu (12-15)."
+  - key: weekly_sets_min
+    value: 4
+    unit: sets_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#K-11"
+    note: "Program incelemesi (K-955): kas başına haftalık alt sınır 4 (K-11). Eşitlik işaretlenmez: 4 set yeterli (prototipteki '4 set aralığın altında' yanlıştı, ADR-073). Kolda arm_weekly_sets_min (K-61) geçerli."
+  - key: review_max_suggestions
+    value: 3
+    unit: suggestions
+    tag: urun
+    source: "arastirma/01-urun-ilkeleri.md#26"
+    note: "SEÇİM, ürün kararı (Levent, ADR-073 #2); sayının araştırma kaynağı yok. İlke: kullanıcı olduğu yerden alınır, zorla düzeltilmez, küçük değişikliklerle doğruya çekilir (ilke 26, ilke 18). İnceleme en çok bu kadar öneri gösterir, öncelik sırasıyla: gün > fazla set > eksik set > sıklık > tekrar aralığı."
   - key: default_training_days_per_week
     value: 4
     unit: days_per_week

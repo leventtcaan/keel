@@ -78,3 +78,13 @@ Orta: ekran yeniden yazımı; sözleşme alanları geriye uyumlu eklenir.
 Sözleşme testi: öneri alanları salona yuvarlanmış ve basamak kadar uzak · motor testi: kalibrasyonda bulunan kilo seans sonunda hedef olur ·
 `Consistency` testi: sonra doldurulan seans haftasını sayar; otomatik kapanış hedefleri hesaplar · ekran testleri: dinlenme hiçbir düğmeyi
 örtmez, son setten sonra çıkmaz; "Too heavy?" iki seçenek gösterir; atlanan hareket "Hold" · rekor tanımı tablo testi.
+
+## Ek 1 · İlk seans kalibrasyonunda "bir basamak ağır" telefonda nasıl bulunur (K-960, 2026-10-07, agent, teknik)
+Hedefi olmayan harekette kilo seans sırasında kullanıcının girdiği değer; sunucu bunu önceden bilemez, `heavierLoadKg` hesaplanamaz.
+Karar: sunucu yalnız bu hareketler için `calibrationStepKg` (bölgenin yük basamağı, `load_increment_upper_kg`/`_lower_kg`, H3 B4) gönderir;
+telefon girilen kiloya ekler ve ısınma setlerinin kullandığı ortak `loadSteps.round` ile salona yuvarlar (ADR-032, K-417). Ne zaman önerileceği
+(`calibration_rir_min`, G6 K-40) ve ne kadar (bir basamak) parametre/sunucu kaynaklı kalır; telefon kural seçmez, yalnız salonun ağırlığına
+yuvarlar. Reddedilen: sunucunun her hareket için salonun bütün kilo merdivenini göndermesi (yük ağır, sınır gerekir).
+"Too heavy?" için hafif seçenek her zaman bulunur (inceleme, 7 Eki): salonun bir basamak içinde yapabildiği en hafif kilo (mümkünse tam bir basamak aşağı), basamak içinde yoksa
+salonun bir alt basamağı (başlangıcın altındaki en ağır kilo); yalnız rafın/barın dibinde yok. Ağır seçenek bir basamakla sınırlı kalır
+(aşmak risk). İzolasyon hareketleri hiç hedef almadığı için her seans kalibrasyon basamağı taşır; "hedef kilosu yokken" tanımına uygun.

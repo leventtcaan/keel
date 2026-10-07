@@ -63,7 +63,7 @@ test("this week's sets; a lighter week says how many of the program's", () => {
   expect(setsLine(bench)).toBe('3 sets');
   expect(setsLine({ ...bench, sets: 2 })).toBe('2 of 3 sets');
   expect(setsLine({ ...bench, baseSets: 1, sets: 1 })).toBe('1 set');
-  expect(repsLine(bench)).toBe('6–10 reps');
+  expect(repsLine(bench)).toBe('6-10 reps');
 });
 
 test("the server's next target in the user's unit; none until there is one", () => {

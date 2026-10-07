@@ -91,6 +91,10 @@ keel:
     import:
       max-workouts: 20
       max-sets: 200
+    # A session left unfinished closes by itself (ADR-075 #5, SessionAutoClose) unfinished_session_close_hours after it
+    # started (data/parameters/workout.json). Looked for every 15 minutes: a close a quarter hour late is nothing to a
+    # session left for a day, and each run reads only the open sessions (their own index, V38 workout_open).
+    session-auto-close: "0 */15 * * * *"
     # A move of the user's own (K-424, ADR-035): a name like the catalog's, and enough of them for any gym's odd machines.
     custom-exercise:
       max-name: 60

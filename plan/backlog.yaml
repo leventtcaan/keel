@@ -4373,3 +4373,19 @@ tasks:
     tests: ["cihaz kaydı + mümkünse birim testi"]
     refs: [plan/kararlar/ADR-067-uiux-revizyonu-once.md, docs/aktarim/M9/img/17-kontrast-acik-food.png]
     learn: ["iOS metin ölçümü ve Dynamic Type"]
+  - id: K-911
+    title: "SessionProgressApiTests sabit tarihi bırakır: seanslar saate göre (moladan dönüş penceresi)"
+    milestone: M9a
+    module: training
+    type: test
+    size: S
+    status: done
+    depends_on: [K-531]
+    why: "Testler 2026-09-28'i sabit kullanıyor; ~19 Eki'den sonra o seanslar return_step_back_after_weeks (3 hafta) eskisi olur, program hedefi bir adım geri gösterir (K-531) ve CI kendiliğinden kırmızıya döner"
+    acceptance:
+      - "SessionProgressApiTests'te seans tarihleri enjekte saate göre (şimdiden iki gün önce); sabit takvim tarihi yok, liste aralığı da saate göre"
+      - "Hiçbir beklenti gevşemez ya da değişmez (K1); her testin anlamı aynı kalır"
+      - "Diğer API testleri aynı kalıp için tarandı; hedef okuyan ve 3 hafta penceresine düşen başka sabit tarih yok ya da o da düzeltildi"
+    tests: ["SessionProgressApiTests (CI, Postgres)"]
+    refs: ["backend/src/main/java/app/keel/engine/ReturnLoad.java", "data/parameters/training.yaml"]
+    learn: ["Zamana bağlı testler: sabit tarih yerine enjekte saat"]
