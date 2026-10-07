@@ -1798,6 +1798,13 @@
     "title": "Settings",
     "entry": "Settings",
     "serverError": "Something went wrong on our side. Try again in a moment.",
+    "appearance": {
+      "title": "Appearance",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "failed": "Couldn't save that. Try again."
+    },
     "units": {
       "title": "Units",
       "metric": "Metric (kg, cm)",

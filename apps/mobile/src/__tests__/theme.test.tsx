@@ -1,11 +1,12 @@
 /**
- * The theme follows the phone's appearance (ADR-016) and the decision block flips it (inverse surface).
+ * The theme is the person's choice, Light until they pick (ADR-070 #3); System follows the phone. The decision block
+ * flips it (inverse surface) and the workout's focus mode is always dark (ADR-070 #4).
  */
 import { renderHook } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { InverseSurface, inverse, ThemeProvider, useTheme } from '@/theme/theme';
+import { FocusMode, InverseSurface, inverse, ThemeProvider, useTheme } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 
 jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
@@ -14,26 +15,62 @@ jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
 }));
 const mockScheme = useColorScheme as jest.Mock;
 
-function inProvider(extra?: (children: ReactNode) => ReactNode) {
+function inProvider() {
   return function Wrapper({ children }: { children: ReactNode }) {
-    return <ThemeProvider>{extra ? extra(children) : children}</ThemeProvider>;
+    return <ThemeProvider>{children}</ThemeProvider>;
   };
 }
+
+test('nothing chosen: light, even on a phone set to dark', async () => {
+  mockScheme.mockReturnValue('dark');
+  const { result } = await renderHook(() => useTheme(), { wrapper: inProvider() });
+  expect(result.current.scheme).toBe('light');
+  expect(result.current.color).toEqual(palettes.light);
+});
+
+test.each([
+  ['light', 'dark'],
+  ['dark', 'light'],
+] as const)('choosing %s overrides a phone set to %s', async (choice, phone) => {
+  mockScheme.mockReturnValue(phone);
+  const { result } = await renderHook(() => useTheme(), {
+    wrapper: ({ children }: { children: ReactNode }) => <ThemeProvider appearance={choice}>{children}</ThemeProvider>,
+  });
+  expect(result.current.scheme).toBe(choice);
+  expect(result.current.color).toEqual(palettes[choice]);
+});
 
 test.each([
   ['light', palettes.light],
   ['dark', palettes.dark],
-] as const)('the %s phone setting selects the %s palette', async (scheme, palette) => {
+] as const)('System follows the phone: %s', async (scheme, palette) => {
   mockScheme.mockReturnValue(scheme);
-  const { result } = await renderHook(() => useTheme(), { wrapper: inProvider() });
+  const { result } = await renderHook(() => useTheme(), {
+    wrapper: ({ children }: { children: ReactNode }) => <ThemeProvider appearance="system">{children}</ThemeProvider>,
+  });
   expect(result.current.scheme).toBe(scheme);
   expect(result.current.color).toEqual(palette);
 });
 
-test('an unspecified phone setting falls back to light', async () => {
+test('System with an unspecified phone setting falls back to light', async () => {
   mockScheme.mockReturnValue('unspecified');
-  const { result } = await renderHook(() => useTheme(), { wrapper: inProvider() });
+  const { result } = await renderHook(() => useTheme(), {
+    wrapper: ({ children }: { children: ReactNode }) => <ThemeProvider appearance="system">{children}</ThemeProvider>,
+  });
   expect(result.current.scheme).toBe('light');
+});
+
+test.each(['light', 'dark', 'system'] as const)('focus mode is dark whatever the choice (%s)', async (choice) => {
+  mockScheme.mockReturnValue('light');
+  const { result } = await renderHook(() => useTheme(), {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <ThemeProvider appearance={choice}>
+        <FocusMode>{children}</FocusMode>
+      </ThemeProvider>
+    ),
+  });
+  expect(result.current.scheme).toBe('dark');
+  expect(result.current.color).toEqual(palettes.dark);
 });
 
 test('an explicit scheme overrides the phone setting', async () => {
@@ -70,6 +107,10 @@ describe.each(Object.entries(palettes))('inverse of the %s palette', (_, p) => {
       track: p.decisionLine,
       accent: p.accentInk,
       onAccent: p.onAccentInk,
+      // A primary button inside the block takes the block's accent: the page's black button would vanish on a black block.
+      cta: p.accentInk,
+      onCta: p.onAccentInk,
+      accentSoft: p.decisionLine,
     });
   });
 
@@ -79,9 +120,12 @@ describe.each(Object.entries(palettes))('inverse of the %s palette', (_, p) => {
 });
 
 test('InverseSurface gives its children the inverse palette', async () => {
-  mockScheme.mockReturnValue('dark');
   const { result } = await renderHook(() => useTheme(), {
-    wrapper: inProvider((children) => <InverseSurface>{children}</InverseSurface>),
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <ThemeProvider appearance="dark">
+        <InverseSurface>{children}</InverseSurface>
+      </ThemeProvider>
+    ),
   });
   expect(result.current.color).toEqual(inverse(palettes.dark));
   expect(result.current.scheme).toBe('dark');

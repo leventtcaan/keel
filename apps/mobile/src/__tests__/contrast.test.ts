@@ -1,10 +1,9 @@
 /**
- * Text on filled controls, and every text colour on its surface, must reach WCAG AA (4.5:1) in both themes (ADR-016)
- * — including the inverse palette that components receive inside the decision block. The previous orange failed at
- * 3.29:1.
+ * Text on filled controls, and every text colour on its surface, must reach WCAG AA (4.5:1) in both themes and in the
+ * workout's focus mode (ADR-070) — including the inverse palette that components receive inside the decision block.
  */
 import { inverse } from '@/theme/theme';
-import { type Palette, palettes } from '@/theme/tokens';
+import { focusPalette, type Palette, palettes } from '@/theme/tokens';
 
 function channel(c: number): number {
   const s = c / 255;
@@ -26,7 +25,7 @@ describe('the contrast formula', () => {
     expect(contrast('#000000', '#FFFFFF')).toBeCloseTo(21, 5);
     expect(contrast('#FFFFFF', '#FFFFFF')).toBeCloseTo(1, 5);
     expect(contrast('#777777', '#FFFFFF')).toBeCloseTo(4.48, 2);
-    expect(contrast('#B0129A', '#FFFFFF')).toBeCloseTo(6.18, 2); // ADR-016's stated ratio
+    expect(contrast('#007C8C', '#FFFFFF')).toBeCloseTo(4.93, 2); // ADR-070's stated ratio for its turquoise fill
   });
 
   test.each(Object.entries(palettes))('reads every %s value as six-digit hex (the formula needs it)', (_, p) => {
@@ -37,6 +36,7 @@ describe('the contrast formula', () => {
 const surfaces: [string, Palette][] = [
   ['light', palettes.light],
   ['dark', palettes.dark],
+  ['focus mode (the workout, always dark)', focusPalette],
   ['inverse light (inside the decision block)', inverse(palettes.light)],
   ['inverse dark (inside the decision block)', inverse(palettes.dark)],
 ];
@@ -58,6 +58,16 @@ describe.each(surfaces)('%s palette', (_, p) => {
 
   test('text on the warning fill reaches 4.5:1', () => {
     expect(contrast(p.warn, p.onWarn)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('text on the primary button reaches 4.5:1, and the button stands out from the page', () => {
+    expect(contrast(p.cta, p.onCta)).toBeGreaterThanOrEqual(4.5);
+    // A non-text control needs 3:1 against what is next to it (WCAG 1.4.11).
+    expect(contrast(p.cta, p.background)).toBeGreaterThanOrEqual(3);
+  });
+
+  test('text on the soft accent ground reaches 4.5:1', () => {
+    expect(contrast(p.text, p.accentSoft)).toBeGreaterThanOrEqual(4.5);
   });
 
   test('a selected chip (text fill, background label) reaches 4.5:1', () => {
@@ -84,6 +94,10 @@ describe.each(Object.entries(palettes))('%s decision block', (_, p) => {
 // K-807 (Accessibility Nutrition Labels › Sufficient Contrast): the accent and the warning are text too — "in use" on a
 // gym, a failed save — on the page, in both themes.
 describe.each(Object.entries(palettes))('%s accent and warning as text', (_, p) => {
+  test('the accent reaches 4.5:1 on the soft accent ground (a selected option)', () => {
+    expect(contrast(p.accent, p.accentSoft)).toBeGreaterThanOrEqual(4.5);
+  });
+
   test.each(['accent', 'warn'] as const)('%s reaches 4.5:1 on background and surface', (ink) => {
     expect(contrast(p[ink], p.background)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(p[ink], p.surface)).toBeGreaterThanOrEqual(4.5);

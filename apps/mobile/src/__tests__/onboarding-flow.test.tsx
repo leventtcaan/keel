@@ -52,6 +52,7 @@ jest.mock('@/services/ServicesProvider', () => ({
   ServicesProvider: ({ children }: { children: unknown }) => children,
   useSignedIn: () => mockSignedIn,
   useSubscriptionGate: () => 'open', // the gate after onboarding (K-706) is navigation.test.tsx's
+  useAppearance: () => 'light',
   useOnboarding: () =>
     jest.requireActual<typeof import('react')>('react').useSyncExternalStore(
       (listener: () => void) => (mockOnboardingListeners.add(listener), () => mockOnboardingListeners.delete(listener)),

@@ -35,7 +35,7 @@ Hepsini baştan okuma; gerektiğinde aç.
 | Motor parametreleri (eşik, pencere, oran) | `data/parameters/*.yaml` | Motor işinde |
 | Arayüz metinleri | `data/copy/en.json` | Arayüz işinde |
 | Araştırma (salt okunur kaynak) | `arastirma/` — sentez `00-05`, ham `ham/`, Güray kuralları `ham/guray/G1-G7` | Kural ya da iddia yazarken |
-| Ekran prototipi (görsel dil: **C iskeleti + RUBİN**, açık/koyu — ADR-016) | `prototip/` | Arayüz işinde |
+| Ekran prototipi (görsel dil: **turkuaz, açık varsayılan, koyu odak modu** — ADR-070; `prototip/yeni-yuz.html`) | `prototip/` | Arayüz işinde |
 | Hareket çekim kontrol listesi | `docs/hareket-cekim-kontrol-listesi.md` | Klip işinde (ADR-017) |
 
 Kod dizinlerinde (`backend/`, `apps/mobile/`, `contracts/`) kendi `CLAUDE.md`'si vardır; o dizinde çalışırken yüklenir.
