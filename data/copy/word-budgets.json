@@ -177,8 +177,14 @@
       "budget": 15,
       "source": "prototip/yeni-yuz.html",
       "task": "K-953",
-      "file": null,
-      "keys": [],
+      "file": "src/app/plus.tsx",
+      "keys": [
+        "plus.title",
+        "plus.weighIn",
+        "plus.meal",
+        "plus.workout",
+        "plus.life"
+      ],
       "notFirstView": []
     },
     {
