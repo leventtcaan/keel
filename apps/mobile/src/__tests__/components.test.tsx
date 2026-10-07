@@ -167,7 +167,7 @@ describe('Chip behaviour', () => {
 describe('RangeText — an estimate is always a range (U5)', () => {
   test('shows low–high with the unit', async () => {
     await renderIn('light', <RangeText low={1800} high={2100} unit="kcal" />);
-    expect(screen.getByText('1800–2100 kcal')).toBeOnTheScreen();
+    expect(screen.getByText('1800-2100 kcal')).toBeOnTheScreen();
   });
 
   test('reads the range as words for VoiceOver', async () => {
@@ -177,17 +177,17 @@ describe('RangeText — an estimate is always a range (U5)', () => {
 
   test('a reversed pair is the same range', async () => {
     await renderIn('light', <RangeText low={2100} high={1800} unit="kcal" />);
-    expect(screen.getByText('1800–2100 kcal')).toBeOnTheScreen();
+    expect(screen.getByText('1800-2100 kcal')).toBeOnTheScreen();
   });
 
   test('without a unit shows only the numbers', async () => {
     await renderIn('light', <RangeText low={3} high={5} />);
-    expect(screen.getByText('3–5')).toBeOnTheScreen();
+    expect(screen.getByText('3-5')).toBeOnTheScreen();
   });
 
   test('numbers use the display face', async () => {
     await renderIn('light', <RangeText low={3} high={5} />);
-    expect(screen.getByText('3–5')).toHaveStyle({ fontFamily: tokens.font.displayBold });
+    expect(screen.getByText('3-5')).toHaveStyle({ fontFamily: tokens.font.displayBold });
   });
 });
 
@@ -213,7 +213,7 @@ describe('TextField (K-416)', () => {
         <TextField label="Reps" value="" onChangeText={() => {}} keyboardType="number-pad" />
       </ThemeProvider>,
     );
-    expect(screen.getByLabelText('Reps').props).toMatchObject({ placeholder: '–', placeholderTextColor: palettes.light.muted });
+    expect(screen.getByLabelText('Reps').props).toMatchObject({ placeholder: '-', placeholderTextColor: palettes.light.muted });
   });
 
   test('a field for words has no dash', async () => {

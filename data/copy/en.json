@@ -224,7 +224,7 @@
       "other": "{count} sets",
       "lighter": "{sets} of {base} sets"
     },
-    "reps": "{min}–{max} reps",
+    "reps": "{min}-{max} reps",
     "next": "Next {load} × {reps}",
     "nextAdded": "Next +{load} × {reps}",
     "start": "Start workout",
@@ -238,7 +238,7 @@
   "workout": {
     "title": "Workout",
     "progress": "{done} of {count} exercises",
-    "targetRir": "Target RIR 0–{max}",
+    "targetRir": "Target RIR 0-{max}",
     "head": {
       "set": "#",
       "today": "Today",
@@ -267,7 +267,7 @@
       "more": "3+"
     },
     "rest": {
-      "label": "Rest · {min}–{max}",
+      "label": "Rest · {min}-{max}",
       "time": "{minutes}:{seconds}",
       "alert": {
         "title": "Rest's up",
@@ -410,7 +410,7 @@
     "loadUpNoRir": "Up {load} from last time",
     "e1rmUp": "Estimated max up {load}",
     "first": "First time logged",
-    "note": "RIR {rir}. Next time, aim for 0–{target}.",
+    "note": "RIR {rir}. Next time, aim for 0-{target}.",
     "done": "Done",
     "setRir": "{set} · RIR {rir}",
     "reachedOne": "{reached} of 1 exercise reached your target effort"
@@ -473,7 +473,7 @@
       "one": "Makes 1 portion",
       "other": "Makes {portions} portions"
     },
-    "perPortion": "Each portion {low}–{high} kcal",
+    "perPortion": "Each portion {low}-{high} kcal",
     "unavailable": "An ingredient is no longer in the food database. Delete this one and enter it again.",
     "delete": "Delete",
     "deleteSpoken": "Delete {name}",
@@ -500,7 +500,7 @@
     },
     "save": "Save recipe",
     "needsConnection": "Saving a recipe needs a connection. Try again when you're online.",
-    "refused": "That recipe couldn't be saved. Check the ingredients' amounts — or, with many recipes kept, delete one you don't use.",
+    "refused": "That recipe couldn't be saved. Check the ingredients' amounts. If you keep many recipes, delete one you don't use.",
     "savedEarlier": "An earlier save of this recipe went through, so your changes since weren't kept. Delete it from your recipes and enter it again."
   },
   "meal": {
@@ -898,7 +898,7 @@
       },
       "fat_estimate_needed": {
         "title": "A lower target needs one more check first.",
-        "body": "Before calories go down, the coach needs a rough read of your body shape — it keeps a lower target from leaving your body short of energy. Add it and the call follows; nothing else waits."
+        "body": "Before calories go down, the coach needs a rough read of your body shape. That read keeps a lower target from leaving your body short of energy. Add it and the call follows; nothing else waits."
       },
       "cycle_check_needed": {
         "title": "One question before any cut.",
@@ -926,11 +926,11 @@
       "applied": "Applied. Your step goal has changed from today.",
       "bmr_floor": {
         "title": "Food stays where it is. Movement goes up.",
-        "body": "Another calorie cut would take you under what your body needs at rest. More daily steps keep things moving without eating less — a gentler push than another cut."
+        "body": "Another calorie cut would take you under what your body needs at rest. More daily steps keep things moving without eating less. It's a gentler push than another cut."
       },
       "carb_squeeze": {
         "title": "Food stays where it is. Movement goes up.",
-        "body": "A lower target would leave too little room for protein and the carbs your training runs on. More daily steps keep things moving without eating less — a gentler push than another cut."
+        "body": "A lower target would leave too little room for protein and the carbs your training runs on. More daily steps keep things moving without eating less. It's a gentler push than another cut."
       }
     },
     "hard_stop": {
@@ -1068,11 +1068,11 @@
   "calibration": {
     "logs_run_low": {
       "title": "Your logs and your weight, side by side.",
-      "body": "Over the last few weeks your weight points to more food than your logs add up to — or to you burning more than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
+      "body": "Over the last few weeks your weight points to more food than your logs add up to, or to you burning more than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
     },
     "logs_run_high": {
       "title": "Your logs and your weight, side by side.",
-      "body": "Over the last few weeks your weight points to less food than your logs add up to — or to you burning less than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
+      "body": "Over the last few weeks your weight points to less food than your logs add up to, or to you burning less than our estimate. We can't tell those two apart, and we don't need to: your weight is what the calls are made from, so nothing here needs fixing."
     }
   },
   "consent": {
@@ -1409,7 +1409,7 @@
     }
   },
   "format": {
-    "range": "{low}–{high}",
+    "range": "{low}-{high}",
     "rangeSpoken": "between {low} and {high}"
   },
   "coach": {
@@ -1568,8 +1568,8 @@
       "restDay": "{max} days at most, so your week keeps a rest day.",
       "lastMonth": "Sessions last month",
       "sessions": {
-        "NONE_OR_ONE": "0–1",
-        "TWO_TO_THREE": "2–3",
+        "NONE_OR_ONE": "0-1",
+        "TWO_TO_THREE": "2-3",
         "FOUR": "4",
         "FIVE_OR_MORE": "5+"
       },

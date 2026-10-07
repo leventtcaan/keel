@@ -82,7 +82,7 @@ test('the moves that reached the target effort, what improved, and a note where 
   expect(screen.getByText('Same weight, 1 more rep at RIR 1')).toBeTruthy();
   expect(screen.getByText('80 kg × 9 · RIR 1')).toBeTruthy();
   expect(screen.getByText('First time logged')).toBeTruthy(); // the raise has no last time
-  expect(screen.getByText('RIR 3. Next time, aim for 0–1.')).toBeTruthy();
+  expect(screen.getByText('RIR 3. Next time, aim for 0-1.')).toBeTruthy();
   await fireEvent.press(screen.getByText('Done'));
   expect(mockBack).toHaveBeenCalled();
 });
