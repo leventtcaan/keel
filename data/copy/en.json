@@ -2146,15 +2146,15 @@
     },
     "too_many_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: the first work sets do most of the growing and fatigue builds fast after them. The extra sets come off your biggest moves."
+      "body": "Coaching rule: the first work sets do most of the growing and fatigue builds fast after them. The extra sets come off, biggest moves first."
     },
     "too_few_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: a muscle needs at least {min} work sets a week to grow. One isolation move tops it up."
+      "body": "Coaching rule: a muscle needs at least {min} work sets a week to grow. Isolation sets top it up."
     },
     "too_few_arm_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: biceps and triceps need at least {min} work sets a week, split over two sessions. One isolation move tops it up."
+      "body": "Coaching rule: biceps and triceps need at least {min} work sets a week, split over two sessions. Isolation sets top it up."
     },
     "once_a_week": {
       "title": "{muscle} on {to} days a week",
