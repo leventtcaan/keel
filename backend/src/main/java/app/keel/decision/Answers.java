@@ -9,7 +9,8 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * The check-in answers as the engine reads them (K-212): choices for how it looks, training, recovery and appetite.
+ * The check-in answers as the engine reads them (K-212): choices for how it looks, training, recovery, appetite and how the
+ * first week felt (ADR-077 #4).
  * Anything not answered stays UNKNOWN and the engine asks instead of guessing (U3). The scales and the waist are read with
  * the questions that ask them (K-213). The cycle question is a woman's (V4, K-222): taken from anyone it stopped a man's
  * plan (K-212 review). Its answer is read for this call only and never kept (ADR-020 L-1).
@@ -17,7 +18,7 @@ import java.util.Set;
 final class Answers {
 
     /** Contract QuestionKind. */
-    enum Kind { TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED, STATE_STILL }
+    enum Kind { TRAINING, RECOVERY, SLEEP_QUALITY, ENERGY, LOOK, WAIST, APPETITE, CYCLE_STOPPED, STATE_STILL, WEEK1_FEEL }
 
     /** Contract Answer: exactly the field its question's format names is set. */
     record Answer(Kind kind, Integer scale, String choice, BigDecimal cm) {
@@ -28,7 +29,7 @@ final class Answers {
     }
 
     private static final Set<Kind> CHOICES = EnumSet.of(Kind.LOOK, Kind.TRAINING, Kind.RECOVERY, Kind.APPETITE, Kind.CYCLE_STOPPED,
-            Kind.STATE_STILL);
+            Kind.STATE_STILL, Kind.WEEK1_FEEL);
 
     private Answers() {
     }
@@ -45,6 +46,7 @@ final class Answers {
         CheckIn.Training training = CheckIn.Training.UNKNOWN;
         CheckIn.Recovery recovery = CheckIn.Recovery.UNKNOWN;
         CheckIn.Appetite appetite = CheckIn.Appetite.UNKNOWN;
+        CheckIn.Week1Feel week1Feel = CheckIn.Week1Feel.UNKNOWN;
         boolean cycleStopped = false;
         boolean cycleResolved = false;
         boolean stateOver = false;
@@ -59,6 +61,7 @@ final class Answers {
                 case TRAINING -> training = choice(CheckIn.Training.class, answer.choice());
                 case RECOVERY -> recovery = choice(CheckIn.Recovery.class, answer.choice());
                 case APPETITE -> appetite = choice(CheckIn.Appetite.class, answer.choice());
+                case WEEK1_FEEL -> week1Feel = choice(CheckIn.Week1Feel.class, answer.choice());
                 case CYCLE_STOPPED -> {
                     require(sex == Sex.FEMALE, "the cycle question is asked only of a woman (V4)");
                     Cycle cycle = choice(Cycle.class, answer.choice());
@@ -72,7 +75,7 @@ final class Answers {
                 default -> throw new IllegalStateException("unreachable: " + answer.kind());
             }
         }
-        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite), cycleStopped, cycleResolved,
+        return new Read(new CheckIn(look, training, recovery, CheckIn.Waist.UNKNOWN, Optional.empty(), appetite, week1Feel), cycleStopped, cycleResolved,
                 stateOver, stillSo);
     }
 

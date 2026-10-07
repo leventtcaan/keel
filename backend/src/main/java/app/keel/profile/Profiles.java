@@ -21,7 +21,7 @@ public class Profiles {
     public Optional<ProfileFacts> of(AccountId account) {
         return store.find(account).map(profile -> new ProfileFacts(profile.sex(), profile.heightCm(), profile.birthYear(),
                 Optional.ofNullable(profile.activityLevel()), profile.goal(), profile.schedule().checkInDay(),
-                ZoneId.of(profile.schedule().timeZone()), Set.copyOf(profile.schedule().trainingDays())));
+                ZoneId.of(profile.schedule().timeZone()), Set.copyOf(profile.schedule().trainingDays()), Optional.ofNullable(profile.experience())));
     }
 
     /**

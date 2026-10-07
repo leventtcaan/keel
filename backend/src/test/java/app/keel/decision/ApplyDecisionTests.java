@@ -3,15 +3,23 @@ package app.keel.decision;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.engine.Action;
+import app.keel.engine.Confidence;
+import app.keel.engine.CopyKey;
+import app.keel.engine.Decision;
 import app.keel.engine.ParameterDomain;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
 import app.keel.engine.Phase;
+import app.keel.engine.Reason;
+import app.keel.engine.RuleId;
 import app.keel.engine.Sex;
+import app.keel.engine.Source;
+import app.keel.engine.SourceTag;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -98,6 +106,17 @@ class ApplyDecisionTests {
                 new Action.MiniCut(2, 4), new Action.NoDecisionYet(),
                 new Action.Continue(), new Action.FixTraining(), new Action.FixRecovery(), new Action.FixAdherence())) {
             assertThat(PlanChange.after(CUT, action, TODAY, P, Optional.empty())).as(action.type().name()).isEmpty();
+        }
+    }
+
+    @Test
+    void theFirstWeeksTrainingDayCallsChangeNothingHereAndAreNotPending() {
+        // K-962, ADR-077 #4: the user picks the day, with the training days; the call itself is not applied.
+        Reason days = new Reason(new RuleId("first_week_add_day"), new Source("arastirma/ham/guray/G6-eski-arsiv.md#K-36", SourceTag.EXPERIENCE));
+        for (Action action : List.of(new Action.AddTrainingDay(4), new Action.MoveMissedSessions(List.of(DayOfWeek.WEDNESDAY)))) {
+            assertThat(PlanChange.after(CUT, action, TODAY, P, Optional.empty())).as(action.type().name()).isEmpty();
+            Decision call = new Decision(action, List.of(days), Confidence.MEDIUM, TODAY.plusDays(7), new CopyKey("decision.add_training_day.first_week_add_day"));
+            assertThat(DecisionService.application(call)).as(action.type().name()).isEqualTo(CallStore.Application.NOT_NEEDED);
         }
     }
 

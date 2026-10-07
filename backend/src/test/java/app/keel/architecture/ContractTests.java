@@ -288,6 +288,9 @@ class ContractTests {
         if (type == BigDecimal.class || type == double.class) {
             return "number";
         }
+        if (type == List.class) {
+            return "array"; // the first week's missed weekdays (K-962)
+        }
         return type.getSimpleName(); // an engine enum: the schema of the same name
     }
 

@@ -8,6 +8,8 @@ import app.keel.shared.Decimals;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -72,6 +74,9 @@ final class DecisionJson {
             case FULL_REST_WEEK -> new Action.FullRestWeek();
             case MINI_CUT -> new Action.MiniCut(whole(action, "minWeeks"), whole(action, "maxWeeks"));
             case CHANGE_PHASE -> new Action.ChangePhase(Phase.valueOf((String) action.get("to")));
+            case ADD_TRAINING_DAY -> new Action.AddTrainingDay(whole(action, "toDays"));
+            case MOVE_MISSED_SESSIONS -> new Action.MoveMissedSessions(((List<?>) action.get("missed")).stream()
+                    .map(day -> DayOfWeek.valueOf((String) day)).toList());
         };
     }
 
@@ -100,6 +105,7 @@ final class DecisionJson {
         return switch (raw) {
             case Enum<?> constant -> constant.name();
             case BigDecimal decimal -> Decimals.plain(decimal);
+            case List<?> list -> list.stream().map(DecisionJson::value).toList();
             default -> raw;
         };
     }

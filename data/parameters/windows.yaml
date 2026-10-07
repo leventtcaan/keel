@@ -76,6 +76,12 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G6-eski-arsiv.md#K-36"
     note: "3 gün taban (G6 K-36 '3 minimum'; G7 K-79 'taban 3', bağımsız kaynak). Motorun önerisi hiçbir girdide bunun altına inmez (ADR-077, ADR-073 #2: program incelemesi günü bu sayının altına indirmez); kullanıcının kendi seçimi serbest."
+  - key: training_days_ideal_min
+    value: 4
+    unit: days_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G6-eski-arsiv.md#K-36"
+    note: "4-5 gün ideal (G6 K-36 '4 ve 5'; G7 K-79 'optimum 4-5', bağımsız kaynak). 1. hafta ayarı (ADR-077 #4, R4): her planlı seans yapıldı, 'I could do more', yeni başlamayan ve gün bunun altındaysa bir gün eklenir; yeni başlayana 3 yeter (G6 K-36), deneyim bilinmiyorsa eklenmez."
   - key: missed_sessions_in_a_row
     value: 2
     unit: sessions

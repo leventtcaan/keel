@@ -27,6 +27,8 @@ public sealed interface Action {
             case FullRestWeek _ -> ActionType.FULL_REST_WEEK;
             case MiniCut _ -> ActionType.MINI_CUT;
             case ChangePhase _ -> ActionType.CHANGE_PHASE;
+            case AddTrainingDay _ -> ActionType.ADD_TRAINING_DAY;
+            case MoveMissedSessions _ -> ActionType.MOVE_MISSED_SESSIONS;
         };
     }
 
@@ -126,6 +128,34 @@ public sealed interface Action {
 
         public ChangePhase {
             java.util.Objects.requireNonNull(to, "to");
+        }
+    }
+
+    /**
+     * The first week's call (ADR-077 #4, G6 K-36): every planned session done and "I could do more", so one more training
+     * day a week. {@code toDays} is the new count; which day is the user's to pick.
+     */
+    record AddTrainingDay(int toDays) implements Action {
+
+        public AddTrainingDay {
+            if (toDays < 1) {
+                throw new IllegalArgumentException("A training week has at least one day, was " + toDays);
+            }
+        }
+    }
+
+    /**
+     * The first week's call (ADR-077 #4, 03 §2.9: adherence before a new plan): most of the week's sessions didn't happen,
+     * so the {@code missed} weekdays — planned, without a session, in the week's order — move to days that fit. The number
+     * of training days stays.
+     */
+    record MoveMissedSessions(java.util.List<java.time.DayOfWeek> missed) implements Action {
+
+        public MoveMissedSessions {
+            missed = java.util.List.copyOf(missed);
+            if (missed.isEmpty()) {
+                throw new IllegalArgumentException("Moving missed sessions needs a missed day");
+            }
         }
     }
 }

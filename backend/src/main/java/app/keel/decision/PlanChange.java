@@ -57,6 +57,8 @@ final class PlanChange {
             });
             case Action.NoDecisionYet _, Action.Continue _, Action.FixTraining _, Action.FixRecovery _, Action.FixAdherence _,
                  Action.StopLoadIncrease _, Action.Deload _, Action.FullRestWeek _ -> Optional.empty();
+            // The first week's training-day calls: the days are the user's to pick (ADR-077 #4), with the training days.
+            case Action.AddTrainingDay _, Action.MoveMissedSessions _ -> Optional.empty();
         };
     }
 

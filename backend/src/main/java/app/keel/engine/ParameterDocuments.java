@@ -52,6 +52,8 @@ final class ParameterDocuments {
             // Under the fix line adherence is the problem; between it and on-track the plan is not followed well
             // enough to judge (G2 K-60, ADR-020 L-9).
             new Order(ParameterKey.ADHERENCE_FIX_BELOW, ParameterKey.ON_TRACK_MIN_RATIO, true),
+            // The floor of training days is under the ideal: "add a day" goes from below it (G6 K-36, ADR-077 #4).
+            new Order(ParameterKey.TRAINING_DAYS_MIN, ParameterKey.TRAINING_DAYS_IDEAL_MIN, true),
             // Phase-gate lines (U4: internal only): below the surplus line a cut ends, above the ceiling a bulk stops,
             // above the fat-first line a bulk is not even started (03 §2.1, G6 K-7, G4 K-10).
             new Order(ParameterKey.SURPLUS_BELOW_FAT_PROXY_PCT, ParameterKey.BULK_CEILING_FAT_PROXY_PCT, true),

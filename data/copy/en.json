@@ -790,6 +790,9 @@
   },
   "decision": {
     "rule": {
+      "first_week_on_track": "When most of the week's sessions happen, the plan is working: the first week changes nothing.",
+      "first_week_add_day": "Four or five training days a week work best once you're past the very start; three are enough when you're new.",
+      "first_week_move_missed": "When sessions don't happen, days that fit your week come before a bigger plan.",
       "weight_steady_waist_down": "Your weight held steady while your waist went down: the scale isn't showing everything that changed.",
       "adherence_low": "When most of the plan didn't happen, the plan can't be judged yet: doing it comes before changing it.",
       "adherence_partial": "Much of the plan happened, but not enough of it to tell whether the plan works.",
@@ -1023,6 +1026,10 @@
     },
     "continue": {
       "label": "Keep going",
+      "first_week_on_track": {
+        "title": "Same plan for week 2.",
+        "body": "Most of your sessions happened, and that's what the first week is for. Weight and food come later, once the scale has enough mornings to say something."
+      },
       "toward_goal": {
         "title": "Keep going exactly as you are.",
         "body": "Your weight is moving the right way and nothing says it needs help. Changing a plan that works only adds noise."
@@ -1076,6 +1083,21 @@
       "appetite_gone": {
         "title": "A short cut to bring your appetite back.",
         "body": "After a long bulk, forcing food down means the bulk has stopped paying off. A few weeks of eating less than on the bulk resets your appetite and clears some of the fat the bulk added; then the bulk picks up again."
+      }
+    },
+    "add_training_day": {
+      "label": "One more day",
+      "first_week_add_day": {
+        "title": "Add one training day.",
+        "body": "Every session happened and you said you could do more. One more day a week puts you where training works best. Pick the day that suits you."
+      }
+    },
+    "move_missed_sessions": {
+      "label": "Days that fit",
+      "first_week_move_missed": {
+        "title": "Same number of days, better days.",
+        "body": "Part of week 1's plan didn't happen. The number of days stays; the days themselves can move to ones that work for you. Nothing to make up.",
+        "missed": "{days} didn't happen. Pick a day that works."
       }
     }
   },
@@ -1389,14 +1411,16 @@
       "recovery": "How are you recovering between sessions?",
       "cycle_stopped": "Has your period stopped in recent months?",
       "appetite": "How's your appetite lately?",
-      "state_still": "Is what you told us about still going on?"
+      "state_still": "Is what you told us about still going on?",
+      "week1_feel": "How did week 1 feel?"
     },
     "reason": {
       "training": "How training goes decides what changes next: food, or how you train.",
       "recovery": "How you recover decides whether the next change is food or rest.",
       "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is.",
       "appetite": "After a long bulk, forcing food down is a sign the bulk has stopped paying off.",
-      "state_still": "Your weeks have been paused for a while. If it's over, your weekly calls start again; if not, they stay paused. Either is fine."
+      "state_still": "Your weeks have been paused for a while. If it's over, your weekly calls start again; if not, they stay paused. Either is fine.",
+      "week1_feel": "Every session happened. If it felt easy, there may be room for one more day."
     },
     "choice": {
       "training": {
@@ -1419,6 +1443,11 @@
       "state_still": {
         "yes": "Yes, still going on",
         "no": "No, I'm back to normal"
+      },
+      "week1_feel": {
+        "too_much": "Too much",
+        "about_right": "About right",
+        "could_do_more": "I could do more"
       }
     }
   },
@@ -1489,7 +1518,9 @@
         "change_phase": {
           "cut": "This week's one focus: the switch to a cut.",
           "bulk": "This week's one focus: the switch to building."
-        }
+        },
+        "add_training_day": "This week's one focus: one more training day.",
+        "move_missed_sessions": "This week's one focus: your sessions, on days that fit."
       }
     },
     "meal": {
