@@ -189,3 +189,10 @@
 - AI: araştırma, doğrulama, tasarım, prototip kodu ve metin agent; Levent değerlendirdi ve 4 soruyu cevapladı
 - kapanış (7 Eki): Levent tur 3'ü onayladı ("tamamdır süper"); akış testi 10/10 akış, 70 adım, 0 hata (`prototip/akis-testi.md`); kararlar faz5-rota §8; sıradaki `plan/oturum-promptlari/UIUX-part3.md` (ADR'ler + görev kartları)
 
+
+## 2026-10-07 · Faz 5 Part 3 (yeni yüzün ADR'leri ve görev kartları) — kod yok
+- yaptım: 9 ADR (070 görsel dil, 071 cevaplar, 072 onboarding, 073 program incelemesi, 074 kardiyo, 075 oturum, 076 paylaşım, 077 karar, 078 ilerleme) + ADR-058/018 ekleri + U7 açıklaması; `plan/yeni-yuz-kurallar.md` (R1-R6, kaynak satırlarıyla); M9a kilometre taşı, 34 yeni kart + K-910 taşındı, GitHub'a uygulandı; kod prompt'u `YENI-YUZ-kod.md` (4 part)
+- karar: Levent — deneme 2 hafta, App ID Story görevinde, telafi tanımı, rekabet v1'de yok, logo kalıcı, pazarlama kuralı sonra (U16 eklenmedi), kardiyo Güray solo + özgürlük, motor 3 günün altını önermez, ürün ADR'leri KABUL
+- takıldım: tur 3'ün iki varsayılanı yanlış kaynaktaydı (kardiyo 2 × 30 konuşmacısı belirsiz podcast; "3 değil 2 gün" Güray'ın 3 gün tabanının altı) → Levent'e kanıtla soruldu; "aralığın altı → hafiflet" için kaynak yok; hamstring örneği K-11'e aykırıydı; Meta önce/sonra politikası doğrulanamadı
+- sıradaki: M9a Part 1 · Temel + motor (`plan/oturum-promptlari/YENI-YUZ-kod.md` › Part 1 prompt'u)
+- AI: bütün ADR, kural listesi, kart ve prompt agent (3 alt ajan kod/kaynak haritası); Levent 9 soruyu cevapladı ve ürün ADR'lerini onayladı

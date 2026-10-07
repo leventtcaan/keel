@@ -17,6 +17,7 @@ milestones:
   - {id: M6, title: "İlerleme", goal: "Gelişimi kanıtla göstermek"}
   - {id: M7, title: "Abonelik", goal: "Satın alma, yetki, kota"}
   - {id: M8, title: "Uyum ve yasal", goal: "Yasal metinler, silme, App Store uyumu"}
+  - {id: M9a, title: "Yeni yüz", goal: "Faz 5 prototipinin (ADR-069..078) koda geçmesi: 3 sekme + '+', yeni onboarding, oturum, paylaşım, karar, ilerleme; cihazda gezildi. Listede M9'dan önce: beta kohortu (K-904) buna bağlı"}
   - {id: M9, title: "Beta", goal: "Dağıtım, TestFlight, başvurulu kohort, öncü göstergeler"}
   - {id: M10, title: "Lansman", goal: "İsim, ASO, mağaza, lansman günü"}
   - {id: M11, title: "Lansman sonrası", goal: "Maliyeti görünsün diye listede duran, ilk yayında olmayan işler"}
@@ -3406,6 +3407,629 @@ tasks:
     learn:
       - "GDPR erişim hakkı ve çıkarımla üretilen veri"
 
+# ───────────────────────────── M9a · Yeni yüz ─────────────────────────────
+# Faz 5 (ADR-067..078). Prototip: prototip/yeni-yuz.html (artifact sürüm 3); '#id' prototipteki ekran kimliği.
+# Kurallar ve parametreler: plan/yeni-yuz-kurallar.md. Prototipten ayrılan değerler ADR-071'de (kardiyo 3 × 30, 1. hafta taşıma, hamstring eşiği).
+  - id: K-951
+    title: "Görsel dil token'ları: turkuaz, açık varsayılan, uygulama içi tema seçici, koyu odak modu"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-070: RUBİN ve yalnız sistem teması yerine turkuaz, açık zemin ve Light/Dark/System seçici; oturum ve kutlama her zaman koyu"
+    acceptance:
+      - "tokens.ts: ADR-070 #1-#2 renkleri iki temada ve odak modu paleti; RUBİN değerleri kalkar"
+      - "Tema tercihi Light/Dark/System, varsayılan Light, telefonda saklanır (kv envanterine bağlı, K-813); System telefonu izler"
+      - "Odak modu sarmalayıcısı: içindeki ekran tema ne olursa olsun koyu paleti alır"
+      - "Barlow Condensed 900 yüklü; tipografi ölçeği ADR-070 #5; köşe ve düğme ölçüleri ADR-070 #6"
+    tests:
+      - "contrast.test.ts iki tema + odak modu (dolgu üstü ≥4,5:1)"
+      - "tokens.test.ts (renk literali yalnız token dosyasında)"
+      - "theme.test.tsx: seçici, varsayılan Light, odak modu her zaman koyu"
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "arastirma/ham/M5-renk-olcumu.md", "prototip/yeni-yuz.html"]
+    learn: ["Tasarım token'ları", "React context ile tema"]
+
+  - id: K-952
+    title: "Metin kuralları: arayüzde tire yok, ekran başına kelime bütçesi testi"
+    milestone: M9a
+    module: mobile
+    type: test
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-069 Doğrulama ve ADR-070 #7: kelime hedefleri ve 'AI izi' tire yasağı mekanik kapıda olmalı"
+    acceptance:
+      - "en.json'da '—' ve '–' yok (test, anayasa denetimine bağlı)"
+      - "Yeni yüz ekranlarının anahtar grupları için kelime bütçesi tablosu (Bu hafta 40, onboarding soruları 25-30, plan 55, paywall 70 yasal hariç, karar 45, İlerleme 50); bütçeyi aşan grup testi düşürür"
+      - "Bütçe tablosu parametre/metin dosyasında, testte sayı yok"
+    tests:
+      - "copy-budget.test.ts, copy-dashes.test.ts; tools/anayasa-denetimi.sh çıktısı"
+    refs: ["plan/kararlar/ADR-069-urun-yonu-yeni-yuz.md", "plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "plan/kararlar/ADR-061-anayasa-denetimi.md"]
+    learn: ["Metni test etmek"]
+
+  - id: K-953
+    title: "İskelet: 3 sekme + '+' sayfası; beslenme sekmesi ve inen ekranların girişi kalkar"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-951]
+    why: "ADR-069 #3-#4: Bu hafta · Antrenman · İlerleme + tek '+'; koç çubuğu, tarifler, projeksiyon, what-if, ledger, beslenme sekmesi girişsiz (kod kalır)"
+    acceptance:
+      - "NativeTabs üç sekme (This week, Train, Progress); '+' her sekmede (#plus): Weigh-in, Meal, Workout (bugünkü seans adı), Cardio, Life got in the way"
+      - "food sekmesi, coach, recipes, recipe, projection, scoff, what-if, ledger, why, meal-photo: hiçbir ekrandan giriş yok; derin bağlantı da açmaz"
+      - "K-909'un iki koşulu karşılanır (AI kapalıyken koç ve öğün fotoğrafına giriş yok); K-909 bu görevle kapanır"
+      - "Ayarlar 'Bu hafta' sağ üstünden"
+    tests:
+      - "navigation.test.tsx (sekme sırası, inen rotalara erişim yok), routes-protected.test.ts, tab-bar.test.tsx"
+    refs: ["plan/kararlar/ADR-069-urun-yonu-yeni-yuz.md", "prototip/envanter.md", "prototip/yeni-yuz.html"]
+    learn: ["expo-router NativeTabs", "Rota korumaları"]
+
+  - id: K-954
+    title: "Profil: deneyim alanı, onboarding sadeleşmesi, başlangıç ağırlıkları"
+    milestone: M9a
+    module: profile
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-072 #3-#5: deneyim akışı değiştirir; 'geçen ay' ve 'saat' soruları kalkar; tecrübelinin girdiği kilo ilk hedef olur"
+    acceptance:
+      - "Sözleşme: Profile.experience (NEW, UNDER_1Y, Y1_3, Y3_PLUS) isteğe bağlı; eski profiller geçerli"
+      - "schedule.sessionsLastMonth ve usualTrainingTime isteğe bağlı kalır; telefon artık göndermez"
+      - "Başlangıç ağırlığı ucu: hareket kimliği + kilo; programdaki o hareketin ilk hedefi olur (salona yuvarlanmış, ADR-032); girilmeyende hedef yok, türetme yok"
+      - "Gün yerleşimi `default_day_sets` parametresinden (onboarding.json)"
+    tests:
+      - "Sözleşme testi (OpenAPI), ProfileTests, başlangıç ağırlığı → NextTargets testi"
+    refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "plan/yeni-yuz-kurallar.md"]
+    learn: ["Geriye uyumlu sözleşme değişikliği"]
+
+  - id: K-955
+    title: "Motor: program incelemesi (ProgramReview)"
+    milestone: M9a
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-073 #2: kendi programını Güray'ın hacim, sıklık, gün ve tekrar kurallarıyla inceler; en çok 3 somut öneri"
+    acceptance:
+      - "Saf kural: girdi program (günler, hareketler, birincil kas, set, tekrar aralığı); çıktı öncelikli öneri listesi, her öneri somut diff taşır"
+      - "Eşikler plan/yeni-yuz-kurallar.md R1 parametrelerinden (training.yaml); kaynak alanları dolu (U14)"
+      - "4 set alt sınırda işaretlenmez; öneri günü training_days_min altına indirmez; diff bulunamazsa bulgu yok"
+    tests:
+      - "ProgramReviewTests (tablo: eşik altı/kendisi/üstü, öncelik, en çok 3)"
+      - "ProgramReviewProperties (jqwik: determinizm, uygulanan öneri bulguyu tekrar üretmez)"
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "plan/yeni-yuz-kurallar.md", "arastirma/ham/guray/G1-antrenman.md", "arastirma/ham/guray/G6-eski-arsiv.md"]
+    learn: ["Saf fonksiyon olarak kural", "Özellik tabanlı test"]
+
+  - id: K-956
+    title: "Program incelemesi uçları: öneri, uygula, geri al, değişiklik kaydı"
+    milestone: M9a
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-955]
+    why: "ADR-073 #3-#4: kullanıcı önerileri tek tek seçer; Antrenman sekmesinde 'N changes applied · Undo'; düzenlemede inceleme yeniden koşar"
+    acceptance:
+      - "GET program incelemesi; POST seçilen önerileri uygula; POST geri al (tek tek ya da hepsi)"
+      - "Program kaynağı GENERATED/OWN korunur; uygulanan değişiklik kaydı tutulur"
+      - "Hareket ekle/çıkar/değiştir ve split değişince inceleme yeniden koşar, sonuç programla döner"
+    tests:
+      - "ProgramReviewControllerTests, sözleşme testi, geri alma testi"
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
+    learn: ["Komut + geri alma kaydı"]
+
+  - id: K-957
+    title: "Strong/Hevy içe aktarmadan program taslağı"
+    milestone: M9a
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-073 #1: kendi programı olan 21 hareketi elle girmesin; geçmiş zaten içe aktarılıyor (K-615) ama program olmuyor"
+    acceptance:
+      - "Son haftaların rutinlerinden taslak: gün (rutin adı), hareketler, set sayısı, görülen tekrar aralığı, hafta günü düzeni"
+      - "Katalogda eşleşmeyen hareket kendi hareketi olur; taslak kullanıcı onayı olmadan program olmaz"
+      - "Rutin adı olmayan geçmişte taslak çıkarılamıyorsa açık hata kodu, elle girişe yönlendirme"
+    tests:
+      - "Örnek Strong ve Hevy dosyalarıyla taslak testi (fixture), eşleşmeyen hareket testi"
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "plan/kararlar/ADR-053-gecmis-ice-aktarma.md"]
+    learn: ["Veri dönüştürme sezgileri"]
+
+  - id: K-958
+    title: "Motor: kardiyo reçetesi (CardioPrescription) ve cardio.yaml"
+    milestone: M9a
+    module: engine
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-074: yağ kaybında antrenman günü kadar (3-5) × 30 dk ağırlıktan sonra, kazanımda 2 × 20, fiziksel işte yok (G2 KRD24)"
+    acceptance:
+      - "data/parameters/cardio.yaml (R2), ParameterDomain'de; her parametrede kaynak ve etiket"
+      - "Faz × gün × aktivite tablosu; 3 günden az planda eksik seans off güne düşük tempo; ağırlıktan önce asla"
+      - "Kullanıcının değişikliği (source USER) ezilmez"
+    tests:
+      - "CardioPrescriptionTests (tablo), CardioPrescriptionProperties (önce asla, USER ezilmez)"
+    refs: ["plan/kararlar/ADR-074-kardiyo-recetesi.md", "plan/yeni-yuz-kurallar.md", "arastirma/ham/guray/G2-kilo-verme.md"]
+    learn: ["Parametre dosyası + kural"]
+
+  - id: K-959
+    title: "Kardiyo sözleşmesi: programda kardiyo, kardiyo kaydı, Apple Health antrenmanları"
+    milestone: M9a
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-958]
+    why: "ADR-074 #3-#6: kardiyo plana girer, kullanıcı değiştirir, kaydedilir; kalori yalnız Apple Watch ölçümü"
+    acceptance:
+      - "Program.cardio (seans/hafta, dakika, yer, source GENERATED/USER); düzenleme ucu"
+      - "Kardiyo kaydı (tarih, dakika, kaynak MANUAL/HEALTHKIT, aktif enerji isteğe bağlı); haftalık sayı programla döner"
+      - "Telefon: HealthKit'ten seans penceresinde aktif enerji ve antrenman (kardiyo) okuması; saat verisi yoksa kalori alanı yok"
+      - "Kardiyo kalorisi beslenme bütçesine eklenmez; haftalık tutarlılık yalnız ağırlık seanslarıyla"
+    tests:
+      - "Sözleşme testi, CardioLogTests, healthKit.test.ts (pencere sorgusu)"
+    refs: ["plan/kararlar/ADR-074-kardiyo-recetesi.md", "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md"]
+    learn: ["HealthKit sorgu pencereleri"]
+
+  - id: K-960
+    title: "Seans içi öneri tablosu: hafif/ağır seçenekleri, ilk seans kalibrasyonu, RIR 0/1/2+"
+    milestone: M9a
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-075 #2-#3: 'çok ağır' ve kalibrasyon çevrimdışı çalışmalı; telefon kural işletmez, sunucunun hazırladığı seçeneği gösterir"
+    acceptance:
+      - "PlannedExercise: lighterLoadKg, heavierLoadKg (bir basamak, salona yuvarlanmış), son seansın en iyi seti, aralık tepesinde sonraki kilo"
+      - "Kalibrasyon: hedef kilosu olmayan harekette '2+' seti sonraki sete heavierLoadKg önerir (G6 K-40); seans sonunda bulunan kilo hedef olur"
+      - "rir_choices 0/1/2 ('2+'); eski 3+ kayıtları 2+ sayılır"
+      - "Aralık altı önerisi için kural-ekle kaynak araması yapılır; bulunamazsa alan eklenmez ve PR'da yazılır"
+    tests:
+      - "NextTargets/SessionProgress tablo testleri, özellik testi (öneri bir basamaktan uzak değil), sözleşme testi"
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/yeni-yuz-kurallar.md", "arastirma/ham/guray/G1-antrenman.md"]
+    learn: ["Çevrimdışı için önceden hesaplanmış karar tablosu"]
+
+  - id: K-961
+    title: "Sonra doldur: açık seans kendiliğinden kapanır, geç kayıt haftasını sayar"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-075 #5, ADR-071 #3: 'Fill in the rest later' seansı açık bırakır; geç kayıt telafi değil düzeltme"
+    acceptance:
+      - "endedAt'siz seans unfinished_session_close_hours sonra kapanır ve hedefler hesaplanır"
+      - "Geriye tarihli ve sonra doldurulan seans startedAt haftasını sayar (Consistency)"
+    tests:
+      - "SessionAutoCloseTests, ConsistencyTests (geç kayıt)"
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-071-faz5-part3-cevaplari.md"]
+    learn: ["Zamanlanmış iş (Spring @Scheduled) ve saati girdi almak"]
+
+  - id: K-962
+    title: "Motor: 1. hafta davranış ayarı (FirstWeekAdjustment) ve 'How did week 1 feel?' sorusu"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-954]
+    why: "ADR-077 #4 (B4): U15'in 1. hafta anı U8'e dokunmadan; motor 3 günün altını önermez (ADR-071 #8)"
+    acceptance:
+      - "Saf kural R4 tablosu: aynı plan / bir gün ekle (yeni başlamayan, hepsi yapıldı, 'could do more', gün < 4) / kaçan seansı taşı"
+      - "WEEK1_FEEL soru türü; yalnız cevabı kararı değiştirebilecekken sorulur (CheckInQuestions ilkesi)"
+      - "İlk pazartesi kararı bu kuraldan; kilo ve kalori yorumu yok (DataSufficiency aynen)"
+    tests:
+      - "FirstWeekAdjustmentTests (tablo), özellik: önerilen gün ≥ training_days_min; CheckInQuestionsTests (WEEK1_FEEL)"
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/yeni-yuz-kurallar.md", "arastirma/ham/guray/G6-eski-arsiv.md"]
+    learn: ["Karar ağacına yeni dal eklemek"]
+
+  - id: K-963
+    title: "'Keep last week's plan': kararı reddetmek (DECLINED), güvenlik kararlarında yok"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-077 #3 (B11): varsayılan uygulanır, tek ikincil seçenek eski planla devam; karar değişmez (U2)"
+    acceptance:
+      - "Application.state DECLINED; decline ve geri alma ('Use this call') uçları"
+      - "Reddedilen karar kayıtta kalır, sonraki haftanın verisine 'not applied' girer"
+      - "SafetyNet kurallarına dayanan kararda decline 409"
+    tests:
+      - "DecisionApplicationTests (decline, undo, güvenlik 409), sözleşme testi"
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Durum makinesi"]
+
+  - id: K-964
+    title: "Bugünü değiştir ve hareket değiştir: kısa sürüm, taşı, atla, swap kapsamı"
+    milestone: M9a
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-073 #5-#6: dayatma yok; telafi yok, aynı hafta içinde taşıma serbest"
+    acceptance:
+      - "Kısa sürüm: programdaki sıradan ilk short_session_moves hareket; seans haftayı sayar"
+      - "Taşı: yarına, pazarı geçmez; atla: telafi eklenmez"
+      - "Swap seçenekleri katalog alternatives + aynı kas + salon ekipmanı (ADR-032); 'Today only' / 'From now on'"
+    tests:
+      - "TodayChangeTests (pazar sınırı, kısa sürüm), SwapOptionsTests (ekipman süzgeci)"
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "plan/kararlar/ADR-032-salon-profili-ve-yuvarlama.md"]
+    learn: ["Haftalık takvim mantığı"]
+
+  - id: K-965
+    title: "İlerleme ve antrenman sonu özetleri: kas başına set, kas haritası, rekor, efor satırı, sonuç cümlesi"
+    milestone: M9a
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-078 ve ADR-075 #7: telefon hesap yapmaz; özet sunucuda, metin şablonla"
+    acceptance:
+      - "Haftalık kas başına set (birincil kas) ve hedefe pay (0-1; weekly_sets_per_muscle, arm_weekly_sets_min)"
+      - "Rekor: önceki bütün setleri geçen gerçek set; ilk seansta baseline; kaldırılan toplam kilo ve aynı seans adına göre %"
+      - "Efor satırı ve sonuç cümlesi için veri (RIR/tekrar geçmişi, kaç harekette güçlenme); e1RM yok"
+    tests:
+      - "ProgressSummaryTests (tablo), PersonalRecordTests"
+    refs: ["plan/kararlar/ADR-078-ilerleme.md", "plan/kararlar/ADR-075-antrenman-oturumu.md"]
+    learn: ["Özet (read model) uçları"]
+
+  - id: K-966
+    title: "Onboarding A: hoş geldin, hedef, deneyim, program, günler, rıza, hakkında, aktivite"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-951, K-952, K-954]
+    why: "ADR-072 #1-#4: tek soru tek ekran, ≤25-30 kelime; satış cümlesi hoş geldinde"
+    acceptance:
+      - "#welcome: 'Stop guessing in the gym.' + dönen örnek kararlar (hareketi azalt ayarında durağan), Apple ile giriş; örneklerde '2 days, not 3' yok (ADR-071 #8)"
+      - "#ob-goal, #ob-exp, #ob-program (önerilen kart), #ob-days (2-5 kutu, 'We place the days'), #ob-consent (tam metin bir dokunuşla), #ob-about (kaydırmalı boy/kilo/yıl, cinsiyet iki seçenek), #ob-activity"
+      - "Adım göstergesi dala göre (yeni başlayan / tecrübeli / kendi programı)"
+      - "Photos, foods, expectations, apple-health ekranlarına giriş yok"
+    tests:
+      - "onboarding rota testi (üç dal), ekran testleri, kelime bütçesi (K-952)"
+    refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "prototip/yeni-yuz.html"]
+    learn: ["Dallanan akış durumu"]
+
+  - id: K-967
+    title: "Onboarding B: başlangıç ağırlıkları, plan hazırlanıyor, plan hazır, paywall 2 hafta"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-966, K-959]
+    why: "ADR-072 #5-#7: onboarding hazır antrenmanla ve başlangıç kararıyla biter; deneme zaman çizelgesi açık"
+    acceptance:
+      - "#ob-weights: üç hareket, adımlayıcı, her biri atlanabilir; yalnız tecrübeli ve kendi programında"
+      - "#ob-preparing: üç satır sunucu cevabının gerçek adımlarına bağlı"
+      - "#ob-plan: cevap yansıması, ilk antrenman (hareket görseli, set × aralık, biliniyorsa kilo, yoksa 'Session 1 finds your weights'), kardiyo, ilk karar tarihi + gün sayacı, başlangıç kalorisi + 14 gün güven satırı, pazartesi bildirimi anahtarı"
+      - "#paywall: plan önizlemesi, üç değer, zaman çizelgesi (bugün · ilk karar · hatırlatma · ücret), süre RevenueCat introPrice'tan, Restore/Terms/Privacy/Account"
+    tests:
+      - "Ekran testleri, paywall zaman çizelgesi testi (2 hafta ve 1 hafta girdisiyle)"
+    refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "plan/kararlar/ADR-058-m7-part2-cevaplari.md", "prototip/yeni-yuz.html"]
+    learn: ["Tanıtım teklifi ve abonelik metni kuralları"]
+
+  - id: K-968
+    title: "Kendi programı dalı: içe aktar ya da gir, program incelemesi ekranı"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-966, K-956, K-957]
+    why: "ADR-073 #1-#3: Levent'in tur 3 notu; inceleme ikna eder, dayatmaz"
+    acceptance:
+      - "#ob-own: 'Import from Strong or Hevy' (taslak + onay) ve 'Type it in'"
+      - "#ob-review: özet blok, en çok 3 öneri kartı (aç/kapa, 'Coaching rule'), 'Use mine with N changes' / 'Keep mine as is'"
+      - "Seçim sunucuya uygulanır; 'Keep mine' programı değiştirmez"
+    tests:
+      - "Ekran testleri (öneri sayısına göre düğme metni), akış testi B"
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "prototip/akis-testi.md"]
+    learn: ["Form ve seçim durumu"]
+
+  - id: K-969
+    title: "Bu hafta ekranı: hafta şeridi, kahraman blok, bugünün antrenmanı, yemek satırı"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-953, K-959]
+    why: "ADR-077 #1: tek kahraman, ≤40 kelime; koç çubuğu ve paragraflar yok"
+    acceptance:
+      - "#home: hafta şeridi (antrenman ✓, kayıt noktası, plan; boş gün kırmızı değil), başlıkta haftalık tutarlılık"
+      - "Kahraman: ilk hafta / karar etiketi + tek satır + sayaç; #home-mon pazartesi 'Open your call'"
+      - "Bugünün antrenmanı: ilk 3 hareket hedefleriyle, kardiyo satırı, Start; yemek satırı kalan bütçe aralık + Log"
+      - "İlk görünüm ≤40 kelime"
+    tests:
+      - "Ekran testleri (ilk hafta, normal, pazartesi), kelime bütçesi"
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "prototip/yeni-yuz.html"]
+    learn: ["Ekran durumlarını veriyle seçmek"]
+
+  - id: K-970
+    title: "Antrenman sekmesi: program kartı, swap, Change ve Edit sayfaları"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-953, K-956, K-959, K-964]
+    why: "ADR-073 #4-#6: kullanıcı programını ve bugününü değiştirebilir"
+    acceptance:
+      - "#train: siyah program kartı (hareket görseli, set × aralık, kilo, tutulan işareti), hareket başına swap, kardiyo satırı, Start + Change"
+      - "#today: Short on time, Gym is busy, Move it, Skip today ('No catch-up')"
+      - "#editprog: günler, hareketler, kardiyo, split, Rebuild for me; inceleme işaretleri görünür"
+      - "Kendi programında 'N changes applied · Undo'; karar varsa karar satırı"
+    tests:
+      - "Ekran testleri, akış testi B (Change → Edit → Swap)"
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "prototip/yeni-yuz.html"]
+    learn: ["Alt sayfa (sheet) kalıbı"]
+
+  - id: K-971
+    title: "Oturum A: koyu odak modu, tek aktif set, dinlenme üstte"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-951]
+    why: "ADR-075 #1-#2: Levent tur 2 'kullanışsız'; set tek dokunuş, dinlenme hiçbir düğmeyi kapatmaz"
+    acceptance:
+      - "#workout: End · süre · Pause; hareket noktaları; hareket başlığı (görsel → nasıl yapılır); hedef satırı; yapılan setler; aktif set (kg ve tekrar adımlayıcı, Reps left 0/1/2+, Log set); Up next"
+      - "Dinlenme sayacı üstte, düğme örtmez; hareketin son setinden sonra çıkmaz, 'Next' görünür"
+      - "Her set önce yerel kuyruğa (bugünkü çevrimdışı yol); uygulama yeniden açılınca seans sürer"
+    tests:
+      - "Ekran testleri (dinlenme, son set), akış testi C4"
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "prototip/akis-testi.md"]
+    learn: ["Uzun ömürlü ekran durumu ve çevrimdışı kuyruk"]
+
+  - id: K-972
+    title: "Oturum B: duraklat, bitir/sonra doldur/at, seti düzelt, set ve hareket atla, swap"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-971, K-961, K-964]
+    why: "ADR-075 #5: telefona bakamayan kullanıcı kaybolmasın; geç kayıt sayar"
+    acceptance:
+      - "Pause/Resume süreyi durdurur; #endwo üç seçenek (Discard onaylı)"
+      - "#editset: kg/tekrar, sil; Skip set ve Skip move (telafi yok); #swap aynı kas + salon"
+    tests:
+      - "Ekran testleri, akış testi C3"
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
+    learn: ["Onaylı yıkıcı eylem"]
+
+  - id: K-973
+    title: "Oturum C: 'Too heavy?', ilk seans kalibrasyonu, analiz satırı, kardiyo son adımı"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-971, K-960, K-959]
+    why: "ADR-075 #3-#4, #6: 'kilo çıkmazsa ne olacak' sorusunun kaynaklı cevabı; telefon yalnız sunucunun değerini seçer"
+    acceptance:
+      - "Too heavy? → 'Use {lighter} kg / Keep {current} kg'; '2+' kalibrasyon önerisi yalnız hedefsiz harekette"
+      - "Her hareketten sonra analiz satırı (en.json şablonu, sunucu değerleri); tutulan harekette 'as called'"
+      - "Son hareketten sonra kardiyo adımı: Done / Later today / Skip today; Finish"
+    tests:
+      - "Ekran testleri (öneri seçimi, analiz şablonları), akış testi A"
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-074-kardiyo-recetesi.md"]
+    learn: ["Şablonlu metin"]
+
+  - id: K-974
+    title: "Antrenman sonu kutlaması ve ortak kas haritası bileşeni"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-971, K-965, K-959]
+    why: "ADR-075 #7: 'başardım' anı; bilgi veren geri bildirim, rozet yok"
+    acceptance:
+      - "#summary (koyu): animasyonlu tamam (hareketi azalt ayarına uyar), dakika, kaldırılan kilo (+%), set, Apple Watch kalorisi (yalnız ölçüm varsa)"
+      - "Rekor kartı (gerçek set, 'Next: …') ya da Baseline; ne arttı; kas haritası (ön/arka, payla dolar); hafta N/M segmentleri; Share + Done"
+      - "Haptik yalnız rekorda; e1RM yok"
+    tests:
+      - "Ekran testleri (ilk seans, rekorlu seans, saatsiz), MuscleMap bileşen testi"
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-078-ilerleme.md"]
+    learn: ["react-native-svg ile çizim", "Reanimated sayı animasyonu"]
+
+  - id: K-975
+    title: "Paylaşım A: dört çıkartma, foto/koyu/Instagram arka planı, sistem sayfası"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-974]
+    why: "ADR-076: Strava kalıbı; karar paylaşılmaz; logo her zaman; görüntü telefonda"
+    acceptance:
+      - "#share: Workout, PR, Streak, Progress çıkartmaları (SVG, şeffaf); kilo/kalori/yağ/e1RM yok; logo (kelime işareti) her şablonda"
+      - "Arka plan: galeri/kamera fotoğrafı (ilerleme fotoğrafları seçicide yok), koyu, 'In Instagram'; 9:16 önizleme"
+      - "Save, TikTok, More sistem sayfasıyla; geçici dosya her durumda silinir"
+      - "ADR-054 kartı ve share.json withheld listesi kalkar"
+    tests:
+      - "Çıkartma metin testleri (yasaklı ifade taramaları), paylaşım servisi testi (dosya silme)"
+    refs: ["plan/kararlar/ADR-076-paylasim-cikartma.md", "prototip/yeni-yuz.html"]
+    learn: ["SVG'den PNG", "Şeffaf görüntü"]
+
+  - id: K-976
+    title: "Paylaşım B: Instagram Story (Facebook App ID), video arka plan"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-975]
+    why: "ADR-076 #5: ölçülmüş tek paylaşım etkisi Story entegrasyonu (Hevy); App ID Levent'te (ADR-071 #2)"
+    acceptance:
+      - "Levent: Meta geliştirici hesabı + Facebook App ID (hesap/sır adımı; görev başında sorulur)"
+      - "react-native-share ile INSTAGRAM_STORIES: stickerImage + backgroundImage ya da backgroundVideo (≤20 sn); LSApplicationQueriesSchemes; sürüm ve Expo uyumu kurulumda doğrulanır (K6)"
+      - "App ID yoksa ya da Instagram kurulu değilse düğme sistem sayfasına düşer"
+    tests:
+      - "Paylaşım servisi testi (App ID yok, Instagram yok), cihazda foto ve video ile bir Story (Levent)"
+    refs: ["plan/kararlar/ADR-076-paylasim-cikartma.md"]
+    learn: ["URL şeması ve pasteboard ile uygulamalar arası paylaşım"]
+
+  - id: K-977
+    title: "Paylaşım C: hareketli çıkartma ve videoya gömme (yerel Swift modülü)"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-976]
+    why: "ADR-076 #7: Levent 'hareketli sayılar, video'; Story dışı hedeflerde video arka plan çıkartmayla birleşmeli"
+    acceptance:
+      - "Başlamadan bölünür (L); v1'e yetişmezse v1.x'e kaydırma Levent'e sorulur"
+      - "AVFoundation ile çıkartma katmanı videoya gömülür; hareketli sayılar kısa video olarak dışa aktarılır"
+    tests:
+      - "Yerel modül testi + cihaz kaydı"
+    refs: ["plan/kararlar/ADR-076-paylasim-cikartma.md"]
+    learn: ["Expo yerel modül (Swift)", "AVFoundation"]
+
+  - id: K-978
+    title: "Pazartesi: check-in, tek katman karar ekranı, 1. hafta kararı, geçmiş kararlar"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-953, K-962, K-963]
+    why: "ADR-077 #2-#4: ürünün ana anı tek akış; varsayılan uygulanır, 'Keep last week's plan'"
+    acceptance:
+      - "#checkin: ≤2 soru, her birinin altında neden; WEEK1_FEEL ('How did week 1 feel?') sunucu sorarsa"
+      - "#call: etiket, satır, değişenler (eski → yeni), iki neden, güven + sonraki tarih, 'In this week's plan', Got it, 'Keep last week's plan' (güvenlikte yok), açılış animasyonu"
+      - "#week1 + #w1change: 'Sounds right' / 'Change it' (aynı plan · günleri ben seçerim · öneri); 2 gün yalnız kullanıcının seçimiyle"
+      - "why/what-if/ledger rotalarına giriş yok; İlerleme › Calls aynı karar ekranını açar"
+    tests:
+      - "Ekran testleri (dört parça, güvenlikte ikincil yok), akış testleri A4, C1, C2"
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "prototip/akis-testi.md"]
+    learn: ["Ekranlar arası akış"]
+
+  - id: K-979
+    title: "İlerleme sekmesi: ilk gün hedefleri, güç + efor, kas başına set, kilo, tutarlılık, kararlar, fotoğraflar"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-953, K-965, K-974]
+    why: "ADR-078: Levent 'en kötü ekran'; ilk gün eyleme dönük, sonra tek cümle sonuç"
+    acceptance:
+      - "#progress ilk gün: dört tıklanabilir hedef (Calories, Protein → öğün; Steps → Apple Health; Cardio → Antrenman), planlanan kas haritası, kilitli güç, 7 tartı noktası"
+      - "Sonra: sonuç cümlesi, hareket çipli güç grafiği + efor satırı, kas başına set / hedef, kilo 7 günlük ortalama, 12 hafta ızgarası (spare week), Calls, Photos"
+      - "Yenen kalori hedefe karşı aralık (U5); ilk görünüm ≤50 kelime"
+    tests:
+      - "Ekran testleri (ilk gün, 12. hafta), akış testleri A3, D"
+    refs: ["plan/kararlar/ADR-078-ilerleme.md", "prototip/yeni-yuz.html"]
+    learn: ["Grafik bileşenleri (SVG)"]
+
+  - id: K-980
+    title: "Kayıt ekranları: tartı, Apple Health izni anında, öğün, barkod, '+' kardiyo"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-953, K-959]
+    why: "ADR-069 #4, ADR-018 Ek 1: tartı ≤4 dokunuş, öğün 2-3 dokunuş; Health izni ilk kullanımda"
+    acceptance:
+      - "#weigh: son kilo dolu, ±0,1 adım, Save; 7 tartıdan önce trend yok"
+      - "#health-jit: ilk tartıda ya da ilk antrenmanda bir kez; 'Not now' serbest"
+      - "#meal: 'Same as yesterday', son yiyecekler tek dokunuş, arama, #barcode; kaloriler aralık, tarafsız renk"
+      - "'+' › Cardio: dakika girişi; Apple Health'ten gelen kardiyo tekrar sorulmaz"
+    tests:
+      - "Ekran testleri, dokunuş sayısı testi (tartı ≤4), akış testi A2"
+    refs: ["plan/kararlar/ADR-069-urun-yonu-yeni-yuz.md", "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md"]
+    learn: ["İzin akışını kullanım anına taşımak"]
+
+  - id: K-981
+    title: "Dönüş ekranı ve 'Life got in the way' yeni yüz"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-953]
+    why: "ADR-077 #5-#6: suçlamasız karşılama, öner ama dayatma"
+    acceptance:
+      - "#return: return_prompt_days kayıtsız açılışta; üç seçenek, boşluğa göre biri önerili (ReturnLoad); sonraki karar tarihi"
+      - "#life: beş durum döşemesi + süre; 'Nothing counts against you. Safety checks still run.'"
+    tests:
+      - "Ekran testleri (boşluk 1 ve 3 hafta), akış testi D"
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Uygulama açılışında durum seçmek"]
+
+  - id: K-982
+    title: "Ayarlar yeni yüz: tema, antrenman, kardiyo, hatırlatmalar, sağlık ve veri, abonelik, hesap"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-951, K-959]
+    why: "ADR-070 #3 tema seçici; ADR-074 #4 kardiyo; yiyecek kısıtı ve içe aktarma Ayarlar'da (ADR-069)"
+    acceptance:
+      - "#settings grupları: Appearance (Light/Dark/System), Training (günler, kardiyo, salonlar, içe aktarma), Food (kısıt), Reminders, Health and data, Subscription, Account"
+      - "Hesap silme ve dışa aktarma bugünkü yollarla (K-812, K-309)"
+    tests:
+      - "Ekran testi, tema değişimi testi"
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "plan/kararlar/ADR-074-kardiyo-recetesi.md"]
+    learn: ["Ayar ekranı kalıbı"]
+
+  - id: K-983
+    title: "App Store Connect: tanıtım teklifi 2 haftalık ücretsiz deneme"
+    milestone: M9a
+    module: subscription
+    type: human
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-058 Ek 1, ADR-071 #1: deneme süresi hesapta ayarlanır, koda gömülmez"
+    acceptance:
+      - "Levent: yıllık ve aylık abonelikte introductory offer 'Free, 2 weeks'"
+      - "RevenueCat sandbox'ta introPrice 2 hafta okunur (agent kontrol eder)"
+    tests:
+      - "Sandbox satın alma ekran görüntüsü"
+    refs: ["plan/kararlar/ADR-058-m7-part2-cevaplari.md"]
+    learn: ["App Store tanıtım teklifleri"]
+
+  - id: K-984
+    title: "Yeni yüz kapanışı: TestFlight derlemesi ve Levent'in cihaz turu"
+    milestone: M9a
+    module: product
+    type: human
+    size: S
+    status: todo
+    depends_on: [K-967, K-968, K-969, K-970, K-972, K-973, K-975, K-978, K-979, K-980, K-981, K-982, K-983, K-910]
+    why: "ADR-067: revizyon koda geçti ve cihazda gezildi; sonra M9 Part 3 (beta kohortu)"
+    acceptance:
+      - "Anayasa denetimi temiz; kelime bütçeleri testte yeşil; iki temada kontrast testleri yeşil"
+      - "TestFlight derlemesi; Levent akış testi senaryolarını (prototip/akis-testi.md A-D) cihazda yürütür, notları backlog'a girer"
+    tests:
+      - "tools/anayasa-denetimi.sh çıktısı, cihaz kaydı"
+    refs: ["plan/kararlar/ADR-067-uiux-revizyonu-once.md", "prototip/akis-testi.md"]
+    learn: ["Sürüm kapanışı"]
+
 # ───────────────────────────── M9 · Beta ─────────────────────────────
   - id: K-901
     title: "VPS dağıtımı: Docker Compose, HTTPS, yedek"
@@ -3465,7 +4089,7 @@ tasks:
     type: human
     size: S
     status: todo
-    depends_on: [K-903]
+    depends_on: [K-903, K-984]
     why: "Beta'yı yeni başlayan için tasarla, zaten kayıt tutan ileri kullanıcıyla test et"
     acceptance:
       - "Başvuru formu; 8 haftalık taahhüt açıkça soruluyor"
@@ -3736,7 +4360,7 @@ tasks:
     learn: ["Özellik bayrağını sunucudan okumak"]
   - id: K-910
     title: "Kalın Metin (Bold Text) tek satırlık etiketlerin sonunu kesmesin"
-    milestone: M9
+    milestone: M9a
     module: mobile
     type: feature
     size: S

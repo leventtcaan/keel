@@ -81,6 +81,8 @@ Faz 5 araştırması bitti (`arastirma/06-faz5-yuz.md`); yön ve kapsam ADR-069,
 M9 Part 2 ile Part 3 arasında. **Çıkış:** ekran envanteri (her ekran: amaç, metin miktarı, karar) · bütün ekranların tıklanabilir artifact
 prototipi, Levent telefonda onayladı · görsel dil ADR'si (ADR-016'nın yerine/ekinde; açık/koyu tema seçimi dahil) · onboarding sadeleşti ·
 uygulamada metin azaldı · revizyon koda geçti ve TestFlight'ta cihazda gezildi. Sonra M9 Part 3 (beta kohortu).
+**Durum (7 Eki):** araştırma, prototip (tur 3 onaylı) ve kararlar bitti (ADR-070..078). Kod kilometre taşı **M9a · Yeni yüz**
+(`plan/backlog.yaml`, K-951..K-984 + K-910; kurallar `plan/yeni-yuz-kurallar.md`; dört part `plan/oturum-promptlari/YENI-YUZ-kod.md`). K-904 (beta kohortu) K-984'e bağlı.
 
 ## M10 · Lansman
 **Çıkış:** ürün adı + marka kontrolü · ASO (başlık/alt başlık/keyword, 3 yerelleştirme hilesi) · ilk 2 ekran görüntüsü mesajı

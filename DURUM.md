@@ -5,12 +5,14 @@ guncelleme: 2026-10-07
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (7 Eki — Faz 5 Part 2 BİTTİ, prototip onaylı)
-Prototip tur 3 **Levent onaylı** ("tamamdır süper"); akış testi 10/10 akış, 70 adım, 0 hata (`prototip/akis-testi.md`, betik `akis-testi.js`).
-Sıradaki session: **Faz 5 Part 3 · ADR'ler ve görev kartları** → prompt `plan/oturum-promptlari/UIUX-part3.md`. Kararlar `plan/faz5-rota.md` §8
-(son madde); ayrıntı `prototip/tur2-strateji.md`. Açık: deneme 2 hafta onayı, Meta App ID, 06 §7 B1/B3/B9/B12.
+## ▶ DEVAM NOKTASI (7 Eki — Faz 5 Part 3 BİTTİ: kararlar ve kartlar hazır)
+Faz 5 kapandı. ADR-070..078 **KABUL** (Levent); ADR-016 → 070, ADR-054 → 076 yerini aldı; ADR-058 ve ADR-018'e Ek 1; anayasa U7'ye telafi tanımı.
+Kod kilometre taşı **M9a · Yeni yüz**: K-951..K-984 + K-910 (GitHub'da, proje 2). Kurallar `plan/yeni-yuz-kurallar.md`.
+**Sıradaki session: M9a Part 1 · Temel + motor** → prompt `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 1 prompt'u" (skill `oturum-baslat`).
+Levent'i bekleyen: K-983 (App Store Connect 2 haftalık deneme, Part 2 başı) · K-976 Facebook App ID (Part 4) · pazarlama kuralı (Apify raporlarıyla, sonra).
 
 ## Şu an
+**Faz 5 Part 3 BİTTİ (7 Eki) — ADR-070..078 KABUL, M9a kartları (35) GitHub'da; sıradaki M9a Part 1 (`YENI-YUZ-kod.md`).** Levent cevapları (ADR-071): deneme 2 hafta · Meta App ID Story görevinde · telafi tanımı · rekabet v1'de yok · pazarlama kuralı sonra · logo kalıcı · kardiyo Güray solo (KRD24: yağ kaybında 3-5 × 30 dk ağırlıktan sonra) + kullanıcı özgürlüğü · motor 3 günün altını önermez. Prototipten bilerek ayrılanlar: kardiyo 3 × 30, 1. hafta "2 gün" yok (taşıma), hamstring 4 set işaretlenmez. Kaynaksız: "aralığın altı → hafiflet" (kod session'ında aranır, yoksa çıkar). K-977 (videoya gömme) v1.x'e kayabilir.
 **Faz 5 Part 2 BİTTİ (7 Eki) — tur 3 Levent onaylı, akış testi 10/10; sıradaki Part 3 (ADR'ler + görev kartları, `UIUX-part3.md`).** Tur 2 hükmü (`verdicts-r2`, 37): "çok daha iyi, mükemmelden uzak"; eksik **kullanıcının işe karışabilmesi**. Cevaplar: turkuaz · deneme "ilk karar + 3 gün" (Apple sabit süre → **2 hafta**, onay bekliyor) · geç kayıt sayar · kardiyo Güray (YAG25: 2 × 30 dk, ağırlıktan sonra). Tur 3: deneyim sorusu, **kendi programı akışı + program incelemesi** (K-36, K-11), başlangıç ağırlıkları, bugünü/programı değiştir, kardiyo, oturumda duraklat/sonra doldur/düzelt/analiz satırı, kutlamalı antrenman sonu (Apple Watch kalorisi, kas haritası), paylaşımda "the call" yok + video, 1. hafta kararı onayla/değiştir. Prototip aynı adres (sürüm 3): https://claude.ai/artifact/RzN9fM7BLhDrHjUMntmkXK · değerlendirmeler `verdicts-r3` (tur 2 notları dizinde). Strateji: `prototip/tur2-strateji.md` (tur 3 bölümü). Sıradaki: Levent gezer → `ArtifactData list verdicts-r3` → işle → onay → ADR'ler + görev kartları.
 **Yön kararı verildi → ADR-069 (7 Eki, Levent):** odak salonda ağırlık çalışan, vaat "haftanın kararı ve nedeni"; onboarding aha = başlangıç kararı; 3 sekme (Bu hafta · Antrenman · İlerleme) + tek "+"; yüzeyden inenler (kesimi Levent bana bıraktı): koç çubuğu, projeksiyon+SCOFF, tarifler, beslenme sekmesi, what-if/geçmiş ayrı ekranı, 4 onboarding ekranı, paragraflar. Rota `plan/faz5-rota.md`; test yalnız Levent.
 **Faz 5 Part 1 (araştırma) BİTTİ (7 Eki) → sıradaki Faz 5 Part 2 · yeni yüzün tıklanabilir prototipi** (`plan/oturum-promptlari/UIUX-part2.md`, kod yok; envanter + prototip ADR-069 iskeletiyle). Sentez `arastirma/06-faz5-yuz.md`; ham `arastirma/ham/M0-M4`. Apify 2,39 / 5 $ (döngü 5 Kas). 13 ADR adayı (06 §7): B7 cevaplandı (başlangıç kararı); B4, B11, B13, B8+B10 Part 2 başında Levent'e. TestFlight'a düştü (Levent, 7 Eki); `ascAppId` `6819852276` → #413 birleşti (mağaza derlemeleri artık etkileşimsiz). K-903 kapanışı: TestFlight'tan cihaza kurulum teyidi (Levent). Faz 5 raporu (artifact): https://claude.ai/artifact/EwXQjThT6LGLhFe5hFWokR. Ayrıntı: "Faz 5 ilerleme".
@@ -716,7 +718,7 @@ Prompt'lar: `plan/oturum-promptlari/UIUX.md` (Part 1, araştırma) · `UIUX-part
 | 1 Envanter | ✅ | `prototip/envanter.md`; örnek kişinin sayıları motorun kendi formülünden (`InitialTarget`: 2.916 kcal bakım, 2.479-3.353, 14 gün gözlem) |
 | 2 Prototip | ✅ yayında | `prototip/yeni-yuz.html` → artifact (db `verdicts`). Kelime sayımı ilk görünümde, canlı; hepsi hedefte (Bu hafta 34/40 · 39/40 ilk gün, onboarding 20-24/25, başlangıç kararı 40/40, karar 57/60, 1. hafta kararı 59/60, kart 25/25) |
 | 3 Levent telefonda | ⏳ | Her ekranda "Değerlendir" → kalsın/değiştir/gitsin + not |
-| 4 ADR'ler + görev kartları | — | görsel dil (ADR-016 yerine), 06 §7, M9 ara |
+| 4 ADR'ler + görev kartları | ✅ 7 Eki | ADR-070..078 KABUL; `plan/yeni-yuz-kurallar.md`; M9a K-951..K-984 + K-910; prompt `YENI-YUZ-kod.md` |
 
 **Part 2 · tur 2 (7 Eki gece, Levent uyurken; "Apify verisinden yola çıkarak çok değişse bile güncelle, şovla"):**
 | Adım | Durum | Not |
@@ -731,6 +733,10 @@ Prompt'lar: `plan/oturum-promptlari/UIUX.md` (Part 1, araştırma) · `UIUX-part
 Tur 2'de yakalanan hata: karar ekranı "Bench 75 → 72.5 kg" diyordu; çift ilerlemede 72,5 × 8'deki kişiye kilo eklenmez, tekrar eklenir → "hedef 72.5 × 9 yerine 72.5 × 8".
 
 Prototipte verilen tasarım kararları (Levent görür, beğenmezse değişir): "+" sekme çubuğunun yanında ayrı daire (iOS 26 ayrık sekme düğmesi; NativeTabs'te uygulanabilirliği [doğrulanmadı]); "Life got in the way" "+" içinde ikincil satır; karar bloğu zeminin tersi (koyu temada açık blok); vurgu yalnız birincil eylem + kararın sayısı; tema seçici Ayarlar'da (Light/Dark/System, varsayılan Light). Not: Pazartesi kaydolan kişide 7 günlük deneme ilk kararın olduğu gün biter (karar sabah, ücret kayıt saatinde) — fiyat/deneme ADR'sinde yazılacak.
+
+## M9a ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
+Ortak talimat ve part'lar: `plan/oturum-promptlari/YENI-YUZ-kod.md`. Henüz başlanmadı (7 Eki). Part 1: K-951, K-952, K-953, K-954, K-955, K-958,
+K-960, K-961, K-962, K-963.
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.

@@ -91,3 +91,6 @@ Bize açık kanca aileleri: **karar yükü skeci** (en uzun yaşayan aile), **it
   - **Geç kayıt haftayı sayar** (B1b: düzeltme, telafi değil). **Kardiyo: Güray** (G2 K-29..K-36; Ç-4'te YAG25: yağ kaybında 2 × 30 dk, ağırlıktan sonra).
   - **Deneme:** Levent "ilk karar + 3 gün" seçti; App Store sabit süre → **2 hafta** önerildi, **onay bekliyor**.
   - **Kullanıcı da karar verir:** deneyim sorusu, kendi programı + program incelemesi, bugünü/programı değiştir, 1. hafta kararını değiştir, dönüşte seçim.
+- **Part 3 (7 Eki, Levent):** deneme **2 hafta** · Meta App ID Story görevinde · telafi tanımı (U7'ye işlendi) · rekabet v1'de yok (v1.x adayı) ·
+  pazarlama kuralı sonra, Apify raporlarıyla · logo çıkartmada her zaman · kardiyo Güray solo (KRD24) + kullanıcı özgürlüğü · motor 3 günün altını
+  önermez · ürün ADR'leri KABUL → **ADR-070..078**; kod kilometre taşı M9a (`plan/oturum-promptlari/YENI-YUZ-kod.md`).
