@@ -3416,7 +3416,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-070: RUBİN ve yalnız sistem teması yerine turkuaz, açık zemin ve Light/Dark/System seçici; oturum ve kutlama her zaman koyu"
     acceptance:
@@ -3437,7 +3437,7 @@ tasks:
     module: mobile
     type: test
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-069 Doğrulama ve ADR-070 #7: kelime hedefleri ve 'AI izi' tire yasağı mekanik kapıda olmalı"
     acceptance:
@@ -3455,7 +3455,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-951]
     why: "ADR-069 #3-#4: Bu hafta · Antrenman · İlerleme + tek '+'; koç çubuğu, tarifler, projeksiyon, what-if, ledger, beslenme sekmesi girişsiz (kod kalır)"
     acceptance:
@@ -3474,7 +3474,7 @@ tasks:
     module: profile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-072 #3-#5: deneyim akışı değiştirir; 'geçen ay' ve 'saat' soruları kalkar; tecrübelinin girdiği kilo ilk hedef olur"
     acceptance:
@@ -3493,7 +3493,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-073 #2: kendi programını Güray'ın hacim, sıklık, gün ve tekrar kurallarıyla inceler; en çok 3 somut öneri"
     acceptance:
@@ -3548,7 +3548,7 @@ tasks:
     module: engine
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-074: yağ kaybında antrenman günü kadar (3-5) × 30 dk ağırlıktan sonra, kazanımda 2 × 20, fiziksel işte yok (G2 KRD24)"
     acceptance:
@@ -3585,7 +3585,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-075 #2-#3: 'çok ağır' ve kalibrasyon çevrimdışı çalışmalı; telefon kural işletmez, sunucunun hazırladığı seçeneği gösterir"
     acceptance:
@@ -3604,7 +3604,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-075 #5, ADR-071 #3: 'Fill in the rest later' seansı açık bırakır; geç kayıt telafi değil düzeltme"
     acceptance:
@@ -3639,7 +3639,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-077 #3 (B11): varsayılan uygulanır, tek ikincil seçenek eski planla devam; karar değişmez (U2)"
     acceptance:
@@ -4349,7 +4349,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-907]
     why: "Cihaz turu (7 Eki): prod'da AI rızası tanımsız (K-907), ama öğün fotoğrafı ve koç 'AI consent needed — give it in Settings' diyor; Ayarlar'da böyle bir rıza yok → çıkmaz sokak"
     acceptance:
