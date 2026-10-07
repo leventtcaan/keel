@@ -197,3 +197,10 @@
 - sıradaki: M9a Part 1 · Temel + motor (`plan/oturum-promptlari/YENI-YUZ-kod.md` › Part 1 prompt'u)
 - AI: bütün ADR, kural listesi, kart ve prompt agent (3 alt ajan kod/kaynak haritası); Levent 9 soruyu cevapladı ve ürün ADR'lerini onayladı
 - ek (7 Eki): ADR-079 (Levent) — görev başına aktarım kalktı, odak ürünü kaliteyle bitirmek; öğrenme proje sonunda kod analiziyle. gorev-baslat/kapat, aktarim skill'i, CLAUDE.md, protokol, ADR-019 #9, YENI-YUZ-kod.md, M9 prompt'ları ve hafıza (toplu-mod-aktarim → toplu-mod) güncellendi
+
+## 2026-10-07 · M9a Part 1 (Temel + motor) — toplu mod, paralel ajanlar
+- yaptım: 10 görev birleşti (#448-#456, #459): turkuaz token'lar + Light/Dark/System + odak modu, tire yasağı + kelime bütçeleri, 3 sekme + "+" (10 ekran girişsiz, K-909 kapandı), profil deneyimi + başlangıç ağırlıkları, ProgramReview, kardiyo reçetesi, seans içi öneri tablosu + kalibrasyon, otomatik kapanış, DECLINED, 1. hafta ayarı; her PR'a inceleme ajanı (11 inceleme, 2 kritik hata yakalandı: 1 setlik kol seansı, başlangıç ağırlığını reddeden DB kısıtı)
+- karar: ADR-070 Ek 1 (vurgu `#007684`, Levent onayı bekliyor), ADR-075 Ek 1 (kalibrasyon basamağı telefonda, hafif seçenek her zaman), ADR-077 Ek 1 (1. hafta kararı gün seçimiyle uygulanır); "aralığın altı → hafiflet" için kaynak yok, özellik yok (R3)
+- takıldım: paralel ajanlar makineyi load 400'e çıkardı (jest zaman aşımları, yük düşünce yeşil); üç PR aynı göç numarasını (V35) istedi → sıra V35-V38; tipli rotalar yeni ekranda yerelde eskidi (yeniden üretildi)
+- sıradaki: M9a Part 2 · Sunucu + onboarding (`YENI-YUZ-kod.md` › Part 2 prompt'u); başta Levent'e 4 soru + K-983
+- AI: bütün kod, test, inceleme ve ADR ekleri agent (ana oturum + 8 uygulayıcı + 11 inceleme alt ajanı); Levent bu part'ta müdahale etmedi

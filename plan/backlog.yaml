@@ -3621,7 +3621,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-954]
     why: "ADR-077 #4 (B4): U15'in 1. hafta anı U8'e dokunmadan; motor 3 günün altını önermez (ADR-071 #8)"
     acceptance:

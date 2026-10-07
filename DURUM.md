@@ -5,7 +5,11 @@ guncelleme: 2026-10-07
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (7 Eki — Faz 5 Part 3 BİTTİ: kararlar ve kartlar hazır)
+## ▶ DEVAM NOKTASI (7 Eki gece — M9a Part 1 BİTTİ, 10/10 görev birleşti)
+**Sıradaki session: M9a Part 2 · Sunucu + onboarding** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 2 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 1 ÇIKIŞ.
+Levent'e 4 soru (Part 1 ÇIKIŞ › Yeni sorular) + K-983 (App Store Connect 2 hafta deneme) Part 2 başında.
+
+## (önceki) DEVAM NOKTASI (7 Eki — Faz 5 Part 3 BİTTİ: kararlar ve kartlar hazır)
 Faz 5 kapandı. ADR-070..078 **KABUL** (Levent); ADR-016 → 070, ADR-054 → 076 yerini aldı; ADR-058 ve ADR-018'e Ek 1; anayasa U7'ye telafi tanımı.
 Kod kilometre taşı **M9a · Yeni yüz**: K-951..K-984 + K-910 (GitHub'da, proje 2). Kurallar `plan/yeni-yuz-kurallar.md`.
 **Sıradaki session: M9a Part 1 · Temel + motor** → prompt `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 1 prompt'u" (skill `oturum-baslat`).
@@ -747,16 +751,44 @@ inceleme ajanlarından geçmeden auto-merge yok.
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-951 token'lar + tema seçici | ✅ birleşti | #449 | ADR-070 Ek 1: açık vurgu `#007684` (AA için), **Levent onayı bekliyor**; iOS'a `Appearance.setColorScheme` |
-| K-952 metin kuralları | ✅ birleşti | #451 | `data/copy/word-budgets.json` (prototip `t:` ile sabit); görevi `done` olan ekran anahtarlarını listelemek zorunda |
-| K-953 iskelet 3 sekme + "+" | ⏳ inceleme | dal `mobile/416-three-tabs` | inen 10 rota `guard={false}`; Cardio satırı K-980'de; simülatör turu K-969'a (Part 3) ertelendi |
-| K-954 profil: deneyim, başlangıç ağırlıkları | ⏳ inceleme | #454 | V35 çakışması (#453); gizlilik metnine "training experience" (Levent görsün) |
-| K-955 ProgramReview | ⏳ düzeltme | #450 | inceleme: kol tamamlamada 1 setlik seans (K-10) → ajan düzeltiyor |
-| K-958 CardioPrescription | ✅ birleşti | #448 | kazanımda off güne seans yok (ADR-074 metni) |
-| K-960 seans içi öneri tablosu | ⏳ | | |
-| K-961 sonra doldur, otomatik kapanış | ⏳ inceleme | #452 | endedAt = startedAt; 15 dk'da bir |
-| K-962 FirstWeekAdjustment | ⏳ | | |
-| K-963 DECLINED | ⏳ inceleme | #453 | V35 |
+| K-951 token'lar + tema seçici | ✅ | #449 | ADR-070 Ek 1: açık vurgu `#007684` (AA için) **Levent onayı bekliyor**; iOS'a `Appearance.setColorScheme` |
+| K-952 metin kuralları | ✅ | #451 | `data/copy/word-budgets.json` prototip `t:` ile sabit; görevi `done` olan ekran anahtarlarını listelemek zorunda |
+| K-953 iskelet 3 sekme + "+" | ✅ | #455 | inen 10 rota `guard={false}`; K-909 kapandı; Cardio satırı K-980'de; simülatör turu K-969'a ertelendi |
+| K-954 profil: deneyim, başlangıç ağırlıkları | ✅ | #454 | V35, V36; `starting_weight_reps` 8; gizlilik metnine "training experience" (Levent görsün) |
+| K-955 ProgramReview | ✅ | #450 | kollar `data/muscles.yaml › arm_muscles`; gün birleştirme kuralı (R1 "Açık" notundan sapma, PR'da) |
+| K-958 CardioPrescription | ✅ | #448 | kazanımda off güne seans yok (ADR-074 metni) |
+| K-960 seans içi öneri tablosu | ✅ | #456 | ADR-075 Ek 1: `calibrationStepKg`, hafif seçenek her zaman; aralık altı: **kaynak yok, alan yok** |
+| K-961 sonra doldur, otomatik kapanış | ✅ | #452 | endedAt = startedAt; 15 dk'da bir; FOR SHARE kilidi; V38 dizin |
+| K-962 FirstWeekAdjustment | ✅ | #459 | ADR-077 Ek 1 (Levent görsün); kayıt günü P'ye girmez; `week1Feel` |
+| K-963 DECLINED | ✅ | #453 | V37; `Decision.declinable` sunucudan |
+
+**Part 1 ÇIKIŞ (7 Eki):**
+- **Birleşenler (10/10):** #448 K-958 · #449 K-951 · #450 K-955 · #451 K-952 · #452 K-961 · #453 K-963 · #454 K-954 · #455 K-953 (+K-909) · #456 K-960 ·
+  #459 K-962. Ayrıca #458 (K-911, ayrı oturum: `SessionProgressApiTests` tarihleri saate göre). Backlog `done`, GitHub eşitlendi.
+- **Açık PR / worktree:** açık PR yok. Ajan worktree'leri kaldırıldı; `../keel-952` (doküman işleri için ayrık HEAD) ve başka oturumun
+  `happy-khayyam` worktree'si duruyor. Yerel dallar `branch -D` kapısı yüzünden silinmedi (zararsız).
+- **Göçler:** V35 profile_experience · V36 training_starting_target · V37 decision_decline · V38 training_open_sessions. Sıradaki V39.
+- **Part 2'nin bilmesi gereken teknik kararlar:**
+  - Tema: `src/theme/appearance.ts` (kv `appearance`, oturum kapanınca silinir), `ThemeProvider appearance=`, `FocusMode` (oturum ve kutlama
+    ekranları sarmalanmalı, K-971/K-974; o ekranlara `StatusBar style="light"` gerekecek). Token'lar: `accentSoft`, `cta`/`onCta`, `focusPalette`,
+    `radius.option`, `size.touch`/`primaryButton`, gövde 17.
+  - Kelime bütçesi: ekranı kuran görev `data/copy/word-budgets.json`'da `file` + `keys` (+ `notFirstView`) doldurur; görev `done` olunca boşsa
+    test düşer. Sayım prototip gibi: harf içeren kelime; sayı ve `{yer tutucu}` sayılmaz.
+  - İskelet: `navigation/tabs.ts › TABS, RETIRED`; "+" `components/PlusEntry` her sekmenin altında; `app/plus.tsx` formSheet.
+  - Profil: `Profile.experience` isteğe bağlı; `PUT /v1/program/starting-weights` (yalnız bileşik, yalnız `repMin ≤ starting_weight_reps`
+    satırlarına); program yeniden üretilirse başlangıç ağırlıkları silinir → **K-966/K-967 ağırlıkları programdan sonra göndermeli**.
+    `default_day_sets` + telefonda `defaultTrainingDays(count)` (K-966 kullanacak). Telefon `sessionsLastMonth`/`usualTrainingTime`'ı hâlâ
+    gönderiyor → K-966 kaldırır.
+  - Motor: `ProgramReview.review(program, Catalog(isolationByMuscle, armMuscles), params)` + `apply` (K-956 uçları bunu kullanır);
+    `CardioPrescription.forWeek` (K-959 sözleşmesi); `FirstWeekAdjustment` kararları `NOT_NEEDED` (gün kullanıcıda, K-978).
+  - Seans: `PlannedExercise.lighterLoadKg/heavierLoadKg/lastBestSet/nextLoadAtTopKg/calibrationStepKg`; telefonda `train/calibration.ts`,
+    `loadSteps.within`; `rir_choices` 0/1/2+.
+  - Karar: `Decision.declinable`, `POST /v1/decisions/{id}/decline`, `DECLINED` CallCard'da PENDING gibi.
+- **Yeni sorular (Levent):** (1) ADR-070 Ek 1 vurgu tonu `#007684` mı, `#007C8C` + ayrı metin token'ı mı · (2) gizlilik politikasına eklenen
+  "training experience" satırı · (3) ADR-077 Ek 1: 1. hafta kararları kendiliğinden uygulanmaz, kullanıcı günü seçer · (4) bilgi: "Too heavy?"
+  hafif seçeneği salonun bir alt basamağı da olabilir (ADR-075 Ek 1).
+- **Kalite notu:** paralel ajan derlemeleri makineyi load 400'e çıkardı; o sırada 3 mobil test dosyası 5 sn zaman aşımına düştü, yük düşünce
+  104/104 geçti. Part 2'de aynı anda en çok 3 arka uç ajanı.
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
