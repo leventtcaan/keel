@@ -1,11 +1,13 @@
 /**
- * Theme: the palette for the phone's appearance setting (ADR-016 — no in-app switch), and the inverse surface that
- * the decision block and selected states use. Components read colours only through useTheme().
+ * Theme: the palette for the person's appearance choice (ADR-070 #3: Light, Dark or System, Light until they pick), the
+ * inverse surface that the decision block and selected states use, and the focus mode that the workout and its
+ * celebration always take (ADR-070 #4). Components read colours only through useTheme().
  */
 import { createContext, type ReactNode, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { type ColorScheme, type Palette, palettes } from './tokens';
+import type { Appearance } from './appearance';
+import { type ColorScheme, focusPalette, type Palette, palettes } from './tokens';
 
 export type Theme = { scheme: ColorScheme; color: Palette };
 
@@ -31,20 +33,32 @@ export function inverse(p: Palette): Palette {
     track: p.decisionLine,
     accent: p.accentInk,
     onAccent: p.onAccentInk,
+    // The page's primary button is black on light: on the black block it would vanish, so it takes the block's accent.
+    cta: p.accentInk,
+    onCta: p.onAccentInk,
+    accentSoft: p.decisionLine,
   };
 }
 
 type ProviderProps = {
-  /** Overrides the phone setting; for tests and previews. */
+  /** The person's choice (Settings › Appearance); Light when not given. */
+  appearance?: Appearance;
+  /** Overrides everything; for tests, previews and dark-only screens. */
   scheme?: ColorScheme;
   children: ReactNode;
 };
 
-export function ThemeProvider({ scheme, children }: ProviderProps) {
+export function ThemeProvider({ appearance = 'light', scheme, children }: ProviderProps) {
   const system = useColorScheme();
-  // 'unspecified' (no preference reported) reads as light, the default iOS appearance.
-  const resolved: ColorScheme = scheme ?? (system === 'dark' ? 'dark' : 'light');
+  // System with no preference reported ('unspecified') reads as light, the default iOS appearance.
+  const followed: ColorScheme = appearance === 'system' ? (system === 'dark' ? 'dark' : 'light') : appearance;
+  const resolved: ColorScheme = scheme ?? followed;
   return <ThemeContext.Provider value={{ scheme: resolved, color: palettes[resolved] }}>{children}</ThemeContext.Provider>;
+}
+
+/** The workout and its celebration: dark whatever the person chose (ADR-070 #4: less glare in a gym, a distinct mode). */
+export function FocusMode({ children }: { children: ReactNode }) {
+  return <ThemeContext.Provider value={{ scheme: 'dark', color: focusPalette }}>{children}</ThemeContext.Provider>;
 }
 
 export function InverseSurface({ children }: { children: ReactNode }) {

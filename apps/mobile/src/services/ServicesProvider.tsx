@@ -31,6 +31,7 @@ import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
 import { deviceShareImage } from '@/share/deviceShare';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
+import type { Appearance } from '@/theme/appearance';
 import type { UnitSystem } from '@/units/units';
 
 import { type AppServices, createAppServices } from './appServices';
@@ -179,6 +180,12 @@ export function useAppServices(): PhoneServices {
 export function useUnits(): UnitSystem {
   const { units } = useAppServices();
   return useSyncExternalStore(units.subscribe, units.current);
+}
+
+/** Light, Dark or System as chosen in Settings (ADR-070 #3); the root layout themes the app with it. */
+export function useAppearance(): Appearance {
+  const { appearance } = useAppServices();
+  return useSyncExternalStore(appearance.subscribe, appearance.current);
 }
 
 /** Whether the signed-in account has finished onboarding (K-306); the root layout routes on it. */

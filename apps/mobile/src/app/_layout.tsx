@@ -1,9 +1,10 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
+import { Appearance } from 'react-native';
 
-import { ServicesProvider, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
+import { ServicesProvider, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 
@@ -79,6 +80,18 @@ function AppStack() {
   );
 }
 
+/**
+ * The person's appearance choice, once the services can read it (ADR-070 #3). iOS is told the same, so its own parts
+ * (status bar, tab bar, sheets, keyboard) match the page; 'unspecified' lets it follow the phone again.
+ */
+function ChosenTheme({ children }: { children: ReactNode }) {
+  const appearance = useAppearance();
+  useEffect(() => {
+    Appearance.setColorScheme(appearance === 'system' ? 'unspecified' : appearance);
+  }, [appearance]);
+  return <ThemeProvider appearance={appearance}>{children}</ThemeProvider>;
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts(fontAssets);
   const ready = loaded || error !== null;
@@ -89,10 +102,13 @@ export default function RootLayout() {
   }
   if (!ready) return null;
 
+  // The outer theme (Light, the default) serves what shows before the services open: the start-up error screen.
   return (
     <ThemeProvider>
       <ServicesProvider>
-        <AppStack />
+        <ChosenTheme>
+          <AppStack />
+        </ChosenTheme>
       </ServicesProvider>
     </ThemeProvider>
   );

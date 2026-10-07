@@ -71,6 +71,7 @@ jest.mock('@/services/ServicesProvider', () => ({
   // One object for the life of the test, as the real services are built once per process: a screen may depend on it.
   useAppServices: () => mockServices,
   useUnits: () => 'METRIC',
+  useAppearance: () => 'light',
 }));
 
 beforeEach(() => {

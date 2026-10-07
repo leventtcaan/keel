@@ -212,6 +212,18 @@ test('the unit choice goes with the session: forgotten at sign-out', async () =>
   expect(services.units.current()).toBe('IMPERIAL');
 });
 
+test('the appearance choice goes with the session: the next person starts on Light (ADR-070 #3)', async () => {
+  const kv = memoryKv();
+  const { services } = await setup(server(404), memoryStorage(), kv);
+  await services.session.signIn(SESSION);
+  await services.appearance.set('dark');
+  expect(kv.items.get('appearance')).toBe('dark');
+  await services.signOut();
+  await settle();
+  expect(kv.items.has('appearance')).toBe(false);
+  expect(services.appearance.current()).toBe('light');
+});
+
 test('the days the app was opened go with the session: forgotten at sign-out (K-521)', async () => {
   const kv = memoryKv();
   const { services } = await setup(server(404), memoryStorage(), kv);

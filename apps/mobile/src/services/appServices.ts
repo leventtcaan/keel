@@ -31,6 +31,7 @@ import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } 
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { sendWithApi } from '@/sync/send';
 import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
+import { type AppearancePreference, createAppearance } from '@/theme/appearance';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
 
 const WORKOUT_KINDS = ['workout', 'set', 'finish'];
@@ -74,6 +75,8 @@ export type AppServices = {
   api: ApiClient;
   queue: SyncQueue;
   units: UnitsPreference;
+  /** Light, Dark or System (ADR-070 #3). */
+  appearance: AppearancePreference;
   /**
    * The SCOFF gate's result for the shape projection (K-607, ADR-050), on this phone only. At sign-out "unavailable" stays
    * (signing out must not re-open the gate) and "clear" goes (the next person is asked).
@@ -156,6 +159,7 @@ export async function createAppServices({
   const store = await openRecordStore(db);
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
+  const appearance = await createAppearance({ kv });
   const projection = await createProjectionAccess({ kv, locale });
   const projectionSwitch = await createProjectionSwitch({ kv, access: projection });
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -237,6 +241,7 @@ export async function createAppServices({
     }
     store.clear().catch(reportError);
     units.forget().catch(reportError); // the preference belongs to the account too
+    appearance.forget().catch(reportError); // and the appearance chosen: the next person starts on Light
     profile.forget().catch(reportError); // and so does "onboarding done"
     consents.forget().catch(reportError); // and what the phone knew of its consents
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
@@ -262,6 +267,7 @@ export async function createAppServices({
     api,
     queue,
     units,
+    appearance,
     projection,
     projectionSwitch,
     profile,

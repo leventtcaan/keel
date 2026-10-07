@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
+import { AppearanceSection } from '@/settings/AppearanceSection';
 import { ConsentsSection } from '@/settings/ConsentsSection';
 import { HealthWriteSection } from '@/settings/HealthWriteSection';
 import { ImportSection } from '@/settings/ImportSection';
@@ -16,7 +17,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * Settings (K-309, prototype 5.2), opened from Today. The reminders (K-410) sit after the units; the subscription (K-702)
+ * Settings (K-309, prototype 5.2), opened from Today. Appearance comes first (ADR-070 #3). The reminders (K-410) sit after the units; the subscription (K-702)
  * after the data and consents, before the account.
  */
 export default function SettingsScreen() {
@@ -28,6 +29,7 @@ export default function SettingsScreen() {
           <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t('settings.back')}`}</Text>
         </Pressable>
         <ScreenTitle>{t('settings.title')}</ScreenTitle>
+        <AppearanceSection />
         <UnitsSection />
         <RemindersSection />
         <Button label={t('settings.gyms')} variant="ghost" onPress={() => router.push('/gyms')} />

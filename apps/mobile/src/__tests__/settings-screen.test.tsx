@@ -58,6 +58,7 @@ const mockServices = {
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useUnits: () => mockUnits,
+  useAppearance: () => 'light',
 }));
 // The subscription section (K-702) reads the server on its own; its behaviour is subscription-section.test.tsx. Here it
 // would take this file's consent answers (one GET mock for every path) out of their order.
