@@ -61,8 +61,10 @@ Bitiş: "Part 1 ÇIKIŞ" + kısa Türkçe özet + Part 2 prompt'u. Session KAPAN
 ## Part 2 prompt'u
 ```
 oturum-baslat. Toplu mod. M9a PART 2 · Sunucu + onboarding. Ortak talimat plan/oturum-promptlari/YENI-YUZ-kod.md (senkron kuralı başta).
-Başta AskUserQuestion: K-983 (App Store Connect'te yıllık ve aylık abonelikte 'Free, 2 weeks' tanıtım teklifi — Levent yapar).
+Başta AskUserQuestion: K-983 (App Store Connect'te yıllık ve aylık abonelikte 'Free, 2 weeks' tanıtım teklifi — Levent yapar) + Part 1
+ÇIKIŞ'taki 4 soru (ADR-070 Ek 1 vurgu tonu, gizlilik "training experience", ADR-077 Ek 1, "Too heavy?" bilgisi).
 Sıra: K-956 → K-957 → K-959 → K-964 → K-965 → K-966 → K-967 → K-968. K-983 sandbox kontrolü Levent bitirince.
+Paralel: aynı anda en çok 3 uygulayıcı ajan (makine yükü); göç numarası sırayla (sıradaki V39); her PR'a inceleme ajanı.
 Bitiş: "Part 2 ÇIKIŞ" + özet + Part 3 prompt'u.
 ```
 
