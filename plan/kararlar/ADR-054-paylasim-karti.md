@@ -1,5 +1,5 @@
 # ADR-054 · Paylaşım kartı: yalnız kelimeler, telefonda yapılır, kilo ve güvenlik kararları varsayılan dışarıda (K-612)
-- **Durum:** KABUL (agent, teknik — ADR-019); güvenlik kararlarının dışarıda tutulması Levent'in kararı (ADR-055 #104)
+- **Durum:** YERİNİ ALDI → ADR-076
 - **Tarih:** 2026-10-04 · **Karar veren:** agent
 
 ## Bağlam

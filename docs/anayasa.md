@@ -39,7 +39,9 @@ Metabolik mantık motorda çalışır, kullanıcıya adı konmadan sunulur. Kan 
 
 **U7 · Suçlama ve utandırma yok. Telafi mekaniği yok. Günlük sıfırlanan streak yok.**
 Tutarlılık haftalık, kümülatif ve 1 hafta aflıdır ("12 haftanın 11'i"). Kaçan gün sessizce haftalık ortalamaya yayılır.
-*Kaynak:* `04-faz3-urun.md` §5, §7.3 · `ham/I1-onboarding-aliskanlik.md`.
+*Telafi* = kaçırılan seansı sonraki haftaya ek yük olarak bindirmek ya da seriyi parayla veya ek eylemle geri satın aldırmak (yasak). Geri
+döneni olumlu karşılamak, geç girilen kaydı kendi haftasında saymak ve seansı aynı hafta içinde başka güne taşımak telafi değildir (ADR-071).
+*Kaynak:* `04-faz3-urun.md` §5, §7.3 · `ham/I1-onboarding-aliskanlik.md` · `06-faz5-yuz.md` §7 B1.
 
 **U8 · Ölç sık, yorumla seyrek.** Günlük veri alınır; ilk 14 gün trend yorumu yok; kilo trendi 7 günlük gösterilir,
 karar penceresi erkekte 2-3 hafta, kadında 28 gün (döngü gürültüsünü matematiksel olarak sıfırlar).

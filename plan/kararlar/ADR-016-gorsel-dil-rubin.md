@@ -1,5 +1,5 @@
 # ADR-016 · Görsel dil: C iskeleti + RUBİN paleti + koyu mod + sistem katmanı
-- **Durum:** KABUL
+- **Durum:** YERİNİ ALDI → ADR-070 (renk, tema, köşe, uygulama içi tema ayarı; Barlow Condensed başlık ve sistem gövde fontu sürer)
 - **Tarih:** 2026-09-29 · **Karar veren:** Levent (öneren: agent)
 - **Yerine geçtiği:** ADR-014 (vurgu rengi ve tipografi kısmı)
 

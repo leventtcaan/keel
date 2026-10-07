@@ -36,3 +36,8 @@ ADR-007, onboarding Apple Health ekranı, K-404, K-104, yeni içe aktarma görev
 ## Doğrulama
 Yazma izni yokken yazma çağrısı yapılmadığını gösteren test; içe aktarmadan sonra ilk kararın ilk pazartesiden önce gelmediğini
 gösteren motor testi.
+
+## Ek 1 · İzin zamanı (2026-10-07 — ADR-069 #3, ADR-072 #8)
+Onboarding'deki Apple Health ekranı kalkar. İzin **ilk kullanıldığı anda** bir kez istenir: ilk tartıda ya da ilk antrenmanda (`health-jit`);
+"Not now" serbest, Ayarlar'dan sonra verilir. Okunan türler aynı; antrenman penceresinde aktif enerji (ADR-074 #5, ADR-075 #7) ve kardiyo için
+antrenman okuması eklenir. Yazma ayrı anahtarla sürer.

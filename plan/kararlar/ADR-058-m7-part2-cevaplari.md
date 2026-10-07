@@ -37,3 +37,9 @@ kaybeder); iOS bildirimleri kapatılınca hatırlatma kalkar (söz verilmez); ç
   ilk açılışta cevap yoksa (`unknown`) kapı ekranı sorar ve bekler.
 - K-702 kabul kriteri: "Duraklat ve iptal iki dokunuşta" → "İptal iki dokunuşta (iOS'ta duraklatma yok — ADR-058)".
 - Prototip 1.11 ve 5.2: "Pause" satırları kaldırıldı; "Day 5" satırı K-707'nin diliyle.
+
+## Ek 1 · Deneme 2 hafta (2026-10-07, Levent — ADR-071 #1)
+Onboarding sonundaki zorunlu paywall'un tanıtım teklifi **2 haftalık ücretsiz deneme** olur (App Store sabit süreleri; "ilk karar + 3 gün"
+niyetinin en kısa sabit karşılığı). Paywall zaman çizelgesi: bugün ücret yok · ilk karar (pazartesi) · hatırlatma (isteğe bağlı,
+`trial_reminder_days_before` = 2) · ücret günü. Süre koda gömülmez: RevenueCat `introPrice`'tan okunur (bugünkü yol). App Store Connect'te teklif
+2 haftaya alınır (Levent, hesap). K-706 ve K-707 davranışı değişmez.
