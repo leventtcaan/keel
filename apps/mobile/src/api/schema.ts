@@ -1761,6 +1761,34 @@ export interface components {
              *     a break shows another target.
              */
             rackEnds?: boolean;
+            /**
+             * @description The in-session table (K-960, ADR-075 #3), worked out on the server so the phone only picks a value in the gym,
+             *     offline. "Too heavy?": one load step (the region's, H3 B4) under the load the session starts from (nextLoadKg,
+             *     else lastBestSet.loadKg), the heaviest the current gym makes at or under it (ADR-032). Absent with no load to
+             *     start from, or nothing that light.
+             */
+            lighterLoadKg?: number;
+            /**
+             * @description One load step over the load the session starts from, the nearest heavier the current gym makes within the jump
+             *     limit (ADR-032, K-430). The phone offers it after a set with 2+ reps left on a move with no nextLoadKg (first-
+             *     session calibration, G6 K-40). Absent with no load to start from, or nothing heavier in reach.
+             */
+            heavierLoadKg?: number;
+            /**
+             * @description The best working set of this move's last session before today (heaviest, then most reps, then fewest left):
+             *     "Beat last time". Absent before the move's first session.
+             */
+            lastBestSet?: {
+                loadKg: number;
+                reps: number;
+                rir?: number;
+            };
+            /**
+             * @description The load the next session gets once every set reaches the top of the range (double progression, K-109), as
+             *     the gym makes it: "2 more and it's 105 kg". Absent with no nextLoadKg, on a move not load-tracked, while the
+             *     load is held, or where no heavier load is in reach.
+             */
+            nextLoadAtTopKg?: number;
         };
         /** @description min < max (a range to climb in, double progression); max at most 100. */
         RepRange: {
