@@ -187,4 +187,5 @@
 - takıldım: iki CSS sınıf çakışması daha (.sw); gecikmeli "both" animasyonları arka planda öğeleri görünmez bırakıyordu → animasyon görünür durumdan başlar; dinlenme sayacı yapışkan kabın içindeydi
 - sıradaki: Levent tur 3'ü gezer → `verdicts-r3` → işle → onay → ADR'ler (görsel dil, program incelemesi, kardiyo, geç kayıt, deneme) + "M9 ara · Yeni yüz" görev kartları
 - AI: araştırma, doğrulama, tasarım, prototip kodu ve metin agent; Levent değerlendirdi ve 4 soruyu cevapladı
+- kapanış (7 Eki): Levent tur 3'ü onayladı ("tamamdır süper"); akış testi 10/10 akış, 70 adım, 0 hata (`prototip/akis-testi.md`); kararlar faz5-rota §8; sıradaki `plan/oturum-promptlari/UIUX-part3.md` (ADR'ler + görev kartları)
 

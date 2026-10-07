@@ -30,3 +30,6 @@ Tur 3 işleri: deneyim sorusu · kendi programı akışı (içe aktar/gir → **
 · oturum: dinlenme düğmeleri kapatmaz, duraklat, sonra gir, seti düzenle, hareket başına analiz satırı · oturum sonu kutlama (hacim, Apple Watch
 kalorisi, rekor, kas haritası) · paylaşım: "the call" yok, antrenman/rekor/seri/gelişim + foto/video · 1. hafta kararında paylaş yok, onayla/değiştir ·
 ilk gün İlerleme: tıklanabilir hedefler + kas haritası + kilitli önizleme · duraklat ekranı modern · dönüş seçenekli · check-in 1. hafta sorusu.
+
+## Kapanış (7 Eki) — tur 3 onaylı
+Levent: "tamamdır süper" (tur 3'e not yok). Akış testi 10/10 (`prototip/akis-testi.md`). Part 2 bitti → sıradaki `UIUX-part3.md`.

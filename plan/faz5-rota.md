@@ -82,3 +82,12 @@ Bize açık kanca aileleri: **karar yükü skeci** (en uzun yaşayan aile), **it
     iyi seti gerçek değer olarak ("100 kg × 5"). Kilo yok (anahtar da yok); yağ %, foto, beden, kalori yok; tahmini max (e1RM) kartta yok.
     U4 pazarlamayı ve kartı da kapsar.
 - **Session sonunda (B1, B3, B9, B12):** prototip onayından sonra.
+- **Prototip turları (7 Eki, Levent; artifact db `verdicts`, `verdicts-r2`, `verdicts-r3`):**
+  - Tur 1 → "yeterli değil": tur 2 araştırmadan yeniden kuruldu (`prototip/tur2-strateji.md`). Tur 2 → "çok daha iyi, mükemmelden uzak":
+    kullanıcının işe karışması eksik. Tur 3 → **onaylandı** ("tamamdır süper", 7 Eki); akış testi 10/10 (`prototip/akis-testi.md`).
+  - **Renk: turkuaz** (ölçüm `arastirma/ham/M5-renk-olcumu.md`). **Cinsiyet:** iki seçenek, "for the energy math".
+  - **Paylaşım:** Strava kalıbı (şeffaf çıkartma + kendi foto/video); **haftalık karar paylaşılmaz** ("the call" yok), paylaşım antrenman sonundan.
+  - **"Neden" katman 2 kalktı**; karar ekranında iki madde.
+  - **Geç kayıt haftayı sayar** (B1b: düzeltme, telafi değil). **Kardiyo: Güray** (G2 K-29..K-36; Ç-4'te YAG25: yağ kaybında 2 × 30 dk, ağırlıktan sonra).
+  - **Deneme:** Levent "ilk karar + 3 gün" seçti; App Store sabit süre → **2 hafta** önerildi, **onay bekliyor**.
+  - **Kullanıcı da karar verir:** deneyim sorusu, kendi programı + program incelemesi, bugünü/programı değiştir, 1. hafta kararını değiştir, dönüşte seçim.
