@@ -866,6 +866,7 @@
     "application",
     "applied_at",
     "undone_at",
+    "declined_at",
     "plan_before",
     "plan_after"
    ],

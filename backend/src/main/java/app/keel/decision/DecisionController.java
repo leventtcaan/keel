@@ -112,6 +112,12 @@ class DecisionController {
         return decisions.undo(account, id);
     }
 
+    /** "Keep last week's plan" (K-963, ADR-077 #3); "Use this call" is apply. */
+    @PostMapping("/v1/decisions/{id}/decline")
+    PlanTargets decline(AccountId account, @PathVariable UUID id) {
+        return decisions.decline(account, id);
+    }
+
     /** Contract Consistency (K-420): this week's four kinds of planned action, and the weeks on track. */
     @GetMapping("/v1/consistency")
     Map<String, Object> consistency(AccountId account) {
@@ -160,6 +166,9 @@ class DecisionController {
         }
         if (call.undoneAt() != null) {
             application.put("undoneAt", call.undoneAt());
+        }
+        if (call.declinedAt() != null) {
+            application.put("declinedAt", call.declinedAt());
         }
         view.put("application", application);
         return view;
