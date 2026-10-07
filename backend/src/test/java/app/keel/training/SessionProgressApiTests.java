@@ -2,6 +2,7 @@ package app.keel.training;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Sex;
@@ -52,6 +53,9 @@ class SessionProgressApiTests {
 
     @Autowired
     TrainingCalls calls;
+
+    @Autowired
+    TrainingLog log;
 
     @Test
     void everyPlannedSetAtTheTopAddsTheRegionsStepFromTheBottomOfTheRange() throws Exception {
@@ -158,6 +162,36 @@ class SessionProgressApiTests {
         // ADR-075 Ek 1: calibration only where there is no target — the squat's lower-body step, none on the bench.
         assertThat(kg(planned(account, 1).get("calibrationStepKg"))).isEqualByComparingTo(step(ParameterKey.LOAD_INCREMENT_LOWER_KG));
         assertThat(bench).doesNotContainKey("calibrationStepKg");
+    }
+
+    @Test
+    void theLastSessionIsEachMovesLatestBeforeTodayWithItsWorkingSetsOnly() throws Exception {
+        // K-960 review: "Beat last time" is the move's last session, even when an older one was heavier; a warm-up, a drop
+        // set and a set to failure are not working sets (SetType); an imported session is seen, not read (K-615, ADR-053).
+        AccountId account = withAProgram();
+        send("PUT", account, "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
+        Instant now = Instant.now();
+        String older = start(account, now.minus(java.time.Duration.ofDays(6)));
+        set(account, older, "bench_press", 80, 8, 1, "BOTH");
+        set(account, older, "squat", 100, 6, 1, "BOTH");
+        String newer = start(account, now.minus(java.time.Duration.ofDays(4)));
+        set(account, newer, "bench_press", 40, 10, null, "BOTH", "WARM_UP");
+        set(account, newer, "bench_press", 60, 8, 1, "BOTH");
+        set(account, newer, "bench_press", 60, 7, 0, "BOTH");
+        set(account, newer, "bench_press", 65, 4, null, "BOTH", "FAILURE");
+        set(account, newer, "bench_press", 50, 10, null, "BOTH", "DROP");
+        Map<String, Object> importedSet = new HashMap<>(Map.of("exerciseId", "bench_press", "setType", "WORKING", "loadKg", 100, "reps", 5));
+        assertThat(send("POST", account, "/v1/workout-imports", Map.of("source", "STRONG", "workouts", List.of(Map.of("clientId", UUID.randomUUID(),
+                "startedAt", now.minus(java.time.Duration.ofDays(2)).toString(), "endedAt", now.minus(java.time.Duration.ofDays(2)).plusSeconds(3600).toString(),
+                "sets", List.of(importedSet)))))).hasStatusOk();
+
+        Map<String, List<TrainingLog.WorkSet>> last = log.lastSessions(account, now.minus(java.time.Duration.ofDays(1)));
+
+        assertThat(last.get("bench_press")).extracting(set -> set.loadKg().intValue(), TrainingLog.WorkSet::reps)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(60, 8), org.assertj.core.groups.Tuple.tuple(60, 7));
+        assertThat(last.get("squat")).as("the squat's last session is the older one").extracting(TrainingLog.WorkSet::reps).containsExactly(6);
+        assertThat(log.lastSessions(account, now.minus(java.time.Duration.ofDays(5))).get("bench_press")).as("before the newer session")
+                .extracting(set -> set.loadKg().intValue()).containsExactly(80);
     }
 
     @Test

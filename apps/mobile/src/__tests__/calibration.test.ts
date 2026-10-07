@@ -33,6 +33,8 @@ test('a rack: the nearest heavier dumbbell within a step; none past the top of t
 
 test("never more than one step away, as the server's heavierLoadKg: a sparse rack (16 → 20, step 2.5) offers nothing", () => {
   expect(calibrationNext(16, 2.5, gym({ dumbbellsKg: [10, 12, 14, 16, 20] }), 'DUMBBELL', 'dumbbell_curl')).toBeNull();
+  // The heaviest inside the step, as the server's within: 10, 11, 13 on a 2.5 step from 10 is 11 (13 is nearer 12.5, but past it).
+  expect(calibrationNext(10, 2.5, gym({ dumbbellsKg: [10, 11, 13] }), 'DUMBBELL', 'dumbbell_curl')).toBe(11);
   // Pairs of 5 only: the bar goes 40 → 50, four steps of 2.5.
   expect(calibrationNext(40, 2.5, gym({ barKg: 20, platesKg: [20, 10, 5] }), 'BARBELL', 'bench_press')).toBeNull();
   // A lower-body step of 5 is one pair of 2.5s: within the step.

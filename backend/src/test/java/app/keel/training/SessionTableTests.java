@@ -55,14 +55,14 @@ class SessionTableTests {
         "no gym: the engine step either way,                   -,        BARBELL,  UPPER, 60,   57.5, 62.5",
         "no gym (lower body),                                  -,        BARBELL,  LOWER, 100,  95,   105",
         "plates make every 2.5 kg,                              full,     BARBELL,  UPPER, 60,   57.5, 62.5",
-        "pairs of 5 only: nothing within a step,                fives,    BARBELL,  UPPER, 60,   -,    -",
-        "pairs of 2.5: nothing within 2.5,                      halves,   BARBELL,  UPPER, 60,   -,    -",
+        "pairs of 5 only: lighter is the next rung down,       fives,    BARBELL,  UPPER, 60,   50,   -",
+        "pairs of 2.5: nothing heavier within 2.5,             halves,   BARBELL,  UPPER, 60,   55,   -",
         "pairs of 2.5 (lower body): a step of 5 is one pair,    halves,   BARBELL,  LOWER, 60,   55,   65",
         "a rack: the nearest within a step,                     rack,     DUMBBELL, UPPER, 12,   10,   14",
         "a rack with a gap: nothing heavier within a step,      rack,     DUMBBELL, UPPER, 16,   14,   -",
-        "top of the rack: nothing heavier,                       rack,     DUMBBELL, UPPER, 20,   -,    -",
+        "top of the rack: lighter is the next dumbbell down,  rack,     DUMBBELL, UPPER, 20,   16,   -",
         "bottom of the rack: nothing lighter,                    rack,     DUMBBELL, UPPER, 10,   -,    12",
-        "a stack by 5: nothing within 2.5,                      stack,    CABLE,    UPPER, 40,   -,    -",
+        "a stack by 5: lighter one plate and nothing heavier, stack,    CABLE,    UPPER, 40,   35,   -",
         "a stack by 5 (lower body),                            stack,    MACHINE,  LOWER, 40,   35,   45",
         "a gym that says nothing of this equipment: engine step,   rack,     BARBELL,  UPPER, 60,   57.5, 62.5",
         "nothing at or under nothing,                           -,        BARBELL,  UPPER, 2.5,  -,    5"})
@@ -123,10 +123,13 @@ class SessionTableTests {
         assertThat(SessionTable.best(sets)).contains(set("62.5", 7, 1));
         assertThat(SessionTable.best(List.of(set("40", 10, null)))).as("a set logged without RIR still counts").contains(set("40", 10, null));
         assertThat(SessionTable.best(List.of())).isEmpty();
+        // K-960 review: a set of no reps is no set done (the contract's reps ≥ 1): 65 × 0 does not beat 60 × 8.
+        assertThat(SessionTable.best(List.of(set("60", 8, 1), set("65", 0, 0)))).contains(set("60", 8, 1));
+        assertThat(SessionTable.best(List.of(set("65", 0, 0)))).isEmpty();
     }
 
     @Property
-    void aStepFromARackIsOnItNeverFurtherThanTheStepAndTheNearestToIt(@ForAll("racks") List<Integer> rackTenths,
+    void aStepFromARackIsOnItHeavierNeverPastTheStepLighterWheneverTheRackGoesLower(@ForAll("racks") List<Integer> rackTenths,
             @ForAll @IntRange(min = 10, max = 600) int fromTenths, @ForAll boolean upper) {
         List<BigDecimal> rack = rackTenths.stream().map(SessionTableTests::tenths).toList();
         BigDecimal from = tenths(fromTenths);
@@ -134,7 +137,9 @@ class SessionTableTests {
         Optional<GymStore.Gym> gym = Optional.of(gym(null, List.of(), rack, null));
 
         Optional<BigDecimal> heaviest = rack.stream().filter(kg -> kg.compareTo(from) > 0 && kg.compareTo(from.add(step)) <= 0).max(BigDecimal::compareTo);
-        Optional<BigDecimal> lightest = rack.stream().filter(kg -> kg.compareTo(from) < 0 && kg.compareTo(from.subtract(step)) >= 0).min(BigDecimal::compareTo);
+        // "Too heavy?" (ADR-075 #3): a full step down where the rack has one within it, else the next dumbbell down.
+        Optional<BigDecimal> lightest = rack.stream().filter(kg -> kg.compareTo(from) < 0 && kg.compareTo(from.subtract(step)) >= 0).min(BigDecimal::compareTo)
+                .or(() -> rack.stream().filter(kg -> kg.compareTo(from) < 0).max(BigDecimal::compareTo));
 
         assertThat(SessionTable.heavier(ExerciseCatalog.Equipment.DUMBBELL, "dumbbell_curl", gym, from, step).map(BigDecimal::stripTrailingZeros))
                 .isEqualTo(heaviest.map(BigDecimal::stripTrailingZeros));
@@ -159,9 +164,11 @@ class SessionTableTests {
             assertThat(LoadSteps.platesPerSide(kg, bar, plates)).as(kg + " with " + plates).isPresent();
         });
         lighter.ifPresent(kg -> {
-            assertThat(kg).isLessThan(from).isGreaterThanOrEqualTo(from.subtract(step)).isPositive();
+            assertThat(kg).isLessThan(from).isPositive();
             assertThat(LoadSteps.platesPerSide(kg, bar, plates)).as(kg + " with " + plates).isPresent();
         });
+        // Lighter can't hurt: over the empty bar there is always one (ADR-075 #3, "kilo çıkmazsa ne olacak").
+        assertThat(lighter.isPresent()).as("lighter over the bar").isEqualTo(pairsOfFive > 0);
     }
 
     @Property

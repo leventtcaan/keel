@@ -33,7 +33,7 @@
       "unit": "reps_in_reserve",
       "tag": "tecrube",
       "source": "arastirma/ham/guray/G6-eski-arsiv.md#K-40",
-      "note": "The same as training.yaml (K-960, ADR-075 #3): on a move with no target, a set logged with this many reps left or more (2+) is offered the server's heavierLoadKg for the next set. MobileParameterMirrorTests keeps the two equal."
+      "note": "The same as training.yaml (K-960, ADR-075 #3 and Ek 1): on a move with no target, a set logged with this many reps left or more (2+) is offered, for the next set, the load just logged plus the server's calibrationStepKg, rounded to the gym and never past that step (calibrationNext). MobileParameterMirrorTests keeps the two equal."
     },
     {
       "key": "set_max_load_kg",

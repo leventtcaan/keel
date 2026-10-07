@@ -56,6 +56,30 @@ class LoadStepsTests {
         }));
     }
 
+    @TestFactory
+    @SuppressWarnings("unchecked")
+    Stream<DynamicTest> theSharedOneStepCases() throws IOException {
+        // K-960: the in-session heavier load here and the phone's calibration (ADR-075 Ek 1) never go past the step.
+        List<Map<String, Object>> cases = (List<Map<String, Object>>) fixture().get("within");
+        assertThat(cases).isNotEmpty();
+        return cases.stream().map(c -> DynamicTest.dynamicTest((String) c.get("case"), () -> {
+            ExerciseCatalog.Equipment equipment = ExerciseCatalog.Equipment.valueOf((String) c.get("equipment"));
+            String exerciseId = (String) c.get("exerciseId");
+            GymStore.Gym gym = gym((Map<String, Object>) c.get("gym"));
+            Optional<BigDecimal> within = LoadSteps.within(equipment, exerciseId, gym, kg(c.get("fromKg")), kg(c.get("toKg")));
+            Object expected = c.get("expect");
+            if ("UNKNOWN".equals(expected)) {
+                assertThat(LoadSteps.knows(equipment, exerciseId, gym)).isFalse();
+                assertThat(within).isEmpty();
+            } else if (expected == null) {
+                assertThat(LoadSteps.knows(equipment, exerciseId, gym)).isTrue();
+                assertThat(within).isEmpty();
+            } else {
+                assertThat(within).hasValueSatisfying(found -> assertThat(found).isEqualByComparingTo(kg(expected)));
+            }
+        }));
+    }
+
     @Test
     void onlyALoadThatIsAllTheLoadMovedHasAJumpLimit() {
         // K-430 review: a plate-loaded machine's sled and a bodyweight move's body are not in loadKg (ADR-032), so +10 →

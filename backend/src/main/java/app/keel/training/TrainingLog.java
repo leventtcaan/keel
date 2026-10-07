@@ -72,16 +72,18 @@ public class TrainingLog {
 
     /**
      * Each move's working sets in its last session started before {@code before} (K-960: "Beat last time"), by move, in
-     * the order they were done. A move outside the catalog (the user's own) is left out: a program has none.
+     * the order they were done. A move outside the catalog (the user's own) is left out: a program has none. One scan of
+     * the account's working sets, the last start per move a window over it (read on every program view, K-960 review).
      */
     Map<String, List<WorkSet>> lastSessions(AccountId account, Instant before) {
         return jdbc.sql("""
-                with done as (
-                    select s.exercise_id, w.started_at, s.load_kg, s.reps, s.rir, s.side, s.seq from training.workout_set s
+                select d.exercise_id, d.started_at, d.load_kg, d.reps, d.rir, d.side from (
+                    select s.exercise_id, w.started_at, s.load_kg, s.reps, s.rir, s.side, s.seq,
+                           max(w.started_at) over (partition by s.exercise_id) as last_started
+                    from training.workout_set s
                     join training.workout w on w.id = s.workout_id
-                    where s.account_id = :account and s.set_type = 'WORKING' and w.imported_from is null and w.started_at < :before)
-                select d.exercise_id, d.started_at, d.load_kg, d.reps, d.rir, d.side from done d
-                where d.started_at = (select max(l.started_at) from done l where l.exercise_id = d.exercise_id)
+                    where s.account_id = :account and s.set_type = 'WORKING' and w.imported_from is null and w.started_at < :before) d
+                where d.started_at = d.last_started
                 order by d.exercise_id, d.seq""")
                 .param("account", account.value()).param("before", before.atOffset(ZoneOffset.UTC))
                 .query((row, n) -> new WorkSet(row.getString("exercise_id"), row.getObject("started_at", OffsetDateTime.class).toInstant(), null,
