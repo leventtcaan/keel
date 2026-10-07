@@ -1775,6 +1775,13 @@ export interface components {
              */
             heavierLoadKg?: number;
             /**
+             * @description First-session calibration on a move with no nextLoadKg (K-960, ADR-075 Ek 1): the region's load step (H3 B4).
+             *     After a set logged with calibration_rir_min reps left or more (2+), the phone offers the load just logged plus
+             *     this step, rounded to the gym with the shared load steps (the warm-ups' path, K-417). Present only while the
+             *     move has no nextLoadKg.
+             */
+            calibrationStepKg?: number;
+            /**
              * @description The best working set of this move's last session before today (heaviest, then most reps, then fewest left):
              *     "Beat last time". Absent before the move's first session.
              */

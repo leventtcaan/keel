@@ -2484,6 +2484,14 @@ components:
             One load step over the load the session starts from, the nearest heavier the current gym makes within the jump
             limit (ADR-032, K-430). The phone offers it after a set with 2+ reps left on a move with no nextLoadKg (first-
             session calibration, G6 K-40). Absent with no load to start from, or nothing heavier in reach.
+        calibrationStepKg:
+          type: number
+          exclusiveMinimum: 0
+          description: |
+            First-session calibration on a move with no nextLoadKg (K-960, ADR-075 Ek 1): the region's load step (H3 B4).
+            After a set logged with calibration_rir_min reps left or more (2+), the phone offers the load just logged plus
+            this step, rounded to the gym with the shared load steps (the warm-ups' path, K-417). Present only while the
+            move has no nextLoadKg.
         lastBestSet:
           type: object
           description: |
