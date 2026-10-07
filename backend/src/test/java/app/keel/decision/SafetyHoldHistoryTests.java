@@ -56,6 +56,13 @@ class SafetyHoldHistoryTests {
     }
 
     @Test
+    void aDeclinedCallIsNotAppliedAndChangesNothing() {
+        // "Keep last week's plan" (K-963, ADR-077 #3): kept on record, never applied — a declined cut does not end the hold.
+        assertThat(SafetyHolds.from(List.of(applied(HARD_STOP), call(CUT, CallStore.Application.DECLINED)))).isTrue();
+        assertThat(SafetyHolds.from(List.of(applied(HARD_STOP), call(STEP_DOWN, CallStore.Application.DECLINED)))).isTrue();
+    }
+
+    @Test
     void theOrderIsTheCallsOwnNotTheListsAndASecondHardStopHoldsAgain() {
         CallStore.Outcome first = applied(HARD_STOP);
         CallStore.Outcome cut = applied(CUT);

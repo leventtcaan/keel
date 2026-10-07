@@ -1,7 +1,7 @@
 import { t } from '@/copy';
 
 test('returns the English string for a key', () => {
-  expect(t('tabs.today')).toBe('Today');
+  expect(t('tabs.today')).toBe('This week');
 });
 
 test('marks a missing key instead of crashing', () => {

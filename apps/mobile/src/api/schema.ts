@@ -593,6 +593,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/program/starting-weights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * The loads the user knows; each becomes its move's first target in the current program
+         * @description Replaces the starting weights given before (ADR-072 #5). A target a session already set is never changed, and a move
+         *     left out has no target until its first session: none is derived from another. No current program: NOT_FOUND.
+         */
+        put: operations["putStartingWeights"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/gyms": {
         parameters: {
             query?: never;
@@ -1071,8 +1092,9 @@ export interface paths {
         put?: never;
         /**
          * Apply the call; only the one thing it changes moves, everything else stays (U3)
-         * @description Only the latest call, only while PENDING, and only on the plan target it judged (else 409: another call moved the
-         *     plan while this one was being made). Applied twice (or by two requests at once), the targets move once. A
+         * @description Only the latest call, only while PENDING or DECLINED, and only on the plan target it judged (else 409: another call
+         *     moved the plan while this one was being made). From DECLINED it is "Use this call" (K-963, ADR-077 #3): the call
+         *     last week's plan was kept over is applied after all. Applied twice (or by two requests at once), the targets move once. A
          *     calorie call moves the calorie target (and restarts its wait); more movement raises the step target. A change of
          *     phase (the hard stop's too, marked `safety`) starts the new direction today at the maintenance estimate, watched;
          *     the hard stop never under maintenance and is not undone. A mini cut is a cut from today at the engine's target
@@ -1106,6 +1128,34 @@ export interface paths {
          *     again (CONFLICT). The call keeps appliedAt and undoneAt.
          */
         post: operations["undoDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/decisions/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keep last week's plan; the call stays on record, not applied (U2)
+         * @description "Keep last week's plan" (K-963, B11): the latest call, PENDING or APPLIED, becomes DECLINED. The plan is last
+         *     week's: a pending call changes nothing, an applied one is put back exactly as an undo would (its planBefore, and
+         *     the program change it made). The call itself does not change (U2): it stays on record, and the next week's call
+         *     reads the plan as not applied. "Use this call" is POST /v1/decisions/{id}/apply. Declined twice, nothing more
+         *     changes. CONFLICT (409): a call resting on the safety net (marked `safety`, or a reason among its rules; U13) is
+         *     never declined; nor an older call, one that changes nothing (NOT_NEEDED), or one undone. NOT_FOUND for an unknown
+         *     id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
+         */
+        post: operations["declineDecision"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1368,6 +1418,7 @@ export interface components {
              */
             birthYear: number;
             activityLevel?: components["schemas"]["ActivityLevel"];
+            experience?: components["schemas"]["Experience"];
             /** @enum {string} */
             programChoice: "BUILD_ONE_FOR_ME" | "BRING_MY_OWN";
             schedule: components["schemas"]["Schedule"];
@@ -1382,13 +1433,22 @@ export interface components {
          * @enum {string}
          */
         ActivityLevel: "INACTIVE" | "LOW_ACTIVE" | "ACTIVE" | "VERY_ACTIVE";
+        /**
+         * @description How long the user has trained (ADR-072 #3): it changes what the onboarding asks and how many hints the app shows,
+         *     never an engine rule. Absent on a profile made before it was asked.
+         * @enum {string}
+         */
+        Experience: "NEW" | "UNDER_1Y" | "Y1_3" | "Y3_PLUS";
         /** @enum {string} */
         Weekday: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
         Schedule: {
             trainingDays: components["schemas"]["Weekday"][];
-            /** @description Local time, HH:mm; reminders follow it. */
+            /** @description Local time, HH:mm; reminders follow it. Optional; no longer asked (ADR-072 */
             usualTrainingTime?: string;
-            /** @enum {string} */
+            /**
+             * @description Optional; no longer asked (ADR-072
+             * @enum {string}
+             */
             sessionsLastMonth?: "NONE_OR_ONE" | "TWO_TO_THREE" | "FOUR" | "FIVE_OR_MORE";
             checkInDay: components["schemas"]["Weekday"];
             /** @description IANA zone, e.g. Europe/Istanbul; the check-in day is the user's local day. */
@@ -1751,7 +1811,10 @@ export interface components {
             sets: number;
             reps: components["schemas"]["RepRange"];
             targetRir: number;
-            /** @description The load for the next session after progression and deload (K-217); absent until known. */
+            /**
+             * @description The load for the next session after progression and deload (K-217), or a starting weight until the first
+             *     session (ADR-072 #5); absent until known.
+             */
             nextLoadKg?: number;
             /** @description The reps to aim for next session (double progression, K-217); absent until known. */
             nextReps?: number;
@@ -1780,6 +1843,20 @@ export interface components {
                     sets: number;
                     reps: components["schemas"]["RepRange"];
                 }[];
+            }[];
+        };
+        /**
+         * @description The loads an experienced user lifts about 8 times (ADR-072 #5), in kg (ADR-029). Each becomes the first target of
+         *     its move on every day of the current program it is planned on: the nearest load the current gym makes (ADR-032; as
+         *     given without a gym, or without word on that equipment), at the bottom of the rep range. Each move once, planned
+         *     in the program, and one whose load the engine progresses (a compound move; an isolation move has no target).
+         *     An empty list clears the starting weights.
+         */
+        StartingWeights: {
+            weights: {
+                exerciseId: string;
+                /** @description At most 2 decimals. */
+                kg: number;
             }[];
         };
         ProgramRequest: {
@@ -2087,6 +2164,12 @@ export interface components {
              */
             readTrendKg?: number;
             application: components["schemas"]["Application"];
+            /**
+             * @description Whether "Keep last week's plan" may be offered now (K-963, ADR-077 #3), decided by the server: the latest call,
+             *     PENDING or APPLIED, and not resting on the safety net (U13; the phone does not know its rules). False for a
+             *     call that changes nothing, an older one, one undone or already declined. POST /v1/decisions/{id}/decline.
+             */
+            declinable: boolean;
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
@@ -2211,15 +2294,19 @@ export interface components {
         };
         /**
          * @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,
-         *     undoneAt once undone.
+         *     undoneAt once undone. DECLINED (K-963, ADR-077 #3): last week's plan was kept and the call stays on record, not
+         *     applied; declinedAt while it is, and appliedAt with it when it had been applied before. Used after all, it is
+         *     APPLIED again.
          */
         Application: {
             /** @enum {string} */
-            state: "NOT_NEEDED" | "PENDING" | "APPLIED" | "UNDONE";
+            state: "NOT_NEEDED" | "PENDING" | "APPLIED" | "UNDONE" | "DECLINED";
             /** Format: date-time */
             appliedAt?: string;
             /** Format: date-time */
             undoneAt?: string;
+            /** Format: date-time */
+            declinedAt?: string;
         };
         DecisionPage: {
             items: components["schemas"]["Decision"][];
@@ -3395,6 +3482,31 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    putStartingWeights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartingWeights"];
+            };
+        };
+        responses: {
+            /** @description The program with the starting weights as targets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     listGyms: {
         parameters: {
             query?: never;
@@ -4015,6 +4127,29 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The targets after the undo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Targets"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    declineDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The targets after the decline (last week's) */
             200: {
                 headers: {
                     [name: string]: unknown;

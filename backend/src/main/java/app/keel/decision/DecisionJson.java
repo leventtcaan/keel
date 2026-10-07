@@ -45,11 +45,16 @@ final class DecisionJson {
         return json;
     }
 
+    /** Whether a kept call is the hard stop, kept as its change of phase with the safety mark. */
+    static boolean safety(Map<String, Object> call) {
+        return Boolean.TRUE.equals(call.get(SAFETY));
+    }
+
     /** The Action of a kept call ({@link #of}'s "action"), as the engine made it. */
     @SuppressWarnings("unchecked")
     static Action action(Map<String, Object> call) {
         Map<String, Object> action = (Map<String, Object>) call.get("action");
-        if (Boolean.TRUE.equals(call.get(SAFETY))) {
+        if (safety(call)) {
             return new Action.HardStop(); // kept as its change of phase (see the class note)
         }
         return switch (ActionType.valueOf((String) action.get("type"))) {

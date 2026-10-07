@@ -42,6 +42,23 @@ class ExerciseCatalogTests {
     }
 
     @Test
+    void bicepsAndTricepsAreMarkedAsArmsInTheMuscleVocabulary() throws IOException {
+        // G1 K-61: their own weekly minimum (arm_weekly_sets_min); the program review reads the mark (K-955).
+        assertThat(ExerciseCatalog.of(repository(), vocabulary()).armMuscles()).containsExactlyInAnyOrder("biceps", "triceps");
+    }
+
+    @Test
+    void anArmThatIsNotAMuscleIsRefused() {
+        Map<String, Object> vocabulary = new HashMap<>(MUSCLES);
+        vocabulary.put("arm_muscles", List.of("triceps", "biceps"));
+        Map<String, Object> squat = Map.of("squat.yaml", move("squat", "compound", List.of("quads"), List.of()));
+
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(squat, vocabulary));
+        vocabulary.put("arm_muscles", List.of("triceps"));
+        assertThat(ExerciseCatalog.of(squat, vocabulary).armMuscles()).containsExactly("triceps");
+    }
+
+    @Test
     void theTestsMoveIsValidSoEachRefusalBelowIsForItsOwnReason() {
         assertThat(ExerciseCatalog.of(Map.of("squat.yaml", move("squat", "compound", List.of("quads"), List.of())), MUSCLES).all()).hasSize(1);
     }

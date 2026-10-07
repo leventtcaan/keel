@@ -45,13 +45,14 @@ class ProfileStore {
         ProfileController.Schedule schedule = profile.schedule();
         ProfileController.Food food = profile.food();
         jdbc.sql("""
-                insert into profile.profile (account_id, goal, sex, height_cm, birth_year, activity_level, program_choice, units,
+                insert into profile.profile (account_id, goal, sex, height_cm, birth_year, activity_level, experience, program_choice, units,
                     training_days, usual_training_time, sessions_last_month, check_in_day, time_zone, food_avoid, budget_note, updated_at,
                     training_days_since)
-                values (:account, :goal, :sex, :height, :born, :activity, :program, :units, :days, :time, :sessions, :checkIn, :zone,
+                values (:account, :goal, :sex, :height, :born, :activity, :experience, :program, :units, :days, :time, :sessions, :checkIn, :zone,
                     :avoid, :budget, :now, :now)
                 on conflict (account_id) do update set goal = excluded.goal, sex = excluded.sex, height_cm = excluded.height_cm,
-                    birth_year = excluded.birth_year, activity_level = excluded.activity_level, program_choice = excluded.program_choice,
+                    birth_year = excluded.birth_year, activity_level = excluded.activity_level, experience = excluded.experience,
+                    program_choice = excluded.program_choice,
                     units = excluded.units, training_days = excluded.training_days, usual_training_time = excluded.usual_training_time,
                     sessions_last_month = excluded.sessions_last_month, check_in_day = excluded.check_in_day,
                     time_zone = excluded.time_zone, food_avoid = excluded.food_avoid, budget_note = excluded.budget_note,
@@ -62,6 +63,7 @@ class ProfileStore {
                 .param("account", account.value()).param("goal", profile.goal().name()).param("sex", profile.sex().name())
                 .param("height", profile.heightCm()).param("born", profile.birthYear())
                 .param("activity", profile.activityLevel() == null ? null : profile.activityLevel().name())
+                .param("experience", profile.experience() == null ? null : profile.experience().name())
                 .param("program", profile.programChoice().name()).param("units", profile.units().name())
                 .param("days", schedule.trainingDays().stream().map(Enum::name).toArray(String[]::new))
                 .param("time", schedule.usualTrainingTime())
@@ -77,6 +79,7 @@ class ProfileStore {
         String budget = row.getString("budget_note");
         return new ProfileController.Profile(Goal.valueOf(row.getString("goal")), Sex.valueOf(row.getString("sex")),
                 row.getInt("height_cm"), row.getInt("birth_year"), optionalEnum(Activity.class, row.getString("activity_level")),
+                optionalEnum(Experience.class, row.getString("experience")),
                 ProfileController.ProgramChoice.valueOf(row.getString("program_choice")),
                 new ProfileController.Schedule(strings(row.getArray("training_days")).stream().map(DayOfWeek::valueOf).toList(),
                         row.getString("usual_training_time"),

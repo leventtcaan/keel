@@ -122,6 +122,31 @@ class ContractTests {
     }
 
     @Test
+    void aProfileMadeBeforeTheNewOnboardingStaysValid() throws IOException {
+        // ADR-072 #3-#4: the experience is optional, and the questions no longer asked stay optional where they were.
+        Map<String, Object> schemas = schemas();
+        Map<String, Object> profile = map(schemas.get("Profile"));
+        Map<String, Object> schedule = map(schemas.get("Schedule"));
+
+        assertThat(properties(profile)).containsKey("experience");
+        assertThat(list(profile.get("required"))).doesNotContain("experience");
+        assertThat(list(map(schemas.get("Experience")).get("enum"))).containsExactlyElementsOf(names(app.keel.profile.Experience.values()));
+        assertThat(properties(schedule)).containsKeys("usualTrainingTime", "sessionsLastMonth");
+        assertThat(list(schedule.get("required"))).doesNotContain("usualTrainingTime", "sessionsLastMonth");
+    }
+
+    @Test
+    void aStartingWeightIsAMoveAndItsLoad() throws IOException {
+        // ADR-072 #5: the move's id and a load in kg; the answer is the program with it as the first target.
+        Map<String, Object> put = map(map(map(contract().get("paths")).get("/v1/program/starting-weights")).get("put"));
+        Map<String, Object> weight = map(map(properties(map(schemas().get("StartingWeights"))).get("weights")).get("items"));
+
+        assertThat(put.get("operationId")).isEqualTo("putStartingWeights");
+        assertThat(list(weight.get("required"))).containsExactlyInAnyOrder("exerciseId", "kg");
+        assertThat(properties(weight).keySet()).containsExactlyInAnyOrder("exerciseId", "kg");
+    }
+
+    @Test
     void everyCalorieEstimateIsARange() throws IOException {
         // U5, over every schema at any depth — nested objects, allOf branches, array items, and the inline schemas of
         // paths: a property whose name says kcal, calorie or energy is a range, or one of the single numbers above.

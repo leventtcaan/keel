@@ -1,17 +1,12 @@
 package app.keel.decision;
 
-import app.keel.engine.RuleId;
 import app.keel.engine.SafetyHold;
-import app.keel.engine.SafetyNet;
 import app.keel.shared.AccountId;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 
 /**
@@ -20,10 +15,6 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class CallReader {
-
-    // A call waiting for the cycle question (V4) or resting on the safety net (U6): the engine's own words only (K-505 review).
-    private static final Set<String> UNTELLABLE = Stream.concat(Stream.of(SafetyHold.CYCLE_CHECK_NEEDED), SafetyNet.RULES.stream())
-            .map(RuleId::value).collect(Collectors.toUnmodifiableSet());
 
     private final DecisionService decisions;
 
@@ -42,8 +33,9 @@ public class CallReader {
         List<CallFacts.Rule> reasons = ((List<Map<String, Object>>) sent.get("reasons")).stream()
                 .map(reason -> new CallFacts.Rule((String) reason.get("rule"), (String) ((Map<String, Object>) reason.get("source")).get("tag")))
                 .toList();
-        boolean untellable = Boolean.TRUE.equals(sent.get("safety"))
-                || reasons.stream().anyMatch(reason -> UNTELLABLE.contains(reason.rule()));
+        // A call resting on the safety net (U6) or waiting for the cycle question (V4): the engine's own words only (K-505 review).
+        boolean untellable = SafetyCalls.restsOnTheSafetyNet(call.decision())
+                || reasons.stream().anyMatch(reason -> SafetyHold.CYCLE_CHECK_NEEDED.value().equals(reason.rule()));
         return new CallFacts(call.id(), call.madeOn(), (Map<String, Object>) sent.get("action"), reasons, (String) sent.get("confidence"),
                 LocalDate.parse((String) sent.get("nextReview")), (String) sent.get("copyKey"), !untellable);
     }

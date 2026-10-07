@@ -92,6 +92,11 @@ public enum ParameterKey {
     SETS_PER_SESSION_PER_MUSCLE_MAX(ParameterDomain.TRAINING, Unit.SETS),
     FREQUENCY_PER_MUSCLE_PER_WEEK(ParameterDomain.TRAINING, Unit.SESSIONS_PER_WEEK),
     DEFAULT_TRAINING_DAYS_PER_WEEK(ParameterDomain.TRAINING, Unit.DAYS_PER_WEEK),
+    TRAINING_DAYS_MAX(ParameterDomain.TRAINING, Unit.DAYS_PER_WEEK),
+    WEEKLY_SETS_MAX(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
+    WEEKLY_SETS_TRIM_TO(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
+    WEEKLY_SETS_MIN(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
+    REVIEW_MAX_SUGGESTIONS(ParameterDomain.TRAINING, Unit.SUGGESTIONS),
     LOAD_INCREMENT_UPPER_KG(ParameterDomain.TRAINING, Unit.KG),
     LOAD_INCREMENT_LOWER_KG(ParameterDomain.TRAINING, Unit.KG),
     LOAD_JUMP_MAX_STEPS(ParameterDomain.TRAINING, Unit.LOAD_STEPS),
@@ -108,6 +113,7 @@ public enum ParameterKey {
     STAGNATION_DELOAD_MONTHS(ParameterDomain.TRAINING, Unit.MONTHS),
     PLATEAU_SESSIONS(ParameterDomain.TRAINING, Unit.SESSIONS),
     OVERTRAINING_MISSED_PLAN_WEEKS(ParameterDomain.TRAINING, Unit.WEEKS),
+    TRAINING_DAYS_MIN(ParameterDomain.WINDOWS, Unit.DAYS_PER_WEEK),
     MISSED_SESSIONS_IN_A_ROW(ParameterDomain.WINDOWS, Unit.SESSIONS),
     HUNGER_QUESTION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     FIRST_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS),
@@ -159,7 +165,18 @@ public enum ParameterKey {
     PROJECTION_ADHERENCE_HIGH(ParameterDomain.PROJECTION, Unit.RATIO),
     PROJECTION_MAINTENANCE_UNCERTAINTY_KJ_PER_DAY(ParameterDomain.PROJECTION, Unit.KJ_PER_DAY),
     PROJECTION_ERROR_FLOOR_KG(ParameterDomain.PROJECTION, Unit.KG),
-    PROJECTION_MIN_GAP_KCAL(ParameterDomain.PROJECTION, Unit.KCAL_PER_DAY);
+    PROJECTION_MIN_GAP_KCAL(ParameterDomain.PROJECTION, Unit.KCAL_PER_DAY),
+
+    // Cardio (ADR-074): the default prescription, the after-lifting line, the pace band.
+    CARDIO_SESSIONS_CUT_MIN(ParameterDomain.CARDIO, Unit.SESSIONS_PER_WEEK),
+    CARDIO_SESSIONS_CUT_MAX(ParameterDomain.CARDIO, Unit.SESSIONS_PER_WEEK),
+    CARDIO_MINUTES_CUT(ParameterDomain.CARDIO, Unit.MINUTES),
+    CARDIO_SESSIONS_BUILD(ParameterDomain.CARDIO, Unit.SESSIONS_PER_WEEK),
+    CARDIO_MINUTES_BUILD(ParameterDomain.CARDIO, Unit.MINUTES),
+    CARDIO_AFTER_LIFT_MAX_MINUTES(ParameterDomain.CARDIO, Unit.MINUTES),
+    CARDIO_NONE_VERY_ACTIVE(ParameterDomain.CARDIO, Unit.BOOLEAN),
+    CARDIO_HR_MIN_BPM(ParameterDomain.CARDIO, Unit.BEATS_PER_MINUTE),
+    CARDIO_HR_MAX_BPM(ParameterDomain.CARDIO, Unit.BEATS_PER_MINUTE);
 
     private final ParameterDomain domain;
     private final Unit unit;

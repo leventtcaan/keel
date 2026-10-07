@@ -213,19 +213,18 @@ test('in pounds, the labels are the pounds of the same weeks', async () => {
   expect(screen.getByTestId('strength-latest')).toHaveTextContent('229.3 lb');
 });
 
-test('nothing to draw yet: a sentence instead of an empty chart, the projection and the coach still there', async () => {
+test('nothing to draw yet: a sentence instead of an empty chart, and the "+" still there', async () => {
   mockHistory = { state: 'ready', value: [workout('2026-09-30', [set('bench_press', 80, 5), set('lateral_raise', 12, 12, 0)])] };
   await show();
   expect(screen.getByText(t('strength.empty'))).toBeOnTheScreen();
   expect(screen.queryByTestId('strength-chart')).toBeNull();
-  expect(screen.getByRole('button', { name: t('projection.view.title') })).toBeOnTheScreen();
-  expect(screen.getByRole('button', { name: t('coach.entry') })).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('plus.entry') })).toBeOnTheScreen();
 });
 
-test('the projection way in stays on the tab and opens the projection (K-606)', async () => {
+test('the projection and the coach are off the tab (ADR-069 #3, K-953; were K-606, K-307)', async () => {
   await show();
-  await fireEvent.press(screen.getByRole('button', { name: t('projection.view.title') }));
-  expect(mockPush).toHaveBeenCalledWith('/projection');
+  expect(screen.queryByRole('button', { name: t('projection.view.title') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('coach.entry') })).toBeNull();
 });
 
 test('the server not reachable: what is on this phone, said so', async () => {

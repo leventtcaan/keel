@@ -47,8 +47,8 @@ class ProfileController {
 
     /** Contract Profile. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Profile(Goal goal, Sex sex, Integer heightCm, Integer birthYear, Activity activityLevel, ProgramChoice programChoice,
-            Schedule schedule, Food food, Units units) {
+    record Profile(Goal goal, Sex sex, Integer heightCm, Integer birthYear, Activity activityLevel, Experience experience,
+            ProgramChoice programChoice, Schedule schedule, Food food, Units units) {
     }
 
     private static final Pattern CLOCK_TIME = Pattern.compile("([01][0-9]|2[0-3]):[0-5][0-9]");
@@ -100,8 +100,8 @@ class ProfileController {
             return profile;
         }
         Food food = new Food(stored, profile.food() == null ? null : profile.food().budgetNote());
-        return new Profile(profile.goal(), profile.sex(), profile.heightCm(), profile.birthYear(), profile.activityLevel(), profile.programChoice(),
-                profile.schedule(), food, profile.units());
+        return new Profile(profile.goal(), profile.sex(), profile.heightCm(), profile.birthYear(), profile.activityLevel(), profile.experience(),
+                profile.programChoice(), profile.schedule(), food, profile.units());
     }
 
     // Without the consent (never given, or taken back) the foods to avoid are not read out.
@@ -110,8 +110,8 @@ class ProfileController {
             return profile;
         }
         Food food = profile.food().budgetNote() == null ? null : new Food(null, profile.food().budgetNote());
-        return new Profile(profile.goal(), profile.sex(), profile.heightCm(), profile.birthYear(), profile.activityLevel(), profile.programChoice(),
-                profile.schedule(), food, profile.units());
+        return new Profile(profile.goal(), profile.sex(), profile.heightCm(), profile.birthYear(), profile.activityLevel(), profile.experience(),
+                profile.programChoice(), profile.schedule(), food, profile.units());
     }
 
     // The contract's limits (openapi.yaml › Profile, Schedule); enum values are checked by the JSON reader already.

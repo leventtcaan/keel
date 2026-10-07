@@ -41,8 +41,8 @@ you agreed to (GDPR Art. 7(1)). *How long:* until you delete your account.
 
 ### Your profile {#data-profile}
 
-Your goal, sex, height, birth year, activity level, program choice, units, training days and usual time, check-in day,
-time zone, an optional budget note, and foods you avoid. The weekly calls are computed from these.
+Your goal, sex, height, birth year, activity level, training experience, program choice, units, training days and usual time,
+check-in day, time zone, an optional budget note, and foods you avoid. The weekly calls are computed from these.
 
 *Why:* to coach you (contract). Foods you avoid can say something about your health, so they need your health data consent
 and are cleared if you withdraw it. *How long:* until you delete your account.

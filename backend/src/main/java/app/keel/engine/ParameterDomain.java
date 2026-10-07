@@ -4,6 +4,7 @@ import java.util.Locale;
 
 /** The engine's parameter files in data/parameters/ (ADR-010). The caller reads exactly these and nothing else. */
 public enum ParameterDomain {
+    CARDIO,
     MEASUREMENT,
     NUTRITION,
     PROJECTION,
