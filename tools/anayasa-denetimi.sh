@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# The constitution audit in one command (K-804, ADR-061): U4, U6, person names (K-523) and K2 over the app's text and
+# The constitution audit in one command (K-804, ADR-061): U4, U6, person names (K-523), K2, no long or middle dash and the
+# new face's word budgets (ADR-070 #7, K-952) over the app's text and
 # code, the legal pages and the store listing; every route behind its guard; the data inventory (V1, V6); the server's
 # architecture rules and its checks of the coach's text (U1, U4, U6). CI runs each part in its own job;
 # tools/test_anayasa_denetimi.py keeps these lists whole. Run from anywhere; nothing here needs a database.
@@ -15,6 +16,8 @@ MOBILE_SUITES=(
   forbidden-phrases.test.ts
   copy-literals.test.ts
   copy-keys.test.ts
+  copy-dashes.test.ts
+  copy-budget.test.ts
   scanners.test.ts
   tokens.test.ts
   typography.test.ts

@@ -1,0 +1,185 @@
+{
+  "note": "Words on each new-face screen's first view (ADR-069 #4, ADR-072 #9, ADR-077 #1/#3, ADR-078 #5). Budgets are the prototype's measured targets (prototip/yeni-yuz.html, each screen's t:). keys: the copy keys the screen shows on its first view; filled by the task that builds the screen. Legal lines (Terms, Privacy, Restore, Account) are not listed: ADR-072 #9 leaves them out. copy-budget.test.ts holds every listed screen to its budget.",
+  "screens": [
+    {
+      "screen": "welcome",
+      "budget": 25,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-goal",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "keys": []
+    },
+    {
+      "screen": "ob-exp",
+      "budget": 25,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-program",
+      "budget": 25,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-own",
+      "budget": 30,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-review",
+      "budget": 75,
+      "source": "ADR-073 #2",
+      "keys": []
+    },
+    {
+      "screen": "ob-days",
+      "budget": 25,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-consent",
+      "budget": 25,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-about",
+      "budget": 25,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-activity",
+      "budget": 25,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-weights",
+      "budget": 30,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-preparing",
+      "budget": 20,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "ob-plan",
+      "budget": 55,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "paywall",
+      "budget": 70,
+      "source": "ADR-072 #9",
+      "keys": []
+    },
+    {
+      "screen": "home",
+      "budget": 40,
+      "source": "ADR-077 #1",
+      "keys": []
+    },
+    {
+      "screen": "home-mon",
+      "budget": 40,
+      "source": "ADR-077 #1",
+      "keys": []
+    },
+    {
+      "screen": "train",
+      "budget": 55,
+      "source": "ADR-069 #4",
+      "keys": []
+    },
+    {
+      "screen": "summary",
+      "budget": 55,
+      "source": "ADR-075 #7",
+      "keys": []
+    },
+    {
+      "screen": "progress",
+      "budget": 50,
+      "source": "ADR-078 #5",
+      "keys": []
+    },
+    {
+      "screen": "plus",
+      "budget": 15,
+      "source": "ADR-069 #4",
+      "keys": []
+    },
+    {
+      "screen": "weigh",
+      "budget": 15,
+      "source": "ADR-069 #4",
+      "keys": []
+    },
+    {
+      "screen": "health-jit",
+      "budget": 30,
+      "source": "ADR-072 #8",
+      "keys": []
+    },
+    {
+      "screen": "meal",
+      "budget": 25,
+      "source": "ADR-069 #4",
+      "keys": []
+    },
+    {
+      "screen": "barcode",
+      "budget": 10,
+      "source": "ADR-069 #4",
+      "keys": []
+    },
+    {
+      "screen": "checkin",
+      "budget": 30,
+      "source": "ADR-077 #2",
+      "keys": []
+    },
+    {
+      "screen": "call",
+      "budget": 45,
+      "source": "ADR-077 #3",
+      "keys": []
+    },
+    {
+      "screen": "week1",
+      "budget": 45,
+      "source": "ADR-077 #4",
+      "keys": []
+    },
+    {
+      "screen": "share",
+      "budget": 25,
+      "source": "ADR-076",
+      "keys": []
+    },
+    {
+      "screen": "return",
+      "budget": 45,
+      "source": "ADR-077 #5",
+      "keys": []
+    },
+    {
+      "screen": "life",
+      "budget": 30,
+      "source": "ADR-077 #6",
+      "keys": []
+    }
+  ]
+}

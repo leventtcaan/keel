@@ -141,7 +141,7 @@ test('the target effort: moves whose every work set had RIR at or under the targ
   );
   expect(summary.reached).toBe(1);
   expect(summary.judged).toBe(2); // push-ups without RIR are not judged
-  expect(summary.moves[0].note).toBe('RIR 2. Next time, aim for 0–1.');
+  expect(summary.moves[0].note).toBe('RIR 2. Next time, aim for 0-1.');
   expect(summary.moves[1].note).toBeNull();
 });
 
