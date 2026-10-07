@@ -24,6 +24,7 @@ const call = (id: string, madeOn: string, readTrendKg?: number): Decision => ({
   nextReview: '2026-10-12',
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
+  declinable: false,
   ...(readTrendKg === undefined ? {} : { readTrendKg }),
 });
 

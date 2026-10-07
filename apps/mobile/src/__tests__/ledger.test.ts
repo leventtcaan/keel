@@ -18,6 +18,7 @@ const call = (id: string, madeOn: string, extra: Partial<Decision> = {}): Decisi
   nextReview: '2026-10-12',
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
+  declinable: false,
   ...extra,
 });
 

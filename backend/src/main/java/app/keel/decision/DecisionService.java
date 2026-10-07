@@ -467,6 +467,21 @@ class DecisionService {
     }
 
     /**
+     * Whether "Keep last week's plan" may be offered on this call now (K-963, contract Decision.declinable): the latest
+     * call, PENDING or APPLIED, not resting on the safety net (U13). The phone reads this; it never learns the safety
+     * net's rules (K2).
+     */
+    static boolean declinable(CallStore.Call call, boolean latest) {
+        boolean open = call.application() == CallStore.Application.PENDING || call.application() == CallStore.Application.APPLIED;
+        return latest && open && !SafetyCalls.restsOnTheSafetyNet(call.decision());
+    }
+
+    /** The id of the account's latest call, the only one that can be applied, undone or declined; the caller has checked consent. */
+    Optional<UUID> latestId(AccountId account) {
+        return calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(CallStore.Call::id);
+    }
+
+    /**
      * The deload ladder's calls go to the program (K-217): hold the load from today; a lighter week or a week off from
      * today until the day before the call's next review, when the next call decides again. CONFLICT without a program.
      * False for any other call: it is the plan's.

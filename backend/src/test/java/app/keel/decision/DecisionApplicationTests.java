@@ -175,7 +175,9 @@ class DecisionApplicationTests {
     @Test
     void aCallRestingOnTheSafetyNetIsNeverDeclined() throws Exception {
         // U13: the hard stop (kept with its safety mark) and a call with a safety net rule among its reasons — pending or
-        // applied, CONFLICT with the code's own words, and nothing moves.
+        // applied, CONFLICT with the code's own words, and nothing moves. The applied state is written as apply would
+        // leave it, not through apply: this test fails only over decline.
+        CallStore.Plan safetyPlan = new CallStore.Plan(Phase.BULK, TODAY, TODAY, 2750, true, null);
         for (SafetyNetCall safety : List.of(new SafetyNetCall(new Action.HardStop(), "low_energy_safety"),
                 new SafetyNetCall(new Action.IncreaseCalories(150), "loss_rate_cap"),
                 new SafetyNetCall(new Action.IncreaseCalories(150), "bmr_floor"))) {
@@ -189,13 +191,38 @@ class DecisionApplicationTests {
             assertThat(map(pendingDeclined)).containsEntry("code", "CONFLICT").containsEntry("message", ErrorCode.CONFLICT.message());
             assertThat(store.byId(account, call).orElseThrow().application()).isEqualTo(CallStore.Application.PENDING);
             assertThat(store.plan(account)).contains(LAST_WEEKS_PLAN);
+            assertThat(map(send(account, "GET", "/v1/decisions/" + call))).as(safety.rule()).containsEntry("declinable", false);
 
-            assertThat(send(account, "POST", "/v1/decisions/" + call + "/apply")).as(safety.rule()).hasStatusOk();
-            CallStore.Plan applied = store.plan(account).orElseThrow();
+            assertThat(store.markApplied(account, call, Instant.now(), LAST_WEEKS_PLAN, safetyPlan)).isTrue();
+            store.replace(account, safetyPlan);
+
             assertThat(send(account, "POST", "/v1/decisions/" + call + "/decline")).as(safety.rule() + " applied").hasStatus(409);
             assertThat(store.byId(account, call).orElseThrow().application()).isEqualTo(CallStore.Application.APPLIED);
-            assertThat(store.plan(account)).contains(applied);
+            assertThat(store.plan(account)).contains(safetyPlan);
+            assertThat(map(send(account, "GET", "/v1/decisions/" + call))).containsEntry("declinable", false);
         }
+    }
+
+    @Test
+    void theCallSaysWhetherItCanBeDeclined() throws Exception {
+        // Contract Decision.declinable: the server decides; the phone never reads the safety net's rules (K2).
+        AccountId account = onACut();
+        UUID older = pending(account, new Action.AdjustCalories(-500), THIS_WEEK.minusWeeks(1), Instant.now().minusSeconds(7200));
+        UUID call = pending(account, new Action.AdjustCalories(-500));
+
+        assertThat(map(send(account, "GET", "/v1/decisions/current"))).containsEntry("declinable", true);
+        assertThat(map(send(account, "GET", "/v1/decisions/" + older))).as("history").containsEntry("declinable", false);
+        List<Map<String, Object>> ledger = (List<Map<String, Object>>) map(send(account, "GET", "/v1/decisions")).get("items");
+        assertThat(ledger).extracting(item -> item.get("declinable")).containsExactly(true, false);
+
+        send(account, "POST", "/v1/decisions/" + call + "/apply");
+        assertThat(map(send(account, "GET", "/v1/decisions/" + call))).as("applied by default").containsEntry("declinable", true);
+        send(account, "POST", "/v1/decisions/" + call + "/decline");
+        assertThat(map(send(account, "GET", "/v1/decisions/" + call))).as("declined already").containsEntry("declinable", false);
+
+        AccountId holding = onACut();
+        pending(holding, new Action.Continue());
+        assertThat(map(send(holding, "GET", "/v1/decisions/current"))).as("changes nothing").containsEntry("declinable", false);
     }
 
     @Test

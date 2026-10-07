@@ -29,6 +29,7 @@ const DECISION: Schemas['Decision'] = {
   nextReview: '2026-10-05',
   copyKey: 'decision.adjust_calories.not_toward_goal',
   application: { state: 'PENDING' },
+  declinable: false,
 };
 const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-05' };
 // Tuesday: a session today.

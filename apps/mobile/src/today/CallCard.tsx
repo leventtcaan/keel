@@ -91,8 +91,10 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
   }
 
   const state = decision.application.state;
+  // Declined (last week's plan kept, K-963) is not applied: it offers the same one tap, which uses the call after all.
+  const toApply = state === 'PENDING' || state === 'DECLINED';
   const change =
-    variant !== 'change' ? null : state === 'PENDING' ? (
+    variant !== 'change' ? null : toApply ? (
       <View style={styles.reasons}>
         <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t('today.call.oneThing')}</Text>
         <Button label={t('today.call.apply')} size="sm" onPress={() => void apply()} disabled={busy} />

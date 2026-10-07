@@ -9,6 +9,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { appliedKey } from '@/today/call';
 import { ThemeProvider } from '@/theme/theme';
 import { formatWeight } from '@/units/units';
 
@@ -52,6 +53,7 @@ const decision = (copyKey: string, extra: Partial<Schemas['Decision']> = {}): Sc
   nextReview: '2026-10-05',
   copyKey,
   application: { state: 'NOT_NEEDED' },
+  declinable: false,
   ...extra,
 });
 const PROGRAM: Schemas['Program'] = {
@@ -794,6 +796,15 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
     expect(screen.queryByText(t('today.call.hold'))).toBeNull();
     expect(allText()).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
+  });
+
+  test('declined (last week\'s plan kept): never shown as applied, and the call can still be used with one tap', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(change('DECLINED'));
+    await show();
+    expect(screen.queryByText(t(appliedKey('decision.change_movement.bmr_floor')))).toBeNull();
+    expect(screen.getByText(t('today.call.oneThing'))).toBeOnTheScreen();
+    await press(t('today.call.apply'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd7' } } });
   });
 
   test('undone: the plan is back as it was, and nothing to apply again', async () => {
