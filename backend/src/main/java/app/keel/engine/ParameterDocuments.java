@@ -65,7 +65,10 @@ final class ParameterDocuments {
             // above the lowest BMI any scenario may reach.
             new Order(ParameterKey.PROJECTION_ADHERENCE_LOW, ParameterKey.PROJECTION_ADHERENCE_MID, true),
             new Order(ParameterKey.PROJECTION_ADHERENCE_MID, ParameterKey.PROJECTION_ADHERENCE_HIGH, true),
-            new Order(ParameterKey.PROJECTION_MIN_BMI, ParameterKey.PROJECTION_LOSS_MIN_BMI, true));
+            new Order(ParameterKey.PROJECTION_MIN_BMI, ParameterKey.PROJECTION_LOSS_MIN_BMI, true),
+            // The fat-loss cardio band and the pace band are ranges (G2 K-32, K-33).
+            new Order(ParameterKey.CARDIO_SESSIONS_CUT_MIN, ParameterKey.CARDIO_SESSIONS_CUT_MAX, false),
+            new Order(ParameterKey.CARDIO_HR_MIN_BPM, ParameterKey.CARDIO_HR_MAX_BPM, true));
 
     private static final Map<String, ParameterKey> KEYS_BY_YAML = Arrays.stream(ParameterKey.values())
             .collect(Collectors.toUnmodifiableMap(ParameterKey::yamlKey, Function.identity()));
