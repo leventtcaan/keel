@@ -67,3 +67,12 @@ dönüş, `state`, `data/parameters/windows.yaml` (`training_days_min`, `return_
 `FirstWeekAdjustment` tablo testleri (üç satırın eşik altı/kendisi/üstü; hiçbir girdide < `training_days_min`) · özellik testi: his cevabı
 yalnız tablodaki satırları değiştirir · decline testi: karar kayıtta, plan değişmez, sonraki hafta "not applied"; güvenlik kararında decline 409 ·
 ekran testleri: Today kelime bütçesi, karar ekranında dört parça.
+
+## Ek 1 · 1. hafta kararının uygulanışı (K-962, 2026-10-07, agent, teknik; Levent görsün)
+- "Bir gün ekle" ve "kaçan seansı taşı" kararları programı kendiliğinden değiştirmez (`Application.state = NOT_NEEDED`, `declinable=false`):
+  hangi gün eklenecek ya da taşınacak, kullanıcının haftasına bağlı. "Sounds right" kullanıcıyı K-978'de gün seçimine götürür (öneri dolu gelir).
+  #3'teki "varsayılan uygulanır" ilkesi kalori ve antrenman yükü kararları için sürer; gün değişikliği kullanıcının dokunuşuyla olur.
+- Kayıt günü planlanan seans sayılmaz (kullanıcı başlamadan "kaçırıldı" denmez, U7); o gün yapılan seans sayılır.
+- 2 günlük planda "bir gün ekle" 3 gündür (+1, taban `training_days_min`); metin ideali ({idealMin}) hedef gösterir, 3'ü "en iyi" demez.
+- His cevabı karar gerekçesinde taşınır (`week1Feel`), ekran geri yansıtır.
+- Sıra: güvenlik ağı › mini cut sonu › bildirilen durum › ters giden antrenman › 1. hafta kararı › yük merdiveni.
