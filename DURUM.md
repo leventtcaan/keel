@@ -737,8 +737,26 @@ Tur 2'de yakalanan hata: karar ekranı "Bench 75 → 72.5 kg" diyordu; çift ile
 Prototipte verilen tasarım kararları (Levent görür, beğenmezse değişir): "+" sekme çubuğunun yanında ayrı daire (iOS 26 ayrık sekme düğmesi; NativeTabs'te uygulanabilirliği [doğrulanmadı]); "Life got in the way" "+" içinde ikincil satır; karar bloğu zeminin tersi (koyu temada açık blok); vurgu yalnız birincil eylem + kararın sayısı; tema seçici Ayarlar'da (Light/Dark/System, varsayılan Light). Not: Pazartesi kaydolan kişide 7 günlük deneme ilk kararın olduğu gün biter (karar sabah, ücret kayıt saatinde) — fiyat/deneme ADR'sinde yazılacak.
 
 ## M9a ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
-Ortak talimat ve part'lar: `plan/oturum-promptlari/YENI-YUZ-kod.md`. Henüz başlanmadı (7 Eki). Part 1: K-951, K-952, K-953, K-954, K-955, K-958,
+Ortak talimat ve part'lar: `plan/oturum-promptlari/YENI-YUZ-kod.md`. Part 1: K-951, K-952, K-953, K-954, K-955, K-958,
 K-960, K-961, K-962, K-963.
+
+**Part 1 başı (7 Eki):** senkron — ana checkout ayrık HEAD = `origin/main` `dd37f78`, temiz; açık PR yok; worktree `../keel-main` (eski `main`);
+Dependabot 3 açık uyarı (önceki gibi); disk 13 GB; Part 1 görevlerinin bağımlılıkları Part içinde (K-953 → K-951, K-962 → K-954).
+Çalışma şekli: motor görevleri (K-955, K-958) ayrı worktree'de arka plan ajanlarıyla, mobil (K-951 → K-952 → K-953) ana checkout'ta; her PR
+inceleme ajanlarından geçmeden auto-merge yok.
+
+| Görev | Durum | PR | Not |
+|---|---|---|---|
+| K-951 token'lar + tema seçici | ⏳ | | |
+| K-952 metin kuralları | ⏳ | | |
+| K-953 iskelet 3 sekme + "+" | ⏳ | | |
+| K-954 profil: deneyim, başlangıç ağırlıkları | ⏳ | | |
+| K-955 ProgramReview | ⏳ ajan | | |
+| K-958 CardioPrescription | ⏳ ajan | | |
+| K-960 seans içi öneri tablosu | ⏳ | | |
+| K-961 sonra doldur, otomatik kapanış | ⏳ | | |
+| K-962 FirstWeekAdjustment | ⏳ | | |
+| K-963 DECLINED | ⏳ | | |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
