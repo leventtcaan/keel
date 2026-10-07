@@ -125,11 +125,29 @@ final class NextTargets {
     /**
      * The target as shown today: a load added while the deload ladder now holds the load is the last load at the top of
      * the range — the hold may have begun after the target was set (K-217 review). So is a rep past the top, which stands
-     * in for a load the gym could not add (K-414 review).
+     * in for a load the gym could not add (K-414 review). A starting weight ({@code lastLoadKg} null) was never lifted:
+     * there is no load to hold it to, it is shown as given.
      */
     static Target shown(Target stored, BigDecimal lastLoadKg, RepRange range, boolean holdInForce) {
+        if (lastLoadKg == null) {
+            return stored;
+        }
         boolean progressed = stored.loadKg().compareTo(lastLoadKg) > 0 || stored.reps() > range.max();
         return holdInForce && progressed ? new Target(lastLoadKg, range.max()) : stored;
+    }
+
+    /**
+     * A starting weight as the move's first target (ADR-072 #5): the load the user gave as the gym in use makes it — the
+     * nearest load it has (ADR-032; a tie to the lighter), the load as given where there is no gym or no word on this
+     * equipment — from the bottom of the range, where a new load starts (as an added load does, K-217).
+     */
+    static Target starting(BigDecimal kg, RepRange range, ExerciseCatalog.Equipment equipment, String exerciseId, Optional<GymStore.Gym> gym) {
+        BigDecimal load = gym.map(inUse -> switch (LoadSteps.round(equipment, exerciseId, inUse, BigDecimal.ZERO, kg)) {
+            case LoadSteps.Rounding.To(BigDecimal made) -> made;
+            case LoadSteps.Rounding.TooFar(BigDecimal made) -> made;
+            case LoadSteps.Rounding.NoHeavier(), LoadSteps.Rounding.Unknown() -> kg;
+        }).orElse(kg);
+        return new Target(load, range.min());
     }
 
     /** A one-sided move's target: the side that did less decides (each side is its own set, SetRules). */

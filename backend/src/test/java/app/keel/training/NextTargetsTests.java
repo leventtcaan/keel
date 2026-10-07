@@ -98,6 +98,39 @@ class NextTargetsTests {
     }
 
     @Test
+    void aStartingWeightIsTheFirstTargetAsTheGymCanMakeItFromTheBottomOfTheRange() {
+        // ADR-072 #5: the load the user gave, rounded to the nearest the gym in use makes (ADR-032), where a new load starts.
+        GymStore.Gym gym = new GymStore.Gym(null, "Test", true, new BigDecimal("20"), List.of(new BigDecimal("10"), new BigDecimal("5"),
+                new BigDecimal("2.5")), List.of(new BigDecimal("18"), new BigDecimal("20"), new BigDecimal("22")), null, java.util.Map.of());
+
+        assertThat(NextTargets.starting(new BigDecimal("81"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.of(gym)))
+                .isEqualTo(new NextTargets.Target(new BigDecimal("80"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("12"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.of(gym)))
+                .as("lighter than the bar: the bar").isEqualTo(new NextTargets.Target(new BigDecimal("20"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("21"), new RepRange(8, 12), ExerciseCatalog.Equipment.DUMBBELL, "one_arm_dumbbell_row",
+                java.util.Optional.of(gym))).as("a tie goes to the lighter").isEqualTo(new NextTargets.Target(new BigDecimal("20"), 8));
+    }
+
+    @Test
+    void withoutAGymOrWordOnTheEquipmentTheStartingWeightIsAsGiven() {
+        GymStore.Gym noBar = new GymStore.Gym(null, "Test", true, null, List.of(), List.of(), null, java.util.Map.of());
+
+        assertThat(NextTargets.starting(new BigDecimal("81.25"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.empty()))
+                .isEqualTo(new NextTargets.Target(new BigDecimal("81.25"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("81.25"), SIX_TO_TEN, ExerciseCatalog.Equipment.BARBELL, "bench_press", java.util.Optional.of(noBar)))
+                .isEqualTo(new NextTargets.Target(new BigDecimal("81.25"), 6));
+    }
+
+    @Test
+    void aStartingWeightWasNeverLiftedSoAHoldHasNothingToHoldItTo() {
+        // No session behind it, no load it came from: shown as given, a deload hold or not.
+        NextTargets.Target start = new NextTargets.Target(new BigDecimal("80"), 6);
+
+        assertThat(NextTargets.shown(start, null, SIX_TO_TEN, true)).isEqualTo(start);
+        assertThat(NextTargets.shown(start, null, SIX_TO_TEN, false)).isEqualTo(start);
+    }
+
+    @Test
     void theSessionIsTheWorkSetsAtTheDaysTopLoad() {
         // Two sets at 80, a back-off at 70: the top load and its sets; a set without RIR reads as the planned RIR.
         List<TrainingLog.WorkSet> sets = List.of(set("80", 8, 2), set("80", 7, null), set("70", 10, 3));
