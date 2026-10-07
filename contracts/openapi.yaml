@@ -835,6 +835,66 @@ paths:
                 $ref: "#/components/schemas/ReviewUndone"
         default:
           $ref: "#/components/responses/Error"
+  /v1/program/cardio:
+    put:
+      tags: [training]
+      operationId: putProgramCardio
+      summary: The user's own cardio (ADR-074 #4); the engine never overwrites it, a new program and a new phase keep it
+      description: |
+        Replaces the engine's default cardio (and any the user set before) with this one: its sessions are the user's
+        days and places, none turns cardio off. No current program: NOT_FOUND.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardioPlan"
+      responses:
+        "200":
+          description: The program with the user's cardio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [training]
+      operationId: deleteProgramCardio
+      summary: Back to the coach's default cardio (ADR-074 Ek 1); the user's own is removed
+      description: |
+        The program's cardio is the engine's default again, following the phase in force. Harmless twice: without the
+        user's own cardio it answers the program as it is. No current program: NOT_FOUND.
+      responses:
+        "200":
+          description: The program with the default cardio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/cardio-sessions:
+    post:
+      tags: [training]
+      operationId: logCardioSession
+      summary: A cardio session done, typed or read from Apple Health (ADR-074 #6)
+      description: |
+        Counted in its week's cardio (Program.cardio.doneThisWeek); never in the food budget nor in the weekly consistency,
+        which counts weight sessions (ADR-074 #5, #6). Active energy needs the health data consent (CONSENT_REQUIRED).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewCardioSession"
+      responses:
+        "201":
+          $ref: "#/components/responses/CardioSessionCreated"
+        "200":
+          $ref: "#/components/responses/CardioSessionCreated"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/gyms:
     get:
       tags: [training]
@@ -1671,6 +1731,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Workout"
+    CardioSessionCreated:
+      description: Stored (201), or already stored with this clientId (200)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CardioSession"
     SetCreated:
       description: Stored (201), or already stored with this clientId (200)
       content:
@@ -2468,6 +2534,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProgramDay"
+        cardio:
+          $ref: "#/components/schemas/ProgramCardio"
         review:
           $ref: "#/components/schemas/ProgramReview"
     ProgramReview:
@@ -2565,6 +2633,108 @@ components:
           type: string
           format: uuid
           description: AppliedReviewChange.id; absent to undo every change in force.
+    ProgramCardio:
+      type: object
+      description: |
+        This week's cardio (ADR-074): the engine's default for the phase in force, the training days and the activity
+        (GENERATED; cardio.yaml), or the user's own (USER), which neither a new program nor a new phase changes. Absent
+        when there is neither: very active work, a gaining phase without training days, no profile yet. Each session is
+        after the weights on a training day or at a very low pace on an off day, never before the weights (G2 K-35).
+        `doneThisWeek` is the days of this week (Monday to Sunday, the user's calendar) with a cardio session logged: the
+        "1 of 3 this week". Cardio is not in the food budget and not in the weekly consistency, which counts weight
+        sessions (ADR-074 #5, #6).
+      required: [source, minutes, sessionsPerWeek, sessions, doneThisWeek, afterLiftOverLine]
+      properties:
+        afterLiftOverLine:
+          type: boolean
+          description: |
+            True when a session after the weights runs past cardio_after_lift_max_minutes (G2 K-35): the app shows one line
+            of information (copy cardio_after_lift_over_line), never a block (ADR-074 #4). Set by the server; the phone runs
+            no rule.
+        source:
+          $ref: "#/components/schemas/CardioSource"
+        minutes:
+          type: integer
+          minimum: 1
+          description: Each session's length.
+        sessionsPerWeek:
+          type: integer
+          minimum: 0
+          description: The week's target, the number of sessions; 0 is cardio the user turned off.
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlannedCardio"
+        doneThisWeek:
+          type: integer
+          minimum: 0
+    CardioSource:
+      type: string
+      description: GENERATED is the engine's default; USER the user's own, never overwritten by the engine (ADR-074 #4).
+      enum: [GENERATED, USER]
+    PlannedCardio:
+      type: object
+      description: One cardio session of the week, one a day at most.
+      required: [weekday, place]
+      properties:
+        weekday:
+          $ref: "#/components/schemas/Weekday"
+        place:
+          $ref: "#/components/schemas/CardioPlace"
+    CardioPlace:
+      type: string
+      description: After the weights on a training day, or on a day without weights at a very low pace (G2 K-35, K-36). Never before the weights.
+      enum: [AFTER_LIFT, OFF_DAY_LOW_INTENSITY]
+    CardioPlan:
+      type: object
+      description: The user's own cardio (ADR-074 #4); an empty list turns cardio off.
+      required: [minutes, sessions]
+      properties:
+        minutes:
+          type: integer
+          minimum: 1
+          maximum: 600
+        sessions:
+          type: array
+          maxItems: 7
+          description: One a weekday at most.
+          items:
+            $ref: "#/components/schemas/PlannedCardio"
+    NewCardioSession:
+      type: object
+      required: [clientId, day, minutes, source]
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        day:
+          type: string
+          format: date
+        minutes:
+          type: integer
+          minimum: 1
+          maximum: 600
+        source:
+          $ref: "#/components/schemas/CardioLogSource"
+        activeEnergyKcal:
+          type: integer
+          minimum: 0
+          maximum: 5000
+          description: |
+            What an Apple Watch measured during the session (HealthKit active energy), passed through as given; only with
+            APPLE_HEALTH, absent without a watch. Never estimated, never added to the food budget (ADR-074 #5).
+    CardioSession:
+      allOf:
+        - $ref: "#/components/schemas/NewCardioSession"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+    CardioLogSource:
+      type: string
+      description: Typed in the app, or read from an Apple Health workout (the same word as MeasurementSource).
+      enum: [MANUAL, APPLE_HEALTH]
     DeloadWeek:
       type: object
       description: A lighter week in force (K-217); ends on its own after `until`.

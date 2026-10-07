@@ -686,6 +686,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/program/cardio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * The user's own cardio (ADR-074
+         * @description Replaces the engine's default cardio (and any the user set before) with this one: its sessions are the user's
+         *     days and places, none turns cardio off. No current program: NOT_FOUND.
+         */
+        put: operations["putProgramCardio"];
+        post?: never;
+        /**
+         * Back to the coach's default cardio (ADR-074 Ek 1); the user's own is removed
+         * @description The program's cardio is the engine's default again, following the phase in force. Harmless twice: without the
+         *     user's own cardio it answers the program as it is. No current program: NOT_FOUND.
+         */
+        delete: operations["deleteProgramCardio"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cardio-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A cardio session done, typed or read from Apple Health (ADR-074
+         * @description Counted in its week's cardio (Program.cardio.doneThisWeek); never in the food budget nor in the weekly consistency,
+         *     which counts weight sessions (ADR-074 #5, #6). Active energy needs the health data consent (CONSENT_REQUIRED).
+         */
+        post: operations["logCardioSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/gyms": {
         parameters: {
             query?: never;
@@ -1830,6 +1877,7 @@ export interface components {
             /** @enum {string} */
             source: "GENERATED" | "OWN";
             days: components["schemas"]["ProgramDay"][];
+            cardio?: components["schemas"]["ProgramCardio"];
             review?: components["schemas"]["ProgramReview"];
         };
         /**
@@ -1889,6 +1937,72 @@ export interface components {
              */
             changeId?: string;
         };
+        /**
+         * @description This week's cardio (ADR-074): the engine's default for the phase in force, the training days and the activity
+         *     (GENERATED; cardio.yaml), or the user's own (USER), which neither a new program nor a new phase changes. Absent
+         *     when there is neither: very active work, a gaining phase without training days, no profile yet. Each session is
+         *     after the weights on a training day or at a very low pace on an off day, never before the weights (G2 K-35).
+         *     `doneThisWeek` is the days of this week (Monday to Sunday, the user's calendar) with a cardio session logged: the
+         *     "1 of 3 this week". Cardio is not in the food budget and not in the weekly consistency, which counts weight
+         *     sessions (ADR-074 #5, #6).
+         */
+        ProgramCardio: {
+            /**
+             * @description True when a session after the weights runs past cardio_after_lift_max_minutes (G2 K-35): the app shows one line
+             *     of information (copy cardio_after_lift_over_line), never a block (ADR-074 #4). Set by the server; the phone runs
+             *     no rule.
+             */
+            afterLiftOverLine: boolean;
+            source: components["schemas"]["CardioSource"];
+            /** @description Each session's length. */
+            minutes: number;
+            /** @description The week's target, the number of sessions; 0 is cardio the user turned off. */
+            sessionsPerWeek: number;
+            sessions: components["schemas"]["PlannedCardio"][];
+            doneThisWeek: number;
+        };
+        /**
+         * @description GENERATED is the engine's default; USER the user's own, never overwritten by the engine (ADR-074
+         * @enum {string}
+         */
+        CardioSource: "GENERATED" | "USER";
+        /** @description One cardio session of the week, one a day at most. */
+        PlannedCardio: {
+            weekday: components["schemas"]["Weekday"];
+            place: components["schemas"]["CardioPlace"];
+        };
+        /**
+         * @description After the weights on a training day, or on a day without weights at a very low pace (G2 K-35, K-36). Never before the weights.
+         * @enum {string}
+         */
+        CardioPlace: "AFTER_LIFT" | "OFF_DAY_LOW_INTENSITY";
+        /** @description The user's own cardio (ADR-074 */
+        CardioPlan: {
+            minutes: number;
+            /** @description One a weekday at most. */
+            sessions: components["schemas"]["PlannedCardio"][];
+        };
+        NewCardioSession: {
+            clientId: components["schemas"]["ClientId"];
+            /** Format: date */
+            day: string;
+            minutes: number;
+            source: components["schemas"]["CardioLogSource"];
+            /**
+             * @description What an Apple Watch measured during the session (HealthKit active energy), passed through as given; only with
+             *     APPLE_HEALTH, absent without a watch. Never estimated, never added to the food budget (ADR-074 #5).
+             */
+            activeEnergyKcal?: number;
+        };
+        CardioSession: components["schemas"]["NewCardioSession"] & {
+            /** Format: uuid */
+            id: string;
+        };
+        /**
+         * @description Typed in the app, or read from an Apple Health workout (the same word as MeasurementSource).
+         * @enum {string}
+         */
+        CardioLogSource: "MANUAL" | "APPLE_HEALTH";
         /** @description A lighter week in force (K-217); ends on its own after `until`. */
         DeloadWeek: {
             setsFactor: number;
@@ -2823,6 +2937,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["Workout"];
+            };
+        };
+        /** @description Stored (201), or already stored with this clientId (200) */
+        CardioSessionCreated: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["CardioSession"];
             };
         };
         /** @description Stored (201), or already stored with this clientId (200) */
@@ -3778,6 +3901,70 @@ export interface operations {
                     "application/json": components["schemas"]["ReviewUndone"];
                 };
             };
+            default: components["responses"]["Error"];
+        };
+    };
+    putProgramCardio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardioPlan"];
+            };
+        };
+        responses: {
+            /** @description The program with the user's cardio */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteProgramCardio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The program with the default cardio */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    logCardioSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewCardioSession"];
+            };
+        };
+        responses: {
+            200: components["responses"]["CardioSessionCreated"];
+            201: components["responses"]["CardioSessionCreated"];
             default: components["responses"]["Error"];
         };
     };
