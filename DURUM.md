@@ -1,5 +1,5 @@
 ---
-guncelleme: 2026-10-07
+guncelleme: 2026-10-08
 ---
 # DURUM
 
@@ -789,6 +789,28 @@ inceleme ajanlarından geçmeden auto-merge yok.
   hafif seçeneği salonun bir alt basamağı da olabilir (ADR-075 Ek 1).
 - **Kalite notu:** paralel ajan derlemeleri makineyi load 400'e çıkardı; o sırada 3 mobil test dosyası 5 sn zaman aşımına düştü, yük düşünce
   104/104 geçti. Part 2'de aynı anda en çok 3 arka uç ajanı.
+
+-----
+**Part 2 başı (8 Eki):** senkron — ana checkout ayrık HEAD = `origin/main` `667b958d`, temiz; açık PR yok; Part 1 ÇIKIŞ git ile tutarlı (10/10);
+worktree `../keel-952`, `../keel-main`, `happy-khayyam` (başka oturum); Dependabot aynı 3 geçişli uyarı; disk 11 GB; simülatör iPhone 16 Pro Max açık.
+Bağımlılıklar `done` (K-955, K-958, K-951, K-952, K-954). **Levent cevapları:** vurgu `#007684` kalır (ADR-070 Ek 1 KABUL) · gizlilik "training
+experience" satırı uygun · ADR-077 Ek 1 KABUL · "Too heavy?" bilgisi verildi, itiraz yok (ADR-075 Ek 1) · **K-983 sonra** (Levent yapınca sandbox
+kontrolü; K-967 paywall süreyi `introPrice`'tan okur, test 1 ve 2 haftayla).
+Çalışma şekli: ben düzenleyici + inceleme; uygulayıcılar ayrı worktree'de, aynı anda en çok 3. **Göç sırası:** Flyway `outOfOrder` kapalı ve
+`MigrationConventionTests` boşluk istemiyor → göçlü PR'lar birleşme anında sıradaki numaraya alınır, aynı anda tek göçlü PR auto-merge'de.
+Geçici numaralar: K-956 V39 · K-959 V40 · K-964 V41 · K-957 V42 · K-965 V43 (gerekirse).
+
+| Görev | Durum | PR | Not |
+|---|---|---|---|
+| K-956 program incelemesi uçları | ⏳ | | |
+| K-957 içe aktarmadan taslak | ⏳ | | |
+| K-959 kardiyo sözleşmesi | ⏳ | | |
+| K-964 bugünü/hareketi değiştir | ⏳ | | |
+| K-965 ilerleme özetleri | ⏳ | | |
+| K-966 onboarding A | ⏳ | | |
+| K-967 onboarding B + paywall | ⏳ | | |
+| K-968 kendi programı dalı | ⏳ | | |
+| K-983 ASC 2 hafta (Levent) | ⏳ sonra | | sandbox kontrolü Levent bitirince |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.

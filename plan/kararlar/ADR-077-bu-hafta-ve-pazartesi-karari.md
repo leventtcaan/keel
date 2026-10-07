@@ -68,7 +68,7 @@ dönüş, `state`, `data/parameters/windows.yaml` (`training_days_min`, `return_
 yalnız tablodaki satırları değiştirir · decline testi: karar kayıtta, plan değişmez, sonraki hafta "not applied"; güvenlik kararında decline 409 ·
 ekran testleri: Today kelime bütçesi, karar ekranında dört parça.
 
-## Ek 1 · 1. hafta kararının uygulanışı (K-962, 2026-10-07, agent, teknik; Levent görsün)
+## Ek 1 · 1. hafta kararının uygulanışı (K-962, 2026-10-07, agent, teknik; **Levent KABUL, 2026-10-08**)
 - "Bir gün ekle" ve "kaçan seansı taşı" kararları programı kendiliğinden değiştirmez (`Application.state = NOT_NEEDED`, `declinable=false`):
   hangi gün eklenecek ya da taşınacak, kullanıcının haftasına bağlı. "Sounds right" kullanıcıyı K-978'de gün seçimine götürür (öneri dolu gelir).
   #3'teki "varsayılan uygulanır" ilkesi kalori ve antrenman yükü kararları için sürer; gün değişikliği kullanıcının dokunuşuyla olur.

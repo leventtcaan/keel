@@ -79,7 +79,7 @@ Sözleşme testi: öneri alanları salona yuvarlanmış ve basamak kadar uzak ·
 `Consistency` testi: sonra doldurulan seans haftasını sayar; otomatik kapanış hedefleri hesaplar · ekran testleri: dinlenme hiçbir düğmeyi
 örtmez, son setten sonra çıkmaz; "Too heavy?" iki seçenek gösterir; atlanan hareket "Hold" · rekor tanımı tablo testi.
 
-## Ek 1 · İlk seans kalibrasyonunda "bir basamak ağır" telefonda nasıl bulunur (K-960, 2026-10-07, agent, teknik)
+## Ek 1 · İlk seans kalibrasyonunda "bir basamak ağır" telefonda nasıl bulunur (K-960, 2026-10-07, agent, teknik; Levent'e bildirildi 2026-10-08, itiraz yok)
 Hedefi olmayan harekette kilo seans sırasında kullanıcının girdiği değer; sunucu bunu önceden bilemez, `heavierLoadKg` hesaplanamaz.
 Karar: sunucu yalnız bu hareketler için `calibrationStepKg` (bölgenin yük basamağı, `load_increment_upper_kg`/`_lower_kg`, H3 B4) gönderir;
 telefon girilen kiloya ekler ve ısınma setlerinin kullandığı ortak `loadSteps.round` ile salona yuvarlar (ADR-032, K-417). Ne zaman önerileceği
