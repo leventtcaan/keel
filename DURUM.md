@@ -747,16 +747,16 @@ inceleme ajanlarından geçmeden auto-merge yok.
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-951 token'lar + tema seçici | ⏳ | | |
-| K-952 metin kuralları | ⏳ | | |
-| K-953 iskelet 3 sekme + "+" | ⏳ | | |
-| K-954 profil: deneyim, başlangıç ağırlıkları | ⏳ | | |
-| K-955 ProgramReview | ⏳ ajan | | |
-| K-958 CardioPrescription | ⏳ ajan | | |
+| K-951 token'lar + tema seçici | ✅ birleşti | #449 | ADR-070 Ek 1: açık vurgu `#007684` (AA için), **Levent onayı bekliyor**; iOS'a `Appearance.setColorScheme` |
+| K-952 metin kuralları | ✅ birleşti | #451 | `data/copy/word-budgets.json` (prototip `t:` ile sabit); görevi `done` olan ekran anahtarlarını listelemek zorunda |
+| K-953 iskelet 3 sekme + "+" | ⏳ inceleme | dal `mobile/416-three-tabs` | inen 10 rota `guard={false}`; Cardio satırı K-980'de; simülatör turu K-969'a (Part 3) ertelendi |
+| K-954 profil: deneyim, başlangıç ağırlıkları | ⏳ inceleme | #454 | V35 çakışması (#453); gizlilik metnine "training experience" (Levent görsün) |
+| K-955 ProgramReview | ⏳ düzeltme | #450 | inceleme: kol tamamlamada 1 setlik seans (K-10) → ajan düzeltiyor |
+| K-958 CardioPrescription | ✅ birleşti | #448 | kazanımda off güne seans yok (ADR-074 metni) |
 | K-960 seans içi öneri tablosu | ⏳ | | |
-| K-961 sonra doldur, otomatik kapanış | ⏳ | | |
+| K-961 sonra doldur, otomatik kapanış | ⏳ inceleme | #452 | endedAt = startedAt; 15 dk'da bir |
 | K-962 FirstWeekAdjustment | ⏳ | | |
-| K-963 DECLINED | ⏳ | | |
+| K-963 DECLINED | ⏳ inceleme | #453 | V35 |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.

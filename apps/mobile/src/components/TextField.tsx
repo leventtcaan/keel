@@ -5,7 +5,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /** What an empty number field shows, faint: the empty table cell's dash (prototype `.fv.ghost`). */
-const EMPTY = '–';
+const EMPTY = '-';
 const NUMERIC: TextInputProps['keyboardType'][] = ['number-pad', 'decimal-pad', 'numeric'];
 
 type Props = {

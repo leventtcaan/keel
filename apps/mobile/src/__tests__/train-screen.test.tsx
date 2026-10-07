@@ -97,7 +97,7 @@ test("each day with its moves, this week's sets, the reps and the server's next 
   expect(screen.getByText('Bench press')).toBeTruthy();
   expect(screen.getByText('Next 62.5 kg × 6')).toBeTruthy();
   expect(screen.getByText('Next +10 kg × 8')).toBeTruthy();
-  expect(screen.getAllByText('3 sets · 6–10 reps').length).toBe(3);
+  expect(screen.getAllByText('3 sets · 6-10 reps').length).toBe(3);
   // Tuesday: the lower day is today's.
   expect(screen.getByTestId('day-b')).toHaveTextContent(/Today/);
   expect(screen.getByTestId('day-a')).not.toHaveTextContent(/Today/);
@@ -124,14 +124,14 @@ test('the calls in force are said above the days: a week off with its note, a li
   expect(await screen.findByText('A week off training, until Oct 4.')).toBeTruthy();
   expect(screen.getByText('Rest is the plan this week. Your program picks up after it.')).toBeTruthy();
   expect(screen.getByText('A lighter week, until Oct 11: fewer sets, the same weights.')).toBeTruthy();
-  expect(screen.getByText('2 of 3 sets · 6–10 reps')).toBeTruthy();
+  expect(screen.getByText('2 of 3 sets · 6-10 reps')).toBeTruthy();
 });
 
 test("a busy week: its least dose above the days, the program's own sets as they are (K-528, U2)", async () => {
   mockDeclared = { kind: 'BUSY', since: '2026-09-28', busyDose: { sessions: 1, setsPerExercise: 1, keepLoad: true } };
   await show();
   expect(await screen.findByText("A busy week: one session with one set per exercise, at your usual weights, keeps what you've built. Anything more is a bonus.")).toBeTruthy();
-  expect(screen.getAllByText('3 sets · 6–10 reps').length).toBeGreaterThan(0);
+  expect(screen.getAllByText('3 sets · 6-10 reps').length).toBeGreaterThan(0);
 });
 
 test('offline, the program kept on the phone, and it says so', async () => {

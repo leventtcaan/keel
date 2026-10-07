@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
-import { CoachEntry } from '@/components/CoachEntry';
+import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -13,14 +13,13 @@ import { CheckInCard } from '@/today/CheckInCard';
 import { FirstWeeksCard } from '@/today/FirstWeeksCard';
 import { PromptCard } from '@/today/PromptCard';
 import { StateCard } from '@/today/StateCard';
-import { CoachChips } from '@/today/CoachChips';
 import { ConsistencyCard } from '@/today/ConsistencyCard';
 import { TodayList } from '@/today/TodayList';
-import { chips } from '@/today/today';
 import { useToday } from '@/today/useToday';
 
 /**
- * Today (K-401, prototype 2.1): the consistency number, this week's call, today's list and the coach's chips. Each part
+ * This week (K-401, prototype 2.1; K-969 gives it the new face): the consistency number, this week's call and today's list;
+ * the coach's chips are off the surface (ADR-069 #3). Each part
  * stands on its own: what is not there yet says what comes; without the health data consent the number and the call
  * give way to one line and the way to Settings; a part that failed says so once, with a way to try again.
  */
@@ -65,10 +64,9 @@ export default function TodayScreen() {
     data === null ? null : (
       <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
     );
-  const coachChips = data === null ? null : <CoachChips keys={chips(data, day)} />;
 
   return (
-    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the coach bar sits above it.
+    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.head}>
@@ -84,10 +82,9 @@ export default function TodayScreen() {
         {prompt}
         {call}
         {list}
-        {coachChips}
       </ScrollView>
-      <View style={styles.coach}>
-        <CoachEntry />
+      <View style={styles.plus}>
+        <PlusEntry />
       </View>
     </SafeAreaView>
   );
@@ -103,5 +100,5 @@ const styles = StyleSheet.create({
   },
   note: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
-  coach: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
+  plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
 });

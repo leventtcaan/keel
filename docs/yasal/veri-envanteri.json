@@ -147,7 +147,7 @@
    "table": "profile.profile",
    "module": "profile",
    "class": "account",
-   "purpose": "Your coaching profile: goal, sex, height, birth year, activity, program choice, units, training days and time, check-in day, time zone, foods you avoid, budget note.",
+   "purpose": "Your coaching profile: goal, sex, height, birth year, activity, training experience, program choice, units, training days and time, check-in day, time zone, foods you avoid, budget note.",
    "columns": [
     "account_id",
     "goal",
@@ -165,7 +165,8 @@
     "food_avoid",
     "budget_note",
     "updated_at",
-    "training_days_since"
+    "training_days_since",
+    "experience"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,
@@ -420,7 +421,7 @@
    "table": "training.planned_exercise",
    "module": "training",
    "class": "training",
-   "purpose": "Planned moves with sets, rep range, reps in reserve and the next session's target.",
+   "purpose": "Planned moves with sets, rep range, reps in reserve and the next session's target (from a session, or the starting weight you gave).",
    "columns": [
     "id",
     "day_id",

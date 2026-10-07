@@ -218,18 +218,15 @@ test('turned off: what was shown is forgotten and nothing more is read', async (
   expect(mockGET).not.toHaveBeenCalled();
 });
 
-test('Progress leads to it', async () => {
+test('Progress no longer leads to it: off the surface, the code kept (ADR-069 #3, K-953)', async () => {
   mockServices = { api: { GET: mockGET } };
   await render(
     <ThemeProvider scheme="light">
       <ProgressScreen />
     </ThemeProvider>,
   );
-
-  await act(async () => {
-    fireEvent.press(screen.getByRole('button', { name: t('projection.view.title') }));
-  });
-  expect(mockPush).toHaveBeenCalledWith('/projection');
+  await act(async () => {});
+  expect(screen.queryByRole('button', { name: t('projection.view.title') })).toBeNull();
 });
 
 test('every reason the contract can give has words', () => {

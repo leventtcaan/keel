@@ -14,7 +14,7 @@ test('it counts up from the last set, second by second', async () => {
     </ThemeProvider>,
   );
   expect(screen.getByText('1:24')).toBeTruthy();
-  expect(screen.getByText('Rest · 2:00–3:00')).toBeTruthy();
+  expect(screen.getByText('Rest · 2:00-3:00')).toBeTruthy();
   await act(async () => jest.advanceTimersByTime(1000));
   expect(screen.getByText('1:25')).toBeTruthy();
 });

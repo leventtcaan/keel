@@ -740,6 +740,29 @@ paths:
                 $ref: "#/components/schemas/Program"
         default:
           $ref: "#/components/responses/Error"
+  /v1/program/starting-weights:
+    put:
+      tags: [training]
+      operationId: putStartingWeights
+      summary: The loads the user knows; each becomes its move's first target in the current program
+      description: |
+        Replaces the starting weights given before (ADR-072 #5). A target a session already set is never changed, and a move
+        left out has no target until its first session: none is derived from another. No current program: NOT_FOUND.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartingWeights"
+      responses:
+        "200":
+          description: The program with the starting weights as targets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/gyms:
     get:
       tags: [training]
@@ -1768,6 +1791,8 @@ components:
           minimum: 1900
         activityLevel:
           $ref: "#/components/schemas/ActivityLevel"
+        experience:
+          $ref: "#/components/schemas/Experience"
         programChoice:
           type: string
           enum: [BUILD_ONE_FOR_ME, BRING_MY_OWN]
@@ -1785,6 +1810,12 @@ components:
       type: string
       description: The whole day's activity, training included (K-114). Absent until asked.
       enum: [INACTIVE, LOW_ACTIVE, ACTIVE, VERY_ACTIVE]
+    Experience:
+      type: string
+      description: |
+        How long the user has trained (ADR-072 #3): it changes what the onboarding asks and how many hints the app shows,
+        never an engine rule. Absent on a profile made before it was asked.
+      enum: [NEW, UNDER_1Y, Y1_3, Y3_PLUS]
     Weekday:
       type: string
       enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
@@ -1800,9 +1831,10 @@ components:
         usualTrainingTime:
           type: string
           pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
-          description: Local time, HH:mm; reminders follow it.
+          description: Local time, HH:mm; reminders follow it. Optional; no longer asked (ADR-072 #4), kept where given.
         sessionsLastMonth:
           type: string
+          description: Optional; no longer asked (ADR-072 #4), kept where given; nothing reads it.
           enum: [NONE_OR_ONE, TWO_TO_THREE, FOUR, FIVE_OR_MORE]
         checkInDay:
           $ref: "#/components/schemas/Weekday"
@@ -2483,7 +2515,9 @@ components:
         nextLoadKg:
           type: number
           minimum: 0
-          description: The load for the next session after progression and deload (K-217); absent until known.
+          description: |
+            The load for the next session after progression and deload (K-217), or a starting weight until the first
+            session (ADR-072 #5); absent until known.
         nextReps:
           type: integer
           minimum: 1
@@ -2542,6 +2576,29 @@ components:
                       maximum: 20
                     reps:
                       $ref: "#/components/schemas/RepRange"
+    StartingWeights:
+      type: object
+      description: |
+        The loads an experienced user lifts about 8 times (ADR-072 #5), in kg (ADR-029). Each becomes the first target of
+        its move on every day of the current program it is planned on: the nearest load the current gym makes (ADR-032; as
+        given without a gym, or without word on that equipment), at the bottom of the rep range. Each move once, planned
+        in the program, and one whose load the engine progresses (a compound move; an isolation move has no target).
+        An empty list clears the starting weights.
+      required: [weights]
+      properties:
+        weights:
+          type: array
+          items:
+            type: object
+            required: [exerciseId, kg]
+            properties:
+              exerciseId:
+                type: string
+              kg:
+                type: number
+                exclusiveMinimum: 0
+                maximum: 1000
+                description: At most 2 decimals.
     ProgramRequest:
       type: object
       required: [trainingDays]

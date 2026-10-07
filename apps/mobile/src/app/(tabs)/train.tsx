@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { CoachEntry } from '@/components/CoachEntry';
+import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
@@ -130,7 +130,7 @@ export default function TrainScreen() {
   };
 
   return (
-    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the coach bar sits above it.
+    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('screens.train.title')}</ScreenTitle>
@@ -141,8 +141,8 @@ export default function TrainScreen() {
         {notes}
         {program?.days.map(dayCard)}
       </ScrollView>
-      <View style={styles.coach}>
-        <CoachEntry />
+      <View style={styles.plus}>
+        <PlusEntry />
       </View>
     </SafeAreaView>
   );
@@ -157,5 +157,5 @@ const styles = StyleSheet.create({
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
-  coach: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
+  plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
 });

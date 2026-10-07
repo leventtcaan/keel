@@ -1,0 +1,55 @@
+parameters:
+  - key: cardio_sessions_cut_min
+    value: 3
+    unit: sessions_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-32"
+    note: "Yağ kaybı fazı: seans = antrenman günü sayısı, en az 3 en çok 5 (KRD24 'haftada 3-5 gün', ADR-074 #1). YAG25'in 'en az 1, tipik 2'si kullanılmaz: konuşmacı belirsiz, solo kaynakla sayıda çelişir (G2 başlık uyarısı 1). Plan 3 günden azsa eksik seans off güne, çok düşük tempo (K-36)."
+  - key: cardio_sessions_cut_max
+    value: 5
+    unit: sessions_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-32"
+    note: "KRD24 bandının üstü. 6-7 günlük planda haftanın ilk 5 antrenman gününe konur."
+  - key: cardio_minutes_cut
+    value: 30
+    unit: minutes
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-31"
+    note: "KV24 (solo): '30 dk ≈ 300 kcal ideal', fazlası antrenman performansından çalar. K-35 (KRD24): ağırlık sonrası kardiyo 20-30 dk'yı geçmemeli; 30 bandın üstü."
+  - key: cardio_sessions_build
+    value: 2
+    unit: sessions_per_week
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-32"
+    note: "KRD24: bulk döneminde haftada 2-3 gün × 20-30 dk; varsayılan bandın altı (ADR-074 #1). İlk iki antrenman gününe, ağırlıktan sonra; antrenman günü sayısını aşmaz, off güne konmaz (ADR-074 #1 off gün dolgusunu yalnız yağ kaybına verir; K-36)."
+  - key: cardio_minutes_build
+    value: 20
+    unit: minutes
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-32"
+    note: "KRD24 bulk bandı 20-30 dk'nın altı."
+  - key: cardio_after_lift_max_minutes
+    value: 30
+    unit: minutes
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-35"
+    note: "KRD24: ağırlık sonrası kardiyo natürelde 20-30 dk'yı geçmemeli. Kullanıcı daha uzununu seçerse tek satır bilgi, engel değil (ADR-074 #4)."
+  - key: cardio_none_very_active
+    value: true
+    unit: boolean
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-46"
+    note: "KRD24: çok aktif işte (garson, antrenör) kardiyo hiç gerekmeyebilir; masa başı işte mutlaka (K-32 koşulu). true: VERY_ACTIVE için varsayılan reçete yok, kullanıcı isterse kendisi ekler. INACTIVE aynı reçeteyi alır (ADR-074 #1). Yükleyici liste değer okumuyor; bu yüzden etkinlik düzeyi listesi yerine tek bayrak."
+  - key: cardio_hr_min_bpm
+    value: 100
+    unit: beats_per_minute
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-33"
+    note: "LISS: ~110 nabız, kişiye göre 100-120, konuşma testi (KRD24). Yalnız Apple Watch verisi varken bilgi satırı (ADR-074 #2); karar girdisi değil."
+  - key: cardio_hr_max_bpm
+    value: 120
+    unit: beats_per_minute
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-33"
+    note: "Bandın üstü; 150-160'a çıkan kişiye 'daha yavaş' (K-33)."

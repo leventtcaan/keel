@@ -11,6 +11,7 @@ import * as path from 'path';
 import ts from 'typescript';
 
 import app from '../../app.json';
+import { RETIRED } from '@/navigation/tabs';
 
 const APP = path.resolve(__dirname, '../app');
 const MAIN_GUARD = "signedIn && onboarding === 'done' && gate === 'open'";
@@ -20,6 +21,8 @@ const OTHER_STATES: Record<string, string[]> = {
   "signedIn && onboarding === 'needed'": ['onboarding'],
   "signedIn && onboarding === 'unknown'": ['checking'],
   '!signedIn': ['sign-in'],
+  // Taken off the surface (ADR-069 #3): the code stays, nothing opens them, a link neither.
+  false: [...RETIRED],
 };
 
 type Screens = { byGuard: Record<string, string[]>; open: string[] };
@@ -85,7 +88,7 @@ test('only the screens of the other states are outside the main guard', () => {
   const { byGuard } = layout();
   const others = Object.fromEntries(Object.entries(byGuard).filter(([guard]) => guard !== MAIN_GUARD));
   expect(others).toEqual(OTHER_STATES);
-  expect(byGuard[MAIN_GUARD]?.length).toBeGreaterThan(20);
+  expect(byGuard[MAIN_GUARD]?.length).toBeGreaterThan(15); // the reader saw the main guard's screens, not one
 });
 
 test('every route of the app is a guarded screen, and every guarded screen a route', () => {

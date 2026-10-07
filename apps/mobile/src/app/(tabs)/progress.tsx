@@ -5,12 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { CoachEntry } from '@/components/CoachEntry';
+import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { PhotoCard } from '@/photos/PhotoCard';
 import { StrengthSection } from '@/progress/StrengthSection';
-import { ProjectionEntry } from '@/projection/ProjectionEntry';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
@@ -81,18 +80,17 @@ export default function ProgressScreen() {
   const phoneOnly = read !== null && server === null ? <Text style={[styles.small, { color: color.muted }]}>{t('history.phoneOnly')}</Text> : null;
 
   return (
-    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the coach bar sits above it.
+    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('screens.progress.title')}</ScreenTitle>
         {phoneOnly}
         {strength}
         {read !== null && <PhotoCard today={read.today} flowWeek={flowWeek(read.firstWeeks)} />}
-        <ProjectionEntry />
         <ShareEntry />
       </ScrollView>
-      <View style={styles.coach}>
-        <CoachEntry />
+      <View style={styles.plus}>
+        <PlusEntry />
       </View>
     </SafeAreaView>
   );
@@ -114,5 +112,5 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: tokens.space.lg, gap: tokens.space.md },
   small: { fontSize: tokens.type.bodySmall },
-  coach: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md },
+  plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md },
 });
