@@ -839,8 +839,10 @@ export interface paths {
          *     from a woman: asked in the low energy band or when the call would wait for it after a hard stop, never kept, a
          *     man's is VALIDATION_FAILED. STATE_STILL (YES/NO, K-516): asked once a state has been declared on a day of each of the
          *     last state_still_after_paused_weeks weeks and is in force today; NO ends it yesterday (this week, declared, still
-         *     waits). Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from the data, the rest are read
-         *     with their own questions later.
+         *     waits). WEEK1_FEEL (TOO_MUCH/ABOUT_RIGHT/COULD_DO_MORE, ADR-077 #4): asked at the call that closes the first week,
+         *     only when COULD_DO_MORE would change it (every planned session done, not a beginner, fewer training days than the
+         *     ideal), inside the week's budget. Any other kind is VALIDATION_FAILED (400): how it looks and the waist come from the
+         *     data, the rest are read with their own questions later.
          */
         post: operations["answerCheckIn"];
         delete?: never;
@@ -1435,7 +1437,8 @@ export interface components {
         ActivityLevel: "INACTIVE" | "LOW_ACTIVE" | "ACTIVE" | "VERY_ACTIVE";
         /**
          * @description How long the user has trained (ADR-072 #3): it changes what the onboarding asks and how many hints the app shows,
-         *     never an engine rule. Absent on a profile made before it was asked.
+         *     and one engine rule: the first week's "add a day" is only for someone not just starting (ADR-077 #4); absent, the
+         *     engine does not suggest it. Absent on a profile made before it was asked.
          * @enum {string}
          */
         Experience: "NEW" | "UNDER_1Y" | "Y1_3" | "Y3_PLUS";
@@ -2044,10 +2047,10 @@ export interface components {
         };
         /**
          * @description What the engine can be missing (its CheckIn) plus the scales the app asks with. Adherence is not asked: it is the
-         *     week's consistency, counted from the logs (ADR-020 L-6).
+         *     week's consistency, counted from the logs (ADR-020 L-6). WEEK1_FEEL: "How did week 1 feel?" (ADR-077 #4).
          * @enum {string}
          */
-        QuestionKind: "TRAINING" | "RECOVERY" | "SLEEP_QUALITY" | "ENERGY" | "LOOK" | "WAIST" | "APPETITE" | "CYCLE_STOPPED" | "STATE_STILL";
+        QuestionKind: "TRAINING" | "RECOVERY" | "SLEEP_QUALITY" | "ENERGY" | "LOOK" | "WAIST" | "APPETITE" | "CYCLE_STOPPED" | "STATE_STILL" | "WEEK1_FEEL";
         Question: {
             kind: components["schemas"]["QuestionKind"];
             /** @enum {string} */
@@ -2332,7 +2335,8 @@ export interface components {
          * @description Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,
          *     undoneAt once undone. DECLINED (K-963, ADR-077 #3): last week's plan was kept and the call stays on record, not
          *     applied; declinedAt while it is, and appliedAt with it when it had been applied before. Used after all, it is
-         *     APPLIED again.
+         *     APPLIED again. The first week's training-day calls (ADD_TRAINING_DAY, MOVE_MISSED_SESSIONS) are NOT_NEEDED and
+         *     not declinable: the days are the user's to pick, with the training days, not through apply (ADR-077 Ek 1).
          */
         Application: {
             /** @enum {string} */
@@ -2377,7 +2381,7 @@ export interface components {
         /** @enum {string} */
         Phase: "CUT" | "BULK";
         /** @description What the engine decided (the engine's sealed Action); `type` names the kind, the rest is its data. */
-        Action: components["schemas"]["NoDecisionYet"] | components["schemas"]["Continue"] | components["schemas"]["AdjustCalories"] | components["schemas"]["IncreaseCalories"] | components["schemas"]["ChangeMovement"] | components["schemas"]["FixTraining"] | components["schemas"]["FixRecovery"] | components["schemas"]["FixAdherence"] | components["schemas"]["HardStop"] | components["schemas"]["StopLoadIncrease"] | components["schemas"]["Deload"] | components["schemas"]["FullRestWeek"] | components["schemas"]["MiniCut"] | components["schemas"]["ChangePhase"];
+        Action: components["schemas"]["NoDecisionYet"] | components["schemas"]["Continue"] | components["schemas"]["AdjustCalories"] | components["schemas"]["IncreaseCalories"] | components["schemas"]["ChangeMovement"] | components["schemas"]["FixTraining"] | components["schemas"]["FixRecovery"] | components["schemas"]["FixAdherence"] | components["schemas"]["HardStop"] | components["schemas"]["StopLoadIncrease"] | components["schemas"]["Deload"] | components["schemas"]["FullRestWeek"] | components["schemas"]["MiniCut"] | components["schemas"]["ChangePhase"] | components["schemas"]["AddTrainingDay"] | components["schemas"]["MoveMissedSessions"];
         /** @description Not enough data, or the window is not full — said, not guessed (U3). */
         NoDecisionYet: {
             /**
@@ -2486,6 +2490,31 @@ export interface components {
              */
             type: "CHANGE_PHASE";
             to: components["schemas"]["Phase"];
+        };
+        /**
+         * @description The first week's call (ADR-077 #4): every planned session done and "I could do more", so one more training day a
+         *     week. `toDays` is the new count, never under the engine's floor of three; which day is the user's to pick.
+         */
+        AddTrainingDay: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "ADD_TRAINING_DAY";
+            toDays: number;
+        };
+        /**
+         * @description The first week's call (ADR-077 #4): most of the week's sessions didn't happen, so the days that were missed move
+         *     to days that fit; the number of training days stays. `missed` are the planned weekdays without a session, in the
+         *     week's order; the user picks where they go.
+         */
+        MoveMissedSessions: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "MOVE_MISSED_SESSIONS";
+            missed: components["schemas"]["Weekday"][];
         };
         /**
          * @description What the user follows today; each a plan number set by calls (ADR-020 L-13). Protein does not depend on calories
