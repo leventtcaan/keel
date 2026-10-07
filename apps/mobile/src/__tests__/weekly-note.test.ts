@@ -21,6 +21,7 @@ const call = (action: Record<string, unknown>, extra: Partial<Schemas['Decision'
   nextReview: '2026-10-12',
   copyKey: 'decision.adjust_calories.not_toward_goal',
   application: { state: 'PENDING' },
+  declinable: false,
   ...extra,
 });
 
@@ -89,6 +90,11 @@ test('applied, the focus is the same change — said as the change, so it never 
   const applied = weeklyNote(call({ type: 'ADJUST_CALORIES', kcalPerDay: -250 }, { application: { state: 'APPLIED', appliedAt: '2026-10-05T08:00:00Z' } }));
   expect(applied.at(-1)).toEqual({ key: 'coach.note.focus.adjust_calories.less', values: { kcal: '250' } });
   expect(t('coach.note.focus.adjust_calories.less', { kcal: '250' })).not.toMatch(/than your current/);
+});
+
+test('a declined change (last week\'s plan kept) is said as not applied, never as the change', () => {
+  const declined = weeklyNote(call({ type: 'ADJUST_CALORIES', kcalPerDay: -250 }, { application: { state: 'DECLINED', declinedAt: '2026-10-06T08:00:00Z' } }));
+  expect(declined.at(-1)).toEqual({ key: 'coach.note.focus.undone' });
 });
 
 test('a change taken back is said to be: no focus on it', () => {

@@ -48,7 +48,7 @@ class DecisionController {
     @PostMapping("/v1/check-ins/current/answers")
     Map<String, Object> answer(AccountId account, @RequestBody CheckInAnswers answers) {
         require(answers.clientId() != null && answers.weekOf() != null && answers.answers() != null);
-        return view(decisions.checkIn(account, answers.clientId(), answers.weekOf(), answers.answers()));
+        return sent(account, decisions.checkIn(account, answers.clientId(), answers.weekOf(), answers.answers()));
     }
 
     @GetMapping("/v1/decisions")
@@ -58,9 +58,10 @@ class DecisionController {
         // One more than asked tells whether an older page exists.
         List<CallStore.Call> page = decisions.page(account, Optional.ofNullable(before), size + 1);
         List<CallStore.Call> shown = page.subList(0, Math.min(size, page.size()));
+        Optional<UUID> latest = decisions.latestId(account);
         // Each call with the trend weight it read (K-611): the ledger says what came after it, never why.
         return new DecisionPage(shown.stream().map(call -> {
-                    Map<String, Object> view = view(call);
+                    Map<String, Object> view = sent(call, latest);
                     decisions.trendRead(call).ifPresent(kg -> view.put("readTrendKg", kg));
                     return view;
                 }).toList(),
@@ -69,12 +70,13 @@ class DecisionController {
 
     @GetMapping("/v1/decisions/current")
     Map<String, Object> current(AccountId account) {
-        return view(decisions.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
+        CallStore.Call call = decisions.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return sent(call, Optional.of(call.id()));
     }
 
     @GetMapping("/v1/decisions/{id}")
     Map<String, Object> call(AccountId account, @PathVariable UUID id) {
-        return view(decisions.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
+        return sent(account, decisions.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
     }
 
     /** Contract DecisionBasis (K-519): the rows "Why this call" shows — health data, behind the consent like the call. */
@@ -112,6 +114,12 @@ class DecisionController {
         return decisions.undo(account, id);
     }
 
+    /** "Keep last week's plan" (K-963, ADR-077 #3); "Use this call" is apply. */
+    @PostMapping("/v1/decisions/{id}/decline")
+    PlanTargets decline(AccountId account, @PathVariable UUID id) {
+        return decisions.decline(account, id);
+    }
+
     /** Contract Consistency (K-420): this week's four kinds of planned action, and the weeks on track. */
     @GetMapping("/v1/consistency")
     Map<String, Object> consistency(AccountId account) {
@@ -144,8 +152,19 @@ class DecisionController {
         return decisions.targets(account);
     }
 
+    /** Contract Decision as the app reads it: the kept call, and whether "Keep last week's plan" may be offered (K-963). */
+    private Map<String, Object> sent(AccountId account, CallStore.Call call) {
+        return sent(call, decisions.latestId(account));
+    }
+
+    private static Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest) {
+        Map<String, Object> view = view(call);
+        view.put("declinable", DecisionService.declinable(call, latest.filter(call.id()::equals).isPresent()));
+        return view;
+    }
+
     /**
-     * Contract Decision: the id and the day, the engine's decision field for field — its sources by kind only (K-523) —
+     * The kept call as recorded (the export reads it too): the id and the day, the engine's decision field for field — its sources by kind only (K-523) —
      * and whether and when it was applied.
      */
     static Map<String, Object> view(CallStore.Call call) {
@@ -160,6 +179,9 @@ class DecisionController {
         }
         if (call.undoneAt() != null) {
             application.put("undoneAt", call.undoneAt());
+        }
+        if (call.declinedAt() != null) {
+            application.put("declinedAt", call.declinedAt());
         }
         view.put("application", application);
         return view;

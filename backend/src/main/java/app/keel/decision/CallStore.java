@@ -18,7 +18,8 @@ import tools.jackson.databind.json.JsonMapper;
 @Repository
 class CallStore {
 
-    enum Application { NOT_NEEDED, PENDING, APPLIED, UNDONE }
+    /** DECLINED (K-963, ADR-077 #3): "Keep last week's plan" — kept on record, not applied; "Use this call" applies it. */
+    enum Application { NOT_NEEDED, PENDING, APPLIED, UNDONE, DECLINED }
 
     /**
      * {@code stepsPerDay} null: no step target set yet, the starting one applies (K-216). {@code miniCutUntil} null: not on
@@ -33,14 +34,18 @@ class CallStore {
         }
     }
 
-    /** {@code appliedAt} and the plan before and after it are set once the call is applied; {@code undoneAt} once undone (K-216). */
+    /**
+     * {@code appliedAt} and the plan before and after it are set once the call is applied; {@code undoneAt} once undone
+     * (K-216); {@code declinedAt} while it is declined (K-963) — a call declined after it was applied keeps when that was.
+     */
     record Call(UUID id, UUID clientId, LocalDate weekOf, LocalDate madeOn, Instant decidedAt, String parametersHash, StoredSnapshot snapshot,
-            Map<String, Object> decision, Application application, Instant appliedAt, Instant undoneAt, Plan planBefore, Plan planAfter) {
+            Map<String, Object> decision, Application application, Instant appliedAt, Instant undoneAt, Plan planBefore, Plan planAfter,
+            Instant declinedAt) {
 
         /** A call as the engine made it, not applied yet. */
         Call(UUID id, UUID clientId, LocalDate weekOf, LocalDate madeOn, Instant decidedAt, String parametersHash, StoredSnapshot snapshot,
                 Map<String, Object> decision, Application application) {
-            this(id, clientId, weekOf, madeOn, decidedAt, parametersHash, snapshot, decision, application, null, null, null, null);
+            this(id, clientId, weekOf, madeOn, decidedAt, parametersHash, snapshot, decision, application, null, null, null, null, null);
         }
     }
 
@@ -88,13 +93,15 @@ class CallStore {
     }
 
     /**
-     * PENDING → APPLIED with the plan before and after; false when the call was not PENDING. The row stays locked until
-     * the transaction ends, so of two requests applying at once only one changes the plan (K-216).
+     * PENDING or DECLINED ("Use this call", K-963) → APPLIED with the plan before and after; false when the call was
+     * neither. The row stays locked until the transaction ends, so of two requests applying at once only one changes the
+     * plan (K-216).
      */
     boolean markApplied(AccountId account, UUID callId, Instant at, Plan before, Plan after) {
         return jdbc.sql("""
                 update decision.weekly_call set application = 'APPLIED', applied_at = :at, plan_before = cast(:before as jsonb),
-                plan_after = cast(:after as jsonb) where account_id = :account and id = :id and application = 'PENDING'""")
+                plan_after = cast(:after as jsonb), declined_at = null
+                where account_id = :account and id = :id and application in ('PENDING', 'DECLINED')""")
                 .param("account", account.value()).param("id", callId).param("at", at.atOffset(ZoneOffset.UTC))
                 .param("before", json.writeValueAsString(before)).param("after", json.writeValueAsString(after)).update() == 1;
     }
@@ -104,6 +111,17 @@ class CallStore {
         return jdbc.sql("""
                 update decision.weekly_call set application = 'UNDONE', undone_at = :at
                 where account_id = :account and id = :id and application = 'APPLIED'""")
+                .param("account", account.value()).param("id", callId).param("at", at.atOffset(ZoneOffset.UTC)).update() == 1;
+    }
+
+    /**
+     * PENDING or APPLIED → DECLINED (K-963); false when the call was neither. An applied call keeps when it was applied and
+     * the plans around it: the caller puts the plan before back.
+     */
+    boolean markDeclined(AccountId account, UUID callId, Instant at) {
+        return jdbc.sql("""
+                update decision.weekly_call set application = 'DECLINED', declined_at = :at
+                where account_id = :account and id = :id and application in ('PENDING', 'APPLIED')""")
                 .param("account", account.value()).param("id", callId).param("at", at.atOffset(ZoneOffset.UTC)).update() == 1;
     }
 
@@ -203,7 +221,8 @@ class CallStore {
                         json.readValue(row.getString("snapshot_json"), StoredSnapshot.class),
                         json.readValue(row.getString("decision_json"), Map.class), Application.valueOf(row.getString("application")),
                         instant(row.getObject("applied_at", OffsetDateTime.class)), instant(row.getObject("undone_at", OffsetDateTime.class)),
-                        plan(row.getString("plan_before_json")), plan(row.getString("plan_after_json"))))
+                        plan(row.getString("plan_before_json")), plan(row.getString("plan_after_json")),
+                        instant(row.getObject("declined_at", OffsetDateTime.class))))
                 .list();
     }
 

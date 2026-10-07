@@ -68,7 +68,8 @@ import org.springframework.transaction.annotation.Transactional;
  * the logs over the window (K-220, WeekLogs).
  *
  * <p>Applying a call (K-216): only the latest, only what it is about, and only on the plan it judged; the call keeps when
- * it was applied and undone and the plan before and after.
+ * it was applied and undone and the plan before and after. Declining it (K-963, ADR-077 #3) keeps last week's plan and
+ * the call on record, unchanged (U2); never a call resting on the safety net (U13).
  */
 @Service
 class DecisionService {
@@ -363,8 +364,9 @@ class DecisionService {
 
     /**
      * Applies the current call (K-216): only the one thing it is about moves (U3), and the call keeps when and the plan
-     * before and after. Applied twice, nothing more changes; a call that changes nothing, one undone, one not the latest,
-     * or one whose kind is not applied here is CONFLICT.
+     * before and after. A declined call is applied the same way ("Use this call", K-963): its plan is last week's again.
+     * Applied twice, nothing more changes; a call that changes nothing, one undone, one not the latest, or one whose kind
+     * is not applied here is CONFLICT.
      */
     @Transactional
     PlanTargets apply(AccountId account, UUID id) {
@@ -373,7 +375,7 @@ class DecisionService {
         if (call.application() == CallStore.Application.APPLIED) {
             return targetsAfter(account);
         }
-        if (call.application() != CallStore.Application.PENDING) {
+        if (call.application() != CallStore.Application.PENDING && call.application() != CallStore.Application.DECLINED) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Week week = week(account);
@@ -390,7 +392,7 @@ class DecisionService {
                 ? Optional.of(before)
                 : PlanChange.after(before, action, week.today(), week.parameters(), maintenance, miniCutTarget(action, week, before, maintenance)))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
-        // Only the request that moved the call from PENDING changes the plan; another one at the same moment reads it.
+        // Only the request that moved the call from PENDING (or DECLINED) changes the plan; another one at the same moment reads it.
         if (calls.markApplied(account, id, clock.instant(), before, after)) {
             calls.replace(account, after);
         }
@@ -428,6 +430,55 @@ class DecisionService {
             training.undo(account, id);
         }
         return targetsAfter(account);
+    }
+
+    /**
+     * "Keep last week's plan" (K-963, ADR-077 #3): the call stays on record, unchanged (U2), and is not applied — a pending
+     * one changes nothing; one applied (the default) is taken back exactly as an undo would: the plan before it and the
+     * program change it made. The next week's call reads the plan as it is, so the declined one as not applied. Declined
+     * twice, nothing more changes. A call resting on the safety net is never declined (U13), nor one that changes nothing,
+     * one undone, or one not the latest: CONFLICT.
+     */
+    @Transactional
+    PlanTargets decline(AccountId account, UUID id) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        CallStore.Call call = latest(account, id);
+        if (SafetyCalls.restsOnTheSafetyNet(call.decision())) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
+        switch (call.application()) {
+            case DECLINED -> {
+                return targetsAfter(account);
+            }
+            case PENDING -> calls.markDeclined(account, id, clock.instant());
+            case APPLIED -> {
+                // The hard stop is the only call not taken back (ADR-020 L-1), and it rests on the safety net: kept as a guard.
+                if (!PlanChange.undoable(DecisionJson.action(call.decision()))) {
+                    throw new ApiException(ErrorCode.CONFLICT);
+                }
+                if (calls.markDeclined(account, id, clock.instant())) {
+                    calls.replace(account, call.planBefore());
+                    training.undo(account, id);
+                }
+            }
+            case NOT_NEEDED, UNDONE -> throw new ApiException(ErrorCode.CONFLICT);
+        }
+        return targetsAfter(account);
+    }
+
+    /**
+     * Whether "Keep last week's plan" may be offered on this call now (K-963, contract Decision.declinable): the latest
+     * call, PENDING or APPLIED, not resting on the safety net (U13). The phone reads this; it never learns the safety
+     * net's rules (K2).
+     */
+    static boolean declinable(CallStore.Call call, boolean latest) {
+        boolean open = call.application() == CallStore.Application.PENDING || call.application() == CallStore.Application.APPLIED;
+        return latest && open && !SafetyCalls.restsOnTheSafetyNet(call.decision());
+    }
+
+    /** The id of the account's latest call, the only one that can be applied, undone or declined; the caller has checked consent. */
+    Optional<UUID> latestId(AccountId account) {
+        return calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(CallStore.Call::id);
     }
 
     /**

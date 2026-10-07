@@ -1285,8 +1285,9 @@ paths:
       operationId: applyDecision
       summary: Apply the call; only the one thing it changes moves, everything else stays (U3)
       description: |
-        Only the latest call, only while PENDING, and only on the plan target it judged (else 409: another call moved the
-        plan while this one was being made). Applied twice (or by two requests at once), the targets move once. A
+        Only the latest call, only while PENDING or DECLINED, and only on the plan target it judged (else 409: another call
+        moved the plan while this one was being made). From DECLINED it is "Use this call" (K-963, ADR-077 #3): the call
+        last week's plan was kept over is applied after all. Applied twice (or by two requests at once), the targets move once. A
         calorie call moves the calorie target (and restarts its wait); more movement raises the step target. A change of
         phase (the hard stop's too, marked `safety`) starts the new direction today at the maintenance estimate, watched;
         the hard stop never under maintenance and is not undone. A mini cut is a cut from today at the engine's target
@@ -1317,6 +1318,30 @@ paths:
       responses:
         "200":
           description: The targets after the undo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Targets"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/decisions/{id}/decline:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [decision]
+      operationId: declineDecision
+      summary: Keep last week's plan; the call stays on record, not applied (U2)
+      description: |
+        "Keep last week's plan" (K-963, B11): the latest call, PENDING or APPLIED, becomes DECLINED. The plan is last
+        week's: a pending call changes nothing, an applied one is put back exactly as an undo would (its planBefore, and
+        the program change it made). The call itself does not change (U2): it stays on record, and the next week's call
+        reads the plan as not applied. "Use this call" is POST /v1/decisions/{id}/apply. Declined twice, nothing more
+        changes. CONFLICT (409): a call resting on the safety net (marked `safety`, or a reason among its rules; U13) is
+        never declined; nor an older call, one that changes nothing (NOT_NEEDED), or one undone. NOT_FOUND for an unknown
+        id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
+      responses:
+        "200":
+          description: The targets after the decline (last week's)
           content:
             application/json:
               schema:
@@ -3040,7 +3065,7 @@ components:
           minimum: 0
     Decision:
       type: object
-      required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, application]
+      required: [id, madeOn, action, reasons, confidence, nextReview, copyKey, application, declinable]
       properties:
         id:
           type: string
@@ -3075,6 +3100,12 @@ components:
             ledger can say what came after it — never why. Absent when the call read no window.
         application:
           $ref: "#/components/schemas/Application"
+        declinable:
+          type: boolean
+          description: |
+            Whether "Keep last week's plan" may be offered now (K-963, ADR-077 #3), decided by the server: the latest call,
+            PENDING or APPLIED, and not resting on the safety net (U13; the phone does not know its rules). False for a
+            call that changes nothing, an older one, one undone or already declined. POST /v1/decisions/{id}/decline.
     DecisionBasis:
       type: object
       description: |
@@ -3265,16 +3296,21 @@ components:
       type: object
       description: |
         Whether the call has changed the plan (K-216). A call that changes nothing is NOT_NEEDED; appliedAt once applied,
-        undoneAt once undone.
+        undoneAt once undone. DECLINED (K-963, ADR-077 #3): last week's plan was kept and the call stays on record, not
+        applied; declinedAt while it is, and appliedAt with it when it had been applied before. Used after all, it is
+        APPLIED again.
       required: [state]
       properties:
         state:
           type: string
-          enum: [NOT_NEEDED, PENDING, APPLIED, UNDONE]
+          enum: [NOT_NEEDED, PENDING, APPLIED, UNDONE, DECLINED]
         appliedAt:
           type: string
           format: date-time
         undoneAt:
+          type: string
+          format: date-time
+        declinedAt:
           type: string
           format: date-time
     DecisionPage:

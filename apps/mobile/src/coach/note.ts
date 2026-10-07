@@ -25,7 +25,8 @@ export function weeklyNote(decision: Decision): Line[] {
  */
 function focus(decision: Decision): Line {
   if (decision.safety === true) return { key: 'coach.note.focus.hard_stop' };
-  if (decision.application.state === 'UNDONE') return { key: 'coach.note.focus.undone' };
+  // Declined (last week's plan kept, K-963) is not applied either: the plan stays as it was, as after an undo.
+  if (decision.application.state === 'UNDONE' || decision.application.state === 'DECLINED') return { key: 'coach.note.focus.undone' };
   const { action } = decision;
   const key = `coach.note.focus.${action.type.toLowerCase()}`;
   switch (action.type) {
