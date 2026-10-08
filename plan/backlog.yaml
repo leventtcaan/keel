@@ -4396,7 +4396,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-955, K-956]
     why: "Levent (8 Eki, K-956 incelemesi): 2, 4 ve 6 günlük şablonlar arka omuz, yan omuz ve baldırı haftada 2 setle bırakıyor; inceleme (weekly_sets_min 4, G1 K-11) kendi kurduğumuz programı eleştiriyor"
     acceptance:
