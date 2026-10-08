@@ -13,7 +13,9 @@ import { tokens } from '@/theme/tokens';
 import { CallCard } from '@/today/CallCard';
 import { Hero } from '@/today/Hero';
 import { StateCard } from '@/today/StateCard';
-import { TodayList } from '@/today/TodayList';
+import { FoodLine } from '@/today/FoodLine';
+import { TodayCard } from '@/today/TodayCard';
+import { todayCardOf } from '@/today/todayWorkout';
 import { useToday } from '@/today/useToday';
 import { WeekStrip } from '@/today/WeekStrip';
 import { heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from '@/today/week';
@@ -21,7 +23,7 @@ import { heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from
 /**
  * This week (K-969, ADR-077 #1, prototype #home and #home-mon): the week strip under the week's number and record, one
  * hero block (the first week, this week's call, Monday's "Open your call", a paused week, or the calls off without the
- * consent), then today. No coach bar, no paragraphs (ADR-069 #3, ADR-077 #1): the consistency's parts, the first weeks'
+ * consent), then today's workout and the food line. No coach bar, no paragraphs (ADR-069 #3, ADR-077 #1): the consistency's parts, the first weeks'
  * words and the coach's questions are off this screen. Settings top right. Every week, date and count is the server's;
  * the phone lays its week out and counts the days to the dates it gave (ADR-077 Ek 2). A part that failed says so once.
  */
@@ -31,7 +33,7 @@ export default function TodayScreen() {
   // The call's details below the hero, until the call screen (K-978) takes them.
   const [callOpen, setCallOpen] = useState(false);
 
-  const parts = data === null ? [] : [data.consistency, data.decision, data.program, data.weighIns, data.targets, data.budget, ...(data.checkIn ? [data.checkIn] : [])];
+  const parts = data === null ? [] : [data.consistency, data.decision, data.program, data.budget, ...(data.checkIn ? [data.checkIn] : [])];
   const failed = parts.some((part) => part.state === 'failed');
   const problem = failed ? (
     <View style={styles.note}>
@@ -45,6 +47,8 @@ export default function TodayScreen() {
     const monday = data.monday ?? weekMonday(data.consistency, data.program, day);
     const sessions = data.program.state === 'ready' ? (data.program.value.week ?? []) : [];
     const hero = heroOf(data);
+    const program = data.program.state === 'ready' ? data.program.value : null;
+    const card = todayCardOf({ program, day, active: data.active ?? null, doneToday: data.doneToday ?? null });
     const details = hero.kind === 'call' && callOpen ? <CallCard decision={hero.decision} onChanged={reload} /> : null;
     top = (
       <>
@@ -53,7 +57,8 @@ export default function TodayScreen() {
         <StateCard state={data.state} onChanged={reload} entry={false} />
         <Hero hero={hero} today={day} open={callOpen} onToggle={() => setCallOpen(!callOpen)} onChanged={reload} />
         {details}
-        <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
+        <TodayCard card={card} program={program} today={day} parts={data.todayParts} />
+        <FoodLine budget={data.budget} />
       </>
     );
   }

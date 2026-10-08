@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { useAppServices } from '@/services/ServicesProvider';
+import { activeWorkout } from '@/train/workout';
 
 import { type TodayData, loadToday } from './today';
+import { finishedToday, loadTodayParts } from './todayWorkout';
 import { useReadOnFocus } from './useReadOnFocus';
 import { loadWeekLogs, weekMonday } from './week';
 
@@ -15,10 +17,10 @@ import { loadWeekLogs, weekMonday } from './week';
  * start a new read each render.
  */
 export function useToday(): { day: string; data: TodayData | null; reload: () => void } {
-  const { api, syncHealth, queue, report, reminders, state, opens } = useAppServices();
-  const latest = useRef({ syncHealth, queue, report, reminders, state, opens });
+  const { api, syncHealth, queue, report, reminders, state, opens, workoutRecords } = useAppServices();
+  const latest = useRef({ syncHealth, queue, report, reminders, state, opens, workoutRecords });
   useEffect(() => {
-    latest.current = { syncHealth, queue, report, reminders, state, opens };
+    latest.current = { syncHealth, queue, report, reminders, state, opens, workoutRecords };
   });
   return useReadOnFocus(
     useCallback(
@@ -33,6 +35,17 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         // The week's days as the server counts its week (K-969): its Monday from what was just read.
         const monday = weekMonday(today.consistency, today.program, day);
         const week = await loadWeekLogs(api, monday, day);
+        // Today's workout (K-969): one under way on this phone first (its own records), else one finished today. A store
+        // that cannot be read (or is not there) never keeps the week from showing: reported, and none under way.
+        const records = await Promise.resolve()
+          .then(() => latest.current.workoutRecords())
+          .catch((error: unknown) => {
+            named(error);
+            return [];
+          });
+        const active = activeWorkout(records);
+        const doneToday = finishedToday(week.workouts, day);
+        const todayParts = await loadTodayParts(api, doneToday, today.program.state === 'ready');
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
         const { program } = today;
         if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
@@ -50,7 +63,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
           named(error);
           return null;
         });
-        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week };
+        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, active, doneToday, todayParts };
       },
       [api],
     ),

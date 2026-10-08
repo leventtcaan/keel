@@ -145,7 +145,7 @@
       "inDays": "{count} days",
       "tomorrow": "Tomorrow",
       "today": "Today",
-      "notApplied": "Not applied. Last week's plan stays.",
+      "notApplied": "Last week's plan stays.",
       "notAppliedShort": "Not applied",
       "useCall": "Use this call",
       "yourWeek": "Your week",
@@ -162,6 +162,41 @@
         "one": "One question first.",
         "other": "{count} questions first."
       }
+    },
+    "today": {
+      "label": "Today's workout",
+      "today": "Today",
+      "short": "Short version",
+      "start": "Start",
+      "startLabel": "Start {session}",
+      "changeLabel": "Change today's workout",
+      "rest": "Rest",
+      "restWeek": "Week off training",
+      "movedTo": "{session} moved to {day}.",
+      "skipped": "Skipped. Monday reads what happened.",
+      "done": "Today · done",
+      "doneLabel": "Done",
+      "doneStats": { "one": "1 set · {lifted} lifted", "other": "{count} sets · {lifted} lifted" },
+      "open": "Open workout",
+      "openSets": {
+        "none": "Finish it anytime this week.",
+        "one": "1 set logged. Finish it anytime this week.",
+        "other": "{count} sets logged. Finish it anytime this week."
+      },
+      "continue": "Continue",
+      "target": "{load} × {reps}",
+      "plan": "{sets} × {reps}",
+      "cardio": "Cardio, {minutes} min",
+      "cardioOptional": "Cardio optional"
+    },
+    "food": {
+      "left": "Food left",
+      "log": "Log",
+      "lineLabel": "{lead} {amount}. Log a meal",
+      "lineLabelAround": "{lead}. Log a meal",
+      "locked": "Needs your OK for health data",
+      "allow": "Allow",
+      "allowLabel": "Allow health data in Settings"
     }
   },
   "today": {
