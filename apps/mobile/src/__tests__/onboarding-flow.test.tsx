@@ -361,6 +361,9 @@ describe('the walk through', () => {
     }
     expect(mockProfile.save).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: t('onboarding.back') })).toBeDisabled();
+    // While it saves, it says so, and the answers are off (review #463).
+    expect(screen.getByText(t('onboarding.saving'))).toBeOnTheScreen();
+    for (const answer of screen.getAllByRole('radio')) expect(answer).toBeDisabled();
     await act(async () => finish());
   });
 
@@ -580,8 +583,14 @@ describe('#ob-consent: the health data consent (K-312, ADR-007, GDPR Art. 9)', (
     await walkTo('about', { allow: true });
     await press(t('onboarding.about.male'));
     expect(continueButton()).toBeDisabled();
+    // VoiceOver hears why: the weight is not set yet, and how to set it (review #463).
+    expect(wheel(t('onboarding.about.weight')).props.accessibilityValue.text).toBe(
+      t('onboarding.wheel.unset', { value: `${onboardingParams.wheelStart.weight_kg}.0 ${t('units.kgUnit')}` }),
+    );
+    expect(wheel(t('onboarding.about.weight')).props.accessibilityHint).toBe(t('onboarding.wheel.unsetHint'));
     await turn(t('onboarding.about.weight'), 'decrement');
     expect(continueButton()).toBeEnabled();
+    expect(wheel(t('onboarding.about.weight')).props.accessibilityHint).toBeUndefined();
   });
 
   test('while "Allow" is on its way, "Not now" and back are off: the last choice is the one that counts', async () => {

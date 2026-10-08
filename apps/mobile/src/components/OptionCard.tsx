@@ -13,6 +13,8 @@ type Props = {
   /** The answer the app recommends: drawn as the decision block (prototype `.opt.hero`). */
   hero?: boolean;
   selected: boolean;
+  /** Can't be chosen now (an answer on its way); shown dimmed. */
+  disabled?: boolean;
   onPress: () => void;
 };
 
@@ -20,7 +22,7 @@ type Props = {
  * One answer of a single-choice question (prototype `.opt`). A radio for screen readers: its words are read together,
  * and whether it is the one chosen. The recommended answer stands out as a block; chosen, it gets the accent's ring.
  */
-export function OptionCard({ title, body, tag, hero = false, selected, onPress }: Props) {
+export function OptionCard({ title, body, tag, hero = false, selected, disabled = false, onPress }: Props) {
   const { color } = useTheme();
   const label = [title, tag, body].filter((part) => part !== undefined).join(', ');
   const ring = hero
@@ -31,9 +33,10 @@ export function OptionCard({ title, body, tag, hero = false, selected, onPress }
     <Pressable
       accessibilityRole="radio"
       accessibilityLabel={label}
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
-      style={[styles.card, hero && styles.hero, ring]}>
+      style={[styles.card, hero && styles.hero, ring, disabled && styles.dim]}>
       {hero ? <InverseSurface>{content}</InverseSurface> : content}
     </Pressable>
   );
@@ -67,6 +70,7 @@ const styles = StyleSheet.create({
     minHeight: tokens.size.touch,
     justifyContent: 'center',
   },
+  dim: { opacity: tokens.opacity.dim },
   hero: { padding: tokens.space.lg, gap: tokens.space.sm, borderWidth: tokens.border.ring },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: tokens.space.sm },
   title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, flexShrink: 1 },

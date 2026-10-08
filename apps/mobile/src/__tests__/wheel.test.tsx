@@ -4,7 +4,9 @@
  */
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useState } from 'react';
+import { FlatList } from 'react-native';
 
+import { t } from '@/copy';
 import { Wheel } from '@/onboarding/Wheel';
 import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -95,4 +97,52 @@ test('not set yet, coming to rest on the suggested row sets it: the person looke
   await show({ unset: true });
   await fireEvent(screen.getByTestId('wheel-Born'), 'momentumScrollEnd', { nativeEvent: { contentOffset: { y: tokens.size.touch * 2 } } });
   expect(changes).toEqual([1992]);
+});
+
+describe('a fling coasts to its own row (review #463)', () => {
+  const column = () => screen.getByTestId('wheel-Born');
+  const offset = (rows: number) => ({ contentOffset: { y: tokens.size.touch * rows } });
+
+  test('lifted with speed, nothing is picked at the lift: the row it comes to rest on is', async () => {
+    await show();
+    await fireEvent(column(), 'scrollEndDrag', { nativeEvent: { ...offset(3), velocity: { x: 0, y: 1.8 } } });
+    expect(changes).toEqual([]);
+    await fireEvent(column(), 'momentumScrollEnd', { nativeEvent: offset(5) });
+    expect(changes).toEqual([1995]);
+  });
+
+  test('lifted still, with nothing to coast, the row under the finger is picked', async () => {
+    await show();
+    await fireEvent(column(), 'scrollEndDrag', { nativeEvent: { ...offset(3), velocity: { x: 0, y: 0 } } });
+    expect(changes).toEqual([1993]);
+  });
+
+  test('a row picked by the column itself is not scrolled to again; a step from VoiceOver moves the column', async () => {
+    const scrolls = jest.spyOn(FlatList.prototype, 'scrollToOffset');
+    try {
+      await show();
+      scrolls.mockClear();
+      await fireEvent(column(), 'momentumScrollEnd', { nativeEvent: offset(4) });
+      expect(changes).toEqual([1994]);
+      expect(scrolls).not.toHaveBeenCalled();
+      await act('decrement');
+      expect(scrolls).toHaveBeenCalledWith({ offset: tokens.size.touch * 3, animated: false });
+    } finally {
+      scrolls.mockRestore();
+    }
+  });
+});
+
+describe('not set yet, VoiceOver says so (review #463)', () => {
+  test('the value says it is not set, and the hint how to set it', async () => {
+    await show({ unset: true });
+    expect(wheel().props.accessibilityValue).toEqual({ text: t('onboarding.wheel.unset', { value: '1992 year' }) });
+    expect(wheel().props.accessibilityHint).toBe(t('onboarding.wheel.unsetHint'));
+  });
+
+  test('once set, neither', async () => {
+    await show();
+    expect(wheel().props.accessibilityValue).toEqual({ text: '1992 year' });
+    expect(wheel().props.accessibilityHint).toBeUndefined();
+  });
 });

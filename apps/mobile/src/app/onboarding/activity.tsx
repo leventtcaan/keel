@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
@@ -17,22 +18,27 @@ const LEVELS: components['schemas']['ActivityLevel'][] = ['INACTIVE', 'LOW_ACTIV
 
 /**
  * #ob-activity, the last question of the walk: the answer ends it and the profile is saved (until K-967 puts the starting
- * weights and the plan after it). A save that fails is said, with a way to try again.
+ * weights and the plan after it). While it saves it says so; a save that fails is said, with a way to try again.
  */
 export default function ActivityStep() {
   const { draft } = useDraft();
   const { color } = useTheme();
   const finish = useFinish();
   const choose = useChoose('activity', finish.run);
-  const actions =
-    finish.problem === null ? undefined : (
+  // While it saves, it says so and the answers are off; a save that failed is said, with a way to try again.
+  let actions: ReactNode;
+  if (finish.busy) {
+    actions = <Text style={[styles.text, { color: color.textSecondary }]}>{t('onboarding.saving')}</Text>;
+  } else if (finish.problem !== null) {
+    actions = (
       <View style={styles.actions}>
         <ProblemText occurrence={finish.occurrence} style={[styles.text, { color: color.text }]}>
           {finish.problem}
         </ProblemText>
-        <Button label={t('onboarding.tryAgain')} onPress={() => void finish.run(draft)} disabled={finish.busy} />
+        <Button label={t('onboarding.tryAgain')} onPress={() => void finish.run(draft)} />
       </View>
     );
+  }
   return (
     <StepFrame
       step="activity"
@@ -46,6 +52,7 @@ export default function ActivityStep() {
           key={level}
           title={t(`onboarding.activity.${level}`)}
           selected={draft.activityLevel === level}
+          disabled={finish.busy}
           onPress={() => choose({ activityLevel: level })}
         />
       ))}

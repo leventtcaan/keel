@@ -156,7 +156,7 @@
         "onboarding.activity.ACTIVE",
         "onboarding.activity.VERY_ACTIVE"
       ],
-      "notFirstView": ["onboarding.tryAgain"]
+      "notFirstView": ["onboarding.tryAgain", "onboarding.saving"]
     },
     {
       "screen": "ob-weights",
