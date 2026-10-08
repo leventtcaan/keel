@@ -18,6 +18,8 @@ export type PlanPreview = {
   firstCall: string | null;
   /** The weekday the calls come on. */
   checkInDay: Weekday;
+  /** Whether the program sets cardio (none for very active work, ADR-074): only then is it promised. */
+  hasCardio: boolean;
 };
 
 export type PlanPreviews = ReturnType<typeof createPlanPreviews>;

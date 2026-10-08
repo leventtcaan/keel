@@ -12,7 +12,7 @@ import type { GateState } from '@/subscription/gate';
 import type { PlanPreview } from '@/subscription/planPreview';
 import type { Plan, SubscriptionStore } from '@/subscription/store';
 import { paywallTimeline } from '@/subscription/words';
-import { localDay, weekdayDate } from '@/today/today';
+import { weekdayDate } from '@/today/today';
 import { ThemeProvider } from '@/theme/theme';
 
 type Subscription = components['schemas']['Subscription'];
@@ -173,8 +173,16 @@ test('not known, and no answer: says so, and asks again on request — the gate 
 });
 
 describe('#paywall after the plan (ADR-072 #7)', () => {
+  // A Tuesday at noon, the phone's clock (review): the first call (Mon 19), the 7-day trial's reminder (Sun 18) and its
+  // charge (Tue 20) fall on three different days, whatever day the tests run.
+  beforeEach(() => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 13, 12, 0), advanceTimers: true });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
   const FIRST_CALL = '2026-10-19';
-  const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: FIRST_CALL, checkInDay: 'MONDAY' };
+  const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: FIRST_CALL, checkInDay: 'MONDAY', hasCardio: true };
 
   test('the plan just shown, in brief: how many days, the first workout (the first call is on the timeline, once)', async () => {
     mockPreview = PREVIEW;
@@ -205,9 +213,8 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
   test('the timeline with the store\'s trial: today, the first call, the reminder, the charge, each on its day', async () => {
     mockPreview = PREVIEW;
     await show();
-    const today = localDay(new Date());
-    const timeline = paywallTimeline(PLANS[0], { today, firstCall: FIRST_CALL });
-    expect(timeline).toHaveLength(4);
+    const timeline = paywallTimeline(PLANS[0], { today: '2026-10-13', firstCall: FIRST_CALL });
+    expect(timeline.map((row) => row.when)).toEqual(['Today', 'Sun, Oct 18', 'Mon, Oct 19', 'Tue, Oct 20']);
     for (const row of timeline) {
       expect(screen.getAllByText(row.when).length).toBeGreaterThan(0);
       expect(screen.getByText(row.words)).toBeOnTheScreen();
@@ -227,6 +234,13 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
     expect(screen.queryByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeNull();
     expect(screen.getByText(t('subscription.values.cardio'))).toBeOnTheScreen();
+  });
+
+  test('without the consent and without cardio in the program (very active work): no cardio promised, a value every program has', async () => {
+    mockPreview = { ...PREVIEW, firstCall: null, hasCardio: false };
+    await show();
+    expect(screen.queryByText(t('subscription.values.cardio'))).toBeNull();
+    expect(screen.getByText(t('subscription.values.swap'))).toBeOnTheScreen();
   });
 
   test('bought: the plan kept for the paywall is let go before the tabs open', async () => {

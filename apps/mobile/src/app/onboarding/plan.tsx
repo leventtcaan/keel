@@ -76,6 +76,7 @@ export default function PlanScreen() {
       firstWorkout: workout.day.weekday ?? null,
       firstCall: consented ? call.day : null,
       checkInDay: schedule.checkInDay,
+      hasCardio: (program.cardio?.sessionsPerWeek ?? 0) > 0,
     });
     try {
       await profile.finish();

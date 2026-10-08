@@ -1910,7 +1910,8 @@
       "sets": "Weight and reps for every set",
       "call": "A {day} call, with the reason",
       "weeklyCall": "A weekly call, with the reason",
-      "cardio": "Cardio planned around your lifting"
+      "cardio": "Cardio planned around your lifting",
+      "swap": "Swap any move, any time"
     },
     "preview": {
       "label": "Your plan",

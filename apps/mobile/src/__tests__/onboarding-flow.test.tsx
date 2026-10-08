@@ -1124,7 +1124,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     mockKeepPreview.mockClear();
     await press(t('onboarding.continue'));
     // On the pinned Wednesday: today's workout, Monday's call.
-    expect(mockKeepPreview).toHaveBeenCalledWith({ own: false, days: 3, firstWorkout: 'WEDNESDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY' });
+    expect(mockKeepPreview).toHaveBeenCalledWith({ own: false, days: 3, firstWorkout: 'WEDNESDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY', hasCardio: true });
     // Kept before onboarding ends: the paywall that replaces the plan reads it as it opens.
     expect(mockKeepPreview.mock.invocationCallOrder[0]).toBeLessThan(mockProfile.finish.mock.invocationCallOrder[0]);
   });

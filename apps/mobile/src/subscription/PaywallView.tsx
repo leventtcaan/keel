@@ -168,10 +168,10 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
       );
     const timeline = paywallTimeline(chosen, { today: localDay(new Date()), firstCall: preview?.firstCall ?? null });
     // The weekly call on the profile's own day; met later, with no plan just shown, without a day; without the health
-    // data consent there are no calls, so another value takes its place.
+    // data consent there are no calls, so another value takes its place: the cardio only when the program sets some.
     let call: string;
     if (preview === null) call = t('subscription.values.weeklyCall');
-    else if (preview.firstCall === null) call = t('subscription.values.cardio');
+    else if (preview.firstCall === null) call = t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap');
     else call = t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
     body = (
       <View style={styles.part}>

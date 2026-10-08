@@ -292,7 +292,7 @@
         "subscription.trialSpan.week",
         ["subscription.values.built", "subscription.values.own"],
         "subscription.values.sets",
-        ["subscription.values.call", "subscription.values.weeklyCall", "subscription.values.cardio"],
+        ["subscription.values.call", "subscription.values.weeklyCall", "subscription.values.cardio", "subscription.values.swap"],
         "onboarding.schedule.dayName.MONDAY",
         "subscription.timeline.today",
         "subscription.timeline.free",
