@@ -2356,7 +2356,7 @@
     "addMove": "Add a move",
     "sheetTo": "To {day}. {sets} sets to start; change them after.",
     "search": "Search moves",
-    "pick": "Add {name}",
+    "pickLabel": "Add {name}, {range}",
     "range": "{min}-{max} reps",
     "none": "No move by that name. Add it as your own.",
     "addOwn": "Add my own move",

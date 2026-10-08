@@ -6,6 +6,7 @@
  */
 import * as path from 'node:path';
 
+import { AccessibilityInfo } from 'react-native';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import type { components } from '@/api/schema';
@@ -103,6 +104,11 @@ async function choose(name: string) {
 }
 const name = (id: string) => t(`exercises.${id}.name`);
 const day = (number: number) => t('programEditor.defaultName', { number });
+/** A search result as VoiceOver says it: the move and the range it starts from. */
+const pick = (id: string) => {
+  const kind = mockCatalog.find((m) => m.id === id)?.kind ?? 'COMPOUND';
+  return t('programEditor.pickLabel', { name: name(id), range: t('programEditor.range', workoutParams.programNewMoveReps[kind]) });
+};
 
 /** Signed in without a profile: goal, experience, "I have my own", "Type it in". */
 async function toEditor() {
@@ -121,7 +127,7 @@ async function addMove(typed: string, id: string, at = 0) {
   await fireEvent.press(screen.getAllByRole('button', { name: t('programEditor.addMove') })[at]);
   await settle();
   await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), typed);
-  await press(t('programEditor.pick', { name: name(id) }));
+  await press(pick(id));
 }
 async function step(label: string, actionName: 'increment' | 'decrement', times = 1) {
   for (let i = 0; i < times; i++) await fireEvent(screen.getByRole('adjustable', { name: label }), 'accessibilityAction', { nativeEvent: { actionName } });
@@ -266,7 +272,7 @@ test('the move search does not offer a move the day has', async () => {
   await fireEvent.press(screen.getByRole('button', { name: t('programEditor.addMove') }));
   await settle();
   await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), 'squ');
-  expect(screen.queryByRole('button', { name: t('programEditor.pick', { name: name('squat') }) })).toBeNull();
+  expect(screen.queryByRole('button', { name: pick('squat') })).toBeNull();
 });
 
 /** "Landmine press" made the user's own move: the engine's questions answered (OwnMoveForm, U1). */
@@ -357,7 +363,7 @@ test('"Add a move" opens a sheet for the open day: search the catalog, each move
   expect(screen.getByText(t('programEditor.sheetTo', { day: day(1), sets: SETS }))).toBeOnTheScreen();
   await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), 'curl');
   expect(screen.getByText(t('programEditor.range', REPS.ISOLATION))).toBeOnTheScreen();
-  await press(t('programEditor.pick', { name: name('barbell_curl') }));
+  await press(pick('barbell_curl'));
   expect(screen.queryByRole('header', { name: t('programEditor.addMove') })).toBeNull();
   expect(screen.getByText(name('barbell_curl'))).toBeOnTheScreen();
 });
@@ -391,4 +397,31 @@ test('an empty day says "No moves yet" in its header', async () => {
   await toEditor();
   await press(t('programEditor.addDay'));
   expect(screen.getByRole('button', { name: header(day(1), t('programEditor.anyDay'), 0) })).toBeOnTheScreen();
+});
+
+test('a removal is said to VoiceOver, with the way to put it back next to where it was', async () => {
+  const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+  try {
+    await toEditor();
+    await addMove('squ', 'squat');
+    await addMove('bench', 'bench_press');
+    await press(t('programEditor.removeMoveLabel', { move: name('squat') }));
+    expect(said).toHaveBeenCalledWith(t('programEditor.removed', { name: name('squat') }));
+    // In the day's card, where the move was: before the move that stayed.
+    const bar = screen.getByTestId('undo');
+    const card = screen.getByTestId(`day-card-0`);
+    expect(card).toContainElement(bar);
+  } finally {
+    said.mockRestore();
+  }
+});
+
+test('Undo that cannot put it back (the move is in the day again) leaves the bar', async () => {
+  await toEditor();
+  await addMove('squ', 'squat');
+  await press(t('programEditor.removeMoveLabel', { move: name('squat') }));
+  await addMove('squ', 'squat');
+  await press(t('programEditor.undoLabel', { name: name('squat') }));
+  expect(screen.getByTestId('undo')).toBeOnTheScreen();
+  expect(screen.getAllByText(name('squat'))).toHaveLength(1);
 });

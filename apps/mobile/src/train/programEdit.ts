@@ -73,10 +73,18 @@ export function withMove(all: EditedDay[], at: number, move: Move): EditedDay[] 
   return changed(all, at, { ...day, moves: [...day.moves, added] });
 }
 
-/** A day put back where it was (Undo); none past the most a program has. */
+/**
+ * A day put back where it was (Undo); none past the most a program has. Its weekday, if another day took it meanwhile,
+ * stays that day's: the day comes back on none (a weekday is one day's).
+ */
 export function withDayAt(all: EditedDay[], day: EditedDay, at: number): EditedDay[] {
   if (all.length >= P.programDaysMax) return all;
-  return [...all.slice(0, at), day, ...all.slice(at)];
+  let back = day;
+  if (day.weekday !== undefined && weekdayTaken(all, -1, day.weekday)) {
+    const { weekday: _taken, ...rest } = day;
+    back = rest;
+  }
+  return [...all.slice(0, at), back, ...all.slice(at)];
 }
 
 /** A move put back where it was in its day (Undo); not into a day gone meanwhile, past the most, or twice. */
@@ -126,6 +134,9 @@ export function canStep(move: EditedMove, field: Stepped, by: number): boolean {
  */
 export function ownProgramOf(all: EditedDay[], made: ReadonlyMap<string, string> = new Map()): Schemas['OwnProgram'] | null {
   if (all.length === 0) return null;
+  // A weekday is one day's: two on one would be refused by the server, again on every try.
+  const weekdays = all.flatMap((day) => (day.weekday === undefined ? [] : [day.weekday]));
+  if (new Set(weekdays).size !== weekdays.length) return null;
   const program: Schemas['OwnProgram'] = { days: [] };
   for (const day of all) {
     const name = day.name.trim();

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { announce } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
@@ -52,8 +53,11 @@ type Props = {
   makeOwn: (body: Schemas['NewCustomExercise']) => Promise<Move | Exclude<SaveOutcome, 'saved'>>;
 };
 
-/** What was removed last, to put back (Undo): a day where it was, or a move where it was in its day. */
-type Removed = { name: string; undo: Parameters<Update>[0] };
+/**
+ * What was removed last, to put back (Undo): a day where it was, or a move where it was in its day; the bar to put it back
+ * is shown in that place (`where`).
+ */
+type Removed = { name: string; undo: Parameters<Update>[0]; where: { at: number } | { dayId: string; index: number } };
 
 const movesWord = (count: number) => t(count === 1 ? 'programEditor.moves.one' : 'programEditor.moves.other', { count });
 
@@ -78,9 +82,14 @@ export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
     onChange((all) => newDay(all, id));
     setOpen(id);
   };
+  // Said to VoiceOver as well (it hears only what it is on): what went, and that the bar to put it back is there.
+  const gone = (what: Removed) => {
+    setRemoved(what);
+    announce(t('programEditor.removed', { name: what.name }));
+  };
   const removeDay = (day: EditedDay, at: number) => {
     onChange((all) => withoutDay(all, at));
-    setRemoved({ name: day.name, undo: (all) => withDayAt(all, day, at) });
+    gone({ name: day.name, undo: (all) => withDayAt(all, day, at), where: { at } });
   };
   const removeMove = (day: EditedDay, index: number) => {
     const move = day.moves[index];
@@ -88,25 +97,22 @@ export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
       const at = all.findIndex((d) => d.id === day.id);
       return at < 0 ? all : withoutMove(all, at, index);
     });
-    setRemoved({ name: exerciseName(move.exerciseId, byId), undo: (all) => withMoveAt(all, day.id, move, index) });
+    gone({ name: exerciseName(move.exerciseId, byId), undo: (all) => withMoveAt(all, day.id, move, index), where: { dayId: day.id, index } });
   };
+  // The bar goes only once the thing is back: put back where it cannot be (the move is in the day again), it stays.
   const undo = () => {
-    if (removed === null) return;
+    if (removed === null || removed.undo(days) === days) return;
     onChange(removed.undo);
     setRemoved(null);
   };
+  const bar = removed === null ? null : <UndoBar key="undo" name={removed.name} onUndo={undo} />;
+  const dayBar = (at: number) => (removed !== null && 'at' in removed.where && removed.where.at === at ? bar : null);
+  const moveBar = (dayId: string) => (removed !== null && 'dayId' in removed.where && removed.where.dayId === dayId ? { index: removed.where.index, bar } : null);
 
   const count = days.reduce((n, day) => n + day.moves.length, 0);
   const dayWords = t(days.length === 1 ? 'programEditor.days.one' : 'programEditor.days.other', { count: days.length });
   const summary = t('programEditor.summary', { days: dayWords, moves: movesWord(count) });
   const more = days.length < P.programDaysMax ? <Button label={t('programEditor.addDay')} variant="ghost" onPress={addDay} /> : null;
-  const snackbar =
-    removed === null ? null : (
-      <View accessibilityLiveRegion="polite" style={[styles.snackbar, { backgroundColor: color.surface }]}>
-        <Text style={[styles.text, { color: color.text }]}>{t('programEditor.removed', { name: removed.name })}</Text>
-        <Button label={t('programEditor.undo')} accessibilityLabel={t('programEditor.undoLabel', { name: removed.name })} variant="ghost" size="sm" onPress={undo} />
-      </View>
-    );
   const sheet =
     adding === null ? null : (
       <AddMoveSheet
@@ -127,7 +133,8 @@ export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
   return (
     <View style={styles.editor}>
       <Text style={[styles.small, { color: color.muted }]}>{summary}</Text>
-      {days.map((day, at) => (
+      {days.map((day, at) => [
+        dayBar(at),
         <DayCard
           key={day.id}
           day={day}
@@ -141,10 +148,11 @@ export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
           onRemoveDay={() => removeDay(day, at)}
           onRemoveMove={(index) => removeMove(day, index)}
           onAddMove={() => setAdding(day)}
-        />
-      ))}
+          undo={moveBar(day.id)}
+        />,
+      ])}
+      {dayBar(days.length)}
       {more}
-      {snackbar}
       {sheet}
     </View>
   );
@@ -163,9 +171,11 @@ type DayProps = {
   onRemoveDay: () => void;
   onRemoveMove: (index: number) => void;
   onAddMove: () => void;
+  /** The bar to put back a move removed from this day, where the move was. */
+  undo: { index: number; bar: ReactNode } | null;
 };
 
-function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemoveDay, onRemoveMove, onAddMove }: DayProps) {
+function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemoveDay, onRemoveMove, onAddMove, undo }: DayProps) {
   const { color } = useTheme();
   const weekday = day.weekday === undefined ? t('programEditor.anyDay') : t(`programEditor.weekdayName.${day.weekday}`);
   const moveWords = day.moves.length === 0 ? t('programEditor.noMovesMeta') : movesWord(day.moves.length);
@@ -180,7 +190,14 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
       <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.dayMeta', { weekday, moves: moveWords })}</Text>
     </Pressable>
   );
-  if (!open) return <View style={[styles.day, { borderColor: color.line }]}>{head}</View>;
+  if (!open) {
+    return (
+      <View testID={`day-card-${at}`} style={[styles.day, { borderColor: color.line }]}>
+        {head}
+        {undo?.bar}
+      </View>
+    );
+  }
 
   const toggle = (w: Schemas['Weekday']) => onChange((all) => withWeekday(all, at, all[at].weekday === w ? undefined : w));
   const remove = alone ? null : (
@@ -199,8 +216,9 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
         ))}
       </View>
     );
+  const undoAt = (index: number) => (undo !== null && undo.index === index ? undo.bar : null);
   return (
-    <View style={[styles.day, { borderColor: color.line }]}>
+    <View testID={`day-card-${at}`} style={[styles.day, { borderColor: color.line }]}>
       {head}
       <TextField label={t('programEditor.dayName')} value={day.name} onChangeText={(name) => onChange((all) => renamed(all, at, name))} maxLength={P.programDayNameMaxChars} />
       {remove}
@@ -217,16 +235,29 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
         ))}
       </View>
       {captions}
-      {day.moves.map((move, index) => (
+      {day.moves.map((move, index) => [
+        undoAt(index),
         <MoveRow
           key={move.exerciseId}
           move={move}
           name={exerciseName(move.exerciseId, byId)}
           onStep={(field, by) => onChange((all) => stepped(all, at, index, field, by))}
           onRemove={() => onRemoveMove(index)}
-        />
-      ))}
+        />,
+      ])}
+      {undoAt(day.moves.length)}
       <Button label={t('programEditor.addMove')} variant="ghost" size="sm" disabled={day.moves.length >= P.programDayMovesMax} onPress={onAddMove} />
+    </View>
+  );
+}
+
+/** "{name} removed." and Undo, in the place of what went. */
+function UndoBar({ name, onUndo }: { name: string; onUndo: () => void }) {
+  const { color } = useTheme();
+  return (
+    <View testID="undo" style={[styles.snackbar, { backgroundColor: color.surface }]}>
+      <Text style={[styles.text, { color: color.text }]}>{t('programEditor.removed', { name })}</Text>
+      <Button label={t('programEditor.undo')} accessibilityLabel={t('programEditor.undoLabel', { name })} variant="ghost" size="sm" onPress={onUndo} />
     </View>
   );
 }
@@ -344,7 +375,7 @@ function AddMoveSheet({ day, moves, byId, makeOwn, onAdd, onClose }: SheetProps)
         <Pressable
           key={m.id}
           accessibilityRole="button"
-          accessibilityLabel={t('programEditor.pick', { name: exerciseName(m.id, byId) })}
+          accessibilityLabel={t('programEditor.pickLabel', { name: exerciseName(m.id, byId), range: t('programEditor.range', P.programNewMoveReps[m.kind]) })}
           onPress={() => onAdd(m)}
           style={styles.found}>
           <Text style={[styles.name, { color: color.text }]}>{exerciseName(m.id, byId)}</Text>

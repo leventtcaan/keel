@@ -143,6 +143,15 @@ describe('put back (Undo)', () => {
     expect(withDayAt(days, newDay([])[0], 0)).toBe(days);
     expect(withMoveAt(oneMove, oneMove[0].id, oneMove[0].moves[0], 0)).toBe(oneMove);
   });
+
+  test('a day put back whose weekday another day took meanwhile comes back on no weekday', () => {
+    const two = withWeekday(newDay(oneMove), 0, 'MONDAY');
+    const gone = two[0];
+    const retaken = withWeekday(withoutDay(two, 0), 0, 'MONDAY');
+    const back = withDayAt(retaken, gone, 0);
+    expect(back[0]).toEqual({ id: gone.id, name: gone.name, moves: gone.moves });
+    expect(back[1].weekday).toBe('MONDAY');
+  });
 });
 
 describe("the user's own move, pending until the program is sent", () => {
@@ -185,6 +194,12 @@ describe('the program it makes (contract OwnProgram)', () => {
     expect(ownProgramOf([])).toBeNull();
     expect(ownProgramOf(newDay(oneMove))).toBeNull();
     expect(ownProgramOf(renamed(oneMove, 0, '   '))).toBeNull();
+  });
+
+  test('two days on one weekday is no program (the server refuses it)', () => {
+    const two = withMove(newDay(oneMove), 1, CURL);
+    const both = two.map((day) => ({ ...day, weekday: 'MONDAY' as const }));
+    expect(ownProgramOf(both)).toBeNull();
   });
 
   test('a name longer than a day name can be is no program', () => {

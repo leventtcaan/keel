@@ -108,7 +108,7 @@ if (built.length > 0) {
     test('every key its file uses is counted, or said to be off the first view', () => {
       expect(screen.file).not.toBeNull();
       const used = keysUsedIn(fs.readFileSync(path.join(MOBILE, screen.file ?? ''), 'utf8'));
-      const accounted = new Set([...flat(screen.keys), ...screen.notFirstView]);
+      const accounted = new Set([...flat(screen.keys), ...screen.notFirstView, ...(screen.uncounted ?? [])]);
       expect(used.filter((key) => !accounted.has(key))).toEqual([]);
     });
   });
