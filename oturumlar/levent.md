@@ -211,3 +211,4 @@
 - takıldım: inceleme ajanı ortak checkout'ta dal değiştirdi (test commit'i PR'sız main'e düştü); `strict: false` yüzünden eski main'e karşı yeşil CI (update-branch kuralı); prototip değişikliği copy-budget testini kırdı (#481); prototip ADR'lerin gerisindeydi ("2 days, not 3")
 - sıradaki: `YENI-YUZ-part2-devam.md` — #475 birleşti mi, Levent `#ob-type` onayı → #479, prototip tur 2'yi commit + yayımla, K-986/K-990/K-991, Part 2 ÇIKIŞ
 - AI: bütün kod, test, inceleme ve prototip agent (ana oturum + ~10 uygulayıcı + ~20 inceleme/yürüyüş alt ajanı); Levent 14 soruyu cevapladı, prototipi değerlendirdi
+- ek (8 Eki gece, Part 2 sonu): Levent `#ob-type`'ı onayladı → #479; K-986 #483, K-990 #485 #487 (V42), K-991 #484 (V43) birleşti; yeni kartlar K-992, K-993 (Levent: geç dönüşte görülmemiş günler sayılmaz), K-994. **Part 2 BİTTİ**; sıradaki Part 3 · Ana ekranlar

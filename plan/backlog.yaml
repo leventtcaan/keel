@@ -4523,3 +4523,35 @@ tasks:
     tests: ["notifications plan testi: pazartesi bitiş → ilk bildirim sonraki pazartesi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Yerel bildirim takvimi ile sunucu tarihinin tutarlılığı"]
+
+  - id: K-993
+    title: "İlk hafta planın görüldüğü günden: geç dönüşte görülmemiş günler kaçırılmış sayılmaz"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-990]
+    why: "Levent (8 Eki): profil kaydı ile plan arasında uygulama kapanıp günler sonra dönülürse planı görmediği günler 1. hafta kararında 'kaçırıldı' sayılıyor (U7); ADR-077 Ek 2 sapması"
+    acceptance:
+      - "Telefon planı ilk gösterdiğinde sunucuya 'plan görüldü' der (idempotent, yalnız ilk kez yazılır)"
+      - "İlk hafta ve ilk karar tarihi plan görüldüğü günden sayılır; yoksa profil kaydı (bugünkü davranış) ve hesap açılışı (eski kullanıcı)"
+      - "Plan görülmeden önceki planlı günler kaçırılmış sayılmaz; ADR-077 Ek 2 sapması kapanır"
+    tests: ["FirstWeekFacts tablo: kayıt G, görüldü D (D<K, K≤D<K+7, D≥K+7); API testi; telefon: plan ilk gösterimde bir kez çağırır"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Başlangıç anını doğru olaya bağlamak"]
+
+  - id: K-994
+    title: "AccountDataTests dışa aktarım testi rastgele UUID içinde '12345' bulup kırılmasın"
+    milestone: M9a
+    module: privacy
+    type: test
+    size: S
+    status: todo
+    depends_on: []
+    why: "8 Eki CI: theExportHoldsEverythingHeldAndNothingOfAnyoneElse dışa aktarımda '12345' olmamasını arıyor; rastgele program günü UUID'si bunu içerebiliyor (kırılgan test)"
+    acceptance:
+      - "Başka hesabın verisi ayırt edici, UUID'de çıkamayacak bir işaretle aranır (ör. harf içeren benzersiz metin); beklenti gevşemez (K1)"
+    tests: ["AccountDataTests (CI)"]
+    refs: ["backend/src/test/java/app/keel/privacy/AccountDataTests.java"]
+    learn: ["Rastgele veride yanlış pozitif"]

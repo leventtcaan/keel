@@ -5,9 +5,9 @@ guncelleme: 2026-10-08
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (8 Eki akşam — M9a Part 2 son düzlükte; Levent'in isteğiyle durdu)
-**Önce `plan/oturum-promptlari/YENI-YUZ-part2-devam.md`.** Part 2'nin 8 görevinden 7'si birleşti (K-967 B2 #475 auto-merge'de); K-968 #479 Levent'in
-`#ob-type` prototip onayını bekliyor. Prototip ana checkout'ta commitlenmemiş tur 2 değişikliği taşıyabilir. Kalan: K-986, K-990, K-991, K-983.
+## ▶ DEVAM NOKTASI (8 Eki gece — M9a Part 2 BİTTİ)
+**Sıradaki session: M9a Part 3 · Ana ekranlar** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 3 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 2 ÇIKIŞ.
+Önce `prototip/kullanici-testi.md` (iki kullanıcı yürüyüşü). Levent'i bekleyen: K-983 (ASC 2 hafta deneme), K-976 Facebook App ID (Part 4).
 
 ## (önceki) DEVAM NOKTASI (7 Eki gece — M9a Part 1 BİTTİ, 10/10 görev birleşti)
 **Sıradaki session: M9a Part 2 · Sunucu + onboarding** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 2 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 1 ÇIKIŞ.
@@ -820,6 +820,26 @@ Geçici numaralar: K-956 V39 · K-959 V40 · K-964 V41 · K-957 V42 · K-965 V43
 | K-988 kilo değişimi (sonuç cümlesi) | ⏳ | | Part 3 İlerleme ile |
 | K-989 başlangıç kalorisi ucu | 🛠 | | K-967 plan ekranı için |
 | K-983 ASC 2 hafta (Levent) | ⏳ sonra | | sandbox kontrolü Levent bitirince |
+
+**Part 2 ÇIKIŞ (8 Eki):**
+- **Birleşenler:** K-956 #462 (V39) · K-957 #460 · K-959 #464 (V40) · K-964 #472 (V41) · K-965 #469 · K-966 #461 #463 · K-967 #474 #475 · K-968 #473 #477 #479 ·
+  K-985 #470 · K-986 #483 · K-987 651dd851 · K-989 #478 · K-990 #485 (V42) #487 · K-991 #484 (V43) · #481 (ob-type bütçe satırı). **Sıradaki göç V44.**
+- **Açık PR / worktree:** açık PR yok. Ajan worktree'leri `.claude/worktrees/agent-*` (silinebilir). Yerel önizleme `.claude/launch.json` "prototype" (8791, commitlenmedi).
+- **Kalan (kart var):** K-983 (Levent ASC) · K-988 kilo değişimi (Part 3) · K-992 ilk hatırlatma sunucunun gününe · K-993 ilk hafta planın görüldüğü günden (Levent 8 Eki) ·
+  K-994 kırılgan dışa aktarım testi.
+- **Part 3'ün bilmesi gereken teknik kararlar:**
+  - Onboarding: `src/onboarding/flow.ts` (dallar, adımlar; ≤12 ekran testi), `prepare.ts` (profil → program (OWN ise okunur, BUILD ise üretilir; dal kaydedilmiş profilden) →
+    başlangıç ağırlıkları → `/v1/targets/starting` → `/v1/first-weeks.firstCallOn` → katalog), `profileStatus` (`onboarding.open` işareti, resume).
+  - Program: `GET/POST /v1/program/review[/apply|/undo]` (`alsoUndone`, `notReviewedMoves`), `PUT /v1/program` (OWN; kendi hareketi ADR-035 Ek 1),
+    `DELETE /v1/program/cardio` (koçun varsayılanı), `Program.cardio.afterLiftOverLine`, bugünü değiştir/swap (ADR-073 Ek 3, `training.session_change`, `PlannedDays`),
+    sabit tekrar (min = max, ADR-073 Ek 4; `train/reps.ts` gösterim yardımcısı).
+  - Düzenleyici: `src/train/ProgramEditor.tsx` + `programEdit.ts` (K-970 "Edit" bunu kullanır; geri alma, VoiceOver duyurusu).
+  - İlerleme: `GET /v1/training-progress`, `GET /v1/workouts/{id}/summary` (rekor = baskın olmayan set, ADR-075 Ek 2).
+  - İlk hafta: `onboarded_at` (V42) profilin ilk kaydı; check-in `firstCallOn`'dan önce yok (ADR-077 Ek 2).
+- **Dersler:** `strict: false` → birleştirmeden önce `gh pr update-branch`; prototip `copy-budget.test.ts`'in girdisi (ekran eklerken bütçe satırı);
+  inceleme ajanı ortak checkout'ta checkout yapmaz; kullanıcı gözüyle persona yürüyüşü mekanik akış testinin kaçırdığını yakalar (UI işinde her turdan sonra).
+- **Levent kararları (8 Eki):** vurgu #007684 · ADR-077 Ek 1 · kendi hareketi OWN programda · şablonlar incelemeye uyar, 1 gün 6 bileşik × 4 · HIIT sayılır ·
+  koçun varsayılanına dön · rekor tanımı · "Type it in" önce prototip, sonra onay · yeni hareket 3 set · 5×5 · geç dönüşte görülmemiş günler sayılmaz (K-993).
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
