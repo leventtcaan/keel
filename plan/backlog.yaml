@@ -3693,7 +3693,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-951, K-952, K-954]
     why: "ADR-072 #1-#4: tek soru tek ekran, ≤25-30 kelime; satış cümlesi hoş geldinde"
     acceptance:
@@ -4429,7 +4429,7 @@ tasks:
     module: decision
     type: test
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ready() kendi tartısını 'şimdiden 1 saat önce' kaydediyor; 00:00-01:00 UTC arası tartı önceki güne düşüyor, theImportedHistoryIsSeenInTheTrendAndTheList kırmızı (8 Eki, #463 ve #464 CI)"
     acceptance:
