@@ -25,8 +25,11 @@ export type NotificationAccess = {
   clear(): Promise<void>;
 };
 
-/** `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all three. */
-export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind };
+/**
+ * `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all three. `noCalls`: the
+ * server makes no calls (no health data consent, K-992), so no check-in morning is planned whatever is on.
+ */
+export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind; noCalls?: true };
 
 type Options = {
   kv: KeyValue;
@@ -82,6 +85,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
     enabled: (await kv.getItemAsync(KEY.enabled)) === ON,
     cue: (await kv.getItemAsync(KEY.cue)) ?? '',
     ...(keptOnly === 'check_in' ? { only: keptOnly } : {}),
+    ...(firstCallOf(await kv.getItemAsync(KEY.firstCall)) === 'off' ? { noCalls: true as const } : {}),
   };
   const listeners = new Set<() => void>();
 
@@ -233,6 +237,8 @@ export async function createReminders({ kv, access, now, report, muted = async (
         const kept = keptFirstCall(firstCall);
         if ((await kv.getItemAsync(KEY.firstCall)) === kept) return;
         await kv.setItemAsync(KEY.firstCall, kept);
+        const { noCalls: _, ...rest } = settings;
+        become({ ...rest, ...(firstCall === 'off' ? { noCalls: true as const } : {}) });
         await reschedule();
       }),
 

@@ -125,6 +125,17 @@ test('only the check-in morning on (from the plan, K-967): said, and all three a
   expect(screen.getByRole('button', { name: t('settings.reminders.turnOffLabel') })).toBeOnTheScreen();
 });
 
+test('the check-in morning alone, but no calls (no health data consent, K-992): not shown as on; all three a tap away', async () => {
+  mockSettings = { enabled: true, cue: '', only: 'check_in', noCalls: true };
+  mockPermission = { granted: true, canAskAgain: false };
+  await show();
+  expect(screen.getByText(t('settings.reminders.noCalls'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('settings.reminders.on'))).toBeNull();
+  expect(screen.queryByText(t('settings.reminders.onlyCheckIn'))).toBeNull();
+  await press(t('settings.reminders.turnOnAll'));
+  expect(mockServices.reminders.turnOn).toHaveBeenCalledWith();
+});
+
 test('the sentence: shown as kept, saved when changed, and only then', async () => {
   mockSettings = { enabled: true, cue: 'Lunch break' };
   mockPermission = { granted: true, canAskAgain: false };

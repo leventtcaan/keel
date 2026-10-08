@@ -485,6 +485,16 @@ describe('the first call day (K-992), kept from the server\'s answer', () => {
     expect(device.scheduled.map((r) => r.when)).toEqual([{ weekday: 2, hour: 9, minute: 0 }]);
     await reminders.keepFirstCall('off');
     expect(device.scheduled).toEqual([]);
+    // Said, so Settings never shows the check-in morning alone as on while nothing rings (review).
+    expect(reminders.current().noCalls).toBe(true);
+    await reminders.keepFirstCall('weekly');
+    expect(reminders.current().noCalls).toBeUndefined();
+  });
+
+  test('no calls kept across launches is said from the start', async () => {
+    const kv = memoryKv();
+    await (await make(kv)).reminders.keepFirstCall('off');
+    expect((await make(kv)).reminders.current().noCalls).toBe(true);
   });
 
   test('kept across launches; nothing kept is weekly, as before K-992', async () => {
