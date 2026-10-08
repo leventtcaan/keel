@@ -6,6 +6,7 @@
 import * as path from 'path';
 
 import { router as appRouter } from 'expo-router';
+import { AccessibilityInfo } from 'react-native';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { t } from '@/copy';
@@ -113,7 +114,13 @@ let mockServerProgram: unknown = null;
 let mockStarting: unknown = 404;
 // What the phone knows of the health data consent (a resumed onboarding reads it; the walk has its own answer).
 let mockConsentGranted = false;
-const mockConsents = { remember: jest.fn(async (_kind: string, _status: string) => {}), granted: jest.fn(async () => mockConsentGranted) };
+// Whether the server holds a grant, for taking it back (K-986): what the phone knows, or 'unknown' when it cannot say.
+let mockConsentHeld: boolean | 'unknown' = false;
+const mockConsents = {
+  remember: jest.fn(async (_kind: string, _status: string) => {}),
+  granted: jest.fn(async () => mockConsentGranted),
+  held: jest.fn(async (_kind: string): Promise<boolean | 'unknown'> => mockConsentHeld),
+};
 // Like the real service (K-231): a refusal throws by name; what went through leaves the phone's health entries behind.
 const mockWithdrawHealthData = jest.fn(async () => {
   if (mockConsentStatus !== 200) throw Object.assign(new Error('x'), { name: 'ConsentRefused' });
@@ -196,6 +203,8 @@ beforeEach(() => {
   mockWithdrawHealthData.mockClear();
   mockConsents.remember.mockClear();
   mockConsents.granted.mockReset().mockImplementation(async () => mockConsentGranted);
+  mockConsentHeld = false;
+  mockConsents.held.mockReset().mockImplementation(async () => mockConsentHeld);
   mockReport.mockClear();
   mockProfile.refresh.mockReset().mockResolvedValue(undefined);
   mockKeepOnPhone.mockClear();
@@ -794,11 +803,12 @@ describe('#ob-consent walked again after a close: the last choice is the one tha
   // while the server and the phone still hold the grant.
   beforeEach(() => {
     mockConsentGranted = true;
+    mockConsentHeld = true;
   });
 
   test('"Not now", then "Continue without": the grant is withdrawn, no weight is asked and no weigh-in is sent', async () => {
     const router = await walkTo('consent');
-    expect(mockConsents.granted).toHaveBeenCalledWith('HEALTH_DATA'); // the screen opens on what the phone remembers
+    expect(mockConsents.held).toHaveBeenCalledWith('HEALTH_DATA'); // the screen opens on what the phone remembers
     await press(t('onboarding.healthData.notNow'));
     expect(mockWithdrawHealthData).not.toHaveBeenCalled(); // "Not now" alone records nothing
     await press(t('onboarding.consent.continueWithout'));
@@ -816,7 +826,7 @@ describe('#ob-consent walked again after a close: the last choice is the one tha
 
   test('"Continue without" pressed before the phone has answered waits for it: the grant is still withdrawn', async () => {
     let known: (granted: boolean) => void = () => {};
-    mockConsents.granted.mockImplementation(() => new Promise<boolean>((resolve) => (known = resolve)));
+    mockConsents.held.mockImplementation(() => new Promise<boolean>((resolve) => (known = resolve)));
     const router = await walkTo('consent');
     await press(t('onboarding.healthData.notNow'));
     // Not awaited: the press is answered only once the phone knows.
@@ -833,15 +843,23 @@ describe('#ob-consent walked again after a close: the last choice is the one tha
 
   test('a withdrawal that does not go through says so, stays, and "Continue without" tries it again', async () => {
     mockConsentStatus = 503;
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     const router = await walkTo('consent');
     await press(t('onboarding.healthData.notNow'));
     await press(t('onboarding.consent.continueWithout'));
     expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen();
+    // VoiceOver hears it too (K-815), and hears it again when the retry fails again.
+    expect(said).toHaveBeenLastCalledWith(t('onboarding.serverError'));
+    said.mockClear();
+    await press(t('onboarding.consent.continueWithout'));
+    expect(said).toHaveBeenCalledWith(t('onboarding.serverError'));
+    said.mockRestore();
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(2);
     expect(router.getPathname()).toBe('/onboarding/health-data');
     expect(mockReport).toHaveBeenCalledWith({ name: 'ConsentRefused' });
     mockConsentStatus = 200;
     await press(t('onboarding.consent.continueWithout'));
-    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(2);
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(3);
     expect(router.getPathname()).toBe('/onboarding/about');
     expect(screen.queryByText(t('onboarding.serverError'))).toBeNull();
   });
@@ -866,8 +884,34 @@ describe('#ob-consent walked again after a close: the last choice is the one tha
     expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
   });
 
+  test('the server could not say (it answered with an error): taken as held and withdrawn, a no-op if none was given', async () => {
+    mockConsentHeld = 'unknown';
+    const router = await walkTo('about');
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
+    expect(router.getPathname()).toBe('/onboarding/about');
+  });
+
+  test('the phone could not answer at all: withdrawn too', async () => {
+    mockConsents.held.mockRejectedValue(new Error('locked'));
+    await walkTo('about');
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
+  });
+
+  test('an "Allow" whose answer was lost may have been recorded: "Continue without" afterwards withdraws it', async () => {
+    mockConsentHeld = false; // nothing held when the screen opened
+    mockApi.PUT.mockRejectedValueOnce(new TypeError('Network request failed'));
+    const router = await walkTo('consent');
+    await press(t('onboarding.healthData.allow'));
+    expect(screen.getByText(t('onboarding.healthData.failed'))).toBeOnTheScreen();
+    await press(t('onboarding.healthData.notNow'));
+    await press(t('onboarding.consent.continueWithout'));
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
+    expect(router.getPathname()).toBe('/onboarding/about');
+  });
+
   test('never given: "Continue without" withdraws nothing', async () => {
     mockConsentGranted = false;
+    mockConsentHeld = false;
     await walkTo('about');
     expect(mockWithdrawHealthData).not.toHaveBeenCalled();
     expect(consentCalls()).toEqual([]);

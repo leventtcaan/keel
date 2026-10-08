@@ -21,10 +21,11 @@ import { tokens } from '@/theme/tokens';
  * the way back are off, so the last choice made is the one recorded.
  *
  * Walked again after a close (K-986): the server may still hold a grant from the first walk. The screen asks again as on
- * a first walk, and reads on opening what the phone knows (the server's answer, kept). While that is a grant, "Continue
- * without" withdraws it the same way, before moving on (GDPR Art. 7(3): the last choice counts); one that does not go
- * through says so and stays, and the same button tries again. Not sure what it knows: withdrawn anyway, as the server
- * does nothing when nothing was given.
+ * a first walk, and reads on opening whether a grant is held, to the text shown now or an older one (consents.held: the
+ * server's answer, or offline what the phone kept). While one is, "Continue without" withdraws it the same way, before
+ * moving on (GDPR Art. 7(3): the last choice counts); one that does not go through says so and stays, and the same
+ * button tries again. Unknown (the server answered with an error): withdrawn anyway, as the server does nothing when
+ * nothing was given. An "Allow" sent counts as held even if its answer never came: it may have been recorded.
  */
 export default function HealthDataStep() {
   const { draft, update } = useDraft();
@@ -34,10 +35,14 @@ export default function HealthDataStep() {
   const [problem, setProblem, occurrence] = useProblem();
   const [fullText, setFullText] = useState(false);
   const sending = useRef(false); // two taps at once must not record twice
-  // Whether the server holds a grant: read on opening, then kept up to date by this screen's own answers.
+  // Whether the server may hold a grant: read on opening, then kept up to date by this screen's own answers. "unknown"
+  // counts as held. `held` answers "unknown" rather than failing; a failure anyway would be no answer either.
   const given = useRef<Promise<boolean> | null>(null);
   useEffect(() => {
-    given.current = consents.granted('HEALTH_DATA').catch(() => true);
+    given.current = consents.held('HEALTH_DATA').then(
+      (held) => held !== false,
+      () => true,
+    );
   }, [consents]);
 
   const onward = () => router.push('/onboarding/about');
@@ -71,8 +76,9 @@ export default function HealthDataStep() {
   const allow = () =>
     send(
       async () => {
-        await grantConsent(api, 'HEALTH_DATA');
+        // Taken as held before it is sent: a grant whose answer is lost may still be recorded, so a decline withdraws it.
         given.current = Promise.resolve(true);
+        await grantConsent(api, 'HEALTH_DATA');
         await consents.remember('HEALTH_DATA', 'GRANTED').catch(() => undefined); // the phone knows at once (K-402)
       },
       () => update({ healthConsent: 'granted' }),

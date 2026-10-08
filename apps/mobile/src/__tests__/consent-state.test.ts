@@ -99,3 +99,44 @@ test('a yes the phone kept before the text was revised is not taken offline (K-4
   await offline.remember('HEALTH_DATA', 'GRANTED');
   expect(kv.items.get('consent.HEALTH_DATA')).toBe(`GRANTED@${consentVersion('HEALTH_DATA')}`);
 });
+
+describe('held: whether a grant is held, for taking it back (K-986)', () => {
+  const offline = { GET: async () => Promise.reject(new TypeError('offline')) } as never;
+  const failing = { GET: async () => ({ error: { code: 'INTERNAL' }, response: new Response(null, { status: 500 }) }) } as never;
+  const answering = (status: string, textVersion = consentVersion('HEALTH_DATA')) =>
+    ({ GET: async () => ({ data: [{ kind: 'HEALTH_DATA', status, textVersion }], response: new Response(null, { status: 200 }) }) }) as never;
+
+  test("the server's answer: a grant, to the text shown now or an older one, is held; anything else is not", async () => {
+    expect(await createConsentState({ api: answering('GRANTED'), kv: memoryKv() }).held('HEALTH_DATA')).toBe(true);
+    expect(await createConsentState({ api: answering('GRANTED', '1-draft'), kv: memoryKv() }).held('HEALTH_DATA')).toBe(true);
+    expect(await createConsentState({ api: answering('WITHDRAWN'), kv: memoryKv() }).held('HEALTH_DATA')).toBe(false);
+    expect(await createConsentState({ api: answering('NEVER_ASKED'), kv: memoryKv() }).held('HEALTH_DATA')).toBe(false);
+  });
+
+  test('a server that answered with an error cannot say: unknown, even with a no kept from before', async () => {
+    const kv = memoryKv();
+    kv.items.set('consent.HEALTH_DATA', `WITHDRAWN@${consentVersion('HEALTH_DATA')}`);
+    expect(await createConsentState({ api: failing, kv }).held('HEALTH_DATA')).toBe('unknown');
+  });
+
+  test('offline: what the phone kept, a grant to any text held; nothing kept is not held', async () => {
+    const kv = memoryKv();
+    const state = createConsentState({ api: offline, kv });
+    expect(await state.held('HEALTH_DATA')).toBe(false);
+    await state.remember('HEALTH_DATA', 'GRANTED');
+    expect(await state.held('HEALTH_DATA')).toBe(true);
+    kv.items.set('consent.HEALTH_DATA', 'GRANTED@1-draft');
+    expect(await state.held('HEALTH_DATA')).toBe(true);
+    await state.remember('HEALTH_DATA', 'WITHDRAWN');
+    expect(await state.held('HEALTH_DATA')).toBe(false);
+  });
+
+  test('a phone that cannot read what it kept cannot say either: unknown', async () => {
+    const kv = { ...memoryKv(), getItemAsync: async () => Promise.reject(new Error('locked')) };
+    expect(await createConsentState({ api: offline, kv }).held('HEALTH_DATA')).toBe('unknown');
+  });
+
+  test('granted is unchanged by it: a server error is still "not given" there', async () => {
+    expect(await createConsentState({ api: failing, kv: memoryKv() }).granted('HEALTH_DATA')).toBe(false);
+  });
+});
