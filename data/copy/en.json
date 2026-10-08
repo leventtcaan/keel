@@ -283,7 +283,12 @@
   },
   "swap": {
     "title": "Swap {move}",
-    "why": "Same muscles, and your gym has these. The new move starts fresh: pick its weight.",
+    "titleGeneric": "Swap a move",
+    "notFound": "This move isn't in your program now.",
+    "noneOwn": "No other move for this one.",
+    "skipInstead": "Skip today instead",
+    "backToList": "Back to the list",
+    "why":"Same muscles, and your gym has these. The new move starts fresh: pick its weight.",
     "back": "Back to the planned move",
     "none": "No other move for these muscles in your gym.",
     "which": "Which one is taken?",

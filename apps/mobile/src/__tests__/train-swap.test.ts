@@ -30,6 +30,7 @@ test("the planned move's options as the server sent them, in its order", () => {
     current: BENCH,
     swapped: false,
     options: ['dumbbell_bench_press', 'machine_chest_press', 'push_up'],
+    todayOptions: ['dumbbell_bench_press', 'machine_chest_press', 'push_up'],
   });
 });
 
@@ -44,13 +45,14 @@ test('swapped for today: the title is the move as it is now, not offered again; 
   expect(choice?.options).toEqual(['bench_press', 'machine_chest_press', 'push_up']);
 });
 
-test('a move the session already has (another swap put it there) is not offered', () => {
+test('a move the session already has (another swap put it there): from now on yes, for today no', () => {
   const row = planned('seated_row');
   const choice = swapChoice(
     found({ exerciseIds: ['bench_press', 'push_up'], swaps: [{ insteadOf: 'lat_pulldown', exercise: { ...row, exerciseId: 'push_up' } }] }),
     'bench_press',
   );
-  expect(choice?.options).toEqual(['dumbbell_bench_press', 'machine_chest_press']);
+  expect(choice?.options).toEqual(['dumbbell_bench_press', 'machine_chest_press', 'push_up']);
+  expect(choice?.todayOptions).toEqual(['dumbbell_bench_press', 'machine_chest_press']);
 });
 
 test("the user's own move has no options; a move not on the day is none to swap", () => {

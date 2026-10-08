@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +18,7 @@ import { exerciseName } from '@/train/program';
 import { swapChoice } from '@/train/swap';
 import { movesOf } from '@/train/trainData';
 import { sessionMoves, todaySession } from '@/train/week';
+import { activeWorkout } from '@/train/workout';
 
 type Scope = components['schemas']['MoveSwap']['scope'];
 type Equipment = components['schemas']['Equipment'];
@@ -29,18 +30,20 @@ const SAID = { conflict: 'swap.conflict', offline: 'swap.offline', failed: 'swap
  * from a move on today's card: titled by the move as it is now (not offered again), the server's options for the
  * planned move, and a pick asks "Today only" or "From now on". The new move starts fresh: no target, its own history
  * (the server's). A move swapped for today offers "Back to the planned move" (undoes it, today). `scope=today` without
- * a move is "Gym is busy": "Which one is taken?" first, then today only. CONFLICT and no connection are said here.
+ * a move is "Gym is busy": "Which one is taken?" first, then today only; a move with nothing to swap to leads to
+ * skipping today instead, or back to the list. While a workout of the day is under way, the swap for today is the
+ * workout's own: here only from now on. CONFLICT and no connection are said here.
  */
 export default function SwapScreen() {
-  const { api, training } = useAppServices();
+  const { api, training, workoutRecords } = useAppServices();
   const { color } = useTheme();
   const params = useLocalSearchParams<{ day?: string; move?: string; scope?: string }>();
   const todayOnly = params.scope === 'today';
   const { day, data } = useReadOnFocus(
     useCallback(async () => {
-      const [read, own] = await Promise.all([training.read(api), training.own(api)]);
-      return { ...read, own };
-    }, [api, training]),
+      const [read, own, records] = await Promise.all([training.read(api), training.own(api), workoutRecords()]);
+      return { ...read, own, active: activeWorkout(records) };
+    }, [api, training, workoutRecords]),
   );
   const [picked, setPicked] = useState<string | null>(params.move ?? null);
   const [to, setTo] = useState<string | null>(null);
@@ -63,7 +66,9 @@ export default function SwapScreen() {
   const found = program === null ? null : todaySession(program, day);
   // The move from the card is the day's even when today is not its session (a from-now-on swap needs no session today).
   const programDay = program?.days.find((d) => d.id === params.day) ?? null;
-  const session = found !== null && found.day.id === params.day ? found : null;
+  const started = data?.active != null && data.active.programDayId === params.day;
+  // For today only while today is the day's session and its workout has not begun (then the workout swaps).
+  const session = found !== null && found.day.id === params.day && found.session.skipped !== true && !started ? found : null;
   const planOnly = programDay === null ? null : { programDayId: programDay.id, date: day, exerciseIds: programDay.exercises.map((e) => e.exerciseId) };
   const target = programDay === null || planOnly === null ? null : (session ?? { day: programDay, session: planOnly });
   const choice = target === null || picked === null ? null : swapChoice(target, picked);
@@ -80,13 +85,25 @@ export default function SwapScreen() {
     else setProblem(t(SAID[answer.kind]));
   };
 
-  let title = t('swap.which');
-  let body = null;
-  if (choice === null && session !== null && picked === null) {
+  let title = t('swap.titleGeneric');
+  let body: ReactNode = null;
+  const line = (key: string) => <Text style={[styles.text, { color: color.textSecondary }]}>{t(key)}</Text>;
+  if (data === null) {
+    body = null; // still reading
+  } else if (program === null) {
+    body = line('train.failed');
+  } else if (programDay === null || (picked !== null && choice === null)) {
+    body = line('swap.notFound');
+  } else if (todayOnly && started) {
+    body = line('todayChange.started');
+  } else if (todayOnly && session === null) {
+    body = line('todayChange.none');
+  } else if (choice === null && session !== null) {
     // "Gym is busy": the session's moves by their name today; the swap names the planned move.
+    title = t('swap.which');
     body = (
       <View style={styles.rows}>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t('swap.whichWhy')}</Text>
+        {line('swap.whichWhy')}
         {sessionMoves(session.day, session.session).map((m) => (
           <OptionRow
             key={m.planned.exerciseId}
@@ -101,10 +118,20 @@ export default function SwapScreen() {
   } else if (choice !== null && to === null) {
     title = t('swap.title', { move: name(choice.current.exerciseId) });
     const plannedId = choice.planned.exerciseId;
+    const offered = todayOnly ? choice.todayOptions : choice.options;
+    // The user's own move has no options at all; a catalog move may have none in this gym.
+    const none = moves.get(choice.current.exerciseId)?.name !== undefined ? 'swap.noneOwn' : 'swap.none';
+    const ways =
+      offered.length === 0 && todayOnly ? (
+        <View style={styles.rows}>
+          <Button label={t('swap.skipInstead')} variant="ghost" onPress={() => router.replace({ pathname: '/today-change', params: { day: params.day ?? '' } })} />
+          <Button label={t('swap.backToList')} variant="ghost" onPress={() => setPicked(null)} />
+        </View>
+      ) : null;
     body = (
       <View style={styles.rows}>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{choice.options.length === 0 ? t('swap.none') : t('swap.why')}</Text>
-        {choice.options.map((id) => (
+        {line(offered.length === 0 ? none : 'swap.why')}
+        {offered.map((id) => (
           <OptionRow
             key={id}
             label={name(id)}
@@ -115,16 +142,18 @@ export default function SwapScreen() {
             onPress={() => (id === plannedId || todayOnly ? void send(plannedId, id, 'TODAY') : setTo(id))}
           />
         ))}
+        {ways}
       </View>
     );
   } else if (choice !== null && to !== null) {
-    const current = name(choice.current.exerciseId);
+    const planned = name(choice.planned.exerciseId);
     const plannedId = choice.planned.exerciseId;
-    title = t('swap.scopeTitle', { move: name(to), current });
-    // Today only while today is the day's session; from now on whenever (the program changes, not the session).
+    title = t('swap.scopeTitle', { move: name(to), current: name(choice.current.exerciseId) });
+    // Today only while today is the day's session and the move is not in it yet; from now on whenever.
+    const today = session !== null && choice.todayOptions.includes(to);
     body = (
       <View style={styles.rows}>
-        {session !== null && <ScopeButton label={t('swap.today')} note={t('swap.todayBody', { current })} busy={busy} onPress={() => void send(plannedId, to, 'TODAY')} />}
+        {today && <ScopeButton label={t('swap.today')} note={t('swap.todayBody', { current: planned })} busy={busy} onPress={() => void send(plannedId, to, 'TODAY')} />}
         <ScopeButton label={t('swap.fromNow')} note={t('swap.fromNowBody', { move: name(to) })} busy={busy} onPress={() => void send(plannedId, to, 'FROM_NOW_ON')} />
       </View>
     );

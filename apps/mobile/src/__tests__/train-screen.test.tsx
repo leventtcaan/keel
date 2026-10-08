@@ -238,6 +238,36 @@ test('each move of today has its swap, named for VoiceOver, opening the swap of 
   expect(screen.getByLabelText('Swap Dip')).toBeTruthy();
 });
 
+test('two quick taps on a swap open one sheet', async () => {
+  mockData = withProgram({ days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e) => ({ ...e, swapOptions: ['push_up'] })) }, PROGRAM.days[1]] });
+  await show();
+  const swap = await screen.findByLabelText('Swap Bench press');
+  await fireEvent.press(swap);
+  await fireEvent.press(swap);
+  await fireEvent.press(screen.getByLabelText(t('train.changeLabel')));
+  expect(mockPush).toHaveBeenCalledTimes(1);
+});
+
+test("a workout under way: no swap on the card (the workout swaps its own moves)", async () => {
+  mockData = withProgram({ days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e) => ({ ...e, swapOptions: ['push_up'] })) }, PROGRAM.days[1]] });
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  await show();
+  expect(await screen.findByText('Continue workout')).toBeTruthy();
+  expect(screen.queryByLabelText('Swap Bench press')).toBeNull();
+});
+
 test('a move with nothing to swap to (the server sent no options) has no swap', async () => {
   await show();
   expect(await screen.findByText('Bench press')).toBeTruthy();

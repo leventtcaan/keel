@@ -1,5 +1,6 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { useCallback, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -52,6 +53,18 @@ export function TodayCard(props: Props) {
 
 function Body({ program, date, today, moves, units, underWay, canPick, onStart }: Props) {
   const { color } = useTheme();
+  // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
+  const opening = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      opening.current = false;
+    }, []),
+  );
+  const sheet = (href: Parameters<typeof router.push>[0]) => {
+    if (opening.current) return;
+    opening.current = true;
+    router.push(href);
+  };
   const restWeek = program.restUntil !== undefined;
   const session = restWeek || today === null || today.session.skipped === true ? null : today;
   const shown = session === null ? [] : sessionMoves(session.day, session.session);
@@ -66,7 +79,7 @@ function Body({ program, date, today, moves, units, underWay, canPick, onStart }
   const cardio = program.cardio?.sessions.find((s) => s.weekday === weekdayOf(date) && s.place === 'AFTER_LIFT');
   const short = session?.session.short === true;
   const held = program.loadHeldSince !== undefined;
-  const change = () => router.push({ pathname: '/today-change', params: { day: session?.day.id ?? '' } });
+  const change = () => sheet({ pathname: '/today-change', params: { day: session?.day.id ?? '' } });
   let dock = null;
   if (underWay) dock = <Button label={t('train.continueWorkout')} onPress={() => router.push('/workout')} />;
   else if (session !== null) {
@@ -93,12 +106,13 @@ function Body({ program, date, today, moves, units, underWay, canPick, onStart }
         const name = exerciseName(planned.exerciseId, moves);
         // The swap names the program's move; a move swapped for today offers it back. None with nothing to swap to.
         const plannedId = insteadOf?.exerciseId ?? planned.exerciseId;
-        const canSwap = session !== null && (swapChoice(session, plannedId)?.options.length ?? 0) > 0;
+        // While a workout is under way, its moves are swapped in the workout.
+        const canSwap = !underWay && session !== null && (swapChoice(session, plannedId)?.options.length ?? 0) > 0;
         const swap = canSwap ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('swap.label', { move: name })}
-            onPress={() => router.push({ pathname: '/swap', params: { day: session.day.id, move: plannedId } })}
+            onPress={() => sheet({ pathname: '/swap', params: { day: session.day.id, move: plannedId } })}
             hitSlop={tokens.space.xs}
             style={[styles.swap, { backgroundColor: color.raise }]}>
             <SymbolView name="arrow.left.arrow.right" size={tokens.type.bodySmall} tintColor={color.text} />
