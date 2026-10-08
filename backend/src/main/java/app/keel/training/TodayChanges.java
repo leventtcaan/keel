@@ -103,6 +103,34 @@ final class TodayChanges {
     record Started(UUID workoutId, boolean open) {
     }
 
+    /** Why a move of today's session would be refused (K-995): a session would pass Sunday, or it was started today. */
+    enum Conflict { PAST_SUNDAY, STARTED }
+
+    /** A session a move puts on a new day. */
+    record Shift(UUID programDayId, LocalDate date) {
+    }
+
+    /** What a move of today's session would do now (K-995, ADR-073 Ek 6): its shifts by date, or why it would be refused. */
+    record Preview(List<Shift> shifts, Conflict conflict) {
+    }
+
+    /**
+     * The move of {@code programDayId} to tomorrow as it would go now, checked as the move checks it: refused when a
+     * workout of the day was started today, then when a session would pass Sunday. Empty when it is not today's session.
+     */
+    static Optional<Preview> preview(List<Session> week, UUID programDayId, LocalDate today, boolean startedToday) {
+        if (on(week, today).stream().noneMatch(session -> session.programDayId().equals(programDayId))) {
+            return Optional.empty();
+        }
+        if (startedToday) {
+            return Optional.of(new Preview(List.of(), Conflict.STARTED));
+        }
+        return Optional.of(moveToTomorrow(week, programDayId, today)
+                .map(moves -> new Preview(moves.entrySet().stream().map(move -> new Shift(move.getKey(), move.getValue()))
+                        .sorted(Comparator.comparing(Shift::date).thenComparing(Shift::programDayId)).toList(), null))
+                .orElse(new Preview(List.of(), Conflict.PAST_SUNDAY)));
+    }
+
     private static final int DAYS_PER_WEEK = 7;
 
     private TodayChanges() {
@@ -187,11 +215,16 @@ final class TodayChanges {
      * user's calendar ({@code zone}) — a session done is done (Ek 3).
      */
     static Set<UUID> undoable(Map<UUID, Undo> undos, List<WorkoutStore.Workout> workouts, LocalDate today, ZoneId zone) {
-        Set<UUID> startedToday = workouts.stream().filter(workout -> workout.programDayId() != null)
-                .filter(workout -> workout.startedAt().atZone(zone).toLocalDate().equals(today)).map(WorkoutStore.Workout::programDayId)
-                .collect(Collectors.toSet());
+        Set<UUID> startedToday = startedOn(workouts, today, zone);
         return undos.entrySet().stream().filter(entry -> entry.getKey().equals(entry.getValue().of()) && entry.getValue().on().equals(today))
                 .map(Map.Entry::getKey).filter(day -> !startedToday.contains(day)).collect(Collectors.toUnmodifiableSet());
+    }
+
+    /** The program days with a workout started on {@code day} on the user's calendar ({@code zone}). */
+    static Set<UUID> startedOn(List<WorkoutStore.Workout> workouts, LocalDate day, ZoneId zone) {
+        return workouts.stream().filter(workout -> workout.programDayId() != null)
+                .filter(workout -> workout.startedAt().atZone(zone).toLocalDate().equals(day)).map(WorkoutStore.Workout::programDayId)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /** The day {@code day} is on in the week of {@code monday} by its weekday; null on no weekday. */
