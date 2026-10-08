@@ -3288,11 +3288,13 @@ components:
         liftedChangePercent:
           type: integer
           description: |
-            liftedKg against the last earlier session of the same program day that has a working set, in whole percent
-            (rounded half up; negative when less). Absent without one, or when it lifted 0 kg.
+            liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+            whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
+            saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
         workingSets:
           type: integer
           minimum: 0
+          description: A one-sided move's sets count once per set, as the side that did fewer (the program's sets are per side).
         marks:
           type: array
           description: One per move of the session that set a record or its baseline, in the order first done.
@@ -3304,16 +3306,18 @@ components:
           description: The Monday of the workout's week, on the user's calendar; the muscles' shares are of this week.
         muscles:
           type: array
-          description: The primary muscles this session trained, with their week (the one muscle map, ADR-078 #4).
+          description: |
+            The primary muscles this session trained, with their week as it stood when the session started (later
+            sessions not counted) — the one muscle map, ADR-078 #4.
           items:
             $ref: "#/components/schemas/MuscleSets"
     SetMark:
       type: object
       description: |
-        RECORD: the session's last working set that beats every earlier set of the move, its own session's earlier sets
-        included — at least as heavy with at least as many reps, and not the same set (double progression's two steps;
-        a tie is none). Sides are one history. BASELINE: the move's first session, its best set (heaviest, then most
-        reps, then fewest left).
+        RECORD (ADR-075 Ek 2): a working set no earlier working set of the move dominates (none at least as heavy with
+        at least as many reps), its own session's earlier sets included: the first time at a load, or more reps than ever
+        at a load at least that heavy. A tie is none. When several sets of the session are records, the heaviest (then
+        most reps, then fewest left). Sides are one history. BASELINE: the move's first session, its best set.
       required: [exerciseId, kind, loadKg, reps]
       properties:
         exerciseId:
@@ -3336,7 +3340,8 @@ components:
       type: object
       description: |
         A primary muscle's week (the catalog's first muscle): the sets this week's program plans (a lighter week's
-        fewer) and the working sets done, each a share of targetSets — weekly_sets_per_muscle, or arm_weekly_sets_min
+        fewer, a week off's none) and the working sets done (a one-sided move's once per set, as the side that did
+        fewer), each a share of targetSets — weekly_sets_per_muscle, or arm_weekly_sets_min
         for an arm — capped at 1 and rounded down to 2 decimals.
       required: [muscle, plannedSets, doneSets, targetSets, plannedShare, doneShare]
       properties:
@@ -3380,7 +3385,7 @@ components:
         strongerLifts:
           type: integer
           minimum: 0
-          description: The lifts whose best set is a record set after their baseline ("Stronger on 4 of 5 lifts").
+          description: The lifts with at least one record after their baseline ("Stronger on 4 of 5 lifts").
         trackedLifts:
           type: integer
           minimum: 0
@@ -3394,10 +3399,12 @@ components:
         baseline:
           $ref: "#/components/schemas/DatedSet"
         best:
-          $ref: "#/components/schemas/DatedSet"
+          allOf:
+            - $ref: "#/components/schemas/DatedSet"
+          description: The last record, or the baseline before the first one.
         stronger:
           type: boolean
-          description: The best set is a record after the baseline (it beats every earlier set).
+          description: At least one record after the baseline (ADR-075 Ek 2).
         weeks:
           type: array
           description: Each Monday week's best set, oldest first (the strength chart).
@@ -3419,7 +3426,7 @@ components:
                 minimum: 0
               held:
                 type: boolean
-                description: The weekly call held the load on a day of this week (K-217).
+                description: The weekly call held the load on a day of this week (K-217); always false for an isolation move.
         effort:
           $ref: "#/components/schemas/EffortLine"
     DatedSet:
@@ -3443,8 +3450,9 @@ components:
       type: object
       description: |
         The effort line's facts (ADR-078 #2), from each session's best set; the first kind that holds, in this order.
-        STUCK ("Stuck at 72.5 kg for 3 sessions. Held this week."): stalled as the deload ladder counts it
-        (plateau_sessions) — loadKg, sessions, held (the weekly call holds the load now; compound moves only).
+        STUCK ("Stuck at 72.5 kg for 3 sessions. Held this week."): stalled as the weekly call counts it (plateau_sessions;
+        sessions logged in the app since the current program was made, imported ones not) — loadKg, sessions, held (the
+        weekly call holds the load now; compound moves only). The other kinds read the whole history, imported too.
         EASIER ("Same 100 kg, now with 1 rep left."): the last session the same load and reps as the one before, with
         more left — loadKg, reps, repsLeft, repsLeftBefore. REPS_RISING: the last sessions at one load, more reps now
         than at the first — loadKg, repsGained, since (the first session at the load), sessions, weeks (whole weeks to

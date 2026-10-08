@@ -2342,10 +2342,12 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day that has a working set, in whole percent
-             *     (rounded half up; negative when less). Absent without one, or when it lifted 0 kg.
+             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+             *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
+             *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
              */
             liftedChangePercent?: number;
+            /** @description A one-sided move's sets count once per set, as the side that did fewer (the program's sets are per side). */
             workingSets: number;
             /** @description One per move of the session that set a record or its baseline, in the order first done. */
             marks: components["schemas"]["SetMark"][];
@@ -2354,14 +2356,17 @@ export interface components {
              * @description The Monday of the workout's week, on the user's calendar; the muscles' shares are of this week.
              */
             weekOf: string;
-            /** @description The primary muscles this session trained, with their week (the one muscle map, ADR-078 */
+            /**
+             * @description The primary muscles this session trained, with their week as it stood when the session started (later
+             *     sessions not counted) — the one muscle map, ADR-078 #4.
+             */
             muscles: components["schemas"]["MuscleSets"][];
         };
         /**
-         * @description RECORD: the session's last working set that beats every earlier set of the move, its own session's earlier sets
-         *     included — at least as heavy with at least as many reps, and not the same set (double progression's two steps;
-         *     a tie is none). Sides are one history. BASELINE: the move's first session, its best set (heaviest, then most
-         *     reps, then fewest left).
+         * @description RECORD (ADR-075 Ek 2): a working set no earlier working set of the move dominates (none at least as heavy with
+         *     at least as many reps), its own session's earlier sets included: the first time at a load, or more reps than ever
+         *     at a load at least that heavy. A tie is none. When several sets of the session are records, the heaviest (then
+         *     most reps, then fewest left). Sides are one history. BASELINE: the move's first session, its best set.
          */
         SetMark: {
             exerciseId: string;
@@ -2374,7 +2379,8 @@ export interface components {
         };
         /**
          * @description A primary muscle's week (the catalog's first muscle): the sets this week's program plans (a lighter week's
-         *     fewer) and the working sets done, each a share of targetSets — weekly_sets_per_muscle, or arm_weekly_sets_min
+         *     fewer, a week off's none) and the working sets done (a one-sided move's once per set, as the side that did
+         *     fewer), each a share of targetSets — weekly_sets_per_muscle, or arm_weekly_sets_min
          *     for an arm — capped at 1 and rounded down to 2 decimals.
          */
         MuscleSets: {
@@ -2395,7 +2401,7 @@ export interface components {
             muscles: components["schemas"]["MuscleSets"][];
             /** @description The current program's moves with a working set, in program order. */
             lifts: components["schemas"]["LiftProgress"][];
-            /** @description The lifts whose best set is a record set after their baseline ("Stronger on 4 of 5 lifts"). */
+            /** @description The lifts with at least one record after their baseline ("Stronger on 4 of 5 lifts"). */
             strongerLifts: number;
             /** @description The number of lifts. */
             trackedLifts: number;
@@ -2403,8 +2409,9 @@ export interface components {
         LiftProgress: {
             exerciseId: string;
             baseline: components["schemas"]["DatedSet"];
+            /** @description The last record, or the baseline before the first one. */
             best: components["schemas"]["DatedSet"];
-            /** @description The best set is a record after the baseline (it beats every earlier set). */
+            /** @description At least one record after the baseline (ADR-075 Ek 2). */
             stronger: boolean;
             /** @description Each Monday week's best set, oldest first (the strength chart). */
             weeks: {
@@ -2413,7 +2420,7 @@ export interface components {
                 loadKg: number;
                 reps: number;
                 rir?: number;
-                /** @description The weekly call held the load on a day of this week (K-217). */
+                /** @description The weekly call held the load on a day of this week (K-217); always false for an isolation move. */
                 held: boolean;
             }[];
             effort?: components["schemas"]["EffortLine"];
@@ -2430,8 +2437,9 @@ export interface components {
         };
         /**
          * @description The effort line's facts (ADR-078 #2), from each session's best set; the first kind that holds, in this order.
-         *     STUCK ("Stuck at 72.5 kg for 3 sessions. Held this week."): stalled as the deload ladder counts it
-         *     (plateau_sessions) — loadKg, sessions, held (the weekly call holds the load now; compound moves only).
+         *     STUCK ("Stuck at 72.5 kg for 3 sessions. Held this week."): stalled as the weekly call counts it (plateau_sessions;
+         *     sessions logged in the app since the current program was made, imported ones not) — loadKg, sessions, held (the
+         *     weekly call holds the load now; compound moves only). The other kinds read the whole history, imported too.
          *     EASIER ("Same 100 kg, now with 1 rep left."): the last session the same load and reps as the one before, with
          *     more left — loadKg, reps, repsLeft, repsLeftBefore. REPS_RISING: the last sessions at one load, more reps now
          *     than at the first — loadKg, repsGained, since (the first session at the load), sessions, weeks (whole weeks to
