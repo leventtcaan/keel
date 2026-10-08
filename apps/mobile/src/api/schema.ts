@@ -754,7 +754,7 @@ export interface paths {
          *     today's swaps) and every session the move pushed on back on its day; `programDayId` names the session moved or
          *     skipped (`WeekSession.undoable`). Nothing to undo, nothing changes (harmless twice). Only this week's session
          *     changes, never the program. CONFLICT (409), nothing changed: that day's session is not on today (SHORT, FULL, MOVE,
-         *     SKIP), a move would pass Sunday, or (MOVE, SKIP, UNDO) a workout of that day was started today, under way or
+         *     SKIP), a move would pass Sunday (`WeekSession.movePreview` says so beforehand), or (MOVE, SKIP, UNDO) a workout of that day was started today, under way or
          *     finished. NOT_FOUND: no program.
          */
         post: operations["changeToday"];
@@ -2194,6 +2194,7 @@ export interface components {
              */
             undoable?: boolean;
             workout?: components["schemas"]["SessionWorkout"];
+            movePreview?: components["schemas"]["MovePreview"];
             skipped?: boolean;
             short?: boolean;
             exerciseIds: string[];
@@ -2203,6 +2204,27 @@ export interface components {
              *     (`lastBestSet`) and in-session table (ADR-075 #3), like a move swapped from now on. Absent when there is none.
              */
             swaps?: components["schemas"]["TodaySwap"][];
+        };
+        /**
+         * @description What "Move it" (POST /v1/program/today MOVE) would do to today's session now (K-995, ADR-073 Ek 3): present only on
+         *     the session on today, not skipped. `shifts`: each session the move puts on a new day, by date — today's on tomorrow,
+         *     then any it pushes on a day (the week re-lays itself); the app shows them and works none out. `conflict`: the move
+         *     would be refused (409), `shifts` empty: PAST_SUNDAY, a session would pass Sunday; STARTED, a workout of the day was
+         *     started today.
+         */
+        MovePreview: {
+            shifts: components["schemas"]["MoveShift"][];
+            /** @enum {string} */
+            conflict?: "PAST_SUNDAY" | "STARTED";
+        };
+        MoveShift: {
+            /** Format: uuid */
+            programDayId: string;
+            /**
+             * Format: date
+             * @description The day the session would be on.
+             */
+            date: string;
         };
         /**
          * @description The workout of a week's session (K-995): of its program day, the latest started this week on the user's calendar.

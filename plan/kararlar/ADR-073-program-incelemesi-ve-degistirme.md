@@ -240,3 +240,14 @@ testi: seçenekler salon ekipmanıyla süzülür.
   DONE (Start yok). Haftanın herhangi bir günü sayılır: seansını gününden önce ya da sonra yapan için seans yapılmıştır (tutarlılık da
   haftada sayar, Ek 3). İçe aktarılan seansın program günü yoktur, eşleşmez. **Reddedilen:** yalnız seansın tarihinde başlayanı saymak
   (gününden önce yapılan seans "yapılmadı" görünürdü) · telefonda antrenman listesinden eşlemek (telefon kural işletmez).
+
+## Ek 6 · Taşı zinciri önizlemesi (K-995 PR C, 2026-10-09, agent, teknik)
+- **`WeekSession.movePreview`, ayrı uç değil:** bugünün (atlanmamış) seansı, MOVE'un şimdi ne yapacağını taşır: `shifts` (taşınan ve zincirle
+  kayan her seans, yeni günüyle, tarihe göre) ya da `conflict` (PAST_SUNDAY: bir seans pazarı geçerdi; STARTED: o günün antrenmanı bugün
+  başladı; ikisinde de `shifts` boş, MOVE 409 verirdi). Hesap MOVE'un kendi zinciridir (`TodayChanges.moveToTomorrow`), telefon zincir
+  hesaplamaz. **Neden alan:** Change sayfası açılır açılmaz zinciri gösterir (ek istek yok, önbellekteki programla çevrimdışı da), program her
+  okunduğunda taze; MOVE yine kendi denetimini yapar (önizleme ile taşıma arasında hafta değişirse 409). **Reddedilen:** ayrı önizleme ucu
+  (her sayfa açılışında bir istek; aynı bilgi zaten haftanın içinde) · `POST /v1/program/today`'e `dryRun` (değiştiren uçta değiştirmeyen kip).
+- **Split seçimi bu kartta yok** (düzenleyici, 9 Eki): her gün sayısının tek şablonu var (1-2 gün tüm vücut, 3 karışık, 4 üst/alt, 5 karışık,
+  6 itiş/çekiş/bacak), seçim fiilen tek seçenek; gerçek seçim yeni şablon, yani koçluk içeriği: Levent kararı bekliyor. Rebuild bugünkü gibi gün
+  sayısıyla üretir; sözleşmeye `split` alanı eklenmedi.
