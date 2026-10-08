@@ -1680,6 +1680,15 @@
         "FRIDAY": "Friday",
         "SATURDAY": "Saturday",
         "SUNDAY": "Sunday"
+      },
+      "dayShort": {
+        "MONDAY": "Mon",
+        "TUESDAY": "Tue",
+        "WEDNESDAY": "Wed",
+        "THURSDAY": "Thu",
+        "FRIDAY": "Fri",
+        "SATURDAY": "Sat",
+        "SUNDAY": "Sun"
       }
     },
     "consent": {
@@ -1767,6 +1776,56 @@
       "on": "Reminders are on. You can change them in Settings at any time.",
       "refused": "Notifications are off for keel in iOS. Only iOS Settings can turn them on now.",
       "cueKeptOnlyOn": "Kept only if you turn reminders on."
+    },
+    "weights": {
+      "title": "Your working weights",
+      "why": "A weight you lift about {reps} times. Skip any.",
+      "unset": "Not set",
+      "less": "Less on {move}",
+      "more": "More on {move}",
+      "minusMark": "-",
+      "plusMark": "+",
+      "skip": "Skip, find them in session 1"
+    },
+    "preparing": {
+      "title": "Building your plan",
+      "program": "Your program, {count} days",
+      "cardio": "Your cardio",
+      "noCardio": "Cardio, only if you want it",
+      "foodAndCardio": "Your food and cardio",
+      "food": "Your food to start",
+      "firstCall": "Your first call: {day}",
+      "firstWorkout": "Your first workout",
+      "done": "{line}, done",
+      "see": "See my plan"
+    },
+    "plan": {
+      "title": "Your plan",
+      "reflectLabel": "Built from your answers",
+      "goal": "Goal: {goal}",
+      "goalName": {
+        "LOSE_FAT": "Lose fat",
+        "BUILD_MUSCLE": "Build muscle",
+        "DECIDE_FOR_ME": "We pick"
+      },
+      "days": "{count} days",
+      "workoutLabel": "First workout",
+      "firstWorkout": "{day} · first workout",
+      "today": "Today",
+      "findsWeights": "Session 1 finds your weights",
+      "setsReps": "{sets} × {min}-{max}",
+      "cardio": "Cardio",
+      "cardioDose": "{sessions} × {minutes} min",
+      "cardioAfter": "Easy pace, after your weights.",
+      "cardioMixed": "Easy pace, some on rest days.",
+      "food": "Food to start",
+      "foodKcal": "{kcal} kcal a day",
+      "foodNote": "Your scale corrects it in {days} days.",
+      "firstCall": "First call",
+      "inDays": "in {count} days",
+      "tomorrow": "tomorrow",
+      "remind": "Tell me {day} morning",
+      "finishFailed": "Couldn't finish on this phone. Try again."
     },
     "appleHealth": {
       "connect": "Connect",
@@ -1914,6 +1973,8 @@
       "turnOn": "Turn on reminders",
       "turnOff": "Turn off",
       "turnOffLabel": "Turn off reminders",
+    "onlyCheckIn": "Only the check-in morning reminder is on.",
+    "turnOnAll": "Turn on all three",
       "on": "On",
       "blocked": "Notifications for keel are off in iOS Settings.",
       "openSettings": "Open iOS Settings",

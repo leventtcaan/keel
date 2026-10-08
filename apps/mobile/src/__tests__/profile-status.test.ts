@@ -225,3 +225,151 @@ describe('the profile handed on, for the reminders (K-410)', () => {
     expect(kv.items.has('onboarded')).toBe(false); // the next start must not open the next account on the tabs
   });
 });
+
+describe('stored before the plan is shown, finished after it (K-967, ADR-072 #2)', () => {
+  test('stored: PUT once, the units adopted, the profile the server holds handed back; onboarding still open, nothing kept', async () => {
+    const { status, server, units, kv } = await setup({ profile: null });
+    await status.refresh();
+    const stored = await status.store({ ...PROFILE, units: 'METRIC' });
+    expect(server.puts).toEqual([{ ...PROFILE, units: 'METRIC' }]);
+    expect(stored).toEqual({ ...PROFILE, units: 'METRIC' });
+    expect(units.current()).toBe('METRIC');
+    expect(status.current()).toBe('needed');
+    expect(kv.items.has('onboarded')).toBe(false);
+  });
+
+  test('finished: done and kept, with no second PUT; the profile handed on once', async () => {
+    const kv = memoryKv();
+    const server = profileServer(null);
+    const api = createApiClient({ baseUrl: BASE, accessToken: async () => 'tok', fetch: server.fetch });
+    const units = await createUnitsPreference({ kv, api, locale: 'en-US' });
+    const onProfile = jest.fn(async (_profile: Profile) => {});
+    const status = await createProfileStatus({ kv, api, units, onProfile });
+    await status.store(PROFILE);
+    expect(onProfile).not.toHaveBeenCalled();
+    await status.finish();
+    expect(status.current()).toBe('done');
+    expect(server.puts).toHaveLength(1);
+    expect(onProfile).toHaveBeenCalledTimes(1);
+    expect((await setup({ kv })).status.current()).toBe('done');
+  });
+
+  test('nothing stored: finishing does nothing', async () => {
+    const { status } = await setup({ profile: null });
+    await status.refresh();
+    await status.finish();
+    expect(status.current()).toBe('needed');
+  });
+
+  test('a refused store throws by name, like a save, and leaves nothing to finish', async () => {
+    const { status } = await setup({ profile: null, failPut: 400 });
+    await status.refresh();
+    await expect(status.store(PROFILE)).rejects.toMatchObject({ name: 'ProfileSaveFailed' });
+    await status.finish();
+    expect(status.current()).toBe('needed');
+  });
+
+  test('stored for one account, then a sign-out: finishing does not mark the next account done', async () => {
+    const { status, kv } = await setup({ profile: null });
+    await status.store(PROFILE);
+    await status.forget();
+    await status.finish();
+    expect(status.current()).toBe('unknown');
+    expect(kv.items.has('onboarded')).toBe(false);
+  });
+
+  test('a finish that cannot be kept throws, and can be tried again: the stored profile is not lost', async () => {
+    const kv = memoryKv();
+    const { status } = await setup({ profile: null, kv });
+    await status.store(PROFILE);
+    const set = kv.setItemAsync;
+    kv.setItemAsync = async () => {
+      throw Object.assign(new Error('disk full'), { name: 'KvFailed' });
+    };
+    await expect(status.finish()).rejects.toMatchObject({ name: 'KvFailed' });
+    expect(status.current()).not.toBe('done');
+    kv.setItemAsync = set;
+    await status.finish();
+    expect(status.current()).toBe('done');
+  });
+});
+
+describe('onboarding still open on this phone: the plan comes back after a restart (K-967 review)', () => {
+  /** The app opened again on the same phone: the same kept items, the server as it is now. */
+  const restart = (kv: ReturnType<typeof memoryKv>, profile: Profile | null) => setup({ kv, profile });
+
+  test('marked open before the profile is saved', async () => {
+    const { status, kv, server } = await setup({ profile: null });
+    server.holdNextPut();
+    const storing = status.store(PROFILE);
+    await new Promise((r) => setTimeout(r, 0)); // the request is on its way
+    expect(kv.items.has('onboarding.open')).toBe(true);
+    server.release();
+    await storing;
+  });
+
+  test('(a) closed after the profile was saved: not done — resumed, with the profile the server holds', async () => {
+    const first = await setup({ profile: null });
+    await first.status.store(PROFILE);
+    const again = await restart(first.kv, PROFILE);
+    expect(again.status.current()).toBe('unknown');
+    await again.status.refresh();
+    expect(again.status.current()).toBe('resume');
+    expect(again.status.resumed()).toEqual(PROFILE);
+    await again.status.finish();
+    expect(again.status.current()).toBe('done');
+    expect(again.kv.items.has('onboarding.open')).toBe(false);
+    expect((await restart(again.kv, PROFILE)).status.current()).toBe('done');
+  });
+
+  test('finished: the mark goes before "done" is kept — closed between the two, the server read finds a profile and no mark: done', async () => {
+    const kv = memoryKv();
+    const order: string[] = [];
+    const set = kv.setItemAsync;
+    const remove = kv.removeItemAsync;
+    kv.setItemAsync = async (key: string, value: string) => (order.push(`set ${key}`), set(key, value));
+    kv.removeItemAsync = async (key: string) => (order.push(`remove ${key}`), remove(key));
+    const { status } = await setup({ profile: null, kv });
+    await status.store(PROFILE);
+    order.length = 0;
+    await status.finish();
+    expect(order.indexOf('remove onboarding.open')).toBeLessThan(order.indexOf('set onboarded'));
+  });
+
+  test('both kept (an older order of the two writes): done — "done" is never undone by the mark', async () => {
+    const kv = memoryKv();
+    kv.items.set('onboarded', 'done');
+    kv.items.set('onboarding.open', '1');
+    const again = await restart(kv, PROFILE);
+    expect(again.status.current()).toBe('done');
+    await again.status.refresh();
+    expect(again.status.current()).toBe('done');
+    expect(kv.items.has('onboarding.open')).toBe(false);
+  });
+
+  test('(d) a sign-out forgets the mark: the next account is not resumed', async () => {
+    const first = await setup({ profile: null });
+    await first.status.store(PROFILE);
+    await first.status.forget();
+    expect(first.kv.items.has('onboarding.open')).toBe(false);
+    const again = await restart(first.kv, PROFILE);
+    await again.status.refresh();
+    expect(again.status.current()).toBe('done');
+  });
+
+  test('(e) a profile on the server and no mark: done, as always', async () => {
+    const { status } = await setup({ profile: PROFILE });
+    await status.refresh();
+    expect(status.current()).toBe('done');
+    expect(status.resumed()).toBeNull();
+  });
+
+  test('(f) the mark but no profile on the server (the save never landed): start over, the mark dropped', async () => {
+    const kv = memoryKv();
+    kv.items.set('onboarding.open', '1');
+    const again = await restart(kv, null);
+    await again.status.refresh();
+    expect(again.status.current()).toBe('needed');
+    expect(kv.items.has('onboarding.open')).toBe(false);
+  });
+});

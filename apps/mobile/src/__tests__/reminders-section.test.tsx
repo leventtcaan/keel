@@ -115,6 +115,16 @@ test('turning off goes through the service', async () => {
   expect(screen.getByRole('button', { name: t('settings.reminders.turnOn') })).toBeTruthy();
 });
 
+test('only the check-in morning on (from the plan, K-967): said, and all three a tap away', async () => {
+  mockSettings = { enabled: true, cue: '', only: 'check_in' };
+  mockPermission = { granted: true, canAskAgain: false };
+  await show();
+  expect(screen.getByText(t('settings.reminders.onlyCheckIn'))).toBeOnTheScreen();
+  await press(t('settings.reminders.turnOnAll'));
+  expect(mockServices.reminders.turnOn).toHaveBeenCalledWith();
+  expect(screen.getByRole('button', { name: t('settings.reminders.turnOffLabel') })).toBeOnTheScreen();
+});
+
 test('the sentence: shown as kept, saved when changed, and only then', async () => {
   mockSettings = { enabled: true, cue: 'Lunch break' };
   mockPermission = { granted: true, canAskAgain: false };

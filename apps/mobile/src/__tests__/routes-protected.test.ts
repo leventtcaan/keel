@@ -18,7 +18,8 @@ const MAIN_GUARD = "signedIn && onboarding === 'done' && gate === 'open'";
 /** The screens of the other guards: what a signed-out, not-yet-onboarded or unsubscribed user may open. */
 const OTHER_STATES: Record<string, string[]> = {
   "signedIn && onboarding === 'done' && gate !== 'open'": ['subscribe'],
-  "signedIn && onboarding === 'needed'": ['onboarding'],
+  // Not onboarded, or resumed on the plan after the app was closed (K-967).
+  "signedIn && (onboarding === 'needed' || onboarding === 'resume')": ['onboarding'],
   "signedIn && onboarding === 'unknown'": ['checking'],
   '!signedIn': ['sign-in'],
   // Taken off the surface (ADR-069 #3): the code stays, nothing opens them, a link neither.

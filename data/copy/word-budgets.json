@@ -203,15 +203,26 @@
         "onboarding.activity.ACTIVE",
         "onboarding.activity.VERY_ACTIVE"
       ],
-      "notFirstView": ["onboarding.tryAgain", "onboarding.saving"]
+      "notFirstView": []
     },
     {
       "screen": "ob-weights",
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-967",
-      "file": null,
-      "keys": [],
+      "file": "src/app/onboarding/weights.tsx",
+      "keys": [
+        "onboarding.weights.title",
+        "onboarding.weights.why",
+        "exercises.squat.name",
+        "onboarding.weights.unset",
+        "exercises.bench_press.name",
+        "onboarding.weights.unset",
+        "exercises.romanian_deadlift.name",
+        "onboarding.weights.unset",
+        "onboarding.weights.skip",
+        "onboarding.continue"
+      ],
       "notFirstView": []
     },
     {
@@ -219,18 +230,52 @@
       "budget": 20,
       "source": "prototip/yeni-yuz.html",
       "task": "K-967",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/preparing.tsx",
+      "keys": [
+        "onboarding.preparing.title",
+        "onboarding.preparing.program",
+        ["onboarding.preparing.cardio", "onboarding.preparing.noCardio", "onboarding.preparing.foodAndCardio", "onboarding.preparing.food"],
+        ["onboarding.preparing.firstCall", "onboarding.preparing.firstWorkout"],
+        "onboarding.schedule.dayName.MONDAY",
+        "onboarding.preparing.see"
+      ],
+      "notFirstView": ["onboarding.preparing.done", "onboarding.tryAgain", "onboarding.saveFailed", "onboarding.serverError", "onboarding.signOut"]
     },
     {
       "screen": "ob-plan",
       "budget": 55,
       "source": "ADR-072 #9",
       "task": "K-967",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/plan.tsx",
+      "keys": [
+        "onboarding.plan.title",
+        "onboarding.plan.goal",
+        ["onboarding.plan.goalName.LOSE_FAT", "onboarding.plan.goalName.BUILD_MUSCLE", "onboarding.plan.goalName.DECIDE_FOR_ME"],
+        "onboarding.plan.days",
+        "onboarding.schedule.dayShort.MONDAY",
+        "onboarding.schedule.dayShort.WEDNESDAY",
+        "onboarding.schedule.dayShort.FRIDAY",
+        "onboarding.plan.firstWorkout",
+        ["onboarding.plan.today", "onboarding.schedule.dayName.WEDNESDAY"],
+        "programDays.full_body_a.name",
+        "onboarding.plan.findsWeights",
+        "exercises.squat.name",
+        "exercises.bench_press.name",
+        "exercises.lat_pulldown.name",
+        "onboarding.plan.setsReps",
+        "onboarding.plan.cardio",
+        "onboarding.plan.cardioDose",
+        ["onboarding.plan.cardioAfter", "onboarding.plan.cardioMixed"],
+        "onboarding.plan.food",
+        "onboarding.plan.foodKcal",
+        "onboarding.plan.foodNote",
+        "onboarding.plan.firstCall",
+        ["onboarding.plan.inDays", "onboarding.plan.tomorrow"],
+        "onboarding.plan.remind",
+        "onboarding.schedule.dayName.MONDAY",
+        "onboarding.continue"
+      ],
+      "notFirstView": ["onboarding.plan.reflectLabel", "onboarding.plan.workoutLabel", "onboarding.plan.finishFailed"]
     },
     {
       "screen": "paywall",

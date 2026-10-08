@@ -33,15 +33,22 @@ const ROUTES: Record<Step, Href> = {
   consent: '/onboarding/health-data',
   about: '/onboarding/about',
   activity: '/onboarding/activity',
+  weights: '/onboarding/weights',
 };
+
+/** After the walk's last step: the plan is prepared (K-967), then shown. */
+const PREPARING: Href = '/onboarding/preparing';
+
+/** The screen after a step: the walk's next, or after its last the plan being prepared. */
+export const routeAfter = (next: Step | null): Href => (next === null ? PREPARING : ROUTES[next]);
 
 /**
  * For a step answered with one tap: keeps the answer and opens the next step of the walk those answers make (the program
- * answer changes the branch, so the next step is worked out from the draft with the answer in it). On the last step the
- * tap ends the walk instead (`onEnd`: the profile is saved). A second tap while the next screen opens, or while the walk
- * ends, does nothing; coming back to the step, or after an end that failed, a tap moves on again.
+ * answer changes the branch, so the next step is worked out from the draft with the answer in it); after the last step,
+ * the plan being prepared. A second tap while the next screen opens does nothing; coming back to the step, a tap moves on
+ * again.
  */
-export function useChoose(step: Step, onEnd?: (answered: Draft) => Promise<unknown>): (answer: Partial<Draft>) => void {
+export function useChoose(step: Step): (answer: Partial<Draft>) => void {
   const { draft, update } = useDraft();
   const leaving = useRef(false);
   useFocusEffect(
@@ -53,15 +60,7 @@ export function useChoose(step: Step, onEnd?: (answered: Draft) => Promise<unkno
     if (leaving.current) return;
     leaving.current = true;
     update(answer);
-    const answered = { ...draft, ...answer };
-    const next = nextStep(step, answered);
-    if (next !== null) {
-      router.push(ROUTES[next]);
-      return;
-    }
-    void (onEnd?.(answered) ?? Promise.resolve()).finally(() => {
-      leaving.current = false;
-    });
+    router.push(routeAfter(nextStep(step, { ...draft, ...answer })));
   };
 }
 
@@ -112,7 +111,8 @@ export function StepFrame({ step, title, why, children, chosen = false, continue
     (chosen ? null : (
       <Button
         label={continueLabel ?? t('onboarding.continue')}
-        onPress={() => next !== null && router.push(ROUTES[next])}
+        // A step off the walk (index -1) leads nowhere: nothing opens it either.
+        onPress={() => index >= 0 && router.push(routeAfter(next))}
         disabled={!ready}
       />
     ));

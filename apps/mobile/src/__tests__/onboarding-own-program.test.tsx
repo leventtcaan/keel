@@ -102,19 +102,36 @@ const kept = (body: Schemas['OwnProgram']): Schemas['Program'] => ({
   })),
 });
 type Init = { body?: unknown };
+/** What the server holds: the program kept at the import (or as the review changed it), and the own moves made with it. */
+let mockServerProgram: Schemas['Program'] | null = null;
+let mockOwnMoves: Schemas['CustomExercise'][] = [];
 const mockAnswer = async (route: string, init: Init): Promise<unknown> => {
-  if (route === '/v1/program') return ok(kept(init.body as Schemas['OwnProgram']));
+  if (route === '/v1/program') return ok((mockServerProgram = kept(init.body as Schemas['OwnProgram'])));
   if (route === '/v1/custom-exercises') {
     const own = init.body as Schemas['NewCustomExercise'];
-    return ok({ ...own, id: own.name === 'Landmine Press' ? 'custom:8a1d' : `custom:${own.name}` });
+    const made = { ...own, id: own.name === 'Landmine Press' ? 'custom:8a1d' : `custom:${own.name}` } as Schemas['CustomExercise'];
+    mockOwnMoves.push(made);
+    return ok(made);
   }
-  if (route === '/v1/program/review/apply') return ok(APPLIED);
+  if (route === '/v1/program/review/apply') return ok((mockServerProgram = APPLIED));
   if (route === '/v1/program/review') return ok(mockReview);
+  // The starting weights onto the program the server holds (K-967).
+  if (route === '/v1/program/starting-weights') return ok(mockServerProgram);
   return ok({ status: 'GRANTED' }); // a consent
 };
 /** The program as the server has it now (GET /v1/program): changed elsewhere, on other weekdays, reviewed again. */
 let mockNow: Schemas['Program'] | null = null;
-const mockRead = async (route: string) => (route === '/v1/program' && mockNow !== null ? ok(mockNow) : mockAnswer(route, {}));
+const mockRead = async (route: string): Promise<unknown> => {
+  if (route === '/v1/program') {
+    const now = mockNow ?? mockServerProgram;
+    return now === null ? refused(404) : ok(now);
+  }
+  // The plan reads the catalog and the user's own moves (K-967); no starting target without the consent.
+  if (route === '/v1/exercises') return ok(mockCatalog);
+  if (route === '/v1/custom-exercises') return ok(mockOwnMoves);
+  if (route === '/v1/targets/starting') return refused(404);
+  return mockAnswer(route, {});
+};
 const mockApi = {
   GET: jest.fn(mockRead),
   PUT: jest.fn(mockAnswer),
@@ -123,10 +140,14 @@ const mockApi = {
 };
 let mockFile: string | null = null;
 const mockPick = jest.fn(async () => mockFile);
+// The profile is stored when the plan is prepared, and onboarding ends at the plan's Continue (K-967).
 const mockProfile = {
-  save: jest.fn(async (_profile: unknown) => {}),
+  store: jest.fn(async (profile: unknown) => profile),
+  finish: jest.fn(async () => {}),
+  resumed: () => null,
   refresh: jest.fn(async () => {}),
 };
+const mockReminderSettings = { enabled: false, cue: '' };
 const mockReport = jest.fn();
 /** The phone's real copy of the user's own moves (trainData.ts), on a store kept in memory. */
 const mockStore = new Map<string, string>();
@@ -145,7 +166,9 @@ const mockServices = {
   queue: { record: jest.fn(async () => true), drain: jest.fn(async () => {}) },
   report: mockReport,
   withdrawHealthData: jest.fn(async () => {}),
-  consents: { remember: jest.fn(async () => {}) },
+  consents: { remember: jest.fn(async () => {}), granted: jest.fn(async () => false) },
+  // The plan's Monday switch reads them: one object, as useSyncExternalStore compares by identity.
+  reminders: { current: () => mockReminderSettings, subscribe: () => () => {}, turnOn: jest.fn(), turnOff: jest.fn() },
   units: { current: () => 'METRIC', keepOnPhone: jest.fn(async () => {}) },
   importFile: { pick: mockPick },
   training: {
@@ -179,6 +202,8 @@ beforeEach(() => {
   mockStore.clear();
   mockReview = REVIEW;
   mockNow = null;
+  mockServerProgram = null;
+  mockOwnMoves = [];
 });
 
 async function settle() {
@@ -459,11 +484,11 @@ describe('the import: a draft, read on this phone', () => {
 });
 
 describe('after the program', () => {
-  test('the walk goes on to its review, fifth of eight; back on #ob-own, Continue goes on with it', async () => {
+  test('the walk goes on to its review, fifth of nine (the weights last); back on #ob-own, Continue goes on with it', async () => {
     const router = await toDraft();
     await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
     await press(t('onboarding.programImport.confirm'));
-    expect(screen.getByLabelText(t('onboarding.progress', { step: 5, total: 8 }))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('onboarding.progress', { step: 5, total: 9 }))).toBeOnTheScreen();
     await press(t('onboarding.back'));
     await press(t('onboarding.back'));
     expect(router.getPathname()).toBe('/onboarding/own-program');
@@ -471,17 +496,23 @@ describe('after the program', () => {
     expect(router.getPathname()).toBe('/onboarding/review');
   });
 
-  test("the profile at the end: bringing my own, on the program's weekdays", async () => {
-    await toDraft();
-    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
-    await press(t('onboarding.programImport.confirm'));
+  /** From the confirmed program: its review kept as is, the consent declined, about you, the activity; it stops on what follows. */
+  async function toActivityEnd() {
     await press(t('onboarding.review.keep'));
     await press(t('onboarding.healthData.notNow'));
     await press(t('onboarding.consent.continueWithout'));
     await press(t('onboarding.about.male'));
     await press(t('onboarding.continue'));
     await choose(t('onboarding.activity.ACTIVE'));
-    expect(mockProfile.save).toHaveBeenCalledWith(
+  }
+
+  test("the profile when the plan is prepared: bringing my own, on the program's weekdays", async () => {
+    await toDraft();
+    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+    await press(t('onboarding.programImport.confirm'));
+    await toActivityEnd();
+    await press(t('onboarding.weights.skip'));
+    expect(mockProfile.store).toHaveBeenCalledWith(
       expect.objectContaining({
         programChoice: 'BRING_MY_OWN',
         schedule: expect.objectContaining({
@@ -489,6 +520,60 @@ describe('after the program', () => {
         }),
       }),
     );
+  });
+
+  test('the program kept at the import is the plan: none built over it; the weights go onto it (K-967)', async () => {
+    await toDraft();
+    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+    await press(t('onboarding.programImport.confirm'));
+    await toActivityEnd();
+    await press(t('onboarding.weights.more', { move: name('bench_press') }));
+    await press(t('onboarding.continue'));
+    expect(mockApi.POST).not.toHaveBeenCalledWith('/v1/program/generate', expect.anything());
+    expect(mockApi.PUT).toHaveBeenCalledWith('/v1/program/starting-weights', { body: { weights: [expect.objectContaining({ exerciseId: 'bench_press' })] } });
+  });
+
+  test('the weights asked are those of the starting moves the program has, and none when it has none', async () => {
+    mockFile = [
+      fixture('strong-program.csv').split('\n')[0],
+      '2025-03-03 18:00:00,"Upper",1h,"Bench Press (Barbell)",1,80,8,0,0,"","",',
+      '2025-03-10 18:00:00,"Upper",1h,"Bench Press (Barbell)",1,80,8,0,0,"","",',
+    ].join('\n');
+    await toDraft();
+    await press(t('onboarding.programImport.confirm'));
+    await toActivityEnd();
+    expect(screen.getByRole('button', { name: t('onboarding.weights.more', { move: name('bench_press') }) })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('onboarding.weights.more', { move: name('squat') }) })).toBeNull();
+  });
+
+  test('a program without any of the starting moves: no weights step, the plan is prepared after the activity', async () => {
+    mockFile = [
+      fixture('strong-program.csv').split('\n')[0],
+      '2025-03-03 18:00:00,"Upper",1h,"Bent Over Row (Barbell)",1,70,10,0,0,"","",',
+      '2025-03-10 18:00:00,"Upper",1h,"Bent Over Row (Barbell)",1,70,10,0,0,"","",',
+    ].join('\n');
+    const router = await toDraft();
+    await press(t('onboarding.programImport.confirm'));
+    await toActivityEnd();
+    expect(router.getPathname()).toBe('/onboarding/preparing');
+  });
+
+  test('the plan names the user\'s own move by the name they gave it, never its id', async () => {
+    // A Monday at noon: the first workout is the Upper day, the one with the user's own move.
+    jest.useFakeTimers({ now: new Date(2026, 9, 12, 12, 0) });
+    await toDraft();
+    await press(t('import.ownLabel', { file: 'Landmine Press' }));
+    await press(`${t('ownMove.kind')} ${t('ownMove.kinds.COMPOUND')}`);
+    await press(`${t('ownMove.equipment')} ${t('ownMove.equipments.BARBELL')}`);
+    await press(`${t('ownMove.unilateral')} ${t('ownMove.no')}`);
+    await press(t('ownMove.save'));
+    await press(t('onboarding.programImport.confirm'));
+    await toActivityEnd();
+    await press(t('onboarding.weights.skip'));
+    await press(t('onboarding.preparing.see'));
+    expect(screen.getByText('Upper')).toBeOnTheScreen();
+    expect(screen.getByText('Landmine Press')).toBeOnTheScreen();
+    expect(screen.queryByText(/custom:/)).toBeNull();
   });
 });
 
@@ -622,7 +707,7 @@ describe('#ob-review (ADR-073 #2-#3)', () => {
     await press(t('onboarding.continue'));
     await choose(t('onboarding.activity.ACTIVE'));
     // The changed program's weekdays (Lower moved to Friday).
-    expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ schedule: expect.objectContaining({ trainingDays: ['MONDAY', 'FRIDAY'] }) }));
+    expect(mockProfile.store).toHaveBeenCalledWith(expect.objectContaining({ schedule: expect.objectContaining({ trainingDays: ['MONDAY', 'FRIDAY'] }) }));
   });
 
   test('"Keep mine as is" sends nothing and changes nothing; the walk goes on', async () => {
@@ -661,7 +746,7 @@ describe('#ob-review (ADR-073 #2-#3)', () => {
     await press(t('onboarding.about.male'));
     await press(t('onboarding.continue'));
     await choose(t('onboarding.activity.ACTIVE'));
-    expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ schedule: expect.objectContaining({ trainingDays: ['TUESDAY', 'SATURDAY'] }) }));
+    expect(mockProfile.store).toHaveBeenCalledWith(expect.objectContaining({ schedule: expect.objectContaining({ trainingDays: ['TUESDAY', 'SATURDAY'] }) }));
   });
 
   test('changes applied, then back: the review shown is the changed program\'s', async () => {

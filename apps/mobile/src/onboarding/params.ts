@@ -42,4 +42,7 @@ export const onboardingParams = {
   welcomeExampleMs: param<number>('welcome_example_ms'),
   wheelStart: param<{ height_cm: number; weight_kg: number; age_years: number }>('about_wheel_start'),
   weightWheel: param<{ min_kg: number; step_kg: number; step_lb: number }>('weight_wheel'),
+  startingWeightReps: param<number>('starting_weight_reps'),
+  startingWeightMoves: param<string[]>('starting_weight_moves'),
+  startingWeightStepper: param<{ start_kg: number; step_kg: number; start_lb: number; step_lb: number }>('starting_weight_stepper'),
 };

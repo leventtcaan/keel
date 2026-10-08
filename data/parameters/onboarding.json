@@ -30,6 +30,22 @@
       "note": "ADR-072 #3, #5: an experienced user is asked the load they lift about this many times. The server reads it too: the load is a first target only on a day whose rep range starts at this or under; a day starting higher finds its load in the first session."
     },
     {
+      "key": "starting_weight_moves",
+      "value": ["squat", "bench_press", "romanian_deadlift"],
+      "unit": "exercise ids",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "ADR-072 #3, #5: the three main moves an experienced user is asked a working weight for (prototype #ob-weights: squat, bench press, deadlift; the catalog's deadlift is the Romanian deadlift). Each is in every program template (data/programs), so a weight given has its move in the program the onboarding builds; parameters.test.ts holds it."
+    },
+    {
+      "key": "starting_weight_stepper",
+      "value": { "start_kg": 20, "step_kg": 2.5, "start_lb": 45, "step_lb": 5 },
+      "unit": "kg, lb",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "#ob-weights' stepper: the first tap sets an empty bar (20 kg, 45 lb), then each step is a pair of the smallest common plates (prototype: 2.5 kg; as workout.json warmup_round_kg and warmup_round_lb). A move left unset is skipped: its weight is found in the first session (ADR-072 #5)."
+    },
+    {
       "key": "welcome_example_ms",
       "value": 1900,
       "unit": "milliseconds",

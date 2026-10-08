@@ -10,7 +10,7 @@
 import type { KeyValue } from '@/units/preference';
 
 import { notificationParams as P } from './params';
-import { type Reminder, type Schedule, planReminders } from './plan';
+import { type Reminder, type ReminderKind, type Schedule, planReminders } from './plan';
 
 /** What iOS answers about notifications: allowed or not, and whether its sheet can still be shown. */
 export type NotificationPermission = { granted: boolean; canAskAgain: boolean };
@@ -25,7 +25,8 @@ export type NotificationAccess = {
   clear(): Promise<void>;
 };
 
-export type ReminderSettings = { enabled: boolean; cue: string };
+/** `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all three. */
+export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind };
 
 type Options = {
   kv: KeyValue;
@@ -42,6 +43,7 @@ type Options = {
 const KEY = {
   enabled: 'reminders.enabled',
   cue: 'reminders.cue',
+  only: 'reminders.only',
   schedule: 'reminders.schedule',
   lastOpened: 'reminders.lastOpened',
   restUntil: 'reminders.restUntil',
@@ -67,7 +69,12 @@ function dateOf(kept: string | null): Date | null {
 export type Reminders = Awaited<ReturnType<typeof createReminders>>;
 
 export async function createReminders({ kv, access, now, report, muted = async () => false, mutedUntil = async () => null }: Options) {
-  let settings: ReminderSettings = { enabled: (await kv.getItemAsync(KEY.enabled)) === ON, cue: (await kv.getItemAsync(KEY.cue)) ?? '' };
+  const keptOnly = await kv.getItemAsync(KEY.only);
+  let settings: ReminderSettings = {
+    enabled: (await kv.getItemAsync(KEY.enabled)) === ON,
+    cue: (await kv.getItemAsync(KEY.cue)) ?? '',
+    ...(keptOnly === 'check_in' ? { only: keptOnly } : {}),
+  };
   const listeners = new Set<() => void>();
 
   function become(next: ReminderSettings) {
@@ -112,7 +119,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
       mutedUntil: until,
       restUntil: await kv.getItemAsync(KEY.restUntil),
     });
-    await access.replace(plan);
+    await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
   }
 
   return {
@@ -127,15 +134,22 @@ export async function createReminders({ kv, access, now, report, muted = async (
     /** iOS's answer as it stands (the user may have changed it in iOS Settings). */
     permission: (): Promise<NotificationPermission> => access.permission(),
 
-    /** Asks iOS; allowed, they are on and scheduled. Refused, they stay off. The answer is returned for the screen. */
-    turnOn: async (): Promise<NotificationPermission> => {
+    /**
+     * Asks iOS; allowed, they are on and scheduled — all three, or `only` one kind (the plan's Monday morning switch).
+     * Refused, they stay off. The answer is returned for the screen.
+     */
+    turnOn: async ({ only }: { only?: 'check_in' } = {}): Promise<NotificationPermission> => {
       const startedIn = generation;
       const answer = await access.request();
       await inTurn(
         async () => {
           if (answer.granted && startedIn === generation) {
             await kv.setItemAsync(KEY.enabled, ON);
-            if (startedIn === generation) become({ ...settings, enabled: true });
+            await (only === undefined ? kv.removeItemAsync(KEY.only) : kv.setItemAsync(KEY.only, only));
+            if (startedIn === generation) {
+              const { only: _, ...rest } = settings;
+              become({ ...rest, enabled: true, ...(only === undefined ? {} : { only }) });
+            }
           }
           await quietly(reschedule());
         },
@@ -148,7 +162,9 @@ export async function createReminders({ kv, access, now, report, muted = async (
       inTurn(
         async () => {
           await kv.removeItemAsync(KEY.enabled);
-          become({ ...settings, enabled: false });
+          await kv.removeItemAsync(KEY.only);
+          const { only: _, ...rest } = settings;
+          become({ ...rest, enabled: false });
           await quietly(reschedule());
         },
         { rethrow: true },

@@ -9,7 +9,6 @@ import { router as appRouter } from 'expo-router';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { t } from '@/copy';
-import { walk } from '@/onboarding/flow';
 import { defaultTrainingDays, onboardingParams } from '@/onboarding/params';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 
@@ -26,7 +25,14 @@ function mockBecome(state: OnboardingState) {
 }
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 const mockUnitsListeners = new Set<() => void>();
-const mockProfile = { save: jest.fn(async (_profile: unknown) => {}), refresh: jest.fn(async () => {}) };
+// The profile is stored when the plan is prepared, and onboarding is done once the plan is seen (K-967).
+const mockProfile = {
+  store: jest.fn(async (profile: unknown) => profile),
+  finish: jest.fn(async () => {}),
+  refresh: jest.fn(async () => {}),
+  // The profile the server holds when onboarding resumes after a restart (K-967); none on a fresh walk.
+  resumed: jest.fn((): unknown => null),
+};
 const mockSignOut = jest.fn(async () => {});
 // The server's answer to a consent PUT; `mockConsentStatus` 200 records it.
 let mockConsentStatus = 200;
@@ -34,9 +40,79 @@ const mockConsentAnswer = async (_path: string, _init: unknown) =>
   mockConsentStatus === 200
     ? { data: { status: 'GRANTED' }, response: new Response(null, { status: 200 }) }
     : { error: { code: 'X' }, response: new Response(null, { status: mockConsentStatus }) };
-const mockApi = { PUT: jest.fn(mockConsentAnswer), DELETE: jest.fn(mockConsentAnswer) };
+const mockOk = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
+type MockMove = { exerciseId: string; baseSets: number; sets: number; reps: { min: number; max: number }; targetRir: number; nextLoadKg?: number };
+const mockMove = (exerciseId: string): MockMove => ({ exerciseId, baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 2 });
+/** Like the server: a program on the days asked for, each day the same three moves, with the engine's cardio. */
+function mockProgram(trainingDays: string[], loads: Record<string, number> = {}) {
+  return {
+    id: 'a1b2c3d4-0000-4000-8000-00000000000a',
+    source: 'GENERATED',
+    days: trainingDays.map((weekday, i) => ({
+      id: `a1b2c3d4-0000-4000-8000-00000000001${i}`,
+      nameKey: 'full_body_a',
+      weekday,
+      exercises: ['squat', 'bench_press', 'lat_pulldown'].map((id) => ({
+        ...mockMove(id),
+        ...(loads[id] === undefined ? {} : { nextLoadKg: loads[id] }),
+      })),
+    })),
+    cardio: { source: 'GENERATED', minutes: 30, sessionsPerWeek: trainingDays.length, doneThisWeek: 0, afterLiftOverLine: false,
+      sessions: trainingDays.map((weekday) => ({ weekday, place: 'AFTER_LIFT' })) },
+  };
+}
+let mockTrainingDays: string[] = [];
+const mockCatalog = [
+  { id: 'squat', nameKey: 'exercises.squat.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] },
+  { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'CABLE', unilateral: false, setupFields: [] },
+];
+/** A consent PUT, or the starting weights: the program with each weight as its move's first target. */
+const mockPut = async (path: string, init: unknown) => {
+  if (path !== '/v1/program/starting-weights') return mockConsentAnswer(path, init);
+  const { weights } = (init as { body: { weights: { exerciseId: string; kg: number }[] } }).body;
+  return mockOk(mockProgram(mockTrainingDays, Object.fromEntries(weights.map((w) => [w.exerciseId, w.kg]))));
+};
+const mockGenerate = async (_path: string, init: unknown) => {
+  mockTrainingDays = (init as { body: { trainingDays: string[] } }).body.trainingDays;
+  return mockOk(mockProgram(mockTrainingDays));
+};
+const mockApi = {
+  PUT: jest.fn(mockPut),
+  DELETE: jest.fn(mockConsentAnswer),
+  POST: jest.fn(mockGenerate),
+  // The catalog; the tabs' reads find no connection (Today shows what it can).
+  GET: jest.fn(async (path: string) => {
+    if (path === '/v1/exercises') return mockOk(mockCatalog);
+    // The user's own moves: none here (a move the catalog does not name is looked for there first).
+    if (path === '/v1/custom-exercises') return mockOk([]);
+    // The program the server holds: none until one is built (a resumed onboarding may find one).
+    // Where the calories start (K-989): the server's answer, or a status meaning none (404 here by default: no weigh-in).
+    if (path === '/v1/targets/starting') {
+      return typeof mockStarting === 'number' ? { error: { code: 'X' }, response: new Response(null, { status: mockStarting }) } : mockOk(mockStarting);
+    }
+    if (path === '/v1/program') {
+      return mockServerProgram === null ? { error: { code: 'NOT_FOUND' }, response: new Response(null, { status: 404 }) } : mockOk(mockServerProgram);
+    }
+    throw new TypeError('Network request failed');
+  }),
+};
+let mockReminderSettings = { enabled: false, cue: '' };
+const mockReminderListeners = new Set<() => void>();
+const mockTurnOn = jest.fn(async () => {
+  mockReminderSettings = { enabled: true, cue: '' };
+  mockReminderListeners.forEach((listener) => listener());
+  return { granted: true, canAskAgain: false };
+});
+const mockTurnOff = jest.fn(async () => {
+  mockReminderSettings = { enabled: false, cue: '' };
+  mockReminderListeners.forEach((listener) => listener());
+});
 const mockQueue = { record: jest.fn(async (_record: unknown) => true), drain: jest.fn(async () => {}) };
-const mockConsents = { remember: jest.fn(async (_kind: string, _status: string) => {}) };
+let mockServerProgram: unknown = null;
+let mockStarting: unknown = 404;
+// What the phone knows of the health data consent (a resumed onboarding reads it; the walk has its own answer).
+let mockConsentGranted = false;
+const mockConsents = { remember: jest.fn(async (_kind: string, _status: string) => {}), granted: jest.fn(async () => mockConsentGranted) };
 // Like the real service (K-231): a refusal throws by name; what went through leaves the phone's health entries behind.
 const mockWithdrawHealthData = jest.fn(async () => {
   if (mockConsentStatus !== 200) throw Object.assign(new Error('x'), { name: 'ConsentRefused' });
@@ -74,8 +150,15 @@ jest.mock('@/services/ServicesProvider', () => ({
     consents: mockConsents,
     syncHealth: async () => 0, // Today reads Apple Health's weigh-ins first (K-402); none here
     units: { current: () => mockUnits, keepOnPhone: mockKeepOnPhone },
-    // Today hands on the program's week off (ADR-037 › 51b).
-    reminders: { era: () => 0, keepRestUntil: async () => {} },
+    // Today hands on the program's week off (ADR-037 › 51b); the plan offers them on Monday morning (K-967).
+    reminders: {
+      era: () => 0,
+      keepRestUntil: async () => {},
+      current: () => mockReminderSettings,
+      subscribe: (listener: () => void) => (mockReminderListeners.add(listener), () => mockReminderListeners.delete(listener)),
+      turnOn: mockTurnOn,
+      turnOff: mockTurnOff,
+    },
     state: { keep: async () => {} }, // Today keeps the state it read, for the reminders (K-518)
     opens: { previous: async () => null }, // Today counts its open (K-521)
   }),
@@ -90,12 +173,23 @@ beforeEach(() => {
   mockSignedIn = true;
   mockOnboarding = 'needed';
   mockUnits = 'METRIC';
-  // Like the real service: a save that goes through marks onboarding done.
-  mockProfile.save.mockReset().mockImplementation(async () => mockBecome('done'));
+  // Like the real service: a store hands back the profile; the plan's Continue marks onboarding done.
+  mockProfile.store.mockReset().mockImplementation(async (profile) => profile);
+  mockProfile.finish.mockReset().mockImplementation(async () => mockBecome('done'));
   mockSignOut.mockClear();
   mockConsentStatus = 200;
-  mockApi.PUT.mockReset().mockImplementation(mockConsentAnswer);
+  mockApi.PUT.mockReset().mockImplementation(mockPut);
   mockApi.DELETE.mockReset().mockImplementation(mockConsentAnswer);
+  mockApi.POST.mockReset().mockImplementation(mockGenerate);
+  mockApi.GET.mockClear();
+  mockTrainingDays = [];
+  mockServerProgram = null;
+  mockStarting = 404;
+  mockConsentGranted = false;
+  mockProfile.resumed.mockReset().mockReturnValue(null);
+  mockReminderSettings = { enabled: false, cue: '' };
+  mockTurnOn.mockClear();
+  mockTurnOff.mockClear();
   mockQueue.record.mockReset().mockResolvedValue(true);
   mockWithdrawHealthData.mockClear();
   mockConsents.remember.mockClear();
@@ -186,6 +280,15 @@ async function walkTo(
   return router;
 }
 
+/**
+ * From activity: the last answers — the activity, and the starting weights left unset where the walk asks them — and on
+ * to the plan being prepared, where the profile is stored (K-967).
+ */
+async function endWalk(level: 'INACTIVE' | 'LOW_ACTIVE' | 'ACTIVE' | 'VERY_ACTIVE' = 'ACTIVE') {
+  await choose(t(`onboarding.activity.${level}`));
+  if (screen.queryByRole('header', { name: t('onboarding.weights.title') }) !== null) await press(t('onboarding.weights.skip'));
+}
+
 describe('who sees onboarding', () => {
   test.each(['/', '/train', '/coach'])('signed in without a profile: onboarding opens, even from %s', async (url) => {
     const router = await open(url);
@@ -271,7 +374,7 @@ describe('the walk through', () => {
     expect(screen.getByRole('radio', { name: new RegExp(`^${t('onboarding.goal.build_muscle.title')}`) })).toBeChecked();
   });
 
-  test("the whole walk sends one profile, with the user's answers, and ends on activity", async () => {
+  test("the whole walk sends one profile, with the user's answers, once the last question is answered (K-967)", async () => {
     const router = await open();
     await choose(t('onboarding.goal.decide_for_me.title'));
     await choose(t('onboarding.experience.Y1_3'));
@@ -286,10 +389,14 @@ describe('the walk through', () => {
     await press(t('onboarding.about.female'));
     await press(t('onboarding.continue'));
     expect(router.getPathname()).toBe('/onboarding/activity');
-    expect(mockProfile.save).not.toHaveBeenCalled();
     await choose(t('onboarding.activity.LOW_ACTIVE'));
-    expect(mockProfile.save).toHaveBeenCalledTimes(1);
-    expect(mockProfile.save).toHaveBeenCalledWith({
+    // An own program: the starting weights are the last question.
+    expect(router.getPathname()).toBe('/onboarding/weights');
+    expect(mockProfile.store).not.toHaveBeenCalled();
+    await press(t('onboarding.weights.skip'));
+    expect(router.getPathname()).toBe('/onboarding/preparing');
+    expect(mockProfile.store).toHaveBeenCalledTimes(1);
+    expect(mockProfile.store).toHaveBeenCalledWith({
       goal: 'DECIDE_FOR_ME',
       sex: 'FEMALE',
       heightCm: onboardingParams.wheelStart.height_cm + 2,
@@ -304,67 +411,63 @@ describe('the walk through', () => {
       },
       units: 'METRIC',
     });
-    expect(router.getPathname()).toBe('/');
   });
 
   test('a save that does not go through says so, and the same answers go again', async () => {
-    mockProfile.save.mockRejectedValueOnce(Object.assign(new Error('profile save: no answer'), { name: 'NoConnection' }));
+    mockProfile.store.mockRejectedValueOnce(Object.assign(new Error('profile save: no answer'), { name: 'NoConnection' }));
     const router = await walkTo('activity');
-    await choose(t('onboarding.activity.ACTIVE'));
+    await endWalk();
     expect(screen.getByText(t('onboarding.saveFailed'))).toBeOnTheScreen();
-    expect(router.getPathname()).toBe('/onboarding/activity');
+    expect(router.getPathname()).toBe('/onboarding/preparing');
     await press(t('onboarding.tryAgain'));
-    expect(mockProfile.save).toHaveBeenCalledTimes(2);
-    expect(mockProfile.save.mock.calls[1][0]).toEqual(mockProfile.save.mock.calls[0][0]);
+    expect(mockProfile.store).toHaveBeenCalledTimes(2);
+    expect(mockProfile.store.mock.calls[1][0]).toEqual(mockProfile.store.mock.calls[0][0]);
   });
 
-  test('after a failed save, choosing again also tries again', async () => {
-    mockProfile.save.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }));
+  test('a save that fails again can be tried again again: a failure never leaves the user stuck', async () => {
+    mockProfile.store
+      .mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }))
+      .mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }));
     await walkTo('activity');
-    await choose(t('onboarding.activity.ACTIVE'));
-    await choose(t('onboarding.activity.INACTIVE'));
-    expect(mockProfile.save).toHaveBeenCalledTimes(2);
-    expect(mockProfile.save).toHaveBeenLastCalledWith(expect.objectContaining({ activityLevel: 'INACTIVE' }));
+    await endWalk();
+    await press(t('onboarding.tryAgain'));
+    expect(screen.getByText(t('onboarding.saveFailed'))).toBeOnTheScreen();
+    await press(t('onboarding.tryAgain'));
+    expect(mockProfile.store).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole('button', { name: t('onboarding.preparing.see') })).toBeEnabled();
   });
 
   test('a server that refuses (not the network) is not called a connection problem', async () => {
-    mockProfile.save.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'ProfileSaveFailed' }));
+    mockProfile.store.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'ProfileSaveFailed' }));
     await walkTo('activity');
-    await choose(t('onboarding.activity.ACTIVE'));
+    await endWalk();
     expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen();
     expect(mockReport).toHaveBeenCalledWith({ name: 'ProfileSaveFailed' });
   });
 
-  test('once the profile is saved, the tabs open, and there is no way back into onboarding', async () => {
+  test('once the plan is seen, Continue opens the tabs, and there is no way back into onboarding', async () => {
     const router = await walkTo('activity');
-    await choose(t('onboarding.activity.ACTIVE'));
+    await endWalk();
+    expect(mockProfile.finish).not.toHaveBeenCalled();
+    await press(t('onboarding.preparing.see'));
+    await press(t('onboarding.continue'));
+    expect(mockProfile.finish).toHaveBeenCalledTimes(1);
     expect(router.getPathname()).toBe('/');
     expect(screen.getByRole('header', { name: t('screens.today.title') })).toBeOnTheScreen();
     expect(appRouter.canGoBack()).toBe(false);
   });
 
-  test('a second tap while saving sends nothing more, and the way back is off', async () => {
-    let finish = () => {};
-    mockProfile.save.mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)));
+  test('while the answers are saved, nothing is sent twice and the plan cannot be opened yet', async () => {
+    let finish = (_: unknown) => {};
+    mockProfile.store.mockImplementation((profile) => new Promise((resolve) => (finish = () => resolve(profile))));
     await walkTo('activity');
-    const option = screen.getByRole('radio', { name: t('onboarding.activity.ACTIVE') });
-    // Two taps in the same moment while the save is on its way. Awaiting a press whose save never ends hangs React's
-    // act(), so both go into one act unawaited; React notes the overlap, which is the point here, so the note is muted.
-    const overlapNote = jest.spyOn(console, 'error').mockImplementation(() => {});
-    try {
-      await act(async () => {
-        void fireEvent.press(option);
-        void fireEvent.press(option);
-      });
-    } finally {
-      overlapNote.mockRestore();
-    }
-    expect(mockProfile.save).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: t('onboarding.back') })).toBeDisabled();
-    // While it saves, it says so, and the answers are off (review #463).
-    expect(screen.getByText(t('onboarding.saving'))).toBeOnTheScreen();
-    for (const answer of screen.getAllByRole('radio')) expect(answer).toBeDisabled();
-    await act(async () => finish());
+    await endWalk();
+    expect(mockProfile.store).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: t('onboarding.preparing.see') })).toBeDisabled();
+    await act(async () => finish(undefined));
+    await settle();
+    expect(mockProfile.store).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: t('onboarding.preparing.see') })).toBeEnabled();
   });
 
   test('imperial all the way: feet and inches go out as centimetres, with the imperial choice', async () => {
@@ -372,8 +475,8 @@ describe('the walk through', () => {
     await press(t('onboarding.about.imperial'));
     await press(t('onboarding.about.male'));
     await press(t('onboarding.continue'));
-    await choose(t('onboarding.activity.ACTIVE'));
-    expect(mockProfile.save).toHaveBeenCalledWith(
+    await endWalk();
+    expect(mockProfile.store).toHaveBeenCalledWith(
       expect.objectContaining({ heightCm: onboardingParams.wheelStart.height_cm, units: 'IMPERIAL' }),
     );
   });
@@ -474,8 +577,8 @@ describe('days (ADR-072 #4)', () => {
   test('a box places the days itself, from the parameter, and moves on (We place the days)', async () => {
     const router = await walkTo('activity', { days: 4 });
     expect(router.getPathname()).toBe('/onboarding/activity');
-    await choose(t('onboarding.activity.ACTIVE'));
-    const sent = mockProfile.save.mock.calls[0][0] as { schedule: Record<string, unknown> };
+    await endWalk();
+    const sent = mockProfile.store.mock.calls[0][0] as { schedule: Record<string, unknown> };
     expect(sent.schedule.trainingDays).toEqual(defaultTrainingDays(4));
     expect(sent.schedule).not.toHaveProperty('sessionsLastMonth');
     expect(sent.schedule).not.toHaveProperty('usualTrainingTime');
@@ -485,31 +588,39 @@ describe('days (ADR-072 #4)', () => {
 describe('the step indicator follows the branch', () => {
   const indicator = (step: number, total: number) => screen.getByLabelText(t('onboarding.progress', { step, total }));
 
+  // The totals written out, not worked out from flow.ts (K-966 review): the indicator is checked against the walk the
+  // product decided (ADR-072 #2), so a walk that changed by mistake fails here.
   test.each([
-    ['a new lifter', 'NEW', 'build_one_for_me'],
-    ['an experienced lifter', 'Y3_PLUS', 'build_one_for_me'],
-  ] as const)('%s: the steps of its walk (flow.ts), this one filled', async (_, experience, program) => {
+    ['a new lifter', 'NEW', 'build_one_for_me', 7],
+    ['an experienced lifter', 'Y3_PLUS', 'build_one_for_me', 8],
+  ] as const)('%s: step 4 of %s', async (_, experience, program, total) => {
     await walkTo('days', { experience, program });
-    expect(indicator(4, 7)).toBeOnTheScreen();
+    expect(indicator(4, total)).toBeOnTheScreen();
   });
 
-  test('an own program: bringing it in is the fourth of eight steps, then its review, in place of the days (K-968)', async () => {
+  test('an own program: bringing it in is the fourth of nine steps, then its review, in place of the days (K-968), the weights last', async () => {
     await walkTo('program', { experience: 'UNDER_1Y' });
     await choose(t('onboarding.program.bring_my_own.title'));
-    expect(indicator(4, 8)).toBeOnTheScreen();
+    expect(indicator(4, 9)).toBeOnTheScreen();
   });
 
-  test('on the first question: step 1', async () => {
+  test('the starting weights are the last step: 8 of 8', async () => {
+    await walkTo('activity', { experience: 'Y3_PLUS' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    expect(indicator(8, 8)).toBeOnTheScreen();
+  });
+
+  test('on the first question: step 1 of the shortest walk (no answers yet: the new lifter)', async () => {
     await open();
-    expect(indicator(1, walk({ experience: null, programChoice: null }).length)).toBeOnTheScreen();
+    expect(indicator(1, 7)).toBeOnTheScreen();
   });
 
   test('the health consent no longer changes the walk: the foods to avoid moved to Settings (ADR-072 #8)', async () => {
     await walkTo('about');
-    expect(indicator(6, 7)).toBeOnTheScreen();
+    expect(indicator(6, 8)).toBeOnTheScreen();
     await press(t('onboarding.back'));
     await press(t('onboarding.healthData.allow'));
-    expect(indicator(6, 7)).toBeOnTheScreen();
+    expect(indicator(6, 8)).toBeOnTheScreen();
   });
 });
 
@@ -549,9 +660,9 @@ describe('#ob-consent: the health data consent (K-312, ADR-007, GDPR Art. 9)', (
 
   test('declined all the way: no health record is sent', async () => {
     await walkTo('activity');
-    await choose(t('onboarding.activity.ACTIVE'));
+    await endWalk();
     expect(mockQueue.record).not.toHaveBeenCalled();
-    expect(mockProfile.save).toHaveBeenCalledWith(expect.not.objectContaining({ food: expect.anything() }));
+    expect(mockProfile.store).toHaveBeenCalledWith(expect.not.objectContaining({ food: expect.anything() }));
   });
 
   test('a consent the server did not record says so, and does not move on', async () => {
@@ -566,12 +677,12 @@ describe('#ob-consent: the health data consent (K-312, ADR-007, GDPR Art. 9)', (
   test('allowed: the weight is asked, and goes as the first weigh-in after the profile; no waist, no foods', async () => {
     const order: string[] = [];
     mockQueue.record.mockImplementation(async (record) => (order.push((record as { kind: string }).kind), true));
-    mockProfile.save.mockImplementation(async () => {
+    mockProfile.store.mockImplementation(async (profile) => {
       order.push('profile');
-      mockBecome('done');
+      return profile;
     });
     await walkTo('activity', { allow: true });
-    await choose(t('onboarding.activity.ACTIVE'));
+    await endWalk();
     expect(order).toEqual(['profile', 'weighIn']);
     expect(mockQueue.record).toHaveBeenCalledWith({
       kind: 'weighIn',
@@ -656,10 +767,10 @@ describe('#ob-consent: the health data consent (K-312, ADR-007, GDPR Art. 9)', (
     await turn(t('onboarding.about.weight'), start > 180 ? 'decrement' : 'increment', Math.abs(start - 180));
     await press(t('onboarding.about.male'));
     await press(t('onboarding.continue'));
-    await choose(t('onboarding.activity.ACTIVE'));
+    await endWalk();
     expect(mockQueue.record).toHaveBeenCalledWith(expect.objectContaining({ kind: 'weighIn', body: expect.objectContaining({ kg: 81.65 }) }));
     expect(mockQueue.record).toHaveBeenCalledTimes(1); // no waist: not asked any more (ADR-072 #2)
-    expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ units: 'IMPERIAL' }));
+    expect(mockProfile.store).toHaveBeenCalledWith(expect.objectContaining({ units: 'IMPERIAL' }));
   });
 
   test('allowed, no step shows a missing text key or an unfilled placeholder either', async () => {
@@ -709,5 +820,334 @@ describe('#ob-activity: the four NASEM levels, each a day to recognise (ADR-027 
     expect(screen.getAllByRole('radio').map((option) => option.props.accessibilityLabel)).toEqual(
       ['INACTIVE', 'LOW_ACTIVE', 'ACTIVE', 'VERY_ACTIVE'].map((level) => t(`onboarding.activity.${level}`)),
     );
+  });
+});
+
+const startingWeightsSent = () => mockApi.PUT.mock.calls.filter(([path]) => path === '/v1/program/starting-weights');
+const KG = (value: number) => t('units.kg', { value });
+const S = onboardingParams.startingWeightStepper;
+
+describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
+  const name = (move: string) => t(`exercises.${move}.name`);
+
+  test('never for a new lifter: from activity straight to the plan being prepared, no weights sent', async () => {
+    const router = await walkTo('activity', { experience: 'NEW' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    expect(router.getPathname()).toBe('/onboarding/preparing');
+    expect(startingWeightsSent()).toEqual([]);
+  });
+
+  test('three moves, each unset at first: "more" sets an empty bar, then a pair of plates; "less" steps back', async () => {
+    await walkTo('activity', { experience: 'Y3_PLUS' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    expect(screen.getByRole('header', { name: t('onboarding.weights.title') })).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.weights.why', { reps: onboardingParams.startingWeightReps }))).toBeOnTheScreen();
+    for (const move of onboardingParams.startingWeightMoves) {
+      expect(screen.getByLabelText(`${name(move)}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
+      // Nothing to take off an unset weight.
+      expect(screen.getByRole('button', { name: t('onboarding.weights.less', { move: name(move) }) })).toBeDisabled();
+    }
+    const squat = name('squat');
+    await press(t('onboarding.weights.more', { move: squat }));
+    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg)}`)).toBeOnTheScreen();
+    await press(t('onboarding.weights.more', { move: squat }));
+    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg + S.step_kg)}`)).toBeOnTheScreen();
+    await press(t('onboarding.weights.less', { move: squat }));
+    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg)}`)).toBeOnTheScreen();
+    // Down from the bar: unset again, skipped (K-967 review).
+    await press(t('onboarding.weights.less', { move: squat }));
+    expect(screen.getByLabelText(`${squat}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
+    expect(continueButton()).toBeDisabled();
+  });
+
+  test('Continue sends weights, so it waits for one; with none, "Skip" is the way on', async () => {
+    await walkTo('activity', { experience: 'Y1_3' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    expect(continueButton()).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('onboarding.weights.skip') })).toBeEnabled();
+    await press(t('onboarding.weights.more', { move: name('bench_press') }));
+    expect(continueButton()).toBeEnabled();
+  });
+
+  test('each weight set becomes its move\'s first target, sent once the program is built; one left unset is skipped', async () => {
+    await walkTo('activity', { experience: 'Y3_PLUS' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    await press(t('onboarding.weights.more', { move: name('squat') }));
+    await press(t('onboarding.weights.more', { move: name('squat') }));
+    await press(t('onboarding.weights.more', { move: name('bench_press') }));
+    await press(t('onboarding.continue'));
+    expect(mockApi.POST.mock.invocationCallOrder[0]).toBeLessThan(mockApi.PUT.mock.invocationCallOrder.at(-1)!);
+    expect(startingWeightsSent()).toEqual([
+      ['/v1/program/starting-weights', { body: { weights: [
+        { exerciseId: 'squat', kg: S.start_kg + S.step_kg },
+        { exerciseId: 'bench_press', kg: S.start_kg },
+      ] } }],
+    ]);
+  });
+
+  test('"Skip" goes on with none: no weight is sent, even one set before', async () => {
+    const router = await walkTo('activity', { experience: 'UNDER_1Y' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    await press(t('onboarding.weights.more', { move: name('squat') }));
+    await press(t('onboarding.weights.skip'));
+    expect(router.getPathname()).toBe('/onboarding/preparing');
+    expect(startingWeightsSent()).toEqual([]);
+  });
+});
+
+describe('#ob-preparing: each line ticked by the server, never a timer (ADR-072 #6)', () => {
+  // Without the health data consent there are no calls: the third line is the first workout (K-967 review).
+  const lines = (third = t('onboarding.preparing.firstWorkout')) => [t('onboarding.preparing.program', { count: 3 }), t('onboarding.preparing.cardio'), third];
+  const ticked = (line: string) => screen.queryByLabelText(t('onboarding.preparing.done', { line })) !== null;
+
+  test('until the program is built nothing is ticked and the plan cannot open; then the three lines, and "See my plan"', async () => {
+    let build = () => {};
+    mockApi.POST.mockImplementation((path, init) => new Promise((resolve) => (build = () => resolve(mockGenerate(path, init)))));
+    await walkTo('activity', { experience: 'NEW' });
+    await endWalk();
+    await settle();
+    expect(lines().map(ticked)).toEqual([false, false, false]);
+    expect(screen.getByRole('button', { name: t('onboarding.preparing.see') })).toBeDisabled();
+    await act(async () => build());
+    await settle();
+    expect(lines().map(ticked)).toEqual([true, true, true]);
+    expect(screen.getByRole('button', { name: t('onboarding.preparing.see') })).toBeEnabled();
+  });
+
+  test('the food is on the second line only when the plan will show its row', async () => {
+    mockStarting = { targetKcal: 2450, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14 };
+    await walkTo('activity', { experience: 'NEW', allow: true });
+    await endWalk();
+    expect(ticked(t('onboarding.preparing.foodAndCardio'))).toBe(true);
+    expect(screen.queryByText(t('onboarding.preparing.cardio'))).toBeNull();
+  });
+
+  test('with the health data consent, the third line is the first call', async () => {
+    await walkTo('activity', { experience: 'NEW', allow: true });
+    await endWalk();
+    expect(lines(t('onboarding.preparing.firstCall', { day: t('onboarding.schedule.dayName.MONDAY') })).map(ticked)).toEqual([true, true, true]);
+    expect(screen.queryByText(t('onboarding.preparing.firstWorkout'))).toBeNull();
+  });
+
+  test('a program that could not be built is tried again from there: the answers are not saved twice', async () => {
+    mockApi.POST.mockRejectedValueOnce(new TypeError('Network request failed'));
+    await walkTo('activity', { experience: 'NEW' });
+    await endWalk();
+    expect(screen.getByText(t('onboarding.saveFailed'))).toBeOnTheScreen();
+    expect(mockReport).toHaveBeenCalledWith({ name: 'NoConnection' });
+    await press(t('onboarding.tryAgain'));
+    expect(mockProfile.store).toHaveBeenCalledTimes(1);
+    expect(mockApi.POST).toHaveBeenCalledTimes(2);
+    expect(lines().map(ticked)).toEqual([true, true, true]);
+  });
+
+  test('a failure that keeps coming is not a dead end: signing out is offered beside "Try again"', async () => {
+    mockApi.POST.mockRejectedValue(new TypeError('Network request failed'));
+    await walkTo('activity', { experience: 'NEW' });
+    await endWalk();
+    await press(t('onboarding.tryAgain'));
+    expect(screen.getByText(t('onboarding.saveFailed'))).toBeOnTheScreen();
+    await press(t('onboarding.signOut'));
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  test('while it works, no way out is offered (the answers are being saved)', async () => {
+    let build = () => {};
+    mockApi.POST.mockImplementation((path, init) => new Promise((resolve) => (build = () => resolve(mockGenerate(path, init)))));
+    await walkTo('activity', { experience: 'NEW' });
+    await endWalk();
+    expect(screen.queryByRole('button', { name: t('onboarding.signOut') })).toBeNull();
+    await act(async () => build());
+  });
+
+  test.each(['/onboarding/preparing', '/onboarding/plan'])('a link to %s before the walk is answered lands on its start; nothing is sent', async (url) => {
+    const router = await open(url);
+    expect(router.getPathname()).toBe('/onboarding');
+    expect(mockProfile.store).not.toHaveBeenCalled();
+    expect(mockApi.POST).not.toHaveBeenCalled();
+  });
+});
+
+describe('closed with the plan still to be seen: it comes back (K-967 review)', () => {
+  const RESUMED_PROFILE = {
+    goal: 'BUILD_MUSCLE',
+    sex: 'MALE',
+    heightCm: 180,
+    birthYear: 1990,
+    activityLevel: 'ACTIVE',
+    experience: 'Y1_3',
+    programChoice: 'BUILD_ONE_FOR_ME',
+    schedule: { trainingDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'], checkInDay: 'MONDAY', timeZone: 'Europe/Istanbul' },
+    units: 'METRIC',
+  };
+  beforeEach(() => {
+    mockOnboarding = 'resume';
+    mockProfile.resumed.mockReturnValue(RESUMED_PROFILE);
+  });
+
+  test('(c) the app opened again: the plan is prepared on the saved profile and shown, nothing asked again', async () => {
+    mockServerProgram = mockProgram(['MONDAY', 'WEDNESDAY', 'FRIDAY'], { squat: 100 });
+    const router = await open('/');
+    expect(router.getPathname()).toBe('/onboarding/preparing');
+    expect(mockProfile.store).not.toHaveBeenCalled();
+    await press(t('onboarding.preparing.see'));
+    expect(router.getPathname()).toBe('/onboarding/plan');
+    expect(screen.getByText(t('onboarding.plan.goal', { goal: t('onboarding.plan.goalName.BUILD_MUSCLE') }))).toBeOnTheScreen();
+    await press(t('onboarding.continue'));
+    expect(mockProfile.finish).toHaveBeenCalledTimes(1);
+    expect(router.getPathname()).toBe('/');
+  });
+
+  test('(b) closed after the program was built: not built again, its starting weights kept', async () => {
+    mockServerProgram = mockProgram(['MONDAY', 'WEDNESDAY', 'FRIDAY'], { squat: 100 });
+    await open('/');
+    expect(mockApi.POST).not.toHaveBeenCalled();
+    expect(startingWeightsSent()).toEqual([]);
+    await press(t('onboarding.preparing.see'));
+    expect(screen.getAllByText(KG(100)).length).toBeGreaterThan(0);
+  });
+
+  test('(a) closed before the program was built: built now, on the saved days', async () => {
+    await open('/');
+    expect(mockApi.POST).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'] } });
+  });
+
+  test('the consent, the walk\'s answer being gone, is what the phone knows: given, the first call is named', async () => {
+    mockConsentGranted = true;
+    await open('/');
+    await press(t('onboarding.preparing.see'));
+    expect(screen.getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
+  });
+});
+
+describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
+  // A Wednesday at noon, the phone's clock: the dates on the plan are known, whatever day the tests run (review).
+  beforeEach(() => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 14, 12, 0) });
+  });
+
+  async function toPlan(walk: Walk = {}, weights: string[] = []) {
+    const router = await walkTo('activity', walk);
+    await choose(t('onboarding.activity.ACTIVE'));
+    for (const move of weights) await press(t('onboarding.weights.more', { move: t(`exercises.${move}.name`) }));
+    if (screen.queryByRole('header', { name: t('onboarding.weights.title') }) !== null) await press(t(weights.length > 0 ? 'onboarding.continue' : 'onboarding.weights.skip'));
+    await press(t('onboarding.preparing.see'));
+    expect(router.getPathname()).toBe('/onboarding/plan');
+    return router;
+  }
+
+  test('the answers reflected: the goal, how many days, which days', async () => {
+    await toPlan({ experience: 'NEW' });
+    expect(screen.getByRole('header', { name: t('onboarding.plan.title') })).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.goal', { goal: t('onboarding.plan.goalName.LOSE_FAT') }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.days', { count: 3 }))).toBeOnTheScreen();
+    expect(screen.getByText(['MONDAY', 'WEDNESDAY', 'FRIDAY'].map((day) => t(`onboarding.schedule.dayShort.${day}`)).join(', '))).toBeOnTheScreen();
+  });
+
+  test('the first workout: each move with its image, sets × range; no weights known, "Session 1 finds your weights"', async () => {
+    await toPlan({ experience: 'NEW' });
+    expect(screen.getByText(t('programDays.full_body_a.name'))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.findsWeights'))).toBeOnTheScreen();
+    for (const move of ['squat', 'bench_press', 'lat_pulldown']) expect(screen.getByText(t(`exercises.${move}.name`))).toBeOnTheScreen();
+    expect(screen.getAllByText(t('onboarding.plan.setsReps', { sets: 3, min: 6, max: 10 }))).toHaveLength(3);
+    // The image is what the move is lifted with (the catalog's equipment); one the catalog does not name gets the bar.
+    // Decorative, so hidden from VoiceOver: found among hidden elements.
+    expect(screen.getAllByTestId('move-thumb-BARBELL', { includeHiddenElements: true })).toHaveLength(2);
+    expect(screen.getAllByTestId('move-thumb-CABLE', { includeHiddenElements: true })).toHaveLength(1);
+  });
+
+  test('with a starting weight: the weight on its move, and no "Session 1 finds your weights"', async () => {
+    await toPlan({ experience: 'Y3_PLUS' }, ['squat']);
+    expect(screen.getByText(KG(S.start_kg))).toBeOnTheScreen();
+    expect(screen.queryByText(t('onboarding.plan.findsWeights'))).toBeNull();
+  });
+
+  test('the cardio as the program sets it: a dose, after the weights (ADR-074)', async () => {
+    await toPlan({ experience: 'NEW' });
+    expect(screen.getByText(t('onboarding.plan.cardioDose', { sessions: 3, minutes: 30 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.cardioAfter'))).toBeOnTheScreen();
+    expect(screen.queryByText(/kcal/)).toBeNull();
+  });
+
+  test('the first call and the days to it, with the health consent; without it there are no calls, so none is promised', async () => {
+    await toPlan({ experience: 'NEW', allow: true });
+    expect(screen.getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
+    expect(screen.getByText('Mon, Oct 19')).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.inDays', { count: 5 }))).toBeOnTheScreen();
+    // The first workout is today's: Wednesday is a training day.
+    expect(screen.getByText(t('onboarding.plan.firstWorkout', { day: t('onboarding.plan.today') }))).toBeOnTheScreen();
+  });
+
+  test('a finish that cannot be kept on the phone says so; Continue tries again', async () => {
+    mockProfile.finish.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'KvFailed' }));
+    const router = await toPlan({ experience: 'NEW' });
+    await press(t('onboarding.continue'));
+    expect(screen.getByText(t('onboarding.plan.finishFailed'))).toBeOnTheScreen();
+    expect(router.getPathname()).toBe('/onboarding/plan');
+    await press(t('onboarding.continue'));
+    expect(router.getPathname()).toBe('/');
+  });
+
+  test('allowed, with a starting target: "Food to start", one number, and the days the scale corrects it in — the server\'s, not 14', async () => {
+    mockStarting = { targetKcal: 1850, maintenanceKcal: { low: 2050, high: 2400 }, observationDays: 28 };
+    await toPlan({ experience: 'NEW', allow: true });
+    expect(screen.getByText(t('onboarding.plan.food'))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.foodKcal', { kcal: '1,850' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.foodNote', { days: 28 }))).toBeOnTheScreen();
+    // Never the estimate's range as a promise, never a number for Monday.
+    expect(screen.queryByText(/2,050|2,400/)).toBeNull();
+  });
+
+  test.each([403, 404, 409])('allowed, the server answering %i for the starting target: no food row, the plan as before', async (status) => {
+    mockStarting = status;
+    await toPlan({ experience: 'NEW', allow: true });
+    expect(screen.queryByText(t('onboarding.plan.food'))).toBeNull();
+    expect(screen.getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
+  });
+
+  test('declined: the starting target is not asked for, and there is no food row', async () => {
+    mockStarting = { targetKcal: 1850, maintenanceKcal: { low: 2050, high: 2400 }, observationDays: 14 };
+    await toPlan({ experience: 'NEW' });
+    expect(mockApi.GET).not.toHaveBeenCalledWith('/v1/targets/starting');
+    expect(screen.queryByText(t('onboarding.plan.food'))).toBeNull();
+  });
+
+  test('declined: no first call on the plan', async () => {
+    await toPlan({ experience: 'NEW' });
+    expect(screen.queryByText(t('onboarding.plan.firstCall'))).toBeNull();
+  });
+
+  test('Monday morning: the switch turns on the check-in morning reminder alone, through the service Settings uses, and off again', async () => {
+    await toPlan({ experience: 'NEW' });
+    const toggle = screen.getByLabelText(t('onboarding.plan.remind', { day: t('onboarding.schedule.dayName.MONDAY') }));
+    expect(toggle.props.value).toBe(false);
+    await act(async () => fireEvent(toggle, 'valueChange', true));
+    // The Monday morning one alone (product decision on review): not the other two kinds.
+    expect(mockTurnOn).toHaveBeenCalledWith({ only: 'check_in' });
+    expect(screen.getByLabelText(t('onboarding.plan.remind', { day: t('onboarding.schedule.dayName.MONDAY') })).props.value).toBe(true);
+    await act(async () => fireEvent(toggle, 'valueChange', false));
+    expect(mockTurnOff).toHaveBeenCalledTimes(1);
+  });
+
+  test('iOS saying no for good is said; the plan goes on', async () => {
+    mockTurnOn.mockImplementationOnce(async () => ({ granted: false, canAskAgain: false }));
+    await toPlan({ experience: 'NEW' });
+    await act(async () => fireEvent(screen.getByLabelText(t('onboarding.plan.remind', { day: t('onboarding.schedule.dayName.MONDAY') })), 'valueChange', true));
+    expect(screen.getByText(t('onboarding.reminders.refused'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('onboarding.continue') })).toBeEnabled();
+  });
+
+  test('no screen after the questions shows a missing text key or an unfilled placeholder', async () => {
+    const clean = () => {
+      expect(screen.queryByText(/\[missing:/)).toBeNull();
+      expect(screen.queryByText(/\{\w+\}/)).toBeNull();
+    };
+    await walkTo('activity', { experience: 'Y3_PLUS', allow: true });
+    await choose(t('onboarding.activity.ACTIVE'));
+    clean();
+    await press(t('onboarding.weights.skip'));
+    clean();
+    await press(t('onboarding.preparing.see'));
+    clean();
   });
 });

@@ -143,6 +143,49 @@ test('on and off are kept: a new start keeps the choice and the schedule', async
   expect((await make(kv)).reminders.current().enabled).toBe(false);
 });
 
+describe('only the check-in morning (the plan\'s "Tell me Monday morning", K-967)', () => {
+  test('turned on that way: only that slot is scheduled, and it is kept across a start', async () => {
+    const { reminders, device, kv } = await make();
+    await reminders.keepSchedule(schedule);
+    await reminders.opened();
+    await reminders.turnOn({ only: 'check_in' });
+    expect(reminders.current()).toEqual({ enabled: true, cue: '', only: 'check_in' });
+    expect(kinds(device.scheduled)).toEqual(['check_in']);
+    const restarted = await make(kv);
+    expect(restarted.reminders.current().only).toBe('check_in');
+    await restarted.reminders.opened();
+    expect(kinds(restarted.device.scheduled)).toEqual(['check_in']);
+  });
+
+  test('turned on in full afterwards (Settings): all three again', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(schedule);
+    await reminders.opened();
+    await reminders.turnOn({ only: 'check_in' });
+    await reminders.turnOn();
+    expect(reminders.current()).toEqual({ enabled: true, cue: '' });
+    expect(kinds(device.scheduled)).toEqual(['training', 'check_in', 'quiet']);
+  });
+
+  test('turned off, and at sign-out, nothing of it is kept', async () => {
+    const { reminders, kv } = await make();
+    await reminders.turnOn({ only: 'check_in' });
+    await reminders.turnOff();
+    expect(kv.items.has('reminders.only')).toBe(false);
+    await reminders.turnOn({ only: 'check_in' });
+    await reminders.forget();
+    expect([...kv.items.keys()].filter((key) => key.startsWith('reminders.'))).toEqual([]);
+  });
+
+  test('refused by iOS: nothing is kept', async () => {
+    const device = fakeDevice({ granted: false, canAskAgain: false });
+    const { reminders, kv } = await make(memoryKv(), device);
+    await reminders.turnOn({ only: 'check_in' });
+    expect(reminders.current()).toEqual({ enabled: false, cue: '' });
+    expect(kv.items.has('reminders.only')).toBe(false);
+  });
+});
+
 test('a sign-out forgets it all: nothing scheduled, nothing kept for the next account', async () => {
   const { reminders, kv, device } = await make();
   await reminders.keepSchedule(schedule);
