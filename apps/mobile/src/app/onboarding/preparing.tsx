@@ -66,7 +66,11 @@ function Preparing() {
         <ProblemText occurrence={prep.occurrence} style={[styles.text, { color: color.text }]}>
           {prep.problem}
         </ProblemText>
-        <Button label={t('onboarding.tryAgain')} onPress={() => void prep.run()} />
+        {prep.missing ? (
+          <Button label={t('onboarding.preparing.bringAgain')} onPress={prep.bringAgain} />
+        ) : (
+          <Button label={t('onboarding.tryAgain')} onPress={() => void prep.run()} />
+        )}
         {/* A failure that keeps coming (a resume after a restart too) is not a dead end: as on the checking screen. */}
         <Button label={t('onboarding.signOut')} variant="ghost" onPress={() => void signOut()} />
       </View>

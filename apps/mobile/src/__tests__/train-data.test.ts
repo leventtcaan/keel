@@ -294,6 +294,16 @@ describe("the user's own moves (K-416, ADR-035)", () => {
     ).toEqual([AS_MOVE]);
   });
 
+  test('the kept copy alone, without the server (the plan names own moves with it when the server cannot, K-967)', async () => {
+    const kv = memoryKv();
+    const cache = createTrainingCache(kv);
+    expect(await cache.keptOwn()).toBeNull();
+    await cache.saved(OWN[0] as never);
+    expect(await cache.keptOwn()).toEqual([AS_MOVE]);
+    await kv.setItemAsync('train.own', 'not json');
+    expect(await cache.keptOwn()).toBeNull();
+  });
+
   test('a move just saved is kept at once: the next read offline has it, though the read after saving failed', async () => {
     const kv = memoryKv();
     const cache = createTrainingCache(kv);

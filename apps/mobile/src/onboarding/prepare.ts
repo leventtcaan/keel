@@ -17,7 +17,7 @@ import type { Draft } from './draft';
 import { finishOnboarding } from './finish';
 import { type Move, ownMove } from '@/train/trainData';
 
-import { branchOf, walk } from './flow';
+import { walk } from './flow';
 import { weightsToSend } from './weights';
 
 type Schemas = components['schemas'];
@@ -48,6 +48,10 @@ type Options = {
   queue: Pick<SyncQueue, 'record' | 'drain'>;
   /** The health data consent: the walk's answer, or, resumed, what the phone knows of it. */
   consented: () => Promise<boolean>;
+  /** The user's own moves as this phone kept them at the import (trainData); none kept: null. */
+  keptOwn: () => Promise<Move[] | null>;
+  /** A problem, by name only (V3). */
+  report: (problem: { name: string }) => void;
   units: UnitSystem;
   now: Date;
   timeZone: string;
@@ -56,7 +60,8 @@ type Options = {
 type Answer<T> = { data?: T; response: Response };
 
 /** By name, so the screen tells no connection from a server that answered with an error (V3: never the server's words). */
-const failure = (name: 'NoConnection' | 'ServerError') => Object.assign(new Error(`preparing the plan: ${name}`), { name });
+const failure = (name: 'NoConnection' | 'ServerError' | 'ProgramMissing') =>
+  Object.assign(new Error(`preparing the plan: ${name}`), { name });
 
 /** The answer's data; none for the statuses that mean "none" (`none`); anything else throws by name. */
 async function answer<T>(request: () => Promise<Answer<T>>): Promise<T>;
@@ -78,7 +83,8 @@ const NO_PROGRAM = [404] as const;
 /** No starting target to show (ADR-072 Ek 1): no consent on the server, no weigh-in in the window, no profile or a plan begun. */
 const NO_STARTING_TARGET = [403, 404, 409] as const;
 
-export async function preparePlan({ draft, from, onProgress, api, profile, queue, consented, units, now, timeZone }: Options): Promise<Prepared> {
+export async function preparePlan(options: Options): Promise<Prepared> {
+  const { draft, from, onProgress, api, profile, queue, consented, keptOwn, report, units, now, timeZone } = options;
   let progress: Progress = { ...from };
   const advance = (next: Progress) => {
     progress = { ...progress, ...next };
@@ -95,15 +101,20 @@ export async function preparePlan({ draft, from, onProgress, api, profile, queue
   if (progress.consented === undefined) advance({ consented: await consented() });
 
   if (progress.program === undefined) {
-    // The program the server holds is never replaced (resumed after a restart, its starting weights with it); only with
-    // none is one built — once: a retry after the weights failed sends them onto the same one.
-    // A program brought in was kept at its import (K-968): it is read, and never built over — none is an error.
+    // The branch is the saved profile's (resumed, the walk's answers are gone). A program brought in was kept at its
+    // import (K-968): read, never built over — none is its own failure. Otherwise the program the server holds is kept
+    // if one was built (resumed, its starting weights with it); one is built when there is none, or when the program on
+    // the server is one brought in and then not chosen ("Build it for me" after an import) — once: a retry after the
+    // weights failed sends them onto the same one.
     let program = progress.built;
     if (program === undefined) {
-      const own = branchOf(draft) === 'ownProgram';
+      const own = held.programChoice === 'BRING_MY_OWN';
+      const found = await answer(() => api.GET('/v1/program'), NO_PROGRAM);
+      if (own && found === null) throw failure('ProgramMissing');
       program =
-        (await answer(() => api.GET('/v1/program'), own ? [] : NO_PROGRAM)) ??
-        (await answer(() => api.POST('/v1/program/generate', { body: { trainingDays: held.schedule.trainingDays } })));
+        own || found?.source === 'GENERATED'
+          ? found!
+          : await answer(() => api.POST('/v1/program/generate', { body: { trainingDays: held.schedule.trainingDays } }));
       advance({ built: program });
     }
     // Only a walk that asked for them sends them: an answer changed to "just starting" leaves no weights behind.
@@ -117,7 +128,8 @@ export async function preparePlan({ draft, from, onProgress, api, profile, queue
     // with the profile goes first (the target needs a weigh-in); a queue that cannot send now only means no row.
     let starting: Schemas['StartingTarget'] | null = null;
     if (progress.consented === true) {
-      await queue.drain().catch(() => undefined);
+      // Not sent now (offline): said by name, as the queue's own background drain does; the target is asked all the same.
+      await queue.drain().catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
       starting = await answer(() => api.GET('/v1/targets/starting'), NO_STARTING_TARGET);
     }
     advance({ starting });
@@ -128,10 +140,21 @@ export async function preparePlan({ draft, from, onProgress, api, profile, queue
     // The user's own moves only when the program names a move the catalog has not: by their names, never their ids.
     const known = new Set(catalog.map((move) => move.id));
     const named = progress.program!.days.some((day) => day.exercises.some((move) => !known.has(move.exerciseId)));
-    const own = named ? (await answer(() => api.GET('/v1/custom-exercises'))).map(ownMove) : [];
+    const own = named ? await ownMoves() : [];
     advance({ exercises: [...catalog, ...own] });
   }
   return progress as Prepared;
+
+  /** The user's own moves from the server; not read, the copy kept at the import; neither, the read's failure. */
+  async function ownMoves(): Promise<Move[]> {
+    try {
+      return (await answer(() => api.GET('/v1/custom-exercises'))).map(ownMove);
+    } catch (error) {
+      const kept = await keptOwn();
+      if (kept === null) throw error;
+      return kept;
+    }
+  }
 }
 /**
  * The lines of #ob-preparing done, in their order: the program; its cardio and the food (the starting target's answer,

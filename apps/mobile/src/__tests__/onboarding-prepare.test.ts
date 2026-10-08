@@ -7,6 +7,7 @@
 import type { components } from '@/api/schema';
 import { type Draft, emptyDraft } from '@/onboarding/draft';
 import { type Progress, firstCall, firstWorkout, linesDone, preparePlan } from '@/onboarding/prepare';
+import { type Move, ownMove } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
@@ -80,7 +81,10 @@ function fakes({ onServer = null as Schemas['Program'] | null } = {}) {
   // The starting weight queued with the profile reaches the server before the starting target is asked for.
   const queue = { record: jest.fn(async () => true), drain: jest.fn(async () => void calls.push('drain')) };
   const consented = jest.fn(async () => true);
-  return { calls, api, profile, queue, consented };
+  // The user's own moves as this phone kept them at the import (trainData), and the reporter (by name only).
+  const keptOwn = jest.fn(async (): Promise<Move[] | null> => null);
+  const report = jest.fn();
+  return { calls, api, profile, queue, consented, keptOwn, report };
 }
 
 const run = (f: ReturnType<typeof fakes>, draft: Draft = DRAFT, from: Progress = {}, onProgress = (_: Progress) => {}) =>
@@ -92,6 +96,8 @@ const run = (f: ReturnType<typeof fakes>, draft: Draft = DRAFT, from: Progress =
     profile: f.profile,
     queue: f.queue,
     consented: f.consented,
+    keptOwn: f.keptOwn,
+    report: f.report,
     units: 'METRIC',
     now: new Date('2026-10-12T09:00:00Z'),
     timeZone: 'Europe/Istanbul',
@@ -167,6 +173,28 @@ describe('resumed after the app was closed (K-967 review): the program the serve
   });
 });
 
+describe('the branch is the saved profile\'s, not the walk\'s answers (K-967 review)', () => {
+  const OWN_ON_SERVER: Schemas['Program'] = { ...PROGRAM, source: 'OWN' };
+
+  test('brought in, then "Build it for me" chosen instead: the program brought in is replaced by one built for the days', async () => {
+    const f = fakes({ onServer: OWN_ON_SERVER });
+    await run(f, { ...DRAFT, programChoice: 'BUILD_ONE_FOR_ME', ownProgram: OWN_ON_SERVER, reviewed: true });
+    expect(f.api.POST).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'] } });
+  });
+
+  test('a program built before is never built again', async () => {
+    const f = fakes({ onServer: PROGRAM });
+    await run(f);
+    expect(f.api.POST).not.toHaveBeenCalled();
+  });
+
+  test('resumed (the walk\'s answers gone): an own program saved in the profile is read, never built over', async () => {
+    const f = fakes({ onServer: OWN_ON_SERVER });
+    await run(f, emptyDraft, { profile: { ...PROFILE, programChoice: 'BRING_MY_OWN' } });
+    expect(f.api.POST).not.toHaveBeenCalled();
+  });
+});
+
 describe('an own program brought in (K-968): never built over (ADR-073)', () => {
   const OWN: Schemas['Program'] = {
     ...PROGRAM,
@@ -184,10 +212,34 @@ describe('an own program brought in (K-968): never built over (ADR-073)', () => 
     expect(done.program).toEqual(WEIGHTED);
   });
 
-  test('none on the server (it went missing): said, never one built in its place', async () => {
+  test('none on the server (it went missing): its own failure, never one built in its place', async () => {
     const f = fakes();
-    await expect(run(f, OWN_DRAFT)).rejects.toMatchObject({ name: 'ServerError' });
+    await expect(run(f, OWN_DRAFT)).rejects.toMatchObject({ name: 'ProgramMissing' });
     expect(f.api.POST).not.toHaveBeenCalled();
+  });
+
+  test('the own moves cannot be read: the copy this phone kept at the import names them', async () => {
+    const f = fakes({ onServer: OWN });
+    f.api.PUT.mockResolvedValueOnce(ok(OWN) as never);
+    const get = f.api.GET.getMockImplementation()!;
+    f.api.GET.mockImplementation(async (path: string) => {
+      if (path === '/v1/custom-exercises') throw new TypeError('Network request failed');
+      return get(path) as never;
+    });
+    f.keptOwn.mockResolvedValueOnce([ownMove(LANDMINE)]);
+    const done = await run(f, OWN_DRAFT);
+    expect(done.exercises).toContainEqual(expect.objectContaining({ id: 'custom:8a1d', name: 'Landmine Press' }));
+  });
+
+  test('neither read nor kept: said, and tried again', async () => {
+    const f = fakes({ onServer: OWN });
+    f.api.PUT.mockResolvedValueOnce(ok(OWN) as never);
+    const get = f.api.GET.getMockImplementation()!;
+    f.api.GET.mockImplementation(async (path: string) => {
+      if (path === '/v1/custom-exercises') throw new TypeError('Network request failed');
+      return get(path) as never;
+    });
+    await expect(run(f, OWN_DRAFT)).rejects.toMatchObject({ name: 'NoConnection' });
   });
 
   test('the user\'s own moves it names are read with the catalog, by their names', async () => {
@@ -227,10 +279,11 @@ describe('the starting calories (K-989, ADR-072 Ek 1): the food row, or none', (
     expect(done.exercises).toEqual(CATALOG);
   });
 
-  test('a queue that cannot send the weigh-in yet does not stop the plan: the target is asked for all the same', async () => {
+  test('a queue that cannot send the weigh-in yet does not stop the plan: reported by name, the target asked for all the same', async () => {
     const f = fakes();
-    f.queue.drain.mockRejectedValueOnce(new Error('offline'));
+    f.queue.drain.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'SyncStopped' }));
     expect((await run(f)).starting).toEqual(STARTING);
+    expect(f.report).toHaveBeenCalledWith({ name: 'SyncStopped' });
   });
 
   test('another failure is said and tried again from there: the program is not built twice', async () => {

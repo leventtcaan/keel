@@ -239,7 +239,7 @@
         "onboarding.schedule.dayName.MONDAY",
         "onboarding.preparing.see"
       ],
-      "notFirstView": ["onboarding.preparing.done", "onboarding.tryAgain", "onboarding.saveFailed", "onboarding.serverError", "onboarding.signOut"]
+      "notFirstView": ["onboarding.preparing.done", "onboarding.tryAgain", "onboarding.saveFailed", "onboarding.serverError", "onboarding.signOut", "onboarding.preparing.bringAgain"]
     },
     {
       "screen": "ob-plan",

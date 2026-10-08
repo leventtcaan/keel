@@ -1797,7 +1797,9 @@
       "firstCall": "Your first call: {day}",
       "firstWorkout": "Your first workout",
       "done": "{line}, done",
-      "see": "See my plan"
+      "see": "See my plan",
+      "programMissing": "Your program isn't on our server any more. Bring it in again to go on.",
+      "bringAgain": "Bring it in again"
     },
     "plan": {
       "title": "Your plan",

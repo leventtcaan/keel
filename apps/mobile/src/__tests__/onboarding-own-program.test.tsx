@@ -484,6 +484,11 @@ describe('the import: a draft, read on this phone', () => {
 });
 
 describe('after the program', () => {
+  // One test sets the phone's clock: every test after it runs on the real one again (review).
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('the walk goes on to its review, fifth of nine (the weights last); back on #ob-own, Continue goes on with it', async () => {
     const router = await toDraft();
     await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
@@ -544,6 +549,50 @@ describe('after the program', () => {
     await toActivityEnd();
     expect(screen.getByRole('button', { name: t('onboarding.weights.more', { move: name('bench_press') }) })).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: t('onboarding.weights.more', { move: name('squat') }) })).toBeNull();
+  });
+
+  test('brought in, then back and "Build it for me": a program is built for the days chosen, over the one brought in', async () => {
+    const router = await toDraft();
+    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+    await press(t('onboarding.programImport.confirm'));
+    await press(t('onboarding.back')); // the review
+    await press(t('onboarding.back')); // #ob-own
+    await press(t('onboarding.back')); // #ob-program
+    expect(router.getPathname()).toBe('/onboarding/program');
+    await choose(t('onboarding.program.build_one_for_me.title'));
+    await choose(t('onboarding.days.label', { count: 3 }));
+    await press(t('onboarding.healthData.notNow'));
+    await press(t('onboarding.consent.continueWithout'));
+    await press(t('onboarding.about.male'));
+    await press(t('onboarding.continue'));
+    await choose(t('onboarding.activity.ACTIVE'));
+    await press(t('onboarding.weights.skip'));
+    expect(mockProfile.store).toHaveBeenCalledWith(expect.objectContaining({ programChoice: 'BUILD_ONE_FOR_ME' }));
+    expect(mockApi.POST).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'] } });
+  });
+
+  test('the program brought in went missing on the server: said, and brought in again — the answers saved again after it', async () => {
+    const router = await toDraft();
+    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+    await press(t('onboarding.programImport.confirm'));
+    await toActivityEnd();
+    mockServerProgram = null;
+    await press(t('onboarding.weights.skip'));
+    expect(screen.getByText(t('onboarding.preparing.programMissing'))).toBeOnTheScreen();
+    await press(t('onboarding.preparing.bringAgain'));
+    expect(router.getPathname()).toBe('/onboarding/own-program');
+    // Brought in again: the walk on from there, and the profile stored a second time (its weekdays may have changed).
+    await choose(t('onboarding.own.import.title'));
+    await press(t('onboarding.programImport.choose'));
+    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+    await press(t('onboarding.programImport.confirm'));
+    await press(t('onboarding.review.keep'));
+    await press(t('onboarding.consent.continueWithout')); // declined before: the answer kept
+    await press(t('onboarding.continue')); // about you, as answered
+    await choose(t('onboarding.activity.ACTIVE'));
+    await press(t('onboarding.weights.skip'));
+    expect(mockProfile.store).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: t('onboarding.preparing.see') })).toBeEnabled();
   });
 
   test('a program without any of the starting moves: no weights step, the plan is prepared after the activity', async () => {
