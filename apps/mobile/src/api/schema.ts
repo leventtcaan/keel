@@ -747,9 +747,11 @@ export interface paths {
          * @description Today's session as the user wants it (K-964, ADR-073 #5), on the user's calendar: `programDayId` names it (the
          *     session `Program.week` puts on today). SHORT: the first short_session_moves moves in the program's order; the
          *     session counts for the week as any other. MOVE: to tomorrow, within the week (never past Sunday); a session already
-         *     on that day moves on a day with it, and so on (the week re-lays itself). SKIP: not done; no catch-up is added and
-         *     nothing is planned again (U7, ADR-071 #3). Only this week's session changes, never the program. CONFLICT (409),
-         *     nothing changed: that day's session is not on today, or a move would pass Sunday. NOT_FOUND: no program.
+         *     on that day moves on a day with it, and so on (the week re-lays itself); a moved session is a fresh one on its new
+         *     day: neither the short version nor today's swaps go with it. SKIP: not done; no catch-up is added and nothing is
+         *     planned again (U7, ADR-071 #3). Only this week's session changes, never the program. CONFLICT (409), nothing
+         *     changed: that day's session is not on today, a move would pass Sunday, or (MOVE, SKIP) a workout of that day was
+         *     started today, under way or finished. NOT_FOUND: no program.
          */
         post: operations["changeToday"];
         delete?: never;
@@ -770,11 +772,13 @@ export interface paths {
         /**
          * Swap a move of a program day, today only or from now on
          * @description A move of a program day for one of its `swapOptions` (K-964, ADR-073 #6). TODAY: only in this week's session of
-         *     that day, which must be on today (CONFLICT otherwise); `to` the planned move again undoes the swap. FROM_NOW_ON: the
+         *     that day, which must be on today and not started (CONFLICT otherwise: a workout of that day started today, under way
+         *     or finished, swaps in the session itself); `to` is checked against the session's moves after today's earlier swaps,
+         *     and the planned move again undoes the swap. FROM_NOW_ON: the
          *     program changes: the move's row gets the new move with the same sets and rep range, and no target (the new move
          *     has its own history and target, double progression per move); every other move keeps its row and target, the
-         *     program its source and days. The review's change log is cleared (the edit is the program now: "N changes applied
-         *     · Undo" goes). VALIDATION_FAILED: `to` is not among the move's swap options (the user's own move has none).
+         *     program its source and days. This week's swap for today of that move, or to the new move, ends (the plan is the
+         *     swap now). The review's change log is cleared (the edit is the program now: "N changes applied · Undo" goes). VALIDATION_FAILED: `to` is not among the move's swap options (the user's own move has none).
          *     NOT_FOUND: no program, or no such day or move.
          */
         post: operations["swapMove"];
@@ -2137,6 +2141,17 @@ export interface components {
             skipped?: boolean;
             short?: boolean;
             exerciseIds: string[];
+            /**
+             * @description Today's swaps in force (K-964, ADR-073 #6): each planned move swapped for today only (`insteadOf`) and the move in
+             *     its place as a planned exercise of its own: the planned move's sets and rep range, no target, its own history
+             *     (`lastBestSet`) and in-session table (ADR-075 #3), like a move swapped from now on. Absent when there is none.
+             */
+            swaps?: components["schemas"]["TodaySwap"][];
+        };
+        TodaySwap: {
+            /** @description The planned move swapped. */
+            insteadOf: string;
+            exercise: components["schemas"]["PlannedExercise"];
         };
         /** @description A lighter week in force (K-217); ends on its own after `until`. */
         DeloadWeek: {
