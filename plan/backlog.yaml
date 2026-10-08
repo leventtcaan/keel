@@ -3657,7 +3657,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-073 #5-#6: dayatma yok; telafi yok, aynı hafta içinde taşıma serbest"
     acceptance:
@@ -4472,3 +4472,20 @@ tasks:
     tests: ["Uç testi (rızalı/rızasız, tartılı/tartısız), sözleşme testi, ilk kararla aynı sayı testi"]
     refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "docs/anayasa.md"]
     learn: ["Okuma ucu ile karar kaydı arasındaki tutarlılık"]
+
+  - id: K-990
+    title: "İlk karar tarihi sunucudan: ilk hafta onboarding bitişinden başlar, o güne kadar check-in sunulmaz"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-989]
+    why: "K-967 incelemesi: telefon ilk karar tarihini kendisi hesaplıyor (ADR-075 #3'e aykırı); sunucu ilk haftayı hesap açılışından (ilk giriş) sayıyor ve 'current check-in'i hemen sunuyor, plan/paywall'un söz verdiği tarihten önce karar çıkabiliyor"
+    acceptance:
+      - "Sunucu ilk karar tarihini gönderir (K-989 başlangıç cevabıyla ya da programla); telefon hesaplamaz"
+      - "İlk hafta onboarding'in bittiği günden sayılır (hesap açılışı değil); kayıt günü planlanan seans sayılmaz (ADR-077 Ek 1)"
+      - "İlk karar tarihinden önce GET /v1/check-ins/current check-in sunmaz; plan ve paywall'daki tarih ile sunucunun ilk kararı aynı gün"
+    tests: ["Tablo: pazar 23:58 giriş + pazartesi bitiş, giriş ile bitiş arasında günler, çarşamba bitiş → check-in yok, pazartesi var; sözleşme testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/kararlar/ADR-072-teklif-ve-onboarding.md"]
+    learn: ["Zaman başlangıcını tek yerde tanımlamak"]
