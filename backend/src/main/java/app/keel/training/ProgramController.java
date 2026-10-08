@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -130,8 +131,12 @@ class ProgramController {
     record ReviewUndone(Program program, List<UUID> alsoUndone) {
     }
 
-    /** Contract ProgramCardio (K-959, ADR-074): this week's cardio, and the days of this week with a session done. */
-    record ProgramCardio(CardioOrigin source, int minutes, int sessionsPerWeek, List<PlannedCardio> sessions, int doneThisWeek) {
+    /**
+     * Contract ProgramCardio (K-959, ADR-074): this week's cardio, the days of this week with a session done, and whether a
+     * session after the weights runs past cardio_after_lift_max_minutes (#4: an info line, never a block; G2 K-35).
+     */
+    record ProgramCardio(CardioOrigin source, int minutes, int sessionsPerWeek, List<PlannedCardio> sessions, int doneThisWeek,
+            boolean afterLiftOverLine) {
     }
 
     /** Contract PlannedCardio: one session of the week, after the weights or on an off day. */
@@ -293,6 +298,14 @@ class ProgramController {
         return view(account, program);
     }
 
+    /** Back to the coach's default (ADR-074 Ek 1): the user's own removed, the default follows the phase in force again. */
+    @DeleteMapping("/v1/program/cardio")
+    Program defaultCardio(AccountId account) {
+        ProgramStore.Program program = store.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        cardio.removeUserPlan(account);
+        return view(account, program);
+    }
+
     /**
      * The engine's parameters for this user. The training ones have one value for both sexes; the profile's sex is used
      * when there is one, so a sex-specific parameter added later reads the right value.
@@ -351,7 +364,8 @@ class ProgramController {
         return CardioWeek.prescription(own, phase, CardioWeek.trainingDays(program, facts.map(ProfileFacts::trainingDays).orElse(Set.of())),
                         facts.flatMap(ProfileFacts::activity).map(activity -> ActivityLevel.valueOf(activity.name())), p)
                 .map(week -> new ProgramCardio(week.origin(), week.minutes(), week.sessions().size(),
-                        week.sessions().stream().map(PlannedCardio::of).toList(), cardio.daysWithCardio(account, monday, monday.plusWeeks(1))));
+                        week.sessions().stream().map(PlannedCardio::of).toList(), cardio.daysWithCardio(account, monday, monday.plusWeeks(1)),
+                        week.afterLiftOverLine(p)));
     }
 
     /**

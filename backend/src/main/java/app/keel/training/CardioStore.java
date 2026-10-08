@@ -65,6 +65,11 @@ class CardioStore {
         }
     }
 
+    /** The user's own cardio removed (its sessions go with it, on delete cascade): the default again. Harmless twice. */
+    void removeUserPlan(AccountId account) {
+        jdbc.sql("delete from training.cardio_plan where account_id = :account").param("account", account.value()).update();
+    }
+
     Stored log(AccountId account, UUID clientId, LocalDate day, int minutes, Source source, Integer activeEnergyKcal) {
         int created = jdbc.sql("""
                 insert into training.cardio_session (id, account_id, client_id, day, minutes, source, active_energy_kcal)

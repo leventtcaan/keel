@@ -76,4 +76,10 @@ ağırlık öncesine asla yerleşmez, kullanıcı değişikliğini ezmez · tele
 - **Aktif enerji** yalnız `APPLE_HEALTH` kaynağıyla ve sağlık verisi rızasıyla kabul edilir; rıza geri çekilince yalnız bu sütun boşalır,
   seans antrenman verisi olarak kalır (ADR-007; profildeki `food_avoid` kalıbı).
 - **Telefon:** saat ölçümü = `HKSourceRevision.productType` "Watch" ile başlayan örnekler, pencerenin tam içinde olanlar toplanır; kardiyo
-  sayılan antrenman türleri `data/parameters/health.json › health_cardio_workout_types` (aralıklı türler, HIIT dahil, sayılmıyor; K-34).
+  sayılan antrenman türleri `data/parameters/health.json › health_cardio_workout_types`; enerji her antrenmanın kendi penceresinde okunur.
+- **Aralıklı kardiyo sayılır (Levent, 2026-10-08):** Apple Health'ten gelen HIIT, ip atlama ve karışık metabolik kardiyo "yapılan kardiyo"
+  olarak kaydedilir; kayıt olanı tutar, reçete düşük tempo kalır (K-34).
+- **Koçun varsayılanına dönüş (Levent, 2026-10-08):** `DELETE /v1/program/cardio` kullanıcının kendi kardiyosunu siler; program yine
+  yürürlükteki fazın varsayılanını taşır. İki kez çağrılması zararsız.
+- **Bilgi satırı (#4):** ağırlık sonrası seans `cardio_after_lift_max_minutes`'ı aşarsa `ProgramCardio.afterLiftOverLine` true; sunucu
+  hesaplar (`CardioPrescription.afterLiftOverLine`), telefon kural işletmez (ADR-075 #3).

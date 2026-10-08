@@ -148,6 +148,8 @@ class ContractTests {
                 .containsExactlyElementsOf(names((Enum<?>[]) Class.forName("app.keel.training.CardioStore$Source").getEnumConstants()));
         assertThat(map(map(map(contract().get("paths")).get("/v1/cardio-sessions")).get("post")).get("operationId")).isEqualTo("logCardioSession");
         assertThat(map(map(map(contract().get("paths")).get("/v1/program/cardio")).get("put")).get("operationId")).isEqualTo("putProgramCardio");
+        // Back to the coach's default (ADR-074 Ek 1).
+        assertThat(map(map(map(contract().get("paths")).get("/v1/program/cardio")).get("delete")).get("operationId")).isEqualTo("deleteProgramCardio");
     }
 
     private static List<String> componentNames(Class<?> record) {

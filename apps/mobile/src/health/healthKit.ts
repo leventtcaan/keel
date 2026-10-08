@@ -207,23 +207,21 @@ export function healthKitAccess(load: () => unknown = loadLibrary, inExpoGo: () 
     // Cardio kinds only (health_cardio_workout_types), never what the app wrote; a workout under a minute is no session.
     readCardioWorkouts: async (from, to) => {
       const workouts = (await kit.queryWorkoutSamples({ limit: 0, filter: { date: { startDate: from, endDate: to } } })).filter(
-        (workout) => CARDIO.has(workout.workoutActivityType) && !isOwn(workout) && Math.round(workout.duration.quantity / MINUTE_S) >= 1,
+        (workout) => CARDIO.has(workout.workoutActivityType) && !isOwn(workout) && workout.duration.quantity >= MINUTE_S,
       );
-      if (workouts.length === 0) return [];
-      // One energy read over the workouts' own span; each takes what a watch measured inside it.
-      const start = new Date(Math.min(...workouts.map((workout) => workout.startDate.getTime())));
-      const end = new Date(Math.max(...workouts.map((workout) => workout.endDate.getTime())));
-      const samples = await energySamples(start, end);
-      return workouts.map((workout) => {
-        const cardio: HealthCardioWorkout = {
+      // Each workout's energy read over its own window: a window of days between workouts holds a day's every sample.
+      const cardio: HealthCardioWorkout[] = [];
+      for (const workout of workouts) {
+        const read: HealthCardioWorkout = {
           id: workout.uuid,
           start: workout.startDate.toISOString(),
           end: workout.endDate.toISOString(),
           minutes: Math.round(workout.duration.quantity / MINUTE_S),
         };
-        const kcal = watchEnergyWithin(samples, workout.startDate, workout.endDate);
-        return kcal === undefined ? cardio : { ...cardio, activeEnergyKcal: kcal };
-      });
+        const kcal = watchEnergyWithin(await energySamples(workout.startDate, workout.endDate), workout.startDate, workout.endDate);
+        cardio.push(kcal === undefined ? read : { ...read, activeEnergyKcal: kcal });
+      }
+      return cardio;
     },
   };
 }

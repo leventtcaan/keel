@@ -55,7 +55,7 @@ class CardioLogTests {
         AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
 
         assertThat(cardio(account)).isEqualTo(Map.of("source", "GENERATED", "minutes", 30, "sessionsPerWeek", 3, "doneThisWeek", 0,
-                "sessions", List.of(after("MONDAY"), after("WEDNESDAY"), after("FRIDAY"))));
+                "sessions", List.of(after("MONDAY"), after("WEDNESDAY"), after("FRIDAY")), "afterLiftOverLine", false));
     }
 
     @Test
@@ -101,12 +101,46 @@ class CardioLogTests {
         MvcTestResult answer = send("PUT", account, "/v1/program/cardio", own);
 
         Map<String, Object> expected = Map.of("source", "USER", "minutes", 40, "sessionsPerWeek", 2, "doneThisWeek", 0,
-                "sessions", List.of(place("TUESDAY", "OFF_DAY_LOW_INTENSITY"), after("FRIDAY")));
+                "sessions", List.of(place("TUESDAY", "OFF_DAY_LOW_INTENSITY"), after("FRIDAY")), "afterLiftOverLine", true);
         assertThat(answer).hasStatusOk();
         assertThat(map(answer).get("cardio")).isEqualTo(expected);
         assertThat(send("POST", account, "/v1/program/generate", Map.of("trainingDays", List.of("TUESDAY", "THURSDAY")))).hasStatusOk();
         profile(account, "LOSE_FAT", "INACTIVE");
         assertThat(cardio(account)).as("a new program and a new phase keep it").isEqualTo(expected);
+    }
+
+    @Test
+    void theCoachsDefaultComesBackAndFollowsThePhaseInForceAgain() throws Exception {
+        // ADR-074 Ek 1: the user's own removed, the default is worked out again, from today's phase.
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        assertThat(send("PUT", account, "/v1/program/cardio", Map.of("minutes", 45, "sessions", List.of(after("MONDAY"))))).hasStatusOk();
+        profile(account, "BUILD_MUSCLE", "INACTIVE");
+
+        MvcTestResult back = send("DELETE", account, "/v1/program/cardio", null);
+        MvcTestResult again = send("DELETE", account, "/v1/program/cardio", null);
+
+        assertThat(back).hasStatusOk();
+        assertThat(map(back).get("cardio")).isEqualTo(Map.of("source", "GENERATED", "minutes", 20, "sessionsPerWeek", 2, "doneThisWeek", 0,
+                "sessions", List.of(after("MONDAY"), after("WEDNESDAY")), "afterLiftOverLine", false));
+        assertThat(again).as("harmless twice").hasStatusOk();
+        assertThat(map(again)).isEqualTo(map(back));
+        profile(account, "LOSE_FAT", "INACTIVE");
+        assertThat(cardio(account)).as("the default follows the phase again").containsEntry("minutes", 30).containsEntry("source", "GENERATED");
+        assertThat(send("DELETE", TestSessions.newAccount(), "/v1/program/cardio", null)).as("no program").hasStatus(404);
+    }
+
+    @Test
+    void aSessionAfterTheWeightsPastTheLineCarriesTheInfoLineNeverABlock() throws Exception {
+        // G2 K-35: cardio_after_lift_max_minutes (30) after the weights; an off day's session is not after the weights.
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+
+        assertThat(send("PUT", account, "/v1/program/cardio", Map.of("minutes", 45, "sessions", List.of(after("MONDAY"))))).hasStatusOk();
+        assertThat(cardio(account)).containsEntry("afterLiftOverLine", true).containsEntry("minutes", 45);
+        assertThat(send("PUT", account, "/v1/program/cardio", Map.of("minutes", 30, "sessions", List.of(after("MONDAY"))))).hasStatusOk();
+        assertThat(cardio(account)).containsEntry("afterLiftOverLine", false);
+        assertThat(send("PUT", account, "/v1/program/cardio", Map.of("minutes", 45, "sessions",
+                List.of(place("SATURDAY", "OFF_DAY_LOW_INTENSITY"))))).hasStatusOk();
+        assertThat(cardio(account)).containsEntry("afterLiftOverLine", false);
     }
 
     @Test
@@ -286,6 +320,7 @@ class CardioLogTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };
         request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));

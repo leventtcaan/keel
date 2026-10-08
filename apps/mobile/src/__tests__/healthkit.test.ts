@@ -224,13 +224,16 @@ test("cardio workouts in a window: the cardio kinds only, never the app's own, m
     ...kit(),
     queryWorkoutSamples: async (options: unknown) => {
       asked.push({ workouts: options });
-      // Elliptical (16) and cycling (13) are cardio; strength (50), the app's own elliptical and soccer (41) are not.
+      // Elliptical (16), cycling (13) and HIIT (63: what happened is recorded, ADR-074 Ek 1) are cardio; strength (50),
+      // the app's own elliptical, soccer (41) and a 35-second elliptical (no session: under a minute) are not.
       return [
         workout('E1', 16, '2026-10-05T17:00:00Z', '2026-10-05T17:30:00Z', 1790),
         workout('C1', 13, '2026-10-06T07:00:00Z', '2026-10-06T07:20:00Z', 1200),
+        workout('H1', 63, '2026-10-06T12:00:00Z', '2026-10-06T12:15:00Z', 900),
         workout('S1', 50, '2026-10-05T16:00:00Z', '2026-10-05T17:00:00Z', 3600),
         workout('K1', 16, '2026-10-05T18:00:00Z', '2026-10-05T18:30:00Z', 1800, { HKExternalUUID: 'keel:4f1c' }),
         workout('F1', 41, '2026-10-06T18:00:00Z', '2026-10-06T19:30:00Z', 5400),
+        workout('T1', 16, '2026-10-06T20:00:00Z', '2026-10-06T20:00:35Z', 35),
       ];
     },
     queryQuantitySamples: async (identifier: string, options: unknown) => {
@@ -247,14 +250,20 @@ test("cardio workouts in a window: the cardio kinds only, never the app's own, m
   ).readCardioWorkouts(from, to);
 
   expect(asked[0]).toEqual({ workouts: { limit: 0, filter: { date: { startDate: from, endDate: to } } } });
-  // The energy over the cardio workouts' own span, one read.
-  expect(asked[1]).toEqual({
+  // The energy over each cardio workout's own window, never the days between them.
+  const window = (start: string, end: string) => ({
     identifier: 'HKQuantityTypeIdentifierActiveEnergyBurned',
-    options: { limit: 0, unit: 'kcal', filter: { date: { startDate: new Date('2026-10-05T17:00:00Z'), endDate: new Date('2026-10-06T07:20:00Z') } } },
+    options: { limit: 0, unit: 'kcal', filter: { date: { startDate: new Date(start), endDate: new Date(end) } } },
   });
+  expect(asked.slice(1)).toEqual([
+    window('2026-10-05T17:00:00Z', '2026-10-05T17:30:00Z'),
+    window('2026-10-06T07:00:00Z', '2026-10-06T07:20:00Z'),
+    window('2026-10-06T12:00:00Z', '2026-10-06T12:15:00Z'),
+  ]);
   expect(cardio).toEqual([
     { id: 'E1', start: '2026-10-05T17:00:00.000Z', end: '2026-10-05T17:30:00.000Z', minutes: 30, activeEnergyKcal: 23 },
     { id: 'C1', start: '2026-10-06T07:00:00.000Z', end: '2026-10-06T07:20:00.000Z', minutes: 20 },
+    { id: 'H1', start: '2026-10-06T12:00:00.000Z', end: '2026-10-06T12:15:00.000Z', minutes: 15 },
   ]);
 });
 
