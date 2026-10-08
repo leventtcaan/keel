@@ -9,6 +9,11 @@
   K-967 ile dikiş: `draft.ownProgram` doluysa hazırlık `generate` çağırmaz, yalnız profil + başlangıç ağırlıkları.
 - **K-989 #478** (`GET /v1/targets/starting`, salt okuma, `firstPlan` ile aynı sayı; `observationDays` erkek 14 / kadın 28 → metin '14' sabit olamaz): incelenmedi → inceleme ajanı + `ContractTests` tek sayı listesine `StartingTarget.targetKcal` eklendi (hedef, U5 izinli; K1 onayı agent'ta, gerekçe PR'da) + ADR-072 Ek (teknik). Sonra K-967'ye kalori satırı. Sonra K-967 plan ekranına kalori satırı + "14 gün" satırı.
 
+## K-968 son durum (8 Eki)
+#473 → sonra #477 ve #479 ("Type it in", `src/train/ProgramEditor.tsx`, K-970 yeniden kullanır), üçü #473 dalına yığılı; inceleme düzeltmeleri yapıldı, CI yeşil.
+#479 incelenmedi. K-967 entegrasyonu (kendi dalında generate yok, ağırlık adımı programdaki hareketler, plan'da kendi hareket adları, 9 adım) ikinci birleşen PR'da.
+Levent'e: elle girilen harekette başlangıç set sayısı 3 (`program_new_move_sets`, urun).
+
 ## Yeni iş (henüz kart yok)
 - **İlk karar tarihi sunucuda** (K-967 incelemesi madde 4): sunucu ilk haftayı hesap açılışından sayıyor, telefon onboarding bitişinden; "current check-in" hemen sunuluyor. Sunucu ilk karar tarihini göndersin (K-989 sözleşmesiyle), ilk hafta onboarding bitişinden başlasın, o tarihe kadar check-in tutulsun. Kart aç (K-990).
 
