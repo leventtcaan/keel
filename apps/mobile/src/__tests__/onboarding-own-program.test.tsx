@@ -291,6 +291,8 @@ describe('the import: a draft, read on this phone', () => {
     expect(screen.getByText(name('barbell_row'))).toBeOnTheScreen();
     expect(screen.getByText(t('onboarding.programImport.move', { sets: 4, min: 7, max: 9 }))).toBeOnTheScreen();
     expect(screen.getByText(name('squat'))).toBeOnTheScreen();
+    // Always 5 reps: a fixed target, said as its reps, not "5-5" (K-991).
+    expect(screen.getByText(t('onboarding.programImport.moveFixed.other', { sets: 3, count: 5 }))).toBeOnTheScreen();
     // A routine done once (Arms) is no day.
     expect(screen.queryByText('Arms')).toBeNull();
     expect(mockApi.PUT).not.toHaveBeenCalled();
@@ -329,7 +331,7 @@ describe('the import: a draft, read on this phone', () => {
             name: 'Lower',
             weekday: 'THURSDAY',
             exercises: [
-              { exerciseId: 'squat', sets: 3, reps: { min: 5, max: 7 } },
+              { exerciseId: 'squat', sets: 3, reps: { min: 5, max: 5 } },
               {
                 exerciseId: 'romanian_deadlift',
                 sets: 3,
@@ -369,7 +371,7 @@ describe('the import: a draft, read on this phone', () => {
     const order = mockApi.POST.mock.invocationCallOrder[0];
     expect(order).toBeLessThan(mockApi.PUT.mock.invocationCallOrder[0]);
     const upper = (programPuts()[0][1].body as Schemas['OwnProgram']).days[0];
-    expect(upper.exercises[2]).toEqual({ exerciseId: 'custom:8a1d', sets: 3, reps: { min: 12, max: 14 } });
+    expect(upper.exercises[2]).toEqual({ exerciseId: 'custom:8a1d', sets: 3, reps: { min: 12, max: 12 } });
   });
 
   test('a draft turned down leaves no own move behind: leaving the screen sends nothing', async () => {
@@ -426,7 +428,7 @@ describe('the import: a draft, read on this phone', () => {
     expect(upper.exercises).toEqual([
       { exerciseId: 'bench_press', sets: 4, reps: { min: 7, max: 9 } },
       { exerciseId: 'barbell_row', sets: 3, reps: { min: 9, max: 11 } },
-      { exerciseId: 'squat', sets: 3, reps: { min: 12, max: 14 } },
+      { exerciseId: 'squat', sets: 3, reps: { min: 12, max: 12 } },
     ]);
     expect(mockApi.POST).not.toHaveBeenCalled(); // no own move made
   });

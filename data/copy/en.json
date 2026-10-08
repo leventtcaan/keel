@@ -1639,6 +1639,10 @@
       "summary": "From {app} · days: {days} · moves: {moves}",
       "anyDay": "No set day",
       "move": "{sets} × {min}-{max} reps",
+      "moveFixed": {
+        "one": "{sets} × 1 rep",
+        "other": "{sets} × {count} reps"
+      },
       "unmatched": "Not in our moves. Pick one, make it your own, or leave it out.",
       "leaveOut": "Leave out",
       "leaveOutLabel": "Leave {name} out of the program",

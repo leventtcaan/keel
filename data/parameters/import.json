@@ -78,7 +78,7 @@
       "unit": "reps",
       "tag": "urun",
       "source": "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md#D1",
-      "note": "The draft's rep range is at least this wide (K-957), opened at the top: double progression needs room to climb (K-109), and the reps seen stay the bottom, so the first session's load does not jump. Always 8 becomes 8-10."
+      "note": "The draft's rep range is at least this wide (K-957), opened at the top: double progression needs room to climb (K-109), and the reps seen stay the bottom, so the first session's load does not jump. Only where the reps varied: every working set at one count is a fixed target, always 5 is 5 x 5 (K-991, ADR-073 Ek 4, a product decision of 2026-10-08); 5, 5, 6 becomes 5-7."
     }
   ]
 }

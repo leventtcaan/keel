@@ -146,7 +146,7 @@ testi: seçenekler salon ekipmanıyla süzülür.
 | `program_draft_move_min_share` | 0,5 | Seansların yarısında yapılan hareket rutinin parçası; daha azı tek seferlik değiştirme |
 | `program_draft_weekday_min_share` | 0,5 | Yapıldığı haftaların yarısında o gündeyse düzen var, o gün rutinin günlerinden biridir (haftada yapıldığı kadar gün, en büyük paylar); azı rastgele, gün kullanıcıya bırakılır |
 | `program_draft_reps_middle_share` | 0,5 | Ortadaki yarı (çeyrekler arası): Strong'un işaretsiz ısınması ve tek tük set aralığı germez |
-| `program_draft_rep_span_min` | 2 | Çift ilerlemenin tırmanacak yeri olsun (K-109); hep 8 yapan 8-10 alır |
+| `program_draft_rep_span_min` | 2 | Çift ilerlemenin tırmanacak yeri olsun (K-109); tekrarlar değişiyorsa. Hep aynı tekrar sabit hedeftir (hep 8 → 8×8; Ek 4, K-991) |
 
 ## Ek 3 · Bugünü değiştir ve hareket değiştir: uçlar ve saklama (K-964, 2026-10-08, agent, teknik)
 - **Uçlar:** `POST /v1/program/today {programDayId, change: SHORT|MOVE|SKIP}`, `POST /v1/program/swap {programDayId, exerciseId, to,
@@ -211,6 +211,7 @@ testi: seçenekler salon ekipmanıyla süzülür.
   genişliğini değil; sabit oluşu kendi başına bulgu değil. Reddedilen: sabit hedefi hep işaretlemek (dayatma, ADR-073 sürücüsü) · 6-10 dışını
   sabitte işaretlememek (5×5 bileşikte K-21'in tam söylediği şey).
 - **Düzenleyici:** en az tekrar en çoğa, en çok en aza kadar adımlanır; birbirini geçmez.
-- **Levent'e açık:** içe aktarma taslağı tek görülen tekrarı bugün D1 kuralıyla açar (hep 5 → 5-7, `program_draft_rep_span_min`, `urun`).
-  Taslak kendisi sabit tekrar çıkarsın mı (hep 5 → 5×5)? D1 ürün değeri ve mevcut taslak testlerinin beklentisi değişir; bu görevde
-  değiştirilmedi. Taslağın kaydedildiği `PUT /v1/program` sabit hedefi alır: kullanıcı onaydan sonra düzenleyicide 5×5 yapar.
+- **İçe aktarma taslağı** (Levent 8 Eki "5×5 olsun", orkestratör kararı): penceredeki bütün çalışma setleri aynı tekrardaysa taslak
+  sabit hedeftir (hep 5 → 5×5); bir set bile farklıysa D1'in aralık kuralı aynen (5, 5, 6 → 5-7, `program_draft_rep_span_min`). D1'in
+  "hep 8 yapan 8-10 alır" satırı bununla değişti: aralık açmanın gerekçesi (çift ilerlemenin tırmanacak yeri) sabit hedefte yok, motor
+  yalnız yükü artırır. Mevcut taslak testlerinden tek tekrarlı hareketlerin beklentisi buna göre değişti (PR #484).
