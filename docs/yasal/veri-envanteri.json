@@ -478,6 +478,33 @@
    ]
   },
   {
+   "table": "training.program_review_change",
+   "module": "training",
+   "class": "training",
+   "purpose": "Changes you applied to your program from its review, with the program before and after each, so any of them can be undone.",
+   "columns": [
+    "id",
+    "account_id",
+    "seq",
+    "suggestion",
+    "program_before",
+    "program_after",
+    "applied_at",
+    "undone_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "programReviewChanges",
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
    "table": "training.program_history",
    "module": "training",
    "class": "training",

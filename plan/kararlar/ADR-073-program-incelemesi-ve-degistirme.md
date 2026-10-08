@@ -70,3 +70,36 @@ Orta: yeni motor kuralı, iki uç (inceleme, öneri uygulama), içe aktarma geni
 `ProgramReview` tablo testleri (her kuralın eşiğinin altı, kendisi, üstü; öncelik ve en çok 3 öneri) + özellik testi (öneri uygulanınca aynı
 bulgu tekrar çıkmaz; determinizm) · içe aktarma testi: rutinli Strong dosyasından taslak program · taşıma testi: pazar sınırı · değiştirme
 testi: seçenekler salon ekipmanıyla süzülür.
+
+## Ek 1 · İnceleme uçları: kimlik, bayatlık, değişiklik kaydı, geri alma (K-956, 2026-10-08, agent, teknik)
+- **Uçlar:** `GET /v1/program/review`, `POST /v1/program/review/apply {reviewId, suggestionIds}`, `POST /v1/program/review/undo {changeId?}`.
+  İnceleme ayrıca sunucunun döndürdüğü her `Program`'da (`review`, isteğe bağlı alan): program her değiştiğinde inceleme yeniden koşar.
+- **Kimlik:** öneri kimliği bulgu + konusu (`TOO_MANY_SETS:chest`, `REP_RANGE:squat`, `TOO_MANY_DAYS`); inceleme kimliği programın içeriğinin
+  SHA-256'sı (günlerin sırası, hareket, set, tekrar aralığı; ad, hafta günü, satır ve hedef değil). Uygulama bu kimliği geri gönderir;
+  program o zamandan beri değiştiyse ya da seçilen öneri şimdiki incelemede yoksa **CONFLICT (409)**, hiçbir şey değişmez (projenin "durum
+  altından kaydı" kodu; ayrı hata kodu açılmadı).
+- **Uygulama:** seçilenler incelemenin sırasıyla, her biri ayrı değişiklik; her birinden sonra inceleme yeniden koşar, öneri kimliğiyle yeniden
+  bulunur (öncekinin düzelttiği atlanır). Değişiklik yalnız diff'in dediğine dokunur: diğer hareketler satırını (id) ve sonraki hedefini (başlangıç
+  ağırlığı ya da seansın) korur; seti değişen ya da taşınan hareket hedefini korur; **tekrar aralığı değişen hareketin hedefi silinir** (eski
+  aralık içindi); eklenen hareket yeni satırdır. Hiç hareketi kalmayan gün gider (fazla seti kırpmak bir günü boşaltabilir). Kaynak
+  (`GENERATED`/`OWN`), program kimliği, günlerin kimliği ve `created_at` korunur; gün sayısı değişirse `program_history`'ye şimdiden geçerli
+  satır (K-535).
+- **Kullanıcının kendi hareketleri** (`custom:` kimlik, katalogda yok; Levent kararı, PR #460, 2026-10-08): incelenmez, hiçbir kasa sayılmaz,
+  hiçbir diff dokunmaz, uygulama ve geri almada olduğu gibi kalır; programın geri kalanı incelenir ve `ProgramReview.notReviewedMoves` kaç tane
+  olduğunu söyler. Günü birleştirilen günde kendi hareketi varsa gün o hareketle kalır. **Bilinen sınır:** yalnız kendi hareketiyle çalışan bir
+  kas "çok az set" önerisi alabilir; kullanıcı o öneriyi kapatır.
+- **Kayıt (V39 `training.program_review_change`):** her değişiklik sırasıyla (`seq`), gösterildiği haliyle öneri ve öncesi/sonrası program (JSON;
+  karar modülündeki `plan_before/plan_after` kalıbı). Geri alınan satır kalır (`undone_at`). Program bütün olarak değişince (`PUT`, `generate`)
+  kayıt silinir. Hesap silmede gider, dışa aktarımda `programReviewChanges`.
+- **Geri alma:** bir değişiklik geri alınınca program ondan önceki haline döner ve **sonraki değişiklikler yeniden uygulanır** (aynı apply yolu);
+  `changeId` yoksa hepsi. Sonraki değişikliklerden **artık uygulanamayan** (bulgusu geri alınanla birlikte kalktı) onunla birlikte geri alınır
+  ve yanıtta `alsoUndone` ile adı verilir: uygulama kaç değişikliğin gittiğini söyler (düzenleyici kararı, teknik). Her hareket şimdiki satırının
+  hedefini taşır (o arada seans hedef koymuş olabilir), aralığı aynıysa; yeniden eklenen hareket aynı gündeki aynı hareketin satırını alır. Son
+  değişiklikten sonra program başka yoldan değiştiyse geri alma CONFLICT (koyacağı eski hal o değişikliği silerdi).
+- **Eşzamanlılık:** uygulama ve geri alma programın satır kilidini (`for update`) alıp okur ve yazar; seans bitişi (ve bitmiş seansın
+  düzeltilmesi) hedefleri yazmadan önce aynı kilidi alır, böylece yeni hedef yeniden yazılan programda kaybolmaz.
+- **Reddedilen:** yalnız sonuncuyu geri alma (yığın; "her biri geri alınabilir" prototipiyle çelişir) · ters diff saklamak (birleşen günlerde
+  kırılgan) · sürüm sayacı sütunu (içerik kimliği şemasız ve geri alınınca eski inceleme yeniden geçerli olur) · uygulanamayan sonraki
+  değişikliği sessizce düşürmek (kullanıcı neyin gittiğini bilmez).
+- **Levent'e açık:** (1) programda o kasın izolasyon hareketi yoksa katalogda kimliğe göre ilki eklenir (hamstring → `lying_leg_curl`); kas başına
+  tercih edilen hareket veriye konmalı mı. (2) Üretilmiş şablonların kendi incelemesinden geçmesi Levent kararıyla ayrı görev (bu PR değil).

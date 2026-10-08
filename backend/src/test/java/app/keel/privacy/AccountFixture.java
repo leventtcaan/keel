@@ -58,7 +58,11 @@ final class AccountFixture {
         send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "look", "SAME"));
         send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "level", 3));
         send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 8000));
-        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY")));
+        MvcTestResult program = send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY")));
+        // A suggestion of the program's review applied (K-956): the change log, with the program before and after, is the account's.
+        Map<?, ?> review = (Map<?, ?>) JSON.readValue(program.getResponse().getContentAsString(), Map.class).get("review");
+        send(account, "POST", "/v1/program/review/apply", Map.of("reviewId", review.get("id"),
+                "suggestionIds", List.of(((Map<?, ?>) ((List<?>) review.get("suggestions")).getFirst()).get("id"))));
         // A gym with every part of its equipment (K-414): its plates, dumbbells and machines are rows too.
         send(account, "PUT", "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "barKg", 20, "platesKg", List.of(20, 10),
                 "dumbbellsKg", List.of(10, 12), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "pec_deck", "stepKg", 7))));

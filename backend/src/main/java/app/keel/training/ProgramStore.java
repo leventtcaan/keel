@@ -35,6 +35,21 @@ class ProgramStore {
         PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir) {
             this(exerciseId, sets, repMin, repMax, targetRir, null, null, null, null, null, false);
         }
+
+        PlannedExercise withSets(int newSets) {
+            return new PlannedExercise(exerciseId, newSets, repMin, repMax, targetRir, nextLoadKg, nextReps, lastLoadKg, id, nextFrom, nextRackEnds);
+        }
+
+        /** Another rep range: the target was for the old one, so it goes (the next session finds the load again). */
+        PlannedExercise withReps(int min, int max) {
+            return new PlannedExercise(exerciseId, sets, min, max, targetRir, null, null, null, id, null, false);
+        }
+
+        /** This move as planned, in {@code row} with that row's target. */
+        PlannedExercise inRowOf(PlannedExercise row) {
+            return new PlannedExercise(exerciseId, sets, repMin, repMax, targetRir, row.nextLoadKg, row.nextReps, row.lastLoadKg, row.id, row.nextFrom,
+                    row.nextRackEnds);
+        }
     }
 
     /** One day: {@code nameKey} for a generated day, {@code name} for the user's own. */
@@ -66,6 +81,8 @@ class ProgramStore {
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("source", source.name())
                 .param("now", clock.instant().atOffset(ZoneOffset.UTC)).query(UUID.class).single();
         jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
+        // The review's changes were made to the program replaced: none can be undone onto this one (K-956).
+        jdbc.sql("delete from training.program_review_change where account_id = :account").param("account", account.value()).update();
         // What this program asks a week, from now (K-535): the weeks before keep the program they had. Always after the
         // last row: two replaces at once each read the clock before the lock, and the one stored last must be in force —
         // strictly after, so the order never falls to a tie.
@@ -75,9 +92,48 @@ class ProgramStore {
                         (select max(effective_from) + interval '1 microsecond' from training.program_history where account_id = :account)))""")
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("sessions", days.size()).param("program", program)
                 .update();
+        insert(account, program, days);
+        return current(account).orElseThrow();
+    }
+
+    /**
+     * The account's program, its row locked until the transaction ends: the review's applies and undos take turns, each
+     * reading the program the one before left (K-956).
+     */
+    Optional<Program> locked(AccountId account) {
+        return jdbc.sql("select id from training.program where account_id = :account for update").param("account", account.value())
+                .query(UUID.class).optional().flatMap(program -> current(account));
+    }
+
+    /**
+     * The account's program with these days in place of its own, each day and move keeping the row (id) and target it
+     * carries, a new row where it has none (K-956). Its source and when it was made stay: an edited program is the same
+     * program (ADR-073 #4). Another number of days asks another number of sessions a week from now (K-535).
+     */
+    @Transactional
+    Program rewrite(AccountId account, List<Day> days) {
+        UUID program = jdbc.sql("select id from training.program where account_id = :account for update").param("account", account.value())
+                .query(UUID.class).single();
+        int before = jdbc.sql("select count(*) from training.program_day where program_id = :program").param("program", program)
+                .query(Integer.class).single();
+        jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
+        if (before != days.size()) {
+            jdbc.sql("""
+                    insert into training.program_history (id, account_id, sessions_per_week, effective_from)
+                    values (:id, :account, :sessions, greatest(cast(:now as timestamp with time zone),
+                            (select max(effective_from) + interval '1 microsecond' from training.program_history where account_id = :account)))""")
+                    .param("id", UUID.randomUUID()).param("account", account.value()).param("sessions", days.size())
+                    .param("now", clock.instant().atOffset(ZoneOffset.UTC)).update();
+        }
+        insert(account, program, days);
+        return current(account).orElseThrow();
+    }
+
+    /** The days and their moves, in order; a day or move without an id gets a new one, a move's target is stored with it. */
+    private void insert(AccountId account, UUID program, List<Day> days) {
         for (int d = 0; d < days.size(); d++) {
             Day day = days.get(d);
-            UUID dayId = UUID.randomUUID();
+            UUID dayId = day.id() == null ? UUID.randomUUID() : day.id();
             jdbc.sql("""
                     insert into training.program_day (id, program_id, account_id, seq, name_key, name, weekday)
                     values (:id, :program, :account, :seq, :key, :name, :weekday)""")
@@ -87,14 +143,17 @@ class ProgramStore {
             for (int e = 0; e < day.exercises().size(); e++) {
                 PlannedExercise planned = day.exercises().get(e);
                 jdbc.sql("""
-                        insert into training.planned_exercise (id, day_id, account_id, seq, exercise_id, sets, rep_min, rep_max, target_rir)
-                        values (:id, :day, :account, :seq, :exercise, :sets, :min, :max, :rir)""")
-                        .param("id", UUID.randomUUID()).param("day", dayId).param("account", account.value()).param("seq", e)
-                        .param("exercise", planned.exerciseId()).param("sets", planned.sets()).param("min", planned.repMin())
-                        .param("max", planned.repMax()).param("rir", planned.targetRir()).update();
+                        insert into training.planned_exercise (id, day_id, account_id, seq, exercise_id, sets, rep_min, rep_max, target_rir,
+                            next_load_kg, next_reps, last_load_kg, next_from, next_rack_ends)
+                        values (:id, :day, :account, :seq, :exercise, :sets, :min, :max, :rir, :load, :reps, :last, :from, :rackEnds)""")
+                        .param("id", planned.id() == null ? UUID.randomUUID() : planned.id()).param("day", dayId).param("account", account.value())
+                        .param("seq", e).param("exercise", planned.exerciseId()).param("sets", planned.sets()).param("min", planned.repMin())
+                        .param("max", planned.repMax()).param("rir", planned.targetRir()).param("load", planned.nextLoadKg())
+                        .param("reps", planned.nextReps()).param("last", planned.lastLoadKg())
+                        .param("from", planned.nextFrom() == null ? null : planned.nextFrom().atOffset(ZoneOffset.UTC))
+                        .param("rackEnds", planned.nextRackEnds()).update();
             }
         }
-        return current(account).orElseThrow();
     }
 
     /** When the account's program was made (or last replaced). */

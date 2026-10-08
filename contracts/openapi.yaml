@@ -763,6 +763,78 @@ paths:
                 $ref: "#/components/schemas/Program"
         default:
           $ref: "#/components/responses/Error"
+  /v1/program/review:
+    get:
+      tags: [training]
+      operationId: getProgramReview
+      summary: The current program reviewed against the coaching rules, with the review's changes in force
+      description: |
+        ADR-073 #2-#3. The user picks any of the suggestions, or none: "Keep mine as is" sends nothing and changes nothing.
+        The same review rides on every Program the server answers (`Program.review`), so it runs again whenever the
+        program changes. No current program: NOT_FOUND.
+      responses:
+        "200":
+          description: The review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgramReview"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/program/review/apply:
+    post:
+      tags: [training]
+      operationId: applyProgramReview
+      summary: Apply the suggestions the user picked; the program keeps its source
+      description: |
+        In the review's order, one change each, each kept in the change log with the program before and after it. The
+        review runs again after each: a later pick an earlier one already fixed is not applied, and one whose fix moved
+        applies the fix the review holds now. A move the change leaves keeps its next target (a starting weight or a
+        session's), except a move whose rep range changed: its target was for the old range. A GENERATED program stays
+        GENERATED (ADR-073 #4). CONFLICT (409), nothing changed: the program is not the one `reviewId` names (it changed
+        since the review; fetch it again), or a suggestion id the review does not hold now. NOT_FOUND without a program.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewApply"
+      responses:
+        "200":
+          description: The program with the changes, reviewed again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/program/review/undo:
+    post:
+      tags: [training]
+      operationId: undoProgramReview
+      summary: Undo one applied change, or all of them ("N changes applied · Undo")
+      description: |
+        With `changeId`, that change: the program as it was before it, with the changes applied after it applied again. A
+        later change that can no longer be applied (its finding is gone without the undone change) is undone with it and
+        named in `alsoUndone`, so the app can say how many changes went. Without `changeId`, every change in force: the
+        program as it was before the first (`alsoUndone` empty). Moves keep their next targets as in apply. An undone change
+        stays in the log, no longer in force; undone twice, or nothing to undo, nothing changes. NOT_FOUND: no program, or
+        no such change. CONFLICT (409), nothing changed: the program changed another way since its last change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewUndo"
+      responses:
+        "200":
+          description: The program after the undo, reviewed again, and the later changes undone with it
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewUndone"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/gyms:
     get:
       tags: [training]
@@ -2368,7 +2440,8 @@ components:
       description: |
         The program as it is this week: the deload ladder's calls in force today on the user's calendar (K-217) — a
         lighter week (`deload`, the sets of each exercise lowered), a week off (`restUntil`), the load held since a day
-        (`loadHeldSince`: no load is added until the next rung).
+        (`loadHeldSince`: no load is added until the next rung). `review`: the program as it is now, reviewed (K-956); this
+        server always sends it.
       required: [id, source, days]
       properties:
         deload:
@@ -2395,6 +2468,103 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProgramDay"
+        review:
+          $ref: "#/components/schemas/ProgramReview"
+    ProgramReview:
+      type: object
+      description: |
+        The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
+        days, too many sets, too few sets, once a week, rep range). `id` names the program as reviewed (its moves, sets,
+        rep ranges and day order; not names or weekdays): an apply names it. `applied`: the review's changes in force,
+        oldest first. The user's own moves (not in the catalog) are not reviewed: they count for no muscle and no change
+        touches them; `notReviewedMoves` says how many there are (this server always sends it).
+      required: [id, suggestions, applied]
+      properties:
+        id:
+          type: string
+        notReviewedMoves:
+          type: integer
+          minimum: 0
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewSuggestion"
+        applied:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppliedReviewChange"
+    ReviewSuggestion:
+      type: object
+      description: |
+        A finding with its fix. `id` is the finding and what it is about, the same while the program is. The words are the
+        app's: data/copy/en.json › `copyKey` (title, body), with `numbers` as its placeholders and the muscle's or the
+        move's name; `reason` is the coaching rule.
+      required: [id, finding, numbers, copyKey, reason]
+      properties:
+        id:
+          type: string
+        finding:
+          type: string
+          enum: [TOO_MANY_DAYS, TOO_MANY_SETS, TOO_FEW_SETS, ONCE_A_WEEK, REP_RANGE]
+        muscle:
+          type: string
+          description: The muscle (data/muscles.yaml) a sets or frequency finding is about.
+        exerciseId:
+          type: string
+          description: The move a rep range finding is about.
+        numbers:
+          type: object
+          additionalProperties:
+            type: integer
+        copyKey:
+          type: string
+        reason:
+          $ref: "#/components/schemas/Reason"
+    AppliedReviewChange:
+      type: object
+      description: A suggestion applied to the program, as it was shown when applied.
+      required: [id, appliedAt, suggestion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        appliedAt:
+          type: string
+          format: date-time
+        suggestion:
+          $ref: "#/components/schemas/ReviewSuggestion"
+    ReviewApply:
+      type: object
+      required: [reviewId, suggestionIds]
+      properties:
+        reviewId:
+          type: string
+          description: ProgramReview.id of the review the user picked from.
+        suggestionIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+    ReviewUndone:
+      type: object
+      required: [program, alsoUndone]
+      properties:
+        program:
+          $ref: "#/components/schemas/Program"
+        alsoUndone:
+          type: array
+          description: AppliedReviewChange.id of each later change undone with the one asked for, in order.
+          items:
+            type: string
+            format: uuid
+    ReviewUndo:
+      type: object
+      properties:
+        changeId:
+          type: string
+          format: uuid
+          description: AppliedReviewChange.id; absent to undo every change in force.
     DeloadWeek:
       type: object
       description: A lighter week in force (K-217); ends on its own after `until`.

@@ -88,6 +88,32 @@ class ContractTests {
         assertThat(properties(planned).keySet()).contains("lighterLoadKg", "heavierLoadKg", "lastBestSet", "nextLoadAtTopKg", "calibrationStepKg");
     }
 
+    @Test
+    void theProgramReviewIsTheEnginesFindingsAndTheServersRecordsFieldForField() throws Exception {
+        // K-956 (ADR-073 #2-#3): the phone shows the review, sends back the picks and the change to undo; the program carries
+        // the review, optional for programs from before it.
+        Map<String, Object> schemas = schemas();
+        Map<String, Object> paths = map(contract().get("paths"));
+        Map<String, Object> suggestion = map(schemas.get("ReviewSuggestion"));
+
+        assertThat(map(map(paths.get("/v1/program/review")).get("get")).get("operationId")).isEqualTo("getProgramReview");
+        assertThat(map(map(paths.get("/v1/program/review/apply")).get("post")).get("operationId")).isEqualTo("applyProgramReview");
+        assertThat(map(map(paths.get("/v1/program/review/undo")).get("post")).get("operationId")).isEqualTo("undoProgramReview");
+        assertThat(list(map(properties(suggestion).get("finding")).get("enum")))
+                .containsExactlyElementsOf(names(app.keel.engine.ProgramReview.Finding.values()));
+        Map<String, String> sent = Map.of("ReviewSuggestion", "app.keel.training.ProgramReviews$Suggestion", "ProgramReview",
+                "app.keel.training.ProgramReviews$Review", "AppliedReviewChange", "app.keel.training.ProgramReviews$Applied", "ReviewApply",
+                "app.keel.training.ProgramController$ReviewApply", "ReviewUndo", "app.keel.training.ProgramController$ReviewUndo", "ReviewUndone",
+                "app.keel.training.ProgramController$ReviewUndone");
+        for (Map.Entry<String, String> schema : sent.entrySet()) {
+            assertThat(properties(map(schemas.get(schema.getKey()))).keySet()).as(schema.getKey())
+                    .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName(schema.getValue())));
+        }
+        assertThat(map(properties(suggestion).get("reason")).get("$ref")).isEqualTo("#/components/schemas/Reason");
+        assertThat(properties(map(schemas.get("Program")))).containsKey("review");
+        assertThat(list(map(schemas.get("Program")).get("required"))).doesNotContain("review");
+    }
+
     private static List<String> componentNames(Class<?> record) {
         return Arrays.stream(record.getRecordComponents()).map(RecordComponent::getName).toList();
     }
