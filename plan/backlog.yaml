@@ -4438,3 +4438,20 @@ tasks:
     tests: ["FirstDecisionNotBeforeMondayTests (CI, Postgres)"]
     refs: ["backend/src/test/java/app/keel/decision/FirstDecisionNotBeforeMondayTests.java"]
     learn: ["Zamana bağlı test kurulumları"]
+
+  - id: K-988
+    title: "İlerleme sonuç cümlesi: dönemin kilo değişimi (7 günlük ortalama farkı)"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-965]
+    why: "ADR-078 #2 'Stronger on 4 of 5 lifts. Down 3.8 kg.'; K-965 training modülünde kaldı, training measurement/decision'a bağlanamaz (K-965 notu)"
+    acceptance:
+      - "Haftalık tutarlılık kaydının yanında (decision, `/v1/consistency` ya da ilgili özet) dönemin kilo değişimi: ilk karar ya da başlangıçtan bugüne iki 7 günlük ortalamanın farkı (U8; tek gün değeri asla)"
+      - "Yeterli tartı yoksa alan yok; yeterlilik mevcut DataSufficiency / min_weighins_per_week kuralıyla, yeni eşik yok"
+      - "Sunucu cümle döndürmez; telefon en.json şablonuyla yazar"
+    tests: ["Tablo testi (yeterli/yetersiz tartı, kayıp/kazanım), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-078-ilerleme.md", "docs/anayasa.md"]
+    learn: ["Modül sınırında okuma modeli"]
