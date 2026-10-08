@@ -36,8 +36,13 @@ export type Draft = {
   waist: string;
   avoid: string;
   ids: { weighIn: string; waist: string };
-  /** The program the user brought in, as the server kept it (PUT /v1/program, K-968); its review rides on it. */
+  /**
+   * The program the user brought in, as the server kept it (PUT /v1/program, K-968) and as the review left it; its review
+   * rides on it. Set, it is the user's program on the server already: the end of the walk keeps it and builds none.
+   */
   ownProgram: Schemas['Program'] | null;
+  /** The user decided on that program's review: changes applied, or kept as it is (ADR-073 #3). */
+  reviewed: boolean;
 };
 
 export const emptyDraft: Draft = {
@@ -55,15 +60,16 @@ export const emptyDraft: Draft = {
   avoid: '',
   ids: { weighIn: '', waist: '' },
   ownProgram: null,
+  reviewed: false,
 };
 
 /**
  * A program brought in (ADR-073 #1) answers the days question: its weekdays are the training days, Monday first. A day
- * on no weekday adds none.
+ * on no weekday adds none. A program brought in anew is reviewed anew.
  */
-export function broughtProgram(program: Schemas['Program']): Pick<Draft, 'ownProgram' | 'trainingDays'> {
+export function broughtProgram(program: Schemas['Program']): Pick<Draft, 'ownProgram' | 'trainingDays' | 'reviewed'> {
   const on = new Set(program.days.flatMap((day) => (day.weekday === undefined ? [] : [day.weekday])));
-  return { ownProgram: program, trainingDays: WEEK.filter((weekday) => on.has(weekday)) };
+  return { ownProgram: program, trainingDays: WEEK.filter((weekday) => on.has(weekday)), reviewed: false };
 }
 
 export type BirthYearProblem = 'missing' | 'not_a_year' | 'too_young';
@@ -110,6 +116,8 @@ export function stepComplete(step: Step | RetiredStep, draft: Draft, system: Uni
       return draft.programChoice !== null;
     case 'ownProgram':
       return draft.ownProgram !== null;
+    case 'review':
+      return draft.ownProgram !== null && draft.reviewed;
     case 'days':
       return draft.trainingDays.length > 0;
     case 'consent':

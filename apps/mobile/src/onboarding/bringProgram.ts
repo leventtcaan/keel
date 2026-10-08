@@ -1,35 +1,40 @@
 /**
- * Sending the program the user confirmed (K-968, ADR-073 #1): PUT /v1/program keeps it as their own (OWN), replacing any
- * before it, and answers with the program as kept, its review on it. A failure is named, never what was in it (V3):
- * NoConnection (no answer), ProgramRefused (the server's no). Nothing is kept on the phone: the same program can go again.
+ * The program the user brings, on the server (K-968, ADR-073 #1-#3). The own moves a confirmed program names are made
+ * first; PUT /v1/program then keeps the program as their own (OWN), replacing any before it, and answers with it as kept,
+ * its review on it. The review is read on its own when that answer has none; the suggestions the user keeps on are
+ * applied by the review they came from. A failure is named, never what was in it (V3): NoConnection (no answer),
+ * ReviewStale (409: the program changed since that review, nothing applied), Refused (the server's no),
+ * ProgramIncomplete (a move without its id). Nothing is kept on the phone: the same request can go again.
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 
 type Schemas = components['schemas'];
+type Answer<T> = { data?: T; response: Response };
 
-const named = (name: 'NoConnection' | 'ProgramRefused' | 'ProgramIncomplete', message: string) => Object.assign(new Error(message), { name });
+const named = (name: 'NoConnection' | 'ReviewStale' | 'Refused' | 'ProgramIncomplete', message: string) =>
+  Object.assign(new Error(message), { name });
+
+async function answered<T>(what: string, request: () => Promise<Answer<T>>): Promise<T> {
+  let answer;
+  try {
+    answer = await request();
+  } catch {
+    throw named('NoConnection', `${what}: no answer`);
+  }
+  if (answer.data !== undefined) return answer.data;
+  const status = answer.response.status;
+  throw status === 409 ? named('ReviewStale', `${what}: the program changed`) : named('Refused', `${what} refused: HTTP ${status}`);
+}
 
 /**
  * The user's own moves a confirmed program names, made on the server one after another, in order (POST
  * /v1/custom-exercises). Each keeps the clientId it was answered with: sent again after a failure, the server answers
  * with the move it kept the first time (ADR-024).
  */
-export async function sendOwnMoves(
-  api: Pick<ApiClient, 'POST'>,
-  moves: Schemas['NewCustomExercise'][],
-): Promise<Schemas['CustomExercise'][]> {
+export async function sendOwnMoves(api: Pick<ApiClient, 'POST'>, moves: Schemas['NewCustomExercise'][]): Promise<Schemas['CustomExercise'][]> {
   const kept: Schemas['CustomExercise'][] = [];
-  for (const body of moves) {
-    let answer;
-    try {
-      answer = await api.POST('/v1/custom-exercises', { body });
-    } catch {
-      throw named('NoConnection', 'own move: no answer');
-    }
-    if (answer.data === undefined) throw named('ProgramRefused', `own move refused: HTTP ${answer.response.status}`);
-    kept.push(answer.data);
-  }
+  for (const body of moves) kept.push(await answered('own move', () => api.POST('/v1/custom-exercises', { body })));
   return kept;
 }
 
@@ -51,13 +56,18 @@ export async function sendWithOwnMoves(
   return sendOwnProgram(api, body);
 }
 
-export async function sendOwnProgram(api: Pick<ApiClient, 'PUT'>, body: Schemas['OwnProgram']): Promise<Schemas['Program']> {
-  let answer;
-  try {
-    answer = await api.PUT('/v1/program', { body });
-  } catch {
-    throw named('NoConnection', 'own program: no answer');
-  }
-  if (answer.data === undefined) throw named('ProgramRefused', `own program refused: HTTP ${answer.response.status}`);
-  return answer.data;
+export function sendOwnProgram(api: Pick<ApiClient, 'PUT'>, body: Schemas['OwnProgram']): Promise<Schemas['Program']> {
+  return answered('own program', () => api.PUT('/v1/program', { body }));
+}
+
+export function readProgram(api: Pick<ApiClient, 'GET'>): Promise<Schemas['Program']> {
+  return answered('program', () => api.GET('/v1/program'));
+}
+
+export function readReview(api: Pick<ApiClient, 'GET'>): Promise<Schemas['ProgramReview']> {
+  return answered('program review', () => api.GET('/v1/program/review'));
+}
+
+export function applyReview(api: Pick<ApiClient, 'POST'>, reviewId: string, suggestionIds: string[]): Promise<Schemas['Program']> {
+  return answered('review apply', () => api.POST('/v1/program/review/apply', { body: { reviewId, suggestionIds } }));
 }
