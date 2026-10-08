@@ -3512,7 +3512,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-955]
     why: "ADR-073 #3-#4: kullanıcı önerileri tek tek seçer; Antrenman sekmesinde 'N changes applied · Undo'; düzenlemede inceleme yeniden koşar"
     acceptance:
@@ -3566,7 +3566,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-958]
     why: "ADR-074 #3-#6: kardiyo plana girer, kullanıcı değiştirir, kaydedilir; kalori yalnız Apple Watch ölçümü"
     acceptance:
