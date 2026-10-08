@@ -4595,3 +4595,19 @@ tasks:
     tests: ["ProgramStore/servis tablo testleri (hedef korunur, kaynak korunur, geri al), API testleri (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
     learn: ["Bütün değiştirme ile kimlikli düzenleme farkı"]
+
+  - id: K-996
+    title: "Üretilmiş günün adı sunucunun nameKey'inden (çift önek: '[missing: programDays.programDays…]')"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "Simülatör düzeneği (9 Eki): sunucu `nameKey: programDays.upper_a.name` gönderiyor (sözleşme metni ve ProgramGeneratorTests), telefon `programDays.${nameKey}.name` kuruyor; her üretilmiş gün adı eksik anahtar. Telefon testleri kısa anahtar ('upper_a') kullandığı için M4'ten beri yakalanmadı"
+    acceptance:
+      - "Telefon üretilmiş günün adını `t(nameKey)` ile yazar (Antrenman, Bu hafta, onboarding planı, seans); kendi gününde `name`"
+      - "Test fikstürleri sözleşmenin şekliyle (tam anahtar); kısa anahtar kalan fikstür yok"
+    tests: ["dayName birim testi tam anahtarla; ekran testleri"]
+    refs: ["contracts/openapi.yaml", "backend/src/main/java/app/keel/training/ProgramTemplates.java"]
+    learn: ["Fikstürün sözleşmeden sapması"]
