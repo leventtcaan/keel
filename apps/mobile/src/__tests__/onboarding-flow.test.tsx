@@ -103,6 +103,7 @@ const mockTurnOn = jest.fn(async () => {
   mockReminderListeners.forEach((listener) => listener());
   return { granted: true, canAskAgain: false };
 });
+const mockKeepPreview = jest.fn();
 const mockTurnOff = jest.fn(async () => {
   mockReminderSettings = { enabled: false, cue: '' };
   mockReminderListeners.forEach((listener) => listener());
@@ -161,6 +162,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     },
     state: { keep: async () => {} }, // Today keeps the state it read, for the reminders (K-518)
     opens: { previous: async () => null }, // Today counts its open (K-521)
+    planPreviews: { keep: mockKeepPreview }, // the plan handed to the paywall after it (K-967)
   }),
 }));
 
@@ -1115,6 +1117,22 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
   test('declined: no first call on the plan', async () => {
     await toPlan({ experience: 'NEW' });
     expect(screen.queryByText(t('onboarding.plan.firstCall'))).toBeNull();
+  });
+
+  test('Continue hands the plan to the paywall after it: its days, its first workout, its first call', async () => {
+    await toPlan({ experience: 'NEW', allow: true });
+    mockKeepPreview.mockClear();
+    await press(t('onboarding.continue'));
+    // On the pinned Wednesday: today's workout, Monday's call.
+    expect(mockKeepPreview).toHaveBeenCalledWith({ own: false, days: 3, firstWorkout: 'WEDNESDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY' });
+    // Kept before onboarding ends: the paywall that replaces the plan reads it as it opens.
+    expect(mockKeepPreview.mock.invocationCallOrder[0]).toBeLessThan(mockProfile.finish.mock.invocationCallOrder[0]);
+  });
+
+  test('without the health data consent the paywall names no first call either', async () => {
+    await toPlan({ experience: 'NEW' });
+    await press(t('onboarding.continue'));
+    expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ firstCall: null }));
   });
 
   test('Monday morning: the switch turns on the check-in morning reminder alone, through the service Settings uses, and off again', async () => {

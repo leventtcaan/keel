@@ -42,7 +42,7 @@ const daysWords = (days: Schemas['Weekday'][]) =>
 export default function PlanScreen() {
   const { color } = useTheme();
   const units = useUnits();
-  const { profile, report } = useAppServices();
+  const { profile, report, planPreviews } = useAppServices();
   const { progress } = useDraft();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem, occurrence] = useProblem();
@@ -69,6 +69,14 @@ export default function PlanScreen() {
     leaving.current = true;
     setBusy(true);
     setProblem(null);
+    // First: the paywall that takes this screen's place reads it as it opens.
+    planPreviews.keep({
+      own: program.source === 'OWN',
+      days: schedule.trainingDays.length,
+      firstWorkout: workout.day.weekday ?? null,
+      firstCall: consented ? call.day : null,
+      checkInDay: schedule.checkInDay,
+    });
     try {
       await profile.finish();
     } catch (error) {

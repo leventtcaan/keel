@@ -7,14 +7,18 @@ import { Button } from '@/components/Button';
 import { OptionCard } from '@/components/OptionCard';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { onboardingParams } from '@/onboarding/params';
 import { useAppServices } from '@/services/ServicesProvider';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
 import type { Plan } from '@/subscription/store';
 import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
-import { paywallWords, planWords } from '@/subscription/words';
+import { type PlanPreview } from '@/subscription/planPreview';
+import { PlanPreviewCard } from '@/subscription/PlanPreviewCard';
+import { paywallTimeline, paywallWords, planWords } from '@/subscription/words';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { localDay } from '@/today/today';
 
 /** A line under the plans: what came of the last thing tried. */
 type Note = 'pending' | 'purchaseFailed' | 'restoreWaiting' | 'restoreFailed';
@@ -39,16 +43,20 @@ type Props = {
    */
   required?: boolean;
   onActive?: () => void;
+  /** The plan just shown at the end of onboarding (#ob-plan): its preview, and the first call on the timeline (K-967). */
+  preview?: PlanPreview | null;
 };
 
 /**
- * The paywall (K-702, prototype 1.11, ADR-057). The store's plans, annual chosen first, each with the store's price (K2);
- * the chosen plan's terms — the trial only for someone who can have it (Apple 3.1.2) — and its button. Bought, the server is
+ * The paywall (K-702, prototype #paywall, ADR-057, ADR-072 #7). The plan just shown, when there is one; three values; the
+ * timeline — today, the first call, the reminder, the charge — for the chosen plan, the trial as long as the store's offer;
+ * the store's plans, annual chosen first, each with the store's price (K2); the chosen plan's terms in full — the trial only
+ * for someone who can have it (Apple 3.1.2) — and its button. Bought, the server is
  * asked until it sees it (D2): subscribed, or "it can take a minute" with a way to look again — never a second purchase.
  * Restore is always offered; so are the legal links set in the build and a way out. Opened only when the user asks
  * (D5): from a feature that needs it, or Settings.
  */
-export function Paywall({ required = false, onActive }: Props) {
+export function Paywall({ required = false, onActive, preview = null }: Props) {
   const { api, purchases, report } = useAppServices();
   const { color } = useTheme();
   const [step, setStep] = useState<Step>({ at: 'loading' });
@@ -159,10 +167,25 @@ export function Paywall({ required = false, onActive }: Props) {
           {links.map((link) => linkButton(link.key, link.url, report))}
         </View>
       );
+    const timeline = paywallTimeline(chosen, { today: localDay(new Date()), firstCall: preview?.firstCall ?? null });
+    const callDay = t(`onboarding.schedule.dayName.${preview?.checkInDay ?? onboardingParams.checkInDay}`);
     body = (
       <View style={styles.part}>
+        {preview !== null && <PlanPreviewCard preview={preview} />}
         <ScreenTitle>{words.title}</ScreenTitle>
-        {text(t('subscription.includes'), 'textSecondary')}
+        <View style={styles.values}>
+          {text(t(preview?.own === true ? 'subscription.values.own' : 'subscription.values.built'))}
+          {text(t('subscription.values.sets'))}
+          {text(t('subscription.values.call', { day: callDay }))}
+        </View>
+        <View accessibilityLabel={t('subscription.timeline.label')} style={styles.timeline}>
+          {timeline.map((row) => (
+            <View key={`${row.day}-${row.words}`} style={[styles.row, { borderLeftColor: color.accent }]}>
+              <Text style={[styles.when, { color: color.text }]}>{row.when}</Text>
+              <Text style={[styles.small, { color: color.textSecondary }]}>{row.words}</Text>
+            </View>
+          ))}
+        </View>
         <View accessibilityRole="radiogroup" style={styles.plans}>
           {step.plans.map((plan) => {
             const { title, body: price } = planWords(plan);
@@ -177,9 +200,10 @@ export function Paywall({ required = false, onActive }: Props) {
             );
           })}
         </View>
-        <View style={styles.terms}>{words.terms.map((line) => <Text key={line} style={[styles.small, { color: color.textSecondary }]}>{line}</Text>)}</View>
         {step.note !== null && text(t(`subscription.${step.note}`))}
         {buying ? text(t('subscription.buying'), 'muted') : <Button label={words.action} disabled={step.busy !== null} onPress={() => void buy(chosen.id)} />}
+        {/* The full terms under the button (Apple 3.1.2): the timeline above says them in short. */}
+        <View style={styles.terms}>{words.terms.map((line) => <Text key={line} style={[styles.small, { color: color.textSecondary }]}>{line}</Text>)}</View>
         <Button label={t('subscription.restore')} variant="ghost" disabled={step.busy !== null} onPress={() => void restore()} />
         {legal}
       </View>
@@ -209,6 +233,10 @@ const styles = StyleSheet.create({
   part: { gap: tokens.space.md },
   plans: { gap: tokens.space.sm },
   terms: { gap: tokens.space.xs },
+  values: { gap: tokens.space.xs },
+  timeline: { gap: tokens.space.sm },
+  row: { borderLeftWidth: tokens.border.ring, paddingLeft: tokens.space.sm, gap: tokens.space.xs },
+  when: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

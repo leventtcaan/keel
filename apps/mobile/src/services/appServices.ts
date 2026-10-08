@@ -18,6 +18,7 @@ import { type SessionManager, type SessionStorage, createSessionManager, refresh
 import { type StateService, createStateService } from '@/state/stateService';
 import { type SubscriptionGate, createSubscriptionGate } from '@/subscription/gate';
 import type { LegalLink } from '@/subscription/links';
+import { type PlanPreviews, createPlanPreviews } from '@/subscription/planPreview';
 import { type TrialReminder, createTrialReminder } from '@/subscription/trialReminder';
 import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
@@ -134,6 +135,8 @@ export type AppServices = {
   gate: SubscriptionGate;
   /** The trial reminder the user asked for (K-707): a billing notice under its own id, on this phone only. */
   trialReminder: TrialReminder;
+  /** The plan just shown at the end of onboarding, for the paywall after it (K-967): in memory only. */
+  planPreviews: PlanPreviews;
 };
 
 export async function createAppServices({
@@ -185,6 +188,7 @@ export async function createAppServices({
   const photos = createPhotoLibrary(photoFiles);
   // iOS is asked only on the user's tap ("Remind me before it ends"), through the reminders' own access.
   const trialReminder = createTrialReminder({ kv, alerts, ask: () => notifications.request(), now });
+  const planPreviews = createPlanPreviews();
   // Each answer the gate reads (every start, every sign-in) lets the trial reminder follow it: a trial cancelled anywhere —
   // in Apple's sheet, in iOS Settings — loses its reminder at the next start (K-707 review).
   const gate = await createSubscriptionGate({ kv, api, purchases, links, report, onRead: (read) => void trialReminder.keep(read).catch(reportName) });
@@ -255,6 +259,7 @@ export async function createAppServices({
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
+    planPreviews.forget(); // and the plan just shown, kept in memory for the paywall (K-967)
     gate.forget().catch(reportError); // and whether this account met the paywall: the next one is asked afresh (K-706)
     photoCache.clear().catch(reportError); // and a meal photo's files a read cut short left in the cache (K-811, V1)
     purchases.forget().catch(reportError); // and the App Store's account: the next person's purchases are not this account's (K-702)
@@ -281,6 +286,7 @@ export async function createAppServices({
     purchases,
     gate,
     trialReminder,
+    planPreviews,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     healthWriting,

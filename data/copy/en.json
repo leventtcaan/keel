@@ -1861,7 +1861,6 @@
     "seePlans": "See plans",
     "title": "Subscribe",
     "titleTrial": "Try it free for {trial}",
-    "includes": "A subscription lets the coach answer your questions and read meals from your words and photos. Your log, your weekly call and its reasons work with or without one.",
     "plan": {
       "annual": "Yearly",
       "monthly": "Monthly",
@@ -1890,6 +1889,34 @@
       "year": "1 year"
     },
     "today": "Today: full access, nothing charged.",
+    "timeline": {
+      "label": "What happens when",
+      "today": "Today",
+      "free": "No charge.",
+      "firstCall": "Your first call.",
+      "reminder": "A reminder, if you want one.",
+      "charge": {
+        "annual": "{price} a year starts, unless you cancel.",
+        "monthly": "{price} a month starts, unless you cancel."
+      },
+      "chargedToday": {
+        "annual": "{price} a year, charged today.",
+        "monthly": "{price} a month, charged today."
+      }
+    },
+    "values": {
+      "built": "Program built for your days",
+      "own": "Your program, tuned",
+      "sets": "Weight and reps for every set",
+      "call": "A {day} call, with the reason"
+    },
+    "preview": {
+      "label": "Your plan",
+      "program": "{count} days a week",
+      "firstWorkout": "First workout {day}",
+      "firstCall": "First call",
+      "reason": "With the reason"
+    },
     "after": {
       "annual": "When the trial ends: {price} a year, renewing every year until you cancel.",
       "monthly": "When the trial ends: {price} a month, renewing every month until you cancel."

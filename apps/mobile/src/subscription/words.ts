@@ -4,6 +4,7 @@
  * cancel. Every word from the copy; every price the store's own string (K2).
  */
 import { t } from '@/copy';
+import { weekdayDate } from '@/today/today';
 
 import { subscriptionParams } from './params';
 import type { Plan } from './store';
@@ -50,4 +51,39 @@ export function paywallWords(plan: Plan): { title: string; terms: string[]; acti
     ],
     action: t('subscription.startTrial'),
   };
+}
+
+/** One line of the timeline: its day (YYYY-MM-DD), when it is said to be, and what happens then. */
+export type TimelineRow = { day: string; when: string; words: string };
+
+/** A calendar day so many days, weeks, months or years on (read as a date only: no time zone moves it). */
+function after(day: string, count: number, unit: NonNullable<Plan['trial']>['unit']): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  if (unit === 'day' || unit === 'week') date.setUTCDate(date.getUTCDate() + count * (unit === 'week' ? DAYS_A_WEEK : 1));
+  else if (unit === 'month') date.setUTCMonth(date.getUTCMonth() + count);
+  else date.setUTCFullYear(date.getUTCFullYear() + count);
+  return date.toISOString().slice(0, 10);
+}
+const DAYS_A_WEEK = 7;
+
+/**
+ * The timeline (ADR-072 #7, ADR-058 Ek 1; prototype `.tl`): today nothing charged · the first call · the reminder before
+ * the trial ends, if wanted · the day it charges — in the order their days come, the trial as long as the store's offer.
+ * Without an offer, today it charges. The first call only when there is one to name; the reminder only when it would come
+ * after today. `today` and `firstCall` are days on the user's calendar. Short words: the full terms stay under the button
+ * (paywallWords, Apple 3.1.2).
+ */
+export function paywallTimeline(plan: Plan, { today, firstCall }: { today: string; firstCall: string | null }): TimelineRow[] {
+  const at = (day: string, words: string): TimelineRow => ({ day, when: day === today ? t('subscription.timeline.today') : weekdayDate(day), words });
+  const price = { price: plan.price };
+  const rows = [at(today, plan.trial === null ? t(`subscription.timeline.chargedToday.${plan.period}`, price) : t('subscription.timeline.free'))];
+  if (firstCall !== null) rows.push(at(firstCall, t('subscription.timeline.firstCall')));
+  if (plan.trial !== null) {
+    const ends = after(today, plan.trial.count, plan.trial.unit);
+    const reminder = after(ends, -subscriptionParams.trialReminderDaysBefore, 'day');
+    if (reminder > today) rows.push(at(reminder, t('subscription.timeline.reminder')));
+    rows.push(at(ends, t(`subscription.timeline.charge.${plan.period}`, price)));
+  }
+  // Stable: on one day, the first call comes before the charge.
+  return rows.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
 }

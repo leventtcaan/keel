@@ -9,7 +9,10 @@ import SubscribeScreen from '@/app/subscribe';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import type { GateState } from '@/subscription/gate';
+import type { PlanPreview } from '@/subscription/planPreview';
 import type { Plan, SubscriptionStore } from '@/subscription/store';
+import { paywallTimeline } from '@/subscription/words';
+import { localDay, weekdayDate } from '@/today/today';
 import { ThemeProvider } from '@/theme/theme';
 
 type Subscription = components['schemas']['Subscription'];
@@ -46,7 +49,10 @@ const mockServices = {
   signOut: jest.fn(async () => {}),
   pendingCount: jest.fn(async () => 0),
   photos: { photos: jest.fn(async () => []) },
+  // The plan just shown at the end of onboarding (K-967); none when the gate is met later.
+  planPreviews: { current: () => mockPreview, keep: () => {}, forget: () => {} },
 };
+let mockPreview: PlanPreview | null = null;
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useSubscriptionGate: () => mockGateState,
@@ -66,6 +72,7 @@ beforeEach(() => {
   mockAnswers = [ok(NONE)];
   mockGateState = 'required';
   mockAnswered = true;
+  mockPreview = null;
 });
 
 async function show() {
@@ -163,4 +170,55 @@ test('not known, and no answer: says so, and asks again on request — the gate 
   mockAnswered = true;
   await press(t('subscription.tryAgain'));
   expect(mockGate.refresh).toHaveBeenCalledTimes(2);
+});
+
+describe('#paywall after the plan (ADR-072 #7)', () => {
+  const FIRST_CALL = '2026-10-19';
+  const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: FIRST_CALL, checkInDay: 'MONDAY' };
+
+  test('the plan just shown, in brief: how many days, the first workout, the first call with the reason', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    expect(screen.getByText(t('subscription.preview.program', { count: 3 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.preview.firstWorkout', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.preview.reason'))).toBeOnTheScreen();
+    expect(screen.getAllByText(weekdayDate(FIRST_CALL)).length).toBeGreaterThan(0);
+  });
+
+  test('three values: the program for the days (or the own program, tuned), every set\'s weight and reps, the weekly call', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    for (const key of ['subscription.values.built', 'subscription.values.sets']) expect(screen.getByText(t(key))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    await screen.unmount();
+    mockPreview = { ...PREVIEW, own: true };
+    await show();
+    expect(screen.getByText(t('subscription.values.own'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('subscription.values.built'))).toBeNull();
+  });
+
+  test('the timeline with the store\'s trial: today, the first call, the reminder, the charge, each on its day', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    const today = localDay(new Date());
+    const timeline = paywallTimeline(PLANS[0], { today, firstCall: FIRST_CALL });
+    expect(timeline).toHaveLength(4);
+    for (const row of timeline) {
+      expect(screen.getAllByText(row.when).length).toBeGreaterThan(0);
+      expect(screen.getByText(row.words)).toBeOnTheScreen();
+    }
+  });
+
+  test('met later, with no plan just shown: no preview, and no first call on the timeline', async () => {
+    await show();
+    expect(screen.queryByText(t('subscription.preview.reason'))).toBeNull();
+    expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
+    expect(screen.getByText(t('subscription.values.sets'))).toBeOnTheScreen();
+  });
+
+  test('no first call without the health data consent: none on the timeline', async () => {
+    mockPreview = { ...PREVIEW, firstCall: null };
+    await show();
+    expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
+  });
 });
