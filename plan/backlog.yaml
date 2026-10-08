@@ -4496,7 +4496,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-968]
     why: "Levent (8 Eki, kullanıcı yürüyüşü): kendi programını yazan 5×5 giremiyor; sözleşme ve çift ilerleme aralık istiyor (min < max)"
     acceptance:
