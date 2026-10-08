@@ -205,7 +205,7 @@ testi: seçenekler salon ekipmanıyla süzülür.
 - **Diğer yerler, sabit hedefte:** başlangıç ağırlığı kuralı aynı (aralığın altı `starting_weight_reps`'ten büyük değilse hedef: 8 kez kaldırılan
   yük 5×5'i başlatır, 10×10'u başlatmaz) · seans içi tablo (hafif/ağır, kalibrasyon) aralığı okumaz; "bütün setler tepede" sonraki yükü sabit
   tekrarda bütün setler o tekrarda demektir · tutulan hedef (K-110) sabit tekrarda gösterilir · ilerleme efor satırları (STUCK, EASIER,
-  REPS_RISING) aralığı okumaz · Antrenman satırı "5 reps" yazar, "5-5" değil (`train.repsFixed`).
+  REPS_RISING) aralığı okumaz · tekrarı yazan her yer (Antrenman satırı, plan, içe aktarma taslağı, düzenleyici) tek yardımcıdan geçer (`apps/mobile/src/train/reps.ts`): "5 reps", "3 × 5", "5-5" değil.
 - **Program incelemesi:** sabit hedef her aralık gibi K-21'e göre okunur. Bileşikte 6-10 dışındaysa (5×5) öneri çıkar (6-10'a), kullanıcı kapatır;
   içindeyse (8×8, izolasyonda 10×10) bulgu yok. Neden: K-21 tekrar **sayısını** söyler (düşük tekrar eklemi ve tendonu zorlar), aralığın
   genişliğini değil; sabit oluşu kendi başına bulgu değil. Reddedilen: sabit hedefi hep işaretlemek (dayatma, ADR-073 sürücüsü) · 6-10 dışını

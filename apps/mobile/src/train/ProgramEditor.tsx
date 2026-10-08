@@ -17,6 +17,7 @@ import { findMoves } from './moves';
 import { OwnMoveForm, type SaveOutcome } from './OwnMoveForm';
 import { workoutParams as P } from './params';
 import { exerciseName } from './program';
+import { repsText } from './reps';
 import {
   type EditedDay,
   type EditedMove,
@@ -375,11 +376,11 @@ function AddMoveSheet({ day, moves, byId, makeOwn, onAdd, onClose }: SheetProps)
         <Pressable
           key={m.id}
           accessibilityRole="button"
-          accessibilityLabel={t('programEditor.pickLabel', { name: exerciseName(m.id, byId), range: t('programEditor.range', P.programNewMoveReps[m.kind]) })}
+          accessibilityLabel={t('programEditor.pickLabel', { name: exerciseName(m.id, byId), range: repsText(P.programNewMoveReps[m.kind]) })}
           onPress={() => onAdd(m)}
           style={styles.found}>
           <Text style={[styles.name, { color: color.text }]}>{exerciseName(m.id, byId)}</Text>
-          <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.range', P.programNewMoveReps[m.kind])}</Text>
+          <Text style={[styles.small, { color: color.muted }]}>{repsText(P.programNewMoveReps[m.kind])}</Text>
         </Pressable>
       ))}
       {none}

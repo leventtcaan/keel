@@ -16,6 +16,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { exerciseName } from '@/train/program';
+import { repsText } from '@/train/reps';
 import type { Move } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -189,13 +190,7 @@ type DayProps = {
 function Day({ day, matched, moves, byId, pending, onPick, onLeaveOut, onOwnAnswered, onChangeOwn }: DayProps) {
   const { color } = useTheme();
   const weekday = day.weekday === undefined ? t('onboarding.programImport.anyDay') : t(`onboarding.schedule.dayName.${day.weekday}`);
-  // A fixed rep target (min = max, K-991) is said as its reps, not "5-5".
-  const line = ({ sets, reps: { min, max } }: DraftMove) =>
-    min !== max
-      ? t('onboarding.programImport.move', { sets, min, max })
-      : min === 1
-        ? t('onboarding.programImport.moveFixed.one', { sets })
-        : t('onboarding.programImport.moveFixed.other', { sets, count: min });
+  const line = (move: DraftMove) => t('onboarding.programImport.move', { sets: move.sets, reps: repsText(move.reps) });
   return (
     <View style={[styles.day, { borderColor: color.line }]}>
       <View style={styles.dayHead}>

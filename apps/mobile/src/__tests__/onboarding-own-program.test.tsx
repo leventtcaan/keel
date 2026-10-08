@@ -289,10 +289,10 @@ describe('the import: a draft, read on this phone', () => {
     expect(screen.getByText(t('onboarding.schedule.dayName.THURSDAY'))).toBeOnTheScreen();
     expect(screen.getByText(t('onboarding.programImport.summary', { app: 'Strong', days: 2, moves: 5 }))).toBeOnTheScreen();
     expect(screen.getByText(name('barbell_row'))).toBeOnTheScreen();
-    expect(screen.getByText(t('onboarding.programImport.move', { sets: 4, min: 7, max: 9 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.programImport.move', { sets: 4, reps: t('train.reps.other', { reps: t('format.range', { low: 7, high: 9 }) }) }))).toBeOnTheScreen();
     expect(screen.getByText(name('squat'))).toBeOnTheScreen();
     // Always 5 reps: a fixed target, said as its reps, not "5-5" (K-991).
-    expect(screen.getByText(t('onboarding.programImport.moveFixed.other', { sets: 3, count: 5 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.programImport.move', { sets: 3, reps: t('train.reps.other', { reps: '5' }) }))).toBeOnTheScreen();
     // A routine done once (Arms) is no day.
     expect(screen.queryByText('Arms')).toBeNull();
     expect(mockApi.PUT).not.toHaveBeenCalled();

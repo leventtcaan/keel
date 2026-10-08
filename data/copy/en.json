@@ -243,10 +243,9 @@
       "other": "{count} sets",
       "lighter": "{sets} of {base} sets"
     },
-    "reps": "{min}-{max} reps",
-    "repsFixed": {
+    "reps": {
       "one": "1 rep",
-      "other": "{count} reps"
+      "other": "{reps} reps"
     },
     "next": "Next {load} × {reps}",
     "nextAdded": "Next +{load} × {reps}",
@@ -1638,11 +1637,7 @@
       "changeLabel": "Change what {name} is",
       "summary": "From {app} · days: {days} · moves: {moves}",
       "anyDay": "No set day",
-      "move": "{sets} × {min}-{max} reps",
-      "moveFixed": {
-        "one": "{sets} × 1 rep",
-        "other": "{sets} × {count} reps"
-      },
+      "move": "{sets} × {reps}",
       "unmatched": "Not in our moves. Pick one, make it your own, or leave it out.",
       "leaveOut": "Leave out",
       "leaveOutLabel": "Leave {name} out of the program",
@@ -1829,7 +1824,7 @@
       "firstWorkout": "{day} · first workout",
       "today": "Today",
       "findsWeights": "Session 1 finds your weights",
-      "setsReps": "{sets} × {min}-{max}",
+      "setsReps": "{sets} × {reps}",
       "cardio": "Cardio",
       "cardioDose": "{sessions} × {minutes} min",
       "cardioAfter": "Easy pace, after your weights.",
@@ -2365,7 +2360,6 @@
     "sheetTo": "To {day}. {sets} sets to start; change them after.",
     "search": "Search moves",
     "pickLabel": "Add {name}, {range}",
-    "range": "{min}-{max} reps",
     "none": "No move by that name. Add it as your own.",
     "addOwn": "Add my own move",
     "close": "Close",

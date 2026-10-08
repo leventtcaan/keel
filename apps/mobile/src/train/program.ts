@@ -5,6 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import { has, t } from '@/copy';
+import { repsText } from '@/train/reps';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
 import type { Move } from './trainData';
@@ -53,11 +54,9 @@ export function setsLine(planned: Schemas['PlannedExercise']): string {
   return planned.sets === 1 ? t('train.sets.one') : t('train.sets.other', { count: planned.sets });
 }
 
-/** The planned reps: a range, or a fixed rep target (min = max, K-991) as its reps. */
+/** The planned reps: a range, or a fixed rep target (min = max, K-991) as its reps (repsText). */
 export function repsLine(planned: Schemas['PlannedExercise']): string {
-  const { min, max } = planned.reps;
-  if (min !== max) return t('train.reps', { min, max });
-  return min === 1 ? t('train.repsFixed.one') : t('train.repsFixed.other', { count: min });
+  return repsText(planned.reps);
 }
 
 /** The next session's target as the server set it; an added load (a weighted dip) with its plus. None until known. */
