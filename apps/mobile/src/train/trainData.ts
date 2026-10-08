@@ -144,6 +144,16 @@ export function createTrainingCache(kv: KeyValue, onProgram?: (program: Schemas[
       const read = await load(() => api.GET('/v1/custom-exercises')).then((answer) => withCopy(OWN, answer, startedIn));
       return read.read.state === 'ready' ? read.read.value.map(ownMove) : [];
     },
+    /** The user's own moves as kept on this phone, without asking the server; none kept (or unreadable): null. */
+    async keptOwn(): Promise<Move[] | null> {
+      const copy = await kv.getItemAsync(OWN);
+      if (copy === null) return null;
+      try {
+        return (JSON.parse(copy) as Schemas['CustomExercise'][]).map(ownMove);
+      } catch {
+        return null; // a copy that cannot be read is no copy
+      }
+    },
     /** A move just saved (K-416): kept at once from the server's answer, so the next read offline has it. */
     async saved(move: Schemas['CustomExercise']): Promise<void> {
       const startedIn = generation;

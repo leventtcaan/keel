@@ -169,3 +169,23 @@ describe('the program draft stays within what the contract takes (K-957)', () =>
     expect(workout.find((p) => p.key === key)?.value).toBe(limit('OwnProgram', field, word));
   });
 });
+
+describe('the starting weights ask about moves every built program has (K-967, ADR-072 #5)', () => {
+  const onboarding = (JSON.parse(fs.readFileSync(path.join(DIR, 'onboarding.json'), 'utf8')) as { parameters: Parameter[] })
+    .parameters;
+  const moves = onboarding.find((p) => p.key === 'starting_weight_moves')?.value as string[];
+  const dayCounts = Object.keys(onboarding.find((p) => p.key === 'default_day_sets')?.value as Record<string, unknown>);
+
+  test('three moves', () => {
+    expect(moves).toHaveLength(3);
+  });
+
+  test.each(dayCounts)('each is in the %s-day template the onboarding can build', (count) => {
+    const template = fs.readFileSync(path.join(ROOT, `data/programs/${count}-days.yaml`), 'utf8');
+    for (const move of moves) expect(template).toMatch(new RegExp(`exercise: ${move}[,}]`));
+  });
+
+  test('each is a compound move: the only kind whose load the server takes as a first target', () => {
+    for (const move of moves) expect(fs.readFileSync(path.join(ROOT, `data/exercises/${move}.yaml`), 'utf8')).toMatch(/^kind: compound$/m);
+  });
+});

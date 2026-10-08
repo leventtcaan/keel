@@ -8,6 +8,7 @@ import { type UnitSystem, heightCmFromImperial, parseWaistCm, parseWeightKg, rou
 
 import { type RetiredStep, type Step, walk } from './flow';
 import { onboardingParams as P } from './params';
+import type { StartingWeights } from './weights';
 
 type Schemas = components['schemas'];
 export type Weekday = Schemas['Weekday'];
@@ -35,6 +36,8 @@ export type Draft = {
   weight: string;
   waist: string;
   avoid: string;
+  /** The starting weights set, in kg by move (weights.ts); a move not here is skipped (ADR-072 #5). */
+  startingWeights: StartingWeights;
   ids: { weighIn: string; waist: string };
   /**
    * The program the user brought in, as the server kept it (PUT /v1/program, K-968) and as the review left it; its review
@@ -58,6 +61,7 @@ export const emptyDraft: Draft = {
   weight: '',
   waist: '',
   avoid: '',
+  startingWeights: {},
   ids: { weighIn: '', waist: '' },
   ownProgram: null,
   reviewed: false,
@@ -131,6 +135,9 @@ export function stepComplete(step: Step | RetiredStep, draft: Draft, system: Uni
       );
     case 'activity':
       return draft.activityLevel !== null;
+    case 'weights':
+      // Continue sends the weights set; with none, the step's own "Skip" goes on (each move skippable, ADR-072 #5).
+      return Object.keys(draft.startingWeights).length > 0;
     case 'foods':
     case 'photos':
     case 'expectations':
@@ -160,9 +167,18 @@ export function startingWaistCm(typed: string, system: UnitSystem): number | nul
 
 type Context = { units: UnitSystem; timeZone: string; thisYear: number };
 
+/** The steps a profile needs left unanswered; the starting weights go to the program, not the profile, and may all be skipped. */
+const unanswered = (draft: Draft, units: UnitSystem, thisYear: number) =>
+  walk(draft).find((step) => step !== 'weights' && !stepComplete(step, draft, units, thisYear));
+
+/** Whether the walk's answers make a profile (the plan can be prepared on them). */
+export function profileReady(draft: Draft, units: UnitSystem, thisYear: number): boolean {
+  return unanswered(draft, units, thisYear) === undefined;
+}
+
 /** The profile to PUT. Throws on a draft that is not complete: the screens only offer "finish" once it is. */
 export function toProfile(draft: Draft, { units, timeZone, thisYear }: Context): Profile {
-  const incomplete = walk(draft).find((step) => !stepComplete(step, draft, units, thisYear));
+  const incomplete = unanswered(draft, units, thisYear);
   if (incomplete !== undefined) throw new Error(`onboarding step ${incomplete} is not complete`);
   // Checked by stepComplete above; the non-null reads below cannot fail. Last month's sessions and a usual time are no
   // longer asked, so none goes out (ADR-072 #4).

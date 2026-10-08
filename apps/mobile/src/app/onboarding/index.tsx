@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -9,11 +10,17 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
+/** The walk's first screen; resumed after a restart with the plan still to be seen (K-967), the plan is prepared instead. */
+export default function GoalScreen() {
+  const { resumed } = useDraft();
+  return resumed ? <Redirect href="/onboarding/preparing" /> : <GoalStep />;
+}
+
 /**
  * #ob-goal. "Decide for me" is the recommended answer (ADR-072 #2): the phase is the engine's call either way (K-222), so
  * the other two stay a tap away, never hidden.
  */
-export default function GoalStep() {
+function GoalStep() {
   const { draft } = useDraft();
   const choose = useChoose('goal');
   const { signOut } = useAppServices();

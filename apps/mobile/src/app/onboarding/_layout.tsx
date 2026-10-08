@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router/stack';
 
 import { OnboardingProvider } from '@/onboarding/OnboardingContext';
+import { useAppServices, useOnboarding } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 
 // The onboarding steps (K-306), one screen each, in the order of the route (src/onboarding/flow.ts; the first, goal, is
@@ -10,8 +11,11 @@ export const unstable_settings = { initialRouteName: 'index' };
 
 export default function OnboardingLayout() {
   const { color } = useTheme();
+  const { profile } = useAppServices();
+  // Resumed after a restart with the plan still to be seen (K-967): the plan is prepared on the profile the server holds.
+  const resumed = useOnboarding() === 'resume' ? profile.resumed() : null;
   return (
-    <OnboardingProvider>
+    <OnboardingProvider resumed={resumed}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
         {/* Off the walk (ADR-069 #3, ADR-072 #8; flow.ts RETIRED_STEPS): the code stays, nothing opens them, a link neither. */}
         <Stack.Protected guard={false}>

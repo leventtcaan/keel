@@ -72,7 +72,8 @@ function AppStack() {
       <Stack.Protected guard={signedIn && onboarding === 'done' && gate !== 'open'}>
         <Stack.Screen name="subscribe" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && onboarding === 'needed'}>
+      {/* Not finished, or finished up to the plan before the app was closed (K-967: resumed on the plan). */}
+      <Stack.Protected guard={signedIn && (onboarding === 'needed' || onboarding === 'resume')}>
         <Stack.Screen name="onboarding" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'unknown'}>

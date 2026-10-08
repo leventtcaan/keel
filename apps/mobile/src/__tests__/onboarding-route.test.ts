@@ -44,22 +44,60 @@ describe('the questions of each branch (ADR-072 #2)', () => {
 });
 
 describe('the walk: the screens a user goes through today', () => {
-  test('the new lifter walks every question of the branch, and it ends there: activity saves (K-967 adds what follows)', () => {
+  test('the new lifter walks every question of the branch, and it ends there: the plan is prepared after it (K-967)', () => {
     expect(walk(answers({ experience: 'NEW', programChoice: 'BUILD_ONE_FOR_ME' }))).toEqual([
       'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity',
     ]);
   });
 
-  test('the experienced lifter: the starting weights join with their screen (K-967)', () => {
+  test('the experienced lifter: the starting weights, last (K-967)', () => {
     expect(walk(answers({ experience: 'Y3_PLUS', programChoice: 'BUILD_ONE_FOR_ME' }))).toEqual([
-      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity',
+      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity', 'weights',
     ]);
   });
 
-  test('the own program: brought in and reviewed in place of the days (K-968)', () => {
+  test('the own program: brought in and reviewed in place of the days (K-968), then the starting weights it has moves for (K-967)', () => {
     expect(walk(answers({ experience: 'Y1_3', programChoice: 'BRING_MY_OWN' }))).toEqual([
-      'goal', 'experience', 'program', 'ownProgram', 'review', 'consent', 'about', 'activity',
+      'goal', 'experience', 'program', 'ownProgram', 'review', 'consent', 'about', 'activity', 'weights',
     ]);
+  });
+
+  describe('the own program\'s starting weights: only for the moves it has (K-967 with K-968)', () => {
+    const own = (ids: string[]): NonNullable<Answers['ownProgram']> => ({
+      id: 'p',
+      source: 'OWN',
+      days: [{ id: 'd', name: 'A', exercises: ids.map((exerciseId) => ({ exerciseId, baseSets: 3, sets: 3, reps: { min: 5, max: 8 }, targetRir: 1 })) }],
+    });
+
+    test('brought in with one of the moves asked about: the weights are asked, last', () => {
+      expect(walk(answers({ experience: 'Y1_3', programChoice: 'BRING_MY_OWN', ownProgram: own(['bench_press', 'custom:a']) })).at(-1)).toBe('weights');
+    });
+
+    test('brought in with none of them: no weights step (9 → 8)', () => {
+      const walked = walk(answers({ experience: 'Y1_3', programChoice: 'BRING_MY_OWN', ownProgram: own(['lat_pulldown', 'custom:a']) }));
+      expect(walked).not.toContain('weights');
+      expect(walked).toHaveLength(8);
+    });
+
+    test('a built program is never looked at: the experienced lifter is asked whatever a program brought in earlier had', () => {
+      expect(walk(answers({ experience: 'Y1_3', programChoice: 'BUILD_ONE_FOR_ME', ownProgram: own(['lat_pulldown']) })).at(-1)).toBe('weights');
+    });
+  });
+
+  // The step indicator's totals, written out (K-966 review): a walk that grew or shrank must be seen here, not followed.
+  test.each([
+    ['a new lifter', 'NEW', 'BUILD_ONE_FOR_ME', 7],
+    ['an experienced lifter', 'UNDER_1Y', 'BUILD_ONE_FOR_ME', 8],
+    ['an own program, starting out', 'NEW', 'BRING_MY_OWN', 9],
+    ['an own program, experienced', 'Y3_PLUS', 'BRING_MY_OWN', 9],
+  ] as const)('%s (%s, %s): %i steps', (_, experience, programChoice, steps) => {
+    expect(walk(answers({ experience, programChoice }))).toHaveLength(steps);
+  });
+
+  test('the own program, the longest walk: 9 questions, then preparing, the plan and the paywall: 12 screens (I1 F1)', () => {
+    const own = walk(answers({ experience: 'Y3_PLUS', programChoice: 'BRING_MY_OWN' }));
+    expect(own).toHaveLength(9);
+    expect([...own, 'preparing', 'plan', 'paywall']).toHaveLength(12);
   });
 
   test('every step walked has a screen, and every screen is walked by someone', () => {
@@ -86,8 +124,15 @@ describe('the next step', () => {
     expect(nextStep('consent', answers())).toBe('about');
   });
 
+  test('after activity: the starting weights for the experienced and an own program, none for the new lifter', () => {
+    expect(nextStep('activity', answers({ experience: 'Y1_3', programChoice: 'BUILD_ONE_FOR_ME' }))).toBe('weights');
+    expect(nextStep('activity', answers({ experience: 'NEW', programChoice: 'BRING_MY_OWN' }))).toBe('weights');
+    expect(nextStep('activity', answers({ experience: 'NEW', programChoice: 'BUILD_ONE_FOR_ME' }))).toBeNull();
+  });
+
   test('none after the last step, and none from a step off the walk', () => {
     expect(nextStep('activity', answers())).toBeNull();
+    expect(nextStep('weights', answers({ experience: 'Y3_PLUS', programChoice: 'BUILD_ONE_FOR_ME' }))).toBeNull();
     for (const step of RETIRED_STEPS) expect(nextStep(step, answers())).toBeNull();
   });
 });

@@ -63,10 +63,19 @@ export function RemindersSection() {
   const blocked = permission !== null && !permission.granted && !permission.canAskAgain;
   const muted = { color: color.muted };
 
+  const onlyOne = (
+    <>
+      <Text style={[styles.note, muted]}>{t('settings.reminders.onlyCheckIn')}</Text>
+      <Button label={t('settings.reminders.turnOnAll')} variant="ghost" size="sm" disabled={busy} onPress={turnOn} />
+    </>
+  );
+
   return (
     <Section title={t('settings.reminders.title')}>
       <Text style={[styles.note, muted]}>{t('settings.reminders.what', { minutes: P.trainingLeadMinutes })}</Text>
       {on ? <OnRow busy={busy} onTurnOff={turnOff} /> : blocked ? <Blocked /> : <Button label={t('settings.reminders.turnOn')} disabled={busy} onPress={turnOn} />}
+      {/* Turned on from the plan for the check-in morning alone (K-967): said, and the other two a tap away. */}
+      {on && settings.only !== undefined && onlyOne}
       <TextField
         label={t('settings.reminders.cue.label')}
         value={cue}

@@ -35,6 +35,7 @@ function complete(overrides: Partial<Draft> = {}): Draft {
     healthConsent: 'declined',
     ownProgram: OWN,
     reviewed: true,
+    startingWeights: { squat: 100 },
     ...overrides,
   };
 }
@@ -238,6 +239,11 @@ describe('the profile the draft becomes', () => {
   test('imperial: the height goes in centimetres', () => {
     const imperial = complete({ height: { cm: '', feet: '5', inches: '10' } });
     expect(toProfile(imperial, { ...CONTEXT, units: 'IMPERIAL' })).toMatchObject({ heightCm: 178, units: 'IMPERIAL' });
+  });
+
+  test('the starting weights are not the profile\'s: all skipped, the profile is whole; set, none goes in it (K-967)', () => {
+    expect(() => toProfile(complete({ startingWeights: {} }), CONTEXT)).not.toThrow();
+    expect(JSON.stringify(toProfile(complete(), CONTEXT))).not.toMatch(/squat|starting/i);
   });
 
   test('an incomplete draft is not turned into a profile', () => {

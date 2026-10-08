@@ -6,12 +6,16 @@
  */
 import type { components } from '@/api/schema';
 
+import { onboardingParams as P } from './params';
+
 type Schemas = components['schemas'];
 
 /** The answers the route turns on; the draft carries them (draft.ts). */
 export type Answers = {
   experience: Schemas['Experience'] | null;
   programChoice: Schemas['Profile']['programChoice'] | null;
+  /** The program brought in (K-968): the starting weights are asked only for the moves it has. */
+  ownProgram?: Schemas['Program'] | null;
 };
 
 export type Branch = 'newLifter' | 'experienced' | 'ownProgram';
@@ -47,8 +51,11 @@ export function questionsOf(branch: Branch): readonly Question[] {
   return BRANCHES[branch];
 }
 
-/** The steps that have a screen (each one a route, StepFrame's ROUTES). */
-export const SCREENS = ['goal', 'experience', 'program', 'ownProgram', 'review', 'days', 'consent', 'about', 'activity'] as const;
+/**
+ * The steps that have a screen (each one a route, StepFrame's ROUTES). After the last step of a walk the plan is
+ * prepared and shown (#ob-preparing, #ob-plan): not questions, so not steps of the indicator (prototype `obRoute`).
+ */
+export const SCREENS = ['goal', 'experience', 'program', 'ownProgram', 'review', 'days', 'consent', 'about', 'activity', 'weights'] as const;
 export type Step = (typeof SCREENS)[number];
 
 /**
@@ -60,14 +67,22 @@ export type RetiredStep = (typeof RETIRED_STEPS)[number];
 
 const isStep = (question: Question): question is Question & Step => (SCREENS as readonly string[]).includes(question);
 
-/** A question without its screen yet is asked by the screen that asks it today, or skipped: the starting weights join with K-967. */
+/** A question without its screen is asked by the screen that asks it today, or skipped: every question has its screen now. */
 const STAND_IN: Record<Exclude<Question, Step>, Step | null> = {
-  weights: null,
 };
 
-/** The screens this user goes through, in order. The last one ends the walk (activity saves, until K-967). */
+/** The starting-weight moves to ask about: on an own program brought in, only those it has (none: no weights step). */
+export function startingWeightMoves(answers: Answers): string[] {
+  const own = answers.ownProgram;
+  if (branchOf(answers) !== 'ownProgram' || own === undefined || own === null) return P.startingWeightMoves;
+  const planned = new Set(own.days.flatMap((day) => day.exercises.map((move) => move.exerciseId)));
+  return P.startingWeightMoves.filter((move) => planned.has(move));
+}
+
+/** The screens this user goes through, in order. The last one ends the walk: the plan is prepared next (K-967). */
 export function walk(answers: Answers): Step[] {
   const steps = questionsOf(branchOf(answers)).flatMap((question) => {
+    if (question === 'weights' && startingWeightMoves(answers).length === 0) return [];
     const step = isStep(question) ? question : STAND_IN[question];
     return step === null ? [] : [step];
   });
