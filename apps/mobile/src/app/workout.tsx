@@ -29,8 +29,9 @@ import { findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
 import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
+import { localDay } from '@/today/today';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
-import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise } from '@/train/workout';
+import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
 import { weightInput } from '@/units/units';
 
 /**
@@ -100,16 +101,20 @@ export default function WorkoutScreen() {
   const [held, setHeld] = useState<components['schemas']['NewSet'][]>([]);
   const warmedUp = [...done, ...held];
   const moves = useMemo(() => movesOf(data, own), [data, own]);
-  // The session's moves (K-416): the day's plan, then the moves done in this session outside it (a swap, an extra; read
-  // back from the sets), then the ones added on this screen in the order they were added — a first set does not move
-  // one ahead of the others.
+  // The session's moves (K-416): the day's plan as the week has it today (the short version, today's swaps: the server's
+  // list, K-964), then the moves done in this session outside it (a swap, an extra; read back from the sets), then the
+  // ones added on this screen in the order they were added — a first set does not move one ahead of the others.
   const [added, setAdded] = useState<string[]>([]);
-  const planIds = day?.exercises.map((p) => p.exerciseId) ?? [];
+  // The session's own day: its start's while under way (one begun at 23:30 stays that day's after midnight, K-961),
+  // else today's (until K-995's Program.today says it).
+  const sessionDay = localDay(active === null ? new Date() : new Date(active.startedAt));
+  const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
+  const planIds = today.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
     (id) => !planIds.includes(id) && moves.has(id),
   );
   const entries: { exerciseId: string; planned?: components['schemas']['PlannedExercise'] }[] =
-    day === null ? [] : [...day.exercises.map((p) => ({ exerciseId: p.exerciseId, planned: p })), ...extraIds.map((exerciseId) => ({ exerciseId }))];
+    day === null ? [] : [...today.map((p) => ({ exerciseId: p.exerciseId, planned: p })), ...extraIds.map((exerciseId) => ({ exerciseId }))];
   const plans: (ExercisePlan | null)[] =
     records === null
       ? []
@@ -500,9 +505,9 @@ export default function WorkoutScreen() {
           <ScreenTitle>{day === null ? t('workout.title') : dayName(day)}</ScreenTitle>
           {day !== null && (
             <Text style={[styles.small, { color: color.muted }]}>
-              {day.exercises.length === 1
+              {today.length === 1
                 ? t('workout.progressOne', { done: movesDone })
-                : t('workout.progress', { done: movesDone, count: day.exercises.length })}
+                : t('workout.progress', { done: movesDone, count: today.length })}
             </Text>
           )}
         </View>

@@ -140,6 +140,24 @@ export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSe
   return { exerciseId: move.id, rows, current: current < 0 ? null : current, open: true };
 }
 
+/**
+ * The day's moves in today's session (K-964, ADR-073 Ek 3): the server's session of the day this week, when the week has
+ * it — its exerciseIds in order (the short version's first moves, today's swaps in place), each the day's planned move
+ * or the swap's own planned move standing in for one (no target, its own history); without it, the day as planned. The
+ * phone picks no move: it applies the server's list. The session is the day's on `onDate` only (the session's own day:
+ * its start's when under way, else today): a short version or a swap is for that day's session alone (ADR-073 Ek 3), and
+ * a week cached offline from last week is not this one. K-995's Program.today is to replace the phone's day here.
+ */
+export function sessionMoves(day: Schemas['ProgramDay'], week: Schemas['WeekSession'][] | undefined, onDate: string): Schemas['PlannedExercise'][] {
+  const session = week?.find((s) => s.programDayId === day.id && s.date === onDate);
+  if (session === undefined) return day.exercises;
+  const swapped = new Map((session.swaps ?? []).map((swap) => [swap.exercise.exerciseId, swap.exercise]));
+  return session.exerciseIds.flatMap((id) => {
+    const planned = swapped.get(id) ?? day.exercises.find((e) => e.exerciseId === id);
+    return planned === undefined ? [] : [planned];
+  });
+}
+
 /** The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31). */
 export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string): Outbound {
   const words = noteOf(note);

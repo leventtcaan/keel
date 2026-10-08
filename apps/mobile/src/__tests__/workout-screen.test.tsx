@@ -1035,3 +1035,48 @@ describe('the finished session to Apple Health (K-412)', () => {
     expect(mockServices.healthWriting.workoutFinished).not.toHaveBeenCalled();
   });
 });
+
+describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the server's moves, none picked on the phone", () => {
+  const withWeek = (session: Partial<Schemas['WeekSession']>) => {
+    const week: Schemas['WeekSession'][] = [{ programDayId: 'day-a', date: '2026-09-28', exerciseIds: ['bench_press', 'one_arm_dumbbell_row'], ...session }];
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week } } };
+  };
+
+  test('the short version: only the moves the server lists, and the count is theirs', async () => {
+    withWeek({ short: true, exerciseIds: ['bench_press'] });
+    await show();
+    expect(await screen.findByText(t('workout.progressOne', { done: 0 }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('exercises.one_arm_dumbbell_row.name'))).toBeNull();
+  });
+
+  test('the session under way keeps the list of the day it started on, after midnight too (K-961)', async () => {
+    // w1 started 2026-09-28; today is later: the list is still that day's.
+    withWeek({ short: true, exerciseIds: ['bench_press'] });
+    await show();
+    expect(await screen.findByText(t('workout.progressOne', { done: 0 }))).toBeOnTheScreen();
+  });
+
+  test('opened on another day than the week has its session on: the day as planned, the short version was for that day only', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    withWeek({ short: true, exerciseIds: ['bench_press'] }); // 2026-09-28, long past
+    await show();
+    expect(await screen.findByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
+  });
+
+  test("a move swapped for today stands in its place and starts with no target; the move it replaced is not in the session", async () => {
+    const DB = { id: 'dumbbell_bench_press', nameKey: 'exercises.dumbbell_bench_press.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, DB] } };
+    withWeek({
+      exerciseIds: ['dumbbell_bench_press', 'one_arm_dumbbell_row'],
+      swaps: [{ insteadOf: 'bench_press', exercise: { exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 } }],
+    });
+    await show();
+    expect((await screen.findAllByText(t('exercises.dumbbell_bench_press.name'))).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Bench press')).toBeNull();
+    expect(screen.getByLabelText('Weight (kg)').props.value).toBe(''); // no target, no history of its own
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '24');
+    await fireEvent.press(screen.getByText('Log set 1'));
+    expect(sets()[0].body).toMatchObject({ exerciseId: 'dumbbell_bench_press', loadKg: 24 });
+  });
+});
