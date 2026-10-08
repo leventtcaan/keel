@@ -62,3 +62,18 @@ Edit, Ayarlar, İlerleme.
 ## Doğrulama
 `CardioPrescription` tablo testleri (faz × gün sayısı × aktivite; 2 günlük planda off güne düşen seans; `VERY_ACTIVE` → yok) · özellik testi:
 ağırlık öncesine asla yerleşmez, kullanıcı değişikliğini ezmez · telefon testi: saat verisi yoksa kalori satırı yok.
+
+## Ek 1 · Sözleşme ve saklama (K-959, 2026-10-08, agent, teknik)
+- **Varsayılan saklanmaz:** program her okunduğunda yürürlükteki faz, programın günleri (yoksa profilin günleri, K-527) ve aktivite ile
+  `CardioPrescription.forWeek`'ten hesaplanır; yeni faz ya da yeni program onu kendiliğinden değiştirir. Kullanıcınınki programdan ayrı
+  `training.cardio_plan` + `training.cardio_plan_session`'da (hesap başına bir tane); yeni program ve yeni faz ona dokunmaz (#4). Reddedilen:
+  varsayılanı programla birlikte yazmak (faz değişince bayatlar, ezme kuralı gerekir).
+- **Faz modül sınırını değiştirmeden:** `training.CurrentPhase` arayüzü, `decision.PlanPhase` sağlar (nutrition `DailyTargets` kalıbı;
+  `allowedDependencies` aynı). Planın fazı; plan yoksa ilk planın başlayacağı faz (hedef; "Decide for me" `PhaseGate.startingPhase`).
+- **Hafta:** Pazartesi-Pazar, kullanıcının takvimi (`Consistency.WEEK_STARTS_ON`); `doneThisWeek` kardiyo kaydı olan gün sayısı (bir gündeki
+  elle ve saatten gelen iki kayıt bir seanstır, motorun "günde en çok bir" modeli gibi).
+- **Kaynak adı `APPLE_HEALTH`** (kartta HEALTHKIT): sözleşmedeki `MeasurementSource` ile aynı kelime.
+- **Aktif enerji** yalnız `APPLE_HEALTH` kaynağıyla ve sağlık verisi rızasıyla kabul edilir; rıza geri çekilince yalnız bu sütun boşalır,
+  seans antrenman verisi olarak kalır (ADR-007; profildeki `food_avoid` kalıbı).
+- **Telefon:** saat ölçümü = `HKSourceRevision.productType` "Watch" ile başlayan örnekler, pencerenin tam içinde olanlar toplanır; kardiyo
+  sayılan antrenman türleri `data/parameters/health.json › health_cardio_workout_types` (aralıklı türler, HIIT dahil, sayılmıyor; K-34).
