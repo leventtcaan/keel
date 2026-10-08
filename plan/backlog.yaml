@@ -4479,7 +4479,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-989]
     why: "K-967 incelemesi: telefon ilk karar tarihini kendisi hesaplıyor (ADR-075 #3'e aykırı); sunucu ilk haftayı hesap açılışından (ilk giriş) sayıyor ve 'current check-in'i hemen sunuyor, plan/paywall'un söz verdiği tarihten önce karar çıkabiliyor"
     acceptance:
@@ -4507,3 +4507,19 @@ tasks:
     tests: ["NextTargets tablo testi (sabit tekrar: tuttu/tutmadı), sözleşme testi, programEdit testi"]
     refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "arastirma/ham/guray/G1-antrenman.md"]
     learn: ["Bir kuralın sınır durumunu kaynaktan türetmek"]
+
+  - id: K-992
+    title: "İlk haftalık hatırlatma sunucunun ilk karar gününe bağlı"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-990]
+    why: "K-990 incelemesi: pazartesi 08:30'da bitirip 'Tell me Monday morning' açan kişi aynı gün 09:00'da 'A new week' bildirimi alıyor; sunucu o gün check-in vermiyor"
+    acceptance:
+      - "İlk check-in hatırlatması `firstCallOn` gününden önce kurulmaz; sonrakiler her checkInDay"
+      - "firstCallOn yoksa (rıza yok) check-in hatırlatması kurulmaz"
+    tests: ["notifications plan testi: pazartesi bitiş → ilk bildirim sonraki pazartesi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Yerel bildirim takvimi ile sunucu tarihinin tutarlılığı"]
