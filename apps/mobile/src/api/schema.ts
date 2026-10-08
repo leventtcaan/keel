@@ -886,6 +886,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workouts/{id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The end of a workout in facts (K-965, ADR-075
+         * @description Working sets only: a warm-up, a drop or a set to failure never counts (SetType). Imported sessions are history
+         *     too: a session's earlier sets include them (ADR-053). NOT_FOUND for a workout not the user's.
+         */
+        get: operations["getWorkoutSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/training-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The progress screen's training facts (K-965, ADR-078
+         * @description This Monday week's sets per primary muscle, and each move of the current program that has a working set: its
+         *     baseline, its best set, its weekly best sets and its effort line; how many of them are stronger. No estimated max
+         *     (B10). Without a program, no lifts and nothing planned. The weight trend (/v1/weight-trend) and the weeks on
+         *     track (/v1/consistency) are their own.
+         */
+        get: operations["getTrainingProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workout-imports": {
         parameters: {
             query?: never;
@@ -2289,6 +2335,121 @@ export interface components {
         LoggedSet: components["schemas"]["NewSet"] & {
             /** Format: uuid */
             id: string;
+        };
+        WorkoutSummary: {
+            /** Format: uuid */
+            workoutId: string;
+            /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
+            liftedKg: number;
+            /**
+             * @description liftedKg against the last earlier session of the same program day that has a working set, in whole percent
+             *     (rounded half up; negative when less). Absent without one, or when it lifted 0 kg.
+             */
+            liftedChangePercent?: number;
+            workingSets: number;
+            /** @description One per move of the session that set a record or its baseline, in the order first done. */
+            marks: components["schemas"]["SetMark"][];
+            /**
+             * Format: date
+             * @description The Monday of the workout's week, on the user's calendar; the muscles' shares are of this week.
+             */
+            weekOf: string;
+            /** @description The primary muscles this session trained, with their week (the one muscle map, ADR-078 */
+            muscles: components["schemas"]["MuscleSets"][];
+        };
+        /**
+         * @description RECORD: the session's last working set that beats every earlier set of the move, its own session's earlier sets
+         *     included — at least as heavy with at least as many reps, and not the same set (double progression's two steps;
+         *     a tie is none). Sides are one history. BASELINE: the move's first session, its best set (heaviest, then most
+         *     reps, then fewest left).
+         */
+        SetMark: {
+            exerciseId: string;
+            /** @enum {string} */
+            kind: "BASELINE" | "RECORD";
+            loadKg: number;
+            reps: number;
+            rir?: number;
+            side?: components["schemas"]["Side"];
+        };
+        /**
+         * @description A primary muscle's week (the catalog's first muscle): the sets this week's program plans (a lighter week's
+         *     fewer) and the working sets done, each a share of targetSets — weekly_sets_per_muscle, or arm_weekly_sets_min
+         *     for an arm — capped at 1 and rounded down to 2 decimals.
+         */
+        MuscleSets: {
+            muscle: string;
+            plannedSets: number;
+            doneSets: number;
+            targetSets: number;
+            plannedShare: number;
+            doneShare: number;
+        };
+        TrainingProgress: {
+            /**
+             * Format: date
+             * @description This week's Monday on the user's calendar.
+             */
+            weekOf: string;
+            /** @description Every muscle planned or trained this week, alphabetical. */
+            muscles: components["schemas"]["MuscleSets"][];
+            /** @description The current program's moves with a working set, in program order. */
+            lifts: components["schemas"]["LiftProgress"][];
+            /** @description The lifts whose best set is a record set after their baseline ("Stronger on 4 of 5 lifts"). */
+            strongerLifts: number;
+            /** @description The number of lifts. */
+            trackedLifts: number;
+        };
+        LiftProgress: {
+            exerciseId: string;
+            baseline: components["schemas"]["DatedSet"];
+            best: components["schemas"]["DatedSet"];
+            /** @description The best set is a record after the baseline (it beats every earlier set). */
+            stronger: boolean;
+            /** @description Each Monday week's best set, oldest first (the strength chart). */
+            weeks: {
+                /** Format: date */
+                weekOf: string;
+                loadKg: number;
+                reps: number;
+                rir?: number;
+                /** @description The weekly call held the load on a day of this week (K-217). */
+                held: boolean;
+            }[];
+            effort?: components["schemas"]["EffortLine"];
+        };
+        DatedSet: {
+            loadKg: number;
+            reps: number;
+            rir?: number;
+            /**
+             * Format: date
+             * @description The session's day on the user's calendar.
+             */
+            day: string;
+        };
+        /**
+         * @description The effort line's facts (ADR-078 #2), from each session's best set; the first kind that holds, in this order.
+         *     STUCK ("Stuck at 72.5 kg for 3 sessions. Held this week."): stalled as the deload ladder counts it
+         *     (plateau_sessions) — loadKg, sessions, held (the weekly call holds the load now; compound moves only).
+         *     EASIER ("Same 100 kg, now with 1 rep left."): the last session the same load and reps as the one before, with
+         *     more left — loadKg, reps, repsLeft, repsLeftBefore. REPS_RISING: the last sessions at one load, more reps now
+         *     than at the first — loadKg, repsGained, since (the first session at the load), sessions, weeks (whole weeks to
+         *     the last). Absent when none holds.
+         */
+        EffortLine: {
+            /** @enum {string} */
+            kind: "STUCK" | "EASIER" | "REPS_RISING";
+            loadKg: number;
+            reps?: number;
+            sessions?: number;
+            held?: boolean;
+            repsLeft?: number;
+            repsLeftBefore?: number;
+            repsGained?: number;
+            /** Format: date */
+            since?: string;
+            weeks?: number;
         };
         /**
          * @description What the engine can be missing (its CheckIn) plus the scales the app asks with. Adherence is not asked: it is the
@@ -4208,6 +4369,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getWorkoutSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The workout's summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutSummary"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getTrainingProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The training progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingProgress"];
+                };
             };
             default: components["responses"]["Error"];
         };
