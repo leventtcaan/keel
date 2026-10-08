@@ -18,9 +18,9 @@ const planned = (exerciseId: string, extra: Partial<Schemas['PlannedExercise']> 
   swapOptions: [],
   ...extra,
 });
-const UPPER: Schemas['ProgramDay'] = { id: 'u', nameKey: 'upper', weekday: 'TUESDAY', exercises: [planned('bench_press'), planned('lat_pulldown'), planned('seated_row')] };
-const LOWER: Schemas['ProgramDay'] = { id: 'l', nameKey: 'lower', weekday: 'WEDNESDAY', exercises: [planned('squat')] };
-const PUSH: Schemas['ProgramDay'] = { id: 'p', nameKey: 'push', weekday: 'THURSDAY', exercises: [planned('bench_press')] };
+const UPPER: Schemas['ProgramDay'] = { id: 'u', nameKey: 'programDays.upper.name', weekday: 'TUESDAY', exercises: [planned('bench_press'), planned('lat_pulldown'), planned('seated_row')] };
+const LOWER: Schemas['ProgramDay'] = { id: 'l', nameKey: 'programDays.lower.name', weekday: 'WEDNESDAY', exercises: [planned('squat')] };
+const PUSH: Schemas['ProgramDay'] = { id: 'p', nameKey: 'programDays.push.name', weekday: 'THURSDAY', exercises: [planned('bench_press')] };
 const program = (week: Schemas['WeekSession'][], days = [UPPER, LOWER, PUSH], extra: Partial<Schemas['Program']> = {}): Schemas['Program'] => ({
   id: 'prog',
   source: 'GENERATED',
@@ -78,10 +78,10 @@ test("the week's other sessions in date order, each with its program day and the
 describe('the split', () => {
   test("is named from the days' names, each kind once in the program's order", () => {
     expect(splitName(program([], [UPPER, LOWER]))).toBe('Upper / Lower');
-    expect(splitName(program([], [UPPER, LOWER, PUSH, { ...PUSH, id: 'pl', nameKey: 'pull' }, { ...LOWER, id: 'lg', nameKey: 'legs' }]))).toBe(
+    expect(splitName(program([], [UPPER, LOWER, PUSH, { ...PUSH, id: 'pl', nameKey: 'programDays.pull.name' }, { ...LOWER, id: 'lg', nameKey: 'programDays.legs.name' }]))).toBe(
       'Upper / Lower + Push / Pull / Legs',
     );
-    expect(splitName(program([], [{ ...UPPER, nameKey: 'full_body_a' }, { ...UPPER, id: 'b', nameKey: 'full_body_b' }]))).toBe('Full body');
+    expect(splitName(program([], [{ ...UPPER, nameKey: 'programDays.full_body_a.name' }, { ...UPPER, id: 'b', nameKey: 'programDays.full_body_b.name' }]))).toBe('Full body');
   });
 
   test("the user's own program is their own, whatever its days are called", () => {

@@ -63,9 +63,10 @@ export function weekRows(program: Schemas['Program'], date: string): WeekRow[] {
  */
 export function splitName(program: Schemas['Program']): string {
   if (program.source === 'OWN') return t('train.split.own');
+  // The server names a generated day by its whole copy key ("programDays.upper_a.name", K-996); its split sits beside it.
   const names = program.days.flatMap((day) => {
-    const key = `programDays.${day.nameKey ?? ''}.split`;
-    return day.nameKey !== undefined && has(key) ? [t(key)] : [];
+    const key = day.nameKey?.replace(/\.name$/, '.split');
+    return key !== undefined && key !== day.nameKey && has(key) ? [t(key)] : [];
   });
   return [...new Set(names)].join(t('train.split.join'));
 }

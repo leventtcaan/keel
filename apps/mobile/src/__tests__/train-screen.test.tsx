@@ -180,7 +180,7 @@ test('moved sessions are marked in the week; today is rest, and the card does no
 });
 
 test('a session moved again, and two moves in one week: no chain is told on the card', async () => {
-  const monday = { id: 'm', nameKey: 'push', weekday: 'MONDAY' as const, exercises: [] };
+  const monday = { id: 'm', nameKey: 'programDays.push.name', weekday: 'MONDAY' as const, exercises: [] };
   mockData = withProgram({
     days: [...PROGRAM.days, monday],
     // Monday's moved to Wednesday, then on to Friday; Tuesday's moved to Thursday, Thursday's to Saturday.

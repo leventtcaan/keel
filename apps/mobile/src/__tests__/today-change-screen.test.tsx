@@ -18,7 +18,7 @@ type Schemas = components['schemas'];
 const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
-  days: [{ id: 'a', nameKey: 'upper_a', weekday: 'TUESDAY', exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 }] }],
+  days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 }] }],
   week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: ['bench_press'] }],
 };
 let mockData: TrainData;
