@@ -7,8 +7,11 @@ import app.keel.engine.Parameters;
 import app.keel.engine.RepositoryParameters;
 import app.keel.engine.Sex;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -152,6 +155,110 @@ class TodayChangeTests {
         assertThat(TodayChanges.moveToTomorrow(week, PUSH.id(), SATURDAY)).contains(Map.of(PUSH.id(), SUNDAY));
         assertThat(TodayChanges.moveToTomorrow(TodayChanges.week(List.of(PUSH), MONDAY, Map.of(PUSH.id(), TodayChanges.Change.NONE.on(SUNDAY)), SHORT),
                 PUSH.id(), SUNDAY)).isEqualTo(Optional.empty());
+    }
+
+    @Test
+    void aMovedSessionSaysItsOwnDayInTheProgramEvenMovedTwice() {
+        Map<UUID, TodayChanges.Change> changes = Map.of(UPPER.id(), TodayChanges.Change.NONE.on(WEDNESDAY), LOWER.id(), TodayChanges.Change.NONE.on(THURSDAY));
+
+        List<TodayChanges.Session> week = TodayChanges.week(List.of(UPPER, LOWER, PUSH), MONDAY, changes, SHORT);
+
+        assertThat(week).extracting(TodayChanges.Session::movedFrom).containsExactly(MONDAY, TUESDAY, null);
+        assertThat(TodayChanges.week(List.of(UPPER), MONDAY, Map.of(), SHORT).getFirst().movedFrom()).isNull();
+    }
+
+    @Test
+    void undoingTodaysMoveBringsBackEverySessionItPushedAndTheMovedOnesShortVersionAndSwaps() {
+        // Monday: Upper moved to Tuesday pushed Lower to Wednesday. Tuesday: Upper, short and with a swap, moved again; Lower on.
+        TodayChanges.Change upperToday = TodayChanges.Change.NONE.on(TUESDAY).swapped("barbell_row", "seated_row").shortened();
+        Map<UUID, TodayChanges.Change> kept = Map.of(UPPER.id(), upperToday, LOWER.id(), TodayChanges.Change.NONE.on(WEDNESDAY));
+        List<TodayChanges.Session> week = TodayChanges.week(List.of(UPPER, LOWER, PUSH), MONDAY, kept, SHORT);
+        Map<UUID, LocalDate> moves = TodayChanges.moveToTomorrow(week, UPPER.id(), TUESDAY).orElseThrow();
+
+        Map<UUID, TodayChanges.Kept> written = TodayChanges.moved(kept, moves, UPPER.id(), TUESDAY);
+
+        assertThat(written.keySet()).containsExactlyInAnyOrder(UPPER.id(), LOWER.id(), PUSH.id());
+        Map<UUID, TodayChanges.Change> after = new HashMap<>(kept);
+        Map<UUID, TodayChanges.Undo> undos = new HashMap<>();
+        written.forEach((id, row) -> {
+            after.put(id, row.change());
+            undos.put(id, row.undo());
+        });
+        assertThat(TodayChanges.week(List.of(UPPER, LOWER, PUSH), MONDAY, after, SHORT)).extracting(TodayChanges.Session::date)
+                .containsExactly(WEDNESDAY, THURSDAY, MONDAY.plusDays(4));
+        // Undone on the day it was made: each row as it was, the moved session short and swapped on Tuesday again.
+        assertThat(TodayChanges.undo(undos, UPPER.id(), TUESDAY)).isEqualTo(Map.of(UPPER.id(), upperToday, LOWER.id(), kept.get(LOWER.id()),
+                PUSH.id(), TodayChanges.Change.NONE));
+        // Another day's undo, or another session's, finds nothing to undo.
+        assertThat(TodayChanges.undo(undos, UPPER.id(), WEDNESDAY)).isEmpty();
+        assertThat(TodayChanges.undo(undos, LOWER.id(), TUESDAY)).isEmpty();
+    }
+
+    @Test
+    void undoingTodaysSkipPutsTheSessionBackAsItWas() {
+        TodayChanges.Change shortToday = TodayChanges.Change.NONE.shortened();
+
+        TodayChanges.Kept skipped = TodayChanges.skipped(shortToday, UPPER.id(), MONDAY);
+
+        assertThat(skipped.change().skipped()).isTrue();
+        assertThat(TodayChanges.undo(Map.of(UPPER.id(), skipped.undo()), UPPER.id(), MONDAY)).isEqualTo(Map.of(UPPER.id(), shortToday));
+    }
+
+    @Test
+    void eachDaysSessionIsItsLatestWorkoutOfTheWeekOpenOrDone() {
+        UUID first = UUID.randomUUID();
+        UUID latest = UUID.randomUUID();
+        UUID lower = UUID.randomUUID();
+        List<WorkoutStore.Workout> workouts = List.of(
+                workout(first, "2026-10-05T08:00:00Z", "2026-10-05T09:00:00Z", UPPER.id()),
+                workout(latest, "2026-10-07T08:00:00Z", null, UPPER.id()),
+                workout(lower, "2026-10-06T08:00:00Z", "2026-10-06T09:00:00Z", LOWER.id()),
+                workout(UUID.randomUUID(), "2026-10-06T10:00:00Z", "2026-10-06T11:00:00Z", null));
+
+        Map<UUID, TodayChanges.Started> started = TodayChanges.started(workouts);
+
+        assertThat(started).isEqualTo(Map.of(UPPER.id(), new TodayChanges.Started(latest, true), LOWER.id(), new TodayChanges.Started(lower, false)));
+    }
+
+    @Test
+    void aMoveOrSkipIsUndoableOnTheDayItWasMadeUntilItsWorkoutStarts() {
+        Map<UUID, TodayChanges.Undo> undos = Map.of(UPPER.id(), new TodayChanges.Undo(UPPER.id(), MONDAY, TodayChanges.Change.NONE),
+                LOWER.id(), new TodayChanges.Undo(UPPER.id(), MONDAY, TodayChanges.Change.NONE));
+        ZoneId istanbul = ZoneId.of("Europe/Istanbul");
+
+        assertThat(TodayChanges.undoable(undos, List.of(), MONDAY, istanbul)).containsExactly(UPPER.id());
+        assertThat(TodayChanges.undoable(undos, List.of(), TUESDAY, istanbul)).isEmpty();
+        // Started on Sunday 22:30 UTC is Monday 01:30 in Istanbul: started today.
+        assertThat(TodayChanges.undoable(undos, List.of(workout(UUID.randomUUID(), "2026-10-04T22:30:00Z", null, UPPER.id())), MONDAY, istanbul))
+                .isEmpty();
+        assertThat(TodayChanges.undoable(undos, List.of(workout(UUID.randomUUID(), "2026-10-04T20:30:00Z", null, UPPER.id())), MONDAY, istanbul))
+                .containsExactly(UPPER.id());
+    }
+
+    @Test
+    void aSwapFromNowOnEndsTheSwapAnUndoWouldBringBackToo() {
+        // Moved with a swap for today, then swapped from now on: an undo must not revive the old swap (Ek 3) either.
+        TodayChanges.Undo undo = new TodayChanges.Undo(UPPER.id(), MONDAY, TodayChanges.Change.NONE.swapped("barbell_row", "seated_row").shortened());
+
+        TodayChanges.Undo after = undo.withoutSwapsOf("barbell_row", "cable_row");
+
+        assertThat(after).isEqualTo(new TodayChanges.Undo(UPPER.id(), MONDAY, TodayChanges.Change.NONE.shortened()));
+        assertThat(undo.withoutSwapsOf("bench_press", "seated_row").before().swaps()).isEmpty();
+    }
+
+    @Test
+    void whatUndoesARowReadsBackFromItsJsonAsItWas() {
+        // V44 keeps it as JSON (SessionChangeStore): the change before, with its day, short version and swaps.
+        TodayChanges.Undo undo = new TodayChanges.Undo(UPPER.id(), TUESDAY,
+                TodayChanges.Change.NONE.on(TUESDAY).swapped("barbell_row", "seated_row").shortened());
+        tools.jackson.databind.json.JsonMapper json = tools.jackson.databind.json.JsonMapper.builder().build();
+
+        assertThat(json.readValue(json.writeValueAsString(undo), TodayChanges.Undo.class)).isEqualTo(undo);
+    }
+
+    private static WorkoutStore.Workout workout(UUID id, String startedAt, String endedAt, UUID programDayId) {
+        return new WorkoutStore.Workout(id, UUID.randomUUID(), Instant.parse(startedAt), endedAt == null ? null : Instant.parse(endedAt), programDayId,
+                null, List.of(), null);
     }
 
     private static ProgramStore.Day day(DayOfWeek weekday, String... moves) {

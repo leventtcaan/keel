@@ -2,6 +2,7 @@ package app.keel.training;
 
 import app.keel.engine.Consistency;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -9,7 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Today's session changed (K-964, ADR-073 #5, Ek 3), pure: one week's sessions on the calendar, Monday to Sunday (the
@@ -33,6 +36,11 @@ final class TodayChanges {
 
         Change shortened() {
             return new Change(onDate, skipped, true, swaps);
+        }
+
+        /** The short version off again (K-995). */
+        Change full() {
+            return new Change(onDate, skipped, false, swaps);
         }
 
         Change skip() {
@@ -68,10 +76,31 @@ final class TodayChanges {
 
     /**
      * A program day's session this week; {@code exerciseIds} its moves that day (today's swaps and the short version applied),
-     * {@code swaps} today's swaps in force (planned move → the one in its place).
+     * {@code swaps} today's swaps in force (planned move → the one in its place); {@code movedFrom} its own day in the program
+     * when moved (K-995), null otherwise.
      */
-    record Session(UUID programDayId, LocalDate date, boolean moved, boolean skipped, boolean shortVersion, List<String> exerciseIds,
-            Map<String, String> swaps) {
+    record Session(UUID programDayId, LocalDate date, boolean moved, LocalDate movedFrom, boolean skipped, boolean shortVersion,
+            List<String> exerciseIds, Map<String, String> swaps) {
+    }
+
+    /**
+     * What undoes a row a move or a skip wrote (K-995, ADR-073 Ek 5): the day whose session was moved or skipped ({@code of}),
+     * the day it was done on ({@code on}, the user's today then), and the row's change before it.
+     */
+    record Undo(UUID of, LocalDate on, Change before) {
+
+        /** The change before without the swaps a swap from now on ends (Change#withoutSwapsOf): an undo does not revive them. */
+        Undo withoutSwapsOf(String planned, String to) {
+            return new Undo(of, on, before.withoutSwapsOf(planned, to));
+        }
+    }
+
+    /** A row to keep: the change, and what undoes it. */
+    record Kept(Change change, Undo undo) {
+    }
+
+    /** A session's workout this week: the latest started, under way ({@code open}) or done. */
+    record Started(UUID workoutId, boolean open) {
     }
 
     private static final int DAYS_PER_WEEK = 7;
@@ -103,11 +132,66 @@ final class TodayChanges {
             }
             Map<String, String> swaps = new LinkedHashMap<>(change.swaps());
             swaps.keySet().retainAll(day.exercises().stream().map(ProgramStore.PlannedExercise::exerciseId).toList());
-            placed.add(new Placed(d, new Session(day.id(), date, !date.equals(planned), change.skipped(), change.shortVersion(), List.copyOf(moves),
+            placed.add(new Placed(d, new Session(day.id(), date, !date.equals(planned), date.equals(planned) ? null : planned, change.skipped(), change.shortVersion(), List.copyOf(moves),
                     Map.copyOf(swaps))));
         }
         return placed.stream().sorted(Comparator.comparing((Placed p) -> p.session().date()).thenComparingInt(Placed::order)).map(Placed::session)
                 .toList();
+    }
+
+    /**
+     * The rows today's move of {@code of} writes (K-995): each session the move puts on a new day, a fresh one there (Ek 3),
+     * with its change before the move, so an undo puts back the moved session as it was today and each one it pushed on.
+     */
+    static Map<UUID, Kept> moved(Map<UUID, Change> kept, Map<UUID, LocalDate> moves, UUID of, LocalDate today) {
+        Map<UUID, Kept> rows = new LinkedHashMap<>();
+        moves.forEach((id, on) -> rows.put(id, new Kept(Change.NONE.on(on), new Undo(of, today, kept.getOrDefault(id, Change.NONE)))));
+        return Map.copyOf(rows);
+    }
+
+    /** The row today's skip of {@code of} writes: skipped, with its change before the skip. */
+    static Kept skipped(Change change, UUID of, LocalDate today) {
+        return new Kept(change.skip(), new Undo(of, today, change));
+    }
+
+    /**
+     * Today's move or skip of {@code of} undone: each row it wrote back to its change before it, by program day. Empty when
+     * nothing of {@code of} was moved or skipped today: an undo of another day's, or one done already.
+     */
+    static Map<UUID, Change> undo(Map<UUID, Undo> undos, UUID of, LocalDate today) {
+        Map<UUID, Change> back = new LinkedHashMap<>();
+        undos.forEach((id, undo) -> {
+            if (undo.of().equals(of) && undo.on().equals(today)) {
+                back.put(id, undo.before());
+            }
+        });
+        return Map.copyOf(back);
+    }
+
+    /**
+     * Each program day's session as its workouts of the week leave it (K-995): the latest started, under way while it has
+     * no end. A workout of no program day (one imported, one started outside the program) is no session's.
+     */
+    static Map<UUID, Started> started(List<WorkoutStore.Workout> workouts) {
+        Map<UUID, WorkoutStore.Workout> latest = new LinkedHashMap<>();
+        workouts.stream().filter(workout -> workout.programDayId() != null)
+                .sorted(Comparator.comparing(WorkoutStore.Workout::startedAt).thenComparing(WorkoutStore.Workout::id))
+                .forEach(workout -> latest.put(workout.programDayId(), workout));
+        Map<UUID, Started> started = new LinkedHashMap<>();
+        latest.forEach((day, workout) -> started.put(day, new Started(workout.id(), workout.endedAt() == null)));
+        return Map.copyOf(started);
+    }
+
+    /**
+     * The sessions an undo would change back today: moved or skipped today, and no workout of the day started today on the
+     * user's calendar ({@code zone}) — a session done is done (Ek 3).
+     */
+    static Set<UUID> undoable(Map<UUID, Undo> undos, List<WorkoutStore.Workout> workouts, LocalDate today, ZoneId zone) {
+        Set<UUID> startedToday = workouts.stream().filter(workout -> workout.programDayId() != null)
+                .filter(workout -> workout.startedAt().atZone(zone).toLocalDate().equals(today)).map(WorkoutStore.Workout::programDayId)
+                .collect(Collectors.toSet());
+        return undos.entrySet().stream().filter(entry -> entry.getKey().equals(entry.getValue().of()) && entry.getValue().on().equals(today))
+                .map(Map.Entry::getKey).filter(day -> !startedToday.contains(day)).collect(Collectors.toUnmodifiableSet());
     }
 
     /** The day {@code day} is on in the week of {@code monday} by its weekday; null on no weekday. */
