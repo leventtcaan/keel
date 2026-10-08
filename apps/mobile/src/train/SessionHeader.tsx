@@ -1,0 +1,65 @@
+import { type ReactNode, useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { t } from '@/copy';
+import { useTheme } from '@/theme/theme';
+import { tokens } from '@/theme/tokens';
+
+import { clockText } from './session';
+
+type Props = {
+  /**
+   * When the session began (ms): the workout's startedAt, or the moment it was opened while nothing is kept yet. Null
+   * shows no time (a session left open past the server's close).
+   */
+  since: number | null;
+  onEnd: () => void;
+  /** The control on the right (Pause, K-972); its place is kept empty without one, so the time stays in the middle. */
+  right?: ReactNode;
+};
+
+/**
+ * The session's top bar (ADR-075 #1, prototype `.wtop`): End on the left, the session's time in the middle, counting
+ * every second from its real start, so it begins at 0:00, belongs to this session only and runs on after a restart.
+ */
+export function SessionHeader({ since, onEnd, right }: Props) {
+  const { color } = useTheme();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+  const time = since === null ? null : clockText(Math.max(0, Math.floor((now - since) / 1000)));
+  const clock =
+    time === null ? null : (
+      <Text testID="session-clock" accessibilityLabel={t('workout.clock.label', { time })} style={[styles.clock, { color: color.text }]}>
+        {time}
+      </Text>
+    );
+  return (
+    <View style={styles.bar}>
+      <View style={styles.side}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('workout.endLabel')}
+          onPress={onEnd}
+          hitSlop={tokens.space.sm}
+          style={({ pressed }) => [styles.control, pressed && styles.dim]}>
+          <Text style={[styles.end, { color: color.muted }]}>{t('workout.end')}</Text>
+        </Pressable>
+      </View>
+      {clock}
+      <View style={[styles.side, styles.right]}>{right}</View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  bar: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  side: { flex: 1, alignItems: 'flex-start' },
+  right: { alignItems: 'flex-end' },
+  control: { minHeight: tokens.size.touch, justifyContent: 'center' },
+  end: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
+  clock: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, fontVariant: ['tabular-nums'] },
+  dim: { opacity: tokens.opacity.dim },
+});

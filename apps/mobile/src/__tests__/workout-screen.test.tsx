@@ -12,6 +12,7 @@ import WorkoutScreen from '@/app/workout';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
+import { focusPalette, tokens } from '@/theme/tokens';
 import { workoutParams } from '@/train/params';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
 
@@ -26,6 +27,32 @@ jest.mock('expo-router', () => ({
   router: { back: () => mockBack(), push: (...args: unknown[]) => mockPush(...args), replace: (...args: unknown[]) => mockReplace(...args) },
   useRouter: () => ({ back: mockBack }),
   useLocalSearchParams: () => mockParams,
+  // Focused while mounted; mockBlur leaves the screen as a pushed one would (its cleanup).
+  useFocusEffect: (effect: () => (() => void) | void) => {
+    const { useEffect } = jest.requireActual<typeof import('react')>('react');
+    useEffect(() => {
+      const cleanup = effect();
+      mockBlur = cleanup ?? null;
+      return cleanup;
+    }, [effect]);
+  },
+}));
+let mockBlur: (() => void) | null = null;
+// The status bar over the focus mode (ADR-070 #4): what the screen asks of it, and whether it is there.
+const mockStatusBar = jest.fn();
+const mockStatusBars = { mounted: 0 };
+jest.mock('expo-status-bar', () => ({
+  StatusBar: (props: { style?: string }) => {
+    const { useEffect } = jest.requireActual<typeof import('react')>('react');
+    mockStatusBar(props);
+    useEffect(() => {
+      mockStatusBars.mounted += 1;
+      return () => {
+        mockStatusBars.mounted -= 1;
+      };
+    }, []);
+    return null;
+  },
 }));
 
 const EXERCISES = [
@@ -116,12 +143,16 @@ beforeAll(async () => {
   await (await show()).unmount();
 }, COLD_START_MS);
 const sets = () => mockRecord.mock.calls.map(([outbound]) => outbound).filter((o) => o.kind === 'set');
+/** A move picked by its dot (K-971: the moves are dots, each said by its name and status). */
+const pickMove = async (name: string) =>
+  fireEvent.press(await screen.findByRole('button', { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, `) }));
 
 test("the day's moves, and the move under way with the server's target faint and last time beside it", async () => {
   await show();
   expect(await screen.findByText('Upper A')).toBeTruthy();
   expect(screen.getAllByText('Bench press').length).toBeGreaterThan(0);
-  expect(screen.getByText('3 sets')).toBeTruthy(); // the bench, before any set
+  // K-971: the moves are dots, each said with its status.
+  expect(screen.getByLabelText(t('workout.dot', { name: 'Bench press', status: '3 sets' }))).toBeTruthy(); // before any set
   expect(screen.getByText('Target RIR 0-1')).toBeTruthy();
   expect(screen.getAllByText('62.5 kg × 6').length).toBe(3);
   expect(screen.getByText('57.5 kg × 8')).toBeTruthy();
@@ -177,7 +208,7 @@ test('a note goes with the set it was written for, and the next set starts witho
 test('the session note is asked at the finish, and goes with it (K-422)', async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
-  await fireEvent.press(await screen.findByText('Finish workout'));
+  await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
   await fireEvent.changeText(await screen.findByLabelText('Note on this workout (optional)'), 'Slept 5 hours');
   await fireEvent.press(screen.getByText('Finish'));
   const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
@@ -194,7 +225,7 @@ test('a set the server would refuse is not logged, and the screen says what to c
 
 test('another move can be picked; a one-sided move is logged side by side', async () => {
   await show();
-  await fireEvent.press(await screen.findByText('One-arm dumbbell row'));
+  await pickMove('One-arm dumbbell row');
   await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '20');
   await fireEvent.changeText(screen.getByLabelText('Reps'), '12');
   await fireEvent.press(screen.getByText('Log set 1 · left'));
@@ -205,7 +236,7 @@ test('another move can be picked; a one-sided move is logged side by side', asyn
 test("finishing asks about each move's form; a move marked not clean is sent, and the summary opens", async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
-  await fireEvent.press(screen.getByText('Finish workout'));
+  await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
   expect(screen.getByText('How was your form?')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Bench press: Not clean'));
   await fireEvent.press(screen.getByText('Finish'));
@@ -238,17 +269,19 @@ test('finishing before any set closes the screen and sends nothing: an empty wor
   mockRecords = lastWeek();
   mockParams = { day: 'day-a' };
   await show();
-  await fireEvent.press(await screen.findByText('Finish workout'));
+  await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
   expect(mockRecord).not.toHaveBeenCalled();
   expect(mockBack).toHaveBeenCalled();
 });
 
-test('when the move picked is done, the next move with sets left comes up', async () => {
+// K-971 (ADR-075 #1, C4): the done move stays with Next, which brings up the next move with sets left.
+test('when the move picked is done, Next brings up the next move with sets left', async () => {
   await show();
-  await fireEvent.press((await screen.findAllByText('Bench press'))[0]); // the list's, picked by the user
+  await pickMove('Bench press'); // its dot, picked by the user
   await fireEvent.press(screen.getByText('Log set 1'));
   await fireEvent.press(await screen.findByText('Log set 2'));
   await fireEvent.press(await screen.findByText('Log set 3'));
+  await fireEvent.press(await screen.findByRole('button', { name: t('workout.next', { name: 'One-arm dumbbell row' }) }));
   expect(await screen.findByText('Log set 1 · left')).toBeTruthy();
 });
 
@@ -296,7 +329,7 @@ test('a finish that cannot be saved says so where the user is, and the screen st
     throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
   });
   await show(); // the open workout has no set yet: finishing asks nothing
-  await fireEvent.press(await screen.findByText('Finish workout'));
+  await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
   expect(await screen.findByText("The workout couldn't be finished on the phone. Try again.")).toBeTruthy();
   expect(mockBack).not.toHaveBeenCalled();
 });
@@ -334,7 +367,7 @@ test("in lb, an untouched suggestion logs the server's kg; a typed one, what was
 test('a move marked not clean and then clean again is sent as clean', async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
-  await fireEvent.press(screen.getByText('Finish workout'));
+  await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
   await fireEvent.press(screen.getByLabelText('Bench press: Not clean'));
   await fireEvent.press(screen.getByLabelText('Bench press: Clean'));
   await fireEvent.press(screen.getByText('Finish'));
@@ -372,7 +405,7 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     await fireEvent.press(await screen.findByText('Log warm-up 1'));
     expect(await screen.findByText('Log warm-up 2')).toBeTruthy();
     expect(mockRecord).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByText('Finish workout'));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
     expect(mockRecord).not.toHaveBeenCalled();
     expect(mockBack).toHaveBeenCalled();
   });
@@ -426,7 +459,7 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     await show();
     expect(await screen.findByText('Log set 2')).toBeTruthy();
     expect(screen.queryByText('Warm-up')).toBeNull();
-    await fireEvent.press(screen.getAllByText('One-arm dumbbell row')[0]);
+    await pickMove('One-arm dumbbell row');
     expect(await screen.findByText('12.5 kg × 5')).toBeTruthy();
     expect(screen.queryByText('Log warm-up 2')).toBeNull();
     await fireEvent.press(screen.getByText('Log warm-up 1'));
@@ -450,7 +483,7 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
       return keep(outbound);
     });
     await show();
-    await fireEvent.press((await screen.findAllByText('One-arm dumbbell row'))[0]);
+    await pickMove('One-arm dumbbell row');
     await fireEvent.press(await screen.findByText('Log warm-up 1'));
     expect(await screen.findByText("That set couldn't be saved on the phone. Try again.")).toBeTruthy();
     await fireEvent.press(screen.getByText('Log warm-up 1'));
@@ -488,7 +521,7 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     await show();
     await fireEvent.press(await screen.findByText('Log warm-up 1'));
     expect(await screen.findByText("That set couldn't be saved on the phone. Try again.")).toBeTruthy();
-    await fireEvent.press(screen.getAllByText('One-arm dumbbell row')[0]);
+    await pickMove('One-arm dumbbell row');
     expect(await screen.findByText('Log warm-up 1')).toBeTruthy();
     expect(screen.queryByText("That set couldn't be saved on the phone. Try again.")).toBeNull();
   });
@@ -534,7 +567,9 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: latName }) }));
-    expect(screen.getAllByText(latName).length).toBeGreaterThan(1); // in the list and as the card's title
+    // K-971: its dot and the card's title.
+    expect(screen.getByRole('button', { name: new RegExp(`^${latName}, `) })).toBeOnTheScreen();
+    expect(screen.getByText(latName)).toBeOnTheScreen();
     expect(screen.getByLabelText(t('workout.repsLabel')).props.value).toBe('');
     await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '50');
     await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
@@ -560,7 +595,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
       record('set', 'x1', { clientId: 'x1', exerciseId: 'lat_pulldown', setType: 'WORKING', loadKg: 50, reps: 10, rir: 1 }, 'w1'),
     ];
     await show();
-    expect((await screen.findAllByText(latName)).length).toBeGreaterThan(0);
+    expect(await screen.findByRole('button', { name: new RegExp(`^${latName}, `) })).toBeOnTheScreen(); // its dot (K-971)
   });
 
   test("the plan's own moves are not offered again; a name not in the catalog says so", async () => {
@@ -605,13 +640,12 @@ describe('a move added to the session, outside the plan (K-416)', () => {
       ['bulgarian_split_squat', 'LEFT'],
       ['bulgarian_split_squat', 'RIGHT'],
     ]);
-    // The list keeps the order they were added in.
+    // The dots keep the order they were added in (K-971: each said by its name, then its status).
     const names = ['Bench press', t('exercises.one_arm_dumbbell_row.name'), latName, t('exercises.bulgarian_split_squat.name')];
     const listed = screen
       .getAllByRole('button')
-      .filter((b) => b.props.accessibilityState?.selected !== undefined)
-      .map((b) => within(b).getAllByText(/./)[0].props.children as string)
-      .filter((text) => names.includes(text));
+      .map((b) => names.find((n) => String(b.props.accessibilityLabel).startsWith(`${n}, `)))
+      .filter((n) => n !== undefined);
     expect(listed).toEqual(names);
   });
 
@@ -643,13 +677,14 @@ describe("the user's own move (K-416, ADR-035)", () => {
     await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'landmine');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: 'Landmine press' }) }));
-    expect(screen.getAllByText('Landmine press').length).toBeGreaterThan(1);
+    expect(screen.getByRole('button', { name: /^Landmine press, / })).toBeOnTheScreen(); // its dot (K-971)
+    expect(screen.getByText('Landmine press')).toBeOnTheScreen(); // the card's title
     expect(screen.queryByText('custom:1')).toBeNull();
     await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '30');
     await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
     await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
     expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'custom:1', loadKg: 30, reps: 10 });
-    await fireEvent.press(await screen.findByText(t('workout.finish')));
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
     expect(await screen.findByLabelText(`Landmine press: ${t('workout.form.clean')}`)).toBeOnTheScreen();
   });
 });
@@ -683,7 +718,8 @@ describe("creating the user's own move (K-416, ADR-035): the catalog's matches f
     expect(screen.getByText(t('ownMove.similar'))).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.t_bar_row.name') }) }));
     expect(mockPOST).not.toHaveBeenCalled();
-    expect(screen.getAllByText(t('exercises.t_bar_row.name')).length).toBeGreaterThan(1);
+    expect(screen.getByRole('button', { name: new RegExp(`^${t('exercises.t_bar_row.name')}, `) })).toBeOnTheScreen(); // its dot (K-971)
+    expect(screen.getByText(t('exercises.t_bar_row.name'))).toBeOnTheScreen(); // the card's title
   });
 
   test('saved only when every question is answered; then it is in the session by its name, its sets under its id', async () => {
@@ -885,7 +921,8 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     expect(await screen.findByText(/^Rest ·/)).toBeOnTheScreen();
   });
 
-  test('the partner done: the rest after each set, the same move again; done too, the next move of the day', async () => {
+  // K-971 (C4): the group's last set brings no rest; Next names the next move of the day.
+  test('the partner done: the rest after each set, the same move again; done too, Next to the next move of the day', async () => {
     const RAISE = { id: 'lateral_raise', nameKey: 'exercises.lateral_raise.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
     const three = { ...DAY, exercises: [...DAY.exercises, { exerciseId: 'lateral_raise', baseSets: 2, sets: 2, reps: { min: 10, max: 15 }, targetRir: 1 }] };
     mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [three] } }, exercises: { state: 'ready', value: [...EXERCISES, RAISE] } };
@@ -900,8 +937,11 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
     expect(sets().at(-1)?.body.supersetId).toBe('g1');
     await fireEvent.press(screen.getByText(t('workout.log', { number: 3 })));
+    const next = await screen.findByRole('button', { name: t('workout.next', { name: t('exercises.lateral_raise.name') }) });
+    expect(screen.queryByText(/^Rest ·/)).toBeNull();
+    await fireEvent.press(next);
     expect(await screen.findByText(t('workout.log', { number: 1 }))).toBeOnTheScreen(); // the raise
-    expect(screen.getAllByText(t('exercises.lateral_raise.name')).length).toBeGreaterThan(1);
+    expect(screen.getByText(t('exercises.lateral_raise.name'))).toBeOnTheScreen();
   });
 
   test('a move outside the plan in a superset, its partner done: it stays, with the rest', async () => {
@@ -909,7 +949,7 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
     mockRecords = [...mockRecords, ...['b1', 'b2', 'b3'].map((id) => groupSet(id, 'bench_press', 'g1')), groupSet('l1', 'lat_pulldown', 'g1')];
     await show();
-    await fireEvent.press((await screen.findAllByText(t('exercises.lat_pulldown.name')))[0]);
+    await pickMove(t('exercises.lat_pulldown.name'));
     await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
     expect(await screen.findByText(t('workout.log', { number: 3 }))).toBeOnTheScreen();
     expect(screen.getByText(/^Rest ·/)).toBeOnTheScreen();
@@ -1005,7 +1045,7 @@ describe('the finished session to Apple Health (K-412)', () => {
   test('finished with work in it: one workout, from its start to the finish, under its own id', async () => {
     await show();
     await fireEvent.press(await screen.findByText('Log set 1'));
-    await fireEvent.press(screen.getByText('Finish workout'));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
     const before = Date.now();
     await fireEvent.press(screen.getByText('Finish'));
     expect(mockServices.healthWriting.workoutFinished).toHaveBeenCalledTimes(1);
@@ -1020,7 +1060,7 @@ describe('the finished session to Apple Health (K-412)', () => {
   test('a finish the phone could not keep: nothing to write', async () => {
     await show();
     await fireEvent.press(await screen.findByText('Log set 1'));
-    await fireEvent.press(screen.getByText('Finish workout'));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
     mockRecord.mockImplementation(async (outbound: Outbound) => {
       if (outbound.kind === 'finish') throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
       return keep(outbound);
@@ -1031,7 +1071,7 @@ describe('the finished session to Apple Health (K-412)', () => {
 
   test('finished before any set: nothing to write', async () => {
     await show();
-    await fireEvent.press(await screen.findByText('Finish workout'));
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
     expect(mockServices.healthWriting.workoutFinished).not.toHaveBeenCalled();
   });
 });
@@ -1078,5 +1118,185 @@ describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the s
     await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '24');
     await fireEvent.press(screen.getByText('Log set 1'));
     expect(sets()[0].body).toMatchObject({ exerciseId: 'dumbbell_bench_press', loadKg: 24 });
+  });
+});
+
+describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
+  const rowName = t('exercises.one_arm_dumbbell_row.name');
+  const dot = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}, `) });
+  const clock = () => screen.getByTestId('session-clock').props.children as string;
+  const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+  const rowSide = (number: number, side: 'LEFT' | 'RIGHT') => t('workout.logSide', { number, side: t(`workout.sideName.${side}`) });
+  const typeAndLog = async (button: string) => {
+    await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '20');
+    await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
+    await fireEvent.press(await screen.findByText(button));
+  };
+
+  test('dark whatever the appearance picked, with light status bar text', async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <WorkoutScreen />
+      </ThemeProvider>,
+    );
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.getByTestId('screen')).toHaveStyle({ backgroundColor: focusPalette.background });
+    expect(mockStatusBar).toHaveBeenLastCalledWith(expect.objectContaining({ style: 'light' }));
+  });
+
+  test('a session opened from a day starts at 0:00: the last workout, finished, is not carried over', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(clock()).toBe('0:00');
+  });
+
+  test('its first set keeps the moment the session was opened as its start, so the time runs on without a jump', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      const opened = Date.now();
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      // A minute and a half of warming up before the first set.
+      jest.setSystemTime(opened + 90_000);
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+      await screen.findByText(t('workout.log', { number: 2 }));
+      await act(async () => jest.advanceTimersByTime(1000));
+      const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
+      const startedAt = workout?.kind === 'workout' ? Date.parse(workout.body.startedAt) : NaN;
+      expect(startedAt).toBeGreaterThanOrEqual(opened);
+      expect(startedAt).toBeLessThan(opened + 5_000);
+      expect(clock()).toMatch(/^1:3\d$/);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('a session open past the server closing it (unfinished_session_close_hours) shows no time: its end is K-972', async () => {
+    const hours = workoutParams.unfinishedSessionCloseHours;
+    mockRecords = [...lastWeek(), record('workout', 'w2', { clientId: 'w2', startedAt: minutesAgo(hours * 60 + 5), programDayId: 'day-a' })];
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByTestId('session-clock')).toBeNull();
+  });
+
+  test('the keyboard does not hide the dock: the page and the dock rise above it', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    // The rise itself (iOS padding) is the device's to show; here, that the dock and the page are inside what rises.
+    const avoiding = within(screen.getByTestId('keyboard-avoiding'));
+    expect(avoiding.getByTestId('dock')).toBeOnTheScreen();
+    expect(avoiding.getByTestId('session-scroll')).toBeOnTheScreen();
+  });
+
+  test('the light status bar is only while the session is in front: a screen opened from it gets its own', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(mockStatusBars.mounted).toBe(1);
+    await act(async () => mockBlur?.());
+    expect(mockStatusBars.mounted).toBe(0);
+  });
+
+  test('the rest has a place of its own at the top, the same size with or without it, so the page does not move', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    const slot = () => screen.getByTestId('rest-slot');
+    expect(slot()).toHaveStyle({ minHeight: tokens.size.touch + tokens.space.sm * 2 });
+    expect(within(slot()).queryByTestId('rest')).toBeNull();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(within(slot()).getByTestId('rest')).toBeOnTheScreen();
+    expect(slot()).toHaveStyle({ minHeight: tokens.size.touch + tokens.space.sm * 2 });
+  });
+
+  test('in a superset up next is the partner, not the next move of the day', async () => {
+    const RAISE = { id: 'lateral_raise', nameKey: 'exercises.lateral_raise.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    const three = { ...DAY, exercises: [...DAY.exercises, { exerciseId: 'lateral_raise', baseSets: 2, sets: 2, reps: { min: 10, max: 15 }, targetRir: 1 }] };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [three] } }, exercises: { state: 'ready', value: [...EXERCISES, RAISE] } };
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: t('exercises.lateral_raise.name') }) }));
+    expect(within(screen.getByTestId('up-next')).getByText(t('exercises.lateral_raise.name'))).toBeOnTheScreen();
+  });
+
+  test('with many moves each dot stays a full touch target, and the dots wrap', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(dot('Bench press')).toHaveStyle({ minWidth: tokens.size.touch });
+    expect(screen.getByTestId('move-dots')).toHaveStyle({ flexWrap: 'wrap' });
+  });
+
+  test('opened again (the app closed mid-session), the session goes on: its real time, its sets done, the next set', async () => {
+    mockRecords = [
+      ...lastWeek(),
+      record('workout', 'w2', { clientId: 'w2', startedAt: minutesAgo(12), programDayId: 'day-a' }),
+      record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 7, rir: 1, side: 'BOTH' }, 'w2'),
+    ];
+    await show();
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+    expect(clock()).toMatch(/^12:0\d$/);
+    expect(screen.getByLabelText(t('workout.setDone', { number: '1' }))).toBeOnTheScreen();
+    expect(screen.getByText('62.5 kg × 7')).toBeOnTheScreen();
+  });
+
+  test('the rest is at the top, outside the scrolled page, and covers nothing; Log set sits in a fixed dock', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    const page = screen.getByTestId('session-scroll');
+    expect(screen.getByTestId('rest')).toBeOnTheScreen();
+    expect(within(page).queryByTestId('rest')).toBeNull();
+    expect(screen.getByTestId('rest')).not.toHaveStyle({ position: 'absolute' });
+    expect(within(screen.getByTestId('dock')).getByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+    expect(within(page).queryByText(t('workout.log', { number: 2 }))).toBeNull();
+  });
+
+  test('the rest can be ended: its timer and its alert go', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest');
+    mockServices.restAlert.stop.mockClear();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.endLabel') }));
+    expect(screen.queryByTestId('rest')).toBeNull();
+    expect(mockServices.restAlert.stop).toHaveBeenCalled();
+  });
+
+  test("C4: after a move's last set no rest comes up; Next names the next move, and after the last move, Finish", async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 2 })));
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 3 })));
+    const next = await screen.findByRole('button', { name: t('workout.next', { name: rowName }) });
+    expect(screen.queryByTestId('rest')).toBeNull();
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(2); // after sets 1 and 2 only
+    expect(screen.queryByText(t('workout.log', { number: 1 }))).toBeNull(); // the bench stays on screen, done
+    await fireEvent.press(next);
+    await typeAndLog(rowSide(1, 'LEFT'));
+    await typeAndLog(rowSide(1, 'RIGHT'));
+    await typeAndLog(rowSide(2, 'LEFT'));
+    await typeAndLog(rowSide(2, 'RIGHT'));
+    expect(await within(screen.getByTestId('dock')).findByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+    expect(screen.queryByTestId('rest')).toBeNull();
+  });
+
+  test('up next names the move after this one', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    const upNext = within(screen.getByTestId('up-next'));
+    expect(upNext.getByText(rowName)).toBeOnTheScreen();
+    expect(upNext.getByText(t('workout.upNext'))).toBeOnTheScreen();
+  });
+
+  test('a dot for each move says its name and where it stands; the one under way is selected, a tap picks another', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(dot('Bench press')).toBeSelected();
+    expect(dot(rowName)).not.toBeSelected();
+    expect(screen.getByLabelText(t('workout.dot', { name: rowName, status: t('workout.sets', { count: 2 }) }))).toBeOnTheScreen();
+    await fireEvent.press(dot(rowName));
+    expect(screen.getByText(rowSide(1, 'LEFT'))).toBeOnTheScreen();
   });
 });
