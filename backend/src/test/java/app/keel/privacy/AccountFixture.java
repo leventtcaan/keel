@@ -58,11 +58,15 @@ final class AccountFixture {
         send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "look", "SAME"));
         send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "level", 3));
         send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 8000));
-        MvcTestResult program = send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "THURSDAY")));
+        // Six days: the one generated program the review still has a suggestion for, fewer days (K-985: the templates pass it).
+        MvcTestResult program = send(account, "POST", "/v1/program/generate", Map.of("trainingDays",
+                List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY")));
         // A suggestion of the program's review applied (K-956): the change log, with the program before and after, is the account's.
         Map<?, ?> review = (Map<?, ?>) JSON.readValue(program.getResponse().getContentAsString(), Map.class).get("review");
+        List<?> suggestions = (List<?>) review.get("suggestions");
+        assertThat(suggestions).as("a suggestion to apply").isNotEmpty();
         send(account, "POST", "/v1/program/review/apply", Map.of("reviewId", review.get("id"),
-                "suggestionIds", List.of(((Map<?, ?>) ((List<?>) review.get("suggestions")).getFirst()).get("id"))));
+                "suggestionIds", List.of(((Map<?, ?>) suggestions.getFirst()).get("id"))));
         // The user's own cardio and a session done with the watch's energy (K-959): training data, its energy health data.
         send(account, "PUT", "/v1/program/cardio", Map.of("minutes", 30, "sessions", List.of(Map.of("weekday", "MONDAY", "place", "AFTER_LIFT"))));
         send(account, "POST", "/v1/cardio-sessions", Map.of("clientId", UUID.randomUUID(), "day", "2026-09-30", "minutes", 30, "source", "APPLE_HEALTH",
