@@ -76,6 +76,15 @@
       "notFirstView": []
     },
     {
+      "screen": "ob-type",
+      "budget": 30,
+      "source": "prototip/yeni-yuz.html",
+      "task": "K-968",
+      "file": null,
+      "keys": [],
+      "notFirstView": []
+    },
+    {
       "screen": "ob-review",
       "budget": 75,
       "source": "prototip/yeni-yuz.html",
