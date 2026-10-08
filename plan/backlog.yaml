@@ -4627,5 +4627,5 @@ tasks:
       - "Rıza yoksa 403 CONSENT_REQUIRED aynen; başlangıç hedefi de yoksa 404 aynen"
       - "Bu hafta yemek satırı ilk haftada da görünür (Food today / Food left + Log)"
     tests: ["Bütçe tablo testi (hedef var / yalnız başlangıç / hiçbiri), API testi (CI), telefon ekran testi"]
-    refs: ["plan/kararlar/ADR-072-onboarding.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Başlangıç değerinin sürekli değerle aynı yoldan geçmesi"]
