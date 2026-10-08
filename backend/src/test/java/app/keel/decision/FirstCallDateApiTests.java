@@ -59,7 +59,7 @@ class FirstCallDateApiTests {
     void theDaysBetweenSignInAndFinishingAreNotTheFirstWeek() throws Exception {
         // Signed in yesterday: counted from the sign-in, today's check-in would close the first week. Finished today, it does not.
         AccountId account = onboardedToday();
-        jdbc.sql("update identity.account set created_at = now() - interval '1 day' where id = :id").param("id", account.value()).update();
+        jdbc.sql("update identity.account set created_at = now() - interval '24 hours' where id = :id").param("id", account.value()).update();
 
         assertThat(send(account, "GET", "/v1/check-ins/current", null)).hasStatus(404);
         assertThat(read(firstWeeks(account))).containsEntry("firstCallOn", today().plusWeeks(1).toString()).containsEntry("week", 1);
@@ -85,7 +85,7 @@ class FirstCallDateApiTests {
         // Onboarded before K-990: no finishing moment kept. Signed in yesterday: today, the check-in day, closes the first week.
         AccountId account = onboardedToday();
         jdbc.sql("update profile.profile set onboarded_at = null where account_id = :a").param("a", account.value()).update();
-        jdbc.sql("update identity.account set created_at = now() - interval '1 day' where id = :id").param("id", account.value()).update();
+        jdbc.sql("update identity.account set created_at = now() - interval '24 hours' where id = :id").param("id", account.value()).update();
 
         assertThat(read(send(account, "GET", "/v1/check-ins/current", null))).containsEntry("weekOf", today().toString());
         assertThat(read(firstWeeks(account))).containsEntry("firstCallOn", today().toString());
@@ -103,7 +103,8 @@ class FirstCallDateApiTests {
     }
 
     private void finished(AccountId account, int daysAgo) {
-        jdbc.sql("update profile.profile set onboarded_at = now() - make_interval(days => :days) where account_id = :a").param("days", daysAgo)
+        // In hours: a day in the session's zone can be 23 or 25 of them.
+        jdbc.sql("update profile.profile set onboarded_at = now() - make_interval(hours => :hours) where account_id = :a").param("hours", daysAgo * 24)
                 .param("a", account.value()).update();
     }
 

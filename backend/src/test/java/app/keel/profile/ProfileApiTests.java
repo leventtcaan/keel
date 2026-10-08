@@ -122,7 +122,7 @@ class ProfileApiTests {
         put(account, onboarding());
         Instant finished = profiles.onboardedAt(account).orElseThrow();
 
-        jdbc.sql("update profile.profile set onboarded_at = onboarded_at - interval '3 days' where account_id = :a").param("a", account.value()).update();
+        jdbc.sql("update profile.profile set onboarded_at = onboarded_at - interval '72 hours' where account_id = :a").param("a", account.value()).update();
         Map<String, Object> changed = onboarding();
         changed.put("goal", "DECIDE_FOR_ME");
         put(account, changed);

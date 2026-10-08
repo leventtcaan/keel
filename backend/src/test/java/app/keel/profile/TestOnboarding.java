@@ -23,7 +23,7 @@ public final class TestOnboarding {
 
     /** The profile, saved already, was saved two weeks ago. */
     public static void finishedTwoWeeksAgo(ApplicationContext context, AccountId account) {
-        assertThat(context.getBean(JdbcClient.class).sql("update profile.profile set onboarded_at = now() - make_interval(days => :days) where account_id = :a")
-                .param("days", DAYS_BACK).param("a", account.value()).update()).as("a profile to move back").isEqualTo(1);
+        assertThat(context.getBean(JdbcClient.class).sql("update profile.profile set onboarded_at = now() - make_interval(hours => :hours) where account_id = :a")
+                .param("hours", DAYS_BACK * 24).param("a", account.value()).update()).as("a profile to move back").isEqualTo(1);
     }
 }
