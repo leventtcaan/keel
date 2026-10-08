@@ -82,6 +82,8 @@
 | `default_day_sets` | 2: Pzt/Per · 3: Pzt/Çar/Cum · 4: Pzt/Sal/Per/Cum · 5: Pzt/Sal/Çar/Cum/Cmt (prototip `DAYSETS`) | onboarding.json | ADR-072 #4; onboarding 2-5 kutu, mevcut `max_training_days` 6 (Edit'te) |
 | `starting_weight_reps` | 8 ("about 8 times"; ilk hedef yalnız tekrar aralığı ≤ 8'den başlayan günde) | onboarding.json | ADR-072 #3, #5 (K-954 incelemesi) |
 | `welcome_example_ms` | 1900 (her örnek karar bu kadar görünür; bir tur döner, ilkinde durur; Hareketi Azalt açıkken ilki sabit) | onboarding.json | ADR-072 #2, prototip `#welcome` (K-966) |
+| `about_wheel_start` | boy 178 cm, kilo 84 kg, yaş 27 (prototip `#ob-about`); boy ve yıl cevap olarak başlar, kilo yalnız tekerlek oynatılınca sayılır (ilk tartı kaydı olur) | onboarding.json | ADR-072 #2 (K-966) |
+| `weight_wheel` | en az 30 kg, adım 0,5 kg / 1 lb; en çok `weigh_in_max_kg` | onboarding.json | ADR-072 #2 (K-966) |
 | `trial_reminder_days_before` | 2 | subscription.json | **mevcut**, ADR-058 Ek 1 |
 
 ## Kural olmayan sunumlar (yeni kural yazılmaz, mevcut çıktıdan şablon)

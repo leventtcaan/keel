@@ -40,4 +40,6 @@ export const onboardingParams = {
   weighInMaxKg: param<number>('weigh_in_max_kg'),
   waistMaxCm: param<number>('waist_max_cm'),
   welcomeExampleMs: param<number>('welcome_example_ms'),
+  wheelStart: param<{ height_cm: number; weight_kg: number; age_years: number }>('about_wheel_start'),
+  weightWheel: param<{ min_kg: number; step_kg: number; step_lb: number }>('weight_wheel'),
 };

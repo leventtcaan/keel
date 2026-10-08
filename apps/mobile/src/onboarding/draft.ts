@@ -6,7 +6,7 @@
 import type { components } from '@/api/schema';
 import { type UnitSystem, heightCmFromImperial, parseWaistCm, parseWeightKg, roundTo } from '@/units/units';
 
-import { type Step, walk } from './flow';
+import { type RetiredStep, type Step, walk } from './flow';
 import { onboardingParams as P } from './params';
 
 type Schemas = components['schemas'];
@@ -88,7 +88,7 @@ export function heightCm(height: Draft['height'], system: UnitSystem): number | 
 }
 
 /** Whether the step's answers let the user go on. The information steps ask nothing. */
-export function stepComplete(step: Step, draft: Draft, system: UnitSystem, thisYear: number): boolean {
+export function stepComplete(step: Step | RetiredStep, draft: Draft, system: UnitSystem, thisYear: number): boolean {
   switch (step) {
     case 'goal':
       return draft.goal !== null;

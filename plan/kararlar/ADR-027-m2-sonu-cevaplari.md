@@ -35,3 +35,6 @@ Uygulanacak işler backlog'a eklendi: K-222 (faz/mini cut/hard stop uygulaması 
 K-223 (motor: K-64 herkese, L-4 alt yağ, kadında LEA'sız aşağı adım yok, adım metni), K-224 (iç yağ tahmini: referans
 seçimi + WHtR bandı; eşleme araştırmadan), K-225 (profil: 18+ ve kısıt alanı rıza kapısında), K-226 (FDC Foundation +
 SR Legacy içe aktarma). ADR-021 madde 4 artık geçici değil.
+
+## Ek 1 · #6 kısa etiketler (K-966, 2026-10-08, agent, teknik)
+Aktivite sorusu 4 NASEM düzeyinde kalır; günlük hayattan uzun örnekler prototipin kısa etiketlerine indi ("Mostly sitting", "Some walking", "On my feet a lot", "Physical work"), ADR-072 #9 kelime bütçesi (ekran ≤25) yüzünden. Düzeyler ve motor değişmez.

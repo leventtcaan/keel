@@ -38,6 +38,22 @@
       "note": "How long each example call shows on the welcome screen (prototype #welcome). They turn once and rest on the first: no endless motion; with Reduce Motion on, the first stays."
     },
     {
+      "key": "about_wheel_start",
+      "value": { "height_cm": 178, "weight_kg": 84, "age_years": 27 },
+      "unit": "cm, kg, years",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "Where the about-you wheels start (prototype #ob-about: 178 cm, 84 kg, born 1999 in 2026). Height and year start as the answer, so Continue is open; the weight goes out as the first weigh-in, so it counts only once the person moves its wheel."
+    },
+    {
+      "key": "weight_wheel",
+      "value": { "min_kg": 30, "step_kg": 0.5, "step_lb": 1 },
+      "unit": "kg, lb",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "The weight wheel's first row and its steps (prototype: half kilograms); its last row is weigh_in_max_kg, what the server keeps."
+    },
+    {
       "key": "adult_min_year_gap",
       "value": 19,
       "unit": "years",

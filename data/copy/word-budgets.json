@@ -106,27 +106,57 @@
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/health-data.tsx",
+      "keys": [
+        "onboarding.consent.title",
+        "onboarding.consent.why",
+        "onboarding.consent.kept",
+        "onboarding.consent.sold",
+        "onboarding.consent.deleted",
+        "onboarding.healthData.allow",
+        "onboarding.healthData.notNow"
+      ],
+      "notFirstView": ["onboarding.consent.fullText", "consent.health_data.body", "onboarding.consent.continueWithout", "onboarding.continue", "onboarding.healthData.withdraw", "onboarding.healthData.allowed", "onboarding.healthData.declinedNote", "onboarding.healthData.failed", "onboarding.serverError"]
     },
     {
       "screen": "ob-about",
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/about.tsx",
+      "keys": [
+        "onboarding.about.title",
+        "onboarding.about.why",
+        "onboarding.about.metric",
+        "onboarding.about.imperial",
+        "onboarding.about.height",
+        "units.cmUnit",
+        "onboarding.about.weight",
+        ["units.kgUnit", "units.lbUnit"],
+        "onboarding.about.born",
+        "onboarding.about.year",
+        "onboarding.about.sex",
+        "onboarding.about.male",
+        "onboarding.about.female",
+        "onboarding.continue"
+      ],
+      "notFirstView": ["units.feetInches"]
     },
     {
       "screen": "ob-activity",
       "budget": 25,
       "source": "ADR-069 #4",
       "task": "K-966",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/activity.tsx",
+      "keys": [
+        "onboarding.activity.title",
+        "onboarding.activity.why",
+        "onboarding.activity.INACTIVE",
+        "onboarding.activity.LOW_ACTIVE",
+        "onboarding.activity.ACTIVE",
+        "onboarding.activity.VERY_ACTIVE"
+      ],
+      "notFirstView": ["onboarding.tryAgain", "onboarding.saving"]
     },
     {
       "screen": "ob-weights",

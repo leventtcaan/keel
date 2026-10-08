@@ -3,14 +3,9 @@
  * lifter, the experienced one and the one who brings a program walk different questions. Pure, so every branch is
  * checked here; onboarding-flow.test.tsx walks the screens themselves.
  */
-import { type Answers, SCREENS, branchOf, nextStep, questionsOf, walk } from '@/onboarding/flow';
+import { type Answers, RETIRED_STEPS, SCREENS, branchOf, nextStep, questionsOf, walk } from '@/onboarding/flow';
 
-const answers = (overrides: Partial<Answers> = {}): Answers => ({
-  experience: null,
-  programChoice: null,
-  healthConsent: null,
-  ...overrides,
-});
+const answers = (overrides: Partial<Answers> = {}): Answers => ({ experience: null, programChoice: null, ...overrides });
 
 describe('the branch: decided by the experience and the program answers', () => {
   test('before either is answered, and for someone just starting: the new lifter', () => {
@@ -49,44 +44,36 @@ describe('the questions of each branch (ADR-072 #2)', () => {
 });
 
 describe('the walk: the screens a user goes through today', () => {
-  // The questions that have a screen, in the branch's order; then, until the consent, about you and activity screens are
-  // rebuilt, the steps the walk has always ended on (Apple Health saves the profile).
-  const TAIL = ['photos', 'expectations', 'appleHealth'];
-
-  test('the new lifter walks every question of the branch', () => {
+  test('the new lifter walks every question of the branch, and it ends there: activity saves (K-967 adds what follows)', () => {
     expect(walk(answers({ experience: 'NEW', programChoice: 'BUILD_ONE_FOR_ME' }))).toEqual([
-      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity', ...TAIL,
+      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity',
     ]);
   });
 
   test('the experienced lifter: the starting weights join with their screen (K-967)', () => {
     expect(walk(answers({ experience: 'Y3_PLUS', programChoice: 'BUILD_ONE_FOR_ME' }))).toEqual([
-      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity', ...TAIL,
+      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity',
     ]);
   });
 
   test('the own program: until bringing it in has its screen (K-968), the days are asked as today', () => {
     expect(walk(answers({ experience: 'Y1_3', programChoice: 'BRING_MY_OWN' }))).toEqual([
-      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity', ...TAIL,
-    ]);
-  });
-
-  test('the foods to avoid only with the health consent: a food someone cannot eat may be an allergy (ADR-027 #14)', () => {
-    expect(walk(answers({ healthConsent: 'declined' }))).not.toContain('foods');
-    expect(walk(answers({ healthConsent: 'granted' }))).toEqual([
-      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity', 'foods', ...TAIL,
+      'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity',
     ]);
   });
 
   test('every step walked has a screen, and every screen is walked by someone', () => {
     const walked = new Set(
       (['NEW', 'Y3_PLUS'] as const).flatMap((experience) =>
-        (['BUILD_ONE_FOR_ME', 'BRING_MY_OWN'] as const).flatMap((programChoice) =>
-          (['granted', 'declined'] as const).flatMap((healthConsent) => walk(answers({ experience, programChoice, healthConsent }))),
-        ),
+        (['BUILD_ONE_FOR_ME', 'BRING_MY_OWN'] as const).flatMap((programChoice) => walk(answers({ experience, programChoice }))),
       ),
     );
     expect([...walked].sort()).toEqual([...SCREENS].sort());
+  });
+
+  test('the foods to avoid, photos, what to expect and Apple Health are off every walk (ADR-069 #3, ADR-072 #8)', () => {
+    expect(RETIRED_STEPS).toEqual(['foods', 'photos', 'expectations', 'appleHealth']);
+    for (const step of RETIRED_STEPS) expect(SCREENS as readonly string[]).not.toContain(step);
   });
 });
 
@@ -94,12 +81,11 @@ describe('the next step', () => {
   test('follows the walk', () => {
     expect(nextStep('goal', answers())).toBe('experience');
     expect(nextStep('program', answers({ programChoice: 'BRING_MY_OWN' }))).toBe('days');
-    expect(nextStep('activity', answers({ healthConsent: 'granted' }))).toBe('foods');
-    expect(nextStep('activity', answers({ healthConsent: 'declined' }))).toBe('photos');
+    expect(nextStep('consent', answers())).toBe('about');
   });
 
-  test('none after the last step, and none from a step outside the walk', () => {
-    expect(nextStep('appleHealth', answers())).toBeNull();
-    expect(nextStep('foods', answers({ healthConsent: 'declined' }))).toBeNull();
+  test('none after the last step, and none from a step off the walk', () => {
+    expect(nextStep('activity', answers())).toBeNull();
+    for (const step of RETIRED_STEPS) expect(nextStep(step, answers())).toBeNull();
   });
 });
