@@ -43,9 +43,9 @@ const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
   days: [
-    { id: 'a', nameKey: 'full_body_a', weekday: 'MONDAY', exercises: [] },
-    { id: 'b', nameKey: 'full_body_b', weekday: 'WEDNESDAY', exercises: [] },
-    { id: 'c', nameKey: 'full_body_a', weekday: 'FRIDAY', exercises: [] },
+    { id: 'a', nameKey: 'programDays.full_body_a.name', weekday: 'MONDAY', exercises: [] },
+    { id: 'b', nameKey: 'programDays.full_body_b.name', weekday: 'WEDNESDAY', exercises: [] },
+    { id: 'c', nameKey: 'programDays.full_body_a.name', weekday: 'FRIDAY', exercises: [] },
   ],
   week: [
     { programDayId: 'a', date: '2026-12-21', exerciseIds: [] },
@@ -81,7 +81,7 @@ const mockServices = {
   syncHealth: jest.fn(async () => 0),
   queue: { drain: jest.fn(async () => {}) },
   report: () => {},
-  reminders: { keepRestUntil: jest.fn(async () => {}), era: () => 0 },
+  reminders: { keepRestUntil: jest.fn(async () => {}), keepFirstCall: jest.fn(async () => {}), era: () => 0 },
   state: { keep: jest.fn(async () => {}), back: jest.fn(async () => {}) },
   opens: { previous: async () => null },
 };
