@@ -32,9 +32,10 @@ const mockServices = {
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
 let mockParams: Record<string, string> = { day: 'a' };
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack() },
+  router: { back: () => mockBack(), replace: (...args: unknown[]) => mockReplace(...args) },
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -155,6 +156,13 @@ test("a workout of today's session under way: only the short version is left", a
   expect(screen.getByText('Short on time')).toBeTruthy();
   expect(screen.queryByText('Move it')).toBeNull();
   expect(screen.queryByText('Skip today')).toBeNull();
+});
+
+test('"Gym is busy" asks which move is taken, for today only', async () => {
+  await show();
+  await fireEvent.press(await screen.findByText('Gym is busy'));
+  expect(mockReplace).toHaveBeenCalledWith({ pathname: '/swap', params: { day: 'a', scope: 'today' } });
+  expect(mockPost).not.toHaveBeenCalled();
 });
 
 test("a day that is not today's session has nothing to change", async () => {

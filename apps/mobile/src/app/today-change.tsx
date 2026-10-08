@@ -18,7 +18,9 @@ import { activeWorkout } from '@/train/workout';
 
 type Change = components['schemas']['TodayChange']['change'];
 
-const SAID = { conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
+type Row = 'short' | 'busy' | 'move' | 'skip';
+const CHANGES: Record<Exclude<Row, 'busy'>, Change> = { short: 'SHORT', move: 'MOVE', skip: 'SKIP' };
+const SAID ={ conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
 
 /**
  * "Change today" (K-970, ADR-073 #5, Ek 3; prototype `#today`), opened from today's card with its program day. Short on
@@ -66,14 +68,20 @@ export default function TodayChangeScreen() {
     if (answer.kind === 'done') router.back();
     else setProblem(t(SAID[answer.kind]));
   };
-  const row = (change: Change, key: string) => (
+  // "Gym is busy" is a swap for today: which move is taken first (the swap sheet), never a toast.
+  const act = (key: Row) => {
+    if (session === null) return;
+    if (key === 'busy') router.replace({ pathname: '/swap', params: { day: session.day.id, scope: 'today' } });
+    else void send(CHANGES[key]);
+  };
+  const row = (key: Row) => (
     <Pressable
-      key={change}
+      key={key}
       accessibilityRole="button"
       accessibilityLabel={`${t(`todayChange.${key}.title`)}. ${t(`todayChange.${key}.body`)}`}
       accessibilityState={{ disabled: busy }}
       disabled={busy}
-      onPress={() => void send(change)}
+      onPress={() => act(key)}
       style={({ pressed }) => [styles.row, { backgroundColor: color.surface }, (pressed || busy) && styles.dim]}>
       <Text style={[styles.title, { color: color.text }]}>{t(`todayChange.${key}.title`)}</Text>
       <Text style={[styles.small, { color: color.textSecondary }]}>{t(`todayChange.${key}.body`)}</Text>
@@ -87,9 +95,10 @@ export default function TodayChangeScreen() {
     body = (
       <View style={styles.rows}>
         {started && <Text style={[styles.text, { color: color.textSecondary }]}>{t('todayChange.started')}</Text>}
-        {short ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('todayChange.shortNow')}</Text> : row('SHORT', 'short')}
-        {!started && row('MOVE', 'move')}
-        {!started && row('SKIP', 'skip')}
+        {short ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('todayChange.shortNow')}</Text> : row('short')}
+        {!started && row('busy')}
+        {!started && row('move')}
+        {!started && row('skip')}
       </View>
     );
   }
