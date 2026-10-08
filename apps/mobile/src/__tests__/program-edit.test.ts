@@ -7,6 +7,7 @@
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import {
+  canStep,
   type EditedDay,
   isPending,
   newDay,
@@ -108,20 +109,33 @@ describe('moves', () => {
     let days = oneMove;
     for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'min', -1);
     for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', -1);
-    expect(days[0].moves[0].reps).toEqual({ min: 1, max: 2 }); // a range: the most above the fewest (OwnProgram)
-    for (let i = 0; i < 3; i++) days = stepped(days, 0, 0, 'max', 1);
+    expect(days[0].moves[0].reps).toEqual({ min: 1, max: 1 }); // a fixed target: the most at the fewest (OwnProgram, K-991)
+    for (let i = 0; i < 4; i++) days = stepped(days, 0, 0, 'max', 1);
     for (let i = 0; i < 2; i++) days = stepped(days, 0, 0, 'min', 1);
     expect(days[0].moves[0].reps).toEqual({ min: 3, max: 5 });
   });
 
-  test('the rep range stays a range: the fewest at least one and under the most, the most at most the reps a set takes', () => {
+  test('the fewest at least one and at most the most, the most at most the reps a set takes', () => {
     let days = oneMove;
     for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'min', 1);
-    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max - 1, max: REPS.COMPOUND.max });
+    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max, max: REPS.COMPOUND.max });
     for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', -1);
-    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max - 1, max: REPS.COMPOUND.max });
+    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max, max: REPS.COMPOUND.max });
     for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', 1);
     expect(days[0].moves[0].reps.max).toBe(workoutParams.maxReps);
+  });
+
+  test('5 x 5: the fewest steps up to the most, the most down to the fewest, never past; the program sends it as it is (K-991)', () => {
+    let days = stepped(oneMove, 0, 0, 'sets', 5 - SETS);
+    for (let i = REPS.COMPOUND.min; i > 5; i--) days = stepped(days, 0, 0, 'min', -1);
+    for (let i = REPS.COMPOUND.max; i > 5; i--) days = stepped(days, 0, 0, 'max', -1);
+    const five = days[0].moves[0];
+    expect(five).toEqual({ exerciseId: 'squat', sets: 5, reps: { min: 5, max: 5 } });
+    expect(canStep(five, 'min', 1)).toBe(false);
+    expect(canStep(five, 'max', -1)).toBe(false);
+    expect(canStep(five, 'min', -1)).toBe(true);
+    expect(canStep(five, 'max', 1)).toBe(true);
+    expect(ownProgramOf(days)?.days[0].exercises).toEqual([{ exerciseId: 'squat', sets: 5, reps: { min: 5, max: 5 } }]);
   });
 });
 

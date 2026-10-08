@@ -240,12 +240,12 @@ test('sets never under one: the stepper stops there, its value said as words, it
   expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: sets }) })).toBeEnabled();
 });
 
-test('the fewest reps stop one under the most: its + off there, the value said as words', async () => {
+test('the fewest reps stop at the most (a fixed target, K-991): its + off there, the value said as words', async () => {
   await toEditor();
   await addMove('squ', 'squat');
   const fewest = t('programEditor.minLabel', { move: name('squat') });
   await step(fewest, 'increment', REPS.COMPOUND.max);
-  expect(screen.getByRole('adjustable', { name: fewest })).toHaveAccessibilityValue({ text: String(REPS.COMPOUND.max - 1) });
+  expect(screen.getByRole('adjustable', { name: fewest })).toHaveAccessibilityValue({ text: String(REPS.COMPOUND.max) });
   expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: fewest }) })).toBeDisabled();
 });
 

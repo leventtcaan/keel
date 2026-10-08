@@ -244,6 +244,10 @@
       "lighter": "{sets} of {base} sets"
     },
     "reps": "{min}-{max} reps",
+    "repsFixed": {
+      "one": "1 rep",
+      "other": "{count} reps"
+    },
     "next": "Next {load} × {reps}",
     "nextAdded": "Next +{load} × {reps}",
     "start": "Start workout",

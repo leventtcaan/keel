@@ -482,6 +482,21 @@ class ProgramReviewTests {
     }
 
     @Test
+    void aFixedRepTargetIsReviewedAsAnyRangeIs() {
+        // K-991 (ADR-073 Ek 4): 5 x 5 on a compound is under 6-10 (K-21), a suggestion the user can switch off; a fixed
+        // target inside the kind's range (8 x 8 on a compound, 10 x 10 on an isolation move) is not flagged.
+        List<List<Move>> fiveByFive = upperLower();
+        set(fiveByFive, 0, 0, move -> reps(move, C_MIN - 1, C_MIN - 1));
+        List<List<Move>> inside = upperLower();
+        set(inside, 0, 0, move -> reps(move, C_MIN + 2, C_MIN + 2));
+        set(inside, 0, 3, move -> reps(move, I_MIN + 2, I_MIN + 2));
+
+        assertThat(of(review(fiveByFive), Finding.REP_RANGE)).singleElement()
+                .satisfies(s -> assertThat(s.changes()).containsExactly(new SetRepRange(0, 0, "bench_press", C_MIN - 1, C_MIN - 1, C_MIN, C_MAX)));
+        assertThat(of(review(inside), Finding.REP_RANGE)).isEmpty();
+    }
+
+    @Test
     void anExerciseOnTwoDaysIsOneSuggestionWithOneChangePerDay() {
         List<List<Move>> week = upperLower();
         set(week, 0, 0, move -> reps(move, 3, 5));

@@ -20,7 +20,8 @@ import java.util.function.Function;
  * The next session's load and reps after a workout (K-217): what the engine's double progression step (K-109, H3 B4)
  * means on the program. An added load starts again from the bottom of the range — unless the deload ladder holds the
  * load (K-110 first rung), then the top of the range is the target. Added reps aim one above the weakest set, within the
- * range. A held session (unclean form, G6 K-31) is repeated, never under the range. An isolation lift has no target
+ * range; a fixed rep target (5 x 5, K-991) has no reps to climb, so its target is its reps until the load is added. A held
+ * session (unclean form, G6 K-31) is repeated, never under the range. An isolation lift has no target
  * (G6 K-33). Load is added only when every planned set was done at the top, as the gym in use can make it (K-414).
  */
 final class NextTargets {
@@ -70,7 +71,8 @@ final class NextTargets {
                                                 !ceilingReaches(session.loadKg(), range, kg, targetReps, plannedRir, parameters));
                                 case LoadSteps.Rounding.Unknown() -> new Target(newLoadKg, targetReps);
                             });
-            case ProgressionStep.AddReps() -> Optional.of(new Target(session.loadKg(), Math.min(weakest + 1, range.max())));
+            // A fixed rep target (K-991) has no rep step: short of it, the same load for the same reps again.
+            case ProgressionStep.AddReps() -> Optional.of(new Target(session.loadKg(), range.fixed() ? range.max() : Math.min(weakest + 1, range.max())));
             case ProgressionStep.Hold() -> Optional.of(new Target(session.loadKg(), Math.max(weakest, range.min())));
             case ProgressionStep.NotTracked() -> Optional.empty();
         };
