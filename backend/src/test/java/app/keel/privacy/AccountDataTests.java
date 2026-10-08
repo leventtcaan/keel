@@ -195,7 +195,9 @@ class AccountDataTests {
         assertThat((List<Map<String, Object>>) ((Map<String, Object>) sections.get("consent")).get("events"))
                 .anySatisfy(event -> assertThat(event).containsEntry("provider", "Example AI")
                         .containsEntry("dataTypes", List.of("meal photo", "meal note", "coach question")));
-        assertThat(body).doesNotContain("93.7", "111.3", "12345", bystanderSubject, bystander.value().toString());
+        // The bystander's numbers as JSON values (K-994): "12345" can sit inside a random UUID of the user's own program.
+        assertThat(body).doesNotContainPattern(JsonNumbers.asValue("93.7")).doesNotContainPattern(JsonNumbers.asValue("111.3"))
+                .doesNotContainPattern(JsonNumbers.asValue("12345")).doesNotContain(bystanderSubject, bystander.value().toString());
     }
 
     private void awaitNoRowsOf(AccountId account) throws InterruptedException {
