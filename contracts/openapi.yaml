@@ -1619,8 +1619,28 @@ paths:
                 $ref: "#/components/schemas/Targets"
         default:
           $ref: "#/components/responses/Error"
+  /v1/targets/starting:
+    get:
+      tags: [decision]
+      operationId: getStartingTarget
+      summary: The calorie target the first call starts the plan with, before it is made (K-989)
+      description: |
+        The plan-ready screen's food row (ADR-072 #6): the engine's starting estimate on today's inputs, the same computation
+        the first weekly call starts the plan with (U1), so with the same inputs the same number. Nothing is stored: it is
+        not a call. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent; CONFLICT without a profile, and once the
+        first call has started the plan (its targets are GET /v1/targets); NOT_FOUND without a weigh-in in the evaluation
+        window, as the first call would then start without a target. In each case the app shows no row.
+      responses:
+        "200":
+          description: The starting target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartingTarget"
+        default:
+          $ref: "#/components/responses/Error"
 
-  # ── coach (M5, ADR-004) ────────────────────────────────────────────────────────────────────────────────────
+  # ── coach (M5, ADR-004)────────────────────────────────────────────────────────────────────────────────────
   /v1/coach/messages:
     post:
       tags: [coach]
@@ -4365,6 +4385,22 @@ components:
           type: integer
         trainingSessionsPerWeek:
           type: integer
+    StartingTarget:
+      type: object
+      description: |
+        Where the plan's calories start (K-114, ADR-072 #6): the target is one number (U5: a target may be), the maintenance
+        estimate it comes from is a range (U5), and the scale corrects it over observationDays (the engine's
+        maintenance_observation_days for the user's sex) before the first calorie call.
+      required: [targetKcal, maintenanceKcal, observationDays]
+      properties:
+        targetKcal:
+          type: integer
+          minimum: 0
+        maintenanceKcal:
+          $ref: "#/components/schemas/KcalRange"
+        observationDays:
+          type: integer
+          minimum: 1
 
     # ── coach ────────────────────────────────────────────────────────────────────────────────────────────────
     CoachQuestion:
