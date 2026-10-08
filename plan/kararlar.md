@@ -39,7 +39,7 @@
 | [ADR-032](kararlar/ADR-032-salon-profili-ve-yuvarlama.md) | Salon profili, ekipman türü (dambıl = tek ağırlık), artış seans sonunda mümkün en yakın yüke yuvarlanır, plaka DP | KABUL |
 | [ADR-033](kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md) | Geçmiş sunucudan (+ gönderilmemiş yerel kayıtlar), rekor yalnız çalışma setinden, izolasyonda yük rekoru yok, hacim rekoru yok | KABUL |
 | [ADR-034](kararlar/ADR-034-tarif-hafizasi.md) | Tarif = malzemeler + porsiyon; sayı her seferinde veritabanından; öğünde `recipe:<id>` tek kalem, porsiyonla ölçeklenir; sağlık verisi | KABUL |
-| [ADR-035](kararlar/ADR-035-superset-ve-kendi-hareket.md) | Süperset = setin üstünde `supersetId`; kullanıcının hareketi sınıflamasıyla (`custom:<id>`), programa girmez, silinmez | KABUL |
+| [ADR-035](kararlar/ADR-035-superset-ve-kendi-hareket.md) | Süperset = setin üstünde `supersetId`; kullanıcının hareketi sınıflamasıyla (`custom:<id>`), silinmez; Ek 1: kendi programına girer, motor ona kural uygulamaz | KABUL |
 | [ADR-036](kararlar/ADR-036-bildirimler.md) | Bildirimler yalnız yerel (expo-notifications), üç tür telefonda planlanır, her değişiklik sırayla hepsini yeniden kurar, kapalı başlar | KABUL |
 | [ADR-037](kararlar/ADR-037-m4-sonu-cevaplari.md) | M4 sonu cevapları (33-54): rıza metni silmeyi söyler, sıçrama sınırı → tekrar, setsiz antrenman sayılmaz, düzenleme hedefi yeniler, cinsiyete göre figür, onboarding'de hatırlatma adımı, mola haftası susturur | KABUL |
 | [ADR-038](kararlar/ADR-038-durum-modu.md) | Durum modu: beş beyan, hafta duraklar (af yanmaz), karar `declared_context` ile bekler (güvenlik önce), 3. hafta tek soru; dönüş yükü/minimum doz kaynak bekler | KABUL |

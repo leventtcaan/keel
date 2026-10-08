@@ -72,7 +72,7 @@ public class TrainingLog {
 
     /**
      * Each move's working sets in its last session started before {@code before} (K-960: "Beat last time"), by move, in
-     * the order they were done. A move outside the catalog (the user's own) is left out: a program has none. One scan of
+     * the order they were done. A move outside the catalog (the user's own) is left out: in a program it has no table (ADR-035 Ek 1). One scan of
      * the account's working sets, the last start per move a window over it (read on every program view, K-960 review).
      */
     Map<String, List<WorkSet>> lastSessions(AccountId account, Instant before) {
