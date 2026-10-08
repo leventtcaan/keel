@@ -4590,6 +4590,7 @@ tasks:
       - "Taşı zinciri önizlemesi sunucudan (kayan günler, pazar sınırı → CONFLICT); telefon zinciri hesaplamaz"
       - "Bugünü değiştirmenin geri alınması: `POST /v1/program/today` FULL (kısa sürümü kaldırır) ve UNDO (o günün seansını taşıma/atlama öncesine döndürür; zincirle kayan günler de geri gelir); başlanmış seansta 409"
       - "`Program.week[]` günün seans durumunu taşır (yapıldı / açık seans + workoutId): Bu hafta ve Antrenman bitmiş seansta Start göstermez, açık seansta Continue açar; telefon antrenman listesinden eşleme yapmaz"
+      - "Sunucu bugünü söyler (`Program.today`, profilin saat dilimiyle) ve taşınan seansın nereden geldiğini (`WeekSession.movedFrom`); telefon taşı zincirini ve bugünü kendi saatinden çıkarmaz (#493 incelemesi)"
       - "Başlanmış seans ve kilit kuralları mevcut uçlarla aynı (409)"
     tests: ["ProgramStore/servis tablo testleri (hedef korunur, kaynak korunur, geri al), API testleri (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
