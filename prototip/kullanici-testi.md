@@ -67,3 +67,76 @@
 Satın alma sayfası (Apple), iOS izin sayfaları (Health, bildirim), dosya seçici (Strong/Hevy içe aktarma, paylaşım arka planı), yemek
 araması ve barkod, Instagram/TikTok paylaşımı, nasıl yapılır klipleri, fotoğraf kamerası, Ayarlar satırları, Edit program satırları
 (toast), Restore/Terms/Privacy. Prototipin senaryo durumu ekranlar arası sızabiliyor (yalnız prototip; uygulamada durum sunucudan).
+
+## Tur 2 (ikinci yürüyüş)
+
+- **Yöntem:** bağımsız ikinci yürüyüş ilk turun düzeltmelerini doğruladı (8 tamam, 4 kısmi) ve yeni bulgular çıkardı. Kararlar: (a) sunucu
+  tartı ve öğün için zaten sağlık verisi rızası istiyor (`MeasurementController` `consent.require`), prototip bunu gösterir; antrenman
+  sağlık verisi değildir, rızasız da kaydedilir; (b) Levent: sabit tekrar (5 × 5) serbest, en az en çoğa eşit olabilir.
+- **Doğrulama:** `node` sözdizimi denetimi; "seed" sekmesinde her düzeltme dokunarak yüründü, konsolda hata yok; kelime sayımı hepsi hedefte
+  (rıza reddi sonrası #ob-consent 22/25); `copy-budget.test.ts` yeşil.
+
+### Prototipte düzeltildi
+
+| # | Bulgu | Düzeltme |
+|---|---|---|
+| (a) | Rıza reddinde tartı, öğün, kalori hedefi ve Health izni hâlâ var | Tartı ve öğün kilitli: tek satır "Needs your OK for health data · Allow" (Allow rızayı verir); Bu hafta'da yemek satırı yerine aynı satır; İlerleme'de kalori, protein, adım ve kilo trendi yok; Ayarlar "Health data consent: Not allowed", Apple Health "Off"; Health izni sorulmaz; antrenman kaydı sürer |
+| (b) | Sabit tekrar girilemiyor | En az = en çok serbest; program "3 × 10" gösterir |
+| B2 | "Fill in the rest later" sonrası seansa dönüş yolu yok | Bu hafta kartı "Open workout · Continue", Antrenman "Continue workout"; seans girilen setleri ve süresiyle açılır |
+| B3, C17 | Değiştirilen hareket eski kiloyu devralıyor; sayfa başlığı ve seçenekler yanlış | Yeni hareket kilosuz başlar ("Pick a weight"), kendi geçmişiyle; başlık şimdiki hareketi söyler, o seçenek listede yok; planlı harekete dönüş "Back to the planned move"; geri al |
+| Süre, C14 | 24:10 sabit, Pause süreyi durdurmuyor, özet sayıları uydurma | Süre gerçek ve Pause'da durur, devamda kaldığı yerden; özetin dakika, kaldırılan kilo ve set sayısı girilen setlerden (atlanan sayılmaz); paylaşım aynı sayıları kullanır |
+| C1 | Antrenman bitince ekranlar değişmiyor | Bu hafta: gün ✓, Start yok, "N sets · X kg lifted"; Antrenman: "Done"; İlerleme: güç kartı açılır (hareket başına başlangıç seti), kas haritası dolar, "Done, 30 min" kardiyoyu 1/2 sayar |
+| C2 | Öğün Food left'i düşürmüyor; İlerleme'den eklenen öğün ana sayfaya atıyor | Öğün aralığı Food left'ten ve İlerleme kalorisinden düşer (610-720); geldiği ekrana döner; geri al |
+| C4 | Uygulanan inceleme önerisi programda görünmüyor | Öneri programa işlenir (izolasyon hareketinin seti artar ya da hareket eklenir; fazla set kırpılır; 5 günü aşan program en hafif günü dağıtır); içe aktarılan PPL'de göğüs kırpması Push gününde görünür |
+| C5 | Edit › Split hep "PPL" | Gerçek split: "Upper / Lower", "Push / Pull / Legs", "PPL + Upper / Lower", "Your own", "Full body" |
+| C6 | 5 günlük planda taşı ne olacağını söylemiyor | Taşı zinciri: sayfa ve toast kayan günleri söyler ("Tue · Push, Wed · Pull, Thu · Legs"); aynı güne iki seans yok; pazarı aşacaksa taşımaz |
+| C7 | Kısa sürüm kardiyo ve geri dönüş belirsiz | "about 35 min, cardio optional"; Change sayfası kısa sürümdeyken "Full workout" sunar; kartta geri al |
+| C8 | 1. hafta kararında gün 14 sabit | "Food and weight wait until day 14" erkek, 28 kadın |
+| C9 | Kalori satırı açığın ne zaman başladığını söylemiyor | "Starts at maintenance. Your deficit starts after day 14/28." (kas hedefinde "surplus") |
+| C10 | Karardan sonra tarih ve hafta sıçrıyor | 12. hafta pazartesi kararı "Got it" → 13. hafta, pazartesi, Full body B; 1. hafta "Sounds right" → 2. hafta (hafta şeridi, seçilen günler, karar kartı, Full body B) |
+| C11 | İlerleme › Calls eski kararı düğmelerle açıyor | Eski kararlar salt okunur (düğme yok) |
+| C12 | "Settings" dokunulamıyor; kararlar kapalıyken "Tell me Monday morning" var | Settings düğme; bildirim anahtarı kararlar kapalıyken yok |
+| C13 | Paylaşım satırı fotoğraf seçeneğiyle çelişiyor | "No body weight. Your photo stays yours." |
+| C15 | Atmak geri alınamıyor | "Workout discarded" toastunda geri al seansı geri getirir |
+| C16 | Atlanan set "100 × 0" yeşil tik; düzeltilen setin analizi bayat | Atlanan set "Skipped" (gri); düzeltme, silme ve atlama analiz satırını yeniden hesaplar; set silme ve atlama geri alınır |
+| C18 | "Keep" sonrası karar ekranı eski hedefi göstermiyor | "Bench, in force 72.5 × 9" |
+| C19 | Yeni başlayanın "Keep going"i neden gün eklenmediğini söylemiyor | "3 days is enough to start." |
+| M5 | "Gym is busy" toast | Önce "Which one is taken?" hareket listesi, sonra seçenekler |
+| M6 | Başlangıç ağırlıkları programda olmayan hareketleri soruyor | Yalnız programdaki ana hareketler (yazılan programda yoksa adım hiç gelmez) |
+| M7 | "Read the full text" boş yer tutucu | Tam metin taslağı açılır, yeniden çizimde açık kalır |
+| P1 | Geri al toastu çok kısa | Geri allı toast 5 sn |
+| P3 | "Type it in" örnek programla başlıyor | Tek boş günle başlar |
+| P6 | 1. hafta kararında seçimden sonra da "Sounds right" | Seçimden sonra "Done" |
+| P7 | Özette yalnız kalan kutu | İzin yoksa üç kutu tek satırda |
+
+### Kodda zaten doğru (Part 2 PR'ları)
+
+| Bulgu | Durum |
+|---|---|
+| Rızasız tartı ve öğün | Sunucu `consent.require` ile reddeder; başlangıç kalorisi 403 `CONSENT_REQUIRED` (ADR-072 Ek 1) |
+| Değiştirilen hareketin kendi geçmişi ve hedefi | "From now on" hedefsiz başlar, bugünlük değişim yalnız o seans (K-964, ADR-073 Ek 3) |
+| Taşı zinciri ve pazar sınırı | Sunucu zincirleme kaydırır, pazarı aşarsa CONFLICT (K-964) |
+| Açık seans haftayı sayar, kendiliğinden kapanır | K-961 |
+| İnceleme önerisinin programa uygulanışı ve geri alma | K-956 (değişiklik kaydı, geri al) |
+
+### Part 3-4 arayüz görevlerine not
+
+| Görev | Not |
+|---|---|
+| K-967 | Rıza reddinde plan ekranı: kalori satırı ve bildirim anahtarı yok; kalori satırında "Starts at maintenance" ve gözlem günü sunucudan |
+| K-968 | Boş günle başla; sabit tekrar serbest; uygulanan önerinin programdaki karşılığı (hangi harekete kaç set) incelemede de görünsün |
+| K-969 | Bitmiş seans, açık seans (Continue), kilit satırı, Food left aralığı, karar sonrası hafta durumu (sunucunun haftası; telefon tarih hesaplamaz) |
+| K-970 | "Gym is busy" önce hareket seçtirir; Split satırı gerçek split; taşı zincirini önceden göster; kısa sürümde "Full workout" |
+| K-971 / K-972 | Gerçek süre ve Pause; atlanan set ayrı görünüm; düzeltmede analiz yeniden; atma ve set silmede geri al |
+| K-973 | Değiştirilen hareket kalibrasyonla başlar |
+| K-974 | Özet sayıları girilen setlerden; izin yoksa üç kutu |
+| K-976 | Paylaşım alt satırı |
+| K-978 | Eski kararlar salt okunur; gözlem günü cinsiyete göre; seçimden sonra "Done"; yeni başlayana neden gün eklenmediği |
+| K-979 | Antrenman sonrası güç ve kas haritası, kardiyo sayımı, öğün kalorisi; rızasız kartlar yok |
+| K-980 | Rızasız tartı ve öğün kilidi; öğün geldiği ekrana döner |
+| K-982 | Rıza "Not allowed" satırı rıza akışını açar; Apple Health durumu gerçek |
+
+### Bilerek sahte kalan
+
+Tur 1'dekiler aynen. Ek olarak: tam rıza metni taslaktır (kayıtlı sürüm `data/copy`'den); 12. hafta özetindeki rekor ve "What moved" satırları
+örnek veridir; İlerleme'deki kas haritası seansın gerçek kaslarından değil örnek dolumdan çizilir; tek "Full body B" listesi örnektir.

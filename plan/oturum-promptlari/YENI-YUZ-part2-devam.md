@@ -10,7 +10,7 @@ K-985 #470 · K-987 (651dd851) · K-989 #478 · #481 (ob-type bütçe satırı).
 - **#475 K-967 B2 (paywall):** inceleme temiz, CI yeşil, auto-merge açık. Birleştiyse K-967 `done`.
 - **#479 K-968 "Type it in" düzenleyicisi:** iki inceleme düzeltildi, CI yeşil (303af97f). **Levent'in prototip onayını bekliyor** (`#ob-type`, artifact).
   Onay gelince: `gh pr update-branch 479` → `--auto --squash` → K-968 `done`. Prototip tur 2'de "Type it in" tek boş günle başlıyor; app de öyle.
-- **Prototip tur 2 (ajan çalışıyordu):** `prototip/yeni-yuz.html` ana checkout'ta **commitlenmemiş değişiklik** olabilir → `git status`; doluysa
+- **Prototip tur 2:** bitti, commitlendi ve yayımlandı (sürüm 7); Levent bakacak.
   `node` sözdizimi + `cd apps/mobile && npx jest src/__tests__/copy-budget.test.ts` → commit → artifact'i yeniden yayımla (RzN9fM7BLhDrHjUMntmkXK) →
   Levent'e "bak" de. `prototip/kullanici-testi.md`'ye "Tur 2" bölümü ekleniyordu. Yerel önizleme: `.claude/launch.json` "prototype" (8791, scratchpad/proto).
 - **Levent'e:** #479 için `#ob-type` onayı.
