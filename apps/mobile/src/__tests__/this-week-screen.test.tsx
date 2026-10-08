@@ -68,12 +68,17 @@ const mockGET = jest.fn(async (path: string, _init?: unknown) => {
 let mockPost: Answer = ok({});
 const mockPOST = jest.fn(async (_path: string, _init?: unknown) => mockPost);
 const mockPush = jest.fn();
+// The screen read again on focus, as expo-router does each time it comes into view.
+let mockRefocus: () => void = () => {};
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
   useRouter: () => ({ push: mockPush }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
-    React.useEffect(() => effect(), [effect]);
+    React.useEffect(() => {
+      mockRefocus = effect;
+      effect();
+    }, [effect]);
   },
 }));
 const mockServices = {
@@ -302,6 +307,20 @@ describe("a call declined: last week's plan kept (K-963, user test 8 Oct)", () =
     expect(screen.getByText(t('today.call.applyFailed'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('thisWeek.hero.useCall') })).toBeOnTheScreen();
   });
+
+  test('not used is said for that read only: read again, the call is a new try', async () => {
+    mockPOST.mockImplementationOnce(async () => {
+      throw new TypeError('Network request failed');
+    });
+    await show();
+    await press(t('thisWeek.hero.useCall'));
+    expect(screen.getByText(t('today.call.applyFailed'))).toBeOnTheScreen();
+    // Each read is parsed anew: the same call, a new object.
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'DECLINED' } }));
+    await act(async () => mockRefocus());
+    expect(screen.queryByText(t('today.call.applyFailed'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('thisWeek.hero.useCall') })).toBeOnTheScreen();
+  });
 });
 
 describe('without the health data consent (ADR-072 Ek 1: no consent, no line)', () => {
@@ -330,5 +349,14 @@ describe('a week paused (K-518): the state is the hero', () => {
     await show();
     expect(screen.getByRole('button', { name: t('today.state.back') })).toBeOnTheScreen();
     expect(screen.queryByTestId('hero')).toBeNull();
+  });
+
+  test('the check-in open in a paused week: "Open your call" under the state\'s card, so the pause can end there', async () => {
+    mockAnswers['/v1/state'] = ok({ kind: 'BUSY', since: '2026-12-22' });
+    mockAnswers['/v1/check-ins/current'] = ok({ weekOf: '2026-12-28', questions: [{ kind: 'STATE_STILL' }], answered: false });
+    await show();
+    expect(screen.getByRole('button', { name: t('today.state.back') })).toBeOnTheScreen();
+    await press(t('thisWeek.hero.monday.openLabel'));
+    expect(mockPush).toHaveBeenCalledWith('/check-in');
   });
 });

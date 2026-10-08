@@ -111,6 +111,17 @@ describe('the week strip: trained, logged, planned; an empty day is only empty',
     expect(days[4]).toMatchObject({ trained: false, planned: true });
   });
 
+  test('a session of a day gone by, not done, has no ring: it is only empty, never missed (U7)', () => {
+    const week: Schemas['WeekSession'][] = [
+      { programDayId: 'a', date: '2026-12-21', exerciseIds: [] },
+      { programDayId: 'b', date: '2026-12-23', exerciseIds: [] },
+      { programDayId: 'c', date: '2026-12-25', exerciseIds: [] },
+    ];
+    const strip = stripDays('2026-12-21', '2026-12-25', week, ['2026-12-21'], []);
+    expect(strip[2]).toMatchObject({ date: '2026-12-23', trained: false, planned: false });
+    expect(strip[4]).toMatchObject({ date: '2026-12-25', planned: true });
+  });
+
   test('a day with nothing has no mark at all (no red, no missed)', () => {
     expect(days[3]).toEqual({ weekday: 'THURSDAY', date: '2026-12-24', trained: false, logged: false, planned: false, today: false });
   });
@@ -150,6 +161,14 @@ describe('the one hero (ADR-077 #1)', () => {
   test("a week paused: the state's own card, nothing else", () => {
     const paused = data({ state: ready({ kind: 'BUSY', since: '2026-12-22' } as Schemas['DeclaredState']) });
     expect(heroOf(paused)).toEqual({ kind: 'paused' });
+  });
+
+  test('a week paused with the check-in open: "Open your call" (it asks whether the state still holds)', () => {
+    const paused = data({
+      state: ready({ kind: 'BUSY', since: '2026-12-22' } as Schemas['DeclaredState']),
+      checkIn: ready({ weekOf: '2026-12-28', questions: [{} as Schemas['Question']], answered: false }),
+    });
+    expect(heroOf(paused)).toEqual({ kind: 'monday', week: null, questions: 1, weekday: 'MONDAY' });
   });
 
   test('the check-in open, not answered: "Open your call", with the week and how many questions', () => {

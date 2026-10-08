@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { type ReactNode, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
 import { ProblemText } from '@/components/ProblemText';
@@ -14,6 +15,8 @@ import { tokens } from '@/theme/tokens';
 import { applyCall } from './call';
 import { labelKey } from './today';
 import { type Hero as HeroFace, daysBetween, weekdayOf } from './week';
+
+type Schemas = components['schemas'];
 
 type Props = {
   hero: HeroFace;
@@ -46,22 +49,23 @@ export function Hero({ hero, today, open, onToggle, onChanged }: Props) {
   const { api, report } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<{ id: string; key: string } | null>(null);
+  // Not used, said for the read it happened on (as CallCard): the call read again is a new try.
+  const [failed, setFailed] = useState<{ read: Schemas['Decision']; key: string } | null>(null);
   // A ref, not state: two taps in the same moment both see state from before either ran, a ref they share.
   const sending = useRef(false);
 
-  async function takeCall(id: string) {
+  async function takeCall(decision: Schemas['Decision']) {
     if (sending.current) return;
     sending.current = true;
     setBusy(true);
     try {
-      await applyCall(api, id);
+      await applyCall(api, decision.id);
       setFailed(null);
       onChanged();
     } catch (error) {
       const name = nameOf(error);
       report({ name });
-      setFailed({ id, key: SAID[name] ?? 'today.call.applyError' });
+      setFailed({ read: decision, key: SAID[name] ?? 'today.call.applyError' });
     } finally {
       sending.current = false;
       setBusy(false);
@@ -115,12 +119,12 @@ export function Hero({ hero, today, open, onToggle, onChanged }: Props) {
         </Pressable>
       );
       const [next, inDays] = when('thisWeek.hero.nextCall', decision.nextReview, today);
-      const use = <Button label={t('thisWeek.hero.useCall')} size="sm" disabled={busy} onPress={() => void takeCall(decision.id)} />;
+      const use = <Button label={t('thisWeek.hero.useCall')} size="sm" disabled={busy} onPress={() => void takeCall(decision)} />;
       return (
         <DecisionBlock testID="hero" eyebrow={t('thisWeek.hero.call')} aside={chevron} title={t(labelKey(decision.copyKey))}>
           {line(declined ? t('thisWeek.hero.notApplied') : t(`${decision.copyKey}.title`))}
           {declined ? foot(t('thisWeek.hero.notAppliedShort'), use) : foot(next, count(inDays))}
-          {failed?.id === decision.id ? <ProblemText style={[styles.meta, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null}
+          {failed?.read === decision ? <ProblemText style={[styles.meta, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null}
         </DecisionBlock>
       );
     }

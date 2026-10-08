@@ -38,7 +38,8 @@ const mondayOf = (day: string) => addDays(day, -WEEK.indexOf(weekdayOf(day)));
 
 /**
  * The Monday this week began: the consistency's; before it is there (no call yet, or no consent) the week the program's
- * sessions are on; neither, the week of today on the phone's calendar.
+ * sessions are on; neither, the week of today on the phone's calendar. The two fallbacks go once the server names the
+ * program's week (K-995 Program.weekOf): read it here then, and add no more date arithmetic.
  */
 export function weekMonday(consistency: Loaded<Schemas['Consistency']>, program: Loaded<Schemas['Program']>, today: string): string {
   if (consistency.state === 'ready') return consistency.value.weekOf;
@@ -49,14 +50,15 @@ export function weekMonday(consistency: Loaded<Schemas['Consistency']>, program:
 export type StripDay = { weekday: Weekday; date: string; trained: boolean; logged: boolean; planned: boolean; today: boolean };
 
 /**
- * The week's seven days: a session done (✓), a log (a weigh-in), a session still to come (the server's week: a moved
- * one on its new day, a skipped one no more). A day with none of them is only empty: nothing says missed (U7).
+ * The week's seven days: a session done (✓), a log (a weigh-in), a session still to come, today or later (the server's
+ * week: a moved one on its new day, a skipped one no more). A day with none of them is only empty: nothing says missed (U7).
  */
 export function stripDays(monday: string, today: string, week: Schemas['WeekSession'][], trainedOn: string[], loggedOn: string[]): StripDay[] {
   return WEEK.map((weekday, i) => {
     const date = addDays(monday, i);
     const trained = trainedOn.includes(date);
-    const planned = !trained && week.some((s) => s.date === date && s.skipped !== true);
+    // Only today and the days to come: a session of a day gone by, not done, is no ring (nothing reads as missed, U7).
+    const planned = !trained && date >= today && week.some((s) => s.date === date && s.skipped !== true);
     return { weekday, date, trained, logged: loggedOn.includes(date), planned, today: date === today };
   });
 }
@@ -87,17 +89,18 @@ export type Hero =
   | { kind: 'none' };
 
 /**
- * The one block at the top (ADR-077 #1), most pressing first: a week paused (the state's card, with "I'm back"); the
- * check-in open ("Open your call", ADR-077 #2); this week's call (declined: "Not applied", K-963); no call yet, the first
+ * The one block at the top (ADR-077 #1), most pressing first: the check-in open ("Open your call", ADR-077 #2), in a
+ * paused week too (the state's card stays above it); a week paused (the state's card, with "I'm back"); this week's call (declined: "Not applied", K-963); no call yet, the first
  * week and the first call's day (ADR-077 Ek 2); without the health data consent, the calls are off (ADR-072 Ek 1).
  */
 export function heroOf(data: TodayData): Hero {
-  if (data.state?.state === 'ready') return { kind: 'paused' };
+  // The check-in first, a paused week too: in a paused week it asks whether the state still holds (STATE_STILL).
   const checkIn = data.checkIn;
   if (checkIn?.state === 'ready' && !checkIn.value.answered) {
     const week = data.firstWeeks?.state === 'ready' ? data.firstWeeks.value.week : null;
     return { kind: 'monday', week, questions: checkIn.value.questions.length, weekday: weekdayOf(checkIn.value.weekOf) };
   }
+  if (data.state?.state === 'ready') return { kind: 'paused' };
   const { decision } = data;
   if (decision.state === 'ready') return { kind: 'call', decision: decision.value, declined: decision.value.application.state === 'DECLINED' };
   if (decision.state === 'consent') return { kind: 'callsOff' };
