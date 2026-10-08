@@ -5,7 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
-import { activeWorkout, extraPlan, finishRecord, lastTime, planExercise } from '@/train/workout';
+import { activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
 
 type Schemas = components['schemas'];
 
@@ -281,5 +281,40 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     const plan = extraPlan(benchMove, [], [warmup]);
     expect(plan.rows).toHaveLength(1);
     expect(plan.rows[0]).toMatchObject({ done: null, suggested: { loadKg: null, reps: null } });
+  });
+});
+
+describe("today's session is the server's (K-971, K-964, ADR-073 Ek 3): its moves as the week says, never picked here", () => {
+  const squat: Schemas['PlannedExercise'] = { exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, nextLoadKg: 100 };
+  const row: Schemas['PlannedExercise'] = { exerciseId: 'barbell_row', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
+  const curl: Schemas['PlannedExercise'] = { exerciseId: 'curl', baseSets: 2, sets: 2, reps: { min: 8, max: 12 }, targetRir: 1 };
+  const day: Schemas['ProgramDay'] = { id: 'd1', nameKey: 'full_body_a', exercises: [squat, { ...bench, nextLoadKg: 60 }, row, curl] };
+  const week = (session: Partial<Schemas['WeekSession']>): Schemas['WeekSession'][] => [
+    { programDayId: 'other', date: '2026-10-05', exerciseIds: ['x'] },
+    { programDayId: 'd1', date: '2026-10-07', exerciseIds: day.exercises.map((e) => e.exerciseId), ...session },
+  ];
+
+  test('no week from the server: the day as planned', () => {
+    expect(sessionMoves(day, undefined)).toEqual(day.exercises);
+  });
+
+  test('the short version: only the moves the server lists, in its order', () => {
+    expect(sessionMoves(day, week({ short: true, exerciseIds: ['squat', 'bench_press', 'barbell_row'] })).map((e) => e.exerciseId)).toEqual([
+      'squat',
+      'bench_press',
+      'barbell_row',
+    ]);
+  });
+
+  test("a move swapped for today is the swap's own planned move, in the place of the one it stands in for, with no target", () => {
+    const swapIn: Schemas['PlannedExercise'] = { exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
+    const moves = sessionMoves(day, week({ exerciseIds: ['squat', 'dumbbell_bench_press', 'barbell_row', 'curl'], swaps: [{ insteadOf: 'bench_press', exercise: swapIn }] }));
+    expect(moves.map((e) => e.exerciseId)).toEqual(['squat', 'dumbbell_bench_press', 'barbell_row', 'curl']);
+    expect(moves[1]).toBe(swapIn);
+    expect(moves[1].nextLoadKg).toBeUndefined();
+  });
+
+  test('a day not in the week (on no weekday) is the day as planned', () => {
+    expect(sessionMoves({ ...day, id: 'd9' }, week({}))).toEqual(day.exercises);
   });
 });
