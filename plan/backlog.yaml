@@ -3757,6 +3757,11 @@ tasks:
       - "Kahraman: ilk hafta / karar etiketi + tek satır + sayaç; #home-mon pazartesi 'Open your call'"
       - "Bugünün antrenmanı: ilk 3 hareket hedefleriyle, kardiyo satırı, Start; yemek satırı kalan bütçe aralık + Log"
       - "İlk görünüm ≤40 kelime"
+      - "Kullanıcı testi (8 Eki): 'Keep last week's plan' sonrası kart 'Not applied · Use this call' (geri alınır)"
+      - "Kullanıcı testi: bugünü değiştir (kısa/taşı/atla) kartta görünür sonuç olur, toast değil; kartta geri al"
+      - "Kullanıcı testi: bitmiş seans gün ✓, Start yok, 'N sets · X kg lifted'; açık seans 'Open workout · Continue' (yarım antrenmana dönüş)"
+      - "Kullanıcı testi: rıza yoksa yemek satırı yerine kilit satırı 'Needs your OK for health data · Allow'; rıza varsa 'Food left' aralığı, öğün kaydı düşürür, satır sekme çubuğunun altında kalmaz ve dokunulur"
+      - "Kullanıcı testi: hafta numarası, tarih ve gün sayısı sunucunun haftasından (telefon tarih hesaplamaz); karar sonrası hafta durumu tutarlı"
     tests:
       - "Ekran testleri (ilk hafta, normal, pazartesi), kelime bütçesi"
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "prototip/yeni-yuz.html"]
@@ -3776,6 +3781,10 @@ tasks:
       - "#today: Short on time, Gym is busy, Move it, Skip today ('No catch-up')"
       - "#editprog: günler, hareketler, kardiyo, split, Rebuild for me; inceleme işaretleri görünür"
       - "Kendi programında 'N changes applied · Undo'; karar varsa karar satırı"
+      - "Kullanıcı testi (8 Eki): Edit'in parçaları (günler, hareketler, kardiyo, split, Rebuild) gerçek ekran, toast değil; günleri taşıma; uygulanan değişiklik sayısı + geri al"
+      - "Kullanıcı testi: swap 'Today only / From now on' sorar; sayfa başlığı şimdiki hareket, o hareket listede yok; yeni hareket kendi hedefiyle (hedefsiz, kendi geçmişi) başlar; 'Back to the planned move'"
+      - "Kullanıcı testi: 'Gym is busy' önce 'Which one is taken?' hareket seçtirir; taşı zincirini önceden gösterir (kayan günler); kısa sürümde 'Full workout'"
+      - "Kullanıcı testi: Split satırı gerçek split (PPL+UL'de 'PPL' demez); kart günün seansı (yalnız 'Full body A' değil)"
     tests:
       - "Ekran testleri, akış testi B (Change → Edit → Swap)"
     refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "prototip/yeni-yuz.html"]
@@ -3794,6 +3803,7 @@ tasks:
       - "#workout: End · süre · Pause; hareket noktaları; hareket başlığı (görsel → nasıl yapılır); hedef satırı; yapılan setler; aktif set (kg ve tekrar adımlayıcı, Reps left 0/1/2+, Log set); Up next"
       - "Dinlenme sayacı üstte, düğme örtmez; hareketin son setinden sonra çıkmaz, 'Next' görünür"
       - "Her set önce yerel kuyruğa (bugünkü çevrimdışı yol); uygulama yeniden açılınca seans sürer"
+      - "Kullanıcı testi (8 Eki): süre 0:00'dan başlar, seanslar arası taşınmaz, gerçek; 'Log set' düğmesi zıplamaz; Skip düğmeleri birbirine yakın değil; sayıyı yazarak girme (kilo adımı 5 kg iken)"
     tests:
       - "Ekran testleri (dinlenme, son set), akış testi C4"
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "prototip/akis-testi.md"]
@@ -3811,6 +3821,9 @@ tasks:
     acceptance:
       - "Pause/Resume süreyi durdurur; #endwo üç seçenek (Discard onaylı)"
       - "#editset: kg/tekrar, sil; Skip set ve Skip move (telafi yok); #swap aynı kas + salon"
+      - "Kullanıcı testi (8 Eki): Pause süreyi durdurur, görünür durum; devamda kaldığı yerden"
+      - "Kullanıcı testi: atlanan set 'Skipped' (gri), '100 × 0' yeşil tik değil; düzeltme/silme/atlama analiz satırını yeniden hesaplar"
+      - "Kullanıcı testi: atla, set sil ve Discard için geri al; 'Fill in the rest later' sonrası seansa dönüş yolu (girilen setler ve süreyle açılır)"
     tests:
       - "Ekran testleri, akış testi C3"
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
@@ -3829,6 +3842,8 @@ tasks:
       - "Too heavy? → 'Use {lighter} kg / Keep {current} kg'; '2+' kalibrasyon önerisi yalnız hedefsiz harekette"
       - "Her hareketten sonra analiz satırı (en.json şablonu, sunucu değerleri); tutulan harekette 'as called'"
       - "Son hareketten sonra kardiyo adımı: Done / Later today / Skip today; Finish"
+      - "Kullanıcı testi (8 Eki): kalibrasyon boş kiloyla başlar ('Pick a weight'), kilo seçilmeden 'Log set' kapalı, ilk setten sonra 'Starting weight found'; değiştirilen hareket de kalibrasyonla başlar"
+      - "Kullanıcı testi: hedef ile son aynıysa 'Beat last time … · Last …' çelişkisi yok; kardiyoda süre, tek kalori sayısı yok"
     tests:
       - "Ekran testleri (öneri seçimi, analiz şablonları), akış testi A"
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-074-kardiyo-recetesi.md"]
@@ -3847,6 +3862,7 @@ tasks:
       - "#summary (koyu): animasyonlu tamam (hareketi azalt ayarına uyar), dakika, kaldırılan kilo (+%), set, Apple Watch kalorisi (yalnız ölçüm varsa)"
       - "Rekor kartı (gerçek set, 'Next: …') ya da Baseline; ne arttı; kas haritası (ön/arka, payla dolar); hafta N/M segmentleri; Share + Done"
       - "Haptik yalnız rekorda; e1RM yok"
+      - "Kullanıcı testi (8 Eki): özetin dakika, kaldırılan kilo ve set sayısı girilen setlerden (atlanan sayılmaz); kalori kutusu yalnız izin + ölçüm varsa, yoksa üç kutu tek satır"
     tests:
       - "Ekran testleri (ilk seans, rekorlu seans, saatsiz), MuscleMap bileşen testi"
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-078-ilerleme.md"]
@@ -3920,6 +3936,9 @@ tasks:
       - "#call: etiket, satır, değişenler (eski → yeni), iki neden, güven + sonraki tarih, 'In this week's plan', Got it, 'Keep last week's plan' (güvenlikte yok), açılış animasyonu"
       - "#week1 + #w1change: 'Sounds right' / 'Change it' (aynı plan · günleri ben seçerim · öneri); 2 gün yalnız kullanıcının seçimiyle"
       - "why/what-if/ledger rotalarına giriş yok; İlerleme › Calls aynı karar ekranını açar"
+      - "Kullanıcı testi (8 Eki): 1. hafta kararı ADR-077 #4'e göre; 'Sounds right' taşı/ekle kararında gün seçimine götürür, öneri dolu; seçimden sonra 'Done'; yeni başlayana neden gün eklenmediği ('3 days is enough to start.')"
+      - "Kullanıcı testi: 'Hold the weight' değişiklik satırı net (hedef düşüyor gibi okunmaz); 'Keep' sonrası yürürlükteki hedef görünür; gözlem günü cinsiyete göre sunucudan"
+      - "Kullanıcı testi: geçmiş kararlar aynı ekranla, salt okunur (düğmesiz) açılır; karar sonrası ekranlar değişir (toast değil)"
     tests:
       - "Ekran testleri (dört parça, güvenlikte ikincil yok), akış testleri A4, C1, C2"
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "prototip/akis-testi.md"]

@@ -5,7 +5,9 @@ guncelleme: 2026-10-08
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (8 Eki gece — M9a Part 2 BİTTİ)
+## ▶ DEVAM NOKTASI (9 Eki — M9a Part 3 sürüyor; tablo DURUM › M9a ilerleme › Part 3 başı)
+
+## (önceki) DEVAM NOKTASI (8 Eki gece — M9a Part 2 BİTTİ)
 **Sıradaki session: M9a Part 3 · Ana ekranlar** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 3 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 2 ÇIKIŞ.
 Önce `prototip/kullanici-testi.md` (iki kullanıcı yürüyüşü). Levent'i bekleyen: K-983 (ASC 2 hafta deneme), K-976 Facebook App ID (Part 4).
 
@@ -840,6 +842,27 @@ Geçici numaralar: K-956 V39 · K-959 V40 · K-964 V41 · K-957 V42 · K-965 V43
   inceleme ajanı ortak checkout'ta checkout yapmaz; kullanıcı gözüyle persona yürüyüşü mekanik akış testinin kaçırdığını yakalar (UI işinde her turdan sonra).
 - **Levent kararları (8 Eki):** vurgu #007684 · ADR-077 Ek 1 · kendi hareketi OWN programda · şablonlar incelemeye uyar, 1 gün 6 bileşik × 4 · HIIT sayılır ·
   koçun varsayılanına dön · rekor tanımı · "Type it in" önce prototip, sonra onay · yeni hareket 3 set · 5×5 · geç dönüşte görülmemiş günler sayılmaz (K-993).
+
+-----
+**Part 3 başı (9 Eki):** senkron — ana checkout ayrık HEAD = `origin/main` `1e8372b8`, temiz (yalnız `.claude/launch.json`); açık PR yok; Part 2 ÇIKIŞ git ile
+tutarlı; bağımlılıklar `done`. 13 ajan worktree'si (hepsi temiz, PR'ları birleşmiş) kaldırıldı → disk 3,6 → 10 GB. Dependabot aynı 3 geçişli uyarı. Simülatör
+iPhone 16 Pro Max açık, EAS geliştirme derlemesi `40e9cfce` kurulu; Docker kapalı → ekran doğrulaması fikstür sunucusu + geçici oturum yamasıyla (repoya girmez).
+`prototip/kullanici-testi.md` "Part 3-4 notları" K-969..K-978 kabul kriterlerine eklendi ("Kullanıcı testi:" satırları).
+Çalışma şekli: ben düzenleyici + inceleme + simülatör; uygulayıcılar ayrı worktree'de, aynı anda en çok 3; göç sırası V44'ten.
+
+| Görev | Durum | PR | Not |
+|---|---|---|---|
+| K-969 Bu hafta | ⏳ | | |
+| K-970 Antrenman + Edit | ⏳ | | |
+| K-971 Oturum A | ⏳ | | |
+| K-972 Oturum B | ⏳ | | K-971 sonrası |
+| K-973 Oturum C | ⏳ | | K-972 sonrası (aynı ekran) |
+| K-974 Antrenman sonu | ⏳ | | |
+| K-978 Pazartesi | ⏳ | | |
+| K-988 kilo değişimi | ⏳ | | decision |
+| K-992 ilk hatırlatma | ⏳ | | |
+| K-993 ilk hafta planın görüldüğü günden | ⏳ | | decision, göç olabilir |
+| K-994 kırılgan test | ⏳ | | |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
