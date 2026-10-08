@@ -14,6 +14,8 @@ export const workoutParams = {
   rirChoices: param<number[]>('rir_choices'),
   maxLoadKg: param<number>('set_max_load_kg'),
   maxReps: param<number>('set_max_reps'),
+  /** How long the server keeps a session open before it closes it (K-961); the session shows no time past it. */
+  unfinishedSessionCloseHours: param<number>('unfinished_session_close_hours'),
   e1rmEpleyDivisor: param<number>('e1rm_epley_divisor'),
   e1rmMaxRepsToFailure: param<number>('e1rm_max_reps_to_failure'),
   targetRirMax: param<number>('target_rir_max'),

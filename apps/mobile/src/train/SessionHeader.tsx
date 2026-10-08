@@ -8,8 +8,11 @@ import { tokens } from '@/theme/tokens';
 import { clockText } from './session';
 
 type Props = {
-  /** When the session began (ms): the workout's startedAt, or the moment it was opened while nothing is kept yet. */
-  since: number;
+  /**
+   * When the session began (ms): the workout's startedAt, or the moment it was opened while nothing is kept yet. Null
+   * shows no time (a session left open past the server's close).
+   */
+  since: number | null;
   onEnd: () => void;
   /** The control on the right (Pause, K-972); its place is kept empty without one, so the time stays in the middle. */
   right?: ReactNode;
@@ -26,7 +29,13 @@ export function SessionHeader({ since, onEnd, right }: Props) {
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
-  const time = clockText(Math.max(0, Math.floor((now - since) / 1000)));
+  const time = since === null ? null : clockText(Math.max(0, Math.floor((now - since) / 1000)));
+  const clock =
+    time === null ? null : (
+      <Text testID="session-clock" accessibilityLabel={t('workout.clock.label', { time })} style={[styles.clock, { color: color.text }]}>
+        {time}
+      </Text>
+    );
   return (
     <View style={styles.bar}>
       <View style={styles.side}>
@@ -39,9 +48,7 @@ export function SessionHeader({ since, onEnd, right }: Props) {
           <Text style={[styles.end, { color: color.muted }]}>{t('workout.end')}</Text>
         </Pressable>
       </View>
-      <Text testID="session-clock" accessibilityLabel={t('workout.clock.label', { time })} style={[styles.clock, { color: color.text }]}>
-        {time}
-      </Text>
+      {clock}
       <View style={[styles.side, styles.right]}>{right}</View>
     </View>
   );

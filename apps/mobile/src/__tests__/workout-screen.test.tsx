@@ -12,7 +12,7 @@ import WorkoutScreen from '@/app/workout';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
-import { focusPalette } from '@/theme/tokens';
+import { focusPalette, tokens } from '@/theme/tokens';
 import { workoutParams } from '@/train/params';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
 
@@ -27,12 +27,30 @@ jest.mock('expo-router', () => ({
   router: { back: () => mockBack(), push: (...args: unknown[]) => mockPush(...args), replace: (...args: unknown[]) => mockReplace(...args) },
   useRouter: () => ({ back: mockBack }),
   useLocalSearchParams: () => mockParams,
+  // Focused while mounted; mockBlur leaves the screen as a pushed one would (its cleanup).
+  useFocusEffect: (effect: () => (() => void) | void) => {
+    const { useEffect } = jest.requireActual<typeof import('react')>('react');
+    useEffect(() => {
+      const cleanup = effect();
+      mockBlur = cleanup ?? null;
+      return cleanup;
+    }, [effect]);
+  },
 }));
-// The status bar over the focus mode (ADR-070 #4): what the screen asks of it.
+let mockBlur: (() => void) | null = null;
+// The status bar over the focus mode (ADR-070 #4): what the screen asks of it, and whether it is there.
 const mockStatusBar = jest.fn();
+const mockStatusBars = { mounted: 0 };
 jest.mock('expo-status-bar', () => ({
   StatusBar: (props: { style?: string }) => {
+    const { useEffect } = jest.requireActual<typeof import('react')>('react');
     mockStatusBar(props);
+    useEffect(() => {
+      mockStatusBars.mounted += 1;
+      return () => {
+        mockStatusBars.mounted -= 1;
+      };
+    }, []);
     return null;
   },
 }));
@@ -1137,15 +1155,78 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
   test('its first set keeps the moment the session was opened as its start, so the time runs on without a jump', async () => {
     mockRecords = lastWeek();
     mockParams = { day: 'day-a' };
-    const before = Date.now();
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      const opened = Date.now();
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      // A minute and a half of warming up before the first set.
+      jest.setSystemTime(opened + 90_000);
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+      await screen.findByText(t('workout.log', { number: 2 }));
+      await act(async () => jest.advanceTimersByTime(1000));
+      const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
+      const startedAt = workout?.kind === 'workout' ? Date.parse(workout.body.startedAt) : NaN;
+      expect(startedAt).toBeGreaterThanOrEqual(opened);
+      expect(startedAt).toBeLessThan(opened + 5_000);
+      expect(clock()).toMatch(/^1:3\d$/);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('a session open past the server closing it (unfinished_session_close_hours) shows no time: its end is K-972', async () => {
+    const hours = workoutParams.unfinishedSessionCloseHours;
+    mockRecords = [...lastWeek(), record('workout', 'w2', { clientId: 'w2', startedAt: minutesAgo(hours * 60 + 5), programDayId: 'day-a' })];
     await show();
-    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByTestId('session-clock')).toBeNull();
+  });
+
+  test('the keyboard does not hide the dock: the page and the dock rise above it', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    // The rise itself (iOS padding) is the device's to show; here, that the dock and the page are inside what rises.
+    const avoiding = within(screen.getByTestId('keyboard-avoiding'));
+    expect(avoiding.getByTestId('dock')).toBeOnTheScreen();
+    expect(avoiding.getByTestId('session-scroll')).toBeOnTheScreen();
+  });
+
+  test('the light status bar is only while the session is in front: a screen opened from it gets its own', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(mockStatusBars.mounted).toBe(1);
+    await act(async () => mockBlur?.());
+    expect(mockStatusBars.mounted).toBe(0);
+  });
+
+  test('the rest has a place of its own at the top, the same size with or without it, so the page does not move', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    const slot = () => screen.getByTestId('rest-slot');
+    expect(slot()).toHaveStyle({ minHeight: tokens.size.touch + tokens.space.sm * 2 });
+    expect(within(slot()).queryByTestId('rest')).toBeNull();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
     await screen.findByText(t('workout.log', { number: 2 }));
-    const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
-    const startedAt = workout?.kind === 'workout' ? Date.parse(workout.body.startedAt) : NaN;
-    expect(startedAt).toBeGreaterThanOrEqual(before - 1000);
-    expect(startedAt).toBeLessThanOrEqual(Date.now());
-    expect(clock()).toMatch(/^0:0\d$/);
+    expect(within(slot()).getByTestId('rest')).toBeOnTheScreen();
+    expect(slot()).toHaveStyle({ minHeight: tokens.size.touch + tokens.space.sm * 2 });
+  });
+
+  test('in a superset up next is the partner, not the next move of the day', async () => {
+    const RAISE = { id: 'lateral_raise', nameKey: 'exercises.lateral_raise.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    const three = { ...DAY, exercises: [...DAY.exercises, { exerciseId: 'lateral_raise', baseSets: 2, sets: 2, reps: { min: 10, max: 15 }, targetRir: 1 }] };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [three] } }, exercises: { state: 'ready', value: [...EXERCISES, RAISE] } };
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: t('exercises.lateral_raise.name') }) }));
+    expect(within(screen.getByTestId('up-next')).getByText(t('exercises.lateral_raise.name'))).toBeOnTheScreen();
+  });
+
+  test('with many moves each dot stays a full touch target, and the dots wrap', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(dot('Bench press')).toHaveStyle({ minWidth: tokens.size.touch });
+    expect(screen.getByTestId('move-dots')).toHaveStyle({ flexWrap: 'wrap' });
   });
 
   test('opened again (the app closed mid-session), the session goes on: its real time, its sets done, the next set', async () => {

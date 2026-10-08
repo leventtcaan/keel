@@ -1,7 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText } from '@/components/ProblemText';
@@ -53,9 +53,19 @@ import { weightInput } from '@/units/units';
  * comes up: Next names the next move, and after the last one, Finish.
  */
 export default function WorkoutScreen() {
+  // Light status bar text only while the session is in front: a screen opened from it (how to, history) is the
+  // person's own theme and sets its own.
+  const [focused, setFocused] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  const statusBar = focused ? <StatusBar style="light" /> : null;
   return (
     <FocusMode>
-      <StatusBar style="light" />
+      {statusBar}
       <Session />
     </FocusMode>
   );
@@ -82,6 +92,9 @@ function Session() {
   };
   // The session's start while nothing is kept yet: the moment it was opened, which its first set keeps as its start.
   const [openedAt] = useState(() => Date.now());
+  // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
+  // clock tells nothing. Closing or filling it in from here is K-972.
+  const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
   const [finishing, setFinishing] = useState(false);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
   const [sessionNote, setSessionNote] = useState('');
@@ -115,6 +128,8 @@ function Session() {
   }, [api, training, workoutRecords, named]);
 
   const active = records === null ? null : activeWorkout(records);
+  const startedAt = active === null ? null : Date.parse(active.startedAt);
+  const stale = startedAt !== null && startedAt < openedAt - closeMs;
   const program = data?.program.state === 'ready' ? data.program.value : null;
   // The workout under way decides the day; otherwise the day the session was opened on, not kept until a set is logged.
   const dayId = active === null ? (opened ?? null) : active.programDayId;
@@ -131,7 +146,7 @@ function Session() {
   const [added, setAdded] = useState<string[]>([]);
   // The session's own day: its start's while under way (one begun at 23:30 stays that day's after midnight, K-961),
   // else the day it was opened on (until K-995's Program.today says it).
-  const sessionDay = localDay(new Date(active === null ? openedAt : Date.parse(active.startedAt)));
+  const sessionDay = localDay(new Date(startedAt ?? openedAt));
   const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
   const planIds = today.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
@@ -168,6 +183,11 @@ function Session() {
     .filter(([id, members]) => members.length > 1 && !unlinked.includes(id));
   const groupOf = (id: string | undefined) => groups.find(([, members]) => id !== undefined && members.includes(id));
   const group = groupOf(moveId);
+  // After the set under way: whether a move still has sets left (the one under way, unless this is its last).
+  const leftAfterThis = (id: string) =>
+    id === moveId
+      ? plan !== null && (plan.open === true || (plan.current ?? 0) < plan.rows.length - 1)
+      : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
   const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
   const warming =
@@ -237,9 +257,7 @@ function Session() {
         let roundDone = false;
         let groupDone = false;
         if (row.side !== 'LEFT') {
-          const left = (id: string) =>
-            id === move.id ? plan.open === true || (plan.current ?? 0) < plan.rows.length - 1 : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
-          const found = nextInGroup(group[1], move.id, left);
+          const found = nextInGroup(group[1], move.id, leftAfterThis);
           roundDone = found.roundDone;
           groupDone = found.next === null;
           setPicked(found.next ?? move.id);
@@ -499,8 +517,11 @@ function Session() {
         {plates}
       </>
     );
+  // In a superset the move after this set is its partner (the round's order), else the next move of the day with sets left.
+  const partner = group === undefined || moveId === undefined ? null : nextInGroup(group[1], moveId, leftAfterThis).next;
+  const upNextId = partner !== null && partner !== moveId ? partner : nextId;
   const upNext =
-    nextId === undefined || row === null ? null : <UpNext name={name(nextId)} equipment={moves.get(nextId)?.equipment} />;
+    upNextId === undefined || row === null ? null : <UpNext name={name(upNextId)} equipment={moves.get(upNextId)?.equipment} />;
 
   // The dock (ADR-075 #1): one place for the one thing to do now, so the button never moves. The set under way; the
   // move done, the next one with sets left; nothing left, the finish.
@@ -567,26 +588,32 @@ function Session() {
 
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <View style={styles.top}>
-        <SessionHeader since={active === null ? openedAt : Date.parse(active.startedAt)} onEnd={onFinish} />
-        {rest !== null && <RestTimer since={rest} onEnd={endRest} />}
-      </View>
-      <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <View style={styles.dayLine}>
-          <Text style={[styles.small, styles.grow, { color: color.textSecondary }]}>{day === null ? t('workout.title') : dayName(day)}</Text>
-          {day !== null && (
-            <Text style={[styles.small, { color: color.muted }]}>
-              {today.length === 1
-                ? t('workout.progressOne', { done: movesDone })
-                : t('workout.progress', { done: movesDone, count: today.length })}
-            </Text>
-          )}
+      {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
+      <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.top}>
+          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onFinish} />
+          {/* Its place is kept with no rest in it, so the page under it does not move when one starts. */}
+          <View testID="rest-slot" style={styles.restSlot}>
+            {rest !== null && <RestTimer since={rest} onEnd={endRest} />}
+          </View>
         </View>
-        {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
-        {loadFailed}
-        {finishing ? form : session}
-      </ScrollView>
-      {dock}
+        <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          <View style={styles.dayLine}>
+            <Text style={[styles.small, styles.grow, { color: color.textSecondary }]}>{day === null ? t('workout.title') : dayName(day)}</Text>
+            {day !== null && (
+              <Text style={[styles.small, { color: color.muted }]}>
+                {today.length === 1
+                  ? t('workout.progressOne', { done: movesDone })
+                  : t('workout.progress', { done: movesDone, count: today.length })}
+              </Text>
+            )}
+          </View>
+          {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
+          {loadFailed}
+          {finishing ? form : session}
+        </ScrollView>
+        {dock}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -597,6 +624,7 @@ const FINISH = 'finish';
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   top: { paddingHorizontal: tokens.space.lg, gap: tokens.space.xs },
+  restSlot: { minHeight: tokens.size.touch + tokens.space.sm * 2, justifyContent: 'center' },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline },
   list: { gap: tokens.space.xs },

@@ -14,7 +14,7 @@ export type Dot = { id: string; name: string; status: string; done: boolean };
 export function MoveDots({ dots, selected, onPick }: { dots: Dot[]; selected: number; onPick: (id: string) => void }) {
   const { color } = useTheme();
   return (
-    <View style={styles.row}>
+    <View testID="move-dots" style={styles.row}>
       {dots.map((dot, index) => (
         <Pressable
           key={`${dot.id}-${index}`}
@@ -31,7 +31,8 @@ export function MoveDots({ dots, selected, onPick }: { dots: Dot[]; selected: nu
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: tokens.space.xs },
-  touch: { flex: 1, minHeight: tokens.size.touch, justifyContent: 'center' },
+  // Each dot keeps a full touch target; past what one line holds (eight moves and more), they wrap.
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.xs },
+  touch: { flexGrow: 1, flexBasis: tokens.size.touch, minWidth: tokens.size.touch, minHeight: tokens.size.touch, justifyContent: 'center' },
   dot: { height: tokens.size.track, borderRadius: tokens.radius.track },
 });
