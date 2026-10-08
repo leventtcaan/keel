@@ -121,7 +121,7 @@ const mockAnswer = async (route: string, init: Init): Promise<unknown> => {
       id: 'g1',
       source: 'GENERATED',
       days: trainingDays.map((weekday, i) => ({
-        id: `g${i}`, nameKey: 'full_body_a', weekday, exercises: [{ exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 2 }],
+        id: `g${i}`, nameKey: 'programDays.full_body_a.name', weekday, exercises: [{ exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 2 }],
       })),
     }));
   }

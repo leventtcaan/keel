@@ -33,7 +33,7 @@ const DECISION: Schemas['Decision'] = {
 };
 const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-05' };
 // Tuesday: a session today.
-const PROGRAM: Schemas['Program'] = { id: 'p1', source: 'GENERATED', days: [{ id: 'a', nameKey: 'upper_a', weekday: 'TUESDAY', exercises: [] }] };
+const PROGRAM: Schemas['Program'] = { id: 'p1', source: 'GENERATED', days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [] }] };
 
 let mockAnswers: Record<string, Answer | 'offline'> = {};
 let mockSent: Answer | 'offline' = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.call', call: CALL });

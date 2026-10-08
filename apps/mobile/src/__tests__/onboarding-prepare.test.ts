@@ -32,9 +32,9 @@ const PROGRAM: Schemas['Program'] = {
   id: '6a0c9d3e-0000-4000-8000-000000000001',
   source: 'GENERATED',
   days: [
-    { id: '6a0c9d3e-0000-4000-8000-000000000002', nameKey: 'upper', weekday: 'MONDAY', exercises: [move('bench_press'), move('lat_pulldown')] },
-    { id: '6a0c9d3e-0000-4000-8000-000000000003', nameKey: 'lower', weekday: 'WEDNESDAY', exercises: [move('squat'), move('romanian_deadlift')] },
-    { id: '6a0c9d3e-0000-4000-8000-000000000004', nameKey: 'full', weekday: 'FRIDAY', exercises: [move('leg_press')] },
+    { id: '6a0c9d3e-0000-4000-8000-000000000002', nameKey: 'programDays.upper.name', weekday: 'MONDAY', exercises: [move('bench_press'), move('lat_pulldown')] },
+    { id: '6a0c9d3e-0000-4000-8000-000000000003', nameKey: 'programDays.lower.name', weekday: 'WEDNESDAY', exercises: [move('squat'), move('romanian_deadlift')] },
+    { id: '6a0c9d3e-0000-4000-8000-000000000004', nameKey: 'programDays.full_body.name', weekday: 'FRIDAY', exercises: [move('leg_press')] },
   ],
   cardio: { source: 'GENERATED', minutes: 30, sessionsPerWeek: 3, sessions: [], doneThisWeek: 0, afterLiftOverLine: false },
 };
