@@ -104,13 +104,16 @@ const within = (value: number, low: number, high: number) => Math.min(high, Math
 
 export type Stepped = 'sets' | 'min' | 'max';
 
-/** The lowest and highest a move's number can be: sets 1 to the most; the fewest reps under the most, the most at most a set's. */
+/**
+ * The lowest and highest a move's number can be: sets 1 to the most; the fewest reps at most the most, the most at most a
+ * set's. The fewest at the most is a fixed rep target (5 x 5, K-991): the engine then adds only load.
+ */
 function bounds(move: EditedMove, field: Stepped): [number, number] {
   if (field === 'sets') return [1, P.programMoveSetsMax];
-  return field === 'min' ? [1, move.reps.max - 1] : [move.reps.min + 1, P.maxReps];
+  return field === 'min' ? [1, move.reps.max] : [move.reps.min, P.maxReps];
 }
 
-/** A move's sets, or the fewest or the most of its reps, a step up or down: each on its own (5 x 5, 3-5, 12-15), a range always a range. */
+/** A move's sets, or the fewest or the most of its reps, a step up or down: each on its own (5 x 5, 3-5, 12-15), never past each other. */
 export function stepped(all: EditedDay[], at: number, index: number, field: Stepped, by: number): EditedDay[] {
   const move = all[at].moves[index];
   const [low, high] = bounds(move, field);

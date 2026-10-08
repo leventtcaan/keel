@@ -64,6 +64,9 @@ test("this week's sets; a lighter week says how many of the program's", () => {
   expect(setsLine({ ...bench, sets: 2 })).toBe('2 of 3 sets');
   expect(setsLine({ ...bench, baseSets: 1, sets: 1 })).toBe('1 set');
   expect(repsLine(bench)).toBe('6-10 reps');
+  // A fixed rep target (5 x 5, K-991) is its reps, not "5-5".
+  expect(repsLine({ ...bench, reps: { min: 5, max: 5 } })).toBe('5 reps');
+  expect(repsLine({ ...bench, reps: { min: 1, max: 1 } })).toBe('1 rep');
 });
 
 test("the server's next target in the user's unit; none until there is one", () => {

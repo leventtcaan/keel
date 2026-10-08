@@ -146,7 +146,7 @@ testi: seçenekler salon ekipmanıyla süzülür.
 | `program_draft_move_min_share` | 0,5 | Seansların yarısında yapılan hareket rutinin parçası; daha azı tek seferlik değiştirme |
 | `program_draft_weekday_min_share` | 0,5 | Yapıldığı haftaların yarısında o gündeyse düzen var, o gün rutinin günlerinden biridir (haftada yapıldığı kadar gün, en büyük paylar); azı rastgele, gün kullanıcıya bırakılır |
 | `program_draft_reps_middle_share` | 0,5 | Ortadaki yarı (çeyrekler arası): Strong'un işaretsiz ısınması ve tek tük set aralığı germez |
-| `program_draft_rep_span_min` | 2 | Çift ilerlemenin tırmanacak yeri olsun (K-109); hep 8 yapan 8-10 alır |
+| `program_draft_rep_span_min` | 2 | Çift ilerlemenin tırmanacak yeri olsun (K-109); tekrarlar değişiyorsa. Hep aynı tekrar sabit hedeftir (hep 8 → 8×8; Ek 4, K-991) |
 
 ## Ek 3 · Bugünü değiştir ve hareket değiştir: uçlar ve saklama (K-964, 2026-10-08, agent, teknik)
 - **Uçlar:** `POST /v1/program/today {programDayId, change: SHORT|MOVE|SKIP}`, `POST /v1/program/swap {programDayId, exerciseId, to,
@@ -190,3 +190,28 @@ testi: seçenekler salon ekipmanıyla süzülür.
   Reddedilen: değişimi kayda ayrı bir değişiklik olarak yazmak (kayıt yalnız inceleme önerilerini tutar, geri alma yeniden uygulama yoluyla
   çalışır; değişim bir öneri değildir) · kayıttaki programları yeni hareketle yeniden yazmak (kırılgan, geri alınan eski hal yeni hareketi
   silerdi).
+
+## Ek 4 · Sabit tekrar (5×5): en az = en çok (K-991, 2026-10-08, agent, teknik; ürün kararı Levent 8 Eki "Sabit tekrar da olsun")
+- **Sözleşme:** `RepRange` min ≤ max; min = max sabit tekrar hedefidir (5×5). Yalnız kullanıcının kendi programında çıkar; üretilen şablonlar
+  aralık vermeye devam eder (`ProgramGenerator`, `rep_range_*`). Veritabanında V8'in `rep_max > rep_min` denetimi `rep_max >= rep_min` olur (V43).
+- **Motor (H3 B4'ün tek basamaklı hali):** her çalışma seti hedef tekrara ulaşınca bölgenin en küçük yük basamağı eklenir, tekrar aynı kalır
+  (aralığın altı = üstü). Ulaşamayan seans **aynı yükte aynı tekrarı** hedefler: tekrar basamağı yok (aralıkta "en zayıf setin bir fazlası";
+  sabitte tırmanılacak aralık yok). Kaynak H3 B4 (Plett/Schoenfeld 2022: yük ilerlemesi tekrar ilerlemesi kadar işe yarıyor). Kartta "G1 K-109"
+  yazıyor: G1'de K-109 yok; koddaki K-109 çift ilerlemeyi kuran görevin numarası. Teknik kapısı (G6 K-31), plato (H3 B5) ve deload merdiveni
+  (G7 K-68) tekrar aralığını okumaz: değişmez.
+- **Salonda sonraki yük yoksa ya da çok uzaksa** (K-414, K-430): aralıkta olduğu gibi tekrar, sabit tekrarın üstüne birer birer çıkar, tavanda
+  durur (`rep_ceiling_above_range`, K-534, `rackEnds`). L3 §5 Y7 "mümkün değilse tekrar artışına çevrilir". Reddedilen: aynı yükte aynı tekrarı
+  sonsuza dek hedeflemek (salon yüzünden plato; motor bilmediği yerde söyler, U3).
+- **Diğer yerler, sabit hedefte:** başlangıç ağırlığı kuralı aynı (aralığın altı `starting_weight_reps`'ten büyük değilse hedef: 8 kez kaldırılan
+  yük 5×5'i başlatır, 10×10'u başlatmaz) · seans içi tablo (hafif/ağır, kalibrasyon) aralığı okumaz; "bütün setler tepede" sonraki yükü sabit
+  tekrarda bütün setler o tekrarda demektir · tutulan hedef (K-110) sabit tekrarda gösterilir · ilerleme efor satırları (STUCK, EASIER,
+  REPS_RISING) aralığı okumaz · tekrarı yazan her yer (Antrenman satırı, plan, içe aktarma taslağı, düzenleyici) tek yardımcıdan geçer (`apps/mobile/src/train/reps.ts`): "5 reps", "3 × 5", "5-5" değil.
+- **Program incelemesi:** sabit hedef her aralık gibi K-21'e göre okunur. Bileşikte 6-10 dışındaysa (5×5) öneri çıkar (6-10'a), kullanıcı kapatır;
+  içindeyse (8×8, izolasyonda 10×10) bulgu yok. Neden: K-21 tekrar **sayısını** söyler (düşük tekrar eklemi ve tendonu zorlar), aralığın
+  genişliğini değil; sabit oluşu kendi başına bulgu değil. Reddedilen: sabit hedefi hep işaretlemek (dayatma, ADR-073 sürücüsü) · 6-10 dışını
+  sabitte işaretlememek (5×5 bileşikte K-21'in tam söylediği şey).
+- **Düzenleyici:** en az tekrar en çoğa, en çok en aza kadar adımlanır; birbirini geçmez.
+- **İçe aktarma taslağı** (Levent 8 Eki "5×5 olsun", orkestratör kararı): penceredeki bütün çalışma setleri aynı tekrardaysa taslak
+  sabit hedeftir (hep 5 → 5×5); bir set bile farklıysa D1'in aralık kuralı aynen (5, 5, 6 → 5-7, `program_draft_rep_span_min`). D1'in
+  "hep 8 yapan 8-10 alır" satırı bununla değişti: aralık açmanın gerekçesi (çift ilerlemenin tırmanacak yeri) sabit hedefte yok, motor
+  yalnız yükü artırır. Mevcut taslak testlerinden tek tekrarlı hareketlerin beklentisi buna göre değişti (PR #484).

@@ -21,7 +21,9 @@ class RepCeilingTests {
         "at the ceiling the target stays,     8, 12, 17, 5, 17",
         "a set past the ceiling does not raise it, 8, 12, 22, 5, 17",
         "a low range,                         3, 5, 9, 5, 10",
-        "another ceiling,                     6, 10, 11, 2, 12"})
+        "another ceiling,                     6, 10, 11, 2, 12",
+        "fixed reps: past them on a sparse rack, 5, 5, 5, 5, 6",
+        "fixed reps at the ceiling,           5, 5, 10, 5, 10"})
     void oneMoreRepUpToTheCeiling(String name, int min, int max, int weakest, int ceilingAbove, int expected) {
         assertThat(NextTargets.oneMore(new RepRange(min, max), weakest, ceilingAbove)).isEqualTo(expected);
     }

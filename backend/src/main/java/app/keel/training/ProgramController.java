@@ -263,7 +263,7 @@ class ProgramController {
                         && exercise.sets() != null
                         && exercise.sets() >= 1 && exercise.sets() <= limits.maxPlannedSets() && exercise.reps() != null
                         && exercise.reps().min() != null && exercise.reps().max() != null && exercise.reps().min() >= 1
-                        && exercise.reps().max() > exercise.reps().min() && exercise.reps().max() <= limits.maxReps());
+                        && exercise.reps().max() >= exercise.reps().min() && exercise.reps().max() <= limits.maxReps());
                 return new ProgramStore.PlannedExercise(exercise.exerciseId(), exercise.sets(), exercise.reps().min(), exercise.reps().max(),
                         targetRir);
             }).toList());

@@ -17,8 +17,12 @@ import app.keel.engine.Source;
 import app.keel.engine.SourceTag;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * The next session's load and reps after a workout (K-217, K-109 double progression): what the engine's step means on
@@ -27,6 +31,8 @@ import org.junit.jupiter.api.Test;
 class NextTargetsTests {
 
     private static final RepRange SIX_TO_TEN = new RepRange(6, 10);
+    /** A fixed rep target (K-991): 5 x 5, min = max. */
+    private static final RepRange FIVE_BY_FIVE = new RepRange(5, 5);
     /** The reps the onboarding asks a starting weight for (onboarding.json › starting_weight_reps). */
     private static final int ASKED_REPS = 8;
     private static final LiftSession BENCH = new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, new BigDecimal("80"),
@@ -166,6 +172,43 @@ class NextTargetsTests {
         assertThat(found.loadKg()).isEqualByComparingTo("42.5");
         assertThat(NextTargets.after(found, Progression.next(found, RepositoryParameters.forSex(Sex.MALE)), false, 2))
                 .contains(new NextTargets.Target(new BigDecimal("42.5"), 9));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(delimiter = '|', value = {
+        "every set at the reps: one load step, the same reps | 5 5 5 5 5 | true  | 82.5 | 5",
+        "a set past the reps counts as at them               | 6 5 5 5 5 | true  | 82.5 | 5",
+        "one set short: the same load, the fixed reps again  | 5 5 5 5 4 | true  | 80   | 5",
+        "far short: no rep step, still the fixed reps        | 5 5 5 4 3 | true  | 80   | 5",
+        "unclean form: held at the fixed reps (G6 K-31)      | 5 5 5 5 5 | false | 80   | 5"})
+    void aFixedRepTargetOnlyEverAddsLoad(String name, String reps, boolean clean, String kg, int expectedReps) {
+        // K-991: double progression with one rung (H3 B4) — the engine adds the load when every work set reaches the reps,
+        // otherwise the same load for the same reps; never a rep target under the fixed reps (no rep step to climb).
+        LiftSession bench = new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, FIVE_BY_FIVE, new BigDecimal("80"),
+                Arrays.stream(reps.split(" ")).map(r -> new SetResult(Integer.parseInt(r), 1)).toList(), clean);
+
+        assertThat(NextTargets.after(bench, Progression.next(bench, RepositoryParameters.forSex(Sex.MALE)), false, 5))
+                .contains(new NextTargets.Target(new BigDecimal(kg), expectedReps));
+    }
+
+    @Test
+    void aFixedRepTargetKeepsItsRepsThroughAHoldAStartingWeightAndASparseRack() {
+        // K-991: every other path reads the range as it reads any range; with min = max it lands on the fixed reps.
+        LiftSession atReps = new LiftSession(LiftKind.COMPOUND, BodyRegion.UPPER, FIVE_BY_FIVE, new BigDecimal("80"),
+                List.of(new SetResult(5, 1), new SetResult(5, 1)), true);
+        Progression addLoad = Progression.next(atReps, RepositoryParameters.forSex(Sex.MALE));
+
+        assertThat(NextTargets.after(atReps, addLoad, true, 2)).as("the deload ladder holds the load (K-110)")
+                .contains(new NextTargets.Target(new BigDecimal("80"), 5));
+        assertThat(NextTargets.shown(new NextTargets.Target(new BigDecimal("82.5"), 5), new BigDecimal("80"), FIVE_BY_FIVE, true))
+                .as("a hold begun after the target was set").isEqualTo(new NextTargets.Target(new BigDecimal("80"), 5));
+        assertThat(NextTargets.after(atReps, addLoad, false, 2, 1, load -> new LoadSteps.Rounding.NoHeavier(), RepositoryParameters.forSex(Sex.MALE)))
+                .as("nothing heavier in the gym: one more rep past the fixed reps (K-414), as past any range's top")
+                .contains(new NextTargets.Target(new BigDecimal("80"), 6));
+        assertThat(NextTargets.starting(new BigDecimal("80"), ASKED_REPS, FIVE_BY_FIVE, ExerciseCatalog.Equipment.BARBELL, "bench_press",
+                Optional.empty())).as("a load lifted 8 times starts 5 x 5").contains(new NextTargets.Target(new BigDecimal("80"), 5));
+        assertThat(NextTargets.starting(new BigDecimal("80"), ASKED_REPS, new RepRange(ASKED_REPS + 2, ASKED_REPS + 2),
+                ExerciseCatalog.Equipment.BARBELL, "bench_press", Optional.empty())).as("too heavy for 10 x 10: found in the first session").isEmpty();
     }
 
     private static Progression step(ProgressionStep step) {

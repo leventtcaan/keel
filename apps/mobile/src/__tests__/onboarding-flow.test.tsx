@@ -43,7 +43,10 @@ const mockConsentAnswer = async (_path: string, _init: unknown) =>
     : { error: { code: 'X' }, response: new Response(null, { status: mockConsentStatus }) };
 const mockOk = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
 type MockMove = { exerciseId: string; baseSets: number; sets: number; reps: { min: number; max: number }; targetRir: number; nextLoadKg?: number };
-const mockMove = (exerciseId: string): MockMove => ({ exerciseId, baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 2 });
+/** The program's reps; a test of a fixed rep target (K-991) sets its own and puts these back. */
+const MOCK_REPS = { min: 6, max: 10 };
+let mockReps = MOCK_REPS;
+const mockMove = (exerciseId: string): MockMove => ({ exerciseId, baseSets: 3, sets: 3, reps: { ...mockReps }, targetRir: 2 });
 /** Like the server: a program on the days asked for, each day the same three moves, with the engine's cardio. */
 function mockProgram(trainingDays: string[], loads: Record<string, number> = {}) {
   return {
@@ -1200,11 +1203,21 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     expect(screen.getByText(t('programDays.full_body_a.name'))).toBeOnTheScreen();
     expect(screen.getByText(t('onboarding.plan.findsWeights'))).toBeOnTheScreen();
     for (const move of ['squat', 'bench_press', 'lat_pulldown']) expect(screen.getByText(t(`exercises.${move}.name`))).toBeOnTheScreen();
-    expect(screen.getAllByText(t('onboarding.plan.setsReps', { sets: 3, min: 6, max: 10 }))).toHaveLength(3);
+    expect(screen.getAllByText(t('onboarding.plan.setsReps', { sets: 3, reps: t('format.range', { low: 6, high: 10 }) }))).toHaveLength(3);
     // The image is what the move is lifted with (the catalog's equipment); one the catalog does not name gets the bar.
     // Decorative, so hidden from VoiceOver: found among hidden elements.
     expect(screen.getAllByTestId('move-thumb-BARBELL', { includeHiddenElements: true })).toHaveLength(2);
     expect(screen.getAllByTestId('move-thumb-CABLE', { includeHiddenElements: true })).toHaveLength(1);
+  });
+
+  test('a fixed rep target is its reps on the plan, never "5-5" (K-991)', async () => {
+    mockReps = { min: 5, max: 5 };
+    try {
+      await toPlan({ experience: 'NEW' });
+      expect(screen.getAllByText(t('onboarding.plan.setsReps', { sets: 3, reps: '5' }))).toHaveLength(3);
+    } finally {
+      mockReps = MOCK_REPS;
+    }
   });
 
   test('with a starting weight: the weight on its move, and no "Session 1 finds your weights"', async () => {

@@ -128,6 +128,20 @@ class ProgramApiTests {
     }
 
     @Test
+    void anOwnProgramTakesAFixedRepTarget() throws Exception {
+        // K-991: 5 x 5 is min = max (the contract's RepRange); the engine then only adds load.
+        AccountId account = TestSessions.newAccount();
+
+        MvcTestResult stored = send(account, "PUT", "/v1/program", own("squat", 5, 5, 5, "Day"));
+
+        assertThat(stored).hasStatusOk();
+        List<Map<String, Object>> days = (List<Map<String, Object>>) map(stored).get("days");
+        assertThat((List<Map<String, Object>>) days.getFirst().get("exercises")).first()
+                .satisfies(squat -> assertThat(squat).containsEntry("sets", 5).containsEntry("reps", Map.of("min", 5, "max", 5)));
+        assertThat(send(account, "PUT", "/v1/program", own("squat", 5, 6, 5, "Day"))).as("max under min").hasStatus(400);
+    }
+
+    @Test
     void anOwnProgramTheEngineCannotReadIsRefused() {
         AccountId account = TestSessions.newAccount();
 

@@ -101,6 +101,15 @@ class SessionTableTests {
     }
 
     @Test
+    void aFixedRepTargetsNextLoadIsTheStepOnceEverySetReachesItsReps() {
+        // K-991: 5 x 5 has no rep step; every set at 5 is the top, the double progression's one load step (K-109).
+        NextTargets.Target squat = new NextTargets.Target(new BigDecimal("100"), 5);
+
+        assertThat(SessionTable.nextAtTop(LiftKind.COMPOUND, BodyRegion.LOWER, new RepRange(5, 5), squat, 5, 1, false, unknown(), P))
+                .hasValueSatisfying(kg -> assertThat(kg).isEqualByComparingTo("105"));
+    }
+
+    @Test
     void noNextLoadWhereNoneComesFromTheTop() {
         NextTargets.Target bench = new NextTargets.Target(new BigDecimal("60"), 8);
         NextTargets.Target curl = new NextTargets.Target(new BigDecimal("16"), 10);

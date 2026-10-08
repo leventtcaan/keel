@@ -141,11 +141,16 @@ function lowerMiddle(values: number[]): number {
 }
 
 /**
- * Where the middle share of the reps fell (nearest rank), at least the span wide: opened at the top, so the reps seen
- * stay the bottom, and at the top of a set's reps at most.
+ * Every working set at one rep count: a fixed rep target, min = max (5 x 5, K-991, ADR-073 Ek 4). Otherwise where the
+ * middle share of the reps fell (nearest rank), at least the span wide: opened at the top, so the reps seen stay the
+ * bottom. Either way at the top of a set's reps at most.
  */
 function repRange(reps: number[]): Schemas['RepRange'] {
   const p = importParams.draft;
+  if (reps.every((r) => r === reps[0])) {
+    const fixed = Math.min(reps[0], workoutParams.maxReps);
+    return { min: fixed, max: fixed };
+  }
   const sorted = [...reps].sort((a, b) => a - b);
   const rank = (share: number) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(share * sorted.length - ROUNDING) - 1))];
   const outside = (1 - p.repsMiddleShare) / 2;

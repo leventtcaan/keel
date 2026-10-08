@@ -69,6 +69,18 @@ class ProgramGeneratorTests {
     }
 
     @Test
+    void aGeneratedProgramAlwaysGivesARangeToClimbNeverAFixedTarget() {
+        // K-991: RepRange takes min = max for the user's own program (5 x 5); the engine's own program keeps double
+        // progression's range (H3 B4, G1 K-21), so rep_range_*_min stays under rep_range_*_max in training.yaml.
+        List<DayOfWeek> week = List.of(DayOfWeek.values());
+        for (int days = 1; days <= 6; days++) {
+            assertThat(ProgramGenerator.generate(EnumSet.copyOf(week.subList(0, days)), templates, catalog, P))
+                    .flatMap(ProgramGenerator.PlannedDay::exercises).as(days + " days").isNotEmpty()
+                    .allSatisfy(planned -> assertThat(planned.reps().min()).as(planned.exerciseId()).isLessThan(planned.reps().max()));
+        }
+    }
+
+    @Test
     void sevenDaysOrNoneIsNotAProgram() {
         // G1 K-70: rest days are part of the program; seven training days leave none.
         assertThatIllegalArgumentException().isThrownBy(() -> ProgramGenerator.generate(EnumSet.allOf(DayOfWeek.class), templates, catalog, P));

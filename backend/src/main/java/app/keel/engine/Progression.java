@@ -7,7 +7,9 @@ import java.util.Objects;
 
 /**
  * Double progression (K-109, H3 B4): add reps within the range; when every set reaches the top, add the smallest
- * load step for the body region (load_increment_upper_kg / load_increment_lower_kg) and climb again from the bottom.
+ * load step for the body region (load_increment_upper_kg / load_increment_lower_kg) and climb again from the bottom. A
+ * fixed rep target (min = max, 5 x 5, K-991) is the same with one rung: every set at its reps adds the load, and the reps
+ * stay (ADR-073 Ek 4).
  *
  * <p>The coaching gates come first: isolation lifts are not load-tracked (G6 K-33, load_progression_compound_only), and
  * unclean form that week holds both load and reps (G6 K-31, technique_gate_required). Work

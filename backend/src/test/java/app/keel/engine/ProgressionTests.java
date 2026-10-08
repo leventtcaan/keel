@@ -139,9 +139,25 @@ class ProgressionTests {
     }
 
     @Test
+    void aFixedRepTargetHasOneRungEveryWorkSetAtItsRepsAddsTheLoad() {
+        // K-991 (5 x 5, min = max): double progression with one rung (H3 B4: at the top, the smallest load step, back to the
+        // bottom, which is the top). Short of it, no load; the reps to reach stay the fixed reps (NextTargets).
+        RepRange fiveByFive = new RepRange(5, 5);
+        LiftSession hit = new LiftSession(LiftKind.COMPOUND, BodyRegion.LOWER, fiveByFive, new BigDecimal("100"),
+                List.of(set(5, 1), set(5, 1), set(6, 0), set(5, 1), set(5, 0)), true);
+        LiftSession missed = new LiftSession(LiftKind.COMPOUND, BodyRegion.LOWER, fiveByFive, new BigDecimal("100"),
+                List.of(set(5, 1), set(5, 1), set(4, 0)), true);
+
+        assertThat(Progression.next(hit, P).step()).isEqualTo(new ProgressionStep.AddLoad(new BigDecimal("100").add(LOWER_STEP), 5));
+        assertThat(Progression.next(missed, P).step()).isEqualTo(new ProgressionStep.AddReps());
+    }
+
+    @Test
     void refusesMalformedInput() {
         assertThatThrownBy(() -> new RepRange(12, 8)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new RepRange(0, 5)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RepRange(6, 5)).as("a fixed target is min = max, never max under min").isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RepRange(0, 0)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SetResult(-1, 1)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SetResult(8, -1)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> bench("60", List.of(), true)).isInstanceOf(IllegalArgumentException.class);
@@ -183,7 +199,7 @@ class ProgressionTests {
     @Provide
     Arbitrary<LiftSession> compoundSessions() {
         Arbitrary<RepRange> ranges = Arbitraries.integers().between(3, 15)
-                .flatMap(min -> Arbitraries.integers().between(min + 1, min + 6).map(max -> new RepRange(min, max)));
+                .flatMap(min -> Arbitraries.integers().between(min, min + 6).map(max -> new RepRange(min, max))); // min = max: a fixed target (K-991)
         return ranges.flatMap(range -> Combinators.combine(
                 Arbitraries.of(BodyRegion.values()),
                 Arbitraries.bigDecimals().between(new BigDecimal("20"), new BigDecimal("250")).ofScale(1),

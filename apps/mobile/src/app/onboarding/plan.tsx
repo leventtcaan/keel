@@ -18,6 +18,7 @@ import { tokens } from '@/theme/tokens';
 import { weekdayDate } from '@/today/today';
 import { MoveThumb } from '@/train/MoveThumb';
 import { dayName, exerciseName } from '@/train/program';
+import { repCount } from '@/train/reps';
 import { formatLoad } from '@/units/units';
 
 type Schemas = components['schemas'];
@@ -134,7 +135,7 @@ export default function PlanScreen() {
               <View style={styles.moveText}>
                 <Text style={[styles.moveName, { color: color.decisionText }]}>{exerciseName(move.exerciseId, moves)}</Text>
                 <Text style={[styles.small, { color: color.decisionMuted }]}>
-                  {t('onboarding.plan.setsReps', { sets: move.sets, min: move.reps.min, max: move.reps.max })}
+                  {t('onboarding.plan.setsReps', { sets: move.sets, reps: repCount(move.reps) })}
                 </Text>
               </View>
               {move.nextLoadKg !== undefined && (

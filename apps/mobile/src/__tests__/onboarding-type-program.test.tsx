@@ -12,6 +12,7 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { workoutParams } from '@/train/params';
+import { repsText } from '@/train/reps';
 import type { Move } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -107,7 +108,7 @@ const day = (number: number) => t('programEditor.defaultName', { number });
 /** A search result as VoiceOver says it: the move and the range it starts from. */
 const pick = (id: string) => {
   const kind = mockCatalog.find((m) => m.id === id)?.kind ?? 'COMPOUND';
-  return t('programEditor.pickLabel', { name: name(id), range: t('programEditor.range', workoutParams.programNewMoveReps[kind]) });
+  return t('programEditor.pickLabel', { name: name(id), range: repsText(workoutParams.programNewMoveReps[kind]) });
 };
 
 /** Signed in without a profile: goal, experience, "I have my own", "Type it in". */
@@ -240,12 +241,12 @@ test('sets never under one: the stepper stops there, its value said as words, it
   expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: sets }) })).toBeEnabled();
 });
 
-test('the fewest reps stop one under the most: its + off there, the value said as words', async () => {
+test('the fewest reps stop at the most (a fixed target, K-991): its + off there, the value said as words', async () => {
   await toEditor();
   await addMove('squ', 'squat');
   const fewest = t('programEditor.minLabel', { move: name('squat') });
   await step(fewest, 'increment', REPS.COMPOUND.max);
-  expect(screen.getByRole('adjustable', { name: fewest })).toHaveAccessibilityValue({ text: String(REPS.COMPOUND.max - 1) });
+  expect(screen.getByRole('adjustable', { name: fewest })).toHaveAccessibilityValue({ text: String(REPS.COMPOUND.max) });
   expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: fewest }) })).toBeDisabled();
 });
 
@@ -362,7 +363,7 @@ test('"Add a move" opens a sheet for the open day: search the catalog, each move
   expect(screen.getByRole('header', { name: t('programEditor.addMove') })).toBeOnTheScreen();
   expect(screen.getByText(t('programEditor.sheetTo', { day: day(1), sets: SETS }))).toBeOnTheScreen();
   await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), 'curl');
-  expect(screen.getByText(t('programEditor.range', REPS.ISOLATION))).toBeOnTheScreen();
+  expect(screen.getByText(repsText(REPS.ISOLATION))).toBeOnTheScreen();
   await press(pick('barbell_curl'));
   expect(screen.queryByRole('header', { name: t('programEditor.addMove') })).toBeNull();
   expect(screen.getByText(name('barbell_curl'))).toBeOnTheScreen();

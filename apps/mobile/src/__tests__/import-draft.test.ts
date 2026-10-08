@@ -51,14 +51,14 @@ describe('from a Strong export', () => {
             { exerciseId: 'bench_press', sets: 4, reps: { min: 7, max: 9 } },
             { exerciseId: 'barbell_row', sets: 3, reps: { min: 9, max: 11 } },
             // In half the sessions, and in no catalog move: the user's own move, by the file's name.
-            { ownName: 'Landmine Press', sets: 3, reps: { min: 12, max: 14 } },
+            { ownName: 'Landmine Press', sets: 3, reps: { min: 12, max: 12 } },
           ],
         },
         {
           name: 'Lower',
           weekday: 'THURSDAY',
           moves: [
-            { exerciseId: 'squat', sets: 3, reps: { min: 5, max: 7 } },
+            { exerciseId: 'squat', sets: 3, reps: { min: 5, max: 5 } },
             { exerciseId: 'romanian_deadlift', sets: 3, reps: { min: 8, max: 10 } },
           ],
         },
@@ -135,6 +135,25 @@ describe('the rules', () => {
   const weekly = (routine: string, weekdays: number[], move: string) =>
     [0, 1, 2, 3].flatMap((week) => weekdays.map((weekday) => session(routine, 2025, 3, 3 + week * 7 + weekday, [[move, [8, 8]]])));
 
+  test('every working set at one rep count is a fixed target: always 5 is 5 x 5 (K-991)', () => {
+    const sessions = [3, 10, 17].map((d) => session('A', 2025, 3, d, [['Squat', [5, 5, 5, 5, 5]]]));
+
+    expect(days(draftProgram(sessions, none, nothingLeftOut))[0].moves).toEqual([{ ownName: 'Squat', sets: 5, reps: { min: 5, max: 5 } }]);
+  });
+
+  test('one set at another count keeps the range rule: 5, 5, 6 is a range, at least the span wide (K-991)', () => {
+    const sessions = [3, 10, 17].map((d) => session('A', 2025, 3, d, [['Squat', [5, 5, 6]]]));
+
+    expect(days(draftProgram(sessions, none, nothingLeftOut))[0].moves).toEqual([{ ownName: 'Squat', sets: 3, reps: { min: 5, max: 5 + importParams.draft.repSpanMin } }]);
+  });
+
+  test("a range at the top of a set's reps stays within it, opened downwards", () => {
+    const top = workoutParams.maxReps;
+    const sessions = [3, 10, 17].map((d) => session('A', 2025, 3, d, [['Curl', [top - 1, top]]]));
+
+    expect(days(draftProgram(sessions, none, nothingLeftOut))[0].moves[0].reps).toEqual({ min: top - importParams.draft.repSpanMin, max: top });
+  });
+
   test('names that never repeat are no routine', () => {
     const sessions = [session('Mon', 2025, 3, 3, [['Squat', [5]]]), session('Tue', 2025, 3, 4, [['Squat', [5]]])];
 
@@ -149,7 +168,7 @@ describe('the rules', () => {
       session('A', 2025, 3, 24, [['Squat', [5, 5, 5, 5, 5]]]),
     ];
 
-    expect(days(draftProgram(sessions, none, nothingLeftOut))[0].moves).toEqual([{ ownName: 'Squat', sets: 3, reps: { min: 5, max: 5 + importParams.draft.repSpanMin } }]);
+    expect(days(draftProgram(sessions, none, nothingLeftOut))[0].moves).toEqual([{ ownName: 'Squat', sets: 3, reps: { min: 5, max: 5 } }]);
   });
 
   test('a routine on a weekday in at least half the weeks it was done is a day there; on fewer, a day without one', () => {
@@ -234,7 +253,7 @@ describe('the rules', () => {
   test('a name spelt with other case or spaces is the same routine and the same move, shown as first written', () => {
     const sessions = [session(' Push Day ', 2025, 3, 3, [[' Cable Fly ', [12]]]), session('push  day', 2025, 3, 10, [['cable  fly', [12]]])];
 
-    expect(draftOf(sessions)).toEqual([{ name: 'Push Day', weekday: 'MONDAY', moves: [{ ownName: 'Cable Fly', sets: 1, reps: { min: 12, max: 14 } }] }]);
+    expect(draftOf(sessions)).toEqual([{ name: 'Push Day', weekday: 'MONDAY', moves: [{ ownName: 'Cable Fly', sets: 1, reps: { min: 12, max: 12 } }] }]);
   });
 
   test('the draft is always one the contract takes: days, moves, sets, reps and the name within OwnProgram', () => {
@@ -253,7 +272,7 @@ describe('the rules', () => {
     expect(draft).toHaveLength(workoutParams.programDaysMax);
     expect(draft[0].name).toBe(long.slice(0, workoutParams.programDayNameMaxChars).trim());
     expect(draft[0].moves).toHaveLength(workoutParams.programDayMovesMax);
-    expect(draft[0].moves[0].reps).toEqual({ min: workoutParams.maxReps - importParams.draft.repSpanMin, max: workoutParams.maxReps });
+    expect(draft[0].moves[0].reps).toEqual({ min: workoutParams.maxReps, max: workoutParams.maxReps });
     expect(draft[1].moves[0].sets).toBe(workoutParams.programMoveSetsMax);
   });
 });
@@ -275,7 +294,7 @@ describe('confirming it', () => {
       exercises: [
         { exerciseId: 'bench_press', sets: 4, reps: { min: 7, max: 9 } },
         { exerciseId: 'barbell_row', sets: 3, reps: { min: 9, max: 11 } },
-        { exerciseId: 'custom:7b0c5a8e-3f4e-4b1a-9d2c-1e2f3a4b5c6d', sets: 3, reps: { min: 12, max: 14 } },
+        { exerciseId: 'custom:7b0c5a8e-3f4e-4b1a-9d2c-1e2f3a4b5c6d', sets: 3, reps: { min: 12, max: 12 } },
       ],
     });
   });
