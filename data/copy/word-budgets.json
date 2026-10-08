@@ -377,9 +377,41 @@
       "budget": 55,
       "source": "prototip/yeni-yuz.html",
       "task": "K-970",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/(tabs)/train.tsx",
+      "keys": [
+        "screens.train.title",
+        "train.head",
+        "train.days.other",
+        "train.todayOn",
+        "train.moveCount.other",
+        "train.setsReps",
+        "train.cardio",
+        "train.cardioAfter",
+        "train.cardioMinutes",
+        "train.start",
+        "train.change",
+        "train.thisWeek",
+        "train.weekRow"
+      ],
+      "dynamic": [
+        { "what": "the split, from the days' names (Full body)", "words": 2 },
+        { "what": "today's weekday (Tue)", "words": 1 },
+        { "what": "today's session (Full body A)", "words": 3 },
+        { "what": "five moves' names (Bench press, Barbell row, Squat, Romanian deadlift, Lat pulldown)", "words": 9 },
+        { "what": "five next loads, each with its unit (62.5 kg)", "words": 5 },
+        { "what": "two other sessions of the week, each a weekday and a day's name (Thu · Full body B)", "words": 8 }
+      ],
+      "notFirstView": [
+        "train.failed",
+        "train.retry",
+        "train.none",
+        "train.kept",
+        "train.days.one",
+        "train.skippedTag",
+        "train.moved",
+        "train.startThis",
+        "train.startDay"
+      ]
     },
     {
       "screen": "summary",

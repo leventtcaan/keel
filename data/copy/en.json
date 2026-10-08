@@ -255,7 +255,45 @@
     "continue": "Continue",
     "nextBodyweight": "Next {reps} reps",
     "rackEnds": "Your gym has no next weight for this move that you can reach yet. Add one to your gym's weights and the load can go up again.",
-    "startDay": "Start {day}"
+    "startDay": "Start {day}",
+    "split": { "own": "Your own program", "join": " + " },
+    "head": "{split} · {days}",
+    "days": { "one": "1 day", "other": "{count} days" },
+    "todayOn": "Today · {weekday}",
+    "moveCount": { "one": "1 move", "other": "{count} moves" },
+    "shortTag": "Short version",
+    "rest": "Rest",
+    "restDay": "No session today. Start any day of the week below.",
+    "movedTo": "Moved to {weekday}. Today is rest.",
+    "movedThen": "Then: {days}.",
+    "skipped": "Skipped. Monday reads what happened.",
+    "setsReps": "{sets} × {reps}",
+    "held": "held",
+    "addedLoad": "+{load}",
+    "cardio": "Cardio, easy",
+    "cardioAfter": "After lifting",
+    "cardioOptional": "Optional today",
+    "cardioMinutes": "{minutes} min",
+    "change": "Change",
+    "changeLabel": "Change today's session",
+    "continueWorkout": "Continue workout",
+    "thisWeek": "This week",
+    "weekRow": "{weekday} · {day}",
+    "moved": "moved",
+    "skippedTag": "skipped"
+  },
+  "todayChange": {
+    "title": "Change today",
+    "short": { "title": "Short on time", "body": "Just the top moves. Cardio is optional." },
+    "shortNow": "This is the short version.",
+    "move": { "title": "Move it", "body": "To tomorrow. Later sessions this week shift a day if they need to." },
+    "skip": { "title": "Skip today", "body": "No catch-up. Monday reads what happened." },
+    "started": "Today's workout has started. Change it in the workout.",
+    "none": "No session today to change.",
+    "offline": "Couldn't change today. Check your connection and try again.",
+    "conflict": "Can't do that now: no day is left this week, or today's workout has started.",
+    "failed": "Something went wrong on our side. Try again in a moment.",
+    "close": "Close"
   },
   "workout": {
     "title": "Workout",
@@ -1349,58 +1387,76 @@
   },
   "programDays": {
     "full_body": {
-      "name": "Full body"
+      "name": "Full body",
+      "split": "Full body"
     },
     "full_body_a": {
-      "name": "Full body A"
+      "name": "Full body A",
+      "split": "Full body"
     },
     "full_body_b": {
-      "name": "Full body B"
+      "name": "Full body B",
+      "split": "Full body"
     },
     "upper": {
-      "name": "Upper"
+      "name": "Upper",
+      "split": "Upper / Lower"
     },
     "lower": {
-      "name": "Lower"
+      "name": "Lower",
+      "split": "Upper / Lower"
     },
     "upper_a": {
-      "name": "Upper A"
+      "name": "Upper A",
+      "split": "Upper / Lower"
     },
     "upper_b": {
-      "name": "Upper B"
+      "name": "Upper B",
+      "split": "Upper / Lower"
     },
     "lower_a": {
-      "name": "Lower A"
+      "name": "Lower A",
+      "split": "Upper / Lower"
     },
     "lower_b": {
-      "name": "Lower B"
+      "name": "Lower B",
+      "split": "Upper / Lower"
     },
     "push": {
-      "name": "Push"
+      "name": "Push",
+      "split": "Push / Pull / Legs"
     },
     "pull": {
-      "name": "Pull"
+      "name": "Pull",
+      "split": "Push / Pull / Legs"
     },
     "legs": {
-      "name": "Legs"
+      "name": "Legs",
+      "split": "Push / Pull / Legs"
     },
     "push_a": {
-      "name": "Push A"
+      "name": "Push A",
+      "split": "Push / Pull / Legs"
     },
     "pull_a": {
-      "name": "Pull A"
+      "name": "Pull A",
+      "split": "Push / Pull / Legs"
     },
     "legs_a": {
-      "name": "Legs A"
+      "name": "Legs A",
+      "split": "Push / Pull / Legs"
     },
     "push_b": {
-      "name": "Push B"
+      "name": "Push B",
+      "split": "Push / Pull / Legs"
     },
     "pull_b": {
-      "name": "Pull B"
+      "name": "Pull B",
+      "split": "Push / Pull / Legs"
     },
     "legs_b": {
-      "name": "Legs B"
+      "name": "Legs B",
+      "split": "Push / Pull / Legs"
     }
   },
   "foodEstimate": {
