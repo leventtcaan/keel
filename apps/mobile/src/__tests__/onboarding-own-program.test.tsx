@@ -181,7 +181,7 @@ const mockServices = {
   // The plan's Monday switch reads them: one object, as useSyncExternalStore compares by identity.
   // The plan hands itself to the paywall after it (K-967).
   planPreviews: { keep: jest.fn() },
-  reminders: { current: () => mockReminderSettings, subscribe: () => () => {}, turnOn: jest.fn(), turnOff: jest.fn() },
+  reminders: { current: () => mockReminderSettings, subscribe: () => () => {}, turnOn: jest.fn(), turnOff: jest.fn(), keepFirstCall: async () => {} },
   units: { current: () => 'METRIC', keepOnPhone: jest.fn(async () => {}) },
   importFile: { pick: mockPick },
   training: {

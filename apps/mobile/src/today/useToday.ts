@@ -32,6 +32,13 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
         const { program } = today;
         if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
+        // Where the first call stands, for the reminders (K-992): no check-in morning before its day, none without calls.
+        const { firstWeeks } = today;
+        if (firstWeeks?.state === 'consent') void remind.keepFirstCall('off', era);
+        else if (firstWeeks?.state === 'ready' || firstWeeks?.state === 'none') {
+          const on = firstWeeks.state === 'ready' ? firstWeeks.value.firstCallOn : undefined;
+          void remind.keepFirstCall(on === undefined ? 'weekly' : { on }, era);
+        }
         // A state declared, kept on the phone for the reminders (K-518) — not for an account that left during the read.
         if (today.state !== undefined && remind.era() === era) await declared.keep(today.state).catch(named);
         // Today's open counted, the one before read (K-521): the week-5 risk's "the app not opened", on the phone only.

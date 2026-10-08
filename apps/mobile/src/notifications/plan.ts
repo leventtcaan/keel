@@ -17,6 +17,12 @@ export type ReminderKind = 'training' | 'check_in' | 'quiet';
 /** Weekly: the phone's calendar, weekday 1 = Sunday … 7 = Saturday (expo-notifications' WeeklyTriggerInput). Once: a moment. */
 export type ReminderTime = { weekday: number; hour: number; minute: number } | { at: Date };
 export type Reminder = { id: string; kind: ReminderKind; when: ReminderTime; title: string; body: string };
+/**
+ * Where the first call stands (K-992, ADR-077 Ek 2), from the server's FirstWeeks: its day still to come (`firstCallOn`);
+ * `weekly`, made or the first weeks over (and what an account kept nothing of before K-992 counts as); `off`, no calls at
+ * all (no health data consent).
+ */
+export type FirstCall = { on: string } | 'weekly' | 'off';
 
 export type PlanInput = {
   schedule: Schedule | null;
@@ -33,6 +39,7 @@ export type PlanInput = {
   mutedUntil: string | null;
   /** A week off in force (Program.restUntil, a calendar day): no training reminder until it ends (ADR-037 › 51b). */
   restUntil: string | null;
+  firstCall: FirstCall;
 };
 
 const WEEKDAYS: Schedule['checkInDay'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -62,7 +69,13 @@ function daysAfter(day: string): Date[] {
   return Array.from({ length: P.restResumeWeeks * 7 }, (_, i) => new Date(year, month - 1, date + i + 1));
 }
 
-export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUntil, restUntil }: PlanInput): Reminder[] {
+/** The calendar day before one, so a day itself can start the dated weeks (daysAfter counts from the day after). */
+function dayBefore(day: string): string {
+  const [year, month, date] = day.split('-').map(Number);
+  return dayOf(new Date(year, month - 1, date - 1));
+}
+
+export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall }: PlanInput): Reminder[] {
   if (muted && mutedUntil === null) return [];
   const plan: Reminder[] = [];
   // A state with a last day still on (K-518): every slot waits for it to end.
@@ -92,12 +105,19 @@ export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUnti
     }
   }
 
-  if (schedule !== null && until === null) {
+  // The first call's day still to come (K-992): a weekly morning would ring on a check-in day the server opens no check-in
+  // on, so the mornings from that day are planned by date and the next open after it turns them weekly. No calls, none.
+  const firstOn = typeof firstCall === 'object' && firstCall.on > dayOf(now) ? dayBefore(firstCall.on) : null;
+  // The mornings by date start after the later of a state and the day before the first call.
+  const checkInAfter = [until, firstOn].filter((day): day is string => day !== null).sort().at(-1) ?? null;
+  if (schedule === null || firstCall === 'off') {
+    // Nothing to plan a check-in on.
+  } else if (checkInAfter === null) {
     const when = weeklyAt(schedule.checkInDay, minutesOf(P.checkInTime));
     plan.push({ id: 'check-in', kind: 'check_in', when, title: t('reminders.checkIn.title'), body: t('reminders.checkIn.body') });
-  } else if (schedule !== null && until !== null) {
-    // The check-in mornings after a state, by date (K-518).
-    for (const day of daysAfter(until).filter((d) => WEEKDAYS[d.getDay()] === schedule.checkInDay)) {
+  } else {
+    // The check-in mornings after a state (K-518) or from the first call's day (K-992), by date.
+    for (const day of daysAfter(checkInAfter).filter((d) => WEEKDAYS[d.getDay()] === schedule.checkInDay)) {
       const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutesOf(P.checkInTime));
       plan.push({ id: `check-in-${dayOf(day)}`, kind: 'check_in', when: { at }, title: t('reminders.checkIn.title'), body: t('reminders.checkIn.body') });
     }

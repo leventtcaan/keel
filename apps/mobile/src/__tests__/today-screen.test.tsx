@@ -99,6 +99,7 @@ jest.mock('react-native/Libraries/AppState/AppState', () => ({
 const mockSyncHealth = jest.fn(async () => 0);
 const mockDrain = jest.fn(async () => {});
 const mockKeepRestUntil = jest.fn(async (_day: string | null, _era?: number) => {});
+const mockKeepFirstCall = jest.fn(async (_firstCall: unknown, _era?: number) => {});
 // An answer to one of the coach's questions (K-520): what the server says back.
 let mockPost: Answer | 'offline' = { data: {}, response: new Response(null, { status: 200 }) } as Answer;
 const mockPOST = jest.fn(async (_path: string, _init?: unknown) => {
@@ -111,7 +112,7 @@ const mockServices = {
   queue: { drain: mockDrain },
   report: () => {},
   // The reminders follow the program's week off (ADR-037 › 51b).
-  reminders: { keepRestUntil: mockKeepRestUntil, era: () => 0 },
+  reminders: { keepRestUntil: mockKeepRestUntil, keepFirstCall: mockKeepFirstCall, era: () => 0 },
   // The state read is kept on the phone for the reminders (K-518).
   state: { keep: jest.fn(async (_loaded: unknown) => {}), back: jest.fn(async () => {}) },
   opens: { previous: async () => mockPreviousOpen },
@@ -452,6 +453,38 @@ describe("the program's week off reaches the reminders (ADR-037 › 51b)", () =>
     mockAnswers['/v1/program'] = 'offline';
     await show();
     expect(mockKeepRestUntil).not.toHaveBeenCalled();
+  });
+});
+
+describe("the first call's day reaches the reminders (K-992)", () => {
+  test('its day still to come: the day; made or the flow over: weekly; no consent: off; unread: nothing said', async () => {
+    mockAnswers['/v1/first-weeks'] = ok({ week: 1, risk: [], readsRisk: false, training: true, firstCallOn: '2026-10-05' });
+    await show();
+    expect(mockKeepFirstCall).toHaveBeenLastCalledWith({ on: '2026-10-05' }, 0);
+    await screen.unmount();
+
+    jest.clearAllMocks();
+    mockAnswers['/v1/first-weeks'] = ok({ week: 3, contentKey: 'first_weeks.week3', risk: [], readsRisk: false, training: true });
+    await show();
+    expect(mockKeepFirstCall).toHaveBeenLastCalledWith('weekly', 0);
+    await screen.unmount();
+
+    jest.clearAllMocks();
+    delete mockAnswers['/v1/first-weeks']; // the first weeks over (404)
+    await show();
+    expect(mockKeepFirstCall).toHaveBeenLastCalledWith('weekly', 0);
+    await screen.unmount();
+
+    jest.clearAllMocks();
+    mockAnswers['/v1/first-weeks'] = refused(403, 'CONSENT_REQUIRED');
+    await show();
+    expect(mockKeepFirstCall).toHaveBeenLastCalledWith('off', 0);
+    await screen.unmount();
+
+    jest.clearAllMocks();
+    mockAnswers['/v1/first-weeks'] = 'offline';
+    await show();
+    expect(mockKeepFirstCall).not.toHaveBeenCalled();
   });
 });
 

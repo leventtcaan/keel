@@ -123,6 +123,7 @@ let mockServerProgram: unknown = null;
 let mockStarting: unknown = 404;
 /** The server's first call: the Monday after the pinned Wednesday the plan tests finish on; a number: that status. */
 let mockFirstCall: string | number = '2026-10-19';
+const mockKeepFirstCall = jest.fn(async (_firstCall: unknown) => {});
 // What the phone knows of the health data consent (a resumed onboarding reads it; the walk has its own answer).
 let mockConsentGranted = false;
 // Whether the server holds a grant, for taking it back (K-986): what the phone knows, or 'unknown' when it cannot say.
@@ -173,6 +174,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     reminders: {
       era: () => 0,
       keepRestUntil: async () => {},
+      keepFirstCall: mockKeepFirstCall,
       current: () => mockReminderSettings,
       subscribe: (listener: () => void) => (mockReminderListeners.add(listener), () => mockReminderListeners.delete(listener)),
       turnOn: mockTurnOn,
@@ -1342,8 +1344,27 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ firstCall: null }));
   });
 
-  test('Monday morning: the switch turns on the check-in morning reminder alone, through the service Settings uses, and off again', async () => {
+  test('the first call reaches the reminders (K-992): its day with the consent, weekly without a day, off without the consent', async () => {
+    await toPlan({ experience: 'NEW', allow: true });
+    expect(mockKeepFirstCall).toHaveBeenLastCalledWith({ on: '2026-10-19' });
+    await screen.unmount();
+    jest.clearAllMocks();
+    mockFirstCall = 404;
+    await toPlan({ experience: 'NEW', allow: true });
+    expect(mockKeepFirstCall).toHaveBeenLastCalledWith('weekly');
+    await screen.unmount();
+    jest.clearAllMocks();
     await toPlan({ experience: 'NEW' });
+    expect(mockKeepFirstCall).toHaveBeenLastCalledWith('off');
+  });
+
+  test('without the health data consent there are no calls: no Monday morning switch (K-992, user test)', async () => {
+    await toPlan({ experience: 'NEW' });
+    expect(screen.queryByLabelText(t('onboarding.plan.remind', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeNull();
+  });
+
+  test('Monday morning: the switch turns on the check-in morning reminder alone, through the service Settings uses, and off again', async () => {
+    await toPlan({ experience: 'NEW', allow: true });
     const toggle = screen.getByLabelText(t('onboarding.plan.remind', { day: t('onboarding.schedule.dayName.MONDAY') }));
     expect(toggle.props.value).toBe(false);
     await act(async () => fireEvent(toggle, 'valueChange', true));
@@ -1356,7 +1377,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
 
   test('iOS saying no for good is said; the plan goes on', async () => {
     mockTurnOn.mockImplementationOnce(async () => ({ granted: false, canAskAgain: false }));
-    await toPlan({ experience: 'NEW' });
+    await toPlan({ experience: 'NEW', allow: true });
     await act(async () => fireEvent(screen.getByLabelText(t('onboarding.plan.remind', { day: t('onboarding.schedule.dayName.MONDAY') })), 'valueChange', true));
     expect(screen.getByText(t('onboarding.reminders.refused'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('onboarding.continue') })).toBeEnabled();
