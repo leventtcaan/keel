@@ -4574,3 +4574,22 @@ tasks:
     tests: ["AccountDataTests (CI)"]
     refs: ["backend/src/test/java/app/keel/privacy/AccountDataTests.java"]
     learn: ["Rastgele veride yanlış pozitif"]
+
+  - id: K-995
+    title: "Programı düzenleme ucu: kaynak ve hedefler korunur; split seçimi; taşı zinciri önizlemesi"
+    milestone: M9a
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-956, K-964]
+    why: "K-970 (9 Eki): `PUT /v1/program` programı bütün halinde değiştiriyor (hedefler, gün kimlikleri, inceleme kaydı gidiyor, GENERATED → OWN); ADR-073 #4 'kaynak korunur, düzenlenen üretilmiş program OWN olmaz, değişiklik kaydı tutulur' ile çelişiyor. Split seçimi ve taşı önizlemesi için sunucu alanı yok (telefon kural işletmez)"
+    acceptance:
+      - "`PATCH /v1/program`: gün ve hareket kimlikleriyle düzenleme (gün seç/taşı, hareket ekle/çıkar/değiştir, set/tekrar); dokunulmayan satırın hedefi (next_load_kg) ve kimliği kalır; kaynak GENERATED/OWN korunur; değişiklik kaydı tutulur, geri alınır; inceleme yeniden koşar"
+      - "Rebuild for me: split seçimi (full body / upper-lower / push-pull-legs) üretece gider; seçilen gün sayısına uymayan split reddedilir (mevcut şablon kuralıyla)"
+      - "Taşı zinciri önizlemesi sunucudan (kayan günler, pazar sınırı → CONFLICT); telefon zinciri hesaplamaz"
+      - "Bugünü değiştirmenin geri alınması: `POST /v1/program/today` FULL (kısa sürümü kaldırır) ve UNDO (o günün seansını taşıma/atlama öncesine döndürür; zincirle kayan günler de geri gelir); başlanmış seansta 409"
+      - "Başlanmış seans ve kilit kuralları mevcut uçlarla aynı (409)"
+    tests: ["ProgramStore/servis tablo testleri (hedef korunur, kaynak korunur, geri al), API testleri (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
+    learn: ["Bütün değiştirme ile kimlikli düzenleme farkı"]
