@@ -5,7 +5,11 @@ guncelleme: 2026-10-08
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (7 Eki gece — M9a Part 1 BİTTİ, 10/10 görev birleşti)
+## ▶ DEVAM NOKTASI (8 Eki — M9a Part 2 YARIDA: kullanım sınırı)
+**Önce `plan/oturum-promptlari/YENI-YUZ-part2-devam.md`.** Birleşen: K-956, K-957, K-959, K-965, K-966, K-985, K-987. Açık PR: #472 (K-964, V41), #474/#475 (K-967),
+#473/#477 (+3. PR) (K-968), K-989 dalı. Levent cevapları ADR eklerinde ve tabloda.
+
+## (önceki) DEVAM NOKTASI (7 Eki gece — M9a Part 1 BİTTİ, 10/10 görev birleşti)
 **Sıradaki session: M9a Part 2 · Sunucu + onboarding** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 2 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 1 ÇIKIŞ.
 Levent'e 4 soru (Part 1 ÇIKIŞ › Yeni sorular) + K-983 (App Store Connect 2 hafta deneme) Part 2 başında.
 
