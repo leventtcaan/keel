@@ -341,6 +341,30 @@
       "tag": "tecrube",
       "source": "arastirma/ham/guray/G1-antrenman.md#K-21",
       "note": "Mirror of training.yaml; see rep_range_isolation_min."
+    },
+    {
+      "key": "cardio_minutes_start",
+      "value": 30,
+      "unit": "min",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G2-kilo-verme.md#K-31",
+      "note": "Where the user's own cardio starts when the program has none (Edit › Cardio, ADR-074 #4); the user sets their own. The engine's dose stays the server's."
+    },
+    {
+      "key": "cardio_minutes_step",
+      "value": 5,
+      "unit": "min",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-074-kardiyo-recetesi.md#Karar",
+      "note": "One step of the cardio minutes stepper (Edit › Cardio, ADR-074 #4)."
+    },
+    {
+      "key": "cardio_minutes_max",
+      "value": 600,
+      "unit": "min",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#CardioPlan",
+      "note": "CardioPlan.minutes maximum: a longer session would be refused by the server."
     }
   ]
 }
