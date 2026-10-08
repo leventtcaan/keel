@@ -802,17 +802,19 @@ Geçici numaralar: K-956 V39 · K-959 V40 · K-964 V41 · K-957 V42 · K-965 V43
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-956 program incelemesi uçları | 🔧 düzeltme | #462 | V39; inceleme: undo sonraki değişikliği sessiz düşürüyor → `alsoUndone`; boş gün; kilit; kendi hareketi atlanır (`notReviewedMoves`) |
-| K-957 içe aktarmadan taslak | 🔍 2. inceleme | #460 | taslak **telefonda** (`src/import/draft.ts`, ayrıştırma zaten telefonda, ADR-053); çok günlü rutin her güne; ADR-073 Ek 1 D1; **ADR-035 Ek 1: OWN programda kendi hareketi (Levent KABUL)** |
-| K-959 kardiyo sözleşmesi | 🔧 düzeltme | #464 | V40; `CurrentPhase` (decision sağlar); varsayılan okumada hesaplanır; Levent: HIIT/ip/karışık sayılır, "coach's default"a dönüş ucu, gizlilik 2 satır uygun |
-| K-964 bugünü/hareketi değiştir | ⏳ #462'den sonra | | "From now on" değişiklik kaydını temizlemeli/taşımalı (K-956 notu) |
-| K-965 ilerleme özetleri | 🛠 yapılıyor | | |
-| K-966 onboarding A | ✅ A1 · 🔧 A2 | #461 · #463 | A1 birleşti (`src/onboarding/flow.ts`); A2: tekerlek savurma, ayarlanmamış kilo a11y, kaydetme durumu, ADR-027 Ek; Levent küçük kararların hepsini onayladı |
-| K-967 onboarding B + paywall | ⏳ K-966, K-959 sonrası | | adım sayıları dala göre somut test edilsin (inceleme notu) |
-| K-968 kendi programı dalı | ⏳ K-956, K-957 sonrası | | `readExport(text,{routines:true})`, `draftProgram(sessions, choices, leftOut)`, `noRoutine` → "Type it in" |
-| K-985 şablonlar incelemeye uyar | ⏳ | | Levent (8 Eki): küçük kaslar haftada ≥4 set; şablon → sıfır öneri testi |
-| K-986 rıza ikinci yürüyüş | ⏳ | | K-966 incelemesi; eski akışta da vardı |
-| K-987 gece yarısı testi | 🔍 | #468 | `FirstDecisionNotBeforeMondayTests` 00:00-01:00 UTC kırmızı |
+| K-956 program incelemesi uçları | ✅ | #462 | V39; `alsoUndone`; boş gün silinir; seans bitişi program kilidi; kendi hareketi atlanır (`notReviewedMoves`); ADR-073 Ek 1 |
+| K-957 içe aktarmadan taslak | ✅ | #460 | taslak telefonda (`src/import/draft.ts`); rutin haftada kaç kez yapıldıysa o kadar gün; ADR-073 Ek 2; **ADR-035 Ek 1: OWN programda kendi hareketi (Levent)** |
+| K-959 kardiyo sözleşmesi | ✅ | #464 | V40; `CurrentPhase`; `DELETE /v1/program/cardio` (koçun varsayılanı, Levent); HIIT/ip/karışık sayılır (Levent); `afterLiftOverLine`; ADR-074 Ek 1 |
+| K-964 bugünü/hareketi değiştir | 🔍 son test | #472 | V41 `training.session_change`; bilinmeyen ekipman süzülmez (karar); başlanmış seans 409; `PlannedDays` (taşınan seans asıl gününde kaçmış sayılmaz); ADR-073 Ek 3 |
+| K-965 ilerleme özetleri | ✅ | #469 | rekor = hiçbir eski set baskın değil (Levent); STUCK kararın penceresi; tek taraflı bir kez; % aynı `programDayId`; ADR-075 Ek 2 |
+| K-966 onboarding A | ✅ | #461 · #463 | `src/onboarding/flow.ts`; ADR-027 Ek |
+| K-967 onboarding B + paywall | 🔍 | #474 · #475 | kalori satırı K-989 bekliyor; yapılacak: "Monday" anahtarı yalnız pazartesi, öldür-devam hatası |
+| K-968 kendi programı dalı | 🛠 | | K-967'nin `preparePlan`'ı kendi programında generate yerine PUT |
+| K-985 şablonlar incelemeye uyar | ✅ | #470 | 1 gün = 6 bileşik × 4 set (Levent); `AccountFixture` 6 gün + TOO_MANY_DAYS |
+| K-986 rıza ikinci yürüyüş | ⏳ | | |
+| K-987 gece yarısı testi | ✅ | 651dd851 | PR'sız `main`'e düştü (kaza; incelenmişti) |
+| K-988 kilo değişimi (sonuç cümlesi) | ⏳ | | Part 3 İlerleme ile |
+| K-989 başlangıç kalorisi ucu | 🛠 | | K-967 plan ekranı için |
 | K-983 ASC 2 hafta (Levent) | ⏳ sonra | | sandbox kontrolü Levent bitirince |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
