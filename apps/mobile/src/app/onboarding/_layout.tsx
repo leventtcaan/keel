@@ -12,7 +12,15 @@ export default function OnboardingLayout() {
   const { color } = useTheme();
   return (
     <OnboardingProvider>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
+        {/* Off the walk (ADR-069 #3, ADR-072 #8; flow.ts RETIRED_STEPS): the code stays, nothing opens them, a link neither. */}
+        <Stack.Protected guard={false}>
+          <Stack.Screen name="foods" />
+          <Stack.Screen name="photos" />
+          <Stack.Screen name="expectations" />
+          <Stack.Screen name="apple-health" />
+        </Stack.Protected>
+      </Stack>
     </OnboardingProvider>
   );
 }

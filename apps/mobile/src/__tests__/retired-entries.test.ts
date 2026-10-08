@@ -45,3 +45,20 @@ test('the parts that led to a retired screen are used by retired screens only', 
   });
   expect(used.map(relative)).toEqual([]);
 });
+
+describe('the onboarding steps taken off the walk (ADR-072 #8, flow.ts RETIRED_STEPS)', () => {
+  const ROUTES = ['foods', 'photos', 'expectations', 'apple-health'];
+  const own = new Set(ROUTES.map((name) => path.join(APP, 'onboarding', `${name}.tsx`)));
+  const named = new RegExp(`['"\`]/onboarding/(${ROUTES.join('|')})(?=['"\`?/])`);
+
+  test('each is still a file: the code stays', () => {
+    for (const file of own) expect(fs.existsSync(file)).toBe(true);
+  });
+
+  test('no other file names their routes', () => {
+    expect(named.test(`router.push('/onboarding/photos')`)).toBe(true);
+    expect(named.test(`'/onboarding/photos-later'`)).toBe(false);
+    const leading = files(SRC).filter((file) => !own.has(file) && named.test(fs.readFileSync(file, 'utf8')));
+    expect(leading.map(relative)).toEqual([]);
+  });
+});

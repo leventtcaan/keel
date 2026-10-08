@@ -1628,58 +1628,43 @@
         "SUNDAY": "Sunday"
       }
     },
+    "consent": {
+      "title": "Your health data",
+      "why": "Weight, meals and check-ins count as health data.",
+      "kept": "Kept only with your OK",
+      "sold": "Never sold",
+      "deleted": "Deleted when you ask",
+      "fullText": "Read the full text",
+      "continueWithout": "Continue without"
+    },
     "healthData": {
       "allow": "Allow",
       "notNow": "Not now",
       "allowed": "Allowed. You can withdraw this in Settings at any time.",
-      "declinedNote": "Without it we can't keep your weight, so there are no weekly calls. You can allow it later in Settings.",
+      "declinedNote": "Without it there are no weekly calls. You can allow it later in Settings.",
       "failed": "Couldn't record your choice. Check your connection and try again.",
       "withdraw": "Withdraw"
     },
     "about": {
       "title": "About you",
-      "units": "Units",
+      "why": "Your starting numbers come from these.",
       "metric": "Metric",
       "imperial": "Imperial",
-      "heightCm": "Height in centimetres",
-      "heightFeet": "Height, feet",
-      "heightInches": "Height, inches",
       "height": "Height",
-      "heightInvalid": "Check your height.",
-      "birthYear": "Year of birth",
-      "birthYearHint": "Only the year is kept.",
-      "notAYear": "Type the four-digit year.",
-      "tooYoung": "keel is for adults, 18 and over.",
-      "sex": "Sex",
-      "sexHint": "Energy needs and safety checks differ between the sexes.",
-      "male": "Male",
-      "female": "Female",
       "weight": "Weight",
-      "weightHint": "This morning, if you weighed in.",
-      "weightInvalid": "Check your weight.",
-      "waist": "Waist (optional)",
-      "waistHint": "We'll ask for it only when it helps: when your weight and training point different ways.",
-      "waistInvalid": "Check your waist."
+      "born": "Born",
+      "year": "year",
+      "sex": "Sex, for the energy math",
+      "male": "Male",
+      "female": "Female"
     },
     "activity": {
       "title": "How active is your day?",
-      "note": "Your whole day, training included. It only sets your starting calories; your weight trend corrects them from there.",
-      "INACTIVE": {
-        "title": "Mostly sitting",
-        "body": "Desk or study days, getting around by car or bus, little walking beyond daily chores."
-      },
-      "LOW_ACTIVE": {
-        "title": "Lightly active",
-        "body": "About an hour of walking spread over the day, or a job with some time on your feet."
-      },
-      "ACTIVE": {
-        "title": "Active",
-        "body": "On your feet most of the day, like shop, teaching or nursing shifts, or long daily walks on top of training."
-      },
-      "VERY_ACTIVE": {
-        "title": "Very active",
-        "body": "Physical work such as building, farm or warehouse jobs, or hard training on top of an active day."
-      }
+      "why": "Your whole day, training included.",
+      "INACTIVE": "Mostly sitting",
+      "LOW_ACTIVE": "Some walking",
+      "ACTIVE": "On my feet a lot",
+      "VERY_ACTIVE": "Physical work"
     },
     "foods": {
       "title": "Anything you don't eat?",
@@ -1735,6 +1720,7 @@
       "sheetFailed": "Apple Health didn't open. Try again, or go on without it."
     },
     "signOut": "Sign out",
+    "tryAgain": "Try again",
     "serverError": "Something went wrong on our side. Try again in a moment."
   },
   "reminders": {

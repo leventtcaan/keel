@@ -15,7 +15,7 @@ const KG_PER_LB = 0.45359237;
 /** lb plates come in quarters of a pound at the finest (ADR-032): four steps a pound. */
 const LB_PLATE_STEPS = 4;
 const CM_PER_IN = 2.54;
-const INCHES_PER_FOOT = 12;
+export const INCHES_PER_FOOT = 12;
 
 type Parameter = { key: string; value: unknown };
 function param<T>(key: string): T {

@@ -3,7 +3,7 @@
  * becomes. Pure — no screen, no network — so every rule is checked here, fast.
  */
 import { avoidList, birthYearProblem, emptyDraft, heightCm, stepComplete, toProfile, type Draft } from '@/onboarding/draft';
-import { SCREENS } from '@/onboarding/flow';
+import { RETIRED_STEPS, SCREENS } from '@/onboarding/flow';
 import { onboardingParams } from '@/onboarding/params';
 
 const THIS_YEAR = 2026;
@@ -28,9 +28,13 @@ const CONTEXT = { units: 'METRIC' as const, timeZone: 'Europe/Istanbul', thisYea
 
 describe('steps', () => {
   // The order and the branches are the route's (onboarding-route.test.ts); here, what each step needs to be left.
-  test('an empty draft can leave only the steps that ask nothing', () => {
+  test('an empty draft can leave no step of the walk: every one asks something', () => {
     const open = SCREENS.filter((step) => stepComplete(step, emptyDraft, 'METRIC', THIS_YEAR));
-    expect(open).toEqual(['foods', 'photos', 'expectations', 'appleHealth']);
+    expect(open).toEqual([]);
+  });
+
+  test('the steps off the walk ask nothing (ADR-069 #3: their code stays)', () => {
+    expect(RETIRED_STEPS.filter((step) => !stepComplete(step, emptyDraft, 'METRIC', THIS_YEAR))).toEqual([]);
   });
 
   test('the consent step is answered either way, but answered', () => {

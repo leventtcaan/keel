@@ -12,7 +12,6 @@ type Schemas = components['schemas'];
 export type Answers = {
   experience: Schemas['Experience'] | null;
   programChoice: Schemas['Profile']['programChoice'] | null;
-  healthConsent: 'granted' | 'declined' | null;
 };
 
 export type Branch = 'newLifter' | 'experienced' | 'ownProgram';
@@ -30,7 +29,7 @@ export type Question =
   | 'weights';
 
 /** Bringing a program decides the branch whatever the experience; otherwise "just starting" (or no answer yet) is new. */
-export function branchOf({ experience, programChoice }: Pick<Answers, 'experience' | 'programChoice'>): Branch {
+export function branchOf({ experience, programChoice }: Answers): Branch {
   if (programChoice === 'BRING_MY_OWN') return 'ownProgram';
   return experience !== null && experience !== 'NEW' ? 'experienced' : 'newLifter';
 }
@@ -48,15 +47,16 @@ export function questionsOf(branch: Branch): readonly Question[] {
   return BRANCHES[branch];
 }
 
-/**
- * The steps that have a screen (each one a route, StepFrame's ROUTES). Until #ob-consent, #ob-about and #ob-activity are
- * rebuilt (K-966, second part) the walk still ends as it always has: the foods to avoid, photos, what to expect, and Apple
- * Health, which saves the profile.
- */
-export const SCREENS = [
-  'goal', 'experience', 'program', 'days', 'consent', 'about', 'activity', 'foods', 'photos', 'expectations', 'appleHealth',
-] as const;
+/** The steps that have a screen (each one a route, StepFrame's ROUTES). */
+export const SCREENS = ['goal', 'experience', 'program', 'days', 'consent', 'about', 'activity'] as const;
 export type Step = (typeof SCREENS)[number];
+
+/**
+ * Off every walk (ADR-069 #3, ADR-072 #8): the foods to avoid go to Settings (K-982), Apple Health to the first weigh-in
+ * or workout (K-980). The code stays; nothing leads there, a link neither (app/onboarding/_layout.tsx).
+ */
+export const RETIRED_STEPS = ['foods', 'photos', 'expectations', 'appleHealth'] as const;
+export type RetiredStep = (typeof RETIRED_STEPS)[number];
 
 const isStep = (question: Question): question is Question & Step => (SCREENS as readonly string[]).includes(question);
 
@@ -70,19 +70,18 @@ const STAND_IN: Record<Exclude<Question, Step>, Step | null> = {
   weights: null,
 };
 
-/** The screens this user goes through, in order. */
+/** The screens this user goes through, in order. The last one ends the walk (activity saves, until K-967). */
 export function walk(answers: Answers): Step[] {
   const steps = questionsOf(branchOf(answers)).flatMap((question) => {
     const step = isStep(question) ? question : STAND_IN[question];
     return step === null ? [] : [step];
   });
-  const tail: Step[] = answers.healthConsent === 'granted' ? ['foods'] : [];
-  return [...new Set<Step>([...steps, ...tail, 'photos', 'expectations', 'appleHealth'])];
+  return [...new Set(steps)];
 }
 
 /** The step after this one for these answers; none after the last, or from a step this walk does not have. */
-export function nextStep(step: Step, answers: Answers): Step | null {
+export function nextStep(step: Step | RetiredStep, answers: Answers): Step | null {
   const steps = walk(answers);
-  const at = steps.indexOf(step);
+  const at = (steps as readonly string[]).indexOf(step);
   return at < 0 ? null : (steps[at + 1] ?? null);
 }

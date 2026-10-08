@@ -2,7 +2,8 @@
  * The frame of every onboarding step (prototype `obFrame`): back and the step indicator on top, the question and its
  * reason, the answers. A step whose answer is one tap moves on with that tap (`useChoose`); the others end with Continue,
  * off until the step is answered, or with their own `actions`. The steps and their order are the route's (flow.ts), so
- * the indicator counts the walk of this user's branch.
+ * the indicator counts the walk of this user's branch. The steps taken off the walk keep their code and this frame;
+ * nothing opens them.
  */
 import { type Href, router, useFocusEffect } from 'expo-router';
 import { Stack } from 'expo-router/stack';
@@ -18,7 +19,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import { type Draft, stepComplete } from './draft';
-import { type Step, nextStep, walk } from './flow';
+import { type RetiredStep, type Step, nextStep, walk } from './flow';
 import { useDraft } from './OnboardingContext';
 
 /** Each step's screen. Typed routes check every entry against src/app/onboarding, so a missing screen fails typecheck. */
@@ -30,18 +31,15 @@ const ROUTES: Record<Step, Href> = {
   consent: '/onboarding/health-data',
   about: '/onboarding/about',
   activity: '/onboarding/activity',
-  foods: '/onboarding/foods',
-  photos: '/onboarding/photos',
-  expectations: '/onboarding/expectations',
-  appleHealth: '/onboarding/apple-health',
 };
 
 /**
  * For a step answered with one tap: keeps the answer and opens the next step of the walk those answers make (the program
- * answer changes the branch, so the next step is worked out from the draft with the answer in it). A second tap while
- * the next screen opens does nothing; coming back to the step, a tap moves on again.
+ * answer changes the branch, so the next step is worked out from the draft with the answer in it). On the last step the
+ * tap ends the walk instead (`onEnd`: the profile is saved). A second tap while the next screen opens, or while the walk
+ * ends, does nothing; coming back to the step, or after an end that failed, a tap moves on again.
  */
-export function useChoose(step: Step): (answer: Partial<Draft>) => void {
+export function useChoose(step: Step, onEnd?: (answered: Draft) => Promise<unknown>): (answer: Partial<Draft>) => void {
   const { draft, update } = useDraft();
   const leaving = useRef(false);
   useFocusEffect(
@@ -51,16 +49,22 @@ export function useChoose(step: Step): (answer: Partial<Draft>) => void {
   );
   return (answer) => {
     if (leaving.current) return;
-    update(answer);
-    const next = nextStep(step, { ...draft, ...answer });
-    if (next === null) return;
     leaving.current = true;
-    router.push(ROUTES[next]);
+    update(answer);
+    const answered = { ...draft, ...answer };
+    const next = nextStep(step, answered);
+    if (next !== null) {
+      router.push(ROUTES[next]);
+      return;
+    }
+    void (onEnd?.(answered) ?? Promise.resolve()).finally(() => {
+      leaving.current = false;
+    });
   };
 }
 
 type Props = {
-  step: Step;
+  step: Step | RetiredStep;
   /** Already translated. */
   title: string;
   /** Why the question is asked, under it (prototype `.why`). Already translated. */
@@ -80,10 +84,9 @@ export function StepFrame({ step, title, why, children, chosen = false, continue
   const { color } = useTheme();
   const { draft } = useDraft();
   const units = useUnits();
-  // The steps this user walks: the branch follows the experience and program answers, and some steps depend on others
-  // (the foods, only with the health consent).
+  // The steps this user walks: the branch follows the experience and program answers.
   const steps = walk(draft);
-  const index = steps.indexOf(step);
+  const index = (steps as readonly string[]).indexOf(step);
   const ready = stepComplete(step, draft, units, new Date().getFullYear());
   const next = nextStep(step, draft);
 
