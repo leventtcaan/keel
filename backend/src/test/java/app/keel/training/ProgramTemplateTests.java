@@ -139,8 +139,18 @@ class ProgramTemplateTests {
         List<ProgramReview.Suggestion> findings = ProgramReview.findings(new ProgramReview.Program(reviewed),
                 new ProgramReview.Catalog(isolation, catalog.armMuscles()), P);
 
-        assertThat(findings).as(days + " days").extracting(ProgramReview.Suggestion::finding)
-                .isEqualTo(days > P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX) ? List.of(ProgramReview.Finding.TOO_MANY_DAYS) : List.of());
+        List<ProgramReview.Finding> expected = days > P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX)
+                ? List.of(ProgramReview.Finding.TOO_MANY_DAYS) : List.of();
+        assertThat(findings).as(days + " days").extracting(ProgramReview.Suggestion::finding).isEqualTo(expected);
+
+        // What the user sees: the stored program through the review endpoints' path, with the catalog's isolation moves.
+        ProgramStore.Program stored = new ProgramStore.Program(null, ProgramStore.Source.GENERATED, program.stream()
+                .map(day -> new ProgramStore.Day(null, day.nameKey(), null, day.weekday(), day.exercises().stream()
+                        .map(planned -> new ProgramStore.PlannedExercise(planned.exerciseId(), planned.sets(), planned.reps().min(),
+                                planned.reps().max(), planned.targetRir())).toList()))
+                .toList());
+        assertThat(ProgramReviews.suggestions(stored, catalog, P)).as(days + " days, as shown")
+                .extracting(ProgramReviews.Suggestion::finding).isEqualTo(expected);
     }
 
     @Test
