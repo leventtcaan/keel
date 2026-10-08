@@ -73,3 +73,16 @@ ADR-018 (Ek 1), ADR-058, ADR-069.
 Onboarding rota testi: yeni başlayanda `ob-weights` yok, kendi programında `ob-review` var · sözleşme testi: `experience` isteğe bağlı, eski
 profil geçerli · telefon `sessionsLastMonth`/`usualTrainingTime` göndermez · başlangıç ağırlığı girilen hareketin ilk hedefi o kilo (yuvarlanmış),
 girilmeyende hedef kilo yok · copy testi: onboarding anahtarlarında kelime bütçesi.
+
+## Ek 1 · Başlangıç kalorisi ilk karardan önce: `GET /v1/targets/starting` (K-989, 2026-10-08, agent, teknik)
+- #6'nın "başlangıç kalorisi" satırı için sunucu, ilk haftalık kontrolün kullandığı **aynı** hesabı (`DecisionService.firstPlan(week)`) bugünün
+  girdileriyle koşar ve hiçbir şey kaydetmez: hedef tek sayı (U5 hedefe izin verir), bakım tahmini aralık (`KcalRange`), gözlem günü cinsiyete göre
+  parametreden (erkek 14, kadın 28 — metin "14" diye sabit yazılamaz).
+- Durumlar: rıza yok 403 `CONSENT_REQUIRED` · profil yok ya da plan zaten başladı 409 (sayı artık `/v1/targets`'ta ya da henüz yok) · değerlendirme
+  penceresinde tartı yok 404. Telefon bu durumlarda satırı göstermez.
+- **Pazartesi farkı beklenir:** aynı fonksiyon pazartesi o günün girdileriyle koşar; yeni tartı başına hedef 14-20,5 kcal/kg (aktivite katsayısıyla)
+  oynar, yılbaşını geçen kayıtta yaş 7-10 kcal düşürür. Fark ±%15 aralığın içinde; telefon pazartesi için tam sayı vaat etmez.
+- Reddedilen: (a) başlangıç planını onboarding'de kaydetmek: kullanıcı karar görmeden plan doğar, 14 günlük gözlem ilk kontrolden önce başlar, "plan
+  var mı" diye bakan her okuyucu (tutarlılık, ilk haftalar, projeksiyon, faz) değişir; (b) `/v1/targets`'a alan eklemek: o uç "şu an izlediğin" demek,
+  onu kararlar değiştirir.
+- Sonra: K-990 ilk karar tarihini bu cevaba ekleyebilir (telefon tarihi hesaplamasın, ADR-075 #3).

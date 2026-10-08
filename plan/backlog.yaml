@@ -4459,7 +4459,7 @@ tasks:
   - id: K-989
     title: "Başlangıç kalori hedefi ilk karardan önce: plan hazır ekranı için sözleşme"
     milestone: M9a
-    module: nutrition
+    module: decision
     type: feature
     size: S
     status: todo
