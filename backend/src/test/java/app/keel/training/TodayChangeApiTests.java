@@ -2,6 +2,7 @@ package app.keel.training;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
@@ -241,6 +242,22 @@ class TodayChangeApiTests {
         assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SHORT"))).hasStatusOk();
         assertThat(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "overhead_press", "dumbbell_shoulder_press", "FROM_NOW_ON")))
                 .hasStatusOk();
+    }
+
+    @Test
+    void todayIsTheUsersOwnDayWhenASessionCountsAsStarted() throws Exception {
+        // In Istanbul (UTC+3) 22:30 UTC on Tuesday 6 is 01:30 on Wednesday 7: today's session was started there.
+        AccountId account = TestSessions.newAccount();
+        assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA)))
+                .hasStatusOk();
+        assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
+                "schedule", Map.of("trainingDays", List.of("WEDNESDAY"), "checkInDay", "MONDAY", "timeZone", "Europe/Istanbul")))).hasStatusOk();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        logged(account, "2026-10-06T22:30:00Z", dayId(program, 0), "bench_press", 80);
+
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SKIP"))).hasStatus(409);
+        assertThat(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "overhead_press", "dumbbell_shoulder_press", "TODAY"))).hasStatus(409);
     }
 
     @Test
