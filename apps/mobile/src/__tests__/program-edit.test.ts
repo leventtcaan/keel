@@ -1,11 +1,25 @@
 /**
  * The program editor's rules (K-968 "Type it in", reused by K-970's Edit): days, their weekday once each, moves with sets
- * and a rep range, always within what the contract's OwnProgram takes (workout.json mirrors its limits). Pure: the
- * editor component and the tests share it.
+ * and a rep range, always within what the contract's OwnProgram takes (workout.json mirrors its limits). An own move the
+ * user makes waits as a pending move until the program is sent (ADR-073 Ek 2). Pure: the editor component and the tests
+ * share it.
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { type EditedDay, newDay, ownProgramOf, renamed, stepped, weekdayTaken, withMove, withoutDay, withoutMove, withWeekday } from '@/train/programEdit';
+import {
+  type EditedDay,
+  isPending,
+  newDay,
+  ownProgramOf,
+  pendingMove,
+  renamed,
+  stepped,
+  weekdayTaken,
+  withMove,
+  withoutDay,
+  withoutMove,
+  withWeekday,
+} from '@/train/programEdit';
 import { workoutParams } from '@/train/params';
 import type { Move } from '@/train/trainData';
 
@@ -29,9 +43,11 @@ const oneMove = withMove(start, 0, SQUAT);
 const { programNewMoveSets: SETS, programNewMoveReps: REPS } = workoutParams;
 
 describe('days', () => {
-  test('a new day is named by its place, without a weekday or a move', () => {
-    expect(start).toEqual([{ name: t('programEditor.defaultName', { number: 1 }), moves: [] }]);
-    expect(newDay(start)[1].name).toBe(t('programEditor.defaultName', { number: 2 }));
+  test('a new day is named by its place, without a weekday or a move, with an id of its own', () => {
+    expect(start).toEqual([{ id: expect.any(String), name: t('programEditor.defaultName', { number: 1 }), moves: [] }]);
+    const two = newDay(start);
+    expect(two[1].name).toBe(t('programEditor.defaultName', { number: 2 }));
+    expect(two[1].id).not.toBe(two[0].id);
   });
 
   test("no more days than the contract's program has", () => {
@@ -40,17 +56,17 @@ describe('days', () => {
     expect(days).toHaveLength(workoutParams.programDaysMax);
   });
 
-  test('a day removed, the others stay as they were', () => {
+  test('a day removed, the others stay as they were, their ids too', () => {
     const two = renamed(newDay(start), 1, 'Pull');
-    expect(withoutDay(two, 0)).toEqual([{ name: 'Pull', moves: [] }]);
+    expect(withoutDay(two, 0)).toEqual([two[1]]);
   });
 
-  test('a weekday is one day\'s: taken by another, it cannot be chosen; chosen again, it is cleared', () => {
+  test("a weekday is one day's: taken by another, it cannot be chosen; chosen again, it is cleared", () => {
     const two = withWeekday(newDay(start), 0, 'MONDAY');
     expect(weekdayTaken(two, 1, 'MONDAY')).toBe(true);
     expect(weekdayTaken(two, 0, 'MONDAY')).toBe(false);
     expect(withWeekday(two, 1, 'MONDAY')).toBe(two);
-    expect(withWeekday(two, 0, undefined)[0]).toEqual({ name: two[0].name, moves: [] });
+    expect(withWeekday(two, 0, undefined)[0]).toEqual({ id: two[0].id, name: two[0].name, moves: [] });
   });
 });
 
@@ -66,10 +82,11 @@ describe('moves', () => {
     expect(SETS).toBeLessThanOrEqual(workoutParams.programMoveSetsMax);
   });
 
-  test("no more moves on a day than the contract's", () => {
+  test("no more moves on a day than the contract's, and a move the day has is not added again", () => {
     let days = start;
     for (let i = 0; i < workoutParams.programDayMovesMax + 2; i++) days = withMove(days, 0, move(`m${i}`));
     expect(days[0].moves).toHaveLength(workoutParams.programDayMovesMax);
+    expect(withMove(oneMove, 0, SQUAT)).toBe(oneMove);
   });
 
   test('a move removed, the others keep their numbers', () => {
@@ -85,16 +102,39 @@ describe('moves', () => {
     expect(days[0].moves[0].sets).toBe(workoutParams.programMoveSetsMax);
   });
 
-  test('the rep range stays a range: the fewest at least one and under the most, the most at most the reps a set takes', () => {
+  test('the rep range moves as a window (6-10 → 7-11), never under one rep nor over the reps a set takes', () => {
+    const span = REPS.COMPOUND.max - REPS.COMPOUND.min;
+    expect(stepped(oneMove, 0, 0, 'reps', 1)[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.min + 1, max: REPS.COMPOUND.max + 1 });
     let days = oneMove;
-    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'min', 1);
-    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max - 1, max: REPS.COMPOUND.max });
-    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', -1);
-    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max - 1, max: REPS.COMPOUND.max });
-    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'min', -1);
-    expect(days[0].moves[0].reps.min).toBe(1);
-    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', 1);
-    expect(days[0].moves[0].reps.max).toBe(workoutParams.maxReps);
+    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'reps', -1);
+    expect(days[0].moves[0].reps).toEqual({ min: 1, max: 1 + span });
+    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'reps', 1);
+    expect(days[0].moves[0].reps).toEqual({ min: workoutParams.maxReps - span, max: workoutParams.maxReps });
+  });
+});
+
+describe("the user's own move, pending until the program is sent", () => {
+  const body: Schemas['NewCustomExercise'] = {
+    clientId: 'c-1',
+    name: 'Landmine press',
+    kind: 'COMPOUND',
+    load: 'EXTERNAL',
+    equipment: 'BARBELL',
+    unilateral: false,
+  };
+
+  test('is a move by its name, with an id that says it is not on the server yet', () => {
+    const pending = pendingMove(body);
+    expect(pending).toMatchObject({ name: 'Landmine press', kind: 'COMPOUND' });
+    expect(isPending(pending.id)).toBe(true);
+    expect(isPending('custom:8a1d')).toBe(false);
+  });
+
+  test('goes in the program by the id the server gave it; without one, no program', () => {
+    const days = withMove(oneMove, 0, pendingMove(body));
+    expect(ownProgramOf(days)).toBeNull();
+    const sent = ownProgramOf(days, new Map([[pendingMove(body).id, 'custom:8a1d']]));
+    expect(sent?.days[0].exercises.map((e) => e.exerciseId)).toEqual(['squat', 'custom:8a1d']);
   });
 });
 

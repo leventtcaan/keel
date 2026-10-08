@@ -292,7 +292,7 @@
       "unit": "sets",
       "tag": "urun",
       "source": "plan/yeni-yuz-kurallar.md#R6",
-      "note": "Product choice, no source: where a move's sets start when the user adds it to a program they type in (K-968, program editor); the user sets their own with the stepper. Three is what the program templates give most moves (data/programs)."
+      "note": "Product choice, approved 2026-10-08 (K-968; plan/yeni-yuz-kurallar.md R6): where a move's sets start when the user adds it to a program they type in (program editor); the user sets their own with the stepper. Three is what the program templates give most moves (data/programs)."
     },
     {
       "key": "rep_range_compound_min",

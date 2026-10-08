@@ -143,9 +143,9 @@ test('a move found by name comes in with its starting sets and range; the progra
   await addMove('squ', 'squat');
   expect(screen.getByText(name('squat'))).toBeOnTheScreen();
   await step(t('programEditor.setsLabel', { move: name('squat') }), 'increment');
-  await step(t('programEditor.maxLabel', { move: name('squat') }), 'increment', 2);
+  await step(t('programEditor.repsLabel', { move: name('squat') }), 'increment', 2);
   await fireEvent.changeText(screen.getByLabelText(t('programEditor.dayName')), 'Legs');
-  await fireEvent.press(screen.getByRole('button', { name: t('onboarding.schedule.dayName.WEDNESDAY') }));
+  await fireEvent.press(screen.getByRole('button', { name: t('programEditor.weekdayName.WEDNESDAY') }));
   await press(t('onboarding.typeProgram.confirm'));
   expect(puts()).toEqual([
     [
@@ -153,7 +153,7 @@ test('a move found by name comes in with its starting sets and range; the progra
       {
         body: {
           days: [
-            { name: 'Legs', weekday: 'WEDNESDAY', exercises: [{ exerciseId: 'squat', sets: SETS + 1, reps: { min: REPS.COMPOUND.min, max: REPS.COMPOUND.max + 2 } }] },
+            { name: 'Legs', weekday: 'WEDNESDAY', exercises: [{ exerciseId: 'squat', sets: SETS + 1, reps: { min: REPS.COMPOUND.min + 2, max: REPS.COMPOUND.max + 2 } }] },
           ],
         },
       },
@@ -165,10 +165,10 @@ test('a move found by name comes in with its starting sets and range; the progra
 test('days added and removed; a weekday one day has is not offered to another', async () => {
   await toEditor();
   await addMove('squ', 'squat');
-  await fireEvent.press(screen.getByRole('button', { name: t('onboarding.schedule.dayName.MONDAY') }));
+  await fireEvent.press(screen.getByRole('button', { name: t('programEditor.weekdayName.MONDAY') }));
   await press(t('programEditor.addDay'));
   expect(screen.getAllByLabelText(t('programEditor.dayName'))[1]).toHaveProp('value', day(2));
-  expect(screen.getAllByRole('button', { name: t('onboarding.schedule.dayName.MONDAY') })[1]).toBeDisabled();
+  expect(screen.getAllByRole('button', { name: t('programEditor.weekdayName.MONDAY') })[1]).toBeDisabled();
   expect(confirm()).toBeDisabled(); // the new day has no move yet
   await addMove('curl', 'barbell_curl', 1);
   expect(confirm()).toBeEnabled();
@@ -194,15 +194,38 @@ test("no more days than a program has: Add a day is off at the contract's most",
   expect(screen.getByRole('button', { name: t('programEditor.addDay') })).toBeDisabled();
 });
 
-test('sets never under one: the stepper stops there', async () => {
+test('sets never under one: the stepper stops there, its value said as words, its − off', async () => {
   await toEditor();
   await addMove('squ', 'squat');
-  await step(t('programEditor.setsLabel', { move: name('squat') }), 'decrement', SETS + 3);
-  expect(screen.getByRole('adjustable', { name: t('programEditor.setsLabel', { move: name('squat') }) })).toHaveAccessibilityValue({ now: 1 });
+  const sets = t('programEditor.setsLabel', { move: name('squat') });
+  expect(screen.getByRole('adjustable', { name: sets })).toHaveAccessibilityValue({ text: String(SETS) });
+  await step(sets, 'decrement', SETS + 3);
+  expect(screen.getByRole('adjustable', { name: sets })).toHaveAccessibilityValue({ text: '1' });
+  expect(screen.getByRole('button', { name: t('programEditor.lessLabel', { what: sets }) })).toBeDisabled();
+  expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: sets }) })).toBeEnabled();
 });
 
-test("the user's own move: made with the engine's questions (OwnMoveForm), then in the day by its id", async () => {
+test('the reps move as a window, said as a range', async () => {
   await toEditor();
+  await addMove('squ', 'squat');
+  const reps = t('programEditor.repsLabel', { move: name('squat') });
+  await step(reps, 'increment');
+  expect(screen.getByRole('adjustable', { name: reps })).toHaveAccessibilityValue({
+    text: t('programEditor.range', { min: REPS.COMPOUND.min + 1, max: REPS.COMPOUND.max + 1 }),
+  });
+});
+
+test('the move search does not offer a move the day has', async () => {
+  await toEditor();
+  await addMove('squ', 'squat');
+  await fireEvent.press(screen.getByRole('button', { name: t('workout.add.open') }));
+  await settle();
+  await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'squ');
+  expect(screen.queryByRole('button', { name: t('workout.add.pick', { name: name('squat') }) })).toBeNull();
+});
+
+/** "Landmine press" made the user's own move: the engine's questions answered (OwnMoveForm, U1). */
+async function makeOwn() {
   await fireEvent.press(screen.getByRole('button', { name: t('workout.add.open') }));
   await settle();
   await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'Landmine press');
@@ -211,11 +234,44 @@ test("the user's own move: made with the engine's questions (OwnMoveForm), then 
   await press(`${t('ownMove.equipment')} ${t('ownMove.equipments.BARBELL')}`);
   await press(`${t('ownMove.unilateral')} ${t('ownMove.no')}`);
   await press(t('ownMove.save'));
-  expect(mockApi.POST).toHaveBeenCalledWith('/v1/custom-exercises', { body: expect.objectContaining({ name: 'Landmine press', kind: 'COMPOUND' }) });
-  expect(mockSaved).toHaveBeenCalledTimes(1);
+}
+const ownPosts = () => mockApi.POST.mock.calls.filter(([route]) => route === '/v1/custom-exercises');
+
+// Spec (ADR-073 Ek 2: nothing of a program the user has not confirmed is left behind): the own move's answers wait on
+// the phone and go with the program, first, as from the import.
+test("the user's own move: in the day at once, sent only with the program, then in it by the server's id", async () => {
+  await toEditor();
+  await makeOwn();
   expect(screen.getByText('Landmine press')).toBeOnTheScreen();
+  expect(mockApi.POST).not.toHaveBeenCalled();
   await press(t('onboarding.typeProgram.confirm'));
+  expect(ownPosts()).toEqual([['/v1/custom-exercises', { body: expect.objectContaining({ name: 'Landmine press', kind: 'COMPOUND' }) }]]);
+  expect(mockSaved).toHaveBeenCalledTimes(1);
+  expect(mockApi.POST.mock.invocationCallOrder[0]).toBeLessThan(mockApi.PUT.mock.invocationCallOrder[0]);
   expect((puts()[0][1].body as Schemas['OwnProgram']).days[0].exercises).toEqual([{ exerciseId: 'custom:8a1d', sets: SETS, reps: REPS.COMPOUND }]);
+});
+
+test('an own move removed from the day before sending is never made', async () => {
+  await toEditor();
+  await addMove('squ', 'squat');
+  await makeOwn();
+  await press(t('programEditor.removeMoveLabel', { move: 'Landmine press' }));
+  await press(t('onboarding.typeProgram.confirm'));
+  expect(ownPosts()).toEqual([]);
+});
+
+test('a program that did not go goes again with the same own move: one clientId', async () => {
+  mockApi.PUT.mockImplementationOnce(async () => {
+    throw new TypeError('Network request failed');
+  });
+  await toEditor();
+  await makeOwn();
+  await press(t('onboarding.typeProgram.confirm'));
+  await press(t('onboarding.typeProgram.confirm'));
+  const ids = ownPosts().map(([, init]) => (init as { body: Schemas['NewCustomExercise'] }).body.clientId);
+  expect(ids).toHaveLength(2);
+  expect(ids[0]).toBe(ids[1]);
+  expect(puts()).toHaveLength(2);
 });
 
 test('a save that fails is said, the walk waits, and the same program goes again', async () => {
