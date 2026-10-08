@@ -3127,7 +3127,9 @@ components:
             type: string
     RepRange:
       type: object
-      description: min < max (a range to climb in, double progression); max at most 100.
+      description: |
+        min < max, a range to climb in (double progression); or min = max, a fixed rep target (5 x 5, K-991): the engine
+        adds load once every work set reaches it, the reps stay. A generated program always has a range. max at most 100.
       required: [min, max]
       properties:
         min:
@@ -3141,7 +3143,7 @@ components:
       description: |
         The user's own program (K-211). Limits are keel.training's: a day's weekday is used once; exercises come from
         /v1/exercises or are the user's own moves (/v1/custom-exercises, ADR-035 Ek 1: no target, not reviewed; another
-        user's move is VALIDATION_FAILED); reps.max is above reps.min and at most 100.
+        user's move is VALIDATION_FAILED); reps.max is at least reps.min (equal: a fixed rep target, K-991) and at most 100.
       required: [days]
       properties:
         days:
