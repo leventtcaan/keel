@@ -167,15 +167,6 @@ class ProgramReviewChangesTests {
         assertThat(weekly(users.program(), "hamstrings")).isEqualTo(P.wholeNumber(ParameterKey.WEEKLY_SETS_MIN));
     }
 
-    @Test
-    void aProgramWithAMoveTheCatalogDoesNotKnowIsNotReviewed() {
-        // Its muscles can't be counted, so no count about them is trusted.
-        ProgramStore.Program program = change(own(), 3, moves -> { moves.add(isolation("deadlift_of_the_moon", 3)); return moves; });
-
-        assertThat(ProgramReviews.suggestions(program, catalog, P)).isEmpty();
-        assertThat(ProgramReviews.apply(program, List.of("TOO_MANY_SETS:chest"), catalog, P).steps()).isEmpty();
-    }
-
     // ── apply ────────────────────────────────────────────────────────────────────────────────────────────────────
 
     @Test
@@ -313,6 +304,81 @@ class ProgramReviewChangesTests {
         assertThat(undone.steps()).isEmpty();
         assertThat(shape(undone.program())).isEqualTo(shape(program));
         assertThat(bench(undone.program()).nextLoadKg()).isEqualByComparingTo("82.5");
+    }
+
+    @Test
+    void undoingAChangeAlsoUndoesALaterOneThatCanNoLongerApplyAndSaysSo() {
+        // The top-up puts the leg curl on the RDL's day: hamstrings on one day, so "once a week" follows. Without the top-up
+        // hamstrings are under weekly_sets_min again and "once a week" has nothing to split.
+        ProgramStore.Program program = own();
+        ProgramReviews.Outcome applied = ProgramReviews.apply(program, List.of("TOO_FEW_SETS:hamstrings", "ONCE_A_WEEK:hamstrings"), catalog, P);
+        assertThat(ids(applied)).containsExactly("TOO_FEW_SETS:hamstrings", "ONCE_A_WEEK:hamstrings");
+
+        ProgramReviews.Outcome undone = ProgramReviews.undo(applied.steps(), OptionalInt.of(0), applied.program(), catalog, P);
+
+        assertThat(undone.steps()).isEmpty();
+        assertThat(undone.skipped()).containsExactly(0);
+        assertThat(shape(undone.program())).isEqualTo(shape(program));
+    }
+
+    @Test
+    void aDayAChangeLeavesWithoutMovesGoes() {
+        // Chest 17 a week: three 1-set moves on each of five days and 2 sets of flyes alone on the sixth. Trimming to
+        // weekly_sets_trim_to drops whole moves from the end of the week: the sixth day is left with nothing.
+        List<ProgramStore.Day> days = new ArrayList<>();
+        for (int d = 0; d < 5; d++) {
+            days.add(day("Day " + d, DayOfWeek.of(d + 1), compound("bench_press", 1), compound("incline_dumbbell_press", 1),
+                    compound("dumbbell_bench_press", 1)));
+        }
+        days.add(day("Flyes", DayOfWeek.SATURDAY, isolation("cable_fly", 2)));
+        ProgramStore.Program program = new ProgramStore.Program(UUID.randomUUID(), ProgramStore.Source.OWN, days);
+
+        ProgramStore.Program after = ProgramReviews.apply(program, List.of("TOO_MANY_SETS:chest"), catalog, P).program();
+
+        assertThat(weekly(after, "chest")).isEqualTo(P.wholeNumber(ParameterKey.WEEKLY_SETS_TRIM_TO));
+        assertThat(after.days()).extracting(ProgramStore.Day::id).containsExactlyElementsOf(days.subList(0, 5).stream().map(ProgramStore.Day::id).toList());
+        assertThat(after.days()).allSatisfy(day -> assertThat(day.exercises()).isNotEmpty());
+    }
+
+    @Test
+    void theUsersOwnMovesAreNotReviewedAndNoChangeTouchesThem() {
+        ProgramStore.PlannedExercise landmine = isolation("custom:landmine-press", 3);
+        ProgramStore.PlannedExercise sled = compound("custom:sled-push", 2);
+        ProgramStore.Program program = change(change(own(), 0, moves -> { moves.addFirst(landmine); return moves; }), 2, moves -> {
+            moves.add(2, sled);
+            return moves;
+        });
+
+        assertThat(ProgramReviews.suggestions(program, catalog, P)).extracting(ProgramReviews.Suggestion::id).containsExactlyElementsOf(
+                ProgramReviews.suggestions(own(), catalog, P).stream().map(ProgramReviews.Suggestion::id).toList());
+        assertThat(ProgramReviews.notReviewed(program, catalog)).isEqualTo(2);
+        ProgramReviews.Outcome applied = ProgramReviews.apply(program, List.of("TOO_MANY_SETS:chest", "TOO_FEW_SETS:hamstrings", "REP_RANGE:squat"),
+                catalog, P);
+        ProgramReviews.Outcome undone = ProgramReviews.undo(applied.steps(), OptionalInt.empty(), applied.program(), catalog, P);
+
+        assertThat(ids(applied)).hasSize(3);
+        assertThat(applied.program().days().get(0).exercises().getFirst()).isEqualTo(landmine);
+        assertThat(byId(applied.program()).get(sled.id())).isEqualTo(sled);
+        assertThat(undone.program()).isEqualTo(program);
+    }
+
+    @Test
+    void aDayWithAnOwnMoveStaysWhenItsOtherMovesGoToOtherDays() {
+        // Six full-body days: the review merges the lightest (the last); the user's own move on it stays where it is.
+        ProgramStore.PlannedExercise own = isolation("custom:neck-curl", 2);
+        List<ProgramStore.Day> days = new ArrayList<>();
+        for (int d = 0; d < 6; d++) {
+            days.add(day("Day " + d, DayOfWeek.of(d + 1), compound("bench_press", 2), compound("squat", 2), compound("seated_row", 2)));
+        }
+        days.set(5, new ProgramStore.Day(days.get(5).id(), null, "Day 5", DayOfWeek.SATURDAY,
+                List.of(compound("bench_press", 2), compound("squat", 2), compound("seated_row", 2), own)));
+        ProgramStore.Program program = new ProgramStore.Program(UUID.randomUUID(), ProgramStore.Source.OWN, days);
+
+        ProgramStore.Program after = ProgramReviews.apply(program, List.of("TOO_MANY_DAYS"), catalog, P).program();
+
+        assertThat(after.days()).hasSize(6);
+        assertThat(after.days().getLast().exercises()).containsExactly(own);
+        assertThat(ProgramReviews.suggestions(after, catalog, P)).extracting(ProgramReviews.Suggestion::id).doesNotContain("TOO_MANY_DAYS");
     }
 
     @Test

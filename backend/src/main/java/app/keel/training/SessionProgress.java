@@ -93,7 +93,9 @@ class SessionProgress {
         if (workout.programDayId() == null) {
             return;
         }
-        programs.current(account).flatMap(program -> program.days().stream().filter(day -> workout.programDayId().equals(day.id())).findFirst())
+        // Read under the program's row lock, as the review's apply and undo do (K-956): a change of the program waits for this
+        // finish's targets, or this finish reads the program the change left; a target is never written to a row being replaced.
+        programs.locked(account).flatMap(program -> program.days().stream().filter(day -> workout.programDayId().equals(day.id())).findFirst())
                 .ifPresent(day -> {
                     Optional<ProfileFacts> profile = profiles.of(account);
                     Parameters p = parameters.forSex(profile.map(facts -> Sex.valueOf(facts.sex().name())).orElse(Sex.MALE));

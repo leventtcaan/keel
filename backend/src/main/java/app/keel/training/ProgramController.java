@@ -118,6 +118,10 @@ class ProgramController {
     record ReviewUndo(UUID changeId) {
     }
 
+    /** Contract ReviewUndone. */
+    record ReviewUndone(Program program, List<UUID> alsoUndone) {
+    }
+
     private final ProgramStore store;
     private final ProgramTemplates templates;
     private final ExerciseCatalog catalog;
@@ -238,8 +242,9 @@ class ProgramController {
 
     /** "N changes applied · Undo" (ADR-073 #3): one change, or every change in force. */
     @PostMapping("/v1/program/review/undo")
-    Program undoReview(AccountId account, @RequestBody ReviewUndo request) {
-        return view(account, reviews.undo(account, Optional.ofNullable(request.changeId()), parametersFor(account)));
+    ReviewUndone undoReview(AccountId account, @RequestBody ReviewUndo request) {
+        ProgramReviews.Undone undone = reviews.undo(account, Optional.ofNullable(request.changeId()), parametersFor(account));
+        return new ReviewUndone(view(account, undone.program()), undone.alsoUndone());
     }
 
     /**

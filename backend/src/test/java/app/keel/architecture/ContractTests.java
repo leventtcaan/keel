@@ -103,7 +103,8 @@ class ContractTests {
                 .containsExactlyElementsOf(names(app.keel.engine.ProgramReview.Finding.values()));
         Map<String, String> sent = Map.of("ReviewSuggestion", "app.keel.training.ProgramReviews$Suggestion", "ProgramReview",
                 "app.keel.training.ProgramReviews$Review", "AppliedReviewChange", "app.keel.training.ProgramReviews$Applied", "ReviewApply",
-                "app.keel.training.ProgramController$ReviewApply", "ReviewUndo", "app.keel.training.ProgramController$ReviewUndo");
+                "app.keel.training.ProgramController$ReviewApply", "ReviewUndo", "app.keel.training.ProgramController$ReviewUndo", "ReviewUndone",
+                "app.keel.training.ProgramController$ReviewUndone");
         for (Map.Entry<String, String> schema : sent.entrySet()) {
             assertThat(properties(map(schemas.get(schema.getKey()))).keySet()).as(schema.getKey())
                     .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName(schema.getValue())));

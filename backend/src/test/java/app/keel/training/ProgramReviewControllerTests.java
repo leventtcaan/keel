@@ -51,6 +51,9 @@ class ProgramReviewControllerTests {
     @Autowired
     JdbcClient jdbc;
 
+    @Autowired
+    ProgramStore programs;
+
     // ── the review ───────────────────────────────────────────────────────────────────────────────────────────────
 
     @Test
@@ -131,6 +134,57 @@ class ProgramReviewControllerTests {
         assertThat(program).containsEntry("source", "GENERATED");
         assertThat(days(program)).hasSize(P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX)).allSatisfy(day -> assertThat(day).containsKey("nameKey"));
         assertThat(appliedIds(program)).containsExactly("TOO_MANY_DAYS");
+        // Fewer days ask fewer sessions a week from now (K-535); undone, as many as before, from then.
+        assertThat(programs.history(account)).extracting(ProgramPeriod::sessionsPerWeek)
+                .containsExactly(6, P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX));
+
+        assertThat(days(undo(account, Map.of()))).hasSize(6);
+        assertThat(programs.history(account)).extracting(ProgramPeriod::sessionsPerWeek)
+                .containsExactly(6, P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX), 6);
+        assertThat(programs.history(account)).extracting(ProgramPeriod::from).isSorted();
+    }
+
+    @Test
+    void undoingAChangeAlsoUndoesALaterOneThatNoLongerAppliesAndSaysSo() throws Exception {
+        // Topped up on the RDL's day, hamstrings are on one day: "once a week" follows and is applied. Without the top-up
+        // hamstrings are under weekly_sets_min again: there is nothing to split, so that change goes too, named.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> entered = map(send("PUT", account, "/v1/program", ownWeek(16)));
+        Map<String, Object> topped = map(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(entered),
+                "suggestionIds", List.of("TOO_FEW_SETS:hamstrings"))));
+        assertThat(suggestions(topped)).contains("ONCE_A_WEEK:hamstrings");
+        Map<String, Object> split = map(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(topped),
+                "suggestionIds", List.of("ONCE_A_WEEK:hamstrings"))));
+
+        Map<String, Object> undone = map(send("POST", account, "/v1/program/review/undo",
+                Map.of("changeId", changeId(split, "TOO_FEW_SETS:hamstrings"))));
+
+        assertThat(undone).containsEntry("alsoUndone", List.of(changeId(split, "ONCE_A_WEEK:hamstrings")));
+        Map<String, Object> program = map(undone.get("program"));
+        assertThat(applied(program)).isEmpty();
+        assertThat(shape(program)).isEqualTo(shape(entered));
+    }
+
+    @Test
+    void theUsersOwnMovesAreNotReviewedAndStayThroughApplyAndUndo() throws Exception {
+        // An own move (custom: id) stored on Upper A, as the program store allows it.
+        AccountId account = TestSessions.newAccount();
+        send("PUT", account, "/v1/program", ownWeek(16));
+        jdbc.sql("""
+                insert into training.planned_exercise (id, day_id, account_id, seq, exercise_id, sets, rep_min, rep_max, target_rir)
+                select gen_random_uuid(), d.id, d.account_id, 99, 'custom:landmine-press', 3, 8, 12, 1 from training.program_day d
+                where d.account_id = :account and d.seq = 0""").param("account", account.value()).update();
+        Map<String, Object> withOwn = map(send("GET", account, "/v1/program", null));
+        assertThat(map(withOwn.get("review"))).containsEntry("notReviewedMoves", 1);
+        assertThat(suggestions(withOwn)).isEqualTo(FINDINGS);
+
+        Map<String, Object> applied = map(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(withOwn),
+                "suggestionIds", FINDINGS)));
+        Map<String, Object> undone = undo(account, Map.of());
+
+        assertThat(appliedIds(applied)).isEqualTo(FINDINGS);
+        assertThat(move(applied, "custom:landmine-press")).containsEntry("baseSets", 3).containsEntry("reps", Map.of("min", 8, "max", 12));
+        assertThat(shape(undone)).isEqualTo(shape(withOwn));
     }
 
     @Test
@@ -179,8 +233,10 @@ class ProgramReviewControllerTests {
         Map<String, Object> theOtherTwo = map(send("POST", other, "/v1/program/review/apply", Map.of("reviewId",
                 reviewId(map(send("PUT", other, "/v1/program", ownWeek(16)))), "suggestionIds", FINDINGS.subList(1, 3))));
 
-        Map<String, Object> program = map(send("POST", account, "/v1/program/review/undo", Map.of("changeId", chest)));
+        Map<String, Object> undone = map(send("POST", account, "/v1/program/review/undo", Map.of("changeId", chest)));
 
+        Map<String, Object> program = map(undone.get("program"));
+        assertThat(undone).containsEntry("alsoUndone", List.of());
         assertThat(shape(program)).isEqualTo(shape(theOtherTwo));
         assertThat(appliedIds(program)).containsExactly("TOO_FEW_SETS:hamstrings", "REP_RANGE:squat");
         assertThat(suggestions(program)).contains("TOO_MANY_SETS:chest").doesNotContain("TOO_FEW_SETS:hamstrings", "REP_RANGE:squat");
@@ -195,7 +251,7 @@ class ProgramReviewControllerTests {
                 Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80)))));
         send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(entered), "suggestionIds", FINDINGS));
 
-        Map<String, Object> program = map(send("POST", account, "/v1/program/review/undo", Map.of()));
+        Map<String, Object> program = undo(account, Map.of());
 
         assertThat(program.get("days")).isEqualTo(withWeights.get("days"));
         assertThat(map(program.get("review"))).containsEntry("id", reviewId(entered)).containsEntry("applied", List.of());
@@ -207,12 +263,12 @@ class ProgramReviewControllerTests {
         AccountId account = TestSessions.newAccount();
         Map<String, Object> applied = applyAll(account);
         String squat = changeId(applied, "REP_RANGE:squat");
-        Map<String, Object> once = map(send("POST", account, "/v1/program/review/undo", Map.of("changeId", squat)));
+        Map<String, Object> once = undo(account, Map.of("changeId", squat));
 
-        assertThat(map(send("POST", account, "/v1/program/review/undo", Map.of("changeId", squat)))).isEqualTo(once);
+        assertThat(undo(account, Map.of("changeId", squat))).isEqualTo(once);
         assertThat(send("POST", account, "/v1/program/review/undo", Map.of("changeId", UUID.randomUUID()))).hasStatus(404);
-        Map<String, Object> none = map(send("POST", account, "/v1/program/review/undo", Map.of()));
-        assertThat(map(send("POST", account, "/v1/program/review/undo", Map.of()))).isEqualTo(none);
+        Map<String, Object> none = undo(account, Map.of());
+        assertThat(undo(account, Map.of())).isEqualTo(none);
         assertThat(map(none.get("review"))).containsEntry("applied", List.of());
     }
 
@@ -280,6 +336,14 @@ class ProgramReviewControllerTests {
         assertThat(applied).hasStatusOk();
         assertThat(appliedIds(map(applied))).isEqualTo(FINDINGS);
         return map(applied);
+    }
+
+    /** The program after an undo that undid no later change by itself. */
+    private Map<String, Object> undo(AccountId account, Map<String, Object> body) throws Exception {
+        MvcTestResult result = send("POST", account, "/v1/program/review/undo", body);
+        assertThat(result).hasStatusOk();
+        assertThat(map(result)).containsEntry("alsoUndone", List.of());
+        return map(map(result).get("program"));
     }
 
     private static String reviewId(Map<String, Object> program) {
