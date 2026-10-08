@@ -4413,7 +4413,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-966]
     why: "K-966 incelemesi: rızadan sonra uygulama kapanırsa onboarding baştan başlar; ikinci yürüyüşte 'Not now' seçen kişinin ilk GRANTED'ı sunucuda ve telefonda kalır (GDPR Md. 7: son ifade edilen tercih geçerli). Eski akışta da vardı"
     acceptance:
