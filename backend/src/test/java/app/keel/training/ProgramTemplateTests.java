@@ -96,6 +96,24 @@ class ProgramTemplateTests {
     }
 
     /**
+     * K-985, Levent 2026-10-08: one day can't hold every muscle at weekly_sets_min in a session of sensible length, so the
+     * 1-day template trains fewer muscles: compound moves only, one per muscle, each at weekly_sets_min (G1 K-11). No arm
+     * move: a muscle the program doesn't train isn't reviewed.
+     */
+    @Test
+    void theOneDayTemplateIsCompoundMovesEachAtTheWeeklyMinimum() throws IOException {
+        ExerciseCatalog catalog = ExerciseCatalogTestData.catalog();
+        List<ProgramTemplates.Slot> day = ProgramTemplates.of(files(), catalog).forDays(1).orElseThrow().getFirst().exercises();
+
+        assertThat(day).allSatisfy(slot -> {
+            assertThat(catalog.find(slot.exerciseId()).orElseThrow().kind()).as(slot.exerciseId()).isEqualTo(ExerciseCatalog.Kind.COMPOUND);
+            assertThat(slot.sets()).as(slot.exerciseId()).isEqualTo(P.wholeNumber(ParameterKey.WEEKLY_SETS_MIN));
+        });
+        assertThat(day).extracting(slot -> primary(catalog, slot.exerciseId())).doesNotHaveDuplicates()
+                .doesNotContainAnyElementsOf(catalog.armMuscles());
+    }
+
+    /**
      * K-985 (ADR-073 #2): the program we generate passes the review a user's own program gets. Six days is only ever the
      * user's choice (default_training_days_per_week is 4), so there the one suggestion is to train fewer days (G6 K-36).
      * The review tops a muscle up with an isolation move for it; here every muscle has one, so no muscle under its minimum

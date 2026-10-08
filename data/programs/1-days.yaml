@@ -3,6 +3,9 @@
 # sets_per_session_per_muscle_max and weekly_sets_per_muscle, 2+ day templates to arm_weekly_sets_min (G1 K-61),
 # and 4+ day templates to frequency_per_muscle_per_week. Every muscle a template trains gets weekly_sets_min (G1 K-11),
 # and the program it makes passes the program review (K-985, ADR-073 #2): with two days or more, a muscle is trained on two.
+# Levent 2026-10-08 (K-985): one session can't hold every muscle at weekly_sets_min, so this day trains fewer muscles:
+# the big compound moves only, each at 4 work sets (~24 sets). Arms are not trained directly; a muscle the program doesn't
+# train isn't reviewed.
 # DRAFT until the product owner approves it (DURUM question list): coaching content, not a technical choice.
 days:
   - day: full_body
@@ -13,6 +16,3 @@ days:
       - {exercise: romanian_deadlift, sets: 4}
       - {exercise: overhead_press, sets: 4}
       - {exercise: seated_row, sets: 4}
-      - {exercise: lateral_raise, sets: 4}
-      - {exercise: barbell_curl, sets: 4}
-      - {exercise: triceps_pushdown, sets: 4}
