@@ -4389,3 +4389,52 @@ tasks:
     tests: ["SessionProgressApiTests (CI, Postgres)"]
     refs: ["backend/src/main/java/app/keel/engine/ReturnLoad.java", "data/parameters/training.yaml"]
     learn: ["Zamana bağlı testler: sabit tarih yerine enjekte saat"]
+
+  - id: K-985
+    title: "Üretilen program kendi incelemesine uyar: şablonlarda küçük kaslar haftalık alt sınıra"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-955, K-956]
+    why: "Levent (8 Eki, K-956 incelemesi): 2, 4 ve 6 günlük şablonlar arka omuz, yan omuz ve baldırı haftada 2 setle bırakıyor; inceleme (weekly_sets_min 4, G1 K-11) kendi kurduğumuz programı eleştiriyor"
+    acceptance:
+      - "data/programs/*-days.yaml: programda yer alan her kas haftada en az weekly_sets_min set (kolda arm_weekly_sets_min); seans başına sınır (sets_per_session_per_muscle_max) ve haftalık üst sınır korunur"
+      - "Kalıcı test: 1-6 günlük her şablondan üretilen program ProgramReview'dan öneri almaz; 6 günde yalnız gün sayısı (TOO_MANY_DAYS) önerisi, çünkü 6 günü kullanıcı seçer"
+      - "Mevcut ProgramTemplateTests beklentileri gevşemez (K1)"
+    tests: ["ProgramTemplateTests (şablon → inceleme sıfır öneri özelliği)"]
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "plan/yeni-yuz-kurallar.md", "arastirma/ham/guray/G1-antrenman.md"]
+    learn: ["Veri ile kuralın tutarlılığını testle kilitlemek"]
+
+  - id: K-986
+    title: "Onboarding rızası: ikinci yürüyüşte 'Continue without' önceki onayı geri çeker"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-966]
+    why: "K-966 incelemesi: rızadan sonra uygulama kapanırsa onboarding baştan başlar; ikinci yürüyüşte 'Not now' seçen kişinin ilk GRANTED'ı sunucuda ve telefonda kalır (GDPR Md. 7: son ifade edilen tercih geçerli). Eski akışta da vardı"
+    acceptance:
+      - "Telefon hatırladığı rızayla açılır; GRANTED hatırlanırken 'Continue without' rızayı geri çeker (mevcut geri çekme ucu) ve yerel kaydı siler"
+      - "Kilo sorulmaz, tartı gönderilmez; tekrar 'Allow' idempotent kalır"
+    tests: ["onboarding-flow.test.tsx: öldür → yeniden yürü → reddet senaryosu"]
+    refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "docs/anayasa.md"]
+    learn: ["Rıza durumunun cihaz ve sunucu arasında tutarlılığı"]
+
+  - id: K-987
+    title: "FirstDecisionNotBeforeMondayTests gece yarısı (00:00-01:00 UTC) kırılmaz"
+    milestone: M9a
+    module: decision
+    type: test
+    size: S
+    status: todo
+    depends_on: []
+    why: "ready() kendi tartısını 'şimdiden 1 saat önce' kaydediyor; 00:00-01:00 UTC arası tartı önceki güne düşüyor, theImportedHistoryIsSeenInTheTrendAndTheList kırmızı (8 Eki, #463 ve #464 CI)"
+    acceptance:
+      - "Tartı zamanı bugünün içinde ve geçmişte kalır, testin çalıştığı saatten bağımsız"
+      - "Hiçbir beklenti değişmez (K1)"
+    tests: ["FirstDecisionNotBeforeMondayTests (CI, Postgres)"]
+    refs: ["backend/src/test/java/app/keel/decision/FirstDecisionNotBeforeMondayTests.java"]
+    learn: ["Zamana bağlı test kurulumları"]
