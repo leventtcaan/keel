@@ -672,11 +672,12 @@ export interface paths {
         put?: never;
         /**
          * Undo one applied change, or all of them ("N changes applied · Undo")
-         * @description With `changeId`, that change: the program as it was before it, with the changes applied after it applied again (one
-         *     the undone change made unneeded is dropped). Without, every change in force: the program as it was before the first.
-         *     Moves keep their next targets as in apply. An undone change stays in the log, no longer in force; undone twice, or
-         *     nothing to undo, nothing changes. NOT_FOUND: no program, or no such change. CONFLICT (409), nothing changed: the
-         *     program changed another way since its last change.
+         * @description With `changeId`, that change: the program as it was before it, with the changes applied after it applied again. A
+         *     later change that can no longer be applied (its finding is gone without the undone change) is undone with it and
+         *     named in `alsoUndone`, so the app can say how many changes went. Without `changeId`, every change in force: the
+         *     program as it was before the first (`alsoUndone` empty). Moves keep their next targets as in apply. An undone change
+         *     stays in the log, no longer in force; undone twice, or nothing to undo, nothing changes. NOT_FOUND: no program, or
+         *     no such change. CONFLICT (409), nothing changed: the program changed another way since its last change.
          */
         post: operations["undoProgramReview"];
         delete?: never;
@@ -1835,10 +1836,12 @@ export interface components {
          * @description The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
          *     days, too many sets, too few sets, once a week, rep range). `id` names the program as reviewed (its moves, sets,
          *     rep ranges and day order; not names or weekdays): an apply names it. `applied`: the review's changes in force,
-         *     oldest first.
+         *     oldest first. The user's own moves (not in the catalog) are not reviewed: they count for no muscle and no change
+         *     touches them; `notReviewedMoves` says how many there are (this server always sends it).
          */
         ProgramReview: {
             id: string;
+            notReviewedMoves?: number;
             suggestions: components["schemas"]["ReviewSuggestion"][];
             applied: components["schemas"]["AppliedReviewChange"][];
         };
@@ -1873,6 +1876,11 @@ export interface components {
             /** @description ProgramReview.id of the review the user picked from. */
             reviewId: string;
             suggestionIds: string[];
+        };
+        ReviewUndone: {
+            program: components["schemas"]["Program"];
+            /** @description AppliedReviewChange.id of each later change undone with the one asked for, in order. */
+            alsoUndone: string[];
         };
         ReviewUndo: {
             /**
@@ -3761,13 +3769,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The program after the undo, reviewed again */
+            /** @description The program after the undo, reviewed again, and the later changes undone with it */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Program"];
+                    "application/json": components["schemas"]["ReviewUndone"];
                 };
             };
             default: components["responses"]["Error"];
