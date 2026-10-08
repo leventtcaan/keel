@@ -276,9 +276,10 @@ class FirstWeeksApiTests {
         began(account, day.atTime(12, 0).toInstant(ZoneOffset.UTC));
     }
 
+    /** The first day (K-990): onboarding finished then — the profile's first save, which the flow counts from. */
     private void began(AccountId account, Instant at) {
-        jdbc.sql("update identity.account set created_at = :at where id = :id").param("at", at.atOffset(ZoneOffset.UTC))
-                .param("id", account.value()).update();
+        assertThat(jdbc.sql("update profile.profile set onboarded_at = :at where account_id = :a").param("at", at.atOffset(ZoneOffset.UTC))
+                .param("a", account.value()).update()).isEqualTo(1);
     }
 
     private static LocalDate today() {

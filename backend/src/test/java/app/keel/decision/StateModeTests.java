@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -403,6 +404,7 @@ class StateModeTests {
                         "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                         "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", KIRITIMATI.getId()))))
                 .exchange()).hasStatusOk();
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
     }
 
     private static LocalDate today() {

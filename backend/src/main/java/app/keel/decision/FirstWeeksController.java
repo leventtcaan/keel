@@ -6,20 +6,21 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The first eight weeks (K-513, ADR-040): /v1/first-weeks — this week of the flow, its words and the risk's signals.
- * NOT_FOUND once the flow is over. Health data (sessions, food, the forgiven week): behind the HEALTH_DATA consent.
+ * The first eight weeks (K-513, ADR-040): /v1/first-weeks — this week of the flow, its words and the risk's signals, and
+ * the first call's day until it is made (K-990). NOT_FOUND once the flow is over. Health data (sessions, food, the forgiven week): behind the HEALTH_DATA consent.
  */
 @RestController
 class FirstWeeksController {
 
     /** Contract FirstWeeks. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record FirstWeeksView(int week, String contentKey, List<SignalView> risk, boolean readsRisk, boolean training) {
+    record FirstWeeksView(int week, String contentKey, List<SignalView> risk, boolean readsRisk, boolean training, LocalDate firstCallOn) {
     }
 
     /** Contract Reason: a signal's rule and its source. */
@@ -37,6 +38,6 @@ class FirstWeeksController {
         FirstWeeks.Week week = decisions.firstWeeks(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         return new FirstWeeksView(week.number(), week.content().map(CopyKey::value).orElse(null),
                 week.risk().stream().map(signal -> new SignalView(signal.rule().value(), SourceView.of(signal.source()))).toList(), week.readsRisk(),
-                week.training());
+                week.training(), decisions.firstCallOn(account).orElse(null));
     }
 }

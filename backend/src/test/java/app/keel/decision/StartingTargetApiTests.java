@@ -10,6 +10,7 @@ import app.keel.engine.Profile;
 import app.keel.engine.Sex;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -143,6 +144,7 @@ class StartingTargetApiTests {
         AccountId account = TestSessions.newAccount();
         consent(account);
         send(account, "PUT", "/v1/profile", profile(sex));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
                 Instant.now().minusSeconds(3600).toString(), "kg", KG, "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
         return account;

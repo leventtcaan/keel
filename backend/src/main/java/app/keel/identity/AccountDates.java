@@ -6,7 +6,10 @@ import java.time.OffsetDateTime;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
-/** When an account began: day one of its first week (K-513, ADR-040). The module's only date other modules read. */
+/**
+ * When an account began, on the first sign-in (K-513, ADR-040): day one of its first week for a profile saved before the
+ * day onboarding finished was kept (K-990, ADR-077 Ek 2). The module's only date other modules read.
+ */
 @Component
 public class AccountDates {
 

@@ -140,6 +140,9 @@ class DecisionService {
         if (taken(account, read.weekOf())) {
             return new CheckInView(read.weekOf(), List.of(), true);
         }
+        if (beforeTheFirstCall(account, read)) {
+            throw new ApiException(ErrorCode.NOT_FOUND);
+        }
         Week week = closingTheFirstWeek(account, read);
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
         // the estimate a plan without a target would get.
@@ -183,7 +186,7 @@ class DecisionService {
             return replay.get();
         }
         Week read = week(account);
-        if (!weekOf.equals(read.weekOf()) || taken(account, weekOf)) {
+        if (!weekOf.equals(read.weekOf()) || taken(account, weekOf) || beforeTheFirstCall(account, read)) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Week week = closingTheFirstWeek(account, read);
@@ -271,7 +274,7 @@ class DecisionService {
      */
     private Week closingTheFirstWeek(AccountId account, Week week) {
         ZoneId zone = week.profile().timeZone();
-        LocalDate began = accounts.began(account).atZone(zone).toLocalDate();
+        LocalDate began = firstDay(account, zone);
         if (!week.weekOf().equals(FirstWeekFacts.closingCheckIn(began, week.profile().checkInDay()))) {
             return week;
         }
@@ -301,6 +304,23 @@ class DecisionService {
             return FatEstimate.rfm(profile.heightCm(), cm, p);
         });
         return new FatInputs(fromLook, fromWaist);
+    }
+
+    /**
+     * The first day on the user's calendar (K-990, ADR-077 Ek 2): the day onboarding finished; for a profile saved before
+     * that was kept, the first sign-in. The first week, the first call's day and the first eight weeks all count from it.
+     */
+    private LocalDate firstDay(AccountId account, ZoneId zone) {
+        return FirstWeekFacts.firstDay(profiles.onboardedAt(account), () -> accounts.began(account), zone);
+    }
+
+    /**
+     * No call yet and the first call's day not come (K-990): the first week is watched, not decided on (U8) — the same rule
+     * for offering the check-in and for taking its answers. Once a call is made, the weeks turn as they always did.
+     */
+    private boolean beforeTheFirstCall(AccountId account, Week week) {
+        return calls.firstMadeOn(account).isEmpty()
+                && !FirstWeekFacts.firstCallOpen(firstDay(account, week.profile().timeZone()), week.profile().checkInDay(), week.today());
     }
 
     /** One call a week (K-212): the same rule for offering the check-in and for taking its answers. */
@@ -610,7 +630,22 @@ class DecisionService {
                 week.parameters());
     }
 
-    /** The first eight weeks (K-513, ADR-040): this week of the flow; empty before the account's first day and once it is over. */
+    /**
+     * The first call's day the app names (K-990, contract FirstWeeks.firstCallOn) until the first call is made: the check-in
+     * day that closes the first week, or today once it has come.
+     */
+    @Transactional(readOnly = true)
+    Optional<LocalDate> firstCallOn(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        if (calls.firstMadeOn(account).isPresent()) {
+            return Optional.empty();
+        }
+        LocalDate today = LocalDate.now(clock.withZone(profile.timeZone()));
+        return Optional.of(FirstWeekFacts.firstCallOn(firstDay(account, profile.timeZone()), profile.checkInDay(), today));
+    }
+
+    /** The first eight weeks (K-513, ADR-040): this week of the flow; empty before the first day and once it is over. */
     @Transactional(readOnly = true)
     Optional<FirstWeeks.Week> firstWeeks(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
@@ -628,7 +663,7 @@ class DecisionService {
      */
     private Optional<FirstWeeks.Week> firstWeeks(AccountId account, ProfileFacts profile, LocalDate today, Parameters p, Supplier<Week> week) {
         ZoneId zone = profile.timeZone();
-        LocalDate began = accounts.began(account).atZone(zone).toLocalDate();
+        LocalDate began = firstDay(account, zone);
         boolean trainingPlanned = planned.perWeek(account, profile) > 0;
         if (!FirstWeeks.readsRisk(began, today, p)) {
             return FirstWeeks.of(new FirstWeeks.Facts(today, began, trainingPlanned, new FirstWeeks.UserWeek(0, 0, false), 0, List.of()), p);

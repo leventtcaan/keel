@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -131,6 +132,7 @@ class FirstDecisionNotBeforeMondayTests {
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
                 todayAnHourAgo().toString(), "kg", 82.4, "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
         return account;

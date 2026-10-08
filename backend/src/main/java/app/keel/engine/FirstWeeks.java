@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The first eight weeks (K-513, ADR-040; 04 §7.5, I1 F2): the user's own week since the account began, its content —
+ * The first eight weeks (K-513, ADR-040; 04 §7.5, I1 F2): the user's own week since the first day (K-990: onboarding's end), its content —
  * the first week silent, I1 F2's "no comment, no score"; a version without lifting for someone who does not train — and
  * the risk. G2 K-63 makes weeks five to eight the critical window, so the risk reads the user's week just over while it is
  * one of those: in weeks six to nine, the ninth open for that alone. Any signal is a risk; none is weighed against
@@ -32,7 +32,7 @@ public final class FirstWeeks {
     /**
      * What the week reads, on the user's calendar.
      *
-     * @param began the day the account began: day one of week one
+     * @param began the first day (K-990: the day onboarding finished): day one of week one
      * @param trainingPlanned the program asks for training at all (this week's words)
      * @param trainingAskedLastWeek training was asked all through the user's week just over (its risk, K-535)
      * @param lastWeek the user's week just over: the seven days before {@link #weekStart}
