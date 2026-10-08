@@ -30,6 +30,11 @@ type Props = {
   detail?: string;
   /** In place of "not brought in", what no move means on the screen (the program draft: not yet a move). Already translated. */
   unmatched?: string;
+  /**
+   * Given, an own move's answers are handed back instead of saved: the screen sends them later (the program draft sends
+   * them only with the program the user confirms, ADR-073 Ek 2).
+   */
+  onOwnAnswered?: (body: Schemas['NewCustomExercise']) => void;
 };
 
 /**
@@ -37,7 +42,7 @@ type Props = {
  * moves are offered one tap each; "Other" finds any move by name; "My own move" makes one (K-416, the engine's questions
  * asked, never assumed). Left out, its sets stay in the file.
  */
-export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn, detail, unmatched }: Props) {
+export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn, detail, unmatched, onOwnAnswered }: Props) {
   const { api, training, report } = useAppServices();
   const { color } = useTheme();
   const [mode, setMode] = useState<'view' | 'search' | 'own'>('view');
@@ -50,6 +55,11 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn, deta
 
   // Saved online, as on the session screen (K-416): kept on the phone from the server's answer at once.
   const saveOwn = async (body: Schemas['NewCustomExercise']): Promise<SaveOutcome> => {
+    if (onOwnAnswered !== undefined) {
+      onOwnAnswered(body);
+      setMode('view');
+      return 'saved';
+    }
     try {
       const { data: kept, error } = await api.POST('/v1/custom-exercises', { body });
       if (kept === undefined) {

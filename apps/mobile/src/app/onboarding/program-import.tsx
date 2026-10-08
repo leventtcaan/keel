@@ -9,7 +9,7 @@ import { type DraftDay, type DraftMove, draftProgram, namesFor, ownProgram } fro
 import { type ExportRead, readExport } from '@/import/formats';
 import { type Matched, matchNames } from '@/import/match';
 import { MoveRow } from '@/import/MoveRow';
-import { sendOwnProgram } from '@/onboarding/bringProgram';
+import { sendOwnMoves, sendOwnProgram } from '@/onboarding/bringProgram';
 import { broughtProgram } from '@/onboarding/draft';
 import { StepFrame, useChoose } from '@/onboarding/StepFrame';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -18,6 +18,7 @@ import { tokens } from '@/theme/tokens';
 import { exerciseName } from '@/train/program';
 import { type Move, ownMove } from '@/train/trainData';
 
+type Schemas = components['schemas'];
 type Read = Extract<ExportRead, { kind: 'read' }>;
 type Stage = { kind: 'start' | 'unknown' | 'empty' } | { kind: 'read'; read: Read; matched: Matched[] };
 
@@ -25,8 +26,9 @@ type Stage = { kind: 'start' | 'unknown' | 'empty' } | { kind: 'read'; read: Rea
  * #ob-own's import (K-968, ADR-073 #1, Ek 2): the file is picked and read on this phone, its names matched to the catalog
  * as the history import matches them (K-609), and the routines the user kept doing drafted into a program (draft.ts).
  * The user sees the draft; a name no move was matched to is picked, made their own move or left out, and the program
- * waits for it: no move goes in under a guess. Nothing leaves the phone until "Use this program" sends the program (PUT
- * /v1/program); an own move goes when the user saves it. Then the walk goes on.
+ * waits for it: no move goes in under a guess. Nothing leaves the phone until "Use this program": then the own moves the
+ * draft still names are made (their answers kept on the phone till then, one clientId each), and the program naming them
+ * is sent (PUT /v1/program). A draft turned down leaves nothing behind (ADR-073 Ek 2). Then the walk goes on.
  */
 export default function ProgramImportStep() {
   const { api, importFile, training, report } = useAppServices();
@@ -37,6 +39,8 @@ export default function ProgramImportStep() {
   const [moves, setMoves] = useState<Move[] | 'failed' | null>(null);
   const [choices, setChoices] = useState<ReadonlyMap<string, string | null>>(new Map());
   const [leftOut, setLeftOut] = useState<ReadonlySet<string>>(new Set());
+  // The own moves answered, by the draft's name, waiting for the program: made only with it.
+  const [pending, setPending] = useState<ReadonlyMap<string, Schemas['NewCustomExercise']>>(new Map());
   const [saving, setSaving] = useState(false);
   const [problem, setProblem, occurrence] = useProblem();
   // A ref, not state: two taps in one frame both see the state from before either ran.
@@ -53,7 +57,10 @@ export default function ProgramImportStep() {
   const byId = useMemo(() => new Map(known.map((m) => [m.id, m])), [known]);
   // The draft from the choices on the screen now: what is shown and what is sent are the same thing.
   const draft = stage.kind === 'read' ? draftProgram(stage.read.sessions, choices, leftOut) : null;
-  const program = draft?.kind === 'draft' ? ownProgram(draft.days, new Map()) : null;
+  const ownNames = draft?.kind === 'draft' ? [...new Set(draft.days.flatMap((day) => day.moves.flatMap((m) => ('ownName' in m ? [m.ownName] : []))))] : [];
+  const ready = draft?.kind === 'draft' && ownNames.every((name) => pending.has(name));
+  // Every move left out: the file has routines, the user took every move out of them.
+  const allLeftOut = stage.kind === 'read' && draft?.kind === 'noRoutine' && leftOut.size > 0 && draftProgram(stage.read.sessions, choices, new Set()).kind === 'draft';
 
   const pickFile = async () => {
     setProblem(null);
@@ -69,6 +76,7 @@ export default function ProgramImportStep() {
     const matched = matchNames(counts, known);
     setChoices(new Map(matched.map((m) => [m.name, m.sure])));
     setLeftOut(new Set());
+    setPending(new Map());
     setStage({ kind: 'read', read, matched });
   };
 
@@ -76,17 +84,24 @@ export default function ProgramImportStep() {
   const pickFor = (ownName: string, id: string) =>
     setChoices((before) => new Map([...before, ...namesFor(ownName, fileNames).map((name) => [name, id] as const)]));
   const leaveOut = (ownName: string) => setLeftOut((before) => new Set([...before, ...namesFor(ownName, fileNames)]));
-  const savedOwn = (ownName: string, own: components['schemas']['CustomExercise']) => {
+  const savedOwn = (ownName: string, own: Schemas['CustomExercise']) => {
     setMoves((before) => [...(Array.isArray(before) ? before : []).filter((m) => m.id !== own.id), ownMove(own)]);
     pickFor(ownName, own.id);
   };
+  // Answered again, the name keeps the clientId it was first answered with: one move, however often it is sent.
+  const answeredOwn = (ownName: string, body: Schemas['NewCustomExercise']) =>
+    setPending((before) => new Map(before).set(ownName, { ...body, clientId: before.get(ownName)?.clientId ?? body.clientId }));
 
   const confirm = async () => {
-    if (program === null || sending.current) return;
+    if (draft?.kind !== 'draft' || !ready || sending.current) return;
     sending.current = true;
     setSaving(true);
     setProblem(null);
     try {
+      const kept = await sendOwnMoves(api, ownNames.map((name) => pending.get(name)!));
+      await Promise.all(kept.map((own) => training.saved(own)));
+      const program = ownProgram(draft.days, new Map(ownNames.map((name, i) => [name, kept[i].id])));
+      if (program === null) throw Object.assign(new Error('own program: a move without its id'), { name: 'ProgramIncomplete' });
       choose(broughtProgram(await sendOwnProgram(api, program)));
     } catch (error) {
       const name = error instanceof Error ? error.name : 'Unknown';
@@ -105,7 +120,7 @@ export default function ProgramImportStep() {
     start: note('onboarding.programImport.intro'),
     unknown: note('import.unknown'),
     empty: note('import.empty'),
-    read: draft?.kind === 'noRoutine' ? note('onboarding.programImport.noRoutine') : null,
+    read: draft?.kind === 'noRoutine' ? note(allLeftOut ? 'onboarding.programImport.allLeftOut' : 'onboarding.programImport.noRoutine') : null,
   };
   let days: ReactNode = null;
   if (stage.kind === 'read' && draft?.kind === 'draft') {
@@ -115,7 +130,18 @@ export default function ProgramImportStep() {
       <View style={styles.part}>
         <Text style={[styles.label, { color: color.text }]}>{summary}</Text>
         {draft.days.map((day, i) => (
-          <Day key={`${day.name}-${i}`} day={day} matched={stage.matched} moves={known} byId={byId} onPick={pickFor} onLeaveOut={leaveOut} onSavedOwn={savedOwn} />
+          <Day
+            key={`${day.name}-${i}`}
+            day={day}
+            matched={stage.matched}
+            moves={known}
+            byId={byId}
+            pending={pending}
+            onPick={pickFor}
+            onLeaveOut={leaveOut}
+            onSavedOwn={savedOwn}
+            onOwnAnswered={answeredOwn}
+          />
         ))}
       </View>
     );
@@ -129,8 +155,8 @@ export default function ProgramImportStep() {
           </ProblemText>
         )}
         {saving && note('onboarding.programImport.saving')}
-        {program === null && note('onboarding.programImport.waiting')}
-        <Button label={t('onboarding.programImport.confirm')} disabled={program === null || saving} onPress={() => void confirm()} />
+        {!ready && note('onboarding.programImport.waiting')}
+        <Button label={t('onboarding.programImport.confirm')} disabled={!ready || saving} onPress={() => void confirm()} />
       </View>
     );
 
@@ -155,13 +181,15 @@ type DayProps = {
   matched: Matched[];
   moves: Move[];
   byId: ReadonlyMap<string, Move>;
+  pending: ReadonlyMap<string, Schemas['NewCustomExercise']>;
   onPick: (ownName: string, id: string) => void;
   onLeaveOut: (ownName: string) => void;
-  onSavedOwn: (ownName: string, own: components['schemas']['CustomExercise']) => void;
+  onSavedOwn: (ownName: string, own: Schemas['CustomExercise']) => void;
+  onOwnAnswered: (ownName: string, body: Schemas['NewCustomExercise']) => void;
 };
 
 /** A day of the draft: its name and weekday, each move with its sets and reps; a name not yet a move, with the ways to make it one. */
-function Day({ day, matched, moves, byId, onPick, onLeaveOut, onSavedOwn }: DayProps) {
+function Day({ day, matched, moves, byId, pending, onPick, onLeaveOut, onSavedOwn, onOwnAnswered }: DayProps) {
   const { color } = useTheme();
   const weekday = day.weekday === undefined ? t('onboarding.programImport.anyDay') : t(`onboarding.schedule.dayName.${day.weekday}`);
   const line = (move: DraftMove) => t('onboarding.programImport.move', { sets: move.sets, min: move.reps.min, max: move.reps.max });
@@ -180,6 +208,25 @@ function Day({ day, matched, moves, byId, onPick, onLeaveOut, onSavedOwn }: DayP
             </View>
           );
         }
+        const leave = (
+          <Button
+            label={t('onboarding.programImport.leaveOut')}
+            accessibilityLabel={t('onboarding.programImport.leaveOutLabel', { name: move.ownName })}
+            variant="ghost"
+            size="sm"
+            onPress={() => onLeaveOut(move.ownName)}
+          />
+        );
+        if (pending.has(move.ownName)) {
+          return (
+            <View key={`${move.ownName}-${i}`} style={styles.move}>
+              <Text style={[styles.text, { color: color.text }]}>{pending.get(move.ownName)?.name}</Text>
+              <Text style={[styles.small, { color: color.textSecondary }]}>{line(move)}</Text>
+              <Text style={[styles.small, { color: color.muted }]}>{t('onboarding.programImport.ownWaiting')}</Text>
+              {leave}
+            </View>
+          );
+        }
         const found = matched.find((m) => namesFor(move.ownName, [m.name]).length > 0);
         if (found === undefined) return null; // every name of the draft is the file's, so matched; never reached
         return (
@@ -193,14 +240,9 @@ function Day({ day, matched, moves, byId, onPick, onLeaveOut, onSavedOwn }: DayP
               unmatched={t('onboarding.programImport.unmatched')}
               onPick={(id) => id !== null && onPick(move.ownName, id)}
               onSavedOwn={(own) => onSavedOwn(move.ownName, own)}
+              onOwnAnswered={(body) => onOwnAnswered(move.ownName, body)}
             />
-            <Button
-              label={t('onboarding.programImport.leaveOut')}
-              accessibilityLabel={t('onboarding.programImport.leaveOutLabel', { name: move.ownName })}
-              variant="ghost"
-              size="sm"
-              onPress={() => onLeaveOut(move.ownName)}
-            />
+            {leave}
           </View>
         );
       })}

@@ -242,29 +242,77 @@ describe('the import: a draft, read on this phone', () => {
     expect(router.getPathname()).toBe('/onboarding/health-data');
   });
 
-  test("made the user's own move: asked as everywhere (OwnMoveForm), saved, then in the program by its id", async () => {
-    await toDraft();
+  /** Landmine Press made the user's own move: the engine's questions answered (OwnMoveForm, U1). */
+  async function answerOwn() {
     await press(t('import.ownLabel', { file: 'Landmine Press' }));
-    expect(mockApi.POST).not.toHaveBeenCalled(); // the questions first
     await press(`${t('ownMove.kind')} ${t('ownMove.kinds.COMPOUND')}`);
     await press(`${t('ownMove.equipment')} ${t('ownMove.equipments.BARBELL')}`);
     await press(`${t('ownMove.unilateral')} ${t('ownMove.no')}`);
     await press(t('ownMove.save'));
-    expect(mockApi.POST).toHaveBeenCalledWith('/v1/custom-exercises', {
-      body: expect.objectContaining({
-        name: 'Landmine Press',
-        kind: 'COMPOUND',
-      }),
-    });
-    expect(mockSaved).toHaveBeenCalledTimes(1);
+  }
+  const ownPosts = () => mockApi.POST.mock.calls.filter(([route]) => route === '/v1/custom-exercises');
+
+  // Spec (ADR-073 Ek 2: "Taslak anında oluşturulmaz: reddedilen taslak kendi hareketi de bırakmaz"; the screen's own
+  // words "Only the program you confirm is sent"): the own move's answers wait on the phone until the program is confirmed.
+  test("made the user's own move: answered now, sent only with the program, then in it by its id", async () => {
+    await toDraft();
+    await answerOwn();
+    expect(mockApi.POST).not.toHaveBeenCalled();
+    expect(mockApi.PUT).not.toHaveBeenCalled();
     expect(screen.queryByText(t('onboarding.programImport.unmatched'))).toBeNull();
+    expect(screen.getByText(t('onboarding.programImport.ownWaiting'))).toBeOnTheScreen();
     await press(t('onboarding.programImport.confirm'));
+    expect(ownPosts()).toEqual([['/v1/custom-exercises', { body: expect.objectContaining({ name: 'Landmine Press', kind: 'COMPOUND' }) }]]);
+    expect(mockSaved).toHaveBeenCalledTimes(1);
+    // The own move first, then the program that names it.
+    const order = mockApi.POST.mock.invocationCallOrder[0];
+    expect(order).toBeLessThan(mockApi.PUT.mock.invocationCallOrder[0]);
     const upper = (programPuts()[0][1].body as Schemas['OwnProgram']).days[0];
-    expect(upper.exercises[2]).toEqual({
-      exerciseId: 'custom:8a1d',
-      sets: 3,
-      reps: { min: 12, max: 14 },
+    expect(upper.exercises[2]).toEqual({ exerciseId: 'custom:8a1d', sets: 3, reps: { min: 12, max: 14 } });
+  });
+
+  test('a draft turned down leaves no own move behind: leaving the screen sends nothing', async () => {
+    const router = await toDraft();
+    await answerOwn();
+    await press(t('onboarding.back'));
+    expect(router.getPathname()).toBe('/onboarding/own-program');
+    expect(mockApi.POST).not.toHaveBeenCalled();
+  });
+
+  test('an own move the confirmed draft no longer uses is not sent', async () => {
+    await toDraft();
+    await answerOwn();
+    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+    await press(t('onboarding.programImport.confirm'));
+    expect(ownPosts()).toEqual([]);
+    expect(programPuts()).toHaveLength(1);
+  });
+
+  test('a program that did not go goes again with the same own move: one clientId, kept for the name', async () => {
+    mockApi.PUT.mockImplementationOnce(async () => {
+      throw new TypeError('Network request failed');
     });
+    await toDraft();
+    await answerOwn();
+    await press(t('onboarding.programImport.confirm'));
+    expect(screen.getByText(t('onboarding.programImport.failed.NoConnection'))).toBeOnTheScreen();
+    await press(t('onboarding.programImport.confirm'));
+    expect(ownPosts()).toHaveLength(2);
+    const clientIds = ownPosts().map(([, init]) => (init as { body: Schemas['NewCustomExercise'] }).body.clientId);
+    expect(clientIds[0]).toEqual(clientIds[1]);
+    expect(programPuts()).toHaveLength(2);
+  });
+
+  test('an own move the server did not keep: said, and no program goes without it', async () => {
+    mockApi.POST.mockImplementationOnce(async () => {
+      throw new TypeError('Network request failed');
+    });
+    const router = await toDraft();
+    await answerOwn();
+    await press(t('onboarding.programImport.confirm'));
+    expect(screen.getByText(t('onboarding.programImport.failed.NoConnection'))).toBeOnTheScreen();
+    expect(programPuts()).toEqual([]);
+    expect(router.getPathname()).toBe('/onboarding/program-import');
   });
 
   test('picked from the catalog: the move it is, in the program', async () => {
@@ -292,6 +340,19 @@ describe('the import: a draft, read on this phone', () => {
         name: t('onboarding.programImport.confirm'),
       }),
     ).toBeNull();
+  });
+
+  test('every move of the draft left out: said so, not called a file without routines', async () => {
+    const header = fixture('strong-program.csv').split('\n')[0];
+    mockFile = [
+      header,
+      '2025-03-03 18:00:00,"Push",1h,"Landmine Press",1,30,12,0,0,"","",',
+      '2025-03-10 18:00:00,"Push",1h,"Landmine Press",1,30,12,0,0,"","",',
+    ].join('\n');
+    await toDraft();
+    await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+    expect(screen.getByText(t('onboarding.programImport.allLeftOut'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('onboarding.programImport.noRoutine'))).toBeNull();
   });
 
   test('a file that is not an export we read: said so, another can be chosen', async () => {

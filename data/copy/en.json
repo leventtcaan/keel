@@ -1622,6 +1622,8 @@
       "choose": "Choose a file",
       "chooseAnother": "Choose another file",
       "noRoutine": "No routine in this file repeats enough to make a program from it.",
+      "allLeftOut": "Every move is left out, so there's no program. Choose the file again to start over.",
+      "ownWaiting": "Your own move. It's saved with the program.",
       "summary": "From {app} · days: {days} · moves: {moves}",
       "anyDay": "No set day",
       "move": "{sets} × {min}-{max} reps",
