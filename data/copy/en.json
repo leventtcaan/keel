@@ -2013,6 +2013,7 @@
       "turnOff": "Turn off",
       "turnOffLabel": "Turn off reminders",
     "onlyCheckIn": "Only the check-in morning reminder is on.",
+    "noCalls": "No weekly calls without your OK for health data, so the check-in morning reminder waits.",
     "turnOnAll": "Turn on all three",
       "on": "On",
       "blocked": "Notifications for keel are off in iOS Settings.",

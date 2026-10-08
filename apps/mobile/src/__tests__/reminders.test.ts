@@ -473,3 +473,52 @@ test('the same week off read again changes nothing: no rebuild of the reminders'
   await reminders.keepRestUntil('2026-10-05');
   expect(device.replaced).toBe(before);
 });
+
+describe('the first call day (K-992), kept from the server\'s answer', () => {
+  test('kept, the check-in morning waits for it; made, weekly; off, none', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(schedule);
+    await reminders.turnOn({ only: 'check_in' });
+    await reminders.keepFirstCall({ on: '2026-10-05' });
+    expect(device.scheduled.map((r) => r.when)).toEqual([{ at: new Date(2026, 9, 5, 9, 0) }, { at: new Date(2026, 9, 12, 9, 0) }]);
+    await reminders.keepFirstCall('weekly');
+    expect(device.scheduled.map((r) => r.when)).toEqual([{ weekday: 2, hour: 9, minute: 0 }]);
+    await reminders.keepFirstCall('off');
+    expect(device.scheduled).toEqual([]);
+    // Said, so Settings never shows the check-in morning alone as on while nothing rings (review).
+    expect(reminders.current().noCalls).toBe(true);
+    await reminders.keepFirstCall('weekly');
+    expect(reminders.current().noCalls).toBeUndefined();
+  });
+
+  test('no calls kept across launches is said from the start', async () => {
+    const kv = memoryKv();
+    await (await make(kv)).reminders.keepFirstCall('off');
+    expect((await make(kv)).reminders.current().noCalls).toBe(true);
+  });
+
+  test('kept across launches; nothing kept is weekly, as before K-992', async () => {
+    const kv = memoryKv();
+    const first = await make(kv);
+    await first.reminders.keepFirstCall({ on: '2026-10-05' });
+    const { reminders, device } = await make(kv);
+    await reminders.keepSchedule(schedule);
+    await reminders.turnOn({ only: 'check_in' });
+    expect(device.scheduled.map((r) => r.when)).toEqual([{ at: new Date(2026, 9, 5, 9, 0) }, { at: new Date(2026, 9, 12, 9, 0) }]);
+    const fresh = await make();
+    await fresh.reminders.keepSchedule(schedule);
+    await fresh.reminders.turnOn({ only: 'check_in' });
+    expect(fresh.device.scheduled.map((r) => r.when)).toEqual([{ weekday: 2, hour: 9, minute: 0 }]);
+  });
+
+  test('a read that began for an account that left is dropped; a sign-out forgets the day', async () => {
+    const { reminders, kv } = await make();
+    const era = reminders.era();
+    await reminders.forget();
+    await reminders.keepFirstCall({ on: '2026-10-05' }, era);
+    expect(kv.items.size).toBe(0);
+    await reminders.keepFirstCall({ on: '2026-10-05' });
+    await reminders.forget();
+    expect(kv.items.size).toBe(0);
+  });
+});

@@ -13,7 +13,7 @@ const schedule: Schedule = {
   timeZone: 'Europe/Istanbul',
 };
 const now = new Date(2026, 9, 2, 12, 0); // a Friday, local time
-const base: PlanInput = { schedule, cue: null, lastOpened: now, now, muted: false, mutedUntil: null, restUntil: null };
+const base: PlanInput = { schedule, cue: null, lastOpened: now, now, muted: false, mutedUntil: null, restUntil: null, firstCall: 'weekly' };
 
 test('a training day gets one reminder, the lead before the usual time, on the phone\'s calendar (1 = Sunday)', () => {
   const training = planReminders(base).filter((r) => r.kind === 'training');
@@ -173,5 +173,39 @@ describe('a state with a last day (K-518, ADR-038): nothing until it ends, then 
   test('a week off ending later than the state: the training days come back after the later of the two', () => {
     const dated = quiet('2026-10-06', { restUntil: '2026-10-09' }).filter((r) => r.kind === 'training');
     expect(dated[0].when).toEqual({ at: new Date(2026, 9, 12, 17, 30) });
+  });
+});
+
+describe('the first call (K-992, ADR-077 Ek 2): no check-in morning before the server\'s first call day', () => {
+  // Onboarding finished Monday 5 Oct 2026 at 08:30; the server's first call is Monday 12 Oct (never the day it finished).
+  const monday = new Date(2026, 9, 5, 8, 30);
+  const first = (firstCall: PlanInput['firstCall'], extra: Partial<PlanInput> = {}) =>
+    planReminders({ ...base, now: monday, lastOpened: monday, firstCall, ...extra }).filter((r) => r.kind === 'check_in');
+
+  test('finished on a Monday morning: the first check-in reminder is the next Monday, not today at 09:00', () => {
+    expect(first({ on: '2026-10-12' }).map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 12, 9, 0) },
+      { at: new Date(2026, 9, 19, 9, 0) }, // by date for the weeks the parameter gives; the next open turns it weekly
+    ]);
+  });
+
+  test('its day come (the check-in open, the call not made yet): weekly again', () => {
+    expect(first({ on: '2026-10-05' }).map((r) => r.when)).toEqual([{ weekday: 2, hour: 9, minute: 0 }]);
+  });
+
+  test('the first call made, or the first weeks over: weekly every check-in day', () => {
+    expect(first('weekly').map((r) => r.when)).toEqual([{ weekday: 2, hour: 9, minute: 0 }]);
+  });
+
+  test('no first call at all (no health data consent, no calls): no check-in reminder; training and quiet stay', () => {
+    expect(first('off')).toEqual([]);
+    expect(planReminders({ ...base, firstCall: 'off' }).map((r) => r.kind)).toEqual(['training', 'training', 'quiet']);
+  });
+
+  test('a state lasting past the first call day: the check-in mornings after the later of the two', () => {
+    expect(first({ on: '2026-10-12' }, { muted: true, mutedUntil: '2026-10-13' }).map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 19, 9, 0) }, // Monday 12 Oct is inside the state
+      { at: new Date(2026, 9, 26, 9, 0) },
+    ]);
   });
 });

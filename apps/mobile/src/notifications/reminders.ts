@@ -10,7 +10,7 @@
 import type { KeyValue } from '@/units/preference';
 
 import { notificationParams as P } from './params';
-import { type Reminder, type ReminderKind, type Schedule, planReminders } from './plan';
+import { type FirstCall, type Reminder, type ReminderKind, type Schedule, planReminders } from './plan';
 
 /** What iOS answers about notifications: allowed or not, and whether its sheet can still be shown. */
 export type NotificationPermission = { granted: boolean; canAskAgain: boolean };
@@ -25,8 +25,11 @@ export type NotificationAccess = {
   clear(): Promise<void>;
 };
 
-/** `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all three. */
-export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind };
+/**
+ * `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all three. `noCalls`: the
+ * server makes no calls (no health data consent, K-992), so no check-in morning is planned whatever is on.
+ */
+export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind; noCalls?: true };
 
 type Options = {
   kv: KeyValue;
@@ -47,6 +50,7 @@ const KEY = {
   schedule: 'reminders.schedule',
   lastOpened: 'reminders.lastOpened',
   restUntil: 'reminders.restUntil',
+  firstCall: 'reminders.firstCall',
 };
 const ON = 'on';
 
@@ -61,6 +65,13 @@ function scheduleOf(kept: string | null): Schedule | null {
   }
 }
 
+/** Kept as `off`, `weekly` or the day; nothing kept (or anything else) is weekly, as every account was before K-992. */
+function firstCallOf(kept: string | null): FirstCall {
+  if (kept === 'off') return 'off';
+  return kept !== null && /^\d{4}-\d{2}-\d{2}$/.test(kept) ? { on: kept } : 'weekly';
+}
+const keptFirstCall = (firstCall: FirstCall) => (typeof firstCall === 'object' ? firstCall.on : firstCall);
+
 function dateOf(kept: string | null): Date | null {
   const date = kept === null ? null : new Date(kept);
   return date !== null && !Number.isNaN(date.getTime()) ? date : null;
@@ -74,6 +85,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
     enabled: (await kv.getItemAsync(KEY.enabled)) === ON,
     cue: (await kv.getItemAsync(KEY.cue)) ?? '',
     ...(keptOnly === 'check_in' ? { only: keptOnly } : {}),
+    ...(firstCallOf(await kv.getItemAsync(KEY.firstCall)) === 'off' ? { noCalls: true as const } : {}),
   };
   const listeners = new Set<() => void>();
 
@@ -118,6 +130,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
       muted: silenced,
       mutedUntil: until,
       restUntil: await kv.getItemAsync(KEY.restUntil),
+      firstCall: firstCallOf(await kv.getItemAsync(KEY.firstCall)),
     });
     await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
   }
@@ -211,6 +224,21 @@ export async function createReminders({ kv, access, now, report, muted = async (
         if ((await kv.getItemAsync(KEY.restUntil)) === day) return;
         if (day === null) await kv.removeItemAsync(KEY.restUntil);
         else await kv.setItemAsync(KEY.restUntil, day);
+        await reschedule();
+      }),
+
+    /**
+     * Where the first call stands (K-992), kept whenever the server's FirstWeeks is read — the plan at onboarding's end and
+     * Today: no check-in morning before its day. `era` as keepRestUntil's; the same answer again changes nothing.
+     */
+    keepFirstCall: (firstCall: FirstCall, era: number = generation): Promise<void> =>
+      inTurn(async () => {
+        if (era !== generation) return;
+        const kept = keptFirstCall(firstCall);
+        if ((await kv.getItemAsync(KEY.firstCall)) === kept) return;
+        await kv.setItemAsync(KEY.firstCall, kept);
+        const { noCalls: _, ...rest } = settings;
+        become({ ...rest, ...(firstCall === 'off' ? { noCalls: true as const } : {}) });
         await reschedule();
       }),
 

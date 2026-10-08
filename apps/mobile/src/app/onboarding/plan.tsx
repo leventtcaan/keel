@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { Stack } from 'expo-router/stack';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -43,11 +43,18 @@ const daysWords = (days: Schemas['Weekday'][]) =>
 export default function PlanScreen() {
   const { color } = useTheme();
   const units = useUnits();
-  const { profile, report, planPreviews } = useAppServices();
+  const { profile, report, planPreviews, reminders } = useAppServices();
   const { progress } = useDraft();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem, occurrence] = useProblem();
   const leaving = useRef(false);
+  // Where the first call stands, for the reminders (K-992): the Monday morning one never rings before the server's day.
+  const consented = progress.consented;
+  const keptCall = progress.firstCall;
+  useEffect(() => {
+    if (consented === undefined) return;
+    void reminders.keepFirstCall(consented !== true ? 'off' : keptCall === undefined || keptCall === null ? 'weekly' : { on: keptCall });
+  }, [reminders, consented, keptCall]);
   // Opened before the plan is prepared (a link): it is prepared first.
   if (progress.profile === undefined || progress.program === undefined || progress.exercises === undefined) {
     return <Redirect href="/onboarding/preparing" />;
@@ -165,7 +172,8 @@ export default function PlanScreen() {
             weekdayDate(call.day),
             call.inDays <= 0 ? t('onboarding.plan.today') : call.inDays === 1 ? t('onboarding.plan.tomorrow') : t('onboarding.plan.inDays', { count: call.inDays }),
           )}
-        <MondayReminder day={t(`onboarding.schedule.dayName.${schedule.checkInDay}`)} />
+        {/* Without the consent there are no calls, so no morning to be told of one (K-992, user test). */}
+        {progress.consented === true && <MondayReminder day={t(`onboarding.schedule.dayName.${schedule.checkInDay}`)} />}
       </ScrollView>
       <View style={styles.bottom}>
         {problem !== null && (

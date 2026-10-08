@@ -1194,6 +1194,7 @@
      "projection.on",
      "reminders.cue",
      "reminders.enabled",
+     "reminders.firstCall",
      "reminders.lastOpened",
      "reminders.only",
      "reminders.restUntil",

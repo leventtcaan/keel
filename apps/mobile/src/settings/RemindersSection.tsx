@@ -59,7 +59,9 @@ export function RemindersSection() {
   const turnOff = () => void run(() => reminders.turnOff(), {}, 'settings.reminders.failed');
   const saveCue = () => void run(() => reminders.setCue(cue), {}, 'settings.reminders.failed');
 
-  const on = settings.enabled && permission?.granted === true;
+  // The check-in morning alone while the server makes no calls (K-992): nothing rings, so it is never shown as on.
+  const waiting = settings.enabled && settings.only === 'check_in' && settings.noCalls === true;
+  const on = settings.enabled && permission?.granted === true && !waiting;
   const blocked = permission !== null && !permission.granted && !permission.canAskAgain;
   const muted = { color: color.muted };
 
@@ -70,10 +72,25 @@ export function RemindersSection() {
     </>
   );
 
+  const noCalls = (
+    <>
+      <Text style={[styles.note, muted]}>{t('settings.reminders.noCalls')}</Text>
+      <Button label={t('settings.reminders.turnOnAll')} variant="ghost" size="sm" disabled={busy} onPress={turnOn} />
+    </>
+  );
+
   return (
     <Section title={t('settings.reminders.title')}>
       <Text style={[styles.note, muted]}>{t('settings.reminders.what', { minutes: P.trainingLeadMinutes })}</Text>
-      {on ? <OnRow busy={busy} onTurnOff={turnOff} /> : blocked ? <Blocked /> : <Button label={t('settings.reminders.turnOn')} disabled={busy} onPress={turnOn} />}
+      {waiting && permission?.granted === true ? (
+        noCalls
+      ) : on ? (
+        <OnRow busy={busy} onTurnOff={turnOff} />
+      ) : blocked ? (
+        <Blocked />
+      ) : (
+        <Button label={t('settings.reminders.turnOn')} disabled={busy} onPress={turnOn} />
+      )}
       {/* Turned on from the plan for the check-in morning alone (K-967): said, and the other two a tap away. */}
       {on && settings.only !== undefined && onlyOne}
       <TextField
