@@ -14,4 +14,5 @@ export const healthParams = {
   chartDays: param<number>('weigh_in_chart_days'),
   historyDays: param<number>('weigh_in_history_days'),
   activityReadDays: param<number>('health_activity_read_days'),
+  cardioWorkoutTypes: param<number[]>('health_cardio_workout_types'),
 };

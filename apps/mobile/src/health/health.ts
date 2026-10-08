@@ -13,7 +13,20 @@ export type HealthAccess = {
   readDailyTotals(from: Date, to: Date): Promise<HealthDayTotals[]>;
   /** Sleep analysis records between two moments, each marked asleep or not (in bed, awake) (K-404). */
   readSleep(from: Date, to: Date): Promise<HealthSleep[]>;
+  /**
+   * The active energy an Apple Watch measured between two moments, a session's window (K-959, ADR-074 #5); undefined
+   * without a watch's reading: the phone's own estimate is never shown, nor any other guess.
+   */
+  readWatchActiveEnergy(from: Date, to: Date): Promise<number | undefined>;
+  /** Cardio workouts in Apple Health between two moments (ADR-074 #6), never the app's own. */
+  readCardioWorkouts(from: Date, to: Date): Promise<HealthCardioWorkout[]>;
 };
+
+/**
+ * A cardio workout from Apple Health: its Health id, when it began and ended (ISO), whole minutes, and the active energy
+ * an Apple Watch measured during it — absent without a watch.
+ */
+export type HealthCardioWorkout = { id: string; start: string; end: string; minutes: number; activeEnergyKcal?: number };
 
 /** A day's totals as Health sums them (sources not counted twice); a kind with no data that day is left out. */
 export type HealthDayTotals = { day: string; steps?: number; activeEnergyKcal?: number };
@@ -37,6 +50,12 @@ export const healthUnavailable: HealthAccess = {
     throw new Error('Apple Health is not available in this build');
   },
   readSleep: async () => {
+    throw new Error('Apple Health is not available in this build');
+  },
+  readWatchActiveEnergy: async () => {
+    throw new Error('Apple Health is not available in this build');
+  },
+  readCardioWorkouts: async () => {
     throw new Error('Apple Health is not available in this build');
   },
 };

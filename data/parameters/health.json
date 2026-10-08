@@ -39,6 +39,14 @@
       "tag": "literatur",
       "source": "arastirma/ham/J1-cinsiyet.md#D1",
       "note": "How far back each Apple Health read looks for steps, sleep and active energy (K-404): the longest decision window (women, 28 days, decision_window_days), since a week's step days are judged in it (K-220). A day already sent with the same values is not sent again."
+    },
+    {
+      "key": "health_cardio_workout_types",
+      "value": [13, 16, 24, 35, 37, 44, 46, 52, 60, 68, 69, 70, 71, 73, 74],
+      "unit": "hk_workout_activity_type",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G2-kilo-verme.md#K-33",
+      "note": "The Apple Health workouts that count as cardio done (K-959, ADR-074 #6): steady cardio, the low-tempo kind the coaching prescribes (K-33; ADR-074 #2 names cycling, incline walking, elliptical). HKWorkoutActivityType raw values: 13 cycling, 16 elliptical, 24 hiking, 35 rowing, 37 running, 44 stair climbing, 46 swimming, 52 walking, 60 cross-country skiing, 68 stairs, 69 step training, 70 wheelchair walk pace, 71 wheelchair run pace, 73 mixed cardio, 74 hand cycling. Not counted: intervals (63 HIIT, 64 jump rope, 30 mixed metabolic cardio; K-34: HIIT is not prescribed), strength (50, the app's own sessions), sports and mind-body."
     }
   ]
 }
