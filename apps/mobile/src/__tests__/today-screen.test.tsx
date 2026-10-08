@@ -3,13 +3,25 @@
  * copy key with "Why this call" (reasons, their kind of source, the next review), today's list, and the coach's chips
  * from the day's data. A safety call shows as its general change (ADR-028 #24): no word of a hard stop or a cycle on
  * the screen.
+ * This week (K-969, ADR-077 #1) keeps one hero: the consistency's parts, the call's card, the check-in card, the state's
+ * entry, the coach's questions and the first weeks' words are off the screen; their components stay (ADR-069 #3) and are
+ * tested here as the old screen showed them, read by the same hook (`showPart`). The new screen: this-week-screen.test.tsx.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import type { ReactNode } from 'react';
 
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { appliedKey } from '@/today/call';
+import { CallCard } from '@/today/CallCard';
+import { CheckInCard } from '@/today/CheckInCard';
+import { ConsistencyCard } from '@/today/ConsistencyCard';
+import { FirstWeeksCard } from '@/today/FirstWeeksCard';
+import { PromptCard } from '@/today/PromptCard';
+import { StateCard } from '@/today/StateCard';
+import type { TodayData } from '@/today/today';
+import { useToday } from '@/today/useToday';
 import { ThemeProvider } from '@/theme/theme';
 import { formatWeight } from '@/units/units';
 
@@ -189,6 +201,38 @@ beforeAll(async () => {
   await show();
   await screen.unmount();
 }, COLD_START_MS);
+/** A part as the old Today screen drew it, from the same read (useToday): on focus, again on each focus. */
+type Part = (data: TodayData, day: string, reload: () => void) => ReactNode;
+function Parts({ of }: { of: Part }) {
+  const { day, data, reload } = useToday();
+  return <>{data === null ? null : of(data, day, reload)}</>;
+}
+async function showPart(of: Part) {
+  await render(
+    <ThemeProvider scheme="light">
+      <Parts of={of} />
+    </ThemeProvider>,
+  );
+  await act(async () => {});
+}
+const consistencyPart: Part = ({ consistency }) =>
+  consistency.state === 'ready' || consistency.state === 'none' ? (
+    <ConsistencyCard consistency={consistency.state === 'ready' ? consistency.value : null} />
+  ) : null;
+const callPart: Part = ({ decision }, _day, reload) =>
+  decision.state === 'ready' || decision.state === 'none' ? <CallCard decision={decision.state === 'ready' ? decision.value : null} onChanged={reload} /> : null;
+const checkInPart: Part = ({ checkIn }) => (checkIn?.state === 'ready' ? <CheckInCard checkIn={checkIn.value} /> : null);
+const statePart: Part = ({ state }, _day, reload) => <StateCard state={state} onChanged={reload} />;
+const promptPart: Part = ({ prompts }) => (prompts?.state === 'ready' ? <PromptCard read={prompts} /> : null);
+const firstWeeksPart: Part = (data, day) => <FirstWeeksCard read={data.firstWeeks} previousOpen={data.previousOpen ?? null} day={day} />;
+/** What the old screen showed before anything was there: the number, the call, today's list. */
+const nothingYetPart: Part = (data, day, reload) => (
+  <>
+    {consistencyPart(data, day, reload)}
+    {callPart(data, day, reload)}
+  </>
+);
+
 const press = async (name: string) => {
   await fireEvent.press(screen.getByRole('button', { name }));
   await act(async () => {});
@@ -197,7 +241,7 @@ const press = async (name: string) => {
 const allText = () => JSON.stringify(screen.toJSON());
 
 test('the number and its four parts, as the server counted them', async () => {
-  await show();
+  await showPart(consistencyPart);
   expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
   expect(screen.getByText(t('today.consistency.of', { done: 16, planned: 19 }))).toBeOnTheScreen();
   for (const [part, count] of [
@@ -229,7 +273,7 @@ test("this week's call: its label, its words from the copy key, its confidence; 
       ],
     }),
   );
-  await show();
+  await showPart(callPart);
   expect(screen.getByText(t('decision.continue.label'))).toBeOnTheScreen();
   expect(screen.getByText(t('decision.continue.toward_goal.title'))).toBeOnTheScreen();
   expect(screen.getByText(t('decision.continue.toward_goal.body'))).toBeOnTheScreen();
@@ -255,7 +299,7 @@ test("no call yet this week: the engine's 'not yet', the cycle check's variant i
       action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'],
     }),
   );
-  await show();
+  await showPart(callPart);
   expect(screen.getByText(t('decision.no_decision_yet.label'))).toBeOnTheScreen();
   expect(screen.getByText(t('decision.no_decision_yet.cycle_check_needed.title'))).toBeOnTheScreen();
 });
@@ -276,7 +320,7 @@ test('a safety call shows as its general change: no hard stop, no cycle, on the 
       ],
     }),
   );
-  await show();
+  await showPart(callPart);
   await press(t('today.call.why'));
   expect(screen.getByText(t('decision.change_phase.label'))).toBeOnTheScreen();
   expect(screen.queryByText(t('decision.rule.low_energy_safety'))).toBeNull();
@@ -289,7 +333,7 @@ test.each([
   ['decision.change_phase.mini_cut_over', 'CHANGE_PHASE'],
 ])('the short cut speaks with its own words: %s', async (copyKey, type) => {
   mockAnswers['/v1/decisions/current'] = ok(decision(copyKey, { action: { type } as Schemas['Decision']['action'] }));
-  await show();
+  await showPart(callPart);
   expect(screen.getByText(t(`${copyKey}.title`))).toBeOnTheScreen();
   expect(screen.getByText(t(`${copyKey}.body`))).toBeOnTheScreen();
 });
@@ -326,12 +370,14 @@ test('before anything is there: each part says what comes, and the others still 
     '/v1/weigh-ins': ok([]),
     '/v1/program': ok({ ...PROGRAM, days: [] }),
   };
-  await show();
+  await showPart(nothingYetPart);
   expect(screen.getByText(t('today.consistency.firstWeek'))).toBeOnTheScreen();
   expect(screen.getByText(t('today.call.none'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('today.consistency.percent', { percent: 84 }))).toBeNull();
+  await screen.unmount();
+  await show();
   expect(screen.getByText(t('today.list.weighIn.todo'))).toBeOnTheScreen();
   expect(screen.getByText(t('today.list.training.rest'))).toBeOnTheScreen();
-  expect(screen.queryByText(t('today.consistency.percent', { percent: 84 }))).toBeNull();
 });
 
 test('without the health data consent: no number and no call, a way to Settings instead', async () => {
@@ -339,9 +385,10 @@ test('without the health data consent: no number and no call, a way to Settings 
     mockAnswers[path] = refused(403, 'CONSENT_REQUIRED');
   }
   await show();
-  expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
-  expect(screen.queryByText(t('today.consistency.percent', { percent: 84 }))).toBeNull();
-  await press(t('today.consent.open'));
+  // K-969 (ADR-077 #1, ADR-072 Ek 1): the hero says the weekly calls are off, with the way to Settings.
+  expect(screen.getByText(t('thisWeek.hero.callsOff'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('thisWeek.onTrack', { onTrack: 2, counted: 3 }))).toBeNull();
+  await press(t('thisWeek.hero.settingsLabel'));
   expect(mockPush).toHaveBeenCalledWith('/settings');
   expect(screen.getByText(t('programDays.upper_a.name'))).toBeOnTheScreen(); // training is not health data
 });
@@ -354,7 +401,7 @@ test('offline: it says so, and trying again reads again', async () => {
   mockAnswers['/v1/consistency'] = ok(CONSISTENCY);
   await press(t('today.retry'));
   expect(mockGET.mock.calls.length).toBeGreaterThan(calls);
-  expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
+  expect(screen.getByText(t('thisWeek.onTrack', { onTrack: 2, counted: 3 }))).toBeOnTheScreen(); // K-969: the record is This week's sign of the number
 });
 
 test("the coach's chips are off This week (ADR-069 #3, K-953; were K-509)", async () => {
@@ -366,12 +413,12 @@ test("the coach's chips are off This week (ADR-069 #3, K-953; were K-509)", asyn
 test('back on Today after giving the consent in Settings, it reads again and shows the number (K-401 review)', async () => {
   mockAnswers['/v1/consistency'] = refused(403, 'CONSENT_REQUIRED');
   await show();
-  expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('thisWeek.onTrack', { onTrack: 2, counted: 3 }))).toBeNull(); // K-969: without the consent, no record (ADR-072 Ek 1)
   mockAnswers['/v1/consistency'] = ok(CONSISTENCY);
 
   await act(async () => mockRefocus());
 
-  expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
+  expect(screen.getByText(t('thisWeek.onTrack', { onTrack: 2, counted: 3 }))).toBeOnTheScreen();
 });
 
 test('the app back in front reads again: a new day, new logs (K-401 review)', async () => {
@@ -396,7 +443,7 @@ test("Apple Health's new weigh-ins go in before Today reads; a failing Health re
 
   mockSyncHealth.mockRejectedValueOnce(new Error('HealthKit'));
   await act(async () => mockRefocus());
-  expect(screen.getByText(t('today.consistency.percent', { percent: 84 }))).toBeOnTheScreen();
+  expect(screen.getByText(t('thisWeek.onTrack', { onTrack: 2, counted: 3 }))).toBeOnTheScreen(); // K-969: the record is This week's sign of the number
 });
 
 test('what waits on the phone is sent before Today reads: a weigh-in just saved shows as done (K-402 review)', async () => {
@@ -500,7 +547,7 @@ describe("this week's check-in (K-501)", () => {
 
   test('not answered yet: a card that says how much it asks, and opens the check-in', async () => {
     mockAnswers['/v1/check-ins/current'] = checkIn(false, [question('TRAINING'), question('RECOVERY')]);
-    await show();
+    await showPart(checkInPart);
     expect(screen.getByText(t('today.checkIn.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('today.checkIn.questions', { count: 2 }))).toBeOnTheScreen();
     await press(t('today.checkIn.open'));
@@ -509,13 +556,13 @@ describe("this week's check-in (K-501)", () => {
 
   test('one question: said as one', async () => {
     mockAnswers['/v1/check-ins/current'] = checkIn(false, [question('TRAINING')]);
-    await show();
+    await showPart(checkInPart);
     expect(screen.getByText(t('today.checkIn.one'))).toBeOnTheScreen();
   });
 
   test('nothing to ask: the call is one tap away', async () => {
     mockAnswers['/v1/check-ins/current'] = checkIn(false, []);
-    await show();
+    await showPart(checkInPart);
     expect(screen.getByText(t('today.checkIn.none'))).toBeOnTheScreen();
   });
 
@@ -538,7 +585,7 @@ describe('state mode on Today (K-518, ADR-038)', () => {
     mockServices.state.back.mockImplementationOnce(async () => {
       mockAnswers['/v1/state'] = refused(404, 'NOT_FOUND');
     });
-    await show();
+    await showPart(statePart);
     expect(screen.getByText(t('today.state.paused', { state: t('state.kind.sick.name'), since: 'Mon, Sep 28' }))).toBeOnTheScreen();
     await press(t('today.state.back'));
     expect(mockServices.state.back).toHaveBeenCalledTimes(1);
@@ -558,7 +605,7 @@ describe('state mode on Today (K-518, ADR-038)', () => {
   });
 
   test('no state: one quiet way to say life got in the way', async () => {
-    await show();
+    await showPart(statePart);
     await press(t('today.state.declare'));
     expect(mockPush).toHaveBeenCalledWith('/state');
   });
@@ -571,7 +618,7 @@ describe('state mode on Today (K-518, ADR-038)', () => {
 
   test('a paused week says so on the number: it counts neither way', async () => {
     mockAnswers['/v1/consistency'] = ok({ ...CONSISTENCY, paused: true });
-    await show();
+    await showPart(consistencyPart);
     expect(screen.getByText(t('today.consistency.paused'))).toBeOnTheScreen();
   });
 });
@@ -594,7 +641,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
 
   test('one question at a time, in its own words, with its answers', async () => {
     mockAnswers['/v1/prompts'] = ok([STEPS, MISSED]);
-    await show();
+    await showPart(promptPart);
     expect(screen.getByText(t('prompt.steps_dropped.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('prompt.steps_dropped.body'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('prompt.steps_dropped.choice.busy') })).toBeOnTheScreen();
@@ -606,7 +653,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
   test('an answer goes to the server once, for that occurrence; its reply is shown in place of the answers', async () => {
     mockAnswers['/v1/prompts'] = ok([STEPS]);
     mockPost = ok({ replyCopyKey: 'prompt.steps_dropped.reply.less' });
-    await show();
+    await showPart(promptPart);
     await press(t('prompt.steps_dropped.choice.less'));
     expect(mockPOST).toHaveBeenCalledTimes(1);
     expect(mockPOST).toHaveBeenCalledWith('/v1/prompts/{rule}/answers', {
@@ -619,7 +666,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
 
   test('life got in the way: answered, then the state screen (K-518)', async () => {
     mockAnswers['/v1/prompts'] = ok([STEPS]);
-    await show();
+    await showPart(promptPart);
     await press(t('prompt.steps_dropped.choice.busy'));
     expect(mockPOST).toHaveBeenCalledTimes(1);
     expect(mockPush).toHaveBeenCalledWith('/state');
@@ -627,7 +674,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
 
   test('a fixed time: answered, then the reminders in Settings; life: the state screen', async () => {
     mockAnswers['/v1/prompts'] = ok([MISSED]);
-    await show();
+    await showPart(promptPart);
     await press(t('prompt.sessions_missed.choice.fixed_time'));
     expect(mockPush).toHaveBeenCalledWith('/settings');
 
@@ -641,7 +688,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
   test('not sent: said once, the answers stay to try again, and nowhere is opened', async () => {
     mockAnswers['/v1/prompts'] = ok([STEPS]);
     mockPost = 'offline';
-    await show();
+    await showPart(promptPart);
     await press(t('prompt.steps_dropped.choice.busy'));
     expect(screen.getByText(t('today.prompt.failed'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('prompt.steps_dropped.choice.busy') })).toBeOnTheScreen();
@@ -651,7 +698,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
   test('refused by the server: said so, not "check your connection"', async () => {
     mockAnswers['/v1/prompts'] = ok([STEPS]);
     mockPost = refused(500, 'INTERNAL');
-    await show();
+    await showPart(promptPart);
     await press(t('prompt.steps_dropped.choice.less'));
     expect(screen.getByText(t('today.prompt.refused'))).toBeOnTheScreen();
     expect(screen.queryByText(t('today.prompt.failed'))).toBeNull();
@@ -660,7 +707,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
   test('a note that it was not sent goes once Today reads again', async () => {
     mockAnswers['/v1/prompts'] = ok([STEPS]);
     mockPost = 'offline';
-    await show();
+    await showPart(promptPart);
     await press(t('prompt.steps_dropped.choice.less'));
     expect(screen.getByText(t('today.prompt.failed'))).toBeOnTheScreen();
     await act(async () => mockRefocus());
@@ -670,14 +717,14 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
 
   test('an answer that leads elsewhere leaves no question behind', async () => {
     mockAnswers['/v1/prompts'] = ok([STEPS]);
-    await show();
+    await showPart(promptPart);
     await press(t('prompt.steps_dropped.choice.busy'));
     expect(screen.queryByText(t('prompt.steps_dropped.title'))).toBeNull();
   });
 
   test('no questions, or none could be read: nothing is shown and nothing said failed', async () => {
     mockAnswers['/v1/prompts'] = ok([]);
-    await show();
+    await showPart(promptPart);
     expect(screen.queryByText(t('today.failed'))).toBeNull();
     mockAnswers['/v1/prompts'] = 'offline';
     await act(async () => mockRefocus());
@@ -689,7 +736,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
   const nextReview = t('today.call.nextReview', { date: 'Mon, Oct 5' });
 
   test('no change: its confidence, nothing to do differently, the next review in sight; nothing to apply', async () => {
-    await show();
+    await showPart(callPart);
     expect(screen.getByText(t('today.call.confidence.HIGH'))).toBeOnTheScreen();
     expect(screen.getByText(t('today.call.hold'))).toBeOnTheScreen();
     expect(screen.getByText(nextReview)).toBeOnTheScreen();
@@ -700,7 +747,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     mockAnswers['/v1/decisions/current'] = ok(
       decision('decision.no_decision_yet.wait_one_more_week', { action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'], confidence: 'LOW' }),
     );
-    await show();
+    await showPart(callPart);
     expect(screen.getAllByText(t('decision.no_decision_yet.label'))).toHaveLength(1);
     expect(screen.queryByText(t('today.call.confidence.LOW'))).toBeNull();
     expect(screen.getByText(t('today.call.waitNote'))).toBeOnTheScreen();
@@ -717,7 +764,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
 
   test('a change: one thing at a time, applied from today with one tap, and Today reads again', async () => {
     mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
-    await show();
+    await showPart(callPart);
     expect(screen.getByText(t('today.call.oneThing'))).toBeOnTheScreen();
     expect(screen.queryByText(t('today.call.hold'))).toBeNull();
 
@@ -734,7 +781,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
   test('not applied: without a connection it says so and the button stays; refused, it says the call is past', async () => {
     mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
     mockPost = 'offline';
-    await show();
+    await showPart(callPart);
     await press(t('today.call.apply'));
     expect(screen.getByText(t('today.call.applyFailed'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
@@ -753,7 +800,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     mockAnswers['/v1/decisions/current'] = ok(
       decision(copyKey, { action: { type } as Schemas['Decision']['action'], application: { state: 'PENDING' } }),
     );
-    await show();
+    await showPart(callPart);
     expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
     expect(screen.queryByText(t('today.call.hold'))).toBeNull();
   });
@@ -762,7 +809,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     mockAnswers['/v1/decisions/current'] = ok(
       decision('decision.fix_adherence.adherence_low', { action: { type: 'FIX_ADHERENCE' } as Schemas['Decision']['action'] }),
     );
-    await show();
+    await showPart(callPart);
     expect(screen.getByText(t('decision.fix_adherence.adherence_low.body'))).toBeOnTheScreen();
     expect(screen.queryByText(t('today.call.hold'))).toBeNull();
     expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
@@ -772,7 +819,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     mockAnswers['/v1/decisions/current'] = ok(
       decision('decision.full_rest_week.plan_missed', { action: { type: 'FULL_REST_WEEK' } as Schemas['Decision']['action'], application: { state: 'APPLIED' } }),
     );
-    await show();
+    await showPart(callPart);
     expect(screen.getByText(t('decision.full_rest_week.applied'))).toBeOnTheScreen();
     expect(t('decision.full_rest_week.applied')).not.toEqual(t('decision.change_movement.applied'));
   });
@@ -780,7 +827,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
   test.each([500, 503, 403])('refused for another reason (%i): something went wrong on our side, try again — the button stays', async (status) => {
     mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
     mockPost = refused(status, status === 403 ? 'CONSENT_REQUIRED' : 'INTERNAL');
-    await show();
+    await showPart(callPart);
     await press(t('today.call.apply'));
     expect(screen.getByText(t('today.call.applyError'))).toBeOnTheScreen();
     expect(screen.queryByText(t('today.call.applyRefused'))).toBeNull();
@@ -790,7 +837,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
   test('not applied is said for that read only: Today read again, the call is a new try', async () => {
     mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
     mockPost = 'offline';
-    await show();
+    await showPart(callPart);
     await press(t('today.call.apply'));
     expect(screen.getByText(t('today.call.applyFailed'))).toBeOnTheScreen();
 
@@ -805,7 +852,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
     mockAnswers['/v1/decisions/current'] = ok(change('PENDING'));
     let answer: (value: Answer) => void = () => {};
     mockPOST.mockImplementationOnce(() => new Promise<Answer>((resolve) => (answer = resolve)));
-    await show();
+    await showPart(callPart);
     const button = screen.getByRole('button', { name: t('today.call.apply') });
     await act(async () => {
       fireEvent.press(button);
@@ -823,7 +870,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
         application: { state: 'PENDING' },
       }),
     );
-    await show();
+    await showPart(callPart);
     expect(screen.getByRole('button', { name: t('today.call.apply') })).toBeOnTheScreen();
     expect(screen.queryByText(t('today.call.hold'))).toBeNull();
     expect(allText()).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
@@ -831,7 +878,7 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
 
   test('declined (last week\'s plan kept): never shown as applied, and the call can still be used with one tap', async () => {
     mockAnswers['/v1/decisions/current'] = ok(change('DECLINED'));
-    await show();
+    await showPart(callPart);
     expect(screen.queryByText(t(appliedKey('decision.change_movement.bmr_floor')))).toBeNull();
     expect(screen.getByText(t('today.call.oneThing'))).toBeOnTheScreen();
     await press(t('today.call.apply'));
@@ -840,14 +887,14 @@ describe("the call's three variants (K-502, prototype 3.2-3.4): from what the se
 
   test('undone: the plan is back as it was, and nothing to apply again', async () => {
     mockAnswers['/v1/decisions/current'] = ok(change('UNDONE'));
-    await show();
+    await showPart(callPart);
     expect(screen.getByText(t('today.call.undone'))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: t('today.call.apply') })).toBeNull();
   });
 });
 
 test('"Why this call" opens in place and leads to no retired page (ADR-069 #3, K-953)', async () => {
-  await show();
+  await showPart(callPart);
   await press(t('today.call.why'));
   expect(screen.queryByRole('button', { name: t('today.call.data') })).toBeNull();
   expect(mockPush).not.toHaveBeenCalledWith(expect.objectContaining({ pathname: '/why' }));
@@ -860,7 +907,7 @@ describe('the first eight weeks (K-521)', () => {
 
   test("the week's own words from the server; week one says nothing", async () => {
     mockAnswers['/v1/first-weeks'] = ok({ week: 4, contentKey: 'first_weeks.week4', risk: [], readsRisk: false, training: true });
-    await show();
+    await showPart(firstWeeksPart);
     expect(screen.getByText(t('first_weeks.week4.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('first_weeks.week4.body'))).toBeOnTheScreen();
     expect(screen.queryByText(t('first_weeks.risk'))).toBeNull();
@@ -868,27 +915,27 @@ describe('the first eight weeks (K-521)', () => {
 
   test('week one: no card', async () => {
     mockAnswers['/v1/first-weeks'] = ok({ week: 1, risk: [], readsRisk: false, training: true });
-    await show();
+    await showPart(firstWeeksPart);
     expect(screen.queryByTestId('first-weeks')).toBeNull();
   });
 
   test("a risky week: one message, in a human voice — the server's signal", async () => {
     mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [{ rule: 'no_session_last_week', source: { tag: 'PRODUCT' } }], readsRisk: true, training: true });
-    await show();
+    await showPart(firstWeeksPart);
     expect(screen.getAllByText(t('first_weeks.risk'))).toHaveLength(1);
   });
 
   test("a risky week: the app not opened in the week before, known only on the phone (ADR-041 #66)", async () => {
     mockPreviousOpen = '2026-09-20'; // nine days before Tuesday 29 September
     mockAnswers['/v1/first-weeks'] = ok({ week: 6, contentKey: 'first_weeks.week6', risk: [], readsRisk: true, training: true });
-    await show();
+    await showPart(firstWeeksPart);
     expect(screen.getByText(t('first_weeks.risk'))).toBeOnTheScreen();
   });
 });
 
 test("the record says the forgiven weeks used, never reset (K-608: 11 of 12 weeks · 1 forgiven week used)", async () => {
   mockAnswers['/v1/consistency'] = ok({ ...CONSISTENCY, record: { onTrackWeeks: 11, countedWeeks: 12, currentRun: 4, forgivenWeeks: 1 } });
-  await show();
+  await showPart(consistencyPart);
 
   expect(await screen.findByText('11 of 12 weeks on track · 1 forgiven week used')).toBeOnTheScreen();
 });

@@ -119,6 +119,51 @@
       }
     }
   },
+  "thisWeek": {
+    "settings": "Settings",
+    "week": "Week {week}",
+    "onTrack": "{onTrack}/{counted} weeks on track",
+    "countedByWeek": "Counted by week",
+    "strip": {
+      "label": "This week",
+      "mark": "{text}, {mark}",
+      "trained": "trained",
+      "logged": "logged",
+      "planned": "planned",
+      "today": "today",
+      "letter": { "MONDAY": "M", "TUESDAY": "T", "WEDNESDAY": "W", "THURSDAY": "T", "FRIDAY": "F", "SATURDAY": "S", "SUNDAY": "S" }
+    },
+    "hero": {
+      "call": "This week's call",
+      "openCall": "Open the call",
+      "hideCall": "Hide the call",
+      "start": "Your start",
+      "firstWeek": "First week",
+      "weighIn": "Weigh in most mornings.",
+      "firstCall": "First call {day}",
+      "nextCall": "Next call {day}",
+      "inDays": "{count} days",
+      "tomorrow": "Tomorrow",
+      "today": "Today",
+      "notApplied": "Not applied. Last week's plan stays.",
+      "notAppliedShort": "Not applied",
+      "useCall": "Use this call",
+      "yourWeek": "Your week",
+      "train": "Train, and see how it feels.",
+      "callsOff": "Weekly calls are off",
+      "settings": "Settings",
+      "settingsLabel": "Turn on weekly calls in Settings",
+      "monday": {
+        "open": "Open",
+        "yourCall": "your call",
+        "openLabel": "Open your call",
+        "ready": "Your week {week} call is ready.",
+        "readyNoWeek": "Your call is ready.",
+        "one": "One question first.",
+        "other": "{count} questions first."
+      }
+    }
+  },
   "today": {
     "prompt": {
       "failed": "Couldn't send that. Check your connection and try again.",
