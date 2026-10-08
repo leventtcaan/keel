@@ -1029,7 +1029,9 @@ export interface paths {
          *     the engine would wait for its answer this week (found by running it on the data and on each possible answer), at
          *     most question_budget_per_week (question_budget_per_week_anomaly when the photo or waist disagrees with the phase).
          *     No questions, and `answered`, once the week has its call — or once the last call's week overlaps it (the check-in
-         *     day moved). Choice texts: checkIn.choice.<kind>.<choice lowercased>.
+         *     day moved). NOT_FOUND before the first call's day (FirstWeeks.firstCallOn, K-990): the first week, from the day
+         *     onboarding finished, is watched before it is decided on (U8, ADR-077 Ek 2). Choice texts:
+         *     checkIn.choice.<kind>.<choice lowercased>.
          */
         get: operations["getCurrentCheckIn"];
         put?: never;
@@ -1052,8 +1054,8 @@ export interface paths {
         /**
          * Answer the check-in; the engine makes this week's call
          * @description The answers name their week (`weekOf`). Sent again with the same clientId, the stored call comes back (200) and
-         *     the engine does not run twice; answers for a week that is not the current one, a second call this week, or a user
-         *     without a profile yet are 409 CONFLICT. A goal of DECIDE_FOR_ME starts where the phase gate puts the fat estimate,
+         *     the engine does not run twice; answers for a week that is not the current one, a second call this week, a user
+         *     without a profile yet, or answers before the first call's day (K-990) are 409 CONFLICT. A goal of DECIDE_FOR_ME starts where the phase gate puts the fat estimate,
          *     a cut without one. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/decisions route.
          *     Taken: TRAINING and RECOVERY, the questions the engine can wait for — also when the data has changed since they
          *     were asked, so a question shown is never refused —, APPETITE (NORMAL/GONE: asked on a long bulk when GONE would
@@ -1162,11 +1164,13 @@ export interface paths {
         };
         /**
          * This week of the first eight (K-513, ADR-040)
-         * @description The user's own week since the account began (04 §7.5, I1 F2): week 1 has no words ("no comment, no score"), weeks
+         * @description The user's own week since the day onboarding finished (04 §7.5, I1 F2; K-990, ADR-077 Ek 2; an account onboarded
+         *     before that day was kept counts from its first sign-in): week 1 has no words ("no comment, no score"), weeks
          *     2-8 have `contentKey`.title/.body (a version without lifting when no training is planned). Once the user's week
          *     just over is week 5 to 8 (G2 K-63), `risk` lists that week's signals, each with its source — any one is a risk,
          *     none weighed; empty when none, or when the week was paused (a declared state, the ladder's week off). Week 9 is
-         *     open for week 8's risk alone, without words. NOT_FOUND once the flow is over. Health data: CONSENT_REQUIRED
+         *     open for week 8's risk alone, without words. `firstCallOn` until the first call is made: the day the plan, the
+         *     paywall and Today name for it. NOT_FOUND once the flow is over. Health data: CONSENT_REQUIRED
          *     without the HEALTH_DATA consent; CONFLICT without a profile. It never changes a call (U1).
          */
         get: operations["getFirstWeeks"];
@@ -2919,6 +2923,14 @@ export interface components {
             week: number;
             /** @description The week's words in the copy file; absent in week 1 and week 9. */
             contentKey?: string;
+            /**
+             * Format: date
+             * @description The first call's day on the user's calendar (K-990, ADR-077 Ek 2): the first check-in day after the day
+             *     onboarding finished — within seven days of it, never on it (ADR-071 #1); today
+             *     once that day has passed without a call (the check-in is open). Absent once the first call is made. The
+             *     phone shows it and counts the days to it; it never works it out.
+             */
+            firstCallOn?: string;
             risk: components["schemas"]["Reason"][];
         };
         Reason: {
