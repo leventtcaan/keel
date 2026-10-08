@@ -85,7 +85,7 @@
 | `about_wheel_start` | boy 178 cm, kilo 84 kg, yaş 27 (prototip `#ob-about`); boy ve yıl cevap olarak başlar, kilo yalnız tekerlek oynatılınca sayılır (ilk tartı kaydı olur) | onboarding.json | ADR-072 #2 (K-966) |
 | `weight_wheel` | en az 30 kg, adım 0,5 kg / 1 lb; en çok `weigh_in_max_kg` | onboarding.json | ADR-072 #2 (K-966) |
 | `trial_reminder_days_before` | 2 | subscription.json | **mevcut**, ADR-058 Ek 1 |
-| `program_draft_weeks` · `_routine_min_sessions` · `_move_min_share` · `_weekday_min_share` · `_reps_middle_share` · `_rep_span_min` | 4 · 2 · 0,5 · 0,5 · 0,5 · 2 | import.json | ADR-073 Ek 1, D1 (K-957) |
+| `program_draft_weeks` · `_routine_min_sessions` · `_move_min_share` · `_weekday_min_share` · `_reps_middle_share` · `_rep_span_min` | 4 · 2 · 0,5 · 0,5 · 0,5 · 2 | import.json | ADR-073 Ek 2, D1 (K-957) |
 
 ## Kural olmayan sunumlar (yeni kural yazılmaz, mevcut çıktıdan şablon)
 Analiz satırı (çift ilerleme) · efor satırı (RIR geçmişi) · rekor (gerçek set baskınlığı) · kaldırılan toplam kilo · kas haritası payı

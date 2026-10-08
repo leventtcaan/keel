@@ -13,7 +13,7 @@ export const importParams = {
   setsPerSessionMax: param<number>('import_sets_per_session_max'),
   matchSuggestMin: param<number>('import_match_suggest_min'),
   matchSuggestions: param<number>('import_match_suggestions'),
-  /** The program draft (K-957, ADR-073 Ek 1, D1). */
+  /** The program draft (K-957, ADR-073 Ek 2, D1). */
   draft: {
     weeks: param<number>('program_draft_weeks'),
     routineMinSessions: param<number>('program_draft_routine_min_sessions'),

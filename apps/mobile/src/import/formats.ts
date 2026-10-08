@@ -3,7 +3,7 @@
  * here are the ones seen in real exports (arastirma/ham/H13 B2, B3) and nothing else is read — a header not among them is
  * "unknown", never guessed at. Only what a set needs is kept: the move's name as the file has it, warm-up or not, the
  * weight in the file's unit, the reps. Notes, RPE, distance and time stay in the file; the session's name too, unless the
- * program draft asks for it (K-957, ADR-073 Ek 1): then each session carries it as `routine`, for the draft on this phone only.
+ * program draft asks for it (K-957, ADR-073 Ek 2): then each session carries it as `routine`, for the draft on this phone only.
  */
 import { parseCsv } from './csv';
 

@@ -1,5 +1,5 @@
 /**
- * The program draft from another app's export (K-957, ADR-073 #1, Ek 1): the routines of the last weeks become days, with
+ * The program draft from another app's export (K-957, ADR-073 #1, Ek 2): the routines of the last weeks become days, with
  * their moves, sets, the reps seen and their weekday; a move not matched keeps the file's name, to become the user's own
  * move when they confirm. Nothing is sent: the draft is the phone's until the user makes it their program.
  */

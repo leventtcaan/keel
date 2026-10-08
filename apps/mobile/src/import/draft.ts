@@ -1,5 +1,5 @@
 /**
- * A program read from another app's recent sessions (K-957, ADR-073 #1, Ek 1): each routine the user kept doing is a day,
+ * A program read from another app's recent sessions (K-957, ADR-073 #1, Ek 2): each routine the user kept doing is a day,
  * on each weekday it kept to, with the moves done in most of its sessions, how many sets and the reps they fell in. Worked out
  * on the phone from the file it already read (ADR-053 §4); nothing here is sent. The user sees the draft, and only their
  * confirmation makes it their program (PUT /v1/program). A move not mapped to the catalog or an own move keeps the file's

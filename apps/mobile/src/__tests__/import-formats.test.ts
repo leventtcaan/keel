@@ -210,7 +210,7 @@ describe('csv, more edges', () => {
   });
 });
 
-describe('the routine names, for the program draft only (K-957, ADR-073 Ek 1)', () => {
+describe('the routine names, for the program draft only (K-957, ADR-073 Ek 2)', () => {
   test("asked for, each session carries its name in the file: Strong's Workout Name, Hevy's title", () => {
     const strong = readExport(fixture('strong.csv'), { routines: true });
     const hevy = readExport(fixture('hevy.csv'), { routines: true });

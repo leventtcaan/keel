@@ -38,7 +38,7 @@
       "unit": "weeks",
       "tag": "urun",
       "source": "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md#D1",
-      "note": "The program draft (K-957, ADR-073 Ek 1) reads the sessions of this many weeks, ending on the day of the file's last session (not today: an export made a while ago still shows its last program). A month shows a weekly program four times and an alternating one twice; older sessions are not today's program."
+      "note": "The program draft (K-957, ADR-073 Ek 2) reads the sessions of this many weeks, ending on the day of the file's last session (not today: an export made a while ago still shows its last program). A month shows a weekly program four times and an alternating one twice; older sessions are not today's program."
     },
     {
       "key": "program_draft_routine_min_sessions",
