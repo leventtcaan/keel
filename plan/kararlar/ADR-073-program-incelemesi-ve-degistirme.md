@@ -111,26 +111,29 @@ testi: seçenekler salon ekipmanıyla süzülür.
   `OWN` kaydedilir. Sunucu ucu neden değil: ayrıştırıcı ve eşleyici telefonda, sunucuda taslak için rutin adlarının ve eşlenmemiş adların
   gönderilmesi gerekirdi (ADR-053'ün "yalnız eşlenmiş setler" ilkesinden geri adım); bu ADR'nin "Etkilenen" listesi de taslak için uç saymıyor.
 - **Rutin adı yalnız istenince okunur:** `readExport(text, { routines: true })` seansa `routine` ekler (Strong `Workout Name`, Hevy `title`;
-  H13 B2-B3'te doğrulanmış sütunlar). Geçmiş içe aktarmanın okuması değişmez: adı taşımaz, sunucuya giden gövdede yoktur.
+  H13 B2-B3'te doğrulanmış sütunlar; bu "seans adı"nın uygulamadaki rutin/şablon adı olduğu `[doğrulanmadı]`: gerçek dosyada rutinsiz seansa
+  ne yazıldığı görülmedi). Geçmiş içe aktarmanın okuması değişmez: adı taşımaz, sunucuya giden gövdede yoktur. Büyük-küçük harf ve boşlukla
+  ayrılan adlar (rutin ve hareket) tek addır; ilk yazılışı gösterilir.
 - **Kural** (sayılar D1): pencere, dosyanın son seansının günüyle biten `program_draft_weeks` hafta. Adı olan ve pencerede en az
-  `program_draft_routine_min_sessions` kez yapılan rutin bir gündür; fazlaysa en çok yapılan `program_days_max` rutin. Günün hareketleri:
+  `program_draft_routine_min_sessions` kez yapılan rutin programa girer. Hafta günü: rutinin yapıldığı haftaların en az
+  `program_draft_weekday_min_share` payında düştüğü **her** hafta günü bir gündür (aynı ad ve hareketler: haftada iki kez Upper iki gün,
+  full body pazartesi/çarşamba/cuma üç gün); hiçbir gün bu payı tutmazsa rutin tek, günsüz bir gündür. İki gün aynı hafta gününü isterse payı
+  yüksek olan alır, diğeri günsüz kalır (programda bir hafta günü bir kez). Fazlaysa en çok yapılan `program_days_max` gün. Günün hareketleri:
   rutinin seanslarının en az `program_draft_move_min_share` payında çalışma seti olanlar, seanstaki ortalama sıralarıyla. Set: seans başına
   çalışma seti sayısının ortancası (çiftte küçüğü). Tekrar aralığı: çalışma setlerinin ortadaki `program_draft_reps_middle_share` payının
   düştüğü aralık (en hafif ısınma ya da tek kötü set aralığı germez); `program_draft_rep_span_min`'den darsa üstten açılır (görülen alt sınır
-  kalır, ilk seansta yük zıplamaz). Hafta günü: seanslarının en az `program_draft_weekday_min_share` payı aynı gündeyse o gün, eşitlikte yok;
-  iki rutin aynı günü isterse payı yüksek olan alır, diğeri günsüz kalır (programda bir hafta günü bir kez). Isınma (Hevy `warmup`) sayılmaz;
+  kalır, ilk seansta yük zıplamaz). Isınma (Hevy `warmup`) sayılmaz;
   Strong ısınmayı işaretlemez (H13 B2), setleri çalışma sayılır: kullanıcı taslakta düzeltir. Sınırlar sözleşmenin `OwnProgram`'ı
   (`program_days_max`, `program_day_moves_max`, `program_move_sets_max`, `program_day_name_max_chars`, tekrar `set_max_reps`): taslak her
   zaman kaydedilebilir.
 - **Eşlenmemiş hareket:** eşleme ekranında bir harekete bağlanmamış ad taslakta adıyla (`ownName`) gelir; onayda OwnMoveForm ile (motorun
   soruları kullanıcıya, U1) kendi hareketi olur, programa onun kimliğiyle girer (`ownProgram(days, own)`: kimliği olmayan ad varken gövde yok).
-  Taslak anında oluşturulmaz: reddedilen taslak kendi hareketi de bırakmaz.
+  Taslak anında oluşturulmaz: reddedilen taslak kendi hareketi de bırakmaz. Kullanıcının eşlemede "dışarıda bırak" dediği ad taslağa da
+  girmez (ayrı küme olarak verilir; eşleme haritasında "seçilmedi" ile aynı `null`).
 - **Taslak çıkmazsa** (adlı seans yok ya da pencerede hiçbir rutin yeterince tekrarlanmamış): `{ kind: 'noRoutine' }`; ekran (K-968) elle
   girişe ("Type it in") yönlendirir.
-- **Açık (Levent):** onaylanan taslağın kendi hareketi programa girebilmeli; bugün `PUT /v1/program` yalnız katalog hareketi alıyor (ADR-035 #3,
-  `CustomExerciseTests.aProgramIsMadeOfCatalogMovesOnly`). Öneri: kullanıcının kendi programında (`OWN`) kendi hareketi kabul edilir, motor ona
-  kural uygulamaz (hedef yok, inceleme saymaz, değiştirme seçeneği yok; kod bugün de katalogda olmayanı atlıyor), kaynaksız kural doğmaz (U14).
-  Testin beklentisini değiştirmek onay ister (K1); onaya kadar sunucu değişmedi.
+- **Kendi hareketi programda** (Levent KABUL, 2026-10-08): `PUT /v1/program` hesabın kendi hareketini alır, başkasınınkini reddeder; motor
+  ona kural uygulamaz. Ayrıntı ADR-035 Ek 1.
 
 ### D1 · Taslak sayıları (hepsi `urun`: araştırma kaynağı yok, ürün sezgisi; kullanıcı taslağı onaylar ve düzeltir)
 | Parametre (`import.json`) | Değer | Neden |
@@ -138,6 +141,6 @@ testi: seçenekler salon ekipmanıyla süzülür.
 | `program_draft_weeks` | 4 | Bir ay: haftalık program 4 kez, dönüşümlü (A/B) program ikişer kez görünür; daha eskisi bugünkü program değil |
 | `program_draft_routine_min_sessions` | 2 | Bir kez yapılan rutin (tek seferlik "Arms", deneme) program günü değil; iki kez tekrar |
 | `program_draft_move_min_share` | 0,5 | Seansların yarısında yapılan hareket rutinin parçası; daha azı tek seferlik değiştirme |
-| `program_draft_weekday_min_share` | 0,5 | Seansların yarısı aynı gündeyse düzen var; azı rastgele, gün kullanıcıya bırakılır |
+| `program_draft_weekday_min_share` | 0,5 | Yapıldığı haftaların yarısında o gündeyse düzen var, o gün bir gündür (birden çok gün olabilir); azı rastgele, gün kullanıcıya bırakılır |
 | `program_draft_reps_middle_share` | 0,5 | Ortadaki yarı (çeyrekler arası): Strong'un işaretsiz ısınması ve tek tük set aralığı germez |
 | `program_draft_rep_span_min` | 2 | Çift ilerlemenin tırmanacak yeri olsun (K-109); hep 8 yapan 8-10 alır |

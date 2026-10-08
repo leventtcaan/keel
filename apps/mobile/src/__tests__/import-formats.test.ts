@@ -219,8 +219,8 @@ describe('the routine names, for the program draft only (K-957, ADR-073 Ek 1)', 
     expect(hevy.kind === 'read' && hevy.sessions.map((s) => s.routine)).toEqual(['Push', 'Push']);
   });
 
-  test('not asked for, the read is the same as before: no session has a name', () => {
-    const read = readExport(fixture('hevy.csv'));
+  test.each(['strong.csv', 'hevy.csv'])('not asked for, the read of %s is the same as before: no session has a name', (file) => {
+    const read = readExport(fixture(file));
 
     expect(read.kind === 'read' && read.sessions.every((s) => !('routine' in s))).toBe(true);
   });

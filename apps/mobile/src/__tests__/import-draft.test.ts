@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { draftProgram, ownProgram, type ProgramDraft } from '@/import/draft';
+import { type DraftDay, draftProgram, ownProgram, type ProgramDraft } from '@/import/draft';
 import { type FileSession, readExport } from '@/import/formats';
 import { importParams } from '@/import/params';
 import { workoutParams } from '@/train/params';
@@ -20,6 +20,7 @@ function sessionsOf(text: string): FileSession[] {
 }
 
 const days = (draft: ProgramDraft) => (draft.kind === 'draft' ? draft.days : []);
+const nothingLeftOut = new Set<string>();
 
 /** A session of `routine` on a day, each move's working sets as their reps. */
 function session(routine: string, y: number, m: number, d: number, moves: [string, number[]][]): FileSession {
@@ -39,7 +40,7 @@ describe('from a Strong export', () => {
   ]);
 
   test('each routine of the last weeks is a day: its moves in order, sets, the reps seen, its weekday', () => {
-    expect(draftProgram(sessionsOf(fixture('strong-program.csv')), choices)).toEqual({
+    expect(draftProgram(sessionsOf(fixture('strong-program.csv')), choices, nothingLeftOut)).toEqual({
       kind: 'draft',
       days: [
         {
@@ -65,18 +66,25 @@ describe('from a Strong export', () => {
     });
   });
 
-  test('a routine done once, a move done once and what is older than the window are not in it', () => {
-    const draft = JSON.stringify(draftProgram(sessionsOf(fixture('strong-program.csv')), choices));
+  test('a routine done once, a move done once and a routine older than the window are not in it', () => {
+    const draft = JSON.stringify(draftProgram(sessionsOf(fixture('strong-program.csv')), choices, nothingLeftOut));
 
     expect(draft).not.toContain('Arms');
     expect(draft).not.toContain('incline_dumbbell_press');
+    expect(draft).not.toContain('Full Body'); // done twice, but five and six weeks before the last session
     expect(draft).not.toContain('overhead_press');
   });
 
-  test('a history without routine names gives no draft, and says so', () => {
-    const unnamed = fixture('strong-program.csv').replace(/"(Upper|Lower|Arms)"/g, '""');
+  test('a name the user chose to leave out is left out of the draft too, never made an own move', () => {
+    const draft = JSON.stringify(draftProgram(sessionsOf(fixture('strong-program.csv')), choices, new Set(['Landmine Press'])));
 
-    expect(draftProgram(sessionsOf(unnamed), choices)).toEqual({ kind: 'noRoutine' });
+    expect(draft).not.toContain('Landmine');
+  });
+
+  test('a history without routine names gives no draft, and says so', () => {
+    const unnamed = fixture('strong-program.csv').replace(/"(Upper|Lower|Arms|Full Body)"/g, '""');
+
+    expect(draftProgram(sessionsOf(unnamed), choices, nothingLeftOut)).toEqual({ kind: 'noRoutine' });
   });
 });
 
@@ -91,7 +99,7 @@ describe('from a Hevy export', () => {
   ]);
 
   test('warm-ups are not sets of the program; a day on its weekday two times in three keeps it', () => {
-    expect(days(draftProgram(sessionsOf(fixture('hevy-program.csv')), choices))).toEqual([
+    expect(days(draftProgram(sessionsOf(fixture('hevy-program.csv')), choices, nothingLeftOut))).toEqual([
       {
         name: 'Push',
         weekday: 'MONDAY',
@@ -122,11 +130,15 @@ describe('from a Hevy export', () => {
 
 describe('the rules', () => {
   const none = new Map<string, string | null>();
+  const draftOf = (sessions: FileSession[]) => days(draftProgram(sessions, none, nothingLeftOut));
+  /** The routine on these weekdays (0 Monday … 5 Saturday) of the four weeks from Monday 3 March 2025. */
+  const weekly = (routine: string, weekdays: number[], move: string) =>
+    [0, 1, 2, 3].flatMap((week) => weekdays.map((weekday) => session(routine, 2025, 3, 3 + week * 7 + weekday, [[move, [8, 8]]])));
 
   test('names that never repeat are no routine', () => {
     const sessions = [session('Mon', 2025, 3, 3, [['Squat', [5]]]), session('Tue', 2025, 3, 4, [['Squat', [5]]])];
 
-    expect(draftProgram(sessions, none)).toEqual({ kind: 'noRoutine' });
+    expect(draftProgram(sessions, none, nothingLeftOut)).toEqual({ kind: 'noRoutine' });
   });
 
   test('a move in fewer than half of its routine sessions is left out; the sets are the lower middle count', () => {
@@ -137,30 +149,68 @@ describe('the rules', () => {
       session('A', 2025, 3, 24, [['Squat', [5, 5, 5, 5, 5]]]),
     ];
 
-    expect(days(draftProgram(sessions, none))[0].moves).toEqual([{ ownName: 'Squat', sets: 3, reps: { min: 5, max: 5 + importParams.draft.repSpanMin } }]);
+    expect(days(draftProgram(sessions, none, nothingLeftOut))[0].moves).toEqual([{ ownName: 'Squat', sets: 3, reps: { min: 5, max: 5 + importParams.draft.repSpanMin } }]);
   });
 
-  test('a weekday tie leaves the day without one; two days wanting one weekday, the larger share keeps it', () => {
-    const sessions = [
+  test('a routine on a weekday in at least half the weeks it was done is a day there; on fewer, a day without one', () => {
+    const twoInFive = [
+      session('A', 2025, 2, 28, [['Squat', [5]]]), // Friday
       session('A', 2025, 3, 3, [['Squat', [5]]]), // Monday
-      session('A', 2025, 3, 10, [['Squat', [5]]]), // Monday
+      session('A', 2025, 3, 11, [['Squat', [5]]]), // Tuesday
       session('A', 2025, 3, 17, [['Squat', [5]]]), // Monday
-      session('B', 2025, 3, 4, [['Press', [8]]]), // Tuesday
-      session('B', 2025, 3, 11, [['Press', [8]]]), // Tuesday
-      session('B', 2025, 3, 19, [['Press', [8]]]), // Wednesday
-      session('B', 2025, 3, 26, [['Press', [8]]]), // Wednesday
-      session('C', 2025, 3, 10, [['Row', [10]]]), // Monday
-      session('C', 2025, 3, 24, [['Row', [10]]]), // Monday
-      session('C', 2025, 3, 28, [['Row', [10]]]), // Friday
+      session('A', 2025, 3, 26, [['Squat', [5]]]), // Wednesday
     ];
-    const draft = days(draftProgram(sessions, none));
 
-    // A is on Monday every time, C two times in three: A keeps it. Days without one follow, in the order first done.
-    expect(draft.map((day) => [day.name, day.weekday])).toEqual([
+    expect(draftOf(twoInFive).map((day) => [day.name, day.weekday])).toEqual([['A', undefined]]);
+    expect(draftOf(twoInFive.slice(1)).map((day) => [day.name, day.weekday])).toEqual([['A', 'MONDAY']]); // two weeks in four
+  });
+
+  test('a routine done on several weekdays is a day on each: upper/lower 4 days, full body 3, push/pull/legs 6', () => {
+    const named = (draft: DraftDay[]) => draft.map((day) => [day.name, day.weekday]);
+
+    expect(named(draftOf([...weekly('Upper', [0, 3], 'Bench'), ...weekly('Lower', [1, 4], 'Squat')]))).toEqual([
+      ['Upper', 'MONDAY'], ['Lower', 'TUESDAY'], ['Upper', 'THURSDAY'], ['Lower', 'FRIDAY'],
+    ]);
+    expect(named(draftOf(weekly('Full Body', [0, 2, 4], 'Squat')))).toEqual([
+      ['Full Body', 'MONDAY'], ['Full Body', 'WEDNESDAY'], ['Full Body', 'FRIDAY'],
+    ]);
+    const ppl = draftOf([...weekly('Push', [0, 3], 'Bench'), ...weekly('Pull', [1, 4], 'Row'), ...weekly('Legs', [2, 5], 'Squat')]);
+    expect(named(ppl)).toEqual([
+      ['Push', 'MONDAY'], ['Pull', 'TUESDAY'], ['Legs', 'WEDNESDAY'], ['Push', 'THURSDAY'], ['Pull', 'FRIDAY'], ['Legs', 'SATURDAY'],
+    ]);
+    expect(ppl[0].moves).toEqual(ppl[3].moves);
+  });
+
+  test('two days wanting one weekday: the larger share keeps it, the other stays a day without one', () => {
+    const sessions = [
+      ...[3, 10, 17, 24].map((d) => session('A', 2025, 3, d, [['Squat', [5]]])), // Monday every week
+      session('C', 2025, 3, 4, [['Row', [10]]]), // Tuesday
+      session('C', 2025, 3, 10, [['Row', [10]]]), // Monday
+      session('C', 2025, 3, 18, [['Row', [10]]]), // Tuesday
+      session('C', 2025, 3, 24, [['Row', [10]]]), // Monday
+    ];
+
+    expect(draftOf(sessions).map((day) => [day.name, day.weekday])).toEqual([
       ['A', 'MONDAY'],
-      ['B', undefined],
+      ['C', 'TUESDAY'],
       ['C', undefined],
     ]);
+  });
+
+  test('moves come in the order they were usually done, not the order first seen', () => {
+    const sessions = [
+      session('A', 2025, 3, 3, [['Row', [10]], ['Squat', [5]]]),
+      session('A', 2025, 3, 10, [['Squat', [5]], ['Row', [10]]]),
+      session('A', 2025, 3, 17, [['Squat', [5]], ['Row', [10]]]),
+    ];
+
+    expect(draftOf(sessions)[0].moves.map((move) => ('ownName' in move ? move.ownName : move.exerciseId))).toEqual(['Squat', 'Row']);
+  });
+
+  test('a name spelt with other case or spaces is the same routine and the same move, shown as first written', () => {
+    const sessions = [session('Push Day', 2025, 3, 3, [['Cable Fly', [12]]]), session(' push  day', 2025, 3, 10, [['cable  fly', [12]]])];
+
+    expect(draftOf(sessions)).toEqual([{ name: 'Push Day', weekday: 'MONDAY', moves: [{ ownName: 'Cable Fly', sets: 1, reps: { min: 12, max: 14 } }] }]);
   });
 
   test('the draft is always one the contract takes: days, moves, sets, reps and the name within OwnProgram', () => {
@@ -174,7 +224,7 @@ describe('the rules', () => {
       session(long, 2025, 3, 17, many),
       ...routines.flatMap((name, i) => [session(name, 2025, 3, 4 + (i % 3), [['Curl', sets]]), session(name, 2025, 3, 18 + (i % 3), [['Curl', sets]])]),
     ];
-    const draft = days(draftProgram(sessions, none));
+    const draft = days(draftProgram(sessions, none, nothingLeftOut));
 
     expect(draft).toHaveLength(workoutParams.programDaysMax);
     expect(draft[0].name).toBe(long.slice(0, workoutParams.programDayNameMaxChars).trim());
@@ -190,7 +240,7 @@ describe('confirming it', () => {
     ['Bent Over Row (Barbell)', 'barbell_row'],
     ['Squat (Barbell)', 'squat'],
     ['Romanian Deadlift (Barbell)', 'romanian_deadlift'],
-  ])));
+  ]), nothingLeftOut));
 
   test('a move named only by the file goes in as the own move made for it', () => {
     const own = new Map([['Landmine Press', 'custom:7b0c5a8e-3f4e-4b1a-9d2c-1e2f3a4b5c6d']]);

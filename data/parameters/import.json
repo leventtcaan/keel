@@ -62,7 +62,7 @@
       "unit": "ratio",
       "tag": "urun",
       "source": "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md#D1",
-      "note": "A day gets the weekday at least this share of its sessions fell on (K-957); a tie at the top, or less, leaves the day without one and the user places it. Two days wanting one weekday: the larger share keeps it."
+      "note": "A routine is a day on each weekday it fell on in at least this share of the weeks it was done (K-957): Upper on Monday and Thursday is two days. On no such weekday it is one day without one, and the user places it. Two days wanting one weekday: the larger share keeps it, the other stays without one."
     },
     {
       "key": "program_draft_reps_middle_share",
