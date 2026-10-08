@@ -60,6 +60,7 @@ const mockServices = {
   opens: { previous: async () => null }, // Today counts its open (K-521)
   // The gate screen (K-706): it asks the gate when not known; the store is not in this build. Its account section counts.
   gate: { refresh: async () => {} },
+  planPreviews: { current: () => null }, // no plan just shown: the gate met on opening the app (K-967)
   purchases: { available: false },
   pendingCount: async () => 0,
 };

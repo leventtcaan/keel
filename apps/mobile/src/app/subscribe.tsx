@@ -14,10 +14,10 @@ import { tokens } from '@/theme/tokens';
  * The gate after onboarding (K-706, ADR-058 › 107): an account that never subscribed sees the plans, with no way to close them.
  * Its account stays reachable — export, delete (App Review 5.1.1(v): deletion in the app, without paying), sign out. Once the
  * server sees a purchase or a restore the gate asks again and the root layout opens the tabs. Not known yet (nothing kept on
- * this phone): it asks, and waits.
+ * this phone): it asks, and waits. Right after onboarding it opens on the plan just shown (#paywall, ADR-072 #7, K-967).
  */
 export default function SubscribeScreen() {
-  const { gate } = useAppServices();
+  const { gate, planPreviews } = useAppServices();
   const state = useSubscriptionGate();
   const { color } = useTheme();
   const [unanswered, setUnanswered] = useState(false);
@@ -28,6 +28,11 @@ export default function SubscribeScreen() {
   useEffect(() => {
     if (state === 'unknown') void ask();
   }, [ask, state]);
+  // Subscribed: the plan kept for this screen is let go, then the gate asks again (the tabs open).
+  const active = () => {
+    planPreviews.forget();
+    void gate.refresh();
+  };
   const again = () => {
     setUnanswered(false);
     void ask();
@@ -44,7 +49,7 @@ export default function SubscribeScreen() {
   }
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
-      <Paywall required onActive={() => void gate.refresh()} />
+      <Paywall required onActive={active} preview={planPreviews.current()} />
       <ScrollView style={styles.account} contentContainerStyle={styles.accountBody}>
         <AccountSection />
       </ScrollView>

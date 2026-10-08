@@ -114,6 +114,17 @@ const mockAnswer = async (route: string, init: Init): Promise<unknown> => {
     return ok(made);
   }
   if (route === '/v1/program/review/apply') return ok((mockServerProgram = APPLIED));
+  // "Build it for me" after all: a program built for the days, over the one brought in.
+  if (route === '/v1/program/generate') {
+    const { trainingDays } = init.body as Schemas['ProgramRequest'];
+    return ok((mockServerProgram = {
+      id: 'g1',
+      source: 'GENERATED',
+      days: trainingDays.map((weekday, i) => ({
+        id: `g${i}`, nameKey: 'full_body_a', weekday, exercises: [{ exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 2 }],
+      })),
+    }));
+  }
   if (route === '/v1/program/review') return ok(mockReview);
   // The starting weights onto the program the server holds (K-967).
   if (route === '/v1/program/starting-weights') return ok(mockServerProgram);
@@ -168,6 +179,8 @@ const mockServices = {
   withdrawHealthData: jest.fn(async () => {}),
   consents: { remember: jest.fn(async () => {}), granted: jest.fn(async () => false) },
   // The plan's Monday switch reads them: one object, as useSyncExternalStore compares by identity.
+  // The plan hands itself to the paywall after it (K-967).
+  planPreviews: { keep: jest.fn() },
   reminders: { current: () => mockReminderSettings, subscribe: () => () => {}, turnOn: jest.fn(), turnOff: jest.fn() },
   units: { current: () => 'METRIC', keepOnPhone: jest.fn(async () => {}) },
   importFile: { pick: mockPick },
@@ -569,6 +582,10 @@ describe('after the program', () => {
     await press(t('onboarding.weights.skip'));
     expect(mockProfile.store).toHaveBeenCalledWith(expect.objectContaining({ programChoice: 'BUILD_ONE_FOR_ME' }));
     expect(mockApi.POST).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'] } });
+    // The paywall after the plan speaks of a program built for the days, not of the one brought in.
+    await press(t('onboarding.preparing.see'));
+    await press(t('onboarding.continue'));
+    expect(mockServices.planPreviews.keep).toHaveBeenCalledWith(expect.objectContaining({ own: false }));
   });
 
   test('the program brought in went missing on the server: said, and brought in again — the answers saved again after it', async () => {

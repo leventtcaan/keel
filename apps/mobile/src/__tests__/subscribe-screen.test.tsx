@@ -9,7 +9,10 @@ import SubscribeScreen from '@/app/subscribe';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import type { GateState } from '@/subscription/gate';
+import type { PlanPreview } from '@/subscription/planPreview';
 import type { Plan, SubscriptionStore } from '@/subscription/store';
+import { paywallTimeline } from '@/subscription/words';
+import { weekdayDate } from '@/today/today';
 import { ThemeProvider } from '@/theme/theme';
 
 type Subscription = components['schemas']['Subscription'];
@@ -46,7 +49,10 @@ const mockServices = {
   signOut: jest.fn(async () => {}),
   pendingCount: jest.fn(async () => 0),
   photos: { photos: jest.fn(async () => []) },
+  // The plan just shown at the end of onboarding (K-967); none when the gate is met later.
+  planPreviews: { current: () => mockPreview, keep: () => {}, forget: jest.fn() },
 };
+let mockPreview: PlanPreview | null = null;
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useSubscriptionGate: () => mockGateState,
@@ -66,6 +72,7 @@ beforeEach(() => {
   mockAnswers = [ok(NONE)];
   mockGateState = 'required';
   mockAnswered = true;
+  mockPreview = null;
 });
 
 async function show() {
@@ -163,4 +170,86 @@ test('not known, and no answer: says so, and asks again on request — the gate 
   mockAnswered = true;
   await press(t('subscription.tryAgain'));
   expect(mockGate.refresh).toHaveBeenCalledTimes(2);
+});
+
+describe('#paywall after the plan (ADR-072 #7)', () => {
+  // A Tuesday at noon, the phone's clock (review): the first call (Mon 19), the 7-day trial's reminder (Sun 18) and its
+  // charge (Tue 20) fall on three different days, whatever day the tests run.
+  beforeEach(() => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 13, 12, 0), advanceTimers: true });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+  const FIRST_CALL = '2026-10-19';
+  const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: FIRST_CALL, checkInDay: 'MONDAY', hasCardio: true };
+
+  test('the plan just shown, in brief: how many days, the first workout (the first call is on the timeline, once)', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    expect(screen.getByText(t('subscription.preview.program', { count: 3 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.preview.firstWorkout', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(1);
+  });
+
+  test('three values: the program for the days (or the own program, tuned), every set\'s weight and reps, the call on its day', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    for (const key of ['subscription.values.built', 'subscription.values.sets']) expect(screen.getByText(t(key))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    await screen.unmount();
+    mockPreview = { ...PREVIEW, own: true };
+    await show();
+    expect(screen.getByText(t('subscription.values.own'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('subscription.values.built'))).toBeNull();
+  });
+
+  test('the call on the profile\'s own check-in day', async () => {
+    mockPreview = { ...PREVIEW, checkInDay: 'SUNDAY' };
+    await show();
+    expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.SUNDAY') }))).toBeOnTheScreen();
+  });
+
+  test('the timeline with the store\'s trial: today, the first call, the reminder, the charge, each on its day', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    const timeline = paywallTimeline(PLANS[0], { today: '2026-10-13', firstCall: FIRST_CALL });
+    expect(timeline.map((row) => row.when)).toEqual(['Today', 'Sun, Oct 18', 'Mon, Oct 19', 'Tue, Oct 20']);
+    for (const row of timeline) {
+      expect(screen.getAllByText(row.when).length).toBeGreaterThan(0);
+      expect(screen.getByText(row.words)).toBeOnTheScreen();
+    }
+  });
+
+  test('met later, with no plan just shown: no preview, no first call on the timeline, the call named without a day', async () => {
+    await show();
+    expect(screen.queryByText(t('subscription.preview.program', { count: 3 }))).toBeNull();
+    expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
+    expect(screen.getByText(t('subscription.values.weeklyCall'))).toBeOnTheScreen();
+  });
+
+  test('without the health data consent there are no calls: none on the timeline, and another value in the call\'s place', async () => {
+    mockPreview = { ...PREVIEW, firstCall: null };
+    await show();
+    expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
+    expect(screen.queryByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeNull();
+    expect(screen.getByText(t('subscription.values.cardio'))).toBeOnTheScreen();
+  });
+
+  test('without the consent and without cardio in the program (very active work): no cardio promised, a value every program has', async () => {
+    mockPreview = { ...PREVIEW, firstCall: null, hasCardio: false };
+    await show();
+    expect(screen.queryByText(t('subscription.values.cardio'))).toBeNull();
+    expect(screen.getByText(t('subscription.values.swap'))).toBeOnTheScreen();
+  });
+
+  test('bought: the plan kept for the paywall is let go before the tabs open', async () => {
+    mockPreview = PREVIEW;
+    mockAnswers = [ok(NONE), ok(TRIAL)];
+    await show();
+    await press(t('subscription.startTrial'));
+    await press(t('subscription.continue'));
+    expect(mockServices.planPreviews.forget).toHaveBeenCalledTimes(1);
+    expect(mockServices.planPreviews.forget.mock.invocationCallOrder[0]).toBeLessThan(mockGate.refresh.mock.invocationCallOrder[0]);
+  });
 });

@@ -235,6 +235,15 @@ test('the days the app was opened go with the session: forgotten at sign-out (K-
   expect(kv.items.has('keel.opens')).toBe(false);
 });
 
+test('the plan just shown goes with the session (K-967): the next account\'s paywall names no first call of this one', async () => {
+  const { services } = await setup(server(404), memoryStorage(), memoryKv());
+  await services.session.signIn(SESSION);
+  services.planPreviews.keep({ own: false, days: 3, firstWorkout: 'MONDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY', hasCardio: true });
+  await services.signOut();
+  await settle();
+  expect(services.planPreviews.current()).toBeNull();
+});
+
 test("the App Store's account goes with the session (K-702): the next person's purchases are not this account's", async () => {
   const forgets: string[] = [];
   const store = { ...storeUnavailable, available: true, forget: async () => void forgets.push('forget') };

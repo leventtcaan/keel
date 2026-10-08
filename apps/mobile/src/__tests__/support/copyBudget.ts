@@ -14,6 +14,8 @@ export type ScreenBudget = {
   file: string | null;
   keys: BudgetKey[];
   notFirstView: string[];
+  /** Words no copy key holds — a date the phone writes ("Mon, Oct 19") — counted as listed. */
+  dynamic?: { what: string; words: number }[];
 };
 
 export function wordsOf(text: string): number {
@@ -29,9 +31,9 @@ export function lookup(copy: Copy, key: string): string | undefined {
 }
 
 /** What breaks a screen's budget: a key that is not a text in the copy, or more words than allowed. */
-export function budgetProblems(copy: Copy, screen: Pick<ScreenBudget, 'screen' | 'budget' | 'keys'>): string[] {
+export function budgetProblems(copy: Copy, screen: Pick<ScreenBudget, 'screen' | 'budget' | 'keys' | 'dynamic'>): string[] {
   const problems: string[] = [];
-  let words = 0;
+  let words = (screen.dynamic ?? []).reduce((sum, entry) => sum + entry.words, 0);
   for (const entry of screen.keys) {
     const counts: number[] = [];
     for (const key of typeof entry === 'string' ? [entry] : entry) {
