@@ -1,27 +1,31 @@
-# M9a Part 2 — devam (8 Eki, kullanım sınırında kesildi)
+# M9a Part 2 — devam (8 Eki akşam, Levent'in isteğiyle sağlıklı noktada durdu)
 
-Önce: `oturum-baslat` + DURUM › M9a ilerleme › Part 2 tablosu. Çelişkide git doğrudur (`gh pr list --state open`).
+Önce: `oturum-baslat` + DURUM › M9a ilerleme. Çelişkide git doğrudur (`gh pr list --state open`).
 
-## Açık PR'lar (hiçbiri birleştirilmedi; birleştirmeden önce dal güncel main'de + CI yeşil — `strict: false`, `gh pr update-branch N` sonra `--auto --squash`)
-- **#472 K-964** (V41): bitti, auto-merge açık (8 Eki) → birleştiyse backlog `done`.
-- **#474 / #475 K-967** (B1 / B2, B2 #474'e yığılı): inceleme bulguları ajana gönderildi (öldür-devam işareti + testler a-f, paywall ≤70 kelime, ay sonu ücret tarihi, rızasız 3. satır, Monday yalnız pazartesi, küçükler). Bitince kısa yeniden inceleme → birleştir; sonra B2'yi main'e taşı.
-- **#473 / #477 K-968** (+ 3. PR "Type it in" düzenleyicisi `mobile/431-type-it-in` yapılıyordu): #473/#477 incelemesi koşuyordu — sonucu yoksa yeniden başlat (`scratchpad` brifleri kayboldu: ortak brif ve inceleme brifi için bu dosyanın sonuna bak).
-  K-967 ile dikiş: `draft.ownProgram` doluysa hazırlık `generate` çağırmaz, yalnız profil + başlangıç ağırlıkları.
-- **K-989 #478** (`GET /v1/targets/starting`, salt okuma, `firstPlan` ile aynı sayı; `observationDays` erkek 14 / kadın 28 → metin '14' sabit olamaz): incelenmedi → inceleme ajanı + `ContractTests` tek sayı listesine `StartingTarget.targetKcal` eklendi (hedef, U5 izinli; K1 onayı agent'ta, gerekçe PR'da) + ADR-072 Ek (teknik). Sonra K-967'ye kalori satırı. Sonra K-967 plan ekranına kalori satırı + "14 gün" satırı.
+## Birleşenler (8 Eki)
+K-956 #462 (V39) · K-957 #460 · K-959 #464 (V40) · K-964 #472 (V41) · K-965 #469 · K-966 #461 #463 · K-967 B1 #474 · K-968 #473 #477 ·
+K-985 #470 · K-987 (651dd851) · K-989 #478 · #481 (ob-type bütçe satırı). Sıradaki göç V42.
 
-## K-968 son durum (8 Eki)
-#473 → sonra #477 ve #479 ("Type it in", `src/train/ProgramEditor.tsx`, K-970 yeniden kullanır), üçü #473 dalına yığılı; inceleme düzeltmeleri yapıldı, CI yeşil.
-#479 incelenmedi. K-967 entegrasyonu (kendi dalında generate yok, ağırlık adımı programdaki hareketler, plan'da kendi hareket adları, 9 adım) ikinci birleşen PR'da.
-Levent'e: elle girilen harekette başlangıç set sayısı 3 (`program_new_move_sets`, urun).
+## Açık
+- **#475 K-967 B2 (paywall):** inceleme temiz, CI yeşil, auto-merge açık. Birleştiyse K-967 `done`.
+- **#479 K-968 "Type it in" düzenleyicisi:** iki inceleme düzeltildi, CI yeşil (303af97f). **Levent'in prototip onayını bekliyor** (`#ob-type`, artifact).
+  Onay gelince: `gh pr update-branch 479` → `--auto --squash` → K-968 `done`. Prototip tur 2'de "Type it in" tek boş günle başlıyor; app de öyle.
+- **Prototip tur 2 (ajan çalışıyordu):** `prototip/yeni-yuz.html` ana checkout'ta **commitlenmemiş değişiklik** olabilir → `git status`; doluysa
+  `node` sözdizimi + `cd apps/mobile && npx jest src/__tests__/copy-budget.test.ts` → commit → artifact'i yeniden yayımla (RzN9fM7BLhDrHjUMntmkXK) →
+  Levent'e "bak" de. `prototip/kullanici-testi.md`'ye "Tur 2" bölümü ekleniyordu. Yerel önizleme: `.claude/launch.json` "prototype" (8791, scratchpad/proto).
+- **Levent'e:** #479 için `#ob-type` onayı.
 
-## Yeni iş (henüz kart yok)
-- **İlk karar tarihi sunucuda** (K-967 incelemesi madde 4): sunucu ilk haftayı hesap açılışından sayıyor, telefon onboarding bitişinden; "current check-in" hemen sunuluyor. Sunucu ilk karar tarihini göndersin (K-989 sözleşmesiyle), ilk hafta onboarding bitişinden başlasın, o tarihe kadar check-in tutulsun. Kart aç (K-990).
+## Kalan Part 2 işleri (kart var)
+K-986 rıza ikinci yürüyüş · K-990 ilk karar tarihi sunucudan (K-989 yanıtına ekle) · K-991 sabit tekrar 5×5 (Levent 8 Eki) · K-988 kilo değişimi (Part 3) ·
+K-983 Levent ASC'yi yapınca sandbox. Sonra "Part 2 ÇIKIŞ" + Part 3 prompt'u (Part 3 görevlerine `prototip/kullanici-testi.md` notları girer).
 
-## Kalan Part 2 sonu
-K-986 (rıza ikinci yürüyüş) · K-983 sandbox (Levent ASC'yi yapınca) · backlog `done` + sync · DURUM "Part 2 ÇIKIŞ" · Part 3 prompt'u (K-988 Part 3'te; K-970 "Type it in" düzenleyicisini yeniden kullanır).
+## Bu oturumun kararları (ADR/dosyada)
+ADR-070 Ek 1, ADR-077 Ek 1 KABUL · ADR-035 Ek 1 (OWN programda kendi hareketi) · ADR-072 Ek 1 (`/v1/targets/starting`) · ADR-073 Ek 1-3 · ADR-074 Ek 1
+(HIIT sayılır, koçun varsayılanına dön) · ADR-075 Ek 2 (rekor = baskın olmayan set) · şablonlar incelemeye uyar, 1 gün = 6 bileşik × 4 (K-985) ·
+yeni hareket 3 set (R6) · bilinmeyen ekipman süzülmez · "Type it in" ayrı adım sayılmaz (≤12 ekran).
 
-## Kurallar (bu oturumda öğrenilen)
-- Göçlü PR'lar sırayla: V41 (#472) sıradaki; Flyway outOfOrder kapalı, numara boşluksuz.
-- İnceleme ajanı ortak checkout'ta asla `git checkout` yapmaz (bir kez yaptı, test commit'i PR'sız main'e düştü). Doküman push'undan önce `HEAD == origin/main` kontrolü.
-- Üretilen programlar artık inceleme önerisi almaz (K-985): öneri uygulayan testler kendi programını ya da 6 günü kullanır, öneriyi türüyle seçer.
-- Her uygulayıcı ajana: TDD, sözleşme ayrı commit + schema.ts, DB testleri yalnız CI, AI imzası yok, birleştirme yok; her PR'a inceleme ajanı.
+## Dersler
+- `strict: false`: birleştirmeden önce `gh pr update-branch N` (CI birleşik halde koşsun).
+- Prototip, `copy-budget.test.ts`'in girdisi: ekran ekleyen prototip değişikliği önce `word-budgets.json` satırıyla.
+- İnceleme ajanı ana checkout'ta checkout yapmaz; doküman push'undan önce `HEAD == origin/main`.
+- Kullanıcı gözüyle yürüyüş (persona) mekanik akış testinin yakalamadığını yakalar; UI işinde her prototip turundan sonra.

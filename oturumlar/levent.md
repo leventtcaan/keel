@@ -204,3 +204,10 @@
 - takıldım: paralel ajanlar makineyi load 400'e çıkardı (jest zaman aşımları, yük düşünce yeşil); üç PR aynı göç numarasını (V35) istedi → sıra V35-V38; tipli rotalar yeni ekranda yerelde eskidi (yeniden üretildi)
 - sıradaki: M9a Part 2 · Sunucu + onboarding (`YENI-YUZ-kod.md` › Part 2 prompt'u); başta Levent'e 4 soru + K-983
 - AI: bütün kod, test, inceleme ve ADR ekleri agent (ana oturum + 8 uygulayıcı + 11 inceleme alt ajanı); Levent bu part'ta müdahale etmedi
+
+## 2026-10-08 · M9a Part 2 (Sunucu + onboarding) — toplu mod, yarıda (Levent'in isteğiyle durdu)
+- yaptım: 12 PR birleşti (#460-#478, #481): program incelemesi uçları (V39), içe aktarmadan taslak, kardiyo (V40), bugünü/hareketi değiştir (V41), ilerleme özetleri, onboarding A ve B1, kendi programı dalı, şablonlar incelemeye uyar, başlangıç kalorisi ucu; her PR'a 1-3 inceleme turu; iki kullanıcı-gözü yürüyüşü (6 persona) ve prototip düzeltmeleri (`prototip/kullanici-testi.md`)
+- karar: Levent — vurgu #007684, ADR-077 Ek 1, OWN programda kendi hareketi, şablonlar kurala uysun + 1 gün 6 bileşik, HIIT sayılır, koçun varsayılanına dön, rekor tanımı, "Type it in" önce prototip, yeni hareket 3 set, 5×5 olsun (K-991)
+- takıldım: inceleme ajanı ortak checkout'ta dal değiştirdi (test commit'i PR'sız main'e düştü); `strict: false` yüzünden eski main'e karşı yeşil CI (update-branch kuralı); prototip değişikliği copy-budget testini kırdı (#481); prototip ADR'lerin gerisindeydi ("2 days, not 3")
+- sıradaki: `YENI-YUZ-part2-devam.md` — #475 birleşti mi, Levent `#ob-type` onayı → #479, prototip tur 2'yi commit + yayımla, K-986/K-990/K-991, Part 2 ÇIKIŞ
+- AI: bütün kod, test, inceleme ve prototip agent (ana oturum + ~10 uygulayıcı + ~20 inceleme/yürüyüş alt ajanı); Levent 14 soruyu cevapladı, prototipi değerlendirdi

@@ -5,9 +5,9 @@ guncelleme: 2026-10-08
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (8 Eki — M9a Part 2 YARIDA: kullanım sınırı)
-**Önce `plan/oturum-promptlari/YENI-YUZ-part2-devam.md`.** Birleşen: K-956, K-957, K-959, K-965, K-966, K-985, K-987. Açık PR: #472 (K-964, V41), #474/#475 (K-967),
-#473/#477 (+3. PR) (K-968), K-989 dalı. Levent cevapları ADR eklerinde ve tabloda.
+## ▶ DEVAM NOKTASI (8 Eki akşam — M9a Part 2 son düzlükte; Levent'in isteğiyle durdu)
+**Önce `plan/oturum-promptlari/YENI-YUZ-part2-devam.md`.** Part 2'nin 8 görevinden 7'si birleşti (K-967 B2 #475 auto-merge'de); K-968 #479 Levent'in
+`#ob-type` prototip onayını bekliyor. Prototip ana checkout'ta commitlenmemiş tur 2 değişikliği taşıyabilir. Kalan: K-986, K-990, K-991, K-983.
 
 ## (önceki) DEVAM NOKTASI (7 Eki gece — M9a Part 1 BİTTİ, 10/10 görev birleşti)
 **Sıradaki session: M9a Part 2 · Sunucu + onboarding** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 2 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 1 ÇIKIŞ.
