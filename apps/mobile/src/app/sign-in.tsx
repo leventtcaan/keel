@@ -4,11 +4,12 @@ import {
   AppleAuthenticationButtonType,
 } from 'expo-apple-authentication';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { ExampleCalls } from '@/onboarding/ExampleCalls';
 import type { SignInResult } from '@/session/appleSignIn';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -20,8 +21,9 @@ function message(result: SignInResult | null): string | null {
 }
 
 /**
- * Sign in with Apple, the only way in (ADR-011). What happens after is the root layout's: once signed in, its guard
- * swaps this screen for the tabs (K-305); a new account goes to onboarding in K-306.
+ * #welcome, and Sign in with Apple, the only way in (ADR-011). The account comes first because the starting call is the
+ * engine's, on the server (ADR-072 #2); nothing personal is asked here. What happens after is the root layout's: once
+ * signed in, its guard swaps this screen for onboarding or the tabs (K-305, K-306).
  */
 export default function SignInScreen() {
   const { signInWithApple, appleAvailable } = useAppServices();
@@ -57,10 +59,12 @@ export default function SignInScreen() {
   const appleStyle = scheme === 'dark' ? AppleAuthenticationButtonStyle.WHITE : AppleAuthenticationButtonStyle.BLACK;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <View style={styles.body}>
-        <ScreenTitle>{t('app.name')}</ScreenTitle>
-        <Text style={[styles.text, { color: color.muted }]}>{t('signIn.note')}</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.body}>
+        <Text style={[styles.mark, { color: color.text }]}>{t('app.name')}</Text>
+        <ExampleCalls />
+        <ScreenTitle>{t('welcome.headline')}</ScreenTitle>
+        <Text style={[styles.lead, { color: color.textSecondary }]}>{t('welcome.lead')}</Text>
+      </ScrollView>
       <View style={styles.bottom}>
         {note !== null && <Text style={[styles.text, { color: color.text }]}>{note}</Text>}
         {available === false && <Text style={[styles.text, { color: color.text }]}>{t('signIn.unavailable')}</Text>}
@@ -80,8 +84,10 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { flex: 1, paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, gap: tokens.space.sm },
+  body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, gap: tokens.space.md },
+  mark: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle },
+  lead: { fontSize: tokens.type.body },
   bottom: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg, gap: tokens.space.md },
   text: { fontSize: tokens.type.body },
-  button: { height: tokens.size.control, width: '100%' },
+  button: { height: tokens.size.primaryButton, width: '100%' },
 });

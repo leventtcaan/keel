@@ -89,7 +89,7 @@ export default function HealthDataStep() {
   );
 
   return (
-    <StepFrame step="healthData" title={t('consent.health_data.title')} actions={actions} backDisabled={busy}>
+    <StepFrame step="consent" title={t('consent.health_data.title')} actions={actions} backDisabled={busy}>
       <Text style={[styles.text, { color: color.text }]}>{t('consent.health_data.body')}</Text>
       {granted && <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.healthData.allowed')}</Text>}
       {declined && <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.healthData.declinedNote')}</Text>}

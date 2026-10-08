@@ -30,6 +30,14 @@
       "note": "ADR-072 #3, #5: an experienced user is asked the load they lift about this many times. The server reads it too: the load is a first target only on a day whose rep range starts at this or under; a day starting higher finds its load in the first session."
     },
     {
+      "key": "welcome_example_ms",
+      "value": 1900,
+      "unit": "milliseconds",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "How long each example call shows on the welcome screen (prototype #welcome). They turn once and rest on the first: no endless motion; with Reduce Motion on, the first stays."
+    },
+    {
       "key": "adult_min_year_gap",
       "value": 19,
       "unit": "years",

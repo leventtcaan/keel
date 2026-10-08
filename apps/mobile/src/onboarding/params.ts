@@ -39,4 +39,5 @@ export const onboardingParams = {
   noInterpretationDays: param<number>('no_interpretation_days'),
   weighInMaxKg: param<number>('weigh_in_max_kg'),
   waistMaxCm: param<number>('waist_max_cm'),
+  welcomeExampleMs: param<number>('welcome_example_ms'),
 };

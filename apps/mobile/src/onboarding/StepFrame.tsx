@@ -1,10 +1,12 @@
 /**
- * The frame of every onboarding step (prototype section 1): back and "n of N" on top, the question, the answers, and
- * Continue at the bottom — off until the step is answered. Continue opens the next step; on the last one, `onFinish`.
+ * The frame of every onboarding step (prototype `obFrame`): back and the step indicator on top, the question and its
+ * reason, the answers. A step whose answer is one tap moves on with that tap (`useChoose`); the others end with Continue,
+ * off until the step is answered, or with their own `actions`. The steps and their order are the route's (flow.ts), so
+ * the indicator counts the walk of this user's branch.
  */
-import { type Href, router } from 'expo-router';
+import { type Href, router, useFocusEffect } from 'expo-router';
 import { Stack } from 'expo-router/stack';
-import type { ReactNode } from 'react';
+import { type ReactNode, useCallback, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,28 +17,57 @@ import { useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-import { type Step, stepComplete, stepsFor } from './draft';
+import { type Draft, stepComplete } from './draft';
+import { type Step, nextStep, walk } from './flow';
 import { useDraft } from './OnboardingContext';
 
 /** Each step's screen. Typed routes check every entry against src/app/onboarding, so a missing screen fails typecheck. */
 const ROUTES: Record<Step, Href> = {
   goal: '/onboarding',
-  healthData: '/onboarding/health-data',
-  foods: '/onboarding/foods',
-  appleHealth: '/onboarding/apple-health',
+  experience: '/onboarding/experience',
   program: '/onboarding/program',
-  schedule: '/onboarding/schedule',
+  days: '/onboarding/days',
+  consent: '/onboarding/health-data',
   about: '/onboarding/about',
   activity: '/onboarding/activity',
+  foods: '/onboarding/foods',
   photos: '/onboarding/photos',
   expectations: '/onboarding/expectations',
+  appleHealth: '/onboarding/apple-health',
 };
+
+/**
+ * For a step answered with one tap: keeps the answer and opens the next step of the walk those answers make (the program
+ * answer changes the branch, so the next step is worked out from the draft with the answer in it). A second tap while
+ * the next screen opens does nothing; coming back to the step, a tap moves on again.
+ */
+export function useChoose(step: Step): (answer: Partial<Draft>) => void {
+  const { draft, update } = useDraft();
+  const leaving = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      leaving.current = false;
+    }, []),
+  );
+  return (answer) => {
+    if (leaving.current) return;
+    update(answer);
+    const next = nextStep(step, { ...draft, ...answer });
+    if (next === null) return;
+    leaving.current = true;
+    router.push(ROUTES[next]);
+  };
+}
 
 type Props = {
   step: Step;
   /** Already translated. */
   title: string;
+  /** Why the question is asked, under it (prototype `.why`). Already translated. */
+  why?: string;
   children: ReactNode;
+  /** The answer is a tap that moves on (useChoose): no Continue. */
+  chosen?: boolean;
   /** Continue's own words, when the step has them. */
   continueLabel?: string;
   /** In place of Continue: steps whose answer is a choice of buttons (a consent, the last step). */
@@ -45,15 +76,16 @@ type Props = {
   backDisabled?: boolean;
 };
 
-export function StepFrame({ step, title, children, continueLabel, actions, backDisabled = false }: Props) {
+export function StepFrame({ step, title, why, children, chosen = false, continueLabel, actions, backDisabled = false }: Props) {
   const { color } = useTheme();
   const { draft } = useDraft();
   const units = useUnits();
-  // The steps this user walks: some depend on earlier answers (the foods, only with the health consent).
-  const steps = stepsFor(draft);
+  // The steps this user walks: the branch follows the experience and program answers, and some steps depend on others
+  // (the foods, only with the health consent).
+  const steps = walk(draft);
   const index = steps.indexOf(step);
   const ready = stepComplete(step, draft, units, new Date().getFullYear());
-  const next = steps[index + 1];
+  const next = nextStep(step, draft);
 
   // The first step has no way back: before it is sign-in, which the session guard has closed.
   const back =
@@ -64,12 +96,21 @@ export function StepFrame({ step, title, children, continueLabel, actions, backD
         accessibilityState={{ disabled: backDisabled }}
         disabled={backDisabled}
         onPress={() => router.back()}
-        hitSlop={tokens.space.md}>
+        hitSlop={tokens.space.md}
+        style={styles.backTarget}>
         <Text style={[styles.back, { color: color.text }]}>{t('onboarding.backMark')}</Text>
       </Pressable>
-    ) : (
-      <View />
-    );
+    ) : null;
+
+  const bottom =
+    actions ??
+    (chosen ? null : (
+      <Button
+        label={continueLabel ?? t('onboarding.continue')}
+        onPress={() => next !== null && router.push(ROUTES[next])}
+        disabled={!ready}
+      />
+    ));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
@@ -77,28 +118,22 @@ export function StepFrame({ step, title, children, continueLabel, actions, backD
       <Stack.Screen options={{ gestureEnabled: !backDisabled }} />
       <View style={styles.top}>
         {back}
-        <Text
-          accessibilityLabel={t('onboarding.progress', {
-            step: index + 1,
-            total: steps.length,
-          })}
-          style={[styles.count, { color: color.muted }]}>
-          {t('onboarding.count', { step: index + 1, total: steps.length })}
-        </Text>
+        {/* One segment per step of this walk, filled up to this one (prototype `.steps`); said as one line. */}
+        <View
+          accessible
+          accessibilityLabel={t('onboarding.progress', { step: index + 1, total: steps.length })}
+          style={styles.steps}>
+          {steps.map((s, i) => (
+            <View key={s} style={[styles.segment, { backgroundColor: i <= index ? color.text : color.line }]} />
+          ))}
+        </View>
       </View>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <ScreenTitle>{title}</ScreenTitle>
+        {why !== undefined && <Text style={[styles.why, { color: color.textSecondary }]}>{why}</Text>}
         {children}
       </ScrollView>
-      <View style={styles.bottom}>
-        {actions ?? (
-          <Button
-            label={continueLabel ?? t('onboarding.continue')}
-            onPress={() => next !== undefined && router.push(ROUTES[next])}
-            disabled={!ready}
-          />
-        )}
-      </View>
+      {bottom !== null && <View style={styles.bottom}>{bottom}</View>}
     </SafeAreaView>
   );
 }
@@ -107,13 +142,17 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   top: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: tokens.space.sm,
     paddingHorizontal: tokens.space.lg,
     paddingTop: tokens.space.sm,
+    minHeight: tokens.size.touch,
   },
+  backTarget: { minWidth: tokens.size.touch, minHeight: tokens.size.touch, justifyContent: 'center' },
   back: { fontSize: tokens.type.heading },
-  count: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
+  steps: { flex: 1, flexDirection: 'row', gap: tokens.space.xs },
+  segment: { flex: 1, height: tokens.size.track, borderRadius: tokens.radius.track },
+  why: { fontSize: tokens.type.body },
   body: {
     paddingHorizontal: tokens.space.lg,
     paddingVertical: tokens.space.md,

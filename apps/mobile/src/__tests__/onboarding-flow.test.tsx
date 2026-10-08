@@ -9,6 +9,8 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 
 import { t } from '@/copy';
 import { notificationParams } from '@/notifications/params';
+import { walk } from '@/onboarding/flow';
+import { defaultTrainingDays } from '@/onboarding/params';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
@@ -135,8 +137,10 @@ async function press(name: string) {
   await settle();
 }
 
+/** An answer by the start of its words ("3+ years" read as text, not as a pattern). */
 async function choose(name: string) {
-  await fireEvent.press(screen.getByRole('radio', { name: new RegExp(`^${name}`) }));
+  const start = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  await fireEvent.press(screen.getByRole('radio', { name: new RegExp(`^${start}`) }));
   await settle();
 }
 
@@ -202,27 +206,26 @@ describe('who sees onboarding', () => {
 });
 
 describe('the walk through', () => {
-  test('continue stays off until the step is answered', async () => {
-    await open();
-    expect(continueButton()).toBeDisabled();
+  test('an answer is one tap: it is kept and the next question opens, with nothing to confirm', async () => {
+    const router = await open();
+    expect(screen.queryByRole('button', { name: t('onboarding.continue') })).toBeNull();
     await choose(t('onboarding.goal.decide_for_me.title'));
-    expect(continueButton()).toBeEnabled();
+    expect(router.getPathname()).toBe('/onboarding/experience');
   });
 
-  test('"decide for me" sits with the other goals, as an equal choice (K-222)', async () => {
+  test('"Decide for me" is the recommended answer, first; the other goals stay one tap away (ADR-072 #2, K-222)', async () => {
     await open();
     expect(screen.getAllByRole('radio').map((option) => option.props.accessibilityLabel)).toEqual([
-      expect.stringMatching(new RegExp(`^${t('onboarding.goal.lose_fat.title')}`)),
-      expect.stringMatching(new RegExp(`^${t('onboarding.goal.build_muscle.title')}`)),
-      expect.stringMatching(new RegExp(`^${t('onboarding.goal.decide_for_me.title')}`)),
+      `${t('onboarding.goal.decide_for_me.title')}, ${t('onboarding.recommended')}, ${t('onboarding.goal.decide_for_me.body')}`,
+      t('onboarding.goal.lose_fat.title'),
+      t('onboarding.goal.build_muscle.title'),
     ]);
   });
 
   test('going back keeps the answer', async () => {
     const router = await open();
     await choose(t('onboarding.goal.build_muscle.title'));
-    await press(t('onboarding.continue'));
-    expect(router.getPathname()).toBe('/onboarding/program');
+    expect(router.getPathname()).toBe('/onboarding/experience');
     await press(t('onboarding.back'));
     expect(router.getPathname()).toBe('/onboarding');
     expect(screen.getByRole('radio', { name: new RegExp(`^${t('onboarding.goal.build_muscle.title')}`) })).toBeChecked();
@@ -231,14 +234,9 @@ describe('the walk through', () => {
   test("the whole walk sends one profile, with the user's answers", async () => {
     const router = await open();
     await choose(t('onboarding.goal.decide_for_me.title'));
-    await press(t('onboarding.continue'));
+    await choose(t('onboarding.experience.Y1_3'));
     await choose(t('onboarding.program.bring_my_own.title'));
-    await press(t('onboarding.continue'));
-    await press(t('onboarding.schedule.dayName.TUESDAY'));
-    await press(t('onboarding.schedule.dayName.MONDAY'));
-    await press(t('onboarding.schedule.sessions.FOUR'));
-    await fireEvent.changeText(screen.getByLabelText(t('onboarding.schedule.time')), '7:30');
-    await press(t('onboarding.continue'));
+    await choose(t('onboarding.days.label', { count: 2 }));
     expect(router.getPathname()).toBe('/onboarding/health-data');
     await press(t('onboarding.healthData.notNow'));
     expect(router.getPathname()).toBe('/onboarding/about');
@@ -262,11 +260,10 @@ describe('the walk through', () => {
       heightCm: 178,
       birthYear: 1994,
       activityLevel: 'LOW_ACTIVE',
+      experience: 'Y1_3',
       programChoice: 'BRING_MY_OWN',
       schedule: {
-        trainingDays: ['MONDAY', 'TUESDAY'],
-        usualTrainingTime: '07:30',
-        sessionsLastMonth: 'FOUR',
+        trainingDays: ['MONDAY', 'THURSDAY'],
         checkInDay: 'MONDAY',
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
@@ -330,7 +327,7 @@ describe('the walk through', () => {
     expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ heightCm: 178, units: 'IMPERIAL' }));
   });
 
-  test('going back keeps typed answers too: height, year, sex, days, last month', async () => {
+  test('going back keeps typed answers too: height, year, sex, the days', async () => {
     await walkTo('activity');
     await press(t('onboarding.back'));
     expect(screen.getByLabelText(t('onboarding.about.heightCm')).props.value).toBe('180');
@@ -339,8 +336,7 @@ describe('the walk through', () => {
     expect(continueButton()).toBeEnabled();
     await press(t('onboarding.back')); // the health consent
     await press(t('onboarding.back'));
-    expect(screen.getByRole('button', { name: t('onboarding.schedule.dayName.MONDAY') })).toBeSelected();
-    expect(screen.getByRole('button', { name: t('onboarding.schedule.sessions.FOUR') })).toBeSelected();
+    expect(screen.getByRole('radio', { name: t('onboarding.days.label', { count: 3 }) })).toBeChecked();
   });
 
   test('no step shows a missing text key', async () => {
@@ -349,7 +345,7 @@ describe('the walk through', () => {
       expect(screen.queryByText(/\[missing:/)).toBeNull();
       expect(screen.queryByText(/\{\w+\}/)).toBeNull();
     };
-    await walkTo('appleHealth', clean);
+    await walkTo('appleHealth', { eachStep: clean });
     clean();
   });
 
@@ -361,54 +357,94 @@ describe('the walk through', () => {
 });
 
 describe('what the words promise is what the parameters say', () => {
-  test('the rest-day note, the photo gap, the quiet days and the check-in day are filled in, not written out', async () => {
+  test('the photo gap, the quiet days and the check-in day are filled in, not written out', async () => {
     const en = jest.requireActual<Record<string, Record<string, Record<string, unknown>>>>('../../../../data/copy/en.json');
     const onboarding = en.onboarding as Record<string, Record<string, unknown>>;
-    expect(onboarding.schedule.restDay).toMatch(/\{max\}/);
     expect(JSON.stringify(onboarding.photos)).not.toMatch(/\b4\b|[Ff]our/);
     expect(JSON.stringify(onboarding.expectations)).not.toMatch(/two weeks|Monday/);
   });
 });
 
-describe('schedule', () => {
-  const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+describe('experience (ADR-072 #3)', () => {
+  test('four answers, in years; the one chosen opens the program question', async () => {
+    const router = await walkTo('experience');
+    expect(screen.getByText(t('onboarding.experience.why'))).toBeOnTheScreen();
+    expect(screen.getAllByRole('radio').map((option) => option.props.accessibilityLabel)).toEqual(
+      ['NEW', 'UNDER_1Y', 'Y1_3', 'Y3_PLUS'].map((level) => t(`onboarding.experience.${level}`)),
+    );
+    await choose(t('onboarding.experience.Y3_PLUS'));
+    expect(router.getPathname()).toBe('/onboarding/program');
+    await press(t('onboarding.back'));
+    expect(screen.getByRole('radio', { name: t('onboarding.experience.Y3_PLUS') })).toBeChecked();
+  });
+});
 
-  test('six days at most: the seventh cannot be chosen, and the screen says why', async () => {
-    await walkTo('schedule');
-    for (const day of days) await press(t(`onboarding.schedule.dayName.${day}`));
-    const sunday = screen.getByRole('button', { name: t('onboarding.schedule.dayName.SUNDAY') });
-    expect(sunday).not.toBeSelected();
-    expect(sunday).toBeDisabled();
-    expect(screen.getByText(t('onboarding.schedule.restDay', { max: 6 }))).toBeOnTheScreen();
+describe('program (ADR-072 #2)', () => {
+  test('"Build it for me" is recommended, first; "I have my own" is a tap away', async () => {
+    await walkTo('program');
+    expect(screen.getAllByRole('radio').map((option) => option.props.accessibilityLabel)).toEqual([
+      `${t('onboarding.program.build_one_for_me.title')}, ${t('onboarding.recommended')}, ${t('onboarding.program.build_one_for_me.body')}`,
+      `${t('onboarding.program.bring_my_own.title')}, ${t('onboarding.program.bring_my_own.body')}`,
+    ]);
   });
 
-  test('the plan sentence follows the days chosen, and last month', async () => {
-    await walkTo('schedule');
-    await press(t('onboarding.schedule.dayName.MONDAY'));
-    await press(t('onboarding.schedule.dayName.THURSDAY'));
-    await press(t('onboarding.schedule.dayName.SATURDAY'));
-    expect(screen.getByText(t('onboarding.schedule.plan', { days: 3 }))).toBeOnTheScreen();
-    await press(t('onboarding.schedule.sessions.TWO_TO_THREE'));
-    expect(screen.getByText(t('onboarding.schedule.lighter'))).toBeOnTheScreen();
-    await press(t('onboarding.schedule.sessions.FIVE_OR_MORE'));
-    expect(screen.queryByText(t('onboarding.schedule.lighter'))).toBeNull();
-    expect(screen.getByText(t('onboarding.schedule.addLater', { days: 3 }))).toBeOnTheScreen();
+  test('bringing a program opens its branch, which asks the days until bringing it in has its screen (K-968)', async () => {
+    const router = await walkTo('program');
+    await choose(t('onboarding.program.bring_my_own.title'));
+    expect(router.getPathname()).toBe('/onboarding/days');
+  });
+});
+
+describe('days (ADR-072 #4)', () => {
+  test('two to five boxes and nothing else to answer: last month and a usual time are no longer asked', async () => {
+    await walkTo('days');
+    expect(screen.getByText(t('onboarding.days.note'))).toBeOnTheScreen();
+    expect(screen.getAllByRole('radio').map((option) => option.props.accessibilityLabel)).toEqual(
+      [2, 3, 4, 5].map((count) => t('onboarding.days.label', { count })),
+    );
+    expect(screen.queryByRole('button', { name: t('onboarding.continue') })).toBeNull();
   });
 
-  test('one day reads as one', async () => {
-    await walkTo('schedule');
-    await press(t('onboarding.schedule.dayName.MONDAY'));
-    expect(screen.getByText(t('onboarding.schedule.planOne'))).toBeOnTheScreen();
+  test('a box places the days itself, from the parameter, and moves on (We place the days)', async () => {
+    const router = await walkTo('consent', { days: 4 });
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+    await press(t('onboarding.healthData.notNow'));
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightCm')), '180');
+    await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.birthYear')), '1990');
+    await press(t('onboarding.about.male'));
+    await press(t('onboarding.continue'));
+    await choose(t('onboarding.activity.ACTIVE.title'));
+    await press(t('onboarding.continue'));
+    await press(t('onboarding.continue'));
+    await press(t('onboarding.expectations.action'));
+    await press(t('onboarding.appleHealth.finish'));
+    const sent = mockProfile.save.mock.calls[0][0] as { schedule: Record<string, unknown> };
+    expect(sent.schedule.trainingDays).toEqual(defaultTrainingDays(4));
+    expect(sent.schedule).not.toHaveProperty('sessionsLastMonth');
+    expect(sent.schedule).not.toHaveProperty('usualTrainingTime');
+  });
+});
+
+describe('the step indicator follows the branch', () => {
+  const indicator = (step: number, total: number) => screen.getByLabelText(t('onboarding.progress', { step, total }));
+
+  test.each([
+    ['a new lifter', 'NEW', 'build_one_for_me'],
+    ['an experienced lifter', 'Y3_PLUS', 'build_one_for_me'],
+    ['an own program', 'UNDER_1Y', 'bring_my_own'],
+  ] as const)('%s: the steps of its walk (flow.ts), this one filled', async (_, experience, program) => {
+    const total = walk({
+      experience,
+      programChoice: program === 'bring_my_own' ? 'BRING_MY_OWN' : 'BUILD_ONE_FOR_ME',
+      healthConsent: null,
+    }).length;
+    await walkTo('days', { experience, program });
+    expect(indicator(4, total)).toBeOnTheScreen();
   });
 
-  test('a time that is not one says so and keeps continue off', async () => {
-    await walkTo('schedule');
-    await press(t('onboarding.schedule.dayName.MONDAY'));
-    await press(t('onboarding.schedule.sessions.FOUR'));
-    await fireEvent.changeText(screen.getByLabelText(t('onboarding.schedule.time')), '25:00');
-    await settle();
-    expect(screen.getByText(t('onboarding.schedule.timeInvalid'))).toBeOnTheScreen();
-    expect(continueButton()).toBeDisabled();
+  test('on the first question: step 1', async () => {
+    await open();
+    expect(indicator(1, walk({ experience: null, programChoice: null, healthConsent: null }).length)).toBeOnTheScreen();
   });
 });
 
@@ -459,26 +495,34 @@ describe('activity: the four NASEM levels, each with a day to recognise (ADR-027
   });
 });
 
+type Walk = {
+  eachStep?: () => void;
+  /** The health consent allowed; declined otherwise. */
+  allow?: boolean;
+  experience?: 'NEW' | 'UNDER_1Y' | 'Y1_3' | 'Y3_PLUS';
+  program?: 'build_one_for_me' | 'bring_my_own';
+  days?: number;
+};
+
 /** Answers every step before `step`, the shortest way (the health consent declined unless `allow`), and stops on it. */
 async function walkTo(
-  step: 'schedule' | 'healthData' | 'about' | 'activity' | 'expectations' | 'appleHealth',
-  eachStep: () => void = () => {},
-  allow = false,
+  step: 'experience' | 'program' | 'days' | 'consent' | 'about' | 'activity' | 'expectations' | 'appleHealth',
+  { eachStep = () => {}, allow = false, experience = 'Y1_3', program = 'build_one_for_me', days = 3 }: Walk = {},
 ) {
   const router = await open();
   eachStep();
   await choose(t('onboarding.goal.lose_fat.title'));
-  await press(t('onboarding.continue'));
   eachStep();
-  await choose(t('onboarding.program.build_one_for_me.title'));
-  await press(t('onboarding.continue'));
+  if (step === 'experience') return router;
+  await choose(t(`onboarding.experience.${experience}`));
   eachStep();
-  if (step === 'schedule') return router;
-  await press(t('onboarding.schedule.dayName.MONDAY'));
-  await press(t('onboarding.schedule.sessions.FOUR'));
-  await press(t('onboarding.continue'));
+  if (step === 'program') return router;
+  await choose(t(`onboarding.program.${program}.title`));
   eachStep();
-  if (step === 'healthData') return router;
+  if (step === 'days') return router;
+  await choose(t('onboarding.days.label', { count: days }));
+  eachStep();
+  if (step === 'consent') return router;
   await press(t(allow ? 'onboarding.healthData.allow' : 'onboarding.healthData.notNow'));
   eachStep();
   if (step === 'about') return router;
@@ -604,7 +648,7 @@ describe('reminders, offered once in onboarding with what they are (K-434, ADR-0
 
 describe('the health data consent (K-312, ADR-007)', () => {
   test('its own step, with the consent text; "Allow" records the version shown, then moves on', async () => {
-    const router = await walkTo('healthData');
+    const router = await walkTo('consent');
     expect(screen.getByRole('header', { name: t('consent.health_data.title') })).toBeOnTheScreen();
     expect(screen.getByText(t('consent.health_data.body'))).toBeOnTheScreen();
     await press(t('onboarding.healthData.allow'));
@@ -622,7 +666,7 @@ describe('the health data consent (K-312, ADR-007)', () => {
       order.push('profile');
       mockBecome('done');
     });
-    const router = await walkTo('activity', () => {}, true);
+    const router = await walkTo('activity', { allow: true });
     await choose(t('onboarding.activity.ACTIVE.title'));
     await press(t('onboarding.continue'));
     expect(router.getPathname()).toBe('/onboarding/foods');
@@ -660,7 +704,7 @@ describe('the health data consent (K-312, ADR-007)', () => {
 
   test('a consent the server did not record says so, and does not move on', async () => {
     mockConsentStatus = 503;
-    const router = await walkTo('healthData');
+    const router = await walkTo('consent');
     await press(t('onboarding.healthData.allow'));
     // The server answered (503): not called a connection problem.
     expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen();
@@ -668,7 +712,7 @@ describe('the health data consent (K-312, ADR-007)', () => {
   });
 
   test('allowed, the weight is required; a waist typed must be one', async () => {
-    await walkTo('about', () => {}, true);
+    await walkTo('about', { allow: true });
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightCm')), '180');
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.birthYear')), '1990');
     await press(t('onboarding.about.male'));
@@ -682,9 +726,9 @@ describe('the health data consent (K-312, ADR-007)', () => {
     expect(continueButton()).toBeDisabled();
   });
 
-  test('the step count follows the walk: 9 steps without the consent, 10 with it', async () => {
+  test('the step count follows the walk: 10 steps without the consent, 11 with it', async () => {
     await walkTo('about');
-    expect(screen.getByText(t('onboarding.count', { step: 5, total: 9 }))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('onboarding.progress', { step: 6, total: 10 }))).toBeOnTheScreen();
   });
 
   test('allowed, no step shows a missing text key or an unfilled placeholder either', async () => {
@@ -692,7 +736,7 @@ describe('the health data consent (K-312, ADR-007)', () => {
       expect(screen.queryByText(/\[missing:/)).toBeNull();
       expect(screen.queryByText(/\{\w+\}/)).toBeNull();
     };
-    await walkTo('appleHealth', clean, true);
+    await walkTo('appleHealth', { eachStep: clean, allow: true });
     clean();
   });
 });
@@ -710,7 +754,7 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
       order.push('profile');
       mockBecome('done');
     });
-    await walkTo('appleHealth', () => {}, true);
+    await walkTo('appleHealth', { allow: true });
     order.length = 0; // the health data consent on the way
     await press(t('onboarding.appleHealth.connect'));
     // Apple's sheet first: if it fails, no consent is left recorded for a connection that never happened.
@@ -722,7 +766,7 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
 
   test('"Not now" records nothing and finishes', async () => {
     mockHealth.available = true;
-    await walkTo('appleHealth', () => {}, true);
+    await walkTo('appleHealth', { allow: true });
     mockApi.PUT.mockClear();
     await press(t('onboarding.appleHealth.notNow'));
     expect(mockApi.PUT).not.toHaveBeenCalled();
@@ -732,7 +776,7 @@ describe('Apple Health, the last step (K-312, ADR-018)', () => {
 
   test("a connection that fails says so and does not finish: the choice is the user's to make again", async () => {
     mockHealth.available = true;
-    await walkTo('appleHealth', () => {}, true);
+    await walkTo('appleHealth', { allow: true });
     mockConsentStatus = 503;
     await press(t('onboarding.appleHealth.connect'));
     expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen(); // the server answered 503
@@ -753,7 +797,7 @@ describe('review fixes (K-312)', () => {
   test('while "Allow" is on its way, "Not now" and back are off: the last choice is the one that counts', async () => {
     let answer: (value: Awaited<ReturnType<typeof mockConsentAnswer>>) => void = () => {};
     mockApi.PUT.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
-    await walkTo('healthData');
+    await walkTo('consent');
     const overlapNote = jest.spyOn(console, 'error').mockImplementation(() => {});
     try {
       await act(async () => {
@@ -770,7 +814,7 @@ describe('review fixes (K-312)', () => {
   });
 
   test('allowed, the consent can be taken back here: withdrawn on the server, health answers cleared, not asked again', async () => {
-    const router = await walkTo('about', () => {}, true);
+    const router = await walkTo('about', { allow: true });
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.weight')), '82');
     await press(t('onboarding.back'));
     expect(router.getPathname()).toBe('/onboarding/health-data');
@@ -784,17 +828,17 @@ describe('review fixes (K-312)', () => {
     expect(screen.getByLabelText(t('onboarding.about.weight')).props.value).toBe(''); // the 82 went with the consent
   });
 
-  test('declined, then back and allowed: the weight is asked and the walk has 10 steps', async () => {
+  test('declined, then back and allowed: the weight is asked and the walk has 11 steps', async () => {
     await walkTo('about');
-    expect(screen.getByText(t('onboarding.count', { step: 5, total: 9 }))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('onboarding.progress', { step: 6, total: 10 }))).toBeOnTheScreen();
     await press(t('onboarding.back'));
     await press(t('onboarding.healthData.allow'));
     expect(screen.getByLabelText(t('onboarding.about.weight'))).toBeOnTheScreen();
-    expect(screen.getByText(t('onboarding.count', { step: 5, total: 10 }))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('onboarding.progress', { step: 6, total: 11 }))).toBeOnTheScreen();
   });
 
   test('changing the units after typing a weight clears it: 82 kg must not become 82 lb', async () => {
-    await walkTo('about', () => {}, true);
+    await walkTo('about', { allow: true });
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.weight')), '82');
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.waist')), '84');
     await press(t('onboarding.about.imperial'));
@@ -803,7 +847,7 @@ describe('review fixes (K-312)', () => {
   });
 
   test('imperial weight all the way: 180 lb goes as 81.65 kg', async () => {
-    await walkTo('about', () => {}, true);
+    await walkTo('about', { allow: true });
     await press(t('onboarding.about.imperial'));
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightFeet')), '5');
     await fireEvent.changeText(screen.getByLabelText(t('onboarding.about.heightInches')), '10');
@@ -830,7 +874,7 @@ describe('review fixes (K-312)', () => {
 
   test('Apple\'s sheet failing says so, records no consent, and "Not now" still finishes cleanly', async () => {
     mockHealth.available = true;
-    await walkTo('appleHealth', () => {}, true);
+    await walkTo('appleHealth', { allow: true });
     mockApi.PUT.mockClear();
     mockHealth.requestRead.mockRejectedValueOnce(new Error('HealthKit'));
     await press(t('onboarding.appleHealth.connect'));

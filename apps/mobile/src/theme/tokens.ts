@@ -104,6 +104,8 @@ export const tokens = {
     decisionTitle: 30,
     heading: 24,
     number: 22,
+    /** The number on an onboarding day box (prototype `.numtile b`). */
+    tile: 56,
     button: 16,
     buttonSmall: 14,
     /** ADR-070 #5. */
@@ -128,6 +130,8 @@ export const tokens = {
   border: {
     hairline: 1,
     outline: 1.5,
+    /** The chosen recommended answer's accent ring (prototype `.opt.hero[aria-pressed]`). */
+    ring: 3,
   },
   size: {
     track: 6,
