@@ -76,3 +76,21 @@ ekran testleri: Today kelime bütçesi, karar ekranında dört parça.
 - 2 günlük planda "bir gün ekle" 3 gündür (+1, taban `training_days_min`); metin ideali ({idealMin}) hedef gösterir, 3'ü "en iyi" demez.
 - His cevabı karar gerekçesinde taşınır (`week1Feel`), ekran geri yansıtır.
 - Sıra: güvenlik ağı › mini cut sonu › bildirilen durum › ters giden antrenman › 1. hafta kararı › yük merdiveni.
+
+## Ek 2 · İlk gün ve ilk karar tarihi sunucuda (K-990, 2026-10-08, agent, teknik; KABUL)
+- **İlk gün = onboarding'in bittiği gün:** profilin ilk kaydı (`profile.profile.onboarded_at`, V42; yalnız ilk insert'te yazılır, sonraki kayıt
+  dokunmaz). K-967 akışında profil #ob-preparing'de, bütün cevaplar verildiğinde kaydedilir; plan o kayıtla kurulur ve hemen gösterilir. İlk
+  hafta, 1. hafta kararının olguları (`FirstWeekFacts`) ve ilk 8 hafta (`FirstWeeks`, ADR-040) aynı günden sayılır (`FirstWeekFacts.firstDay`, tek
+  tanım). Bitiş günü planlanmış seans sayılmaz (Ek 1). Giriş ile bitiş arasındaki günler ilk haftaya girmez.
+- **İlk karar tarihi:** ilk günden sonraki ilk check-in günü (en geç 7. gün, asla aynı gün; ADR-071 #1). O gün gelmeden ve hiç karar yokken
+  `GET /v1/check-ins/current` 404, `POST …/answers` 409. Tarih `GET /v1/first-weeks` › `firstCallOn` ile gelir (ilk karar verilene kadar; gün
+  geçmiş ve karar yoksa bugün: check-in açık). Telefon tarihi hesaplamaz; yalnız kalan günü sayar. Plan, paywall ve Bugün aynı alanı okur.
+- **Eski hesaplar:** V42'den önce kaydedilmiş profilde `onboarded_at` boş; ilk gün eskisi gibi ilk giriş (`AccountDates.began`). Karar vermiş
+  hesap etkilenmez (kapı yalnız hiç karar yokken).
+- Reddedilen: (a) `POST /v1/onboarding/finish` (plan Continue'da): plan ekranı tarihi bitişten önce gösterir, sunucu "bugün biterse" tahmini
+  verip sonra başka bir an kaydederdi (gece yarısında ayrışır); Continue'ya ağ şartı ve yeni uç eklenir; eski derlemeler hiç çağırmaz. (b) İlk
+  program üretimi/PUT: kendi programını getiren onboarding ortasında PUT eder; "bitti" anlamı taşımaz. (c) Tarihi `/v1/targets/starting`'e
+  koymak: tartı yokken 404 döner, tarih kaybolur; ilk karar tartısız da verilir. (d) Profil cevabına koymak: kural decision'ın; profil
+  modülü decision'a bağlanamaz, kural iki yerde yazılırdı.
+- Bilinen sapma: onboarding kayıttan günler sonra devam ettirilirse ilk gün kayıt günü kalır (cevaplar o gün verildi); ilk karar günü geçmişse
+  check-in açık gelir ve plan "Today" der.
