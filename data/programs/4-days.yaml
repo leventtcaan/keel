@@ -1,7 +1,8 @@
 # Program template, 4 training days (K-211). Dört gün (varsayılan): üst/alt ×2 (H3 B8, G1 K-22); seans başına kas başına ≤5 set (G1 K-10).
 # Sets are counted for each move's first muscle (its primary); ProgramTemplateTests holds every template to
 # sets_per_session_per_muscle_max and weekly_sets_per_muscle, 2+ day templates to arm_weekly_sets_min (G1 K-61),
-# and 4+ day templates to frequency_per_muscle_per_week.
+# and 4+ day templates to frequency_per_muscle_per_week. Every muscle a template trains gets weekly_sets_min (G1 K-11),
+# and the program it makes passes the program review (K-985, ADR-073 #2): with two days or more, a muscle is trained on two.
 # DRAFT until the product owner approves it (DURUM question list): coaching content, not a technical choice.
 days:
   - day: upper_a
@@ -11,12 +12,14 @@ days:
       - {exercise: seated_row, sets: 2}
       - {exercise: dumbbell_shoulder_press, sets: 2}
       - {exercise: lateral_raise, sets: 3}
+      - {exercise: reverse_pec_deck, sets: 2}
       - {exercise: barbell_curl, sets: 3}
       - {exercise: triceps_pushdown, sets: 3}
   - day: lower_a
     exercises:
       - {exercise: squat, sets: 3}
       - {exercise: romanian_deadlift, sets: 3}
+      - {exercise: hip_thrust, sets: 2}
       - {exercise: leg_extension, sets: 2}
       - {exercise: lying_leg_curl, sets: 2}
       - {exercise: standing_calf_raise, sets: 3}
@@ -26,6 +29,7 @@ days:
       - {exercise: cable_fly, sets: 2}
       - {exercise: pull_up, sets: 2}
       - {exercise: chest_supported_row, sets: 2}
+      - {exercise: overhead_press, sets: 2}
       - {exercise: cable_lateral_raise, sets: 2}
       - {exercise: rear_delt_fly, sets: 2}
       - {exercise: dumbbell_curl, sets: 3}
