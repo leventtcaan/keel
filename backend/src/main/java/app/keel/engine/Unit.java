@@ -63,6 +63,8 @@ public enum Unit {
     LEVELS("levels", Kind.WHOLE, Bound.POSITIVE),
     // How many suggestions the program review shows at most (K-955, ADR-073 #2).
     SUGGESTIONS("suggestions", Kind.WHOLE, Bound.POSITIVE),
+    // How many moves a short session keeps (K-964, ADR-073 #5).
+    MOVES("moves", Kind.WHOLE, Bound.POSITIVE),
 
     // The projection's energy balance model (Hall 2011, H12 M2-M5): published constants in the model's own units.
     MJ_PER_KG("mj_per_kg", Kind.FRACTION, Bound.POSITIVE),

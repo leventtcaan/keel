@@ -157,7 +157,8 @@ testi: seçenekler salon ekipmanıyla süzülür.
   taşındığı gün, atlandı mı, kısa mı, bugünlük değişimler (JSON, planlı hareket → yerine geçen). Program değişmez; `program_history`'ye
   satır girmez → tutarlılık ve planlı seans sayısı (`PlannedSessions`) aynı kalır. Tutarlılık seansları haftada sayar: taşınan seans yeni
   gününde yapılınca o haftayı sayar, kısa seans da bir seanstır, atlanan seans yapılmamış seanstır (telafi eklenmez, yeniden planlanmaz;
-  U7, ADR-071 #3). Program bütün olarak değişince (`PUT`, `generate`) satırlar silinir (gün kimlikleri yenidir).
+  U7, ADR-071 #3). Program bütün olarak değişince (`PUT`, `generate`) satırlar silinir (gün kimlikleri yenidir). Hesap silmede
+  gider, dışa aktarımda `sessionChanges` (veri envanteri).
 - **Taşıma:** yalnız bugünün seansı, yarına; pazarı geçmez (hafta `Consistency.WEEK_STARTS_ON` ile, kullanıcının saat diliminde). Yarında
   başka seans varsa o da bir gün kayar, zincirleme ("The week re-lays itself", prototip); biri pazarı geçecekse taşıma CONFLICT, hiçbir şey
   değişmez. **Reddedilen:** dolu güne üst üste iki seans koymak (aynı gün iki antrenman), dolu güne taşımayı yasaklamak (prototipin "re-lays"

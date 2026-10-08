@@ -505,6 +505,32 @@
    ]
   },
   {
+   "table": "training.session_change",
+   "module": "training",
+   "class": "training",
+   "purpose": "Changes you made to a week's session: moved to another day, skipped, the short version, or a move swapped for today.",
+   "columns": [
+    "account_id",
+    "program_day_id",
+    "week_of",
+    "on_date",
+    "skipped",
+    "short_version",
+    "swaps"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "sessionChanges",
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
    "table": "training.program_history",
    "module": "training",
    "class": "training",

@@ -69,6 +69,11 @@ class ReviewChangeStore {
                 .list();
     }
 
+    /** The log emptied: the program was edited another way and the changes no longer undo onto it (K-964, ADR-073 Ek 2). */
+    void clear(AccountId account) {
+        jdbc.sql("delete from training.program_review_change where account_id = :account").param("account", account.value()).update();
+    }
+
     void undo(AccountId account, List<UUID> ids, Instant at) {
         ids.forEach(id -> jdbc.sql("update training.program_review_change set undone_at = :at where account_id = :account and id = :id and undone_at is null")
                 .param("account", account.value()).param("id", id).param("at", at.atOffset(ZoneOffset.UTC)).update());
