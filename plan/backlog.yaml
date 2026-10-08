@@ -4462,7 +4462,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-072 #6: #ob-plan başlangıç kalorisini ve '14 günde tartın düzeltir' güven satırını gösterir; sunucu hedefi ilk haftalık kontrolde hesaplıyor, öncesinde GET /v1/targets NOT_FOUND (K-967 notu)"
     acceptance:
