@@ -18,6 +18,8 @@ function health(weights: HealthWeight[], available = true) {
     readWeights: async (from, to) => (asked.push({ from, to }), weights),
     readDailyTotals: async () => [],
     readSleep: async () => [],
+    readWatchActiveEnergy: async () => undefined,
+    readCardioWorkouts: async () => [],
   };
   return { access, asked };
 }

@@ -8,8 +8,9 @@
  */
 import { isRunningInExpoGo } from 'expo';
 
-import type { HealthAccess, HealthWriteAccess } from './health';
+import type { HealthAccess, HealthCardioWorkout, HealthWriteAccess } from './health';
 import { healthUnavailable, healthWriteUnavailable } from './health';
+import { healthParams } from './params';
 
 /**
  * What is read: exactly the list the consent text names (en.json › consent.apple_health; ADR-018 §2) — steps, sleep,
@@ -24,7 +25,24 @@ export const READ_TYPES = [
   'HKWorkoutTypeIdentifier',
 ] as const;
 
-type Sample = { uuid: string; startDate: Date; quantity: number; metadata?: { HKExternalUUID?: unknown } };
+type Sample = {
+  uuid: string;
+  startDate: Date;
+  endDate: Date;
+  quantity: number;
+  metadata?: { HKExternalUUID?: unknown };
+  sourceRevision?: { productType?: string };
+};
+// A workout as the installed 16.x library gives it (lib/typescript/types/Workouts.d.ts, WorkoutSample): the duration in
+// seconds (WorkoutProxy.swift serialises HKWorkout.duration with HKUnit.second()).
+type Workout = {
+  uuid: string;
+  workoutActivityType: number;
+  startDate: Date;
+  endDate: Date;
+  duration: { quantity: number };
+  metadata?: { HKExternalUUID?: unknown };
+};
 type Statistics = { startDate?: Date; sumQuantity?: { quantity: number } };
 type StatisticsOptions = { unit: string; filter: { date: { startDate: Date; endDate: Date } } };
 type Kit = {
@@ -47,6 +65,7 @@ type Kit = {
     identifier: string,
     options: { limit: number; filter: { date: { startDate: Date; endDate: Date } } },
   ): Promise<readonly { value: number; startDate: Date; endDate: Date }[]>;
+  queryWorkoutSamples(options: { limit: number; filter: { date: { startDate: Date; endDate: Date } } }): Promise<readonly Workout[]>;
 };
 
 // Writing (K-412), the installed 16.x signatures (lib/typescript/healthkit.ios.d.ts): the write permission is asked with
@@ -89,7 +108,24 @@ const MARK = 'keel:';
  * identifier, so a finish refused and done again never adds a second workout (K-412 review).
  */
 const markOf = (id: string): Mark => ({ HKExternalUUID: `${MARK}${id}`, HKSyncIdentifier: `${MARK}${id}`, HKSyncVersion: 1 });
-const isOwn = (sample: Sample) => typeof sample.metadata?.HKExternalUUID === 'string' && sample.metadata.HKExternalUUID.startsWith(MARK);
+const isOwn = (sample: Pick<Sample, 'metadata'>) =>
+  typeof sample.metadata?.HKExternalUUID === 'string' && sample.metadata.HKExternalUUID.startsWith(MARK);
+
+/**
+ * Saved by an Apple Watch: HKSourceRevision.productType names the device that saved the sample, a watch's begins with
+ * "Watch" (Apple's example is "watch2,4"). Only a watch measures active energy (ADR-074 #5); the phone's is an estimate.
+ */
+const WATCH = /^watch/i;
+const MINUTE_S = 60;
+const CARDIO = new Set(healthParams.cardioWorkoutTypes);
+
+/** Kilocalories a watch measured within [from, to]: samples wholly inside it, so none is counted for two windows. */
+function watchEnergyWithin(samples: readonly Sample[], from: Date, to: Date): number | undefined {
+  const inside = samples.filter(
+    (sample) => WATCH.test(sample.sourceRevision?.productType ?? '') && sample.startDate >= from && sample.endDate <= to,
+  );
+  return inside.length === 0 ? undefined : inside.reduce((kcal, sample) => kcal + sample.quantity, 0);
+}
 
 // HKCategoryValueSleepAnalysis (the installed library's CategoryValueSleepAnalysis): in bed 0, awake 2; asleep is
 // unspecified 1, core 3, deep 4, REM 5.
@@ -111,6 +147,12 @@ export function healthKitAccess(load: () => unknown = loadLibrary, inExpoGo: () 
   } catch {
     return healthUnavailable; // no native module in this build
   }
+  const energySamples = (from: Date, to: Date) =>
+    kit.queryQuantitySamples('HKQuantityTypeIdentifierActiveEnergyBurned', {
+      limit: 0,
+      unit: 'kcal',
+      filter: { date: { startDate: from, endDate: to } },
+    });
   return {
     available: true,
     // Apple shows its sheet once; later calls resolve at once with the user's earlier choice (which the app cannot read).
@@ -160,6 +202,26 @@ export function healthKitAccess(load: () => unknown = loadLibrary, inExpoGo: () 
         filter: { date: { startDate: from, endDate: to } },
       });
       return samples.map((s) => ({ start: s.startDate.toISOString(), end: s.endDate.toISOString(), asleep: ASLEEP.has(s.value) }));
+    },
+    readWatchActiveEnergy: async (from, to) => watchEnergyWithin(await energySamples(from, to), from, to),
+    // Cardio kinds only (health_cardio_workout_types), never what the app wrote; a workout under a minute is no session.
+    readCardioWorkouts: async (from, to) => {
+      const workouts = (await kit.queryWorkoutSamples({ limit: 0, filter: { date: { startDate: from, endDate: to } } })).filter(
+        (workout) => CARDIO.has(workout.workoutActivityType) && !isOwn(workout) && workout.duration.quantity >= MINUTE_S,
+      );
+      // Each workout's energy read over its own window: a window of days between workouts holds a day's every sample.
+      const cardio: HealthCardioWorkout[] = [];
+      for (const workout of workouts) {
+        const read: HealthCardioWorkout = {
+          id: workout.uuid,
+          start: workout.startDate.toISOString(),
+          end: workout.endDate.toISOString(),
+          minutes: Math.round(workout.duration.quantity / MINUTE_S),
+        };
+        const kcal = watchEnergyWithin(await energySamples(workout.startDate, workout.endDate), workout.startDate, workout.endDate);
+        cardio.push(kcal === undefined ? read : { ...read, activeEnergyKcal: kcal });
+      }
+      return cardio;
     },
   };
 }

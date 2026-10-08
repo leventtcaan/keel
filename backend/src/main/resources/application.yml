@@ -91,6 +91,11 @@ keel:
     import:
       max-workouts: 20
       max-sets: 200
+    # A cardio session and the user's own cardio (K-959; the contract's maximums): ten hours is past any session, and a
+    # watch reading past 5000 kcal for one is a broken reading.
+    cardio:
+      max-minutes: 600
+      max-active-energy-kcal: 5000
     # A session left unfinished closes by itself (ADR-075 #5, SessionAutoClose) unfinished_session_close_hours after it
     # started (data/parameters/workout.json). Looked for every 15 minutes: a close a quarter hour late is nothing to a
     # session left for a day, and each run reads only the open sessions (their own index, V38 workout_open).

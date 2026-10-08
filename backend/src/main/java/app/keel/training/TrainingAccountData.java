@@ -1,16 +1,20 @@
 package app.keel.training;
 
+import app.keel.consent.ConsentKind;
+import app.keel.consent.ConsentWithdrawn;
 import app.keel.shared.AccountDataExport;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
 import java.util.Map;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
  * Training's part of the user's data (K-214): every workout with its sets, the program (K-211), what each program asked
- * (K-535) and its calls (K-217), the review's changes to it (K-956), the gyms (K-414), the user's own moves (K-424).
+ * (K-535) and its calls (K-217), the review's changes to it (K-956), the gyms (K-414), the user's own moves (K-424), the
+ * user's own cardio and the cardio sessions done (K-959).
  */
 @Component
 class TrainingAccountData implements AccountDataExport {
@@ -23,11 +27,13 @@ class TrainingAccountData implements AccountDataExport {
     private final GymStore gyms;
     private final CustomExerciseStore customs;
     private final ReviewChangeStore reviewChanges;
+    private final CardioStore cardio;
 
     TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs, TrainingCalls calls, GymStore gyms, CustomExerciseStore customs,
-            ReviewChangeStore reviewChanges) {
+            ReviewChangeStore reviewChanges, CardioStore cardio) {
         this.reviewChanges = reviewChanges;
         this.customs = customs;
+        this.cardio = cardio;
         this.calls = calls;
         this.gyms = gyms;
         this.jdbc = jdbc;
@@ -43,8 +49,16 @@ class TrainingAccountData implements AccountDataExport {
         // The program's days and moves go with it (on delete cascade); by account too, as for sets.
         // A gym's weights and machines go with it (on delete cascade); by account too.
         for (String table : new String[] {"program_change", "program_review_change", "program_history", "planned_exercise", "program_day", "program", "gym_weight", "gym_machine", "gym",
-            "custom_exercise"}) {
+            "custom_exercise", "cardio_plan_session", "cardio_plan", "cardio_session"}) {
             jdbc.sql("delete from training." + table + " where account_id = :account").param("account", deletion.account().value()).update();
+        }
+    }
+
+    /** Of training only a cardio session's active energy is health data (ADR-074 #5, K-231): in the withdrawal's transaction. */
+    @EventListener
+    void on(ConsentWithdrawn withdrawn) {
+        if (withdrawn.kind() == ConsentKind.HEALTH_DATA) {
+            cardio.clearActiveEnergy(withdrawn.account());
         }
     }
 
@@ -64,6 +78,9 @@ class TrainingAccountData implements AccountDataExport {
         training.put("programReviewChanges", reviewChanges.all(account));
         training.put("gyms", gyms.all(account));
         training.put("customExercises", customs.all(account));
+        cardio.userPlan(account).ifPresent(own -> training.put("cardioPlan", Map.of("minutes", own.minutes(), "sessions", own.sessions().stream()
+                .map(session -> Map.of("weekday", session.day(), "place", session.placement())).toList())));
+        training.put("cardioSessions", cardio.all(account));
         return training;
     }
 }

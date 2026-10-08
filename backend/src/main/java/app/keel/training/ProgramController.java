@@ -1,10 +1,16 @@
 package app.keel.training;
 
+import app.keel.engine.ActivityLevel;
 import app.keel.engine.BodyRegion;
+import app.keel.engine.CardioOrigin;
+import app.keel.engine.CardioPlacement;
+import app.keel.engine.CardioPrescription;
+import app.keel.engine.CardioSession;
 import app.keel.engine.LiftKind;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
+import app.keel.engine.Phase;
 import app.keel.engine.RepRange;
 import app.keel.engine.ReturnLoad;
 import app.keel.engine.Sex;
@@ -29,6 +35,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -103,11 +111,12 @@ class ProgramController {
     /**
      * Contract Program, with the deload ladder's calls in force today (K-217): a lighter week, a week off
      * ({@code restUntil}), the load held ({@code loadHeldSince}); back after a long break (K-531), a target a step lighter
-     * ({@code backAfterBreak}, absent otherwise); the program reviewed as it is now (K-956).
+     * ({@code backAfterBreak}, absent otherwise); the program reviewed as it is now (K-956); this week's
+     * cardio (K-959), absent where there is none.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Program(UUID id, ProgramStore.Source source, List<ProgramDay> days, DeloadWeek deload, LocalDate restUntil,
-            LocalDate loadHeldSince, Boolean backAfterBreak, ProgramReviews.Review review) {
+            LocalDate loadHeldSince, Boolean backAfterBreak, ProgramReviews.Review review, ProgramCardio cardio) {
     }
 
     /** Contract ReviewApply. */
@@ -120,6 +129,26 @@ class ProgramController {
 
     /** Contract ReviewUndone. */
     record ReviewUndone(Program program, List<UUID> alsoUndone) {
+    }
+
+    /**
+     * Contract ProgramCardio (K-959, ADR-074): this week's cardio, the days of this week with a session done, and whether a
+     * session after the weights runs past cardio_after_lift_max_minutes (#4: an info line, never a block; G2 K-35).
+     */
+    record ProgramCardio(CardioOrigin source, int minutes, int sessionsPerWeek, List<PlannedCardio> sessions, int doneThisWeek,
+            boolean afterLiftOverLine) {
+    }
+
+    /** Contract PlannedCardio: one session of the week, after the weights or on an off day. */
+    record PlannedCardio(DayOfWeek weekday, CardioPlacement place) {
+
+        static PlannedCardio of(CardioSession session) {
+            return new PlannedCardio(session.day(), session.placement());
+        }
+    }
+
+    /** Contract CardioPlan: the user's own cardio (ADR-074 #4); no sessions is cardio off. */
+    record CardioPlan(Integer minutes, List<PlannedCardio> sessions) {
     }
 
     private final ProgramStore store;
@@ -135,12 +164,19 @@ class ProgramController {
     private final TrainingLog log;
     private final StartingWeightReps startingWeightReps;
     private final ProgramReviews reviews;
+    private final CardioStore cardio;
+    private final CardioController.CardioLimits cardioLimits;
+    private final ObjectProvider<CurrentPhase> phases;
 
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
             WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log,
-            StartingWeightReps startingWeightReps, ProgramReviews reviews) {
+            StartingWeightReps startingWeightReps, ProgramReviews reviews, CardioStore cardio, CardioController.CardioLimits cardioLimits,
+            ObjectProvider<CurrentPhase> phases) {
         this.reviews = reviews;
         this.startingWeightReps = startingWeightReps;
+        this.cardio = cardio;
+        this.cardioLimits = cardioLimits;
+        this.phases = phases;
         this.gyms = gyms;
         this.log = log;
         this.calls = calls;
@@ -248,6 +284,29 @@ class ProgramController {
     }
 
     /**
+     * The user's own cardio (ADR-074 #4), in place of the engine's default; kept through a new program and a new phase. Each
+     * session as the user puts it, one a weekday at most: the user's own rests on no engine rule.
+     */
+    @PutMapping("/v1/program/cardio")
+    Program ownCardio(AccountId account, @RequestBody CardioPlan plan) {
+        require(cardioLimits.minutes(plan.minutes()) && plan.sessions() != null
+                && plan.sessions().stream().allMatch(session -> session != null && session.weekday() != null && session.place() != null)
+                && plan.sessions().stream().map(PlannedCardio::weekday).distinct().count() == plan.sessions().size());
+        ProgramStore.Program program = store.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        cardio.setUserPlan(account, CardioPrescription.user(plan.minutes(),
+                plan.sessions().stream().map(session -> new CardioSession(session.weekday(), session.place())).toList()));
+        return view(account, program);
+    }
+
+    /** Back to the coach's default (ADR-074 Ek 1): the user's own removed, the default follows the phase in force again. */
+    @DeleteMapping("/v1/program/cardio")
+    Program defaultCardio(AccountId account) {
+        ProgramStore.Program program = store.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        cardio.removeUserPlan(account);
+        return view(account, program);
+    }
+
+    /**
      * The engine's parameters for this user. The training ones have one value for both sexes; the profile's sex is used
      * when there is one, so a sex-specific parameter added later reads the right value.
      */
@@ -257,7 +316,8 @@ class ProgramController {
 
     /** The program as it is this week: the calls in force today on the user's calendar (K-217). */
     private Program view(AccountId account, ProgramStore.Program program) {
-        ZoneId zone = profiles.of(account).map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
+        Optional<ProfileFacts> facts = profiles.of(account);
+        ZoneId zone = facts.map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
         LocalDate today = LocalDate.now(clock.withZone(zone));
         List<TrainingChanges.Change> changes = calls.changes(account);
         Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(changes, TrainingChanges.Kind.LIGHTER_WEEK, today);
@@ -286,7 +346,26 @@ class ProgramController {
         return new Program(program.id(), program.source(), days, lighter.map(change -> new DeloadWeek(change.setsFactor(), change.endsOn())).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null),
-                backAfterBreak ? Boolean.TRUE : null, reviews.review(account, program, back.parameters()));
+                backAfterBreak ? Boolean.TRUE : null, reviews.review(account, program, back.parameters()),
+                cardioThisWeek(account, program, facts, today, back.parameters()).orElse(null));
+    }
+
+    /**
+     * This week's cardio (K-959, ADR-074): the user's own, else the engine's default for the phase in force (decision's,
+     * through CurrentPhase) on the program's training days and the profile's activity; none without either. Done: the days
+     * of this week with a cardio session.
+     */
+    private Optional<ProgramCardio> cardioThisWeek(AccountId account, ProgramStore.Program program, Optional<ProfileFacts> facts, LocalDate today,
+            Parameters p) {
+        Optional<CardioPrescription> own = cardio.userPlan(account);
+        Optional<Phase> phase = own.isPresent() ? Optional.empty()
+                : Optional.ofNullable(phases.getIfUnique()).flatMap(current -> current.of(account));
+        LocalDate monday = CardioWeek.weekOf(today);
+        return CardioWeek.prescription(own, phase, CardioWeek.trainingDays(program, facts.map(ProfileFacts::trainingDays).orElse(Set.of())),
+                        facts.flatMap(ProfileFacts::activity).map(activity -> ActivityLevel.valueOf(activity.name())), p)
+                .map(week -> new ProgramCardio(week.origin(), week.minutes(), week.sessions().size(),
+                        week.sessions().stream().map(PlannedCardio::of).toList(), cardio.daysWithCardio(account, monday, monday.plusWeeks(1)),
+                        week.afterLiftOverLine(p)));
     }
 
     /**

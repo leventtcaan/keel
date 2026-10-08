@@ -56,6 +56,8 @@ Health data is a special category under the GDPR (Art. 9). The app keeps it only
 - what you concluded from comparing your progress photos (better, same or worse) — never the photo itself;
 - the reference look you picked as closest to yours (a level, never a percentage);
 - a day's steps, sleep minutes and active energy, if you connect Apple Health;
+- the active energy an Apple Watch measured during a cardio session read from Apple Health (the session itself is in your
+  training log below);
 - your meals and saved recipes, with the calorie and macro ranges estimated when you logged them;
 - your plan (phase, daily calorie and step targets), and every weekly call with the data it was made from, so you can see
   why it was made and undo it. Each call also keeps an internal estimate the rules computed from your waist and the look you
@@ -74,7 +76,9 @@ catches anything that was being saved at that moment); the weekly calls stop unt
 ### Your training log {#data-training}
 
 Your workouts and sets (move, set type, load, reps, reps in reserve, side, supersets, your notes), your program and its
-history, lighter weeks and weeks off applied by a call, your gyms and their equipment, and moves you added yourself.
+history, lighter weeks and weeks off applied by a call, your gyms and their equipment, moves you added yourself, your own
+cardio if you changed the default (days, minutes, after the weights or on a day off), and the cardio sessions you did
+(the day, how long, typed or from Apple Health).
 
 *Why:* to coach your training (contract). The training log doesn't count as health data and doesn't need the health data
 consent, so withdrawing that consent leaves it in place. Importing past sessions from another app does need it, because

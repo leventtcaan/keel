@@ -627,6 +627,77 @@
    ]
   },
   {
+   "table": "training.cardio_plan",
+   "module": "training",
+   "class": "training",
+   "purpose": "Your own cardio, if you changed the default: how long each session is.",
+   "columns": [
+    "account_id",
+    "minutes"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "cardioPlan",
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.cardio_plan_session",
+   "module": "training",
+   "class": "training",
+   "purpose": "Your own cardio's days, and whether each is after the weights or on a day off.",
+   "columns": [
+    "account_id",
+    "weekday",
+    "place"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "cardioPlan.sessions",
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ]
+  },
+  {
+   "table": "training.cardio_session",
+   "module": "training",
+   "class": "training",
+   "purpose": "Cardio sessions you did: the day, how long, typed or from Apple Health, and the active energy an Apple Watch measured.",
+   "columns": [
+    "id",
+    "account_id",
+    "client_id",
+    "day",
+    "minutes",
+    "source",
+    "active_energy_kcal"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "cardioSessions",
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness",
+    "Health & Fitness › Health"
+   ],
+   "note": "The active energy needs HEALTH_DATA and is cleared when it is withdrawn; the session itself is training data (CardioController.java, TrainingAccountData.java)."
+  },
+  {
    "table": "privacy.deletion",
    "module": "privacy",
    "class": "technical",

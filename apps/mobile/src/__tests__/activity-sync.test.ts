@@ -40,6 +40,8 @@ function health(totals: Awaited<ReturnType<HealthAccess['readDailyTotals']>>, sl
     readWeights: async () => [],
     readDailyTotals: async () => (asked.push('totals'), totals),
     readSleep: async () => (asked.push('sleep'), sleep),
+    readWatchActiveEnergy: async () => undefined,
+    readCardioWorkouts: async () => [],
   };
   return { access, asked };
 }
@@ -137,6 +139,8 @@ test("late in the day, the window's oldest day still has its night: its sleep is
     readWeights: async () => [],
     readDailyTotals: async () => [{ day: oldestDay, steps: 5000 }],
     readSleep: async (from, to) => records.filter((r) => Date.parse(r.end) > from.getTime() && Date.parse(r.start) < to.getTime()),
+    readWatchActiveEnergy: async () => undefined,
+    readCardioWorkouts: async () => [],
   };
   const a = api();
 

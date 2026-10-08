@@ -158,3 +158,133 @@ test('sleep: asleep (unspecified, core, deep, REM) is sleep; in bed and awake ar
   expect(sleep.map((s) => s.asleep)).toEqual([false, true, false, true, true, true]);
   expect(sleep[0]).toEqual({ start: '2026-09-30T01:00:00.000Z', end: '2026-09-30T02:00:00.000Z', asleep: false });
 });
+
+// Cardio (K-959, ADR-074 #5, #6): the active energy an Apple Watch measured in a window, and the cardio workouts in one.
+// A watch's samples carry its product type ("Watch6,1"); the phone's own estimate ("iPhone14,2") is never shown.
+const watch = { productType: 'Watch6,1' };
+const phone = { productType: 'iPhone14,2' };
+const energy = (start: string, end: string, kcal: number, sourceRevision: { productType?: string }) => ({
+  uuid: `${start}-${kcal}`,
+  startDate: new Date(start),
+  endDate: new Date(end),
+  quantity: kcal,
+  sourceRevision,
+});
+
+test("a window's active energy is the sum of what a watch measured inside it, read in kcal over the window", async () => {
+  const asked: unknown[] = [];
+  const fake = {
+    ...kit(),
+    queryQuantitySamples: async (identifier: string, options: unknown) => {
+      asked.push({ identifier, options });
+      return [
+        energy('2026-10-05T17:00:00Z', '2026-10-05T17:01:00Z', 9.5, watch),
+        energy('2026-10-05T17:30:00Z', '2026-10-05T17:31:00Z', 10.5, { productType: 'watch2,4' }),
+        energy('2026-10-05T17:10:00Z', '2026-10-05T17:20:00Z', 40, phone),
+        energy('2026-10-05T16:59:30Z', '2026-10-05T17:00:30Z', 5, watch),
+      ];
+    },
+  };
+  const from = new Date('2026-10-05T17:00:00Z');
+  const to = new Date('2026-10-05T18:00:00Z');
+
+  const kcal = await healthKitAccess(
+    () => fake,
+    () => false,
+  ).readWatchActiveEnergy(from, to);
+
+  expect(asked).toEqual([
+    { identifier: 'HKQuantityTypeIdentifierActiveEnergyBurned', options: { limit: 0, unit: 'kcal', filter: { date: { startDate: from, endDate: to } } } },
+  ]);
+  expect(kcal).toBe(20);
+});
+
+test('without a watch in the window there is no energy: the phone guesses, the app never shows a guess', async () => {
+  const fake = { ...kit(), queryQuantitySamples: async () => [energy('2026-10-05T17:10:00Z', '2026-10-05T17:20:00Z', 40, phone)] };
+
+  const kcal = await healthKitAccess(
+    () => fake,
+    () => false,
+  ).readWatchActiveEnergy(new Date('2026-10-05T17:00:00Z'), new Date('2026-10-05T18:00:00Z'));
+
+  expect(kcal).toBeUndefined();
+});
+
+test("cardio workouts in a window: the cardio kinds only, never the app's own, minutes from Health's duration, a watch's energy", async () => {
+  const asked: unknown[] = [];
+  const workout = (uuid: string, type: number, start: string, end: string, seconds: number, metadata: object = {}) => ({
+    uuid,
+    workoutActivityType: type,
+    startDate: new Date(start),
+    endDate: new Date(end),
+    duration: { quantity: seconds, unit: 's' },
+    metadata,
+  });
+  const fake = {
+    ...kit(),
+    queryWorkoutSamples: async (options: unknown) => {
+      asked.push({ workouts: options });
+      // Elliptical (16), cycling (13) and HIIT (63: what happened is recorded, ADR-074 Ek 1) are cardio; strength (50),
+      // the app's own elliptical, soccer (41) and a 35-second elliptical (no session: under a minute) are not.
+      return [
+        workout('E1', 16, '2026-10-05T17:00:00Z', '2026-10-05T17:30:00Z', 1790),
+        workout('C1', 13, '2026-10-06T07:00:00Z', '2026-10-06T07:20:00Z', 1200),
+        workout('H1', 63, '2026-10-06T12:00:00Z', '2026-10-06T12:15:00Z', 900),
+        workout('S1', 50, '2026-10-05T16:00:00Z', '2026-10-05T17:00:00Z', 3600),
+        workout('K1', 16, '2026-10-05T18:00:00Z', '2026-10-05T18:30:00Z', 1800, { HKExternalUUID: 'keel:4f1c' }),
+        workout('F1', 41, '2026-10-06T18:00:00Z', '2026-10-06T19:30:00Z', 5400),
+        workout('T1', 16, '2026-10-06T20:00:00Z', '2026-10-06T20:00:35Z', 35),
+      ];
+    },
+    queryQuantitySamples: async (identifier: string, options: unknown) => {
+      asked.push({ identifier, options });
+      return [energy('2026-10-05T17:05:00Z', '2026-10-05T17:06:00Z', 12, watch), energy('2026-10-05T17:20:00Z', '2026-10-05T17:21:00Z', 11, watch)];
+    },
+  };
+  const from = new Date('2026-10-05T00:00:00Z');
+  const to = new Date('2026-10-07T00:00:00Z');
+
+  const cardio = await healthKitAccess(
+    () => fake,
+    () => false,
+  ).readCardioWorkouts(from, to);
+
+  expect(asked[0]).toEqual({ workouts: { limit: 0, filter: { date: { startDate: from, endDate: to } } } });
+  // The energy over each cardio workout's own window, never the days between them.
+  const window = (start: string, end: string) => ({
+    identifier: 'HKQuantityTypeIdentifierActiveEnergyBurned',
+    options: { limit: 0, unit: 'kcal', filter: { date: { startDate: new Date(start), endDate: new Date(end) } } },
+  });
+  expect(asked.slice(1)).toEqual([
+    window('2026-10-05T17:00:00Z', '2026-10-05T17:30:00Z'),
+    window('2026-10-06T07:00:00Z', '2026-10-06T07:20:00Z'),
+    window('2026-10-06T12:00:00Z', '2026-10-06T12:15:00Z'),
+  ]);
+  expect(cardio).toEqual([
+    { id: 'E1', start: '2026-10-05T17:00:00.000Z', end: '2026-10-05T17:30:00.000Z', minutes: 30, activeEnergyKcal: 23 },
+    { id: 'C1', start: '2026-10-06T07:00:00.000Z', end: '2026-10-06T07:20:00.000Z', minutes: 20 },
+    { id: 'H1', start: '2026-10-06T12:00:00.000Z', end: '2026-10-06T12:15:00.000Z', minutes: 15 },
+  ]);
+});
+
+test('no cardio workout in the window: nothing, and no energy read', async () => {
+  const read = jest.fn();
+  const fake = { ...kit(), queryWorkoutSamples: async () => [], queryQuantitySamples: read };
+
+  const cardio = await healthKitAccess(
+    () => fake,
+    () => false,
+  ).readCardioWorkouts(new Date('2026-10-05T00:00:00Z'), new Date('2026-10-07T00:00:00Z'));
+
+  expect(cardio).toEqual([]);
+  expect(read).not.toHaveBeenCalled();
+});
+
+test('where Apple Health is not available, the cardio reads refuse', async () => {
+  const access = healthKitAccess(
+    () => kit(false),
+    () => false,
+  );
+  await expect(access.readWatchActiveEnergy(new Date(), new Date())).rejects.toThrow();
+  await expect(access.readCardioWorkouts(new Date(), new Date())).rejects.toThrow();
+});
