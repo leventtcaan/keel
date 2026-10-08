@@ -167,12 +167,14 @@ class ProgramController {
     private final CardioStore cardio;
     private final CardioController.CardioLimits cardioLimits;
     private final ObjectProvider<CurrentPhase> phases;
+    private final CustomExerciseStore customs;
 
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
             WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log,
             StartingWeightReps startingWeightReps, ProgramReviews reviews, CardioStore cardio, CardioController.CardioLimits cardioLimits,
-            ObjectProvider<CurrentPhase> phases) {
+            ObjectProvider<CurrentPhase> phases, CustomExerciseStore customs) {
         this.reviews = reviews;
+        this.customs = customs;
         this.startingWeightReps = startingWeightReps;
         this.cardio = cardio;
         this.cardioLimits = cardioLimits;
@@ -209,6 +211,11 @@ class ProgramController {
         return view(account, store.replace(account, ProgramStore.Source.GENERATED, program));
     }
 
+    /**
+     * The user's own program: catalog moves, and the user's own moves (ADR-035 Ek 1, ADR-073 #1: an imported routine's move
+     * the catalog does not have). The engine applies no rule to an own move: no target, no in-session table (each reads the
+     * catalog and passes over what it does not hold).
+     */
     @PutMapping("/v1/program")
     Program own(AccountId account, @RequestBody OwnProgram own) {
         require(own.days() != null && !own.days().isEmpty() && own.days().size() <= DayOfWeek.values().length);
@@ -220,7 +227,9 @@ class ProgramController {
             require(day.weekday() == null || weekdays.add(day.weekday()));
             require(day.exercises() != null && !day.exercises().isEmpty() && day.exercises().size() <= limits.maxDayExercises());
             return new ProgramStore.Day(null, null, day.name().strip(), day.weekday(), day.exercises().stream().map(exercise -> {
-                require(exercise != null && catalog.find(exercise.exerciseId()).isPresent() && exercise.sets() != null
+                require(exercise != null && exercise.exerciseId() != null
+                        && (catalog.find(exercise.exerciseId()).isPresent() || customs.find(account, exercise.exerciseId()).isPresent())
+                        && exercise.sets() != null
                         && exercise.sets() >= 1 && exercise.sets() <= limits.maxPlannedSets() && exercise.reps() != null
                         && exercise.reps().min() != null && exercise.reps().max() != null && exercise.reps().min() >= 1
                         && exercise.reps().max() > exercise.reps().min() && exercise.reps().max() <= limits.maxReps());

@@ -27,6 +27,11 @@ export const workoutParams = {
   healthWorkoutMaxMinutes: param<number>('health_workout_max_minutes'),
   evaluationWindowDays: param<number>('evaluation_window_days'),
   effortCallWindowWeeks: param<number>('effort_call_window_weeks'),
+  /** The user's own program as the contract takes it (OwnProgram). */
+  programDaysMax: param<number>('program_days_max'),
+  programDayMovesMax: param<number>('program_day_moves_max'),
+  programMoveSetsMax: param<number>('program_move_sets_max'),
+  programDayNameMaxChars: param<number>('program_day_name_max_chars'),
   warmup: {
     first: {
       sets: param<number>('warmup_sets_first_move'),

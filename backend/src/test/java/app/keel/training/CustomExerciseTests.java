@@ -179,14 +179,58 @@ class CustomExerciseTests {
                 .hasStatus(400);
     }
 
+    /**
+     * ADR-035 Ek 1 (Levent, 2026-10-08; ADR-073 #1): the user's own program may carry their own move — an imported routine's
+     * move the catalog does not have. The engine applies no rule to it: no target, nothing from the in-session table.
+     */
     @Test
-    void aProgramIsMadeOfCatalogMovesOnly() throws Exception {
+    void anOwnProgramMayCarryTheUsersOwnMoveWithNoTarget() throws Exception {
         AccountId account = TestSessions.newAccount();
         String id = (String) map(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Landmine press", "COMPOUND", "EXTERNAL",
                 "BARBELL", true))).get("id");
 
-        assertThat(send(account, "PUT", "/v1/program", day(id))).hasStatus(400);
-        assertThat(send(account, "PUT", "/v1/program", day("bench_press"))).as("the same program with a catalog move").hasStatusOk();
+        MvcTestResult stored = send(account, "PUT", "/v1/program", day(id));
+
+        assertThat(stored).hasStatusOk();
+        Map<String, Object> program = map(stored);
+        assertThat(program).containsEntry("source", "OWN");
+        Map<String, Object> planned = ((List<Map<String, Object>>) ((List<Map<String, Object>>) program.get("days")).getFirst().get("exercises")).getFirst();
+        assertThat(planned).containsEntry("exerciseId", id).containsEntry("sets", 3).containsEntry("reps", Map.of("min", 6, "max", 8))
+                .doesNotContainKeys("nextLoadKg", "nextReps", "lighterLoadKg", "heavierLoadKg", "calibrationStepKg", "lastBestSet", "nextLoadAtTopKg");
+        assertThat(map(send(account, "GET", "/v1/program", null))).isEqualTo(program);
+    }
+
+    @Test
+    void finishingADayWithAnOwnMoveSetsTheCatalogMovesTargetsAndNoneForIt() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        String id = (String) map(send(account, "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Landmine press", "COMPOUND", "EXTERNAL",
+                "BARBELL", false))).get("id");
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", Map.of("days", List.of(Map.of("name", "Upper", "weekday", "MONDAY",
+                "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 8)),
+                        Map.of("exerciseId", id, "sets", 3, "reps", Map.of("min", 6, "max", 8))))))));
+        String dayId = (String) ((List<Map<String, Object>>) program.get("days")).getFirst().get("id");
+        String workout = (String) map(send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-09-30T15:40:00Z",
+                "programDayId", dayId))).get("id");
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/sets", set("bench_press", 60, null))).hasStatus(201);
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/sets", set(id, 40, null))).hasStatus(201);
+
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-09-30T16:30:00Z"))).hasStatusOk();
+
+        List<Map<String, Object>> planned = (List<Map<String, Object>>) ((List<Map<String, Object>>) map(send(account, "GET", "/v1/program", null))
+                .get("days")).getFirst().get("exercises");
+        assertThat(planned.get(0)).containsEntry("exerciseId", "bench_press").containsKeys("nextLoadKg", "nextReps");
+        assertThat(planned.get(1)).containsEntry("exerciseId", id).doesNotContainKeys("nextLoadKg", "nextReps", "lastBestSet");
+    }
+
+    @Test
+    void anotherUsersMoveIsNotInAProgram() throws Exception {
+        String id = (String) map(send(TestSessions.newAccount(), "POST", "/v1/custom-exercises", move(UUID.randomUUID(), "Landmine press", "COMPOUND",
+                "EXTERNAL", "BARBELL", true))).get("id");
+        AccountId other = TestSessions.newAccount();
+
+        assertThat(send(other, "PUT", "/v1/program", day(id))).hasStatus(400);
+        assertThat(send(other, "PUT", "/v1/program", day("custom:" + UUID.randomUUID()))).as("no such move").hasStatus(400);
+        assertThat(send(other, "GET", "/v1/program", null)).as("nothing stored").hasStatus(404);
     }
 
     private static Map<String, Object> day(String exerciseId) {
