@@ -2,11 +2,24 @@
  * The onboarding draft (K-306): what the user has answered so far, whether a step can be left, and the profile it
  * becomes. Pure — no screen, no network — so every rule is checked here, fast.
  */
-import { avoidList, birthYearProblem, emptyDraft, heightCm, stepComplete, toProfile, type Draft } from '@/onboarding/draft';
+import type { components } from '@/api/schema';
+import { avoidList, birthYearProblem, broughtProgram, emptyDraft, heightCm, stepComplete, toProfile, type Draft } from '@/onboarding/draft';
 import { RETIRED_STEPS, SCREENS } from '@/onboarding/flow';
 import { onboardingParams } from '@/onboarding/params';
 
 const THIS_YEAR = 2026;
+
+/** A program the server kept for the user (PUT /v1/program): two days on a weekday, one on none. */
+const planned = { exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
+const OWN: components['schemas']['Program'] = {
+  id: 'p1',
+  source: 'OWN',
+  days: [
+    { id: 'd1', name: 'Pull', weekday: 'THURSDAY', exercises: [planned] },
+    { id: 'd2', name: 'Push', weekday: 'MONDAY', exercises: [planned] },
+    { id: 'd3', name: 'Arms', exercises: [planned] },
+  ],
+};
 
 function complete(overrides: Partial<Draft> = {}): Draft {
   return {
@@ -20,6 +33,7 @@ function complete(overrides: Partial<Draft> = {}): Draft {
     sex: 'FEMALE',
     activityLevel: 'LOW_ACTIVE',
     healthConsent: 'declined',
+    ownProgram: OWN,
     ...overrides,
   };
 }
@@ -64,6 +78,23 @@ describe('training days: one question, how many (ADR-072 #4)', () => {
   test('the days step needs only the days placed: last month and a usual time are no longer asked', () => {
     expect(stepComplete('days', complete({ trainingDays: [] }), 'METRIC', THIS_YEAR)).toBe(false);
     expect(stepComplete('days', { ...emptyDraft, trainingDays: ['MONDAY', 'THURSDAY'] }, 'METRIC', THIS_YEAR)).toBe(true);
+  });
+});
+
+describe('bringing a program (K-968, ADR-073 #1)', () => {
+  test('the step is left once the program is kept on the server, not before', () => {
+    expect(stepComplete('ownProgram', emptyDraft, 'METRIC', THIS_YEAR)).toBe(false);
+    expect(stepComplete('ownProgram', { ...emptyDraft, ...broughtProgram(OWN) }, 'METRIC', THIS_YEAR)).toBe(true);
+  });
+
+  test("the program's weekdays are the training days, Monday first; a day on no weekday adds none", () => {
+    expect(broughtProgram(OWN)).toEqual({ ownProgram: OWN, trainingDays: ['MONDAY', 'THURSDAY'] });
+  });
+
+  test('the profile of someone who brought a program: its days, and no days question asked', () => {
+    const own = { ...complete({ programChoice: 'BRING_MY_OWN', trainingDays: ['FRIDAY'] }), ...broughtProgram(OWN) };
+    expect(toProfile(own, CONTEXT)).toMatchObject({ programChoice: 'BRING_MY_OWN', schedule: { trainingDays: ['MONDAY', 'THURSDAY'] } });
+    expect(() => toProfile({ ...own, ownProgram: null }, CONTEXT)).toThrow();
   });
 });
 

@@ -11,7 +11,7 @@ import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
-import type { TrainData } from '@/train/trainData';
+import { type Move, type TrainData, ownMove } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 
@@ -46,9 +46,10 @@ const mockRead = jest.fn(async () => mockData);
 let mockRecords: LocalRecord[] = [];
 const mockRecord = jest.fn(async (_outbound: Outbound) => true);
 let mockDeclared: Schemas['DeclaredState'] | null = null;
+let mockOwn: Move[] = [];
 const mockServices = {
   api: {},
-  training: { read: mockRead },
+  training: { read: mockRead, own: async () => mockOwn },
   state: { current: async () => mockDeclared },
   workoutRecords: async () => mockRecords,
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
@@ -82,6 +83,7 @@ beforeEach(() => {
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockDeclared = null;
   mockRecords = [];
+  mockOwn = [];
 });
 
 const show = () =>
@@ -199,4 +201,15 @@ test('a move opens its history and records (K-415), named for a screen reader', 
   await show();
   await fireEvent.press(await screen.findByLabelText('Squat: history'));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise-history', params: { exercise: 'squat' } });
+});
+
+test("the user's own move in their program is named as they named it, never by its id (K-968)", async () => {
+  const own = ownMove({ id: 'custom:8a1d', clientId: 'c1', name: 'Landmine press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false });
+  mockOwn = [own];
+  const day = { ...PROGRAM.days[0], exercises: [{ exerciseId: own.id, baseSets: 3, sets: 3, reps: { min: 8, max: 12 }, targetRir: 1 }] };
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, source: 'OWN', days: [day] } } };
+  await show();
+  expect(await screen.findByText('Landmine press')).toBeTruthy();
+  expect(screen.getByRole('button', { name: t('history.openLabel', { exercise: 'Landmine press' }) })).toBeTruthy();
+  expect(screen.queryByText(/custom:/)).toBeNull();
 });

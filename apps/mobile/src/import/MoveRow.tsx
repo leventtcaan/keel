@@ -25,7 +25,17 @@ type Props = {
   moves: Move[];
   byId: ReadonlyMap<string, Move>;
   onPick: (id: string | null) => void;
-  onSavedOwn: (own: Schemas['CustomExercise']) => void;
+  /** An own move saved here (when the screen does not take its answers instead, `onOwnAnswered`). */
+  onSavedOwn?: (own: Schemas['CustomExercise']) => void;
+  /** In place of the file's set count, a line of the screen's own (the program draft's sets and reps). Already translated. */
+  detail?: string;
+  /** In place of "not brought in", what no move means on the screen (the program draft: not yet a move). Already translated. */
+  unmatched?: string;
+  /**
+   * Given, an own move's answers are handed back instead of saved: the screen sends them later (the program draft sends
+   * them only with the program the user confirms, ADR-073 Ek 2).
+   */
+  onOwnAnswered?: (body: Schemas['NewCustomExercise']) => void;
 };
 
 /**
@@ -33,7 +43,7 @@ type Props = {
  * moves are offered one tap each; "Other" finds any move by name; "My own move" makes one (K-416, the engine's questions
  * asked, never assumed). Left out, its sets stay in the file.
  */
-export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Props) {
+export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn, detail, unmatched, onOwnAnswered }: Props) {
   const { api, training, report } = useAppServices();
   const { color } = useTheme();
   const [mode, setMode] = useState<'view' | 'search' | 'own'>('view');
@@ -46,6 +56,11 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Pr
 
   // Saved online, as on the session screen (K-416): kept on the phone from the server's answer at once.
   const saveOwn = async (body: Schemas['NewCustomExercise']): Promise<SaveOutcome> => {
+    if (onOwnAnswered !== undefined) {
+      onOwnAnswered(body);
+      setMode('view');
+      return 'saved';
+    }
     try {
       const { data: kept, error } = await api.POST('/v1/custom-exercises', { body });
       if (kept === undefined) {
@@ -53,7 +68,7 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Pr
         return 'refused';
       }
       await training.saved(kept);
-      onSavedOwn(kept);
+      onSavedOwn?.(kept);
       setMode('view');
       return 'saved';
     } catch (error) {
@@ -80,8 +95,8 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Pr
   return (
     <View style={[styles.row, { borderColor: color.line }]}>
       <Text style={[styles.name, { color: color.text }]}>{file}</Text>
-      <Text style={[styles.small, { color: color.muted }]}>{t('import.sets', { count: matched.sets })}</Text>
-      <Status chosen={chosen} byId={byId} />
+      <Text style={[styles.small, { color: color.muted }]}>{detail ?? t('import.sets', { count: matched.sets })}</Text>
+      <Status chosen={chosen} byId={byId} unmatched={unmatched} />
       {offers && <Offers file={file} ids={matched.suggestions} byId={byId} onPick={(id) => take(id)} />}
       {searching && <Search file={file} query={query} onQuery={setQuery} moves={moves} byId={byId} onPick={(id) => take(id)} />}
       {below}
@@ -89,9 +104,9 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Pr
   );
 }
 
-function Status({ chosen, byId }: { chosen: string | null; byId: ReadonlyMap<string, Move> }) {
+function Status({ chosen, byId, unmatched }: { chosen: string | null; byId: ReadonlyMap<string, Move>; unmatched?: string }) {
   const { color } = useTheme();
-  const words = chosen === null ? t('import.notMatched') : t('import.matched', { move: exerciseName(chosen, byId) });
+  const words = chosen === null ? (unmatched ?? t('import.notMatched')) : t('import.matched', { move: exerciseName(chosen, byId) });
   return <Text style={[styles.text, { color: color.text }]}>{words}</Text>;
 }
 
