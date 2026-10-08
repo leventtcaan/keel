@@ -288,7 +288,7 @@ describe("today's session is the server's (K-971, K-964, ADR-073 Ek 3): its move
   const squat: Schemas['PlannedExercise'] = { exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, nextLoadKg: 100 };
   const row: Schemas['PlannedExercise'] = { exerciseId: 'barbell_row', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
   const curl: Schemas['PlannedExercise'] = { exerciseId: 'curl', baseSets: 2, sets: 2, reps: { min: 8, max: 12 }, targetRir: 1 };
-  const day: Schemas['ProgramDay'] = { id: 'd1', nameKey: 'full_body_a', exercises: [squat, { ...bench, nextLoadKg: 60 }, row, curl] };
+  const day: Schemas['ProgramDay'] = { id: 'd1', nameKey: 'programDays.full_body_a.name', exercises: [squat, { ...bench, nextLoadKg: 60 }, row, curl] };
   const week = (session: Partial<Schemas['WeekSession']>): Schemas['WeekSession'][] => [
     { programDayId: 'other', date: '2026-10-05', exerciseIds: ['x'] },
     { programDayId: 'd1', date: '2026-10-07', exerciseIds: day.exercises.map((e) => e.exerciseId), ...session },
