@@ -36,6 +36,8 @@ export type Draft = {
   waist: string;
   avoid: string;
   ids: { weighIn: string; waist: string };
+  /** The program the user brought in, as the server kept it (PUT /v1/program, K-968); its review rides on it. */
+  ownProgram: Schemas['Program'] | null;
 };
 
 export const emptyDraft: Draft = {
@@ -52,7 +54,17 @@ export const emptyDraft: Draft = {
   waist: '',
   avoid: '',
   ids: { weighIn: '', waist: '' },
+  ownProgram: null,
 };
+
+/**
+ * A program brought in (ADR-073 #1) answers the days question: its weekdays are the training days, Monday first. A day
+ * on no weekday adds none.
+ */
+export function broughtProgram(program: Schemas['Program']): Pick<Draft, 'ownProgram' | 'trainingDays'> {
+  const on = new Set(program.days.flatMap((day) => (day.weekday === undefined ? [] : [day.weekday])));
+  return { ownProgram: program, trainingDays: WEEK.filter((weekday) => on.has(weekday)) };
+}
 
 export type BirthYearProblem = 'missing' | 'not_a_year' | 'too_young';
 
@@ -96,6 +108,8 @@ export function stepComplete(step: Step | RetiredStep, draft: Draft, system: Uni
       return draft.experience !== null;
     case 'program':
       return draft.programChoice !== null;
+    case 'ownProgram':
+      return draft.ownProgram !== null;
     case 'days':
       return draft.trainingDays.length > 0;
     case 'consent':

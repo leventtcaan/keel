@@ -15,6 +15,7 @@ import { tokens } from '@/theme/tokens';
 import { programToday } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { dayName, exerciseName, nextLine, programNotes, rackNote, repsLine, setsLine } from '@/train/program';
+import { movesOf } from '@/train/trainData';
 import { activeWorkout } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -33,13 +34,19 @@ export default function TrainScreen() {
   const { day, data, reload } = useReadOnFocus(
     useCallback(async () => {
       // A state declared, as the phone last knew it (K-518): a busy week brings its least dose (K-528).
-      const [read, records, declared] = await Promise.all([training.read(api), workoutRecords(), state.current().catch(() => null)]);
-      return { ...read, active: activeWorkout(records), declared };
+      // The user's own moves too: an own program names them by the user's words, never by their id (K-968).
+      const [read, own, records, declared] = await Promise.all([
+        training.read(api),
+        training.own(api),
+        workoutRecords(),
+        state.current().catch(() => null),
+      ]);
+      return { ...read, own, active: activeWorkout(records), declared };
     }, [api, training, workoutRecords, state]),
   );
 
   const program = data?.program.state === 'ready' ? data.program.value : null;
-  const moves = new Map((data?.exercises.state === 'ready' ? data.exercises.value : []).map((move) => [move.id, move]));
+  const moves = movesOf(data, data?.own ?? []);
   const today = program === null ? null : programToday(program, day);
   const active = data?.active ?? null;
 
@@ -114,9 +121,9 @@ export default function TrainScreen() {
             <View key={`${planned.exerciseId}-${index}`} style={styles.move}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('history.openLabel', { exercise: exerciseName(planned.exerciseId) })}
+                accessibilityLabel={t('history.openLabel', { exercise: exerciseName(planned.exerciseId, moves) })}
                 onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: planned.exerciseId } })}>
-                <Text style={[styles.text, { color: color.text }]}>{exerciseName(planned.exerciseId)}</Text>
+                <Text style={[styles.text, { color: color.text }]}>{exerciseName(planned.exerciseId, moves)}</Text>
               </Pressable>
               <Text style={[styles.small, { color: color.textSecondary }]}>{`${setsLine(planned)} · ${repsLine(planned)}`}</Text>
               {next !== null && <Text style={[styles.small, { color: color.text }]}>{next}</Text>}

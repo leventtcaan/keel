@@ -71,8 +71,14 @@
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-968",
-      "file": null,
-      "keys": [],
+      "file": "src/app/onboarding/own-program.tsx",
+      "keys": [
+        "onboarding.own.title",
+        "onboarding.own.why",
+        "onboarding.own.import.title",
+        "onboarding.own.import.tag",
+        "onboarding.own.import.body"
+      ],
       "notFirstView": []
     },
     {

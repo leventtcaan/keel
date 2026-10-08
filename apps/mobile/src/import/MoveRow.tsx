@@ -26,6 +26,10 @@ type Props = {
   byId: ReadonlyMap<string, Move>;
   onPick: (id: string | null) => void;
   onSavedOwn: (own: Schemas['CustomExercise']) => void;
+  /** In place of the file's set count, a line of the screen's own (the program draft's sets and reps). Already translated. */
+  detail?: string;
+  /** In place of "not brought in", what no move means on the screen (the program draft: not yet a move). Already translated. */
+  unmatched?: string;
 };
 
 /**
@@ -33,7 +37,7 @@ type Props = {
  * moves are offered one tap each; "Other" finds any move by name; "My own move" makes one (K-416, the engine's questions
  * asked, never assumed). Left out, its sets stay in the file.
  */
-export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Props) {
+export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn, detail, unmatched }: Props) {
   const { api, training, report } = useAppServices();
   const { color } = useTheme();
   const [mode, setMode] = useState<'view' | 'search' | 'own'>('view');
@@ -80,8 +84,8 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Pr
   return (
     <View style={[styles.row, { borderColor: color.line }]}>
       <Text style={[styles.name, { color: color.text }]}>{file}</Text>
-      <Text style={[styles.small, { color: color.muted }]}>{t('import.sets', { count: matched.sets })}</Text>
-      <Status chosen={chosen} byId={byId} />
+      <Text style={[styles.small, { color: color.muted }]}>{detail ?? t('import.sets', { count: matched.sets })}</Text>
+      <Status chosen={chosen} byId={byId} unmatched={unmatched} />
       {offers && <Offers file={file} ids={matched.suggestions} byId={byId} onPick={(id) => take(id)} />}
       {searching && <Search file={file} query={query} onQuery={setQuery} moves={moves} byId={byId} onPick={(id) => take(id)} />}
       {below}
@@ -89,9 +93,9 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn }: Pr
   );
 }
 
-function Status({ chosen, byId }: { chosen: string | null; byId: ReadonlyMap<string, Move> }) {
+function Status({ chosen, byId, unmatched }: { chosen: string | null; byId: ReadonlyMap<string, Move>; unmatched?: string }) {
   const { color } = useTheme();
-  const words = chosen === null ? t('import.notMatched') : t('import.matched', { move: exerciseName(chosen, byId) });
+  const words = chosen === null ? (unmatched ?? t('import.notMatched')) : t('import.matched', { move: exerciseName(chosen, byId) });
   return <Text style={[styles.text, { color: color.text }]}>{words}</Text>;
 }
 

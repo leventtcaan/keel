@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { type DraftDay, draftProgram, ownProgram, type ProgramDraft } from '@/import/draft';
+import { type DraftDay, draftProgram, namesFor, ownProgram, type ProgramDraft } from '@/import/draft';
 import { type FileSession, readExport } from '@/import/formats';
 import { importParams } from '@/import/params';
 import { workoutParams } from '@/train/params';
@@ -282,5 +282,22 @@ describe('confirming it', () => {
 
   test('until then there is no program to send', () => {
     expect(ownProgram(draft, new Map())).toBeNull();
+  });
+});
+
+describe("a choice for a draft's name (K-968)", () => {
+  test("is made on every spelling of it in the file: the draft's name is one of them, trimmed", () => {
+    const names = ['Landmine Press', 'landmine  press ', 'Landmine Row', 'Bench Press (Barbell)'];
+    expect(namesFor('Landmine Press', names)).toEqual(['Landmine Press', 'landmine  press ']);
+    expect(namesFor('Cable Fly', names)).toEqual([]);
+  });
+
+  test('picked or left out on every spelling, the name is gone from the draft', () => {
+    const lower = (name: string): FileSession => session('Upper', 2026, 3, 2, [['Bench Press (Barbell)', [8, 8]], [name, [12, 12]]]);
+    const sessions = [lower('Landmine Press'), { ...lower('landmine press'), startedAt: new Date(2026, 2, 9, 18, 0) }];
+    const spellings = namesFor('Landmine Press', ['Bench Press (Barbell)', 'Landmine Press', 'landmine press']);
+    const choices = new Map<string, string | null>([['Bench Press (Barbell)', 'bench_press'], ...spellings.map((n) => [n, 'custom:1'] as const)]);
+    expect(JSON.stringify(draftProgram(sessions, choices, nothingLeftOut))).not.toContain('ownName');
+    expect(JSON.stringify(draftProgram(sessions, new Map([['Bench Press (Barbell)', 'bench_press']]), new Set(spellings)))).not.toContain('andmine');
   });
 });

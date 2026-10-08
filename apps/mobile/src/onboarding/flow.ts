@@ -48,7 +48,7 @@ export function questionsOf(branch: Branch): readonly Question[] {
 }
 
 /** The steps that have a screen (each one a route, StepFrame's ROUTES). */
-export const SCREENS = ['goal', 'experience', 'program', 'days', 'consent', 'about', 'activity'] as const;
+export const SCREENS = ['goal', 'experience', 'program', 'ownProgram', 'days', 'consent', 'about', 'activity'] as const;
 export type Step = (typeof SCREENS)[number];
 
 /**
@@ -62,10 +62,9 @@ const isStep = (question: Question): question is Question & Step => (SCREENS as 
 
 /**
  * A question without its screen yet is asked by the screen that asks it today, or skipped: the starting weights join
- * with K-967; bringing a program and its review with K-968, and until then the days are asked as they always were.
+ * with K-967, the program's review with its screen (K-968).
  */
 const STAND_IN: Record<Exclude<Question, Step>, Step | null> = {
-  ownProgram: 'days',
   review: null,
   weights: null,
 };

@@ -1610,6 +1610,32 @@
         "body": "We review it."
       }
     },
+    "own": {
+      "title": "Bring your program",
+      "why": "We check it against what works. You decide.",
+      "import": { "title": "Import from Strong or Hevy", "tag": "Fastest", "body": "Read on this phone" }
+    },
+    "programImport": {
+      "title": "Your program from a file",
+      "intro": "Export your workouts from Strong or Hevy, then choose the file. Each routine you keep doing becomes a day.",
+      "privacy": "The file stays on this phone. Only the program you confirm is sent.",
+      "choose": "Choose a file",
+      "chooseAnother": "Choose another file",
+      "noRoutine": "No routine in this file repeats enough to make a program from it.",
+      "summary": "From {app} · days: {days} · moves: {moves}",
+      "anyDay": "No set day",
+      "move": "{sets} × {min}-{max} reps",
+      "unmatched": "Not in our moves. Pick one, make it your own, or leave it out.",
+      "leaveOut": "Leave out",
+      "leaveOutLabel": "Leave {name} out of the program",
+      "waiting": "Pick a move for each name above, or leave it out.",
+      "confirm": "Use this program",
+      "saving": "Saving your program…",
+      "failed": {
+        "NoConnection": "No connection. Try again when you're online.",
+        "other": "The program couldn't be saved. Try again."
+      }
+    },
     "days": {
       "title": "How many days a week?",
       "why": "Pick what you can keep.",

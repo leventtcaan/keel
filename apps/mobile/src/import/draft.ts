@@ -165,6 +165,14 @@ function fit(name: string): string {
 }
 
 /**
+ * The file's names that a draft's `ownName` stands for (the same but for case or spaces): a choice for it, picked or left
+ * out, is made on each of them, as the mapping and `leftOut` are by the file's names.
+ */
+export function namesFor(ownName: string, names: Iterable<string>): string[] {
+  return [...names].filter((name) => same(name) === same(ownName));
+}
+
+/**
  * The draft as the user's own program (contract OwnProgram), once each move named only by the file is the own move made
  * for it (`own`: the file's name → its id). Null while one is not: such a move never goes in under a guess.
  */

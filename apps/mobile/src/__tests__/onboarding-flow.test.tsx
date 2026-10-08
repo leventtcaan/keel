@@ -275,7 +275,7 @@ describe('the walk through', () => {
     const router = await open();
     await choose(t('onboarding.goal.decide_for_me.title'));
     await choose(t('onboarding.experience.Y1_3'));
-    await choose(t('onboarding.program.bring_my_own.title'));
+    await choose(t('onboarding.program.build_one_for_me.title'));
     await choose(t('onboarding.days.label', { count: 2 }));
     expect(router.getPathname()).toBe('/onboarding/health-data');
     await press(t('onboarding.healthData.notNow'));
@@ -296,7 +296,7 @@ describe('the walk through', () => {
       birthYear: SUGGESTED_YEAR - 3,
       activityLevel: 'LOW_ACTIVE',
       experience: 'Y1_3',
-      programChoice: 'BRING_MY_OWN',
+      programChoice: 'BUILD_ONE_FOR_ME',
       schedule: {
         trainingDays: ['MONDAY', 'THURSDAY'],
         checkInDay: 'MONDAY',
@@ -454,10 +454,10 @@ describe('program (ADR-072 #2)', () => {
     ]);
   });
 
-  test('bringing a program opens its branch, which asks the days until bringing it in has its screen (K-968)', async () => {
+  test('bringing a program opens its branch: the program is brought in in place of the days (K-968)', async () => {
     const router = await walkTo('program');
     await choose(t('onboarding.program.bring_my_own.title'));
-    expect(router.getPathname()).toBe('/onboarding/days');
+    expect(router.getPathname()).toBe('/onboarding/own-program');
   });
 });
 
@@ -488,11 +488,15 @@ describe('the step indicator follows the branch', () => {
   test.each([
     ['a new lifter', 'NEW', 'build_one_for_me'],
     ['an experienced lifter', 'Y3_PLUS', 'build_one_for_me'],
-    ['an own program', 'UNDER_1Y', 'bring_my_own'],
   ] as const)('%s: the steps of its walk (flow.ts), this one filled', async (_, experience, program) => {
-    const total = walk({ experience, programChoice: program === 'bring_my_own' ? 'BRING_MY_OWN' : 'BUILD_ONE_FOR_ME' }).length;
     await walkTo('days', { experience, program });
-    expect(indicator(4, total)).toBeOnTheScreen();
+    expect(indicator(4, 7)).toBeOnTheScreen();
+  });
+
+  test('an own program: bringing it in is the fourth of seven steps, in place of the days (K-968)', async () => {
+    await walkTo('program', { experience: 'UNDER_1Y' });
+    await choose(t('onboarding.program.bring_my_own.title'));
+    expect(indicator(4, 7)).toBeOnTheScreen();
   });
 
   test('on the first question: step 1', async () => {
