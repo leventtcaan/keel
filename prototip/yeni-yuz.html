@@ -294,8 +294,9 @@ button{cursor:pointer}
 .tdays button[aria-pressed="true"]{background:var(--block);color:var(--block-fg)}
 .tdays button small{display:block;font-weight:600;font-size:12px;opacity:.75}
 .tday{display:grid;gap:10px}
-.tday label.tname{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
-.tday input{min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:700 17px var(--f-body);padding-inline:12px}
+.tday label.tname,.ownmv label.tname{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+.ownmv{display:grid;gap:8px}
+.tday input,.ownmv input{min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:700 17px var(--f-body);padding-inline:12px}
 .twd{display:flex;gap:4px;flex-wrap:wrap}
 .twd button{min-width:44px;min-height:40px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-weight:700;font-size:14px}
 .twd button[aria-pressed="true"]{background:var(--block);color:var(--block-fg);border-color:transparent}
@@ -308,6 +309,17 @@ button{cursor:pointer}
 .tstep button{width:40px;height:40px;border:0;background:none;color:var(--ink);display:grid;place-items:center}
 .tstep span{text-align:center;font:900 20px/1 var(--f-display)}
 .tstep span small{display:block;font:700 11px/1.2 var(--f-body);color:var(--muted)}
+.tsteps.three{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.tsteps.three .tstep{grid-template-columns:34px minmax(0,1fr) 34px}
+.tsteps.three .tstep button{width:34px;height:44px}
+.tsteps.three .tstep span{font-size:19px}
+.thead3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding-inline:10px;font-size:12.5px;font-weight:800;color:var(--muted);text-align:center;margin-bottom:-4px}
+.tmove{padding:10px}
+.tmove .th b,.tdhead .tdn{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.tnrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+.tdel{width:44px;height:44px;border:0;background:none;color:var(--muted);display:grid;place-items:center}
+.tdcard.empty0{border-style:dashed}
+.warn0{color:var(--warn)}
 .tadd{min-height:48px;border:1.5px dashed var(--line);border-radius:14px;background:none;color:var(--accent-text);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:6px}
 
 /* review */
@@ -465,6 +477,7 @@ button{cursor:pointer}
 .done-hero h1{margin:0;font:900 48px/.9 var(--f-display);text-transform:uppercase;animation:rise .6s ease-out}
 .done-hero p{margin:0;font-size:15.5px;font-weight:700;color:var(--muted)}
 .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.statgrid > div:last-child:nth-child(odd){grid-column:1/-1}
 .statgrid div{background:var(--surface);border-radius:16px;padding:14px;display:grid;gap:2px;animation:rise .5s ease-out}
 .statgrid b{font:900 36px/1 var(--f-display)}
 .statgrid span{font-size:13.5px;font-weight:700;color:var(--muted)}
@@ -604,6 +617,7 @@ button{cursor:pointer}
         <li><b>Antrenman sonu:</b> kutlama, kaldırılan toplam kilo, Apple Watch kalorisi, rekor, kas haritası. Paylaşım buradan.</li>
         <li><b>Paylaşım:</b> "the call" kalktı; antrenman, rekor, seri, gelişim çıkartmaları; fotoğraf ya da video, hareketli sayılar.</li>
         <li><b>Yeni (8 Eki):</b> "Type it in" artık bir ekran (#ob-type): bütün günlerin alt alta, her gün kendi kartında; "Add a day" ile 7 güne kadar. Değerlendir lütfen.</li>
+        <li><b>Kullanıcı testi (8 Eki):</b> 6 kişilik yürüyüşün tasarım bulguları işlendi: yazdığın program akıp gider, "Add a move" gerçek, 1. hafta kararı ADR-077'ye uydu, "Keep last week's plan" her yerde görünür, bugünü değiştir kartı değiştirir. Liste: prototip/kullanici-testi.md.</li>
         <li><b>Deneme 2 hafta:</b> "ilk karar + 3 gün" App Store'da kurulamıyor (sabit süreler); 2 hafta bu niyeti herkes için karşılayan en kısa seçenek. Onayın lazım.</li>
       </ul>
     </details>
@@ -703,14 +717,15 @@ const S = {
   scenario: 'd1', mode: store.get('mode', 'light'),
   screen: 'welcome', stack: [], sheet: null, toast: null, startView: false, reveal: false,
   typed: { open: 0, days: [
-    { name: 'Push', wd: 'Mon', moves: [{ n: 'Bench press', sets: 3, min: 6, max: 10 }, { n: 'Overhead press', sets: 3, min: 6, max: 10 }, { n: 'Lateral raise', sets: 3, min: 8, max: 12 }] },
-    { name: 'Pull', wd: 'Wed', moves: [{ n: 'Lat pulldown', sets: 3, min: 6, max: 10 }, { n: 'Seated row', sets: 3, min: 6, max: 10 }] },
-    { name: 'Legs', wd: 'Fri', moves: [{ n: 'Back squat', sets: 3, min: 6, max: 10 }, { n: 'Romanian deadlift', sets: 3, min: 6, max: 10 }] }] },
+    { name: 'Push', wd: 'Mon', moves: [{ n: 'Bench press', sets: 4, min: 6, max: 10 }, { n: 'Overhead press', sets: 3, min: 6, max: 10 }, { n: 'Lateral raise', sets: 3, min: 8, max: 12 }, { n: 'Triceps pushdown', sets: 3, min: 8, max: 12 }] },
+    { name: 'Pull', wd: 'Wed', moves: [{ n: 'Lat pulldown', sets: 4, min: 6, max: 10 }, { n: 'Seated row', sets: 3, min: 6, max: 10 }, { n: 'Biceps curl', sets: 3, min: 8, max: 12 }] },
+    { name: 'Legs', wd: 'Fri', moves: [{ n: 'Back squat', sets: 4, min: 6, max: 10 }, { n: 'Romanian deadlift', sets: 3, min: 6, max: 10 }] }] },
+  mq: '', ownMv: false, ownMvName: '',
   ob: { goal: null, exp: null, program: null, daysN: 3, consent: null, height: 178, weight: 84.0, year: 1999, sex: 'male', activity: null,
-    lifts: { squat: 100, bench: 80, deadlift: 140 }, review: { days: true, chest: true, ham: true } },
+    lifts: { squat: 100, bench: 80, deadlift: 140 }, review: {}, applied: null },
   prep: 0, remMon: false, trialRem: false, plan: 'year',
-  weight: 80.2, d1Weight: 84.0, d1Weighs: 0, healthAsked: false,
-  checkin: null, w1feel: null, kept: { w12: false }, w1choice: 'keep',
+  weight: 80.2, d1Weight: 84.0, d1Weighs: 0, healthAsked: false, health: null,
+  checkin: null, w1feel: null, w1done: 'missed', kept: { w12: false }, w1choice: 'suggest', w1pick: null, w1pickOpen: false, todayChg: null,
   share: { tpl: 'workout', bg: 'sample', media: null, mediaType: null },
   life: { kind: null, len: 'back' }, scanned: false, lift: 'squat', ret: 'ease',
   wo: null, restEnd: 0, woStart: Date.now() - 24 * 60000, paused: false, swapped: {}, editKey: null,
@@ -744,13 +759,26 @@ const LIFTS = {
   row: { name: 'Row', series: [50, 50, 52.5, 52.5, 55, 55, 57.5, 57.5, 57.5, 60, 60, 60], best: '60 × 9', delta: '+10 kg', effort: 'Steady: one rep more than last week.' },
 };
 const MUSCLES_W12 = [['Chest', 9, 10], ['Back', 10, 10], ['Quads', 9, 10], ['Hamstrings', 8, 10], ['Shoulders', 6, 10], ['Arms', 6, 6]];
-const OWN_SETS = [['Chest', 18], ['Back', 12], ['Quads', 9], ['Hamstrings', 4], ['Shoulders', 10], ['Arms', 8]];
+/* the imported PPL (Strong or Hevy): 6 days, 21 moves; hamstrings 3 sets is under the floor of 4 (G1 K-11; 4 itself is not flagged, ADR-073) */
+const IMPORT_PROG = { name: 'Push / Pull / Legs', short: 'PPL', days: 6, moves: 21, sets: { Chest: 18, Back: 12, Quads: 9, Hamstrings: 3, Shoulders: 10, Arms: 8 } };
+/* the move catalog the "Add a move" sheet searches: primary muscle, compound (6-10) or isolation (8-12) */
+const CATALOG = [
+  ['Bench press', 'barbell', 'Chest'], ['Incline dumbbell press', 'dumbbell', 'Chest'], ['Cable fly', 'cable', 'Chest', 1],
+  ['Overhead press', 'barbell', 'Shoulders'], ['Lateral raise', 'dumbbell', 'Shoulders', 1],
+  ['Lat pulldown', 'cable', 'Back'], ['Seated row', 'cable', 'Back'], ['Barbell row', 'barbell', 'Back'],
+  ['Back squat', 'barbell', 'Quads'], ['Leg press', 'machine', 'Quads'], ['Leg extension', 'machine', 'Quads', 1],
+  ['Romanian deadlift', 'barbell', 'Hamstrings'], ['Leg curl', 'machine', 'Hamstrings', 1],
+  ['Biceps curl', 'dumbbell', 'Arms', 1], ['Triceps pushdown', 'cable', 'Arms', 1], ['Calf raise', 'machine', 'Calves', 1],
+].map(([n, eq, mu, iso]) => ({ n, eq, mu, iso: !!iso, min: iso ? 8 : 6, max: iso ? 12 : 10 }));
+const catOf = n => CATALOG.find(c => c.n === n);
+const REVIEW_MUSCLES = ['Chest', 'Back', 'Quads', 'Hamstrings', 'Shoulders', 'Arms'];
+const ISO_FOR = { Chest: 'cable flies', Back: 'seated rows', Quads: 'leg extensions', Hamstrings: 'leg curls', Shoulders: 'lateral raises', Arms: 'curls and pushdowns' };
 /* muscle map fills: share of the week's target, 0..1 (null = not planned) */
 const MAP_W12_TODAY = { chest: .9, back: 1, shoulders: .6, arms: .5, core: .3, quads: .9, hamstrings: .8, glutes: .7, calves: 0 };
 const MAP_D1_PLAN = { chest: 0, back: 0, shoulders: 0, arms: 0, core: 0, quads: 0, hamstrings: 0, glutes: 0, calves: null };
 const MAP_D1_TODAY = { chest: .35, back: .35, shoulders: .3, arms: .2, core: .1, quads: .35, hamstrings: .35, glutes: .3, calves: 0 };
 
-const EXAMPLES = [['Hold the', 'weight'], ['Add', 'one rep'], ['Lighter', 'week'], ['2 days,', 'not 3'], ['Eat a little', 'more']];
+const EXAMPLES = [['Hold the', 'weight'], ['Add', 'one rep'], ['Lighter', 'week'], ['Eat a little', 'more']];
 const CALL_W12 = {
   date: 'Mon, Dec 28', label: 'Hold the weight', line: 'Bench stays at <span class="acc tnum">72.5 kg</span>. The rest climbs.',
   change: [['Bench target', '72.5 × 9', '72.5 × 8']],
@@ -809,12 +837,58 @@ const backBtn = () => `<button class="iconbtn" type="button" data-act="back" ari
 const navtop = (title, side = '') => `<header class="navtop">${backBtn()}<h1>${title}</h1><span class="side">${side}</span></header>`;
 const d1 = () => S.scenario !== 'w12';
 const own = () => S.scenario === 'own';
-const planDays = () => own() ? ['MON', 'TUE', 'WED', 'FRI', 'SAT'] : (DAYSETS[S.ob.daysN] || DAYSETS[3]);
+/* the own program: typed in (#ob-type) or imported; the review's applied changes travel with it */
+const typedOn = () => own() && S.ob.ownsrc === 'type';
+const ownName = () => typedOn() ? 'program' : IMPORT_PROG.short;
+const fmtNum = n => Math.round(n).toLocaleString('en-US');
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const WD_KEY = { Mon: 'MON', Tue: 'TUE', Wed: 'WED', Thu: 'THU', Fri: 'FRI', Sat: 'SAT', Sun: 'SUN' };
+const FULL = { MON: 'Monday', TUE: 'Tuesday', WED: 'Wednesday', THU: 'Thursday', FRI: 'Friday', SAT: 'Saturday', SUN: 'Sunday' };
+const applied = () => { const r = reviewOf(); return S.ob.applied == null ? r.sugg.filter(s => S.ob.review[s.key] !== false).length : S.ob.applied; };
+const appliedKeys = () => { const r = reviewOf(); return S.ob.applied === 0 ? [] : r.sugg.filter(s => S.ob.review[s.key] !== false).map(s => s.key); };
+function ownDaysN() {
+  const base = typedOn() ? S.typed.days.length : IMPORT_PROG.days;
+  return appliedKeys().includes('days') ? Math.min(base, 5) : base;
+}
+function ownDayNames() {
+  if (typedOn()) return S.typed.days.slice(0, ownDaysN()).map(d => d.name);
+  return ownDaysN() === 6 ? ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs'] : ['Push', 'Pull', 'Legs', 'Upper', 'Lower'];
+}
+function planDays() {
+  if (!own()) return DAYSETS[S.ob.daysN] || DAYSETS[3];
+  const n = ownDaysN();
+  if (typedOn()) { const wd = S.typed.days.slice(0, n).map(d => WD_KEY[d.wd]).filter(Boolean); if (wd.length === n) return wd; }
+  return n >= 6 ? ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] : n === 5 ? ['MON', 'TUE', 'WED', 'FRI', 'SAT'] : (DAYSETS[n] || DAYSETS[3]);
+}
 const daysText = () => planDays().map(d => SHORT[d]).join(', ');
-const moves = () => own() ? PUSH : FULLBODY;
-const sessionName = () => own() ? 'Push' : 'Full body A';
+/* starting weights: what the person entered on #ob-weights; a move with no weight is found in session 1 (kg null) */
+const LIFTKEY = { 'Bench press': 'bench', 'Back squat': 'squat', 'Deadlift': 'deadlift' };
+const liftKg = name => LIFTKEY[name] && S.ob.lifts[LIFTKEY[name]] > 0 ? S.ob.lifts[LIFTKEY[name]] : null;
+function typedMoves(di) {
+  const d = S.typed.days[di]; if (!d) return [];
+  return d.moves.map((x, i) => { const c = catOf(x.n); const iso = c ? c.iso : false;
+    return { id: `t${di}-${i}`, name: x.n, eq: c ? c.eq : 'barbell', sets: x.sets, range: `${x.min}-${x.max}`, min: x.min, max: x.max, kg: liftKg(x.n),
+      reps: Math.min(x.max, Math.max(x.min, 8)), last: null, iso, own: !c,
+      alt: c ? [...new Set([...CATALOG.filter(o => o.mu === c.mu && o.iso === c.iso && o.n !== c.n).map(o => o.n), ...(([...PUSH, ...FULLBODY].find(o => o.name === c.n) || {}).alt || [])])].slice(0, 3) : [] }; });
+}
+function moves() {
+  if (own()) return typedOn() ? typedMoves(0) : PUSH.map(m => m.id === 'obench' ? { ...m, kg: liftKg('Bench press') } : m);
+  if (d1()) return FULLBODY.map(m => ({ ...m, kg: knowsWeights() ? liftKg(m.name) : null, reps: m.iso ? 10 : 8, last: null, held: false }));
+  /* "Keep last week's plan": the call stays on record, last week's targets stay (bench 72.5 × 9, not held) */
+  return S.kept.w12 ? FULLBODY.map(m => m.held ? { ...m, reps: 9, held: false } : m) : FULLBODY;
+}
+const sessionName = () => own() ? (typedOn() ? (S.typed.days[0] ? S.typed.days[0].name : 'Day 1') : 'Push') : 'Full body A';
 const moveName = m => S.swapped[m.id] || m.name;
 const knowsWeights = () => own() || (S.ob.exp && S.ob.exp !== 'new');
+/* starting food target, as the server computes it (ADR-072 Ek 1): Mifflin-St Jeor × activity factor (nutrition.yaml), maintenance to start */
+const ACT_FACTOR = { INACTIVE: 1.4, LOW_ACTIVE: 1.6, ACTIVE: 1.75, VERY_ACTIVE: 2.05 };
+const startKcal = () => { const o = S.ob; const age = 2026 - o.year;
+  return Math.round((10 * o.weight + 6.25 * o.height - 5 * age + (o.sex === 'female' ? -161 : 5)) * (ACT_FACTOR[o.activity] || 1.6)); };
+const startProtein = () => Math.round(2 * S.ob.weight);
+const watchDays = () => S.ob.sex === 'female' ? 28 : 14;
+const noConsent = () => S.ob.consent === 'no';
+const hasHealth = () => !d1() || S.health === 'yes';
+const tomorrow = () => d1() ? 'Tue' : 'Sat';
 const stepOf = m => m.iso ? 1 : m.lower ? 5 : 2.5;
 const fmtKg = v => (Math.round(v * 10) / 10).toString();
 
@@ -841,14 +915,16 @@ function tabbar() {
 /* ---------- onboarding routing: the walk differs for the new lifter, the experienced one, and the one with a program ---------- */
 function obRoute() {
   const r = ['ob-goal', 'ob-exp', 'ob-program'];
-  if (S.ob.program === 'own') { r.push('ob-own'); if (S.ob.ownsrc === 'type') r.push('ob-type'); r.push('ob-review'); } else r.push('ob-days');
+  /* "Type it in" (#ob-type) is a sub-screen of the own step, like the import's draft: not a step of its own (≤12 onboarding screens) */
+  if (S.ob.program === 'own') r.push('ob-own', 'ob-review'); else r.push('ob-days');
   r.push('ob-consent', 'ob-about', 'ob-activity');
   if (S.ob.program === 'own' || (S.ob.exp && S.ob.exp !== 'new')) r.push('ob-weights');
   return r;
 }
-const obNext = from => { const r = obRoute(); const i = r.indexOf(from); return i >= 0 && i + 1 < r.length ? r[i + 1] : 'ob-preparing'; };
+const OB_SUB = { 'ob-type': 'ob-own' }; /* sub-screen → the step it belongs to */
+const obNext = from => { const r = obRoute(); const i = r.indexOf(OB_SUB[from] || from); return i >= 0 && i + 1 < r.length ? r[i + 1] : 'ob-preparing'; };
 function obFrame(id, inner, dock = '') {
-  const r = obRoute(); const i = r.indexOf(id) + 1;
+  const r = obRoute(); const i = r.indexOf(OB_SUB[id] || id) + 1;
   const steps = i ? `<div class="steps" aria-label="Step ${i} of ${r.length}">${r.map((_, j) => `<span class="${j < i ? 'on' : ''}"></span>`).join('')}</div>` : '<span style="flex:1"></span>';
   return `<div class="obtop">${backBtn()}${steps}</div>${inner}${dock ? `<div class="dock">${dock}</div>` : ''}`;
 }
@@ -861,6 +937,38 @@ const WHEELS = {
 };
 const wheel = id => { const w = WHEELS[id]; const cur = S.ob[w.key];
   return `<div class="wheelbox"><span class="wl">${w.label}</span><div class="wwrap"><div class="wheel" data-wheel="${id}" tabindex="0" role="spinbutton" aria-label="${w.label} in ${w.unit}" aria-valuenow="${cur}"><div class="wpad"></div>${w.vals.map(v => `<div class="wv tnum ${v === cur ? 'sel' : ''}" data-nc>${w.fmt(v)}</div>`).join('')}<div class="wpad"></div></div></div><span class="wunit" data-nc>${w.unit}</span></div>`; };
+
+/* the program review (ADR-073 #2): days > 5, a muscle > 15 sets, a muscle < 4 sets (arms < 6); at most 3, in that order.
+   Reviews whatever program came in: the typed one (#ob-type) or the imported PPL. Own moves (not in the catalog) are not reviewed. */
+function reviewOf() {
+  if (S.ob.ownsrc !== 'type') {
+    const p = IMPORT_PROG;
+    return { name: p.name, days: p.days, moves: p.moves, own: 0, sugg: [
+      { key: 'days', head: '6 lifting days', text: 'Rest days are where you grow. Make it 5: PPL plus Upper, Lower.' },
+      { key: 'chest', head: 'Chest: 18 sets a week', text: 'Past about 15, more sets add fatigue, not muscle. Trim to 12.' },
+      { key: 'ham', head: 'Hamstrings: 3 sets a week', text: 'Under the useful floor of 4. Add 1 set of leg curls.' }] };
+  }
+  const T = S.typed, sets = {}; let own = 0, nm = 0;
+  T.days.forEach(d => d.moves.forEach(x => { nm += 1; const c = catOf(x.n); if (!c) { own += 1; return; } sets[c.mu] = (sets[c.mu] || 0) + x.sets; }));
+  const sugg = [];
+  if (T.days.length > 5) sugg.push({ key: 'days', head: `${T.days.length} lifting days`, text: 'Rest days are where you grow. Make it 5.' });
+  REVIEW_MUSCLES.forEach(mu => { const n = sets[mu] || 0; if (n > 15) sugg.push({ key: 'hi-' + mu, head: `${mu}: ${n} sets a week`, text: 'Past about 15, more sets add fatigue, not muscle. Trim to 12.' }); });
+  REVIEW_MUSCLES.forEach(mu => { const n = sets[mu] || 0, min = mu === 'Arms' ? 6 : 4;
+    if (n < min) sugg.push({ key: 'lo-' + mu, head: `${mu}: ${plural(n, 'set')} a week`, text: `Under the useful floor of ${min}. Add ${plural(min - n, 'set')} of ${ISO_FOR[mu]}.` }); });
+  return { name: T.days.map(d => d.name).join(' / '), days: T.days.length, moves: nm, own, sugg: sugg.slice(0, 3) };
+}
+
+/* the first-week call (ADR-077 #4 + Ek 1; ADR-071 #8: never under 3 days): done/planned with the feel answer.
+   done/planned >= 0.7 → keep going · all done + "I could do more" + not a beginner + under 4 days → add a day · under 0.7 → move the missed session */
+const widx = d => WEEK.findIndex(w => w[0] === d);
+function week1Call() {
+  const days = planDays(), n = days.length, beginner = S.w1done !== 'allexp' && (!S.ob.exp || S.ob.exp === 'new');
+  const missed = S.w1done === 'missed' ? (days[1] || days[0]) : null, done = missed ? n - 1 : n;
+  const free = WEEK.map(w => w[0]).filter(d => !days.includes(d));
+  if (missed && done / n < 0.7) return { kind: 'move', n, done, missed, day: free.find(d => widx(d) > widx(missed)) || free[0] };
+  if (!missed && S.w1feel === 'more' && !beginner && n < 4) return { kind: 'add', n, done, day: ['SAT', 'TUE', 'THU', 'SUN'].find(d => !days.includes(d)) || free[0] };
+  return { kind: 'keep', n, done };
+}
 
 /* ---------- screens ---------- */
 const SCREENS = {
@@ -899,41 +1007,42 @@ const SCREENS = {
 
   'ob-type': { n: 'Programını yaz (yeni)', t: 30, r: () => {
     const T = S.typed, WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const nMoves = T.days.reduce((a, x) => a + x.moves.length, 0);
-    const step = (act, i, val, unit, label) => `<div class="tstep"><button type="button" data-act="${act}" data-val="${i},-1" aria-label="Less ${label}">${I.minus(18, 2.6)}</button><span class="tnum" aria-live="polite">${val}<small>${unit}</small></span><button type="button" data-act="${act}" data-val="${i},1" aria-label="More ${label}">${I.plus(18, 2.6)}</button></div>`;
-    const dayCard = (d, di) => { const open = di === T.open;
-      return `<section class="tdcard ${open ? 'open' : ''}" aria-label="${d.name}">
-      <button class="tdhead" type="button" data-act="tday" data-val="${di}" aria-expanded="${open}"><span class="tdn">${d.name}</span><span class="tdm tnum">${d.wd || 'Any day'} · ${d.moves.length} move${d.moves.length === 1 ? '' : 's'}</span><span class="tdc">${I.chev(18)}</span></button>
+    const nMoves = T.days.reduce((a, x) => a + x.moves.length, 0), ready = T.days.every(d => d.moves.length > 0);
+    /* sets 1-20; reps as two numbers, min and max, min < max, 1-100 */
+    const step = (act, i, val, label) => `<div class="tstep"><button type="button" data-act="${act}" data-val="${i},-1" aria-label="Less: ${label}">${I.minus(18, 2.6)}</button><span class="tnum" aria-label="${label}: ${val}">${val}</span><button type="button" data-act="${act}" data-val="${i},1" aria-label="More: ${label}">${I.plus(18, 2.6)}</button></div>`;
+    const dayCard = (d, di) => { const open = di === T.open, none = d.moves.length === 0;
+      /* the day's name and its moves are the person's own words: not counted as our copy (data-nc) */
+      return `<section class="tdcard ${open ? 'open' : ''} ${none ? 'empty0' : ''}" aria-label="${esc(d.name)}">
+      <button class="tdhead" type="button" data-act="tday" data-val="${di}" aria-expanded="${open}"><span class="tdn" data-nc>${esc(d.name)}</span><span class="tdm tnum"><span data-nc>${d.wd || 'Any day'}</span> · ${none ? '<span class="warn0">No moves yet</span>' : plural(d.moves.length, 'move')}</span><span class="tdc">${I.chev(18)}</span></button>
       ${open ? `<div class="tday">
-        <label class="tname" for="tname">Day name<input id="tname" type="text" maxlength="60" value="${d.name}" data-act-input="tname"></label>
-        <div class="twd" role="group" aria-label="Weekday, optional">${WD.map(w => { const taken = T.days.some((x, i) => i !== di && x.wd === w); return `<button type="button" data-act="twd" data-val="${w}" aria-pressed="${d.wd === w}" ${taken ? 'disabled style="opacity:.35"' : ''}>${w}</button>`; }).join('')}</div>
-        ${d.moves.map((m, i) => `<div class="tmove"><div class="th"><b>${m.n}</b><button type="button" data-act="tdel" data-val="${i}" aria-label="Remove ${m.n}">${I.trash(18)}</button></div>
-          <div class="tsteps">${step('tsets', i, m.sets, 'sets', 'sets')}${step('trep', i, `${m.min}-${m.max}`, 'reps', 'reps')}</div></div>`).join('')}
-        <button class="tadd" type="button" data-act="proto" data-val="Search the moves, or add one of your own.">${I.plus(18, 2.6)}Add a move</button>
-        ${T.days.length > 1 ? `<button class="tlink muted" type="button" data-act="tdelday" style="justify-self:start">Remove this day</button>` : ''}
+        <div class="tnrow"><label class="tname" for="tname">Day name<input id="tname" type="text" maxlength="60" value="${esc(d.name)}" data-act-input="tname"></label>${T.days.length > 1 ? `<button class="tdel" type="button" data-act="tdelday" aria-label="Remove this day">${I.trash(18)}</button>` : ''}</div>
+        <div class="twd" role="group" aria-label="Weekday, optional" data-nc>${WD.map(w => { const taken = T.days.some((x, i) => i !== di && x.wd === w); return `<button type="button" data-act="twd" data-val="${w}" aria-pressed="${d.wd === w}" ${taken ? 'disabled style="opacity:.35"' : ''}>${w}</button>`; }).join('')}</div>
+        ${none ? '<p class="fine" style="font-weight:700;color:var(--warn)">Add at least one move.</p>' : `<div class="thead3" aria-hidden="true"><span>Sets</span><span>Min reps</span><span>Max reps</span></div>`}
+        ${d.moves.map((m, i) => `<div class="tmove"><div class="th"><b data-nc>${esc(m.n)}</b><button type="button" data-act="tdel" data-val="${i}" aria-label="Remove ${esc(m.n)}">${I.trash(18)}</button></div>
+          <div class="tsteps three">${step('tsets', i, m.sets, `${m.n} sets`)}${step('tmin', i, m.min, `${m.n} min reps`)}${step('tmax', i, m.max, `${m.n} max reps`)}</div></div>`).join('')}
+        <button class="tadd" type="button" data-act="openadd">${I.plus(18, 2.6)}Add a move</button>
       </div>` : ''}</section>`; };
     return obFrame('ob-type', `
     <h1 class="q">Type your program</h1>
     <p class="why">Each day you train, with its moves.</p>
-    <p class="tsum tnum" data-nc>${T.days.length} day${T.days.length === 1 ? '' : 's'} · ${nMoves} moves</p>
+    <p class="tsum tnum" data-nc>${plural(T.days.length, 'day')} · ${plural(nMoves, 'move')}</p>
     <div class="tdays2">${T.days.map(dayCard).join('')}</div>
     ${T.days.length < 7 ? `<button class="tadd" type="button" data-act="taddday">${I.plus(18, 2.6)}Add a day</button>` : ''}`,
-    `<button class="btn primary wide" type="button" data-act="obgo" data-val="ob-type">Use this program</button>`);
+    `<button class="btn primary wide" type="button" data-act="typego" ${ready ? '' : 'disabled'}>Use this program</button>`);
   } },
 
   'ob-review': { n: 'Program incelemesi (yeni)', t: 75, r: () => {
-    const rv = S.ob.review, n = Object.values(rv).filter(Boolean).length;
-    const card = (key, head, tag, text, src) => `<div class="revc ${rv[key] ? '' : 'off'}"><div class="rh"><b>${head}</b><label class="toggle" style="min-height:auto;gap:8px;font-size:14px" for="rv-${key}"><span>${tag}</span><input class="sw" type="checkbox" id="rv-${key}" data-act="revtoggle" data-val="${key}" ${rv[key] ? 'checked' : ''}></label></div><p>${text}</p><span class="src">${src}</span></div>`;
+    const rv = S.ob.review, R = reviewOf(), on = s => rv[s.key] !== false, n = R.sugg.filter(on).length;
+    const card = s => `<div class="revc ${on(s) ? '' : 'off'}"><div class="rh"><b>${s.head}</b><label class="toggle" style="min-height:auto;gap:8px;font-size:14px" for="rv-${s.key}"><span>Apply</span><input class="sw" type="checkbox" id="rv-${s.key}" data-act="revtoggle" data-val="${s.key}" ${on(s) ? 'checked' : ''}></label></div><p>${s.text}</p><span class="src">Coaching rule</span></div>`;
+    const head = R.sugg.length ? `Strong base. ${plural(R.sugg.length, 'tweak')}.` : 'Good as it is.';
     return obFrame('ob-review', `
     <h1 class="q" style="font-size:36px">Your program, reviewed</h1>
-    <section class="block"><div class="meta"><span>Push / Pull / Legs</span><span class="tnum">6 days · 21 moves</span></div><p class="line" style="font:900 30px/.95 var(--f-display);text-transform:uppercase">Strong base. 3 tweaks.</p></section>
-    <div class="rev">
-      ${card('days', '6 lifting days', 'Apply', 'Rest days are where you grow. Make it 5: PPL plus Upper, Lower.', 'Coaching rule')}
-      ${card('chest', 'Chest: 18 sets a week', 'Apply', 'Past about 15, more sets add fatigue, not muscle. Trim to 12.', 'Coaching rule')}
-      ${card('ham', 'Hamstrings: 4 sets', 'Apply', 'Below the useful range. Add 2 sets of leg curls.', 'Coaching rule')}
-    </div>
-    <p class="fine">Your call. Monday's calls work either way.</p>`,
-    `<button class="btn primary wide" type="button" data-act="revgo">${n ? `Use mine with ${n} change${n > 1 ? 's' : ''}` : 'Keep mine as is'}</button>${n ? '<button class="btn ghost wide" type="button" data-act="revkeep">Keep mine as is</button>' : ''}`);
+    <section class="block"><div class="meta"><span class="rvname" data-nc>${esc(R.name)}</span><span class="tnum">${R.days} days · ${R.moves} moves</span></div><p class="line" style="font:900 30px/.95 var(--f-display);text-transform:uppercase">${head}</p></section>
+    ${R.sugg.length ? `<div class="rev">${R.sugg.map(card).join('')}</div>` : '<p class="empty">Every muscle is in the useful range. Monday reads how it goes.</p>'}
+    ${R.own ? `<p class="fine">Your own moves aren't reviewed: <span class="tnum">${R.own}</span></p>` : ''}
+    ${R.sugg.length ? `<p class="fine">Your call. Monday's calls work either way.</p>` : ''}`,
+    R.sugg.length ? `<button class="btn primary wide" type="button" data-act="revgo">${n ? `Use mine with ${plural(n, 'change')}` : 'Keep mine as is'}</button>${n ? '<button class="btn ghost wide" type="button" data-act="revkeep">Keep mine as is</button>' : ''}`
+      : `<button class="btn primary wide" type="button" data-act="revkeep">Use my program</button>`);
   } },
 
   'ob-days': { n: 'Günler', t: 25, r: () => obFrame('ob-days', `
@@ -982,28 +1091,29 @@ const SCREENS = {
     <div class="prep"><ol>
       <li class="${S.prep >= 1 ? 'on' : ''}"><span class="tick">${I.check(18, 3)}</span>${S.ob.program === 'own' ? 'Your program, reviewed' : `Your program, ${S.ob.daysN} days`}</li>
       <li class="${S.prep >= 2 ? 'on' : ''}"><span class="tick">${I.check(18, 3)}</span>Your food and cardio</li>
-      <li class="${S.prep >= 3 ? 'on' : ''}"><span class="tick">${I.check(18, 3)}</span>Your first call: Monday</li>
+      <li class="${S.prep >= 3 ? 'on' : ''}"><span class="tick">${I.check(18, 3)}</span>${noConsent() ? 'Your first workout' : 'Your first call: Monday'}</li>
     </ol></div>
     <div style="flex:2"></div>
     <div class="dock"><button class="btn primary wide" type="button" data-go="ob-plan" data-replace="1" ${S.prep >= 3 ? '' : 'disabled'}>See my plan</button></div>` },
 
   'ob-plan': { n: 'Plan hazır', t: 55, scen: true, r: () => {
-    const goal = S.ob.goal === 'build' ? 'Build muscle' : S.ob.goal === 'lose_fat' ? 'Lose fat' : 'We pick';
-    const view = S.startView, mv = moves(), known = knowsWeights();
-    const reflect = own() ? `<span>Your <b>PPL</b></span><span><b>5</b> days</span><span><b>3</b> changes</span><span>Goal: <b>${goal}</b></span>`
+    /* "Decide for me": the engine's phase gate; with no fat estimate yet (no waist on day 1) it starts with a cut (ADR-027 #17) */
+    const goal = S.ob.goal === 'build' ? 'Build muscle' : S.ob.goal === 'lose_fat' ? 'Lose fat' : 'Lose fat</b> · we picked<b>';
+    const view = S.startView, mv = moves(), known = mv.some(m => m.kg != null), gaps = known && mv.some(m => m.kg == null), nch = applied();
+    const reflect = own() ? `<span>Your <b>${ownName()}</b></span><span><b>${ownDaysN()}</b> days</span><span><b>${nch}</b> ${nch === 1 ? 'change' : 'changes'}</span><span>Goal: <b>${goal}</b></span>`
       : `<span>Goal: <b>${goal}</b></span><span><b>${S.ob.daysN}</b> days</span><span>${daysText()}</span>`;
     return `<div class="obtop">${view ? backBtn() : '<span style="width:44px;height:44px"></span>'}<span style="flex:1"></span></div>
     <h1 class="title" style="font-size:46px;margin-top:-6px">Your plan</h1>
     <div class="reflect" aria-label="Built from your answers">${reflect}</div>
     <section class="card ink" aria-label="First workout">
-      <div class="ct"><span class="k">Monday · first workout</span><span class="k tnum">${own() ? '55 min' : '50 min'}</span></div>
-      <p class="label" style="font-size:40px">${sessionName()}</p>
-      ${known ? '' : '<span class="tag onblock" style="justify-self:start">Session 1 finds your weights</span>'}
-      ${mv.map(m => `<div class="mrow">${thumb(m.eq)}<div><div class="mn">${m.name}</div><div class="ms tnum">${m.sets} × ${m.range}</div></div><div class="mt tnum">${known ? `${m.kg} kg` : ''}</div></div>`).join('')}
+      <div class="ct"><span class="k">${FULL[planDays()[0]]} · first workout</span><span class="k tnum">${own() ? '55 min' : '50 min'}</span></div>
+      <p class="label" style="font-size:40px" ${typedOn() ? 'data-nc' : ''}>${esc(sessionName())}</p>
+      ${known ? (gaps ? '<span class="tag onblock" style="justify-self:start">Session 1 finds the rest</span>' : '') : '<span class="tag onblock" style="justify-self:start">Session 1 finds your weights</span>'}
+      ${mv.map(m => `<div class="mrow">${thumb(m.eq)}<div><div class="mn">${esc(m.name)}</div><div class="ms tnum">${m.sets} × ${m.range}</div></div><div class="mt tnum">${m.kg != null ? `${fmtKg(m.kg)} kg` : ''}</div></div>`).join('')}
     </section>
     <div class="kv"><span class="kk">Cardio</span><span class="vv"><b class="tnum">2 × 30 min</b><small>Easy pace, after lifting.</small></span></div>
-    <div class="kv"><span class="kk">First call</span><span class="vv"><b>Mon, Oct 19</b><small>in 7 days</small></span></div>
-    <div class="kv"><span class="kk">Food to start</span><span class="vv"><b class="tnum">2,916 kcal</b><small>Your scale corrects it in 14 days.</small></span></div>
+    ${noConsent() ? '' : `<div class="kv"><span class="kk">First call</span><span class="vv"><b>Mon, Oct 19</b><small>in 7 days</small></span></div>
+    <div class="kv"><span class="kk">Food to start</span><span class="vv"><b class="tnum">${fmtNum(startKcal())} kcal</b><small>Your scale corrects it in ${watchDays()} days.</small></span></div>`}
     ${view ? '' : `<label class="toggle" for="remmon"><span>Tell me Monday morning</span><input class="sw" type="checkbox" id="remmon" data-act="remmon" ${S.remMon ? 'checked' : ''}></label>
     <div class="dock"><button class="btn primary wide" type="button" data-go="paywall">Continue</button></div>`}`;
   } },
@@ -1012,15 +1122,16 @@ const SCREENS = {
     <div class="obtop">${backBtn()}<span style="flex:1"></span></div>
     <section class="pwhero" aria-label="Your plan">
       <div class="stack">
-        <div class="minicard"><div><b>${own() ? 'Your PPL · 5 days' : `Full body · ${S.ob.daysN} days`}</b><br><span>First workout Monday</span></div>${thumb('barbell')}</div>
-        <div class="minicard"><div><b class="acc">First call</b><br><span>Mon, Oct 19</span></div><span class="tag onblock">With the reason</span></div>
+        <div class="minicard"><div><b>${own() ? `Your ${ownName()} · ${ownDaysN()} days` : `Full body · ${S.ob.daysN} days`}</b><br><span>First workout ${FULL[planDays()[0]]}</span></div>${thumb('barbell')}</div>
+        ${noConsent() ? `<div class="minicard"><div><b class="acc">Cardio</b><br><span>2 × 30 min</span></div><span class="tag onblock">Easy pace</span></div>`
+          : `<div class="minicard"><div><b class="acc">First call</b><br><span>Mon, Oct 19</span></div><span class="tag onblock">With the reason</span></div>`}
       </div>
     </section>
     <h1 class="q" style="margin-top:2px">Try it free for 2 weeks</h1>
-    <ul class="values"><li><span class="vi">${I.barbell(20)}</span>${own() ? 'Your program, tuned' : 'Program built for your days'}</li><li><span class="vi">${I.target(20)}</span>Weight and reps for every set</li><li><span class="vi">${I.week(20)}</span>A Monday call, with the reason</li></ul>
+    <ul class="values"><li><span class="vi">${I.barbell(20)}</span>${own() ? 'Your program, tuned' : 'Program built for your days'}</li><li><span class="vi">${I.target(20)}</span>Weight and reps for every set</li><li><span class="vi">${I.week(20)}</span>${noConsent() ? 'Your progress, week by week' : 'A Monday call, with the reason'}</li></ul>
     <ol class="tl">
       <li><span class="dot"></span><div class="tc"><b>Today</b><span>No charge.</span></div></li>
-      <li><span class="dot"></span><div class="tc"><b>Mon, Oct 19</b><span>Your first call.</span></div></li>
+      ${noConsent() ? '' : '<li><span class="dot"></span><div class="tc"><b>Mon, Oct 19</b><span>Your first call.</span></div></li>'}
       <li><span class="dot"></span><div class="tc"><b>Sat, Oct 24</b><span>Reminder, if you want.</span>
         <div><button class="btn line sm" type="button" data-act="trialrem" aria-pressed="${S.trialRem}" style="margin-top:6px">${S.trialRem ? I.check(18, 3) + ' Set' : 'Remind me'}</button></div></div></li>
       <li><span class="dot"></span><div class="tc"><b>Mon, Oct 26</b><span>[price]/${S.plan === 'year' ? 'year' : 'mo'} starts, unless you cancel.</span></div></li>
@@ -1042,23 +1153,26 @@ const SCREENS = {
         <div class="meta"><span>Your start</span><button class="blink" type="button" data-act="startview" aria-label="See your plan">${I.chev(18, 2.6)}</button></div>
         <p class="label">First week</p>
         <p class="line">Weigh in most mornings.</p>
-        <div class="foot"><span>First call Monday</span><span><b>7</b> days</span></div>
+        <div class="foot">${noConsent() ? '<span>Weekly calls are off</span><span>Settings</span>' : '<span>First call Monday</span><span><b>7</b> days</span>'}</div>
       </section>` : `
       <section class="block" aria-label="This week's call">
         <div class="meta"><span>This week's call</span><button class="blink" type="button" data-go="call" aria-label="Open the call">${I.chev(18, 2.6)}</button></div>
         <p class="label">Hold the weight</p>
-        <p class="line">${CALL_W12.line}</p>
-        <div class="foot"><span>Next call Monday</span><span><b>3</b> days</span></div>
+        ${S.kept.w12 ? `<p class="line">Not applied. Last week's plan stays.</p>
+        <div class="foot"><span>Not applied</span><button class="btn onblock sm" type="button" data-act="usecall">Use this call</button></div>`
+        : `<p class="line">${CALL_W12.line}</p>
+        <div class="foot"><span>Next call Monday</span><span><b>3</b> days</span></div>`}
       </section>`;
+    const tc = S.todayChg;
     return `<header class="top"><h1 class="title">This week</h1><button class="iconbtn surf" type="button" data-go="settings" aria-label="Settings">${I.gear(22)}</button></header>
     ${weekStrip()}
     ${hero}
     <section class="today" aria-label="Today's workout">
-      <div class="tt"><div><div class="tl1">Today</div><div class="tl2">${sessionName()}</div></div><button class="btn primary sm" type="button" data-go="workout">Start</button></div>
-      ${mv.slice(0, 3).map(m => `<div class="mrow">${thumb(m.eq)}<div><div class="mn">${moveName(m)}</div></div><div class="mt tnum">${d1() && !knowsWeights() ? `${m.sets} × ${m.range}` : `${m.kg} × ${m.reps}`}</div></div>`).join('')}
-      <div class="tfoot">${I.run(18)}<span>Cardio, 30 min</span></div>
+      <div class="tt"><div><div class="tl1">Today${tc === 'short' ? ' · <span class="tag">Short version</span>' : ''}</div><div class="tl2">${tc === 'move' ? 'Rest' : esc(sessionName())}</div></div>${tc === 'move' || tc === 'skip' ? '' : '<button class="btn primary sm" type="button" data-go="workout">Start</button>'}</div>
+      ${tc === 'move' ? `<p class="fine" style="font-weight:700">${esc(sessionName())} moved to ${tomorrow()}.</p>` : tc === 'skip' ? '<p class="fine" style="font-weight:700">Skipped. Monday reads what happened.</p>'
+        : mv.slice(0, 3).map(m => `<div class="mrow">${thumb(m.eq)}<div><div class="mn">${esc(moveName(m))}</div></div><div class="mt tnum">${m.kg == null ? `${m.sets} × ${m.range}` : `${fmtKg(m.kg)} × ${m.reps}`}</div></div>`).join('') + `<div class="tfoot">${I.run(18)}<span>Cardio, 30 min</span></div>`}
     </section>
-    <button class="food" type="button" data-go="meal"><span class="fk"><span>${d1() ? 'Food today' : 'Food left'}</span><b class="tnum">${d1() ? '2,916 kcal' : '1,240-1,480 kcal'}</b></span><span class="plusmini">${I.meal(18)} Log</span></button>`;
+    <button class="food" type="button" data-go="meal"><span class="fk"><span>${d1() ? 'Food today' : 'Food left'}</span>${d1() && noConsent() ? '' : `<b class="tnum">${d1() ? `${fmtNum(startKcal())} kcal` : '1,240-1,480 kcal'}</b>`}</span><span class="plusmini">${I.meal(18)} Log</span></button>`;
   } },
 
   'home-mon': { n: 'Bu hafta · pazartesi sabahı', t: 40, tabs: true, r: () => `<header class="top"><h1 class="title">This week</h1><button class="iconbtn surf" type="button" data-go="settings" aria-label="Settings">${I.gear(22)}</button></header>
@@ -1073,21 +1187,32 @@ const SCREENS = {
     </section>` },
 
   train: { n: 'Antrenman (program)', t: 55, scen: true, tabs: true, r: () => {
-    const mv = moves();
-    const head = own() ? `<p class="sub">Your PPL · 5 days · reviewed</p><button class="rowbtn" type="button" data-act="proto" data-val="Shows the 3 changes from the review. Each can be undone." style="background:var(--accent-soft);border-radius:14px;padding-inline:14px;border:0"><span class="lic"><span class="ic" style="background:var(--bg)">${I.check(20, 2.6)}</span><span>3 changes applied</span></span><span class="rv2">Undo ${I.chev(18)}</span></button>`
-      : `<p class="sub">Full body · ${S.ob.daysN} days · week <span class="tnum">${d1() ? 1 : 12}</span></p>${d1() ? '' : `<button class="rowbtn" type="button" data-go="call" style="background:var(--accent-soft);border-radius:14px;padding-inline:14px;border:0"><span class="lic"><span class="ic" style="background:var(--bg)">${I.info(20)}</span><span>Bench holds at <span class="tnum">72.5</span> kg</span></span><span class="rv2">${I.chev(18)}</span></button>`}`;
+    const mv = moves(), tc = S.todayChg, nch = applied();
+    const callRow = S.kept.w12
+      ? `<button class="rowbtn" type="button" data-act="usecall" style="background:var(--accent-soft);border-radius:14px;padding-inline:14px;border:0"><span class="lic"><span class="ic" style="background:var(--bg)">${I.info(20)}</span><span>Not applied</span></span><span class="rv2">Use this call ${I.chev(18)}</span></button>`
+      : `<button class="rowbtn" type="button" data-go="call" style="background:var(--accent-soft);border-radius:14px;padding-inline:14px;border:0"><span class="lic"><span class="ic" style="background:var(--bg)">${I.info(20)}</span><span>Bench holds at <span class="tnum">72.5</span> kg</span></span><span class="rv2">${I.chev(18)}</span></button>`;
+    const head = own() ? `<p class="sub">Your ${ownName()} · ${ownDaysN()} days · reviewed</p>${nch ? `<button class="rowbtn" type="button" data-act="proto" data-val="Shows the ${plural(nch, 'change')} from the review. Each can be undone." style="background:var(--accent-soft);border-radius:14px;padding-inline:14px;border:0"><span class="lic"><span class="ic" style="background:var(--bg)">${I.check(20, 2.6)}</span><span>${plural(nch, 'change')} applied</span></span><span class="rv2">Undo ${I.chev(18)}</span></button>` : ''}`
+      : `<p class="sub">Full body · ${S.ob.daysN} days · week <span class="tnum">${d1() ? 1 : 12}</span></p>${d1() ? '' : callRow}`;
+    const shown = tc === 'short' ? mv.slice(0, 3) : mv;
+    const body = tc === 'move' ? `<p class="line" style="margin:0">Moved to ${tomorrow()}. Today is rest.</p>`
+      : tc === 'skip' ? `<p class="line" style="margin:0">Skipped. Monday reads what happened.</p>`
+      : `${shown.map(m => `<div class="mrow wswap">${thumb(m.eq)}<div><div class="mn">${esc(moveName(m))}</div><div class="ms tnum">${m.sets} × ${m.range}</div></div><div class="mt tnum">${m.kg == null ? '' : `${fmtKg(m.kg)} kg`}${m.held ? '<small>held</small>' : ''}</div><button class="swapb" type="button" data-act="swapfrom" data-val="${m.id}" aria-label="Swap ${esc(m.name)}">${I.swap(18)}</button></div>`).join('')}
+      <div class="mrow" style="border-top:1px solid var(--block-line);padding-top:12px"><span class="thumb" aria-hidden="true">${I.run(24, 2.2)}</span><div><div class="mn">Cardio, easy</div><div class="ms">After lifting</div></div><div class="mt tnum">30 min</div></div>`;
+    const dock = tc === 'move' || tc === 'skip' ? `<button class="btn block2" type="button" data-act="undotoday">Undo</button>`
+      : `<div class="dock" style="position:static;background:none;padding:0;grid-template-columns:1fr auto"><button class="btn onblock" type="button" data-go="workout">Start workout</button><button class="btn block2" type="button" data-act="sheet" data-val="today">Change</button></div>`;
+    const later = d1() ? planDays().slice(1).map((d, i) => `<div class="rowbtn" style="cursor:default"><span class="lic"><span class="ic">${I.week(18)}</span><span>${SHORT[d]} · <span ${typedOn() ? 'data-nc' : ''}>${esc(own() ? ownDayNames()[i + 1] || 'Day ' + (i + 2) : 'Full body ' + (i % 2 ? 'A' : 'B'))}</span></span></span><span class="rv2">${i === 1 && !own() ? '+ cardio' : ''}</span></div>`).join('')
+      : [['Mon', 'Full body A', '52 min · cardio'], ['Wed', 'Full body B', '47 min']].map(([d, n, t]) => `<div class="rowbtn" style="cursor:default"><span class="lic"><span class="ic" style="background:var(--ink);color:var(--bg)">${I.check(18, 3)}</span><span>${d} · ${n}</span></span><span class="rv2 tnum">${t}</span></div>`).join('');
     return `<header class="top"><h1 class="title">Train</h1><button class="tlink" type="button" data-act="sheet" data-val="editprog">Edit</button></header>
     ${head}
     <section class="card ink" aria-label="Today">
-      <div class="ct"><span class="k">${d1() ? 'Today · Mon' : 'Today · Fri'}</span><span class="k tnum">${mv.length} moves · ${own() ? 55 : 50} min</span></div>
-      <p class="label" style="font-size:44px">${sessionName()}</p>
-      ${mv.map(m => `<div class="mrow wswap">${thumb(m.eq)}<div><div class="mn">${moveName(m)}</div><div class="ms tnum">${m.sets} × ${m.range}</div></div><div class="mt tnum">${d1() && !knowsWeights() ? '' : `${m.kg} kg`}${m.held && !d1() ? '<small>held</small>' : ''}</div><button class="swapb" type="button" data-act="swapfrom" data-val="${m.id}" aria-label="Swap ${m.name}">${I.swap(18)}</button></div>`).join('')}
-      <div class="mrow" style="border-top:1px solid var(--block-line);padding-top:12px"><span class="thumb" aria-hidden="true">${I.run(24, 2.2)}</span><div><div class="mn">Cardio, easy</div><div class="ms">After lifting</div></div><div class="mt tnum">30 min</div></div>
-      <div class="dock" style="position:static;background:none;padding:0;grid-template-columns:1fr auto"><button class="btn onblock" type="button" data-go="workout">Start workout</button><button class="btn block2" type="button" data-act="sheet" data-val="today">Change</button></div>
+      <div class="ct"><span class="k">${d1() ? 'Today · Mon' : 'Today · Fri'}</span><span class="k tnum">${tc === 'move' || tc === 'skip' ? '' : tc === 'short' ? 'Short version · 35 min' : `${mv.length} moves · ${own() ? 55 : 50} min`}</span></div>
+      <p class="label" style="font-size:44px" ${typedOn() ? 'data-nc' : ''}>${tc === 'move' ? 'Rest' : esc(sessionName())}</p>
+      ${body}
+      ${dock}
     </section>
     <section style="display:grid;gap:2px"><h2 class="h2">${d1() ? 'Coming up' : 'This week'}</h2>
-      ${d1() ? planDays().slice(1).map((d, i) => `<div class="rowbtn" style="cursor:default"><span class="lic"><span class="ic">${I.week(18)}</span><span>${SHORT[d]} · ${own() ? ['Pull', 'Legs', 'Upper', 'Lower'][i] : 'Full body ' + (i % 2 ? 'A' : 'B')}</span></span><span class="rv2">${i === 1 && !own() ? '+ cardio' : ''}</span></div>`).join('')
-        : [['Mon', 'Full body A', '52 min · cardio'], ['Wed', 'Full body B', '47 min']].map(([d, n, t]) => `<div class="rowbtn" style="cursor:default"><span class="lic"><span class="ic" style="background:var(--ink);color:var(--bg)">${I.check(18, 3)}</span><span>${d} · ${n}</span></span><span class="rv2 tnum">${t}</span></div>`).join('')}
+      ${tc === 'move' ? `<div class="rowbtn" style="cursor:default"><span class="lic"><span class="ic">${I.week(18)}</span><span>${tomorrow()} · ${esc(sessionName())}</span></span><span class="rv2">moved</span></div>` : ''}
+      ${later}
     </section>`;
   } },
 
@@ -1099,9 +1224,10 @@ const SCREENS = {
     <header class="top"><h1 class="title">Progress</h1></header>
     <section class="insight"><p>Day 1. Today's targets.</p><span class="is">Tap one to log it.</span></section>
     <div class="targets">
-      <button class="tgt" type="button" data-go="meal"><span class="tk">Calories ${I.chev(16)}</span><b class="tnum">0 <small>/ 2,916</small></b><span class="bar"><i style="width:2%"></i></span><span class="src">From your meals</span></button>
-      <button class="tgt" type="button" data-go="meal"><span class="tk">Protein ${I.chev(16)}</span><b class="tnum">0 <small>/ 168 g</small></b><span class="bar"><i style="width:2%"></i></span><span class="src">From your meals</span></button>
-      <button class="tgt" type="button" data-act="proto" data-val="Steps come from Apple Health; tap shows the day and the week."><span class="tk">Steps ${I.chev(16)}</span><b class="tnum">3,240 <small>/ 7,000</small></b><span class="bar"><i style="width:46%"></i></span><span class="src">Apple Health</span></button>
+      <button class="tgt" type="button" data-go="meal"><span class="tk">Calories ${I.chev(16)}</span><b class="tnum">0 <small>/ ${fmtNum(startKcal())}</small></b><span class="bar"><i style="width:2%"></i></span><span class="src">From your meals</span></button>
+      <button class="tgt" type="button" data-go="meal"><span class="tk">Protein ${I.chev(16)}</span><b class="tnum">0 <small>/ ${startProtein()} g</small></b><span class="bar"><i style="width:2%"></i></span><span class="src">From your meals</span></button>
+      ${hasHealth() ? `<button class="tgt" type="button" data-act="proto" data-val="Steps come from Apple Health; tap shows the day and the week."><span class="tk">Steps ${I.chev(16)}</span><b class="tnum">3,240 <small>/ 7,000</small></b><span class="bar"><i style="width:46%"></i></span><span class="src">Apple Health</span></button>`
+        : `<button class="tgt" type="button" data-act="sheet" data-val="health-jit"><span class="tk">Steps ${I.chev(16)}</span><b class="tnum"><small>/ 7,000</small></b><span class="bar"><i style="width:0"></i></span><span class="src">Connect Apple Health</span></button>`}
       <button class="tgt" type="button" data-go="train"><span class="tk">Cardio ${I.chev(16)}</span><b class="tnum">0 <small>/ 2 this week</small></b><span class="bar"><i style="width:2%"></i></span><span class="src">30 min each</span></button>
     </div>
     <section class="card"><div class="sh"><h2 class="h2">This week's muscles</h2><span class="fine">planned</span></div>
@@ -1125,7 +1251,7 @@ const SCREENS = {
       <div class="grid12" aria-label="11 of 12 weeks on track, 1 spare week used">${'<span></span>'.repeat(6)}<span class="spare"></span>${'<span></span>'.repeat(5)}</div>
       <p class="fine">Spare week used once. A missed day never resets it.</p></section>
     <section class="card"><div class="sh"><h2 class="h2">Calls</h2></div>
-      ${[['Dec 28', 'Hold the weight', 'call'], ['Dec 21', 'Keep going', ''], ['Oct 26', 'New calorie target', ''], ['Oct 19', '2 days, not 3', 'week1']].map(([d, l, g]) => `<button class="rowbtn" type="button" ${g ? `data-go="${g}"` : 'data-act="proto" data-val="Earlier calls open the same call screen."'}><span>${l}<br><span class="fine">${d}</span></span><span class="rv2">${I.chev(18)}</span></button>`).join('')}</section>
+      ${[['Dec 28' + (S.kept.w12 ? ' · not applied' : ''), 'Hold the weight', 'call'], ['Dec 21', 'Keep going', ''], ['Oct 26', 'New calorie target', ''], ['Oct 19', 'Move Wednesday', 'week1']].map(([d, l, g]) => `<button class="rowbtn" type="button" ${g ? `data-go="${g}"` : 'data-act="proto" data-val="Earlier calls open the same call screen."'}><span>${l}<br><span class="fine">${d}</span></span><span class="rv2">${I.chev(18)}</span></button>`).join('')}</section>
     <section class="card"><div class="sh"><h2 class="h2">Photos</h2><span class="tag">Photo week</span></div>
       <button class="btn ink wide" type="button" data-go="photos">${I.cam(20)} Take this week's photos</button><p class="fine">They stay on this phone.</p></section>` },
 
@@ -1146,7 +1272,7 @@ const SCREENS = {
     <div class="scale"><button class="step" type="button" data-act="w" data-val="-0.1" aria-label="Minus 0.1 kilograms">${I.minus(28, 2.6)}</button>
       <div class="wnum" aria-live="polite"><span class="n tnum">${w.toFixed(1)}</span><span>kg</span></div>
       <button class="step" type="button" data-act="w" data-val="0.1" aria-label="Plus 0.1 kilograms">${I.plus(28, 2.6)}</button></div>
-    <p class="fine center" style="font-weight:700">Last: <span class="tnum">${d1() ? '84.0' : '80.4'}</span> kg</p>
+    <p class="fine center" style="font-weight:700">Last: <span class="tnum">${d1() ? S.ob.weight.toFixed(1) : '80.4'}</span> kg</p>
     ${d1() ? '<p class="empty center">Trend starts after 7 weigh-ins.</p>' : `<section class="card"><div class="sh"><span class="fine" style="font-weight:700">7-day average</span><b class="mid tnum">80.3</b></div>${lineChart([80.9, 80.7, 80.8, 80.5, 80.6, 80.4, 80.2], { h: 70 })}</section>`}
     <div class="dock"><button class="btn primary wide" type="button" data-act="saveweigh">Save</button></div>`;
   } },
@@ -1178,6 +1304,7 @@ const SCREENS = {
     <h1 class="q">How did week 1 feel?</h1>
     <p class="why">It shapes next week's plan.</p>
     <div class="opts">${[['much', 'Too much', 'up'], ['right', 'About right', 'eq'], ['more', 'I could do more', 'plus']].map(([v, l, ic]) => `<button class="opt" type="button" data-act="w1feel" data-val="${v}" aria-pressed="${S.w1feel === v}"><span class="oi">${I[ic](22)}</span><span class="ot">${l}</span></button>`).join('')}</div>
+    <button class="protobtn" type="button" data-act="w1done" data-nc>Prototip, hafta 1: ${({ missed: '3 seanstan 2, Çarşamba kaçtı', all: '3 seansın 3\'ü, yeni başlayan', allexp: '3 seansın 3\'ü, 1-3 yıl' })[S.w1done]} · değiştir</button>
     <div class="dock"><button class="btn primary wide" type="button" data-act="reveal" data-val="week1" ${S.w1feel ? '' : 'disabled'}>Show my call</button></div>` : `${navtop('Monday')}
     <h1 class="q">How did training go?</h1>
     <p class="why">It decides what changes: food or training.</p>
@@ -1190,7 +1317,7 @@ const SCREENS = {
     <section class="block ${S.reveal ? 'reveal' : ''}" aria-label="The call">
       <p class="label" style="font-size:60px">${c.label}</p>
       <p class="line">${c.line}</p>
-      <div class="foot" style="font-size:15px"><span style="display:flex;align-items:center;gap:6px">${kept ? "Keeping last week's plan. The call stays on record." : I.check(18, 3) + " In this week's plan"}</span></div>
+      <div class="foot" style="font-size:15px"><span style="display:flex;align-items:center;gap:6px">${kept ? 'Not applied. The call stays on record.' : I.check(18, 3) + " In this week's plan"}</span></div>
     </section>
     <div class="changes">${c.change.map(([n, a, b]) => `<div class="chg"><span class="cn">${n}</span><span class="cv tnum"><s>${a}</s>${I.chev(16)}<span class="accT">${b}</span></span></div>`).join('')}</div>
     <ul class="why2">${c.why.map(([ic, t]) => `<li><span class="wi">${I[ic](18)}</span><span>${t}</span></li>`).join('')}</ul>
@@ -1200,19 +1327,26 @@ const SCREENS = {
   } },
 
   week1: { n: '1. hafta kararı (B4)', t: 45, r: () => {
-    const ch = S.w1choice;
-    const label = ch === 'three' ? 'Keep 3 days' : ch === 'days' ? '2 days, your pick' : '2 days, not 3';
-    const line = ch === 'three' ? 'Your call: 3 days. Monday reads how it goes.' : ch === 'days' ? 'Two days next week, on the days you choose.' : 'Wednesday didn\'t happen. Next week: <span class="acc">Mon and Fri</span>.';
+    const c = week1Call(), ch = S.w1choice, last = ch === 'last' && c.kind !== 'keep';
+    const pick = ch === 'pick' && S.w1pick && c.kind !== 'keep', day = pick ? S.w1pick : c.day; /* the call keeps its suggestion (U2); the change row shows what the person chose */
+    const feel = S.w1feel === 'much' ? 'You said week 1 felt like too much.' : S.w1feel === 'more' ? 'You said you could do more.' : 'You said it felt about right.';
+    const label = c.kind === 'move' ? `Move ${FULL[c.missed]}` : c.kind === 'add' ? 'Add a day' : 'Keep going';
+    const line = c.kind === 'move' ? `${FULL[c.missed]} didn't happen. <span class="acc">${FULL[c.day]}</span> instead, still ${c.n} days.`
+      : c.kind === 'add' ? `All ${c.n} done. Next week: ${c.n + 1} days, plus <span class="acc">${FULL[c.day]}</span>.`
+      : `${c.done} of ${c.n} done. Same plan next week.`;
+    const chg = c.kind === 'move' ? [pick ? 'Your pick' : `${SHORT[c.missed]} session`, SHORT[c.missed], last ? SHORT[c.missed] : SHORT[day]]
+      : c.kind === 'add' ? [pick ? `Your pick: ${SHORT[day]}` : 'Training days', c.n, last ? c.n : `${c.n + 1}`] : ['Training days', c.n, c.n];
+    const why = c.kind === 'move' ? 'A day that fits gets done.' : c.kind === 'add' ? 'Every session done: room for one more.' : 'On track. The plan stays.';
     return `${navtop('', 'Mon, Oct 19')}
     <section class="block ${S.reveal ? 'reveal' : ''}" aria-label="The call">
-      <p class="label" style="font-size:58px">${label}</p>
+      <p class="label" style="font-size:54px">${label}</p>
       <p class="line">${line}</p>
-      <div class="foot" style="font-size:15px"><span>${S.w1feel === 'much' ? 'You said week 1 felt like too much.' : S.w1feel === 'more' ? 'You said you could do more.' : 'You said it felt about right.'}</span></div>
+      <div class="foot" style="font-size:15px"><span>${last ? "Keeping last week's plan. The call stays on record." : feel}</span></div>
     </section>
-    <div class="changes"><div class="chg"><span class="cn">Training days</span><span class="cv tnum"><s>3</s>${I.chev(16)}<span class="accT">${ch === 'three' ? '3' : '2'}</span></span></div></div>
-    <ul class="why2"><li><span class="wi">${I.week(18)}</span><span>A plan that fits gets done first.</span></li><li><span class="wi">${I.clock(18)}</span><span>Food and weight wait until day 14.</span></li></ul>
+    <div class="changes"><div class="chg"><span class="cn">${chg[0]}</span><span class="cv tnum">${chg[1] === chg[2] ? `<span>${chg[2]}</span>` : `<s>${chg[1]}</s>${I.chev(16)}<span class="accT">${chg[2]}</span>`}</span></div></div>
+    <ul class="why2"><li><span class="wi">${I.week(18)}</span><span>${why}</span></li><li><span class="wi">${I.clock(18)}</span><span>Food and weight wait until day 14.</span></li></ul>
     <div class="metaline"><span>Confidence <b>Medium</b></span><span>Next call <b>Mon, Oct 26</b></span></div>
-    <div class="dock two"><button class="btn primary" type="button" data-act="home">Sounds right</button><button class="btn ghost" type="button" data-act="sheet" data-val="w1change">Change it</button></div>`;
+    <div class="dock two"><button class="btn primary" type="button" data-act="w1ok">Sounds right</button><button class="btn ghost" type="button" data-act="w1open">Change it</button></div>`;
   } },
 
   share: { n: 'Paylaşım', t: 25, scen: true, countRoot: '.ov', r: () => shareScreen() },
@@ -1256,7 +1390,23 @@ const SCREENS = {
 
 /* ---------- sheets ---------- */
 const sheetRow = (act, val, ic, title, sub) => `<button class="rowbtn" type="button" data-act="${act}" data-val="${val}"><span class="lic"><span class="ic">${I[ic](20)}</span><span>${title}<small>${sub}</small></span></span><span class="rv2">${I.chev(18)}</span></button>`;
+/* "Add a move": the catalog filtered by the search field; a move already in the open day is left out */
+function mvRows() {
+  const d = S.typed.days[S.typed.open]; const have = new Set(d ? d.moves.map(m => m.n) : []);
+  const q = S.mq.trim().toLowerCase();
+  const list = CATALOG.filter(c => !have.has(c.n) && (!q || c.n.toLowerCase().includes(q) || c.mu.toLowerCase().includes(q)));
+  return list.length ? list.map(c => `<button class="rowbtn" type="button" data-act="addmv" data-val="${esc(c.n)}"><span class="lic">${thumb(c.eq)}<span>${c.n}<small>${c.mu} · ${c.min}-${c.max} reps</small></span></span><span class="rv2">${I.plus(20, 2.6)}</span></button>`).join('')
+    : '<p class="empty">No match. Add it as your own move.</p>';
+}
 Object.assign(SCREENS, {
+  addmove: { n: 'Hareket ekle (yeni)', t: null, sheet: true, under: 'ob-type', r: () => { const d = S.typed.days[S.typed.open];
+    return `<div class="sheet" role="dialog" aria-label="Add a move">
+    <div class="grab"></div><h2>Add a move</h2><p class="fine">To <b data-nc>${d ? esc(d.name) : 'this day'}</b>. 3 sets to start; change them after.</p>
+    <div class="inbox">${I.search(18)}<input id="mvq" type="search" placeholder="Search moves" aria-label="Search moves" value="${esc(S.mq)}" data-act-input="mvq" autocomplete="off"></div>
+    <div id="mvlist" style="display:grid">${mvRows()}</div>
+    ${S.ownMv ? `<div class="ownmv"><label class="tname" for="ownmvn">Your move's name<input id="ownmvn" type="text" maxlength="60" value="${esc(S.ownMvName)}" data-act-input="ownmvn"></label><button class="btn primary wide" type="button" data-act="ownmvadd">Add my move</button></div>`
+      : `<button class="tadd" type="button" data-act="ownmv">${I.plus(18, 2.6)}Add my own move</button>`}
+  </div>`; } },
   today: { n: 'Bugünü değiştir (yeni)', t: null, sheet: true, under: 'train', r: () => `<div class="sheet" role="dialog" aria-label="Change today">
     <div class="grab"></div><h2>Change today</h2>
     ${sheetRow('todaychg', 'short', 'clock', 'Short on time', 'A 35 min version: top 3 moves')}
@@ -1276,12 +1426,17 @@ Object.assign(SCREENS, {
     <div class="grab"></div><h2>Swap ${m.name}</h2><p class="fine">Same muscles. Your gym has these.</p>
     ${m.alt.map(a => `<button class="rowbtn" type="button" data-act="swapto" data-val="${a}"><span class="lic">${thumb(m.eq)}<span>${a}</span></span><span class="rv2">${I.chev(18)}</span></button>`).join('')}
     <button class="rowbtn" type="button" data-act="swapto" data-val="${m.name}"><span class="lic"><span class="ic">${I.check(20, 2.6)}</span><span>Keep ${m.name}</span></span><span class="rv2"></span></button></div>`; } },
-  w1change: { n: '1. hafta kararını değiştir (yeni)', t: null, sheet: true, under: 'week1', r: () => `<div class="sheet" role="dialog" aria-label="Change the call">
-    <div class="grab"></div><h2>Your call too</h2><p class="fine">We suggested 2 days. You know your week.</p>
-    ${sheetRow('w1set', 'three', 'week', 'Keep 3 days', 'Monday reads how it goes')}
-    ${sheetRow('w1set', 'days', 'pin', 'Two days, my pick', 'Choose the days that work')}
-    ${sheetRow('w1set', 'keep', 'check', '2 days, Mon and Fri', 'The suggestion')}
-  </div>` },
+  w1change: { n: '1. hafta kararını değiştir (yeni)', t: null, sheet: true, under: 'week1', r: () => { const c = week1Call();
+    const sugg = c.kind === 'move' ? `${FULL[c.day]} instead of ${FULL[c.missed]}` : c.kind === 'add' ? `Add ${FULL[c.day]}: ${c.n + 1} days` : `Same days: ${daysText()}`;
+    const free = WEEK.map(w => w[0]).filter(d => !planDays().includes(d));
+    return `<div class="sheet" role="dialog" aria-label="Change the call">
+    <div class="grab"></div><h2>Your call too</h2><p class="fine">We suggested: ${sugg}. You know your week.</p>
+    ${sheetRow('w1set', 'suggest', 'check', 'Keep the suggestion', sugg)}
+    ${c.kind === 'keep' ? sheetRow('proto', 'Opens your training days in Train: pick any days, 2 to 7. The plan re-lays itself.', 'pin', 'Pick my days myself', 'Any days, any number')
+      : sheetRow('w1pickopen', '', 'pin', 'Pick the day myself', c.kind === 'move' ? 'Any free day next week' : 'The day you can add')}
+    ${S.w1pickOpen && c.kind !== 'keep' ? `<div class="twd" role="group" aria-label="Pick a day" style="padding-inline:4px">${free.map(d => `<button type="button" data-act="w1pick" data-val="${d}" aria-pressed="${S.w1choice === 'pick' && S.w1pick === d}">${SHORT[d]}</button>`).join('')}</div>` : ''}
+    ${c.kind === 'keep' ? '' : sheetRow('w1set', 'last', 'week', "Keep last week's plan", `${daysText()}, as before`)}
+  </div>`; } },
   editset: { n: 'Seti düzelt (yeni)', t: null, sheet: true, under: 'workout', r: () => { const s = S.wo && S.wo.logged[S.editKey]; if (!s) return '<div class="sheet"></div>'; const m = moves()[Number(S.editKey.split('-')[0])]; return `<div class="sheet" role="dialog" aria-label="Edit set">
     <div class="grab"></div><h2>Set ${Number(S.editKey.split('-')[1]) + 1}, ${m.name}</h2>
     <div class="steppers">
@@ -1308,7 +1463,7 @@ function curSet(m, k) {
 function setInsight(m, s, i) {
   const st = stepOf(m);
   if (s.reps < m.min) return null;
-  if (d1() && !own() && s.rir >= 2) return `${s.rir === 2 ? '2+' : s.rir} reps left: that weight is light. Next set ${fmtKg(s.kg + st)} kg?`;
+  if (m.kg == null) return s.rir >= 2 ? `${s.rir === 2 ? '2+' : s.rir} reps left: that weight is light. Next set ${fmtKg(s.kg + st)} kg?` : `Starting weight found: ${fmtKg(s.kg)} kg.`;
   if (m.held && !d1()) return `${s.reps} again, as called. Monday's call reads it.`;
   if (m.last) { const d = s.reps - m.last[1]; const toTop = m.max - s.reps;
     if (d > 0) return `+${d} rep vs last time.${m.iso ? '' : toTop > 0 ? ` ${toTop} more and it's ${fmtKg(s.kg + st)} kg.` : ` Top of the range: ${fmtKg(s.kg + st)} kg next time.`}`;
@@ -1323,7 +1478,9 @@ function workoutScreen() {
   const nextIdx = logged.length, allDone = nextIdx >= m.sets;
   const c = allDone ? null : curSet(m, mi + '-' + nextIdx);
   const st = stepOf(m), next = mv[mi + 1];
-  const goal = d1() && !own() ? [`First time`, `${m.range} reps`, 'Pick a weight that leaves<br>1 rep in the tank'] : [`Beat last time`, `${fmtKg(m.kg)} kg × ${m.reps}`, m.last ? `Last: <span class="tnum">${fmtKg(m.last[0])} × ${m.last[1]}</span>` : 'From your weights'];
+  const goal = m.kg == null ? [`First time`, `${m.range} reps`, 'Pick a weight that leaves<br>1 rep in the tank']
+    : m.last ? [`Beat last time`, `${fmtKg(m.kg)} kg × ${m.reps}`, `Last: <span class="tnum">${fmtKg(m.last[0])} × ${m.last[1]}</span>`]
+    : [`Start here`, `${fmtKg(m.kg)} kg × ${m.range}`, 'From your weights'];
   return `<header class="wtop"><button class="tlink muted" type="button" data-act="sheet" data-val="endwo" style="justify-self:start">End</button><span class="wtime tnum ${S.paused ? 'paused' : ''}" id="wtime">24:10</span><button class="tlink" type="button" data-act="pausewo" style="justify-self:end">${S.paused ? 'Resume' : 'Pause'}</button></header>
   <div id="restslot" class="restslot"></div>
   ${S.paused ? `<div class="pausebar"><span>Paused. Take your time.</span><button class="btn primary sm" type="button" data-act="pausewo">Resume</button></div>` : ''}
@@ -1336,26 +1493,26 @@ function workoutScreen() {
   ${allDone ? '' : `<section class="active" aria-label="Set ${nextIdx + 1}">
     <div class="ah">Set ${nextIdx + 1} of ${m.sets}<span>${m.range} reps</span></div>
     <div class="steppers">
-      <div class="stepper"><button type="button" data-act="adj" data-val="kg,-${st}" aria-label="Less weight">${I.minus(20, 2.6)}</button><div class="sv"><b class="tnum">${fmtKg(c.kg)}</b><span>kg</span></div><button type="button" data-act="adj" data-val="kg,${st}" aria-label="More weight">${I.plus(20, 2.6)}</button></div>
+      <div class="stepper"><button type="button" data-act="adj" data-val="kg,-${st}" aria-label="Less weight">${I.minus(20, 2.6)}</button><div class="sv">${c.kg == null ? '<b style="font-size:22px;line-height:34px">Pick</b><span>a weight</span>' : `<b class="tnum">${fmtKg(c.kg)}</b><span>kg</span>`}</div><button type="button" data-act="adj" data-val="kg,${st}" aria-label="More weight">${I.plus(20, 2.6)}</button></div>
       <div class="stepper"><button type="button" data-act="adj" data-val="reps,-1" aria-label="Fewer reps">${I.minus(20, 2.6)}</button><div class="sv"><b class="tnum">${c.reps}</b><span>reps</span></div><button type="button" data-act="adj" data-val="reps,1" aria-label="More reps">${I.plus(20, 2.6)}</button></div>
     </div>
     <div class="rirrow"><button class="rl" type="button" data-act="proto" data-val="Reps left: how many more you could have done with good form. Aim for 0 or 1.">Reps left ${I.info(16)}</button><div class="seg" role="group" aria-label="Reps left in the tank">${[[0, '0'], [1, '1'], [2, '2+']].map(([v, l]) => `<button type="button" data-act="rir" data-val="${v}" aria-pressed="${c.rir === v}">${l}</button>`).join('')}</div></div>
-    <button class="btn primary wide" type="button" data-act="logset">${I.check(20, 3)} Log set</button>
-    <div class="alinks"><button type="button" data-act="heavy">Too heavy?</button><button type="button" data-act="skipset">Skip set</button></div>
+    <button class="btn primary wide" type="button" data-act="logset" ${c.kg == null ? 'disabled' : ''}>${I.check(20, 3)} Log set</button>
+    <div class="alinks">${c.kg == null ? '' : '<button type="button" data-act="heavy">Too heavy?</button>'}<button type="button" data-act="skipset">Skip set</button></div>
   </section>`}
-  ${allDone ? `<button class="btn primary wide" type="button" data-act="nextmove">${next ? `Next: ${next.name}` : 'Next: cardio'}</button>`
+  ${allDone ? `<button class="btn primary wide" type="button" data-act="nextmove">${next ? `Next: ${esc(next.name)}` : 'Next: cardio'}</button>`
     : next ? `<div class="upnext">${thumb(next.eq)}<div class="un"><span>Up next</span><b>${next.name}</b></div></div>` : ''}
   <div style="height:30px"></div>`;
 }
 function cardioScreen() {
   const cd = S.wo.cardio;
-  return `<header class="wtop"><button class="tlink muted" type="button" data-act="sheet" data-val="endwo" style="justify-self:start">End</button><span class="wtime tnum" id="wtime">24:10</span><button class="tlink" type="button" data-go="summary" style="justify-self:end">Finish</button></header>
+  return `<header class="wtop"><button class="tlink muted" type="button" data-act="sheet" data-val="endwo" style="justify-self:start">End</button><span class="wtime tnum" id="wtime">24:10</span><button class="tlink" type="button" data-act="finishwo" style="justify-self:end">Finish</button></header>
   <div id="restslot" class="restslot"></div>
-  <div class="mhead"><span class="thumb lg" aria-hidden="true">${I.run(30, 2.2)}</span><div><h1 class="mname">Cardio, easy</h1><p class="fine" style="font-weight:700;margin-top:6px">30 min · about 300 kcal</p></div></div>
+  <div class="mhead"><span class="thumb lg" aria-hidden="true">${I.run(30, 2.2)}</span><div><h1 class="mname">Cardio, easy</h1><p class="fine" style="font-weight:700;margin-top:6px">30 min, easy</p></div></div>
   <div class="goal"><div><span>Pace</span><br><b>Talk test</b></div><span style="text-align:right">You can talk,<br>in short sentences</span></div>
   <ul class="why2"><li><span class="wi">${I.clock(18)}</span><span>After lifting, not before. 30 min is enough.</span></li><li><span class="wi">${I.fire(18)}</span><span>Bike, incline walk or cross-trainer. No sprints.</span></li></ul>
-  ${cd ? `<div class="insight-l"><span class="ii">${I.check(16, 3)}</span><span>${cd === 'done' ? 'Cardio logged: 30 min. Apple Watch adds the calories.' : cd === 'later' ? 'Saved for later today. It still counts.' : 'Skipped today. 1 of 2 this week is still open.'}</span></div>` : ''}
-  <div class="dock"><button class="btn primary wide" type="button" data-act="cardio" data-val="done">${I.check(20, 3)} Done, 30 min</button><div class="dock two" style="position:static;padding:0"><button class="btn ghost" type="button" data-act="cardio" data-val="later">Later today</button><button class="btn ghost" type="button" data-act="cardio" data-val="skip">Skip today</button></div><button class="btn line wide" type="button" data-go="summary">Finish workout</button></div>`;
+  ${cd ? `<div class="insight-l"><span class="ii">${I.check(16, 3)}</span><span>${cd === 'done' ? (hasHealth() ? 'Cardio logged: 30 min. Apple Watch adds the calories.' : 'Cardio logged: 30 min.') : cd === 'later' ? 'Saved for later today. It still counts.' : 'Skipped today. 1 of 2 this week is still open.'}</span></div>` : ''}
+  <div class="dock"><button class="btn primary wide" type="button" data-act="cardio" data-val="done">${I.check(20, 3)} Done, 30 min</button><div class="dock two" style="position:static;padding:0"><button class="btn ghost" type="button" data-act="cardio" data-val="later">Later today</button><button class="btn ghost" type="button" data-act="cardio" data-val="skip">Skip today</button></div><button class="btn line wide" type="button" data-act="finishwo">Finish workout</button></div>`;
 }
 
 /* ---------- summary: the "I did it" moment ---------- */
@@ -1367,7 +1524,7 @@ function summaryScreen() {
       <div><b class="tnum" data-count="54">54</b><span>minutes</span></div>
       <div><b class="tnum" data-count="5870">5,870</b><span>kg lifted</span></div>
       <div><b class="tnum" data-count="14">14</b><span>sets</span></div>
-      <div><b class="tnum" data-count="310">310</b><span>kcal</span><small>Apple Watch</small></div>
+      ${hasHealth() ? '<div><b class="tnum" data-count="310">310</b><span>kcal</span><small>Apple Watch</small></div>' : ''}
     </div>
     <div class="pr"><span class="medal">${I.target(26, 2.4)}</span><div><b>Baseline set</b><br><span>Next time every set has a target to beat.</span></div></div>
     <section class="card"><div class="sh"><h2 class="h2">Worked today</h2></div>${muscleMap(MAP_D1_TODAY)}</section>
@@ -1385,7 +1542,7 @@ function summaryScreen() {
     <section class="card"><div class="sh"><h2 class="h2">What moved</h2></div><div class="lifts">
       <div class="lift"><span>Romanian deadlift</span><span><span class="lv tnum">90 × 9</span> <span class="up">+1 rep</span></span></div>
       <div class="lift"><span>Cable row</span><span><span class="lv tnum">60 × 9</span> <span class="up">+1 rep</span></span></div>
-      <div class="lift"><span>Bench press</span><span><span class="lv tnum">72.5 × 8</span> <span class="up">held</span></span></div>
+      <div class="lift"><span>Bench press</span><span><span class="lv tnum">72.5 × 8</span> <span class="up">${S.kept.w12 ? 'same' : 'held'}</span></span></div>
     </div></section>
     <section class="card"><div class="sh"><h2 class="h2">Worked today</h2></div>${muscleMap(MAP_W12_TODAY)}</section>
     ${segs(3, 3)}
@@ -1415,40 +1572,43 @@ function shareScreen() {
     <div class="tplrow" role="group" aria-label="Background">${[['media', 'Photo or video'], ['ig', 'In Instagram'], ['dark', 'Dark']].map(([v, l]) => `<button type="button" data-act="bg" data-val="${v}" aria-pressed="${bg === v || (v === 'media' && bg === 'sample')}">${l}</button>`).join('')}<button type="button" data-act="anim" aria-pressed="${!!S.share.anim}">Animate</button></div>
     <button class="btn primary wide" type="button" data-act="dest" data-val="story">${I.share(20)} Share to Story</button>
     <div class="dests"><button type="button" data-act="dest" data-val="tiktok">${I.video(18)} TikTok</button><button type="button" data-act="dest" data-val="save">${I.dl(18)} Save</button><button type="button" data-act="dest" data-val="more">${I.more(18)} More</button></div>
-    <p class="fine center">Made on this phone. No weight or body numbers.</p>
+    <p class="fine center">Made on this phone. No body weight or photos of you.</p>
   </div>`;
 }
 
 /* ---------- index ---------- */
 const FLOWS = [
   { t: '1 · İlk gün (yeni başlayan, program bizden)', sc: 'd1', items: ['welcome', 'ob-goal', 'ob-exp', 'ob-program', 'ob-days', 'ob-consent', 'ob-about', 'ob-activity', 'ob-preparing', 'ob-plan', 'paywall', 'home', 'train', 'today', 'workout', 'summary', 'share', 'progress', 'weigh', 'health-jit', 'checkin', 'week1', 'w1change'] },
-  { t: '1b · Kendi programı olan (tecrübeli)', sc: 'own', items: ['ob-program', 'ob-own', 'ob-type', 'ob-review', 'ob-weights', 'ob-plan', 'paywall', 'train', 'editprog', 'workout'] },
+  { t: '1b · Kendi programı olan (tecrübeli)', sc: 'own', items: ['ob-program', 'ob-own', 'ob-type', 'addmove', 'ob-review', 'ob-weights', 'ob-plan', 'paywall', 'train', 'editprog', 'workout'] },
   { t: '2 · Sıradan gün (12. hafta)', sc: 'w12', items: ['home', 'plus', 'train', 'workout', 'editset', 'endwo', 'summary', 'share', 'progress', 'weigh', 'meal', 'barcode', 'photos', 'settings'] },
   { t: '3 · Pazartesi (12. hafta)', sc: 'w12', items: ['home-mon', 'checkin', 'call'] },
   { t: '4 · Dönüş ve duraklatma', sc: 'w12', items: ['return', 'life'] },
 ];
-const PREVKEY = { 'ob-plan': 'ob-plan', 'ob-exp': null, 'ob-own': null, 'ob-type': null, 'ob-review': null, 'ob-weights': null, 'home-mon': 'home-mon', today: null, editprog: null, w1change: null, editset: null, endwo: null, swap: null };
+const PREVKEY = { addmove: null, 'ob-plan': 'ob-plan', 'ob-exp': null, 'ob-own': null, 'ob-type': null, 'ob-review': null, 'ob-weights': null, 'home-mon': 'home-mon', today: null, editprog: null, w1change: null, editset: null, endwo: null, swap: null };
 const prevKey = (id, sc) => id in PREVKEY ? PREVKEY[id] : (SCREENS[id]?.scen ? (sc === 'own' ? null : `${id}.${sc}`) : id);
 const CH = {
   welcome: 'Aynı.', 'ob-goal': 'Aynı.', 'ob-exp': 'YENİ: deneyim. Yeni başlayan ağırlıklarını ilk seansta bulur, tecrübeli girer.',
   'ob-program': '"I have my own" artık ayrı akışa gider (1b).', 'ob-own': 'YENİ: içe aktar ya da gir.',
-  'ob-type': 'YENİ (8 Eki, K-968), 2. hal: bütün günler alt alta kart; dokun, aç, düzenle; altta "Add a day" (en çok 7). Her günde hareketler, set ve tekrar aralığı. Aynı düzenleyici Antrenman › Edit › Moves olur.',
-  'ob-review': 'YENİ: programın Güray kurallarıyla incelenir (6 gün K-36, set aralığı K-11), 3 öneri; uygula ya da benimki kalsın.',
+  'ob-type': 'YENİ (8 Eki, K-968), 2. hal: bütün günler alt alta kart; "Add a day" (en çok 7). Kullanıcı testi: tekrar iki ayrı sayı (en az, en çok); "Add a move" gerçek sayfa; hareketsiz gün uyarır ve "Use this program" kapanır; yazdığın program incelemeye, plana ve Antrenman sekmesine gider.',
+  addmove: 'YENİ (kullanıcı testi): ara (15 yaygın hareket) ya da kendi hareketini adıyla ekle; 3 set ve katalog aralığıyla (bileşik 6-10, izolasyon 8-12) açık güne girer; geri al.',
+  'ob-review': 'Programın koçluk kurallarıyla incelenir (6 gün K-36, set aralığı K-11), en çok 3 öneri. Kullanıcı testi: hamstring örneği 3 set (4 alt sınırdır, işaretlenmez); yazdığın programı inceler, öneri yoksa "Good as it is"; uygulanan sayı plana ve Antrenman sekmesine taşınır.',
   'ob-days': 'Aynı.', 'ob-consent': 'Aynı.', 'ob-about': 'Aynı.', 'ob-activity': 'Aynı.',
   'ob-weights': 'YENİ: tecrübeli için çalışma ağırlıkları; atlanabilir, ilk seans bulur.',
-  'ob-preparing': 'Kardiyo da hesaba girer.', 'ob-plan': 'Oynat rozeti kalktı; ağırlık ya da "Session 1 finds your weights"; kardiyo satırı.',
-  paywall: 'Deneme 2 hafta (App Store sabit süreleri); zaman çizelgesinde ilk karar ücretten 7 gün önce.',
-  home: 'Bugünün kartında kardiyo; yemek satırı "Log".', 'home-mon': 'Aynı.',
-  train: 'Her harekette değiştir; "Change": kısa, meşgul salon, taşı, atla; "Edit": günler, hareketler, kardiyo, split; kardiyo satırı.',
+  'ob-preparing': 'Kardiyo da hesaba girer. Kullanıcı testi: kendiliğinden geçmez, üç satır tamamlanınca "See my plan" açılır; rıza yoksa üçüncü satır "Your first workout".',
+  'ob-plan': 'Kullanıcı testi: "Decide for me" neyin seçildiğini söyler; kalori boy, kilo, yaş, cinsiyet ve aktiviteden; gözlem kadında 28, erkekte 14 gün; girdiğin ağırlıklar görünür; rıza yoksa ilk karar ve kalori satırı yok.',
+  paywall: 'Deneme 2 hafta (App Store sabit süreleri). Kullanıcı testi: rıza yoksa ilk karar satırı ve haftalık karar vaadi yok.',
+  home: 'Kullanıcı testi: "Keep last week\'s plan" sonrası "Not applied · Use this call"; bugünü değiştir kartta görünür; kalori senin sayılarından.', 'home-mon': 'Aynı.',
+  train: 'Kullanıcı testi: "Change" kartı gerçekten değiştirir (kısa: ilk 3 hareket; taşı: "Moved to Tue", bugün dinlenme; atla), her birinde geri al; eski plan seçilince geçen haftanın hedefleri; uygulanan değişiklik sayısı doğru.',
   today: 'YENİ: bugünü değiştir.', editprog: 'YENİ: programı düzenle.',
-  workout: 'Dinlenme üstte, hiçbir düğmeyi kapatmaz; duraklat; bitir/sonra doldur/at; seti düzelt; atla; her hareketten sonra analiz satırı; sonda kardiyo.',
+  workout: 'Dinlenme üstte; duraklat; bitir/sonra doldur/at; seti düzelt; atla; analiz satırı; sonda kardiyo. Kullanıcı testi: yeni başlayanda kilo boş gelir ("Pick a weight"), ilk setten sonra "Starting weight found"; kardiyoda tek kalori sayısı yok.',
   editset: 'YENİ: girilmiş seti düzelt.', endwo: 'YENİ: sonra doldur (geç kayıt sayar).',
-  summary: 'Kutlama: animasyonlu tamam, dakika, kaldırılan kilo, set, Apple Watch kalorisi, rekor, ne arttı, kas haritası, hafta.',
-  share: '"The call" kalktı: antrenman, rekor, seri, gelişim; foto ya da video arka plan; hareketli sayılar.',
-  progress: 'İlk gün: tıklanabilir hedefler (kalori, protein, adım, kardiyo), kas haritası, kilitli önizleme. 12. hafta aynı.',
-  plus: 'Kardiyo satırı.', weigh: 'Aynı.', 'health-jit': 'Antrenmanları da okur (kalori için).', meal: 'Aynı.', barcode: 'Aynı.',
-  checkin: '1. hafta: "nasıl geçti" sorusu (ilk karar onu da okur).', call: 'Paylaş kalktı; "Got it" + "Keep last week\'s plan".',
-  week1: 'Paylaş kalktı; "Sounds right" ya da "Change it".', w1change: 'YENİ: 1. hafta kararını kendin seç.',
+  summary: 'Kutlama. Kullanıcı testi: Apple Health izni ilk antrenmanın sonunda (tartıdan önce gelirse) sorulur; izin yoksa kalori kutusu yok.',
+  share: 'Kullanıcı testi: alt satır "No body weight or photos of you" (kaldırılan kilo görünüyor).',
+  progress: 'İlk gün: hedefler senin sayılarından; Health izni yoksa adım "Connect Apple Health". 12. hafta: kararlar listesinde "2 days, not 3" yok.',
+  plus: 'Kardiyo satırı.', weigh: 'Kullanıcı testi: ilk tartı onboarding kilondan başlar.', 'health-jit': 'İlk tartıda ya da ilk antrenmanın sonunda, hangisi önce gelirse.', meal: 'Aynı.', barcode: 'Aynı.',
+  checkin: '1. hafta: "nasıl geçti" sorusu. Prototip düğmesiyle haftayı değiştir: Çarşamba kaçtı / 3\'ü de yapıldı (yeni başlayan, tecrübeli).', call: 'Paylaş kalktı; "Got it" + "Keep last week\'s plan".',
+  week1: 'Kullanıcı testi (ADR-077 #4, ADR-071 #8): "2 days, not 3" kalktı. Kaçan seans başka güne taşınır (3 gün kalır); hepsi yapıldı + "I could do more" + yeni başlamayan → bir gün ekle; yoksa "Keep going". His cevabı yansır.',
+  w1change: 'Kullanıcı testi: öneriyi tut / günü ben seçerim / geçen haftanın planı.',
   'return': 'Seçenekli: önerilen + kaldığım yerden + yeniden kur.', life: 'Modern ikonlu döşemeler.', settings: 'Kardiyo satırı.', photos: 'Aynı.',
 };
 const ckey = (id, sc = S.scenario) => `${id}.${sc}`;
@@ -1539,7 +1699,9 @@ function prepFor(id) {
   if (id === 'ob-preparing') S.prep = 3;
   if (['workout', 'editset', 'endwo', 'swap'].includes(id)) { S.wo = newWorkout(); if (id === 'editset') { S.wo.logged['0-0'] = { kg: 100, reps: 8, rir: 1 }; S.editKey = '0-0'; } }
   if (id === 'ob-review' || id === 'ob-own' || id === 'ob-type' || id === 'ob-weights') S.ob.program = 'own';
-  if (id === 'ob-type') S.ob.ownsrc = 'type';
+  if (id === 'w1change') S.w1pickOpen = false;
+  if (id === 'ob-type' || id === 'addmove') S.ob.ownsrc = 'type';
+  if (id === 'addmove') { S.ob.program = 'own'; if (S.typed.open < 0 || !S.typed.days[S.typed.open]) S.typed.open = 0; S.mq = ''; S.ownMv = false; }
   if (S.scenario === 'own') { S.ob.program = 'own'; S.ob.exp = 'exp'; }
   if (S.scenario === 'd1' && ['ob-exp', 'ob-program', 'ob-days', 'ob-plan', 'paywall', 'home', 'train', 'workout', 'summary'].includes(id)) { if (S.ob.program === 'own') S.ob.program = 'build'; if (!S.ob.exp || S.ob.exp === 'exp') S.ob.exp = 'new'; }
 }
@@ -1562,7 +1724,8 @@ function go(id, { replace = false, reset = false } = {}) {
   if (reset) S.stack = []; else if (!replace) S.stack.push(S.screen);
   S.screen = id; S.sheet = null; S.toast = null;
   if (id === 'ob-preparing') S.prep = 0;
-  if (id === 'workout') { S.wo = newWorkout(); S.restEnd = 0; S.paused = false; }
+  if (id === 'workout') { S.wo = newWorkout(); S.restEnd = 0; S.paused = false; S.woStart = Date.now(); }
+  if (id === 'weigh' && d1() && S.d1Weighs === 0) S.d1Weight = S.ob.weight;
   if (id === 'barcode') S.scanned = false;
   closeIndexMobile(); render(true);
 }
@@ -1571,13 +1734,15 @@ function back() {
   S.screen = S.stack.pop() || (S.screen.startsWith('ob-') ? 'welcome' : 'home');
   S.startView = false; S.toast = null; render(true);
 }
+let undoFn = null;
 function toast(text, proto = false, undo = false) {
-  S.toast = { text, proto, undo }; render();
+  undoFn = typeof undo === 'function' ? undo : null;
+  S.toast = { text, proto, undo: !!undo }; render();
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = null; render(); }, proto ? 3400 : 2600);
 }
 function runPrep() {
   clearTimeout(prepTimer);
-  if (S.prep >= 3) { prepTimer = setTimeout(() => { if (S.screen === 'ob-preparing') go('ob-plan', { replace: true }); }, 900); return; }
+  if (S.prep >= 3) return; /* no auto-advance: "See my plan" turns on when all three lines are ticked */
   prepTimer = setTimeout(() => { if (S.screen !== 'ob-preparing') return; S.prep += 1; render(); }, 750);
 }
 function tickWorkout() { const el = $('#wtime'); if (!el || S.paused) return; const s = Math.floor((Date.now() - S.woStart) / 1000) % 5400; el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
@@ -1602,38 +1767,55 @@ const ACT = {
   daysn: v => { S.ob.daysN = Number(v); render(); setTimeout(() => go(obNext('ob-days')), 220); },
   ownsrc: v => { S.ob.ownsrc = v; if (v === 'type') return go('ob-type'); toast('Reads your Strong or Hevy file on this phone: 6 days, 21 moves, 14 weeks of history.', true); setTimeout(() => go('ob-review'), 1100); },
   tday: v => { const n = Number(v); S.typed.open = S.typed.open === n ? -1 : n; render(); },
-  tdelday: () => { const T = S.typed; T.days.splice(T.open, 1); T.open = -1; render(); },
+  tdelday: () => { const T = S.typed, at = T.open, gone = T.days[at]; T.days.splice(at, 1); T.open = -1; render(); toast(`${esc(gone.name)} removed.`, false, () => { T.days.splice(at, 0, gone); T.open = at; render(); }); },
   taddday: () => { const T = S.typed; if (T.days.length >= 7) return toast('A program holds up to 7 days.'); T.days.push({ name: `Day ${T.days.length + 1}`, wd: null, moves: [] }); T.open = T.days.length - 1; render(); },
   twd: v => { const d = S.typed.days[S.typed.open]; if (!d) return; d.wd = d.wd === v ? null : v; render(); },
-  tdel: v => { S.typed.days[S.typed.open].moves.splice(Number(v), 1); render(); },
+  tdel: v => { const d = S.typed.days[S.typed.open], i = Number(v), gone = d.moves[i]; d.moves.splice(i, 1); render(); toast(`${esc(gone.n)} removed.`, false, () => { d.moves.splice(i, 0, gone); render(); }); },
   tsets: v => { const [i, dd] = v.split(',').map(Number); const m = S.typed.days[S.typed.open].moves[i]; m.sets = Math.min(20, Math.max(1, m.sets + dd)); render(); },
-  trep: v => { const [i, dd] = v.split(',').map(Number); const m = S.typed.days[S.typed.open].moves[i]; const w = m.max - m.min; m.min = Math.min(100 - w, Math.max(1, m.min + dd)); m.max = m.min + w; render(); },
+  tmin: v => { const [i, dd] = v.split(',').map(Number); const m = S.typed.days[S.typed.open].moves[i]; m.min = Math.min(m.max - 1, Math.max(1, m.min + dd)); render(); },
+  tmax: v => { const [i, dd] = v.split(',').map(Number); const m = S.typed.days[S.typed.open].moves[i]; m.max = Math.min(100, Math.max(m.min + 1, m.max + dd)); render(); },
+  typego: () => { if (!S.typed.days.every(d => d.moves.length)) return; S.ob.review = {}; S.ob.applied = null; go(obNext('ob-type')); },
+  openadd: () => { S.mq = ''; S.ownMv = false; S.ownMvName = ''; S.sheet = 'addmove'; render(); },
+  addmv: v => { const c = catOf(v), d = S.typed.days[S.typed.open]; if (!c || !d) return; d.moves.push({ n: c.n, sets: 3, min: c.min, max: c.max }); S.sheet = null; render();
+    toast(`${c.n} added: 3 × ${c.min}-${c.max}.`, false, () => { const i = d.moves.findIndex(m => m.n === c.n); if (i >= 0) d.moves.splice(i, 1); render(); }); },
+  ownmv: () => { S.ownMv = true; render(); setTimeout(() => { const el = $('#ownmvn'); if (el) el.focus(); }, 30); },
+  ownmvadd: () => { const n = S.ownMvName.trim(), d = S.typed.days[S.typed.open]; if (!n) { const el = $('#ownmvn'); if (el) el.focus(); return; } if (!d) return;
+    d.moves.push({ n, sets: 3, min: 8, max: 12 }); S.ownMv = false; S.ownMvName = ''; S.sheet = null; render();
+    toast('The form goes on here: main muscle, equipment, compound or isolation.', true); },
   revtoggle: (v, e, el) => { S.ob.review[v] = el.checked; render(); },
-  revgo: () => go(obNext('ob-review')),
-  revkeep: () => { S.ob.review = { days: false, chest: false, ham: false }; toast('Your program stays as it is. We will show you what the data says.'); setTimeout(() => go(obNext('ob-review')), 900); },
+  revgo: () => { S.ob.applied = reviewOf().sugg.filter(x => S.ob.review[x.key] !== false).length; go(obNext('ob-review')); },
+  revkeep: () => { const R = reviewOf(); R.sugg.forEach(x => { S.ob.review[x.key] = false; }); S.ob.applied = 0;
+    if (!R.sugg.length) return go(obNext('ob-review'));
+    toast('Your program stays as it is. We will show you what the data says.'); setTimeout(() => go(obNext('ob-review')), 900); },
   lw: v => { const [k, d] = v.split(','); S.ob.lifts[k] = Math.max(0, S.ob.lifts[k] + Number(d)); render(); },
   sex: v => { S.ob.sex = v; render(); },
   consent: v => { S.ob.consent = v; if (v === 'yes') go(obNext('ob-consent')); else render(); },
   remmon: (v, e, el) => { S.remMon = el.checked; if (el.checked) toast('iOS asks for notifications here.', true); },
   trialrem: () => { S.trialRem = !S.trialRem; render(); if (S.trialRem) toast('iOS asks for notifications here (ADR-058 #105).', true); },
   plan: v => { S.plan = v; render(); },
-  trial: () => { S.d1Weighs = 0; S.healthAsked = false; toast('Apple’s purchase sheet opens here.', true); setTimeout(() => go(own() ? 'train' : 'home', { reset: true }), 900); },
+  trial: () => { S.d1Weighs = 0; S.healthAsked = false; S.health = null; S.todayChg = null; toast('Apple’s purchase sheet opens here.', true); setTimeout(() => go(own() ? 'train' : 'home', { reset: true }), 900); },
   startview: () => { S.startView = true; go('ob-plan'); },
   toweigh: () => { S.sheet = null; go('weigh'); },
   w: v => { const k = d1() ? 'd1Weight' : 'weight'; S[k] = Math.round((S[k] + Number(v)) * 10) / 10; render(); },
   saveweigh: () => { if (d1() && !S.healthAsked) { S.sheet = 'health-jit'; return render(); } finishWeigh(); },
-  health: v => { S.healthAsked = true; S.sheet = null; if (v === 'yes') toast('Apple’s Health permission sheet opens here.', true); setTimeout(finishWeigh, v === 'yes' ? 1200 : 0); },
+  /* Apple Health, just in time (ADR-072 #8): at the first weigh-in or at the end of the first workout, whichever comes first */
+  health: v => { S.healthAsked = true; S.health = v; S.sheet = null; if (v === 'yes') toast('Apple’s Health permission sheet opens here.', true); else render();
+    if (S.screen === 'weigh') setTimeout(finishWeigh, v === 'yes' ? 1200 : 0); },
+  finishwo: () => { go('summary'); if (d1() && !S.healthAsked) { S.sheet = 'health-jit'; render(); } },
   logmeal: v => { go('home', { reset: true }); toast(v, false, true); },
-  untoast: () => { S.toast = null; render(); },
+  untoast: () => { const f = undoFn; undoFn = null; S.toast = null; if (f) f(); render(); },
   scan: () => { S.scanned = true; render(); },
-  adj: v => { const [f, d] = v.split(','); const mi = S.wo.move; const c = curSet(moves()[mi], mi + '-' + loggedCount(mi)); c[f] = Math.max(f === 'kg' ? 0 : 1, Math.round((c[f] + Number(d)) * 10) / 10); render(); },
+  adj: v => { const [f, d] = v.split(','); const mi = S.wo.move, m = moves()[mi]; const c = curSet(m, mi + '-' + loggedCount(mi));
+    /* an empty weight (first session, no weight known) starts at the empty bar or the lightest dumbbell/stack */
+    if (f === 'kg' && c.kg == null) { c.kg = { barbell: 20, dumbbell: 5 }[m.eq] || 10; return render(); }
+    c[f] = Math.max(f === 'kg' ? 0 : 1, Math.round((c[f] + Number(d)) * 10) / 10); render(); },
   rir: v => { const mi = S.wo.move; curSet(moves()[mi], mi + '-' + loggedCount(mi)).rir = Number(v); render(); },
   logset: () => {
     const mi = S.wo.move, m = moves()[mi], i = loggedCount(mi), c = curSet(m, mi + '-' + i);
     S.wo.logged[mi + '-' + i] = { ...c }; S.wo.note = null; S.wo.insight[mi] = setInsight(m, c, i);
     if (i + 1 < m.sets) S.restEnd = Date.now() + 150000; else S.restEnd = 0;
     if (c.reps < m.min && i + 1 < m.sets) S.wo.note = { text: `${c.reps} reps, under ${m.min}. Next set lighter?`, kg: fmtKg(c.kg - stepOf(m)), from: fmtKg(c.kg) };
-    if (d1() && !own() && c.rir >= 2 && i + 1 < m.sets) { const up = fmtKg(c.kg + stepOf(m)); S.wo.note = { text: `${c.rir === 2 ? '2+' : c.rir} reps left. Next set heavier?`, kg: up, from: fmtKg(c.kg) }; S.wo.insight[mi] = null; }
+    if (m.kg == null && c.rir >= 2 && i + 1 < m.sets) { const up = fmtKg(c.kg + stepOf(m)); S.wo.note = { text: `${c.rir === 2 ? '2+' : c.rir} reps left. Next set heavier?`, kg: up, from: fmtKg(c.kg) }; S.wo.insight[mi] = null; }
     render();
   },
   heavy: () => { const mi = S.wo.move, m = moves()[mi], c = curSet(m, mi + '-' + loggedCount(mi)); S.wo.note = { text: 'If it feels wrong from the first rep, stop and go lighter.', kg: fmtKg(c.kg - stepOf(m)), from: fmtKg(c.kg) }; render(); },
@@ -1652,14 +1834,27 @@ const ACT = {
   swapopen: v => { S.swapId = v; S.sheet = 'swap'; render(); },
   swapfrom: v => { S.swapId = v; S.sheet = 'swap'; render(); },
   swapto: v => { const m = moves().find(x => x.id === S.swapId) || moves()[S.wo ? S.wo.move : 0]; S.swapped[m.id] = v === m.name ? undefined : v; S.sheet = null; render(); toast(v === m.name ? 'Kept.' : `Swapped to ${v}, today only.`); },
-  todaychg: v => { S.sheet = null; render(); toast({ short: 'Today: 35 min, the top 3 moves. The rest waits.', swap: 'Pick the move to swap.', move: 'Moved to tomorrow. The week re-lays itself.', skip: 'Skipped. No catch-up. Monday reads what happened.' }[v]); },
-  endchoice: v => { S.sheet = null; if (v === 'finish') return go('summary'); if (v === 'later') { go('home', { reset: true }); return toast('Saved. Fill in the rest anytime; it still counts for this week.'); } go('home', { reset: true }); toast('Workout discarded.'); },
+  todaychg: v => { S.sheet = null; if (v === 'swap') { render(); return toast('Tap the swap icon on the move to change.'); }
+    const prev = S.todayChg; S.todayChg = v; render();
+    toast({ short: 'Today: the top 3 moves.', move: `Moved to ${tomorrow()}. The week re-lays itself.`, skip: 'Skipped. Monday reads what happened.' }[v], false, () => { S.todayChg = prev; render(); }); },
+  undotoday: () => { S.todayChg = null; render(); },
+  endchoice: v => { S.sheet = null; if (v === 'finish') return ACT.finishwo(); if (v === 'later') { go('home', { reset: true }); return toast('Saved. Fill in the rest anytime; it still counts for this week.'); } go('home', { reset: true }); toast('Workout discarded.'); },
   cardio: v => { S.wo.cardio = v; render(); },
   ci: v => { S.checkin = v; render(); },
   w1feel: v => { S.w1feel = v; render(); },
-  w1set: v => { S.w1choice = v; S.sheet = null; render(); toast(v === 'three' ? 'Three days it is.' : v === 'days' ? 'Pick your two days in Train.' : 'Mon and Fri.'); },
+  w1done: () => { S.w1done = { missed: 'all', all: 'allexp', allexp: 'missed' }[S.w1done]; S.w1choice = 'suggest'; S.w1pick = null; render(); },
+  w1open: () => { S.w1pickOpen = false; S.sheet = 'w1change'; render(); },
+  w1pickopen: () => { S.w1pickOpen = !S.w1pickOpen; render(); },
+  w1set: v => { const prev = [S.w1choice, S.w1pick]; S.w1choice = v; S.sheet = null; render();
+    toast(v === 'last' ? "Last week's plan stays. The call stays on record." : 'The suggestion stays.', false, () => { [S.w1choice, S.w1pick] = prev; render(); }); },
+  w1pick: v => { const prev = [S.w1choice, S.w1pick]; S.w1choice = 'pick'; S.w1pick = v; S.sheet = null; render();
+    toast(`${FULL[v]} it is.`, false, () => { [S.w1choice, S.w1pick] = prev; render(); }); },
+  w1ok: () => { const c = week1Call(), day = S.w1choice === 'pick' && S.w1pick ? S.w1pick : c.day;
+    const t = S.w1choice === 'last' && c.kind !== 'keep' ? "Last week's plan stays." : c.kind === 'move' ? `Next week: ${FULL[day]} instead of ${FULL[c.missed]}.` : c.kind === 'add' ? `Next week: ${c.n + 1} days, ${FULL[day]} added.` : 'Same plan next week.';
+    go('home', { reset: true }); toast(t, false, c.kind === 'keep' ? false : () => go('week1')); },
   reveal: v => { S.reveal = true; go(v, { replace: true }); },
   keepw12: () => { S.kept.w12 = !S.kept.w12; render(); },
+  usecall: () => { S.kept.w12 = false; render(); toast("This week's call is in your plan.", false, () => { S.kept.w12 = true; render(); }); },
   tpl: v => { S.share.tpl = v; render(); },
   bg: v => { if (v === 'media') { $('#mediain').click(); return; } S.share.bg = v; render(); },
   anim: () => { S.share.anim = !S.share.anim; render(); },
@@ -1678,7 +1873,10 @@ function finishWeigh() {
   else { go('home', { reset: true }); toast('Saved · 7-day average 80.3 kg'); }
 }
 
-$('#app').addEventListener('input', e => { const el = e.target.closest('[data-act-input="tname"]'); if (!el) return; const d = S.typed.days[S.typed.open]; d.name = el.value.trim() || d.name; const b = $$('.tdcard .tdn')[S.typed.open]; if (b) b.textContent = d.name; });
+$('#app').addEventListener('input', e => { const el = e.target.closest('[data-act-input]'); if (!el) return; const k = el.dataset.actInput;
+  if (k === 'mvq') { S.mq = el.value; const l = $('#mvlist'); if (l) l.innerHTML = mvRows(); return; }
+  if (k === 'ownmvn') { S.ownMvName = el.value; return; }
+  const d = S.typed.days[S.typed.open]; d.name = el.value.trim() || d.name; const b = $$('.tdcard .tdn')[S.typed.open]; if (b) b.textContent = d.name; });
 $('#app').addEventListener('click', e => {
   const el = e.target.closest('[data-go],[data-act],[data-tab]'); if (!el || el.disabled || el.matches('input[type=checkbox]')) return;
   if (el.dataset.tab) { S.stack = []; S.screen = el.dataset.tab; S.sheet = null; S.toast = null; return render(true); }
