@@ -72,9 +72,11 @@ class ProgressController {
     private final ParameterSet parameters;
     private final Profiles profiles;
     private final Clock clock;
+    private final TrainingStatusReader statuses;
 
     ProgressController(ProgressReads reads, WorkoutStore workouts, ProgramStore programs, TrainingCalls calls, ExerciseCatalog catalog,
-            ParameterSet parameters, Profiles profiles, Clock clock) {
+            ParameterSet parameters, Profiles profiles, Clock clock, TrainingStatusReader statuses) {
+        this.statuses = statuses;
         this.reads = reads;
         this.workouts = workouts;
         this.programs = programs;
@@ -93,7 +95,8 @@ class ProgressController {
         List<TrainingLog.WorkSet> sets = rows.stream().filter(row -> row.workoutId().equals(id)).map(ProgressReads.Row::set)
                 .filter(set -> set.reps() >= 1).toList();
         List<ProgressReads.Row> before = rows.stream().filter(row -> row.set().at().isBefore(workout.startedAt())).toList();
-        // The last earlier session of the same program day (it has a working set: the rows are working sets).
+        // The last earlier session of the same program day (it has a working set: the rows are working sets). A program
+        // replaced has new days: none, a new basis (ADR-075 Ek 2); the review's changes keep the days (K-956).
         Optional<BigDecimal> previous = before.stream().filter(row -> row.programDayId() != null && row.programDayId().equals(workout.programDayId()))
                 .max(Comparator.comparing(row -> row.set().at())).map(ProgressReads.Row::workoutId)
                 .map(last -> ProgressSummary.lifted(before.stream().filter(row -> row.workoutId().equals(last)).map(ProgressReads.Row::set).toList()));
@@ -107,8 +110,11 @@ class ProgressController {
         LocalDate day = workout.startedAt().atZone(zone).toLocalDate();
         Set<String> trained = sets.stream().flatMap(set -> primary(set.exerciseId()).stream()).collect(Collectors.toSet());
         BigDecimal lifted = ProgressSummary.lifted(sets);
-        List<ProgressSummary.MuscleSets> week = muscles(programs.current(account), calls.changes(account), rows, day, zone, parameters(account));
-        return new WorkoutSummary(id, lifted, ProgressSummary.changePercent(lifted, previous).orElse(null), sets.size(), marks,
+        // The week as it stood when this workout started: the sets of later sessions are not this summary's.
+        List<ProgressReads.Row> upToThis = rows.stream().filter(row -> !row.set().at().isAfter(workout.startedAt())).toList();
+        List<ProgressSummary.MuscleSets> week = muscles(programs.current(account), calls.changes(account), upToThis, day, zone, parameters(account));
+        int workingSets = ProgressSummary.counted(sets).values().stream().mapToInt(Integer::intValue).sum();
+        return new WorkoutSummary(id, lifted, ProgressSummary.changePercent(lifted, previous).orElse(null), workingSets, marks,
                 ProgressSummary.monday(day), week.stream().filter(muscle -> trained.contains(muscle.muscle())).toList());
     }
 
@@ -121,40 +127,51 @@ class ProgressController {
         Optional<ProgramStore.Program> program = programs.current(account);
         Parameters p = parameters(account);
         boolean held = TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).isPresent();
+        Map<String, Integer> stalled = statuses.stalledSessions(account, today, zone);
         List<LiftProgress> lifts = program.stream().flatMap(current -> current.days().stream())
                 .flatMap(programDay -> programDay.exercises().stream()).map(ProgramStore.PlannedExercise::exerciseId).distinct()
                 .flatMap(exerciseId -> catalog.find(exerciseId).stream())
                 .flatMap(move -> lift(move, rows.stream().map(ProgressReads.Row::set).filter(set -> set.exerciseId().equals(move.id()))
-                        .filter(set -> set.reps() >= 1).toList(), held, changes, zone, p).stream())
+                        .filter(set -> set.reps() >= 1).toList(), stalled.getOrDefault(move.id(), 0), held, changes, zone, p).stream())
                 .toList();
         return new TrainingProgress(ProgressSummary.monday(today), muscles(program, changes, rows, today, zone, p), lifts,
                 (int) lifts.stream().filter(LiftProgress::stronger).count(), lifts.size());
     }
 
-    /** A move with a working set; the load held only where the engine adds load (a compound move, G6 K-33). */
-    private static Optional<LiftProgress> lift(ExerciseCatalog.Exercise move, List<TrainingLog.WorkSet> history, boolean held,
+    /**
+     * A move with a working set (imported ones too: records, baseline, chart); {@code stalled} as the weekly call counts it;
+     * the load held only where the engine adds load (a compound move, G6 K-33).
+     */
+    private static Optional<LiftProgress> lift(ExerciseCatalog.Exercise move, List<TrainingLog.WorkSet> history, int stalled, boolean held,
             List<TrainingChanges.Change> changes, ZoneId zone, Parameters parameters) {
+        boolean compound = move.kind() == ExerciseCatalog.Kind.COMPOUND;
         List<ProgressSummary.Session> sessions = ProgressSummary.sessions(history, zone);
         return PersonalRecords.best(history).map(best -> {
             ProgressSummary.Session baseline = sessions.getFirst();
             return new LiftProgress(move.id(), dated(baseline.top(), zone), dated(best.set(), zone), best.kind() == PersonalRecords.Kind.RECORD,
-                    ProgressSummary.weeks(sessions, changes),
-                    ProgressSummary.effort(sessions, held && move.kind() == ExerciseCatalog.Kind.COMPOUND, parameters).orElse(null));
+                    ProgressSummary.weeks(sessions, changes, compound),
+                    ProgressSummary.effort(sessions, stalled, held && compound, parameters).orElse(null));
         });
     }
 
-    /** The week of {@code day}: the program's sets this week (a lighter week's fewer, K-217) and the working sets done, by primary muscle. */
+    /**
+     * The week of {@code day}: the program's sets this week (a lighter week's fewer, a week off's none, K-217) and the
+     * working sets done (ProgressSummary.counted, per workout), by primary muscle.
+     */
     private List<ProgressSummary.MuscleSets> muscles(Optional<ProgramStore.Program> program, List<TrainingChanges.Change> changes,
             List<ProgressReads.Row> rows, LocalDate day, ZoneId zone, Parameters parameters) {
         LocalDate monday = ProgressSummary.monday(day);
         Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(changes, TrainingChanges.Kind.LIGHTER_WEEK, day);
+        boolean resting = TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, day).isPresent();
         Map<String, Integer> planned = new HashMap<>();
         program.stream().flatMap(current -> current.days().stream()).flatMap(programDay -> programDay.exercises().stream())
-                .forEach(move -> primary(move.exerciseId()).ifPresent(muscle -> planned.merge(muscle, TrainingChanges.sets(move.sets(), lighter), Integer::sum)));
+                .forEach(move -> primary(move.exerciseId()).ifPresent(muscle -> planned.merge(muscle, resting ? 0 : TrainingChanges.sets(move.sets(), lighter), Integer::sum)));
         Predicate<LocalDate> thisWeek = date -> !date.isBefore(monday) && date.isBefore(monday.plusDays(DAYS_PER_WEEK));
         Map<String, Integer> done = new HashMap<>();
-        rows.stream().map(ProgressReads.Row::set).filter(set -> set.reps() >= 1 && thisWeek.test(set.at().atZone(zone).toLocalDate()))
-                .forEach(set -> primary(set.exerciseId()).ifPresent(muscle -> done.merge(muscle, 1, Integer::sum)));
+        rows.stream().filter(row -> thisWeek.test(row.set().at().atZone(zone).toLocalDate()))
+                .collect(Collectors.groupingBy(ProgressReads.Row::workoutId, Collectors.mapping(ProgressReads.Row::set, Collectors.toList())))
+                .values().forEach(workout -> ProgressSummary.counted(workout)
+                        .forEach((move, sets) -> primary(move).ifPresent(muscle -> done.merge(muscle, sets, Integer::sum))));
         return ProgressSummary.muscles(planned, done, catalog.armMuscles(), parameters);
     }
 

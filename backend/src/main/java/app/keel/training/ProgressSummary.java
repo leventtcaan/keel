@@ -87,18 +87,31 @@ final class ProgressSummary {
     }
 
     /**
-     * The move's effort line, the first kind that holds, in this order: STUCK — stalled as the deload ladder counts it
-     * (TrainingStatuses, plateau_sessions, H3 B5), so the line agrees with the weekly call; EASIER — the last session
-     * the same load and reps as the one before, with more reps left (both logged); REPS_RISING — the last sessions at
-     * one load, more reps now than at the first of them. None when nothing holds.
+     * The working sets a workout counts, by move (the muscle map and the summary's set count): a two-sided move's sets as
+     * logged; a one-sided move's once per set, as the side that did less — each side is its own set (SetRules) and the
+     * weaker side decides the move's target (SessionProgress, NextTargets.weaker), so the program's sets are per side.
      */
-    static Optional<EffortLine> effort(List<Session> sessions, boolean held, Parameters parameters) {
+    static Map<String, Integer> counted(List<TrainingLog.WorkSet> workout) {
+        Map<String, Integer> counted = new LinkedHashMap<>();
+        workout.stream().filter(set -> set.reps() >= 1)
+                .collect(Collectors.groupingBy(TrainingLog.WorkSet::exerciseId, LinkedHashMap::new,
+                        Collectors.groupingBy(set -> set.side() == Side.LEFT || set.side() == Side.RIGHT ? set.side() : Side.BOTH, Collectors.counting())))
+                .forEach((move, sides) -> counted.put(move, sides.values().stream().mapToInt(Long::intValue).min().orElseThrow()));
+        return counted;
+    }
+
+    /**
+     * The move's effort line, the first kind that holds, in this order: STUCK — {@code stalled} sessions as the weekly call
+     * counts them (TrainingStatusReader: the working sets logged in the app since the program was made, H3 B5) reach
+     * plateau_sessions, so the line agrees with the call; EASIER — the last session the same load and reps as the one
+     * before, with more reps left (both logged); REPS_RISING — the last sessions at one load, more reps now than at the
+     * first of them. EASIER and REPS_RISING read the whole history shown, imported sessions too. None when nothing holds.
+     */
+    static Optional<EffortLine> effort(List<Session> sessions, int stalled, boolean held, Parameters parameters) {
         if (sessions.size() < 2) {
             return Optional.empty();
         }
         TrainingLog.WorkSet last = sessions.getLast().top();
-        int stalled = TrainingStatuses.stalledSessions(sessions.stream()
-                .map(session -> new TrainingStatuses.Session(session.day(), session.top().loadKg(), session.top().reps())).toList());
         if (stalled >= parameters.wholeNumber(ParameterKey.PLATEAU_SESSIONS)) {
             return Optional.of(new EffortLine(EffortKind.STUCK, last.loadKg(), null, stalled, held, null, null, null, null, null));
         }
@@ -120,13 +133,16 @@ final class ProgressSummary {
         return Optional.empty();
     }
 
-    /** Each Monday week's best set, oldest first; held when a hold of the load (K-217) was in force on a day of it. */
-    static List<WeekBest> weeks(List<Session> sessions, List<TrainingChanges.Change> changes) {
+    /**
+     * Each Monday week's best set, oldest first; held when a hold of the load (K-217) was in force on a day of it — only
+     * for a {@code compound} move, the only kind the engine adds load to (G6 K-33).
+     */
+    static List<WeekBest> weeks(List<Session> sessions, List<TrainingChanges.Change> changes, boolean compound) {
         return sessions.stream().collect(Collectors.groupingBy(session -> monday(session.day()), LinkedHashMap::new, Collectors.toList()))
                 .entrySet().stream().map(week -> {
                     TrainingLog.WorkSet top = SessionTable.best(week.getValue().stream().map(Session::top).toList()).orElseThrow();
                     LocalDate sunday = week.getKey().plusDays(DAYS_PER_WEEK - 1L);
-                    boolean held = changes.stream().anyMatch(change -> change.kind() == TrainingChanges.Kind.HOLD_LOAD
+                    boolean held = compound && changes.stream().anyMatch(change -> change.kind() == TrainingChanges.Kind.HOLD_LOAD
                             && !change.startsOn().isAfter(sunday) && (change.endsOn() == null || !change.endsOn().isBefore(week.getKey())));
                     return new WeekBest(week.getKey(), top.loadKg(), top.reps(), top.rir(), held);
                 }).toList();

@@ -57,26 +57,28 @@ class ProgressSummaryTests {
     }
 
     /**
-     * The effort line's kind, one per move, in this order: stuck (the deload ladder's stall, plateau_sessions, H3 B5 — the
-     * line agrees with the call), then easier (the same load and reps with more left), then reps rising at one load.
-     * Sessions oldest first, each "load×reps@left" its best set.
+     * The effort line's kind, one per move, in this order: stuck (the deload ladder's stall, plateau_sessions, H3 B5, counted
+     * as the weekly call counts it: TrainingStatusReader's window, given here), then easier (the same load and reps with
+     * more left), then reps rising at one load. Sessions oldest first, each "load×reps@left" its best set.
      */
-    @ParameterizedTest(name = "{0} held={1} → {2} {4}")
+    @ParameterizedTest(name = "{0} stalled={1} held={2} → {3}")
     @CsvSource(delimiter = '|', value = {
-            "100x8@0 100x8@1                     | false | EASIER      | 100 | reps=8 left=1 before=0",
-            "100x8@0 100x8@0                     | false |             |     | ",
-            "100x8@1 100x8@0                     | false |             |     | ",
-            "100x8@  100x8@1                     | false |             |     | ",
-            "72.5x8@0 72.5x8@0 72.5x8@0 72.5x8@0 | true  | STUCK       | 72.5 | sessions=3 held=true",
-            "72.5x8@0 72.5x8@0 72.5x8@0 72.5x8@1 | false | STUCK       | 72.5 | sessions=3 held=false",
-            "72.5x8@0 72.5x8@0 72.5x8@0          | false |             |     | ",
-            "60x8@1 62.5x6@1 62.5x7@1 62.5x9@1   | false | REPS_RISING | 62.5 | gained=3 sessions=3",
-            "62.5x6@1                            | false |             |     | ",
-            "62.5x9@1 62.5x6@1                   | false |             |     | "})
-    void theEffortLineIsTheFirstKindTheSessionsShow(String sessions, boolean held, ProgressSummary.EffortKind kind, String kg, String facts) {
+            "100x8@0 100x8@1                     | 1 | false | EASIER      | 100",
+            "100x8@0 100x8@0                     | 1 | false |             |     ",
+            "100x8@1 100x8@0                     | 1 | false |             |     ",
+            "100x8@  100x8@1                     | 1 | false |             |     ",
+            "72.5x8@0 72.5x8@0 72.5x8@0 72.5x8@0 | 3 | true  | STUCK       | 72.5",
+            "72.5x8@0 72.5x8@0 72.5x8@0 72.5x8@1 | 3 | false | STUCK       | 72.5",
+            "72.5x8@0 72.5x8@0 72.5x8@0          | 2 | false |             |     ",
+            // Stalled in the history shown (imported, or before this program), not in the call's window: not stuck.
+            "72.5x8@0 72.5x8@0 72.5x8@0 72.5x8@0 | 0 | true  |             |     ",
+            "60x8@1 62.5x6@1 62.5x7@1 62.5x9@1   | 0 | false | REPS_RISING | 62.5",
+            "62.5x6@1                            | 0 | false |             |     ",
+            "62.5x9@1 62.5x6@1                   | 1 | false |             |     "})
+    void theEffortLineIsTheFirstKindTheSessionsShow(String sessions, int stalled, boolean held, ProgressSummary.EffortKind kind, String kg) {
         List<ProgressSummary.Session> read = sessions(sessions);
 
-        Optional<ProgressSummary.EffortLine> line = ProgressSummary.effort(read, held, P);
+        Optional<ProgressSummary.EffortLine> line = ProgressSummary.effort(read, stalled, held, P);
 
         if (kind == null) {
             assertThat(line).isEmpty();
@@ -89,7 +91,7 @@ class ProgressSummaryTests {
         switch (kind) {
             case EASIER -> assertThat(List.of(effort.reps(), effort.repsLeft(), effort.repsLeftBefore())).containsExactly(8, 1, 0);
             case STUCK -> {
-                assertThat(effort.sessions()).isEqualTo(3);
+                assertThat(effort.sessions()).isEqualTo(stalled);
                 assertThat(effort.held()).isEqualTo(held);
             }
             case REPS_RISING -> {
@@ -104,15 +106,24 @@ class ProgressSummaryTests {
 
     @Test
     void theStallIsTheLaddersPlateau() {
-        // One stalled session under plateau_sessions is not stuck.
         int plateau = P.wholeNumber(ParameterKey.PLATEAU_SESSIONS);
-        StringBuilder flat = new StringBuilder("80x10@0");
-        for (int i = 0; i < plateau - 1; i++) {
-            flat.append(" 80x10@0");
+        List<ProgressSummary.Session> flat = sessions("80x10@0 80x10@0 80x10@0 80x10@0 80x10@0");
+
+        assertThat(ProgressSummary.effort(flat, plateau - 1, false, P)).as("under plateau_sessions").isEmpty();
+        assertThat(ProgressSummary.effort(flat, plateau, false, P)).map(ProgressSummary.EffortLine::kind).contains(ProgressSummary.EffortKind.STUCK);
+    }
+
+    @Test
+    void aOneSidedMovesSetsCountOncePerWorkoutAsTheSideThatDidLess() {
+        Instant at = MONDAY.atStartOfDay(UTC).toInstant();
+        List<TrainingLog.WorkSet> workout = new ArrayList<>(List.of(set(at, "60", 8, 1), set(at, "60", 8, 1), set(at, "60", 8, 1)));
+        for (Side side : List.of(Side.LEFT, Side.RIGHT, Side.LEFT, Side.RIGHT, Side.LEFT)) {
+            workout.add(new TrainingLog.WorkSet("one_arm_dumbbell_row", at, ExerciseCatalog.Load.EXTERNAL, new BigDecimal("30"), 10, 1, side));
         }
-        assertThat(ProgressSummary.effort(sessions(flat.toString()), false, P)).isEmpty();
-        assertThat(ProgressSummary.effort(sessions(flat + " 80x10@0"), false, P)).map(ProgressSummary.EffortLine::kind)
-                .contains(ProgressSummary.EffortKind.STUCK);
+
+        // Three bench sets; the row three on the left, two on the right: two (SessionProgress: the side that did less decides).
+        assertThat(ProgressSummary.counted(workout)).isEqualTo(Map.of("bench_press", 3, "one_arm_dumbbell_row", 2));
+        assertThat(ProgressSummary.counted(List.of())).isEmpty();
     }
 
     @Test
@@ -136,9 +147,11 @@ class ProgressSummaryTests {
                 MONDAY.plusDays(6), null, null), new TrainingChanges.Change(UUID.randomUUID(), TrainingChanges.Kind.LIGHTER_WEEK,
                 MONDAY.minusDays(7), MONDAY.minusDays(1), new BigDecimal("0.5")));
 
-        assertThat(ProgressSummary.weeks(read, changes)).containsExactly(
+        assertThat(ProgressSummary.weeks(read, changes, true)).containsExactly(
                 new ProgressSummary.WeekBest(MONDAY.minusDays(7), new BigDecimal("80"), 9, 0, false),
                 new ProgressSummary.WeekBest(MONDAY, new BigDecimal("82.5"), 7, 1, true));
+        // The hold is on the load the engine adds: an isolation move's week is never held (G6 K-33).
+        assertThat(ProgressSummary.weeks(read, changes, false)).extracting(ProgressSummary.WeekBest::held).containsOnly(false);
     }
 
     @ParameterizedTest(name = "{0} kg after {1} kg → {2}%")
