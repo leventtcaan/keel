@@ -1,0 +1,22 @@
+# M9a Part 2 — devam (8 Eki, kullanım sınırında kesildi)
+
+Önce: `oturum-baslat` + DURUM › M9a ilerleme › Part 2 tablosu. Çelişkide git doğrudur (`gh pr list --state open`).
+
+## Açık PR'lar (hiçbiri birleştirilmedi; birleştirmeden önce dal güncel main'de + CI yeşil — `strict: false`, `gh pr update-branch N` sonra `--auto --squash`)
+- **#472 K-964** (V41): iki inceleme geçti; son iş bağlantı testleri (PromptsApiTests taşınan seans, FirstWeekCallApiTests, Istanbul saat dilimi 409). Ajan ekliyordu → CI yeşilse birleştir.
+- **#474 / #475 K-967** (B1 / B2, B2 #474'e yığılı): inceleme bulguları ajana gönderildi (öldür-devam işareti + testler a-f, paywall ≤70 kelime, ay sonu ücret tarihi, rızasız 3. satır, Monday yalnız pazartesi, küçükler). Bitince kısa yeniden inceleme → birleştir; sonra B2'yi main'e taşı.
+- **#473 / #477 K-968** (+ 3. PR "Type it in" düzenleyicisi `mobile/431-type-it-in` yapılıyordu): #473/#477 incelemesi koşuyordu — sonucu yoksa yeniden başlat (`scratchpad` brifleri kayboldu: ortak brif ve inceleme brifi için bu dosyanın sonuna bak).
+  K-967 ile dikiş: `draft.ownProgram` doluysa hazırlık `generate` çağırmaz, yalnız profil + başlangıç ağırlıkları.
+- **K-989** (başlangıç kalorisi ucu, #476, `nutrition/476-starting-target`): ajan yazıyordu; PR yoksa dalı kontrol et. Sonra K-967 plan ekranına kalori satırı + "14 gün" satırı.
+
+## Yeni iş (henüz kart yok)
+- **İlk karar tarihi sunucuda** (K-967 incelemesi madde 4): sunucu ilk haftayı hesap açılışından sayıyor, telefon onboarding bitişinden; "current check-in" hemen sunuluyor. Sunucu ilk karar tarihini göndersin (K-989 sözleşmesiyle), ilk hafta onboarding bitişinden başlasın, o tarihe kadar check-in tutulsun. Kart aç (K-990).
+
+## Kalan Part 2 sonu
+K-986 (rıza ikinci yürüyüş) · K-983 sandbox (Levent ASC'yi yapınca) · backlog `done` + sync · DURUM "Part 2 ÇIKIŞ" · Part 3 prompt'u (K-988 Part 3'te; K-970 "Type it in" düzenleyicisini yeniden kullanır).
+
+## Kurallar (bu oturumda öğrenilen)
+- Göçlü PR'lar sırayla: V41 (#472) sıradaki; Flyway outOfOrder kapalı, numara boşluksuz.
+- İnceleme ajanı ortak checkout'ta asla `git checkout` yapmaz (bir kez yaptı, test commit'i PR'sız main'e düştü). Doküman push'undan önce `HEAD == origin/main` kontrolü.
+- Üretilen programlar artık inceleme önerisi almaz (K-985): öneri uygulayan testler kendi programını ya da 6 günü kullanır, öneriyi türüyle seçer.
+- Her uygulayıcı ajana: TDD, sözleşme ayrı commit + schema.ts, DB testleri yalnız CI, AI imzası yok, birleştirme yok; her PR'a inceleme ajanı.
