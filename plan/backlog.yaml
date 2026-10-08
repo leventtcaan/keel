@@ -4713,3 +4713,20 @@ tasks:
     tests: ["Tablo testi, API testi (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Modül sınırında okuma modeli"]
+
+  - id: K-1010
+    title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
+    milestone: M9
+    module: infra
+    type: chore
+    size: S
+    status: doing
+    depends_on: [K-901]
+    why: "Levent'in ikinci girişimi (Dilmaç, dilmac.site) aynı VPS'te çalışacak. 80/443 keel'in Caddy'sinde; keel'e her site için dokunmamak adına tek seferlik içeri alma kuralı. Ek siteler kendi klasörlerinde ve kendi Compose projelerinde, keel'in deploy'u /opt/sites'a dokunmaz"
+    acceptance:
+      - "Caddyfile'ın sonunda `import /etc/caddy/sites/*.caddy`; klasör boşken Caddy yalnızca uyarı verir, keel etkilenmez (sunucuda caddy validate ile denendi)"
+      - "Caddy servisi /opt/sites'ı salt okunur bağlar; ek port açılmaz, access log yok (mevcut testler geçer)"
+      - "test_deploy: içeri alma satırı ve salt okunur bağlama sabitlenir"
+    tests: ["python3 tools/test_deploy.py"]
+    refs: ["deploy/Caddyfile", "deploy/compose.yaml"]
+    learn: ["Caddy import ile birden çok site"]

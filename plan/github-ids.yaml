@@ -148,6 +148,12 @@ tasks:
     item: PVTI_lAHOCKkQ2c4BlAgHzg9UaCg
     project_fields_synced: true
     url: https://github.com/leventtcaan/keel/issues/12
+  K-1010:
+    hash: 8980f661384c3db2
+    issue: 502
+    item: PVTI_lAHOCKkQ2c4BlAgHzg_hesA
+    project_fields_synced: true
+    url: https://github.com/leventtcaan/keel/issues/502
   K-102:
     hash: 7e39858a9d954596
     issue: 13
