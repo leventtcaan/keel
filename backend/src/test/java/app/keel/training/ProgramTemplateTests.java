@@ -3,17 +3,22 @@ package app.keel.training;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import app.keel.engine.LiftKind;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
+import app.keel.engine.ProgramReview;
 import app.keel.engine.RepositoryParameters;
 import app.keel.engine.Sex;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.DayOfWeek;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -68,6 +73,84 @@ class ProgramTemplateTests {
                 }
             });
         }
+    }
+
+    /**
+     * K-985: a template keeps the weekly minimum it will be reviewed against, for every muscle it trains: weekly_sets_min
+     * (G1 K-11), on the arms arm_weekly_sets_min with two days or more (G1 K-61; one session can't hold it under
+     * sets_per_session_per_muscle_max, K-10).
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6})
+    void everyMuscleATemplateTrainsGetsItsWeeklyMinimum(int days) throws IOException {
+        ExerciseCatalog catalog = ExerciseCatalogTestData.catalog();
+        List<ProgramTemplates.Day> template = ProgramTemplates.of(files(), catalog).forDays(days).orElseThrow();
+        int weeklyMin = P.wholeNumber(ParameterKey.WEEKLY_SETS_MIN);
+        int armMin = days >= 2 ? Math.max(weeklyMin, P.wholeNumber(ParameterKey.ARM_WEEKLY_SETS_MIN)) : weeklyMin;
+
+        Map<String, Integer> week = new TreeMap<>();
+        template.forEach(day -> day.exercises().forEach(slot -> week.merge(primary(catalog, slot.exerciseId()), slot.sets(), Integer::sum)));
+
+        assertThat(week).as(days + " days").allSatisfy((muscle, sets) -> assertThat(sets).as(muscle)
+                .isGreaterThanOrEqualTo(catalog.armMuscles().contains(muscle) ? armMin : weeklyMin));
+    }
+
+    /**
+     * K-985, Levent 2026-10-08: one day can't hold every muscle at weekly_sets_min in a session of sensible length, so the
+     * 1-day template trains fewer muscles: compound moves only, one per muscle, each at weekly_sets_min (G1 K-11). No arm
+     * move: a muscle the program doesn't train isn't reviewed.
+     */
+    @Test
+    void theOneDayTemplateIsCompoundMovesEachAtTheWeeklyMinimum() throws IOException {
+        ExerciseCatalog catalog = ExerciseCatalogTestData.catalog();
+        List<ProgramTemplates.Slot> day = ProgramTemplates.of(files(), catalog).forDays(1).orElseThrow().getFirst().exercises();
+
+        assertThat(day).allSatisfy(slot -> {
+            assertThat(catalog.find(slot.exerciseId()).orElseThrow().kind()).as(slot.exerciseId()).isEqualTo(ExerciseCatalog.Kind.COMPOUND);
+            assertThat(slot.sets()).as(slot.exerciseId()).isEqualTo(P.wholeNumber(ParameterKey.WEEKLY_SETS_MIN));
+        });
+        assertThat(day).extracting(slot -> primary(catalog, slot.exerciseId())).doesNotHaveDuplicates()
+                .doesNotContainAnyElementsOf(catalog.armMuscles());
+    }
+
+    /**
+     * K-985 (ADR-073 #2): the program we generate passes the review a user's own program gets. Six days is only ever the
+     * user's choice (default_training_days_per_week is 4), so there the one suggestion is to train fewer days (G6 K-36).
+     * The review tops a muscle up with an isolation move for it; here every muscle has one, so no muscle under its minimum
+     * goes unnoticed for want of a move.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6})
+    void theGeneratedProgramPassesItsOwnReview(int days) throws IOException {
+        ExerciseCatalog catalog = ExerciseCatalogTestData.catalog();
+        ProgramTemplates templates = ProgramTemplates.of(files(), catalog);
+        Set<DayOfWeek> weekdays = EnumSet.copyOf(List.of(DayOfWeek.values()).subList(0, days));
+        List<ProgramGenerator.PlannedDay> program = ProgramGenerator.generate(weekdays, templates, catalog, P);
+
+        List<ProgramReview.Day> reviewed = program.stream().map(day -> new ProgramReview.Day(day.exercises().stream()
+                .map(planned -> {
+                    ExerciseCatalog.Exercise exercise = catalog.find(planned.exerciseId()).orElseThrow();
+                    return new ProgramReview.Move(exercise.id(), exercise.muscles().getFirst(),
+                            exercise.kind() == ExerciseCatalog.Kind.COMPOUND ? LiftKind.COMPOUND : LiftKind.ISOLATION,
+                            planned.sets(), planned.reps().min(), planned.reps().max());
+                }).toList())).toList();
+        Map<String, String> isolation = new TreeMap<>();
+        reviewed.forEach(day -> day.moves().forEach(move -> isolation.putIfAbsent(move.muscle(), move.muscle() + "_isolation")));
+        List<ProgramReview.Suggestion> findings = ProgramReview.findings(new ProgramReview.Program(reviewed),
+                new ProgramReview.Catalog(isolation, catalog.armMuscles()), P);
+
+        List<ProgramReview.Finding> expected = days > P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX)
+                ? List.of(ProgramReview.Finding.TOO_MANY_DAYS) : List.of();
+        assertThat(findings).as(days + " days").extracting(ProgramReview.Suggestion::finding).isEqualTo(expected);
+
+        // What the user sees: the stored program through the review endpoints' path, with the catalog's isolation moves.
+        ProgramStore.Program stored = new ProgramStore.Program(null, ProgramStore.Source.GENERATED, program.stream()
+                .map(day -> new ProgramStore.Day(null, day.nameKey(), null, day.weekday(), day.exercises().stream()
+                        .map(planned -> new ProgramStore.PlannedExercise(planned.exerciseId(), planned.sets(), planned.reps().min(),
+                                planned.reps().max(), planned.targetRir())).toList()))
+                .toList());
+        assertThat(ProgramReviews.suggestions(stored, catalog, P)).as(days + " days, as shown")
+                .extracting(ProgramReviews.Suggestion::finding).isEqualTo(expected);
     }
 
     @Test
