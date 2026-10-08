@@ -148,3 +148,24 @@ describe('the starting measurements stay within what the contract keeps (K-312)'
     expect(onboarding.find((p) => p.key === key)?.value).toBe(maximum(schema, field));
   });
 });
+
+describe('the program draft stays within what the contract takes (K-957)', () => {
+  const contract = fs.readFileSync(path.join(ROOT, 'contracts/openapi.yaml'), 'utf8').split('\n');
+  const workout = (JSON.parse(fs.readFileSync(path.join(DIR, 'workout.json'), 'utf8')) as { parameters: Parameter[] }).parameters;
+  /** The first `key: N` after `schema:` and then its `field:` in the contract. */
+  function limit(schema: string, field: string, key: string): number {
+    const start = contract.findIndex((line) => line.trim() === `${schema}:`);
+    const at = contract.findIndex((line, i) => i > start && line.trim() === `${field}:`);
+    const found = contract.slice(at).map((line) => new RegExp(`^\\s*${key}: (\\d+)$`).exec(line)).find((m) => m !== null);
+    if (start < 0 || at < 0 || found === undefined || found === null) throw new Error(`no ${key} for ${schema}.${field}`);
+    return Number(found[1]);
+  }
+  test.each([
+    ['program_days_max', 'days', 'maxItems'],
+    ['program_day_moves_max', 'exercises', 'maxItems'],
+    ['program_move_sets_max', 'sets', 'maximum'],
+    ['program_day_name_max_chars', 'name', 'maxLength'],
+  ])('%s = OwnProgram %s %s', (key, field, word) => {
+    expect(workout.find((p) => p.key === key)?.value).toBe(limit('OwnProgram', field, word));
+  });
+});

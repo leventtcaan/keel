@@ -787,7 +787,9 @@ export interface paths {
          * Keep a move the catalog does not have
          * @description The engine needs what the catalog says of a move, so the user answers it (L3 §1 #10): compound or isolation, the
          *     load model, the equipment, one side at a time or not. A set names it by its id ("custom:<uuid>"); only its owner
-         *     can. Not in programs (those are made of catalog moves). At most 100 a user (keel.training.custom-exercise.max-count).
+         *     can. It may be in the user's own program (PUT /v1/program; ADR-035 Ek 1), where the engine applies no rule to it: no
+         *     target, not counted by the program review, no swap options. A generated program is made of catalog moves only. At
+         *     most 100 a user (keel.training.custom-exercise.max-count).
          */
         post: operations["saveCustomExercise"];
         delete?: never;
@@ -2162,7 +2164,8 @@ export interface components {
         };
         /**
          * @description The user's own program (K-211). Limits are keel.training's: a day's weekday is used once; exercises come from
-         *     /v1/exercises; reps.max is above reps.min and at most 100.
+         *     /v1/exercises or are the user's own moves (/v1/custom-exercises, ADR-035 Ek 1: no target, not reviewed; another
+         *     user's move is VALIDATION_FAILED); reps.max is above reps.min and at most 100.
          */
         OwnProgram: {
             days: {

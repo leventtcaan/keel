@@ -46,3 +46,12 @@ mobil K-416.
 
 ## Doğrulama
 CustomExerciseTests, SupersetTests; gizlilik testleri (`AccountFixture`).
+
+## Ek 1 · Kendi programında kendi hareketi (K-957, 2026-10-08, agent, teknik; **Levent KABUL, 2026-10-08**)
+- #3 daraltıldı: kullanıcının **kendi programı** (`OWN`, `PUT /v1/program`) hesabın kendi hareketini alabilir. Sebep ADR-073 #1: içe aktarılan
+  rutinin katalogda olmayan hareketi kendi hareketi olur ve onaylanan taslakla programa girer. Başka hesabın hareketi ya da olmayan bir
+  `custom:` kimliği `VALIDATION_FAILED`. Üretilmiş program (`GENERATED`) katalogdan kalır: üreteç yalnız şablonun katalog hareketlerini koyar.
+- Motor kendi hareketine **hiçbir kural uygulamaz** (#3'ün gerekçesi sürer, kaynaksız kural doğmaz, U14): hedef ve ilerleme yok
+  (`SessionProgress` katalogda olmayanı atlar), seans içi tablo ve "Beat last time" yok, antrenman durumu saymaz (yalnız katalog bileşikleri),
+  başlangıç ağırlığı alamaz, program incelemesi saymaz (K-956), değiştirme seçeneği yok (K-964).
+- Doğrulama: `CustomExerciseTests.anOwnProgramMayCarryTheUsersOwnMoveWithNoTarget`, `anotherUsersMoveIsNotInAProgram`.

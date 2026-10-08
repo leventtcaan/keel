@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const uncommented = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const READERS = ['csv.ts', 'formats.ts', 'match.ts', 'build.ts', 'params.ts'].map((name) => path.resolve(__dirname, '../import', name));
+const READERS = ['csv.ts', 'formats.ts', 'match.ts', 'build.ts', 'draft.ts', 'params.ts'].map((name) => path.resolve(__dirname, '../import', name));
 /** What a reader may import: types of the contract, the copy, the train module's parameters and moves' type, its siblings. */
 const ALLOWED = [/^import type .* from '@\/api\/schema';$/, /^import type .* from '@\/train\/trainData';$/, /from '@\/copy';$/, /from '@\/train\/params';$/,
   /from '\.\/(csv|formats|match|params)';$/, /from '(\.\.\/)+data\/parameters\/import\.json';$/];
