@@ -98,6 +98,7 @@ public enum ParameterKey {
     WEEKLY_SETS_TRIM_TO(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
     WEEKLY_SETS_MIN(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
     REVIEW_MAX_SUGGESTIONS(ParameterDomain.TRAINING, Unit.SUGGESTIONS),
+    SHORT_SESSION_MOVES(ParameterDomain.TRAINING, Unit.MOVES),
     LOAD_INCREMENT_UPPER_KG(ParameterDomain.TRAINING, Unit.KG),
     LOAD_INCREMENT_LOWER_KG(ParameterDomain.TRAINING, Unit.KG),
     LOAD_JUMP_MAX_STEPS(ParameterDomain.TRAINING, Unit.LOAD_STEPS),

@@ -71,6 +71,11 @@ final class AccountFixture {
         send(account, "PUT", "/v1/program/cardio", Map.of("minutes", 30, "sessions", List.of(Map.of("weekday", "MONDAY", "place", "AFTER_LIFT"))));
         send(account, "POST", "/v1/cardio-sessions", Map.of("clientId", UUID.randomUUID(), "day", "2026-09-30", "minutes", 30, "source", "APPLE_HEALTH",
                 "activeEnergyKcal", 280));
+        // A week's change to a session of the program (K-964): stored as the endpoint stores it, on a day the clock does not pick.
+        jdbc.sql("""
+                insert into training.session_change (account_id, program_day_id, week_of, on_date, skipped, short_version, swaps)
+                select :account, id, date '2026-09-28', null, true, false, '{"squat": "leg_press"}'::jsonb from training.program_day
+                where account_id = :account order by seq limit 1""").param("account", account.value()).update();
         // A gym with every part of its equipment (K-414): its plates, dumbbells and machines are rows too.
         send(account, "PUT", "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "barKg", 20, "platesKg", List.of(20, 10),
                 "dumbbellsKg", List.of(10, 12), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "pec_deck", "stepKg", 7))));

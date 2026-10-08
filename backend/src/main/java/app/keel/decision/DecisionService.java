@@ -41,6 +41,7 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.training.TrainingCalls;
+import app.keel.training.PlannedDays;
 import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -276,7 +277,10 @@ class DecisionService {
         }
         Set<DayOfWeek> programDays = statuses.programDays(account);
         Set<DayOfWeek> trainingDays = programDays.isEmpty() ? week.profile().trainingDays() : programDays;
-        return week.withFirstWeek(FirstWeekFacts.of(began, week.profile().checkInDay(), week.weekOf(), trainingDays,
+        // A session moved in its week is planned where it was moved, not on its weekday (K-964).
+        PlannedDays plannedDays = programDays.isEmpty() ? PlannedDays.weekly(trainingDays)
+                : statuses.plannedDays(account, began, week.weekOf()).orElse(PlannedDays.weekly(trainingDays));
+        return week.withFirstWeek(FirstWeekFacts.of(began, week.profile().checkInDay(), week.weekOf(), plannedDays::on,
                 logs.sessionDays(account, zone, began, week.weekOf()), planned.perWeek(account, week.profile()),
                 week.profile().experience().map(experience -> Experience.valueOf(experience.name()))));
     }

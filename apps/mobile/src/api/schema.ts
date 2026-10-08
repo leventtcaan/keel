@@ -733,6 +733,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/program/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change today's session ("Short on time", "Move it", "Skip today")
+         * @description Today's session as the user wants it (K-964, ADR-073 #5), on the user's calendar: `programDayId` names it (the
+         *     session `Program.week` puts on today). SHORT: the first short_session_moves moves in the program's order; the
+         *     session counts for the week as any other. MOVE: to tomorrow, within the week (never past Sunday); a session already
+         *     on that day moves on a day with it, and so on (the week re-lays itself); a moved session is a fresh one on its new
+         *     day: neither the short version nor today's swaps go with it. SKIP: not done; no catch-up is added and nothing is
+         *     planned again (U7, ADR-071 #3). Only this week's session changes, never the program. CONFLICT (409), nothing
+         *     changed: that day's session is not on today, a move would pass Sunday, or (MOVE, SKIP) a workout of that day was
+         *     started today, under way or finished. NOT_FOUND: no program.
+         */
+        post: operations["changeToday"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/program/swap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Swap a move of a program day, today only or from now on
+         * @description A move of a program day for one of its `swapOptions` (K-964, ADR-073 #6). TODAY: only in this week's session of
+         *     that day, which must be on today and not started (CONFLICT otherwise: a workout of that day started today, under way
+         *     or finished, swaps in the session itself); `to` is checked against the session's moves after today's earlier swaps,
+         *     and the planned move again undoes the swap. FROM_NOW_ON: the
+         *     program changes: the move's row gets the new move with the same sets and rep range, and no target (the new move
+         *     has its own history and target, double progression per move); every other move keeps its row and target, the
+         *     program its source and days. This week's swap for today of that move, or to the new move, ends (the plan is the
+         *     swap now). The review's change log is cleared (the edit is the program now: "N changes applied · Undo" goes). VALIDATION_FAILED: `to` is not among the move's swap options (the user's own move has none).
+         *     NOT_FOUND: no program, or no such day or move.
+         */
+        post: operations["swapMove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/gyms": {
         parameters: {
             query?: never;
@@ -1927,6 +1982,11 @@ export interface components {
             days: components["schemas"]["ProgramDay"][];
             cardio?: components["schemas"]["ProgramCardio"];
             review?: components["schemas"]["ProgramReview"];
+            /**
+             * @description This week's sessions on the user's calendar, Monday to Sunday by date (K-964): each program day put on a weekday,
+             *     or moved to a day; a day on no weekday is not on the calendar. This server always sends it.
+             */
+            week?: components["schemas"]["WeekSession"][];
         };
         /**
          * @description The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
@@ -2051,6 +2111,48 @@ export interface components {
          * @enum {string}
          */
         CardioLogSource: "MANUAL" | "APPLE_HEALTH";
+        TodayChange: {
+            /** Format: uuid */
+            programDayId: string;
+            /** @enum {string} */
+            change: "SHORT" | "MOVE" | "SKIP";
+        };
+        MoveSwap: {
+            /** Format: uuid */
+            programDayId: string;
+            /** @description The planned move swapped. */
+            exerciseId: string;
+            /** @description One of the planned move's swapOptions (or, TODAY, the planned move again). */
+            to: string;
+            /** @enum {string} */
+            scope: "TODAY" | "FROM_NOW_ON";
+        };
+        /**
+         * @description A program day's session this week (K-964): on `date`, its weekday's unless moved (`moved` true); `skipped` true when
+         *     the user skipped it (not done, nothing planned again); `short` true for the short version. `exerciseIds`: the
+         *     session's moves that day in order, the short version's first short_session_moves and today's swaps applied.
+         */
+        WeekSession: {
+            /** Format: uuid */
+            programDayId: string;
+            /** Format: date */
+            date: string;
+            moved?: boolean;
+            skipped?: boolean;
+            short?: boolean;
+            exerciseIds: string[];
+            /**
+             * @description Today's swaps in force (K-964, ADR-073 #6): each planned move swapped for today only (`insteadOf`) and the move in
+             *     its place as a planned exercise of its own: the planned move's sets and rep range, no target, its own history
+             *     (`lastBestSet`) and in-session table (ADR-075 #3), like a move swapped from now on. Absent when there is none.
+             */
+            swaps?: components["schemas"]["TodaySwap"][];
+        };
+        TodaySwap: {
+            /** @description The planned move swapped. */
+            insteadOf: string;
+            exercise: components["schemas"]["PlannedExercise"];
+        };
         /** @description A lighter week in force (K-217); ends on its own after `until`. */
         DeloadWeek: {
             setsFactor: number;
@@ -2156,6 +2258,12 @@ export interface components {
              *     load is held, or where no heavier load is in reach.
              */
             nextLoadAtTopKg?: number;
+            /**
+             * @description The moves this one can be swapped for (K-964, ADR-073 #6): the catalog's alternatives, then the moves of the same
+             *     primary muscle and kind (G6 K-35), each the current gym has the equipment for (ADR-032; any without a gym), none
+             *     already on the day. Empty for the user's own move. This server always sends it.
+             */
+            swapOptions?: string[];
         };
         /** @description min < max (a range to climb in, double progression); max at most 100. */
         RepRange: {
@@ -4137,6 +4245,56 @@ export interface operations {
         responses: {
             200: components["responses"]["CardioSessionCreated"];
             201: components["responses"]["CardioSessionCreated"];
+            default: components["responses"]["Error"];
+        };
+    };
+    changeToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TodayChange"];
+            };
+        };
+        responses: {
+            /** @description The program with this week's sessions as changed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    swapMove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveSwap"];
+            };
+        };
+        responses: {
+            /** @description The program after the swap */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };

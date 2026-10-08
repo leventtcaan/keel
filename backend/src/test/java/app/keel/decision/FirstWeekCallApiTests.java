@@ -138,6 +138,28 @@ class FirstWeekCallApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void aSessionMovedAndDoneOnItsNewDayIsNotMissed() throws Exception {
+        // K-964: begun on Tuesday 22 (mid-week: the move is kept under the week of Monday 21, before the first day), a program
+        // on Wednesday, Thursday and Saturday; Thursday's session moved to Friday and done there, nothing else done. Missed:
+        // Wednesday and Saturday, not Thursday (on the weekdays alone it would be all three).
+        AccountId account = firstWeekOver("Y1_3");
+        began(account, TUESDAY);
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", Map.of("days", List.of(programDay("WEDNESDAY"), programDay("THURSDAY"),
+                programDay("SATURDAY")))));
+        Object thursday = ((List<Map<String, Object>>) program.get("days")).get(1).get("id");
+        jdbc.sql("""
+                insert into training.session_change (account_id, program_day_id, week_of, on_date, skipped, short_version, swaps)
+                values (:a, :day, :monday, :on, false, false, '{}'::jsonb)""").param("a", account.value()).param("day", UUID.fromString((String) thursday))
+                .param("monday", TUESDAY.minusDays(1)).param("on", THURSDAY.plusDays(1)).update();
+        session(account, THURSDAY.plusDays(1), 12, 0);
+
+        Map<String, Object> call = map(answer(account, List.of()));
+
+        assertThat(call.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("WEDNESDAY", "SATURDAY")));
+    }
+
+    @Test
     void someoneStartingOutIsNotAskedAndKeepsThePlan() throws Exception {
         AccountId account = firstWeekOver("NEW");
         session(account, TUESDAY, 12, 0);
@@ -173,6 +195,11 @@ class FirstWeekCallApiTests {
         assertThat(send(account, "PUT", "/v1/profile", profile)).hasStatusOk();
         began(account, TODAY.minusDays(7));
         return account;
+    }
+
+    private static Map<String, Object> programDay(String weekday) {
+        return Map.of("name", "Full body " + weekday, "weekday", weekday, "exercises",
+                List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10))));
     }
 
     private void began(AccountId account, LocalDate day) {

@@ -83,6 +83,8 @@ class ProgramStore {
         jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
         // The review's changes were made to the program replaced: none can be undone onto this one (K-956).
         jdbc.sql("delete from training.program_review_change where account_id = :account").param("account", account.value()).update();
+        // So were the week's changes to its sessions (K-964): this program's days are new.
+        jdbc.sql("delete from training.session_change where account_id = :account").param("account", account.value()).update();
         // What this program asks a week, from now (K-535): the weeks before keep the program they had. Always after the
         // last row: two replaces at once each read the clock before the lock, and the one stored last must be in force —
         // strictly after, so the order never falls to a tie.

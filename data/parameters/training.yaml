@@ -102,6 +102,12 @@ parameters:
     tag: urun
     source: "arastirma/01-urun-ilkeleri.md#26"
     note: "SEÇİM, ürün kararı (Levent, ADR-073 #2); sayının araştırma kaynağı yok. İlke: kullanıcı olduğu yerden alınır, zorla düzeltilmez, küçük değişikliklerle doğruya çekilir (ilke 26, ilke 18). İnceleme en çok bu kadar öneri gösterir, öncelik sırasıyla: gün > fazla set > eksik set > sıklık > tekrar aralığı."
+  - key: short_session_moves
+    value: 3
+    unit: moves
+    tag: urun
+    source: "arastirma/01-urun-ilkeleri.md#26"
+    note: "SEÇİM, ürün kararı (Levent, ADR-073 #5, yeni-yuz-kurallar R6); sayının araştırma kaynağı yok. 'Short on time': bugünün seansı programdaki sıraya göre ilk bu kadar hareket; seans haftayı sayar. İlke: kullanıcı olduğu yerden alınır, dayatma yok (ilke 26)."
   - key: default_training_days_per_week
     value: 4
     unit: days_per_week

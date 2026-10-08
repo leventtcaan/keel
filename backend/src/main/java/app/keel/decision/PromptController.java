@@ -18,6 +18,7 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.training.TrainingLog;
+import app.keel.training.PlannedDays;
 import app.keel.training.TrainingStatusReader;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Clock;
@@ -110,6 +111,9 @@ class PromptController {
         LocalDate since = setOn.flatMap(Optional::stream).max(Comparator.naturalOrder()).orElse(today);
         LocalDate from = since.isBefore(weekBefore) ? since : weekBefore;
         TrainingStatusReader.Breaks breaks = statuses.breaks(account, from, today);
+        // A session moved in its week is planned where it was moved, not on its weekday (K-964).
+        PlannedDays planned = programDays.isEmpty() ? PlannedDays.weekly(trainingDays)
+                : statuses.plannedDays(account, from, today).orElse(PlannedDays.weekly(trainingDays));
         Set<LocalDate> paused = new HashSet<>(states.days(account, from, today));
         paused.addAll(breaks.rest());
         // Every session: the miss counts from the last one, however long ago (a few hundred timestamps a year at most).
@@ -122,7 +126,7 @@ class PromptController {
         Function<LocalDate, Integer> stepTarget = plan.map(current -> weeks.stepTargets(account, current, zone, p))
                 .orElseGet(() -> day -> p.wholeNumber(ParameterKey.STEPS_TARGET_START));
         Prompts.Facts facts = new Prompts.Facts(today, plan.map(CallStore.Plan::phase), measurements.stepsByDay(account, weekBefore, today.minusDays(1)),
-                stepTarget, List.copyOf(trainingDays), since, sessions, Set.copyOf(paused), breaks.lighter(), loadsDropped,
+                stepTarget, planned::on, since, sessions, Set.copyOf(paused), breaks.lighter(), loadsDropped,
                 plan.flatMap(current -> DeficitStart.of(current, calls.planSteps(account))), states.current(account, today).isPresent());
         Set<String> answered = answers.answered(account);
         return Prompts.today(facts, p).stream().filter(prompt -> !answered.contains(prompt.rule().value() + "/" + prompt.key()))

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -131,6 +132,19 @@ class PromptsTests {
     void aSessionOnAnyDayAfterTheFirstMissedOneStartsAgain() {
         // Trained Saturday 3 Oct instead of Thursday: only Monday 5 passed since — one, not two.
         assertThat(Prompts.today(facts().sessions(LAST_MONDAY, LocalDate.of(2026, 10, 3)).build(), MALE)).isEmpty();
+    }
+
+    @Test
+    void aSessionMovedToTodayIsNotMissedOnItsWeekday() {
+        // Monday 5 Oct's session moved to Tuesday 6 (K-964): on Tuesday only Thursday 1 has passed; on the weekdays, two had.
+        Predicate<LocalDate> moved = day -> !day.equals(LocalDate.of(2026, 10, 5))
+                && (day.equals(LocalDate.of(2026, 10, 6)) || Set.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY).contains(day.getDayOfWeek()));
+        LocalDate tuesday = LocalDate.of(2026, 10, 6);
+
+        assertThat(Prompts.today(facts().on(tuesday).sessions(LAST_MONDAY).plannedOn(moved).build(), MALE)).isEmpty();
+        assertThat(Prompts.today(facts().on(tuesday).sessions(LAST_MONDAY).build(), MALE)).hasSize(1);
+        // Moved and then not done either: two planned days missed by Wednesday, the first still Thursday 1.
+        assertThat(only(facts().on(LocalDate.of(2026, 10, 7)).sessions(LAST_MONDAY).plannedOn(moved)).key()).isEqualTo("2026-10-01");
     }
 
     @Test
@@ -285,6 +299,12 @@ class PromptsTests {
         private boolean loadsDropped;
         private Optional<LocalDate> deficitBegan = Optional.empty();
         private boolean declaredNow;
+        private Predicate<LocalDate> plannedOn = day -> Set.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY).contains(day.getDayOfWeek());
+
+        FactsBuilder plannedOn(Predicate<LocalDate> days) {
+            plannedOn = days;
+            return this;
+        }
 
         FactsBuilder on(LocalDate day) {
             today = day;
@@ -347,7 +367,7 @@ class PromptsTests {
         }
 
         Prompts.Facts build() {
-            return new Prompts.Facts(today, phase, steps, stepTarget, List.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), trainingDaysSince, sessions,
+            return new Prompts.Facts(today, phase, steps, stepTarget, plannedOn, trainingDaysSince, sessions,
                     Set.copyOf(paused), Set.copyOf(lighter), loadsDropped, deficitBegan, declaredNow);
         }
     }
