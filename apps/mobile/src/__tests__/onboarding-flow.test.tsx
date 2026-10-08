@@ -92,7 +92,11 @@ const mockApi = {
       return typeof mockStarting === 'number' ? { error: { code: 'X' }, response: new Response(null, { status: mockStarting }) } : mockOk(mockStarting);
     }
     // The first call's day (K-990): the server's, never worked out on the phone.
-    if (path === '/v1/first-weeks') return mockOk({ week: 1, risk: [], readsRisk: false, training: true, firstCallOn: mockFirstCall });
+    if (path === '/v1/first-weeks') {
+      return typeof mockFirstCall === 'number'
+        ? { error: { code: 'X' }, response: new Response(null, { status: mockFirstCall }) }
+        : mockOk({ week: 1, risk: [], readsRisk: false, training: true, firstCallOn: mockFirstCall });
+    }
     if (path === '/v1/program') {
       return mockServerProgram === null ? { error: { code: 'NOT_FOUND' }, response: new Response(null, { status: 404 }) } : mockOk(mockServerProgram);
     }
@@ -114,8 +118,8 @@ const mockTurnOff = jest.fn(async () => {
 const mockQueue = { record: jest.fn(async (_record: unknown) => true), drain: jest.fn(async () => {}) };
 let mockServerProgram: unknown = null;
 let mockStarting: unknown = 404;
-/** The server's first call: the Monday after the pinned Wednesday the plan tests finish on. */
-let mockFirstCall = '2026-10-19';
+/** The server's first call: the Monday after the pinned Wednesday the plan tests finish on; a number: that status. */
+let mockFirstCall: string | number = '2026-10-19';
 // What the phone knows of the health data consent (a resumed onboarding reads it; the walk has its own answer).
 let mockConsentGranted = false;
 // Whether the server holds a grant, for taking it back (K-986): what the phone knows, or 'unknown' when it cannot say.
@@ -1036,6 +1040,10 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
 });
 
 describe('#ob-preparing: each line ticked by the server, never a timer (ADR-072 #6)', () => {
+  // A Wednesday at noon: the server's first call (the Monday after) is days ahead whatever day the tests run.
+  beforeEach(() => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 14, 12, 0) });
+  });
   // Without the health data consent there are no calls: the third line is the first workout (K-967 review).
   const lines = (third = t('onboarding.preparing.firstWorkout')) => [t('onboarding.preparing.program', { count: 3 }), t('onboarding.preparing.cardio'), third];
   const ticked = (line: string) => screen.queryByLabelText(t('onboarding.preparing.done', { line })) !== null;
@@ -1067,6 +1075,14 @@ describe('#ob-preparing: each line ticked by the server, never a timer (ADR-072 
     await endWalk();
     expect(lines(t('onboarding.preparing.firstCall', { day: t('onboarding.schedule.dayName.MONDAY') })).map(ticked)).toEqual([true, true, true]);
     expect(screen.queryByText(t('onboarding.preparing.firstWorkout'))).toBeNull();
+  });
+
+  test.each([403, 404, 409])('with the consent but no first call from the server (%i): the third line is the first workout', async (status) => {
+    mockFirstCall = status;
+    await walkTo('activity', { experience: 'NEW', allow: true });
+    await endWalk();
+    expect(lines().map(ticked)).toEqual([true, true, true]);
+    expect(screen.queryByText(t('onboarding.preparing.firstCall', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeNull();
   });
 
   test('a program that could not be built is tried again from there: the answers are not saved twice', async () => {
@@ -1136,6 +1152,18 @@ describe('closed with the plan still to be seen: it comes back (K-967 review)', 
     await press(t('onboarding.continue'));
     expect(mockProfile.finish).toHaveBeenCalledTimes(1);
     expect(router.getPathname()).toBe('/');
+  });
+
+  test("(d) resumed after the first call's day went by: the server says today, and so do both screens", async () => {
+    // Onboarding saved on a Wednesday, the Monday after passed without a call; opened again on the Wednesday after that.
+    jest.useFakeTimers({ now: new Date(2026, 9, 21, 12, 0) });
+    mockConsentGranted = true;
+    mockFirstCall = '2026-10-21';
+    await open('/');
+    expect(screen.getByText(t('onboarding.preparing.firstCall', { day: t('onboarding.plan.today') }))).toBeOnTheScreen();
+    await press(t('onboarding.preparing.see'));
+    expect(screen.getByText('Wed, Oct 21')).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.today'))).toBeOnTheScreen();
   });
 
   test('(b) closed after the program was built: not built again, its starting weights kept', async () => {

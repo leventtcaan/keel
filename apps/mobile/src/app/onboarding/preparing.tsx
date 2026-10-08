@@ -12,7 +12,7 @@ import { t } from '@/copy';
 import { profileReady } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { onboardingParams as P } from '@/onboarding/params';
-import { linesDone } from '@/onboarding/prepare';
+import { firstCallDay, linesDone } from '@/onboarding/prepare';
 import { usePreparation } from '@/onboarding/usePreparation';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -44,6 +44,11 @@ function Preparing() {
   const done = linesDone(progress);
   const days = progress.program?.days.length ?? draft.trainingDays.length;
   const checkInDay = progress.profile?.schedule.checkInDay ?? P.checkInDay;
+  // Without the health data consent there are no calls; nor when the server names none: the first workout is said instead.
+  // Before the profile is saved there is no answer yet: the check-in day.
+  const zone = progress.profile?.schedule.timeZone;
+  let call: ReturnType<typeof firstCallDay> = null;
+  if (progress.consented ?? draft.healthConsent === 'granted') call = zone === undefined ? checkInDay : firstCallDay(progress.firstCall, checkInDay, new Date(), zone);
   // The food only once the plan will show its row (a starting target came back); the cardio as the program sets it.
   const noCardio = progress.program !== undefined && progress.program.cardio === undefined;
   const food = progress.starting !== undefined && progress.starting !== null;
@@ -52,10 +57,9 @@ function Preparing() {
   const lines = [
     t('onboarding.preparing.program', { count: days }),
     t(second),
-    // Without the health data consent there are no calls: the third line is the first workout, named by the catalog.
-    (progress.consented ?? draft.healthConsent === 'granted')
-      ? t('onboarding.preparing.firstCall', { day: t(`onboarding.schedule.dayName.${checkInDay}`) })
-      : t('onboarding.preparing.firstWorkout'),
+    call === null
+      ? t('onboarding.preparing.firstWorkout')
+      : t('onboarding.preparing.firstCall', { day: call === 'TODAY' ? t('onboarding.plan.today') : t(`onboarding.schedule.dayName.${call}`) }),
   ];
 
   const tick = <SymbolView name="checkmark" size={TICK_MARK} tintColor={color.onAccent} weight="bold" />;

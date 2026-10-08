@@ -169,8 +169,8 @@ export async function preparePlan(options: Options): Promise<Prepared> {
 }
 /**
  * The lines of #ob-preparing done, in their order: the program; its cardio and the food (the starting target's answer,
- * or none to show); then the first call — its day the stored profile's — or the first workout, once the catalog has named
- * its moves.
+ * or none to show); then the first call — its day the server's (firstCallDay) — or the first workout, once the catalog has
+ * named its moves.
  */
 export function linesDone({ profile, program, starting, exercises }: Progress): number {
   if (profile === undefined || program === undefined) return 0;
@@ -191,6 +191,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** The days from today on the user's calendar to `day` (the server's first call): 0 today, 1 tomorrow. Counted, not decided. */
 export function daysTo(day: string, now: Date, timeZone: string): number {
   return Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${today(now, timeZone).day}T00:00:00Z`)) / DAY_MS);
+}
+
+/**
+ * #ob-preparing's first call (K-990): the server's day once it came — today when it is today or went by (a resumed
+ * onboarding: the check-in is open), else its weekday; before the answer, the profile's check-in day, the day the server
+ * names for a walk ended now; null when the server names none (the first workout is said instead).
+ */
+export function firstCallDay(firstCall: string | null | undefined, checkInDay: Weekday, now: Date, timeZone: string): Weekday | 'TODAY' | null {
+  if (firstCall === undefined) return checkInDay;
+  if (firstCall === null) return null;
+  return daysTo(firstCall, now, timeZone) <= 0 ? 'TODAY' : WEEK[new Date(`${firstCall}T00:00:00Z`).getUTCDay()];
 }
 
 /** The first workout: the program's soonest day from today on, today included; a program without weekdays, its first day. */

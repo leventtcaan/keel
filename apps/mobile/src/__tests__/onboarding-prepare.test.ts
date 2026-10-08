@@ -6,7 +6,7 @@
  */
 import type { components } from '@/api/schema';
 import { type Draft, emptyDraft } from '@/onboarding/draft';
-import { type Progress, daysTo, firstWorkout, linesDone, preparePlan } from '@/onboarding/prepare';
+import { type Progress, daysTo, firstCallDay, firstWorkout, linesDone, preparePlan } from '@/onboarding/prepare';
 import { type Move, ownMove } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -401,6 +401,16 @@ describe('the dates the plan gives', () => {
     expect(daysTo('2026-10-12', MONDAY, TZ)).toBe(0);
     // Still Sunday in UTC, already Monday in Istanbul: the user's day counts.
     expect(daysTo('2026-10-26', new Date('2026-10-18T22:30:00Z'), TZ)).toBe(7);
+  });
+
+  test("#ob-preparing's first call: the server's day once it came (its weekday, or today); before it, the check-in day; none, none", () => {
+    expect(firstCallDay('2026-10-19', 'MONDAY', MONDAY, TZ)).toBe('MONDAY');
+    // A check-in day moved since: the server's day still counts.
+    expect(firstCallDay('2026-10-14', 'MONDAY', MONDAY, TZ)).toBe('WEDNESDAY');
+    // Resumed after it went by without a call: the server says today.
+    expect(firstCallDay('2026-10-12', 'MONDAY', MONDAY, TZ)).toBe('TODAY');
+    expect(firstCallDay(undefined, 'MONDAY', MONDAY, TZ)).toBe('MONDAY');
+    expect(firstCallDay(null, 'MONDAY', MONDAY, TZ)).toBeNull();
   });
 
   test('the first workout: the soonest day of the program from today on, today included', () => {
