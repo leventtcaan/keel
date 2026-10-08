@@ -39,6 +39,17 @@ const PROGRAM: Schemas['Program'] = {
     { id: 'c', nameKey: 'programDays.push.name', weekday: 'FRIDAY', exercises: [planned('dumbbell_shoulder_press')] },
   ],
   review: { id: 'rev-1', suggestions: [SUGGESTION], applied: [APPLIED], notReviewedMoves: 0 },
+  cardio: {
+    source: 'GENERATED',
+    minutes: 30,
+    sessionsPerWeek: 2,
+    sessions: [
+      { weekday: 'MONDAY', place: 'AFTER_LIFT' },
+      { weekday: 'FRIDAY', place: 'AFTER_LIFT' },
+    ],
+    doneThisWeek: 0,
+    afterLiftOverLine: false,
+  },
   week: [],
 };
 
@@ -46,8 +57,15 @@ let mockData: TrainData;
 let mockAnswers: Record<string, () => unknown> = {};
 const mockPost = jest.fn(async (path: string, ..._rest: unknown[]) => mockAnswers[path]());
 const mockGet = jest.fn(async (path: string) => (path === '/v1/profile' ? { data: { schedule: { trainingDays: ['MONDAY', 'THURSDAY'] } }, response: { status: 200 } } : { response: { status: 404 } }));
+const mockPut = jest.fn(async (..._args: unknown[]) => ({ data: PROGRAM, response: { status: 200 } }));
+const mockDelete = jest.fn(async (..._args: unknown[]) => ({ data: PROGRAM, response: { status: 200 } }));
 const mockServices = {
-  api: { POST: (path: string, ...rest: unknown[]) => mockPost(path, ...rest), GET: (path: string) => mockGet(path) },
+  api: {
+    POST: (path: string, ...rest: unknown[]) => mockPost(path, ...rest),
+    GET: (path: string) => mockGet(path),
+    PUT: (...args: unknown[]) => mockPut(...args),
+    DELETE: (...args: unknown[]) => mockDelete(...args),
+  },
   training: { read: jest.fn(async () => mockData), own: async () => [] },
   workoutRecords: async () => mockRecords,
 };
@@ -111,6 +129,7 @@ describe('the page', () => {
     ['Moves', 'moves'],
     ['Split', 'split'],
     ['Rebuild for me', 'rebuild'],
+    ['Cardio', 'cardio'],
     ['1 change applied', 'changes'],
   ])('%s opens its own page', async (row, part) => {
     await show();
@@ -177,6 +196,78 @@ describe('the changes applied', () => {
     await show();
     await fireEvent.press(await screen.findByLabelText(`${t('editProgram.undo')}: Hamstrings: 4 sets a week, not 3`));
     expect(await screen.findByText(t('editProgram.undoConflict'))).toBeTruthy();
+  });
+});
+
+describe('cardio', () => {
+  const cardio = (extra: Partial<Schemas['ProgramCardio']>) => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: { ...PROGRAM.cardio!, ...extra } } } };
+  };
+
+  test("the row says the week's cardio; off when there is none", async () => {
+    await show();
+    expect(await screen.findByText('2 × 30 min')).toBeTruthy();
+  });
+
+  test("its page: whose it is, the minutes and the days, each day where it goes", async () => {
+    mockParams = { part: 'cardio' };
+    await show();
+    expect(await screen.findByText(t('editProgram.cardio.coach'))).toBeTruthy();
+    expect(screen.getByText('30 min')).toBeTruthy();
+    expect(screen.getByText('Mon · after lifting')).toBeTruthy();
+    expect(screen.getByText('Fri · after lifting')).toBeTruthy();
+    // The coach's default is the coach's: no way back to it from itself.
+    expect(screen.queryByText(t('editProgram.cardio.coachDefault'))).toBeNull();
+  });
+
+  test('changed and saved: the minutes a step up, a rest day added at an easy pace, sent whole', async () => {
+    mockParams = { part: 'cardio' };
+    await show();
+    await fireEvent.press(await screen.findByLabelText(t('programEditor.moreLabel', { what: t('editProgram.cardio.minutesLabel') })));
+    await fireEvent.press(screen.getByLabelText('Sunday'));
+    expect(screen.getByText('Sun · easy, no weights')).toBeTruthy();
+    await fireEvent.press(screen.getByText(t('editProgram.cardio.save')));
+    expect(mockPut).toHaveBeenCalledWith('/v1/program/cardio', {
+      body: {
+        minutes: 35,
+        sessions: [
+          { weekday: 'MONDAY', place: 'AFTER_LIFT' },
+          { weekday: 'FRIDAY', place: 'AFTER_LIFT' },
+          { weekday: 'SUNDAY', place: 'OFF_DAY_LOW_INTENSITY' },
+        ],
+      },
+    });
+    expect(await screen.findByText(t('editProgram.cardio.saved'))).toBeTruthy();
+  });
+
+  test('turned off: no session at all', async () => {
+    mockParams = { part: 'cardio' };
+    await show();
+    await fireEvent.press(await screen.findByText(t('editProgram.cardio.turnOff')));
+    expect(mockPut).toHaveBeenCalledWith('/v1/program/cardio', { body: { minutes: 30, sessions: [] } });
+  });
+
+  test("the user's own: back to the coach's default removes it", async () => {
+    mockParams = { part: 'cardio' };
+    cardio({ source: 'USER' });
+    await show();
+    expect(await screen.findByText(t('editProgram.cardio.own'))).toBeTruthy();
+    await fireEvent.press(screen.getByText(t('editProgram.cardio.coachDefault')));
+    expect(mockDelete).toHaveBeenCalledWith('/v1/program/cardio');
+  });
+
+  test('a session after the weights past the line: one line of information, never a block (G2 K-35)', async () => {
+    mockParams = { part: 'cardio' };
+    cardio({ source: 'USER', minutes: 45, afterLiftOverLine: true });
+    await show();
+    expect(await screen.findByText(t('decision.rule.cardio_after_lift_over_line'))).toBeTruthy();
+    expect(screen.getByText(t('editProgram.cardio.save'))).toBeTruthy();
+  });
+
+  test('no cardio: off on the row, and the page starts from the start minutes', async () => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: undefined } } };
+    await show();
+    expect(await screen.findByText(t('editProgram.cardio.off'))).toBeTruthy();
   });
 });
 

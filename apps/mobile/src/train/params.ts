@@ -42,6 +42,10 @@ export const workoutParams = {
     COMPOUND: { min: param<number>('rep_range_compound_min'), max: param<number>('rep_range_compound_max') },
     ISOLATION: { min: param<number>('rep_range_isolation_min'), max: param<number>('rep_range_isolation_max') },
   },
+  /** Edit › Cardio (ADR-074 #4): where the user's own starts, one step of its minutes, the contract's most. */
+  cardioMinutesStart: param<number>('cardio_minutes_start'),
+  cardioMinutesStep: param<number>('cardio_minutes_step'),
+  cardioMinutesMax: param<number>('cardio_minutes_max'),
   warmup: {
     first: {
       sets: param<number>('warmup_sets_first_move'),

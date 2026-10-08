@@ -5,7 +5,7 @@
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
-import { applySuggestion, changeToday, rebuild, swapMove, undoChange } from '@/train/changes';
+import { applySuggestion, changeToday, coachCardio, putCardio, rebuild, swapMove, undoChange } from '@/train/changes';
 
 type Schemas = components['schemas'];
 
@@ -55,6 +55,17 @@ describe('the program edited on the Edit page', () => {
   test('an undo the server refuses (the program changed another way) is a conflict', async () => {
     const { api } = apiAnswering(() => answer(409));
     expect(await undoChange(api, 'c1')).toEqual({ kind: 'conflict' });
+  });
+
+  test("the user's own cardio is sent whole; back to the coach's default removes it", async () => {
+    const PUT = jest.fn(async () => answer(200, PROGRAM));
+    const DELETE = jest.fn(async () => answer(200, PROGRAM));
+    const api = { PUT, DELETE } as unknown as ApiClient;
+    const plan = { minutes: 25, sessions: [{ weekday: 'MONDAY' as const, place: 'AFTER_LIFT' as const }] };
+    expect(await putCardio(api, plan)).toEqual({ kind: 'done', program: PROGRAM });
+    expect(PUT).toHaveBeenCalledWith('/v1/program/cardio', { body: plan });
+    expect(await coachCardio(api)).toEqual({ kind: 'done', program: PROGRAM });
+    expect(DELETE).toHaveBeenCalledWith('/v1/program/cardio');
   });
 
   test("rebuilt from the user's training days", async () => {
