@@ -121,7 +121,10 @@ class FirstDecisionNotBeforeMondayTests {
                 .hasStatusOk();
     }
 
-    /** A man starting a cut, today's own weigh-in an hour ago (as DecisionServiceTests). */
+    /**
+     * A man starting a cut, today's own weigh-in an hour ago (as DecisionServiceTests), never before today's midnight (UTC): between 00:00 and 01:00
+     * an hour ago is yesterday, and the trend would show a day the test doesn't expect.
+     */
     private AccountId ready() {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
@@ -129,8 +132,15 @@ class FirstDecisionNotBeforeMondayTests {
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
         assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
-                Instant.now().minusSeconds(3600).toString(), "kg", 82.4, "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
+                todayAnHourAgo().toString(), "kg", 82.4, "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
         return account;
+    }
+
+    private static Instant todayAnHourAgo() {
+        Instant now = Instant.now();
+        Instant midnight = LocalDate.ofInstant(now, ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant hourAgo = now.minusSeconds(3600);
+        return hourAgo.isBefore(midnight) ? midnight : hourAgo;
     }
 
     private static Map<String, Object> pick(Map<String, Object> call) {
