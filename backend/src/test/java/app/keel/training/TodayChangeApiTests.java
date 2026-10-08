@@ -71,7 +71,7 @@ class TodayChangeApiTests {
 
         assertThat(sessions(program)).extracting(session -> session.get("date")).containsExactly("2026-10-07", "2026-10-08", "2026-10-10");
         assertThat(sessions(program).getFirst()).isEqualTo(Map.of("programDayId", dayId(program, 0), "date", "2026-10-07",
-                "exerciseIds", List.of("bench_press", "overhead_press", "barbell_row", "triceps_pushdown")));
+                "exerciseIds", List.of("bench_press", "overhead_press", "barbell_row", "triceps_pushdown", "incline_dumbbell_press")));
         assertThat(move(program, 1, "squat").get("swapOptions")).isEqualTo(List.of("hack_squat", "leg_press", "bulgarian_split_squat"));
     }
 
@@ -152,7 +152,8 @@ class TodayChangeApiTests {
 
         Map<String, Object> swapped = map(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "bench_press", "dumbbell_bench_press", "TODAY")));
 
-        assertThat(sessions(swapped).getFirst().get("exerciseIds")).isEqualTo(List.of("dumbbell_bench_press", "overhead_press", "barbell_row", "triceps_pushdown"));
+        assertThat(sessions(swapped).getFirst().get("exerciseIds"))
+                .isEqualTo(List.of("dumbbell_bench_press", "overhead_press", "barbell_row", "triceps_pushdown", "incline_dumbbell_press"));
         assertThat(swapped.get("days")).isEqualTo(program.get("days"));
         Map<String, Object> back = map(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "bench_press", "bench_press", "TODAY")));
         assertThat(sessions(back)).isEqualTo(sessions(program));
@@ -173,11 +174,7 @@ class TodayChangeApiTests {
         assertThat(send(account, "PUT", "/v1/program/starting-weights", Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80)))))
                 .hasStatusOk();
         // Hack squats done last week: the move's own history.
-        MvcTestResult started = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-10-01T15:00:00Z"));
-        assertThat(started).hasStatus(201);
-        String workout = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
-        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "hack_squat",
-                "setType", "WORKING", "loadKg", 100, "reps", 8, "rir", 1))).hasStatus(201);
+        logged(account, "2026-10-01T15:00:00Z", null, "hack_squat", 100);
         Map<String, Object> before = map(send(account, "GET", "/v1/program", null));
         List<ProgramPeriod> history = programs.history(account);
 
@@ -202,9 +199,123 @@ class TodayChangeApiTests {
         assertThat(map(undo).get("program")).isEqualTo(swapped);
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void aSwapForTodayIsAPlannedMoveOfItsOwnWithItsHistoryAndTable() throws Exception {
+        // ADR-073 #6, ADR-075 #3: the move in its place has the planned move's sets and range, no target, its own last time.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        logged(account, "2026-10-01T15:00:00Z", null, "dumbbell_bench_press", 30);
+
+        Map<String, Object> swapped = map(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "bench_press", "dumbbell_bench_press", "TODAY")));
+
+        List<Map<String, Object>> swaps = (List<Map<String, Object>>) sessions(swapped).getFirst().get("swaps");
+        assertThat(swaps).hasSize(1);
+        assertThat(swaps.getFirst()).containsEntry("insteadOf", "bench_press");
+        Map<?, ?> exercise = (Map<?, ?>) swaps.getFirst().get("exercise");
+        Map<?, ?> bench = move(program, 0, "bench_press");
+        assertThat(exercise.get("exerciseId")).isEqualTo("dumbbell_bench_press");
+        assertThat(exercise.get("baseSets")).isEqualTo(bench.get("baseSets"));
+        assertThat(exercise.get("reps")).isEqualTo(bench.get("reps"));
+        assertThat(exercise.containsKey("nextLoadKg")).as("no target").isFalse();
+        assertThat(new BigDecimal(String.valueOf(((Map<?, ?>) exercise.get("lastBestSet")).get("loadKg")))).isEqualByComparingTo("30");
+        assertThat(exercise.containsKey("lighterLoadKg")).as("its in-session table, from its last time").isTrue();
+        assertThat(sessions(program).getFirst()).doesNotContainKey("swaps");
+    }
+
+    @Test
+    void aSessionStartedTodayIsNotMovedSkippedOrSwappedForToday() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        String workout = logged(account, "2026-10-07T11:00:00Z", dayId(program, 0), "bench_press", 80);
+
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "MOVE"))).hasStatus(409);
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SKIP"))).hasStatus(409);
+        assertThat(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "overhead_press", "dumbbell_shoulder_press", "TODAY"))).hasStatus(409);
+        // Finished, the same: a session done is done.
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-10-07T11:50:00Z", "uncleanExerciseIds", List.of())))
+                .hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SKIP"))).hasStatus(409);
+        assertThat(sessions(map(send(account, "GET", "/v1/program", null)))).isEqualTo(sessions(program));
+        // Running short of time in the middle of it is still allowed; a swap from now on is the program's.
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SHORT"))).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "overhead_press", "dumbbell_shoulder_press", "FROM_NOW_ON")))
+                .hasStatusOk();
+    }
+
+    @Test
+    void aSessionStartedYesterdayOrForAnotherDayDoesNotHoldTodaysBack() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        logged(account, "2026-10-06T23:30:00Z", dayId(program, 0), "bench_press", 80);
+        logged(account, "2026-10-07T08:00:00Z", dayId(program, 1), "squat", 100);
+
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SKIP"))).hasStatusOk();
+    }
+
+    @Test
+    void aSwapFromNowOnEndsTodaysSwapOfThatMoveSoItIsNotRevivedLater() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        Object push = dayId(program, 0);
+
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "dumbbell_bench_press", "TODAY"))).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "machine_chest_press", "FROM_NOW_ON"))).hasStatusOk();
+        Map<String, Object> back = map(send(account, "POST", "/v1/program/swap", swap(push, "machine_chest_press", "bench_press", "FROM_NOW_ON")));
+
+        assertThat(sessions(back).getFirst().get("exerciseIds")).isEqualTo(List.of("bench_press", "overhead_press", "barbell_row", "triceps_pushdown", "incline_dumbbell_press"));
+        assertThat(sessions(back).getFirst()).doesNotContainKey("swaps");
+    }
+
+    @Test
+    void aSwapForTodayIsCheckedAgainstTheSessionAfterTodaysEarlierSwaps() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        Object push = dayId(program, 0);
+        assertThat(move(program, 0, "incline_dumbbell_press").get("swapOptions")).asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST)
+                .contains("dumbbell_bench_press");
+
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "dumbbell_bench_press", "TODAY"))).hasStatusOk();
+
+        // Dumbbell bench presses are in the session already: not twice.
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "incline_dumbbell_press", "dumbbell_bench_press", "TODAY"))).hasStatus(400);
+        // The same move swapped again for another one is fine.
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "machine_chest_press", "TODAY"))).hasStatusOk();
+    }
+
+    @Test
+    void aMovedSessionIsFreshOnItsNewDayTheShortVersionAndTodaysSwapsStay() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        Object push = dayId(program, 0);
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "SHORT"))).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "dumbbell_bench_press", "TODAY"))).hasStatusOk();
+
+        Map<String, Object> moved = map(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "MOVE")));
+
+        Map<String, Object> session = sessions(moved).getFirst();
+        assertThat(session).containsEntry("programDayId", push).containsEntry("date", "2026-10-08").containsEntry("moved", true)
+                .containsEntry("exerciseIds", List.of("bench_press", "overhead_press", "barbell_row", "triceps_pushdown", "incline_dumbbell_press")).doesNotContainKey("short").doesNotContainKey("swaps");
+    }
+
+    /** A workout begun at {@code startedAt} (of a program day or none) with one working set of the move; its id. */
+    private String logged(AccountId account, String startedAt, Object programDayId, String exercise, int kg) throws Exception {
+        Map<String, Object> body = new HashMap<>(Map.of("clientId", UUID.randomUUID(), "startedAt", startedAt));
+        if (programDayId != null) {
+            body.put("programDayId", programDayId);
+        }
+        MvcTestResult started = send(account, "POST", "/v1/workouts", body);
+        assertThat(started).hasStatus(201);
+        String workout = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", exercise,
+                "setType", "WORKING", "loadKg", kg, "reps", 8, "rir", 1))).hasStatus(201);
+        return workout;
+    }
+
     private static Map<String, Object> week(String... weekdays) {
         List<Map<String, Object>> days = List.of(
-                day("Push", compound("bench_press"), compound("overhead_press"), compound("barbell_row"), isolation("triceps_pushdown")),
+                day("Push", compound("bench_press"), compound("overhead_press"), compound("barbell_row"), isolation("triceps_pushdown"),
+                        compound("incline_dumbbell_press")),
                 day("Legs", compound("squat"), compound("romanian_deadlift")),
                 day("Pull", compound("lat_pulldown"), isolation("barbell_curl")),
                 day("Arms", isolation("dumbbell_curl")),

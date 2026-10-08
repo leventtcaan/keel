@@ -40,19 +40,27 @@ class SwapOptionsTests {
     }
 
     @Test
-    void onlyWhatTheGymHasTheEquipmentFor() {
-        Optional<GymStore.Gym> dumbbellsOnly = gym(null, List.of(), List.of(kg("10"), kg("12.5")), null, Map.of());
+    void aGymWithoutABarbellIsOfferedNoBarbellMove() {
+        // The gym profile says "no barbell" by leaving the bar out (ADR-032, GymInput.barKg).
+        Optional<GymStore.Gym> noBar = gym(null, List.of(kg("20"), kg("10")), List.of(kg("10"), kg("12.5")), kg("5"), Map.of());
 
-        assertThat(SwapOptions.of("squat", List.of(), catalog, dumbbellsOnly)).containsExactly("bulgarian_split_squat");
-        // Bodyweight needs nothing; a cable or machine only where the gym gives a stack step for it.
-        assertThat(SwapOptions.of("lat_pulldown", List.of(), catalog, dumbbellsOnly)).containsExactly("pull_up");
-        assertThat(SwapOptions.of("lat_pulldown", List.of(), catalog, gym(null, List.of(), List.of(), null, Map.of("close_grip_lat_pulldown", kg("5")))))
-                .containsExactly("pull_up", "close_grip_lat_pulldown");
-        Optional<GymStore.Gym> full = gym(kg("20"), List.of(kg("20"), kg("10")), List.of(kg("10")), kg("5"), Map.of());
-        assertThat(SwapOptions.of("squat", List.of(), catalog, full)).containsExactly("hack_squat", "leg_press", "bulgarian_split_squat");
-        // A bar without plates makes no load: no barbell move.
+        assertThat(SwapOptions.of("dumbbell_bench_press", List.of(), catalog, noBar)).containsExactly("machine_chest_press", "dip", "incline_dumbbell_press",
+                "push_up");
+        assertThat(SwapOptions.of("dumbbell_shoulder_press", List.of(), catalog, noBar)).isEmpty();
+        // With a bar, plates or not: the barbell moves are back.
         assertThat(SwapOptions.of("dumbbell_bench_press", List.of(), catalog, gym(kg("20"), List.of(), List.of(kg("10")), kg("5"), Map.of())))
-                .containsExactly("machine_chest_press", "dip", "incline_dumbbell_press", "push_up");
+                .containsExactly("bench_press", "machine_chest_press", "dip", "incline_dumbbell_press", "push_up");
+    }
+
+    @Test
+    void whatTheGymSaysNothingAboutIsNotTakenAway() {
+        // The profile cannot say "no machine", "no cable", "no sled" or "no dumbbells" (ADR-032, orchestrator decision on K-964):
+        // without a stack step, a machine listed, plates or dumbbells, those moves stay.
+        Optional<GymStore.Gym> barOnly = gym(kg("20"), List.of(), List.of(), null, Map.of());
+
+        assertThat(SwapOptions.of("lat_pulldown", List.of(), catalog, barOnly)).containsExactly("pull_up", "close_grip_lat_pulldown");
+        assertThat(SwapOptions.of("squat", List.of(), catalog, barOnly)).containsExactly("hack_squat", "leg_press", "bulgarian_split_squat");
+        assertThat(SwapOptions.of("pec_deck", List.of(), catalog, barOnly)).containsExactly("cable_fly");
     }
 
     @Test

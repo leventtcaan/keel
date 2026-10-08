@@ -1,6 +1,5 @@
 package app.keel.engine;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -11,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * The coach's own questions between the weekly calls (K-512, ADR-039): the coaching triggers (G5 §2), asked in the app — never
@@ -44,6 +44,8 @@ public final class Prompts {
      * @param phase the plan's direction; none before the first call
      * @param steps the step count of each day that has one
      * @param stepTarget the plan's step target on each day: a week is judged against the target it had (K-220 review)
+     * @param plannedOn whether the plan has a session on a day: its training weekdays, a session moved that week on the day
+     *     it was moved to (K-964)
      * @param trainingDaysSince the day the program began asking for these training days
      * @param sessionDays the days a session was done (a set past the warm-ups, K-431)
      * @param pausedDays the days nothing was asked: a state declared (ADR-038), a week off the ladder gave
@@ -54,7 +56,7 @@ public final class Prompts {
      * @param declaredNow a state is in force today
      */
     public record Facts(LocalDate today, Optional<Phase> phase, Map<LocalDate, Integer> steps, Function<LocalDate, Integer> stepTarget,
-            List<DayOfWeek> trainingDays,
+            Predicate<LocalDate> plannedOn,
             LocalDate trainingDaysSince, List<LocalDate> sessionDays, Set<LocalDate> pausedDays, Set<LocalDate> lighterDays,
             boolean loadsDroppedLastWeek, Optional<LocalDate> deficitBegan, boolean declaredNow) {
     }
@@ -129,7 +131,7 @@ public final class Prompts {
             return Optional.empty();
         }
         List<LocalDate> missed = from.datesUntil(facts.today())
-                .filter(day -> facts.trainingDays().contains(day.getDayOfWeek()) && !facts.pausedDays().contains(day)).toList();
+                .filter(day -> facts.plannedOn().test(day) && !facts.pausedDays().contains(day)).toList();
         return missed.size() < parameters.wholeNumber(ParameterKey.MISSED_SESSIONS_IN_A_ROW) ? Optional.empty() : Optional.of(missed.getFirst());
     }
 

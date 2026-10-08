@@ -8,6 +8,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * The first week as the call that closes it reads it (K-962, ADR-077 #4). The first week runs from the account's first
@@ -29,11 +30,17 @@ final class FirstWeekFacts {
     /** The first week, when the check-in of {@code weekOf} closes it; empty for any other check-in. */
     static Optional<FirstWeekAdjustment.Week> of(LocalDate began, DayOfWeek checkInDay, LocalDate weekOf, Set<DayOfWeek> trainingDays,
             Set<LocalDate> sessionDays, int daysPerWeek, Optional<Experience> experience) {
+        return of(began, checkInDay, weekOf, day -> trainingDays.contains(day.getDayOfWeek()), sessionDays, daysPerWeek, experience);
+    }
+
+    /** As above, planned on the days {@code plannedOn} says: a session moved that week counts where it was moved (K-964). */
+    static Optional<FirstWeekAdjustment.Week> of(LocalDate began, DayOfWeek checkInDay, LocalDate weekOf, Predicate<LocalDate> plannedOn,
+            Set<LocalDate> sessionDays, int daysPerWeek, Optional<Experience> experience) {
         if (!weekOf.equals(closingCheckIn(began, checkInDay))) {
             return Optional.empty();
         }
         List<LocalDate> after = began.plusDays(1).datesUntil(weekOf).toList();
-        List<LocalDate> planned = after.stream().filter(day -> trainingDays.contains(day.getDayOfWeek())).toList();
+        List<LocalDate> planned = after.stream().filter(plannedOn).toList();
         int signupDay = sessionDays.contains(began) ? 1 : 0;
         int done = (int) after.stream().filter(sessionDays::contains).count() + signupDay;
         List<DayOfWeek> missed = planned.stream().filter(day -> !sessionDays.contains(day)).map(LocalDate::getDayOfWeek).toList();

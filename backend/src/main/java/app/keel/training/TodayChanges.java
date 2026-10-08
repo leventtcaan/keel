@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Today's session changed (K-964, ADR-073 #5, Ek 2), pure: one week's sessions on the calendar, Monday to Sunday (the
+ * Today's session changed (K-964, ADR-073 #5, Ek 3), pure: one week's sessions on the calendar, Monday to Sunday (the
  * consistency week), each program day on its weekday unless moved; the short version, today's swaps, a skip; a move to
  * tomorrow that never passes Sunday. The program is never changed here: a skip adds no catch-up and plans nothing again
  * (U7, ADR-071 #3).
@@ -53,10 +53,25 @@ final class TodayChanges {
             }
             return new Change(onDate, skipped, shortVersion, next);
         }
+
+        /**
+         * Today's swaps once {@code planned} is swapped for {@code to} from now on: the one of {@code planned} is the plan now,
+         * and one to {@code to} would put that move in the session twice.
+         */
+        Change withoutSwapsOf(String planned, String to) {
+            Map<String, String> next = new LinkedHashMap<>(swaps);
+            next.remove(planned);
+            next.values().removeIf(to::equals);
+            return new Change(onDate, skipped, shortVersion, next);
+        }
     }
 
-    /** A program day's session this week; {@code exerciseIds} its moves that day (today's swaps and the short version applied). */
-    record Session(UUID programDayId, LocalDate date, boolean moved, boolean skipped, boolean shortVersion, List<String> exerciseIds) {
+    /**
+     * A program day's session this week; {@code exerciseIds} its moves that day (today's swaps and the short version applied),
+     * {@code swaps} today's swaps in force (planned move → the one in its place).
+     */
+    record Session(UUID programDayId, LocalDate date, boolean moved, boolean skipped, boolean shortVersion, List<String> exerciseIds,
+            Map<String, String> swaps) {
     }
 
     private static final int DAYS_PER_WEEK = 7;
@@ -77,7 +92,7 @@ final class TodayChanges {
         for (int d = 0; d < days.size(); d++) {
             ProgramStore.Day day = days.get(d);
             Change change = changes.getOrDefault(day.id(), Change.NONE);
-            LocalDate planned = day.weekday() == null ? null : monday.plusDays(day.weekday().getValue() - (long) Consistency.WEEK_STARTS_ON.getValue());
+            LocalDate planned = plannedDate(day, monday);
             LocalDate date = change.onDate() != null ? change.onDate() : planned;
             if (date == null) {
                 continue;
@@ -86,10 +101,18 @@ final class TodayChanges {
             if (change.shortVersion() && moves.size() > shortMoves) {
                 moves = moves.subList(0, shortMoves);
             }
-            placed.add(new Placed(d, new Session(day.id(), date, !date.equals(planned), change.skipped(), change.shortVersion(), List.copyOf(moves))));
+            Map<String, String> swaps = new LinkedHashMap<>(change.swaps());
+            swaps.keySet().retainAll(day.exercises().stream().map(ProgramStore.PlannedExercise::exerciseId).toList());
+            placed.add(new Placed(d, new Session(day.id(), date, !date.equals(planned), change.skipped(), change.shortVersion(), List.copyOf(moves),
+                    Map.copyOf(swaps))));
         }
         return placed.stream().sorted(Comparator.comparing((Placed p) -> p.session().date()).thenComparingInt(Placed::order)).map(Placed::session)
                 .toList();
+    }
+
+    /** The day {@code day} is on in the week of {@code monday} by its weekday; null on no weekday. */
+    static LocalDate plannedDate(ProgramStore.Day day, LocalDate monday) {
+        return day.weekday() == null ? null : monday.plusDays(day.weekday().getValue() - (long) Consistency.WEEK_STARTS_ON.getValue());
     }
 
     /** The sessions on {@code day} not skipped: the ones to train that day. */

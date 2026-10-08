@@ -28,8 +28,10 @@ public class TrainingStatusReader {
     private final TrainingLog log;
     private final TrainingCalls calls;
     private final ExerciseCatalog catalog;
+    private final SessionChangeStore sessionChanges;
 
-    TrainingStatusReader(ProgramStore programs, TrainingLog log, TrainingCalls calls, ExerciseCatalog catalog) {
+    TrainingStatusReader(ProgramStore programs, TrainingLog log, TrainingCalls calls, ExerciseCatalog catalog, SessionChangeStore sessionChanges) {
+        this.sessionChanges = sessionChanges;
         this.programs = programs;
         this.log = log;
         this.calls = calls;
@@ -61,6 +63,15 @@ public class TrainingStatusReader {
     public Set<DayOfWeek> programDays(AccountId account) {
         return programs.current(account).map(program -> program.days().stream().map(ProgramStore.Day::weekday)
                 .filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet())).orElse(Set.of());
+    }
+
+    /**
+     * The days the account's program plans a session on from {@code from} to {@code to} (K-964): its weekdays, a session
+     * moved in its week on the day it was moved to instead (a skipped one stays planned). Empty without a program.
+     */
+    public Optional<PlannedDays> plannedDays(AccountId account, LocalDate from, LocalDate to) {
+        return programs.current(account).map(program -> PlannedDays.of(program.days(),
+                sessionChanges.between(account, TodayChanges.monday(from), TodayChanges.monday(to))));
     }
 
     /**

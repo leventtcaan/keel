@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -22,6 +23,19 @@ class FirstWeekFactsTests {
     private static final LocalDate NEXT_MONDAY = LocalDate.of(2026, 10, 12);
     private static final Set<DayOfWeek> MON_WED_FRI = Set.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY);
     private static final Optional<Experience> EXPERIENCED = Optional.of(Experience.Y1_3);
+
+    @Test
+    void aSessionMovedOffItsWeekdayIsPlannedWhereItWasMoved() {
+        // Begun on a Tuesday, Mon/Wed/Fri; Wednesday's session moved to Thursday (K-964) and done there, Friday's done.
+        LocalDate tuesday = WEDNESDAY.minusDays(1);
+        LocalDate thursday = WEDNESDAY.plusDays(1);
+        Predicate<LocalDate> moved = day -> !day.equals(WEDNESDAY) && (day.equals(thursday) || MON_WED_FRI.contains(day.getDayOfWeek()));
+
+        Optional<FirstWeekAdjustment.Week> week = FirstWeekFacts.of(tuesday, DayOfWeek.MONDAY, NEXT_MONDAY, moved,
+                Set.of(thursday, WEDNESDAY.plusDays(2)), 3, EXPERIENCED);
+
+        assertThat(week).contains(new FirstWeekAdjustment.Week(2, 2, 3, List.of(), EXPERIENCED));
+    }
 
     @Test
     void theFirstCheckInDayAfterTheFirstDayClosesIt() {

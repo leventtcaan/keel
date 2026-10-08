@@ -32,12 +32,17 @@ class SessionChangeStore {
 
     /** The changes to the week of {@code monday}, by program day. */
     Map<UUID, TodayChanges.Change> week(AccountId account, LocalDate monday) {
-        return rows(account, "and week_of = :monday", monday).stream().collect(Collectors.toMap(Row::programDayId, Row::change));
+        return between(account, monday, monday).stream().collect(Collectors.toMap(Row::programDayId, Row::change));
+    }
+
+    /** The changes to the weeks from the one of Monday {@code from} to the one of Monday {@code to}, oldest week first. */
+    List<Row> between(AccountId account, LocalDate from, LocalDate to) {
+        return rows(account, "and week_of between :from and :to", from, to);
     }
 
     /** Every change kept, oldest week first (the account's data, K-214). */
     List<Row> all(AccountId account) {
-        return rows(account, "", null);
+        return rows(account, "", null, null);
     }
 
     /** The day's change in that week, in place of the one kept. The caller holds the program's lock (ProgramStore#locked). */
@@ -52,12 +57,12 @@ class SessionChangeStore {
                 .update();
     }
 
-    private List<Row> rows(AccountId account, String where, LocalDate monday) {
+    private List<Row> rows(AccountId account, String where, LocalDate from, LocalDate to) {
         var query = jdbc.sql("""
                 select program_day_id, week_of, on_date, skipped, short_version, swaps::text as swaps from training.session_change
                 where account_id = :account %s order by week_of, program_day_id""".formatted(where)).param("account", account.value());
-        if (monday != null) {
-            query = query.param("monday", monday);
+        if (from != null) {
+            query = query.param("from", from).param("to", to);
         }
         return query.query((row, n) -> new Row(row.getObject("program_day_id", UUID.class), row.getObject("week_of", LocalDate.class),
                 new TodayChanges.Change(row.getObject("on_date", LocalDate.class), row.getBoolean("skipped"), row.getBoolean("short_version"),

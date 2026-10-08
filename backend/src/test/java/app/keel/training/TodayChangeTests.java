@@ -70,9 +70,22 @@ class TodayChangeTests {
     void todaysSwapIsInTheSessionAndTheShortVersionCountsItsPlace() {
         Map<UUID, TodayChanges.Change> changes = Map.of(UPPER.id(), TodayChanges.Change.NONE.swapped("barbell_row", "seated_row").shortened());
 
-        assertThat(TodayChanges.week(List.of(UPPER), MONDAY, changes, SHORT).getFirst().exerciseIds())
-                .containsExactly("bench_press", "seated_row", "overhead_press");
+        TodayChanges.Session upper = TodayChanges.week(List.of(UPPER), MONDAY, changes, SHORT).getFirst();
+        assertThat(upper.exerciseIds()).containsExactly("bench_press", "seated_row", "overhead_press");
+        assertThat(upper.swaps()).as("each swap in force, by the planned move").isEqualTo(Map.of("barbell_row", "seated_row"));
+        // A swap kept for a move the day no longer has is not in force.
+        assertThat(TodayChanges.week(List.of(UPPER), MONDAY, Map.of(UPPER.id(), TodayChanges.Change.NONE.swapped("squat", "leg_press")), SHORT)
+                .getFirst().swaps()).isEmpty();
         assertThat(TodayChanges.Change.NONE.swapped("barbell_row", "seated_row").swapped("barbell_row", "barbell_row").swaps()).isEmpty();
+    }
+
+    @Test
+    void aSwapFromNowOnEndsTodaysSwapOfThatMoveAndAnyOneToItsNewMove() {
+        TodayChanges.Change today = TodayChanges.Change.NONE.swapped("squat", "leg_press").swapped("romanian_deadlift", "hack_squat").shortened();
+
+        assertThat(today.withoutSwapsOf("squat", "bulgarian_split_squat").swaps()).isEqualTo(Map.of("romanian_deadlift", "hack_squat"));
+        assertThat(today.withoutSwapsOf("squat", "hack_squat").swaps()).isEmpty();
+        assertThat(today.withoutSwapsOf("squat", "hack_squat").shortVersion()).isTrue();
     }
 
     @Test
