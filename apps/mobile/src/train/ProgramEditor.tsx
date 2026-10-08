@@ -84,7 +84,6 @@ function DayEditor({ day, at, alone, taken, moves, byId, onChange, makeOwn }: Da
       onPress={() => onChange((all) => withoutDay(all, at))}
     />
   );
-  const none = day.moves.length === 0 ? <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.noMoves')}</Text> : null;
   return (
     <View style={[styles.day, { borderColor: color.line }]}>
       <TextField
@@ -106,7 +105,6 @@ function DayEditor({ day, at, alone, taken, moves, byId, onChange, makeOwn }: Da
           />
         ))}
       </View>
-      {none}
       {day.moves.map((move, index) => (
         <MoveEditor key={move.exerciseId} move={move} name={exerciseName(move.exerciseId, byId)} onChange={(change) => onChange((all) => change(all, at, index))} />
       ))}

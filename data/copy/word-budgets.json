@@ -88,9 +88,25 @@
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-968",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/program-type.tsx",
+      "keys": [
+        "onboarding.typeProgram.title",
+        "onboarding.typeProgram.why",
+        "programEditor.dayName",
+        "programEditor.defaultName",
+        "programEditor.weekday",
+        "programEditor.weekdayShort.MONDAY",
+        "programEditor.weekdayShort.TUESDAY",
+        "programEditor.weekdayShort.WEDNESDAY",
+        "programEditor.weekdayShort.THURSDAY",
+        "programEditor.weekdayShort.FRIDAY",
+        "programEditor.weekdayShort.SATURDAY",
+        "programEditor.weekdayShort.SUNDAY",
+        "workout.add.open",
+        "programEditor.addDay",
+        "onboarding.typeProgram.confirm"
+      ],
+      "notFirstView": ["import.loadingMoves", "import.noMoves", "onboarding.programImport.saving"]
     },
     {
       "screen": "ob-review",

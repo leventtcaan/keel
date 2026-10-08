@@ -67,7 +67,6 @@ export default function ProgramTypeStep() {
     <View style={styles.actions}>
       {shown}
       {saving && note('onboarding.programImport.saving')}
-      {!ready && note('onboarding.typeProgram.waiting')}
       <Button label={t('onboarding.typeProgram.confirm')} disabled={!ready || saving} onPress={confirm} />
     </View>
   );
