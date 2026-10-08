@@ -353,14 +353,35 @@ class DecisionService {
      * it is judged (K-114). Without a weigh-in there is no estimate yet; the engine says there is not enough data.
      */
     private CallStore.Plan firstPlan(Week week) {
-        Phase phase = switch (week.profile().goal()) {
+        return new CallStore.Plan(startingPhase(week.profile(), week.fatEstimate(), week.parameters()), week.today(), week.today(), estimate(week),
+                true, null);
+    }
+
+    /** The direction the user chose; "Decide for me", the phase gate on the fat estimate — without one, a cut (ADR-027 #17, G4 K-4). */
+    private static Phase startingPhase(ProfileFacts profile, Optional<FatEstimate.Estimate> fat, Parameters p) {
+        return switch (profile.goal()) {
             case LOSE_FAT -> Phase.CUT;
             case BUILD_MUSCLE -> Phase.BULK;
-            // The phase gate on the fat estimate; without one, a cut (ADR-027 #17, G4 K-4).
-            case DECIDE_FOR_ME -> PhaseGate.startingPhase(week.fatEstimate().map(FatEstimate.Estimate::lowerPct),
-                    week.fatEstimate().map(FatEstimate.Estimate::higherPct), week.parameters());
+            case DECIDE_FOR_ME -> PhaseGate.startingPhase(fat.map(FatEstimate.Estimate::lowerPct), fat.map(FatEstimate.Estimate::higherPct), p);
         };
-        return new CallStore.Plan(phase, week.today(), week.today(), estimate(week), true, null);
+    }
+
+    /**
+     * The phase in force, for training's cardio (K-959, ADR-074 #1, through CurrentPhase): the plan's, or before the first
+     * call the one the first plan would start with, as the check-in would start it. None without a profile. No consent
+     * check: without the health data consent there is no plan nor measurement to read (K-231), and the goal decides.
+     */
+    @Transactional(readOnly = true)
+    Optional<Phase> phaseNow(AccountId account) {
+        Optional<CallStore.Plan> plan = calls.plan(account);
+        if (plan.isPresent()) {
+            return Optional.of(plan.get().phase());
+        }
+        return profiles.of(account).map(profile -> {
+            Parameters p = parameters.forSex(Sex.valueOf(profile.sex().name()));
+            FatInputs fat = fatInputs(account, profile, LocalDate.now(clock.withZone(profile.timeZone())), p);
+            return startingPhase(profile, FatEstimate.of(fat.fromLook(), fat.fromWaist()), p);
+        });
     }
 
     /** The maintenance estimate at the last weigh-in of the window (K-114); none without one. */

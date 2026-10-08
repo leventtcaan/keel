@@ -44,7 +44,9 @@ class ContractTests {
     // Calorie numbers that are not estimates (U5: "a target and a decision may be one number"): the plan's daily target
     // and a decision's step, and a device's own reading passed through as given.
     private static final Set<String> SINGLE_CALORIE_NUMBERS = Set.of("Targets.targetKcal", "DayBudget.targetKcal",
-            "AdjustCalories.kcalPerDay", "IncreaseCalories.kcalPerDay", "ActivityDay.activeEnergyKcal");
+            "AdjustCalories.kcalPerDay", "IncreaseCalories.kcalPerDay", "ActivityDay.activeEnergyKcal",
+            // What an Apple Watch measured during a cardio session (K-959, ADR-074 #5).
+            "NewCardioSession.activeEnergyKcal");
     private static final Set<String> RANGES = Set.of("#/components/schemas/KcalRange", "#/components/schemas/KcalBalance");
     private static final Pattern FAT_NUMBER = Pattern.compile(
             "(?i)body.?fat|fat.?(pct|percent|proxy|ratio|free)|fat_?mass|percent.?fat|lean.?mass|\\bffm\\b|body.?composition");
@@ -112,6 +114,40 @@ class ContractTests {
         assertThat(map(properties(suggestion).get("reason")).get("$ref")).isEqualTo("#/components/schemas/Reason");
         assertThat(properties(map(schemas.get("Program")))).containsKey("review");
         assertThat(list(map(schemas.get("Program")).get("required"))).doesNotContain("review");
+    }
+
+    @Test
+    void theProgramsCardioIsTheServersAndTheEnginesFieldForField() throws Exception {
+        // K-959 (ADR-074): optional on the program, for the phones that read it before; its places and sources the engine's.
+        Map<String, Object> schemas = schemas();
+        Map<String, Object> program = map(schemas.get("Program"));
+
+        assertThat(properties(program)).containsKey("cardio");
+        assertThat(list(program.get("required"))).doesNotContain("cardio");
+        assertThat(properties(map(schemas.get("ProgramCardio"))).keySet())
+                .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.training.ProgramController$ProgramCardio")));
+        assertThat(properties(map(schemas.get("PlannedCardio"))).keySet())
+                .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.training.ProgramController$PlannedCardio")));
+        assertThat(properties(map(schemas.get("CardioPlan"))).keySet())
+                .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.training.ProgramController$CardioPlan")));
+        assertThat(list(map(schemas.get("CardioPlace")).get("enum"))).containsExactlyElementsOf(names(app.keel.engine.CardioPlacement.values()));
+        assertThat(list(map(schemas.get("CardioSource")).get("enum"))).containsExactlyElementsOf(names(app.keel.engine.CardioOrigin.values()));
+    }
+
+    @Test
+    void aCardioSessionIsTheServersFieldForFieldItsEnergyOnlyAWatchsOwnReading() throws Exception {
+        // ADR-074 #5: the active energy an Apple Watch measured, passed through, optional (no watch, no number).
+        Map<String, Object> schemas = schemas();
+        Map<String, Object> session = map(schemas.get("NewCardioSession"));
+
+        assertThat(properties(session).keySet())
+                .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.training.CardioController$NewCardioSession")));
+        assertThat(list(session.get("required"))).doesNotContain("activeEnergyKcal");
+        assertThat(SINGLE_CALORIE_NUMBERS).contains("NewCardioSession.activeEnergyKcal");
+        assertThat(list(map(schemas.get("CardioLogSource")).get("enum")))
+                .containsExactlyElementsOf(names((Enum<?>[]) Class.forName("app.keel.training.CardioStore$Source").getEnumConstants()));
+        assertThat(map(map(map(contract().get("paths")).get("/v1/cardio-sessions")).get("post")).get("operationId")).isEqualTo("logCardioSession");
+        assertThat(map(map(map(contract().get("paths")).get("/v1/program/cardio")).get("put")).get("operationId")).isEqualTo("putProgramCardio");
     }
 
     private static List<String> componentNames(Class<?> record) {

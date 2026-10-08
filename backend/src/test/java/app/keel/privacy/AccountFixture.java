@@ -63,6 +63,10 @@ final class AccountFixture {
         Map<?, ?> review = (Map<?, ?>) JSON.readValue(program.getResponse().getContentAsString(), Map.class).get("review");
         send(account, "POST", "/v1/program/review/apply", Map.of("reviewId", review.get("id"),
                 "suggestionIds", List.of(((Map<?, ?>) ((List<?>) review.get("suggestions")).getFirst()).get("id"))));
+        // The user's own cardio and a session done with the watch's energy (K-959): training data, its energy health data.
+        send(account, "PUT", "/v1/program/cardio", Map.of("minutes", 30, "sessions", List.of(Map.of("weekday", "MONDAY", "place", "AFTER_LIFT"))));
+        send(account, "POST", "/v1/cardio-sessions", Map.of("clientId", UUID.randomUUID(), "day", "2026-09-30", "minutes", 30, "source", "APPLE_HEALTH",
+                "activeEnergyKcal", 280));
         // A gym with every part of its equipment (K-414): its plates, dumbbells and machines are rows too.
         send(account, "PUT", "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "barKg", 20, "platesKg", List.of(20, 10),
                 "dumbbellsKg", List.of(10, 12), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "pec_deck", "stepKg", 7))));
