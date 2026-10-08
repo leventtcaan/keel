@@ -899,16 +899,20 @@ paths:
     post:
       tags: [training]
       operationId: changeToday
-      summary: Change today's session ("Short on time", "Move it", "Skip today")
+      summary: Change today's session ("Short on time", "Move it", "Skip today"), or change it back
       description: |
-        Today's session as the user wants it (K-964, ADR-073 #5), on the user's calendar: `programDayId` names it (the
-        session `Program.week` puts on today). SHORT: the first short_session_moves moves in the program's order; the
-        session counts for the week as any other. MOVE: to tomorrow, within the week (never past Sunday); a session already
-        on that day moves on a day with it, and so on (the week re-lays itself); a moved session is a fresh one on its new
-        day: neither the short version nor today's swaps go with it. SKIP: not done; no catch-up is added and nothing is
-        planned again (U7, ADR-071 #3). Only this week's session changes, never the program. CONFLICT (409), nothing
-        changed: that day's session is not on today, a move would pass Sunday, or (MOVE, SKIP) a workout of that day was
-        started today, under way or finished. NOT_FOUND: no program.
+        Today's session as the user wants it (K-964, ADR-073 #5), on the user's calendar (`Program.today`): `programDayId`
+        names it (the session `Program.week` puts on today). SHORT: the first short_session_moves moves in the program's
+        order; the session counts for the week as any other. FULL: the short version off again, every move back (K-995).
+        MOVE: to tomorrow, within the week (never past Sunday); a session already on that day moves on a day with it, and so
+        on (the week re-lays itself); a moved session is a fresh one on its new day: neither the short version nor today's
+        swaps go with it. SKIP: not done; no catch-up is added and nothing is planned again (U7, ADR-071 #3). UNDO (K-995):
+        today's move or skip of that day's session undone, the session as it was before it (its day, the short version,
+        today's swaps) and every session the move pushed on back on its day; `programDayId` names the session moved or
+        skipped (`WeekSession.undoable`). Nothing to undo, nothing changes (harmless twice). Only this week's session
+        changes, never the program. CONFLICT (409), nothing changed: that day's session is not on today (SHORT, FULL, MOVE,
+        SKIP), a move would pass Sunday, or (MOVE, SKIP, UNDO) a workout of that day was started today, under way or
+        finished. NOT_FOUND: no program.
       requestBody:
         required: true
         content:
@@ -2663,6 +2667,12 @@ components:
           $ref: "#/components/schemas/ProgramCardio"
         review:
           $ref: "#/components/schemas/ProgramReview"
+        today:
+          type: string
+          format: date
+          description: |
+            Today on the user's calendar (the profile's time zone, UTC without one; K-995): the day `week` and
+            POST /v1/program/today read. The app takes today from here, not from the phone's clock. This server always sends it.
         week:
           type: array
           description: |
@@ -2876,7 +2886,7 @@ components:
           format: uuid
         change:
           type: string
-          enum: [SHORT, MOVE, SKIP]
+          enum: [SHORT, FULL, MOVE, SKIP, UNDO]
     MoveSwap:
       type: object
       required: [programDayId, exerciseId, to, scope]
@@ -2909,6 +2919,17 @@ components:
           format: date
         moved:
           type: boolean
+        movedFrom:
+          type: string
+          format: date
+          description: A moved session's own day in the program (its weekday's this week), present only when moved (K-995).
+        undoable:
+          type: boolean
+          description: |
+            Present (true) only when today's move or skip of this session can be undone (POST /v1/program/today UNDO, K-995):
+            moved or skipped today and no workout of it started today.
+        workout:
+          $ref: "#/components/schemas/SessionWorkout"
         skipped:
           type: boolean
         short:
@@ -2925,6 +2946,20 @@ components:
             (`lastBestSet`) and in-session table (ADR-075 #3), like a move swapped from now on. Absent when there is none.
           items:
             $ref: "#/components/schemas/TodaySwap"
+    SessionWorkout:
+      type: object
+      description: |
+        The workout of a week's session (K-995): of its program day, the latest started this week on the user's calendar.
+        OPEN: under way, not finished (ADR-075 #5: it closes by itself later); the app continues it (`id`), never starts
+        another. DONE: finished; the app does not offer to start it again.
+      required: [id, state]
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [OPEN, DONE]
     TodaySwap:
       type: object
       required: [insteadOf, exercise]

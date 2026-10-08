@@ -215,3 +215,27 @@ testi: seçenekler salon ekipmanıyla süzülür.
   sabit hedeftir (hep 5 → 5×5); bir set bile farklıysa D1'in aralık kuralı aynen (5, 5, 6 → 5-7, `program_draft_rep_span_min`). D1'in
   "hep 8 yapan 8-10 alır" satırı bununla değişti: aralık açmanın gerekçesi (çift ilerlemenin tırmanacak yeri) sabit hedefte yok, motor
   yalnız yükü artırır. Mevcut taslak testlerinden tek tekrarlı hareketlerin beklentisi buna göre değişti (PR #484).
+
+## Ek 5 · Bugünü geri almak, sunucunun bugünü, seansın durumu (K-995 PR A, 2026-10-09, agent, teknik)
+- **`POST /v1/program/today` FULL ve UNDO.** FULL kısa sürümü kaldırır; SHORT gibi yalnız bugünün seansında ve başlamış seansta da
+  serbesttir (SHORT'un tersi: seansın ortasında zaman açılabilir; madde 7 "mevcut uçlarla aynı"). UNDO bugünkü taşımayı ya da atlamayı
+  geri alır; MOVE/SKIP gibi o günün bugün başlamış bir antrenmanı varsa CONFLICT. Geri alınacak bir şey yoksa hiçbir şey değişmez (200;
+  inceleme geri alması ve `DELETE /v1/program/cardio` gibi iki kez zararsız, çevrimdışı tekrar gönderim güvenli).
+- **Geri alma kaydı (V44 `training.session_change.undo`, JSON):** MOVE ve SKIP dokunduğu her satıra (taşınan seans ve zincirle kayan her
+  seans) `{of, on, before}` yazar: hangi günün değişikliği (`of`), hangi gün yapıldı (`on`, kullanıcının bugünü), satırın önceki hali
+  (`before`: gün, atlandı, kısa, bugünlük değişimler). UNDO `of` = o gün ve `on` = bugün olan satırları `before`'a döndürür ve kaydı
+  siler (bir düzey; yinele yok). SHORT, FULL ve değişimler kaydı olduğu gibi bırakır. **Neden kayıt, hesap değil:** zincir her seansı bir
+  gün iter, ama şimdiki halden hangi seansın bugünkü taşımayla, hangisinin önceki bir günün zinciriyle kaydığı ayırt edilemez (önceki
+  günün zinciriyle bugünden geçen seans, bugün atlanan seansın yanında); taşınan seansın kısa sürümü ve bugünlük değişimleri de taşımada
+  silinir (taze seans) ve geri gelmesi gerekir. **Reddedilen:** hafta başından yeniden hesap (geçmiş yok) · ayrı tablo (aynı satıra ait,
+  program bütün değişince satırla birlikte gider) · yalnız sonuncuyu tutan hesap düzeyinde kayıt (aynı hafta başka günün taşıması onu ezer).
+- **`Program.today`:** profilin saat dilimiyle sunucunun bugünü (profil yoksa UTC); `week` ve today ucu bunu okur. Telefon bugünü kendi
+  saatinden çıkarmaz (#493 incelemesi).
+- **`WeekSession.movedFrom`:** taşınan seansın programdaki günü (hafta gününün bu haftaki tarihi), yalnız taşınmışken. İki kez taşınan
+  seansta da asıl gün (önceki taşımanın günü değil). **`WeekSession.undoable`:** UNDO'nun geri alacağı seans (bugün taşındı ya da
+  atlandı, bugün başlamadı); telefon Undo'yu buna göre gösterir, kendisi çıkarmaz.
+- **`WeekSession.workout` (`SessionWorkout {id, state: OPEN|DONE}`):** o program gününün bu hafta (kullanıcının takviminde, pazartesi-pazar)
+  başlatılan en son antrenmanı; bitmemişse OPEN (telefon Continue ile onu açar, yenisini başlatmaz; K-961 kendiliğinden kapanır), bitmişse
+  DONE (Start yok). Haftanın herhangi bir günü sayılır: seansını gününden önce ya da sonra yapan için seans yapılmıştır (tutarlılık da
+  haftada sayar, Ek 3). İçe aktarılan seansın program günü yoktur, eşleşmez. **Reddedilen:** yalnız seansın tarihinde başlayanı saymak
+  (gününden önce yapılan seans "yapılmadı" görünürdü) · telefonda antrenman listesinden eşlemek (telefon kural işletmez).
