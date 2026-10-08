@@ -224,6 +224,56 @@ test('nothing to start below (a workout under way, or the rest skipped): rest, w
   expect(screen.queryByLabelText('Start Lower A')).toBeNull();
 });
 
+test('each move of today has its swap, named for VoiceOver, opening the swap of that planned move', async () => {
+  const swapped = { exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, swapOptions: ['push_up'] };
+  mockData = withProgram({
+    days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e, i) => ({ ...e, swapOptions: [i === 0 ? 'dumbbell_bench_press' : 'push_up'] })) }, PROGRAM.days[1]],
+    week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: ['dumbbell_bench_press', 'dip'], swaps: [{ insteadOf: 'bench_press', exercise: swapped }] }],
+  });
+  await show();
+  // Swapped for today: the card shows the move in its place, and its swap names the planned one.
+  expect(await screen.findByText('Dumbbell bench press')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('Swap Dumbbell bench press'));
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/swap', params: { day: 'a', move: 'bench_press' } });
+  expect(screen.getByLabelText('Swap Dip')).toBeTruthy();
+});
+
+test('two quick taps on a swap open one sheet', async () => {
+  mockData = withProgram({ days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e) => ({ ...e, swapOptions: ['push_up'] })) }, PROGRAM.days[1]] });
+  await show();
+  const swap = await screen.findByLabelText('Swap Bench press');
+  await fireEvent.press(swap);
+  await fireEvent.press(swap);
+  await fireEvent.press(screen.getByLabelText(t('train.changeLabel')));
+  expect(mockPush).toHaveBeenCalledTimes(1);
+});
+
+test("a workout under way: no swap on the card (the workout swaps its own moves)", async () => {
+  mockData = withProgram({ days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e) => ({ ...e, swapOptions: ['push_up'] })) }, PROGRAM.days[1]] });
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  await show();
+  expect(await screen.findByText('Continue workout')).toBeTruthy();
+  expect(screen.queryByLabelText('Swap Bench press')).toBeNull();
+});
+
+test('a move with nothing to swap to (the server sent no options) has no swap', async () => {
+  await show();
+  expect(await screen.findByText('Bench press')).toBeTruthy();
+  expect(screen.queryByLabelText('Swap Bench press')).toBeNull();
+});
+
 test("Change opens today's changes for today's session", async () => {
   await show();
   await fireEvent.press(await screen.findByLabelText(t('train.changeLabel')));
