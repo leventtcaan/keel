@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { ProblemText } from '@/components/ProblemText';
+import { ProblemText, useProblem } from '@/components/ProblemText';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { useDraft } from '@/onboarding/OnboardingContext';
@@ -19,15 +19,26 @@ import { tokens } from '@/theme/tokens';
  * nothing health later in the walk (the weight). Once allowed it can be taken back right here (Art. 7(3)): withdrawn on
  * the server, and the health answers so far leave the draft with it. While an answer is on its way, the other choice and
  * the way back are off, so the last choice made is the one recorded.
+ *
+ * Walked again after a close (K-986): the server may still hold a grant from the first walk. The screen asks again as on
+ * a first walk, and reads on opening what the phone knows (the server's answer, kept). While that is a grant, "Continue
+ * without" withdraws it the same way, before moving on (GDPR Art. 7(3): the last choice counts); one that does not go
+ * through says so and stays, and the same button tries again. Not sure what it knows: withdrawn anyway, as the server
+ * does nothing when nothing was given.
  */
 export default function HealthDataStep() {
   const { draft, update } = useDraft();
   const { api, report, withdrawHealthData, consents } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem, occurrence] = useProblem();
   const [fullText, setFullText] = useState(false);
   const sending = useRef(false); // two taps at once must not record twice
+  // Whether the server holds a grant: read on opening, then kept up to date by this screen's own answers.
+  const given = useRef<Promise<boolean> | null>(null);
+  useEffect(() => {
+    given.current = consents.granted('HEALTH_DATA').catch(() => true);
+  }, [consents]);
 
   const onward = () => router.push('/onboarding/about');
 
@@ -50,20 +61,31 @@ export default function HealthDataStep() {
     }
   }
 
+  // The same path as Settings (K-231): the server deletes what the consent covered — in onboarding nothing yet, the
+  // answers are sent at the end — and the phone forgets its health entries.
+  async function takeBack() {
+    await withdrawHealthData();
+    given.current = Promise.resolve(false);
+  }
+
   const allow = () =>
     send(
       async () => {
         await grantConsent(api, 'HEALTH_DATA');
+        given.current = Promise.resolve(true);
         await consents.remember('HEALTH_DATA', 'GRANTED').catch(() => undefined); // the phone knows at once (K-402)
       },
       () => update({ healthConsent: 'granted' }),
     );
   const withdraw = () =>
+    send(takeBack, () => update({ healthConsent: 'declined', weight: '', waist: '', avoid: '' }));
+  // Declined with a grant from an earlier walk still held: taken back before going on (K-986).
+  const continueWithout = () =>
     send(
-      // The same path as Settings (K-231): the server deletes what the consent covered — in onboarding nothing yet, the
-      // answers are sent at the end — and the phone forgets its health entries.
-      withdrawHealthData,
-      () => update({ healthConsent: 'declined', weight: '', waist: '', avoid: '' }),
+      async () => {
+        if (await (given.current ?? true)) await takeBack();
+      },
+      () => undefined,
     );
 
   const granted = draft.healthConsent === 'granted';
@@ -80,7 +102,7 @@ export default function HealthDataStep() {
     choices = (
       <>
         <Button label={t('onboarding.healthData.allow')} onPress={allow} disabled={busy} />
-        <Button label={t('onboarding.consent.continueWithout')} variant="ghost" onPress={onward} disabled={busy} />
+        <Button label={t('onboarding.consent.continueWithout')} variant="ghost" onPress={continueWithout} disabled={busy} />
       </>
     );
   } else {
@@ -98,7 +120,11 @@ export default function HealthDataStep() {
   }
   const actions = (
     <View style={styles.actions}>
-      {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
+      {problem !== null && (
+        <ProblemText style={[styles.text, { color: color.text }]} occurrence={occurrence}>
+          {problem}
+        </ProblemText>
+      )}
       {choices}
     </View>
   );

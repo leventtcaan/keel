@@ -195,6 +195,7 @@ beforeEach(() => {
   mockQueue.record.mockReset().mockResolvedValue(true);
   mockWithdrawHealthData.mockClear();
   mockConsents.remember.mockClear();
+  mockConsents.granted.mockReset().mockImplementation(async () => mockConsentGranted);
   mockReport.mockClear();
   mockProfile.refresh.mockReset().mockResolvedValue(undefined);
   mockKeepOnPhone.mockClear();
@@ -235,6 +236,9 @@ async function turn(label: string, actionName: 'increment' | 'decrement', times 
   }
   await settle();
 }
+
+/** Consents recorded or withdrawn through the API. */
+const consentCalls = () => [...mockApi.PUT.mock.calls, ...mockApi.DELETE.mock.calls].filter(([p]) => p === '/v1/consents/{kind}');
 
 const continueButton = () => screen.getByRole('button', { name: t('onboarding.continue') });
 
@@ -785,6 +789,91 @@ describe('#ob-consent: the health data consent (K-312, ADR-007, GDPR Art. 9)', (
   });
 });
 
+describe('#ob-consent walked again after a close: the last choice is the one that counts (K-986, GDPR Art. 7(3))', () => {
+  // Closed after "Allow" and before the profile was saved: the next start finds no profile and walks from the goal again,
+  // while the server and the phone still hold the grant.
+  beforeEach(() => {
+    mockConsentGranted = true;
+  });
+
+  test('"Not now", then "Continue without": the grant is withdrawn, no weight is asked and no weigh-in is sent', async () => {
+    const router = await walkTo('consent');
+    expect(mockConsents.granted).toHaveBeenCalledWith('HEALTH_DATA'); // the screen opens on what the phone remembers
+    await press(t('onboarding.healthData.notNow'));
+    expect(mockWithdrawHealthData).not.toHaveBeenCalled(); // "Not now" alone records nothing
+    await press(t('onboarding.consent.continueWithout'));
+    // K-231: the one path that withdraws on the server and leaves the phone's record withdrawn (app-services.test.ts).
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
+    expect(router.getPathname()).toBe('/onboarding/about');
+    expect(screen.queryByRole('adjustable', { name: t('onboarding.about.weight') })).toBeNull();
+    await press(t('onboarding.about.male'));
+    await press(t('onboarding.continue'));
+    await endWalk();
+    expect(mockProfile.store).toHaveBeenCalledTimes(1);
+    expect(mockQueue.record).not.toHaveBeenCalled();
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
+  });
+
+  test('"Continue without" pressed before the phone has answered waits for it: the grant is still withdrawn', async () => {
+    let known: (granted: boolean) => void = () => {};
+    mockConsents.granted.mockImplementation(() => new Promise<boolean>((resolve) => (known = resolve)));
+    const router = await walkTo('consent');
+    await press(t('onboarding.healthData.notNow'));
+    // Not awaited: the press is answered only once the phone knows.
+    await act(async () => {
+      void fireEvent.press(screen.getByRole('button', { name: t('onboarding.consent.continueWithout') }));
+    });
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+    expect(screen.getByRole('button', { name: t('onboarding.healthData.allow') })).toBeDisabled();
+    await act(async () => known(true));
+    await settle();
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
+    expect(router.getPathname()).toBe('/onboarding/about');
+  });
+
+  test('a withdrawal that does not go through says so, stays, and "Continue without" tries it again', async () => {
+    mockConsentStatus = 503;
+    const router = await walkTo('consent');
+    await press(t('onboarding.healthData.notNow'));
+    await press(t('onboarding.consent.continueWithout'));
+    expect(screen.getByText(t('onboarding.serverError'))).toBeOnTheScreen();
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+    expect(mockReport).toHaveBeenCalledWith({ name: 'ConsentRefused' });
+    mockConsentStatus = 200;
+    await press(t('onboarding.consent.continueWithout'));
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(2);
+    expect(router.getPathname()).toBe('/onboarding/about');
+    expect(screen.queryByText(t('onboarding.serverError'))).toBeNull();
+  });
+
+  test('"Allow" again records the same text again and nothing is withdrawn: the weight is asked', async () => {
+    const router = await walkTo('consent');
+    await press(t('onboarding.healthData.allow'));
+    expect(consentCalls()).toEqual([
+      ['/v1/consents/{kind}', { params: { path: { kind: 'HEALTH_DATA' } }, body: { textVersion: t('consent.health_data.version') } }],
+    ]);
+    expect(mockWithdrawHealthData).not.toHaveBeenCalled();
+    expect(router.getPathname()).toBe('/onboarding/about');
+    expect(wheel(t('onboarding.about.weight'))).toBeOnTheScreen();
+  });
+
+  test('withdrawn here already, "Continue without" later does not withdraw twice', async () => {
+    await walkTo('consent');
+    await press(t('onboarding.healthData.notNow'));
+    await press(t('onboarding.consent.continueWithout'));
+    await press(t('onboarding.back'));
+    await press(t('onboarding.consent.continueWithout'));
+    expect(mockWithdrawHealthData).toHaveBeenCalledTimes(1);
+  });
+
+  test('never given: "Continue without" withdraws nothing', async () => {
+    mockConsentGranted = false;
+    await walkTo('about');
+    expect(mockWithdrawHealthData).not.toHaveBeenCalled();
+    expect(consentCalls()).toEqual([]);
+  });
+});
+
 describe('#ob-about (ADR-072 #2)', () => {
   test('height and year on wheels, starting on the suggestion; sex in two options, for the energy math', async () => {
     await walkTo('about');
@@ -1019,6 +1108,17 @@ describe('closed with the plan still to be seen: it comes back (K-967 review)', 
     await open('/');
     await press(t('onboarding.preparing.see'));
     expect(screen.getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
+  });
+
+  test('the consent, decided before the close, is not asked again: nothing recorded, nothing withdrawn (K-986)', async () => {
+    mockConsentGranted = true;
+    const router = await open('/');
+    expect(screen.queryByRole('header', { name: t('onboarding.consent.title') })).toBeNull();
+    await press(t('onboarding.preparing.see'));
+    await press(t('onboarding.continue'));
+    expect(router.getPathname()).toBe('/');
+    expect(consentCalls()).toEqual([]);
+    expect(mockWithdrawHealthData).not.toHaveBeenCalled();
   });
 });
 
