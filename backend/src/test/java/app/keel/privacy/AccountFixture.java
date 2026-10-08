@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -52,6 +53,7 @@ final class AccountFixture {
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC"),
                 "food", Map.of("avoid", List.of("peanuts"), "budgetNote", "student budget")));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", "2026-09-30T05:00:00Z", "kg", 82.4,
                 "source", "MANUAL"));
         send(account, "POST", "/v1/waist-measurements", Map.of("clientId", UUID.randomUUID(), "measuredOn", "2026-09-30", "cm", 88));

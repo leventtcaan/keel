@@ -32,6 +32,14 @@ public class Profiles {
         return store.find(account).map(ProfileController.Profile::food).map(ProfileController.Food::avoid).map(List::copyOf).orElse(List.of());
     }
 
+    /**
+     * When onboarding finished (K-990, ADR-077 Ek 2): the profile's first save. Empty without a profile, and for a profile
+     * saved before this was kept — the first week of those counts from the account's first sign-in.
+     */
+    public Optional<Instant> onboardedAt(AccountId account) {
+        return store.onboardedAt(account);
+    }
+
     /** When the training days were last set: they are asked for from then on, at the earliest (K-512). */
     public Optional<Instant> trainingDaysSince(AccountId account) {
         return store.trainingDaysSince(account);

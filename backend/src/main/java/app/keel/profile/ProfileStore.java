@@ -41,15 +41,23 @@ class ProfileStore {
                 .query((row, n) -> row.getObject("training_days_since", OffsetDateTime.class).toInstant()).optional();
     }
 
+    /** When onboarding finished: the first save, which a later one never moves (K-990); none for a profile saved before it was kept. */
+    Optional<Instant> onboardedAt(AccountId account) {
+        return jdbc.sql("select onboarded_at from profile.profile where account_id = :account").param("account", account.value())
+                .query((row, n) -> Optional.ofNullable(row.getObject("onboarded_at", OffsetDateTime.class)).map(OffsetDateTime::toInstant))
+                .optional().flatMap(at -> at);
+    }
+
+    /** The whole profile; the first save is when onboarding finished (onboarded_at, set on insert only). */
     void save(AccountId account, ProfileController.Profile profile) {
         ProfileController.Schedule schedule = profile.schedule();
         ProfileController.Food food = profile.food();
         jdbc.sql("""
                 insert into profile.profile (account_id, goal, sex, height_cm, birth_year, activity_level, experience, program_choice, units,
                     training_days, usual_training_time, sessions_last_month, check_in_day, time_zone, food_avoid, budget_note, updated_at,
-                    training_days_since)
+                    training_days_since, onboarded_at)
                 values (:account, :goal, :sex, :height, :born, :activity, :experience, :program, :units, :days, :time, :sessions, :checkIn, :zone,
-                    :avoid, :budget, :now, :now)
+                    :avoid, :budget, :now, :now, :now)
                 on conflict (account_id) do update set goal = excluded.goal, sex = excluded.sex, height_cm = excluded.height_cm,
                     birth_year = excluded.birth_year, activity_level = excluded.activity_level, experience = excluded.experience,
                     program_choice = excluded.program_choice,

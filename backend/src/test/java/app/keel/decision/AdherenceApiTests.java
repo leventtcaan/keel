@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -151,6 +152,7 @@ class AdherenceApiTests {
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", ISTANBUL.getId())));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         LocalDate began = LocalDate.now(ISTANBUL).minusDays(60);
         jdbc.sql("""
                 insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)

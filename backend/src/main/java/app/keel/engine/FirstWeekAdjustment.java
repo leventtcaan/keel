@@ -40,7 +40,7 @@ public final class FirstWeekAdjustment {
     private static final int DAYS_PER_WEEK = 7;
 
     /**
-     * The first week on the user's calendar: from the account's first day to the day before its first check-in day.
+     * The first week on the user's calendar: from the first day (K-990) to the day before its first check-in day.
      *
      * @param planned the sessions the plan asked in it (P)
      * @param done the days with a session in it (Y), a day off's session included

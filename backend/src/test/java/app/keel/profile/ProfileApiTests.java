@@ -7,8 +7,10 @@ import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +111,24 @@ class ProfileApiTests {
         assertThat(facts).contains(new ProfileFacts(Sex.MALE, 180, 1996, Optional.of(Activity.LOW_ACTIVE), Goal.LOSE_FAT,
                 DayOfWeek.MONDAY, ZoneId.of("Europe/Istanbul"), java.util.Set.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)));
         assertThat(profiles.of(TestSessions.newAccount())).isEmpty();
+    }
+
+    @Test
+    void onboardingFinishesWithTheFirstSaveAndALaterSaveKeepsThatMoment() {
+        // K-990 (ADR-077 Ek 2): the first week starts the day the profile was first saved, not when the account was made.
+        AccountId account = consenting();
+        Instant before = Instant.now();
+        assertThat(profiles.onboardedAt(account)).isEmpty();
+        put(account, onboarding());
+        Instant finished = profiles.onboardedAt(account).orElseThrow();
+
+        jdbc.sql("update profile.profile set onboarded_at = onboarded_at - interval '72 hours' where account_id = :a").param("a", account.value()).update();
+        Map<String, Object> changed = onboarding();
+        changed.put("goal", "DECIDE_FOR_ME");
+        put(account, changed);
+
+        assertThat(finished).isAfterOrEqualTo(before.truncatedTo(ChronoUnit.MILLIS)).isBeforeOrEqualTo(Instant.now());
+        assertThat(profiles.onboardedAt(account)).contains(finished.minus(3, ChronoUnit.DAYS));
     }
 
     @Test

@@ -185,7 +185,7 @@ class FirstWeekCallApiTests {
                 .query(String.class).single()).doesNotContain("week1Feel").doesNotContain("firstWeek");
     }
 
-    /** A man in New York, Tuesday, Thursday and Saturday, checking in on Mondays; the account begun last Monday at noon. */
+    /** A man in New York, Tuesday, Thursday and Saturday, checking in on Mondays; onboarding finished last Monday at noon. */
     private AccountId firstWeekOver(String experience) {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
@@ -203,8 +203,9 @@ class FirstWeekCallApiTests {
     }
 
     private void began(AccountId account, LocalDate day) {
-        jdbc.sql("update identity.account set created_at = :at where id = :id").param("at", day.atTime(12, 0).atZone(NEW_YORK).toOffsetDateTime())
-                .param("id", account.value()).update();
+        // The first day (K-990): onboarding finished then — the profile's first save, which the first week counts from.
+        assertThat(jdbc.sql("update profile.profile set onboarded_at = :at where account_id = :a")
+                .param("at", day.atTime(12, 0).atZone(NEW_YORK).toOffsetDateTime()).param("a", account.value()).update()).isEqualTo(1);
     }
 
     /** A session that day at that time in New York: a workout with a working set (K-431), logged now. */

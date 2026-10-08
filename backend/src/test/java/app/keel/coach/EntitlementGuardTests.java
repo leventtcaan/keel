@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import app.keel.subscription.TestWebhooks;
 import java.time.Clock;
@@ -210,6 +211,7 @@ class EntitlementGuardTests {
         assertThat(send(account, "/v1/profile", "PUT", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")))).hasStatusOk();
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         send(account, "/v1/weigh-ins", "POST", Map.of("clientId", UUID.randomUUID(), "measuredAt", Instant.now().minusSeconds(3600).toString(),
                 "kg", 82.4, "source", "MANUAL"));
         return account;

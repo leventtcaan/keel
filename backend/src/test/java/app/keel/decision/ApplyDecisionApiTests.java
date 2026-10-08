@@ -19,6 +19,7 @@ import app.keel.engine.SourceTag;
 import app.keel.engine.WeightSeries;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -538,6 +539,7 @@ class ApplyDecisionApiTests {
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", weighedAt.toString(), "kg", 80.0,
                 "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
         return account;

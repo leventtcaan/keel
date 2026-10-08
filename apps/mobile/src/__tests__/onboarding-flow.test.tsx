@@ -91,6 +91,8 @@ const mockApi = {
     if (path === '/v1/targets/starting') {
       return typeof mockStarting === 'number' ? { error: { code: 'X' }, response: new Response(null, { status: mockStarting }) } : mockOk(mockStarting);
     }
+    // The first call's day (K-990): the server's, never worked out on the phone.
+    if (path === '/v1/first-weeks') return mockOk({ week: 1, risk: [], readsRisk: false, training: true, firstCallOn: mockFirstCall });
     if (path === '/v1/program') {
       return mockServerProgram === null ? { error: { code: 'NOT_FOUND' }, response: new Response(null, { status: 404 }) } : mockOk(mockServerProgram);
     }
@@ -112,6 +114,8 @@ const mockTurnOff = jest.fn(async () => {
 const mockQueue = { record: jest.fn(async (_record: unknown) => true), drain: jest.fn(async () => {}) };
 let mockServerProgram: unknown = null;
 let mockStarting: unknown = 404;
+/** The server's first call: the Monday after the pinned Wednesday the plan tests finish on. */
+let mockFirstCall = '2026-10-19';
 // What the phone knows of the health data consent (a resumed onboarding reads it; the walk has its own answer).
 let mockConsentGranted = false;
 // Whether the server holds a grant, for taking it back (K-986): what the phone knows, or 'unknown' when it cannot say.
@@ -194,6 +198,7 @@ beforeEach(() => {
   mockTrainingDays = [];
   mockServerProgram = null;
   mockStarting = 404;
+  mockFirstCall = '2026-10-19';
   mockConsentGranted = false;
   mockProfile.resumed.mockReset().mockReturnValue(null);
   mockReminderSettings = { enabled: false, cue: '' };
@@ -1222,6 +1227,23 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     expect(screen.getByText(t('onboarding.plan.inDays', { count: 5 }))).toBeOnTheScreen();
     // The first workout is today's: Wednesday is a training day.
     expect(screen.getByText(t('onboarding.plan.firstWorkout', { day: t('onboarding.plan.today') }))).toBeOnTheScreen();
+  });
+
+  test("the first call is the server's day, not one the phone works out; the paywall gets the same day", async () => {
+    mockFirstCall = '2026-10-26';
+    await toPlan({ experience: 'NEW', allow: true });
+    expect(screen.getByText('Mon, Oct 26')).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.inDays', { count: 12 }))).toBeOnTheScreen();
+    expect(screen.queryByText('Mon, Oct 19')).toBeNull();
+    await press(t('onboarding.continue'));
+    expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ firstCall: '2026-10-26' }));
+  });
+
+  test('a first call open today (its day passed while onboarding waited): "Today"', async () => {
+    mockFirstCall = '2026-10-14';
+    await toPlan({ experience: 'NEW', allow: true });
+    expect(screen.getByText('Wed, Oct 14')).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.today'))).toBeOnTheScreen();
   });
 
   test('a finish that cannot be kept on the phone says so; Continue tries again', async () => {

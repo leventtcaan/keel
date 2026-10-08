@@ -3,17 +3,21 @@ package app.keel.decision;
 import app.keel.engine.Experience;
 import app.keel.engine.FirstWeekAdjustment;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
- * The first week as the call that closes it reads it (K-962, ADR-077 #4). The first week runs from the account's first
- * day to the day before the first check-in day after it — so the first call comes on day seven at the latest (ADR-071
- * #1) — and the check-in of that day closes it. The signup day is not planned: the plan was only just made. Planned: the
+ * The first week as the call that closes it reads it (K-962, ADR-077 #4). The first week runs from the first day — the day
+ * onboarding finished (K-990) — to the day before the first check-in day after it — so the first call comes on day seven at
+ * the latest (ADR-071 #1), never before — and the check-in of that day closes it. The first day is not planned: the plan
+ * was only just made. Planned: the
  * training weekdays after it, and the signup day itself only when a session was done on it; done: the days with a
  * session, a day off's included; missed: the planned days without one, in the week's order.
  */
@@ -22,9 +26,27 @@ final class FirstWeekFacts {
     private FirstWeekFacts() {
     }
 
-    /** The check-in day that closes the first week: the first one after the account's first day. */
+    /** The check-in day that closes the first week: the first one after the first day. */
     static LocalDate closingCheckIn(LocalDate began, DayOfWeek checkInDay) {
         return began.with(TemporalAdjusters.next(checkInDay));
+    }
+
+    /**
+     * The first day on the user's calendar (K-990, ADR-077 Ek 2): the day onboarding finished, the profile's first save; a
+     * profile saved before that moment was kept counts from the first sign-in, as it always had.
+     */
+    static LocalDate firstDay(Optional<Instant> onboarded, Supplier<Instant> firstSignIn, ZoneId zone) {
+        return onboarded.orElseGet(firstSignIn).atZone(zone).toLocalDate();
+    }
+
+    /** Whether the first call can be made today: from the check-in day that closes the first week on. */
+    static boolean firstCallOpen(LocalDate firstDay, DayOfWeek checkInDay, LocalDate today) {
+        return !today.isBefore(closingCheckIn(firstDay, checkInDay));
+    }
+
+    /** The day the first call is named for: the closing check-in day, or today once it has come without a call. */
+    static LocalDate firstCallOn(LocalDate firstDay, DayOfWeek checkInDay, LocalDate today) {
+        return firstCallOpen(firstDay, checkInDay, today) ? today : closingCheckIn(firstDay, checkInDay);
     }
 
     /** The first week, when the check-in of {@code weekOf} closes it; empty for any other check-in. */

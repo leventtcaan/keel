@@ -7,6 +7,7 @@ import app.keel.engine.DecisionPipeline;
 import app.keel.engine.ParameterSet;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -167,6 +168,7 @@ class DecisionServiceTests {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", profile("BUILD_MUSCLE", "FEMALE", 1990, "UTC", "ACTIVE"));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         weighIn(account, java.time.Instant.now().minusSeconds(3 * 86400), 60.2);
         weighIn(account, java.time.Instant.now().minusSeconds(3600), 61.0);
 
@@ -226,6 +228,7 @@ class DecisionServiceTests {
         Map<String, Object> profile = new java.util.HashMap<>(profile("LOSE_FAT", "MALE", 1996, zone, null));
         profile.put("schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", theirs.getDayOfWeek().name(), "timeZone", zone));
         send(account, "PUT", "/v1/profile", profile);
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
 
         MvcTestResult result = answer(account, UUID.randomUUID(), theirs, List.of());
 
@@ -348,6 +351,7 @@ class DecisionServiceTests {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", profile(goal, "MALE", 1996, "UTC", null));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         weighIn(account, java.time.Instant.now().minusSeconds(3600), 82.4);
         return account;
     }

@@ -6,6 +6,7 @@ import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.TrainingStatus;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -156,6 +157,7 @@ class TrainingStatusApiTests {
         send("PUT", account, "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "Full body", "weekday", "MONDAY", "exercises", List.of(
                 Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)),
                 Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 3, "max", 6)),

@@ -6,7 +6,7 @@
  */
 import type { components } from '@/api/schema';
 import { type Draft, emptyDraft } from '@/onboarding/draft';
-import { type Progress, firstCall, firstWorkout, linesDone, preparePlan } from '@/onboarding/prepare';
+import { type Progress, daysTo, firstWorkout, linesDone, preparePlan } from '@/onboarding/prepare';
 import { type Move, ownMove } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -47,6 +47,9 @@ const LANDMINE: Schemas['CustomExercise'] = {
   id: 'custom:8a1d', name: 'Landmine Press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false,
 } as Schemas['CustomExercise'];
 const STARTING: Schemas['StartingTarget'] = { targetKcal: 2450, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14 };
+/** The first call's day, the server's (K-990): not the Monday after "today" (the 19th), so a day the phone worked out would show. */
+const FIRST_CALL = '2026-10-26';
+const FIRST_WEEKS: Schemas['FirstWeeks'] = { week: 1, risk: [], readsRisk: false, training: true, firstCallOn: FIRST_CALL };
 
 const DRAFT: Draft = {
   ...emptyDraft,
@@ -73,6 +76,7 @@ function fakes({ onServer = null as Schemas['Program'] | null } = {}) {
       calls.push(`GET ${path}`);
       if (path === '/v1/program') return onServer === null ? refused(404) : ok(onServer);
       if (path === '/v1/targets/starting') return ok(STARTING);
+      if (path === '/v1/first-weeks') return ok(FIRST_WEEKS);
       if (path === '/v1/custom-exercises') return ok([LANDMINE]);
       return ok(CATALOG);
     }),
@@ -109,20 +113,20 @@ describe('the steps, in order', () => {
     const done = await run(f);
     expect(f.calls).toEqual([
       'store profile', 'GET /v1/program', 'POST /v1/program/generate', 'PUT /v1/program/starting-weights',
-      'drain', 'GET /v1/targets/starting', 'GET /v1/exercises',
+      'drain', 'GET /v1/targets/starting', 'GET /v1/first-weeks', 'GET /v1/exercises',
     ]);
     expect(f.api.POST).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'] } });
     expect(f.api.PUT).toHaveBeenCalledWith('/v1/program/starting-weights', {
       body: { weights: [{ exerciseId: 'squat', kg: 100 }, { exerciseId: 'bench_press', kg: 80 }] },
     });
     // The program with the weights as its targets is the one shown.
-    expect(done).toMatchObject({ profile: PROFILE, program: WEIGHTED, exercises: CATALOG, consented: true, starting: STARTING });
+    expect(done).toMatchObject({ profile: PROFILE, program: WEIGHTED, exercises: CATALOG, consented: true, starting: STARTING, firstCall: FIRST_CALL });
   });
 
   test('no starting weights (a new lifter, or every move skipped): none sent, the program as built', async () => {
     const f = fakes();
     const done = await run(f, { ...DRAFT, experience: 'NEW', startingWeights: {} });
-    expect(f.calls).toEqual(['store profile', 'GET /v1/program', 'POST /v1/program/generate', 'drain', 'GET /v1/targets/starting', 'GET /v1/exercises']);
+    expect(f.calls).toEqual(['store profile', 'GET /v1/program', 'POST /v1/program/generate', 'drain', 'GET /v1/targets/starting', 'GET /v1/first-weeks', 'GET /v1/exercises']);
     expect(done.program).toEqual(PROGRAM);
   });
 
@@ -148,7 +152,8 @@ describe('the steps, in order', () => {
       ['profile', 'consented', 'built'],
       ['profile', 'consented', 'built', 'program'],
       ['profile', 'consented', 'built', 'program', 'starting'],
-      ['profile', 'consented', 'built', 'program', 'starting', 'exercises'],
+      ['profile', 'consented', 'built', 'program', 'starting', 'firstCall'],
+      ['profile', 'consented', 'built', 'program', 'starting', 'firstCall', 'exercises'],
     ]);
   });
 });
@@ -159,7 +164,7 @@ describe('resumed after the app was closed (K-967 review): the program the serve
   test('(b) closed after the program was built: no second build, its weights kept (none sent again)', async () => {
     const f = fakes({ onServer: WEIGHTED });
     const done = await run(f, emptyDraft, RESUMED);
-    expect(f.calls).toEqual(['GET /v1/program', 'drain', 'GET /v1/targets/starting', 'GET /v1/exercises']);
+    expect(f.calls).toEqual(['GET /v1/program', 'drain', 'GET /v1/targets/starting', 'GET /v1/first-weeks', 'GET /v1/exercises']);
     expect(f.api.POST).not.toHaveBeenCalled();
     expect(f.api.PUT).not.toHaveBeenCalled();
     expect(done.program).toEqual(WEIGHTED);
@@ -168,7 +173,7 @@ describe('resumed after the app was closed (K-967 review): the program the serve
   test("(a) closed after the profile was saved, before the program: built now, on the profile's days", async () => {
     const f = fakes();
     await run(f, emptyDraft, RESUMED);
-    expect(f.calls).toEqual(['GET /v1/program', 'POST /v1/program/generate', 'drain', 'GET /v1/targets/starting', 'GET /v1/exercises']);
+    expect(f.calls).toEqual(['GET /v1/program', 'POST /v1/program/generate', 'drain', 'GET /v1/targets/starting', 'GET /v1/first-weeks', 'GET /v1/exercises']);
     expect(f.profile.store).not.toHaveBeenCalled();
   });
 });
@@ -257,6 +262,53 @@ describe('an own program brought in (K-968): never built over (ADR-073)', () => 
   });
 });
 
+describe("the first call's day (K-990, ADR-077 Ek 2): the server's, never worked out on the phone", () => {
+  test('with the consent: the day the server names, after the starting target', async () => {
+    const f = fakes();
+    expect((await run(f)).firstCall).toBe(FIRST_CALL);
+  });
+
+  test('without the consent: not asked for (there are no calls), none named', async () => {
+    const f = fakes();
+    f.consented.mockResolvedValueOnce(false);
+    const done = await run(f);
+    expect(done.firstCall).toBeNull();
+    expect(f.calls).not.toContain('GET /v1/first-weeks');
+  });
+
+  test.each([
+    [403, 'the consent is not on the server'],
+    [404, 'the first weeks are over'],
+    [409, 'no profile'],
+  ])('%i (%s): none named, and the plan goes on', async (status) => {
+    const f = fakes();
+    const get = f.api.GET.getMockImplementation()!;
+    f.api.GET.mockImplementation(async (path: string) => (path === '/v1/first-weeks' ? refused(status) : get(path)) as never);
+    const done = await run(f);
+    expect(done.firstCall).toBeNull();
+    expect(done.exercises).toEqual(CATALOG);
+  });
+
+  test('the first call made already (no day in the answer): none named', async () => {
+    const f = fakes();
+    const get = f.api.GET.getMockImplementation()!;
+    f.api.GET.mockImplementation(async (path: string) => (path === '/v1/first-weeks' ? ok({ ...FIRST_WEEKS, firstCallOn: undefined }) : get(path)) as never);
+    expect((await run(f)).firstCall).toBeNull();
+  });
+
+  test('another failure is said and tried again from there: the starting target is not asked again', async () => {
+    const f = fakes();
+    const get = f.api.GET.getMockImplementation()!;
+    f.api.GET.mockImplementation(async (path: string) => (path === '/v1/first-weeks' ? refused(500) : get(path)) as never);
+    let progress: Progress = {};
+    await expect(run(f, DRAFT, {}, (p) => (progress = p))).rejects.toMatchObject({ name: 'ServerError' });
+    f.api.GET.mockImplementation(get);
+    f.calls.length = 0;
+    expect((await run(f, DRAFT, progress)).firstCall).toBe(FIRST_CALL);
+    expect(f.calls).toEqual(['GET /v1/first-weeks', 'GET /v1/exercises']);
+  });
+});
+
 describe('the starting calories (K-989, ADR-072 Ek 1): the food row, or none', () => {
   test('without the health data consent: not asked for (the server would refuse), no row', async () => {
     const f = fakes();
@@ -295,7 +347,7 @@ describe('the starting calories (K-989, ADR-072 Ek 1): the food row, or none', (
     f.api.GET.mockImplementation(get);
     f.calls.length = 0;
     await run(f, DRAFT, progress);
-    expect(f.calls).toEqual(['drain', 'GET /v1/targets/starting', 'GET /v1/exercises']);
+    expect(f.calls).toEqual(['drain', 'GET /v1/targets/starting', 'GET /v1/first-weeks', 'GET /v1/exercises']);
   });
 });
 
@@ -322,7 +374,7 @@ describe('a step that fails', () => {
     expect(progress).toEqual({ profile: PROFILE, consented: true, built: PROGRAM });
     f.calls.length = 0;
     await run(f, DRAFT, progress);
-    expect(f.calls).toEqual(['PUT /v1/program/starting-weights', 'drain', 'GET /v1/targets/starting', 'GET /v1/exercises']);
+    expect(f.calls).toEqual(['PUT /v1/program/starting-weights', 'drain', 'GET /v1/targets/starting', 'GET /v1/first-weeks', 'GET /v1/exercises']);
   });
 });
 
@@ -343,12 +395,12 @@ describe('the dates the plan gives', () => {
   const TZ = 'Europe/Istanbul';
   const MONDAY = new Date('2026-10-12T09:00:00+03:00');
 
-  test('the first call: the next check-in day after today, in 7 days when today is that day', () => {
-    expect(firstCall('MONDAY', MONDAY, TZ)).toEqual({ day: '2026-10-19', inDays: 7 });
-    expect(firstCall('MONDAY', new Date('2026-10-17T22:00:00+03:00'), TZ)).toEqual({ day: '2026-10-19', inDays: 2 });
-    expect(firstCall('MONDAY', new Date('2026-10-18T09:00:00+03:00'), TZ)).toEqual({ day: '2026-10-19', inDays: 1 });
+  test("the days to the server's first call, on the user's calendar", () => {
+    expect(daysTo('2026-10-19', MONDAY, TZ)).toBe(7);
+    expect(daysTo('2026-10-19', new Date('2026-10-18T09:00:00+03:00'), TZ)).toBe(1);
+    expect(daysTo('2026-10-12', MONDAY, TZ)).toBe(0);
     // Still Sunday in UTC, already Monday in Istanbul: the user's day counts.
-    expect(firstCall('MONDAY', new Date('2026-10-18T22:30:00Z'), TZ)).toEqual({ day: '2026-10-26', inDays: 7 });
+    expect(daysTo('2026-10-26', new Date('2026-10-18T22:30:00Z'), TZ)).toBe(7);
   });
 
   test('the first workout: the soonest day of the program from today on, today included', () => {

@@ -11,7 +11,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { MondayReminder } from '@/onboarding/MondayReminder';
 import { useDraft } from '@/onboarding/OnboardingContext';
-import { firstCall, firstWorkout } from '@/onboarding/prepare';
+import { daysTo, firstWorkout } from '@/onboarding/prepare';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -35,7 +35,7 @@ const daysWords = (days: Schemas['Weekday'][]) =>
  * answers reflected (goal, days, which days). The action: the first workout — each move's image, sets × range and, where
  * known, its weight, else "Session 1 finds your weights" — and the cardio as the program sets it (ADR-074: a dose, never
  * a measured burn) and, when the server has one, where the calories start (K-989: one number, and the days the scale
- * corrects it in; no row without the consent or a weigh-in). The date: the first call and the days to it, only with the health data consent (without it there
+ * corrects it in; no row without the consent or a weigh-in). The date: the server's first call (K-990) and the days to it, only with the health data consent (without it there
  * are no calls). The Monday morning reminder is offered here (K-434's place). Continue ends onboarding: the paywall, or
  * the tabs. No way back: the answers are saved.
  */
@@ -57,10 +57,11 @@ export default function PlanScreen() {
   const moves = new Map(progress.exercises.map((move) => [move.id, move]));
   const now = new Date();
   const workout = firstWorkout(program, now, schedule.timeZone);
-  const call = firstCall(schedule.checkInDay, now, schedule.timeZone);
+  // The first call's day is the server's (K-990): shown, and the days to it counted; never worked out here. Without the
+  // health data consent there are no weekly calls: none is promised.
+  const firstCall = progress.consented === true ? (progress.firstCall ?? null) : null;
+  const call = firstCall === null ? null : { day: firstCall, inDays: daysTo(firstCall, now, schedule.timeZone) };
   const known = workout.day.exercises.some((move) => move.nextLoadKg !== undefined);
-  // Without the health data consent there are no weekly calls: none is promised.
-  const consented = progress.consented === true;
   // Where the calories start (K-989): one number to start from, not Monday's (the first call runs on Monday's inputs).
   const starting = progress.starting ?? null;
 
@@ -74,7 +75,7 @@ export default function PlanScreen() {
       own: program.source === 'OWN',
       days: schedule.trainingDays.length,
       firstWorkout: workout.day.weekday ?? null,
-      firstCall: consented ? call.day : null,
+      firstCall: call?.day ?? null,
       checkInDay: schedule.checkInDay,
       hasCardio: (program.cardio?.sessionsPerWeek ?? 0) > 0,
     });
@@ -157,11 +158,11 @@ export default function PlanScreen() {
             // The days the scale watches it before a calorie call: the engine's, by sex (never written here, ADR-072 Ek 1).
             t('onboarding.plan.foodNote', { days: starting.observationDays }),
           )}
-        {consented &&
+        {call !== null &&
           row(
             t('onboarding.plan.firstCall'),
             weekdayDate(call.day),
-            call.inDays === 1 ? t('onboarding.plan.tomorrow') : t('onboarding.plan.inDays', { count: call.inDays }),
+            call.inDays <= 0 ? t('onboarding.plan.today') : call.inDays === 1 ? t('onboarding.plan.tomorrow') : t('onboarding.plan.inDays', { count: call.inDays }),
           )}
         <MondayReminder day={t(`onboarding.schedule.dayName.${schedule.checkInDay}`)} />
       </ScrollView>

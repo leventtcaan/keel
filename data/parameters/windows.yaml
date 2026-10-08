@@ -99,7 +99,7 @@ parameters:
     unit: weeks
     tag: urun
     source: "arastirma/04-faz3-urun.md#7.5"
-    note: "İlk 8 hafta akışı (K-513, ADR-040): H1-H8, kişinin kendi haftası, hesabın açıldığı günden; ardından bir hafta yalnız 8. haftanın riski için açık. 8 hafta alışkanlık kurmaz (Lally) — bir sonraki bloğa devrettirir."
+    note: "İlk 8 hafta akışı (K-513, ADR-040): H1-H8, kişinin kendi haftası, onboarding'in bittiği günden (K-990, ADR-077 Ek 2; öncesinde kaydedilen profilde hesabın açıldığı günden); ardından bir hafta yalnız 8. haftanın riski için açık. 8 hafta alışkanlık kurmaz (Lally) — bir sonraki bloğa devrettirir."
   - key: first_weeks_risk_from
     value: 5
     unit: weeks

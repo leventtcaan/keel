@@ -5,16 +5,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.engine.Experience;
 import app.keel.engine.FirstWeekAdjustment;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * The first week the call that closes it reads (K-962, ADR-077 #4): from the account's first day to the day before the
- * first check-in day after it; planned on the training weekdays, done on the days with a session, missed in the week's order.
+ * The first week the call that closes it reads (K-962, ADR-077 #4): from the first day — the day onboarding finished (K-990,
+ * ADR-077 Ek 2) — to the day before the first check-in day after it; planned on the training weekdays, done on the days with
+ * a session, missed in the week's order. No check-in before that day.
  */
 class FirstWeekFactsTests {
 
@@ -42,6 +48,44 @@ class FirstWeekFactsTests {
         assertThat(FirstWeekFacts.closingCheckIn(WEDNESDAY, DayOfWeek.MONDAY)).isEqualTo(NEXT_MONDAY);
         // Begun on the check-in day itself: that day's check-in is not the first week's, the next one is (day seven).
         assertThat(FirstWeekFacts.closingCheckIn(NEXT_MONDAY, DayOfWeek.MONDAY)).isEqualTo(NEXT_MONDAY.plusWeeks(1));
+    }
+
+    @ParameterizedTest(name = "signed in {0}, finished {1}: on {2} the first call is {3}, open {4}")
+    @CsvSource(nullValues = "-", value = {
+            // Sunday 23:58 sign-in, Monday finish: the week counts from Monday, so Monday itself has no call; the next one does.
+            "2026-10-11T23:58, 2026-10-12T00:05, 2026-10-12, 2026-10-19, false",
+            "2026-10-11T23:58, 2026-10-12T00:05, 2026-10-18, 2026-10-19, false",
+            "2026-10-11T23:58, 2026-10-12T00:05, 2026-10-19, 2026-10-19, true",
+            // Days between sign-in and finish: they are not the first week; it starts on Wednesday, the finishing day.
+            "2026-10-09T10:00, 2026-10-14T18:00, 2026-10-12, 2026-10-19, false",
+            // A Wednesday finish: no check-in that day or any day to Sunday; Monday has one.
+            "2026-10-14T09:00, 2026-10-14T09:20, 2026-10-14, 2026-10-19, false",
+            "2026-10-14T09:00, 2026-10-14T09:20, 2026-10-16, 2026-10-19, false",
+            "2026-10-14T09:00, 2026-10-14T09:20, 2026-10-19, 2026-10-19, true",
+            // Monday came and went without a call (onboarding resumed late, or no check-in yet): open, today.
+            "2026-10-14T09:00, 2026-10-14T09:20, 2026-10-21, 2026-10-21, true",
+            // Onboarded before the day was kept: counted from the first sign-in, as before (Wednesday: Monday).
+            "2026-10-14T09:00, -, 2026-10-14, 2026-10-19, false",
+            "2026-10-14T09:00, -, 2026-10-19, 2026-10-19, true",
+    })
+    void theFirstCallComesOnTheFirstCheckInDayAfterOnboardingFinished(String signedIn, String finished, LocalDate today, LocalDate firstCall,
+            boolean open) {
+        ZoneId istanbul = ZoneId.of("Europe/Istanbul");
+        Optional<Instant> onboarded = Optional.ofNullable(finished).map(at -> LocalDateTime.parse(at).atZone(istanbul).toInstant());
+
+        LocalDate firstDay = FirstWeekFacts.firstDay(onboarded, () -> LocalDateTime.parse(signedIn).atZone(istanbul).toInstant(), istanbul);
+
+        assertThat(FirstWeekFacts.firstCallOn(firstDay, DayOfWeek.MONDAY, today)).isEqualTo(firstCall);
+        assertThat(FirstWeekFacts.firstCallOpen(firstDay, DayOfWeek.MONDAY, today)).isEqualTo(open);
+    }
+
+    @Test
+    void theFirstDayIsTheUsersCalendarsNotUtcs() {
+        // Monday 00:05 in Istanbul is Sunday 21:05 UTC: the first day is Monday where the user lives.
+        Instant finished = LocalDateTime.parse("2026-10-12T00:05").atZone(ZoneId.of("Europe/Istanbul")).toInstant();
+
+        assertThat(FirstWeekFacts.firstDay(Optional.of(finished), () -> finished, ZoneId.of("Europe/Istanbul"))).isEqualTo(NEXT_MONDAY);
+        assertThat(FirstWeekFacts.firstDay(Optional.of(finished), () -> finished, ZoneId.of("UTC"))).isEqualTo(NEXT_MONDAY.minusDays(1));
     }
 
     @Test

@@ -9,6 +9,7 @@ import app.keel.engine.Profile;
 import app.keel.engine.Sex;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
+import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -306,6 +307,7 @@ class CheckInQuestionsApiTests {
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         weighIn(account, today.minusDays(120).atStartOfDay(ZoneOffset.UTC).plusHours(6).toInstant(), 60.0);
         jdbc.sql("""
@@ -480,6 +482,7 @@ class CheckInQuestionsApiTests {
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         jdbc.sql("""
                 insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
@@ -523,6 +526,7 @@ class CheckInQuestionsApiTests {
         send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "FEMALE", "heightCm", 165, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
                 "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         jdbc.sql("""
                 insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
@@ -542,6 +546,7 @@ class CheckInQuestionsApiTests {
         AccountId account = TestSessions.newAccount();
         send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA));
         send(account, "PUT", "/v1/profile", profile(DayOfWeek.MONDAY));
+        TestOnboarding.finishedTwoWeeksAgo(context, account);
         if (oneWeighIn) {
             weighIn(account, Instant.now().minusSeconds(3600), 82.4);
         }
