@@ -3712,7 +3712,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-966, K-959]
     why: "ADR-072 #5-#7: onboarding hazır antrenmanla ve başlangıç kararıyla biter; deneme zaman çizelgesi açık"
     acceptance:
