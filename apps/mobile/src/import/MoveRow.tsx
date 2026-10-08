@@ -25,7 +25,8 @@ type Props = {
   moves: Move[];
   byId: ReadonlyMap<string, Move>;
   onPick: (id: string | null) => void;
-  onSavedOwn: (own: Schemas['CustomExercise']) => void;
+  /** An own move saved here (when the screen does not take its answers instead, `onOwnAnswered`). */
+  onSavedOwn?: (own: Schemas['CustomExercise']) => void;
   /** In place of the file's set count, a line of the screen's own (the program draft's sets and reps). Already translated. */
   detail?: string;
   /** In place of "not brought in", what no move means on the screen (the program draft: not yet a move). Already translated. */
@@ -67,7 +68,7 @@ export function MoveRow({ matched, chosen, moves, byId, onPick, onSavedOwn, deta
         return 'refused';
       }
       await training.saved(kept);
-      onSavedOwn(kept);
+      onSavedOwn?.(kept);
       setMode('view');
       return 'saved';
     } catch (error) {

@@ -32,7 +32,7 @@ type Seen = { move: { exerciseId: string } | { ownName: string }; sessions: numb
 type Day = DraftDay & { sessions: number; share: number; wants?: Weekday; first: number };
 
 /** One spelling for a name written with other case or spaces. */
-const same = (name: string) => name.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
+export const sameName = (name: string) => name.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
 /** The Monday of a session's week, on the phone's calendar. */
 /** A week in milliseconds: two weeks' Mondays differ by a whole number of them, give or take a clock change's hour. */
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -51,7 +51,7 @@ export function draftProgram(sessions: FileSession[], choices: ReadonlyMap<strin
   // Each named routine of the window, its sessions oldest first, by its first spelling; the routines in the order first done.
   const routines = new Map<string, { name: string; done: FileSession[] }>();
   for (const session of [...sessions].sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())) {
-    const key = same(session.routine ?? '');
+    const key = sameName(session.routine ?? '');
     if (session.startedAt.getTime() < from || key === '') continue;
     const routine = routines.get(key) ?? { name: session.routine ?? '', done: [] };
     routine.done.push(session);
@@ -113,7 +113,7 @@ function movesOf(done: FileSession[], choices: ReadonlyMap<string, string | null
       if (set.warmUp || leftOut.has(set.name)) continue;
       const id = choices.get(set.name);
       const move = typeof id === 'string' ? { exerciseId: id } : { ownName: set.name.trim() };
-      const key = typeof id === 'string' ? `id ${id}` : `name ${same(set.name)}`;
+      const key = typeof id === 'string' ? `id ${id}` : `name ${sameName(set.name)}`;
       const counted = seen.get(key) ?? { move, sessions: 0, sets: [], reps: [], places: [] };
       if (!here.includes(key)) {
         here.push(key);
@@ -169,7 +169,7 @@ function fit(name: string): string {
  * out, is made on each of them, as the mapping and `leftOut` are by the file's names.
  */
 export function namesFor(ownName: string, names: Iterable<string>): string[] {
-  return [...names].filter((name) => same(name) === same(ownName));
+  return [...names].filter((name) => sameName(name) === sameName(ownName));
 }
 
 /**

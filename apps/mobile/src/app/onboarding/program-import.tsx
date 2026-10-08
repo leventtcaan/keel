@@ -5,18 +5,18 @@ import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { type DraftDay, type DraftMove, draftProgram, namesFor, ownProgram } from '@/import/draft';
+import { type DraftDay, type DraftMove, draftProgram, namesFor, ownProgram, sameName } from '@/import/draft';
 import { type ExportRead, readExport } from '@/import/formats';
 import { type Matched, matchNames } from '@/import/match';
 import { MoveRow } from '@/import/MoveRow';
-import { sendOwnMoves, sendOwnProgram } from '@/onboarding/bringProgram';
+import { sendWithOwnMoves } from '@/onboarding/bringProgram';
 import { broughtProgram } from '@/onboarding/draft';
 import { StepFrame, useChoose } from '@/onboarding/StepFrame';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { exerciseName } from '@/train/program';
-import { type Move, ownMove } from '@/train/trainData';
+import type { Move } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 type Read = Extract<ExportRead, { kind: 'read' }>;
@@ -39,7 +39,8 @@ export default function ProgramImportStep() {
   const [moves, setMoves] = useState<Move[] | 'failed' | null>(null);
   const [choices, setChoices] = useState<ReadonlyMap<string, string | null>>(new Map());
   const [leftOut, setLeftOut] = useState<ReadonlySet<string>>(new Set());
-  // The own moves answered, by the draft's name, waiting for the program: made only with it.
+  // The own moves answered, by the draft's name (one for its spellings in any case or spacing), waiting for the program:
+  // made only with it.
   const [pending, setPending] = useState<ReadonlyMap<string, Schemas['NewCustomExercise']>>(new Map());
   const [saving, setSaving] = useState(false);
   const [problem, setProblem, occurrence] = useProblem();
@@ -57,8 +58,9 @@ export default function ProgramImportStep() {
   const byId = useMemo(() => new Map(known.map((m) => [m.id, m])), [known]);
   // The draft from the choices on the screen now: what is shown and what is sent are the same thing.
   const draft = stage.kind === 'read' ? draftProgram(stage.read.sessions, choices, leftOut) : null;
-  const ownNames = draft?.kind === 'draft' ? [...new Set(draft.days.flatMap((day) => day.moves.flatMap((m) => ('ownName' in m ? [m.ownName] : []))))] : [];
-  const ready = draft?.kind === 'draft' && ownNames.every((name) => pending.has(name));
+  const ownNames = draft?.kind === 'draft' ? draft.days.flatMap((day) => day.moves.flatMap((m) => ('ownName' in m ? [m.ownName] : []))) : [];
+  const ownKeys = [...new Set(ownNames.map(sameName))];
+  const ready = draft?.kind === 'draft' && ownKeys.every((key) => pending.has(key));
   // Every move left out: the file has routines, the user took every move out of them.
   const allLeftOut = stage.kind === 'read' && draft?.kind === 'noRoutine' && leftOut.size > 0 && draftProgram(stage.read.sessions, choices, new Set()).kind === 'draft';
 
@@ -84,13 +86,19 @@ export default function ProgramImportStep() {
   const pickFor = (ownName: string, id: string) =>
     setChoices((before) => new Map([...before, ...namesFor(ownName, fileNames).map((name) => [name, id] as const)]));
   const leaveOut = (ownName: string) => setLeftOut((before) => new Set([...before, ...namesFor(ownName, fileNames)]));
-  const savedOwn = (ownName: string, own: Schemas['CustomExercise']) => {
-    setMoves((before) => [...(Array.isArray(before) ? before : []).filter((m) => m.id !== own.id), ownMove(own)]);
-    pickFor(ownName, own.id);
-  };
   // Answered again, the name keeps the clientId it was first answered with: one move, however often it is sent.
   const answeredOwn = (ownName: string, body: Schemas['NewCustomExercise']) =>
-    setPending((before) => new Map(before).set(ownName, { ...body, clientId: before.get(ownName)?.clientId ?? body.clientId }));
+    setPending((before) => {
+      const key = sameName(ownName);
+      return new Map(before).set(key, { ...body, clientId: before.get(key)?.clientId ?? body.clientId });
+    });
+  // Changed: the answers set aside (their clientId with them), the name is to be picked or made again.
+  const changeOwn = (ownName: string) =>
+    setPending((before) => {
+      const next = new Map(before);
+      next.delete(sameName(ownName));
+      return next;
+    });
 
   const confirm = async () => {
     if (draft?.kind !== 'draft' || !ready || sending.current) return;
@@ -98,11 +106,14 @@ export default function ProgramImportStep() {
     setSaving(true);
     setProblem(null);
     try {
-      const kept = await sendOwnMoves(api, ownNames.map((name) => pending.get(name)!));
-      await Promise.all(kept.map((own) => training.saved(own)));
-      const program = ownProgram(draft.days, new Map(ownNames.map((name, i) => [name, kept[i].id])));
-      if (program === null) throw Object.assign(new Error('own program: a move without its id'), { name: 'ProgramIncomplete' });
-      choose(broughtProgram(await sendOwnProgram(api, program)));
+      const days = draft.days;
+      const program = await sendWithOwnMoves(
+        api,
+        (own) => training.saved(own),
+        ownKeys.map((key) => pending.get(key)!),
+        (ids) => ownProgram(days, new Map(ownNames.map((name) => [name, ids[ownKeys.indexOf(sameName(name))]]))),
+      );
+      choose(broughtProgram(program));
     } catch (error) {
       const name = error instanceof Error ? error.name : 'Unknown';
       report({ name });
@@ -139,8 +150,8 @@ export default function ProgramImportStep() {
             pending={pending}
             onPick={pickFor}
             onLeaveOut={leaveOut}
-            onSavedOwn={savedOwn}
             onOwnAnswered={answeredOwn}
+            onChangeOwn={changeOwn}
           />
         ))}
       </View>
@@ -184,12 +195,12 @@ type DayProps = {
   pending: ReadonlyMap<string, Schemas['NewCustomExercise']>;
   onPick: (ownName: string, id: string) => void;
   onLeaveOut: (ownName: string) => void;
-  onSavedOwn: (ownName: string, own: Schemas['CustomExercise']) => void;
   onOwnAnswered: (ownName: string, body: Schemas['NewCustomExercise']) => void;
+  onChangeOwn: (ownName: string) => void;
 };
 
 /** A day of the draft: its name and weekday, each move with its sets and reps; a name not yet a move, with the ways to make it one. */
-function Day({ day, matched, moves, byId, pending, onPick, onLeaveOut, onSavedOwn, onOwnAnswered }: DayProps) {
+function Day({ day, matched, moves, byId, pending, onPick, onLeaveOut, onOwnAnswered, onChangeOwn }: DayProps) {
   const { color } = useTheme();
   const weekday = day.weekday === undefined ? t('onboarding.programImport.anyDay') : t(`onboarding.schedule.dayName.${day.weekday}`);
   const line = (move: DraftMove) => t('onboarding.programImport.move', { sets: move.sets, min: move.reps.min, max: move.reps.max });
@@ -217,17 +228,26 @@ function Day({ day, matched, moves, byId, pending, onPick, onLeaveOut, onSavedOw
             onPress={() => onLeaveOut(move.ownName)}
           />
         );
-        if (pending.has(move.ownName)) {
+        const answered = pending.get(sameName(move.ownName));
+        if (answered !== undefined) {
           return (
             <View key={`${move.ownName}-${i}`} style={styles.move}>
-              <Text style={[styles.text, { color: color.text }]}>{pending.get(move.ownName)?.name}</Text>
+              <Text style={[styles.text, { color: color.text }]}>{answered.name}</Text>
               <Text style={[styles.small, { color: color.textSecondary }]}>{line(move)}</Text>
               <Text style={[styles.small, { color: color.muted }]}>{t('onboarding.programImport.ownWaiting')}</Text>
+              <Button
+                label={t('onboarding.programImport.change')}
+                accessibilityLabel={t('onboarding.programImport.changeLabel', { name: move.ownName })}
+                variant="ghost"
+                size="sm"
+                onPress={() => onChangeOwn(move.ownName)}
+              />
               {leave}
             </View>
           );
         }
-        const found = matched.find((m) => namesFor(move.ownName, [m.name]).length > 0);
+        // The file's own spelling of the name first, then any spelling of it.
+        const found = matched.find((m) => m.name.trim() === move.ownName) ?? matched.find((m) => namesFor(move.ownName, [m.name]).length > 0);
         if (found === undefined) return null; // every name of the draft is the file's, so matched; never reached
         return (
           <View key={`${move.ownName}-${i}`} style={styles.move}>
@@ -239,7 +259,6 @@ function Day({ day, matched, moves, byId, pending, onPick, onLeaveOut, onSavedOw
               detail={line(move)}
               unmatched={t('onboarding.programImport.unmatched')}
               onPick={(id) => id !== null && onPick(move.ownName, id)}
-              onSavedOwn={(own) => onSavedOwn(move.ownName, own)}
               onOwnAnswered={(body) => onOwnAnswered(move.ownName, body)}
             />
             {leave}

@@ -11,7 +11,8 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import type { Move } from '@/train/trainData';
+import { createTrainingCache, type Move } from '@/train/trainData';
+import type { KeyValue } from '@/units/preference';
 
 type Schemas = components['schemas'];
 
@@ -62,7 +63,10 @@ const kept = (body: Schemas['OwnProgram']): Schemas['Program'] => ({
 type Init = { body?: unknown };
 const mockAnswer = async (route: string, init: Init): Promise<unknown> => {
   if (route === '/v1/program') return ok(kept(init.body as Schemas['OwnProgram']));
-  if (route === '/v1/custom-exercises') return ok({ ...(init.body as object), id: 'custom:8a1d' });
+  if (route === '/v1/custom-exercises') {
+    const own = init.body as Schemas['NewCustomExercise'];
+    return ok({ ...own, id: own.name === 'Landmine Press' ? 'custom:8a1d' : `custom:${own.name}` });
+  }
   return ok({ status: 'GRANTED' }); // a consent
 };
 const mockApi = {
@@ -77,7 +81,15 @@ const mockProfile = {
   refresh: jest.fn(async () => {}),
 };
 const mockReport = jest.fn();
-const mockSaved = jest.fn(async (_move: unknown) => {});
+/** The phone's real copy of the user's own moves (trainData.ts), on a store kept in memory. */
+const mockStore = new Map<string, string>();
+const mockKv: KeyValue = {
+  getItemAsync: async (key) => mockStore.get(key) ?? null,
+  setItemAsync: async (key, value) => void mockStore.set(key, value),
+  removeItemAsync: async (key) => void mockStore.delete(key),
+};
+const mockCache = createTrainingCache(mockKv);
+const mockSaved = jest.fn((move: Schemas['CustomExercise']) => mockCache.saved(move));
 // One object, as the real provider gives: a screen that reads on its services' change reads once.
 const mockServices = {
   profile: mockProfile,
@@ -116,6 +128,7 @@ beforeEach(() => {
   mockApi.PUT.mockImplementation(mockAnswer);
   mockApi.POST.mockImplementation(mockAnswer);
   mockFile = fixture('strong-program.csv');
+  mockStore.clear();
 });
 
 async function settle() {
@@ -425,5 +438,65 @@ describe('after the program', () => {
         }),
       }),
     );
+  });
+});
+
+describe('own moves of the draft, sent with the program', () => {
+  const header = fixture('strong-program.csv').split('\n')[0];
+  const row = (date: string, routine: string, name: string) => `${date},"${routine}",1h,"${name}",1,30,12,0,0,"","",`;
+  async function answer(file: string) {
+    await press(t('import.ownLabel', { file }));
+    await press(`${t('ownMove.kind')} ${t('ownMove.kinds.ISOLATION')}`);
+    await press(`${t('ownMove.equipment')} ${t('ownMove.equipments.CABLE')}`);
+    await press(`${t('ownMove.unilateral')} ${t('ownMove.no')}`);
+    await press(t('ownMove.save'));
+  }
+  const posts = () => mockApi.POST.mock.calls.filter(([route]) => route === '/v1/custom-exercises');
+
+  test("two own moves made: the phone keeps both (each kept after the other, none lost)", async () => {
+    mockFile = [
+      header,
+      row('2025-03-03 18:00:00', 'Push', 'Landmine Press'),
+      row('2025-03-03 18:00:00', 'Push', 'Cable Fly'),
+      row('2025-03-10 18:00:00', 'Push', 'Landmine Press'),
+      row('2025-03-10 18:00:00', 'Push', 'Cable Fly'),
+    ].join('\n');
+    await toDraft();
+    await answer('Landmine Press');
+    await answer('Cable Fly');
+    await press(t('onboarding.programImport.confirm'));
+    expect(posts()).toHaveLength(2);
+    const kept = JSON.parse(mockStore.get('train.own') ?? '[]') as Schemas['CustomExercise'][];
+    expect(kept.map((m) => m.id).sort()).toEqual(['custom:8a1d', 'custom:Cable Fly']);
+  });
+
+  test('one name in other case or spaces, on two days, is one own move', async () => {
+    mockFile = [
+      header,
+      row('2025-03-03 18:00:00', 'Push', 'Cable Fly'),
+      row('2025-03-06 18:00:00', 'Pull', 'cable  fly'),
+      row('2025-03-10 18:00:00', 'Push', 'Cable Fly'),
+      row('2025-03-13 18:00:00', 'Pull', 'cable  fly'),
+    ].join('\n');
+    await toDraft();
+    await answer('Cable Fly');
+    expect(screen.queryByText(t('onboarding.programImport.unmatched'))).toBeNull();
+    await press(t('onboarding.programImport.confirm'));
+    expect(posts()).toHaveLength(1);
+    const days = (programPuts()[0][1].body as Schemas['OwnProgram']).days;
+    expect(days.map((day) => day.exercises.map((e) => e.exerciseId))).toEqual([['custom:Cable Fly'], ['custom:Cable Fly']]);
+  });
+
+  test('an answered own move can be changed: the move picked from the catalog instead, no own move made', async () => {
+    await toDraft();
+    await answer('Landmine Press');
+    await press(t('onboarding.programImport.changeLabel', { name: 'Landmine Press' }));
+    expect(screen.getByText(t('onboarding.programImport.unmatched'))).toBeOnTheScreen();
+    await press(t('import.otherLabel', { file: 'Landmine Press' }));
+    await fireEvent.changeText(screen.getByLabelText(t('import.search')), 'squat');
+    await press(t('import.pickLabel', { move: name('squat'), file: 'Landmine Press' }));
+    await press(t('onboarding.programImport.confirm'));
+    expect(posts()).toEqual([]);
+    expect((programPuts()[0][1].body as Schemas['OwnProgram']).days[0].exercises[2].exerciseId).toBe('squat');
   });
 });
