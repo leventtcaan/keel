@@ -4591,6 +4591,7 @@ tasks:
       - "Bugünü değiştirmenin geri alınması: `POST /v1/program/today` FULL (kısa sürümü kaldırır) ve UNDO (o günün seansını taşıma/atlama öncesine döndürür; zincirle kayan günler de geri gelir); başlanmış seansta 409"
       - "`Program.week[]` günün seans durumunu taşır (yapıldı / açık seans + workoutId): Bu hafta ve Antrenman bitmiş seansta Start göstermez, açık seansta Continue açar; telefon antrenman listesinden eşleme yapmaz"
       - "Sunucu bugünü söyler (`Program.today`, profilin saat dilimiyle) ve taşınan seansın nereden geldiğini (`WeekSession.movedFrom`); telefon taşı zincirini ve bugünü kendi saatinden çıkarmaz (#493 incelemesi)"
+      - "`Program.weekOf` (sunucunun haftasının pazartesi günü): Bu hafta şeridi haftayı telefonda çıkarmaz (#494 incelemesi; consistency ilk haftada ve rızasız 404/403)"
       - "Başlanmış seans ve kilit kuralları mevcut uçlarla aynı (409)"
     tests: ["ProgramStore/servis tablo testleri (hedef korunur, kaynak korunur, geri al), API testleri (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
@@ -4611,3 +4612,20 @@ tasks:
     tests: ["dayName birim testi tam anahtarla; ekran testleri"]
     refs: ["contracts/openapi.yaml", "backend/src/main/java/app/keel/training/ProgramTemplates.java"]
     learn: ["Fikstürün sözleşmeden sapması"]
+
+  - id: K-997
+    title: "İlk haftada günün bütçesi başlangıç hedefinden (Food today / Food left)"
+    milestone: M9a
+    module: nutrition
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-989]
+    why: "#501 incelemesi (9 Eki): `/v1/days/{day}/budget` hedef yokken 404; ilk karardan önce hedef yok, yeni kullanıcı 7 güne kadar yemek satırı ve Log görmüyor. Prototip ilk haftada 'Food today N kcal', öğünden sonra 'Food left' aralığı (ADR-072 Ek 1, K-989)"
+    acceptance:
+      - "İlk karardan önce (hedef yok, başlangıç hedefi var) günün bütçesi başlangıç hedefinden hesaplanır; kalan aralık (U5) sunucuda, telefon çıkarma yapmaz"
+      - "Rıza yoksa 403 CONSENT_REQUIRED aynen; başlangıç hedefi de yoksa 404 aynen"
+      - "Bu hafta yemek satırı ilk haftada da görünür (Food today / Food left + Log)"
+    tests: ["Bütçe tablo testi (hedef var / yalnız başlangıç / hiçbiri), API testi (CI), telefon ekran testi"]
+    refs: ["plan/kararlar/ADR-072-onboarding.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Başlangıç değerinin sürekli değerle aynı yoldan geçmesi"]
