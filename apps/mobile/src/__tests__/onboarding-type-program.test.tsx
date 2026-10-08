@@ -2,7 +2,7 @@
  * "Type it in" (K-968, ADR-073 #1b): #ob-own's other way in. The program editor (train/ProgramEditor, K-970 reuses it):
  * days with a name and, if the user wants, a weekday; moves from the catalog by search or the user's own (OwnMoveForm);
  * sets and a rep range each, within the contract's OwnProgram. "Use this program" sends it (PUT /v1/program) and the walk
- * goes on as from the import. Routes are rendered from the real src/app folder; the services are faked.
+ * goes on to its review (#ob-review), as from the import. Routes are rendered from the real src/app folder; the services are faked.
  */
 import * as path from 'node:path';
 
@@ -159,7 +159,7 @@ test('a move found by name comes in with its starting sets and range; the progra
       },
     ],
   ]);
-  expect(router.getPathname()).toBe('/onboarding/health-data');
+  expect(router.getPathname()).toBe('/onboarding/review');
 });
 
 test('days added and removed; a weekday one day has is not offered to another', async () => {
@@ -286,7 +286,7 @@ test('a save that fails is said, the walk waits, and the same program goes again
   await press(t('onboarding.typeProgram.confirm'));
   expect(puts()).toHaveLength(2);
   expect(puts()[1][1]).toEqual(puts()[0][1]);
-  expect(router.getPathname()).toBe('/onboarding/health-data');
+  expect(router.getPathname()).toBe('/onboarding/review');
 });
 
 test("an export with no routine to read offers typing it in instead", async () => {
