@@ -5,7 +5,7 @@
  * said of an upper/lower and push/pull/legs program).
  */
 import type { components } from '@/api/schema';
-import { alsoMoved, movedAway, sessionMoves, splitName, todaySession, weekRows } from '@/train/week';
+import { sessionMoves, splitName, todaySession, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -64,19 +64,6 @@ describe("today's session", () => {
     const moves = sessionMoves(UPPER, swapped);
     expect(moves[0]).toEqual({ planned: fresh, insteadOf: UPPER.exercises[0] });
     expect(moves[1]).toEqual({ planned: UPPER.exercises[1] });
-  });
-});
-
-describe('a moved session', () => {
-  test("moved off today: the session of today's weekday the server put on another date", () => {
-    const p = program([session('u', '2026-10-14', { moved: true }), session('l', '2026-10-15', { moved: true })]);
-    expect(movedAway(p, TUESDAY)).toEqual({ session: p.week?.[0], day: UPPER });
-    expect(movedAway(program([session('u', TUESDAY)]), TUESDAY)).toBeNull();
-  });
-
-  test('the others the week moved with it, in date order', () => {
-    const p = program([session('u', '2026-10-14', { moved: true }), session('l', '2026-10-15', { moved: true }), session('p', '2026-10-16')]);
-    expect(alsoMoved(p, 'u').map((s) => s.day.id)).toEqual(['l']);
   });
 });
 

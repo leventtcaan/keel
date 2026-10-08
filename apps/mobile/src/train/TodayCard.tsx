@@ -12,7 +12,7 @@ import { MoveThumb } from './MoveThumb';
 import { dayName, exerciseName, rackNote } from './program';
 import { repCount } from './reps';
 import type { Move } from './trainData';
-import { type Found, alsoMoved, sessionMoves, weekdayOf } from './week';
+import { type Found, sessionMoves, weekdayOf } from './week';
 
 type Schemas = components['schemas'];
 
@@ -22,12 +22,12 @@ type Props = {
   date: string;
   /** The week's session on today, as the server set it; null on a day without one. */
   today: Found | null;
-  /** The session of today's weekday the server moved to another day ("Move it"). */
-  away: Found | null;
   moves: ReadonlyMap<string, Move>;
   units: UnitSystem;
   /** A workout under way: continued, not started again. */
   underWay: boolean;
+  /** With no session today, a session of the week below can be started: the rest line says so. */
+  canPick: boolean;
   onStart: (programDayId: string) => void;
 };
 
@@ -36,18 +36,19 @@ const weekdayShort = (date: string) => t(`programEditor.weekdayShort.${weekdayOf
 /**
  * Today's session (K-970, prototype `#train` › `.card.ink`): the session the server put on today, by its day's name;
  * each move with its image, sets × reps, the next load the server set and "held" while loads are held; today's cardio
- * after lifting; Start and Change. Moved off today, skipped, or a week off, it says so instead, with the days that
- * shifted (the server's week). Every number is the server's.
+ * after lifting; Start and Change. Skipped or a week off, it says so instead; a day without a session is rest. Where a
+ * moved session went is not told here: `moved` says only that a session is off its usual day, and the week below marks
+ * it (the server's own word on what moved where comes with K-995). Every number is the server's.
  */
-export function TodayCard({ program, date, today, away, moves, units, underWay, onStart }: Props) {
+export function TodayCard(props: Props) {
   return (
     <InverseSurface>
-      <Body program={program} date={date} today={today} away={away} moves={moves} units={units} underWay={underWay} onStart={onStart} />
+      <Body {...props} />
     </InverseSurface>
   );
 }
 
-function Body({ program, date, today, away, moves, units, underWay, onStart }: Props) {
+function Body({ program, date, today, moves, units, underWay, canPick, onStart }: Props) {
   const { color } = useTheme();
   const restWeek = program.restUntil !== undefined;
   const session = restWeek || today === null || today.session.skipped === true ? null : today;
@@ -58,11 +59,7 @@ function Body({ program, date, today, away, moves, units, underWay, onStart }: P
   let line: string | null = null;
   if (restWeek) line = t('train.status.restWeekNote');
   else if (today?.session.skipped === true) line = t('train.skipped');
-  else if (today === null && away !== null) line = t('train.movedTo', { weekday: weekdayShort(away.session.date) });
-  else if (today === null) line = t('train.restDay');
-  const shifted = today === null && away !== null ? alsoMoved(program, away.day.id) : [];
-  const then =
-    shifted.length === 0 ? null : t('train.movedThen', { days: shifted.map((f) => t('train.weekRow', { weekday: weekdayShort(f.session.date), day: dayName(f.day) })).join(', ') });
+  else if (today === null) line = t(canPick ? 'train.restDayPick' : 'train.restDay');
 
   const cardio = program.cardio?.sessions.find((s) => s.weekday === weekdayOf(date) && s.place === 'AFTER_LIFT');
   const short = session?.session.short === true;
@@ -90,7 +87,6 @@ function Body({ program, date, today, away, moves, units, underWay, onStart }: P
         {title}
       </Text>
       {line !== null && <Text style={[styles.text, { color: color.text }]}>{line}</Text>}
-      {then !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{then}</Text>}
       {shown.map(({ planned }) => {
         const name = exerciseName(planned.exerciseId, moves);
         const move = moves.get(planned.exerciseId);

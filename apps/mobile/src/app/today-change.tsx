@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,6 +42,14 @@ export default function TodayChangeScreen() {
   const [busy, setBusy] = useState(false);
   // A ref, not state: two taps in the same moment both see state from before either ran.
   const sending = useRef(false);
+  // An answer that comes once the sheet has gone closes nothing: going back then would close another screen.
+  const shown = useRef(true);
+  useEffect(() => {
+    shown.current = true;
+    return () => {
+      shown.current = false;
+    };
+  }, []);
 
   const today = data?.program == null ? null : todaySession(data.program, day);
   const session = today !== null && today.day.id === programDayId && today.session.skipped !== true ? today : null;
@@ -53,6 +61,7 @@ export default function TodayChangeScreen() {
     setBusy(true);
     const answer = await changeToday(api, session.day.id, change);
     sending.current = false;
+    if (!shown.current) return;
     setBusy(false);
     if (answer.kind === 'done') router.back();
     else setProblem(t(SAID[answer.kind]));

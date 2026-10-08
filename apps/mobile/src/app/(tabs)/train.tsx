@@ -14,7 +14,7 @@ import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { movedAway, splitName, todaySession, weekRows } from '@/train/week';
+import { splitName, todaySession, weekRows } from '@/train/week';
 import { activeWorkout } from '@/train/workout';
 
 /**
@@ -83,6 +83,7 @@ export default function TrainScreen() {
   const notes = programNotes(program, data?.declared);
   // With no session today (and no week off), any of the week's can be started from its row.
   const pick = today === null && program.restUntil === undefined && active === null;
+  const rows = weekRows(program, day);
   return (
     <Screen>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.head', { split: splitName(program), days })}</Text>
@@ -96,21 +97,21 @@ export default function TrainScreen() {
         program={program}
         date={day}
         today={today}
-        away={movedAway(program, day)}
         moves={moves}
         units={units}
         underWay={active !== null}
+        canPick={pick && rows.some((row) => row.session.skipped !== true)}
         onStart={start}
       />
       <View style={styles.week}>
         <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
           {t('train.thisWeek')}
         </Text>
-        {weekRows(program, day).map((row) => {
+        {rows.map((row) => {
           const tag = row.session.skipped === true ? t('train.skippedTag') : row.session.moved === true ? t('train.moved') : null;
           const label = t('train.startDay', { day: dayName(row.day) });
           const startRow =
-            pick && row.session.skipped !== true ? <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" size="sm" onPress={() => start(row.day.id)} /> : null;
+            pick && row.session.skipped !== true ? <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} /> : null;
           return (
             <View key={row.day.id} style={[styles.row, { borderColor: color.line }]}>
               <Text style={[styles.text, styles.grow, { color: color.text }]}>

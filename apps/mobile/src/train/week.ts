@@ -50,17 +50,6 @@ export function sessionMoves(day: Schemas['ProgramDay'], session: Schemas['WeekS
   });
 }
 
-/** The session of today's weekday that the server moved to another date ("Move it"): today is then rest. */
-export function movedAway(program: Schemas['Program'], date: string): Found | null {
-  const weekday = weekdayOf(date);
-  return sessions(program).find((f) => f.session.moved === true && f.session.date !== date && f.day.weekday === weekday) ?? null;
-}
-
-/** The other sessions the week moved, in date order: the days that shifted with the one moved off today. */
-export function alsoMoved(program: Schemas['Program'], programDayId: string): Found[] {
-  return sessions(program).filter((f) => f.session.moved === true && f.day.id !== programDayId);
-}
-
 /** The week's sessions but today's, in date order, each on the weekday of its date. */
 export function weekRows(program: Schemas['Program'], date: string): WeekRow[] {
   return sessions(program)

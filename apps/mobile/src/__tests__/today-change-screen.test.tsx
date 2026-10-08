@@ -4,7 +4,7 @@
  * failure says so on the sheet, and nothing is taken as changed. The short version offers no second short; a workout
  * of that day under way leaves only the short version (the server refuses a move or a skip then).
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import TodayChangeScreen from '@/app/today-change';
 import type { components } from '@/api/schema';
@@ -92,6 +92,30 @@ test.each([
   await show();
   await fireEvent.press(await screen.findByText('Move it'));
   expect(await screen.findByText(t(key))).toBeTruthy();
+  expect(mockBack).not.toHaveBeenCalled();
+});
+
+test('two taps while the answer is on its way send the change once', async () => {
+  let answer: (value: unknown) => void = () => undefined;
+  mockAnswer = () => new Promise((resolve) => (answer = resolve));
+  await show();
+  const move = await screen.findByText('Move it');
+  await fireEvent.press(move);
+  await fireEvent.press(move);
+  await fireEvent.press(screen.getByText('Skip today'));
+  expect(mockPost).toHaveBeenCalledTimes(1);
+  await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
+  expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('an answer that comes after the sheet has gone closes nothing: another screen may be up', async () => {
+  let answer: (value: unknown) => void = () => undefined;
+  mockAnswer = () => new Promise((resolve) => (answer = resolve));
+  const { rerender } = await show();
+  await fireEvent.press(await screen.findByText('Move it'));
+  // The sheet goes (another screen takes its place) before the answer comes.
+  await rerender(<ThemeProvider>{null}</ThemeProvider>);
+  await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
   expect(mockBack).not.toHaveBeenCalled();
 });
 

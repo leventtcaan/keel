@@ -10,6 +10,7 @@ import TrainScreen from '@/app/(tabs)/train';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { tokens } from '@/theme/tokens';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
@@ -160,7 +161,9 @@ test('no cardio on a day the server put none', async () => {
   expect(screen.queryByText('Cardio, easy')).toBeNull();
 });
 
-test('moved off today: today is rest, the card says where it went and which days shifted with it, and the week marks them', async () => {
+// `moved` says only that a session is not on its usual day: where today's went, and which moves shifted with it, the
+// server does not say yet (K-995). The card says nothing it would have to guess; the week marks what the server marks.
+test('moved sessions are marked in the week; today is rest, and the card does not guess which one was today\'s', async () => {
   mockData = withProgram({
     week: [
       { programDayId: 'a', date: '2026-09-30', moved: true, exerciseIds: ['bench_press', 'dip'] },
@@ -169,10 +172,29 @@ test('moved off today: today is rest, the card says where it went and which days
   });
   await show();
   expect(await screen.findByText('Rest')).toBeTruthy();
-  expect(screen.getByText('Moved to Wed. Today is rest.')).toBeTruthy();
-  expect(screen.getByText('Then: Fri · Lower A.')).toBeTruthy();
   expect(screen.getAllByText(t('train.moved'))).toHaveLength(2);
+  expect(screen.getByText('Wed · Upper A')).toBeTruthy();
+  expect(screen.queryByText(/Moved to/)).toBeNull();
+  expect(screen.queryByText(/Then:/)).toBeNull();
   expect(screen.queryByText('Start workout')).toBeNull();
+});
+
+test('a session moved again, and two moves in one week: no chain is told on the card', async () => {
+  const monday = { id: 'm', nameKey: 'push', weekday: 'MONDAY' as const, exercises: [] };
+  mockData = withProgram({
+    days: [...PROGRAM.days, monday],
+    // Monday's moved to Wednesday, then on to Friday; Tuesday's moved to Thursday, Thursday's to Saturday.
+    week: [
+      { programDayId: 'a', date: '2026-10-01', moved: true, exerciseIds: ['bench_press', 'dip'] },
+      { programDayId: 'm', date: '2026-10-02', moved: true, exerciseIds: [] },
+      { programDayId: 'b', date: '2026-10-03', moved: true, exerciseIds: ['squat'] },
+    ],
+  });
+  await show();
+  expect(await screen.findByText('Rest')).toBeTruthy();
+  expect(screen.getAllByText(t('train.moved'))).toHaveLength(3);
+  expect(screen.queryByText(/Moved to/)).toBeNull();
+  expect(screen.queryByText(/Then:/)).toBeNull();
 });
 
 test('skipped: no catch-up, nothing to start or change', async () => {
@@ -186,9 +208,20 @@ test('skipped: no catch-up, nothing to start or change', async () => {
 test('a day without a session: rest, and any session of the week can be started from its row', async () => {
   mockData = withProgram({ week: [THURSDAY] });
   await show();
-  expect(await screen.findByText(t('train.restDay'))).toBeTruthy();
-  await fireEvent.press(screen.getByLabelText('Start Lower A'));
+  expect(await screen.findByText(t('train.restDayPick'))).toBeTruthy();
+  const start = screen.getByLabelText('Start Lower A');
+  // A full-size button (at least size.touch tall), not the small one.
+  expect(start).toHaveStyle({ paddingVertical: tokens.space.md });
+  await fireEvent.press(start);
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'b' } });
+});
+
+test('nothing to start below (a workout under way, or the rest skipped): rest, without pointing below', async () => {
+  mockData = withProgram({ week: [{ ...THURSDAY, skipped: true }] });
+  await show();
+  expect(await screen.findByText(t('train.restDay'))).toBeTruthy();
+  expect(screen.queryByText(t('train.restDayPick'))).toBeNull();
+  expect(screen.queryByLabelText('Start Lower A')).toBeNull();
 });
 
 test("Change opens today's changes for today's session", async () => {
