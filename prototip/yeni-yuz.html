@@ -279,6 +279,26 @@ button{cursor:pointer}
 .wrow button{width:44px;height:44px;border-radius:10px;border:0;background:var(--bg);color:var(--ink);display:grid;place-items:center}
 .wrow .wv2{text-align:center;font:900 26px/1 var(--f-display)}
 .wrow .wv2 small{display:block;font:700 12px/1.2 var(--f-body);color:var(--muted)}
+.tdays{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tdays button{flex:none;min-height:44px;border:0;border-radius:12px;padding:6px 12px;background:var(--surface);color:var(--ink);font-weight:700;font-size:15px;text-align:left}
+.tdays button[aria-pressed="true"]{background:var(--block);color:var(--block-fg)}
+.tdays button small{display:block;font-weight:600;font-size:12px;opacity:.75}
+.tday{display:grid;gap:10px}
+.tday label.tname{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+.tday input{min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:700 17px var(--f-body);padding-inline:12px}
+.twd{display:flex;gap:4px;flex-wrap:wrap}
+.twd button{min-width:44px;min-height:40px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-weight:700;font-size:14px}
+.twd button[aria-pressed="true"]{background:var(--block);color:var(--block-fg);border-color:transparent}
+.tmove{display:grid;gap:8px;background:var(--surface);border-radius:14px;padding:10px 10px 10px 14px}
+.tmove .th{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center}
+.tmove .th b{font-size:16.5px}
+.tmove .th button{width:44px;height:44px;border:0;background:none;color:var(--muted);display:grid;place-items:center}
+.tsteps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tstep{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;align-items:center;background:var(--bg);border-radius:10px}
+.tstep button{width:40px;height:40px;border:0;background:none;color:var(--ink);display:grid;place-items:center}
+.tstep span{text-align:center;font:900 20px/1 var(--f-display)}
+.tstep span small{display:block;font:700 11px/1.2 var(--f-body);color:var(--muted)}
+.tadd{min-height:48px;border:1.5px dashed var(--line);border-radius:14px;background:none;color:var(--accent-text);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:6px}
 
 /* review */
 .rev{display:grid;gap:10px}
@@ -573,6 +593,7 @@ button{cursor:pointer}
         <li><b>Antrenman:</b> dinlenme hiçbir düğmeyi kapatmaz, duraklat, sonra doldur (geç kayıt sayar), seti düzelt, her hareketten sonra analiz satırı.</li>
         <li><b>Antrenman sonu:</b> kutlama, kaldırılan toplam kilo, Apple Watch kalorisi, rekor, kas haritası. Paylaşım buradan.</li>
         <li><b>Paylaşım:</b> "the call" kalktı; antrenman, rekor, seri, gelişim çıkartmaları; fotoğraf ya da video, hareketli sayılar.</li>
+        <li><b>Yeni (8 Eki):</b> "Type it in" artık bir ekran (#ob-type): kendi programını gün gün yaz. Değerlendir lütfen.</li>
         <li><b>Deneme 2 hafta:</b> "ilk karar + 3 gün" App Store'da kurulamıyor (sabit süreler); 2 hafta bu niyeti herkes için karşılayan en kısa seçenek. Onayın lazım.</li>
       </ul>
     </details>
@@ -671,6 +692,10 @@ const I = new Proxy({}, { get: (_, k) => (s, w) => sv(P[k], s, w) });
 const S = {
   scenario: 'd1', mode: store.get('mode', 'light'),
   screen: 'welcome', stack: [], sheet: null, toast: null, startView: false, reveal: false,
+  typed: { open: 0, days: [
+    { name: 'Push', wd: 'Mon', moves: [{ n: 'Bench press', sets: 3, min: 6, max: 10 }, { n: 'Overhead press', sets: 3, min: 6, max: 10 }, { n: 'Lateral raise', sets: 3, min: 8, max: 12 }] },
+    { name: 'Pull', wd: 'Wed', moves: [{ n: 'Lat pulldown', sets: 3, min: 6, max: 10 }, { n: 'Seated row', sets: 3, min: 6, max: 10 }] },
+    { name: 'Legs', wd: 'Fri', moves: [{ n: 'Back squat', sets: 3, min: 6, max: 10 }, { n: 'Romanian deadlift', sets: 3, min: 6, max: 10 }] }] },
   ob: { goal: null, exp: null, program: null, daysN: 3, consent: null, height: 178, weight: 84.0, year: 1999, sex: 'male', activity: null,
     lifts: { squat: 100, bench: 80, deadlift: 140 }, review: { days: true, chest: true, ham: true } },
   prep: 0, remMon: false, trialRem: false, plan: 'year',
@@ -806,7 +831,7 @@ function tabbar() {
 /* ---------- onboarding routing: the walk differs for the new lifter, the experienced one, and the one with a program ---------- */
 function obRoute() {
   const r = ['ob-goal', 'ob-exp', 'ob-program'];
-  if (S.ob.program === 'own') r.push('ob-own', 'ob-review'); else r.push('ob-days');
+  if (S.ob.program === 'own') { r.push('ob-own'); if (S.ob.ownsrc === 'type') r.push('ob-type'); r.push('ob-review'); } else r.push('ob-days');
   r.push('ob-consent', 'ob-about', 'ob-activity');
   if (S.ob.program === 'own' || (S.ob.exp && S.ob.exp !== 'new')) r.push('ob-weights');
   return r;
@@ -861,6 +886,23 @@ const SCREENS = {
       <button class="opt" type="button" data-act="ownsrc" data-val="import"><span class="oi">${I.import(22)}</span><span class="ot">Import from Strong or Hevy<small>Your history comes too</small></span><span class="tag">Fastest</span></button>
       <button class="opt" type="button" data-act="ownsrc" data-val="type"><span class="oi">${I.edit(22)}</span><span class="ot">Type it in<small>Days and moves, about 3 minutes</small></span></button>
     </div>`) },
+
+  'ob-type': { n: 'Programını yaz (yeni)', t: 30, r: () => {
+    const T = S.typed, d = T.days[T.open], WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const step = (act, i, val, unit, label) => `<div class="tstep"><button type="button" data-act="${act}" data-val="${i},-1" aria-label="Less ${label}">${I.minus(18, 2.6)}</button><span class="tnum" aria-live="polite">${val}<small>${unit}</small></span><button type="button" data-act="${act}" data-val="${i},1" aria-label="More ${label}">${I.plus(18, 2.6)}</button></div>`;
+    return obFrame('ob-type', `
+    <h1 class="q">Type your program</h1>
+    <p class="why">Day by day. Change it any time.</p>
+    <div class="tdays" role="group" aria-label="Days">${T.days.map((x, i) => `<button type="button" data-act="tday" data-val="${i}" aria-pressed="${i === T.open}">${x.name}<small>${x.wd || 'Any day'}</small></button>`).join('')}<button type="button" data-act="taddday" aria-label="Add a day">${I.plus(18, 2.6)}</button></div>
+    <div class="tday">
+      <label class="tname" for="tname">Day name<input id="tname" type="text" maxlength="60" value="${d.name}" data-act-input="tname"></label>
+      <div class="twd" role="group" aria-label="Weekday, optional">${WD.map(w => { const taken = T.days.some((x, i) => i !== T.open && x.wd === w); return `<button type="button" data-act="twd" data-val="${w}" aria-pressed="${d.wd === w}" ${taken ? 'disabled style="opacity:.35"' : ''}>${w}</button>`; }).join('')}</div>
+      ${d.moves.map((m, i) => `<div class="tmove"><div class="th"><b>${m.n}</b><button type="button" data-act="tdel" data-val="${i}" aria-label="Remove ${m.n}">${I.trash(18)}</button></div>
+        <div class="tsteps">${step('tsets', i, m.sets, 'sets', 'sets')}${step('trep', i, `${m.min}-${m.max}`, 'reps', 'reps')}</div></div>`).join('')}
+      <button class="tadd" type="button" data-act="proto" data-val="Search the moves, or add one of your own.">${I.plus(18, 2.6)}Add a move</button>
+    </div>`,
+    `<button class="btn primary wide" type="button" data-act="obgo" data-val="ob-type">Use this program</button>`);
+  } },
 
   'ob-review': { n: 'Program incelemesi (yeni)', t: 75, r: () => {
     const rv = S.ob.review, n = Object.values(rv).filter(Boolean).length;
@@ -1363,16 +1405,17 @@ function shareScreen() {
 /* ---------- index ---------- */
 const FLOWS = [
   { t: '1 · İlk gün (yeni başlayan, program bizden)', sc: 'd1', items: ['welcome', 'ob-goal', 'ob-exp', 'ob-program', 'ob-days', 'ob-consent', 'ob-about', 'ob-activity', 'ob-preparing', 'ob-plan', 'paywall', 'home', 'train', 'today', 'workout', 'summary', 'share', 'progress', 'weigh', 'health-jit', 'checkin', 'week1', 'w1change'] },
-  { t: '1b · Kendi programı olan (tecrübeli)', sc: 'own', items: ['ob-program', 'ob-own', 'ob-review', 'ob-weights', 'ob-plan', 'paywall', 'train', 'editprog', 'workout'] },
+  { t: '1b · Kendi programı olan (tecrübeli)', sc: 'own', items: ['ob-program', 'ob-own', 'ob-type', 'ob-review', 'ob-weights', 'ob-plan', 'paywall', 'train', 'editprog', 'workout'] },
   { t: '2 · Sıradan gün (12. hafta)', sc: 'w12', items: ['home', 'plus', 'train', 'workout', 'editset', 'endwo', 'summary', 'share', 'progress', 'weigh', 'meal', 'barcode', 'photos', 'settings'] },
   { t: '3 · Pazartesi (12. hafta)', sc: 'w12', items: ['home-mon', 'checkin', 'call'] },
   { t: '4 · Dönüş ve duraklatma', sc: 'w12', items: ['return', 'life'] },
 ];
-const PREVKEY = { 'ob-plan': 'ob-plan', 'ob-exp': null, 'ob-own': null, 'ob-review': null, 'ob-weights': null, 'home-mon': 'home-mon', today: null, editprog: null, w1change: null, editset: null, endwo: null, swap: null };
+const PREVKEY = { 'ob-plan': 'ob-plan', 'ob-exp': null, 'ob-own': null, 'ob-type': null, 'ob-review': null, 'ob-weights': null, 'home-mon': 'home-mon', today: null, editprog: null, w1change: null, editset: null, endwo: null, swap: null };
 const prevKey = (id, sc) => id in PREVKEY ? PREVKEY[id] : (SCREENS[id]?.scen ? (sc === 'own' ? null : `${id}.${sc}`) : id);
 const CH = {
   welcome: 'Aynı.', 'ob-goal': 'Aynı.', 'ob-exp': 'YENİ: deneyim. Yeni başlayan ağırlıklarını ilk seansta bulur, tecrübeli girer.',
   'ob-program': '"I have my own" artık ayrı akışa gider (1b).', 'ob-own': 'YENİ: içe aktar ya da gir.',
+  'ob-type': 'YENİ (8 Eki, K-968): elle yaz. Gün (ad, isteğe bağlı hafta günü), hareket ekle/çıkar, set ve tekrar aralığı. Aynı düzenleyici Antrenman › Edit › Moves olur.',
   'ob-review': 'YENİ: programın Güray kurallarıyla incelenir (6 gün K-36, set aralığı K-11), 3 öneri; uygula ya da benimki kalsın.',
   'ob-days': 'Aynı.', 'ob-consent': 'Aynı.', 'ob-about': 'Aynı.', 'ob-activity': 'Aynı.',
   'ob-weights': 'YENİ: tecrübeli için çalışma ağırlıkları; atlanabilir, ilk seans bulur.',
@@ -1478,7 +1521,8 @@ function countWords() {
 function prepFor(id) {
   if (id === 'ob-preparing') S.prep = 3;
   if (['workout', 'editset', 'endwo', 'swap'].includes(id)) { S.wo = newWorkout(); if (id === 'editset') { S.wo.logged['0-0'] = { kg: 100, reps: 8, rir: 1 }; S.editKey = '0-0'; } }
-  if (id === 'ob-review' || id === 'ob-own' || id === 'ob-weights') S.ob.program = 'own';
+  if (id === 'ob-review' || id === 'ob-own' || id === 'ob-type' || id === 'ob-weights') S.ob.program = 'own';
+  if (id === 'ob-type') S.ob.ownsrc = 'type';
   if (S.scenario === 'own') { S.ob.program = 'own'; S.ob.exp = 'exp'; }
   if (S.scenario === 'd1' && ['ob-exp', 'ob-program', 'ob-days', 'ob-plan', 'paywall', 'home', 'train', 'workout', 'summary'].includes(id)) { if (S.ob.program === 'own') S.ob.program = 'build'; if (!S.ob.exp || S.ob.exp === 'exp') S.ob.exp = 'new'; }
 }
@@ -1539,7 +1583,13 @@ const ACT = {
     setTimeout(() => go(obNext(from)), 220); },
   obgo: v => go(obNext(v)),
   daysn: v => { S.ob.daysN = Number(v); render(); setTimeout(() => go(obNext('ob-days')), 220); },
-  ownsrc: v => { toast(v === 'import' ? 'Reads your Strong or Hevy file on this phone: 6 days, 21 moves, 14 weeks of history.' : 'Day by day: pick moves, sets and reps.', true); setTimeout(() => go('ob-review'), 1100); },
+  ownsrc: v => { S.ob.ownsrc = v; if (v === 'type') return go('ob-type'); toast('Reads your Strong or Hevy file on this phone: 6 days, 21 moves, 14 weeks of history.', true); setTimeout(() => go('ob-review'), 1100); },
+  tday: v => { S.typed.open = Number(v); render(); },
+  taddday: () => { const T = S.typed; if (T.days.length >= 7) return toast('A program holds up to 7 days.'); T.days.push({ name: `Day ${T.days.length + 1}`, wd: null, moves: [] }); T.open = T.days.length - 1; render(); },
+  twd: v => { const d = S.typed.days[S.typed.open]; d.wd = d.wd === v ? null : v; render(); },
+  tdel: v => { S.typed.days[S.typed.open].moves.splice(Number(v), 1); render(); },
+  tsets: v => { const [i, dd] = v.split(',').map(Number); const m = S.typed.days[S.typed.open].moves[i]; m.sets = Math.min(20, Math.max(1, m.sets + dd)); render(); },
+  trep: v => { const [i, dd] = v.split(',').map(Number); const m = S.typed.days[S.typed.open].moves[i]; const w = m.max - m.min; m.min = Math.min(100 - w, Math.max(1, m.min + dd)); m.max = m.min + w; render(); },
   revtoggle: (v, e, el) => { S.ob.review[v] = el.checked; render(); },
   revgo: () => go(obNext('ob-review')),
   revkeep: () => { S.ob.review = { days: false, chest: false, ham: false }; toast('Your program stays as it is. We will show you what the data says.'); setTimeout(() => go(obNext('ob-review')), 900); },
@@ -1610,6 +1660,7 @@ function finishWeigh() {
   else { go('home', { reset: true }); toast('Saved · 7-day average 80.3 kg'); }
 }
 
+$('#app').addEventListener('input', e => { const el = e.target.closest('[data-act-input="tname"]'); if (!el) return; const d = S.typed.days[S.typed.open]; d.name = el.value.trim() || d.name; const b = $$('.tdays button')[S.typed.open]; if (b && b.firstChild) b.firstChild.nodeValue = d.name; });
 $('#app').addEventListener('click', e => {
   const el = e.target.closest('[data-go],[data-act],[data-tab]'); if (!el || el.disabled || el.matches('input[type=checkbox]')) return;
   if (el.dataset.tab) { S.stack = []; S.screen = el.dataset.tab; S.sheet = null; S.toast = null; return render(true); }
