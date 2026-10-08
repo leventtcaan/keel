@@ -5,7 +5,7 @@
  * move", which undoes the swap for today. From "Gym is busy": first "Which one is taken?", then today only. The server
  * answers; CONFLICT and no connection are said on the sheet.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import SwapScreen from '@/app/swap';
 import type { components } from '@/api/schema';
@@ -28,7 +28,7 @@ const PULLDOWN = planned('lat_pulldown', ['seated_row']);
 const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
-  days: [{ id: 'a', nameKey: 'upper_a', weekday: 'TUESDAY', exercises: [BENCH, PULLDOWN] }],
+  days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [BENCH, PULLDOWN] }],
   week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: ['bench_press', 'lat_pulldown'] }],
 };
 const SWAPPED: Schemas['Program'] = {
@@ -129,6 +129,31 @@ test('"Gym is busy": which one is taken first, by its name today; then the optio
   await fireEvent.press(screen.getByText('Seated row'));
   expect(screen.queryByText('From now on')).toBeNull();
   expect(mockPost).toHaveBeenCalledWith('/v1/program/swap', { body: { programDayId: 'a', exerciseId: 'lat_pulldown', to: 'seated_row', scope: 'TODAY' } });
+});
+
+test('two taps while the answer is on its way swap once', async () => {
+  let answer: (value: unknown) => void = () => undefined;
+  mockAnswer = () => new Promise((resolve) => (answer = resolve));
+  await show();
+  await fireEvent.press(await screen.findByText('Push-up'));
+  const today = screen.getByText('Today only');
+  await fireEvent.press(today);
+  await fireEvent.press(today);
+  await fireEvent.press(screen.getByText('From now on'));
+  expect(mockPost).toHaveBeenCalledTimes(1);
+  await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
+  expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('an answer that comes after the sheet has gone closes nothing', async () => {
+  let answer: (value: unknown) => void = () => undefined;
+  mockAnswer = () => new Promise((resolve) => (answer = resolve));
+  const { rerender } = await show();
+  await fireEvent.press(await screen.findByText('Push-up'));
+  await fireEvent.press(screen.getByText('Today only'));
+  await rerender(<ThemeProvider>{null}</ThemeProvider>);
+  await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
+  expect(mockBack).not.toHaveBeenCalled();
 });
 
 test('no option in this gym says so', async () => {

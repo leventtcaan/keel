@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -46,7 +46,16 @@ export default function SwapScreen() {
   const [to, setTo] = useState<string | null>(null);
   const [problem, setProblem, occurrence] = useProblem();
   const [busy, setBusy] = useState(false);
+  // A ref, not state: two taps in the same moment both see state from before either ran.
   const sending = useRef(false);
+  // An answer that comes once the sheet has gone closes nothing: going back then would close another screen.
+  const shown = useRef(true);
+  useEffect(() => {
+    shown.current = true;
+    return () => {
+      shown.current = false;
+    };
+  }, []);
 
   const program = data?.program.state === 'ready' ? data.program.value : null;
   const moves = movesOf(data, data?.own ?? []);
@@ -65,6 +74,7 @@ export default function SwapScreen() {
     setBusy(true);
     const answer = await swapMove(api, { programDayId: params.day, exerciseId, to: next, scope });
     sending.current = false;
+    if (!shown.current) return;
     setBusy(false);
     if (answer.kind === 'done') router.back();
     else setProblem(t(SAID[answer.kind]));

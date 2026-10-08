@@ -18,7 +18,7 @@ const planned = (exerciseId: string, swapOptions: string[] = []): Schemas['Plann
   swapOptions,
 });
 const BENCH = planned('bench_press', ['dumbbell_bench_press', 'machine_chest_press', 'push_up']);
-const DAY: Schemas['ProgramDay'] = { id: 'a', nameKey: 'upper_a', exercises: [BENCH, planned('lat_pulldown', ['seated_row'])] };
+const DAY: Schemas['ProgramDay'] = { id: 'a', nameKey: 'programDays.upper_a.name', exercises: [BENCH, planned('lat_pulldown', ['seated_row'])] };
 const found = (session: Partial<Schemas['WeekSession']> = {}): Found => ({
   day: DAY,
   session: { programDayId: 'a', date: '2026-09-29', exerciseIds: ['bench_press', 'lat_pulldown'], ...session },
