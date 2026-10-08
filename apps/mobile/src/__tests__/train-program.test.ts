@@ -51,7 +51,7 @@ test('back after a long break: the targets start a step lighter, and it says so 
 });
 
 test("a day's name: the copy of a generated day, the user's own text for their own", () => {
-  expect(dayName({ id: 'a', nameKey: 'upper_a', weekday: 'MONDAY', exercises: [] })).toBe('Upper A');
+  expect(dayName({ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'MONDAY', exercises: [] })).toBe('Upper A'); // the server's key, as the contract says (K-996)
   expect(dayName({ id: 'b', name: 'Push', exercises: [] })).toBe('Push');
 });
 

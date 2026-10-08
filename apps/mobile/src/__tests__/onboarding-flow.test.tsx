@@ -54,7 +54,7 @@ function mockProgram(trainingDays: string[], loads: Record<string, number> = {})
     source: 'GENERATED',
     days: trainingDays.map((weekday, i) => ({
       id: `a1b2c3d4-0000-4000-8000-00000000001${i}`,
-      nameKey: 'full_body_a',
+      nameKey: 'programDays.full_body_a.name',
       weekday,
       exercises: ['squat', 'bench_press', 'lat_pulldown'].map((id) => ({
         ...mockMove(id),

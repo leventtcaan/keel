@@ -59,7 +59,7 @@ const decision = (copyKey: string, extra: Partial<Schemas['Decision']> = {}): Sc
 const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
-  days: [{ id: 'a', nameKey: 'upper_a', weekday: 'TUESDAY', exercises: [] }],
+  days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [] }],
 };
 
 let mockAnswers: Record<string, Answer | 'offline'> = {};

@@ -30,7 +30,7 @@ const PROGRAM: Schemas['Program'] = {
   days: [
     {
       id: 'day-a',
-      nameKey: 'upper_a',
+      nameKey: 'programDays.upper_a.name',
       exercises: [
         { exerciseId: 'bench_press', baseSets: 2, sets: 2, reps: { min: 6, max: 10 }, targetRir: 1 },
         { exerciseId: 'lateral_raise', baseSets: 2, sets: 2, reps: { min: 8, max: 12 }, targetRir: 1 },

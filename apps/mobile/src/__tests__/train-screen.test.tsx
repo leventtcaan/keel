@@ -25,7 +25,7 @@ const PROGRAM: Schemas['Program'] = {
   days: [
     {
       id: 'a',
-      nameKey: 'upper_a',
+      nameKey: 'programDays.upper_a.name',
       weekday: 'MONDAY',
       exercises: [
         { exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, nextLoadKg: 62.5, nextReps: 6 },
@@ -34,7 +34,7 @@ const PROGRAM: Schemas['Program'] = {
     },
     {
       id: 'b',
-      nameKey: 'lower_a',
+      nameKey: 'programDays.lower_a.name',
       weekday: 'TUESDAY',
       exercises: [{ exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 }],
     },
