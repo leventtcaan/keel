@@ -267,7 +267,7 @@
         "onboarding.preparing.program",
         ["onboarding.preparing.cardio", "onboarding.preparing.noCardio", "onboarding.preparing.foodAndCardio", "onboarding.preparing.food"],
         ["onboarding.preparing.firstCall", "onboarding.preparing.firstWorkout"],
-        "onboarding.schedule.dayName.MONDAY",
+        ["onboarding.schedule.dayName.MONDAY", "onboarding.plan.today"],
         "onboarding.preparing.see"
       ],
       "notFirstView": ["onboarding.preparing.done", "onboarding.tryAgain", "onboarding.saveFailed", "onboarding.serverError", "onboarding.signOut", "onboarding.preparing.bringAgain"]

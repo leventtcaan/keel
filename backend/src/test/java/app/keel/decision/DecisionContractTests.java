@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.FileReader;
 import java.io.Reader;
 import java.lang.reflect.RecordComponent;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,32 @@ class DecisionContractTests {
         assertThat((List<String>) schema.get("required")).containsExactlyInAnyOrderElementsOf(fields);
         assertThat(Arrays.stream(StartingTarget.Range.class.getRecordComponents()).map(RecordComponent::getName))
                 .as("the maintenance estimate is the contract's KcalRange (U5)").containsExactly("low", "high");
+    }
+
+    @Test
+    void theFirstWeeksAreAGetTheServerAnswersFieldForFieldWithTheFirstCallsDayAsADate() throws Exception {
+        // K-990 (ADR-077 Ek 2): the first call's day the plan, the paywall and #ob-preparing name comes from here.
+        Map<String, Object> firstWeeks = map(map(map(contract().get("paths")).get("/v1/first-weeks")).get("get"));
+
+        assertThat(firstWeeks).containsEntry("operationId", "getFirstWeeks");
+        Map<String, Object> ok = map(map(firstWeeks.get("responses")).get("200"));
+        assertThat(map(map(map(ok.get("content")).get("application/json")).get("schema"))).containsEntry("$ref", "#/components/schemas/FirstWeeks");
+        assertThat(Arrays.stream(FirstWeeksController.class.getDeclaredMethods())
+                .map(method -> method.getAnnotation(GetMapping.class)).filter(mapping -> mapping != null)
+                .flatMap(mapping -> Arrays.stream(mapping.value())))
+                .contains("/v1/first-weeks");
+        Map<String, Object> schema = map(map(map(contract().get("components")).get("schemas")).get("FirstWeeks"));
+        List<String> fields = Arrays.stream(FirstWeeksController.FirstWeeksView.class.getRecordComponents()).map(RecordComponent::getName).toList();
+        assertThat(map(schema.get("properties")).keySet()).containsExactlyInAnyOrderElementsOf(fields);
+        // Absent in some weeks (the words) and once the first call is made (its day): the rest always there.
+        assertThat((List<String>) schema.get("required")).containsExactlyInAnyOrderElementsOf(
+                fields.stream().filter(field -> !List.of("contentKey", "firstCallOn").contains(field)).toList());
+        assertThat(map(map(schema.get("properties")).get("firstCallOn"))).containsEntry("type", "string").containsEntry("format", "date");
+        assertThat(FirstWeeksController.FirstWeeksView.class.getRecordComponents()).filteredOn(c -> c.getName().equals("firstCallOn"))
+                .singleElement().satisfies(c -> assertThat(c.getType()).isEqualTo(LocalDate.class));
+        Map<String, Object> reason = map(map(map(contract().get("components")).get("schemas")).get("Reason"));
+        assertThat(map(reason.get("properties")).keySet()).containsExactlyInAnyOrderElementsOf(
+                Arrays.stream(FirstWeeksController.SignalView.class.getRecordComponents()).map(RecordComponent::getName).toList());
     }
 
     private static Map<String, Object> contract() throws Exception {

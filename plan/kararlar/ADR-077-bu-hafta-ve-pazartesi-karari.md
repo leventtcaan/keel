@@ -92,5 +92,15 @@ ekran testleri: Today kelime bütçesi, karar ekranında dört parça.
   program üretimi/PUT: kendi programını getiren onboarding ortasında PUT eder; "bitti" anlamı taşımaz. (c) Tarihi `/v1/targets/starting`'e
   koymak: tartı yokken 404 döner, tarih kaybolur; ilk karar tartısız da verilir. (d) Profil cevabına koymak: kural decision'ın; profil
   modülü decision'a bağlanamaz, kural iki yerde yazılırdı.
-- Bilinen sapma: onboarding kayıttan günler sonra devam ettirilirse ilk gün kayıt günü kalır (cevaplar o gün verildi); ilk karar günü geçmişse
-  check-in açık gelir ve plan "Today" der.
+- **Bilinen sapma: geç devam (Levent'e bildirilecek).** Profil kaydedilip (#ob-preparing) uygulama kapanır, onboarding günler sonra devam
+  ettirilirse ilk gün yine kayıt günü (G) kalır; kapanış check-in günü K = G'den sonraki ilk check-in günü. Devam günü D'ye göre:
+  - D < K: fark yok; plan ve #ob-preparing K'yi gösterir.
+  - K ≤ D < K + 7 (kapanış haftası): check-in açık, plan ve #ob-preparing "Today" der. Karar 1. hafta kararıdır: G+1..K-1 arasındaki
+    planlı günler, kullanıcı planı henüz görmemişken "kaçırıldı" sayılır (Y/P < 0,7 → "kaçan seansı taşı", metin kaçan günü adıyla
+    söyler); his sorusu (WEEK1_FEEL) kuralına göre sorulabilir.
+  - D ≥ K + 7: 1. hafta kararı ve his sorusu hiç gelmez (kapanış haftası geçti; gönderilen his cevabı okunmaz); ilk karar sıradan bir
+    haftalık karar olur.
+  - İlk 8 hafta akışı (`FirstWeeks`) G'den saydığı için ileride başlar (ör. 10 gün sonra devam: 2. hafta, sözleri ile).
+  Neden kabul edildi: cevaplar ve plan G'de oluştu; bu yol nadir (onboarding ortasında kapatıp günlerce dönmemek). Kapanış haftasındaki
+  "kaçırıldı" sayımı U7 açısından tartışmalı (kullanıcı başlamadan kaçırdı denmesi); düzeltmesi (ör. ilk günü devamda ilerletmek ya da
+  planı görmeden geçen günleri P'ye katmamak) ürün kararı, Levent'e sorulacak.
