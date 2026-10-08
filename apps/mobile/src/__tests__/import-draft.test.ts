@@ -181,20 +181,44 @@ describe('the rules', () => {
     expect(ppl[0].moves).toEqual(ppl[3].moves);
   });
 
+  test('a routine is as many days as it was done a week: once a week on two weekdays in turn is one day without one', () => {
+    const named = (sessions: FileSession[]) => draftOf(sessions).map((day) => [day.name, day.weekday]);
+    const legs = (d: number) => session('Legs', 2025, 3, d, [['Squat', [5]]]);
+
+    expect(named([legs(3), legs(13), legs(17), legs(27)])).toEqual([['Legs', undefined]]); // Mon, Thu, Mon, Thu
+    expect(named([legs(3), legs(13)])).toEqual([['Legs', undefined]]); // Mon one week, Thu the next
+    // Tuesday, Tuesday, Wednesday, Wednesday: a tie for its one day, no weekday; next to A on Monday, no extra day either.
+    expect(named([...[3, 10, 17, 24].map((d) => session('A', 2025, 3, d, [['Row', [10]]])), ...[4, 11, 19, 26].map((d) => session('B', 2025, 3, d, [['Press', [8]]]))]))
+      .toEqual([['A', 'MONDAY'], ['B', undefined]]);
+    // Twice a week, Monday every week and the other day anywhere: Monday and a day without a weekday.
+    expect(named([...[3, 10, 17, 24].map((d) => session('X', 2025, 3, d, [['Squat', [5]]])), ...[4, 12, 20, 28].map((d) => session('X', 2025, 3, d, [['Squat', [5]]]))]))
+      .toEqual([['X', 'MONDAY'], ['X', undefined]]);
+  });
+
   test('two days wanting one weekday: the larger share keeps it, the other stays a day without one', () => {
     const sessions = [
       ...[3, 10, 17, 24].map((d) => session('A', 2025, 3, d, [['Squat', [5]]])), // Monday every week
-      session('C', 2025, 3, 4, [['Row', [10]]]), // Tuesday
-      session('C', 2025, 3, 10, [['Row', [10]]]), // Monday
-      session('C', 2025, 3, 18, [['Row', [10]]]), // Tuesday
-      session('C', 2025, 3, 24, [['Row', [10]]]), // Monday
+      ...[6, 10, 17, 24].map((d) => session('C', 2025, 3, d, [['Row', [10]]])), // Thursday, then Monday three weeks
     ];
 
     expect(draftOf(sessions).map((day) => [day.name, day.weekday])).toEqual([
       ['A', 'MONDAY'],
-      ['C', 'TUESDAY'],
       ['C', undefined],
     ]);
+  });
+
+  test('past the days a program has, the days that stand for the fewest sessions go, however placed', () => {
+    const sessions = [
+      ...weekly('P', [0, 2, 4], 'Squat'), // three days, four sessions each
+      ...weekly('Q', [1, 3], 'Bench'), // two days, four each
+      ...weekly('S', [5], 'Row'), // one day, four
+      // Six sessions on six weekdays in four weeks: two days without a weekday, three sessions each.
+      ...[3, 5, 11, 20, 22, 28].map((d) => session('R', 2025, 3, d, [['Curl', [12]]])),
+    ];
+    const draft = draftOf(sessions).map((day) => day.name);
+
+    expect(draft).toHaveLength(workoutParams.programDaysMax);
+    expect(draft.filter((name) => name === 'R')).toHaveLength(1);
   });
 
   test('moves come in the order they were usually done, not the order first seen', () => {
@@ -208,7 +232,7 @@ describe('the rules', () => {
   });
 
   test('a name spelt with other case or spaces is the same routine and the same move, shown as first written', () => {
-    const sessions = [session('Push Day', 2025, 3, 3, [['Cable Fly', [12]]]), session(' push  day', 2025, 3, 10, [['cable  fly', [12]]])];
+    const sessions = [session(' Push Day ', 2025, 3, 3, [[' Cable Fly ', [12]]]), session('push  day', 2025, 3, 10, [['cable  fly', [12]]])];
 
     expect(draftOf(sessions)).toEqual([{ name: 'Push Day', weekday: 'MONDAY', moves: [{ ownName: 'Cable Fly', sets: 1, reps: { min: 12, max: 14 } }] }]);
   });

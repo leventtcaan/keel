@@ -62,7 +62,7 @@
       "unit": "ratio",
       "tag": "urun",
       "source": "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md#D1",
-      "note": "A routine is a day on each weekday it fell on in at least this share of the weeks it was done (K-957): Upper on Monday and Thursday is two days. On no such weekday it is one day without one, and the user places it. Two days wanting one weekday: the larger share keeps it, the other stays without one."
+      "note": "A routine is as many days as it was done a week (K-957), each on a weekday it fell on in at least this share of the weeks it was done, the largest shares first: Upper on Monday and Thursday is two days. Weekdays tied at that count, or too few, leave a day without one, and the user places it (once a week on Monday and Thursday in turn is one day). Two days wanting one weekday: the larger share keeps it, the other stays without one."
     },
     {
       "key": "program_draft_reps_middle_share",

@@ -34,6 +34,8 @@ type Day = DraftDay & { sessions: number; share: number; wants?: Weekday; first:
 /** One spelling for a name written with other case or spaces. */
 const same = (name: string) => name.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
 /** The Monday of a session's week, on the phone's calendar. */
+/** A week in milliseconds: two weeks' Mondays differ by a whole number of them, give or take a clock change's hour. */
+const WEEK = 7 * 24 * 60 * 60 * 1000;
 const weekOf = (at: Date) => new Date(at.getFullYear(), at.getMonth(), at.getDate() - ((at.getDay() + 6) % 7)).getTime();
 
 /**
@@ -51,30 +53,33 @@ export function draftProgram(sessions: FileSession[], choices: ReadonlyMap<strin
   for (const session of [...sessions].sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())) {
     const key = same(session.routine ?? '');
     if (session.startedAt.getTime() < from || key === '') continue;
-    const routine = routines.get(key) ?? { name: (session.routine ?? '').trim(), done: [] };
+    const routine = routines.get(key) ?? { name: session.routine ?? '', done: [] };
     routine.done.push(session);
     routines.set(key, routine);
   }
 
-  // A day on each weekday the routine fell on in enough of the weeks it was done; on none, one day without a weekday.
+  // As many days as the routine was done a week, from the week of its first session to the week of its last. Each is on a
+  // weekday it fell on in enough of the weeks it was done, the largest shares first; weekdays tied across that count, or too
+  // few such weekdays, leave a day without one. Every day stands for the routine's sessions over its days.
   const candidates: Day[] = [];
   for (const { name, done } of routines.values()) {
     if (done.length < p.routineMinSessions) continue;
     const moves = movesOf(done, choices, leftOut);
     if (moves.length === 0) continue;
+    const spanned = Math.round((weekOf(done[done.length - 1].startedAt) - weekOf(done[0].startedAt)) / WEEK) + 1;
+    const count = Math.max(1, Math.round(done.length / spanned));
     const weeks = new Set(done.map((s) => weekOf(s.startedAt))).size;
-    const onDay = new Map<Weekday, { weeks: Set<number>; first: number }>();
+    const onDay = new Map<Weekday, Set<number>>();
     for (const session of done) {
       const weekday = WEEKDAYS[session.startedAt.getDay()];
-      const seen = onDay.get(weekday) ?? { weeks: new Set<number>(), first: session.startedAt.getTime() };
-      seen.weeks.add(weekOf(session.startedAt));
-      onDay.set(weekday, seen);
+      onDay.set(weekday, (onDay.get(weekday) ?? new Set<number>()).add(weekOf(session.startedAt)));
     }
-    const regular = [...onDay].filter(([, seen]) => seen.weeks.size / weeks >= p.weekdayMinShare);
-    if (regular.length === 0) candidates.push({ name: fit(name), moves, sessions: done.length, share: 0, first: done[0].startedAt.getTime() });
-    for (const [weekday, seen] of regular) {
-      candidates.push({ name: fit(name), moves, sessions: seen.weeks.size, share: seen.weeks.size / weeks, wants: weekday, first: seen.first });
-    }
+    const share = (weekday: Weekday) => (onDay.get(weekday)?.size ?? 0) / weeks;
+    const regular = [...onDay.keys()].filter((weekday) => share(weekday) >= p.weekdayMinShare).sort((a, b) => share(b) - share(a));
+    const placed = regular.length > count ? regular.filter((weekday) => share(weekday) > share(regular[count])) : regular;
+    const day = { name: fit(name), moves, sessions: done.length / count, first: done[0].startedAt.getTime() };
+    placed.forEach((weekday) => candidates.push({ ...day, share: share(weekday), wants: weekday }));
+    for (let i = placed.length; i < count; i++) candidates.push({ ...day, share: 0 });
   }
   if (candidates.length === 0) return { kind: 'noRoutine' };
 

@@ -115,10 +115,13 @@ testi: seçenekler salon ekipmanıyla süzülür.
   ne yazıldığı görülmedi). Geçmiş içe aktarmanın okuması değişmez: adı taşımaz, sunucuya giden gövdede yoktur. Büyük-küçük harf ve boşlukla
   ayrılan adlar (rutin ve hareket) tek addır; ilk yazılışı gösterilir.
 - **Kural** (sayılar D1): pencere, dosyanın son seansının günüyle biten `program_draft_weeks` hafta. Adı olan ve pencerede en az
-  `program_draft_routine_min_sessions` kez yapılan rutin programa girer. Hafta günü: rutinin yapıldığı haftaların en az
-  `program_draft_weekday_min_share` payında düştüğü **her** hafta günü bir gündür (aynı ad ve hareketler: haftada iki kez Upper iki gün,
-  full body pazartesi/çarşamba/cuma üç gün); hiçbir gün bu payı tutmazsa rutin tek, günsüz bir gündür. İki gün aynı hafta gününü isterse payı
-  yüksek olan alır, diğeri günsüz kalır (programda bir hafta günü bir kez). Fazlaysa en çok yapılan `program_days_max` gün. Günün hareketleri:
+  `program_draft_routine_min_sessions` kez yapılan rutin programa girer, **haftada yapıldığı kadar gün** olarak (seans sayısı / ilk ve son
+  seansın haftaları arasındaki hafta sayısı, yuvarlanmış, en az 1; aynı ad ve hareketler: haftada iki kez Upper iki gün, full body
+  pazartesi/çarşamba/cuma üç gün). Hafta günü: rutinin yapıldığı haftaların en az `program_draft_weekday_min_share` payında düştüğü günler,
+  payı büyükten küçüğe, gün sayısı kadar; o sayının sınırında eşit paylı günler ve eksik kalan günler günsüzdür (haftada bir kez, pazartesi
+  ve perşembe dönüşümlü: tek, günsüz gün). İki gün aynı hafta gününü isterse payı yüksek olan alır, diğeri günsüz kalır (programda bir hafta
+  günü bir kez). Fazlaysa `program_days_max` gün kalır: her gün, rutinin seanslarının gün sayısına bölümü kadar seans sayılır, azı düşer.
+  Günün hareketleri:
   rutinin seanslarının en az `program_draft_move_min_share` payında çalışma seti olanlar, seanstaki ortalama sıralarıyla. Set: seans başına
   çalışma seti sayısının ortancası (çiftte küçüğü). Tekrar aralığı: çalışma setlerinin ortadaki `program_draft_reps_middle_share` payının
   düştüğü aralık (en hafif ısınma ya da tek kötü set aralığı germez); `program_draft_rep_span_min`'den darsa üstten açılır (görülen alt sınır
@@ -141,6 +144,6 @@ testi: seçenekler salon ekipmanıyla süzülür.
 | `program_draft_weeks` | 4 | Bir ay: haftalık program 4 kez, dönüşümlü (A/B) program ikişer kez görünür; daha eskisi bugünkü program değil |
 | `program_draft_routine_min_sessions` | 2 | Bir kez yapılan rutin (tek seferlik "Arms", deneme) program günü değil; iki kez tekrar |
 | `program_draft_move_min_share` | 0,5 | Seansların yarısında yapılan hareket rutinin parçası; daha azı tek seferlik değiştirme |
-| `program_draft_weekday_min_share` | 0,5 | Yapıldığı haftaların yarısında o gündeyse düzen var, o gün bir gündür (birden çok gün olabilir); azı rastgele, gün kullanıcıya bırakılır |
+| `program_draft_weekday_min_share` | 0,5 | Yapıldığı haftaların yarısında o gündeyse düzen var, o gün rutinin günlerinden biridir (haftada yapıldığı kadar gün, en büyük paylar); azı rastgele, gün kullanıcıya bırakılır |
 | `program_draft_reps_middle_share` | 0,5 | Ortadaki yarı (çeyrekler arası): Strong'un işaretsiz ısınması ve tek tük set aralığı germez |
 | `program_draft_rep_span_min` | 2 | Çift ilerlemenin tırmanacak yeri olsun (K-109); hep 8 yapan 8-10 alır |
