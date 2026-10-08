@@ -16,6 +16,11 @@ export type ScreenBudget = {
   notFirstView: string[];
   /** Words no copy key holds — a date the phone writes ("Mon, Oct 19") — counted as listed. */
   dynamic?: { what: string; words: number }[];
+  /**
+   * On the first view but not our words, as the prototype leaves them out of its count (`data-nc`): what the user typed
+   * (a day's name) and short marks (the weekday chips).
+   */
+  uncounted?: string[];
 };
 
 export function wordsOf(text: string): number {

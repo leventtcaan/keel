@@ -32,6 +32,12 @@ export const workoutParams = {
   programDayMovesMax: param<number>('program_day_moves_max'),
   programMoveSetsMax: param<number>('program_move_sets_max'),
   programDayNameMaxChars: param<number>('program_day_name_max_chars'),
+  /** Where a move added to a typed program starts (K-968): the sets, and the engine's rep range of its kind. */
+  programNewMoveSets: param<number>('program_new_move_sets'),
+  programNewMoveReps: {
+    COMPOUND: { min: param<number>('rep_range_compound_min'), max: param<number>('rep_range_compound_max') },
+    ISOLATION: { min: param<number>('rep_range_isolation_min'), max: param<number>('rep_range_isolation_max') },
+  },
   warmup: {
     first: {
       sets: param<number>('warmup_sets_first_move'),

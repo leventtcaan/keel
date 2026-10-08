@@ -285,6 +285,46 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#OwnProgram",
       "note": "OwnProgram day name maxLength, the server's keel.training.max-day-name (counted in UTF-16 units there): a longer routine name is cut to fit in the draft (K-957)."
+    },
+    {
+      "key": "program_new_move_sets",
+      "value": 3,
+      "unit": "sets",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "Product choice, approved 2026-10-08 (K-968; plan/yeni-yuz-kurallar.md R6): where a move's sets start when the user adds it to a program they type in (program editor); the user sets their own with the stepper. Three is what the program templates give most moves (data/programs)."
+    },
+    {
+      "key": "rep_range_compound_min",
+      "value": 6,
+      "unit": "reps",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-21",
+      "note": "Mirror of training.yaml (MobileParameterMirrorTests holds them one value): where a compound move's rep range starts when the user adds it to a program they type in (K-968), so it does not start as a review finding. The user sets their own."
+    },
+    {
+      "key": "rep_range_compound_max",
+      "value": 10,
+      "unit": "reps",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-21",
+      "note": "Mirror of training.yaml; see rep_range_compound_min."
+    },
+    {
+      "key": "rep_range_isolation_min",
+      "value": 8,
+      "unit": "reps",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-21",
+      "note": "Mirror of training.yaml; an isolation move's starting range in a typed program (K-968)."
+    },
+    {
+      "key": "rep_range_isolation_max",
+      "value": 12,
+      "unit": "reps",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-21",
+      "note": "Mirror of training.yaml; see rep_range_isolation_min."
     }
   ]
 }

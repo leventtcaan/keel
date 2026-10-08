@@ -1613,7 +1613,13 @@
     "own": {
       "title": "Bring your program",
       "why": "We check it against what works. You decide.",
-      "import": { "title": "Import from Strong or Hevy", "tag": "Fastest", "body": "Read on this phone" }
+      "import": { "title": "Import from Strong or Hevy", "tag": "Fastest", "body": "Read on this phone" },
+      "type": { "title": "Type it in", "body": "Days, moves, sets and reps" }
+    },
+    "typeProgram": {
+      "title": "Type your program",
+      "why": "Each day you train, with its moves.",
+      "confirm": "Use this program"
     },
     "programImport": {
       "title": "Your program from a file",
@@ -2326,6 +2332,54 @@
     "judgeEyebrow": "Progress",
     "judgeTitle": "Judged over {days} days",
     "judgeNote": "The whole line. Flat weeks inside it are normal."
+  },
+  "programEditor": {
+    "dayName": "Day name",
+    "defaultName": "Day {number}",
+    "weekdayShort": { "MONDAY": "Mon", "TUESDAY": "Tue", "WEDNESDAY": "Wed", "THURSDAY": "Thu", "FRIDAY": "Fri", "SATURDAY": "Sat", "SUNDAY": "Sun" },
+    "weekdayName": {
+      "MONDAY": "Monday",
+      "TUESDAY": "Tuesday",
+      "WEDNESDAY": "Wednesday",
+      "THURSDAY": "Thursday",
+      "FRIDAY": "Friday",
+      "SATURDAY": "Saturday",
+      "SUNDAY": "Sunday"
+    },
+    "addDay": "Add a day",
+    "removeDay": "Remove this day",
+    "removeDayLabel": "Remove {day}",
+    "removeMove": "Remove",
+    "removeMoveLabel": "Remove {move}",
+    "noMoves": "Add at least one move.",
+    "noMovesMeta": "No moves yet",
+    "addMove": "Add a move",
+    "sheetTo": "To {day}. {sets} sets to start; change them after.",
+    "search": "Search moves",
+    "pickLabel": "Add {name}, {range}",
+    "range": "{min}-{max} reps",
+    "none": "No move by that name. Add it as your own.",
+    "addOwn": "Add my own move",
+    "close": "Close",
+    "removed": "{name} removed.",
+    "undo": "Undo",
+    "undoLabel": "Undo: put {name} back",
+    "anyDay": "Any day",
+    "days": { "one": "1 day", "other": "{count} days" },
+    "moves": { "one": "1 move", "other": "{count} moves" },
+    "summary": "{days} · {moves}",
+    "dayMeta": "{weekday} · {moves}",
+    "dayHeader": "{day}, {weekday}, {moves}",
+    "sets": "Sets",
+    "repsMin": "Min reps",
+    "repsMax": "Max reps",
+    "setsLabel": "{move}, sets",
+    "minLabel": "{move}, min reps",
+    "maxLabel": "{move}, max reps",
+    "less": "−",
+    "more": "+",
+    "lessLabel": "{what}, one less",
+    "moreLabel": "{what}, one more"
   },
   "review": {
     "too_many_days": {

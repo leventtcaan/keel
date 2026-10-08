@@ -1,5 +1,5 @@
 {
-  "note": "Words on each new-face screen's first view (ADR-069 #4, ADR-072 #9, ADR-077 #3, ADR-078 #5), counted as the prototype counted them: a word has a letter; numbers and {placeholders} are not words. Budgets are the prototype's targets (prototip/yeni-yuz.html, each screen's t:); copy-budget.test.ts holds the table to the prototype and every built screen to its budget. task: the backlog task that builds the screen; once it is done the screen must list its keys. file: the screen's route file; every copy key it uses is in keys or in notFirstView. keys: the copy keys of the first view; dynamic: words no key holds (a date the phone writes, 'Mon, Oct 19' is 2), each with what it is; a list inside the list is one of several texts shown in the same place, and the longest counts. Legal lines (Terms, Privacy, Restore, Account) go in notFirstView: ADR-072 #9 leaves them out.",
+  "note": "Words on each new-face screen's first view (ADR-069 #4, ADR-072 #9, ADR-077 #3, ADR-078 #5), counted as the prototype counted them: a word has a letter; numbers and {placeholders} are not words. Budgets are the prototype's targets (prototip/yeni-yuz.html, each screen's t:); copy-budget.test.ts holds the table to the prototype and every built screen to its budget. task: the backlog task that builds the screen; once it is done the screen must list its keys. file: the screen's route file; every copy key it uses is in keys or in notFirstView. keys: the copy keys of the first view; dynamic: words no key holds (a date the phone writes, 'Mon, Oct 19' is 2), each with what it is; a list inside the list is one of several texts shown in the same place, and the longest counts. Legal lines (Terms, Privacy, Restore, Account) go in notFirstView: ADR-072 #9 leaves them out. uncounted: on the first view but not counted, as the prototype marks them data-nc (the user's own words such as a day's name, and short marks such as weekday chips).",
   "screens": [
     {
       "screen": "welcome",
@@ -77,7 +77,9 @@
         "onboarding.own.why",
         "onboarding.own.import.title",
         "onboarding.own.import.tag",
-        "onboarding.own.import.body"
+        "onboarding.own.import.body",
+        "onboarding.own.type.title",
+        "onboarding.own.type.body"
       ],
       "notFirstView": []
     },
@@ -86,9 +88,38 @@
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-968",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/onboarding/program-type.tsx",
+      "keys": [
+        "onboarding.typeProgram.title",
+        "onboarding.typeProgram.why",
+        "programEditor.noMovesMeta",
+        "programEditor.dayName",
+        "programEditor.noMoves",
+        "programEditor.addMove",
+        "programEditor.addDay",
+        "onboarding.typeProgram.confirm"
+      ],
+      "notFirstView": [
+        "import.loadingMoves",
+        "import.noMoves",
+        "onboarding.programImport.saving"
+      ],
+      "uncounted": [
+        "programEditor.summary",
+        "programEditor.days.one",
+        "programEditor.days.other",
+        "programEditor.moves.one",
+        "programEditor.moves.other",
+        "programEditor.defaultName",
+        "programEditor.anyDay",
+        "programEditor.weekdayShort.MONDAY",
+        "programEditor.weekdayShort.TUESDAY",
+        "programEditor.weekdayShort.WEDNESDAY",
+        "programEditor.weekdayShort.THURSDAY",
+        "programEditor.weekdayShort.FRIDAY",
+        "programEditor.weekdayShort.SATURDAY",
+        "programEditor.weekdayShort.SUNDAY"
+      ]
     },
     {
       "screen": "ob-review",
