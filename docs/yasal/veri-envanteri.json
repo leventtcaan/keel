@@ -166,7 +166,8 @@
     "budget_note",
     "updated_at",
     "training_days_since",
-    "experience"
+    "experience",
+    "onboarded_at"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,
