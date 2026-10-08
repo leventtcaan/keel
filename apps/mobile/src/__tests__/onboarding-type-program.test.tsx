@@ -143,7 +143,8 @@ test('a move found by name comes in with its starting sets and range; the progra
   await addMove('squ', 'squat');
   expect(screen.getByText(name('squat'))).toBeOnTheScreen();
   await step(t('programEditor.setsLabel', { move: name('squat') }), 'increment');
-  await step(t('programEditor.repsLabel', { move: name('squat') }), 'increment', 2);
+  await step(t('programEditor.maxLabel', { move: name('squat') }), 'increment', 2);
+  await step(t('programEditor.minLabel', { move: name('squat') }), 'decrement');
   await fireEvent.changeText(screen.getByLabelText(t('programEditor.dayName')), 'Legs');
   await fireEvent.press(screen.getByRole('button', { name: t('programEditor.weekdayName.WEDNESDAY') }));
   await press(t('onboarding.typeProgram.confirm'));
@@ -153,7 +154,7 @@ test('a move found by name comes in with its starting sets and range; the progra
       {
         body: {
           days: [
-            { name: 'Legs', weekday: 'WEDNESDAY', exercises: [{ exerciseId: 'squat', sets: SETS + 1, reps: { min: REPS.COMPOUND.min + 2, max: REPS.COMPOUND.max + 2 } }] },
+            { name: 'Legs', weekday: 'WEDNESDAY', exercises: [{ exerciseId: 'squat', sets: SETS + 1, reps: { min: REPS.COMPOUND.min - 1, max: REPS.COMPOUND.max + 2 } }] },
           ],
         },
       },
@@ -162,16 +163,40 @@ test('a move found by name comes in with its starting sets and range; the progra
   expect(router.getPathname()).toBe('/onboarding/review');
 });
 
+/** A day's card header (prototype v5 `#ob-type`): its name, its weekday or "Any day", its moves. */
+const header = (name: string, weekday: string, moves: number) =>
+  t('programEditor.dayHeader', { day: name, weekday, moves: t(moves === 1 ? 'programEditor.moves.one' : 'programEditor.moves.other', { count: moves }) });
+const anyDay = () => t('programEditor.anyDay');
+
+test('every day is a card, one open at a time: a new day opens, the others close to their header', async () => {
+  await toEditor();
+  expect(screen.getByRole('button', { name: header(day(1), anyDay(), 0) })).toHaveProp('accessibilityState', expect.objectContaining({ expanded: true }));
+  await addMove('squ', 'squat');
+  await fireEvent.press(screen.getByRole('button', { name: t('programEditor.weekdayName.MONDAY') }));
+  expect(screen.getByText(t('programEditor.summary', { days: t('programEditor.days.one'), moves: t('programEditor.moves.one', { count: 1 }) }))).toBeOnTheScreen();
+  await press(t('programEditor.addDay'));
+  // Day 1 closed to its header; day 2 open with its own fields.
+  expect(screen.getByRole('button', { name: header(day(1), t('programEditor.weekdayName.MONDAY'), 1) })).toHaveProp(
+    'accessibilityState',
+    expect.objectContaining({ expanded: false }),
+  );
+  expect(screen.getAllByLabelText(t('programEditor.dayName'))).toHaveLength(1);
+  expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', day(2));
+  expect(screen.getByText(t('programEditor.summary', { days: t('programEditor.days.other', { count: 2 }), moves: t('programEditor.moves.one', { count: 1 }) }))).toBeOnTheScreen();
+  await press(header(day(1), t('programEditor.weekdayName.MONDAY'), 1));
+  expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', day(1));
+});
+
 test('days added and removed; a weekday one day has is not offered to another', async () => {
   await toEditor();
   await addMove('squ', 'squat');
   await fireEvent.press(screen.getByRole('button', { name: t('programEditor.weekdayName.MONDAY') }));
   await press(t('programEditor.addDay'));
-  expect(screen.getAllByLabelText(t('programEditor.dayName'))[1]).toHaveProp('value', day(2));
-  expect(screen.getAllByRole('button', { name: t('programEditor.weekdayName.MONDAY') })[1]).toBeDisabled();
+  expect(screen.getByRole('button', { name: t('programEditor.weekdayName.MONDAY') })).toBeDisabled();
   expect(confirm()).toBeDisabled(); // the new day has no move yet
-  await addMove('curl', 'barbell_curl', 1);
+  await addMove('curl', 'barbell_curl');
   expect(confirm()).toBeEnabled();
+  await press(header(day(1), t('programEditor.weekdayName.MONDAY'), 1));
   await press(t('programEditor.removeDayLabel', { day: day(1) }));
   await press(t('onboarding.typeProgram.confirm'));
   expect(puts()[0][1]).toEqual({ body: { days: [{ name: day(2), exercises: [{ exerciseId: 'barbell_curl', sets: SETS, reps: REPS.ISOLATION }] }] } });
@@ -187,11 +212,11 @@ test('a move removed is gone from the day', async () => {
   expect((puts()[0][1].body as Schemas['OwnProgram']).days[0].exercises.map((e) => e.exerciseId)).toEqual(['bench_press']);
 });
 
-test("no more days than a program has: Add a day is off at the contract's most", async () => {
+test("no more days than a program has: Add a day is gone at the contract's most", async () => {
   await toEditor();
   for (let i = 1; i < workoutParams.programDaysMax; i++) await press(t('programEditor.addDay'));
-  expect(screen.getAllByLabelText(t('programEditor.dayName'))).toHaveLength(workoutParams.programDaysMax);
-  expect(screen.getByRole('button', { name: t('programEditor.addDay') })).toBeDisabled();
+  expect(screen.getAllByRole('button', { expanded: false })).toHaveLength(workoutParams.programDaysMax - 1);
+  expect(screen.queryByRole('button', { name: t('programEditor.addDay') })).toBeNull();
 });
 
 test('sets never under one: the stepper stops there, its value said as words, its − off', async () => {
@@ -205,14 +230,30 @@ test('sets never under one: the stepper stops there, its value said as words, it
   expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: sets }) })).toBeEnabled();
 });
 
-test('the reps move as a window, said as a range', async () => {
+test('the fewest reps stop one under the most: its + off there, the value said as words', async () => {
   await toEditor();
   await addMove('squ', 'squat');
-  const reps = t('programEditor.repsLabel', { move: name('squat') });
-  await step(reps, 'increment');
-  expect(screen.getByRole('adjustable', { name: reps })).toHaveAccessibilityValue({
-    text: t('programEditor.range', { min: REPS.COMPOUND.min + 1, max: REPS.COMPOUND.max + 1 }),
-  });
+  const fewest = t('programEditor.minLabel', { move: name('squat') });
+  await step(fewest, 'increment', REPS.COMPOUND.max);
+  expect(screen.getByRole('adjustable', { name: fewest })).toHaveAccessibilityValue({ text: String(REPS.COMPOUND.max - 1) });
+  expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: fewest }) })).toBeDisabled();
+});
+
+test('a day without a move says so in one line, and the program waits for it', async () => {
+  await toEditor();
+  expect(screen.getByText(t('programEditor.noMoves'))).toBeOnTheScreen();
+  expect(confirm()).toBeDisabled();
+  await addMove('squ', 'squat');
+  expect(screen.queryByText(t('programEditor.noMoves'))).toBeNull();
+  expect(confirm()).toBeEnabled();
+});
+
+test("a long day name is whole in the field and in its card's header (wrapped, never cut)", async () => {
+  await toEditor();
+  const long = 'x'.repeat(workoutParams.programDayNameMaxChars);
+  await fireEvent.changeText(screen.getByLabelText(t('programEditor.dayName')), long);
+  expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', long);
+  expect(screen.getByText(long)).not.toHaveProp('numberOfLines');
 });
 
 test('the move search does not offer a move the day has', async () => {

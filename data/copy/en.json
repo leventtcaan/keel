@@ -1618,7 +1618,7 @@
     },
     "typeProgram": {
       "title": "Type your program",
-      "why": "Day by day. Change it any time.",
+      "why": "Day by day.",
       "confirm": "Use this program"
     },
     "programImport": {
@@ -2334,9 +2334,8 @@
     "judgeNote": "The whole line. Flat weeks inside it are normal."
   },
   "programEditor": {
-    "dayName": "Day name",
+    "dayName": "Name",
     "defaultName": "Day {number}",
-    "weekday": "Optional",
     "weekdayShort": { "MONDAY": "Mon", "TUESDAY": "Tue", "WEDNESDAY": "Wed", "THURSDAY": "Thu", "FRIDAY": "Fri", "SATURDAY": "Sat", "SUNDAY": "Sun" },
     "weekdayName": {
       "MONDAY": "Monday",
@@ -2348,15 +2347,23 @@
       "SUNDAY": "Sunday"
     },
     "addDay": "Add a day",
-    "removeDay": "Remove day",
+    "removeDay": "Remove this day",
     "removeDayLabel": "Remove {day}",
     "removeMove": "Remove",
     "removeMoveLabel": "Remove {move}",
+    "noMoves": "No moves yet.",
+    "anyDay": "Any day",
+    "days": { "one": "1 day", "other": "{count} days" },
+    "moves": { "one": "1 move", "other": "{count} moves" },
+    "summary": "{days} · {moves}",
+    "dayMeta": "{weekday} · {moves}",
+    "dayHeader": "{day}, {weekday}, {moves}",
     "sets": "Sets",
-    "reps": "Reps",
-    "range": "{min}-{max}",
+    "repsMin": "Fewest reps",
+    "repsMax": "Most reps",
     "setsLabel": "{move}, sets",
-    "repsLabel": "{move}, reps",
+    "minLabel": "{move}, fewest reps",
+    "maxLabel": "{move}, most reps",
     "less": "−",
     "more": "+",
     "lessLabel": "{what}, one less",

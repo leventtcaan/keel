@@ -16,9 +16,11 @@ import { exerciseName } from './program';
 import {
   type EditedDay,
   type EditedMove,
+  type Stepped,
   WEEKDAYS,
   canStep,
   newDay,
+  nextDayId,
   renamed,
   stepped,
   weekdayTaken,
@@ -45,20 +47,49 @@ type Props = {
   makeOwn: (body: Schemas['NewCustomExercise']) => Promise<Move | Exclude<SaveOutcome, 'saved'>>;
 };
 
+const movesWord = (count: number) => t(count === 1 ? 'programEditor.moves.one' : 'programEditor.moves.other', { count });
+
 /**
- * The program editor (K-968 "Type it in"; K-970's Edit reuses it): each day with its name, a weekday if the user wants
- * one (a weekday another day has is off), its moves with sets and the rep range, removed or added — found by name in the
- * catalog and the user's own moves (not one the day has), or made their own. The rules are programEdit.ts; what is done
- * with the program, and with an own move, is the screen's.
+ * The program editor (K-968 "Type it in"; K-970's Edit reuses it; prototype `#ob-type`): every day a card, one open at a
+ * time — its header the day's name (wrapped, never cut: accessibility.test.ts), its weekday or "Any day" and its moves; open, the name, a weekday if the
+ * user wants one (a weekday another day has is off), its moves with sets and the fewest and most reps, removed or added
+ * (found by name in the catalog and the user's own moves, not one the day has, or made their own), and "Remove this day".
+ * A new day opens; under the cards, "Add a day" while there are fewer than a program has. The rules are programEdit.ts;
+ * what is done with the program, and with an own move, is the screen's.
  */
 export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
+  const { color } = useTheme();
   const byId = useMemo(() => new Map(moves.map((m) => [m.id, m])), [moves]);
+  const [open, setOpen] = useState<string | null>(days[0]?.id ?? null);
+  const addDay = () => {
+    const id = nextDayId();
+    onChange((all) => newDay(all, id));
+    setOpen(id);
+  };
+  const count = days.reduce((n, day) => n + day.moves.length, 0);
+  const dayWords = t(days.length === 1 ? 'programEditor.days.one' : 'programEditor.days.other', { count: days.length });
+  const moveWords = movesWord(count);
+  const summary = t('programEditor.summary', { days: dayWords, moves: moveWords });
+  const more = days.length < P.programDaysMax ? <Button label={t('programEditor.addDay')} variant="ghost" onPress={addDay} /> : null;
   return (
     <View style={styles.editor}>
+      <Text style={[styles.small, { color: color.muted }]}>{summary}</Text>
       {days.map((day, at) => (
-        <DayEditor key={day.id} day={day} at={at} alone={days.length === 1} taken={(w) => weekdayTaken(days, at, w)} moves={moves} byId={byId} onChange={onChange} makeOwn={makeOwn} />
+        <DayEditor
+          key={day.id}
+          day={day}
+          at={at}
+          open={open === day.id}
+          onOpen={() => setOpen(open === day.id ? null : day.id)}
+          alone={days.length === 1}
+          taken={(w) => weekdayTaken(days, at, w)}
+          moves={moves}
+          byId={byId}
+          onChange={onChange}
+          makeOwn={makeOwn}
+        />
       ))}
-      <Button label={t('programEditor.addDay')} variant="ghost" disabled={days.length >= P.programDaysMax} onPress={() => onChange(newDay)} />
+      {more}
     </View>
   );
 }
@@ -66,14 +97,31 @@ export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
 type DayProps = Omit<Props, 'days'> & {
   day: EditedDay;
   at: number;
+  open: boolean;
+  onOpen: () => void;
   /** The only day: it stays. */
   alone: boolean;
   taken: (weekday: Schemas['Weekday']) => boolean;
   byId: ReadonlyMap<string, Move>;
 };
 
-function DayEditor({ day, at, alone, taken, moves, byId, onChange, makeOwn }: DayProps) {
+function DayEditor({ day, at, open, onOpen, alone, taken, moves, byId, onChange, makeOwn }: DayProps) {
   const { color } = useTheme();
+  const weekday = day.weekday === undefined ? t('programEditor.anyDay') : t(`programEditor.weekdayName.${day.weekday}`);
+  const head = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('programEditor.dayHeader', { day: day.name, weekday, moves: movesWord(day.moves.length) })}
+      accessibilityState={{ expanded: open }}
+      onPress={onOpen}
+      style={styles.dayHead}>
+      <Text style={[styles.dayName, { color: color.text }]}>
+        {day.name}
+      </Text>
+      <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.dayMeta', { weekday, moves: movesWord(day.moves.length) })}</Text>
+    </Pressable>
+  );
+  if (!open) return <View style={[styles.day, { borderColor: color.line }]}>{head}</View>;
   const toggle = (weekday: Schemas['Weekday']) => onChange((all) => withWeekday(all, at, all[at].weekday === weekday ? undefined : weekday));
   const remove = alone ? null : (
     <Button
@@ -84,15 +132,16 @@ function DayEditor({ day, at, alone, taken, moves, byId, onChange, makeOwn }: Da
       onPress={() => onChange((all) => withoutDay(all, at))}
     />
   );
+  const none = day.moves.length === 0 ? <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.noMoves')}</Text> : null;
   return (
     <View style={[styles.day, { borderColor: color.line }]}>
+      {head}
       <TextField
         label={t('programEditor.dayName')}
         value={day.name}
         onChangeText={(name) => onChange((all) => renamed(all, at, name))}
         maxLength={P.programDayNameMaxChars}
       />
-      <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.weekday')}</Text>
       <View style={styles.row}>
         {WEEKDAYS.map((weekday) => (
           <Chip
@@ -105,6 +154,7 @@ function DayEditor({ day, at, alone, taken, moves, byId, onChange, makeOwn }: Da
           />
         ))}
       </View>
+      {none}
       {day.moves.map((move, index) => (
         <MoveEditor key={move.exerciseId} move={move} name={exerciseName(move.exerciseId, byId)} onChange={(change) => onChange((all) => change(all, at, index))} />
       ))}
@@ -120,10 +170,20 @@ type MoveProps = {
   onChange: (change: (all: EditedDay[], at: number, index: number) => EditedDay[]) => void;
 };
 
-/** A move of the day: its name, remove, and two steppers, the sets and the rep range (moved as a window). */
+/** A move of the day: its name, remove, and three steppers: the sets, the fewest reps and the most. */
 function MoveEditor({ move, name, onChange }: MoveProps) {
   const { color } = useTheme();
-  const step = (field: 'sets' | 'reps') => (by: number) => onChange((all, at, index) => stepped(all, at, index, field, by));
+  const step = (field: Stepped) => (by: number) => onChange((all, at, index) => stepped(all, at, index, field, by));
+  const stepper = (field: Stepped, caption: string, label: string, value: number) => (
+    <Stepper
+      caption={t(caption)}
+      label={t(label, { move: name })}
+      value={String(value)}
+      less={canStep(move, field, -1)}
+      more={canStep(move, field, 1)}
+      onStep={step(field)}
+    />
+  );
   return (
     <View style={styles.move}>
       <View style={styles.moveHead}>
@@ -137,22 +197,9 @@ function MoveEditor({ move, name, onChange }: MoveProps) {
         />
       </View>
       <View style={styles.row}>
-        <Stepper
-          caption={t('programEditor.sets')}
-          label={t('programEditor.setsLabel', { move: name })}
-          value={String(move.sets)}
-          less={canStep(move, 'sets', -1)}
-          more={canStep(move, 'sets', 1)}
-          onStep={step('sets')}
-        />
-        <Stepper
-          caption={t('programEditor.reps')}
-          label={t('programEditor.repsLabel', { move: name })}
-          value={t('programEditor.range', { min: move.reps.min, max: move.reps.max })}
-          less={canStep(move, 'reps', -1)}
-          more={canStep(move, 'reps', 1)}
-          onStep={step('reps')}
-        />
+        {stepper('sets', 'programEditor.sets', 'programEditor.setsLabel', move.sets)}
+        {stepper('min', 'programEditor.repsMin', 'programEditor.minLabel', move.reps.min)}
+        {stepper('max', 'programEditor.repsMax', 'programEditor.maxLabel', move.reps.max)}
       </View>
     </View>
   );
@@ -253,6 +300,8 @@ function AddMove({ day, moves, byId, onAdd, makeOwn }: AddProps) {
 const styles = StyleSheet.create({
   editor: { gap: tokens.space.lg },
   day: { gap: tokens.space.sm, paddingTop: tokens.space.md, borderTopWidth: tokens.border.hairline },
+  dayHead: { gap: tokens.space.xs, minHeight: tokens.size.touch, justifyContent: 'center' },
+  dayName: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   move: { gap: tokens.space.xs },
   moveHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm },

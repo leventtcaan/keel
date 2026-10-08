@@ -31,14 +31,18 @@ export function pendingMove(body: Schemas['NewCustomExercise']): Move {
   return ownMove({ ...body, id: `${PENDING}${body.clientId}` });
 }
 
-let days = 0;
+let made = 0;
+/** An id for a day not made yet: the screen can open the day it is about to add. */
+export function nextDayId(): string {
+  made += 1;
+  return `day-${made}`;
+}
 const changed = (all: EditedDay[], at: number, day: EditedDay) => all.map((d, i) => (i === at ? day : d));
 
-/** A day after the last, named by its place. */
-export function newDay(all: EditedDay[]): EditedDay[] {
+/** A day after the last, named by its place (`id`: one from nextDayId, or a new one). */
+export function newDay(all: EditedDay[], id: string = nextDayId()): EditedDay[] {
   if (all.length >= P.programDaysMax) return all;
-  days += 1;
-  return [...all, { id: `day-${days}`, name: t('programEditor.defaultName', { number: all.length + 1 }), moves: [] }];
+  return [...all, { id, name: t('programEditor.defaultName', { number: all.length + 1 }), moves: [] }];
 }
 
 export function withoutDay(all: EditedDay[], at: number): EditedDay[] {
@@ -75,27 +79,30 @@ export function withoutMove(all: EditedDay[], at: number, index: number): Edited
 
 const within = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 
-/**
- * A move's sets a step up or down (1 to the most), or its rep range moved as a window (6-10 → 7-11), its width kept,
- * never under one rep nor over the reps a set takes.
- */
-export function stepped(all: EditedDay[], at: number, index: number, field: 'sets' | 'reps', by: number): EditedDay[] {
+export type Stepped = 'sets' | 'min' | 'max';
+
+/** The lowest and highest a move's number can be: sets 1 to the most; the fewest reps under the most, the most at most a set's. */
+function bounds(move: EditedMove, field: Stepped): [number, number] {
+  if (field === 'sets') return [1, P.programMoveSetsMax];
+  return field === 'min' ? [1, move.reps.max - 1] : [move.reps.min + 1, P.maxReps];
+}
+
+/** A move's sets, or the fewest or the most of its reps, a step up or down: each on its own (5 x 5, 3-5, 12-15), a range always a range. */
+export function stepped(all: EditedDay[], at: number, index: number, field: Stepped, by: number): EditedDay[] {
   const move = all[at].moves[index];
-  const { min, max } = move.reps;
-  let next: EditedMove;
-  if (field === 'sets') {
-    next = { ...move, sets: within(move.sets + by, 1, P.programMoveSetsMax) };
-  } else {
-    const from = within(min + by, 1, P.maxReps - (max - min));
-    next = { ...move, reps: { min: from, max: from + (max - min) } };
-  }
+  const [low, high] = bounds(move, field);
+  const next: EditedMove =
+    field === 'sets'
+      ? { ...move, sets: within(move.sets + by, low, high) }
+      : { ...move, reps: { ...move.reps, [field]: within(move.reps[field] + by, low, high) } };
   return changed(all, at, { ...all[at], moves: all[at].moves.map((m, i) => (i === index ? next : m)) });
 }
 
 /** Whether a step that way would change the number: the steppers' buttons are off where it would not. */
-export function canStep(move: EditedMove, field: 'sets' | 'reps', by: number): boolean {
-  if (field === 'sets') return by < 0 ? move.sets > 1 : move.sets < P.programMoveSetsMax;
-  return by < 0 ? move.reps.min > 1 : move.reps.max < P.maxReps;
+export function canStep(move: EditedMove, field: Stepped, by: number): boolean {
+  const [low, high] = bounds(move, field);
+  const value = field === 'sets' ? move.sets : move.reps[field];
+  return by < 0 ? value > low : value < high;
 }
 
 /**

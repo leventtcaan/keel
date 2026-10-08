@@ -102,14 +102,24 @@ describe('moves', () => {
     expect(days[0].moves[0].sets).toBe(workoutParams.programMoveSetsMax);
   });
 
-  test('the rep range moves as a window (6-10 → 7-11), never under one rep nor over the reps a set takes', () => {
-    const span = REPS.COMPOUND.max - REPS.COMPOUND.min;
-    expect(stepped(oneMove, 0, 0, 'reps', 1)[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.min + 1, max: REPS.COMPOUND.max + 1 });
+  test('the fewest and the most reps step on their own, so 5 x 5, 3-5 or 12-15 can be written', () => {
     let days = oneMove;
-    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'reps', -1);
-    expect(days[0].moves[0].reps).toEqual({ min: 1, max: 1 + span });
-    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'reps', 1);
-    expect(days[0].moves[0].reps).toEqual({ min: workoutParams.maxReps - span, max: workoutParams.maxReps });
+    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'min', -1);
+    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', -1);
+    expect(days[0].moves[0].reps).toEqual({ min: 1, max: 2 }); // a range: the most above the fewest (OwnProgram)
+    for (let i = 0; i < 3; i++) days = stepped(days, 0, 0, 'max', 1);
+    for (let i = 0; i < 2; i++) days = stepped(days, 0, 0, 'min', 1);
+    expect(days[0].moves[0].reps).toEqual({ min: 3, max: 5 });
+  });
+
+  test('the rep range stays a range: the fewest at least one and under the most, the most at most the reps a set takes', () => {
+    let days = oneMove;
+    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'min', 1);
+    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max - 1, max: REPS.COMPOUND.max });
+    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', -1);
+    expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max - 1, max: REPS.COMPOUND.max });
+    for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', 1);
+    expect(days[0].moves[0].reps.max).toBe(workoutParams.maxReps);
   });
 });
 
