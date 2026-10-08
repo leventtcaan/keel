@@ -16,7 +16,9 @@ import { newClientId } from '@/sync/send';
 import type { LocalRecord } from '@/sync/store';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { DoneSets } from '@/train/DoneSets';
 import { FinishForm } from '@/train/FinishForm';
+import { GoalLine } from '@/train/GoalLine';
 import { MoveDots } from '@/train/MoveDots';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
@@ -24,13 +26,13 @@ import { SupersetLink } from '@/train/SupersetLink';
 import { nextInGroup, supersetsInForce } from '@/train/superset';
 import { RestTimer } from '@/train/RestTimer';
 import { SessionHeader } from '@/train/SessionHeader';
-import { SetEntry } from '@/train/SetEntry';
-import { SetTable } from '@/train/SetTable';
+import { ActiveSet } from '@/train/ActiveSet';
 import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
+import { repsText } from '@/train/reps';
 import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
@@ -420,26 +422,31 @@ function Session() {
   );
 
   const sides = move?.unilateral === true ? 2 : 1;
-  // The set under way, by sets (a one-sided move's two rows are one); a move outside the plan has no count to reach.
   const heading =
-    plan === null || plan.current === null ? null : (
-      <Text style={[styles.text, { color: color.text }]}>
-        {plan.open === true
-          ? t('workout.setNumber', { number: Math.floor(plan.current / sides) + 1 })
-          : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides })}
-      </Text>
-    );
-  // The button that logs it is the dock's (it never moves); the fields stay here.
-  const entryBlock =
-    move === undefined || plan === null || plan.current === null || row === null ? null : (
-      <SetEntry move={move} index={plan.current} side={row.side} entry={entry} onChange={setEntry} problem={said} problemOccurrence={problem} />
-    );
+    plan === null || plan.current === null
+      ? ''
+      : plan.open === true
+        ? t('workout.setNumber', { number: Math.floor(plan.current / sides) + 1 })
+        : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides });
   const typedKg = row === null ? null : parseLoad(entry.load, units, row.suggested.loadKg);
-  const perSide = move === undefined || typedKg === null || entryBlock === null ? null : platesLine(move, typedKg, data?.gym);
-  const plates = perSide === null ? null : <Text style={[styles.small, { color: color.muted }]}>{perSide}</Text>;
-  // A move outside the plan has no target RIR line: there is no plan to aim at.
-  const targetLine =
-    planned === undefined ? null : <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>;
+  // The one set under way (ADR-075 #1): the button that logs it is the dock's, so it never moves.
+  const entryBlock =
+    move === undefined || row === null ? null : (
+      <ActiveSet
+        move={move}
+        heading={heading}
+        range={planned === undefined ? null : repsText(planned.reps)}
+        // A move outside the plan has no aim for reps left: there is no plan to aim at.
+        aim={planned?.targetRir ?? null}
+        suggestedKg={row.suggested.loadKg}
+        gym={data?.gym}
+        plates={typedKg === null ? null : platesLine(move, typedKg, data?.gym)}
+        entry={entry}
+        onChange={setEntry}
+        problem={said}
+        problemOccurrence={problem}
+      />
+    );
   const linkWith = (partner: string) => {
     if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [moveId, partner]]]));
   };
@@ -498,7 +505,6 @@ function Session() {
               <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
             </Pressable>
           </View>
-          {targetLine}
         </View>
       </View>
     );
@@ -509,12 +515,11 @@ function Session() {
       </Card>
     ) : (
       <>
+        {planned !== undefined && <GoalLine planned={planned} move={move} />}
         {supersetBlock}
         {warmBlock}
-        <SetTable plan={plan} move={move} />
-        {heading}
+        <DoneSets plan={plan} move={move} />
         {entryBlock}
-        {plates}
       </>
     );
   // In a superset the move after this set is its partner (the round's order), else the next move of the day with sets left.

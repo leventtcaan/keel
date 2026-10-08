@@ -81,6 +81,7 @@
 | `unfinished_session_close_hours` | 24 | workout.json | ADR-075 #5 |
 | `default_day_sets` | 2: Pzt/Per · 3: Pzt/Çar/Cum · 4: Pzt/Sal/Per/Cum · 5: Pzt/Sal/Çar/Cum/Cmt (prototip `DAYSETS`) | onboarding.json | ADR-072 #4; onboarding 2-5 kutu, mevcut `max_training_days` 6 (Edit'te) |
 | `starting_weight_reps` | 8 ("about 8 times"; ilk hedef yalnız tekrar aralığı ≤ 8'den başlayan günde) | onboarding.json | ADR-072 #3, #5 (K-954 incelemesi) |
+| `set_load_step_kg` / `_lb` | 2,5 kg / 5 lb (seansın kilo adımlayıcısı; salonda `loadSteps.within`, basamakta yük yoksa salonun bir sonraki yükü; başka kilo yazılır) | workout.json | ADR-075 #1 (K-971) |
 | `starting_weight_moves` | squat, bench_press, romanian_deadlift (prototip `#ob-weights` üç ana hareket; katalogdaki deadlift Romanian); her şablonda var (`parameters.test.ts`) | onboarding.json | ADR-072 #3, #5 (K-967) |
 | `starting_weight_stepper` | ilk dokunuş boş bar 20 kg / 45 lb, adım 2,5 kg / 5 lb (`warmup_round_kg/lb` gibi en küçük plaka çifti); ayarlanmayan hareket atlanır | onboarding.json | ADR-072 #5 (K-967) |
 | `welcome_example_ms` | 1900 (her örnek karar bu kadar görünür; bir tur döner, ilkinde durur; Hareketi Azalt açıkken ilki sabit) | onboarding.json | ADR-072 #2, prototip `#welcome` (K-966) |

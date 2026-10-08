@@ -147,15 +147,18 @@ const sets = () => mockRecord.mock.calls.map(([outbound]) => outbound).filter((o
 const pickMove = async (name: string) =>
   fireEvent.press(await screen.findByRole('button', { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, `) }));
 
-test("the day's moves, and the move under way with the server's target faint and last time beside it", async () => {
+// K-971 (ADR-075 #1): one set under way, filled with the suggestion; the rows of sets to do and the phone's last-time
+// column are gone (the server's target line has its own tests below). Last time's sets still fill the suggestion
+// (workout.test.ts).
+test("the day's moves, and the move under way filled with the server's next target", async () => {
   await show();
   expect(await screen.findByText('Upper A')).toBeTruthy();
   expect(screen.getAllByText('Bench press').length).toBeGreaterThan(0);
   // K-971: the moves are dots, each said with its status.
   expect(screen.getByLabelText(t('workout.dot', { name: 'Bench press', status: '3 sets' }))).toBeTruthy(); // before any set
-  expect(screen.getByText('Target RIR 0-1')).toBeTruthy();
-  expect(screen.getAllByText('62.5 kg × 6').length).toBe(3);
-  expect(screen.getByText('57.5 kg × 8')).toBeTruthy();
+  expect(screen.getByText(t('workout.targetRir', { max: 1 }))).toBeTruthy();
+  expect(screen.getByLabelText('Weight (kg)').props.value).toBe('62.5');
+  expect(screen.getByLabelText('Reps').props.value).toBe('6');
 });
 
 test('one tap logs the set as suggested, with the target RIR, under the workout; then the rest timer runs', async () => {
@@ -1238,8 +1241,8 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     await show();
     expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
     expect(clock()).toMatch(/^12:0\d$/);
-    expect(screen.getByLabelText(t('workout.setDone', { number: '1' }))).toBeOnTheScreen();
-    expect(screen.getByText('62.5 kg × 7')).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('workout.doneSet', { number: 1, set: '62.5 kg × 7', left: '1' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.setOf', { number: 2, count: 3 }))).toBeOnTheScreen();
   });
 
   test('the rest is at the top, outside the scrolled page, and covers nothing; Log set sits in a fixed dock', async () => {
@@ -1298,5 +1301,82 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     expect(screen.getByLabelText(t('workout.dot', { name: rowName, status: t('workout.sets', { count: 2 }) }))).toBeOnTheScreen();
     await fireEvent.press(dot(rowName));
     expect(screen.getByText(rowSide(1, 'LEFT'))).toBeOnTheScreen();
+  });
+
+  test("the target line: the server's next set to beat, and last time's best", async () => {
+    const withBest = { ...DAY, exercises: [{ ...DAY.exercises[0], lastBestSet: { loadKg: 60, reps: 8, rir: 1 } }, DAY.exercises[1]] };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [withBest] } } };
+    await show();
+    const goal = within(await screen.findByTestId('goal'));
+    expect(goal.getByText(t('workout.goal.beat'))).toBeOnTheScreen();
+    expect(goal.getByText('62.5 kg × 6')).toBeOnTheScreen();
+    expect(goal.getByText(t('workout.goal.last', { set: '60 kg × 8' }))).toBeOnTheScreen();
+  });
+
+  test('with a load to start from and no session before: start here, over the range', async () => {
+    await show();
+    const goal = within(await screen.findByTestId('goal'));
+    expect(goal.getByText(t('workout.goal.start'))).toBeOnTheScreen();
+    expect(goal.getByText('62.5 kg × 6-10')).toBeOnTheScreen();
+  });
+
+  test('no load known: the range alone', async () => {
+    await show();
+    await pickMove(rowName);
+    const goal = within(await screen.findByTestId('goal'));
+    expect(goal.getByText(t('workout.goal.first'))).toBeOnTheScreen();
+    expect(goal.getByText(t('workout.goal.reps', { reps: '8-12' }))).toBeOnTheScreen();
+  });
+
+  describe('the weight and the reps: steppers, or typed', () => {
+    const load = () => screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') }));
+    const reps = () => screen.getByLabelText(t('workout.repsLabel'));
+    const press = (key: string) => fireEvent.press(screen.getByRole('button', { name: t(key) }));
+
+    test('without a gym, a step is the smallest pair of plates either way; the reps one at a time', async () => {
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await press('workout.stepper.moreLoad');
+      expect(load().props.value).toBe('65');
+      await press('workout.stepper.lessLoad');
+      await press('workout.stepper.lessLoad');
+      expect(load().props.value).toBe('60');
+      await press('workout.stepper.moreReps');
+      expect(reps().props.value).toBe('7');
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+      expect(sets()[0].body).toMatchObject({ loadKg: 60, reps: 7 });
+    });
+
+    test('at a gym with no small plates a step goes to the next load it makes; any weight can still be typed', async () => {
+      const GYM = { barKg: 20, platesKg: [20, 10, 5], dumbbellsKg: [], stackStepKg: null, machineStepsKg: {} };
+      const BARBELL = EXERCISES.map((m) => ({ ...m, equipment: m.id === 'bench_press' ? 'BARBELL' : 'DUMBBELL' })) as Schemas['Exercise'][];
+      const at100 = { ...DAY, exercises: [{ ...DAY.exercises[0], nextLoadKg: 100 }, DAY.exercises[1]] };
+      mockData = { ...mockData, exercises: { state: 'ready', value: BARBELL }, gym: GYM, program: { state: 'ready', value: { ...PROGRAM, days: [at100] } } };
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await press('workout.stepper.moreLoad');
+      expect(load().props.value).toBe('110');
+      await press('workout.stepper.lessLoad');
+      expect(load().props.value).toBe('100');
+      await press('workout.stepper.lessLoad');
+      expect(load().props.value).toBe('90');
+      await fireEvent.changeText(load(), '102.5');
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+      expect(sets()[0].body).toMatchObject({ loadKg: 102.5 });
+    });
+
+    test('fewer reps stops at one', async () => {
+      await show();
+      await fireEvent.changeText(await screen.findByLabelText(t('workout.repsLabel')), '1');
+      expect(screen.getByRole('button', { name: t('workout.stepper.lessReps') })).toBeDisabled();
+    });
+
+    test('reps left is picked from 0, 1 and 2+, with the aim beside it', async () => {
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      expect(screen.getByText(t('workout.rir.short'))).toBeOnTheScreen();
+      expect(screen.getByText(t('workout.targetRir', { max: 1 }))).toBeOnTheScreen();
+      for (const choice of ['0', '1', '2+']) expect(screen.getByRole('button', { name: choice })).toBeOnTheScreen();
+    });
   });
 });

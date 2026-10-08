@@ -4,17 +4,20 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { type UnitSystem, formatLoad, formatPlate, parseLoadKg, weightInput } from '@/units/units';
+import { type UnitSystem, formatLoad, formatPlate, loadValue, parseLoadKg, weightInput } from '@/units/units';
 
-import { type GymWeights, plateUnits, platesFor } from './loadSteps';
+import { type GymWeights, lighter, plateUnits, platesFor, round, within } from './loadSteps';
 import { workoutParams } from './params';
 import type { ExercisePlan } from './workout';
 
 type Schemas = components['schemas'];
 type Entry = { loadKg: number; reps: number };
 
-/** A load, an added load with its plus (a weighted dip), or the body alone (a weighted move with nothing added too). */
-export function setText(set: Entry, move: Schemas['Exercise'], units: UnitSystem): string {
+/**
+ * A load, an added load with its plus (a weighted dip), or the body alone (a weighted move with nothing added too). The
+ * reps may be a range ("6-10"), as a target says them.
+ */
+export function setText(set: { loadKg: number; reps: number | string }, move: Schemas['Exercise'], units: UnitSystem): string {
   if (move.load === 'BODYWEIGHT' || (move.load === 'BODYWEIGHT_PLUS_EXTERNAL' && set.loadKg === 0))
     return t('workout.bodyweight', { reps: set.reps });
   const key = move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.added' : 'workout.set';
@@ -31,6 +34,34 @@ export function clockText(seconds: number): string {
   const secondsText = String(seconds % 60).padStart(2, '0');
   if (minutes < 60) return t('workout.clock.minutes', { minutes, seconds: secondsText });
   return t('workout.clock.hours', { hours: Math.floor(minutes / 60), minutes: String(minutes % 60).padStart(2, '0'), seconds: secondsText });
+}
+
+/**
+ * One tap of the weight stepper (K-971, ADR-075 #1): a pair of the smallest plates (set_load_step_kg or _lb, in the
+ * user's unit). At the gym in use it lands on a load the gym makes: the one within the step (loadSteps.within, as the
+ * calibration and the server round), else the next it makes past it; a gym that says nothing of this equipment takes the
+ * plain step. Nothing yet starts from nothing (at a gym, the empty bar). Never under nothing; null where a tap would not
+ * move it. Any other weight is typed.
+ */
+export function stepLoad(kg: number | null, direction: 1 | -1, move: Schemas['Exercise'], gym: GymWeights | undefined, units: UnitSystem): number | null {
+  const from = kg ?? 0;
+  if (direction < 0 && from <= 0) return null;
+  const step = units === 'METRIC' ? workoutParams.loadStep.kg : workoutParams.loadStep.lb;
+  const plain = parseLoadKg(String(Math.max(0, loadValue(from, units) + direction * step)), units) ?? 0;
+  if (gym === undefined) return plain;
+  const found = within(move.equipment, move.id, gym, from, plain);
+  if (found.kind === 'to') return found.kg;
+  if (found.kind === 'unknown') return plain;
+  if (direction < 0) return lighter(move.equipment, move.id, gym, from, plain);
+  const up = round(move.equipment, move.id, gym, from, plain);
+  return up.kind === 'to' ? up.kg : null;
+}
+
+/** One tap of the reps stepper: one rep either way, from one to the most a set takes; nothing typed counts from none. */
+export function stepReps(reps: string, direction: 1 | -1): number | null {
+  const now = Number(reps.trim());
+  const next = (reps.trim() === '' || !Number.isInteger(now) ? 0 : now) + direction;
+  return next < 1 || next > workoutParams.maxReps ? null : next;
 }
 
 /**

@@ -16,6 +16,8 @@ export const workoutParams = {
   maxReps: param<number>('set_max_reps'),
   /** How long the server keeps a session open before it closes it (K-961); the session shows no time past it. */
   unfinishedSessionCloseHours: param<number>('unfinished_session_close_hours'),
+  /** The session's weight stepper (K-971): one tap, in the user's unit. */
+  loadStep: { kg: param<number>('set_load_step_kg'), lb: param<number>('set_load_step_lb') },
   e1rmEpleyDivisor: param<number>('e1rm_epley_divisor'),
   e1rmMaxRepsToFailure: param<number>('e1rm_max_reps_to_failure'),
   targetRirMax: param<number>('target_rir_max'),

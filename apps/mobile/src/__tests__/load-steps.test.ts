@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { type GymWeights, platesFor, platesPerSide, round, within } from '@/train/loadSteps';
+import { type GymWeights, lighter, platesFor, platesPerSide, round, within } from '@/train/loadSteps';
 
 type Case = {
   case: string;
@@ -76,5 +76,21 @@ describe('the plates a side for a load, by what the move is made of', () => {
     expect(platesFor('BARBELL', 100, { ...GYM, barKg: null })).toBeNull();
     expect(platesFor('BARBELL', 101, GYM)).toBeNull();
     expect(platesFor('PLATE_LOADED', 0, GYM)).toBeNull();
+  });
+});
+
+// The backend's LoadSteps.lighter on the phone (K-971: the weight stepper going down where the gym makes nothing within a step).
+describe('a step back the gym makes: the heaviest load at or under the target and lighter than the load', () => {
+  const GYM: GymWeights = { barKg: 20, platesKg: [20, 10, 5], dumbbellsKg: [10, 12, 14], stackStepKg: 5, machineStepsKg: {} };
+
+  test('plates, dumbbells, a stack', () => {
+    expect(lighter('BARBELL', 'bench_press', GYM, 100, 97.5)).toBe(90);
+    expect(lighter('DUMBBELL', 'curl', GYM, 14, 11.5)).toBe(10);
+    expect(lighter('MACHINE', 'leg_extension', GYM, 50, 47.5)).toBe(45);
+  });
+
+  test('none so light, or nothing known of the equipment', () => {
+    expect(lighter('BARBELL', 'bench_press', GYM, 20, 17.5)).toBeNull();
+    expect(lighter('CABLE', 'cable_row', { ...GYM, stackStepKg: null }, 50, 47.5)).toBeNull();
   });
 });
