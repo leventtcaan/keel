@@ -895,6 +895,61 @@ paths:
           $ref: "#/components/responses/CardioSessionCreated"
         default:
           $ref: "#/components/responses/Error"
+  /v1/program/today:
+    post:
+      tags: [training]
+      operationId: changeToday
+      summary: Change today's session ("Short on time", "Move it", "Skip today")
+      description: |
+        Today's session as the user wants it (K-964, ADR-073 #5), on the user's calendar: `programDayId` names it (the
+        session `Program.week` puts on today). SHORT: the first short_session_moves moves in the program's order; the
+        session counts for the week as any other. MOVE: to tomorrow, within the week (never past Sunday); a session already
+        on that day moves on a day with it, and so on (the week re-lays itself). SKIP: not done; no catch-up is added and
+        nothing is planned again (U7, ADR-071 #3). Only this week's session changes, never the program. CONFLICT (409),
+        nothing changed: that day's session is not on today, or a move would pass Sunday. NOT_FOUND: no program.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TodayChange"
+      responses:
+        "200":
+          description: The program with this week's sessions as changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/program/swap:
+    post:
+      tags: [training]
+      operationId: swapMove
+      summary: Swap a move of a program day, today only or from now on
+      description: |
+        A move of a program day for one of its `swapOptions` (K-964, ADR-073 #6). TODAY: only in this week's session of
+        that day, which must be on today (CONFLICT otherwise); `to` the planned move again undoes the swap. FROM_NOW_ON: the
+        program changes: the move's row gets the new move with the same sets and rep range, and no target (the new move
+        has its own history and target, double progression per move); every other move keeps its row and target, the
+        program its source and days. The review's change log is cleared (the edit is the program now: "N changes applied
+        · Undo" goes). VALIDATION_FAILED: `to` is not among the move's swap options (the user's own move has none).
+        NOT_FOUND: no program, or no such day or move.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveSwap"
+      responses:
+        "200":
+          description: The program after the swap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/gyms:
     get:
       tags: [training]
@@ -2579,6 +2634,13 @@ components:
           $ref: "#/components/schemas/ProgramCardio"
         review:
           $ref: "#/components/schemas/ProgramReview"
+        week:
+          type: array
+          description: |
+            This week's sessions on the user's calendar, Monday to Sunday by date (K-964): each program day put on a weekday,
+            or moved to a day; a day on no weekday is not on the calendar. This server always sends it.
+          items:
+            $ref: "#/components/schemas/WeekSession"
     ProgramReview:
       type: object
       description: |
@@ -2776,6 +2838,56 @@ components:
       type: string
       description: Typed in the app, or read from an Apple Health workout (the same word as MeasurementSource).
       enum: [MANUAL, APPLE_HEALTH]
+    TodayChange:
+      type: object
+      required: [programDayId, change]
+      properties:
+        programDayId:
+          type: string
+          format: uuid
+        change:
+          type: string
+          enum: [SHORT, MOVE, SKIP]
+    MoveSwap:
+      type: object
+      required: [programDayId, exerciseId, to, scope]
+      properties:
+        programDayId:
+          type: string
+          format: uuid
+        exerciseId:
+          type: string
+          description: The planned move swapped.
+        to:
+          type: string
+          description: One of the planned move's swapOptions (or, TODAY, the planned move again).
+        scope:
+          type: string
+          enum: [TODAY, FROM_NOW_ON]
+    WeekSession:
+      type: object
+      description: |
+        A program day's session this week (K-964): on `date`, its weekday's unless moved (`moved` true); `skipped` true when
+        the user skipped it (not done, nothing planned again); `short` true for the short version. `exerciseIds`: the
+        session's moves that day in order, the short version's first short_session_moves and today's swaps applied.
+      required: [programDayId, date, exerciseIds]
+      properties:
+        programDayId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        moved:
+          type: boolean
+        skipped:
+          type: boolean
+        short:
+          type: boolean
+        exerciseIds:
+          type: array
+          items:
+            type: string
     DeloadWeek:
       type: object
       description: A lighter week in force (K-217); ends on its own after `until`.
@@ -2959,6 +3071,14 @@ components:
             The load the next session gets once every set reaches the top of the range (double progression, K-109), as
             the gym makes it: "2 more and it's 105 kg". Absent with no nextLoadKg, on a move not load-tracked, while the
             load is held, or where no heavier load is in reach.
+        swapOptions:
+          type: array
+          description: |
+            The moves this one can be swapped for (K-964, ADR-073 #6): the catalog's alternatives, then the moves of the same
+            primary muscle and kind (G6 K-35), each the current gym has the equipment for (ADR-032; any without a gym), none
+            already on the day. Empty for the user's own move. This server always sends it.
+          items:
+            type: string
     RepRange:
       type: object
       description: min < max (a range to climb in, double progression); max at most 100.

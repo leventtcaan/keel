@@ -147,3 +147,32 @@ testi: seçenekler salon ekipmanıyla süzülür.
 | `program_draft_weekday_min_share` | 0,5 | Yapıldığı haftaların yarısında o gündeyse düzen var, o gün rutinin günlerinden biridir (haftada yapıldığı kadar gün, en büyük paylar); azı rastgele, gün kullanıcıya bırakılır |
 | `program_draft_reps_middle_share` | 0,5 | Ortadaki yarı (çeyrekler arası): Strong'un işaretsiz ısınması ve tek tük set aralığı germez |
 | `program_draft_rep_span_min` | 2 | Çift ilerlemenin tırmanacak yeri olsun (K-109); hep 8 yapan 8-10 alır |
+
+## Ek 3 · Bugünü değiştir ve hareket değiştir: uçlar ve saklama (K-964, 2026-10-08, agent, teknik)
+- **Uçlar:** `POST /v1/program/today {programDayId, change: SHORT|MOVE|SKIP}`, `POST /v1/program/swap {programDayId, exerciseId, to,
+  scope: TODAY|FROM_NOW_ON}`; ikisi de `Program` döner. `Program.week`: bu haftanın seansları (pazartesi-pazar, tarihle; taşınan `moved`,
+  atlanan `skipped`, kısa `short`, o günün hareketleri `exerciseIds`). `PlannedExercise.swapOptions`: program okunurken hesaplanır (salonda
+  çevrimdışı seçilebilsin; telefon hesap yapmaz).
+- **Saklama (V41 `training.session_change`):** bir program gününün **o haftaki** seansı başına tek satır (hesap, gün, haftanın pazartesisi):
+  taşındığı gün, atlandı mı, kısa mı, bugünlük değişimler (JSON, planlı hareket → yerine geçen). Program değişmez; `program_history`'ye
+  satır girmez → tutarlılık ve planlı seans sayısı (`PlannedSessions`) aynı kalır. Tutarlılık seansları haftada sayar: taşınan seans yeni
+  gününde yapılınca o haftayı sayar, kısa seans da bir seanstır, atlanan seans yapılmamış seanstır (telafi eklenmez, yeniden planlanmaz;
+  U7, ADR-071 #3). Program bütün olarak değişince (`PUT`, `generate`) satırlar silinir (gün kimlikleri yenidir).
+- **Taşıma:** yalnız bugünün seansı, yarına; pazarı geçmez (hafta `Consistency.WEEK_STARTS_ON` ile, kullanıcının saat diliminde). Yarında
+  başka seans varsa o da bir gün kayar, zincirleme ("The week re-lays itself", prototip); biri pazarı geçecekse taşıma CONFLICT, hiçbir şey
+  değişmez. **Reddedilen:** dolu güne üst üste iki seans koymak (aynı gün iki antrenman), dolu güne taşımayı yasaklamak (prototipin "re-lays"
+  metniyle çelişir).
+- **Hareket değiştirme seçenekleri:** katalogdaki `alternatives` (sırasıyla), sonra **aynı birincil kas ve aynı türden** (bileşik/izolasyon)
+  katalog hareketleri kimliğe göre; her biri şimdiki salonun ekipmanıyla yapılabilir olmalı (ADR-032: `LoadSteps.knows`; vücut ağırlığı her
+  zaman; salon yoksa süzgeç yok), o günde zaten olan hareket çıkar. Aynı tür şartı G6 K-35'ten (bileşik değişmez, izolasyon serbest:
+  bileşiğin yerine izolasyon önerilmez); katalog `alternatives` elle seçildiği için olduğu gibi. Kullanıcının kendi hareketinin seçeneği
+  yoktur (boş liste). Salon makine için adım söylemiyorsa (`stackStepKg` yok, makine listede değil) makine/kablo hareketi önerilmez.
+- **"Today only":** yalnız bugüne düşen seansta (CONFLICT değilse); planlı hareketin kendisine geri değiştirmek değişimi kaldırır.
+  Seans içi değiştirme ayrıca bir şey istemez (set başka hareketi adlandırır, K-210).
+- **"From now on":** programda o günün o hareketinin satırı yeni hareketle değişir (aynı set ve tekrar aralığı, **hedef yok**: yeni hareketin
+  kendi geçmişi ve hedefi, sıradaki seans koyar); diğer her hareket satırını ve hedefini, program kaynağını, günlerini ve kimliklerini korur
+  (inceleme uygulaması gibi, `ProgramStore.rewrite` + satır kilidi). **İncelemenin değişiklik kaydı silinir:** kayıttaki "sonrası" programlar
+  artık bu programla eşleşmez ve geri alma CONFLICT verirdi; düzenleme artık programın kendisidir ("N changes applied · Undo" kalkar).
+  Reddedilen: değişimi kayda ayrı bir değişiklik olarak yazmak (kayıt yalnız inceleme önerilerini tutar, geri alma yeniden uygulama yoluyla
+  çalışır; değişim bir öneri değildir) · kayıttaki programları yeni hareketle yeniden yazmak (kırılgan, geri alınan eski hal yeni hareketi
+  silerdi).
