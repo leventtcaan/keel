@@ -3530,7 +3530,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-073 #1: kendi programı olan 21 hareketi elle girmesin; geçmiş zaten içe aktarılıyor (K-615) ama program olmuyor"
     acceptance:
