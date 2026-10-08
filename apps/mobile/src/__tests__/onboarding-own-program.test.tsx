@@ -177,7 +177,7 @@ const mockServices = {
   queue: { record: jest.fn(async () => true), drain: jest.fn(async () => {}) },
   report: mockReport,
   withdrawHealthData: jest.fn(async () => {}),
-  consents: { remember: jest.fn(async () => {}), granted: jest.fn(async () => false) },
+  consents: { remember: jest.fn(async () => {}), granted: jest.fn(async () => false), held: jest.fn(async () => false) },
   // The plan's Monday switch reads them: one object, as useSyncExternalStore compares by identity.
   // The plan hands itself to the paywall after it (K-967).
   planPreviews: { keep: jest.fn() },
