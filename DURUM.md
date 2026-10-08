@@ -849,20 +849,23 @@ tutarlı; bağımlılıklar `done`. 13 ajan worktree'si (hepsi temiz, PR'ları b
 iPhone 16 Pro Max açık, EAS geliştirme derlemesi `40e9cfce` kurulu; Docker kapalı → ekran doğrulaması fikstür sunucusu + geçici oturum yamasıyla (repoya girmez).
 `prototip/kullanici-testi.md` "Part 3-4 notları" K-969..K-978 kabul kriterlerine eklendi ("Kullanıcı testi:" satırları).
 Çalışma şekli: ben düzenleyici + inceleme + simülatör; uygulayıcılar ayrı worktree'de, aynı anda en çok 3; göç sırası V44'ten.
+Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim/` (fixture.js 8790, Metro 8081, `run.sh <dal> [senaryo]`, `scenario.sh`, `shot.sh`, `theme.sh`); senaryolar beginner-w1, regular-w12-mon, regular-midweek, open-session, no-consent, own-program, returning.
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-969 Bu hafta | ⏳ | | |
-| K-970 Antrenman + Edit | ⏳ | | |
-| K-971 Oturum A | ⏳ | | |
+| K-969 Bu hafta | 🛠 ajan | | undo/bitmiş seans K-995 bekler; `useToday` K-992 bloğu korunur |
+| K-970 Antrenman + Edit | 🔍 | #493 · #495 | #493 kart + Change (`/today-change?day=`), #495 swap; PR 3 Edit (Days/Moves/Split K-995'e kadar salt okunur) |
+| K-971 Oturum A | 🔍 | #497 · #499 | #497 oturum WeekSession'dan (programDayId + date) auto-merge; #499 odak modu incelemede |
 | K-972 Oturum B | ⏳ | | K-971 sonrası |
 | K-973 Oturum C | ⏳ | | K-972 sonrası (aynı ekran) |
 | K-974 Antrenman sonu | ⏳ | | |
 | K-978 Pazartesi | ⏳ | | |
 | K-988 kilo değişimi | ⏳ | | decision |
-| K-992 ilk hatırlatma | ⏳ | | |
+| K-992 ilk hatırlatma | ✅ | #492 | `reminders.firstCall` kv; rıza yoksa Monday anahtarı yok, Settings 'noCalls' |
 | K-993 ilk hafta planın görüldüğü günden | ⏳ | | decision, göç olabilir |
-| K-994 kırılgan test | ⏳ | | |
+| K-994 kırılgan test | ✅ | #490 | `JsonNumbers.asValue` |
+| K-995 program düzenleme ucu (yeni) | ⏳ | | #491: PATCH /v1/program, split, taşı önizleme, today FULL/UNDO, `Program.today`, `WeekSession.movedFrom`, gün durumu |
+| K-996 gün adı nameKey (yeni) | ✅ | #498 | M4'ten beri her üretilmiş gün '[missing…]'; simülatör düzeneği yakaladı |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
