@@ -15,7 +15,9 @@ import {
   renamed,
   stepped,
   weekdayTaken,
+  withDayAt,
   withMove,
+  withMoveAt,
   withoutDay,
   withoutMove,
   withWeekday,
@@ -120,6 +122,26 @@ describe('moves', () => {
     expect(days[0].moves[0].reps).toEqual({ min: REPS.COMPOUND.max - 1, max: REPS.COMPOUND.max });
     for (let i = 0; i < 200; i++) days = stepped(days, 0, 0, 'max', 1);
     expect(days[0].moves[0].reps.max).toBe(workoutParams.maxReps);
+  });
+});
+
+describe('put back (Undo)', () => {
+  test('a day removed goes back where it was, with its moves', () => {
+    const three = newDay(newDay(oneMove));
+    expect(withDayAt(withoutDay(three, 0), three[0], 0)).toEqual(three);
+  });
+
+  test('a move removed goes back where it was in its day; a day gone meanwhile takes nothing', () => {
+    const two = withMove(oneMove, 0, CURL);
+    expect(withMoveAt(withoutMove(two, 0, 0), two[0].id, two[0].moves[0], 0)).toEqual(two);
+    expect(withMoveAt([], two[0].id, two[0].moves[0], 0)).toEqual([]);
+  });
+
+  test('never past the limits: no eighth day, no move twice', () => {
+    let days: EditedDay[] = [];
+    for (let i = 0; i < workoutParams.programDaysMax; i++) days = newDay(days);
+    expect(withDayAt(days, newDay([])[0], 0)).toBe(days);
+    expect(withMoveAt(oneMove, oneMove[0].id, oneMove[0].moves[0], 0)).toBe(oneMove);
   });
 });
 

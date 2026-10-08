@@ -118,10 +118,10 @@ async function toEditor() {
 
 /** A move added to a day (the n-th "Add a move"), found by what was typed. */
 async function addMove(typed: string, id: string, at = 0) {
-  await fireEvent.press(screen.getAllByRole('button', { name: t('workout.add.open') })[at]);
+  await fireEvent.press(screen.getAllByRole('button', { name: t('programEditor.addMove') })[at]);
   await settle();
-  await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), typed);
-  await press(t('workout.add.pick', { name: name(id) }));
+  await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), typed);
+  await press(t('programEditor.pick', { name: name(id) }));
 }
 async function step(label: string, actionName: 'increment' | 'decrement', times = 1) {
   for (let i = 0; i < times; i++) await fireEvent(screen.getByRole('adjustable', { name: label }), 'accessibilityAction', { nativeEvent: { actionName } });
@@ -165,7 +165,11 @@ test('a move found by name comes in with its starting sets and range; the progra
 
 /** A day's card header (prototype v5 `#ob-type`): its name, its weekday or "Any day", its moves. */
 const header = (name: string, weekday: string, moves: number) =>
-  t('programEditor.dayHeader', { day: name, weekday, moves: t(moves === 1 ? 'programEditor.moves.one' : 'programEditor.moves.other', { count: moves }) });
+  t('programEditor.dayHeader', {
+    day: name,
+    weekday,
+    moves: moves === 0 ? t('programEditor.noMovesMeta') : t(moves === 1 ? 'programEditor.moves.one' : 'programEditor.moves.other', { count: moves }),
+  });
 const anyDay = () => t('programEditor.anyDay');
 
 test('every day is a card, one open at a time: a new day opens, the others close to their header', async () => {
@@ -259,18 +263,18 @@ test("a long day name is whole in the field and in its card's header (wrapped, n
 test('the move search does not offer a move the day has', async () => {
   await toEditor();
   await addMove('squ', 'squat');
-  await fireEvent.press(screen.getByRole('button', { name: t('workout.add.open') }));
+  await fireEvent.press(screen.getByRole('button', { name: t('programEditor.addMove') }));
   await settle();
-  await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'squ');
-  expect(screen.queryByRole('button', { name: t('workout.add.pick', { name: name('squat') }) })).toBeNull();
+  await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), 'squ');
+  expect(screen.queryByRole('button', { name: t('programEditor.pick', { name: name('squat') }) })).toBeNull();
 });
 
 /** "Landmine press" made the user's own move: the engine's questions answered (OwnMoveForm, U1). */
 async function makeOwn() {
-  await fireEvent.press(screen.getByRole('button', { name: t('workout.add.open') }));
+  await fireEvent.press(screen.getByRole('button', { name: t('programEditor.addMove') }));
   await settle();
-  await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'Landmine press');
-  await press(t('workout.add.create', { name: 'Landmine press' }));
+  await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), 'Landmine press');
+  await press(t('programEditor.addOwn'));
   await press(`${t('ownMove.kind')} ${t('ownMove.kinds.COMPOUND')}`);
   await press(`${t('ownMove.equipment')} ${t('ownMove.equipments.BARBELL')}`);
   await press(`${t('ownMove.unilateral')} ${t('ownMove.no')}`);
@@ -343,4 +347,48 @@ test("an export with no routine to read offers typing it in instead", async () =
   expect(screen.getByText(t('onboarding.programImport.noRoutine'))).toBeOnTheScreen();
   await press(t('onboarding.own.type.title'));
   expect(router.getPathname()).toBe('/onboarding/program-type');
+});
+
+test('"Add a move" opens a sheet for the open day: search the catalog, each move with the range it starts from', async () => {
+  await toEditor();
+  await fireEvent.press(screen.getByRole('button', { name: t('programEditor.addMove') }));
+  await settle();
+  expect(screen.getByRole('header', { name: t('programEditor.addMove') })).toBeOnTheScreen();
+  expect(screen.getByText(t('programEditor.sheetTo', { day: day(1), sets: SETS }))).toBeOnTheScreen();
+  await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), 'curl');
+  expect(screen.getByText(t('programEditor.range', REPS.ISOLATION))).toBeOnTheScreen();
+  await press(t('programEditor.pick', { name: name('barbell_curl') }));
+  expect(screen.queryByRole('header', { name: t('programEditor.addMove') })).toBeNull();
+  expect(screen.getByText(name('barbell_curl'))).toBeOnTheScreen();
+});
+
+test('a move removed can be put back (Undo), where it was', async () => {
+  await toEditor();
+  await addMove('squ', 'squat');
+  await addMove('bench', 'bench_press');
+  await press(t('programEditor.removeMoveLabel', { move: name('squat') }));
+  expect(screen.getByText(t('programEditor.removed', { name: name('squat') }))).toBeOnTheScreen();
+  await press(t('programEditor.undoLabel', { name: name('squat') }));
+  expect(screen.queryByText(t('programEditor.removed', { name: name('squat') }))).toBeNull();
+  await press(t('onboarding.typeProgram.confirm'));
+  expect((puts()[0][1].body as Schemas['OwnProgram']).days[0].exercises.map((e) => e.exerciseId)).toEqual(['squat', 'bench_press']);
+});
+
+test('a day removed can be put back (Undo), with its moves', async () => {
+  await toEditor();
+  await addMove('squ', 'squat');
+  await press(t('programEditor.addDay'));
+  await addMove('curl', 'barbell_curl');
+  await press(t('programEditor.removeDayLabel', { day: day(2) }));
+  expect(screen.queryByRole('button', { name: header(day(2), t('programEditor.anyDay'), 1) })).toBeNull();
+  await press(t('programEditor.undoLabel', { name: day(2) }));
+  expect(screen.getByRole('button', { name: header(day(2), t('programEditor.anyDay'), 1) })).toBeOnTheScreen();
+  await press(t('onboarding.typeProgram.confirm'));
+  expect((puts()[0][1].body as Schemas['OwnProgram']).days.map((d) => d.name)).toEqual([day(1), day(2)]);
+});
+
+test('an empty day says "No moves yet" in its header', async () => {
+  await toEditor();
+  await press(t('programEditor.addDay'));
+  expect(screen.getByRole('button', { name: header(day(1), t('programEditor.anyDay'), 0) })).toBeOnTheScreen();
 });

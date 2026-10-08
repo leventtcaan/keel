@@ -92,19 +92,10 @@
       "keys": [
         "onboarding.typeProgram.title",
         "onboarding.typeProgram.why",
-        "programEditor.defaultName",
-        "programEditor.anyDay",
-        "programEditor.moves.other",
+        "programEditor.noMovesMeta",
         "programEditor.dayName",
-        "programEditor.weekdayShort.MONDAY",
-        "programEditor.weekdayShort.TUESDAY",
-        "programEditor.weekdayShort.WEDNESDAY",
-        "programEditor.weekdayShort.THURSDAY",
-        "programEditor.weekdayShort.FRIDAY",
-        "programEditor.weekdayShort.SATURDAY",
-        "programEditor.weekdayShort.SUNDAY",
         "programEditor.noMoves",
-        "workout.add.open",
+        "programEditor.addMove",
         "programEditor.addDay",
         "onboarding.typeProgram.confirm"
       ],
@@ -115,7 +106,17 @@
         "programEditor.summary",
         "programEditor.days.one",
         "programEditor.days.other",
-        "programEditor.moves.one"
+        "programEditor.moves.one",
+        "programEditor.moves.other",
+        "programEditor.defaultName",
+        "programEditor.anyDay",
+        "programEditor.weekdayShort.MONDAY",
+        "programEditor.weekdayShort.TUESDAY",
+        "programEditor.weekdayShort.WEDNESDAY",
+        "programEditor.weekdayShort.THURSDAY",
+        "programEditor.weekdayShort.FRIDAY",
+        "programEditor.weekdayShort.SATURDAY",
+        "programEditor.weekdayShort.SUNDAY"
       ]
     },
     {

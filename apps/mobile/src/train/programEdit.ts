@@ -73,6 +73,21 @@ export function withMove(all: EditedDay[], at: number, move: Move): EditedDay[] 
   return changed(all, at, { ...day, moves: [...day.moves, added] });
 }
 
+/** A day put back where it was (Undo); none past the most a program has. */
+export function withDayAt(all: EditedDay[], day: EditedDay, at: number): EditedDay[] {
+  if (all.length >= P.programDaysMax) return all;
+  return [...all.slice(0, at), day, ...all.slice(at)];
+}
+
+/** A move put back where it was in its day (Undo); not into a day gone meanwhile, past the most, or twice. */
+export function withMoveAt(all: EditedDay[], dayId: string, move: EditedMove, index: number): EditedDay[] {
+  const at = all.findIndex((day) => day.id === dayId);
+  if (at < 0) return all;
+  const { moves } = all[at];
+  if (moves.length >= P.programDayMovesMax || moves.some((m) => m.exerciseId === move.exerciseId)) return all;
+  return changed(all, at, { ...all[at], moves: [...moves.slice(0, index), move, ...moves.slice(index)] });
+}
+
 export function withoutMove(all: EditedDay[], at: number, index: number): EditedDay[] {
   return changed(all, at, { ...all[at], moves: all[at].moves.filter((_, i) => i !== index) });
 }
