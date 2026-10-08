@@ -6,7 +6,7 @@ import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { applyReview, readReview } from '@/onboarding/bringProgram';
+import { applyReview, readProgram, readReview } from '@/onboarding/bringProgram';
 import { broughtProgram } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { StepFrame, useChoose } from '@/onboarding/StepFrame';
@@ -38,11 +38,12 @@ function buttonLabel(on: number): string {
  * #ob-review (ADR-073 #2-#3): the program the user brought, reviewed by the engine on the server (the review rides on the
  * program kept, or is read). Each suggestion is a concrete change with its coaching rule one tap away, and the user's to
  * take or leave: all on at first, each turned off with its switch. "Use mine with N changes" applies the ones on, by the
- * review they came from; a review gone stale (409) is read again and shown again. "Keep mine as is" sends nothing.
+ * review they came from; a review gone stale (409) means the program changed: it is read again, made the walk's (its
+ * weekdays the training days), and its review shown. "Keep mine as is" sends nothing, also when the review cannot load.
  * Either way the walk goes on, and Monday's calls work either way.
  */
 export default function ReviewStep() {
-  const { draft } = useDraft();
+  const { draft, update } = useDraft();
   const { api, report } = useAppServices();
   const { color } = useTheme();
   const choose = useChoose('review');
@@ -50,6 +51,18 @@ export default function ReviewStep() {
   const [review, setReview] = useState<Schemas['ProgramReview'] | null>(program?.review ?? null);
   const [off, setOff] = useState<ReadonlySet<string>>(new Set());
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
+  // The program changed (changes applied, or read again after a stale review): its review is the one shown, all on.
+  // Adjusted while rendering, as React advises for state that follows a prop: no effect, no second pass.
+  const kept = program?.review ?? null;
+  const [shownFor, setShownFor] = useState(kept);
+  if (kept !== shownFor) {
+    setShownFor(kept);
+    if (kept !== null) {
+      setReview(kept);
+      setOff(new Set());
+      setOpened(new Set());
+    }
+  }
   const [busy, setBusy] = useState(false);
   const [problem, setProblem, occurrence] = useProblem();
   // A ref, not state: two taps in one frame both see the state from before either ran.
@@ -68,6 +81,19 @@ export default function ReviewStep() {
       return false;
     }
   }, [api, report, setProblem]);
+  /** After a stale review: the program as it is now, the walk's from here; its review comes with it, or is read. */
+  const reread = async (): Promise<boolean> => {
+    setProblem(null);
+    try {
+      const now = await readProgram(api);
+      update(broughtProgram(now));
+      return now.review === undefined ? await read() : true;
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+      setProblem(t('onboarding.review.loadFailed'));
+      return false;
+    }
+  };
   // Read once on opening when the program came without its review; a failed read is tried again by the user.
   const unread = useRef(review === null);
   useEffect(() => {
@@ -89,7 +115,7 @@ export default function ReviewStep() {
       const name = error instanceof Error ? error.name : 'Unknown';
       report({ name });
       if (name === 'ReviewStale') {
-        if (await read()) setProblem(t('onboarding.review.changed'));
+        if (await reread()) setProblem(t('onboarding.review.changed'));
       } else {
         setProblem(t(`onboarding.review.failed.${name === 'NoConnection' ? 'NoConnection' : 'other'}`));
       }
@@ -126,8 +152,15 @@ export default function ReviewStep() {
   );
   const retry = review === null && problem !== null ? <Button label={t('onboarding.tryAgain')} variant="ghost" size="sm" onPress={() => void read()} /> : null;
   const keepToo = picked.length === 0 ? null : <Button label={t('onboarding.review.keep')} variant="ghost" disabled={busy} onPress={keep} />;
+  // The review not loaded: the program can still be kept as it is.
+  const keepOnly =
+    problem === null ? undefined : (
+      <View style={styles.actions}>
+        <Button label={t('onboarding.review.keep')} onPress={keep} />
+      </View>
+    );
   const actions =
-    review === null ? undefined : (
+    review === null ? keepOnly : (
       <View style={styles.actions}>
         {busy && note(t('onboarding.review.applying'))}
         <Button label={buttonLabel(picked.length)} disabled={busy} onPress={picked.length === 0 ? keep : () => void use()} />

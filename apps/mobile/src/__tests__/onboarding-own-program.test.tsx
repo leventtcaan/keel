@@ -112,7 +112,9 @@ const mockAnswer = async (route: string, init: Init): Promise<unknown> => {
   if (route === '/v1/program/review') return ok(mockReview);
   return ok({ status: 'GRANTED' }); // a consent
 };
-const mockRead = async (route: string) => mockAnswer(route, {});
+/** The program as the server has it now (GET /v1/program): changed elsewhere, on other weekdays, reviewed again. */
+let mockNow: Schemas['Program'] | null = null;
+const mockRead = async (route: string) => (route === '/v1/program' && mockNow !== null ? ok(mockNow) : mockAnswer(route, {}));
 const mockApi = {
   GET: jest.fn(mockRead),
   PUT: jest.fn(mockAnswer),
@@ -176,6 +178,7 @@ beforeEach(() => {
   mockFile = fixture('strong-program.csv');
   mockStore.clear();
   mockReview = REVIEW;
+  mockNow = null;
 });
 
 async function settle() {
@@ -631,19 +634,57 @@ describe('#ob-review (ADR-073 #2-#3)', () => {
     expect(router.getPathname()).toBe('/onboarding/health-data');
   });
 
-  test('a review gone stale (409): nothing applied; it is read again and shown again, every suggestion on', async () => {
+  test('a review gone stale (409): nothing applied; the program is read again, its review shown, every suggestion on', async () => {
     const router = await toReview();
     await flip(CHEST_ONCE);
     mockApi.POST.mockImplementationOnce(async () => ({ error: { code: 'CONFLICT' }, response: new Response(null, { status: 409 }) }));
-    mockReview = { id: 'r9', notReviewedMoves: 0, suggestions: [CHEST_ONCE], applied: [] };
+    mockNow = { ...APPLIED, review: { id: 'r9', notReviewedMoves: 0, suggestions: [CHEST_ONCE], applied: [] } };
     await press('Use mine with 2 changes');
-    expect(mockApi.GET).toHaveBeenCalledWith('/v1/program/review');
+    expect(mockApi.GET).toHaveBeenCalledWith('/v1/program');
     expect(router.getPathname()).toBe('/onboarding/review');
     expect(screen.getByText(t('onboarding.review.changed'))).toBeOnTheScreen();
     expect(screen.queryByText('Squat: 6-10 reps')).toBeNull();
     expect(toggle(CHEST_ONCE).props.value).toBe(true);
     await press('Use mine with 1 change');
     expect(applies()[1][1]).toEqual({ body: { reviewId: 'r9', suggestionIds: [CHEST_ONCE.id] } });
+  });
+
+  test("after a stale review, the program read again is the walk's: its weekdays are the training days", async () => {
+    await toReview();
+    mockApi.POST.mockImplementationOnce(async () => ({ error: { code: 'CONFLICT' }, response: new Response(null, { status: 409 }) }));
+    mockNow = { ...APPLIED, days: [{ ...APPLIED.days[0], weekday: 'TUESDAY' }, { ...APPLIED.days[1], weekday: 'SATURDAY' }] };
+    await press('Use mine with 3 changes');
+    expect(screen.getByRole('header', { name: t('onboarding.review.headline.none') })).toBeOnTheScreen();
+    await press(t('onboarding.review.keep'));
+    await press(t('onboarding.healthData.notNow'));
+    await press(t('onboarding.consent.continueWithout'));
+    await press(t('onboarding.about.male'));
+    await press(t('onboarding.continue'));
+    await choose(t('onboarding.activity.ACTIVE'));
+    expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ schedule: expect.objectContaining({ trainingDays: ['TUESDAY', 'SATURDAY'] }) }));
+  });
+
+  test('changes applied, then back: the review shown is the changed program\'s', async () => {
+    await toReview();
+    await press('Use mine with 3 changes');
+    await press(t('onboarding.back'));
+    expect(screen.getByRole('header', { name: t('onboarding.review.headline.none') })).toBeOnTheScreen();
+    expect(screen.queryByRole('switch')).toBeNull();
+  });
+
+  test('a review that cannot load still lets the program be kept as it is', async () => {
+    mockApi.PUT.mockImplementation(async (route: string, init: Init) => {
+      if (route !== '/v1/program') return mockAnswer(route, init);
+      const { review: _left, ...program } = kept(init.body as Schemas['OwnProgram']);
+      return ok(program);
+    });
+    mockApi.GET.mockImplementation(async () => {
+      throw new TypeError('Network request failed');
+    });
+    const router = await toReview();
+    expect(screen.getByText(t('onboarding.review.loadFailed'))).toBeOnTheScreen();
+    await press(t('onboarding.review.keep'));
+    expect(router.getPathname()).toBe('/onboarding/health-data');
   });
 
   test('a stale review that cannot be read again: said so, not called reviewed again', async () => {
