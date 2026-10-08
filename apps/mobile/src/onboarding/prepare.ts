@@ -5,7 +5,8 @@
  * starting weights are never replaced, resumed after a restart or tried again —, the starting weights become its first
  * targets — sent only once the program exists, because a program built again drops them —, and the catalog says what each
  * move is (its equipment, for the plan's move images). With the health data consent, where the calories start is asked
- * for too (GET /v1/targets/starting, K-989), after the starting weigh-in queued with the profile is sent. Each line the screen ticks is one of these answers, never a timer (no made-up progress). A step
+ * for too (GET /v1/targets/starting, K-989), after the starting weigh-in queued with the profile is sent, and the first call's
+ * day (GET /v1/first-weeks, K-990: the server's, never worked out here). Each line the screen ticks is one of these answers, never a timer (no made-up progress). A step
  * that fails throws by name and is tried again from where it stopped; what went through is not sent again.
  */
 import type { ApiClient } from '@/api/client';
@@ -32,6 +33,8 @@ export type Progress = {
   program?: Schemas['Program'];
   /** Where the calories start (GET /v1/targets/starting, K-989); null when the server has none to give: no food row. */
   starting?: Schemas['StartingTarget'] | null;
+  /** The first call's day (YYYY-MM-DD, the user's calendar; K-990); null without the consent or when the server names none. */
+  firstCall?: string | null;
   /** The catalog's moves, and the user's own the program names (by the names they gave them). */
   exercises?: Move[];
 };
@@ -82,6 +85,8 @@ async function answer<T>(request: () => Promise<Answer<T>>, none: readonly numbe
 const NO_PROGRAM = [404] as const;
 /** No starting target to show (ADR-072 Ek 1): no consent on the server, no weigh-in in the window, no profile or a plan begun. */
 const NO_STARTING_TARGET = [403, 404, 409] as const;
+/** No first call to name (ADR-077 Ek 2): no consent on the server, the first weeks over, no profile. */
+const NO_FIRST_CALL = [403, 404, 409] as const;
 
 export async function preparePlan(options: Options): Promise<Prepared> {
   const { draft, from, onProgress, api, profile, queue, consented, keptOwn, report, units, now, timeZone } = options;
@@ -135,6 +140,12 @@ export async function preparePlan(options: Options): Promise<Prepared> {
     advance({ starting });
   }
 
+  if (progress.firstCall === undefined) {
+    // Without the consent there are no calls. The day is the server's, from the day onboarding finished (the profile's save).
+    const weeks = progress.consented === true ? await answer(() => api.GET('/v1/first-weeks'), NO_FIRST_CALL) : null;
+    advance({ firstCall: weeks?.firstCallOn ?? null });
+  }
+
   if (progress.exercises === undefined) {
     const catalog: Move[] = await answer(() => api.GET('/v1/exercises'));
     // The user's own moves only when the program names a move the catalog has not: by their names, never their ids.
@@ -175,20 +186,11 @@ function today(now: Date, timeZone: string): { day: string; weekday: number } {
   return { day, weekday: new Date(`${day}T00:00:00Z`).getUTCDay() };
 }
 
-function plusDays(day: string, days: number): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-/**
- * The first call (ADR-018, onboarding.json › check_in_day): the check-in day after today on the user's calendar — a
- * week on when today is that day, as the first week is watched before it is decided on (U8).
- */
-export function firstCall(checkInDay: Weekday, now: Date, timeZone: string): { day: string; inDays: number } {
-  const { day, weekday } = today(now, timeZone);
-  const inDays = (WEEK.indexOf(checkInDay) - weekday + 7) % 7 || 7;
-  return { day: plusDays(day, inDays), inDays };
+/** The days from today on the user's calendar to `day` (the server's first call): 0 today, 1 tomorrow. Counted, not decided. */
+export function daysTo(day: string, now: Date, timeZone: string): number {
+  return Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${today(now, timeZone).day}T00:00:00Z`)) / DAY_MS);
 }
 
 /** The first workout: the program's soonest day from today on, today included; a program without weekdays, its first day. */
