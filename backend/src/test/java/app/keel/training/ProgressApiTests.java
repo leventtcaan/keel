@@ -214,13 +214,15 @@ class ProgressApiTests {
     @Test
     @SuppressWarnings("unchecked")
     void theChangeAgainstTheSameDayOutlivesAReviewButNotANewProgram() throws Exception {
-        AccountId account = withAProgram();
+        // The user's own week with 16 chest sets: over weekly_sets_max, a finding the review always makes (K-955).
+        AccountId account = withAProgram(Map.of("exerciseId", "bench_press", "sets", 16, "reps", Map.of("min", 6, "max", 10)), own("squat", 6, 10));
         Instant now = clock.instant();
         sets(account, start(account, now.minus(Duration.ofDays(9))), "bench_press", 3, 60, 8, 1, "WORKING");
         Map<String, Object> review = (Map<String, Object>) map(send("GET", account, "/v1/program")).get("review");
-        String pick = (String) ((List<Map<String, Object>>) review.get("suggestions")).getFirst().get("id");
-        assertThat(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", review.get("id"), "suggestionIds", List.of(pick))))
-                .hasStatusOk();
+        assertThat(((List<Map<String, Object>>) review.get("suggestions")).stream().map(suggestion -> suggestion.get("id")))
+                .contains("TOO_MANY_SETS:chest");
+        assertThat(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", review.get("id"),
+                "suggestionIds", List.of("TOO_MANY_SETS:chest")))).hasStatusOk();
 
         String afterReview = start(account, now.minus(Duration.ofDays(2)));
         sets(account, afterReview, "bench_press", 3, 60, 9, 1, "WORKING");
