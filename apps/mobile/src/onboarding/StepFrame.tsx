@@ -28,6 +28,7 @@ const ROUTES: Record<Step, Href> = {
   experience: '/onboarding/experience',
   program: '/onboarding/program',
   ownProgram: '/onboarding/own-program',
+  review: '/onboarding/review',
   days: '/onboarding/days',
   consent: '/onboarding/health-data',
   about: '/onboarding/about',

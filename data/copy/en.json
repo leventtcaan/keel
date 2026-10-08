@@ -1640,6 +1640,30 @@
         "other": "The program couldn't be saved. Try again."
       }
     },
+    "review": {
+      "title": "Your program, reviewed",
+      "loading": "Reviewing your program…",
+      "loadFailed": "The review couldn't load. Try again.",
+      "size": "Days: {days} · moves: {moves}",
+      "headline": {
+        "none": "Good as it is.",
+        "one": "A good base. 1 tweak.",
+        "other": "A good base. {count} tweaks."
+      },
+      "apply": "Apply",
+      "rule": "Coaching rule",
+      "notReviewed": "Your own moves aren't reviewed: {count}",
+      "note": "Your call. Monday's calls work either way.",
+      "useOne": "Use mine with 1 change",
+      "use": "Use mine with {count} changes",
+      "keep": "Keep mine as is",
+      "applying": "Making the changes…",
+      "changed": "Your program changed since. Here it is, reviewed again.",
+      "failed": {
+        "NoConnection": "No connection. Try again when you're online.",
+        "other": "The changes couldn't be made. Try again."
+      }
+    },
     "days": {
       "title": "How many days a week?",
       "why": "Pick what you can keep.",

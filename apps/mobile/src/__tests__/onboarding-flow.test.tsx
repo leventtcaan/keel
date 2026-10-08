@@ -493,10 +493,10 @@ describe('the step indicator follows the branch', () => {
     expect(indicator(4, 7)).toBeOnTheScreen();
   });
 
-  test('an own program: bringing it in is the fourth of seven steps, in place of the days (K-968)', async () => {
+  test('an own program: bringing it in is the fourth of eight steps, then its review, in place of the days (K-968)', async () => {
     await walkTo('program', { experience: 'UNDER_1Y' });
     await choose(t('onboarding.program.bring_my_own.title'));
-    expect(indicator(4, 7)).toBeOnTheScreen();
+    expect(indicator(4, 8)).toBeOnTheScreen();
   });
 
   test('on the first question: step 1', async () => {

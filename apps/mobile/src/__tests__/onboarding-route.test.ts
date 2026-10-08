@@ -56,9 +56,9 @@ describe('the walk: the screens a user goes through today', () => {
     ]);
   });
 
-  test('the own program: brought in in place of the days (K-968); its review joins with its screen', () => {
+  test('the own program: brought in and reviewed in place of the days (K-968)', () => {
     expect(walk(answers({ experience: 'Y1_3', programChoice: 'BRING_MY_OWN' }))).toEqual([
-      'goal', 'experience', 'program', 'ownProgram', 'consent', 'about', 'activity',
+      'goal', 'experience', 'program', 'ownProgram', 'review', 'consent', 'about', 'activity',
     ]);
   });
 
@@ -81,7 +81,8 @@ describe('the next step', () => {
   test('follows the walk', () => {
     expect(nextStep('goal', answers())).toBe('experience');
     expect(nextStep('program', answers({ programChoice: 'BRING_MY_OWN' }))).toBe('ownProgram');
-    expect(nextStep('ownProgram', answers({ programChoice: 'BRING_MY_OWN' }))).toBe('consent');
+    expect(nextStep('ownProgram', answers({ programChoice: 'BRING_MY_OWN' }))).toBe('review');
+    expect(nextStep('review', answers({ programChoice: 'BRING_MY_OWN' }))).toBe('consent');
     expect(nextStep('consent', answers())).toBe('about');
   });
 

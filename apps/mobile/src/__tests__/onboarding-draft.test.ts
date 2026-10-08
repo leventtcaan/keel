@@ -34,6 +34,7 @@ function complete(overrides: Partial<Draft> = {}): Draft {
     activityLevel: 'LOW_ACTIVE',
     healthConsent: 'declined',
     ownProgram: OWN,
+    reviewed: true,
     ...overrides,
   };
 }
@@ -88,13 +89,22 @@ describe('bringing a program (K-968, ADR-073 #1)', () => {
   });
 
   test("the program's weekdays are the training days, Monday first; a day on no weekday adds none", () => {
-    expect(broughtProgram(OWN)).toEqual({ ownProgram: OWN, trainingDays: ['MONDAY', 'THURSDAY'] });
+    expect(broughtProgram(OWN)).toEqual({ ownProgram: OWN, trainingDays: ['MONDAY', 'THURSDAY'], reviewed: false });
+  });
+
+  test('its review is left once the user decided, either way; a program brought in again is reviewed again', () => {
+    const brought = { ...emptyDraft, ...broughtProgram(OWN) };
+    expect(stepComplete('review', brought, 'METRIC', THIS_YEAR)).toBe(false);
+    const decided = { ...brought, reviewed: true };
+    expect(stepComplete('review', decided, 'METRIC', THIS_YEAR)).toBe(true);
+    expect(stepComplete('review', { ...decided, ...broughtProgram(OWN) }, 'METRIC', THIS_YEAR)).toBe(false);
   });
 
   test('the profile of someone who brought a program: its days, and no days question asked', () => {
-    const own = { ...complete({ programChoice: 'BRING_MY_OWN', trainingDays: ['FRIDAY'] }), ...broughtProgram(OWN) };
+    const own = { ...complete({ programChoice: 'BRING_MY_OWN', trainingDays: ['FRIDAY'] }), ...broughtProgram(OWN), reviewed: true };
     expect(toProfile(own, CONTEXT)).toMatchObject({ programChoice: 'BRING_MY_OWN', schedule: { trainingDays: ['MONDAY', 'THURSDAY'] } });
     expect(() => toProfile({ ...own, ownProgram: null }, CONTEXT)).toThrow();
+    expect(() => toProfile({ ...own, reviewed: false }, CONTEXT)).toThrow();
   });
 });
 

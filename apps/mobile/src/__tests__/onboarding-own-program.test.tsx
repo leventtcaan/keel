@@ -2,7 +2,9 @@
  * Bringing a program (K-968, ADR-073 #1, Ek 2): #ob-own offers the import, and the import reads the file on this phone
  * into a draft of the program (import/draft.ts). The user sees the draft; a name no catalog move was matched to is
  * picked, made the user's own move (OwnMoveForm) or left out; only their confirmation sends the program (PUT
- * /v1/program), and then the walk goes on. Routes are rendered from the real src/app folder; the services are faked.
+ * /v1/program). #ob-review then shows the server's review of it (ADR-073 #2-#3): each suggestion on or off, "Use mine
+ * with N changes" applies the ones on, "Keep mine as is" changes nothing. Routes are rendered from the real src/app
+ * folder; the services are faked.
  */
 import fs from 'node:fs';
 import * as path from 'node:path';
@@ -43,8 +45,47 @@ const refused = (status: number) => ({
   error: { code: 'VALIDATION_FAILED' },
   response: new Response(null, { status }),
 });
+const reason = { rule: 'weekly_sets_min', source: { tag: 'EXPERIENCE' as const } };
+const FEW_HAMSTRINGS: Schemas['ReviewSuggestion'] = {
+  id: 'TOO_FEW_SETS:hamstrings',
+  finding: 'TOO_FEW_SETS',
+  muscle: 'hamstrings',
+  numbers: { from: 3, to: 4, min: 4 },
+  copyKey: 'review.too_few_sets',
+  reason,
+};
+const CHEST_ONCE: Schemas['ReviewSuggestion'] = {
+  id: 'ONCE_A_WEEK:chest',
+  finding: 'ONCE_A_WEEK',
+  muscle: 'chest',
+  numbers: { from: 1, to: 2 },
+  copyKey: 'review.once_a_week',
+  reason,
+};
+const SQUAT_REPS: Schemas['ReviewSuggestion'] = {
+  id: 'REP_RANGE:squat',
+  finding: 'REP_RANGE',
+  exerciseId: 'squat',
+  numbers: { fromMin: 5, fromMax: 7, toMin: 6, toMax: 10 },
+  copyKey: 'review.rep_range_compound',
+  reason,
+};
+const REVIEW: Schemas['ProgramReview'] = { id: 'r1', notReviewedMoves: 0, suggestions: [FEW_HAMSTRINGS, CHEST_ONCE, SQUAT_REPS], applied: [] };
+/** The review the server sends with the program it kept (Program.review), and from GET /v1/program/review. */
+let mockReview = REVIEW;
+/** The program after the changes picked: Lower moved to Friday, the review run again. */
+const APPLIED: Schemas['Program'] = {
+  id: 'p1',
+  source: 'OWN',
+  days: [
+    { id: 'd0', name: 'Upper', weekday: 'MONDAY', exercises: [] },
+    { id: 'd1', name: 'Lower', weekday: 'FRIDAY', exercises: [] },
+  ],
+  review: { id: 'r2', notReviewedMoves: 0, suggestions: [], applied: [] },
+};
 /** The server keeps the program it is sent, each day with an id (PUT /v1/program). */
 const kept = (body: Schemas['OwnProgram']): Schemas['Program'] => ({
+  review: mockReview,
   id: 'p1',
   source: 'OWN',
   days: body.days.map((day, i) => ({
@@ -67,9 +108,13 @@ const mockAnswer = async (route: string, init: Init): Promise<unknown> => {
     const own = init.body as Schemas['NewCustomExercise'];
     return ok({ ...own, id: own.name === 'Landmine Press' ? 'custom:8a1d' : `custom:${own.name}` });
   }
+  if (route === '/v1/program/review/apply') return ok(APPLIED);
+  if (route === '/v1/program/review') return ok(mockReview);
   return ok({ status: 'GRANTED' }); // a consent
 };
+const mockRead = async (route: string) => mockAnswer(route, {});
 const mockApi = {
+  GET: jest.fn(mockRead),
   PUT: jest.fn(mockAnswer),
   POST: jest.fn(mockAnswer),
   DELETE: jest.fn(mockAnswer),
@@ -127,8 +172,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockApi.PUT.mockImplementation(mockAnswer);
   mockApi.POST.mockImplementation(mockAnswer);
+  mockApi.GET.mockImplementation(mockRead);
   mockFile = fixture('strong-program.csv');
   mockStore.clear();
+  mockReview = REVIEW;
 });
 
 async function settle() {
@@ -252,7 +299,7 @@ describe('the import: a draft, read on this phone', () => {
         ],
       },
     });
-    expect(router.getPathname()).toBe('/onboarding/health-data');
+    expect(router.getPathname()).toBe('/onboarding/review');
   });
 
   /** Landmine Press made the user's own move: the engine's questions answered (OwnMoveForm, U1). */
@@ -404,27 +451,28 @@ describe('the import: a draft, read on this phone', () => {
     await press(t('onboarding.programImport.confirm'));
     expect(programPuts()).toHaveLength(3);
     expect(programPuts()[2][1]).toEqual(programPuts()[0][1]);
-    expect(router.getPathname()).toBe('/onboarding/health-data');
+    expect(router.getPathname()).toBe('/onboarding/review');
   });
 });
 
 describe('after the program', () => {
-  test('the walk goes on to the consent, fifth of seven; back on #ob-own, Continue goes on with it', async () => {
+  test('the walk goes on to its review, fifth of eight; back on #ob-own, Continue goes on with it', async () => {
     const router = await toDraft();
     await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
     await press(t('onboarding.programImport.confirm'));
-    expect(screen.getByLabelText(t('onboarding.progress', { step: 5, total: 7 }))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('onboarding.progress', { step: 5, total: 8 }))).toBeOnTheScreen();
     await press(t('onboarding.back'));
     await press(t('onboarding.back'));
     expect(router.getPathname()).toBe('/onboarding/own-program');
     await press(t('onboarding.continue'));
-    expect(router.getPathname()).toBe('/onboarding/health-data');
+    expect(router.getPathname()).toBe('/onboarding/review');
   });
 
   test("the profile at the end: bringing my own, on the program's weekdays", async () => {
     await toDraft();
     await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
     await press(t('onboarding.programImport.confirm'));
+    await press(t('onboarding.review.keep'));
     await press(t('onboarding.healthData.notNow'));
     await press(t('onboarding.consent.continueWithout'));
     await press(t('onboarding.about.male'));
@@ -498,5 +546,160 @@ describe('own moves of the draft, sent with the program', () => {
     await press(t('onboarding.programImport.confirm'));
     expect(posts()).toEqual([]);
     expect((programPuts()[0][1].body as Schemas['OwnProgram']).days[0].exercises[2].exerciseId).toBe('squat');
+  });
+});
+
+/** The program brought in (Landmine Press left out) and kept: #ob-review is open. */
+async function toReview() {
+  const router = await toDraft();
+  await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
+  await press(t('onboarding.programImport.confirm'));
+  return router;
+}
+const title = (s: Schemas['ReviewSuggestion']) =>
+  t(`${s.copyKey}.title`, { ...s.numbers, muscle: t(`demo.muscle.${s.muscle}`), exercise: name(s.exerciseId ?? '') });
+const toggle = (s: Schemas['ReviewSuggestion']) => screen.getByRole('switch', { name: title(s) });
+async function flip(s: Schemas['ReviewSuggestion']) {
+  await fireEvent(toggle(s), 'valueChange', !toggle(s).props.value);
+  await settle();
+}
+const applies = () => mockApi.POST.mock.calls.filter(([route]) => route === '/v1/program/review/apply');
+
+describe('#ob-review (ADR-073 #2-#3)', () => {
+  test('the program in one block, then each suggestion with its concrete change, on, and its coaching rule', async () => {
+    const router = await toReview();
+    expect(router.getPathname()).toBe('/onboarding/review');
+    expect(screen.getByRole('header', { name: t('onboarding.review.title') })).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.review.size', { days: 2, moves: 4 }))).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: t('onboarding.review.headline.other', { count: 3 }) })).toBeOnTheScreen();
+    expect(screen.getByText('Hamstrings: 4 sets a week, not 3')).toBeOnTheScreen();
+    expect(screen.getByText('Chest on 2 days a week')).toBeOnTheScreen();
+    expect(screen.getByText('Squat: 6-10 reps')).toBeOnTheScreen();
+    for (const s of [FEW_HAMSTRINGS, CHEST_ONCE, SQUAT_REPS]) expect(toggle(s).props.value).toBe(true);
+    expect(screen.getAllByRole('button', { name: t('onboarding.review.rule') })).toHaveLength(3);
+    expect(screen.getByText(t('onboarding.review.note'))).toBeOnTheScreen();
+    // The rule's own words are one tap away; the card names the kind of source, never a person (U14).
+    expect(screen.queryByText(t('review.too_few_sets.body', { min: 4 }))).toBeNull();
+  });
+
+  test('the coaching rule opens under its suggestion, in its own words', async () => {
+    await toReview();
+    await fireEvent.press(screen.getAllByRole('button', { name: t('onboarding.review.rule') })[0]);
+    await settle();
+    expect(screen.getByText(t('review.too_few_sets.body', { min: 4 }))).toBeOnTheScreen();
+  });
+
+  test.each([
+    [0, 'Use mine with 3 changes'],
+    [1, 'Use mine with 2 changes'],
+    [2, 'Use mine with 1 change'],
+  ])('with %i turned off, the button counts the changes still on: "%s"; Keep mine as is beside it', async (off, label) => {
+    await toReview();
+    for (const s of [FEW_HAMSTRINGS, CHEST_ONCE].slice(0, off)) await flip(s);
+    expect(screen.getByRole('button', { name: label })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('onboarding.review.keep') })).toBeOnTheScreen();
+  });
+
+  test('every suggestion off: one button, Keep mine as is', async () => {
+    await toReview();
+    for (const s of [FEW_HAMSTRINGS, CHEST_ONCE, SQUAT_REPS]) await flip(s);
+    expect(screen.queryByRole('button', { name: /^Use mine/ })).toBeNull();
+    expect(screen.getAllByRole('button', { name: t('onboarding.review.keep') })).toHaveLength(1);
+  });
+
+  test('"Use mine with 2 changes" applies those two, by the review they came from; the walk goes on with the changed program', async () => {
+    const router = await toReview();
+    await flip(CHEST_ONCE);
+    await press('Use mine with 2 changes');
+    expect(applies()).toEqual([['/v1/program/review/apply', { body: { reviewId: 'r1', suggestionIds: [FEW_HAMSTRINGS.id, SQUAT_REPS.id] } }]]);
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+    await press(t('onboarding.healthData.notNow'));
+    await press(t('onboarding.consent.continueWithout'));
+    await press(t('onboarding.about.male'));
+    await press(t('onboarding.continue'));
+    await choose(t('onboarding.activity.ACTIVE'));
+    // The changed program's weekdays (Lower moved to Friday).
+    expect(mockProfile.save).toHaveBeenCalledWith(expect.objectContaining({ schedule: expect.objectContaining({ trainingDays: ['MONDAY', 'FRIDAY'] }) }));
+  });
+
+  test('"Keep mine as is" sends nothing and changes nothing; the walk goes on', async () => {
+    const router = await toReview();
+    const puts = mockApi.PUT.mock.calls.length;
+    await press(t('onboarding.review.keep'));
+    expect(applies()).toEqual([]);
+    expect(mockApi.PUT.mock.calls.length).toBe(puts);
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+  });
+
+  test('a review gone stale (409): nothing applied; it is read again and shown again, every suggestion on', async () => {
+    const router = await toReview();
+    await flip(CHEST_ONCE);
+    mockApi.POST.mockImplementationOnce(async () => ({ error: { code: 'CONFLICT' }, response: new Response(null, { status: 409 }) }));
+    mockReview = { id: 'r9', notReviewedMoves: 0, suggestions: [CHEST_ONCE], applied: [] };
+    await press('Use mine with 2 changes');
+    expect(mockApi.GET).toHaveBeenCalledWith('/v1/program/review');
+    expect(router.getPathname()).toBe('/onboarding/review');
+    expect(screen.getByText(t('onboarding.review.changed'))).toBeOnTheScreen();
+    expect(screen.queryByText('Squat: 6-10 reps')).toBeNull();
+    expect(toggle(CHEST_ONCE).props.value).toBe(true);
+    await press('Use mine with 1 change');
+    expect(applies()[1][1]).toEqual({ body: { reviewId: 'r9', suggestionIds: [CHEST_ONCE.id] } });
+  });
+
+  test('a stale review that cannot be read again: said so, not called reviewed again', async () => {
+    await toReview();
+    mockApi.POST.mockImplementationOnce(async () => ({ error: { code: 'CONFLICT' }, response: new Response(null, { status: 409 }) }));
+    mockApi.GET.mockImplementationOnce(async () => {
+      throw new TypeError('Network request failed');
+    });
+    await press('Use mine with 3 changes');
+    expect(screen.getByText(t('onboarding.review.loadFailed'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('onboarding.review.changed'))).toBeNull();
+  });
+
+  test('no connection: said, the walk waits, the same picks can go again', async () => {
+    const router = await toReview();
+    mockApi.POST.mockImplementationOnce(async () => {
+      throw new TypeError('Network request failed');
+    });
+    await press('Use mine with 3 changes');
+    expect(screen.getByText(t('onboarding.review.failed.NoConnection'))).toBeOnTheScreen();
+    expect(router.getPathname()).toBe('/onboarding/review');
+    await press('Use mine with 3 changes');
+    expect(applies()).toHaveLength(2);
+    expect(applies()[1]).toEqual(applies()[0]);
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+  });
+
+  test("the user's own moves are not reviewed, and it says so in one line", async () => {
+    mockReview = { ...REVIEW, notReviewedMoves: 2 };
+    await toReview();
+    expect(screen.getByText(t('onboarding.review.notReviewed', { count: 2 }))).toBeOnTheScreen();
+  });
+
+  test('none of their own: no such line', async () => {
+    await toReview();
+    expect(screen.queryByText(t('onboarding.review.notReviewed', { count: 0 }))).toBeNull();
+  });
+
+  test('nothing to suggest: said so, and the way on is Keep mine as is', async () => {
+    mockReview = { ...REVIEW, suggestions: [] };
+    await toReview();
+    expect(screen.getByRole('header', { name: t('onboarding.review.headline.none') })).toBeOnTheScreen();
+    expect(screen.queryByRole('switch')).toBeNull();
+    await press(t('onboarding.review.keep'));
+    expect(applies()).toEqual([]);
+  });
+
+  test('a program kept without its review (an older server): the review is read', async () => {
+    mockReview = { ...REVIEW, suggestions: [SQUAT_REPS] };
+    mockApi.PUT.mockImplementation(async (route: string, init: Init) => {
+      if (route !== '/v1/program') return mockAnswer(route, init);
+      const { review: _left, ...program } = kept(init.body as Schemas['OwnProgram']);
+      return ok(program);
+    });
+    await toReview();
+    expect(mockApi.GET).toHaveBeenCalledWith('/v1/program/review');
+    expect(screen.getByText('Squat: 6-10 reps')).toBeOnTheScreen();
   });
 });
