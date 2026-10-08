@@ -298,6 +298,16 @@
     "title": "Workout",
     "progress": "{done} of {count} exercises",
     "targetRir": "Target RIR 0-{max}",
+    "end": "End",
+    "endLabel": "End the workout",
+    "clock": {
+      "minutes": "{minutes}:{seconds}",
+      "hours": "{hours}:{minutes}:{seconds}",
+      "label": "Workout time {time}"
+    },
+    "dot": "{name}, {status}",
+    "next": "Next: {name}",
+    "upNext": "Up next",
     "head": {
       "set": "#",
       "today": "Today",
@@ -328,6 +338,8 @@
     "rest": {
       "label": "Rest · {min}-{max}",
       "time": "{minutes}:{seconds}",
+      "end": "Ready",
+      "endLabel": "End the rest",
       "alert": {
         "title": "Rest's up",
         "body": "{min} of rest. Next set when you're ready."
