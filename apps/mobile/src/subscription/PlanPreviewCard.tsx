@@ -1,13 +1,12 @@
 /**
  * The plan just shown, in brief, at the top of the paywall (prototype `.pwhero`, ADR-072 #7): the program's days and its
- * first workout; the first call and that it comes with its reason — only when there is one (the health data consent).
+ * first workout. The first call is on the timeline below, once.
  */
 import { StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { weekdayDate } from '@/today/today';
 
 import type { PlanPreview } from './planPreview';
 
@@ -23,13 +22,6 @@ export function PlanPreviewCard({ preview }: { preview: PlanPreview }) {
         {preview.firstWorkout !== null &&
           line(t('subscription.preview.firstWorkout', { day: t(`onboarding.schedule.dayName.${preview.firstWorkout}`) }))}
       </View>
-      {preview.firstCall !== null && (
-        <View style={[styles.part, styles.call, { borderTopColor: color.decisionLine }]}>
-          {line(t('subscription.preview.firstCall'), true)}
-          {line(weekdayDate(preview.firstCall))}
-          {line(t('subscription.preview.reason'))}
-        </View>
-      )}
     </View>
   );
 }
@@ -37,7 +29,6 @@ export function PlanPreviewCard({ preview }: { preview: PlanPreview }) {
 const styles = StyleSheet.create({
   card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
   part: { gap: tokens.space.xs },
-  call: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
   strong: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   small: { fontSize: tokens.type.bodySmall },
 });

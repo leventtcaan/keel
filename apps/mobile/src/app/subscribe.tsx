@@ -28,6 +28,11 @@ export default function SubscribeScreen() {
   useEffect(() => {
     if (state === 'unknown') void ask();
   }, [ask, state]);
+  // Subscribed: the plan kept for this screen is let go, then the gate asks again (the tabs open).
+  const active = () => {
+    planPreviews.forget();
+    void gate.refresh();
+  };
   const again = () => {
     setUnanswered(false);
     void ask();
@@ -44,7 +49,7 @@ export default function SubscribeScreen() {
   }
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
-      <Paywall required onActive={() => void gate.refresh()} preview={planPreviews.current()} />
+      <Paywall required onActive={active} preview={planPreviews.current()} />
       <ScrollView style={styles.account} contentContainerStyle={styles.accountBody}>
         <AccountSection />
       </ScrollView>

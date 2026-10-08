@@ -50,7 +50,7 @@ const mockServices = {
   pendingCount: jest.fn(async () => 0),
   photos: { photos: jest.fn(async () => []) },
   // The plan just shown at the end of onboarding (K-967); none when the gate is met later.
-  planPreviews: { current: () => mockPreview, keep: () => {}, forget: () => {} },
+  planPreviews: { current: () => mockPreview, keep: () => {}, forget: jest.fn() },
 };
 let mockPreview: PlanPreview | null = null;
 jest.mock('@/services/ServicesProvider', () => ({
@@ -176,16 +176,15 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
   const FIRST_CALL = '2026-10-19';
   const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: FIRST_CALL, checkInDay: 'MONDAY' };
 
-  test('the plan just shown, in brief: how many days, the first workout, the first call with the reason', async () => {
+  test('the plan just shown, in brief: how many days, the first workout (the first call is on the timeline, once)', async () => {
     mockPreview = PREVIEW;
     await show();
     expect(screen.getByText(t('subscription.preview.program', { count: 3 }))).toBeOnTheScreen();
     expect(screen.getByText(t('subscription.preview.firstWorkout', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
-    expect(screen.getByText(t('subscription.preview.reason'))).toBeOnTheScreen();
-    expect(screen.getAllByText(weekdayDate(FIRST_CALL)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(1);
   });
 
-  test('three values: the program for the days (or the own program, tuned), every set\'s weight and reps, the weekly call', async () => {
+  test('three values: the program for the days (or the own program, tuned), every set\'s weight and reps, the call on its day', async () => {
     mockPreview = PREVIEW;
     await show();
     for (const key of ['subscription.values.built', 'subscription.values.sets']) expect(screen.getByText(t(key))).toBeOnTheScreen();
@@ -195,6 +194,12 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     await show();
     expect(screen.getByText(t('subscription.values.own'))).toBeOnTheScreen();
     expect(screen.queryByText(t('subscription.values.built'))).toBeNull();
+  });
+
+  test('the call on the profile\'s own check-in day', async () => {
+    mockPreview = { ...PREVIEW, checkInDay: 'SUNDAY' };
+    await show();
+    expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.SUNDAY') }))).toBeOnTheScreen();
   });
 
   test('the timeline with the store\'s trial: today, the first call, the reminder, the charge, each on its day', async () => {
@@ -209,16 +214,28 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     }
   });
 
-  test('met later, with no plan just shown: no preview, and no first call on the timeline', async () => {
+  test('met later, with no plan just shown: no preview, no first call on the timeline, the call named without a day', async () => {
     await show();
-    expect(screen.queryByText(t('subscription.preview.reason'))).toBeNull();
+    expect(screen.queryByText(t('subscription.preview.program', { count: 3 }))).toBeNull();
     expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
-    expect(screen.getByText(t('subscription.values.sets'))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.values.weeklyCall'))).toBeOnTheScreen();
   });
 
-  test('no first call without the health data consent: none on the timeline', async () => {
+  test('without the health data consent there are no calls: none on the timeline, and another value in the call\'s place', async () => {
     mockPreview = { ...PREVIEW, firstCall: null };
     await show();
     expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
+    expect(screen.queryByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeNull();
+    expect(screen.getByText(t('subscription.values.cardio'))).toBeOnTheScreen();
+  });
+
+  test('bought: the plan kept for the paywall is let go before the tabs open', async () => {
+    mockPreview = PREVIEW;
+    mockAnswers = [ok(NONE), ok(TRIAL)];
+    await show();
+    await press(t('subscription.startTrial'));
+    await press(t('subscription.continue'));
+    expect(mockServices.planPreviews.forget).toHaveBeenCalledTimes(1);
+    expect(mockServices.planPreviews.forget.mock.invocationCallOrder[0]).toBeLessThan(mockGate.refresh.mock.invocationCallOrder[0]);
   });
 });

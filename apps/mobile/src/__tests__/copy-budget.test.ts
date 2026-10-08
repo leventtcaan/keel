@@ -49,6 +49,12 @@ describe('the checker', () => {
     expect(budgetProblems(copy, { screen: 's', budget: 3, keys: [['a.two', 'a.long']] })).toEqual(['s: 4 words, budget 3']);
   });
 
+  test('words no copy key holds (a date the phone writes) count as listed', () => {
+    const dates = [{ what: 'a date (Mon, Oct 19)', words: 2 }];
+    expect(budgetProblems(copy, { screen: 's', budget: 5, keys: ['a.one'], dynamic: dates })).toEqual([]);
+    expect(budgetProblems(copy, { screen: 's', budget: 4, keys: ['a.one'], dynamic: dates })).toEqual(['s: 5 words, budget 4']);
+  });
+
   test('a key that is not a text fails: a typo must not count as zero words', () => {
     expect(budgetProblems(copy, { screen: 's', budget: 9, keys: ['a.three', ['a', 'a.one']] })).toEqual([
       's: a.three is not a text in en.json',

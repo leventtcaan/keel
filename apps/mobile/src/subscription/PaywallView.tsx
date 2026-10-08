@@ -7,7 +7,6 @@ import { Button } from '@/components/Button';
 import { OptionCard } from '@/components/OptionCard';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
-import { onboardingParams } from '@/onboarding/params';
 import { useAppServices } from '@/services/ServicesProvider';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
@@ -168,7 +167,12 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
         </View>
       );
     const timeline = paywallTimeline(chosen, { today: localDay(new Date()), firstCall: preview?.firstCall ?? null });
-    const callDay = t(`onboarding.schedule.dayName.${preview?.checkInDay ?? onboardingParams.checkInDay}`);
+    // The weekly call on the profile's own day; met later, with no plan just shown, without a day; without the health
+    // data consent there are no calls, so another value takes its place.
+    let call: string;
+    if (preview === null) call = t('subscription.values.weeklyCall');
+    else if (preview.firstCall === null) call = t('subscription.values.cardio');
+    else call = t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
     body = (
       <View style={styles.part}>
         {preview !== null && <PlanPreviewCard preview={preview} />}
@@ -176,7 +180,7 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
         <View style={styles.values}>
           {text(t(preview?.own === true ? 'subscription.values.own' : 'subscription.values.built'))}
           {text(t('subscription.values.sets'))}
-          {text(t('subscription.values.call', { day: callDay }))}
+          {text(call)}
         </View>
         <View accessibilityLabel={t('subscription.timeline.label')} style={styles.timeline}>
           {timeline.map((row) => (

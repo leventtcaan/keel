@@ -1894,7 +1894,7 @@
       "today": "Today",
       "free": "No charge.",
       "firstCall": "Your first call.",
-      "reminder": "A reminder, if you want one.",
+      "reminder": "A reminder, if you want.",
       "charge": {
         "annual": "{price} a year starts, unless you cancel.",
         "monthly": "{price} a month starts, unless you cancel."
@@ -1908,14 +1908,14 @@
       "built": "Program built for your days",
       "own": "Your program, tuned",
       "sets": "Weight and reps for every set",
-      "call": "A {day} call, with the reason"
+      "call": "A {day} call, with the reason",
+      "weeklyCall": "A weekly call, with the reason",
+      "cardio": "Cardio planned around your lifting"
     },
     "preview": {
       "label": "Your plan",
       "program": "{count} days a week",
-      "firstWorkout": "First workout {day}",
-      "firstCall": "First call",
-      "reason": "With the reason"
+      "firstWorkout": "First workout {day}"
     },
     "after": {
       "annual": "When the trial ends: {price} a year, renewing every year until you cancel.",

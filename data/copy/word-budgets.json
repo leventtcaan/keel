@@ -1,5 +1,5 @@
 {
-  "note": "Words on each new-face screen's first view (ADR-069 #4, ADR-072 #9, ADR-077 #3, ADR-078 #5), counted as the prototype counted them: a word has a letter; numbers and {placeholders} are not words. Budgets are the prototype's targets (prototip/yeni-yuz.html, each screen's t:); copy-budget.test.ts holds the table to the prototype and every built screen to its budget. task: the backlog task that builds the screen; once it is done the screen must list its keys. file: the screen's route file; every copy key it uses is in keys or in notFirstView. keys: the copy keys of the first view; a list inside the list is one of several texts shown in the same place, and the longest counts. Legal lines (Terms, Privacy, Restore, Account) go in notFirstView: ADR-072 #9 leaves them out.",
+  "note": "Words on each new-face screen's first view (ADR-069 #4, ADR-072 #9, ADR-077 #3, ADR-078 #5), counted as the prototype counted them: a word has a letter; numbers and {placeholders} are not words. Budgets are the prototype's targets (prototip/yeni-yuz.html, each screen's t:); copy-budget.test.ts holds the table to the prototype and every built screen to its budget. task: the backlog task that builds the screen; once it is done the screen must list its keys. file: the screen's route file; every copy key it uses is in keys or in notFirstView. keys: the copy keys of the first view; dynamic: words no key holds (a date the phone writes, 'Mon, Oct 19' is 2), each with what it is; a list inside the list is one of several texts shown in the same place, and the longest counts. Legal lines (Terms, Privacy, Restore, Account) go in notFirstView: ADR-072 #9 leaves them out.",
   "screens": [
     {
       "screen": "welcome",
@@ -275,6 +275,7 @@
         "onboarding.schedule.dayName.MONDAY",
         "onboarding.continue"
       ],
+      "dynamic": [{ "what": "the first call's date (Mon, Oct 19)", "words": 2 }],
       "notFirstView": ["onboarding.plan.reflectLabel", "onboarding.plan.workoutLabel", "onboarding.plan.finishFailed"]
     },
     {
@@ -287,13 +288,11 @@
         "subscription.preview.program",
         "subscription.preview.firstWorkout",
         "onboarding.schedule.dayName.MONDAY",
-        "subscription.preview.firstCall",
-        "subscription.preview.reason",
         "subscription.titleTrial",
         "subscription.trialSpan.week",
         ["subscription.values.built", "subscription.values.own"],
         "subscription.values.sets",
-        "subscription.values.call",
+        ["subscription.values.call", "subscription.values.weeklyCall", "subscription.values.cardio"],
         "onboarding.schedule.dayName.MONDAY",
         "subscription.timeline.today",
         "subscription.timeline.free",
@@ -307,6 +306,11 @@
         "subscription.plan.monthlyPrice",
         "subscription.plan.monthlyBilled",
         "subscription.startTrial"
+      ],
+      "dynamic": [
+        { "what": "the timeline's first call date (Mon, Oct 19)", "words": 2 },
+        { "what": "the timeline's reminder date (Sat, Oct 24)", "words": 2 },
+        { "what": "the timeline's charge date (Mon, Oct 26)", "words": 2 }
       ],
       "notFirstView": [
         "subscription.today",

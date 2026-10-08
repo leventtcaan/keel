@@ -46,6 +46,15 @@ test('the trial in days or months is counted on the calendar, as the store gives
   expect(rows({ ...ANNUAL, trial: { count: 1, unit: 'month' } }, null).at(-1)?.day).toBe('2026-11-12');
 });
 
+test.each([
+  ['a month from Jan 31', '2027-01-31', { count: 1, unit: 'month' } as const, '2027-02-28'],
+  ['a month from Jan 31 in a leap year', '2028-01-31', { count: 1, unit: 'month' } as const, '2028-02-29'],
+  ['three months from Nov 30', '2026-11-30', { count: 3, unit: 'month' } as const, '2027-02-28'],
+  ['a year from Feb 29', '2028-02-29', { count: 1, unit: 'year' } as const, '2029-02-28'],
+])('%s: the charge day is the last day of a shorter month, never the month after', (_, today, trial, ends) => {
+  expect(paywallTimeline({ ...ANNUAL, trial }, { today, firstCall: null }).at(-1)?.day).toBe(ends);
+});
+
 test('the charge is the chosen plan\'s, in the store\'s price', () => {
   const monthly: Plan = { id: '$rc_monthly', period: 'monthly', price: '$12.99', pricePerMonth: null, trial: { count: 2, unit: 'week' } };
   expect(rows(monthly).at(-1)?.words).toBe(t('subscription.timeline.charge.monthly', { price: '$12.99' }));

@@ -56,14 +56,22 @@ export function paywallWords(plan: Plan): { title: string; terms: string[]; acti
 /** One line of the timeline: its day (YYYY-MM-DD), when it is said to be, and what happens then. */
 export type TimelineRow = { day: string; when: string; words: string };
 
-/** A calendar day so many days, weeks, months or years on (read as a date only: no time zone moves it). */
+/**
+ * A calendar day so many days, weeks, months or years on (read as a date only: no time zone moves it). A month or a year
+ * on from a day the target month lacks (Jan 31, Feb 29) is that month's last day, never a day of the month after.
+ */
 function after(day: string, count: number, unit: NonNullable<Plan['trial']>['unit']): string {
   const date = new Date(`${day}T00:00:00Z`);
-  if (unit === 'day' || unit === 'week') date.setUTCDate(date.getUTCDate() + count * (unit === 'week' ? DAYS_A_WEEK : 1));
-  else if (unit === 'month') date.setUTCMonth(date.getUTCMonth() + count);
-  else date.setUTCFullYear(date.getUTCFullYear() + count);
-  return date.toISOString().slice(0, 10);
+  if (unit === 'day' || unit === 'week') {
+    date.setUTCDate(date.getUTCDate() + count * (unit === 'week' ? DAYS_A_WEEK : 1));
+    return date.toISOString().slice(0, 10);
+  }
+  const months = date.getUTCMonth() + count * (unit === 'year' ? MONTHS_A_YEAR : 1);
+  // Day 0 of the month after the target is the target's last day.
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), months + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(date.getUTCFullYear(), months, Math.min(date.getUTCDate(), lastDay))).toISOString().slice(0, 10);
 }
+const MONTHS_A_YEAR = 12;
 const DAYS_A_WEEK = 7;
 
 /**
