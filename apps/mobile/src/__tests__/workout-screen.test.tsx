@@ -1049,6 +1049,21 @@ describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the s
     expect(screen.queryByText(t('exercises.one_arm_dumbbell_row.name'))).toBeNull();
   });
 
+  test('the session under way keeps the list of the day it started on, after midnight too (K-961)', async () => {
+    // w1 started 2026-09-28; today is later: the list is still that day's.
+    withWeek({ short: true, exerciseIds: ['bench_press'] });
+    await show();
+    expect(await screen.findByText(t('workout.progressOne', { done: 0 }))).toBeOnTheScreen();
+  });
+
+  test('opened on another day than the week has its session on: the day as planned, the short version was for that day only', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    withWeek({ short: true, exerciseIds: ['bench_press'] }); // 2026-09-28, long past
+    await show();
+    expect(await screen.findByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
+  });
+
   test("a move swapped for today stands in its place and starts with no target; the move it replaced is not in the session", async () => {
     const DB = { id: 'dumbbell_bench_press', nameKey: 'exercises.dumbbell_bench_press.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
     mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, DB] } };

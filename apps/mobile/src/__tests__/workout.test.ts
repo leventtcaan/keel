@@ -289,17 +289,18 @@ describe("today's session is the server's (K-971, K-964, ADR-073 Ek 3): its move
   const row: Schemas['PlannedExercise'] = { exerciseId: 'barbell_row', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
   const curl: Schemas['PlannedExercise'] = { exerciseId: 'curl', baseSets: 2, sets: 2, reps: { min: 8, max: 12 }, targetRir: 1 };
   const day: Schemas['ProgramDay'] = { id: 'd1', nameKey: 'programDays.full_body_a.name', exercises: [squat, { ...bench, nextLoadKg: 60 }, row, curl] };
+  const ON = '2026-10-07';
   const week = (session: Partial<Schemas['WeekSession']>): Schemas['WeekSession'][] => [
     { programDayId: 'other', date: '2026-10-05', exerciseIds: ['x'] },
     { programDayId: 'd1', date: '2026-10-07', exerciseIds: day.exercises.map((e) => e.exerciseId), ...session },
   ];
 
   test('no week from the server: the day as planned', () => {
-    expect(sessionMoves(day, undefined)).toEqual(day.exercises);
+    expect(sessionMoves(day, undefined, ON)).toEqual(day.exercises);
   });
 
   test('the short version: only the moves the server lists, in its order', () => {
-    expect(sessionMoves(day, week({ short: true, exerciseIds: ['squat', 'bench_press', 'barbell_row'] })).map((e) => e.exerciseId)).toEqual([
+    expect(sessionMoves(day, week({ short: true, exerciseIds: ['squat', 'bench_press', 'barbell_row'] }), ON).map((e) => e.exerciseId)).toEqual([
       'squat',
       'bench_press',
       'barbell_row',
@@ -308,13 +309,19 @@ describe("today's session is the server's (K-971, K-964, ADR-073 Ek 3): its move
 
   test("a move swapped for today is the swap's own planned move, in the place of the one it stands in for, with no target", () => {
     const swapIn: Schemas['PlannedExercise'] = { exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
-    const moves = sessionMoves(day, week({ exerciseIds: ['squat', 'dumbbell_bench_press', 'barbell_row', 'curl'], swaps: [{ insteadOf: 'bench_press', exercise: swapIn }] }));
+    const moves = sessionMoves(day, week({ exerciseIds: ['squat', 'dumbbell_bench_press', 'barbell_row', 'curl'], swaps: [{ insteadOf: 'bench_press', exercise: swapIn }] }), ON);
     expect(moves.map((e) => e.exerciseId)).toEqual(['squat', 'dumbbell_bench_press', 'barbell_row', 'curl']);
     expect(moves[1]).toBe(swapIn);
     expect(moves[1].nextLoadKg).toBeUndefined();
   });
 
   test('a day not in the week (on no weekday) is the day as planned', () => {
-    expect(sessionMoves({ ...day, id: 'd9' }, week({}))).toEqual(day.exercises);
+    expect(sessionMoves({ ...day, id: 'd9' }, week({}), ON)).toEqual(day.exercises);
+  });
+
+  test("another day's session of the same program day is not today's: its short version or swap was for that day only", () => {
+    // Picked short on Monday and not trained; the day started on Thursday, or last week's cached week offline.
+    expect(sessionMoves(day, week({ short: true, exerciseIds: ['squat'] }), '2026-10-09')).toEqual(day.exercises);
+    expect(sessionMoves(day, week({ short: true, exerciseIds: ['squat'] }), '2026-10-14')).toEqual(day.exercises);
   });
 });

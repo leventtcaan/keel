@@ -29,6 +29,7 @@ import { findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
 import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
+import { localDay } from '@/today/today';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
 import { weightInput } from '@/units/units';
@@ -104,7 +105,10 @@ export default function WorkoutScreen() {
   // list, K-964), then the moves done in this session outside it (a swap, an extra; read back from the sets), then the
   // ones added on this screen in the order they were added — a first set does not move one ahead of the others.
   const [added, setAdded] = useState<string[]>([]);
-  const today = day === null ? [] : sessionMoves(day, program?.week);
+  // The session's own day: its start's while under way (one begun at 23:30 stays that day's after midnight, K-961),
+  // else today's (until K-995's Program.today says it).
+  const sessionDay = localDay(active === null ? new Date() : new Date(active.startedAt));
+  const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
   const planIds = today.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
     (id) => !planIds.includes(id) && moves.has(id),
