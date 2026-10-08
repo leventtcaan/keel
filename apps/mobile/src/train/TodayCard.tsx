@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -11,6 +12,7 @@ import { type UnitSystem, formatLoad } from '@/units/units';
 import { MoveThumb } from './MoveThumb';
 import { dayName, exerciseName, rackNote } from './program';
 import { repCount } from './reps';
+import { swapChoice } from './swap';
 import type { Move } from './trainData';
 import { type Found, sessionMoves, weekdayOf } from './week';
 
@@ -87,8 +89,21 @@ function Body({ program, date, today, moves, units, underWay, canPick, onStart }
         {title}
       </Text>
       {line !== null && <Text style={[styles.text, { color: color.text }]}>{line}</Text>}
-      {shown.map(({ planned }) => {
+      {shown.map(({ planned, insteadOf }) => {
         const name = exerciseName(planned.exerciseId, moves);
+        // The swap names the program's move; a move swapped for today offers it back. None with nothing to swap to.
+        const plannedId = insteadOf?.exerciseId ?? planned.exerciseId;
+        const canSwap = session !== null && (swapChoice(session, plannedId)?.options.length ?? 0) > 0;
+        const swap = canSwap ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('swap.label', { move: name })}
+            onPress={() => router.push({ pathname: '/swap', params: { day: session.day.id, move: plannedId } })}
+            hitSlop={tokens.space.xs}
+            style={[styles.swap, { backgroundColor: color.raise }]}>
+            <SymbolView name="arrow.left.arrow.right" size={tokens.type.bodySmall} tintColor={color.text} />
+          </Pressable>
+        ) : null;
         const move = moves.get(planned.exerciseId);
         const rack = rackNote(planned);
         // No weight to aim for on a bodyweight move; an added load (a weighted dip) with its plus.
@@ -112,6 +127,7 @@ function Body({ program, date, today, moves, units, underWay, canPick, onStart }
                 {held && <Text style={[styles.small, { color: color.muted }]}>{t('train.held')}</Text>}
               </View>
             )}
+            {swap}
           </View>
         );
       })}
@@ -137,6 +153,7 @@ const styles = StyleSheet.create({
   cardio: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
   name: { flex: 1, gap: tokens.space.xs },
   load: { alignItems: 'flex-end' },
+  swap: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
   dock: { flexDirection: 'row', gap: tokens.space.sm, alignItems: 'center' },
   grow: { flex: 1 },
   text: { fontSize: tokens.type.body },

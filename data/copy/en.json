@@ -281,8 +281,27 @@
     "moved": "moved",
     "skippedTag": "skipped"
   },
+  "swap": {
+    "title": "Swap {move}",
+    "why": "Same muscles, and your gym has these. The new move starts fresh: pick its weight.",
+    "back": "Back to the planned move",
+    "none": "No other move for these muscles in your gym.",
+    "which": "Which one is taken?",
+    "whichWhy": "Pick the move to swap, today only.",
+    "scopeTitle": "{move} instead of {current}",
+    "today": "Today only",
+    "todayBody": "Next time it's {current} again.",
+    "fromNow": "From now on",
+    "fromNowBody": "Your program has {move} from now on, with its own history.",
+    "conflict": "Can't swap it for today now: today's workout has started. Swap it in the workout.",
+    "offline": "Couldn't swap it. Check your connection and try again.",
+    "failed": "Something went wrong on our side. Try again in a moment.",
+    "close": "Close",
+    "label": "Swap {move}"
+  },
   "todayChange": {
     "title": "Change today",
+    "busy": { "title": "Gym is busy", "body": "Swap a move for one that is free." },
     "short": { "title": "Short on time", "body": "Just the top moves. Cardio is optional." },
     "shortNow": "This is the short version.",
     "move": { "title": "Move it", "body": "To tomorrow. Later sessions this week shift a day if they need to." },
