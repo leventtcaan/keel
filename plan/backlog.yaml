@@ -4489,3 +4489,21 @@ tasks:
     tests: ["Tablo: pazar 23:58 giriş + pazartesi bitiş, giriş ile bitiş arasında günler, çarşamba bitiş → check-in yok, pazartesi var; sözleşme testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/kararlar/ADR-072-teklif-ve-onboarding.md"]
     learn: ["Zaman başlangıcını tek yerde tanımlamak"]
+
+  - id: K-991
+    title: "Sabit tekrar (5×5): en az = en çok tekrar; motor yalnız kiloyu artırır"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-968]
+    why: "Levent (8 Eki, kullanıcı yürüyüşü): kendi programını yazan 5×5 giremiyor; sözleşme ve çift ilerleme aralık istiyor (min < max)"
+    acceptance:
+      - "Sözleşme RepRange min = max kabul eder (kendi programında; üretilen şablonlar değişmez)"
+      - "Motor: sabit tekrarlı harekette tekrar basamağı yok; bütün çalışma setleri hedef tekrarı tutunca bir yük basamağı (G1 K-109 çift ilerlemenin tek basamaklı hali); plato ve deload kuralları aynı"
+      - "Program incelemesi sabit tekrarı K-21 dışı saymaz mı, sayar mı: kararı ADR-073 Ek'e yaz (öneri: bileşikte 6-10 dışı olduğu için öneri çıkar, kullanıcı kapatır)"
+      - "Düzenleyici (#479) ve içe aktarma taslağı min = max'a izin verir"
+    tests: ["NextTargets tablo testi (sabit tekrar: tuttu/tutmadı), sözleşme testi, programEdit testi"]
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md", "arastirma/ham/guray/G1-antrenman.md"]
+    learn: ["Bir kuralın sınır durumunu kaynaktan türetmek"]
