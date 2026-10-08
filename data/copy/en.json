@@ -257,6 +257,7 @@
     "rackEnds": "Your gym has no next weight for this move that you can reach yet. Add one to your gym's weights and the load can go up again.",
     "startDay": "Start {day}",
     "split": { "own": "Your own program", "join": " + " },
+    "call": { "notApplied": "Not applied: last week's plan, kept", "use": "Use this call" },
     "head": "{split} · {days}",
     "days": { "one": "1 day", "other": "{count} days" },
     "todayOn": "Today · {weekday}",

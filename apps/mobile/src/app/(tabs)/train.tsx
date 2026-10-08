@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { type ReactNode, useCallback, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -10,7 +10,9 @@ import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
+import { CallRow } from '@/train/CallRow';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
@@ -32,13 +34,15 @@ export default function TrainScreen() {
     useCallback(async () => {
       // A state declared, as the phone last knew it (K-518): a busy week brings its least dose (K-528).
       // The user's own moves too: an own program names them by the user's words, never by their id (K-968).
-      const [read, own, records, declared] = await Promise.all([
+      // This week's call too (a row above the card; K-970).
+      const [read, own, records, declared, decision] = await Promise.all([
         training.read(api),
         training.own(api),
         workoutRecords(),
         state.current().catch(() => null),
+        load(() => api.GET('/v1/decisions/current')),
       ]);
-      return { ...read, own, active: activeWorkout(records), declared };
+      return { ...read, own, active: activeWorkout(records), declared, decision };
     }, [api, training, workoutRecords, state]),
   );
 
@@ -84,9 +88,26 @@ export default function TrainScreen() {
   // With no session today (and no week off), any of the week's can be started from its row.
   const pick = today === null && program.restUntil === undefined && active === null;
   const rows = weekRows(program, day);
+  // The review's changes in force (ADR-073 #3): how many, and the page that undoes each.
+  const appliedCount = program.review?.applied.length ?? 0;
+  const applied =
+    appliedCount === 0 ? null : (
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push({ pathname: '/edit-program', params: { part: 'changes' } })}
+        style={({ pressed }) => [styles.applied, { backgroundColor: color.accentSoft }, pressed && styles.dim]}>
+        <Text style={[styles.text, styles.bold, styles.grow, { color: color.text }]}>
+          {t(appliedCount === 1 ? 'editProgram.applied.one' : 'editProgram.applied.other', { count: appliedCount })}
+        </Text>
+        <Text style={[styles.text, { color: color.text }]}>{t('editProgram.appliedUndo')}</Text>
+      </Pressable>
+    );
+  const decision = data?.decision.state === 'ready' && data.decision.value.action.type !== 'NO_DECISION_YET' ? data.decision.value : null;
   return (
-    <Screen>
+    <Screen editable>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.head', { split: splitName(program), days })}</Text>
+      {applied}
+      {decision !== null && <CallRow decision={decision} onChanged={reload} />}
       {kept}
       {notes.map((note) => (
         <Text key={note} style={[styles.text, { color: color.text }]}>
@@ -127,13 +148,28 @@ export default function TrainScreen() {
   );
 }
 
-function Screen({ children }: { children: ReactNode }) {
+/** The tab's frame; with a program, "Edit" beside the title (prototype `#train` › `.tlink`). */
+function Screen({ children, editable = false }: { children: ReactNode; editable?: boolean }) {
   const { color } = useTheme();
+  const edit = editable ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('editProgram.editLabel')}
+      onPress={() => router.push('/edit-program')}
+      style={({ pressed }) => [styles.edit, pressed && styles.dim]}>
+      <Text style={[styles.text, styles.bold, { color: color.accent }]}>{t('editProgram.edit')}</Text>
+    </Pressable>
+  ) : null;
   return (
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <ScreenTitle>{t('screens.train.title')}</ScreenTitle>
+        <View style={styles.top}>
+          <View style={styles.grow}>
+            <ScreenTitle>{t('screens.train.title')}</ScreenTitle>
+          </View>
+          {edit}
+        </View>
         {children}
       </ScrollView>
       <View style={styles.plus}>
@@ -150,6 +186,11 @@ const styles = StyleSheet.create({
   week: { gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, borderTopWidth: tokens.border.hairline },
   grow: { flex: 1 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  edit: { minHeight: tokens.size.touch, minWidth: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
+  applied: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.md, flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  bold: { fontWeight: tokens.weight.semibold },
+  dim: { opacity: tokens.opacity.dim },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

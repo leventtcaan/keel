@@ -64,8 +64,17 @@ let mockRecords: LocalRecord[] = [];
 const mockRecord = jest.fn(async (_outbound: Outbound) => true);
 let mockDeclared: Schemas['DeclaredState'] | null = null;
 let mockOwn: Move[] = [];
+let mockDecision: Schemas['Decision'] | null = null;
+const mockApplied = jest.fn();
 const mockServices = {
-  api: {},
+  api: {
+    GET: async (path: string) =>
+      path === '/v1/decisions/current' && mockDecision !== null ? { data: mockDecision, response: { status: 200 } } : { response: { status: 404 } },
+    POST: async (path: string) => {
+      mockApplied(path);
+      return { data: mockDecision, response: { status: 200 } };
+    },
+  },
   training: { read: mockRead, own: async () => mockOwn },
   state: { current: async () => mockDeclared },
   workoutRecords: async () => mockRecords,
@@ -101,6 +110,57 @@ beforeEach(() => {
   mockDeclared = null;
   mockRecords = [];
   mockOwn = [];
+  mockDecision = null;
+});
+
+const DECISION = {
+  id: 'd1',
+  madeOn: '2026-09-28',
+  action: { type: 'STOP_LOAD_INCREASE' },
+  reasons: [],
+  confidence: 'MEDIUM',
+  nextReview: '2026-10-05',
+  copyKey: 'decision.stop_load_increase.plateau',
+  application: { state: 'APPLIED' },
+  declinable: true,
+} as unknown as Schemas['Decision'];
+
+describe('the head of the tab', () => {
+  test('Edit opens the program editor', async () => {
+    await show();
+    await fireEvent.press(await screen.findByLabelText(t('editProgram.editLabel')));
+    expect(mockPush).toHaveBeenCalledWith('/edit-program');
+  });
+
+  test('changes from the review in force: how many, and the way to undo each', async () => {
+    const applied = [{ id: 'c1', appliedAt: '2026-09-28T10:00:00Z', suggestion: {} }, { id: 'c2', appliedAt: '2026-09-28T10:00:00Z', suggestion: {} }];
+    mockData = withProgram({ review: { id: 'r', suggestions: [], applied } as unknown as Schemas['ProgramReview'] });
+    await show();
+    await fireEvent.press(await screen.findByText('2 changes applied'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'changes' } });
+  });
+
+  test("this week's call, in its words", async () => {
+    mockDecision = DECISION;
+    await show();
+    expect(await screen.findByText('Keep the same weight this week.')).toBeTruthy();
+  });
+
+  test('a call kept from last week (declined): not applied, and one tap uses it', async () => {
+    mockDecision = { ...DECISION, application: { state: 'DECLINED' } } as Schemas['Decision'];
+    await show();
+    expect(await screen.findByText(t('train.call.notApplied'))).toBeTruthy();
+    await fireEvent.press(screen.getByText(t('train.call.use')));
+    expect(mockApplied).toHaveBeenCalledWith('/v1/decisions/{id}/apply');
+  });
+
+  test('no call yet: no row', async () => {
+    mockDecision = { ...DECISION, action: { type: 'NO_DECISION_YET' } } as unknown as Schemas['Decision'];
+    await show();
+    expect(await screen.findByText('Upper A')).toBeTruthy();
+    expect(screen.queryByText(t('train.call.notApplied'))).toBeNull();
+    expect(screen.queryByText(/Not yet/)).toBeNull();
+  });
 });
 
 const show = () =>

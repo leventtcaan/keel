@@ -380,6 +380,7 @@
       "file": "src/app/(tabs)/train.tsx",
       "keys": [
         "screens.train.title",
+        "editProgram.edit",
         "train.head",
         "train.days.other",
         "train.todayOn",
@@ -395,6 +396,7 @@
       ],
       "dynamic": [
         { "what": "the split, from the days' names (Full body)", "words": 2 },
+        { "what": "this week's call, its title (Keep the same weight this week.)", "words": 6 },
         { "what": "today's weekday (Tue)", "words": 1 },
         { "what": "today's session (Full body A)", "words": 3 },
         { "what": "five moves' names (Bench press, Barbell row, Squat, Romanian deadlift, Lat pulldown)", "words": 9 },
@@ -410,7 +412,9 @@
         "train.skippedTag",
         "train.moved",
         "train.startThis",
-        "train.startDay"
+        "train.startDay",
+        "editProgram.editLabel",
+        "editProgram.appliedUndo"
       ]
     },
     {
