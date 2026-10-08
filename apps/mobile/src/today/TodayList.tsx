@@ -9,6 +9,7 @@ import { BudgetLine } from '@/food/BudgetLine';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { dayName } from '@/train/program';
 import { formatWeight } from '@/units/units';
 import { useUnits } from '@/services/ServicesProvider';
 
@@ -64,7 +65,7 @@ export function TodayList({ day, weighIns, program, targets, budget, stepsToday 
       today.kind === 'session'
         ? {
             key: 'training',
-            title: today.day.nameKey === undefined ? (today.day.name ?? '') : t(`programDays.${today.day.nameKey}.name`),
+            title: dayName(today.day),
             note: t('today.list.training.exercises', {
               count: today.day.exercises.length,
             }),

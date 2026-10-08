@@ -41,8 +41,8 @@ const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
   days: [
-    { id: 'a', nameKey: 'upper_a', weekday: 'TUESDAY', exercises: [] },
-    { id: 'b', nameKey: 'lower_a', weekday: 'THURSDAY', exercises: [] },
+    { id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [] },
+    { id: 'b', nameKey: 'programDays.lower_a.name', weekday: 'THURSDAY', exercises: [] },
   ],
 };
 

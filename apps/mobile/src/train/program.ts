@@ -35,9 +35,9 @@ export function programNotes(program: Schemas['Program'], declared?: Schemas['De
   return notes;
 }
 
-/** A generated day by its copy key; the user's own day by the name they gave it. */
+/** A generated day by its copy key, whole as the server sends it (programDays.<day>.name); the user's own day by the name they gave it. */
 export function dayName(day: Schemas['ProgramDay']): string {
-  return day.nameKey !== undefined ? t(`programDays.${day.nameKey}.name`) : (day.name ?? '');
+  return day.nameKey !== undefined ? t(day.nameKey) : (day.name ?? '');
 }
 
 /** A move by the catalog's copy, the user's own by the name they gave it; a move this app version does not know, by its id. */

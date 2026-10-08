@@ -19,7 +19,7 @@ const PROGRAM: Schemas['Program'] = {
   days: [
     {
       id: 'a',
-      nameKey: 'upper_a',
+      nameKey: 'programDays.upper_a.name',
       weekday: 'TUESDAY',
       exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 }],
     },
@@ -93,7 +93,7 @@ test("the workout is today's session, by name, and starts it", async () => {
 test('a workout under way is continued, not started again, and the tile names that workout', async () => {
   // Monday's workout left open; today (Tuesday) plans Upper A.
   mockData = {
-    program: { state: 'ready', value: { ...PROGRAM, days: [...PROGRAM.days, { ...PROGRAM.days[0], id: 'b', nameKey: 'lower_a', weekday: 'MONDAY' }] } },
+    program: { state: 'ready', value: { ...PROGRAM, days: [...PROGRAM.days, { ...PROGRAM.days[0], id: 'b', nameKey: 'programDays.lower_a.name', weekday: 'MONDAY' }] } },
     exercises: { state: 'none' },
     kept: false,
   };
