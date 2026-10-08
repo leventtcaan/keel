@@ -88,3 +88,19 @@ yuvarlar. Reddedilen: sunucunun her hareket için salonun bütün kilo merdiveni
 "Too heavy?" için hafif seçenek her zaman bulunur (inceleme, 7 Eki): salonun bir basamak içinde yapabildiği en hafif kilo (mümkünse tam bir basamak aşağı), basamak içinde yoksa
 salonun bir alt basamağı (başlangıcın altındaki en ağır kilo); yalnız rafın/barın dibinde yok. Ağır seçenek bir basamakla sınırlı kalır
 (aşmak risk). İzolasyon hareketleri hiç hedef almadığı için her seans kalibrasyon basamağı taşır; "hedef kilosu yokken" tanımına uygun.
+
+## Ek 2 · Rekorun tanımı ve "aynı seans adına göre %" (K-965, 2026-10-08)
+**Rekor (Levent KABUL 2026-10-08):** #7'deki "önceki bütün setleri geçen (daha ağır kiloda en az aynı tekrar ya da aynı kiloda daha çok
+tekrar)" yerine: **önceki hiçbir çalışma setinin baskın gelmediği çalışma seti**. Önceki bir set, en az o kadar ağır ve en az o kadar
+tekrarlıysa baskındır; eşitlik baskındır, yani rekor değildir. Sonuç: bir kiloya ilk çıkış rekordur (80×10'dan sonra 85×8), bir kiloda
+şimdiye kadarkinden çok tekrar rekordur (80×11); eski hafif ve çok tekrarlı bir set (60×15) ağır seti hiç engellemez. Isınma, drop ve
+tükeniş setleri karşılaştırılmaz (yalnız çalışma seti); aynı seansın önceki setleri "önceki" sayılır; seansta birden çok rekor varsa kart en
+ağırını gösterir. Hareketin ilk seansı başlangıçtır (Baseline). "Güçlenen hareket" = başlangıçtan sonra en az bir rekor. e1RM yok (B10).
+Reddedilen: ilk tanım (bütün önceki setleri geçmek): kilo artınca rekor tekrarlar eski kilonun tekrarına yetişene kadar gecikiyordu, eski
+hafif set rekoru süresiz engelliyordu.
+
+**Aynı seansa göre % (düzenleyici kararı, teknik; agent kaydetti):** #7 "aynı seans adının öncekine göre" diyor; uygulama aynı program
+gününün (`programDayId`) önceki seansıyla karşılaştırır. Program yeniden kaydedilince (PUT /v1/program, yeniden üretme) günlerin kimliği
+değişir; o zaman önceki seans yoktur ve alan gelmez: yeni program yeni temeldir. Program incelemesinin değişiklikleri (K-956) günleri
+korur, % kaybolmaz. Reddedilen: gün adıyla eşleştirmek (üretilen programda ad anahtardır, kendi programında serbest metin; aynı ad farklı
+içerikli bir günü karşılaştırırdı).

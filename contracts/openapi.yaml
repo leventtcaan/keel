@@ -1091,6 +1091,45 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /v1/workouts/{id}/summary:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [training]
+      operationId: getWorkoutSummary
+      summary: The end of a workout in facts (K-965, ADR-075 #7); the phone fills its templates and computes nothing
+      description: |
+        Working sets only: a warm-up, a drop or a set to failure never counts (SetType). Imported sessions are history
+        too: a session's earlier sets include them (ADR-053). NOT_FOUND for a workout not the user's.
+      responses:
+        "200":
+          description: The workout's summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutSummary"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/training-progress:
+    get:
+      tags: [training]
+      operationId: getTrainingProgress
+      summary: The progress screen's training facts (K-965, ADR-078 #2, #4)
+      description: |
+        This Monday week's sets per primary muscle, and each move of the current program that has a working set: its
+        baseline, its best set, its weekly best sets and its effort line; how many of them are stronger. No estimated max
+        (B10). Without a program, no lifts and nothing planned. The weight trend (/v1/weight-trend) and the weeks on
+        track (/v1/consistency) are their own.
+      responses:
+        "200":
+          description: The training progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingProgress"
+        default:
+          $ref: "#/components/responses/Error"
+
   /v1/workout-imports:
     post:
       tags: [training]
@@ -3237,6 +3276,221 @@ components:
             id:
               type: string
               format: uuid
+
+    WorkoutSummary:
+      type: object
+      required: [workoutId, liftedKg, workingSets, marks, weekOf, muscles]
+      properties:
+        workoutId:
+          type: string
+          format: uuid
+        liftedKg:
+          type: number
+          minimum: 0
+          description: Load × reps over the working sets, the load as logged (a bodyweight move's added load).
+        liftedChangePercent:
+          type: integer
+          description: |
+            liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+            whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
+            saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
+        workingSets:
+          type: integer
+          minimum: 0
+          description: A one-sided move's sets count once per set, as the side that did fewer (the program's sets are per side).
+        marks:
+          type: array
+          description: One per move of the session that set a record or its baseline, in the order first done.
+          items:
+            $ref: "#/components/schemas/SetMark"
+        weekOf:
+          type: string
+          format: date
+          description: The Monday of the workout's week, on the user's calendar; the muscles' shares are of this week.
+        muscles:
+          type: array
+          description: |
+            The primary muscles this session trained, with their week as it stood when the session started (later
+            sessions not counted) — the one muscle map, ADR-078 #4.
+          items:
+            $ref: "#/components/schemas/MuscleSets"
+    SetMark:
+      type: object
+      description: |
+        RECORD (ADR-075 Ek 2): a working set no earlier working set of the move dominates (none at least as heavy with
+        at least as many reps), its own session's earlier sets included: the first time at a load, or more reps than ever
+        at a load at least that heavy. A tie is none. When several sets of the session are records, the heaviest (then
+        most reps, then fewest left). Sides are one history. BASELINE: the move's first session, its best set.
+      required: [exerciseId, kind, loadKg, reps]
+      properties:
+        exerciseId:
+          type: string
+        kind:
+          type: string
+          enum: [BASELINE, RECORD]
+        loadKg:
+          type: number
+          minimum: 0
+        reps:
+          type: integer
+          minimum: 1
+        rir:
+          type: integer
+          minimum: 0
+        side:
+          $ref: "#/components/schemas/Side"
+    MuscleSets:
+      type: object
+      description: |
+        A primary muscle's week (the catalog's first muscle): the sets this week's program plans (a lighter week's
+        fewer, a week off's none) and the working sets done (a one-sided move's once per set, as the side that did
+        fewer), each a share of targetSets — weekly_sets_per_muscle, or arm_weekly_sets_min
+        for an arm — capped at 1 and rounded down to 2 decimals.
+      required: [muscle, plannedSets, doneSets, targetSets, plannedShare, doneShare]
+      properties:
+        muscle:
+          type: string
+        plannedSets:
+          type: integer
+          minimum: 0
+        doneSets:
+          type: integer
+          minimum: 0
+        targetSets:
+          type: integer
+          minimum: 1
+        plannedShare:
+          type: number
+          minimum: 0
+          maximum: 1
+        doneShare:
+          type: number
+          minimum: 0
+          maximum: 1
+    TrainingProgress:
+      type: object
+      required: [weekOf, muscles, lifts, strongerLifts, trackedLifts]
+      properties:
+        weekOf:
+          type: string
+          format: date
+          description: This week's Monday on the user's calendar.
+        muscles:
+          type: array
+          description: Every muscle planned or trained this week, alphabetical.
+          items:
+            $ref: "#/components/schemas/MuscleSets"
+        lifts:
+          type: array
+          description: The current program's moves with a working set, in program order.
+          items:
+            $ref: "#/components/schemas/LiftProgress"
+        strongerLifts:
+          type: integer
+          minimum: 0
+          description: The lifts with at least one record after their baseline ("Stronger on 4 of 5 lifts").
+        trackedLifts:
+          type: integer
+          minimum: 0
+          description: The number of lifts.
+    LiftProgress:
+      type: object
+      required: [exerciseId, baseline, best, stronger, weeks]
+      properties:
+        exerciseId:
+          type: string
+        baseline:
+          $ref: "#/components/schemas/DatedSet"
+        best:
+          allOf:
+            - $ref: "#/components/schemas/DatedSet"
+          description: The last record, or the baseline before the first one.
+        stronger:
+          type: boolean
+          description: At least one record after the baseline (ADR-075 Ek 2).
+        weeks:
+          type: array
+          description: Each Monday week's best set, oldest first (the strength chart).
+          items:
+            type: object
+            required: [weekOf, loadKg, reps, held]
+            properties:
+              weekOf:
+                type: string
+                format: date
+              loadKg:
+                type: number
+                minimum: 0
+              reps:
+                type: integer
+                minimum: 1
+              rir:
+                type: integer
+                minimum: 0
+              held:
+                type: boolean
+                description: The weekly call held the load on a day of this week (K-217); always false for an isolation move.
+        effort:
+          $ref: "#/components/schemas/EffortLine"
+    DatedSet:
+      type: object
+      required: [loadKg, reps, day]
+      properties:
+        loadKg:
+          type: number
+          minimum: 0
+        reps:
+          type: integer
+          minimum: 1
+        rir:
+          type: integer
+          minimum: 0
+        day:
+          type: string
+          format: date
+          description: The session's day on the user's calendar.
+    EffortLine:
+      type: object
+      description: |
+        The effort line's facts (ADR-078 #2), from each session's best set; the first kind that holds, in this order.
+        STUCK ("Stuck at 72.5 kg for 3 sessions. Held this week."): stalled as the weekly call counts it (plateau_sessions;
+        sessions logged in the app since the current program was made, imported ones not) — loadKg, sessions, held (the
+        weekly call holds the load now; compound moves only). The other kinds read the whole history, imported too.
+        EASIER ("Same 100 kg, now with 1 rep left."): the last session the same load and reps as the one before, with
+        more left — loadKg, reps, repsLeft, repsLeftBefore. REPS_RISING: the last sessions at one load, more reps now
+        than at the first — loadKg, repsGained, since (the first session at the load), sessions, weeks (whole weeks to
+        the last). Absent when none holds.
+      required: [kind, loadKg]
+      properties:
+        kind:
+          type: string
+          enum: [STUCK, EASIER, REPS_RISING]
+        loadKg:
+          type: number
+          minimum: 0
+        reps:
+          type: integer
+          minimum: 1
+        sessions:
+          type: integer
+          minimum: 1
+        held:
+          type: boolean
+        repsLeft:
+          type: integer
+          minimum: 0
+        repsLeftBefore:
+          type: integer
+          minimum: 0
+        repsGained:
+          type: integer
+          minimum: 1
+        since:
+          type: string
+          format: date
+        weeks:
+          type: integer
+          minimum: 0
 
     # ── check-in ─────────────────────────────────────────────────────────────────────────────────────────────
     QuestionKind:

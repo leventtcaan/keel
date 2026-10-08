@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -93,13 +94,38 @@ public class TrainingStatusReader {
             return Optional.empty();
         }
         Instant to = today.plusDays(1).atStartOfDay(zone).toInstant();
-        Map<String, List<TrainingStatuses.Session>> compound = new LinkedHashMap<>();
-        program.get().days().stream().flatMap(day -> day.exercises().stream()).map(ProgramStore.PlannedExercise::exerciseId).distinct()
-                .filter(id -> catalog.find(id).filter(move -> move.kind() == ExerciseCatalog.Kind.COMPOUND).isPresent())
-                .forEach(id -> compound.put(id, TrainingStatuses.sessions(log.workingSets(account, id, made.get(), to), zone)));
+        Map<String, List<TrainingStatuses.Session>> compound = sessions(account, program.get(), made.get(), to, zone,
+                move -> move.kind() == ExerciseCatalog.Kind.COMPOUND);
         List<LocalDate> workoutDays = log.workoutStarts(account, made.get(), to).stream().map(at -> at.atZone(zone).toLocalDate()).toList();
         // Missed plan weeks only from a week this program was in force from the start of (K-535, ADR-049).
         return Optional.of(TrainingStatuses.of(compound, calls.changes(account), workoutDays, pausedDays, program.get().days().size(), today,
                 checkInDay, TrainingStatuses.judgedFrom(made.get(), zone)));
+    }
+
+    /**
+     * Each catalog move of the program's stalled sessions, read as {@link #status} reads the compound lifts — the working
+     * sets logged in the app (not imported) since the program was made, on the user's calendar — so the progress screen's
+     * "stuck" (K-965) agrees with the weekly call. Empty without a program.
+     */
+    Map<String, Integer> stalledSessions(AccountId account, LocalDate today, ZoneId zone) {
+        Optional<ProgramStore.Program> program = programs.current(account);
+        Optional<Instant> made = programs.createdAt(account);
+        if (program.isEmpty() || made.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Integer> stalled = new LinkedHashMap<>();
+        sessions(account, program.get(), made.get(), today.plusDays(1).atStartOfDay(zone).toInstant(), zone, move -> true)
+                .forEach((move, sessions) -> stalled.put(move, TrainingStatuses.stalledSessions(sessions)));
+        return stalled;
+    }
+
+    /** The program's catalog moves {@code which} takes, each with its sessions in [made, to); the user's own moves have none. */
+    private Map<String, List<TrainingStatuses.Session>> sessions(AccountId account, ProgramStore.Program program, Instant made, Instant to,
+            ZoneId zone, Predicate<ExerciseCatalog.Exercise> which) {
+        Map<String, List<TrainingStatuses.Session>> sessions = new LinkedHashMap<>();
+        program.days().stream().flatMap(day -> day.exercises().stream()).map(ProgramStore.PlannedExercise::exerciseId).distinct()
+                .filter(id -> catalog.find(id).filter(which).isPresent())
+                .forEach(id -> sessions.put(id, TrainingStatuses.sessions(log.workingSets(account, id, made, to), zone)));
+        return sessions;
     }
 }
