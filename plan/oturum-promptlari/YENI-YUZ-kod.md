@@ -71,8 +71,11 @@ Bitiş: "Part 2 ÇIKIŞ" + özet + Part 3 prompt'u.
 ## Part 3 prompt'u
 ```
 oturum-baslat. Toplu mod. M9a PART 3 · Ana ekranlar. Ortak talimat plan/oturum-promptlari/YENI-YUZ-kod.md (senkron kuralı başta).
-Sıra: K-969 → K-970 → K-971 → K-972 → K-973 → K-974 → K-978. Her ekranı simülatörde iki temada prototiple yan yana doğrula;
-akış testi senaryoları (prototip/akis-testi.md) uygulamada da yürür.
+Önce oku: prototip/kullanici-testi.md (iki kullanıcı yürüyüşü, 8 Eki) — "Part 3-4 arayüz görevlerine not" maddeleri ilgili görevin kabul kriterine
+eklenir (toast değil, ekran değişir; geri alma; rıza yoksa kilit; değiştirilen hareketin kendi hedefi; yarım antrenmana dönüş; gerçek sayılar).
+Sıra: K-969 → K-970 (Edit, #479 ProgramEditor'ı yeniden kullanır) → K-971 → K-972 → K-973 → K-974 → K-978 → K-988 (kilo değişimi, decision).
+Paralel: en çok 3 uygulayıcı ajan; her PR'a inceleme ajanı; birleştirmeden önce `gh pr update-branch` (strict: false).
+Her ekran: simülatörde iki temada prototiple yan yana; ayrıca part sonunda uygulamada 6 personalı kullanıcı-gözü yürüyüşü (kullanici-testi.md yöntemi).
 Bitiş: "Part 3 ÇIKIŞ" + özet + Part 4 prompt'u.
 ```
 
