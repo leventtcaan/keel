@@ -1,17 +1,17 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { router } from 'expo-router';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { ProblemText, useProblem } from '@/components/ProblemText';
+import { ProblemText } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { type DraftDay, type DraftMove, draftProgram, namesFor, ownProgram, sameName } from '@/import/draft';
 import { type ExportRead, readExport } from '@/import/formats';
 import { type Matched, matchNames } from '@/import/match';
 import { MoveRow } from '@/import/MoveRow';
-import { sendWithOwnMoves } from '@/onboarding/bringProgram';
-import { broughtProgram } from '@/onboarding/draft';
-import { StepFrame, useChoose } from '@/onboarding/StepFrame';
+import { StepFrame } from '@/onboarding/StepFrame';
+import { useSendOwnProgram } from '@/onboarding/useSendOwnProgram';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -31,9 +31,9 @@ type Stage = { kind: 'start' | 'unknown' | 'empty' } | { kind: 'read'; read: Rea
  * is sent (PUT /v1/program). A draft turned down leaves nothing behind (ADR-073 Ek 2). Then the walk goes on.
  */
 export default function ProgramImportStep() {
-  const { api, importFile, training, report } = useAppServices();
+  const { api, importFile, training } = useAppServices();
   const { color } = useTheme();
-  const choose = useChoose('ownProgram');
+  const { send, clear, saving, problem, occurrence } = useSendOwnProgram();
   const [stage, setStage] = useState<Stage>({ kind: 'start' });
   // null while the catalog is read: a file chosen before it would match against nothing.
   const [moves, setMoves] = useState<Move[] | 'failed' | null>(null);
@@ -42,10 +42,6 @@ export default function ProgramImportStep() {
   // The own moves answered, by the draft's name (one for its spellings in any case or spacing), waiting for the program:
   // made only with it.
   const [pending, setPending] = useState<ReadonlyMap<string, Schemas['NewCustomExercise']>>(new Map());
-  const [saving, setSaving] = useState(false);
-  const [problem, setProblem, occurrence] = useProblem();
-  // A ref, not state: two taps in one frame both see the state from before either ran.
-  const sending = useRef(false);
 
   useEffect(() => {
     void Promise.all([training.read(api), training.own(api)]).then(
@@ -65,7 +61,7 @@ export default function ProgramImportStep() {
   const allLeftOut = stage.kind === 'read' && draft?.kind === 'noRoutine' && leftOut.size > 0 && draftProgram(stage.read.sessions, choices, new Set()).kind === 'draft';
 
   const pickFile = async () => {
-    setProblem(null);
+    clear();
     const text = await importFile.pick();
     if (text === null) return; // nothing chosen: nothing changes
     const read = readExport(text, { routines: true });
@@ -100,28 +96,14 @@ export default function ProgramImportStep() {
       return next;
     });
 
-  const confirm = async () => {
-    if (draft?.kind !== 'draft' || !ready || sending.current) return;
-    sending.current = true;
-    setSaving(true);
-    setProblem(null);
-    try {
-      const days = draft.days;
-      const program = await sendWithOwnMoves(
-        api,
-        (own) => training.saved(own),
-        ownKeys.map((key) => pending.get(key)!),
-        (ids) => ownProgram(days, new Map(ownNames.map((name) => [name, ids[ownKeys.indexOf(sameName(name))]]))),
-      );
-      choose(broughtProgram(program));
-    } catch (error) {
-      const name = error instanceof Error ? error.name : 'Unknown';
-      report({ name });
-      setProblem(t(`onboarding.programImport.failed.${name === 'NoConnection' ? 'NoConnection' : 'other'}`));
-    } finally {
-      sending.current = false;
-      setSaving(false);
-    }
+  // The own moves the draft still names (their answers kept till now), then the program naming them.
+  const confirm = () => {
+    if (draft?.kind !== 'draft' || !ready) return;
+    const days = draft.days;
+    void send(
+      ownKeys.map((key) => pending.get(key)!),
+      (ids) => ownProgram(days, new Map(ownNames.map((name) => [name, ids[ownKeys.indexOf(sameName(name))]]))),
+    );
   };
 
   // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
@@ -133,6 +115,9 @@ export default function ProgramImportStep() {
     empty: note('import.empty'),
     read: draft?.kind === 'noRoutine' ? note(allLeftOut ? 'onboarding.programImport.allLeftOut' : 'onboarding.programImport.noRoutine') : null,
   };
+  // No routine to read: the other way in, typing the program (K-957 Ek 2).
+  const typeInstead =
+    draft?.kind === 'noRoutine' && !allLeftOut ? <Button label={t('onboarding.own.type.title')} onPress={() => router.replace('/onboarding/program-type')} /> : null;
   let days: ReactNode = null;
   if (stage.kind === 'read' && draft?.kind === 'draft') {
     const moveCount = draft.days.reduce((n, day) => n + day.moves.length, 0);
@@ -167,13 +152,14 @@ export default function ProgramImportStep() {
         )}
         {saving && note('onboarding.programImport.saving')}
         {!ready && note('onboarding.programImport.waiting')}
-        <Button label={t('onboarding.programImport.confirm')} disabled={!ready || saving} onPress={() => void confirm()} />
+        <Button label={t('onboarding.programImport.confirm')} disabled={!ready || saving} onPress={confirm} />
       </View>
     );
 
   return (
     <StepFrame step="ownProgram" title={t('onboarding.programImport.title')} chosen actions={actions} backDisabled={saving}>
       {outcome[stage.kind]}
+      {typeInstead}
       {note('onboarding.programImport.privacy')}
       {catalogNote}
       <Button

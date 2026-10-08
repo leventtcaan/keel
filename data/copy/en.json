@@ -1613,7 +1613,14 @@
     "own": {
       "title": "Bring your program",
       "why": "We check it against what works. You decide.",
-      "import": { "title": "Import from Strong or Hevy", "tag": "Fastest", "body": "Read on this phone" }
+      "import": { "title": "Import from Strong or Hevy", "tag": "Fastest", "body": "Read on this phone" },
+      "type": { "title": "Type it in", "body": "Days, moves, sets and reps" }
+    },
+    "typeProgram": {
+      "title": "Type your program",
+      "why": "Your days and moves, as you train them.",
+      "confirm": "Use this program",
+      "waiting": "Each day needs a name and at least one move."
     },
     "programImport": {
       "title": "Your program from a file",
@@ -2326,6 +2333,28 @@
     "judgeEyebrow": "Progress",
     "judgeTitle": "Judged over {days} days",
     "judgeNote": "The whole line. Flat weeks inside it are normal."
+  },
+  "programEditor": {
+    "dayName": "Day name",
+    "defaultName": "Day {number}",
+    "weekday": "On a set day? Optional",
+    "weekdayShort": { "MONDAY": "Mon", "TUESDAY": "Tue", "WEDNESDAY": "Wed", "THURSDAY": "Thu", "FRIDAY": "Fri", "SATURDAY": "Sat", "SUNDAY": "Sun" },
+    "addDay": "Add a day",
+    "removeDay": "Remove day",
+    "removeDayLabel": "Remove {day}",
+    "removeMove": "Remove",
+    "removeMoveLabel": "Remove {move}",
+    "noMoves": "No moves yet.",
+    "sets": "Sets",
+    "repsMin": "Reps from",
+    "repsMax": "to",
+    "setsLabel": "{move}, sets",
+    "minLabel": "{move}, fewest reps",
+    "maxLabel": "{move}, most reps",
+    "less": "−",
+    "more": "+",
+    "lessLabel": "{what}, one less",
+    "moreLabel": "{what}, one more"
   },
   "review": {
     "too_many_days": {

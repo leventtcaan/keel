@@ -77,7 +77,9 @@
         "onboarding.own.why",
         "onboarding.own.import.title",
         "onboarding.own.import.tag",
-        "onboarding.own.import.body"
+        "onboarding.own.import.body",
+        "onboarding.own.type.title",
+        "onboarding.own.type.body"
       ],
       "notFirstView": []
     },
