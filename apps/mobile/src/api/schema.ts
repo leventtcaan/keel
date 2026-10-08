@@ -1443,8 +1443,9 @@ export interface paths {
          * @description The plan-ready screen's food row (ADR-072 #6): the engine's starting estimate on today's inputs, the same computation
          *     the first weekly call starts the plan with (U1), so with the same inputs the same number. Nothing is stored: it is
          *     not a call. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent; CONFLICT without a profile, and once the
-         *     first call has started the plan (its targets are GET /v1/targets); NOT_FOUND without a weigh-in in the evaluation
-         *     window, as the first call would then start without a target. In each case the app shows no row.
+         *     first call has started the plan (use GET /v1/targets, or none yet: a first call made without a weigh-in starts a
+         *     plan with no target, which a later weigh-in gives it); NOT_FOUND without a weigh-in in the evaluation window, as
+         *     the first call would then start without a target. In each case the app shows no row.
          */
         get: operations["getStartingTarget"];
         put?: never;
