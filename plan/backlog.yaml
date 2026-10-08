@@ -3675,7 +3675,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-078 ve ADR-075 #7: telefon hesap yapmaz; özet sunucuda, metin şablonla"
     acceptance:
