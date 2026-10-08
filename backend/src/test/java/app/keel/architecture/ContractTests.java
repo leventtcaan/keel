@@ -46,7 +46,9 @@ class ContractTests {
     private static final Set<String> SINGLE_CALORIE_NUMBERS = Set.of("Targets.targetKcal", "DayBudget.targetKcal",
             "AdjustCalories.kcalPerDay", "IncreaseCalories.kcalPerDay", "ActivityDay.activeEnergyKcal",
             // What an Apple Watch measured during a cardio session (K-959, ADR-074 #5).
-            "NewCardioSession.activeEnergyKcal");
+            "NewCardioSession.activeEnergyKcal",
+            // The target the first call starts the plan with (K-989, ADR-072 #6); its maintenance estimate is a range.
+            "StartingTarget.targetKcal");
     private static final Set<String> RANGES = Set.of("#/components/schemas/KcalRange", "#/components/schemas/KcalBalance");
     private static final Pattern FAT_NUMBER = Pattern.compile(
             "(?i)body.?fat|fat.?(pct|percent|proxy|ratio|free)|fat_?mass|percent.?fat|lean.?mass|\\bffm\\b|body.?composition");

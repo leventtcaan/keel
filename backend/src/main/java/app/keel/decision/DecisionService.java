@@ -390,8 +390,29 @@ class DecisionService {
 
     /** The maintenance estimate at the last weigh-in of the window (K-114); none without one. */
     private Integer estimate(Week week) {
-        return week.weights().isEmpty() ? null : InitialTarget.estimate(week.sex(), week.weights().getLast().kg(), week.body(),
-                week.profile().activity().map(activity -> ActivityLevel.valueOf(activity.name())), week.parameters()).maintenanceKcal();
+        return startingEstimate(week).map(InitialTarget.Estimate::maintenanceKcal).orElse(null);
+    }
+
+    /** The engine's estimate the first plan's target is (K-114), with its range (U5); none without a weigh-in in the window. */
+    private Optional<InitialTarget.Estimate> startingEstimate(Week week) {
+        return week.weights().isEmpty() ? Optional.empty() : Optional.of(InitialTarget.estimate(week.sex(), week.weights().getLast().kg(),
+                week.body(), week.profile().activity().map(activity -> ActivityLevel.valueOf(activity.name())), week.parameters()));
+    }
+
+    /**
+     * The plan-ready screen's food row (K-989, ADR-072 #6): the first plan as the first call would start it on today's
+     * inputs — the same computation, not a second formula (U1) — and nothing stored, as it is not a call. Once the plan has
+     * begun, its targets are the plan's (CONFLICT); without a weigh-in the first call would start without one (NOT_FOUND).
+     */
+    @Transactional(readOnly = true)
+    StartingTarget startingTarget(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        if (calls.plan(account).isPresent()) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
+        Week week = week(account);
+        InitialTarget.Estimate estimate = startingEstimate(week).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return StartingTarget.of(firstPlan(week), estimate, week.parameters());
     }
 
     /**

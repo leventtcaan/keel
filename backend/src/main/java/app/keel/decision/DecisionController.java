@@ -152,6 +152,11 @@ class DecisionController {
         return decisions.targets(account);
     }
 
+    @GetMapping("/v1/targets/starting")
+    StartingTarget startingTarget(AccountId account) {
+        return decisions.startingTarget(account);
+    }
+
     /** Contract Decision as the app reads it: the kept call, and whether "Keep last week's plan" may be offered (K-963). */
     private Map<String, Object> sent(AccountId account, CallStore.Call call) {
         return sent(call, decisions.latestId(account));

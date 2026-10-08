@@ -1431,6 +1431,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/targets/starting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The calorie target the first call starts the plan with, before it is made (K-989)
+         * @description The plan-ready screen's food row (ADR-072 #6): the engine's starting estimate on today's inputs, the same computation
+         *     the first weekly call starts the plan with (U1), so with the same inputs the same number. Nothing is stored: it is
+         *     not a call. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent; CONFLICT without a profile, and once the
+         *     first call has started the plan (use GET /v1/targets, or none yet: a first call made without a weigh-in starts a
+         *     plan with no target, which a later weigh-in gives it); NOT_FOUND without a weigh-in in the evaluation window, as
+         *     the first call would then start without a target. In each case the app shows no row.
+         */
+        get: operations["getStartingTarget"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/coach/messages": {
         parameters: {
             query?: never;
@@ -3061,6 +3086,16 @@ export interface components {
             fatG?: number;
             stepsPerDay: number;
             trainingSessionsPerWeek: number;
+        };
+        /**
+         * @description Where the plan's calories start (K-114, ADR-072 #6): the target is one number (U5: a target may be), the maintenance
+         *     estimate it comes from is a range (U5), and the scale corrects it over observationDays (the engine's
+         *     maintenance_observation_days for the user's sex) before the first calorie call.
+         */
+        StartingTarget: {
+            targetKcal: number;
+            maintenanceKcal: components["schemas"]["KcalRange"];
+            observationDays: number;
         };
         CoachQuestion: {
             text: string;
@@ -5033,6 +5068,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Targets"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getStartingTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The starting target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingTarget"];
                 };
             };
             default: components["responses"]["Error"];
