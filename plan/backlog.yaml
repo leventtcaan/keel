@@ -4455,3 +4455,20 @@ tasks:
     tests: ["Tablo testi (yeterli/yetersiz tartı, kayıp/kazanım), sözleşme testi"]
     refs: ["plan/kararlar/ADR-078-ilerleme.md", "docs/anayasa.md"]
     learn: ["Modül sınırında okuma modeli"]
+
+  - id: K-989
+    title: "Başlangıç kalori hedefi ilk karardan önce: plan hazır ekranı için sözleşme"
+    milestone: M9a
+    module: nutrition
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-072 #6: #ob-plan başlangıç kalorisini ve '14 günde tartın düzeltir' güven satırını gösterir; sunucu hedefi ilk haftalık kontrolde hesaplıyor, öncesinde GET /v1/targets NOT_FOUND (K-967 notu)"
+    acceptance:
+      - "Onboarding sonunda (profil + tartı, sağlık rızasıyla) motorun başlangıç hedefi okunabilir: hedef tek sayı, tahmin aralık (U5), gözlem günü (14) parametreden"
+      - "İlk haftalık kararın başlangıç noktası aynı hesap; iki ayrı formül yok (U1: karar motordan)"
+      - "Rıza ya da tartı yoksa alan/uç cevap vermez (açık durum kodu); telefon satırı göstermez"
+    tests: ["Uç testi (rızalı/rızasız, tartılı/tartısız), sözleşme testi, ilk kararla aynı sayı testi"]
+    refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "docs/anayasa.md"]
+    learn: ["Okuma ucu ile karar kaydı arasındaki tutarlılık"]
