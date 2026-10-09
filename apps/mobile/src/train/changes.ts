@@ -54,7 +54,16 @@ export async function undoChange(api: ApiClient, changeId: string): Promise<Undo
   return answer.response.status === 409 ? { kind: 'conflict' } : { kind: 'failed' };
 }
 
-/** "Rebuild for me": a new program from the user's training days, replacing this one (the server's generator). */
-export function rebuild(api: ApiClient, trainingDays: Schemas['Weekday'][]): Promise<Changed> {
-  return sent(() => api.POST('/v1/program/generate', { body: { trainingDays } }));
+/**
+ * "Rebuild for me": a new program from the user's training days, replacing this one (the server's generator).
+ * `refused`: the server has no program for those days (VALIDATION_FAILED, 400); which days it builds for is its rule.
+ */
+export async function rebuild(api: ApiClient, trainingDays: Schemas['Weekday'][]): Promise<Changed | { kind: 'refused' }> {
+  let status = 0;
+  const answer = await sent(async () => {
+    const result = await api.POST('/v1/program/generate', { body: { trainingDays } });
+    status = result.response.status;
+    return result;
+  });
+  return answer.kind === 'failed' && status === 400 ? { kind: 'refused' } : answer;
 }

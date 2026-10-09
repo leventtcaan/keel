@@ -221,6 +221,7 @@
   },
   "train": {
     "kept": "You're offline. This is your program as it was last loaded.",
+    "loading": "Loading your program…",
     "failed": "Your program couldn't load.",
     "retry": "Try again",
     "none": "No program yet.",
@@ -310,7 +311,9 @@
     "undoneWith": { "one": "Undone, with 1 later change that needed it.", "other": "Undone, with {count} later changes that needed it." },
     "undoConflict": "Your program changed another way since, so this can't be undone.",
     "splitBody": "Your split follows your training days. Rebuild for me makes a new program from them.",
-    "rebuildBody": "This replaces your program with a new one built from your training days. Your logged workouts stay; the changes from the review go.",
+    "rebuildBody": "This replaces your program with a new one built from your training days. What goes: every move's next targets and starting weights, this week's changes to your sessions (moved, skipped, short, swapped), the changes from the review, and your own program with your own moves in it. Your logged workouts stay.",
+    "rebuildUnderWay": "Finish or end today's workout first: a rebuild would replace the day it is on.",
+    "rebuildRefused": "Rebuild can't make a program for {count} training days. Change your training days in Settings, then try again.",
     "rebuildConfirm": "Rebuild my program",
     "noDays": "Your training days couldn't load. Try again.",
     "offline": "No connection. Try again when you're online.",

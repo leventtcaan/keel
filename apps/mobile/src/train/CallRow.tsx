@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { ProblemText } from '@/components/ProblemText';
+import { ProblemText, useProblem } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -19,16 +19,19 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
 /**
  * This week's call on the Train tab (K-970; prototype `#train` call row): its title in the app's words. A call kept from
  * last week ("Keep last week's plan", K-963, DECLINED) says it is not applied and offers the one tap that uses it after
- * all; then the tab reads again. No call yet (the engine's "not yet", U3): no row. The call itself and its reasons are on
- * This week.
+ * all; then the tab reads again, as it does when the call turns out to be past (409: another one is in force). A failure
+ * is said each time it happens (K-815) and goes with its call. No call yet (the engine's "not yet", U3): no row. The call
+ * itself and its reasons are on This week.
  */
 export function CallRow({ decision, onChanged }: { decision: Decision; onChanged: () => void }) {
   const { api } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
+  const [failed, setFailed, occurrence] = useProblem();
   const sending = useRef(false);
   const declined = decision.application.state === 'DECLINED';
+  // A failure belongs to the call it was for.
+  useEffect(() => setFailed(null), [decision.id, setFailed]);
 
   const use = async () => {
     if (sending.current) return;
@@ -39,7 +42,10 @@ export function CallRow({ decision, onChanged }: { decision: Decision; onChanged
       setFailed(null);
       onChanged();
     } catch (error) {
-      setFailed(SAID[nameOf(error)] ?? 'today.call.applyError');
+      const name = nameOf(error);
+      setFailed(t(SAID[name] ?? 'today.call.applyError'));
+      // Past: the call in force is another one; the tab reads it.
+      if (name === 'ApplyRefused') onChanged();
     } finally {
       sending.current = false;
       setBusy(false);
@@ -50,7 +56,11 @@ export function CallRow({ decision, onChanged }: { decision: Decision; onChanged
     <View testID="call-row" style={[styles.row, { backgroundColor: color.accentSoft }]}>
       <Text style={[styles.text, { color: color.text }]}>{declined ? t('train.call.notApplied') : t(`${decision.copyKey}.title`)}</Text>
       {action}
-      {failed !== null && <ProblemText style={[styles.small, { color: color.text }]}>{t(failed)}</ProblemText>}
+      {failed !== null && (
+        <ProblemText occurrence={occurrence} style={[styles.small, { color: color.text }]}>
+          {failed}
+        </ProblemText>
+      )}
     </View>
   );
 }

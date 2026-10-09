@@ -405,6 +405,7 @@
       ],
       "notFirstView": [
         "train.failed",
+        "train.loading",
         "train.retry",
         "train.none",
         "train.kept",

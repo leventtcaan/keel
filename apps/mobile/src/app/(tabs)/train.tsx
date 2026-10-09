@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { type ReactNode, useCallback, useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -73,9 +73,13 @@ export default function TrainScreen() {
     ) : null;
   const none = data?.program.state === 'none' ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.none')}</Text> : null;
   const kept = data?.kept === true && program !== null ? <Text style={[styles.small, { color: color.muted }]}>{t('train.kept')}</Text> : null;
+  // The first read on its way: a calm sign, not an empty page (simulator walk, K-970).
+  const loading =
+    data === null ? <ActivityIndicator accessible accessibilityLabel={t('train.loading')} color={color.muted} style={styles.loading} /> : null;
   if (program === null) {
     return (
       <Screen>
+        {loading}
         {problem}
         {none}
       </Screen>
@@ -186,6 +190,7 @@ const styles = StyleSheet.create({
   week: { gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, borderTopWidth: tokens.border.hairline },
   grow: { flex: 1 },
+  loading: { alignSelf: 'flex-start', minHeight: tokens.size.touch },
   top: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   edit: { minHeight: tokens.size.touch, minWidth: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   applied: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.md, flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },

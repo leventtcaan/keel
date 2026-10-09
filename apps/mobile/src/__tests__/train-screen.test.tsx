@@ -4,13 +4,15 @@
  * today, skipped or short as the server says; the rest of the week below. Offline, the copy kept on the phone, saying
  * so; no program, one line; a failed read, one line and a way to try again.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 
 import TrainScreen from '@/app/(tabs)/train';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { CallRow } from '@/train/CallRow';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
@@ -66,13 +68,14 @@ let mockDeclared: Schemas['DeclaredState'] | null = null;
 let mockOwn: Move[] = [];
 let mockDecision: Schemas['Decision'] | null = null;
 const mockApplied = jest.fn();
+let mockApplyStatus = 200;
 const mockServices = {
   api: {
     GET: async (path: string) =>
       path === '/v1/decisions/current' && mockDecision !== null ? { data: mockDecision, response: { status: 200 } } : { response: { status: 404 } },
-    POST: async (path: string) => {
-      mockApplied(path);
-      return { data: mockDecision, response: { status: 200 } };
+    POST: async (path: string, init?: unknown) => {
+      mockApplied(path, init);
+      return mockApplyStatus === 200 ? { data: mockDecision, response: { status: 200 } } : { error: { code: 'X' }, response: { status: mockApplyStatus } };
     },
   },
   training: { read: mockRead, own: async () => mockOwn },
@@ -111,6 +114,7 @@ beforeEach(() => {
   mockRecords = [];
   mockOwn = [];
   mockDecision = null;
+  mockApplyStatus = 200;
 });
 
 const DECISION = {
@@ -150,8 +154,47 @@ describe('the head of the tab', () => {
     mockDecision = { ...DECISION, application: { state: 'DECLINED' } } as Schemas['Decision'];
     await show();
     expect(await screen.findByText(t('train.call.notApplied'))).toBeTruthy();
+    const reads = mockRead.mock.calls.length;
     await fireEvent.press(screen.getByText(t('train.call.use')));
-    expect(mockApplied).toHaveBeenCalledWith('/v1/decisions/{id}/apply');
+    expect(mockApplied).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd1' } } });
+    // Then the tab reads again: the call in force is the server's.
+    expect(mockRead.mock.calls.length).toBe(reads + 1);
+  });
+
+  test('a call that is past (409): said, and the tab reads again (the offer goes with the old call)', async () => {
+    mockDecision = { ...DECISION, application: { state: 'DECLINED' } } as Schemas['Decision'];
+    mockApplyStatus = 409;
+    await show();
+    const reads = mockRead.mock.calls.length;
+    await fireEvent.press(await screen.findByText(t('train.call.use')));
+    expect(await screen.findByText(t('today.call.applyRefused'))).toBeTruthy();
+    expect(mockRead.mock.calls.length).toBe(reads + 1);
+  });
+
+  test('the same failure twice is said twice (VoiceOver hears each)', async () => {
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    mockDecision = { ...DECISION, application: { state: 'DECLINED' } } as Schemas['Decision'];
+    mockApplyStatus = 500;
+    await show();
+    const use = await screen.findByText(t('train.call.use'));
+    await fireEvent.press(use);
+    await fireEvent.press(use);
+    expect(said.mock.calls.filter(([words]) => words === t('today.call.applyError'))).toHaveLength(2);
+  });
+
+  test("a new call clears the last one's failure", async () => {
+    const declined = (id: string) => ({ ...DECISION, id, application: { state: 'DECLINED' } }) as Schemas['Decision'];
+    mockApplyStatus = 500;
+    const row = (decision: Schemas['Decision']) => (
+      <ThemeProvider>
+        <CallRow decision={decision} onChanged={() => undefined} />
+      </ThemeProvider>
+    );
+    const { rerender } = await render(row(declined('d1')));
+    await fireEvent.press(screen.getByText(t('train.call.use')));
+    expect(await screen.findByText(t('today.call.applyError'))).toBeTruthy();
+    await rerender(row(declined('d2')));
+    expect(screen.queryByText(t('today.call.applyError'))).toBeNull();
   });
 
   test('no call yet: no row', async () => {
@@ -380,6 +423,16 @@ test('offline, the program kept on the phone, and it says so', async () => {
   await show();
   expect(await screen.findByText("You're offline. This is your program as it was last loaded.")).toBeTruthy();
   expect(screen.getByText('Upper A')).toBeTruthy();
+});
+
+test('while the first read is on its way: a calm loading sign under the title, said to VoiceOver; gone once read', async () => {
+  let answer: (data: TrainData) => void = () => undefined;
+  mockRead.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+  await show();
+  expect(screen.getByLabelText(t('train.loading'))).toBeTruthy();
+  await act(async () => answer(mockData));
+  expect(await screen.findByText('Upper A')).toBeTruthy();
+  expect(screen.queryByLabelText(t('train.loading'))).toBeNull();
 });
 
 test('no program yet: one line', async () => {

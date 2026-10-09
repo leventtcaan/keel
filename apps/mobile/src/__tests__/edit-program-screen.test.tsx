@@ -11,6 +11,7 @@ import EditProgramScreen from '@/app/edit-program';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import type { LocalRecord } from '@/sync/store';
 import type { TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -48,6 +49,20 @@ const mockGet = jest.fn(async (path: string) => (path === '/v1/profile' ? { data
 const mockServices = {
   api: { POST: (path: string, ...rest: unknown[]) => mockPost(path, ...rest), GET: (path: string) => mockGet(path) },
   training: { read: jest.fn(async () => mockData), own: async () => [] },
+  workoutRecords: async () => mockRecords,
+};
+let mockRecords: LocalRecord[] = [];
+/** A workout of day "a" under way on the phone. */
+const UNDER_WAY: LocalRecord = {
+  seq: 1,
+  clientId: 'w1',
+  kind: 'workout',
+  parentClientId: null,
+  body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+  state: 'PENDING',
+  serverId: null,
+  serverBody: null,
+  errorCode: null,
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 const mockPush = jest.fn();
@@ -66,6 +81,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockParams = {};
+  mockRecords = [];
   mockAnswers = {
     '/v1/program/review/apply': () => ({ data: PROGRAM, response: { status: 200 } }),
     '/v1/program/review/undo': () => ({ data: { program: PROGRAM, alsoUndone: [] }, response: { status: 200 } }),
@@ -192,5 +208,92 @@ describe('rebuild for me', () => {
     await act(async () => undefined);
     expect(await screen.findByText(t('editProgram.offline'))).toBeTruthy();
     expect(mockDismissTo).not.toHaveBeenCalled();
+  });
+
+  test('the confirmation names what goes: targets, starting weights, this week\'s changes, the user\'s own program and moves', () => {
+    const body = t('editProgram.rebuildBody');
+    for (const word of ['targets', 'starting weights', "this week's", 'own program']) expect(body).toContain(word);
+  });
+
+  test('a workout under way: no rebuild, and why', async () => {
+    mockParams = { part: 'rebuild' };
+    mockRecords = [UNDER_WAY];
+    await show();
+    expect(await screen.findByText(t('editProgram.rebuildUnderWay'))).toBeTruthy();
+    expect(screen.queryByText(t('editProgram.rebuildConfirm'))).toBeNull();
+  });
+
+  test("days the server can't build for: said with their number, not as our failure", async () => {
+    mockParams = { part: 'rebuild' };
+    mockGet.mockImplementationOnce(async () => ({ data: { schedule: { trainingDays: [] } }, response: { status: 200 } }));
+    mockAnswers['/v1/program/generate'] = () => ({ error: { code: 'VALIDATION_FAILED' }, response: { status: 400 } });
+    await show();
+    await fireEvent.press(await screen.findByText(t('editProgram.rebuildConfirm')));
+    expect(await screen.findByText(t('editProgram.rebuildRefused', { count: 0 }))).toBeTruthy();
+    expect(mockDismissTo).not.toHaveBeenCalled();
+  });
+
+  test('two taps on the confirmation rebuild once', async () => {
+    mockParams = { part: 'rebuild' };
+    await show();
+    const confirm = await screen.findByText(t('editProgram.rebuildConfirm'));
+    await fireEvent.press(confirm);
+    await fireEvent.press(confirm);
+    expect(mockPost).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the page shows what the server answered at once', () => {
+  const NEXT: Schemas['Program'] = {
+    ...PROGRAM,
+    review: { id: 'rev-2', suggestions: [{ ...SUGGESTION, id: 'TOO_MANY_SETS:lats', muscle: 'lats' }], applied: [], notReviewedMoves: 0 },
+  };
+
+  test('after an apply, the next apply names the review the server answered, even before the page reads again', async () => {
+    mockParams = { part: 'moves' };
+    mockAnswers['/v1/program/review/apply'] = () => ({ data: NEXT, response: { status: 200 } });
+    // The read after it is slow: the page still shows the program as it was read before.
+    let late: (value: TrainData) => void = () => undefined;
+    await show();
+    mockServices.training.read.mockImplementationOnce(() => new Promise((resolve) => (late = resolve)));
+    await fireEvent.press(await screen.findByLabelText(`${t('editProgram.apply')}: Chest: 12 sets a week, not 18`));
+    await fireEvent.press(await screen.findByLabelText(`${t('editProgram.apply')}: Lats: 12 sets a week, not 18`));
+    expect(mockPost).toHaveBeenLastCalledWith('/v1/program/review/apply', { body: { reviewId: 'rev-2', suggestionIds: ['TOO_MANY_SETS:lats'] } });
+    await act(async () => late({ ...mockData, program: { state: 'ready', value: NEXT } }));
+  });
+
+  test('an undo that took a later change with it: both go from the list at once, and the page reads again', async () => {
+    mockParams = { part: 'changes' };
+    const second = { ...APPLIED, id: 'c2', suggestion: { ...SUGGESTION, id: 'TOO_MANY_SETS:chest' } };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, review: { ...PROGRAM.review!, applied: [APPLIED, second] } } } };
+    mockAnswers['/v1/program/review/undo'] = () => ({ data: { program: { ...PROGRAM, review: { ...PROGRAM.review!, applied: [] } }, alsoUndone: ['c2'] }, response: { status: 200 } });
+    await show();
+    expect(await screen.findByText('Chest: 12 sets a week, not 18')).toBeTruthy();
+    // The read after the undo never ends: what the list shows comes from the undo's answer alone.
+    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
+    await fireEvent.press(screen.getByLabelText(`${t('editProgram.undo')}: Hamstrings: 4 sets a week, not 3`));
+    expect(await screen.findByText(t('editProgram.changesNone'))).toBeTruthy();
+    expect(screen.queryByText('Chest: 12 sets a week, not 18')).toBeNull();
+    expect(screen.queryByText('Hamstrings: 4 sets a week, not 3')).toBeNull();
+    expect(screen.getByText(t('editProgram.undoneWith.one'))).toBeTruthy();
+  });
+
+  test('two taps on Apply send once', async () => {
+    mockParams = { part: 'moves' };
+    let answer: (value: unknown) => void = () => undefined;
+    mockAnswers['/v1/program/review/apply'] = () => new Promise((resolve) => (answer = resolve));
+    await show();
+    const apply = await screen.findByLabelText(`${t('editProgram.apply')}: Chest: 12 sets a week, not 18`);
+    await fireEvent.press(apply);
+    await fireEvent.press(apply);
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
+  });
+
+  test('after an undo the page reads the program again', async () => {
+    mockParams = { part: 'changes' };
+    await show();
+    await fireEvent.press(await screen.findByLabelText(`${t('editProgram.undo')}: Hamstrings: 4 sets a week, not 3`));
+    expect(mockServices.training.read).toHaveBeenCalledTimes(2);
   });
 });

@@ -19,6 +19,7 @@ import { repCount } from '@/train/reps';
 import { suggestionWords } from '@/train/review';
 import { movesOf } from '@/train/trainData';
 import { splitName } from '@/train/week';
+import { activeWorkout } from '@/train/workout';
 
 type Schemas = components['schemas'];
 type Part = 'days' | 'moves' | 'changes' | 'split' | 'rebuild';
@@ -39,16 +40,19 @@ const SAID = { conflict: 'editProgram.stale', offline: 'editProgram.offline', fa
  * wipes its targets, so no such edit is offered until the server keeps them (K-995). Every number is the server's.
  */
 export default function EditProgramScreen() {
-  const { api, training } = useAppServices();
+  const { api, training, workoutRecords } = useAppServices();
   const { color } = useTheme();
   const params = useLocalSearchParams<{ part?: string }>();
   const part = PARTS.find((p) => p === params.part) ?? null;
   const { data, reload } = useReadOnFocus(
     useCallback(async () => {
-      const [read, own] = await Promise.all([training.read(api), training.own(api)]);
-      return { ...read, own };
-    }, [api, training]),
+      const [read, own, records] = await Promise.all([training.read(api), training.own(api), workoutRecords()]);
+      return { ...read, own, active: activeWorkout(records) };
+    }, [api, training, workoutRecords]),
   );
+  // The program the server just answered, shown until the page reads again: a second tap names the review it holds
+  // now (not the one read before), an undo's later changes leave the list at once (K-970 review).
+  const [answered, setAnswered] = useState<{ program: Schemas['Program']; over: typeof data } | null>(null);
   const [problem, setProblem, occurrence] = useProblem();
   const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -63,12 +67,15 @@ export default function EditProgramScreen() {
     };
   }, []);
 
-  const program = data?.program.state === 'ready' ? data.program.value : null;
+  const read = data?.program.state === 'ready' ? data.program.value : null;
+  // Once the page has read again (another `data`), the read is the newer word.
+  const program = answered !== null && answered.over === data ? answered.program : read;
   const moves = movesOf(data, data?.own ?? []);
   const review = program?.review;
 
-  /** One request at a time; its answer said here, and the program read again. */
-  const send = async (request: () => Promise<Changed | Undone>, then: (answer: Changed | Undone) => void, said: Record<keyof typeof SAID, string> = SAID) => {
+  type Answer = Changed | Undone | { kind: 'refused' };
+  /** One request at a time; its answer shown and said here, and the program read again. */
+  const send = async (request: () => Promise<Answer>, then: (answer: Answer) => void, said: Record<string, string> = SAID) => {
     if (sending.current) return;
     sending.current = true;
     setBusy(true);
@@ -79,12 +86,14 @@ export default function EditProgramScreen() {
     setBusy(false);
     if (answer.kind === 'done') {
       setProblem(null);
+      setAnswered({ program: answer.program, over: data });
       then(answer);
-    } else setProblem(t(said[answer.kind]));
+    } else setProblem(said[answer.kind] ?? t(SAID.failed));
     reload();
   };
+  const words = (keys: Record<string, string>) => Object.fromEntries(Object.entries(keys).map(([k, key]) => [k, t(key)]));
   const apply = (s: Schemas['ReviewSuggestion']) => {
-    if (review !== undefined) void send(() => applySuggestion(api, review.id, s.id), () => undefined);
+    if (review !== undefined) void send(() => applySuggestion(api, review.id, s.id), () => undefined, words(SAID));
   };
   // An undo refused is not a stale review: the program changed another way since its last change.
   const undo = (change: Schemas['AppliedReviewChange']) =>
@@ -94,17 +103,32 @@ export default function EditProgramScreen() {
         const also = 'alsoUndone' in answer ? answer.alsoUndone.length : 0;
         setDone(also === 0 ? t('editProgram.undone') : plural('editProgram.undoneWith', also));
       },
-      { ...SAID, conflict: 'editProgram.undoConflict' },
+      words({ ...SAID, conflict: 'editProgram.undoConflict' }),
     );
+  // A tap waits for the training days too: a second one before they come must not rebuild twice.
+  const rebuilding = useRef(false);
   const rebuildNow = async () => {
-    if (sending.current) return;
+    if (sending.current || rebuilding.current) return;
+    rebuilding.current = true;
     const profile = await load(() => api.GET('/v1/profile'));
     if (!shown.current) return;
-    if (profile.state !== 'ready') return setProblem(t(profile.state === 'failed' && profile.problem === 'NoConnection' ? 'editProgram.offline' : 'editProgram.noDays'));
-    void send(
-      () => rebuild(api, profile.value.schedule.trainingDays),
-      () => router.dismissTo('/train'),
+    if (profile.state !== 'ready') {
+      rebuilding.current = false;
+      return setProblem(t(profile.state === 'failed' && profile.problem === 'NoConnection' ? 'editProgram.offline' : 'editProgram.noDays'));
+    }
+    const days = profile.value.schedule.trainingDays;
+    let rebuilt = false;
+    await send(
+      () => rebuild(api, days),
+      () => {
+        rebuilt = true;
+        router.dismissTo('/train');
+      },
+      // Which days the server builds for is its rule: the phone only says how many it was asked for.
+      { ...words(SAID), refused: t('editProgram.rebuildRefused', { count: days.length }) },
     );
+    // Rebuilt, the page is on its way out: no second rebuild from it. Not rebuilt, another try is the user's.
+    rebuilding.current = rebuilt;
   };
 
   let title = t('editProgram.title');
@@ -186,10 +210,13 @@ export default function EditProgramScreen() {
     );
   } else if (program !== null && part === 'rebuild') {
     title = t('editProgram.rebuild');
+    // A workout under way is on one of the days a rebuild replaces: its targets would have nowhere to go.
+    const underWay = data?.active != null;
+    const confirm = underWay ? null : <Button label={t('editProgram.rebuildConfirm')} variant="warn" disabled={busy} onPress={() => void rebuildNow()} />;
     body = (
       <View style={styles.rows}>
-        <Text style={[styles.text, { color: color.text }]}>{t('editProgram.rebuildBody')}</Text>
-        <Button label={t('editProgram.rebuildConfirm')} variant="warn" disabled={busy} onPress={() => void rebuildNow()} />
+        <Text style={[styles.text, { color: color.text }]}>{t(underWay ? 'editProgram.rebuildUnderWay' : 'editProgram.rebuildBody')}</Text>
+        {confirm}
       </View>
     );
   }
