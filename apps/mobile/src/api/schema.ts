@@ -584,9 +584,12 @@ export interface paths {
          *     move has its own history). A move without `id` is new. Each id once. The program keeps its id and source: an
          *     edited GENERATED program stays GENERATED. The edit is a change of the change log (`Program.review.edits`), undone
          *     with POST /v1/program/review/undo as a suggestion is; the review runs again on the program edited.
-         *     This week's session changes of a day the edit puts on another weekday, or takes out, go: the week re-lays itself.
-         *     Nothing different from the program, nothing changes and nothing is logged. CONFLICT (409), nothing changed: a day
-         *     or move id the program does not have (it changed since; read it again). VALIDATION_FAILED as PUT. NOT_FOUND: no
+         *     This week's sessions re-lay: a day the edit puts on another weekday, or takes out, loses this week's change, and the
+         *     sessions its move pushed on go back to their days; today's swaps keep only a planned move swapped for one the day
+         *     does not plan. A move's starting weight stays with its row while its range does. Nothing different from the program,
+         *     nothing changes and nothing is logged. CONFLICT (409), nothing changed: a day or move id the program does not have
+         *     (it changed since; read it again), or a day whose workout was started today put on another weekday or taken out
+         *     (as a move or a skip: a session done is done; its moves may change). VALIDATION_FAILED as PUT. NOT_FOUND: no
          *     program.
          */
         patch: operations["editProgram"];
@@ -688,12 +691,15 @@ export interface paths {
         put?: never;
         /**
          * Undo one applied change, or all of them ("N changes applied · Undo")
-         * @description With `changeId`, that change: the program as it was before it, with the changes applied after it applied again. A
-         *     later change that can no longer be applied (its finding is gone without the undone change) is undone with it and
-         *     named in `alsoUndone`, so the app can say how many changes went. Without `changeId`, every change in force: the
-         *     program as it was before the first (`alsoUndone` empty). Moves keep their next targets as in apply. An undone change
-         *     stays in the log, no longer in force; undone twice, or nothing to undo, nothing changes. NOT_FOUND: no program, or
-         *     no such change. CONFLICT (409), nothing changed: the program changed another way since its last change.
+         * @description With `changeId`, that change, a suggestion applied or an edit (PATCH /v1/program, K-995): the program as it was
+         *     before it, with the changes after it applied again. A later change that can no longer be applied (its finding is
+         *     gone without the undone change; an edit, made to a program that is no more) is undone with it and named in
+         *     `alsoUndone`, so the app can say how many changes went. Without `changeId`, every suggestion in force ("N changes
+         *     applied · Undo"): the program as it was before the first of them; an edit made before it stays, one made after it
+         *     is applied again or undone with them and named in `alsoUndone`. Moves keep their next targets as in apply. This
+         *     week's sessions re-lay as for an edit. An undone change stays in the log, no longer in force; undone twice, or
+         *     nothing to undo, nothing changes. NOT_FOUND: no program, or no such change. CONFLICT (409), nothing changed: the
+         *     program changed another way since its last change.
          */
         post: operations["undoProgramReview"];
         delete?: never;
@@ -2113,13 +2119,16 @@ export interface components {
         };
         ReviewUndone: {
             program: components["schemas"]["Program"];
-            /** @description AppliedReviewChange.id of each later change undone with the one asked for, in order. */
+            /**
+             * @description The id (AppliedReviewChange.id or ProgramEditChange.id) of each later change undone with the ones asked for, in
+             *     order.
+             */
             alsoUndone: string[];
         };
         ReviewUndo: {
             /**
              * Format: uuid
-             * @description AppliedReviewChange.id; absent to undo every change in force.
+             * @description AppliedReviewChange.id or ProgramEditChange.id; absent to undo every suggestion in force (edits stay, K-995).
              */
             changeId?: string;
         };

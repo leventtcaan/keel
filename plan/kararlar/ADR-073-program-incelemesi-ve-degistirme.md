@@ -258,20 +258,28 @@ testi: seçenekler salon ekipmanıyla süzülür.
   kimliksiz gün yenidir ve ad ister; gönderilmeyen gün gider. Ad verilen üretilmiş gün kullanıcının adını alır (`name_key` ya da `name`,
   V8). Kimlikli hareket (herhangi bir günden: hareket gün değiştirebilir) aynı hareket ve aynı tekrar aralığıyla satırını ve hedefini korur
   (set değişse de, inceleme uygulaması gibi); başka aralık satırı hedefsiz tutar (Ek 1); yerine başka hareket konan satır yeni satırdır,
-  hedefsiz ("From now on" gibi, Ek 3); satırı korunan hareketin başlangıç ağırlığı (`start_load_kg`, `start_reps`, K-998) da kalır, yerine
-  başka hareket konan satırda yoktur (o hareketindi). Kimliksiz hareket yenidir. Programda olmayan kimlik **CONFLICT** (program o arada değişti), hiçbir şey
+  hedefsiz ("From now on" gibi, Ek 3); satırı korunan hareketin başlangıç ağırlığı (`start_load_kg`, `start_reps`, K-998) da kalır;
+  aralığı değişen satırda ve yerine başka hareket konan satırda yoktur (o hareketin o aralığı içindi; atılan seans onu yeni aralığa hedef
+  yapardı, #518 incelemesi). Başlangıç ağırlığı `ProgramStore.PlannedExercise`'ın parçasıdır: kaydın anlık görüntüleri de taşır, geri
+  alma onu geri getirir (eski görüntüde yok, null okunur; göç yok). Kimliksiz hareket yenidir. Programda olmayan kimlik **CONFLICT** (program o arada değişti), hiçbir şey
   değişmez; doğrulama `PUT` ile aynı sınırlar. Kaynak ve program kimliği kalır: düzenlenen üretilmiş program `GENERATED` kalır (#4). Gün
   sayısı değişirse `program_history` satırı (`ProgramStore.rewrite`).
 - **Kayıt ve geri alma (V46, `program_review_change.kind` REVIEW|EDIT, EDIT'te `suggestion` yok):** düzenleme, inceleme değişikliklerinin
   kaydına bir değişiklik olarak girer (öncesi ve sonrası programla) ve aynı uçla geri alınır (`POST /v1/program/review/undo`). Bir
-  değişiklik geri alınınca sonrakiler yeniden uygulanır: öneri kimliğiyle (Ek 1); düzenleme, ancak program onun "öncesi"yle aynıysa
+  değişiklik (kimliğiyle; öneri ya da düzenleme) geri alınınca sonrakiler yeniden uygulanır: öneri kimliğiyle (Ek 1); düzenleme, ancak program onun "öncesi"yle aynıysa
   (günler, adlar, hafta günleri, hareketler, set ve aralık) olduğu gibi; değilse uygulanamaz ve `alsoUndone` ile adı verilir (düzenleme
   bir hedef hal, fark değil: başka bir programa yeniden kurmak kullanıcının yapmadığı bir düzenleme olurdu). Sözleşmede `Program.review.applied`
   yalnız önerileri taşır (Antrenman'ın "N changes applied" satırı ve onboarding onları sayar; değişmez), düzenlemeler ayrı listededir
-  (`Program.review.edits`, `{id, editedAt}`); ikisi de aynı uçla, kimliğiyle geri alınır. Programdan farkı olmayan düzenleme hiçbir şey yazmaz.
-- **Bu haftanın seansları:** düzenlemenin başka hafta gününe koyduğu ya da çıkardığı günün bu haftaki değişikliği (taşıma, atlama, kısa,
-  bugünlük değişim) silinir, seans yeni gününe yerleşir ("Sessions re-lay themselves"); geçmiş haftaların satırları kalır (tutarlılık
-  onları okur). Başlamış seans düzenlemeyi engellemez ("From now on" gibi: program değişir, yapılan seans yapılmıştır).
+  (`Program.review.edits`, `{id, editedAt}`); ikisi de aynı uçla, kimliğiyle geri alınır. Kimliksiz geri
+  alma ("N changes applied · Undo") yalnız önerileri geri alır: ilk önerinin öncesine döner, ondan önceki düzenleme kalır, sonraki düzenleme
+  yeniden uygulanır ya da `alsoUndone` ile gider (düzenleyici kararı, #518). Programdan farkı olmayan düzenleme hiçbir şey yazmaz.
+- **Bu haftanın seansları** (`TodayChanges.relay`; düzenlemede, inceleme uygulamasında ve geri almada): başka hafta gününe konan ya da
+  çıkarılan günün bu haftaki değişikliği (taşıma, atlama, kısa, bugünlük değişim) silinir, seans yeni gününe yerleşir ("Sessions re-lay
+  themselves"); o günün taşımasının zincirle ittiği seanslar da önceki hallerine döner (Ek 5'in geri alma kaydından; taşıma artık yok).
+  Bugünlük değişimlerden yalnız planlı bir hareketin, günün planlamadığı bir hareketle değişimi kalır (plan birini bırakmış ya da ötekini
+  almış olabilir: aynı hareket seansta iki kez olmaz). Geçmiş haftaların satırları kalır (tutarlılık onları okur).
+- **Başlamış seans (kart maddesi 7, düzenleyici kararı #518):** bugün antrenmanı başlamış günü başka hafta gününe koymak ya da çıkarmak
+  CONFLICT (taşıma ve atlama gibi: yapılan seans yapılmıştır); o günün hareketleri değişebilir ("From now on" gibi, plan artık odur).
 - **Reddedilen:** işlem listesi (ekle/çıkar/taşı adımları; telefonun düzenleyicisi programın bütününü tutuyor, kimlikli bütün hal daha az
   kırılgan) · düzenlemeyi inceleme kaydını silerek yapmak (Ek 3'teki gibi; kartın "geri alınır" maddesini karşılamaz) · ayrı düzenleme
   kaydı tablosu (iki kayıt arasında sıra kurmak gerekirdi; geri alma tek yoldan) · düzenlemeyi fark olarak saklayıp yeniden uygulamak
