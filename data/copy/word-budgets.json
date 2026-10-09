@@ -708,7 +708,8 @@
         "workoutEnd.weekLabel",
         "workoutEnd.pending",
         "workoutEnd.failed",
-        "workoutEnd.retry"
+        "workoutEnd.retry",
+        "workoutEnd.ready"
       ]
     },
     {

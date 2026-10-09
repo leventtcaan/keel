@@ -27,7 +27,17 @@ const WORKOUT = record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-29
 const FINISH = record('finish', 'f1', { endedAt: '2026-09-29T08:52:00Z' });
 const SUMMARY: Schemas['WorkoutSummary'] = { workoutId: 'srv-w1', minutes: 52, liftedKg: 4200, workingSets: 15, marks: [], weekOf: '2026-09-28', muscles: [] };
 const PROGRAM: Schemas['Program'] = { id: 'p', source: 'GENERATED', days: [], week: [] };
-const CONSISTENCY = { weekOf: '2026-09-28', planned: 3, done: 2 } as Schemas['Consistency'];
+// The whole week's actions (training, protein, steps, weigh-ins) are 19 planned, 5 done; its sessions 3 planned, 2 done.
+const CONSISTENCY: Schemas['Consistency'] = {
+  weekOf: '2026-09-28',
+  training: { planned: 3, done: 2 },
+  protein: { planned: 7, done: 1 },
+  steps: { planned: 7, done: 1 },
+  weighIns: { planned: 2, done: 1 },
+  planned: 19,
+  done: 5,
+  record: { onTrackWeeks: 0, countedWeeks: 0, currentRun: 0, forgivenWeeks: 0 },
+} as Schemas['Consistency'];
 
 const deps = (over: Partial<Parameters<typeof loadWorkoutEnd>[0]> = {}) => {
   const GET = jest.fn(async (path: string) => {
@@ -42,8 +52,8 @@ const deps = (over: Partial<Parameters<typeof loadWorkoutEnd>[0]> = {}) => {
     value: {
       api: { GET } as never,
       queue: { drain: jest.fn(async () => undefined) },
-      workoutRecords: async () => [WORKOUT, FINISH],
-      training: { read: async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false }) },
+      workoutRecords: jest.fn(async () => [WORKOUT, FINISH]),
+      training: { read: jest.fn(async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false })) },
       health: { readWatchActiveEnergy },
       consents: { granted: async () => true },
       ...over,
@@ -105,4 +115,52 @@ test('the week not read: the rest stands, without the week', async () => {
   );
   const end = await loadWorkoutEnd(value, 'w1');
   expect(end.kind === 'ready' && end.week).toBeNull();
+});
+
+test("the week is the sessions' (training), never the sum of the week's actions", async () => {
+  const { value } = deps();
+  const end = await loadWorkoutEnd(value, 'w1');
+  expect(end.kind === 'ready' && end.week).toEqual({ done: 2, planned: 3 });
+});
+
+test('without the health data consent the consistency is refused (403): no week, nothing made up', async () => {
+  const { value, GET } = deps();
+  GET.mockImplementation(async (path: string) =>
+    path === '/v1/workouts/{id}/summary' ? { data: SUMMARY, response: { status: 200 } } : { error: { code: 'CONSENT_REQUIRED' }, response: { status: 403 } },
+  );
+  const end = await loadWorkoutEnd(value, 'w1');
+  expect(end.kind === 'ready' && end.week).toBeNull();
+});
+
+test("a program kept offline is not read for the record's next target: it may be from before this workout", async () => {
+  const { value } = deps({
+    training: { read: async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: true }) },
+  });
+  const end = await loadWorkoutEnd(value, 'w1');
+  expect(end.kind === 'ready' && end.program).toBeNull();
+});
+
+test('the queue is drained before the records are read', async () => {
+  const order: string[] = [];
+  const { value } = deps();
+  value.queue.drain = jest.fn(async () => void order.push('drain'));
+  value.workoutRecords = jest.fn(async () => {
+    order.push('records');
+    return [WORKOUT, FINISH];
+  });
+  await loadWorkoutEnd(value, 'w1');
+  expect(order).toEqual(['drain', 'records']);
+});
+
+test('another workout id: not found here, failed (never pending forever)', async () => {
+  const { value } = deps();
+  expect(await loadWorkoutEnd(value, 'other')).toEqual({ kind: 'failed', problem: 'ServerError' });
+});
+
+test.each([
+  ['the workout refused by the server', [{ ...WORKOUT, state: 'REJECTED' as const }, FINISH]],
+  ['its finish refused by the server', [WORKOUT, { ...FINISH, state: 'REJECTED' as const }]],
+])('%s: failed, never pending forever', async (_, records) => {
+  const { value } = deps({ workoutRecords: async () => records });
+  expect(await loadWorkoutEnd(value, 'w1')).toEqual({ kind: 'failed', problem: 'ServerError' });
 });

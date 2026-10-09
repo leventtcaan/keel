@@ -6,6 +6,7 @@
  * a way to try again, no number made up.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 
 import WorkoutEndScreen from '@/app/workout-end';
 import type { components } from '@/api/schema';
@@ -29,9 +30,10 @@ const SUMMARY: Schemas['WorkoutSummary'] = {
   liftedKg: 4200,
   liftedChangePercent: 6,
   workingSets: 15,
+  // In the server's order (first done): the card shows the first record, never one the phone picks.
   marks: [
-    { exerciseId: 'bench_press', kind: 'RECORD', loadKg: 72.5, reps: 8 },
     { exerciseId: 'squat', kind: 'RECORD', loadKg: 100, reps: 8 },
+    { exerciseId: 'bench_press', kind: 'RECORD', loadKg: 120, reps: 3 },
   ],
   weekOf: '2026-09-28',
   muscles: MUSCLES,
@@ -54,7 +56,13 @@ const mockDismiss = jest.fn();
 jest.mock('expo-router', () => ({
   router: { push: (...a: unknown[]) => mockPush(...a), dismissTo: (...a: unknown[]) => mockDismiss(...a) },
   useLocalSearchParams: () => ({ workout: 'w1' }),
+  useFocusEffect: (effect: () => () => void) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    React.useEffect(() => effect(), [effect]);
+  },
 }));
+const mockBar = jest.fn();
+jest.mock('expo-status-bar', () => ({ StatusBar: () => null, setStatusBarStyle: (style: string) => mockBar(style) }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -100,7 +108,7 @@ test('closed by itself (no minutes known): no minutes box, none made up', async 
   expect(screen.queryByText(t('workoutEnd.minutes.other'))).toBeNull();
 });
 
-test('a record: the heaviest, the real set, and its next target from the program', async () => {
+test("a record: the server's first, the real set, and its next target from the program", async () => {
   await show();
   expect(await screen.findByText(t('workoutEnd.record', { move: 'Squat', set: '100 kg × 8' }))).toBeTruthy();
   expect(screen.getByText(t('workoutEnd.recordNext', { set: '100 kg × 9' }))).toBeTruthy();
@@ -159,4 +167,52 @@ test('Reduce Motion: the hero is still, nothing animates', async () => {
   await show();
   expect(await screen.findByTestId('hero-mark')).toHaveStyle({ opacity: 1, transform: [{ scale: 1 }] });
   await act(async () => undefined);
+});
+
+test("the record's move not on the program's day (or the program not read): best ever, no next target made up", async () => {
+  mockEnd = { ...READY, program: null };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.recordBest'))).toBeTruthy();
+});
+
+test('the status bar is light while this screen is in front, and back to dark once it leaves (the share card is light)', async () => {
+  const { unmount } = await show();
+  expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
+  expect(mockBar).toHaveBeenLastCalledWith('light');
+  await unmount();
+  expect(mockBar).toHaveBeenLastCalledWith('auto');
+});
+
+test('the summary not read: said, and Try again reads once however often it is tapped', async () => {
+  let answer: (v: WorkoutEnd) => void = () => undefined;
+  mockLoad.mockImplementationOnce(async () => ({ kind: 'failed', problem: 'NoConnection' }));
+  await show();
+  expect(await screen.findByText(t('workoutEnd.failed'))).toBeTruthy();
+  mockLoad.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+  const retry = screen.getByText(t('workoutEnd.retry'));
+  await fireEvent.press(retry);
+  await fireEvent.press(retry);
+  expect(mockLoad).toHaveBeenCalledTimes(2);
+  await act(async () => answer(READY));
+  expect(await screen.findByText('4,200')).toBeTruthy();
+});
+
+test('a read that throws is failed, not a blank screen', async () => {
+  mockLoad.mockImplementationOnce(async () => {
+    throw new Error('store');
+  });
+  await show();
+  expect(await screen.findByText(t('workoutEnd.failed'))).toBeTruthy();
+});
+
+test('pending, failed and ready are said to VoiceOver as they come', async () => {
+  const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+  mockEnd = { kind: 'pending' };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.pending'))).toBeTruthy();
+  expect(said).toHaveBeenCalledWith(t('workoutEnd.pending'));
+  mockEnd = READY;
+  await fireEvent.press(screen.getByText(t('workoutEnd.retry')));
+  expect(await screen.findByText('4,200')).toBeTruthy();
+  expect(said).toHaveBeenCalledWith(t('workoutEnd.ready'));
 });

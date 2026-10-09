@@ -707,7 +707,8 @@
     "done": "Done",
     "pending": "Your numbers show once this workout reaches the server. It's saved on this phone.",
     "failed": "Your numbers couldn't load.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "ready": "Your numbers are in."
   },
   "muscleMap": {
     "label": "Muscle map, sets this week: {muscles}",

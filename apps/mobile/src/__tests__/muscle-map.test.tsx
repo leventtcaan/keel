@@ -54,6 +54,15 @@ test('an area fills by its share: full at the target, partly below, lightly when
   expect(colourOf('head')).toBe(p.track);
 });
 
+test('several muscles on one area: the most done fills it, whichever comes first', async () => {
+  await render(
+    <ThemeProvider>
+      <MuscleMap muscles={[sets('side_delts', 10), sets('front_delts', 2), sets('rear_delts', 0, 4)]} figure="male" />
+    </ThemeProvider>,
+  );
+  expect(colourOf('deltoids')).toBe(palettes.light.accent);
+});
+
 test('several muscles on one area: the most done fills it', async () => {
   await render(
     <ThemeProvider>

@@ -3,8 +3,10 @@
  * (`GET /v1/workouts/{id}/summary`: working sets only, a skipped set never counted, the active minutes, the records),
  * so the workout and its finish must be on the server: the queue is drained first, and while either is still on the
  * phone the end is pending (nothing is counted here, offline or not). Beside it: the program, for the record's next
- * target; this week's sessions done of planned (`/v1/consistency`); and the energy an Apple Watch measured over the
- * session's window, read only with both health consents (ADR-074 #5, K-959): no watch, no number, never a guess.
+ * target (not from a copy kept offline); this week's sessions done of planned (`/v1/consistency` training; none without
+ * it); and the energy an Apple Watch measured over the session's window, read only with both health consents (ADR-074
+ * #5, K-959): no watch, no number, never a guess. A workout refused by the server, or not on this phone, is failed:
+ * it will never be sent.
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
@@ -42,8 +44,10 @@ export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<W
   await deps.queue.drain().catch(() => undefined);
   const records = await deps.workoutRecords();
   const workout = records.find((r) => r.kind === 'workout' && r.clientId === clientId);
-  const finish = records.find((r) => r.kind === 'finish' && r.parentClientId === clientId && r.state !== 'REJECTED');
-  if (workout?.serverId == null || finish === undefined || finish.state !== 'SYNCED') return { kind: 'pending' };
+  const finish = records.find((r) => r.kind === 'finish' && r.parentClientId === clientId);
+  // Not on this phone, or refused by the server: it will never be sent, so it is not waited for.
+  if (workout === undefined || workout.state === 'REJECTED' || finish?.state === 'REJECTED') return { kind: 'failed', problem: 'ServerError' };
+  if (workout.serverId === null || finish === undefined || finish.state !== 'SYNCED') return { kind: 'pending' };
   const id = workout.serverId;
   const body = workout.body as Schemas['NewWorkout'];
   const ended = (finish.body as Schemas['WorkoutFinish']).endedAt;
@@ -58,9 +62,11 @@ export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<W
   return {
     kind: 'ready',
     summary: summary.value,
-    program: read?.program.state === 'ready' ? read.program.value : null,
+    // A copy kept offline may be from before this workout: its next target could be the set just done.
+    program: read?.program.state === 'ready' && !read.kept ? read.program.value : null,
     programDayId: body.programDayId ?? null,
-    week: consistency.state === 'ready' ? { done: consistency.value.done, planned: consistency.value.planned } : null,
+    // The week's sessions (training), not every action's; without the consistency (no consent: 403), no week.
+    week: consistency.state === 'ready' ? { done: consistency.value.training.done, planned: consistency.value.training.planned } : null,
     kcal,
   };
 }

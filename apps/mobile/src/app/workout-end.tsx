@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { MuscleMap } from '@/components/MuscleMap';
+import { announce } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { FocusMode, useTheme } from '@/theme/theme';
@@ -40,25 +41,40 @@ export default function WorkoutEndScreen() {
   const [end, setEnd] = useState<WorkoutEnd | null>(null);
   const [figure, setFigure] = useState<Figure>('male');
   const felt = useRef(false);
+  // One read at a time: Try again tapped twice reads once.
+  const reading = useRef(false);
 
   const read = useCallback(() => {
-    void loadWorkoutEnd(services, workout).then((answer) => {
-      setEnd(answer);
-      // The record is felt once, when it is first shown.
-      if (answer.kind === 'ready' && !felt.current && answer.summary.marks.some((m) => m.kind === 'RECORD')) {
-        felt.current = true;
-        haptics.record();
-      }
-    });
+    if (reading.current) return;
+    reading.current = true;
+    void loadWorkoutEnd(services, workout)
+      .catch((): WorkoutEnd => ({ kind: 'failed', problem: 'ServerError' }))
+      .then((answer) => {
+        reading.current = false;
+        setEnd(answer);
+        // VoiceOver hears what came: the numbers, or why they wait.
+        announce(t(answer.kind === 'ready' ? 'workoutEnd.ready' : answer.kind === 'pending' ? 'workoutEnd.pending' : 'workoutEnd.failed'));
+        // The record is felt once, when it is first shown.
+        if (answer.kind === 'ready' && !felt.current && answer.summary.marks.some((m) => m.kind === 'RECORD')) {
+          felt.current = true;
+          haptics.record();
+        }
+      });
   }, [services, workout]);
   useEffect(read, [read]);
   useEffect(() => {
     void services.bodyFigure().then(setFigure);
   }, [services]);
+  // Light status bar text only while this screen is in front: the share card opened from it is light.
+  useFocusEffect(
+    useCallback(() => {
+      setStatusBarStyle('light');
+      return () => setStatusBarStyle('auto');
+    }, []),
+  );
 
   return (
     <FocusMode>
-      <StatusBar style="light" />
       <Body end={end} units={units} figure={figure} onRetry={read} />
     </FocusMode>
   );
@@ -164,13 +180,15 @@ function Facts({ end, day, units, figure }: { end: Ready; day: Schemas['ProgramD
   );
 }
 
-/** The session's record (the heaviest; the real set and its next target), or the baseline of a first session. */
+/**
+ * The session's record (the first the server lists, in the order done: kilos across moves are not compared here; the
+ * real set and its next target), or the baseline of a first session.
+ */
 function Mark({ marks, day, units }: { marks: Schemas['SetMark'][]; day: Schemas['ProgramDay'] | null; units: UnitSystem }) {
   const { color } = useTheme();
-  const records = marks.filter((m) => m.kind === 'RECORD');
   const set = (loadKg: number, reps: number) => t('workoutEnd.set', { load: formatLoad(loadKg, units), reps });
-  if (records.length > 0) {
-    const best = records.reduce((a, b) => (b.loadKg > a.loadKg || (b.loadKg === a.loadKg && b.reps > a.reps) ? b : a));
+  const best = marks.find((m) => m.kind === 'RECORD');
+  if (best !== undefined) {
     const next = day?.exercises.find((e) => e.exerciseId === best.exerciseId);
     const nextLine =
       next?.nextLoadKg !== undefined && next.nextReps !== undefined ? t('workoutEnd.recordNext', { set: set(next.nextLoadKg, next.nextReps) }) : t('workoutEnd.recordBest');
