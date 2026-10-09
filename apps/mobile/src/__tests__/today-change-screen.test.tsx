@@ -122,6 +122,18 @@ test('an answer that comes after the sheet has gone closes nothing: another scre
   expect(mockBack).not.toHaveBeenCalled();
 });
 
+test.each([
+  ['Skip today', null, 'todayChange.started'],
+  ['Short on time', null, 'train.dayChanged'],
+  ['Full workout', { short: true }, 'train.dayChanged'],
+] as const)('a refusal (409) says what it was for %s', async (row, extra, key) => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], ...(extra ?? {}) }] } } };
+  mockAnswer = () => ({ error: { code: 'CONFLICT' }, response: { status: 409 } });
+  await show();
+  await fireEvent.press(await screen.findByText(row));
+  expect(await screen.findByText(t(key))).toBeTruthy();
+});
+
 test('no connection says so', async () => {
   mockAnswer = () => {
     throw new TypeError('Network request failed');
@@ -134,7 +146,8 @@ test('no connection says so', async () => {
 test('the short version already: no second short; Full workout brings every move back', async () => {
   mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], short: true }] } } };
   await show();
-  expect(await screen.findByText('Full workout')).toBeTruthy();
+  expect(await screen.findByText(t('todayChange.shortNow'))).toBeTruthy();
+  expect(screen.getByText('Full workout')).toBeTruthy();
   expect(screen.queryByText('Short on time')).toBeNull();
   expect(screen.getByText('Move it')).toBeTruthy();
   await fireEvent.press(screen.getByText('Full workout'));
@@ -195,6 +208,14 @@ test('skipped today and undoable: Undo, the one change left', async () => {
   expect(screen.queryByText('Move it')).toBeNull();
 });
 
+test("a workout of today's session open on another phone (the server says so): no move or skip either", async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w9', state: 'OPEN' } }] } } };
+  await show();
+  expect(await screen.findByText(t('todayChange.started'))).toBeTruthy();
+  expect(screen.queryByText('Move it')).toBeNull();
+  expect(screen.queryByText('Skip today')).toBeNull();
+});
+
 test("today's session done (the server says so): it says so, and nothing is left to change", async () => {
   mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'DONE' } }] } } };
   await show();
@@ -204,8 +225,20 @@ test("today's session done (the server says so): it says so, and nothing is left
   expect(screen.queryByText('Skip today')).toBeNull();
 });
 
-test("a workout of today's session under way (the server says so): only the short version is left", async () => {
-  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'OPEN' } }] } } };
+test("a workout of today's session under way: only the short version is left", async () => {
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
   await show();
   expect(await screen.findByText(t('todayChange.started'))).toBeTruthy();
   expect(screen.getByText('Short on time')).toBeTruthy();

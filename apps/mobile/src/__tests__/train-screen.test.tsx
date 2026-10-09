@@ -361,10 +361,20 @@ test('two quick taps on a swap open one sheet', async () => {
 });
 
 test("a workout under way: no swap on the card (the workout swaps its own moves)", async () => {
-  mockData = withProgram({
-    days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e) => ({ ...e, swapOptions: ['push_up'] })) }, PROGRAM.days[1]],
-    week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'OPEN' } }, THURSDAY],
-  });
+  mockData = withProgram({ days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e) => ({ ...e, swapOptions: ['push_up'] })) }, PROGRAM.days[1]] });
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
   await show();
   expect(await screen.findByText('Continue workout')).toBeTruthy();
   expect(screen.queryByLabelText('Swap Bench press')).toBeNull();
@@ -465,17 +475,7 @@ test('two quick taps on Start open the session once', async () => {
   expect(mockPush).toHaveBeenCalledTimes(1);
 });
 
-test('a workout under way (the server says so) is continued, not started again', async () => {
-  mockData = withProgram({ week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'OPEN' } }, THURSDAY] });
-  await show();
-  expect(await screen.findByText('Continue workout')).toBeTruthy();
-  expect(screen.queryByText('Start workout')).toBeNull();
-  await fireEvent.press(screen.getByText('Continue workout'));
-  expect(mockPush).toHaveBeenCalledWith('/workout');
-  expect(mockRecord).not.toHaveBeenCalled();
-});
-
-test("the phone's own record of a workout is not what the card goes by: the server's week is", async () => {
+test('a workout under way is continued, not started again', async () => {
   mockRecords = [
     {
       seq: 1,
@@ -490,8 +490,100 @@ test("the phone's own record of a workout is not what the card goes by: the serv
     },
   ];
   await show();
-  expect(await screen.findByText('Start workout')).toBeTruthy();
+  expect(await screen.findByText('Continue workout')).toBeTruthy();
+  expect(screen.queryByText('Start workout')).toBeNull();
+  await fireEvent.press(screen.getByText('Continue workout'));
+  expect(mockPush).toHaveBeenCalledWith('/workout');
+  expect(mockRecord).not.toHaveBeenCalled();
+});
+
+test('under way on this phone, offline (the server knows nothing yet): continued, and nothing to change or swap', async () => {
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  mockData = withProgram({
+    days: [{ ...PROGRAM.days[0], exercises: PROGRAM.days[0].exercises.map((e) => ({ ...e, swapOptions: ['push_up'] })) }, PROGRAM.days[1]],
+  });
+  await show();
+  expect(await screen.findByText('Continue workout')).toBeTruthy();
+  expect(screen.queryByLabelText(t('train.changeLabel'))).toBeNull();
+  expect(screen.queryByLabelText('Swap Bench press')).toBeNull();
+});
+
+test('finished on this phone, the finish still in the queue: done, no second session to start', async () => {
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+    {
+      seq: 2,
+      clientId: 'f1',
+      kind: 'finish',
+      parentClientId: 'w1',
+      body: { endedAt: '2026-09-29T08:50:00Z' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  await show();
+  expect(await screen.findByText(t('train.doneToday'))).toBeTruthy();
+  expect(screen.queryByText('Start workout')).toBeNull();
   expect(screen.queryByText('Continue workout')).toBeNull();
+});
+
+test('the server says OPEN, nothing of it on this phone: open elsewhere; no Continue into an empty screen, no Start', async () => {
+  mockData = withProgram({ week: [{ ...PROGRAM.week![0], workout: { id: 'w9', state: 'OPEN' } }, THURSDAY] });
+  await show();
+  expect(await screen.findByText(t('train.openElsewhere'))).toBeTruthy();
+  expect(screen.queryByText('Continue workout')).toBeNull();
+  expect(screen.queryByText('Start workout')).toBeNull();
+});
+
+test("another day's session OPEN on the server is not today's: today's starts as usual", async () => {
+  mockData = withProgram({ week: [PROGRAM.week![0], { ...THURSDAY, date: '2026-09-28', workout: { id: 'w9', state: 'OPEN' } }] });
+  await show();
+  expect(await screen.findByText('Start workout')).toBeTruthy();
+});
+
+test("offline with the copy kept yesterday: the phone's day is today, yesterday's DONE is not today's", async () => {
+  // Kept on Monday 28 Sep (Monday done); the phone is on Tuesday 29 Sep, offline.
+  mockData = {
+    ...withProgram({ today: '2026-09-28', week: [{ ...PROGRAM.week![0] }, { ...THURSDAY, date: '2026-09-28', workout: { id: 'w0', state: 'DONE' } }] }),
+    kept: true,
+  };
+  await show();
+  const card = await screen.findByTestId('today-card');
+  expect(card).toHaveTextContent(/Today · Tue/);
+  expect(card).toHaveTextContent(/Upper A/);
+  expect(screen.getByText('Start workout')).toBeTruthy();
+  expect(screen.queryByText(t('train.doneToday'))).toBeNull();
+});
+
+test("offline with a kept copy, the kept Undo is not offered (the server's word was for then)", async () => {
+  mockData = { ...withProgram({ week: [{ ...PROGRAM.week![0], skipped: true, undoable: true }, THURSDAY] }), kept: true };
+  await show();
+  expect(await screen.findByText('Skipped. Monday reads what happened.')).toBeTruthy();
+  expect(screen.queryByLabelText(t('train.undoLabel'))).toBeNull();
 });
 
 test("today's session done: no Start, it says it is done, and nothing to change", async () => {
@@ -514,15 +606,58 @@ test("today is the server's day, not the phone's clock (travelling)", async () =
 });
 
 describe("today's change undone (UNDO) and the full workout back (FULL)", () => {
-  test('moved off today: where it went, from the server; Undo brings it back', async () => {
+  test("moved off today: where it went, from the server; Undo brings it back, shown from the server's answer at once", async () => {
     mockData = withProgram({ week: [{ ...PROGRAM.week![0], date: '2026-09-30', moved: true, movedFrom: '2026-09-29', undoable: true }, THURSDAY] });
     mockChangeAnswer = () => ({ data: PROGRAM, response: { status: 200 } });
     await show();
     expect(await screen.findByText('Moved to Wed. Today is rest.')).toBeTruthy();
     const reads = mockRead.mock.calls.length;
+    // The read after the undo never ends: the card shows the answer itself.
+    mockRead.mockImplementationOnce(() => new Promise(() => undefined));
     await fireEvent.press(screen.getByLabelText(t('train.undoLabel')));
     expect(mockChanged).toHaveBeenCalledWith('/v1/program/today', { body: { programDayId: 'a', change: 'UNDO' } });
     expect(mockRead.mock.calls.length).toBe(reads + 1);
+    expect(await screen.findByText('Start workout')).toBeTruthy();
+  });
+
+  test('moved twice (on from its own day, then again today): Undo by the one the server marks undoable', async () => {
+    mockData = withProgram({
+      week: [{ ...PROGRAM.week![0], date: '2026-09-30', moved: true, movedFrom: '2026-09-28', undoable: true }, { ...THURSDAY, date: '2026-10-02', moved: true, movedFrom: '2026-09-29' }],
+    });
+    await show();
+    expect(await screen.findByText('Moved to Wed. Today is rest.')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText(t('train.undoLabel')));
+    expect(mockChanged).toHaveBeenCalledWith('/v1/program/today', { body: { programDayId: 'a', change: 'UNDO' } });
+  });
+
+  test('two taps on Undo send once', async () => {
+    mockData = withProgram({ week: [{ ...PROGRAM.week![0], skipped: true, undoable: true }, THURSDAY] });
+    let answer: (v: unknown) => void = () => undefined;
+    mockChangeAnswer = () => new Promise((resolve) => (answer = resolve));
+    await show();
+    const undo = await screen.findByLabelText(t('train.undoLabel'));
+    await fireEvent.press(undo);
+    await fireEvent.press(undo);
+    expect(mockChanged).toHaveBeenCalledTimes(1);
+    await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
+  });
+
+  test("the full workout back the server refuses (409: the day turned): said so, and the week read again", async () => {
+    mockData = withProgram({ week: [{ programDayId: 'a', date: '2026-09-29', short: true, exerciseIds: ['bench_press'] }, THURSDAY] });
+    mockChangeAnswer = () => ({ error: { code: 'CONFLICT' }, response: { status: 409 } });
+    await show();
+    const reads = mockRead.mock.calls.length;
+    await fireEvent.press(await screen.findByText(t('train.full')));
+    expect(await screen.findByText(t('train.dayChanged'))).toBeTruthy();
+    expect(mockRead.mock.calls.length).toBe(reads + 1);
+  });
+
+  test("an undo the server refuses (409: today's workout began): said so", async () => {
+    mockData = withProgram({ week: [{ ...PROGRAM.week![0], skipped: true, undoable: true }, THURSDAY] });
+    mockChangeAnswer = () => ({ error: { code: 'CONFLICT' }, response: { status: 409 } });
+    await show();
+    await fireEvent.press(await screen.findByLabelText(t('train.undoLabel')));
+    expect(await screen.findByText(t('todayChange.started'))).toBeTruthy();
   });
 
   test('skipped today: Undo while the server says it can be undone', async () => {
@@ -542,7 +677,9 @@ describe("today's change undone (UNDO) and the full workout back (FULL)", () => 
   test('an undo the server answered without undoing (the day turned meanwhile): not called undone', async () => {
     const still = { ...PROGRAM.week![0], skipped: true, undoable: true };
     mockData = withProgram({ week: [still, THURSDAY] });
-    mockChangeAnswer = () => ({ data: { ...PROGRAM, week: [still, THURSDAY] }, response: { status: 200 } });
+    // As the server answers after midnight: nothing to undo now, its today the next day, the session still skipped and
+    // no longer undoable.
+    mockChangeAnswer = () => ({ data: { ...PROGRAM, today: '2026-09-30', week: [{ ...still, undoable: undefined }, THURSDAY] }, response: { status: 200 } });
     await show();
     await fireEvent.press(await screen.findByLabelText(t('train.undoLabel')));
     expect(await screen.findByText(t('train.notUndone'))).toBeTruthy();

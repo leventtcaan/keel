@@ -11,9 +11,23 @@ import SwapScreen from '@/app/swap';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import type { LocalRecord } from '@/sync/store';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
 
 type Schemas = components['schemas'];
+
+/** A workout of day "a" under way on the phone. */
+const UNDER_WAY: LocalRecord = {
+  seq: 1,
+  clientId: 'w1',
+  kind: 'workout',
+  parentClientId: null,
+  body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+  state: 'PENDING',
+  serverId: null,
+  serverBody: null,
+  errorCode: null,
+};
 
 const planned = (exerciseId: string, swapOptions: string[] = []): Schemas['PlannedExercise'] => ({
   exerciseId,
@@ -49,8 +63,10 @@ const mockPost = jest.fn(async (..._args: unknown[]) => mockAnswer());
 const mockServices = {
   api: { POST: (...args: unknown[]) => mockPost(...args) },
   training: { read: async () => mockData, own: async () => mockOwn },
+  workoutRecords: async () => mockRecords,
 };
 let mockOwn: Move[] = [];
+let mockRecords: LocalRecord[] = [];
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
@@ -76,6 +92,7 @@ beforeEach(() => {
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockParams = { day: 'a', move: 'bench_press' };
   mockOwn = [];
+  mockRecords = [];
   mockAnswer = () => ({ data: PROGRAM, response: { status: 200 } });
 });
 
@@ -186,8 +203,15 @@ test("a move another swap put in today's session: offered from now on, not for t
 });
 
 test("today's workout of that day under way: no today only (the swap is the workout's), from now on still", async () => {
-  // The server says the day's workout is under way (WeekSession.workout); the phone's own records are not asked.
-  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'OPEN' } }] } } };
+  mockRecords = [UNDER_WAY];
+  await show();
+  await fireEvent.press(await screen.findByText('Push-up'));
+  expect(screen.queryByText('Today only')).toBeNull();
+  expect(screen.getByText('From now on')).toBeTruthy();
+});
+
+test('the server says the workout is open on another phone: no today only either, from now on still', async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w9', state: 'OPEN' } }] } } };
   await show();
   await fireEvent.press(await screen.findByText('Push-up'));
   expect(screen.queryByText('Today only')).toBeNull();
@@ -195,8 +219,7 @@ test("today's workout of that day under way: no today only (the swap is the work
 });
 
 test('"Gym is busy" while the workout is under way: said, nothing to pick', async () => {
-  // The server says the day's workout is under way (WeekSession.workout); the phone's own records are not asked.
-  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'OPEN' } }] } } };
+  mockRecords = [UNDER_WAY];
   mockParams = { day: 'a', scope: 'today' };
   await show();
   expect(await screen.findByText(t('todayChange.started'))).toBeTruthy();

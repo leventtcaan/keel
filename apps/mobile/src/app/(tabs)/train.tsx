@@ -20,7 +20,7 @@ import { changeToday } from '@/train/changes';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { movedOffToday, splitName, todaySession, weekRows } from '@/train/week';
+import { movedOffToday, sessionState, splitName, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -32,7 +32,7 @@ type Schemas = components['schemas'];
  * computed here: every date, move and number is the server's.
  */
 export default function TrainScreen() {
-  const { api, training, state } = useAppServices();
+  const { api, training, workoutRecords, state } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
   const { data, reload } = useReadOnFocus(
@@ -40,33 +40,47 @@ export default function TrainScreen() {
       // A state declared, as the phone last knew it (K-518): a busy week brings its least dose (K-528).
       // The user's own moves too: an own program names them by the user's words, never by their id (K-968).
       // This week's call too (a row above the card; K-970).
-      // A workout under way or done is the server's word (WeekSession.workout, K-995), not the phone's own records.
-      const [read, own, declared, decision] = await Promise.all([
+      // A workout under way or done: the phone's records first (sets and a finish may still be in the queue), then the
+      // server's word (WeekSession.workout, K-995) — sessionState.
+      const [read, own, records, declared, decision] = await Promise.all([
         training.read(api),
         training.own(api),
+        workoutRecords(),
         state.current().catch(() => null),
         load(() => api.GET('/v1/decisions/current')),
       ]);
-      return { ...read, own, declared, decision };
-    }, [api, training, state]),
+      return { ...read, own, records, declared, decision };
+    }, [api, training, workoutRecords, state]),
   );
 
-  const program = data?.program.state === 'ready' ? data.program.value : null;
+  // The program the server just answered (an undo, the full workout back), shown until the tab reads again.
+  const [answered, setAnswered] = useState<{ program: Schemas['Program']; over: typeof data } | null>(null);
+  const read = data?.program.state === 'ready' ? data.program.value : null;
+  const program = answered !== null && answered.over === data ? answered.program : read;
   const moves = movesOf(data, data?.own ?? []);
-  // Today's change undone or the full workout back (K-995): one at a time; what came of it said under the card.
+  // Today's change undone or the full workout back (K-995): one at a time (a ref: two taps in one moment both see
+  // state from before either ran); what came of it said under the card.
   const [changing, setChanging] = useState(false);
+  const sending = useRef(false);
   const [notice, setNotice, occurrence] = useProblem();
   const changeToday_ = async (programDayId: string, change: 'UNDO' | 'FULL') => {
-    if (changing) return;
+    if (sending.current || program === null) return;
+    sending.current = true;
     setChanging(true);
+    const before = program;
     const answer = await changeToday(api, programDayId, change);
+    sending.current = false;
     setChanging(false);
-    if (answer.kind !== 'done') setNotice(t(SAID[answer.kind]));
-    // An undo the server answered without undoing (the day turned meanwhile, nothing to undo): never called undone.
-    else if (change === 'UNDO' && answer.program.week?.some((s) => s.programDayId === programDayId && s.undoable === true)) setNotice(t('train.notUndone'));
+    if (answer.kind === 'conflict') setNotice(t(change === 'UNDO' ? 'todayChange.started' : 'train.dayChanged'));
+    else if (answer.kind !== 'done') setNotice(t(SAID[answer.kind]));
     else {
-      setNotice(null);
-      announce(t(change === 'UNDO' ? 'train.undone' : 'train.fullBack'));
+      setAnswered({ program: answer.program, over: data });
+      // An undo the server answered without undoing (the day turned meanwhile, nothing to undo): never called undone.
+      if (change === 'UNDO' && !undone(before, answer.program, programDayId)) setNotice(t('train.notUndone'));
+      else {
+        setNotice(null);
+        announce(t(change === 'UNDO' ? 'train.undone' : 'train.fullBack'));
+      }
     }
     reload();
   };
@@ -107,13 +121,14 @@ export default function TrainScreen() {
     );
   }
 
-  const today = todaySession(program);
-  const active = program.week?.find((s) => s.workout?.state === 'OPEN') ?? null;
+  const session = sessionState({ program, kept: data?.kept === true, records: data?.records ?? [], now: new Date() });
+  const today = session.found;
+  const active = session.onPhone;
   const days = t(program.days.length === 1 ? 'train.days.one' : 'train.days.other', { count: program.days.length });
   const notes = programNotes(program, data?.declared);
   // With no session today (and no week off), any of the week's can be started from its row.
   const pick = today === null && program.restUntil === undefined && active === null;
-  const rows = weekRows(program);
+  const rows = weekRows(program, session.today);
   // The review's changes in force (ADR-073 #3): how many, and the page that undoes each.
   const appliedCount = program.review?.applied.length ?? 0;
   const applied =
@@ -143,7 +158,10 @@ export default function TrainScreen() {
       <TodayCard
         program={program}
         today={today}
-        movedAway={today === null ? movedOffToday(program) : null}
+        date={session.today}
+        status={session.status}
+        stale={session.stale}
+        movedAway={today === null && !session.stale ? movedOffToday(program) : null}
         moves={moves}
         units={units}
         underWay={active !== null}
@@ -183,6 +201,19 @@ export default function TrainScreen() {
 }
 
 /** The tab's frame; with a program, "Edit" beside the title (prototype `#train` › `.tlink`). */
+/**
+ * Whether today's undo did undo: the session no longer skipped, or back off the day it was moved to, on the same day of
+ * the server's. Compared with what was sent, as the server answers 200 with nothing changed when there is nothing to undo.
+ */
+function undone(before: Schemas['Program'], after: Schemas['Program'], programDayId: string): boolean {
+  if (after.today !== before.today) return false;
+  const was = before.week?.find((s) => s.programDayId === programDayId);
+  const now = after.week?.find((s) => s.programDayId === programDayId);
+  if (was === undefined || now === undefined) return false;
+  if (was.skipped === true) return now.skipped !== true;
+  return now.date !== was.date || now.moved !== true;
+}
+
 /** A session of the week that can be started from its row: not skipped, not done already (the server's word). */
 const startable = (session: Schemas['WeekSession']) => session.skipped !== true && session.workout?.state !== 'DONE';
 

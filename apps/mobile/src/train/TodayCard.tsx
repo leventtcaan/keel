@@ -15,19 +15,25 @@ import { dayName, exerciseName, rackNote } from './program';
 import { repCount } from './reps';
 import { swapChoice } from './swap';
 import type { Move } from './trainData';
-import { type Found, sessionMoves, weekdayOf } from './week';
+import { type Found, type SessionStatus, sessionMoves, weekdayOf } from './week';
 
 type Schemas = components['schemas'];
 
 type Props = {
   program: Schemas['Program'];
-  /** The week's session on the server's today; null on a day without one. */
+  /** The week's session on today (sessionState); null on a day without one. */
   today: Found | null;
+  /** Today (sessionState): the server's, or the phone's day when the program is the copy kept offline. */
+  date: string;
+  /** Today's session under way on this phone, done, open on another phone, or none (sessionState). */
+  status: SessionStatus;
+  /** The program is the copy kept offline: its Undo and its full-workout offer were the server's then, not now. */
+  stale: boolean;
   /** The session the server moved off today (`movedFrom`), when today has none. */
   movedAway: Found | null;
   moves: ReadonlyMap<string, Move>;
   units: UnitSystem;
-  /** A workout of the week under way (the server's `workout` OPEN): continued, not started again. */
+  /** A workout under way on this phone (any day's, not finished): continued, never a second started. */
   underWay: boolean;
   /** With no session today, a session of the week below can be started: the rest line says so. */
   canPick: boolean;
@@ -56,8 +62,7 @@ export function TodayCard(props: Props) {
   );
 }
 
-function Body({ program, today, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
-  const date = program.today ?? '';
+function Body({ program, today, date, status, stale, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
   const { color } = useTheme();
   // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
   const opening = useRef(false);
@@ -72,8 +77,9 @@ function Body({ program, today, movedAway, moves, units, underWay, canPick, onSt
     router.push(href);
   };
   const restWeek = program.restUntil !== undefined;
-  const done = today?.session.workout?.state === 'DONE';
-  const session = restWeek || today === null || today.session.skipped === true || done ? null : today;
+  const done = status === 'done';
+  const elsewhere = status === 'openElsewhere';
+  const session = restWeek || today === null || today.session.skipped === true || done || elsewhere ? null : today;
   const shown = session === null ? [] : sessionMoves(session.day, session.session);
   const meta = session === null ? '' : t(shown.length === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count: shown.length });
   const title = session !== null ? dayName(session.day) : today !== null && !restWeek ? dayName(today.day) : t('train.rest');
@@ -81,11 +87,12 @@ function Body({ program, today, movedAway, moves, units, underWay, canPick, onSt
   let line: string | null = null;
   if (restWeek) line = t('train.status.restWeekNote');
   else if (done) line = t('train.doneToday');
+  else if (elsewhere) line = t('train.openElsewhere');
   else if (today?.session.skipped === true) line = t('train.skipped');
   else if (today === null && movedAway !== null) line = t('train.movedTo', { weekday: weekdayShort(movedAway.session.date) });
   else if (today === null) line = t(canPick ? 'train.restDayPick' : 'train.restDay');
   // Undo where the server says today's move or skip can be undone; the full workout back from the short version.
-  const undoable = [today, movedAway].find((f) => f !== null && f.session.undoable === true) ?? null;
+  const undoable = stale || underWay ? null : ([today, movedAway].find((f) => f !== null && f.session.undoable === true) ?? null);
   const undo =
     undoable === null ? null : (
       <Button
@@ -101,7 +108,7 @@ function Body({ program, today, movedAway, moves, units, underWay, canPick, onSt
   const cardio = program.cardio?.sessions.find((s) => s.weekday === weekdayOf(date) && s.place === 'AFTER_LIFT');
   const short = session?.session.short === true;
   const full =
-    session !== null && short && !underWay ? (
+    session !== null && short && !underWay && !stale ? (
       <Button label={t('train.full')} variant="ghost" size="sm" disabled={onChange === null} onPress={() => onChange?.(session.day.id, 'FULL')} />
     ) : null;
   const held = program.loadHeldSince !== undefined;
