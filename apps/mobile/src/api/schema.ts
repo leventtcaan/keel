@@ -885,7 +885,14 @@ export interface paths {
         get: operations["getWorkout"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Discard a workout and its sets (K-998, ADR-075
+         * @description The workout and every set of it are gone: the week no longer counts it, progress and records no longer read it,
+         *     and a target it set (a finished session of the program, or one closed by itself) goes as an edit that deletes all
+         *     its sets does (K-432); a target a newer session set stays. NOT_FOUND for a workout not the user's, or one already
+         *     discarded: a repeat changes nothing.
+         */
+        delete: operations["deleteWorkout"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2396,6 +2403,11 @@ export interface components {
              *     the one given; with one, replaces it. Never logged; not sent to an AI without its consent (V2).
              */
             note?: string;
+            /**
+             * @description How long the session was paused (K-998, ADR-075 #5: Pause stops the time). More than endedAt − startedAt is
+             *     VALIDATION_FAILED. Absent: 0, or, on a later finish, the one given before.
+             */
+            pausedSeconds?: number;
         };
         Workout: {
             /** Format: uuid */
@@ -2409,6 +2421,8 @@ export interface components {
             programDayId?: string;
             /** @description The session's note, given at the finish (WorkoutFinish.note). */
             note?: string;
+            /** @description How long the session was paused, given at the finish (WorkoutFinish.pausedSeconds); 0 when never. This server always sends it. */
+            pausedSeconds?: number;
             sets: components["schemas"]["LoggedSet"][];
             /** @description Present only on a session imported from another app's export (K-615); the engine never reads it. */
             importedFrom?: components["schemas"]["ImportSource"];
@@ -2520,6 +2534,11 @@ export interface components {
         WorkoutSummary: {
             /** Format: uuid */
             workoutId: string;
+            /**
+             * @description The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
+             *     Absent while the session is open.
+             */
+            minutes?: number;
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
@@ -4557,6 +4576,27 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Workout"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discarded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };
