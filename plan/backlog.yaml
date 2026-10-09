@@ -4662,3 +4662,22 @@ tasks:
     tests: ["Ekran testleri (sunucuda OPEN, telefonda yok → Continue setleri getirir)"]
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
     learn: ["Sunucu durumundan yerel durum kurmak"]
+
+  - id: K-1000
+    title: "Karar ekranı için sunucu alanları: değişenler, neden olguları, varsayılan uygulanır, 1. hafta gün önerisi, gözlem günü"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-962, K-963, K-995]
+    why: "K-978 (9 Eki): ADR-077 #3 karar ekranı 'değişen hedefler (eski → yeni) · iki neden (veri + kural) · In this week's plan (varsayılan uygulanmış)' ve #4/Ek 1 '1. hafta gün seçimi, öneri dolu' istiyor; sunucu bunların hiçbirini göndermiyor (yalnız eylem ve reason.rule); karar PENDING kalıyor; observationDays ilk karardan sonra okunamıyor. Telefon geriye hesaplarsa kural işletir"
+    acceptance:
+      - "`Decision.changes[] {what, before, after}` (kalori, adım, hareket hedefi: '72.5 × 9 → 72.5 × 8'); DECLINED'da yürürlükteki değer (`inForce`)"
+      - "`Reason` başına veri satırı için olgular (ör. hareket, yük, tekrar, seans sayısı; sayılar sunucudan); telefon `decision.rule.<rule>.short` şablonuyla yazar (kısa metinler en.json'a, tire yok)"
+      - "Varsayılan uygulanır (ADR-077 #3, B11, Levent KABUL): check-in cevabıyla oluşan kalori/yük kararı uygulanmış gelir; 1. hafta gün değişikliği uygulanmaz, kullanıcının dokunuşu (Ek 1); güvenlik kararı da uygulanır ve declinable değil"
+      - "1. hafta kararında `suggested: Weekday[]` (MoveMissedSessions, AddTrainingDay); günü kaydetmek K-995 B PATCH ile (gün taşı/ekle)"
+      - "Gözlem günü (`observationDays`) 1. hafta kararında okunur (FirstWeeks ya da karar)"
+    tests: ["DecisionService tablo testleri (değişenler, olgular, varsayılan uygulama, öneri günleri), API testleri (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Ekranın ihtiyacını sözleşmeye taşımak"]
