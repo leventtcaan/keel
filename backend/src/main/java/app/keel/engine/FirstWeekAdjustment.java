@@ -117,9 +117,12 @@ public final class FirstWeekAdjustment {
     }
 
     /**
-     * Where the missed sessions could go (K-1000, ADR-077 Ek 4; a suggestion the user changes, never a rule of the call):
-     * for each missed day in the week's order, the first free day after it in the week, else the week's first free day;
-     * never a training day, never a day twice. As many as there are free days; none without the training weekdays.
+     * Where the missed sessions could go (K-1000; a suggestion the user changes, never a rule of the call): for each missed
+     * day in the week's order, the first free day after it in the week, else the week's first free day; never a training
+     * day, never a day twice. As many as there are free days; none without the training weekdays.
+     *
+     * <p>Source (U14): a product decision, the product owner ACCEPTED it on 2026-10-10, recorded in ADR-077 Ek 4. No research file has a
+     * rule for which day, so it carries no [tecrube]/[literatur] tag.
      */
     static List<DayOfWeek> movedTo(Week week) {
         List<DayOfWeek> free = free(week);
@@ -132,8 +135,9 @@ public final class FirstWeekAdjustment {
     }
 
     /**
-     * The days to add (K-1000, ADR-077 Ek 4): each the free day with the most rest on both sides of it, the week going
-     * round (Sunday to Monday is one day), the earliest on a tie; one for each day added, as many as are free.
+     * The days to add (K-1000): each the free day with the most rest on both sides of it, the week going round (Sunday to
+     * Monday is one day), the earliest on a tie; one for each day added, as many as are free. Source (U14): the same product
+     * decision as {@link #movedTo}, ADR-077 Ek 4 (accepted 2026-10-10).
      */
     static List<DayOfWeek> added(Week week, int count) {
         List<DayOfWeek> training = new ArrayList<>(week.weekdays());

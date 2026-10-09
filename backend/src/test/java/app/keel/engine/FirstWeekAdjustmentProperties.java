@@ -100,6 +100,19 @@ class FirstWeekAdjustmentProperties {
     }
 
     @Property
+    void asManyDaysAreSuggestedAsTheCallNeedsAndTheWeekHasFree(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
+        int free = week.weekdays().isEmpty() ? 0 : DayOfWeek.values().length - week.weekdays().size();
+        FirstWeekAdjustment.decide(week, feel, MONDAY, P).map(Decision::action).ifPresent(action -> {
+            switch (action) {
+                case Action.MoveMissedSessions move -> assertThat(move.suggested()).hasSize(Math.min(move.missed().size(), free));
+                case Action.AddTrainingDay add -> assertThat(add.suggested()).hasSize(Math.min(add.toDays() - week.trainingDays(), free));
+                default -> {
+                }
+            }
+        });
+    }
+
+    @Property
     void theSameWeekGivesTheSameCall(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
         assertThat(FirstWeekAdjustment.decide(week, feel, MONDAY, P)).isEqualTo(FirstWeekAdjustment.decide(week, feel, MONDAY, P));
     }

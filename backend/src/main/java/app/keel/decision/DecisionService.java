@@ -243,15 +243,23 @@ class DecisionService {
         if (call.application() != CallStore.Application.PENDING) {
             return call;
         }
+        return appliedAsMade(() -> apply(account, call.id())) ? calls.byId(account, call.id()).orElse(call) : call;
+    }
+
+    /**
+     * Runs the apply of a call just made: true when it moved the plan; false when it could not now (CONFLICT: the call stays
+     * PENDING as made, nothing changed); anything else (not found, no consent) is not swallowed.
+     */
+    static boolean appliedAsMade(Runnable apply) {
         try {
-            apply(account, call.id());
+            apply.run();
+            return true;
         } catch (ApiException notNow) {
             if (notNow.code() != ErrorCode.CONFLICT) {
                 throw notNow;
             }
-            return call;
+            return false;
         }
-        return calls.byId(account, call.id()).orElse(call);
     }
 
     /** The profile, today and the week on the user's calendar, the body, the weights, and what the data says (look, waist). */
@@ -558,7 +566,7 @@ class DecisionService {
 
     /**
      * Puts the plan back as it was before the call (kept in the audit trail). Undone twice, nothing more changes. The hard
-     * stop is CONFLICT: it is not taken back (ADR-020 L-1).
+     * stop and any call resting on the safety net are CONFLICT: not taken back (ADR-020 L-1, U13).
      */
     @Transactional
     PlanTargets undo(AccountId account, UUID id) {
@@ -567,7 +575,7 @@ class DecisionService {
         if (call.application() == CallStore.Application.UNDONE) {
             return targetsAfter(account);
         }
-        if (call.application() != CallStore.Application.APPLIED || !PlanChange.undoable(DecisionJson.action(call.decision()))) {
+        if (call.application() != CallStore.Application.APPLIED || !undoable(call)) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         if (calls.markUndone(account, id, clock.instant())) {
@@ -575,6 +583,14 @@ class DecisionService {
             training.undo(account, id);
         }
         return targetsAfter(account);
+    }
+
+    /**
+     * Whether an applied call can be taken back: the hard stop never (ADR-020 L-1), nor any call resting on the safety net
+     * (U13). A safety call is applied by default (K-1000) and is not declined; an undo would be a decline by another name.
+     */
+    static boolean undoable(CallStore.Call call) {
+        return PlanChange.undoable(DecisionJson.action(call.decision())) && !SafetyCalls.restsOnTheSafetyNet(call.decision());
     }
 
     /**
@@ -640,6 +656,14 @@ class DecisionService {
             sent.put("facts", facts);
             return sent;
         }).toList();
+    }
+
+    /** What the call changed in the plan, old to new (K-1000), the step target read as the plan holds it (the starting one before any is set). */
+    List<Map<String, Object>> changes(CallStore.Call call) {
+        if (call.snapshot() == null) {
+            return List.of();
+        }
+        return CallChanges.of(call, parameters.forSex(call.snapshot().sex()));
     }
 
     /** The first week's watch days, on the call that closes it (K-1000, ADR-077 #4): the user's sex's, as the call read it. */

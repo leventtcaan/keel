@@ -122,7 +122,7 @@ ekran testleri: Today kelime bütçesi, karar ekranında dört parça.
   gönderim ilk haftayı ve 1. hafta kararını ikinci kez açmaz, ilk 8 hafta sayacı geri gitmez). `onboarded_at` ve `plan_seen_at` dışa
   aktarılır (profil bölümü, `onboardedAt`, `planSeenAt`).
 
-## Ek 4 · Karar ekranının sunucu alanları (K-1000, 2026-10-10, agent, teknik; gün öneri kuralı için ürün onayı bekliyor)
+## Ek 4 · Karar ekranının sunucu alanları (K-1000, 2026-10-10, agent, teknik; gün öneri kuralı ürün kararı: **Levent KABUL, 2026-10-10**)
 Karar ekranı (#3) ve 1. hafta gün seçimi (#4, Ek 1) telefonda hesap istemez (U1; telefon kural işletmez); sözleşme (`contracts/openapi.yaml`) şunu taşır:
 - **Değişenler:** `Decision.changes[] {what: CALORIES|STEPS|PHASE, before, after, inForce?}`; kararın kendi kaydından ve planın önce/sonrasından
   okunur, karar uygulandıktan sonra dolar (uygulanmamış ya da hedef değiştirmeyen karar için boş). DECLINED'da `inForce` yürürlükteki (geçen
@@ -141,9 +141,25 @@ Karar ekranı (#3) ve 1. hafta gün seçimi (#4, Ek 1) telefonda hesap istemez (
     (iki yanında en çok dinlenme); eşitlikte en erken gün; hiçbiri antrenman günü değil. Ekleme sırasıyla seçilir (seçilen gün sonrakinin
     hesabında antrenman günü sayılır).
   - Antrenman günleri bilinmiyorsa (bu alanı kaydetmeden verilmiş eski karar) öneri boş döner; uydurulmaz.
-  - **Kaynak: yok [ürün kararı, Levent onayı bekliyor].** Güray omurgasında gün aralığı için kural bulunmadı (G6 K-36 haftada gün SAYISINI söyler,
-    hangi gün olduğunu değil; `program_frequency` "kas haftada iki kez" der, gün dağılımını değil). Gerekçe yalnız mantık: ardışık antrenman
-    günleri yerine arası açık günler dinlenmeyi bölüştürür. Onaylanırsa aralık kuralı ayrı bir motor kuralı olarak `kural-ekle` ile (kaynak + parametre + test) yazılır; bugünkü sıralama onun ilk hali sayılır. Onay gelmeden bu öneri ekranda "öneri" olarak kalır, karar değildir.
+  - **Kaynak (U14): ürün kararı, Levent KABUL (10 Eki 2026); bu ADR bu kuralın kaynağıdır.** Güray omurgasında gün aralığı için kural
+    bulunmadı (G6 K-36 haftada gün SAYISINI söyler, hangi gün olduğunu değil; `program_frequency` "kas haftada iki kez" der, gün dağılımını
+    değil), bu yüzden araştırma etiketi ([tecrübe]/[literatür]) taşımaz. Gerekçe mantık: ardışık antrenman günleri yerine arası açık
+    günler dinlenmeyi bölüştürür. Öneri kullanıcının değiştirebileceği bir başlangıçtır, kararın parçası değildir (U2). Motor kodu
+    (`FirstWeekAdjustment.movedTo/added`) kaynağı bu ADR'ye bağlar. Aralık kuralı bir gün gerçek bir motor kuralı olursa `kural-ekle` ile
+    (kaynak + parametre + test) yazılır; bugünkü sıralama onun ilk hali sayılır.
+  - Eski biçimli saklanmış 1. hafta kararında `suggested` yoktur: gönderilirken boş liste eklenir (`SourceView.sent`), sözleşme zorunlu kılar.
+- **Değişenlerin okunuşu:** hedef planın yürürlükteki değeriyle okunur: adım hedefi hiç kurulmamışsa başlangıç hedefidir
+  (`steps_target_start`), böylece ilk "more movement" kararı bir değişikliktir (7000 → 10000); ilk tartıdan önce başlamış planın kalori
+  hedefi yoktur, yönü değiştiren karar onu kurar: `before` boş değerdir (`{}`, "yürürlükte hedef yoktu"), değişiklik atlanmaz. Geri
+  alınmış (UNDONE) ya da "eski plan" seçilmiş (DECLINED) kararda `inForce` = `before` (plan karardan önceki haline döndü).
+- **Güvenlik kararı geri alınmaz (U13):** varsayılan uygulanan güvenlik kararı (`SafetyNet.RULES` ya da sert durdurma) ne `decline` ne
+  `undo` ile geri alınır (CONFLICT, aynı yanıt); aksi halde undo, decline'ın arka kapısı olurdu.
+- **Güvenlik kararının olgusu:** `rapid_loss` ve `loss_rate_cap` karar penceresini okumaz (bir hafta ve sekiz hafta öncesinin trendine
+  bakar); pencere sayısı onların okuduğu sayı olmazdı (U1). Yalnız adımın büyüklüğü (`kcal`) gelir; kuralın okuduğu oranı karara
+  taşımak motorun `Reason`/`Decision` kaydını genişletmeyi gerektirir, gerekirse ayrı iş.
+- **Bilinen sınır:** `observationDays` kararın saklı parametre özetini (`parametersHash`) değil, çalışan parametre setini okur;
+  `maintenance_observation_days` değişirse eski bir 1. hafta kararı yeni değeri söyler. Parametre sürümlerinin saklanması (özetten
+  geri okuma) ayrı bir iş; bugün tek sürüm yüklü olduğundan sapma yok.
 - **Kısa neden satırı:** `Reason.facts` (kararın kendi kaydından, kuralın okuduğu sayılar: `kgPerWeek` (bir ondalık, işaret okunduğu gibi),
   `weeks`, `done`, `planned`, `sessions`, `kcal`) sunucudan gelir; metin `data/copy/en.json` içinde `decision.ruleShort.<rule>` anahtarıyla
   her motor kuralı için bir şablondur (`decision.rule.<rule>` uzun cümlenin kısası). Şablon yalnız kendi kuralının facts adlarını yer tutucu

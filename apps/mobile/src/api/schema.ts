@@ -1416,7 +1416,8 @@ export interface paths {
         /**
          * Put the targets back as they were before the call was applied (kept in the audit trail)
          * @description Only the latest call, and only once APPLIED; undone twice, nothing more changes. An undone call is not applied
-         *     again (CONFLICT). The call keeps appliedAt and undoneAt.
+         *     again (CONFLICT). The call keeps appliedAt and undoneAt. A call resting on the safety net, and the hard stop, are
+         *     never taken back (CONFLICT, U13): as with decline, applied by default and kept.
          */
         post: operations["undoDecision"];
         delete?: never;
@@ -2987,8 +2988,8 @@ export interface components {
              * @description What the call changes in the plan, old to new (K-1000, ADR-077 #3 "the targets that change"): each target it
              *     moves, as the plan held it before the call and as the call set it: read from the call as kept, the plan before and
              *     after it, set once it was applied (by default, ADR-077 #3). Empty for a call never applied, and for one that
-             *     changes no target (advice, "not yet", a program call: the program's own change is its words). Declined, each
-             *     change also says `inForce`: the value the plan follows now (last week's).
+             *     changes no target (advice, "not yet", a program call: the program's own change is its words). Declined or undone,
+             *     each change also says `inForce`: the value the plan follows now (last week's, the plan before the call).
              */
             changes: components["schemas"]["DecisionChange"][];
             /**
@@ -3001,6 +3002,8 @@ export interface components {
         /**
          * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
          *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
+         *     The step target before any was set is the starting one. An empty `before` (and `inForce`) means none was in force: a
+         *     plan begun before the first weigh-in has no calorie target until a call starts one.
          */
         DecisionChange: {
             /** @enum {string} */
