@@ -40,6 +40,7 @@ import java.util.function.BiFunction;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,6 +68,18 @@ class ProgramController {
     record OwnProgram(List<OwnDay> days) {
     }
 
+    /** Contract EditedExercise (K-995): {@code id} the program's row of the move, null for a new one. */
+    record EditedExercise(UUID id, String exerciseId, Integer sets, Reps reps) {
+    }
+
+    /** Contract EditedProgramDay: {@code id} the program's day, null for a new one; {@code name} null keeps the day's own. */
+    record EditedProgramDay(UUID id, String name, DayOfWeek weekday, List<EditedExercise> exercises) {
+    }
+
+    /** Contract ProgramEdit (PATCH /v1/program). */
+    record ProgramEdit(List<EditedProgramDay> days) {
+    }
+
     /** Contract StartingWeights: a move's load the user knows, in kg. */
     record StartingWeight(String exerciseId, BigDecimal kg) {
     }
@@ -75,13 +88,13 @@ class ProgramController {
     }
 
     /**
-     * Contract PlannedExercise; {@code sets} is this week's (a deload lowers it, K-217), {@code baseSets} the program's;
+     * Contract PlannedExercise; {@code id} its program row (K-995; none on a move swapped in for today); {@code sets} is this week's (a deload lowers it, K-217), {@code baseSets} the program's;
      * {@code rackEnds} true only when the target shown stopped at the ceiling (K-534), absent otherwise. The in-session
      * table (K-960, ADR-075 #3) — {@code lighterLoadKg}, {@code heavierLoadKg}, {@code calibrationStepKg} (Ek 1),
      * {@code lastBestSet}, {@code nextLoadAtTopKg} — each absent where there is none (SessionTable).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record PlannedExercise(String exerciseId, int baseSets, int sets, Reps reps, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
+    record PlannedExercise(UUID id, String exerciseId, int baseSets, int sets, Reps reps, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
             Boolean rackEnds, BigDecimal lighterLoadKg, BigDecimal heavierLoadKg, BigDecimal calibrationStepKg, BestSet lastBestSet,
             BigDecimal nextLoadAtTopKg, List<String> swapOptions) {
     }
@@ -299,6 +312,32 @@ class ProgramController {
     }
 
     /**
+     * The program edited in place by its day and move ids (K-995, ADR-073 #4, Ek 7): the same limits as the user's own
+     * program; each move kept as its row while it is the same move, the program its source; the edit a change of the log.
+     * PUT stays the whole replace (onboarding, K-968).
+     */
+    @PatchMapping("/v1/program")
+    Program edit(AccountId account, @RequestBody ProgramEdit edit) {
+        require(edit.days() != null && !edit.days().isEmpty() && edit.days().size() <= DayOfWeek.values().length);
+        Set<DayOfWeek> weekdays = new HashSet<>();
+        List<ProgramEdits.Day> days = edit.days().stream().map(day -> {
+            require(day != null && (day.name() == null ? day.id() != null : !day.name().isBlank() && day.name().length() <= limits.maxDayName()));
+            require(day.weekday() == null || weekdays.add(day.weekday()));
+            require(day.exercises() != null && !day.exercises().isEmpty() && day.exercises().size() <= limits.maxDayExercises());
+            return new ProgramEdits.Day(day.id(), day.name() == null ? null : day.name().strip(), day.weekday(), day.exercises().stream().map(exercise -> {
+                require(exercise != null && exercise.exerciseId() != null
+                        && (catalog.find(exercise.exerciseId()).isPresent() || customs.find(account, exercise.exerciseId()).isPresent())
+                        && exercise.sets() != null && exercise.sets() >= 1 && exercise.sets() <= limits.maxPlannedSets() && exercise.reps() != null
+                        && exercise.reps().min() != null && exercise.reps().max() != null && exercise.reps().min() >= 1
+                        && exercise.reps().max() >= exercise.reps().min() && exercise.reps().max() <= limits.maxReps());
+                return new ProgramEdits.Move(exercise.id(), exercise.exerciseId(), exercise.sets(), exercise.reps().min(), exercise.reps().max());
+            }).toList());
+        }).toList();
+        return view(account, reviews.edit(account, days, parametersFor(account).wholeNumber(ParameterKey.TARGET_RIR_MAX), today(account),
+                zone(account)));
+    }
+
+    /**
      * The loads an experienced user knows (ADR-072 #5): each is its move's first target on every day the move is planned
      * with a range starting at or under the reps the load was given for, as the gym in use makes it, replacing those given
      * before. Only a move of the program whose load the engine progresses (an isolation move has no target, Progression),
@@ -340,13 +379,14 @@ class ProgramController {
     Program applyReview(AccountId account, @RequestBody ReviewApply request) {
         List<String> picks = request.suggestionIds();
         require(request.reviewId() != null && picks != null && !picks.isEmpty() && !picks.contains(null) && Set.copyOf(picks).size() == picks.size());
-        return view(account, reviews.apply(account, request.reviewId(), picks, parametersFor(account)));
+        return view(account, reviews.apply(account, request.reviewId(), picks, parametersFor(account), today(account), zone(account)));
     }
 
     /** "N changes applied · Undo" (ADR-073 #3): one change, or every change in force. */
     @PostMapping("/v1/program/review/undo")
     ReviewUndone undoReview(AccountId account, @RequestBody ReviewUndo request) {
-        ProgramReviews.Undone undone = reviews.undo(account, Optional.ofNullable(request.changeId()), parametersFor(account));
+        ProgramReviews.Undone undone = reviews.undo(account, Optional.ofNullable(request.changeId()), parametersFor(account), today(account),
+                zone(account));
         return new ReviewUndone(view(account, undone.program()), undone.alsoUndone());
     }
 
@@ -432,7 +472,7 @@ class ProgramController {
             int thisWeeksSets = TrainingChanges.sets(planned.sets(), lighter);
             Optional<TrainingLog.WorkSet> best = SessionTable.best(lastSessions.getOrDefault(planned.exerciseId(), List.of()));
             Table table = table(planned, next, best, held, thisWeeksSets, back);
-            return new PlannedExercise(planned.exerciseId(), planned.sets(), thisWeeksSets,
+            return new PlannedExercise(planned.id(), planned.exerciseId(), planned.sets(), thisWeeksSets,
                     new Reps(planned.repMin(), planned.repMax()), planned.targetRir(), next.map(NextTargets.Target::loadKg).orElse(null),
                     next.map(NextTargets.Target::reps).orElse(null), next.filter(NextTargets.Target::rackEnds).map(target -> Boolean.TRUE).orElse(null),
                     table.lighterKg(), table.heavierKg(), table.calibrationStepKg(), best.map(BestSet::of).orElse(null),
