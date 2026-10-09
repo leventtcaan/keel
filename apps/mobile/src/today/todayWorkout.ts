@@ -1,9 +1,11 @@
 /**
  * Today's workout on This week (K-969, ADR-077 #1): which card shows, read from what is already known. A workout under way
- * on this phone (its own records, K-405, K-961) comes first; then a workout finished today (the server's list of the
- * day, or the phone's own record whose finish waits to be sent: offline, the session is still done); then this week's
- * session as the server laid it out (Program.week, K-964: today's, its short version, skipped, or moved to another day);
- * a week off; rest. Nothing here decides a session or a date.
+ * on this phone (its own records, K-405, K-961) comes first; then one finished on this phone whose finish may still wait
+ * to be sent (offline, the session is still done); then the server's word on today's session (WeekSession.workout,
+ * K-995: DONE, or OPEN on another phone); then this week's session as the server laid it out (Program.week, K-964:
+ * today's, skipped, or moved to another day, each undoable when the server says so); a week off; rest. Nothing here
+ * decides a session or a date. "Today" is still the phone's calendar day the lists were asked for; K-995 Program.today
+ * replaces it once K-970's shared helper (src/train/week.ts) reads it.
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';

@@ -1,9 +1,9 @@
 /**
  * This week (K-969, ADR-077 #1): which face the screen shows, read from what the server said. The week is the server's:
- * its Monday from the consistency (Consistency.weekOf), before the first call from the dates the program's sessions are
- * on this week (Program.week), its number from the first eight weeks (FirstWeeks.week) and the record from the
- * consistency. The phone lays that week's days out and counts the days to a date the server gave (ADR-077 Ek 2); it
- * works out no week, no call day and no state.
+ * its Monday from the program (Program.weekOf, K-995), else the consistency (Consistency.weekOf), its number from the
+ * first eight weeks (FirstWeeks.week) and the record from the consistency. The phone lays that week's days out and
+ * counts the days to a date the server gave (ADR-077 Ek 2); it works out no week, no call day and no state. Today is
+ * still the phone's calendar day until K-970's shared helper reads Program.today (K-995).
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
@@ -113,9 +113,13 @@ export function heroOf(data: TodayData): Hero {
 
 export type WeekLogs = { workouts: Loaded<Schemas['Workout'][]>; weighIns: Loaded<Schemas['WeighIn'][]> };
 
-/** The week's workouts and weigh-ins, Monday to today; the weigh-ins are health data (CONSENT_REQUIRED without it). */
+/**
+ * The week's workouts and weigh-ins, Monday to today; the weigh-ins are health data (CONSENT_REQUIRED without it). The
+ * Monday is the server's and today still the phone's (K-995 Program.today replaces it with K-970's shared helper): a
+ * Monday after today (the server already in a new week) reads today alone, never a range that turns over.
+ */
 export async function loadWeekLogs(api: ApiClient, monday: string, today: string): Promise<WeekLogs> {
-  const query = { from: monday, to: today };
+  const query = { from: monday <= today ? monday : today, to: today };
   const [workouts, weighIns] = await Promise.all([
     load(() => api.GET('/v1/workouts', { params: { query } })),
     load(() => api.GET('/v1/weigh-ins', { params: { query } })),
