@@ -5,6 +5,7 @@
  * through the phone's queue (K-304), so it all works offline.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { AccessibilityInfo, AppState } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -1562,16 +1563,127 @@ describe('Pause and Resume (K-972, ADR-075 #5): the time stops, and goes on from
     expect(mockPause?.pause.pausedAt).toBeNull();
   });
 
-  test('paused before the first set: the workout it starts keeps the pause', async () => {
-    mockRecords = lastWeek();
-    mockParams = { day: 'day-a' };
+  test('paused before the first set and still paused: the first set starts the workout with the pause kept, then goes on', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      mockRecords = lastWeek();
+      mockParams = { day: 'day-a' };
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await pause();
+      jest.setSystemTime(Date.now() + 30_000);
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+      await screen.findByText(t('workout.log', { number: 2 }));
+      const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
+      expect(mockPause?.workout).toBe(workout?.kind === 'workout' ? workout.body.clientId : 'none');
+      expect(mockPause?.pause.pausedAt).toBeNull();
+      expect(mockPause?.pause.pausedMs).toBeGreaterThanOrEqual(30_000);
+      expect(mockPause?.pause.pausedMs).toBeLessThan(35_000);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('resumed, a rest the pause ended does not come back, nor its alert', async () => {
+    open(5);
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest');
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(1);
+    await pause();
+    await resume();
+    expect(screen.queryByTestId('rest')).toBeNull();
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(1);
+  });
+
+  test('paused while the set is being kept: no rest starts inside the pause', async () => {
+    open(5);
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    mockRecord.mockImplementationOnce(async (outbound: Outbound) => {
+      await gate;
+      return keep(outbound);
+    });
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await pause();
+    await act(async () => release());
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.queryByTestId('rest')).toBeNull();
+    expect(mockServices.restAlert.start).not.toHaveBeenCalled();
+    expect(screen.getByText(t('workout.paused'))).toBeOnTheScreen();
+  });
+
+  test('a warm-up logged while paused: the session goes on', async () => {
+    open(5);
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
     await pause();
-    await resume();
-    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
-    await screen.findByText(t('workout.log', { number: 2 }));
-    const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
-    expect(mockPause?.workout).toBe(workout?.kind === 'workout' ? workout.body.clientId : 'none');
+    await fireEvent.press(screen.getByText('Log warm-up 1'));
+    await screen.findByText('Log warm-up 2');
+    expect(screen.queryByText(t('workout.paused'))).toBeNull();
+  });
+
+  test('one Resume, the header\'s, a full touch target; the paused line only says so', async () => {
+    open(5);
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.getByRole('button', { name: t('workout.pauseLabel') })).toHaveStyle({ minHeight: tokens.size.touch });
+    await pause();
+    expect(within(screen.getByTestId('rest-slot')).queryByRole('button')).toBeNull();
+    expect(screen.getAllByRole('button', { name: t('workout.resumeLabel') })).toHaveLength(1);
+  });
+
+  test('pausing and resuming are said (K-815), and the time says it is paused', async () => {
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    try {
+      open(5);
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await pause();
+      expect(said).toHaveBeenLastCalledWith(t('workout.paused'));
+      const time = screen.getByTestId('session-clock').props.children as string;
+      expect(screen.getByLabelText(t('workout.clock.pausedLabel', { time }))).toBeOnTheScreen();
+      await resume();
+      expect(said).toHaveBeenLastCalledWith(t('workout.resumed'));
+    } finally {
+      said.mockRestore();
+    }
+  });
+
+  test('resumed, the time goes on from where it stood: it never steps back to a tick before', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      open(5);
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await pause();
+      const stopped = clockSeconds();
+      jest.setSystemTime(Date.now() + 60_000); // no tick in between
+      await resume();
+      await act(async () => jest.advanceTimersByTime(0));
+      expect(clockSeconds()).toBe(stopped);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('back in front after a while, the time is the real one at once', async () => {
+    const listen = jest.spyOn(AppState, 'addEventListener');
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      open(5);
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      const before = clockSeconds();
+      jest.setSystemTime(Date.now() + 10 * 60_000); // the app was away: no tick
+      const onChange = listen.mock.calls.map(([, handler]) => handler).at(-1);
+      await act(async () => onChange?.('active'));
+      expect(clockSeconds() - before).toBeGreaterThanOrEqual(600);
+      expect(clockSeconds() - before).toBeLessThan(605);
+    } finally {
+      jest.useRealTimers();
+      listen.mockRestore();
+    }
   });
 });

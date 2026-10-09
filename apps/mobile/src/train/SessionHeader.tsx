@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -33,8 +33,20 @@ export function SessionHeader({ since, onEnd, pause, onPause, subtitle }: Props)
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(tick);
+    // Back in front, the time is now's at once, not the last tick's before the app went away.
+    const shown = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setNow(Date.now());
+    });
+    return () => {
+      clearInterval(tick);
+      shown.remove();
+    };
   }, []);
+  // Paused or resumed, from this moment at once: a tick up to a second old would set the time back.
+  useEffect(() => {
+    const at = setTimeout(() => setNow(Date.now()), 0);
+    return () => clearTimeout(at);
+  }, [pause.pausedAt]);
   // Paused, the time is where the pause began; the pauses before it are not the session's.
   const at = pause.pausedAt ?? now;
   const time = since === null ? null : clockText(Math.max(0, Math.floor((at - since - pausedFor(pause, at)) / 1000)));
@@ -43,7 +55,7 @@ export function SessionHeader({ since, onEnd, pause, onPause, subtitle }: Props)
     time === null ? null : (
       <Text
         testID="session-clock"
-        accessibilityLabel={t('workout.clock.label', { time })}
+        accessibilityLabel={t(paused ? 'workout.clock.pausedLabel' : 'workout.clock.label', { time })}
         style={[styles.clock, { color: color.text }, paused && styles.dim]}>
         {time}
       </Text>

@@ -451,10 +451,12 @@
     "resume": "Resume",
     "resumeLabel": "Resume the workout",
     "paused": "Paused. Take your time.",
+    "resumed": "Resumed.",
     "clock": {
       "minutes": "{minutes}:{seconds}",
       "hours": "{hours}:{minutes}:{seconds}",
-      "label": "Workout time {time}"
+      "label": "Workout time {time}",
+      "pausedLabel": "Workout time {time}, paused"
     },
     "dot": "{name}, {status}",
     "goal": {

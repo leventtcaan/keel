@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ProblemText } from '@/components/ProblemText';
+import { ProblemText, announce } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 
 import { Button } from '@/components/Button';
@@ -94,8 +94,10 @@ function Session() {
   };
   // The session's start while nothing is kept yet: the moment it was opened, which its first set keeps as its start.
   const [openedAt] = useState(() => Date.now());
-  // Pause and Resume (K-972): kept with the open workout, so it is still paused when opened again.
-  const [pause, setPause] = useState<Pause>(NOT_PAUSED);
+  // Pause and Resume (K-972): kept with the open workout, so it is still paused when opened again. The ref is the pause
+  // as it is now, for what a save does once its awaits are over (a Pause pressed meanwhile counts).
+  const [pause, setPauseState] = useState<Pause>(NOT_PAUSED);
+  const pauseRef = useRef<Pause>(NOT_PAUSED);
   // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
   // clock tells nothing. Closing or filling it in from here is K-972.
   const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
@@ -125,7 +127,8 @@ function Session() {
         const paused = open === null ? NOT_PAUSED : await sessionPause.read(open.clientId);
         setData(read);
         setOwn(mine);
-        setPause(paused);
+        pauseRef.current = paused;
+        setPauseState(paused);
         setRecords(kept);
       })
       .catch((error: unknown) => {
@@ -226,19 +229,27 @@ function Session() {
     const clientId = newClientId();
     await queue.record({ kind: 'workout', body: { clientId, startedAt: new Date(openedAt).toISOString(), programDayId } });
     // A pause before the first set is the session's too.
-    if (pause.pausedAt !== null || pause.pausedMs > 0) await sessionPause.keep(clientId, pause);
+    const before = pauseRef.current;
+    if (before.pausedAt !== null || before.pausedMs > 0) await sessionPause.keep(clientId, before);
     return clientId;
   };
 
   /** Pause, or Resume: paused, the rest is over and its alert with it. Kept with the workout once there is one. */
   const keepPause = (next: Pause, workoutClientId: string | null) => {
-    setPause(next);
+    pauseRef.current = next;
+    setPauseState(next);
     if (workoutClientId !== null) void sessionPause.keep(workoutClientId, next).catch(named);
+    // Said, not only shown (K-815): the time stopping or going on is no change VoiceOver would notice.
+    announce(t(next.pausedAt === null ? 'workout.resumed' : 'workout.paused'));
   };
   const togglePause = () => {
-    const next = toggle(pause, new Date().getTime());
+    const next = toggle(pauseRef.current, new Date().getTime());
     if (next.pausedAt !== null) endRest();
     keepPause(next, active?.clientId ?? null);
+  };
+  /** A set or a warm-up logged while paused: the session goes on, from the tap. */
+  const goOn = () => {
+    if (pauseRef.current.pausedAt !== null) keepPause(toggle(pauseRef.current, new Date().getTime()), active?.clientId ?? null);
   };
 
   const log = async () => {
@@ -250,12 +261,12 @@ function Session() {
     }
     saving.current = true;
     setBusy(true);
+    goOn();
     let saved = false;
-    let workoutClientId: string | null = null;
     try {
       // The workout this set belongs to: the one under way as last read, or — read again, as a set that failed after its
       // workout was kept, or another screen, may have started one since — none yet, and this set starts it.
-      workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? (await start(day.id));
+      const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? (await start(day.id));
       // The warm-ups waiting go first, under their own ids: one already saved before a failure is not saved twice.
       for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
       setHeld([]);
@@ -267,14 +278,14 @@ function Session() {
       setProblem({ row: rowKey, text: t('workout.saveFailed') });
     }
     if (saved) {
-      // A set logged while paused: the session goes on.
-      if (pause.pausedAt !== null) keepPause(toggle(pause, new Date().getTime()), workoutClientId);
+      // Paused while the set was being kept: no rest starts inside the pause (nor its alert).
+      const resting = pauseRef.current.pausedAt === null;
       if (group === undefined) {
         // The move's last set (C4, ADR-075 #1): no rest, the move stays with Next. A move outside the plan is never done.
         if (planned !== undefined && plan.current === plan.rows.length - 1) {
           endRest();
           setPicked(move.id);
-        } else setRest(new Date().getTime());
+        } else if (resting) setRest(new Date().getTime());
       } else {
         // In a superset the partner comes next (a one-sided move's right side first); the rest comes after the round,
         // unless the round was the group's last.
@@ -286,7 +297,7 @@ function Session() {
           groupDone = found.next === null;
           setPicked(found.next ?? move.id);
         }
-        if (roundDone && !groupDone) setRest(new Date().getTime());
+        if (roundDone && !groupDone && resting) setRest(new Date().getTime());
         // A set inside a round ends the last round's rest: its timer goes, and its alert must not sound mid-round (K-411).
         else endRest();
       }
@@ -308,6 +319,7 @@ function Session() {
     if (warmup === undefined) return;
     saving.current = true;
     setBusy(true);
+    goOn();
     try {
       const sets = warmupSets(warmup, move, warmedUp).map((set) => ({ clientId: newClientId(), ...set }));
       const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? null;
@@ -581,10 +593,10 @@ function Session() {
     </View>
   );
   // Paused (K-972, prototype `.pausebar`): said in the rest's place, with the way back.
+  // Only what it is: the one Resume is the header's (a full touch target, one label).
   const pausedBar = (
     <View style={[styles.pausedBar, { backgroundColor: color.surface }]}>
       <Text style={[styles.text, styles.grow, { color: color.text }]}>{t('workout.paused')}</Text>
-      <Button label={t('workout.resume')} accessibilityLabel={t('workout.resumeLabel')} size="sm" onPress={togglePause} />
     </View>
   );
   const dock =
