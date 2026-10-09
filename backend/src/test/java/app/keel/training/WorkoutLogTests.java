@@ -37,6 +37,9 @@ class WorkoutLogTests {
     @Autowired
     ApplicationContext context;
 
+    @Autowired
+    TrainingLog log;
+
     @Test
     void theCatalogIsServed() throws Exception {
         List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
@@ -125,6 +128,55 @@ class WorkoutLogTests {
         assertThat(mvc.delete().uri("/v1/workouts/" + workout + "/sets/" + set).header("Authorization", bearer(account)).exchange())
                 .hasStatus(204);
         assertThat((List<?>) map(get(account, "/v1/workouts/" + workout)).get("sets")).isEmpty();
+    }
+
+    @Test
+    void aWorkoutCanBeDiscardedWithItsSetsAndTheWeekNoLongerCountsIt() throws Exception {
+        // K-998 (ADR-075 #5, Discard): a workout whose sets reached the server is gone, sets and all.
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account, "2026-09-30T15:40:00Z");
+        assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 80, 8, 1))).hasStatus(201);
+        java.time.Instant from = java.time.Instant.parse("2026-09-28T00:00:00Z");
+        java.time.Instant to = java.time.Instant.parse("2026-10-05T00:00:00Z");
+        assertThat(log.workoutStarts(account, from, to)).hasSize(1);
+
+        assertThat(delete(account, "/v1/workouts/" + workout)).hasStatus(204);
+
+        assertThat(get(account, "/v1/workouts/" + workout)).hasStatus(404);
+        assertThat(list(get(account, "/v1/workouts?from=2026-09-30&to=2026-09-30"))).isEmpty();
+        assertThat(log.workoutStarts(account, from, to)).isEmpty();
+        assertThat(log.workingSets(account, "bench_press", from, to)).isEmpty();
+    }
+
+    @Test
+    void anotherAccountsWorkoutCannotBeDiscardedAndADiscardSentTwiceChangesNothing() throws Exception {
+        AccountId owner = TestSessions.newAccount();
+        String workout = start(owner, "2026-09-30T15:40:00Z");
+
+        assertThat(delete(TestSessions.newAccount(), "/v1/workouts/" + workout)).hasStatus(404);
+        assertThat(get(owner, "/v1/workouts/" + workout)).hasStatusOk();
+
+        assertThat(delete(owner, "/v1/workouts/" + workout)).hasStatus(204);
+        assertThat(delete(owner, "/v1/workouts/" + workout)).hasStatus(404);
+    }
+
+    @Test
+    void theFinishKeepsHowLongTheSessionWasPausedWithinItsLength() throws Exception {
+        // K-998 (ADR-075 #5: Pause stops the time): kept and read back; never more than the session lasted.
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account, "2026-09-30T15:40:00Z");
+        String finish = "/v1/workouts/" + workout + "/finish";
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("pausedSeconds", 0);
+
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "pausedSeconds", -1))).as("negative").hasStatus(400);
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "pausedSeconds", 3601))).as("longer than the session")
+                .hasStatus(400);
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "pausedSeconds", 600))).hasStatusOk();
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("pausedSeconds", 600);
+
+        // A later finish without it (a replay, a corrected end) keeps it.
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:45:00Z"))).hasStatusOk();
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("pausedSeconds", 600);
     }
 
     @Test
@@ -218,6 +270,10 @@ class WorkoutLogTests {
     private MvcTestResult post(AccountId account, String uri, Object body) {
         return mvc.post().uri(uri).header("Authorization", bearer(account)).contentType(MediaType.APPLICATION_JSON)
                 .content(JSON.writeValueAsString(body)).exchange();
+    }
+
+    private MvcTestResult delete(AccountId account, String uri) {
+        return mvc.delete().uri(uri).header("Authorization", bearer(account)).exchange();
     }
 
     private MvcTestResult get(AccountId account, String uri) {

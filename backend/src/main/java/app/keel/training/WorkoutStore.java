@@ -23,10 +23,10 @@ class WorkoutStore {
      * {@code note}s are the user's own words (K-422): kept and handed back, never logged (V3). {@code uncleanExerciseIds}:
      * the finish's answer on form (G6 K-31), kept so a target derived again after an edit holds them as the finish did
      * (K-432). {@code importedFrom}: the app a session imported from another app's export came from (K-615); none for
-     * a session logged in the app.
+     * a session logged in the app. {@code pausedSeconds}: how long it was paused, given at the finish (K-998).
      */
     record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<String> uncleanExerciseIds,
-            ImportSource importedFrom) {
+            ImportSource importedFrom, int pausedSeconds) {
     }
 
     /** A set of an imported session as the file had it: no reps in reserve, side or note (K-615). */
@@ -117,14 +117,27 @@ class WorkoutStore {
 
     /**
      * A finish without a note keeps the one given before (a replay, a corrected end time); one with a note replaces it.
-     * The answer on form is the latest finish's.
+     * The time paused likewise (K-998). The answer on form is the latest finish's.
      */
-    void finish(AccountId account, UUID id, Instant endedAt, String note, Set<String> uncleanExerciseIds) {
+    void finish(AccountId account, UUID id, Instant endedAt, String note, Set<String> uncleanExerciseIds, Integer pausedSeconds) {
         jdbc.sql("""
-                update training.workout set ended_at = :at, note = coalesce(:note, note), unclean_exercise_ids = :unclean
+                update training.workout set ended_at = :at, note = coalesce(:note, note), unclean_exercise_ids = :unclean,
+                paused_seconds = coalesce(:paused, paused_seconds)
                 where id = :id and account_id = :account""")
                 .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("note", note).param("unclean", uncleanExerciseIds.stream().sorted().toArray(String[]::new))
-                .param("id", id).param("account", account.value()).update();
+                .param("paused", pausedSeconds).param("id", id).param("account", account.value()).update();
+    }
+
+    /** Discards a workout with its sets (K-998, on delete cascade); false when there was none of the account's to discard. */
+    boolean delete(AccountId account, UUID id) {
+        return jdbc.sql("delete from training.workout where id = :id and account_id = :account")
+                .param("id", id).param("account", account.value()).update() == 1;
+    }
+
+    /** Every set of the workout, before it is discarded: the targets it set are derived again from none (K-998). */
+    void deleteSets(AccountId account, UUID workout) {
+        jdbc.sql("delete from training.workout_set where workout_id = :workout and account_id = :account")
+                .param("workout", workout).param("account", account.value()).update();
     }
 
     /**
@@ -175,7 +188,7 @@ class WorkoutStore {
         return new Workout(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
                 row.getObject("started_at", OffsetDateTime.class).toInstant(), ended == null ? null : ended.toInstant(),
                 row.getObject("program_day_id", UUID.class), row.getString("note"), List.of((String[]) row.getArray("unclean_exercise_ids").getArray()),
-                importedFrom == null ? null : ImportSource.valueOf(importedFrom));
+                importedFrom == null ? null : ImportSource.valueOf(importedFrom), row.getInt("paused_seconds"));
     }
 
     private static LoggedSet loggedSet(ResultSet row) throws SQLException {

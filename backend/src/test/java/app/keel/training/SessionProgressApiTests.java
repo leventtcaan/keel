@@ -564,6 +564,51 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void aDiscardedSessionTakesTheTargetsItSetWithIt() throws Exception {
+        // K-998: none is left standing on a session that is gone, as when every set of it is deleted (K-432).
+        AccountId account = withAProgram();
+        String workout = start(account, recently);
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+        assertThat(planned(account, 0)).containsKeys("nextLoadKg", "nextReps");
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + workout, null)).hasStatus(204);
+
+        assertThat(planned(account, 0)).doesNotContainKeys("nextLoadKg", "nextReps");
+    }
+
+    @Test
+    void discardingAnOlderSessionLeavesTheTargetTheNewerOneSet() throws Exception {
+        AccountId account = withAProgram();
+        String older = start(account, recently.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        String newer = start(account, recently);
+        sets(account, newer, "bench_press", 3, 62.5, 8, "BOTH");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+        List<Object> target = next(account, 0);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + older, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(target);
+    }
+
+    @Test
+    void anUnfinishedSessionDiscardedLeavesTheTargetsAsTheyWere() throws Exception {
+        AccountId account = withAProgram();
+        String done = start(account, recently.minus(java.time.Duration.ofDays(1)));
+        sets(account, done, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, done, List.of())).hasStatusOk();
+        List<Object> target = next(account, 0);
+        String open = start(account, recently);
+        sets(account, open, "bench_press", 3, 65, 10, "BOTH");
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + open, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(target);
+    }
+
+    @Test
     void editingAnOlderSessionLeavesTheTargetTheNewerOneSet() throws Exception {
         AccountId account = withAProgram();
         String older = start(account, recently.minus(java.time.Duration.ofDays(7)));

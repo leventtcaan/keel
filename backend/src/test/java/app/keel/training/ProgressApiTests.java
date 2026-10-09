@@ -94,6 +94,21 @@ class ProgressApiTests {
     }
 
     @Test
+    void aSummarysMinutesAreTheSessionsActiveTimeAndNoneWhileItIsOpen() throws Exception {
+        // K-998: the time paused is not the session's (ADR-075 #5, user test C14).
+        AccountId account = withAProgram();
+        Instant at = clock.instant().minus(Duration.ofDays(2));
+        String workout = start(account, at);
+        sets(account, workout, "bench_press", 1, 60, 8, 1, "WORKING");
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout + "/summary"))).doesNotContainKey("minutes");
+
+        assertThat(send("POST", account, "/v1/workouts/" + workout + "/finish",
+                Map.of("endedAt", at.plus(Duration.ofMinutes(55)).toString(), "pausedSeconds", 300))).hasStatusOk();
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout + "/summary"))).containsEntry("minutes", 50);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void progressHasEachProgramMoveWithItsBaselineBestEffortAndTheLiftsStronger() throws Exception {
         AccountId account = withAProgram();

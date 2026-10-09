@@ -86,8 +86,11 @@ class WorkoutController {
     record NewWorkout(UUID clientId, Instant startedAt, UUID programDayId) {
     }
 
-    /** {@code uncleanExerciseIds}: the moves whose form was not clean (G6 K-31) — their load and reps are held (K-217). */
-    record Finish(Instant endedAt, List<String> uncleanExerciseIds, String note) {
+    /**
+     * {@code uncleanExerciseIds}: the moves whose form was not clean (G6 K-31) — their load and reps are held (K-217).
+     * {@code pausedSeconds}: how long it was paused (K-998), within its length.
+     */
+    record Finish(Instant endedAt, List<String> uncleanExerciseIds, String note, Integer pausedSeconds) {
     }
 
     /** {@code supersetId}: the superset the set belongs to, made by the phone (K-424, ADR-035). */
@@ -100,8 +103,8 @@ class WorkoutController {
      * move a target of its day — one that came from it or an older session, or a move with none yet (K-432).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<LoggedSet> sets,
-            ImportSource importedFrom, Boolean setsNextTargets) {
+    record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, int pausedSeconds,
+            List<LoggedSet> sets, ImportSource importedFrom, Boolean setsNextTargets) {
     }
 
     /** Contract LoggedSet. */
@@ -168,14 +171,32 @@ class WorkoutController {
     Workout finish(AccountId account, @PathVariable UUID id, @RequestBody Finish finish) {
         WorkoutStore.Workout workout = owned(account, id);
         require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()) && limits.fits(finish.note()));
+        require(finish.pausedSeconds() == null || finish.pausedSeconds() >= 0
+                && finish.pausedSeconds() <= java.time.Duration.between(workout.startedAt(), finish.endedAt()).toSeconds());
         List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
         // No contains(null): an immutable list (the default here) throws on it.
         // A catalog move, or one of the user's own (K-424): an off-program move is accepted and has no target to hold.
         require(unclean.stream().allMatch(exercise -> exercise != null && (catalog.find(exercise).isPresent() || customs.find(account, exercise).isPresent()))
                 && Set.copyOf(unclean).size() == unclean.size());
         // Kept with the next session's load and reps of the day's planned moves (K-217).
-        progress.finish(account, workout, finish.endedAt(), TrainingLimits.note(finish.note()), Set.copyOf(unclean));
+        progress.finish(account, workout, finish.endedAt(), TrainingLimits.note(finish.note()), Set.copyOf(unclean), finish.pausedSeconds());
         return read(account, owned(account, id));
+    }
+
+    /**
+     * Discards a workout (K-998, ADR-075 #5): its sets go first and its targets are derived again from none, as an edit
+     * deleting all of them does (K-432: a target a newer session set stays; an open session set none), then the workout.
+     * Held as a change of its sets is, so a close by itself or a finish under way is waited for. The week and progress
+     * read the log, so they no longer count it. A repeat finds none: NOT_FOUND, nothing changed.
+     */
+    @DeleteMapping("/v1/workouts/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    void discard(AccountId account, @PathVariable UUID id) {
+        WorkoutStore.Workout workout = held(account, id);
+        store.deleteSets(account, id);
+        progress.edited(account, workout);
+        store.delete(account, id);
     }
 
     /** A set of a finished session (one forgotten, K-416) derives its targets again, in the same transaction (K-432). */
@@ -235,7 +256,7 @@ class WorkoutController {
         Boolean setsNextTargets = workout.endedAt() == null || workout.programDayId() == null ? null
                 : ProgramStore.movesATarget(targetSources.getOrDefault(workout.programDayId(), List.of()), workout.startedAt());
         return new Workout(workout.id(), workout.clientId(), workout.startedAt(), workout.endedAt(), workout.programDayId(), workout.note(),
-                store.sets(workout.id()).stream().map(LoggedSet::of).toList(), workout.importedFrom(), setsNextTargets);
+                workout.pausedSeconds(), store.sets(workout.id()).stream().map(LoggedSet::of).toList(), workout.importedFrom(), setsNextTargets);
     }
 
     private static void require(boolean valid) {

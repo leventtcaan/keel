@@ -43,8 +43,8 @@ class ProgressController {
 
     /** Contract WorkoutSummary. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record WorkoutSummary(UUID workoutId, BigDecimal liftedKg, Integer liftedChangePercent, int workingSets, List<SetMark> marks, LocalDate weekOf,
-            List<ProgressSummary.MuscleSets> muscles) {
+    record WorkoutSummary(UUID workoutId, Integer minutes, BigDecimal liftedKg, Integer liftedChangePercent, int workingSets, List<SetMark> marks,
+            LocalDate weekOf, List<ProgressSummary.MuscleSets> muscles) {
     }
 
     /** Contract DatedSet. */
@@ -114,7 +114,9 @@ class ProgressController {
         List<ProgressReads.Row> upToThis = rows.stream().filter(row -> !row.set().at().isAfter(workout.startedAt())).toList();
         List<ProgressSummary.MuscleSets> week = muscles(programs.current(account), calls.changes(account), upToThis, day, zone, parameters(account));
         int workingSets = ProgressSummary.counted(sets).values().stream().mapToInt(Integer::intValue).sum();
-        return new WorkoutSummary(id, lifted, ProgressSummary.changePercent(lifted, previous).orElse(null), workingSets, marks,
+        // The session's active time (K-998); none while it is open.
+        Integer minutes = workout.endedAt() == null ? null : ProgressSummary.activeMinutes(workout.startedAt(), workout.endedAt(), workout.pausedSeconds());
+        return new WorkoutSummary(id, minutes, lifted, ProgressSummary.changePercent(lifted, previous).orElse(null), workingSets, marks,
                 ProgressSummary.monday(day), week.stream().filter(muscle -> trained.contains(muscle.muscle())).toList());
     }
 
