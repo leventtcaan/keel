@@ -154,6 +154,19 @@ export function createTrainingCache(kv: KeyValue, onProgram?: (program: Schemas[
         return null; // a copy that cannot be read is no copy
       }
     },
+    /**
+     * The program as kept on this phone, without asking the server (the Train tab's offline copy); none kept (or
+     * unreadable): null. This week reads it when the server's program cannot be read, as the Train tab does.
+     */
+    async keptProgram(): Promise<Schemas['Program'] | null> {
+      const copy = await kv.getItemAsync(PROGRAM);
+      if (copy === null) return null;
+      try {
+        return JSON.parse(copy) as Schemas['Program'];
+      } catch {
+        return null; // a copy that cannot be read is no copy
+      }
+    },
     /** A move just saved (K-416): kept at once from the server's answer, so the next read offline has it. */
     async saved(move: Schemas['CustomExercise']): Promise<void> {
       const startedIn = generation;

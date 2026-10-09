@@ -112,6 +112,8 @@ const mockServices = {
   opens: { previous: async () => null },
   // The phone's own records: a workout under way (K-405, K-961).
   workoutRecords: jest.fn(async (): Promise<unknown[]> => []),
+  // The program the Train tab keeps for offline (K-405): none unless a test keeps one.
+  training: { keptProgram: jest.fn(async (): Promise<Schemas['Program'] | null> => null) },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
@@ -163,6 +165,7 @@ function firstWeek() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockServices.training.keptProgram.mockImplementation(async () => null);
   mockPost = ok({});
   ordinaryWeek();
 });
@@ -478,6 +481,14 @@ describe("today's workout (#home)", () => {
     expect(day('2026-12-25')).toBe('Friday, planned, today');
   });
 
+  test("one today on the whole screen: the hero's days to the next call and the week's logs read the server's day, not the phone's", async () => {
+    onPhone(new Date(2026, 11, 26, 0, 30)); // Saturday 00:30 on the phone; the user's calendar is still Friday
+    await show();
+    expect(screen.getByText(t('thisWeek.hero.inDays', { count: 3 }))).toBeOnTheScreen(); // 28 Dec from Friday 25, not from Saturday
+    expect(mockGET).toHaveBeenCalledWith('/v1/workouts', { params: { query: { from: '2026-12-21', to: '2026-12-25' } } });
+    expect(mockGET).toHaveBeenCalledWith('/v1/weigh-ins', { params: { query: { from: '2026-12-21', to: '2026-12-25' } } });
+  });
+
   test('moved today and undoable: "Undo" on the card puts the week back (UNDO, K-995)', async () => {
     mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true, movedFrom: '2026-12-25', undoable: true });
     await show();
@@ -605,6 +616,41 @@ describe("today's workout (#home)", () => {
     await show();
     expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+  });
+
+  test("another day's session finished here while today's is planned: done, no Start (one rule with the Train card)", async () => {
+    mockServices.workoutRecords.mockResolvedValueOnce([
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-25T08:00:00Z', programDayId: 'b' }),
+      record(2, 'finish', 'f1', 'wo', { endedAt: '2026-12-25T09:00:00Z', uncleanExerciseIds: [] }),
+    ]);
+    await show();
+    expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+  });
+
+  describe('the program cannot be read (offline)', () => {
+    const finishedOffline = [
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-25T08:00:00Z', programDayId: 'c' }),
+      record(2, 'finish', 'f1', 'wo', { endedAt: '2026-12-25T09:00:00Z', uncleanExerciseIds: [] }),
+    ];
+
+    test('a workout finished here is still done, with no copy of the program kept', async () => {
+      mockAnswers['/v1/program'] = 'offline';
+      mockServices.workoutRecords.mockResolvedValueOnce(finishedOffline);
+      await show();
+      expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+    });
+
+    test("with the copy the Train tab keeps: the session it names, done from the phone's records, and no Undo of the server's old word", async () => {
+      mockAnswers['/v1/program'] = 'offline';
+      mockServices.training.keptProgram.mockResolvedValue({ ...PROGRAM, week: [...(PROGRAM.week ?? []).slice(0, 2), { programDayId: 'c', date: '2026-12-25', exerciseIds: FRIDAY_MOVES, skipped: true, undoable: true }] });
+      await show();
+      expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull();
+      expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+      mockServices.workoutRecords.mockResolvedValueOnce(finishedOffline);
+      await act(async () => mockRefocus());
+      expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+    });
   });
 
   test('a workout left open: "Open workout · Continue" back into it, with the sets logged', async () => {
