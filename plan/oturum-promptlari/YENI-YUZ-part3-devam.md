@@ -41,3 +41,11 @@ TDD (assertion RED) · metin en.json, tire yok, kelime bütçesi · telefon kura
 auto-merge yok (düzenleyici açar) · rapor: PR, kontroller, kabul ↔ test, kararlar, simülatör için uçlar/durumlar.
 Süreç dersleri: yığılı PR + squash → üstteki PR'ı yalnız kendi commit'leriyle `origin/main`'e rebase; aynı anda en çok 3 uygulayıcı; birleştirmeden önce
 `gh pr update-branch`; tam jest yük altında meal/onboarding zaman aşımına düşer → `-i` ya da `-w 2 --testTimeout=20000` ile yeniden.
+
+## Cihaz turuna (K-984) bakılacaklar
+- Seans: aktif set iPhone SE'de (667pt) ilk görünümde tam görünüyor mu (üstteki dinlenme yuvası ~60pt boş); 375pt'de "102.5" kesilmiyor mu; klavye "Log set"i örtmüyor mu (KeyboardAvoidingView).
+
+## Devam sonrası (9 Eki öğle) olanlar
+- #500 simülatörde görüldü (prototip sırası, "180", simgeler) → auto-merge. K-971 ajanı K-998'e (#507: DELETE workout + finish pausedSeconds) geçti, sonra K-972 P1-P4.
+- K-969 metin kararları (5) onaylandı. K-972 kararları: Discard yeni uç (K-998), set düzelt/sil PENDING yerelde / SYNCED çevrimiçi, duraklama özet ve Health'ten düşer, analiz satırı yeniden hesabı K-973'e.
+
