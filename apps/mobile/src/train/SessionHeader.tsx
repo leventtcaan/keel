@@ -17,8 +17,8 @@ type Props = {
   onEnd: () => void;
   /** The session's pause (K-972): its time is not the session's, and while paused the time stands still. */
   pause: Pause;
-  /** Pause, or Resume while paused: on the right, opposite End. */
-  onPause: () => void;
+  /** Pause, or Resume while paused: on the right, opposite End. Null where there is nothing to pause (a workout just discarded). */
+  onPause: (() => void) | null;
   /** Under the time: the day and how far into it. */
   subtitle?: ReactNode;
 };
@@ -60,6 +60,17 @@ export function SessionHeader({ since, onEnd, pause, onPause, subtitle }: Props)
         {time}
       </Text>
     );
+  const pauseButton =
+    onPause === null ? null : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t(paused ? 'workout.resumeLabel' : 'workout.pauseLabel')}
+        onPress={onPause}
+        hitSlop={tokens.space.sm}
+        style={({ pressed }) => [styles.control, pressed && styles.dim]}>
+        <Text style={[styles.end, { color: color.accent }]}>{t(paused ? 'workout.resume' : 'workout.pause')}</Text>
+      </Pressable>
+    );
   return (
     <View testID="session-header" style={styles.bar}>
       <View style={styles.side}>
@@ -77,14 +88,7 @@ export function SessionHeader({ since, onEnd, pause, onPause, subtitle }: Props)
         {subtitle}
       </View>
       <View style={[styles.side, styles.right]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t(paused ? 'workout.resumeLabel' : 'workout.pauseLabel')}
-          onPress={onPause}
-          hitSlop={tokens.space.sm}
-          style={({ pressed }) => [styles.control, pressed && styles.dim]}>
-          <Text style={[styles.end, { color: color.accent }]}>{t(paused ? 'workout.resume' : 'workout.pause')}</Text>
-        </Pressable>
+        {pauseButton}
       </View>
     </View>
   );

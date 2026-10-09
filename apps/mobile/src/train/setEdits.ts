@@ -17,16 +17,18 @@ import type { LocalRecord, RecordStore } from '@/sync/store';
 type NewSet = components['schemas']['NewSet'];
 
 type Options = {
-  store: Pick<RecordStore, 'find' | 'insert' | 'replacePending' | 'forgetPending' | 'forgetClient' | 'moveTo' | 'replaceWith'>;
+  store: Pick<RecordStore, 'find' | 'insert' | 'replacePending' | 'forgetPending' | 'forgetClient' | 'moveTo' | 'replaceWith' | 'forgetWithChildren'>;
   queue: Pick<SyncQueue, 'exclusive'>;
   /** DELETE /v1/workouts/{id}/sets/{setId}: resolves once the server has it no more; throws otherwise. */
   deleteOnServer: (workoutServerId: string, setServerId: string) => Promise<void>;
+  /** DELETE /v1/workouts/{id} (K-998): resolves once the server has it no more; throws otherwise. */
+  deleteWorkoutOnServer: (workoutServerId: string) => Promise<void>;
   newClientId: () => string;
 };
 
 export type SetEdits = ReturnType<typeof createSetEdits>;
 
-export function createSetEdits({ store, queue, deleteOnServer, newClientId }: Options) {
+export function createSetEdits({ store, queue, deleteOnServer, deleteWorkoutOnServer, newClientId }: Options) {
   /** Steps 1-4 above, the queue held; `next` null deletes. The set as it was, for Undo. */
   const change = (clientId: string, next: NewSet | null): Promise<LocalRecord | null> =>
     queue.exclusive(async (sendPending) => {
@@ -59,5 +61,26 @@ export function createSetEdits({ store, queue, deleteOnServer, newClientId }: Op
       if ((await store.find(gone.clientId)) === null) await store.moveTo(clientId, gone.seq);
     });
 
-  return { change, restore };
+  /**
+   * A workout discarded (K-972, K-998), the same way: the queue held, never sent then gone from the phone; else sent
+   * first if it waits, deleted on the server (its sets with it), then gone from the phone with its sets in one step.
+   * Offline once it may be there, it fails and nothing changes here. One the server refused goes from the phone only.
+   */
+  const discard = (workoutClientId: string): Promise<void> =>
+    queue.exclusive(async (sendPending) => {
+      const workout = await store.find(workoutClientId);
+      if (workout === null) return;
+      if (workout.state === 'PENDING' && workout.attempted !== true) {
+        // Never tried: its sets were not either (a set goes only after its workout is on the server).
+        await store.forgetWithChildren(workoutClientId);
+        return;
+      }
+      if (workout.state === 'PENDING') await sendPending();
+      const sent = await store.find(workoutClientId);
+      if (sent?.state === 'SYNCED' && sent.serverId !== null) await deleteWorkoutOnServer(sent.serverId);
+      else if (sent?.state !== 'REJECTED') throw new NoAnswer('the workout may be on the server, and it cannot be reached');
+      await store.forgetWithChildren(workoutClientId);
+    });
+
+  return { change, restore, discard };
 }

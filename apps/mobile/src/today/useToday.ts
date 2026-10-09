@@ -43,7 +43,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
             named(error);
             return [];
           });
-        const active = activeWorkout(records);
+        const active = activeWorkout(records, Date.now());
         // A finish waiting on this phone (offline) is done before the server says DONE (the card reads its word, K-995).
         const doneToday = finishedOnPhone(records, day);
         const planned = today.program.state === 'ready' ? today.program.value : null;

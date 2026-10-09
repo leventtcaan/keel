@@ -8,6 +8,7 @@ import type { components } from '@/api/schema';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 
+import { workoutParams } from './params';
 import { noteOf } from './session';
 
 type Schemas = components['schemas'];
@@ -54,15 +55,25 @@ export const setsOf = (records: LocalRecord[], workoutClientId: string) =>
     .map((r) => r.body as NewSet);
 
 /**
+ * Whether a workout started at `startedAt` has been open longer than the server keeps one open
+ * (unfinished_session_close_hours, K-961): by `now` it is closed there already, with no end known.
+ */
+export function openTooLong(startedAt: string, now: number): boolean {
+  return Date.parse(startedAt) < now - workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
+}
+
+/**
  * The newest workout, while it has no finish, with its sets in the order they were done. Only the newest: an older one
  * left open (a double tap on Start) does not come back once the newest is finished or refused (K-405 review). A finish the server
- * refused does not count, so the workout can be finished again.
+ * refused does not count, so the workout can be finished again. Given `now`, a workout left open past the server's close
+ * is retired (K-972): the server closed it, and it would hold the Train tab for good. Its records stay and sync as they are.
  */
-export function activeWorkout(records: LocalRecord[]): ActiveWorkout | null {
+export function activeWorkout(records: LocalRecord[], now?: number): ActiveWorkout | null {
   const finished = new Set(records.filter((r) => r.kind === 'finish' && kept(r)).map((r) => r.parentClientId));
   const open = records.filter((r) => r.kind === 'workout').sort((a, b) => b.seq - a.seq)[0];
   if (open === undefined || !kept(open) || finished.has(open.clientId)) return null;
   const body = open.body as Schemas['NewWorkout'];
+  if (now !== undefined && openTooLong(body.startedAt, now)) return null;
   return { clientId: open.clientId, startedAt: body.startedAt, programDayId: body.programDayId ?? null, sets: setsOf(records, open.clientId) };
 }
 
@@ -190,9 +201,17 @@ export function sessionMoves(day: Schemas['ProgramDay'], week: Schemas['WeekSess
   });
 }
 
-/** The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31). */
-export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string): Outbound {
+/**
+ * The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31), with the time
+ * paused (K-998), whole seconds, when there was any.
+ */
+export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string, pausedSeconds = 0): Outbound {
   const words = noteOf(note);
-  const body = { endedAt: at.toISOString(), uncleanExerciseIds: [...new Set(unclean)], ...(words === null ? {} : { note: words }) };
+  const body = {
+    endedAt: at.toISOString(),
+    uncleanExerciseIds: [...new Set(unclean)],
+    ...(words === null ? {} : { note: words }),
+    ...(pausedSeconds > 0 ? { pausedSeconds } : {}),
+  };
   return { kind: 'finish', clientId, workoutClientId, body };
 }

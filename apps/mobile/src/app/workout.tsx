@@ -19,6 +19,7 @@ import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { DoneSets } from '@/train/DoneSets';
 import { EditSet } from '@/train/EditSet';
+import { EndSheet } from '@/train/EndSheet';
 import { FinishForm } from '@/train/FinishForm';
 import { GoalLine } from '@/train/GoalLine';
 import { MoveDots } from '@/train/MoveDots';
@@ -33,7 +34,7 @@ import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
-import { NOT_PAUSED, type Pause, toggle } from '@/train/pause';
+import { NOT_PAUSED, type Pause, pausedFor, toggle } from '@/train/pause';
 import type { Skips } from '@/train/skips';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
@@ -42,7 +43,7 @@ import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
 import { todayFor } from '@/train/week';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
-import { type ExercisePlan, NONE_SKIPPED, activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
+import { type ExercisePlan, NONE_SKIPPED, activeWorkout, extraPlan, finishRecord, lastTime, openTooLong, planExercise, sessionMoves } from '@/train/workout';
 
 /**
  * The session (K-405, prototype 2.4, B §6.5): the day's moves; the move under way with its rows — the server's next
@@ -109,9 +110,19 @@ function Session() {
   // A set done being corrected (K-972): the set and its number as shown.
   const [editing, setEditing] = useState<{ set: components['schemas']['NewSet']; number: string } | null>(null);
   // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
-  // clock tells nothing. Closing or filling it in from here is K-972.
-  const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
+  // clock tells nothing. It can only be finished or discarded (K-972): the server closed it, nothing is left to fill in later.
   const [finishing, setFinishing] = useState(false);
+  // End's three ways out (K-972); a workout just discarded, kept on the screen for Undo.
+  const [ending, setEnding] = useState(false);
+  const [discarded, setDiscarded] = useState<{
+    startedAt: string;
+    programDayId: string | null;
+    sets: components['schemas']['NewSet'][];
+    pause: Pause;
+    skips: Skips;
+    /** The ids it comes back under, made once: an Undo that failed half way and is tried again adds nothing twice. */
+    back: { workout: string; sets: string[] };
+  } | null>(null);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
   const [sessionNote, setSessionNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -130,10 +141,13 @@ function Session() {
   const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
   // A failed read back is not a failed save: the set is kept; the screen catches up at the next read.
   const refresh = useCallback(() => workoutRecords().then(setRecords).catch(named), [workoutRecords, named]);
+  // The workout under way. Opened on a day to start it, one left open past the server's close is not under way: it is
+  // closed there, and would hold the screen on a day gone (K-972); opened to continue, it is shown so it can be ended.
+  const underWay = useCallback((kept: LocalRecord[]) => activeWorkout(kept, opened === undefined ? undefined : openedAt), [opened, openedAt]);
   useEffect(() => {
     void Promise.all([training.read(api), training.own(api), workoutRecords()])
       .then(async ([read, mine, kept]) => {
-        const open = activeWorkout(kept);
+        const open = underWay(kept);
         const paused = open === null ? NOT_PAUSED : await sessionPause.read(open.clientId);
         const skipped = open === null ? {} : await sessionSkips.read(open.clientId);
         setSkips(skipped);
@@ -147,11 +161,11 @@ function Session() {
         named(error);
         setFailed(true);
       });
-  }, [api, training, workoutRecords, named, sessionPause, sessionSkips]);
+  }, [api, training, workoutRecords, named, sessionPause, sessionSkips, underWay]);
 
-  const active = records === null ? null : activeWorkout(records);
+  const active = records === null ? null : underWay(records);
   const startedAt = active === null ? null : Date.parse(active.startedAt);
-  const stale = startedAt !== null && startedAt < openedAt - closeMs;
+  const stale = active !== null && openTooLong(active.startedAt, openedAt);
   const program = data?.program.state === 'ready' ? data.program.value : null;
   // The workout under way decides the day; otherwise the day the session was opened on, not kept until a set is logged.
   const dayId = active === null ? (opened ?? null) : active.programDayId;
@@ -255,10 +269,13 @@ function Session() {
   };
 
   /** Pause, or Resume: paused, the rest is over and its alert with it. Kept with the workout once there is one. */
-  const keepPause = (next: Pause, workoutClientId: string | null) => {
+  const holdPause = (next: Pause, workoutClientId: string | null) => {
     pauseRef.current = next;
     setPauseState(next);
     if (workoutClientId !== null) void sessionPause.keep(workoutClientId, next).catch(named);
+  };
+  const keepPause = (next: Pause, workoutClientId: string | null) => {
+    holdPause(next, workoutClientId);
     // Said, not only shown (K-815): the time stopping or going on is no change VoiceOver would notice.
     announce(t(next.pausedAt === null ? 'workout.resumed' : 'workout.paused'));
   };
@@ -286,7 +303,7 @@ function Session() {
     try {
       // The workout this set belongs to: the one under way as last read, or — read again, as a set that failed after its
       // workout was kept, or another screen, may have started one since — none yet, and this set starts it.
-      const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? (await start(day.id));
+      const workoutClientId = active?.clientId ?? underWay(await workoutRecords())?.clientId ?? (await start(day.id));
       // The warm-ups waiting go first, under their own ids: one already saved before a failure is not saved twice.
       for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
       setHeld([]);
@@ -345,7 +362,7 @@ function Session() {
     goOn();
     try {
       const sets = warmupSets(warmup, move, warmedUp).map((set) => ({ clientId: newClientId(), ...set }));
-      const workoutClientId = active?.clientId ?? activeWorkout(await workoutRecords())?.clientId ?? null;
+      const workoutClientId = active?.clientId ?? underWay(await workoutRecords())?.clientId ?? null;
       if (workoutClientId === null) setHeld((waiting) => [...waiting, ...sets]);
       else for (const set of sets) await queue.record({ kind: 'set', workoutClientId, body: set });
       setProblem((said) => (said?.row === warmupKey ? null : said));
@@ -364,14 +381,21 @@ function Session() {
     setBusy(true);
     try {
       const end = new Date();
-      await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote));
+      // The time paused (K-998), within the session's length: the summary's minutes and Health's are the active time.
+      const lengthMs = Math.max(0, end.getTime() - Date.parse(active.startedAt));
+      const pausedMs = Math.min(lengthMs, pausedFor(pauseRef.current, end.getTime()));
+      await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote, Math.floor(pausedMs / 1000)));
       // Finished, its pause is done with (the time paused goes with the finish once the contract takes it, K-998).
       void sessionPause.forget().catch(named);
       void sessionSkips.forget().catch(named);
       // What was done, against last time (K-406); a workout without a work set has nothing to show.
       if (worked.length > 0) {
         // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
-        void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end });
+        // Written from its start for its active length: the library's save takes no pauses (installed types). Paused
+        // for all of it, there is no workout to write.
+        if (lengthMs > pausedMs) {
+          void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end: new Date(end.getTime() - pausedMs) });
+        }
         router.replace({ pathname: '/workout-end', params: { workout: active.clientId } });
       } else router.back();
     } catch (error) {
@@ -388,9 +412,92 @@ function Session() {
   const movesDone = plans.filter((p, i) => entries[i]?.planned !== undefined && p !== null && p.rows.some((r) => r.done !== null)).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   const onFinish = () => {
+    setEnding(false);
     if (active === null) router.back();
     else if (worked.length === 0) void finish();
     else setFinishing(true);
+  };
+  // End (K-972): with nothing kept there is nothing to choose; else the three ways out.
+  const onEnd = () => {
+    if (active === null) router.back();
+    else setEnding(true);
+  };
+  /**
+   * Left open (ADR-075 #5, K-961): it counts for its week, Continue opens it again, the server closes it after
+   * unfinished_session_close_hours. Left, it is paused: the hours away are not training time, whether the next set goes
+   * on from where it stopped (goOn) or the finish comes with no set (the pause under way is counted to it).
+   */
+  const later = () => {
+    if (active !== null && pauseRef.current.pausedAt === null) holdPause(toggle(pauseRef.current, new Date().getTime()), active.clientId);
+    endRest();
+    announce(t('workout.ending.laterSaid', { hours: workoutParams.unfinishedSessionCloseHours }));
+    router.back();
+  };
+  /**
+   * Discarded (ADR-075 #5, K-998): nothing is saved. Once the server has it, it is deleted there first (offline then,
+   * it says a connection is needed and keeps it); then the phone's records of it go, with its pause and skips. What it
+   * held stays on the screen to bring back with Undo, as a new workout from the same start.
+   */
+  const discard = async () => {
+    if (saving.current || active === null) return;
+    saving.current = true;
+    setBusy(true);
+    const gone = {
+      startedAt: active.startedAt,
+      programDayId: active.programDayId,
+      sets: active.sets,
+      pause: pauseRef.current,
+      skips,
+      back: { workout: newClientId(), sets: active.sets.map(() => newClientId()) },
+    };
+    try {
+      // On the server first once it may be there, with no send meanwhile (setEdits.discard).
+      await workoutEdits.discard(active.clientId);
+      void sessionPause.forget().catch(named);
+      void sessionSkips.forget().catch(named);
+      endRest();
+      setHeld([]);
+      setEnding(false);
+      setDiscarded(gone);
+      setProblem(null);
+      // Said, not only shown (K-815): the screen changes under VoiceOver's finger.
+      announce(t('workout.ending.discarded'));
+    } catch (error) {
+      named(error);
+      const offline = error instanceof TypeError || error instanceof NoAnswer;
+      setProblem({ row: DISCARD, text: t(offline ? 'workout.ending.offline' : 'workout.ending.failed') });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
+  };
+  /**
+   * The discarded workout back, as a new one from the same start: its sets, its pause and its skips. Under the ids made
+   * when it was discarded, so a try that failed half way and is tried again keeps what it had and adds the rest: the
+   * queue saves a clientId once. A failure is said, and Undo stays to try again.
+   */
+  const undoDiscard = async () => {
+    if (discarded === null || saving.current) return;
+    saving.current = true;
+    const { back } = discarded;
+    try {
+      await queue.record({
+        kind: 'workout',
+        body: { clientId: back.workout, startedAt: discarded.startedAt, ...(discarded.programDayId === null ? {} : { programDayId: discarded.programDayId }) },
+      });
+      for (const [index, set] of discarded.sets.entries()) {
+        await queue.record({ kind: 'set', workoutClientId: back.workout, body: { ...set, clientId: back.sets[index] } });
+      }
+      if (discarded.pause.pausedAt !== null || discarded.pause.pausedMs > 0) await sessionPause.keep(back.workout, discarded.pause);
+      if (Object.keys(discarded.skips).length > 0) await sessionSkips.keep(back.workout, discarded.skips);
+      setDiscarded(null);
+      setProblem(null);
+    } catch (error) {
+      named(error);
+      setProblem({ row: UNDO, text: t('workout.undoFailed') });
+    }
+    await refresh();
+    saving.current = false;
   };
 
   // Adding a move outside the plan (K-416): found in the catalog by name or alias, on the phone (offline too).
@@ -778,8 +885,35 @@ function Session() {
       <Text style={[styles.text, styles.grow, { color: color.text }]}>{t('workout.paused')}</Text>
     </View>
   );
+  const endSheet = (
+    <EndSheet
+      onFinish={onFinish}
+      onLater={stale ? null : later}
+      onDiscard={() => void discard()}
+      onBack={() => setEnding(false)}
+      problem={problem !== null && problem.row === DISCARD ? problem.text : null}
+      problemOccurrence={problem}
+      busy={busy}
+    />
+  );
+  const discardedPanel = (
+    <View style={[styles.discarded, { backgroundColor: color.surface }]}>
+      <Text style={[styles.text, { color: color.text }]}>{t('workout.ending.discarded')}</Text>
+      {problem !== null && problem.row === UNDO && (
+        <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>
+          {problem.text}
+        </ProblemText>
+      )}
+      <View style={styles.actions}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={() => void undoDiscard()} style={styles.link}>
+          <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+        </Pressable>
+        <Button label={t('workout.ending.close')} variant="ghost" onPress={() => router.back()} />
+      </View>
+    </View>
+  );
   const dock =
-    dockButton === null ? null : (
+    dockButton === null || ending || discarded !== null ? null : (
       <View testID="dock" style={[styles.dock, { borderTopColor: color.line }]}>
         {dockButton}
       </View>
@@ -831,7 +965,7 @@ function Session() {
       {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
       <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onFinish} pause={pause} onPause={togglePause} subtitle={dayLine} />
+          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={pause} onPause={discarded === null ? togglePause : null} subtitle={dayLine} />
           {/* Its place is kept with no rest in it, so the page under it does not move when one starts. */}
           <View testID="rest-slot" style={styles.restSlot}>
             {pause.pausedAt !== null ? pausedBar : rest !== null && <RestTimer since={rest} onEnd={endRest} />}
@@ -840,7 +974,7 @@ function Session() {
         <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
-          {finishing ? form : session}
+          {discarded !== null ? discardedPanel : ending ? endSheet : finishing ? form : session}
         </ScrollView>
         {dock}
       </KeyboardAvoidingView>
@@ -852,6 +986,10 @@ function Session() {
 const FINISH = 'finish';
 /** A correction's own key for a problem. */
 const EDIT = 'edit';
+/** A discard's own key for a problem. */
+const DISCARD = 'discard';
+/** An Undo's own key for a problem. */
+const UNDO = 'undo';
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
@@ -861,6 +999,8 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.sm },
   dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline, alignItems: 'stretch' },
   undo: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
+  discarded: { gap: tokens.space.sm, padding: tokens.space.md, borderRadius: tokens.radius.card },
+  actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.lg },
   list: { gap: tokens.space.xs },
   dayLine: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: tokens.space.sm },
   head: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },

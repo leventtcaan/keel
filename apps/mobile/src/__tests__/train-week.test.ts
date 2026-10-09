@@ -146,11 +146,18 @@ describe("today's session state: the phone's records first, then the server's wo
   });
 
   test("an open workout of another day (yesterday's left open) is not today's", () => {
-    const yesterday = rec('workout', 'w0', { clientId: 'w0', startedAt: new Date(2026, 9, 12, 8, 0).toISOString(), programDayId: 'l' });
+    const yesterday = rec('workout', 'w0', { clientId: 'w0', startedAt: new Date(2026, 9, 12, 10, 0).toISOString(), programDayId: 'l' });
     const state = sessionState({ program: fresh([session('u', TUESDAY)]), kept: false, records: [yesterday], now: NOW });
     expect(state.status).toBe('none');
     // Still under way on this phone: the card continues it rather than start a second.
     expect(state.onPhone?.clientId).toBe('w0');
+  });
+
+  test("a workout left open past the server's close (a day) is not under way on this phone: the server closed it, today's session can start", () => {
+    const left = rec('workout', 'w0', { clientId: 'w0', startedAt: new Date(2026, 9, 12, 8, 0).toISOString(), programDayId: 'u' });
+    const state = sessionState({ program: fresh([session('u', TUESDAY)]), kept: false, records: [left], now: NOW });
+    expect(state.onPhone).toBeNull();
+    expect(state.status).toBe('none');
   });
 
   test("the copy kept offline from another day: the phone's day, and the kept session states are not believed", () => {

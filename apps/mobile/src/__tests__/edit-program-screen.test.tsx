@@ -11,6 +11,7 @@ import { AccessibilityInfo } from 'react-native';
 import EditProgramScreen from '@/app/edit-program';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { workoutParams } from '@/train/params';
 import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { LocalRecord } from '@/sync/store';
@@ -79,7 +80,7 @@ const UNDER_WAY: LocalRecord = {
   clientId: 'w1',
   kind: 'workout',
   parentClientId: null,
-  body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+  body: { clientId: 'w1', startedAt: new Date(Date.now() - 60 * 60_000).toISOString(), programDayId: 'a' },
   state: 'PENDING',
   serverId: null,
   serverBody: null,
@@ -429,6 +430,15 @@ describe('rebuild for me', () => {
     await show();
     expect(await screen.findByText(t('editProgram.rebuildUnderWay'))).toBeTruthy();
     expect(screen.queryByText(t('editProgram.rebuildConfirm'))).toBeNull();
+  });
+
+  test("a workout left open past the server's close is not under way: the rebuild is offered", async () => {
+    mockParams = { part: 'rebuild' };
+    const left = { ...UNDER_WAY, body: { ...(UNDER_WAY.body as object), startedAt: new Date(Date.now() - (workoutParams.unfinishedSessionCloseHours + 2) * 3_600_000).toISOString() } };
+    mockRecords = [left];
+    await show();
+    expect(await screen.findByText(t('editProgram.rebuildConfirm'))).toBeTruthy();
+    expect(screen.queryByText(t('editProgram.rebuildUnderWay'))).toBeNull();
   });
 
   test("days the server can't build for: said with their number, not as our failure", async () => {

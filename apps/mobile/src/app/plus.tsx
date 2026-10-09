@@ -28,7 +28,7 @@ export default function PlusScreen() {
   const { day, data } = useReadOnFocus(
     useCallback(async () => {
       const [read, records] = await Promise.all([training.read(api), workoutRecords()]);
-      return { program: read.program.state === 'ready' ? read.program.value : null, active: activeWorkout(records) };
+      return { program: read.program.state === 'ready' ? read.program.value : null, active: activeWorkout(records, Date.now()) };
     }, [api, training, workoutRecords]),
   );
 

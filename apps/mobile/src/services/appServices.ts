@@ -349,6 +349,11 @@ export async function createAppServices({
         // Gone already is gone.
         if (!response.ok && response.status !== 404) throw Object.assign(new Error(`HTTP_${response.status}`), { name: 'DeleteRefused' });
       },
+      deleteWorkoutOnServer: async (id) => {
+        const { response } = await api.DELETE('/v1/workouts/{id}', { params: { path: { id } } });
+        // Gone already (a repeat, K-998) is gone.
+        if (!response.ok && response.status !== 404) throw Object.assign(new Error(`HTTP_${response.status}`), { name: 'DiscardRefused' });
+      },
     }),
     mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
     forgetRecord: store.forgetClient,

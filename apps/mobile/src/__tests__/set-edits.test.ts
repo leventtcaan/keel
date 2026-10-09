@@ -59,7 +59,7 @@ async function setup() {
   const api = server();
   const queue = createSyncQueue({ store, send: api.send, report: () => undefined });
   let n = 0;
-  const edits = createSetEdits({ store, queue, deleteOnServer: api.deleteSet, newClientId: () => `new-${++n}` });
+  const edits = createSetEdits({ store, queue, deleteWorkoutOnServer: async () => undefined, deleteOnServer: api.deleteSet, newClientId: () => `new-${++n}` });
   await queue.record({ kind: 'workout', body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
   await queue.drain();
   return { store, api, queue, edits };
@@ -151,6 +151,7 @@ test('a delete on the server that fails: the corrected record goes, the old one 
   const failing = createSetEdits({
     store,
     queue,
+    deleteWorkoutOnServer: async () => undefined,
     deleteOnServer: async () => {
       throw new Error('500');
     },
@@ -196,7 +197,7 @@ test('held: a drain asked for during the delete (the app back in front) sends no
   await queue.drain();
   const sentBefore = api.stored.size;
   const held = heldDelete();
-  const edits = createSetEdits({ store, queue, deleteOnServer: held.deleteOnServer, newClientId: () => 'new-1' });
+  const edits = createSetEdits({ store, queue, deleteWorkoutOnServer: async () => undefined, deleteOnServer: held.deleteOnServer, newClientId: () => 'new-1' });
   const correcting = edits.change('a', set('a', 9));
   await tick();
   expect(held.calls).toEqual(['srv-a']);
@@ -215,7 +216,7 @@ test('two holders take turns: the second starts only once the first is done', as
   await queue.drain();
   const held = heldDelete();
   let n = 0;
-  const edits = createSetEdits({ store, queue, deleteOnServer: held.deleteOnServer, newClientId: () => `new-${++n}` });
+  const edits = createSetEdits({ store, queue, deleteWorkoutOnServer: async () => undefined, deleteOnServer: held.deleteOnServer, newClientId: () => `new-${++n}` });
   const first = edits.change('a', set('a', 9));
   const second = edits.change('b', null);
   await tick();
@@ -244,6 +245,7 @@ test('the old set gone and the corrected one in its place in one step: never two
   const edits = createSetEdits({
     store,
     queue,
+    deleteWorkoutOnServer: async () => undefined,
     // While the server deletes it, the phone still has the old set only: no new copy is written before.
     deleteOnServer: async () => {
       seen.push((await sets(store)).map((x) => x.clientId));
@@ -265,4 +267,110 @@ test('a set the server refused is not "offline": it fails as it is', async () =>
   await store.markRejected('a', 'VALIDATION_FAILED');
   await expect(edits.change('a', set('a', 9))).rejects.toMatchObject({ name: 'Refused' });
   void queue;
+});
+
+describe('a workout discarded (K-972, K-998): on the server once it may be there, then the phone in one step', () => {
+  async function withDiscard() {
+    const store = await openRecordStore(nodeSqlite());
+    const api = server();
+    const queue = createSyncQueue({ store, send: api.send, report: () => undefined });
+    const deletedWorkouts: string[] = [];
+    let offlineDelete = false;
+    const edits = createSetEdits({
+      store,
+      queue,
+      deleteOnServer: api.deleteSet,
+      deleteWorkoutOnServer: async (id) => {
+        if (offlineDelete) throw new TypeError('Network request failed');
+        deletedWorkouts.push(id);
+      },
+      newClientId: () => 'new-1',
+    });
+    return { store, api, queue, edits, deletedWorkouts, goOffline: () => (offlineDelete = true) };
+  }
+
+  test('never sent: gone from the phone, nothing asked of the server', async () => {
+    const { store, queue, edits, deletedWorkouts } = await withDiscard();
+    await store.insert({ clientId: 'w', kind: 'workout', parentClientId: null, body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
+    await store.insert({ clientId: 'a', kind: 'set', parentClientId: 'w', body: set('a', 8) });
+    await edits.discard('w');
+    await queue.drain();
+    expect(await store.all()).toEqual([]);
+    expect(deletedWorkouts).toEqual([]);
+  });
+
+  test('its send under way: deleted on the server after it lands; nothing left on either side', async () => {
+    const { store, api, queue, edits, deletedWorkouts } = await withDiscard();
+    await store.insert({ clientId: 'w', kind: 'workout', parentClientId: null, body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
+    await store.insert({ clientId: 'a', kind: 'set', parentClientId: 'w', body: set('a', 8) });
+    api.hold();
+    const sending = queue.drain();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const discarding = edits.discard('w');
+    api.letThrough();
+    await sending;
+    await discarding;
+    expect(deletedWorkouts).toEqual(['srv-w']);
+    expect(await store.all()).toEqual([]);
+  });
+
+  // Through the queue's own record(): it tries a send at once, so a workout the phone kept is "tried" from that moment,
+  // reachable or not. Never tried is only a record stored and not yet sent (the app closed in between), not a state a
+  // session reaches by being offline (#527 review).
+  test('recorded offline through the queue: the send was tried, so Discard needs the connection and changes nothing', async () => {
+    const { store, api, queue, edits } = await withDiscard();
+    api.offline(true);
+    await queue.record({ kind: 'workout', body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
+    await queue.record({ kind: 'set', workoutClientId: 'w', body: set('a', 8) });
+    await queue.drain();
+    expect((await store.all()).map((r) => [r.clientId, r.state, r.attempted])).toEqual([
+      ['w', 'PENDING', true],
+      ['a', 'PENDING', false],
+    ]);
+    await expect(edits.discard('w')).rejects.toBeInstanceOf(NoAnswer);
+    expect((await store.all()).map((r) => r.clientId)).toEqual(['w', 'a']);
+  });
+
+  test('recorded offline, back online: sent first, then deleted on the server, then gone here', async () => {
+    const { store, api, queue, edits, deletedWorkouts } = await withDiscard();
+    api.offline(true);
+    await queue.record({ kind: 'workout', body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
+    await queue.record({ kind: 'set', workoutClientId: 'w', body: set('a', 8) });
+    await queue.drain();
+    api.offline(false);
+    await edits.discard('w');
+    expect(deletedWorkouts).toEqual(['srv-w']);
+    expect(await store.all()).toEqual([]);
+  });
+
+  test('recorded online through the queue: deleted on the server, gone here, its sets with it', async () => {
+    const { store, queue, edits, deletedWorkouts } = await withDiscard();
+    await queue.record({ kind: 'workout', body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
+    await queue.record({ kind: 'set', workoutClientId: 'w', body: set('a', 8) });
+    await queue.drain();
+    await edits.discard('w');
+    expect(deletedWorkouts).toEqual(['srv-w']);
+    expect(await store.all()).toEqual([]);
+  });
+
+  test('a workout the server refused: gone from the phone only, nothing to delete there', async () => {
+    const { store, queue, edits, deletedWorkouts } = await withDiscard();
+    await store.insert({ clientId: 'w', kind: 'workout', parentClientId: null, body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
+    await store.insert({ clientId: 'a', kind: 'set', parentClientId: 'w', body: set('a', 8) });
+    await store.markAttempted('w');
+    await store.markRejected('w', 'VALIDATION_FAILED');
+    await edits.discard('w');
+    await queue.drain();
+    expect(deletedWorkouts).toEqual([]);
+    expect(await store.all()).toEqual([]);
+  });
+
+  test('offline once it may be on the server: nothing changes here (a connection is needed)', async () => {
+    const { store, queue, edits, goOffline } = await withDiscard();
+    await store.insert({ clientId: 'w', kind: 'workout', parentClientId: null, body: { clientId: 'w', startedAt: '2026-10-09T18:00:00Z' } });
+    await queue.drain();
+    goOffline();
+    await expect(edits.discard('w')).rejects.toThrow(TypeError);
+    expect((await store.all()).map((r) => r.clientId)).toEqual(['w']);
+  });
 });

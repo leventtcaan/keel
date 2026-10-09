@@ -10,6 +10,7 @@ import { AccessibilityInfo } from 'react-native';
 import TrainScreen from '@/app/(tabs)/train';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { workoutParams } from '@/train/params';
 import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { CallRow } from '@/train/CallRow';
@@ -368,7 +369,7 @@ test("a workout under way: no swap on the card (the workout swaps its own moves)
       clientId: 'w1',
       kind: 'workout',
       parentClientId: null,
-      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      body: { clientId: 'w1', startedAt: new Date(Date.now() - 60 * 60_000).toISOString(), programDayId: 'a' },
       state: 'PENDING',
       serverId: null,
       serverBody: null,
@@ -482,7 +483,7 @@ test('a workout under way is continued, not started again', async () => {
       clientId: 'w1',
       kind: 'workout',
       parentClientId: null,
-      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      body: { clientId: 'w1', startedAt: new Date(Date.now() - 60 * 60_000).toISOString(), programDayId: 'a' },
       state: 'PENDING',
       serverId: null,
       serverBody: null,
@@ -497,6 +498,25 @@ test('a workout under way is continued, not started again', async () => {
   expect(mockRecord).not.toHaveBeenCalled();
 });
 
+test("a workout left open past the server's close is not continued: the server closed it, and today's session starts", async () => {
+  mockRecords = [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: new Date(Date.now() - (workoutParams.unfinishedSessionCloseHours + 2) * 3_600_000).toISOString(), programDayId: 'a' },
+      state: 'PENDING',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+  await show();
+  expect(await screen.findByText('Start workout')).toBeTruthy();
+  expect(screen.queryByText('Continue workout')).toBeNull();
+});
+
 test('under way on this phone, offline (the server knows nothing yet): continued, and nothing to change or swap', async () => {
   mockRecords = [
     {
@@ -504,7 +524,7 @@ test('under way on this phone, offline (the server knows nothing yet): continued
       clientId: 'w1',
       kind: 'workout',
       parentClientId: null,
-      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
+      body: { clientId: 'w1', startedAt: new Date(Date.now() - 60 * 60_000).toISOString(), programDayId: 'a' },
       state: 'PENDING',
       serverId: null,
       serverBody: null,

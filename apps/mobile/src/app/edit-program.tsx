@@ -57,7 +57,7 @@ export default function EditProgramScreen() {
         part === 'cardio' ? load(() => api.GET('/v1/profile')) : Promise.resolve(null),
       ]);
       const profileDays = profile?.state === 'ready' ? profile.value.schedule.trainingDays : null;
-      return { ...read, own, active: activeWorkout(records), profileDays };
+      return { ...read, own, active: activeWorkout(records, Date.now()), profileDays };
     }, [api, training, workoutRecords, part]),
   );
   // The program the server just answered, shown until the page reads again: a second tap names the review it holds
