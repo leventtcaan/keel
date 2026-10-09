@@ -46,6 +46,15 @@ type MockMove = { exerciseId: string; baseSets: number; sets: number; reps: { mi
 /** The program's reps; a test of a fixed rep target (K-991) sets its own and puts these back. */
 const MOCK_REPS = { min: 6, max: 10 };
 let mockReps = MOCK_REPS;
+// The server's answer to "the plan was shown" (K-993): 204 keeps it; another status refuses; 'offline' is no connection.
+// Like the server, the first call's day counts from the day it was kept (here: a week on from the day before it).
+let mockPlanSeen: number | 'offline' = 204;
+let mockFirstCallAfterSeen: string | number | null = null;
+const mockPlanSeenAnswer = async () => {
+  if (mockPlanSeen === 'offline') throw new TypeError('Network request failed');
+  if (mockPlanSeen === 204 && mockFirstCallAfterSeen !== null) mockFirstCall = mockFirstCallAfterSeen;
+  return mockPlanSeen === 204 ? { response: new Response(null, { status: 204 }) } : { error: { code: 'X' }, response: new Response(null, { status: mockPlanSeen }) };
+};
 const mockMove = (exerciseId: string): MockMove => ({ exerciseId, baseSets: 3, sets: 3, reps: { ...mockReps }, targetRir: 2 });
 /** Like the server: a program on the days asked for, each day the same three moves, with the engine's cardio. */
 function mockProgram(trainingDays: string[], loads: Record<string, number> = {}) {
@@ -72,6 +81,7 @@ const mockCatalog = [
 ];
 /** A consent PUT, or the starting weights: the program with each weight as its move's first target. */
 const mockPut = async (path: string, init: unknown) => {
+  if (path === '/v1/profile/plan-seen') return mockPlanSeenAnswer();
   if (path !== '/v1/program/starting-weights') return mockConsentAnswer(path, init);
   const { weights } = (init as { body: { weights: { exerciseId: string; kg: number }[] } }).body;
   return mockOk(mockProgram(mockTrainingDays, Object.fromEntries(weights.map((w) => [w.exerciseId, w.kg]))));
@@ -208,6 +218,8 @@ beforeEach(() => {
   mockServerProgram = null;
   mockStarting = 404;
   mockFirstCall = '2026-10-19';
+  mockPlanSeen = 204;
+  mockFirstCallAfterSeen = null;
   mockConsentGranted = false;
   mockProfile.resumed.mockReset().mockReturnValue(null);
   mockReminderSettings = { enabled: false, cue: '' };
@@ -1381,6 +1393,87 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     await act(async () => fireEvent(screen.getByLabelText(t('onboarding.plan.remind', { day: t('onboarding.schedule.dayName.MONDAY') })), 'valueChange', true));
     expect(screen.getByText(t('onboarding.reminders.refused'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('onboarding.continue') })).toBeEnabled();
+  });
+
+  describe('the plan was shown: the first week counts from today (K-993, ADR-077 Ek 3)', () => {
+    const seenCalls = () => mockApi.PUT.mock.calls.filter(([p]) => p === '/v1/profile/plan-seen');
+    const firstWeeksReads = () => mockApi.GET.mock.calls.filter(([p]) => p === '/v1/first-weeks').length;
+
+    test('the first time the plan is shown it says so, once, without a body', async () => {
+      await toPlan({ experience: 'NEW', allow: true });
+      expect(seenCalls()).toEqual([['/v1/profile/plan-seen']]);
+    });
+
+    test('then the first call is read again: the server may have moved it (the days before the plan was seen are not planned)', async () => {
+      mockFirstCallAfterSeen = '2026-10-26';
+      await toPlan({ experience: 'NEW', allow: true });
+      expect(firstWeeksReads()).toBe(2); // while preparing, and after the plan was kept as seen
+      const seen = mockApi.PUT.mock.invocationCallOrder[mockApi.PUT.mock.calls.findIndex(([p]) => p === '/v1/profile/plan-seen')];
+      expect(mockApi.GET.mock.invocationCallOrder.at(-1)!).toBeGreaterThan(seen);
+      expect(screen.getByText('Mon, Oct 26')).toBeOnTheScreen();
+      expect(screen.queryByText('Mon, Oct 19')).toBeNull();
+      expect(mockKeepFirstCall).toHaveBeenLastCalledWith({ on: '2026-10-26' });
+      await press(t('onboarding.continue'));
+      expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ firstCall: '2026-10-26' }));
+    });
+
+    test('the plan shown a second time (back through the preparing screen) is not said again', async () => {
+      const router = await toPlan({ experience: 'NEW', allow: true });
+      await act(async () => appRouter.replace('/onboarding/preparing'));
+      await settle();
+      await press(t('onboarding.preparing.see'));
+      expect(router.getPathname()).toBe('/onboarding/plan');
+      expect(seenCalls()).toHaveLength(1);
+      expect(firstWeeksReads()).toBe(2);
+    });
+
+    test('without the health data consent: still said (it is the plan, not health data), but no first call to read again', async () => {
+      await toPlan({ experience: 'NEW' });
+      expect(seenCalls()).toHaveLength(1);
+      expect(firstWeeksReads()).toBe(0);
+    });
+
+    test('the server refusing it: the plan goes on as it is, nothing said to the user, reported by name, tried again when shown again', async () => {
+      mockPlanSeen = 500;
+      const router = await toPlan({ experience: 'NEW', allow: true });
+      expect(seenCalls()).toHaveLength(1);
+      expect(firstWeeksReads()).toBe(1);
+      expect(screen.getByText('Mon, Oct 19')).toBeOnTheScreen();
+      expect(screen.queryByText(t('onboarding.plan.finishFailed'))).toBeNull();
+      expect(mockReport).toHaveBeenCalledWith({ name: 'ServerError' });
+      expect(screen.getByRole('button', { name: t('onboarding.continue') })).toBeEnabled();
+      mockPlanSeen = 204;
+      await act(async () => appRouter.replace('/onboarding/preparing'));
+      await settle();
+      await press(t('onboarding.preparing.see'));
+      expect(seenCalls()).toHaveLength(2);
+      await press(t('onboarding.continue'));
+      expect(router.getPathname()).toBe('/');
+    });
+
+    test('offline: the plan goes on, Continue works, the first call stays the one already read', async () => {
+      mockPlanSeen = 'offline';
+      const router = await toPlan({ experience: 'NEW', allow: true });
+      expect(mockReport).toHaveBeenCalledWith({ name: 'NoConnection' });
+      expect(firstWeeksReads()).toBe(1);
+      expect(screen.getByText('Mon, Oct 19')).toBeOnTheScreen();
+      await press(t('onboarding.continue'));
+      expect(router.getPathname()).toBe('/');
+    });
+
+    test('said, but the first call cannot be read again: the plan is kept as seen (not said again), the day stays, nothing said to the user', async () => {
+      mockFirstCallAfterSeen = 500;
+      const router = await toPlan({ experience: 'NEW', allow: true });
+      expect(mockReport).toHaveBeenCalledWith({ name: 'ServerError' });
+      expect(screen.getByText('Mon, Oct 19')).toBeOnTheScreen();
+      expect(screen.queryByText(t('onboarding.plan.finishFailed'))).toBeNull();
+      await act(async () => appRouter.replace('/onboarding/preparing'));
+      await settle();
+      mockFirstCall = '2026-10-19';
+      await press(t('onboarding.preparing.see'));
+      expect(seenCalls()).toHaveLength(1);
+      expect(router.getPathname()).toBe('/onboarding/plan');
+    });
   });
 
   test('no screen after the questions shows a missing text key or an unfilled placeholder', async () => {
