@@ -26,7 +26,7 @@ export type SetRow = {
   last: NewSet | null;
   done: NewSet | null;
   /** Skipped in this session (K-972): no set, no catch-up; the next row is the one after. */
-  skipped: boolean;
+  skipped?: boolean;
 };
 
 /**
@@ -133,7 +133,7 @@ export function planExercise(
       });
     }
   }
-  const current = rows.findIndex((row) => row.done === null && !row.skipped);
+  const current = rows.findIndex((row) => row.done === null && row.skipped !== true);
   return { exerciseId: planned.exerciseId, rows, current: current < 0 ? null : current, ...(skipped.move ? { skippedMove: true as const } : {}) };
 }
 
