@@ -25,12 +25,26 @@ export function restText(seconds: number): string {
   return t('workout.rest.time', { minutes: Math.floor(seconds / 60), seconds: String(seconds % 60).padStart(2, '0') });
 }
 
-/** The sets planned before any is done, the set under way, or all done; a move outside the plan has no count to say. */
+/** The session's time (K-971): minutes and seconds, and the hours in front once past one. */
+export function clockText(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const secondsText = String(seconds % 60).padStart(2, '0');
+  if (minutes < 60) return t('workout.clock.minutes', { minutes, seconds: secondsText });
+  return t('workout.clock.hours', { hours: Math.floor(minutes / 60), minutes: String(minutes % 60).padStart(2, '0'), seconds: secondsText });
+}
+
+/**
+ * The sets planned before any is done, the set under way, or all done; a move outside the plan has no count to say. A
+ * one-sided move's two rows (a side each) are one set.
+ */
 export function exerciseStatus(plan: ExercisePlan): string {
   if (plan.current === null) return t('workout.allDone');
-  if (plan.open === true) return t('workout.setNumber', { number: plan.current + 1 });
-  if (plan.current === 0) return plan.rows.length === 1 ? t('workout.setsOne') : t('workout.sets', { count: plan.rows.length });
-  return t('workout.setOf', { number: plan.current + 1, count: plan.rows.length });
+  const sides = plan.rows.some((row) => row.side !== 'BOTH') ? 2 : 1;
+  const number = Math.floor(plan.current / sides) + 1;
+  const count = plan.rows.length / sides;
+  if (plan.open === true) return t('workout.setNumber', { number });
+  if (plan.current === 0) return count === 1 ? t('workout.setsOne') : t('workout.sets', { count });
+  return t('workout.setOf', { number, count });
 }
 
 /**

@@ -326,8 +326,32 @@
     "moved": "moved",
     "skippedTag": "skipped"
   },
+  "swap": {
+    "title": "Swap {move}",
+    "titleGeneric": "Swap a move",
+    "notFound": "This move isn't in your program now.",
+    "noneOwn": "No other move for this one.",
+    "skipInstead": "Skip today instead",
+    "backToList": "Back to the list",
+    "why":"Same muscles, and your gym has these. The new move starts fresh: pick its weight.",
+    "back": "Back to the planned move",
+    "none": "No other move for these muscles in your gym.",
+    "which": "Which one is taken?",
+    "whichWhy": "Pick the move to swap, today only.",
+    "scopeTitle": "{move} instead of {current}",
+    "today": "Today only",
+    "todayBody": "Next time it's {current} again.",
+    "fromNow": "From now on",
+    "fromNowBody": "Your program has {move} from now on, with its own history.",
+    "conflict": "Can't swap it for today now: today's workout has started. Swap it in the workout.",
+    "offline": "Couldn't swap it. Check your connection and try again.",
+    "failed": "Something went wrong on our side. Try again in a moment.",
+    "close": "Close",
+    "label": "Swap {move}"
+  },
   "todayChange": {
     "title": "Change today",
+    "busy": { "title": "Gym is busy", "body": "Swap a move for one that is free." },
     "short": { "title": "Short on time", "body": "Just the top moves. Cardio is optional." },
     "shortNow": "This is the short version.",
     "move": { "title": "Move it", "body": "To tomorrow. Later sessions this week shift a day if they need to." },
@@ -343,6 +367,16 @@
     "title": "Workout",
     "progress": "{done} of {count} exercises",
     "targetRir": "Target RIR 0-{max}",
+    "end": "End",
+    "endLabel": "End the workout",
+    "clock": {
+      "minutes": "{minutes}:{seconds}",
+      "hours": "{hours}:{minutes}:{seconds}",
+      "label": "Workout time {time}"
+    },
+    "dot": "{name}, {status}",
+    "next": "Next: {name}",
+    "upNext": "Up next",
     "head": {
       "set": "#",
       "today": "Today",
@@ -373,6 +407,8 @@
     "rest": {
       "label": "Rest · {min}-{max}",
       "time": "{minutes}:{seconds}",
+      "end": "Ready",
+      "endLabel": "End the rest",
       "alert": {
         "title": "Rest's up",
         "body": "{min} of rest. Next set when you're ready."

@@ -4,7 +4,7 @@
  */
 import type { components } from '@/api/schema';
 import { workoutParams } from '@/train/params';
-import { buildSet, exerciseStatus, parseEntry, restText, rirChoice, setText } from '@/train/session';
+import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setText } from '@/train/session';
 import type { ExercisePlan } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -43,6 +43,22 @@ test("a move's place: the sets planned, the set under way, or all done", () => {
   expect(exerciseStatus(plan(1))).toBe('Set 2 of 3');
   expect(exerciseStatus(plan(3))).toBe('All sets done');
   expect(exerciseStatus(plan(0, 1))).toBe('1 set');
+});
+
+test("a one-sided move's place counts sets, not sides: its two rows are one set (K-971: the dots say it)", () => {
+  const sided = (done: number): ExercisePlan => ({
+    exerciseId: 'one_arm_dumbbell_row',
+    rows: (['LEFT', 'RIGHT', 'LEFT', 'RIGHT'] as const).map((side, i) => ({
+      side,
+      suggested: { loadKg: 20, reps: 10 },
+      last: null,
+      done: i < done ? { clientId: `s${i}`, exerciseId: 'one_arm_dumbbell_row', setType: 'WORKING', loadKg: 20, reps: 10, side } : null,
+    })),
+    current: done < 4 ? done : null,
+  });
+  expect(exerciseStatus(sided(0))).toBe('2 sets');
+  expect(exerciseStatus(sided(1))).toBe('Set 1 of 2'); // the right side of the first set
+  expect(exerciseStatus(sided(2))).toBe('Set 2 of 2');
 });
 
 test("what the user typed, in kg as the server keeps it; a bodyweight move's load is always 0", () => {
@@ -86,3 +102,11 @@ test('a set with a note keeps the words without their outer spaces; only spaces 
   expect(buildSet('c4', bench, 'BOTH', { loadKg: 60, reps: 8 }, 1, '   ')).not.toHaveProperty('note');
   expect(buildSet('c5', bench, 'BOTH', { loadKg: 60, reps: 8 }, 1)).not.toHaveProperty('note');
 });
+
+test('the session clock: minutes and seconds, and hours once past one', () => {
+  expect(clockText(0)).toBe('0:00');
+  expect(clockText(725)).toBe('12:05');
+  expect(clockText(3600)).toBe('1:00:00');
+  expect(clockText(3725)).toBe('1:02:05');
+});
+
