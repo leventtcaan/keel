@@ -621,6 +621,41 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void discardingTheFirstSessionBringsBackTheStartingWeight() throws Exception {
+        // #509 review (Levent, ADR-075 #5): an experienced user discards a first session they only looked through; the
+        // weights given at onboarding (ADR-072 #5) are the targets again, not lost.
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program/starting-weights",
+                Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80))))).hasStatusOk();
+        List<Object> starting = next(account, 0);
+        String first = start(account, recently);
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+        assertThat(next(account, 0)).isNotEqualTo(starting);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + first, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(starting);
+    }
+
+    @Test
+    void everySetOfTheFirstSessionDeletedBringsBackTheStartingWeight() throws Exception {
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program/starting-weights",
+                Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80))))).hasStatusOk();
+        List<Object> starting = next(account, 0);
+        String first = start(account, recently);
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+
+        for (String set : setIds(account, first)) {
+            assertThat(send("DELETE", account, "/v1/workouts/" + first + "/sets/" + set, null)).hasStatus(204);
+        }
+
+        assertThat(next(account, 0)).isEqualTo(starting);
+    }
+
+    @Test
     void discardingAnOlderSessionLeavesTheTargetTheNewerOneSet() throws Exception {
         AccountId account = withAProgram();
         String older = start(account, recently.minus(java.time.Duration.ofDays(7)));

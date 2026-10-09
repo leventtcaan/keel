@@ -75,6 +75,7 @@ class TrainingAccountData implements AccountDataExport {
         training.put("workouts", store.all(account).stream()
                 .map(workout -> Map.of("workout", workout, "sets", store.sets(workout.id()))).toList());
         programs.current(account).ifPresent(program -> training.put("program", program));
+        training.put("startingWeights", programs.startingWeights(account));
         training.put("programHistory", programs.history(account));
         training.put("programChanges", calls.changes(account));
         training.put("programReviewChanges", reviewChanges.all(account));
