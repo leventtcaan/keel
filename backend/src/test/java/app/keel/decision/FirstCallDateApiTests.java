@@ -123,7 +123,10 @@ class FirstCallDateApiTests {
 
         assertThat(send(account, "PUT", "/v1/profile/plan-seen", null)).hasStatus(204);
 
-        assertThat(jdbc.sql("select plan_seen_at from profile.profile where account_id = :a").param("a", account.value()).query().singleValue()).isNull();
+        // The one profile row is there and its plan_seen_at is NULL: read as a list, since singleValue() refuses a NULL.
+        List<Object> seen = jdbc.sql("select plan_seen_at from profile.profile where account_id = :a").param("a", account.value())
+                .query((rs, row) -> rs.getObject("plan_seen_at")).list();
+        assertThat(seen).hasSize(1).containsOnlyNulls();
         assertThat(read(firstWeeks(account))).isEqualTo(before);
     }
 
