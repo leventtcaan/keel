@@ -41,6 +41,8 @@ const READY: WorkoutEnd = { kind: 'ready', summary: SUMMARY, program: PROGRAM, p
 let mockEnd: WorkoutEnd = READY;
 const mockLoad = jest.fn(async () => mockEnd);
 jest.mock('@/train/workoutEnd', () => ({ loadWorkoutEnd: () => mockLoad() }));
+const mockHaptic = jest.fn();
+jest.mock('@/train/haptics', () => ({ haptics: { record: () => mockHaptic() } }));
 let mockReduce = false;
 jest.mock('@/theme/useReduceMotion', () => ({ useReduceMotion: () => mockReduce }));
 const mockMap = jest.fn((_props: unknown) => null);
@@ -77,7 +79,9 @@ test("the hero, the day's name, and the server's numbers: minutes, kg lifted wit
   expect(screen.getByText('15')).toBeTruthy();
   expect(screen.getByText('340')).toBeTruthy();
   expect(screen.getByText(t('workoutEnd.watch'))).toBeTruthy();
-  expect(screen.getByTestId('stats')).toHaveProp('accessibilityHint', undefined);
+  // Four boxes with the watch's kcal; each said as one to VoiceOver.
+  expect(screen.getAllByTestId('stat')).toHaveLength(4);
+  expect(screen.getByLabelText(`340 ${t('workoutEnd.kcal')} ${t('workoutEnd.watch')}`)).toBeTruthy();
 });
 
 test('no watch reading: no kcal box, the other three in one row', async () => {
@@ -101,6 +105,19 @@ test('a record: the heaviest, the real set, and its next target from the program
   expect(await screen.findByText(t('workoutEnd.record', { move: 'Squat', set: '100 kg × 8' }))).toBeTruthy();
   expect(screen.getByText(t('workoutEnd.recordNext', { set: '100 kg × 9' }))).toBeTruthy();
   expect(screen.queryByText(/e1RM|estimated/i)).toBeNull();
+});
+
+test('a record: the haptic once (ADR-075 #7, Ek 5); none without a record', async () => {
+  await show();
+  expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
+  expect(mockHaptic).toHaveBeenCalledTimes(1);
+});
+
+test('no record (a baseline only): no haptic', async () => {
+  mockEnd = { ...READY, summary: { ...SUMMARY, marks: [{ exerciseId: 'squat', kind: 'BASELINE', loadKg: 60, reps: 8 }] } };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.baseline'))).toBeTruthy();
+  expect(mockHaptic).not.toHaveBeenCalled();
 });
 
 test("the first session: Baseline set, and what it's for", async () => {
