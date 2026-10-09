@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -89,6 +91,72 @@ class FirstCallDateApiTests {
 
         assertThat(read(send(account, "GET", "/v1/check-ins/current", null))).containsEntry("weekOf", today().toString());
         assertThat(read(firstWeeks(account))).containsEntry("firstCallOn", today().toString());
+    }
+
+    @Test
+    void theFirstWeekCountsFromTheDayThePlanWasSeenAndOnlyTheFirstTimeIsKept() throws Exception {
+        // K-993 (ADR-077 Ek 3): saved a week ago, the app closed, the plan seen today: today's check-in would have closed
+        // the first week (missing the days never seen); it counts from today, the call a week on.
+        LocalDate today = today();
+        AccountId account = onboardedToday();
+        finished(account, 7);
+
+        assertThat(send(account, "PUT", "/v1/profile/plan-seen", null)).hasStatus(204);
+
+        assertThat(read(firstWeeks(account))).containsEntry("firstCallOn", today.plusWeeks(1).toString()).containsEntry("week", 1);
+        assertThat(send(account, "GET", "/v1/check-ins/current", null)).hasStatus(404);
+        // Sent again later: the first time stays.
+        Object seen = jdbc.sql("select plan_seen_at from profile.profile where account_id = :a").param("a", account.value()).query().singleValue();
+        assertThat(send(account, "PUT", "/v1/profile/plan-seen", null)).hasStatus(204);
+        assertThat(jdbc.sql("select plan_seen_at from profile.profile where account_id = :a").param("a", account.value()).query().singleValue())
+                .isEqualTo(seen);
+    }
+
+    @Test
+    void aPlanSeenAfterTheFirstCallMovesNothing() throws Exception {
+        // #526 review: an old account (or a late send) after its first call: the first week and its call stay as they were.
+        LocalDate today = today();
+        AccountId account = onboardedToday();
+        finished(account, 7);
+        assertThat(answer(account, today)).hasStatusOk();
+        Map<String, Object> before = read(firstWeeks(account));
+
+        assertThat(send(account, "PUT", "/v1/profile/plan-seen", null)).hasStatus(204);
+
+        // The one profile row is there and its plan_seen_at is NULL: read as a list, since singleValue() refuses a NULL.
+        List<Object> seen = jdbc.sql("select plan_seen_at from profile.profile where account_id = :a").param("a", account.value())
+                .query((rs, row) -> rs.getObject("plan_seen_at")).list();
+        assertThat(seen).hasSize(1).containsOnlyNulls();
+        assertThat(read(firstWeeks(account))).isEqualTo(before);
+    }
+
+    @ParameterizedTest(name = "saved {0} days ago, signed in {1} days ago, plan seen {2} days ago: week {3}, first call in {4} days")
+    @CsvSource({
+            // D < K: seen three days ago, the closing check-in today (the check-in day is today's weekday); counted from the
+            // save it would be week 2.
+            "10, 12, 3, 1, 0",
+            // K <= D < K + 7: seen today, the save's closing check-in three days gone: the first call a week on.
+            "10, 12, 0, 1, 7",
+            // D >= K + 7: seen yesterday, the save's first week long over: week 1 again from the day seen, the call today.
+            "20, 22, 1, 1, 0",
+    })
+    void theFirstWeekCountsFromTheDaySeenWhenAllThreeAreKept(int savedDaysAgo, int signedInDaysAgo, int seenDaysAgo, int week, int callInDays)
+            throws Exception {
+        AccountId account = onboardedToday();
+        finished(account, savedDaysAgo);
+        jdbc.sql("update identity.account set created_at = now() - make_interval(hours => :hours) where id = :id").param("hours", signedInDaysAgo * 24)
+                .param("id", account.value()).update();
+        jdbc.sql("update profile.profile set plan_seen_at = now() - make_interval(hours => :hours) where account_id = :a").param("hours", seenDaysAgo * 24)
+                .param("a", account.value()).update();
+
+        Map<String, Object> firstWeeks = read(firstWeeks(account));
+
+        assertThat(firstWeeks).containsEntry("week", week).containsEntry("firstCallOn", today().plusDays(callInDays).toString());
+    }
+
+    @Test
+    void thePlanIsSeenOnlyOnceThereIsAProfile() {
+        assertThat(send(TestSessions.newAccount(), "PUT", "/v1/profile/plan-seen", null)).hasStatus(404);
     }
 
     /** A man in UTC with the health data consent, checking in on today's weekday; his profile saved now. */

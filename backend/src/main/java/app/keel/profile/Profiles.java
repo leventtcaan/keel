@@ -40,6 +40,11 @@ public class Profiles {
         return store.onboardedAt(account);
     }
 
+    /** When the plan was first shown (K-993, ADR-077 Ek 3); empty until the app says so, and without a profile. */
+    public Optional<Instant> planSeenAt(AccountId account) {
+        return store.planSeenAt(account);
+    }
+
     /** When the training days were last set: they are asked for from then on, at the earliest (K-512). */
     public Optional<Instant> trainingDaysSince(AccountId account) {
         return store.trainingDaysSince(account);

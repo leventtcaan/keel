@@ -167,7 +167,8 @@
     "updated_at",
     "training_days_since",
     "experience",
-    "onboarded_at"
+    "onboarded_at",
+    "plan_seen_at"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,

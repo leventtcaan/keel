@@ -48,6 +48,19 @@ class ProfileStore {
                 .optional().flatMap(at -> at);
     }
 
+    /** When the plan was first shown (K-993); none until the app says so. */
+    Optional<Instant> planSeenAt(AccountId account) {
+        return jdbc.sql("select plan_seen_at from profile.profile where account_id = :account").param("account", account.value())
+                .query((row, n) -> Optional.ofNullable(row.getObject("plan_seen_at", OffsetDateTime.class)).map(OffsetDateTime::toInstant))
+                .optional().flatMap(at -> at);
+    }
+
+    /** The plan shown now, the first time only (K-993): kept as it was when sent again. False without a profile. */
+    boolean planSeen(AccountId account) {
+        return jdbc.sql("update profile.profile set plan_seen_at = coalesce(plan_seen_at, :now) where account_id = :account")
+                .param("now", clock.instant().atOffset(ZoneOffset.UTC)).param("account", account.value()).update() == 1;
+    }
+
     /** The whole profile; the first save is when onboarding finished (onboarded_at, set on insert only). */
     void save(AccountId account, ProfileController.Profile profile) {
         ProfileController.Schedule schedule = profile.schedule();

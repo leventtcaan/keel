@@ -307,11 +307,12 @@ class DecisionService {
     }
 
     /**
-     * The first day on the user's calendar (K-990, ADR-077 Ek 2): the day onboarding finished; for a profile saved before
-     * that was kept, the first sign-in. The first week, the first call's day and the first eight weeks all count from it.
+     * The first day on the user's calendar (K-993, ADR-077 Ek 3): the day the plan was first shown; else the day onboarding
+     * finished (K-990, Ek 2); for a profile saved before that was kept, the first sign-in. The first week, the first call's day and the first eight weeks all count from it.
      */
     private LocalDate firstDay(AccountId account, ZoneId zone) {
-        return FirstWeekFacts.firstDay(profiles.onboardedAt(account), () -> accounts.began(account), zone);
+        return FirstWeekFacts.firstDay(profiles.planSeenAt(account), calls.firstMadeOn(account), profiles.onboardedAt(account), () -> accounts.began(account),
+                zone);
     }
 
     /**
