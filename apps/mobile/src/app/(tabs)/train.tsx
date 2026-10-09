@@ -200,7 +200,6 @@ export default function TrainScreen() {
   );
 }
 
-/** The tab's frame; with a program, "Edit" beside the title (prototype `#train` › `.tlink`). */
 /**
  * Whether today's undo did undo: the session no longer skipped, or back off the day it was moved to, on the same day of
  * the server's. Compared with what was sent, as the server answers 200 with nothing changed when there is nothing to undo.
@@ -219,6 +218,7 @@ const startable = (session: Schemas['WeekSession']) => session.skipped !== true 
 
 const SAID = { conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
 
+/** The tab's frame; with a program, "Edit" beside the title (prototype `#train` › `.tlink`). */
 function Screen({ children, editable = false }: { children: ReactNode; editable?: boolean }) {
   const { color } = useTheme();
   const edit = editable ? (

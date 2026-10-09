@@ -22,6 +22,8 @@ const light = {
   onAccent: '#FFFFFF',
   /** A selected option's ground and the accent's quiet fills. */
   accentSoft: '#DDF3F4',
+  /** Between accentSoft and accent: the muscle map's area partly filled (a share of the week's target, ADR-078 #4). */
+  accentMid: '#7CC4CA',
   /** The primary button: black on light, turquoise on dark (ADR-070 #2). */
   cta: '#0B0C0C',
   onCta: '#FFFFFF',
@@ -50,6 +52,7 @@ const dark: Record<keyof typeof light, string> = {
   accent: '#35D7CF',
   onAccent: '#061212',
   accentSoft: '#113030',
+  accentMid: '#1F7E7A',
   cta: '#35D7CF',
   onCta: '#061212',
   // On the light block of dark mode: the same text-safe turquoise as the light accent (4.84:1 on the block).

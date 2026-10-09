@@ -271,7 +271,7 @@ test("finishing asks about each move's form; a move marked not clean is sent, an
   const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
   expect(finish).toMatchObject({ kind: 'finish', workoutClientId: 'w1', body: { uncleanExerciseIds: ['bench_press'] } });
   // The summary of what was done takes the session's place (K-406).
-  expect(mockReplace).toHaveBeenCalledWith({ pathname: '/workout-summary', params: { workout: 'w1' } });
+  expect(mockReplace).toHaveBeenCalledWith({ pathname: '/workout-end', params: { workout: 'w1' } });
 });
 
 test('offline, the screen says the sets are kept on the phone', async () => {

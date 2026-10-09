@@ -366,7 +366,7 @@ function Session() {
       if (worked.length > 0) {
         // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
         void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end });
-        router.replace({ pathname: '/workout-summary', params: { workout: active.clientId } });
+        router.replace({ pathname: '/workout-end', params: { workout: active.clientId } });
       } else router.back();
     } catch (error) {
       named(error);
