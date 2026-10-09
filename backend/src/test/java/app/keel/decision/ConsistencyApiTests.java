@@ -259,7 +259,30 @@ class ConsistencyApiTests {
 
         Map<String, Object> consistency = read(get(account));
 
-        assertThat(consistency.get("weightChange")).isEqualTo(Map.of("kg", -2.5, "since", since.toString()));
+        assertThat(consistency.get("weightChange")).isEqualTo(Map.of("kg", -2.5, "direction", "DOWN", "since", since.toString()));
+    }
+
+    @Test
+    void appleHealthWeighInsCountAndHistoryImportedOnceDoesNot() throws Exception {
+        // #522 review (ADR-078 Ek 1): Apple Health's daily sync is the user's own weighing; an IMPORT is history only.
+        AccountId account = afterTheFirstCall();
+        LocalDate today = LocalDate.now(ISTANBUL);
+        LocalDate since = today.minusWeeks(3);
+        jdbc.sql("update decision.weekly_call set made_on = :since where account_id = :a").param("since", since).param("a", account.value()).update();
+        for (int back = 0; back < 7; back++) {
+            weighIn(account, since.minusDays(back), 90.0, "IMPORT");
+        }
+        for (int back = 1; back < 7; back++) {
+            weighIn(account, today.minusDays(back), 89.8, "APPLE_HEALTH");
+        }
+        assertThat(read(get(account))).as("the start window is imported history only").doesNotContainKey("weightChange");
+
+        for (int back = 0; back < 7; back++) {
+            weighIn(account, since.minusDays(back), 90.0, "APPLE_HEALTH");
+        }
+
+        // A day's first weigh-in counts; the Apple Health ones now fill the start window: 0.2 kg is within the flat margin.
+        assertThat(read(get(account)).get("weightChange")).isEqualTo(Map.of("kg", -0.2, "direction", "STEADY", "since", since.toString()));
     }
 
     @Test
@@ -278,10 +301,16 @@ class ConsistencyApiTests {
         assertThat(get(account)).hasStatus(403).bodyJson().extractingPath("$.code").isEqualTo("CONSENT_REQUIRED");
     }
 
-    /** A weigh-in at 07:00 on {@code day} in Istanbul. */
+    /** A weigh-in at 07:00 on {@code day} in Istanbul, typed in. */
     private void weighIn(AccountId account, LocalDate day, double kg) {
+        weighIn(account, day, kg, "MANUAL");
+    }
+
+    /** A weigh-in on {@code day} in Istanbul from {@code source}: an Apple Health one at 06:00, before a typed one. */
+    private void weighIn(AccountId account, LocalDate day, double kg, String source) {
+        int hour = "MANUAL".equals(source) ? 7 : 6;
         assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
-                day.atTime(7, 0).atZone(ISTANBUL).toInstant().toString(), "kg", kg, "source", "MANUAL"))).hasStatus(201);
+                day.atTime(hour, 0).atZone(ISTANBUL).toInstant().toString(), "kg", kg, "source", source))).hasStatus(201);
     }
 
     /** A man in Istanbul training on Mondays and Thursdays, whose first weekly call was made this week. */

@@ -139,7 +139,8 @@ class DecisionController {
             view.put("paused", true); // a state declared this week (K-516): neither on track nor missed
         }
         // The period's weight change (K-988): only with enough weigh-ins either end; the app writes the sentence.
-        consistency.weightChange().ifPresent(kg -> view.put("weightChange", Map.of("kg", kg, "since", consistency.since())));
+        consistency.weightChange().ifPresent(change -> view.put("weightChange", Map.of("kg", change.kg(), "direction", change.direction(), "since",
+                consistency.since())));
         view.put("record", Map.of("onTrackWeeks", now.record().onTrackWeeks(), "countedWeeks", now.record().countedWeeks(),
                 "currentRun", now.record().currentRun(), "forgivenWeeks", now.record().forgivenWeeks()));
         return view;
