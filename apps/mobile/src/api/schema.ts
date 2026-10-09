@@ -2625,6 +2625,12 @@ export interface components {
             /** Format: uuid */
             workoutId: string;
             /**
+             * @description "What moved" (ADR-075 #7, K-1008): each move of the session, in the order first done, its best working set
+             *     against its best in the last earlier session of the same program day (the session liftedChangePercent compares
+             *     with). This server always sends it.
+             */
+            moves: components["schemas"]["MoveChange"][];
+            /**
              * @description The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
              *     Absent while the session is open, and once closed by itself (K-961: endedAt = startedAt, its length unknown).
              */
@@ -2651,6 +2657,25 @@ export interface components {
              *     sessions not counted) — the one muscle map, ADR-078 #4.
              */
             muscles: components["schemas"]["MuscleSets"][];
+        };
+        /**
+         * @description A move's best working set this session (the heaviest, then the most reps, then the fewest left; a set of no reps
+         *     never counts; sides are one history; the load as logged, a bodyweight move's added load) against its best in the
+         *     last earlier session of the same program day. LOAD: another load, `by` the difference in kg (negative when
+         *     lighter). REPS: the same load, `by` the difference in reps (negative when fewer). SAME: the same load and reps.
+         *     HELD: the same load while the weekly call holds the load (ADR-077). FIRST: nothing to compare with (the move was
+         *     not in that session, or there is none). No estimated max (B10).
+         */
+        MoveChange: {
+            exerciseId: string;
+            best: {
+                loadKg: number;
+                reps: number;
+            };
+            /** @enum {string} */
+            change: "LOAD" | "REPS" | "SAME" | "HELD" | "FIRST";
+            /** @description LOAD in kg, REPS in reps; absent otherwise. */
+            by?: number;
         };
         /**
          * @description RECORD (ADR-075 Ek 2): a working set no earlier working set of the move dominates (none at least as heavy with
