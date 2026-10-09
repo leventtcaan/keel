@@ -51,3 +51,12 @@ Süreç dersleri: yığılı PR + squash → üstteki PR'ı yalnız kendi commit
 - #500 simülatörde görüldü (prototip sırası, "180", simgeler) → auto-merge. K-971 ajanı K-998'e (#507: DELETE workout + finish pausedSeconds) geçti, sonra K-972 P1-P4.
 - K-969 metin kararları (5) onaylandı. K-972 kararları: Discard yeni uç (K-998), set düzelt/sil PENDING yerelde / SYNCED çevrimiçi, duraklama özet ve Health'ten düşer, analiz satırı yeniden hesabı K-973'e.
 
+
+## ▶ DURAKLATMA 2 (9 Eki öğleden sonra, token sınırı)
+Birleşenler (devamdan sonra): #494 #500 #501 #505(V44) #506 #508 #509(V45) #510 #511 · #512 auto-merge'de.
+Açık PR ve ajan işleri (her ajan duraklat mesajı aldı; dönüşte dalın son commit'inden):
+- K-969 ajanı: #519 (K-978 PR1 /call) incelemede → bulgular; sonra K-1000 (#514, decision/514-call-fields) → K-978 PR2.
+- K-970 ajanı: #515 kritik düzeltmeler (ortak `sessionState(program, records, now)`; 8 madde; `train-screen.test.tsx:478` beklentisi geri gelir) → #512 birleştiyse rebase; K-974 (mobile/437-workout-summary, `/workout-end`, test yönlendirme değişikliği ONAYLI) → K-1008 (#516) → K-974 "What moved".
+- K-971 ajanı: #517 (P3a atlama) 6 bulgu düzeltmede; P3b set düzelt/sil yığılı; sonra P2 (End/Discard/pausedSeconds/Health) → P4 swap → K-973.
+- K-995 ajanı: #518 (PATCH, V46) 6 bulgu + start_* anlık görüntüde düzeltmede (409 süren seans günü: KARAR) → K-993 (#488; göç gerekirse V47) → K-988 → K-997.
+Kalan kartlar: K-973, K-979'a kadar Part 3: K-972, K-973, K-974, K-978, K-988, K-993, K-997, K-999, K-1000, K-1008; part sonu persona yürüyüşü + ÇIKIŞ.
