@@ -121,6 +121,35 @@ class ProgramReviewControllerTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void aStartingWeightOutlivesAReviewAppliedAndComesBackWhenTheFirstSessionIsDiscarded() throws Exception {
+        // K-998 (#509 review): the review rewrites the program's rows (rewrite); the starting weight kept with a move stays.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> entered = map(send("PUT", account, "/v1/program", ownWeek(16)));
+        assertThat(send("PUT", account, "/v1/program/starting-weights", Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80)))))
+                .hasStatusOk();
+        assertThat(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(entered),
+                "suggestionIds", List.of("REP_RANGE:squat")))).hasStatusOk();
+        Map<String, Object> program = map(send("GET", account, "/v1/program", null));
+        String day = (String) days(program).stream()
+                .filter(d -> ((List<Map<String, Object>>) d.get("exercises")).stream().anyMatch(m -> m.get("exerciseId").equals("bench_press")))
+                .findFirst().orElseThrow().get("id");
+        java.time.Instant at = java.time.Instant.now().minus(java.time.Duration.ofDays(1));
+        String workout = (String) map(send("POST", account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", at.toString(),
+                "programDayId", day))).get("id");
+        for (int set = 0; set < 5; set++) {
+            assertThat(send("POST", account, "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press",
+                    "setType", "WORKING", "loadKg", 60, "reps", 10, "rir", 1, "side", "BOTH"))).hasStatus(201);
+        }
+        assertThat(send("POST", account, "/v1/workouts/" + workout + "/finish", Map.of("endedAt", at.plusSeconds(3600).toString()))).hasStatusOk();
+        assertThat(kg(move(map(send("GET", account, "/v1/program", null)), "bench_press").get("nextLoadKg"))).isNotEqualByComparingTo("80");
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + workout, null)).hasStatus(204);
+
+        assertThat(kg(move(map(send("GET", account, "/v1/program", null)), "bench_press").get("nextLoadKg"))).isEqualByComparingTo("80");
+    }
+
+    @Test
     void anEditedGeneratedProgramStaysGenerated() throws Exception {
         // Six training days: the review brings them down to training_days_max; the days left keep their names.
         AccountId account = TestSessions.newAccount();
@@ -400,6 +429,7 @@ class ProgramReviewControllerTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };
         request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));

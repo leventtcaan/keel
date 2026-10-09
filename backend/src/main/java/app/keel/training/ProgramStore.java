@@ -118,6 +118,12 @@ class ProgramStore {
                 .query(UUID.class).single();
         int before = jdbc.sql("select count(*) from training.program_day where program_id = :program").param("program", program)
                 .query(Integer.class).single();
+        // The starting weights kept with the moves (K-998) go back onto the rows that keep their id.
+        record Start(UUID id, BigDecimal loadKg, int reps) {
+        }
+        List<Start> starts = jdbc.sql("select id, start_load_kg, start_reps from training.planned_exercise where account_id = :account and start_load_kg is not null")
+                .param("account", account.value())
+                .query((row, n) -> new Start(row.getObject("id", UUID.class), row.getBigDecimal("start_load_kg"), row.getInt("start_reps"))).list();
         jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
         if (before != days.size()) {
             jdbc.sql("""
@@ -128,6 +134,10 @@ class ProgramStore {
                     .param("now", clock.instant().atOffset(ZoneOffset.UTC)).update();
         }
         insert(account, program, days);
+        for (Start start : starts) {
+            jdbc.sql("update training.planned_exercise set start_load_kg = :load, start_reps = :reps where account_id = :account and id = :id")
+                    .param("account", account.value()).param("id", start.id()).param("load", start.loadKg()).param("reps", start.reps()).update();
+        }
         return current(account).orElseThrow();
     }
 
