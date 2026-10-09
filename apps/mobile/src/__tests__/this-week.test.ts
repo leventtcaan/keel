@@ -80,14 +80,13 @@ describe('calendar days, read as dates only', () => {
 });
 
 describe("the week's Monday is the server's", () => {
-  test("the consistency's week first", () => {
-    expect(weekMonday(ready(CONSISTENCY), ready({ ...PROGRAM, week: [{ programDayId: 'a', date: '2026-12-30', exerciseIds: [] }] }), '2026-12-25')).toBe(
-      '2026-12-21',
-    );
+  test("the program's week first, the week its sessions are laid out on (Program.weekOf, K-995)", () => {
+    expect(weekMonday(ready({ ...CONSISTENCY, weekOf: '2026-12-14' }), ready({ ...PROGRAM, weekOf: '2026-12-21' }), '2026-12-25')).toBe('2026-12-21');
+    expect(weekMonday(none, ready({ ...PROGRAM, weekOf: '2026-10-12' }), '2026-10-12')).toBe('2026-10-12');
   });
 
-  test("before the first call (no consistency yet): the week the program's sessions are on", () => {
-    expect(weekMonday(none, ready({ ...PROGRAM, week: [{ programDayId: 'b', date: '2026-10-14', exerciseIds: [] }] }), '2026-10-12')).toBe('2026-10-12');
+  test("no program: the consistency's week", () => {
+    expect(weekMonday(ready(CONSISTENCY), none, '2026-12-25')).toBe('2026-12-21');
   });
 
   test("neither: the week of today on the phone's calendar", () => {

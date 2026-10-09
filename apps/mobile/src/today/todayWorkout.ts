@@ -18,11 +18,13 @@ type Schemas = components['schemas'];
 type Day = Schemas['ProgramDay'];
 
 export type TodayCard =
-  | { kind: 'open'; day: Day | null; sets: number }
+  /** `onPhone`: the workout is on this phone and can be continued here; `sets` its sets so far (unknown when it is not). */
+  | { kind: 'open'; day: Day | null; sets: number | null; onPhone: boolean }
   | { kind: 'done'; day: Day | null; workoutId: string | null }
   | { kind: 'session'; day: Day; session: Schemas['WeekSession'] }
-  | { kind: 'moved'; day: Day; to: string }
-  | { kind: 'skipped'; day: Day }
+  /** `undoable`: the server says today's move or skip can be undone (WeekSession.undoable, K-995). */
+  | { kind: 'moved'; day: Day; to: string; undoable: boolean }
+  | { kind: 'skipped'; day: Day; undoable: boolean }
   | { kind: 'restWeek' }
   | { kind: 'rest' }
   | { kind: 'none' };
@@ -40,27 +42,26 @@ type Input = {
 
 export function todayCardOf({ program, day, active, doneToday }: Input): TodayCard {
   const dayOf = (id: string | null | undefined) => program?.days.find((d) => d.id === id) ?? null;
-  if (active !== null) return { kind: 'open', day: dayOf(active.programDayId), sets: active.sets.length };
+  // The phone first: a workout under way here, then one finished here whose finish may still wait to be sent.
+  if (active !== null) return { kind: 'open', day: dayOf(active.programDayId), sets: active.sets.length, onPhone: true };
   if (doneToday !== null) return { kind: 'done', day: dayOf(doneToday.programDayId), workoutId: doneToday.workoutId };
   if (program === null) return { kind: 'none' };
-  if (program.restUntil !== undefined && day <= program.restUntil) return { kind: 'restWeek' };
   const week = program.week ?? [];
   const here = week.find((s) => s.date === day);
   const named = here === undefined ? null : dayOf(here.programDayId);
-  if (here !== undefined && named !== null) return here.skipped === true ? { kind: 'skipped', day: named } : { kind: 'session', day: named, session: here };
+  // Then the server's word on today's session (K-995): done, or under way elsewhere (nothing to continue on this phone).
+  if (here?.workout?.state === 'DONE') return { kind: 'done', day: named, workoutId: here.workout.id };
+  if (here?.workout?.state === 'OPEN') return { kind: 'open', day: named, sets: null, onPhone: false };
+  if (program.restUntil !== undefined && day <= program.restUntil) return { kind: 'restWeek' };
+  if (here !== undefined && named !== null) {
+    return here.skipped === true ? { kind: 'skipped', day: named, undoable: here.undoable === true } : { kind: 'session', day: named, session: here };
+  }
   // Today's own session, moved by the user to another day of the week (the server's date).
   const weekday = weekdayOf(day);
   const away = week.find((s) => s.moved === true && s.date !== day && dayOf(s.programDayId)?.weekday === weekday);
   const awayDay = away === undefined ? null : dayOf(away.programDayId);
-  if (away !== undefined && awayDay !== null) return { kind: 'moved', day: awayDay, to: away.date };
+  if (away !== undefined && awayDay !== null) return { kind: 'moved', day: awayDay, to: away.date, undoable: away.undoable === true };
   return { kind: 'rest' };
-}
-
-/** The last workout of today's list that is finished; one still open is not done (K-961). */
-export function finishedToday(workouts: Loaded<Schemas['Workout'][]> | undefined, day: string): Done | null {
-  if (workouts?.state !== 'ready') return null;
-  const done = workouts.value.filter((w) => w.endedAt !== undefined && localDay(new Date(w.startedAt)) === day).at(-1);
-  return done === undefined ? null : { workoutId: done.id, programDayId: done.programDayId ?? null };
 }
 
 /** Records the server took or will take: a refused one is not part of what was done (as train/workout.ts reads them). */

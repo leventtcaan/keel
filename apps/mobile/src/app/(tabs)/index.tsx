@@ -59,7 +59,7 @@ export default function TodayScreen() {
         {stateCard}
         <Hero hero={hero} today={day} open={callOpen} onToggle={() => setCallOpen(!callOpen)} onChanged={reload} />
         {details}
-        <TodayCard card={card} program={program} today={day} parts={data.todayParts} />
+        <TodayCard card={card} program={program} today={day} parts={data.todayParts} onChanged={reload} />
         <FoodLine budget={data.budget} starting={data.todayParts?.starting ?? null} />
       </>
     );

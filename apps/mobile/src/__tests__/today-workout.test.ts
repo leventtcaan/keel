@@ -33,12 +33,12 @@ test('the short version is the session, marked short', () => {
 });
 
 test('skipped: said so, no Start', () => {
-  expect(todayCardOf({ ...base, program: program([{ ...onFriday, skipped: true }]) })).toEqual({ kind: 'skipped', day: A });
+  expect(todayCardOf({ ...base, program: program([{ ...onFriday, skipped: true }]) })).toEqual({ kind: 'skipped', day: A, undoable: false });
 });
 
 test("moved away: the day it went to (the server's date); today is rest", () => {
   const moved = { ...onFriday, date: '2026-12-26', moved: true };
-  expect(todayCardOf({ ...base, program: program([moved]) })).toEqual({ kind: 'moved', day: A, to: '2026-12-26' });
+  expect(todayCardOf({ ...base, program: program([moved]) })).toEqual({ kind: 'moved', day: A, to: '2026-12-26', undoable: false });
 });
 
 test("another day's session moved onto today is today's session", () => {
@@ -57,13 +57,38 @@ test('no session today: rest; a week off in force: the week off', () => {
 
 test('a workout under way on this phone comes first: "Open workout · Continue", with the sets logged so far', () => {
   const active = { clientId: 'c', startedAt: '2026-12-25T09:00:00Z', programDayId: 'a', sets: [{}, {}] as Schemas['NewSet'][] };
-  expect(todayCardOf({ ...base, program: program([onFriday]), active })).toEqual({ kind: 'open', day: A, sets: 2 });
-  expect(todayCardOf({ ...base, program: null, active: { ...active, programDayId: null } })).toEqual({ kind: 'open', day: null, sets: 2 });
+  expect(todayCardOf({ ...base, program: program([onFriday]), active })).toEqual({ kind: 'open', day: A, sets: 2, onPhone: true });
+  expect(todayCardOf({ ...base, program: null, active: { ...active, programDayId: null } })).toEqual({ kind: 'open', day: null, sets: 2, onPhone: true });
 });
 
 test('a workout finished today: done, its day by the workout\'s own program day', () => {
   const doneToday = { workoutId: 'w', programDayId: 'a' };
   expect(todayCardOf({ ...base, program: program([onFriday]), doneToday })).toEqual({ kind: 'done', day: A, workoutId: 'w' });
+});
+
+describe("the server's word on today's session (K-995)", () => {
+  test('a move or skip that can be undone says so (WeekSession.undoable)', () => {
+    const moved = { ...onFriday, date: '2026-12-26', moved: true, movedFrom: FRIDAY, undoable: true };
+    expect(todayCardOf({ ...base, program: program([moved]) })).toEqual({ kind: 'moved', day: A, to: '2026-12-26', undoable: true });
+    expect(todayCardOf({ ...base, program: program([{ ...onFriday, skipped: true, undoable: true }]) })).toEqual({ kind: 'skipped', day: A, undoable: true });
+  });
+
+  test("today's session done (workout DONE): done, with the server's workout", () => {
+    const done = { ...onFriday, workout: { id: 'w7', state: 'DONE' as const } };
+    expect(todayCardOf({ ...base, program: program([done]) })).toEqual({ kind: 'done', day: A, workoutId: 'w7' });
+  });
+
+  test("today's session under way (workout OPEN) but not on this phone: open, nothing to continue here", () => {
+    const open = { ...onFriday, workout: { id: 'w8', state: 'OPEN' as const } };
+    expect(todayCardOf({ ...base, program: program([open]) })).toEqual({ kind: 'open', day: A, sets: null, onPhone: false });
+  });
+
+  test('the phone still comes first: its open workout, then its finish waiting to be sent, even before the server says DONE', () => {
+    const active = { clientId: 'c', startedAt: '2026-12-25T09:00:00Z', programDayId: 'a', sets: [{}] as Schemas['NewSet'][] };
+    const open = { ...onFriday, workout: { id: 'w8', state: 'OPEN' as const } };
+    expect(todayCardOf({ ...base, program: program([open]), active })).toEqual({ kind: 'open', day: A, sets: 1, onPhone: true });
+    expect(todayCardOf({ ...base, program: program([open]), doneToday: { workoutId: null, programDayId: 'a' } })).toEqual({ kind: 'done', day: A, workoutId: null });
+  });
 });
 
 test('no program: nothing to show', () => {

@@ -37,14 +37,14 @@ export function daysBetween(from: string, to: string): number {
 const mondayOf = (day: string) => addDays(day, -WEEK.indexOf(weekdayOf(day)));
 
 /**
- * The Monday this week began: the consistency's; before it is there (no call yet, or no consent) the week the program's
- * sessions are on; neither, the week of today on the phone's calendar. The two fallbacks go once the server names the
- * program's week (K-995 Program.weekOf): read it here then, and add no more date arithmetic.
+ * The Monday this week began, the server's: the program's week, the one its sessions are laid out on (Program.weekOf,
+ * K-995); without a program, the consistency's. Neither (no program, no call yet or no consent), the week of today on
+ * the phone's calendar: the strip still has seven days to lay out, with nothing planned on them.
  */
 export function weekMonday(consistency: Loaded<Schemas['Consistency']>, program: Loaded<Schemas['Program']>, today: string): string {
+  if (program.state === 'ready' && program.value.weekOf !== undefined) return program.value.weekOf;
   if (consistency.state === 'ready') return consistency.value.weekOf;
-  const session = program.state === 'ready' ? program.value.week?.[0] : undefined;
-  return mondayOf(session?.date ?? today);
+  return mondayOf(today);
 }
 
 export type StripDay = { weekday: Weekday; date: string; trained: boolean; logged: boolean; planned: boolean; today: boolean };
