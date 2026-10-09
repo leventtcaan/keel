@@ -108,7 +108,8 @@ export function Hero({ hero, today, onChanged }: Props) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('thisWeek.hero.openCall')}
-          onPress={() => router.push('/call')}
+          // navigate, not push: a second tap before the screen is up goes to the same one, it stacks no second call.
+          onPress={() => router.navigate('/call')}
           hitSlop={tokens.space.md}
           style={styles.chevron}>
           <SymbolView name="chevron.right" size={tokens.type.body} tintColor={color.decisionText} weight="bold" />

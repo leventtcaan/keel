@@ -88,10 +88,11 @@ const mockGET = jest.fn(async (path: string, _init?: unknown) => {
 let mockPost: Answer = ok({});
 const mockPOST = jest.fn(async (_path: string, _init?: unknown) => mockPost);
 const mockPush = jest.fn();
+const mockNavigate = jest.fn();
 // The screen read again on focus, as expo-router does each time it comes into view.
 let mockRefocus: () => void = () => {};
 jest.mock('expo-router', () => ({
-  router: { push: (...args: unknown[]) => mockPush(...args) },
+  router: { push: (...args: unknown[]) => mockPush(...args), navigate: (...args: unknown[]) => mockNavigate(...args) },
   useRouter: () => ({ push: mockPush }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -221,11 +222,15 @@ describe('an ordinary week', () => {
     expect(screen.queryByText(/^Week \d+$/)).toBeNull();
   });
 
-  test('the call opens on its own screen (K-978); nothing retired opens', async () => {
+  test('the call opens on its own screen (K-978), by navigating: a second tap goes to the same screen, not a second one', async () => {
     await show();
-    await press(t('thisWeek.hero.openCall'));
-    expect(mockPush).toHaveBeenCalledWith('/call');
-    expect(mockPush).toHaveBeenCalledTimes(1);
+    const chevron = screen.getByRole('button', { name: t('thisWeek.hero.openCall') });
+    await act(async () => {
+      fireEvent.press(chevron);
+      fireEvent.press(chevron);
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('/call');
+    expect(mockPush).not.toHaveBeenCalled(); // nothing retired opens, and no stack of calls
   });
 
   test('one hero, no more (ADR-077 #1): no consistency card, no first weeks card, no coach questions, no chips', async () => {

@@ -6,6 +6,7 @@
  * what changed, not a toast.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 
 import CallScreen from '@/app/call';
 import type { components } from '@/api/schema';
@@ -46,11 +47,13 @@ const mockPOST = jest.fn(async (_path: string, _init?: unknown) => {
   return mockPost;
 });
 const mockBack = jest.fn();
-let mockParams: { id?: string } = {};
+const mockPush = jest.fn();
+let mockParams: { id?: string; from?: string } = {};
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack(), push: jest.fn() },
+  router: { back: () => mockBack(), push: (to: string) => mockPush(to) },
   useLocalSearchParams: () => mockParams,
 }));
+const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn() };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
@@ -143,15 +146,58 @@ describe("this week's call", () => {
     expect(screen.queryByText(t('callScreen.inPlan'))).toBeNull();
   });
 
-  test('not kept (no connection): said so, the button stays; refused (409), said the call cannot change any more', async () => {
+  test('not kept (no connection): said so, the button stays', async () => {
     await show();
     mockPost = 'offline';
     await press(t('callScreen.keep'));
     expect(screen.getByText(t('callScreen.keepFailed'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('callScreen.keep') })).toBeOnTheScreen();
+  });
+
+  test('refused (409: the call past changing): the call read again, then said so on it as it now is, no dead button', async () => {
+    await show();
     mockPost = refused(409, 'CONFLICT');
+    // A newer state on the server: the call no longer declinable.
+    mockAnswers['/v1/decisions/current'] = ok(decision({ declinable: false }));
+    const reads = mockGET.mock.calls.length;
     await press(t('callScreen.keep'));
+    expect(mockGET.mock.calls.length).toBe(reads + 1);
+    expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
     expect(screen.getByText(t('callScreen.keepRefused'))).toBeOnTheScreen();
+  });
+
+  test('kept, or used again: the new state is said aloud too (VoiceOver, K-815)', async () => {
+    await show();
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'DECLINED' }, declinable: false }));
+    await press(t('callScreen.keep'));
+    expect(said).toHaveBeenCalledWith(t('callScreen.notApplied'));
+    mockAnswers['/v1/decisions/current'] = ok(decision());
+    await press(t('callScreen.use'));
+    expect(said).toHaveBeenCalledWith(t('callScreen.inPlan'));
+  });
+
+  test('without the health data consent: said as the consent, with the way to Settings', async () => {
+    mockAnswers['/v1/decisions/current'] = refused(403, 'CONSENT_REQUIRED');
+    await show();
+    expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
+    await press(t('today.consent.open'));
+    expect(mockPush).toHaveBeenCalledWith('/settings');
+    expect(screen.queryByText(t('callScreen.failed'))).toBeNull();
+  });
+
+  test('without a subscription: the way to the plans', async () => {
+    mockAnswers['/v1/decisions/current'] = refused(403, 'ENTITLEMENT_REQUIRED');
+    await show();
+    expect(screen.getByText(t('callScreen.subscription'))).toBeOnTheScreen();
+    await press(t('subscription.seePlans'));
+    expect(mockPush).toHaveBeenCalledWith('/paywall');
+  });
+
+  test('no call yet (404): its own line, not a fault', async () => {
+    mockAnswers['/v1/decisions/current'] = refused(404, 'NOT_FOUND');
+    await show();
+    expect(screen.getByText(t('callScreen.none'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('callScreen.failed'))).toBeNull();
   });
 
   test('two taps at once send once', async () => {
@@ -178,6 +224,15 @@ describe("this week's call", () => {
 });
 
 describe('a past call (Progress › Calls)', () => {
+  test('an applied one says it was applied, not that it is in this week\'s plan; the way back names where it came from', async () => {
+    mockParams = { id: 'd0', from: 'progress' };
+    mockAnswers['/v1/decisions/{id}'] = ok(decision({ id: 'd0' }));
+    await show();
+    expect(screen.getByText(t('callScreen.applied'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('callScreen.inPlan'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('callScreen.backProgress') })).toBeOnTheScreen();
+  });
+
   test('the same screen, read only: where it stands, and nothing to tap but the way back', async () => {
     mockParams = { id: 'd0' };
     mockAnswers['/v1/decisions/{id}'] = ok(decision({ id: 'd0', application: { state: 'DECLINED' }, declinable: false }));

@@ -205,8 +205,11 @@
   },
   "callScreen": {
     "back": "This week",
-    "label": "The call",
+    "backProgress": "Progress",
     "inPlan": "In this week's plan",
+    "applied": "Applied",
+    "subscription": "Your weekly call comes with a subscription.",
+    "none": "No call yet. Your first one comes after your first check-in.",
     "notApplied": "Not applied. Kept on record.",
     "undone": "Undone. Your plan is back as it was.",
     "confidence": "Confidence {level}",

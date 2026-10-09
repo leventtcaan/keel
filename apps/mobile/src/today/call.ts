@@ -40,8 +40,11 @@ export async function applyCall(api: ApiClient, id: string): Promise<void> {
 }
 
 export type CallFace = {
-  /** What the call's foot says of the plan: in it, kept off it (declined), undone; nothing for one not applied yet. */
-  foot: 'inPlan' | 'notApplied' | 'undone' | null;
+  /**
+   * What the call's foot says of the plan: in it (a past call: applied), kept off it (declined), undone; nothing for one
+   * not applied yet.
+   */
+  foot: 'inPlan' | 'applied' | 'notApplied' | 'undone' | null;
   /** The one second way (ADR-077 #3): keep last week's plan, where the server allows it; use the call, where it is not in the plan. */
   second: 'keep' | 'use' | null;
 };
@@ -53,7 +56,7 @@ export type CallFace = {
  */
 export function callFace(decision: Decision, readOnly: boolean): CallFace {
   const state = decision.application.state;
-  const foot = state === 'APPLIED' ? 'inPlan' : state === 'DECLINED' ? 'notApplied' : state === 'UNDONE' ? 'undone' : null;
+  const foot = state === 'APPLIED' ? (readOnly ? 'applied' : 'inPlan') : state === 'DECLINED' ? 'notApplied' : state === 'UNDONE' ? 'undone' : null;
   if (readOnly) return { foot, second: null };
   if (state === 'DECLINED' || state === 'PENDING') return { foot, second: 'use' };
   return { foot, second: state === 'APPLIED' && decision.declinable ? 'keep' : null };

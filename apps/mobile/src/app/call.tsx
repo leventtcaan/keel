@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
-import { ProblemText } from '@/components/ProblemText';
+import { ProblemText, announce } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -40,17 +40,22 @@ const SAID: Record<string, string> = {
  * once, as the prototype does, unless Reduce Motion is on.
  */
 export default function CallScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, from } = useLocalSearchParams<{ id?: string; from?: string }>();
   const readOnly = id !== undefined;
+  const backKey = from === 'progress' ? 'callScreen.backProgress' : 'callScreen.back';
   const { api, report } = useAppServices();
   const { color } = useTheme();
   const reduce = useReduceMotion();
   const [call, setCall] = useState<Loaded<Decision> | null>(null);
   const [busy, setBusy] = useState(false);
-  // Not changed, said for the read it happened on: the call read again is a new try.
-  const [failed, setFailed] = useState<{ read: Decision; key: string } | null>(null);
+  // Not changed, said for one read of the call: the one it happened on (no connection: nothing new to read), or, for the
+  // server's "not now" (409), the read that follows (`next`), so the note speaks of the call as it now is.
+  const [failed, setFailed] = useState<{ read: Decision | 'next'; from: Loaded<Decision> | null; key: string } | null>(null);
+  if (failed?.read === 'next' && call !== failed.from && call?.state === 'ready') setFailed({ ...failed, read: call.value });
   // A ref, not state: two taps in the same moment both see state from before either ran, a ref they share.
   const sending = useRef(false);
+  // Changed: the read that follows says the call's new standing aloud (VoiceOver, K-815).
+  const toSay = useRef<Loaded<Decision> | null | undefined>(undefined);
 
   // Read on arrival and again after a change or on asking; an answer landing after the screen left is dropped.
   const [reads, setReads] = useState(0);
@@ -73,6 +78,13 @@ export default function CallScreen() {
     else Animated.timing(rise, { toValue: 1, duration: tokens.motion.revealMs, useNativeDriver: true }).start();
   }, [shown, reduce, rise]);
 
+  useEffect(() => {
+    if (toSay.current === undefined || call === toSay.current || call?.state !== 'ready') return;
+    toSay.current = undefined;
+    const foot = callFace(call.value, readOnly).foot;
+    if (foot !== null) announce(t(`callScreen.${foot}`));
+  }, [call, readOnly]);
+
   async function change(decision: Decision, how: 'keep' | 'use') {
     if (sending.current) return;
     sending.current = true;
@@ -80,11 +92,19 @@ export default function CallScreen() {
     try {
       await (how === 'keep' ? declineCall(api, decision.id) : applyCall(api, decision.id));
       setFailed(null);
+      toSay.current = call;
       read();
     } catch (error) {
       const name = nameOf(error);
       report({ name });
-      setFailed({ read: decision, key: how === 'use' && name === 'NoConnection' ? 'today.call.applyFailed' : (SAID[name] ?? 'callScreen.keepError') });
+      const key = how === 'use' && name === 'NoConnection' ? 'today.call.applyFailed' : (SAID[name] ?? 'callScreen.keepError');
+      // Past changing (409): read the call again, so no button stays that cannot do anything; then say why.
+      if (name === 'DeclineRefused' || name === 'ApplyRefused') {
+        setFailed({ read: 'next', from: call, key });
+        read();
+      } else {
+        setFailed({ read: decision, from: call, key });
+      }
     } finally {
       sending.current = false;
       setBusy(false);
@@ -92,20 +112,27 @@ export default function CallScreen() {
   }
 
   const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel={t('callScreen.back')} onPress={() => router.back()} hitSlop={tokens.space.md}>
-      <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t('callScreen.back')}`}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t(backKey)} onPress={() => router.back()} hitSlop={tokens.space.md}>
+      <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t(backKey)}`}</Text>
     </Pressable>
   );
-  let body = null;
-  let dock = null;
-  if (call !== null && call.state !== 'ready') {
-    body = (
+  const note = (key: string, action?: { label: string; onPress: () => void }) => {
+    // Built outside the JSX children (the raw-text guard reads them).
+    const button = action === undefined ? null : <Button label={action.label} variant="ghost" size="sm" onPress={action.onPress} />;
+    return (
       <View style={styles.note}>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t('callScreen.failed')}</Text>
-        <Button label={t('callScreen.retry')} variant="ghost" size="sm" onPress={read} />
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t(key)}</Text>
+        {button}
       </View>
     );
-  } else if (call?.state === 'ready') {
+  };
+  let body = null;
+  let dock = null;
+  if (call?.state === 'consent') body = note('today.consent.body', { label: t('today.consent.open'), onPress: () => router.push('/settings') });
+  else if (call?.state === 'subscription') body = note('callScreen.subscription', { label: t('subscription.seePlans'), onPress: () => router.push('/paywall') });
+  else if (call?.state === 'none') body = note('callScreen.none');
+  else if (call?.state === 'failed') body = note('callScreen.failed', { label: t('callScreen.retry'), onPress: read });
+  else if (call?.state === 'ready') {
     const decision = call.value;
     const face = callFace(decision, readOnly);
     const waits = decision.action.type === 'NO_DECISION_YET';
@@ -130,7 +157,6 @@ export default function CallScreen() {
       <>
         <Text style={[styles.small, { color: color.muted }]}>{weekdayDate(decision.madeOn)}</Text>
         <Animated.View
-          accessibilityLabel={t('callScreen.label')}
           style={{ opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [tokens.motion.revealRise, 0] }) }] }}>
           <DecisionBlock testID="call-block" title={t(labelKey(decision.copyKey))}>
             <Text style={[styles.line, { color: color.decisionTextSecondary }]}>{t(`${decision.copyKey}.title`)}</Text>

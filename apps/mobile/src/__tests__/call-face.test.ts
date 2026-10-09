@@ -35,7 +35,7 @@ test('undone, or a call that changes nothing: its words only', () => {
 });
 
 test('a past call, read only: the foot, never a way to change it', () => {
-  expect(callFace(call('APPLIED', true), true)).toEqual({ foot: 'inPlan', second: null });
+  expect(callFace(call('APPLIED', true), true)).toEqual({ foot: 'applied', second: null }); // a past week: applied, not "this week"
   expect(callFace(call('DECLINED'), true)).toEqual({ foot: 'notApplied', second: null });
 });
 
