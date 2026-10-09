@@ -11,7 +11,6 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { CallCard } from '@/today/CallCard';
 import { Hero } from '@/today/Hero';
 import { StateCard } from '@/today/StateCard';
 import type { TodayData } from '@/today/today';
@@ -34,8 +33,6 @@ type Program = components['schemas']['Program'];
 export default function TodayScreen() {
   const { color } = useTheme();
   const { day, data, reload } = useToday();
-  // The call's details below the hero, until the call screen (K-978) takes them.
-  const [callOpen, setCallOpen] = useState(false);
   // A change to today answered with the program as changed: shown at once, for the read it answered, while the week is
   // read again (Health, the queue, every part); the next read is the server's word again.
   const [answered, setAnswered] = useState<{ read: TodayData; program: Program } | null>(null);
@@ -57,15 +54,13 @@ export default function TodayScreen() {
     const hero = heroOf(data);
     const stateCard = hero.kind === 'monday' ? null : <StateCard state={data.state} onChanged={reload} entry={false} />;
     const card = todayCardOf({ program, day, active: data.active ?? null, doneToday: data.doneToday ?? null });
-    const details = hero.kind === 'call' && callOpen ? <CallCard decision={hero.decision} onChanged={reload} /> : null;
     top = (
       <>
         <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, day, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
         {/* A paused week is the state's own card ("I'm back"); back, its welcome stays until another state is read. With the
             check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
         {stateCard}
-        <Hero hero={hero} today={day} open={callOpen} onToggle={() => setCallOpen(!callOpen)} onChanged={reload} />
-        {details}
+        <Hero hero={hero} today={day} onChanged={reload} />
         <TodayCard
           card={card}
           program={program}
