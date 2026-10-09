@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { type GymWeights, platesFor, platesPerSide, round, within } from '@/train/loadSteps';
+import { type GymWeights, lighter, platesFor, platesPerSide, round, within } from '@/train/loadSteps';
 
 type Case = {
   case: string;
@@ -19,12 +19,14 @@ type Case = {
   expect: number | string;
 };
 type PlateCase = { case: string; baseKg: number; platesKg: number[]; totalKg: number; expect: number[] | null };
+type LighterCase = Pick<Case, 'case' | 'equipment' | 'exerciseId' | 'gym'> & { fromKg: number; targetKg: number; expect: number | null };
 type WithinCase = Pick<Case, 'case' | 'equipment' | 'exerciseId' | 'gym'> & { fromKg: number; toKg: number; expect: number | null | 'UNKNOWN' };
 
 const fixture = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../../contracts/fixtures/load-steps.json'), 'utf8')) as {
   round: Case[];
   platesPerSide: PlateCase[];
   within: WithinCase[];
+  lighter: LighterCase[];
 };
 
 const gym = (g: Case['gym']): GymWeights => ({
@@ -77,4 +79,10 @@ describe('the plates a side for a load, by what the move is made of', () => {
     expect(platesFor('BARBELL', 101, GYM)).toBeNull();
     expect(platesFor('PLATE_LOADED', 0, GYM)).toBeNull();
   });
+});
+
+// The backend's LoadSteps.lighter (K-971: the weight stepper going down where the gym makes nothing within a step): the
+// same cases the backend runs.
+test.each(fixture.lighter.map((c) => [c.case, c] as const))('a step back: %s', (_name, c) => {
+  expect(lighter(c.equipment as never, c.exerciseId, gym(c.gym), c.fromKg, c.targetKg)).toBe(c.expect);
 });

@@ -128,6 +128,18 @@ export function within(equipment: Equipment, exerciseId: string, gym: GymWeights
   return { kind: 'to', kg: scale.kg(to > from ? Math.max(...between) : Math.min(...between)) };
 }
 
+/**
+ * A step back the gym can make (the backend's LoadSteps.lighter): the heaviest load it makes at or under `targetKg` and
+ * lighter than `fromKg`; null when it makes none so light, or says nothing about this equipment.
+ */
+export function lighter(equipment: Equipment, exerciseId: string, gym: GymWeights, fromKg: number, targetKg: number): number | null {
+  const { scale, loads } = made(equipment, exerciseId, gym, targetKg);
+  const from = scale.units(fromKg);
+  const target = scale.target(targetKg);
+  const under = loads.filter((load) => load <= target && load < from);
+  return under.length === 0 ? null : scale.kg(Math.max(...under));
+}
+
 /** The loads a gym makes for an equipment, around a target, on the scale its weights were entered in. */
 function made(equipment: Equipment, exerciseId: string, gym: GymWeights, targetKg: number): { scale: Scale; loads: number[] } {
   const stepKg = gym.machineStepsKg[exerciseId] ?? gym.stackStepKg;

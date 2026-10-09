@@ -1,5 +1,5 @@
 {
-  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest load the gym can make that is heavier than the last; a tie goes to the lighter; NO_HEAVIER when the gym has nothing heavier (only a finite list can end: dumbbells, or a bodyweight move's dumbbells without plates); UNKNOWN when the gym says nothing about this equipment. A gym whose weights were entered in lb (each on the quarter-pound grid, at least one not a multiple of 0.05 kg) is counted in hundredths of a lb, and a load goes back to kg as the app converts a typed lb load (round(lb x 0.45359237, 2)): 140 lb is 63.5, whatever plates make it. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made. maxJump (K-430, ADR-037 #38), when given: the nearest heavier load is taken only within that many of the engine's steps (target - last) over the last; further, TOO_FAR with that load (tooFarKg) — the load stays and the reps go up until the sets at the last are worth the bottom of the range there (Epley, ADR-041 #55; the caller's). Without it (a warm-up), no limit. within (K-960, ADR-075 #3 and Ek 1): a move of at most one step from fromKg (excluded) to toKg (included) -> the load the gym makes there nearest toKg: the heaviest when toKg is over fromKg, the lightest when under; null when it makes none there; UNKNOWN when the gym says nothing about this equipment. The in-session heavier load and the phone's calibration never go past the step.",
+  "about": "Rounding a load to what a gym can make, and the plates per side (K-414, ADR-032). The backend (LoadStepsTests) and the app (K-417) read these same cases, so the two implementations agree. Loads in kg, 2 decimals (ADR-029). round: the engine's target after the last load -> the nearest load the gym can make that is heavier than the last; a tie goes to the lighter; NO_HEAVIER when the gym has nothing heavier (only a finite list can end: dumbbells, or a bodyweight move's dumbbells without plates); UNKNOWN when the gym says nothing about this equipment. A gym whose weights were entered in lb (each on the quarter-pound grid, at least one not a multiple of 0.05 kg) is counted in hundredths of a lb, and a load goes back to kg as the app converts a typed lb load (round(lb x 0.45359237, 2)): 140 lb is 63.5, whatever plates make it. platesPerSide: fewest plates, heavier first on a tie; null when the total cannot be made. maxJump (K-430, ADR-037 #38), when given: the nearest heavier load is taken only within that many of the engine's steps (target - last) over the last; further, TOO_FAR with that load (tooFarKg) — the load stays and the reps go up until the sets at the last are worth the bottom of the range there (Epley, ADR-041 #55; the caller's). Without it (a warm-up), no limit. within (K-960, ADR-075 #3 and Ek 1): a move of at most one step from fromKg (excluded) to toKg (included) -> the load the gym makes there nearest toKg: the heaviest when toKg is over fromKg, the lightest when under; null when it makes none there; UNKNOWN when the gym says nothing about this equipment. The in-session heavier load and the phone's calibration never go past the step. lighter (K-971, the session's weight stepper going down): the heaviest load the gym makes at or under targetKg and lighter than fromKg; null when it makes none so light, or says nothing about the equipment.",
   "round": [
     {
       "case": "dumbbells by 2 kg: +2.5 becomes the 22",
@@ -1010,6 +1010,88 @@
       "fromKg": 60,
       "toKg": 62.5,
       "expect": "UNKNOWN"
+    }
+  ],
+  "lighter": [
+    {
+      "case": "plates of 20, 10, 5: under 100 and at most 97.5 is 90",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "platesKg": [
+          20,
+          10,
+          5
+        ],
+        "dumbbellsKg": [],
+        "machines": {},
+        "barKg": 20
+      },
+      "fromKg": 100,
+      "targetKg": 97.5,
+      "expect": 90
+    },
+    {
+      "case": "a rack of 10, 12, 14: under 14 and at most 11.5 is 10",
+      "equipment": "DUMBBELL",
+      "exerciseId": "dumbbell_curl",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [
+          10,
+          12,
+          14
+        ],
+        "machines": {}
+      },
+      "fromKg": 14,
+      "targetKg": 11.5,
+      "expect": 10
+    },
+    {
+      "case": "a 5 kg stack: under 50 and at most 47.5 is 45",
+      "equipment": "MACHINE",
+      "exerciseId": "leg_extension",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "machines": {},
+        "stackStepKg": 5
+      },
+      "fromKg": 50,
+      "targetKg": 47.5,
+      "expect": 45
+    },
+    {
+      "case": "the empty bar: nothing lighter",
+      "equipment": "BARBELL",
+      "exerciseId": "bench_press",
+      "gym": {
+        "platesKg": [
+          20,
+          10,
+          5
+        ],
+        "dumbbellsKg": [],
+        "machines": {},
+        "barKg": 20
+      },
+      "fromKg": 20,
+      "targetKg": 17.5,
+      "expect": null
+    },
+    {
+      "case": "a cable with no stack known: none",
+      "equipment": "CABLE",
+      "exerciseId": "cable_row",
+      "gym": {
+        "platesKg": [],
+        "dumbbellsKg": [],
+        "machines": {}
+      },
+      "fromKg": 50,
+      "targetKg": 47.5,
+      "expect": null
     }
   ]
 }

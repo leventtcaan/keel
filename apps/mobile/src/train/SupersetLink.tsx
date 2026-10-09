@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Button } from "@/components/Button";
 import { Chip } from "@/components/Chip";
 import { t } from "@/copy";
 import { useTheme } from "@/theme/theme";
@@ -39,7 +38,10 @@ export function SupersetLine({
   );
 }
 
-/** The move under way's superset (K-416): its partners and a way out, or a way in with a move of the session. */
+/**
+ * The move under way's superset (K-416): its partners and a way out, or a way in with a move of the session. Small links
+ * beside the move's other links (K-971: the set under way stays in the first view); picking opens the moves under them.
+ */
 export function SupersetLink({
   partners,
   candidates,
@@ -48,6 +50,15 @@ export function SupersetLink({
 }: Props) {
   const { color } = useTheme();
   const [picking, setPicking] = useState(false);
+  const link = (label: string, onPress: () => void) => (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={styles.link}
+    >
+      <Text style={[styles.small, { color: color.accent }]}>{label}</Text>
+    </Pressable>
+  );
   if (partners.length > 0) {
     return (
       <View style={styles.row}>
@@ -56,25 +67,12 @@ export function SupersetLink({
             names: partners.join(t("superset.separator")),
           })}
         </Text>
-        <Button
-          label={t("superset.unlink")}
-          variant="ghost"
-          size="sm"
-          onPress={onUnlink}
-        />
+        {link(t("superset.unlink"), onUnlink)}
       </View>
     );
   }
   if (candidates.length === 0) return null;
-  if (!picking)
-    return (
-      <Button
-        label={t("superset.link")}
-        variant="ghost"
-        size="sm"
-        onPress={() => setPicking(true)}
-      />
-    );
+  if (!picking) return link(t("superset.link"), () => setPicking(true));
   return (
     <View style={styles.picking}>
       <Text style={[styles.small, { color: color.textSecondary }]}>
@@ -93,20 +91,17 @@ export function SupersetLink({
           />
         ))}
       </View>
-      <Button
-        label={t("superset.close")}
-        variant="ghost"
-        size="sm"
-        onPress={() => setPicking(false)}
-      />
+      {link(t("superset.close"), () => setPicking(false))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: tokens.space.sm },
+  link: { minHeight: tokens.size.touch, justifyContent: "center" },
   grow: { flex: 1 },
-  picking: { gap: tokens.space.sm },
+  // Under the links it sits beside, across the whole line.
+  picking: { gap: tokens.space.sm, flexBasis: "100%" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: tokens.space.sm },
   small: { fontSize: tokens.type.bodySmall },
 });

@@ -321,7 +321,7 @@
   "workout": {
     "title": "Workout",
     "progress": "{done} of {count} exercises",
-    "targetRir": "Target RIR 0-{max}",
+    "targetRir": "Aim for 0-{max}",
     "end": "End",
     "endLabel": "End the workout",
     "clock": {
@@ -330,8 +330,24 @@
       "label": "Workout time {time}"
     },
     "dot": "{name}, {status}",
+    "goal": {
+      "beat": "Beat last time",
+      "last": "Last: {set}",
+      "start": "Start here",
+      "first": "First time",
+      "reps": "{reps} reps"
+    },
+    "doneNumber": "set {number}",
+    "doneLeft": "{left} left",
+    "doneSet": "Set {number}, done: {set}, {left} left",
     "next": "Next: {name}",
     "upNext": "Up next",
+    "stepper": {
+      "lessLoad": "Less weight",
+      "moreLoad": "More weight",
+      "lessReps": "Fewer reps",
+      "moreReps": "More reps"
+    },
     "head": {
       "set": "#",
       "today": "Today",
@@ -357,6 +373,7 @@
     "saveFailed": "That set couldn't be saved on the phone. Try again.",
     "rir": {
       "label": "Set {number} · reps left in the tank",
+      "short": "Reps left",
       "more": "2+"
     },
     "rest": {
@@ -396,6 +413,7 @@
       "title": "Warm-up",
       "note": "Easy sets, nowhere near failure.",
       "log": "Log warm-up {number}",
+      "fold": "Warm-up, {count}",
       "done": "Done"
     },
     "plates": "{plates} {unit} a side",

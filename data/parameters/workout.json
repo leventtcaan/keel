@@ -152,6 +152,22 @@
       "note": "The same in lb: a pair of 2.5 lb plates."
     },
     {
+      "key": "set_load_step_kg",
+      "value": 2.5,
+      "unit": "kg",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "The session's weight stepper (ADR-075 #1, K-971): one tap is a pair of the smallest common plates, as warmup_round_kg and onboarding's starting_weight_stepper. At the gym in use a tap goes to the load the gym makes within this step (loadSteps.within, ADR-032), or to the next load it makes past it; any other weight is typed."
+    },
+    {
+      "key": "set_load_step_lb",
+      "value": 5,
+      "unit": "lb",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "The same in lb: a pair of 2.5 lb plates."
+    },
+    {
       "key": "history_days",
       "value": 365,
       "unit": "days",

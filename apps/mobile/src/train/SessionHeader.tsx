@@ -16,13 +16,15 @@ type Props = {
   onEnd: () => void;
   /** The control on the right (Pause, K-972); its place is kept empty without one, so the time stays in the middle. */
   right?: ReactNode;
+  /** Under the time: the day and how far into it. */
+  subtitle?: ReactNode;
 };
 
 /**
  * The session's top bar (ADR-075 #1, prototype `.wtop`): End on the left, the session's time in the middle, counting
  * every second from its real start, so it begins at 0:00, belongs to this session only and runs on after a restart.
  */
-export function SessionHeader({ since, onEnd, right }: Props) {
+export function SessionHeader({ since, onEnd, right, subtitle }: Props) {
   const { color } = useTheme();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -48,7 +50,10 @@ export function SessionHeader({ since, onEnd, right }: Props) {
           <Text style={[styles.end, { color: color.muted }]}>{t('workout.end')}</Text>
         </Pressable>
       </View>
-      {clock}
+      <View style={styles.middle}>
+        {clock}
+        {subtitle}
+      </View>
       <View style={[styles.side, styles.right]}>{right}</View>
     </View>
   );
@@ -58,6 +63,7 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   side: { flex: 1, alignItems: 'flex-start' },
   right: { alignItems: 'flex-end' },
+  middle: { flexShrink: 1, alignItems: 'center' },
   control: { minHeight: tokens.size.touch, justifyContent: 'center' },
   end: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   clock: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, fontVariant: ['tabular-nums'] },
