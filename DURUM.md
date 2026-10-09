@@ -5,7 +5,10 @@ guncelleme: 2026-10-08
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (9 Eki — M9a Part 3 DURAKLATILDI, Levent'in token sınırı; aynı session'da sürecek)
+## ▶ DEVAM NOKTASI (9 Eki akşam — M9a Part 3 YENİ SESSION'A DEVREDİLDİ)
+**Devam:** `plan/oturum-promptlari/YENI-YUZ-part3-devam-2.md` (yeni session prompt'u başında; açık PR'lar, kalan iş, Levent'e sorular, simülatör düzeneği `../keel-sim/.sim/`, ajan talimatı `ajan-brief.md`).
+
+## (önceki) DEVAM NOKTASI (9 Eki — M9a Part 3 duraklatıldı)
 **Devam:** `plan/oturum-promptlari/YENI-YUZ-part3-devam.md` (açık PR'lar, duraklatılan 4 ajan, kalan sıra, Levent'e 5 soru). Tablo: DURUM › M9a ilerleme › Part 3 başı.
 
 ## (önceki) DEVAM NOKTASI (8 Eki gece — M9a Part 2 BİTTİ)
