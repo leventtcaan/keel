@@ -9,7 +9,7 @@ import type { components } from '@/api/schema';
 import { has } from '@/copy';
 import type { ActiveWorkout } from '@/train/workout';
 
-import type { TodayParts } from './todayWorkout';
+import type { Done, TodayParts } from './todayWorkout';
 
 type Schemas = components['schemas'];
 
@@ -49,7 +49,7 @@ export type TodayData = {
   week?: { workouts: Loaded<Schemas['Workout'][]>; weighIns: Loaded<Schemas['WeighIn'][]> };
   /** Today's workout (K-969): one under way on this phone, one finished today, and what its card needs. */
   active?: ActiveWorkout | null;
-  doneToday?: { workoutId: string; programDayId: string | null } | null;
+  doneToday?: Done | null;
   todayParts?: TodayParts;
 };
 

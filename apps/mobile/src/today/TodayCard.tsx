@@ -12,6 +12,7 @@ import { tokens } from '@/theme/tokens';
 import { MoveThumb } from '@/train/MoveThumb';
 import { dayName, exerciseName } from '@/train/program';
 import { repCount } from '@/train/reps';
+import { sessionMoves } from '@/train/workout';
 import { type UnitSystem, loadValue } from '@/units/units';
 
 import { type TodayCard as Card, type TodayParts, cardioToday } from './todayWorkout';
@@ -22,20 +23,18 @@ type Schemas = components['schemas'];
 /** The first moves shown with their targets (prototype `#home`: three; ADR-077 #1). */
 const FIRST_MOVES = 3;
 
-/** The session's planned move by id: today's swap in its place, else the program day's own. */
-function plannedOf(day: Schemas['ProgramDay'], session: Schemas['WeekSession'], id: string): Schemas['PlannedExercise'] | undefined {
-  return session.swaps?.find((s) => s.exercise.exerciseId === id)?.exercise ?? day.exercises.find((e) => e.exerciseId === id);
-}
-
 /**
- * The next session's target as the server set it, in the user's unit ("72.5 × 9", prototype `#home`; the unit is the
- * Train tab's and the session's); before one is known, the plan ("3 × 6-10").
+ * The next session's target as the server set it, in the user's unit, written the way the session writes a set
+ * (train/session.ts setText): a load ("72.5 × 9", prototype `#home`, the unit the Train tab's), an added load with its
+ * plus ("+10 × 7"), and the body alone (a bodyweight move, or a weighted one with nothing added) as its sets and reps
+ * ("3 × 7"), never "0 ×". Before a target is known, the plan ("3 × 6-10").
  */
 function targetOf(planned: Schemas['PlannedExercise'], move: Schemas['Exercise'] | undefined, units: UnitSystem): string {
-  if (planned.nextLoadKg !== undefined && planned.nextReps !== undefined && move?.load !== 'BODYWEIGHT') {
-    return t('thisWeek.today.target', { load: loadValue(planned.nextLoadKg, units), reps: planned.nextReps });
-  }
-  return t('thisWeek.today.plan', { sets: planned.sets, reps: repCount(planned.reps) });
+  const { nextLoadKg: kg, nextReps: reps } = planned;
+  if (reps === undefined) return t('train.setsReps', { sets: planned.sets, reps: repCount(planned.reps) });
+  if (kg === undefined || kg === 0 || move?.load === 'BODYWEIGHT') return t('train.setsReps', { sets: planned.sets, reps });
+  const key = move?.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'thisWeek.today.added' : 'thisWeek.today.target';
+  return t(key, { load: loadValue(kg, units), reps });
 }
 
 /** "8,420 kg": the load lifted, the server's sum, whole, in the user's unit. */
@@ -74,13 +73,13 @@ export function TodayCard({ card, program, today, parts }: Props) {
       {right}
     </View>
   );
-  // K-970's page to change today (PR 493); until it is in main, the Train tab, where the session is. An icon, so the
-  // first view keeps its words (ADR-077 #1: the prototype's card has none for it).
-  const change = (
+  // K-970's page to change today, for today's session. An icon, so the first view keeps its words (ADR-077 #1: the
+  // prototype's card has none for it).
+  const change = (programDayId: string) => (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('thisWeek.today.changeLabel')}
-      onPress={() => router.push('/train')}
+      onPress={() => router.push({ pathname: '/today-change', params: { day: programDayId } })}
       style={({ pressed }) => [styles.icon, { backgroundColor: color.background }, pressed && styles.dim]}>
       <SymbolView name="slider.horizontal.3" size={tokens.type.body} tintColor={color.text} />
     </Pressable>
@@ -125,7 +124,7 @@ export function TodayCard({ card, program, today, parts }: Props) {
       body = (
         <>
           {head(t('thisWeek.today.today'), t('thisWeek.today.rest'), null)}
-          {fine(t('thisWeek.today.movedTo', { session: name(card.day), day: t(`onboarding.schedule.dayName.${weekdayOf(card.to)}`) }))}
+          {fine(t('thisWeek.today.movedTo', { day: t(`onboarding.schedule.dayName.${weekdayOf(card.to)}`) }))}
         </>
       );
       break;
@@ -133,7 +132,11 @@ export function TodayCard({ card, program, today, parts }: Props) {
       body = (
         <>
           {head(t('thisWeek.today.today'), name(card.day), null)}
-          {fine(t('thisWeek.today.skipped'))}
+          {fine(
+            parts?.checkInDay == null
+              ? t('thisWeek.today.skippedNoDay')
+              : t('thisWeek.today.skipped', { day: t(`onboarding.schedule.dayName.${parts.checkInDay}`) }),
+          )}
         </>
       );
       break;
@@ -162,25 +165,27 @@ export function TodayCard({ card, program, today, parts }: Props) {
             </Text>
           </View>
         );
-      const moves = session.exerciseIds.slice(0, FIRST_MOVES).flatMap((id) => {
-        const planned = plannedOf(day, session, id);
-        if (planned === undefined) return [];
-        const move = parts?.moves.get(id);
-        return [
-          <View key={id} testID={`move-${id}`} style={styles.move}>
-            <MoveThumb equipment={move?.equipment} />
-            <Text style={[styles.moveName, { color: color.text }]}>{exerciseName(id, parts?.moves)}</Text>
-            <Text style={[styles.target, { color: color.text }]}>{targetOf(planned, move, units)}</Text>
-          </View>,
-        ];
-      });
+      // The session's own moves, as the session takes them (short version, today's swaps): one rule for both.
+      const moves = sessionMoves(day, program?.week, today)
+        .slice(0, FIRST_MOVES)
+        .map((planned) => {
+          const id = planned.exerciseId;
+          const move = parts?.moves.get(id);
+          return (
+            <View key={id} testID={`move-${id}`} style={styles.move}>
+              <MoveThumb equipment={move?.equipment} />
+              <Text style={[styles.moveName, { color: color.text }]}>{exerciseName(id, parts?.moves)}</Text>
+              <Text style={[styles.target, { color: color.text }]}>{targetOf(planned, move, units)}</Text>
+            </View>
+          );
+        });
       body = (
         <>
           {head(
             t('thisWeek.today.today'),
             name(day),
             <View style={styles.row}>
-              {change}
+              {change(day.id)}
               {start}
             </View>,
             short ? t('thisWeek.today.short') : undefined,

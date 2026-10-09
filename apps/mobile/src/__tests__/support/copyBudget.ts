@@ -21,6 +21,13 @@ export type ScreenBudget = {
    * (a day's name) and short marks (the weekday chips).
    */
   uncounted?: string[];
+  /** The components the route draws (K-969): their keys are the screen's too, so a word added there is counted. */
+  parts?: string[];
+  /**
+   * The screen's other states, each its own first view (K-969: This week's first week, a call declined, no consent, a
+   * workout under way): each is held to the budget with its own words, since two states never show at once.
+   */
+  faces?: { face: string; keys: BudgetKey[]; dynamic?: { what: string; words: number }[] }[];
 };
 
 export function wordsOf(text: string): number {
@@ -36,7 +43,20 @@ export function lookup(copy: Copy, key: string): string | undefined {
 }
 
 /** What breaks a screen's budget: a key that is not a text in the copy, or more words than allowed. */
-export function budgetProblems(copy: Copy, screen: Pick<ScreenBudget, 'screen' | 'budget' | 'keys' | 'dynamic'>): string[] {
+export function budgetProblems(copy: Copy, screen: Pick<ScreenBudget, 'screen' | 'budget' | 'keys' | 'dynamic' | 'faces'>): string[] {
+  const own = viewProblems(copy, screen.screen, screen.budget, screen.keys, screen.dynamic);
+  const faces = (screen.faces ?? []).flatMap((f) => viewProblems(copy, `${screen.screen} (${f.face})`, screen.budget, f.keys, f.dynamic));
+  return [...own, ...faces];
+}
+
+/** Every key a screen accounts for: its first view's, its faces', and those said to be off the first view or uncounted. */
+export function accountedKeys(screen: Pick<ScreenBudget, 'keys' | 'notFirstView' | 'uncounted' | 'faces'>): Set<string> {
+  const flat = (keys: BudgetKey[]) => keys.flatMap((k) => (typeof k === 'string' ? [k] : k));
+  return new Set([...flat(screen.keys), ...(screen.faces ?? []).flatMap((f) => flat(f.keys)), ...screen.notFirstView, ...(screen.uncounted ?? [])]);
+}
+
+function viewProblems(copy: Copy, name: string, budget: number, keys: BudgetKey[], dynamic: ScreenBudget['dynamic']): string[] {
+  const screen = { screen: name, budget, keys, dynamic };
   const problems: string[] = [];
   let words = (screen.dynamic ?? []).reduce((sum, entry) => sum + entry.words, 0);
   for (const entry of screen.keys) {

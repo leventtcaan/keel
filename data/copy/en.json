@@ -134,7 +134,6 @@
       "letter": { "MONDAY": "M", "TUESDAY": "T", "WEDNESDAY": "W", "THURSDAY": "T", "FRIDAY": "F", "SATURDAY": "S", "SUNDAY": "S" }
     },
     "hero": {
-      "call": "This week's call",
       "openCall": "Open the call",
       "hideCall": "Hide the call",
       "start": "Your start",
@@ -172,25 +171,29 @@
       "changeLabel": "Change today's workout",
       "rest": "Rest",
       "restWeek": "Week off training",
-      "movedTo": "{session} moved to {day}.",
-      "skipped": "Skipped. Monday reads what happened.",
+      "movedTo": "Moved to {day}.",
+      "skipped": "Skipped. {day} reads what happened.",
+      "skippedNoDay": "Skipped. Nothing to make up.",
       "done": "Today · done",
       "doneLabel": "Done",
       "doneStats": { "one": "1 set · {lifted} lifted", "other": "{count} sets · {lifted} lifted" },
       "open": "Open workout",
       "openSets": {
-        "none": "Finish it anytime this week.",
-        "one": "1 set logged. Finish it anytime this week.",
-        "other": "{count} sets logged. Finish it anytime this week."
+        "none": "Finish anytime this week.",
+        "one": "1 set logged. Finish anytime this week.",
+        "other": "{count} sets logged. Finish anytime this week."
       },
       "continue": "Continue",
       "target": "{load} × {reps}",
-      "plan": "{sets} × {reps}",
+      "added": "+{load} × {reps}",
       "cardio": "Cardio, {minutes} min",
       "cardioOptional": "Cardio optional"
     },
     "food": {
       "left": "Food left",
+      "today": "Food today",
+      "over": "Over by",
+      "around": "Around target",
       "log": "Log",
       "lineLabel": "{lead} {amount}. Log a meal",
       "lineLabelAround": "{lead}. Log a meal",
@@ -1111,15 +1114,15 @@
       "label": "Eat a little more",
       "applied": "Applied. Your calorie target has changed from today.",
       "loss_rate_cap": {
-        "title": "You're losing faster than your body can keep up with.",
+        "title": "Losing faster than your body can keep up.",
         "body": "Past this pace you start losing muscle, and the extra on the scale is mostly water. Calories go up a step this week so what you lose stays fat."
       },
       "rapid_loss": {
-        "title": "You've lost a lot in a short time. Time to ease off.",
+        "title": "Weight came off fast. Time to ease off.",
         "body": "The scale has been dropping faster than a steady pace for a while now. Calories go up a step so your body keeps up and what you lose stays fat."
       },
       "low_energy_availability": {
-        "title": "Your plan leaves too little fuel for your training.",
+        "title": "Your plan leaves too little fuel for training.",
         "body": "After what your workouts burn, what's left is less than your body needs to run well. Calories go up so training, sleep and recovery have enough to work with."
       }
     },
@@ -1239,14 +1242,14 @@
         "body": "Less than half of the plan happened over the last few weeks. Changing calories now would change a plan that hasn't been tried. Pick the one habit that slipped most and start there."
       },
       "adherence_partial": {
-        "title": "Close, but not enough to judge the plan yet.",
+        "title": "Close. Not enough yet to judge the plan.",
         "body": "A good part of the plan happened, not quite enough to tell whether it works. Calories stay where they are while the plan gets a fair try."
       }
     },
     "fix_training": {
       "label": "Fix training first",
       "performance_red_flag": {
-        "title": "Your lifts come first. No calorie cut this week.",
+        "title": "Lifts come first. No calorie cut this week.",
         "body": "Your training is slipping while your weight isn't moving toward your goal. Cutting more now would cost muscle. Calories stay, and the focus is getting your sessions back on track."
       },
       "training_first": {

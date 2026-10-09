@@ -47,18 +47,20 @@ export default function TodayScreen() {
     const monday = data.monday ?? weekMonday(data.consistency, data.program, day);
     const sessions = data.program.state === 'ready' ? (data.program.value.week ?? []) : [];
     const hero = heroOf(data);
+    const stateCard = hero.kind === 'monday' ? null : <StateCard state={data.state} onChanged={reload} entry={false} />;
     const program = data.program.state === 'ready' ? data.program.value : null;
     const card = todayCardOf({ program, day, active: data.active ?? null, doneToday: data.doneToday ?? null });
     const details = hero.kind === 'call' && callOpen ? <CallCard decision={hero.decision} onChanged={reload} /> : null;
     top = (
       <>
         <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, day, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
-        {/* A paused week is the state's own card ("I'm back"); back, its welcome stays until another state is read. */}
-        <StateCard state={data.state} onChanged={reload} entry={false} />
+        {/* A paused week is the state's own card ("I'm back"); back, its welcome stays until another state is read. With the
+            check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
+        {stateCard}
         <Hero hero={hero} today={day} open={callOpen} onToggle={() => setCallOpen(!callOpen)} onChanged={reload} />
         {details}
         <TodayCard card={card} program={program} today={day} parts={data.todayParts} />
-        <FoodLine budget={data.budget} />
+        <FoodLine budget={data.budget} starting={data.todayParts?.starting ?? null} />
       </>
     );
   }

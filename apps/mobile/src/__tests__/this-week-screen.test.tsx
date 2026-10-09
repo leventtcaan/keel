@@ -200,7 +200,7 @@ describe('an ordinary week', () => {
 
   test("the hero: the call's label and one line, the next call's day and the days to it, from the server's date", async () => {
     await show();
-    expect(screen.getByText(t('thisWeek.hero.call'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('thisWeek.hero.openCall') })).toBeOnTheScreen(); // the label is the block's head, no eyebrow (word budget)
     expect(screen.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
     expect(screen.getByText(t('decision.stop_load_increase.plateau.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.hero.nextCall', { day: 'Monday' }))).toBeOnTheScreen();
@@ -371,11 +371,11 @@ describe('a week paused (K-518): the state is the hero', () => {
     expect(screen.queryByTestId('hero')).toBeNull();
   });
 
-  test('the check-in open in a paused week: "Open your call" under the state\'s card, so the pause can end there', async () => {
+  test('the check-in open in a paused week: "Open your call", one block; the check-in asks whether the state still holds', async () => {
     mockAnswers['/v1/state'] = ok({ kind: 'BUSY', since: '2026-12-22' });
     mockAnswers['/v1/check-ins/current'] = ok({ weekOf: '2026-12-28', questions: [{ kind: 'STATE_STILL' }], answered: false });
     await show();
-    expect(screen.getByRole('button', { name: t('today.state.back') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('today.state.back') })).toBeNull();
     await press(t('thisWeek.hero.monday.openLabel'));
     expect(mockPush).toHaveBeenCalledWith('/check-in');
   });
@@ -410,17 +410,33 @@ describe("today's workout (#home)", () => {
     expect(screen.getByText(t('exercises.squat.name'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.today.target', { load: 80, reps: 8 }))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.today.target', { load: 72.5, reps: 9 }))).toBeOnTheScreen();
-    expect(screen.getByText(t('thisWeek.today.plan', { sets: 3, reps: '8-12' }))).toBeOnTheScreen(); // no target yet
+    expect(screen.getByText(t('train.setsReps', { sets: 3, reps: '8-12' }))).toBeOnTheScreen(); // no target yet
     expect(screen.queryByTestId('move-plank')).toBeNull();
     expect(screen.getByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeOnTheScreen();
     await press(startFullBodyA());
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'c' } });
   });
 
-  test('"Change" leads to changing today (the Train tab until the page of K-970 is in)', async () => {
+  test('"Change" opens the page that changes today (K-970), for today\'s session', async () => {
     await show();
     await press(t('thisWeek.today.changeLabel'));
-    expect(mockPush).toHaveBeenCalledWith('/train');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/today-change', params: { day: 'c' } });
+  });
+
+  test('a bodyweight move says its sets and reps, never "0 ×"; an added load has its plus (the session\'s own rule)', async () => {
+    const move = (id: string, load: Schemas['Exercise']['load']) =>
+      ({ id, nameKey: `exercises.${id}.name`, kind: 'COMPOUND', muscles: [], alternatives: [], load, equipment: 'BODYWEIGHT', unilateral: false, setupFields: [] }) as Schemas['Exercise'];
+    mockAnswers['/v1/exercises'] = ok([move('pull_up', 'BODYWEIGHT_PLUS_EXTERNAL'), move('dip', 'BODYWEIGHT_PLUS_EXTERNAL'), move('push_up', 'BODYWEIGHT')]);
+    const planned = (exerciseId: string, nextLoadKg: number) => ({ exerciseId, baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, nextLoadKg, nextReps: 7 });
+    mockAnswers['/v1/program'] = ok({
+      ...PROGRAM,
+      days: [...PROGRAM.days.slice(0, 2), { ...PROGRAM.days[2], exercises: [planned('pull_up', 0), planned('dip', 10), planned('push_up', 0)] }],
+      week: [...(PROGRAM.week ?? []).slice(0, 2), { programDayId: 'c', date: '2026-12-25', exerciseIds: ['pull_up', 'dip', 'push_up'] }],
+    });
+    await show();
+    expect(screen.getAllByText(t('train.setsReps', { sets: 3, reps: 7 }))).toHaveLength(2); // the pull-up and the push-up
+    expect(screen.getByText(t('thisWeek.today.added', { load: 10, reps: 7 }))).toBeOnTheScreen();
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/"0 ×/);
   });
 
   test('the short version shows on the card: "Short version", cardio optional', async () => {
@@ -434,15 +450,16 @@ describe("today's workout (#home)", () => {
     mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true });
     await show();
     expect(screen.getByText(t('thisWeek.today.rest'))).toBeOnTheScreen();
-    expect(screen.getByText(t('thisWeek.today.movedTo', { session: t('programDays.full_body_a.name'), day: 'Saturday' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.movedTo', { day: 'Saturday' }))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
     expect(day('2026-12-26')).toBe('Saturday, planned');
   });
 
-  test('skipped: said so, no Start, nothing planned in its place', async () => {
+  test('skipped: said so with the check-in day the user has, no Start, nothing planned in its place', async () => {
     mockAnswers['/v1/program'] = fridayAs({ skipped: true });
+    mockAnswers['/v1/profile'] = ok({ schedule: { trainingDays: ['MONDAY'], checkInDay: 'SUNDAY', timeZone: 'Europe/Istanbul' } });
     await show();
-    expect(screen.getByText(t('thisWeek.today.skipped'))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.skipped', { day: 'Sunday' }))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
     expect(day('2026-12-25')).toBe('Friday, today');
   });
@@ -459,6 +476,17 @@ describe("today's workout (#home)", () => {
     expect(mockGET).toHaveBeenCalledWith('/v1/workouts/{id}/summary', { params: { path: { id: 'w3' } } });
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
     expect(day('2026-12-25')).toBe('Friday, trained, today');
+  });
+
+  test('finished offline (its finish still waiting on the phone): done, no Start again', async () => {
+    mockServices.workoutRecords.mockResolvedValueOnce([
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-25T08:00:00Z', programDayId: 'c' }),
+      record(2, 'set', 's1', 'wo', { exerciseId: 'squat', setType: 'WORKING', loadKg: 80, reps: 8 }),
+      record(3, 'finish', 'f1', 'wo', { endedAt: '2026-12-25T09:00:00Z', uncleanExerciseIds: [] }),
+    ]);
+    await show();
+    expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
   });
 
   test('a workout left open: "Open workout · Continue" back into it, with the sets logged', async () => {
@@ -502,7 +530,16 @@ describe('the food line', () => {
     expect(mockPush).toHaveBeenCalledWith('/settings');
   });
 
-  test('no calorie target yet: no line', async () => {
+  test('the first week, no budget yet: the starting target as "Food today", one number, and Log (prototype foodLine)', async () => {
+    mockAnswers['/v1/targets/starting'] = ok({ targetKcal: 2100, maintenanceKcal: { low: 2000, high: 2200 }, observationDays: 14 });
+    await show();
+    expect(screen.getByText(t('thisWeek.food.today'))).toBeOnTheScreen();
+    expect(screen.getByText(t('food.budget.single', { value: '2,100', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
+    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.today'), amount: '2,100 kcal' }));
+    expect(mockPush).toHaveBeenCalledWith('/meal');
+  });
+
+  test('no budget and no starting target either: no line', async () => {
     await show();
     expect(screen.queryByTestId('food-line')).toBeNull();
     expect(screen.queryByTestId('food-locked')).toBeNull();

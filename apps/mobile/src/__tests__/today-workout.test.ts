@@ -5,7 +5,8 @@
  * version, skipped, or moved away to another day; a week off; rest. Nothing here decides a session.
  */
 import type { components } from '@/api/schema';
-import { cardioToday, todayCardOf } from '@/today/todayWorkout';
+import type { LocalRecord } from '@/sync/store';
+import { cardioToday, finishedOnPhone, todayCardOf } from '@/today/todayWorkout';
 
 type Schemas = components['schemas'];
 
@@ -87,5 +88,25 @@ describe("today's cardio (ADR-074, K-959)", () => {
     expect(cardioToday(program([], { cardio }), '2026-12-24')).toBeNull();
     expect(cardioToday(program([], { cardio: { ...cardio, sessionsPerWeek: 0 } }), FRIDAY)).toBeNull();
     expect(cardioToday(program([]), FRIDAY)).toBeNull();
+  });
+});
+
+describe('a workout finished on this phone, its finish not sent yet (offline)', () => {
+  const record = (seq: number, kind: string, clientId: string, parentClientId: string | null, body: unknown, state = 'PENDING', serverId: string | null = null) =>
+    ({ seq, clientId, kind, parentClientId, body, state, serverId, serverBody: null, errorCode: null }) as LocalRecord;
+  const workout = (startedAt: string, state = 'PENDING', serverId: string | null = null) =>
+    record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt, programDayId: 'a' }, state, serverId);
+  const finish = (state = 'PENDING') => record(2, 'finish', 'f', 'wo', { endedAt: '2026-12-25T10:00:00Z', uncleanExerciseIds: [] }, state);
+
+  test("finished today: done, by the workout's own day; its server id once it has one", () => {
+    expect(finishedOnPhone([workout('2026-12-25T09:00:00Z'), finish()], FRIDAY)).toEqual({ workoutId: null, programDayId: 'a' });
+    expect(finishedOnPhone([workout('2026-12-25T09:00:00Z', 'SYNCED', 'w9'), finish()], FRIDAY)).toEqual({ workoutId: 'w9', programDayId: 'a' });
+  });
+
+  test('not finished, finished another day, or refused by the server: not done today', () => {
+    expect(finishedOnPhone([workout('2026-12-25T09:00:00Z')], FRIDAY)).toBeNull();
+    expect(finishedOnPhone([workout('2026-12-24T09:00:00Z'), finish()], FRIDAY)).toBeNull();
+    expect(finishedOnPhone([workout('2026-12-25T09:00:00Z'), finish('REJECTED')], FRIDAY)).toBeNull();
+    expect(finishedOnPhone([workout('2026-12-25T09:00:00Z', 'REJECTED'), finish()], FRIDAY)).toBeNull();
   });
 });

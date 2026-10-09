@@ -4,7 +4,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { activeWorkout } from '@/train/workout';
 
 import { type TodayData, loadToday } from './today';
-import { finishedToday, loadTodayParts } from './todayWorkout';
+import { finishedOnPhone, finishedToday, loadTodayParts, todayCardOf } from './todayWorkout';
 import { useReadOnFocus } from './useReadOnFocus';
 import { loadWeekLogs, weekMonday } from './week';
 
@@ -44,8 +44,11 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
             return [];
           });
         const active = activeWorkout(records);
-        const doneToday = finishedToday(week.workouts, day);
-        const todayParts = await loadTodayParts(api, doneToday, today.program.state === 'ready');
+        // The server's list first; a finish still waiting on the phone (offline) is done too.
+        const doneToday = finishedToday(week.workouts, day) ?? finishedOnPhone(records, day);
+        const planned = today.program.state === 'ready' ? today.program.value : null;
+        const skipped = todayCardOf({ program: planned, day, active, doneToday }).kind === 'skipped';
+        const todayParts = await loadTodayParts(api, { done: doneToday, withMoves: planned !== null, budget: today.budget, skipped });
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
         const { program } = today;
         if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
