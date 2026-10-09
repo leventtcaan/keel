@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 class TodaySessions {
 
-    enum Kind { SHORT, MOVE, SKIP }
+    enum Kind { SHORT, FULL, MOVE, SKIP, UNDO }
 
     enum Scope { TODAY, FROM_NOW_ON }
 
@@ -40,33 +41,58 @@ class TodaySessions {
         this.gyms = gyms;
     }
 
-    /** The week of {@code today} as the program and its changes lay it out. */
-    List<TodayChanges.Session> week(AccountId account, ProgramStore.Program program, LocalDate today, int shortMoves) {
+    /**
+     * A session of the week as shown (K-995): the session, its workout of the week (null: none started), whether an undo
+     * changes it back today.
+     */
+    record Shown(TodayChanges.Session session, TodayChanges.Started workout, boolean undoable) {
+    }
+
+    /** The week of {@code today} as the program, its changes and the week's workouts on the user's calendar lay it out. */
+    List<Shown> week(AccountId account, ProgramStore.Program program, LocalDate today, ZoneId zone, int shortMoves) {
         LocalDate monday = TodayChanges.monday(today);
-        return TodayChanges.week(program.days(), monday, changes.week(account, monday), shortMoves);
+        List<WorkoutStore.Workout> started = workouts.between(account, monday.atStartOfDay(zone).toInstant(),
+                monday.plusWeeks(1).atStartOfDay(zone).toInstant());
+        Map<UUID, TodayChanges.Started> latest = TodayChanges.started(started);
+        Set<UUID> undoable = TodayChanges.undoable(changes.undos(account, monday), started, today, zone);
+        return TodayChanges.week(program.days(), monday, changes.week(account, monday), shortMoves).stream()
+                .map(session -> new Shown(session, latest.get(session.programDayId()), undoable.contains(session.programDayId()))).toList();
     }
 
     /**
-     * Today's session {@code programDayId} short, moved or skipped. CONFLICT when it is not on today, a move passes Sunday, or
-     * (a move, a skip) a workout of that day was started today. A moved session is a fresh one on its new day: neither the
-     * short version nor today's swaps go with it, nor with one the move pushes on.
+     * Today's session {@code programDayId} short, full again, moved or skipped, or today's move or skip undone (K-995). CONFLICT
+     * when it is not on today (all but an undo), a move passes Sunday, or (a move, a skip, an undo) a workout of that day was
+     * started today. A moved session is a fresh one on its new day: neither the short version nor today's swaps go with it,
+     * nor with one the move pushes on; each row a move or a skip writes keeps its change before, which an undo puts back
+     * (ADR-073 Ek 5). Nothing to undo, nothing changes.
      */
     @Transactional
     ProgramStore.Program change(AccountId account, UUID programDayId, Kind kind, LocalDate today, ZoneId zone, int shortMoves) {
         ProgramStore.Program program = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         LocalDate monday = TodayChanges.monday(today);
+        if (kind == Kind.UNDO) {
+            Map<UUID, TodayChanges.Change> back = TodayChanges.undo(changes.undos(account, monday), programDayId, today);
+            if (!back.isEmpty()) {
+                requireNotStarted(account, programDayId, today, zone);
+                back.forEach((day, before) -> changes.put(account, day, monday, new TodayChanges.Kept(before, null)));
+            }
+            return program;
+        }
         Map<UUID, TodayChanges.Change> kept = changes.week(account, monday);
         List<TodayChanges.Session> week = TodayChanges.week(program.days(), monday, kept, shortMoves);
         requireToday(week, programDayId, today);
-        if (kind != Kind.SHORT) {
+        if (kind != Kind.SHORT && kind != Kind.FULL) {
             requireNotStarted(account, programDayId, today, zone);
         }
         TodayChanges.Change change = kept.getOrDefault(programDayId, TodayChanges.Change.NONE);
         switch (kind) {
             case SHORT -> changes.put(account, programDayId, monday, change.shortened());
-            case SKIP -> changes.put(account, programDayId, monday, change.skip());
-            case MOVE -> TodayChanges.moveToTomorrow(week, programDayId, today).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT))
-                    .forEach((day, on) -> changes.put(account, day, monday, TodayChanges.Change.NONE.on(on)));
+            case FULL -> changes.put(account, programDayId, monday, change.full());
+            case SKIP -> changes.put(account, programDayId, monday, TodayChanges.skipped(change, programDayId, today));
+            case MOVE -> TodayChanges.moved(kept, TodayChanges.moveToTomorrow(week, programDayId, today)
+                            .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)), programDayId, today)
+                    .forEach((day, row) -> changes.put(account, day, monday, row));
+            case UNDO -> throw new IllegalStateException("an undo returned above");
         }
         return program;
     }
@@ -113,7 +139,14 @@ class TodaySessions {
                 .toList();
         ProgramStore.Program edited = programs.rewrite(account, days);
         if (kept.containsKey(programDayId)) {
-            changes.put(account, programDayId, monday, change.withoutSwapsOf(exerciseId, to));
+            // Today's move or skip undone later must not bring the swap back either (K-995).
+            TodayChanges.Undo undo = changes.undos(account, monday).get(programDayId);
+            TodayChanges.Change now = change.withoutSwapsOf(exerciseId, to);
+            if (undo == null) {
+                changes.put(account, programDayId, monday, now);
+            } else {
+                changes.put(account, programDayId, monday, new TodayChanges.Kept(now, undo.withoutSwapsOf(exerciseId, to)));
+            }
         }
         reviewChanges.clear(account);
         return edited;

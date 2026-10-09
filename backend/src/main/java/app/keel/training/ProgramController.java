@@ -114,26 +114,39 @@ class ProgramController {
      * Contract Program, with the deload ladder's calls in force today (K-217): a lighter week, a week off
      * ({@code restUntil}), the load held ({@code loadHeldSince}); back after a long break (K-531), a target a step lighter
      * ({@code backAfterBreak}, absent otherwise); the program reviewed as it is now (K-956); this week's
-     * cardio (K-959), absent where there is none; this week's sessions on the calendar (K-964).
+     * cardio (K-959), absent where there is none; today on the user's calendar and its week's Monday (K-995), and this week's sessions on it (K-964).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Program(UUID id, ProgramStore.Source source, List<ProgramDay> days, DeloadWeek deload, LocalDate restUntil,
-            LocalDate loadHeldSince, Boolean backAfterBreak, ProgramReviews.Review review, ProgramCardio cardio, List<WeekSession> week) {
+            LocalDate loadHeldSince, Boolean backAfterBreak, ProgramReviews.Review review, ProgramCardio cardio, LocalDate today,
+            LocalDate weekOf, List<WeekSession> week) {
     }
 
-    /** Contract WeekSession (K-964): a program day's session this week; the flags only when true. */
+    /**
+     * Contract WeekSession (K-964): a program day's session this week; the flags only when true. K-995: {@code movedFrom} its
+     * own day when moved, {@code undoable} when today's move or skip of it can be undone, its workout of the week.
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record WeekSession(UUID programDayId, LocalDate date, Boolean moved, Boolean skipped, @JsonProperty("short") Boolean shortVersion,
-            List<String> exerciseIds, List<TodaySwap> swaps) {
+    record WeekSession(UUID programDayId, LocalDate date, Boolean moved, LocalDate movedFrom, Boolean undoable, SessionWorkout workout,
+            Boolean skipped, @JsonProperty("short") Boolean shortVersion, List<String> exerciseIds, List<TodaySwap> swaps) {
 
-        static WeekSession of(TodayChanges.Session session, List<TodaySwap> swaps) {
-            return new WeekSession(session.programDayId(), session.date(), only(session.moved()), only(session.skipped()), only(session.shortVersion()),
-                    session.exerciseIds(), swaps.isEmpty() ? null : swaps);
+        static WeekSession of(TodaySessions.Shown shown, List<TodaySwap> swaps) {
+            TodayChanges.Session session = shown.session();
+            SessionWorkout workout = shown.workout() == null ? null : new SessionWorkout(shown.workout().workoutId(),
+                    shown.workout().open() ? SessionWorkout.State.OPEN : SessionWorkout.State.DONE);
+            return new WeekSession(session.programDayId(), session.date(), only(session.moved()), session.movedFrom(), only(shown.undoable()), workout,
+                    only(session.skipped()), only(session.shortVersion()), session.exerciseIds(), swaps.isEmpty() ? null : swaps);
         }
 
         private static Boolean only(boolean flag) {
             return flag ? Boolean.TRUE : null;
         }
+    }
+
+    /** Contract SessionWorkout (K-995): a session's latest workout of the week, under way or done. */
+    record SessionWorkout(UUID id, State state) {
+
+        enum State { OPEN, DONE }
     }
 
     /** Contract TodaySwap: a planned move swapped for today only, and the move in its place as a planned move of its own. */
@@ -346,7 +359,10 @@ class ProgramController {
         return view(account, program);
     }
 
-    /** Today's session short, moved to tomorrow or skipped (K-964, ADR-073 #5): this week's, never the program. */
+    /**
+     * Today's session short, full again, moved to tomorrow or skipped, or today's move or skip undone (K-964, K-995, ADR-073 #5,
+     * Ek 5): this week's, never the program.
+     */
     @PostMapping("/v1/program/today")
     Program changeToday(AccountId account, @RequestBody TodayChange request) {
         require(request.programDayId() != null && request.change() != null);
@@ -397,7 +413,7 @@ class ProgramController {
         Back back = new Back(today, zone, parametersFor(account), gyms.current(account), lastSession);
         // "Beat last time" is the last session before today's, as the break is (a session under way is not its own last time).
         Map<String, List<TrainingLog.WorkSet>> lastSessions = log.lastSessions(account, today.atStartOfDay(zone).toInstant());
-        BiFunction<ProgramStore.PlannedExercise, List<String>, PlannedExercise> shown = (planned, onTheDay) -> {
+        BiFunction<ProgramStore.PlannedExercise, List<String>, PlannedExercise> asShown = (planned, onTheDay) -> {
             Optional<NextTargets.Target> next = next(planned, held, back);
             int thisWeeksSets = TrainingChanges.sets(planned.sets(), lighter);
             Optional<TrainingLog.WorkSet> best = SessionTable.best(lastSessions.getOrDefault(planned.exerciseId(), List.of()));
@@ -411,16 +427,17 @@ class ProgramController {
         List<ProgramDay> days = program.days().stream().map(day -> {
             List<String> onTheDay = day.exercises().stream().map(ProgramStore.PlannedExercise::exerciseId).toList();
             return new ProgramDay(day.id(), day.nameKey(), day.name(), day.weekday(),
-                    day.exercises().stream().map(planned -> shown.apply(planned, onTheDay)).toList());
+                    day.exercises().stream().map(planned -> asShown.apply(planned, onTheDay)).toList());
         }).toList();
         // Today's swaps (K-964, ADR-073 #6): the move in place of a planned one is shown as that planned move would be with
         // it from now on — the same sets and range, no target, its own last time and in-session table.
-        List<WeekSession> week = todays.week(account, program, today, back.parameters().wholeNumber(ParameterKey.SHORT_SESSION_MOVES)).stream()
-                .map(session -> WeekSession.of(session, program.days().stream().filter(day -> day.id().equals(session.programDayId())).findFirst()
-                        .map(day -> day.exercises().stream().filter(planned -> session.swaps().containsKey(planned.exerciseId()))
-                                .map(planned -> new TodaySwap(planned.exerciseId(), shown.apply(new ProgramStore.PlannedExercise(
-                                        session.swaps().get(planned.exerciseId()), planned.sets(), planned.repMin(), planned.repMax(), planned.targetRir()),
-                                        day.exercises().stream().map(move -> session.swaps().getOrDefault(move.exerciseId(), move.exerciseId())).toList())))
+        List<WeekSession> week = todays.week(account, program, today, zone, back.parameters().wholeNumber(ParameterKey.SHORT_SESSION_MOVES)).stream()
+                .map(shown -> WeekSession.of(shown, program.days().stream().filter(day -> day.id().equals(shown.session().programDayId())).findFirst()
+                        .map(day -> day.exercises().stream().filter(planned -> shown.session().swaps().containsKey(planned.exerciseId()))
+                                .map(planned -> new TodaySwap(planned.exerciseId(), asShown.apply(new ProgramStore.PlannedExercise(
+                                        shown.session().swaps().get(planned.exerciseId()), planned.sets(), planned.repMin(), planned.repMax(),
+                                        planned.targetRir()), day.exercises().stream()
+                                        .map(move -> shown.session().swaps().getOrDefault(move.exerciseId(), move.exerciseId())).toList())))
                                 .toList())
                         .orElse(List.of())))
                 .toList();
@@ -430,7 +447,7 @@ class ProgramController {
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null),
                 backAfterBreak ? Boolean.TRUE : null, reviews.review(account, program, back.parameters()),
-                cardioThisWeek(account, program, facts, today, back.parameters()).orElse(null), week);
+                cardioThisWeek(account, program, facts, today, back.parameters()).orElse(null), today, TodayChanges.monday(today), week);
     }
 
     /**
