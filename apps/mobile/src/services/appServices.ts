@@ -111,6 +111,15 @@ export type AppServices = {
   training: TrainingCache;
   /** The phone's workouts, their sets and their finishes, sent or not (K-405): the session is built from them. */
   workoutRecords(): Promise<LocalRecord[]>;
+  /**
+   * A set of the session under way corrected or taken back on the phone (K-972): in its place while it still waits
+   * (false once the server has it: then it is changed there), or the phone's copy forgotten once the server's is gone.
+   */
+  workoutEdits: {
+    replacePending(clientId: string, body: unknown): Promise<boolean>;
+    forgetPending(clientId: string): Promise<boolean>;
+    forget(clientId: string): Promise<void>;
+  };
   /** The phone's meals, sent or not (K-407): today's list shows a meal saved offline at once. */
   mealRecords(): Promise<LocalRecord[]>;
   /** Forgets the phone's copy of a record the server no longer has (a meal corrected or deleted, K-407). */
@@ -337,6 +346,7 @@ export async function createAppServices({
     },
     pendingCount: store.pendingCount,
     workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
+    workoutEdits: { replacePending: store.replacePending, forgetPending: store.forgetPending, forget: store.forgetClient },
     mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
     forgetRecord: store.forgetClient,
     claimPhotos: async (owner: string) => {

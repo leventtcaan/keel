@@ -156,6 +156,21 @@ export async function openRecordStore(db: SqlDatabase, now: () => Date = () => n
       await db.runAsync('DELETE FROM records WHERE client_id = ?', [clientId]);
     },
 
+    /**
+     * A record the server does not have yet, changed in its place (its order kept): a set corrected in the session
+     * (K-972). False, and nothing changed, once it is the server's (sent meanwhile): the caller changes it there.
+     */
+    replacePending: async (clientId: string, body: unknown): Promise<boolean> => {
+      const { changes } = await db.runAsync(`UPDATE records SET body = ? WHERE client_id = ? AND state = 'PENDING'`, [JSON.stringify(body), clientId]);
+      return changes === 1;
+    },
+
+    /** A record the server does not have yet, taken back (a set deleted in the session, K-972); false once it is the server's. */
+    forgetPending: async (clientId: string): Promise<boolean> => {
+      const { changes } = await db.runAsync(`DELETE FROM records WHERE client_id = ? AND state = 'PENDING'`, [clientId]);
+      return changes === 1;
+    },
+
     /** Everything, for sign-out and account deletion: records on the phone belong to the account that made them. */
     clear: async (): Promise<void> => {
       await db.runAsync('DELETE FROM records', []);

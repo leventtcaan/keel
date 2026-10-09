@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -12,10 +12,17 @@ import type { ExercisePlan } from './workout';
 
 /**
  * The move's sets done in this session (ADR-075 #1, prototype `.donerow`): each with its mark (done is said by more than
- * colour, K-807), what was lifted, its number (and side) and the reps left. A set skipped (K-972) is grey and says so:
+ * colour, K-807), what was lifted, its number (and side) and the reps left; a tap corrects or deletes it (K-972). A set skipped (K-972) is grey and says so:
  * no mark, no load, never a "100 × 0".
  */
-export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components['schemas']['Exercise'] }) {
+type Props = {
+  plan: ExercisePlan;
+  move: components['schemas']['Exercise'];
+  /** A set done tapped, to correct or delete it (K-972); its number (and side) as shown. */
+  onEdit: (set: components['schemas']['NewSet'], number: string) => void;
+};
+
+export function DoneSets({ plan, move, onEdit }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const sides = move.unilateral ? 2 : 1;
@@ -37,9 +44,15 @@ export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components[
         const set = setText(row.done, move, units);
         const rir = row.done.rir === undefined ? null : rirChoice(row.done.rir);
         const left = rir === null ? null : rir === workoutParams.rirChoices[top] ? t('workout.rir.more') : String(rir);
+        const done = row.done;
         return (
-          <View
+          <Pressable
             key={`${row.side}-${index}`}
+            accessibilityRole="button"
+            accessibilityLabel={t('workout.editSet', { number: label, set })}
+            onPress={() => onEdit(done, label)}
+            style={({ pressed }) => [pressed && styles.dim]}>
+          <View
             accessible
             accessibilityLabel={left === null ? t('workout.setDone', { number: label }) : t('workout.doneSet', { number: label, set, left })}
             style={[styles.row, { backgroundColor: color.surface }]}>
@@ -50,6 +63,7 @@ export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components[
             <Text style={[styles.small, styles.grow, { color: color.textSecondary }]}>{t('workout.doneNumber', { number: label })}</Text>
             {left !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{t('workout.doneLeft', { left })}</Text>}
           </View>
+          </Pressable>
         );
       })}
     </View>
@@ -58,6 +72,7 @@ export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components[
 
 const styles = StyleSheet.create({
   list: { gap: tokens.space.xs },
+  dim: { opacity: tokens.opacity.dim },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   mark: { width: tokens.space.xl, height: tokens.space.xl, borderRadius: tokens.space.xl / 2, alignItems: 'center', justifyContent: 'center' },
   markText: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },

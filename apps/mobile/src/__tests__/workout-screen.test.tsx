@@ -106,8 +106,27 @@ let mockSkips: { workout: string; skips: Record<string, unknown> } | null = null
 const mockWorkoutRecords = jest.fn(async () => mockRecords);
 let mockSave: (body: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
 const mockPOST = jest.fn(async (_path: string, init: { body: unknown }) => mockSave(init.body));
+let mockDelete: () => Promise<{ response: Response }> = async () => ({ response: new Response(null, { status: 204 }) });
+const mockDELETE = jest.fn(async (_path: string, _init: unknown) => mockDelete());
 const mockServices = {
-  api: { POST: mockPOST },
+  api: { POST: mockPOST, DELETE: mockDELETE },
+  // A set of the session corrected or taken back on the phone (K-972): the store as the phone's.
+  workoutEdits: {
+    replacePending: jest.fn(async (clientId: string, body: unknown) => {
+      const at = mockRecords.findIndex((r) => r.clientId === clientId && r.state === 'PENDING');
+      if (at < 0) return false;
+      mockRecords = mockRecords.map((r, i) => (i === at ? { ...r, body } : r));
+      return true;
+    }),
+    forgetPending: jest.fn(async (clientId: string) => {
+      const before = mockRecords.length;
+      mockRecords = mockRecords.filter((r) => !(r.clientId === clientId && r.state === 'PENDING'));
+      return mockRecords.length < before;
+    }),
+    forget: jest.fn(async (clientId: string) => {
+      mockRecords = mockRecords.filter((r) => r.clientId !== clientId);
+    }),
+  },
   training: { read: async () => mockData, own: async () => mockOwn, saved: jest.fn(async () => {}) },
   workoutRecords: () => mockWorkoutRecords(),
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
@@ -147,6 +166,7 @@ function reset() {
   mockRecord.mockImplementation(keep);
   mockPause = null;
   mockSkips = null;
+  mockDelete = async () => ({ response: new Response(null, { status: 204 }) });
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockOwn = [];
   mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
@@ -1879,5 +1899,81 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await show();
     expect(await screen.findByLabelText(t('workout.skippedSet', { number: '1' }))).toBeOnTheScreen();
     expect(screen.getByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+  });
+});
+
+describe('a set done, corrected or deleted in the session (K-972, ADR-075 #5)', () => {
+  const editSet = (number: number, set: string) => fireEvent.press(screen.getByRole('button', { name: t('workout.editSet', { number: String(number), set }) }));
+  const benchSets = () => mockRecords.filter((r) => r.kind === 'set' && r.parentClientId === 'w1').map((r) => r.body as Schemas['NewSet']);
+
+  test('a set still on the phone, corrected in its place: the same set, its new reps, nothing sent twice', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await editSet(1, '62.5 kg × 6');
+    await fireEvent.press(within(screen.getByTestId('edit-set')).getByRole('button', { name: t('workout.stepper.moreReps') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.edit.done') }));
+    expect(await screen.findByLabelText(t('workout.doneSet', { number: '1', set: '62.5 kg × 7', left: '1' }))).toBeOnTheScreen();
+    expect(benchSets()).toEqual([expect.objectContaining({ clientId: sets()[0].body.clientId, reps: 7 })]);
+    expect(sets()).toHaveLength(1);
+  });
+
+  test('deleted, it is gone, and Undo brings it back', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await editSet(1, '62.5 kg × 6');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.edit.delete') }));
+    expect(await screen.findByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+    expect(benchSets()).toEqual([]);
+    expect(screen.getByText(t('workout.setDeleted'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+    expect(benchSets()).toEqual([expect.objectContaining({ loadKg: 62.5, reps: 6 })]);
+  });
+
+  const synced = () => {
+    mockRecords = [
+      ...lastWeek(),
+      { ...record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' }), serverId: 'srv-w1' },
+      { ...record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 8, rir: 1, side: 'BOTH' }, 'w1'), serverId: 'srv-b1' },
+    ];
+  };
+
+  test("a set the server has: deleted there, then the corrected one sent as a new set", async () => {
+    synced();
+    await show();
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await editSet(1, '60 kg × 8');
+    await fireEvent.press(within(screen.getByTestId('edit-set')).getByRole('button', { name: t('workout.stepper.lessReps') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.edit.done') }));
+    expect(await screen.findByLabelText(t('workout.doneSet', { number: '1', set: '60 kg × 7', left: '1' }))).toBeOnTheScreen();
+    expect(mockDELETE).toHaveBeenCalledWith('/v1/workouts/{id}/sets/{setId}', { params: { path: { id: 'srv-w1', setId: 'srv-b1' } } });
+    expect(sets()).toEqual([expect.objectContaining({ workoutClientId: 'w1', body: expect.objectContaining({ loadKg: 60, reps: 7, rir: 1 }) })]);
+    expect(sets()[0].body.clientId).not.toBe('b1');
+  });
+
+  test('a set the server has, offline: it says a connection is needed and the set stays as it was', async () => {
+    synced();
+    mockDelete = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await show();
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await editSet(1, '60 kg × 8');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.edit.delete') }));
+    expect(await screen.findByText(t('workout.edit.offline'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('workout.doneSet', { number: '1', set: '60 kg × 8', left: '1' }))).toBeOnTheScreen();
+    expect(sets()).toEqual([]);
+  });
+
+  test('closed without a change: nothing changes', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await editSet(1, '62.5 kg × 6');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.edit.done') }));
+    expect(screen.queryByRole('button', { name: t('workout.edit.delete') })).toBeNull();
+    expect(mockServices.workoutEdits.replacePending).not.toHaveBeenCalled();
   });
 });

@@ -17,6 +17,7 @@ import type { LocalRecord } from '@/sync/store';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { DoneSets } from '@/train/DoneSets';
+import { EditSet } from '@/train/EditSet';
 import { FinishForm } from '@/train/FinishForm';
 import { GoalLine } from '@/train/GoalLine';
 import { MoveDots } from '@/train/MoveDots';
@@ -76,7 +77,7 @@ export default function WorkoutScreen() {
 }
 
 function Session() {
-  const { api, training, workoutRecords, queue, report, restAlert, healthWriting, sessionPause, sessionSkips } = useAppServices();
+  const { api, training, workoutRecords, workoutEdits, queue, report, restAlert, healthWriting, sessionPause, sessionSkips } = useAppServices();
   const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
   const { color } = useTheme();
@@ -102,7 +103,10 @@ function Session() {
   const pauseRef = useRef<Pause>(NOT_PAUSED);
   // What was skipped (K-972), by move: never sent, kept with the workout. `undo` puts back the last skip.
   const [skips, setSkips] = useState<Skips>({});
-  const [undo, setUndo] = useState<{ said: string; skips: Skips; picked: string | null } | null>(null);
+  // The last skip or delete, said, and how to take it back (K-972).
+  const [undo, setUndo] = useState<{ said: string; run: () => void } | null>(null);
+  // A set done being corrected (K-972): the set and its number as shown.
+  const [editing, setEditing] = useState<{ set: components['schemas']['NewSet']; number: string } | null>(null);
   // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
   // clock tells nothing. Closing or filling it in from here is K-972.
   const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
@@ -460,7 +464,15 @@ function Session() {
     if (active !== null) void sessionSkips.keep(active.clientId, next).catch(named);
   };
   const changeSkips = (next: Skips, said: string) => {
-    setUndo({ said, skips, picked: moveId ?? null });
+    const before = skips;
+    const picked = moveId ?? null;
+    setUndo({
+      said,
+      run: () => {
+        keepSkips(before);
+        if (picked !== null) setPicked(picked);
+      },
+    });
     keepSkips(next);
     endRest();
     // Said, not only shown (K-815).
@@ -487,12 +499,51 @@ function Session() {
     keepSkips({ ...skips, [moveId]: { ...(skips[moveId] ?? NONE_SKIPPED), move: false } });
     setUndo(null);
   };
-  /** The last skip taken back, and the move it was on picked again; a rest it ended does not come back. */
-  const undoSkip = () => {
-    if (undo === null) return;
-    keepSkips(undo.skips);
-    if (undo.picked !== null) setPicked(undo.picked);
+  /** The last skip or delete taken back (a skip: the move it was on picked again; a rest it ended does not come back). */
+  const undoLast = () => {
+    undo?.run();
     setUndo(null);
+  };
+
+  /**
+   * A set done corrected (`next`) or deleted (null), K-972. Still on the phone, it changes in its place; once the
+   * server has it, it is deleted there first and the corrected set sent as a new one (a set has no edit in the
+   * contract, K-432's way); offline then, it says a connection is needed and nothing changes. A delete can be undone.
+   */
+  const changeSet = async (set: components['schemas']['NewSet'], next: { loadKg: number; reps: number } | null) => {
+    if (saving.current || active === null) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      const body = next === null ? null : { ...set, ...next };
+      const inPlace = body === null ? await workoutEdits.forgetPending(set.clientId) : await workoutEdits.replacePending(set.clientId, body);
+      if (!inPlace) {
+        const kept = await workoutRecords();
+        const setId = kept.find((r) => r.clientId === set.clientId)?.serverId;
+        const workoutId = kept.find((r) => r.kind === 'workout' && r.clientId === active.clientId)?.serverId;
+        if (setId == null || workoutId == null) throw Object.assign(new Error('not sent'), { name: 'NotSent' });
+        const { response } = await api.DELETE('/v1/workouts/{id}/sets/{setId}', { params: { path: { id: workoutId, setId } } });
+        // Already gone there is gone: the phone's copy follows.
+        if (!response.ok && response.status !== 404) throw Object.assign(new Error(String(response.status)), { name: 'DeleteRefused' });
+        await workoutEdits.forget(set.clientId);
+        if (body !== null) await queue.record({ kind: 'set', workoutClientId: active.clientId, body: { ...body, clientId: newClientId() } });
+      }
+      if (body === null) {
+        const workoutClientId = active.clientId;
+        setUndo({
+          said: t('workout.setDeleted'),
+          run: () => void queue.record({ kind: 'set', workoutClientId, body: { ...set, clientId: newClientId() } }).then(refresh).catch(named),
+        });
+      }
+      setEditing(null);
+      setProblem((said) => (said?.row === EDIT ? null : said));
+    } catch (error) {
+      named(error);
+      setProblem({ row: EDIT, text: t(error instanceof TypeError ? 'workout.edit.offline' : 'workout.edit.failed') });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
   };
   // The next move with sets left after `from`, in the session's order and round again to one left undone; -1 for none.
   const openAfter = (from: number) => {
@@ -632,8 +683,23 @@ function Session() {
       <>
         {/* The prototype's order (K-971): the target, the sets done, then the one under way, its warm-ups folded above it. */}
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
-        <DoneSets plan={plan} move={move} />
+        <DoneSets plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })} />
         {plan.skippedMove === true ? skippedMove : null}
+        {editing === null ? null : (
+          <EditSet
+            key={editing.set.clientId}
+            move={move}
+            set={editing.set}
+            number={editing.number}
+            gym={data?.gym}
+            onSave={(loadKg, reps) => void changeSet(editing.set, { loadKg, reps })}
+            onDelete={() => void changeSet(editing.set, null)}
+            onClose={() => setEditing(null)}
+            problem={problem !== null && problem.row === EDIT ? problem.text : null}
+            problemOccurrence={problem}
+            busy={busy}
+          />
+        )}
         {warmBlock}
         {entryBlock}
       </>
@@ -680,7 +746,7 @@ function Session() {
     undo === null ? null : (
       <View style={[styles.undo, { backgroundColor: color.surface }]}>
         <Text style={[styles.text, styles.grow, { color: color.text }]}>{undo.said}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={undoSkip} style={styles.link}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={undoLast} style={styles.link}>
           <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
         </Pressable>
       </View>
@@ -775,6 +841,8 @@ function Session() {
 
 /** The finish's own key for a problem: not a row of any move. */
 const FINISH = 'finish';
+/** A correction's own key for a problem. */
+const EDIT = 'edit';
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
