@@ -22,9 +22,6 @@ type Props = {
   hero: HeroFace;
   /** Today on the phone's calendar: the days to a date the server gave are counted from it. */
   today: string;
-  /** The call's details are open below (the call screen is K-978's). */
-  open: boolean;
-  onToggle: () => void;
   onChanged: () => void;
 };
 
@@ -45,7 +42,7 @@ function when(lead: 'thisWeek.hero.nextCall' | 'thisWeek.hero.firstCall', day: s
  * that uses the call after all (K-963); Monday's "Open your call" while the check-in waits; without the consent, the calls
  * are off and the way to Settings (ADR-072 Ek 1). A paused week is the state's own card, not this block.
  */
-export function Hero({ hero, today, open, onToggle, onChanged }: Props) {
+export function Hero({ hero, today, onChanged }: Props) {
   const { api, report } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
@@ -110,12 +107,11 @@ export function Hero({ hero, today, open, onToggle, onChanged }: Props) {
       const chevron = (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t(open ? 'thisWeek.hero.hideCall' : 'thisWeek.hero.openCall')}
-          accessibilityState={{ expanded: open }}
-          onPress={onToggle}
+          accessibilityLabel={t('thisWeek.hero.openCall')}
+          onPress={() => router.push('/call')}
           hitSlop={tokens.space.md}
           style={styles.chevron}>
-          <SymbolView name={open ? 'chevron.down' : 'chevron.right'} size={tokens.type.body} tintColor={color.decisionText} weight="bold" />
+          <SymbolView name="chevron.right" size={tokens.type.body} tintColor={color.decisionText} weight="bold" />
         </Pressable>
       );
       const [next, inDays] = when('thisWeek.hero.nextCall', decision.nextReview, today);

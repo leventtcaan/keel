@@ -221,15 +221,11 @@ describe('an ordinary week', () => {
     expect(screen.queryByText(/^Week \d+$/)).toBeNull();
   });
 
-  test("the call's details open in place (the call screen is K-978's); nothing retired opens", async () => {
+  test('the call opens on its own screen (K-978); nothing retired opens', async () => {
     await show();
-    expect(screen.queryByTestId('call')).toBeNull();
     await press(t('thisWeek.hero.openCall'));
-    expect(screen.getByTestId('call')).toBeOnTheScreen();
-    expect(screen.getByText(t('decision.stop_load_increase.plateau.body'))).toBeOnTheScreen();
-    await press(t('thisWeek.hero.hideCall'));
-    expect(screen.queryByTestId('call')).toBeNull();
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/call');
+    expect(mockPush).toHaveBeenCalledTimes(1);
   });
 
   test('one hero, no more (ADR-077 #1): no consistency card, no first weeks card, no coach questions, no chips', async () => {

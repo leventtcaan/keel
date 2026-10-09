@@ -146,6 +146,13 @@ export const tokens = {
     /** Pressed and disabled controls. */
     dim: 0.5,
   },
+  /** The app's few movements of its own, each skipped under Reduce Motion (K-807). */
+  motion: {
+    /** The call's reveal on its screen (ADR-077 #3, prototype `.block.reveal`): rising into place, in milliseconds. */
+    revealMs: 450,
+    /** How far below its place the call starts. */
+    revealRise: 24,
+  },
 } as const;
 
 export type Tokens = typeof tokens;

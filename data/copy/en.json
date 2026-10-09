@@ -135,7 +135,6 @@
     },
     "hero": {
       "openCall": "Open the call",
-      "hideCall": "Hide the call",
       "start": "Your start",
       "firstWeek": "First week",
       "weighIn": "Weigh in most mornings.",
@@ -203,6 +202,24 @@
       "allow": "Allow",
       "allowLabel": "Allow health data in Settings"
     }
+  },
+  "callScreen": {
+    "back": "This week",
+    "label": "The call",
+    "inPlan": "In this week's plan",
+    "notApplied": "Not applied. Kept on record.",
+    "undone": "Undone. Your plan is back as it was.",
+    "confidence": "Confidence {level}",
+    "level": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High" },
+    "nextCall": "Next call {date}",
+    "gotIt": "Got it",
+    "keep": "Keep last week's plan",
+    "use": "Use this call",
+    "keepFailed": "Not changed: no connection. Try again in a moment.",
+    "keepRefused": "This call can't be changed any more.",
+    "keepError": "Not changed: something went wrong on our side. Try again in a moment.",
+    "failed": "Couldn't load this call. Check your connection.",
+    "retry": "Try again"
   },
   "today": {
     "prompt": {
