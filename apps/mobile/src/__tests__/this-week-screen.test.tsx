@@ -454,13 +454,28 @@ describe("today's workout (#home)", () => {
   });
 
   test("moved: today is rest, and the card says where the session went (the server's day)", async () => {
-    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true });
+    // Moved off today: the one the server says can still be undone, as the Train card finds it (train/week.ts › movedOffToday).
+    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true, movedFrom: '2026-12-25', undoable: true });
     await show();
     expect(screen.getByText(t('thisWeek.today.rest'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.today.movedTo', { day: 'Saturday' }))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
     expect(day('2026-12-26')).toBe('Saturday, planned');
-    expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull(); // the server says it cannot be undone
+  });
+
+  test('a session moved on an earlier day is not today\'s: today is rest, with no line about it (one rule with the Train card)', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true, movedFrom: '2026-12-25' });
+    await show();
+    expect(screen.getByText(t('thisWeek.today.rest'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.today.movedTo', { day: 'Saturday' }))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull();
+  });
+
+  test("the server's today, not the phone's clock: past midnight on the phone, Friday's session still shows", async () => {
+    onPhone(new Date(2026, 11, 26, 0, 30));
+    await show();
+    expect(screen.getByRole('button', { name: startFullBodyA() })).toBeOnTheScreen();
+    expect(day('2026-12-25')).toBe('Friday, planned, today');
   });
 
   test('moved today and undoable: "Undo" on the card puts the week back (UNDO, K-995)', async () => {

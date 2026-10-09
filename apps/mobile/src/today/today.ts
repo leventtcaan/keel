@@ -7,9 +7,9 @@
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { has } from '@/copy';
-import type { ActiveWorkout } from '@/train/workout';
+import type { LocalRecord } from '@/sync/store';
 
-import type { Done, TodayParts } from './todayWorkout';
+import type { TodayParts } from './todayWorkout';
 
 type Schemas = components['schemas'];
 
@@ -47,9 +47,9 @@ export type TodayData = {
   /** This week as the server counts it (K-969): its Monday, and its workouts and weigh-ins from then to today. */
   monday?: string;
   week?: { workouts: Loaded<Schemas['Workout'][]>; weighIns: Loaded<Schemas['WeighIn'][]> };
-  /** Today's workout (K-969): one under way on this phone, one finished today, and what its card needs. */
-  active?: ActiveWorkout | null;
-  doneToday?: Done | null;
+  /** Today's workout (K-969): the phone's workout records and the moment of the read, for the card's rule, and what it needs. */
+  records?: LocalRecord[];
+  readAt?: Date;
   todayParts?: TodayParts;
 };
 

@@ -19,6 +19,7 @@ import { TodayCard } from '@/today/TodayCard';
 import { todayCardOf } from '@/today/todayWorkout';
 import { useToday } from '@/today/useToday';
 import { WeekStrip } from '@/today/WeekStrip';
+import { todayFor } from '@/train/week';
 import { heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from '@/today/week';
 
 type Program = components['schemas']['Program'];
@@ -53,10 +54,13 @@ export default function TodayScreen() {
     const sessions = program?.week ?? [];
     const hero = heroOf(data);
     const stateCard = hero.kind === 'monday' ? null : <StateCard state={data.state} onChanged={reload} entry={false} />;
-    const card = todayCardOf({ program, day, active: data.active ?? null, doneToday: data.doneToday ?? null });
+    // Today as the training screens read it (src/train/week.ts › todayFor): the server's, the phone's only without its word.
+    const now = data.readAt ?? new Date();
+    const today = todayFor(program, false, now);
+    const card = todayCardOf({ program, records: data.records ?? [], now });
     top = (
       <>
-        <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, day, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
+        <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
         {/* A paused week is the state's own card ("I'm back"); back, its welcome stays until another state is read. With the
             check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
         {stateCard}
@@ -64,7 +68,7 @@ export default function TodayScreen() {
         <TodayCard
           card={card}
           program={program}
-          today={day}
+          today={today}
           parts={data.todayParts}
           onChanged={(changed) => {
             if (changed !== null) setAnswered({ read: data, program: changed });

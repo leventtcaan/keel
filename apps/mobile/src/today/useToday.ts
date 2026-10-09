@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { useAppServices } from '@/services/ServicesProvider';
-import { activeWorkout } from '@/train/workout';
 
 import { type TodayData, loadToday } from './today';
-import { finishedOnPhone, loadTodayParts, todayCardOf } from './todayWorkout';
+import { loadTodayParts, todayCardOf } from './todayWorkout';
 import { useReadOnFocus } from './useReadOnFocus';
 import { loadWeekLogs, weekMonday } from './week';
 
@@ -43,12 +42,11 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
             named(error);
             return [];
           });
-        const active = activeWorkout(records, Date.now());
-        // A finish waiting on this phone (offline) is done before the server says DONE (the card reads its word, K-995).
-        const doneToday = finishedOnPhone(records, day);
+        // The moment of this read: the card's rule reads the phone's day from it, never a later clock (K-969, K-995).
+        const readAt = new Date();
         const planned = today.program.state === 'ready' ? today.program.value : null;
         // What the card will show decides what it needs: a done workout's summary (the server's id), a skipped day's line.
-        const card = todayCardOf({ program: planned, day, active, doneToday });
+        const card = todayCardOf({ program: planned, records, now: readAt });
         const done = card.kind === 'done' ? { workoutId: card.workoutId, programDayId: card.day?.id ?? null } : null;
         const todayParts = await loadTodayParts(api, { done, withMoves: planned !== null, skipped: card.kind === 'skipped' });
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
@@ -68,7 +66,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
           named(error);
           return null;
         });
-        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, active, doneToday, todayParts };
+        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, records, readAt, todayParts };
       },
       [api],
     ),
