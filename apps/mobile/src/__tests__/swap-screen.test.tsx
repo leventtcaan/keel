@@ -43,6 +43,7 @@ const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
   days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [BENCH, PULLDOWN] }],
+  today: '2026-09-29',
   week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: ['bench_press', 'lat_pulldown'] }],
 };
 const SWAPPED: Schemas['Program'] = {
@@ -64,8 +65,8 @@ const mockServices = {
   training: { read: async () => mockData, own: async () => mockOwn },
   workoutRecords: async () => mockRecords,
 };
-let mockRecords: LocalRecord[] = [];
 let mockOwn: Move[] = [];
+let mockRecords: LocalRecord[] = [];
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
@@ -90,8 +91,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockParams = { day: 'a', move: 'bench_press' };
-  mockRecords = [];
   mockOwn = [];
+  mockRecords = [];
   mockAnswer = () => ({ data: PROGRAM, response: { status: 200 } });
 });
 
@@ -203,6 +204,14 @@ test("a move another swap put in today's session: offered from now on, not for t
 
 test("today's workout of that day under way: no today only (the swap is the workout's), from now on still", async () => {
   mockRecords = [UNDER_WAY];
+  await show();
+  await fireEvent.press(await screen.findByText('Push-up'));
+  expect(screen.queryByText('Today only')).toBeNull();
+  expect(screen.getByText('From now on')).toBeTruthy();
+});
+
+test('the server says the workout is open on another phone: no today only either, from now on still', async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w9', state: 'OPEN' } }] } } };
   await show();
   await fireEvent.press(await screen.findByText('Push-up'));
   expect(screen.queryByText('Today only')).toBeNull();

@@ -485,11 +485,12 @@
    "table": "training.program_review_change",
    "module": "training",
    "class": "training",
-   "purpose": "Changes you applied to your program from its review, with the program before and after each, so any of them can be undone.",
+   "purpose": "Changes you made to your program, from its review or by editing it, with the program before and after each, so any of them can be undone.",
    "columns": [
     "id",
     "account_id",
     "seq",
+    "kind",
     "suggestion",
     "program_before",
     "program_after",
@@ -1181,7 +1182,7 @@
     "policy": "data-on-phone"
    },
    {
-    "what": "Settings and states on the phone: appearance (light, dark or system), units, consents, reminders (all, or the check-in morning alone) and your reminder sentence, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), the open workout's pause, Apple Health write switches and the steps, sleep and active energy of the recent days sent (up to 28, so none is sent twice), onboarding done or still open (plan not yet seen), whether the account met the subscription screen, the profile's sex (for the muscle map's figure), the last days the app was opened (never sent: a long gap, reminders' timing)",
+    "what": "Settings and states on the phone: appearance (light, dark or system), units, consents, reminders (all, or the check-in morning alone) and your reminder sentence, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), the open workout's pause and what was skipped in it, Apple Health write switches and the steps, sleep and active energy of the recent days sent (up to 28, so none is sent twice), onboarding done or still open (plan not yet seen), whether the account met the subscription screen, the profile's sex (for the muscle map's figure), the last days the app was opened (never sent: a long gap, reminders' timing)",
     "policy": "data-on-phone",
     "kv_keys": [
      "appearance",
@@ -1213,6 +1214,7 @@
      "train.pause",
      "train.program",
      "train.setup",
+     "train.skips",
      "units"
     ],
     "survives_sign_out": [

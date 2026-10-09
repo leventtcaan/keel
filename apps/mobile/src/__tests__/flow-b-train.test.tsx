@@ -45,6 +45,7 @@ const PROGRAM: Schemas['Program'] = {
   source: 'OWN',
   days: [DAY],
   review: { id: 'rev-1', suggestions: [SUGGESTION], applied: [], notReviewedMoves: 0 },
+  today: '2026-09-29',
   week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: ['bench_press', 'dumbbell_shoulder_press'] }],
 };
 

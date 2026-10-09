@@ -573,7 +573,26 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit the program in place by its day and move ids; it keeps its source, rows and targets (K-995)
+         * @description The program edited (ADR-073 #4, Ek 7): the program as the user wants it, every day in order. A day with `id` is that day
+         *     of the program (its id and, without `name`, its name stay); a day without one is new and needs `name`; a day left
+         *     out goes. `name` on a day renames it (a generated day then has the user's name). Each weekday once, none for a day on
+         *     no weekday. A move with `id` (PlannedExercise.id, of any day: a move can go to another day) keeps its row and next
+         *     target while it is the same move with the same rep range, other sets or not; another rep range keeps the row
+         *     without its target (it was for the old range); another move in its place is a new row without a target (the new
+         *     move has its own history). A move without `id` is new. Each id once. The program keeps its id and source: an
+         *     edited GENERATED program stays GENERATED. The edit is a change of the change log (`Program.review.edits`), undone
+         *     with POST /v1/program/review/undo as a suggestion is; the review runs again on the program edited.
+         *     This week's sessions re-lay: a day the edit puts on another weekday, or takes out, loses this week's change, and the
+         *     sessions its move pushed on go back to their days; today's swaps keep only a planned move swapped for one the day
+         *     does not plan. A move's starting weight stays with its row while its range does. Nothing different from the program,
+         *     nothing changes and nothing is logged. CONFLICT (409), nothing changed: a day or move id the program does not have
+         *     (it changed since; read it again), or a day whose workout was started today put on another weekday or taken out
+         *     (as a move or a skip: a session done is done; its moves may change). VALIDATION_FAILED as PUT. NOT_FOUND: no
+         *     program.
+         */
+        patch: operations["editProgram"];
         trace?: never;
     };
     "/v1/program/generate": {
@@ -652,7 +671,8 @@ export interface paths {
          *     applies the fix the review holds now. A move the change leaves keeps its next target (a starting weight or a
          *     session's), except a move whose rep range changed: its target was for the old range. A GENERATED program stays
          *     GENERATED (ADR-073 #4). CONFLICT (409), nothing changed: the program is not the one `reviewId` names (it changed
-         *     since the review; fetch it again), or a suggestion id the review does not hold now. NOT_FOUND without a program.
+         *     since the review; fetch it again), a suggestion id the review does not hold now, or the change would put a day
+         *     whose workout was started today on another weekday or take it out (ADR-073 Ek 7). NOT_FOUND without a program.
          */
         post: operations["applyProgramReview"];
         delete?: never;
@@ -672,12 +692,16 @@ export interface paths {
         put?: never;
         /**
          * Undo one applied change, or all of them ("N changes applied · Undo")
-         * @description With `changeId`, that change: the program as it was before it, with the changes applied after it applied again. A
-         *     later change that can no longer be applied (its finding is gone without the undone change) is undone with it and
-         *     named in `alsoUndone`, so the app can say how many changes went. Without `changeId`, every change in force: the
-         *     program as it was before the first (`alsoUndone` empty). Moves keep their next targets as in apply. An undone change
-         *     stays in the log, no longer in force; undone twice, or nothing to undo, nothing changes. NOT_FOUND: no program, or
-         *     no such change. CONFLICT (409), nothing changed: the program changed another way since its last change.
+         * @description With `changeId`, that change, a suggestion applied or an edit (PATCH /v1/program, K-995): the program as it was
+         *     before it, with the changes after it applied again. A later change that can no longer be applied (its finding is
+         *     gone without the undone change; an edit, made to a program that is no more) is undone with it and named in
+         *     `alsoUndone`, so the app can say how many changes went. Without `changeId`, every suggestion in force ("N changes
+         *     applied · Undo"): the program as it was before the first of them; an edit made before it stays, one made after it
+         *     is applied again or undone with them and named in `alsoUndone`. Moves keep their next targets as in apply. This
+         *     week's sessions re-lay as for an edit. An undone change stays in the log, no longer in force; undone twice, or
+         *     nothing to undo, nothing changes. NOT_FOUND: no program, or no such change. CONFLICT (409), nothing changed: the
+         *     program changed another way since its last change, or the undo would put a day whose workout was started today on
+         *     another weekday or take it out (ADR-073 Ek 7).
          */
         post: operations["undoProgramReview"];
         delete?: never;
@@ -2045,7 +2069,8 @@ export interface components {
          * @description The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
          *     days, too many sets, too few sets, once a week, rep range). `id` names the program as reviewed (its moves, sets,
          *     rep ranges and day order; not names or weekdays): an apply names it. `applied`: the review's changes in force,
-         *     oldest first. The user's own moves (not in the catalog) are not reviewed: they count for no muscle and no change
+         *     oldest first. `edits`: the user's edits in force (PATCH /v1/program, K-995), oldest first, this server always sends
+         *     it; both are undone with POST /v1/program/review/undo by their id. The user's own moves (not in the catalog) are not reviewed: they count for no muscle and no change
          *     touches them; `notReviewedMoves` says how many there are (this server always sends it).
          */
         ProgramReview: {
@@ -2053,6 +2078,14 @@ export interface components {
             notReviewedMoves?: number;
             suggestions: components["schemas"]["ReviewSuggestion"][];
             applied: components["schemas"]["AppliedReviewChange"][];
+            edits?: components["schemas"]["ProgramEditChange"][];
+        };
+        /** @description An edit of the program in force (K-995), one change of the log, undone as a review change is. */
+        ProgramEditChange: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            editedAt: string;
         };
         /**
          * @description A finding with its fix. `id` is the finding and what it is about, the same while the program is. The words are the
@@ -2088,13 +2121,16 @@ export interface components {
         };
         ReviewUndone: {
             program: components["schemas"]["Program"];
-            /** @description AppliedReviewChange.id of each later change undone with the one asked for, in order. */
+            /**
+             * @description The id (AppliedReviewChange.id or ProgramEditChange.id) of each later change undone with the ones asked for, in
+             *     order.
+             */
             alsoUndone: string[];
         };
         ReviewUndo: {
             /**
              * Format: uuid
-             * @description AppliedReviewChange.id; absent to undo every change in force.
+             * @description AppliedReviewChange.id or ProgramEditChange.id; absent to undo every suggestion in force (edits stay, K-995).
              */
             changeId?: string;
         };
@@ -2299,6 +2335,12 @@ export interface components {
             id: string;
         };
         PlannedExercise: {
+            /**
+             * Format: uuid
+             * @description The program's row of the move (K-995): an edit (PATCH /v1/program) names it to keep the move's row and target. Sent
+             *     for every move of a program day; absent on a move swapped in for today (TodaySwap), which is no row.
+             */
+            id?: string;
             exerciseId: string;
             /** @description The program's sets. */
             baseSets: number;
@@ -2385,6 +2427,31 @@ export interface components {
                     reps: components["schemas"]["RepRange"];
                 }[];
             }[];
+        };
+        /** @description The program as the user edited it (PATCH /v1/program), every day in order. */
+        ProgramEdit: {
+            days: components["schemas"]["EditedProgramDay"][];
+        };
+        EditedProgramDay: {
+            /**
+             * Format: uuid
+             * @description The program's day (ProgramDay.id); absent for a new day.
+             */
+            id?: string;
+            /** @description A new name; absent keeps the day's own (a new day needs one). */
+            name?: string;
+            weekday?: components["schemas"]["Weekday"];
+            exercises: components["schemas"]["EditedExercise"][];
+        };
+        EditedExercise: {
+            /**
+             * Format: uuid
+             * @description The program's row of the move (PlannedExercise.id); absent for a new move.
+             */
+            id?: string;
+            exerciseId: string;
+            sets: number;
+            reps: components["schemas"]["RepRange"];
         };
         /**
          * @description The loads an experienced user lifts about 8 times (ADR-072 #5), in kg (ADR-029). Each becomes the first target of
@@ -4198,6 +4265,31 @@ export interface operations {
         };
         responses: {
             /** @description The stored program */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    editProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramEdit"];
+            };
+        };
+        responses: {
+            /** @description The program edited, reviewed again */
             200: {
                 headers: {
                     [name: string]: unknown;
