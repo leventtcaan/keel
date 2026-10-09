@@ -31,3 +31,39 @@ export function changeToday(api: ApiClient, programDayId: string, change: Schema
 export function swapMove(api: ApiClient, body: Schemas['MoveSwap']): Promise<Changed> {
   return sent(() => api.POST('/v1/program/swap', { body }));
 }
+
+/** A review suggestion the user takes (ADR-073 #3, Ek 1): named with the review it came from; CONFLICT if that review is stale. */
+export function applySuggestion(api: ApiClient, reviewId: string, suggestionId: string): Promise<Changed> {
+  return sent(() => api.POST('/v1/program/review/apply', { body: { reviewId, suggestionIds: [suggestionId] } }));
+}
+
+export type Undone = { kind: 'done'; program: Schemas['Program']; alsoUndone: string[] } | Exclude<Changed, { kind: 'done' }>;
+
+/**
+ * An applied change undone ("N changes applied · Undo", ADR-073 Ek 1): the program before it, the later changes applied
+ * again; those that no longer apply go with it, named in `alsoUndone` so the page can say how many went.
+ */
+export async function undoChange(api: ApiClient, changeId: string): Promise<Undone> {
+  let answer: { data?: Schemas['ReviewUndone']; response: Response };
+  try {
+    answer = await api.POST('/v1/program/review/undo', { body: { changeId } });
+  } catch {
+    return { kind: 'offline' };
+  }
+  if (answer.data !== undefined) return { kind: 'done', program: answer.data.program, alsoUndone: answer.data.alsoUndone };
+  return answer.response.status === 409 ? { kind: 'conflict' } : { kind: 'failed' };
+}
+
+/**
+ * "Rebuild for me": a new program from the user's training days, replacing this one (the server's generator).
+ * `refused`: the server has no program for those days (VALIDATION_FAILED, 400); which days it builds for is its rule.
+ */
+export async function rebuild(api: ApiClient, trainingDays: Schemas['Weekday'][]): Promise<Changed | { kind: 'refused' }> {
+  let status = 0;
+  const answer = await sent(async () => {
+    const result = await api.POST('/v1/program/generate', { body: { trainingDays } });
+    status = result.response.status;
+    return result;
+  });
+  return answer.kind === 'failed' && status === 400 ? { kind: 'refused' } : answer;
+}

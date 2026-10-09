@@ -13,20 +13,10 @@ import { StepFrame, useChoose } from '@/onboarding/StepFrame';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { exerciseName } from '@/train/program';
+import { suggestionWords } from '@/train/review';
 
 type Schemas = components['schemas'];
 type Suggestion = Schemas['ReviewSuggestion'];
-
-/** A suggestion's words are the app's (copyKey), with the server's numbers and the muscle's or the move's name. */
-function words(suggestion: Suggestion, part: 'title' | 'body'): string {
-  const { copyKey, numbers, muscle, exerciseId } = suggestion;
-  return t(`${copyKey}.${part}`, {
-    ...numbers,
-    ...(muscle === undefined ? {} : { muscle: t(`demo.muscle.${muscle}`) }),
-    ...(exerciseId === undefined ? {} : { exercise: exerciseName(exerciseId) }),
-  });
-}
 
 /** "Use mine with N changes" counts the suggestions still on; with none on, keeping the program is the one way on. */
 function buttonLabel(on: number): string {
@@ -188,10 +178,10 @@ type CardProps = { suggestion: Suggestion; on: boolean; opened: boolean; disable
 /** One suggestion (prototype `.revc`): the change, its switch, and "Coaching rule" that opens into the rule's words. */
 function Card({ suggestion, on, opened, disabled, onToggle, onOpen }: CardProps) {
   const { color } = useTheme();
-  const title = words(suggestion, 'title');
+  const title = suggestionWords(suggestion, 'title');
   // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
   const rule = opened ? (
-    <Text style={[styles.small, { color: color.text }]}>{words(suggestion, 'body')}</Text>
+    <Text style={[styles.small, { color: color.text }]}>{suggestionWords(suggestion, 'body')}</Text>
   ) : (
     <Pressable accessibilityRole="button" accessibilityState={{ expanded: false }} onPress={onOpen} hitSlop={tokens.space.sm} style={styles.rule}>
       <Text style={[styles.label, { color: color.textSecondary }]}>{t('onboarding.review.rule')}</Text>

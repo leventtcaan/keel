@@ -119,6 +119,89 @@
       }
     }
   },
+  "thisWeek": {
+    "settings": "Settings",
+    "week": "Week {week}",
+    "onTrack": "{onTrack}/{counted} weeks on track",
+    "countedByWeek": "Counted by week",
+    "strip": {
+      "label": "This week",
+      "mark": "{text}, {mark}",
+      "trained": "trained",
+      "logged": "logged",
+      "planned": "planned",
+      "today": "today",
+      "letter": { "MONDAY": "M", "TUESDAY": "T", "WEDNESDAY": "W", "THURSDAY": "T", "FRIDAY": "F", "SATURDAY": "S", "SUNDAY": "S" }
+    },
+    "hero": {
+      "openCall": "Open the call",
+      "hideCall": "Hide the call",
+      "start": "Your start",
+      "firstWeek": "First week",
+      "weighIn": "Weigh in most mornings.",
+      "firstCall": "First call {day}",
+      "nextCall": "Next call {day}",
+      "inDays": "{count} days",
+      "tomorrow": "Tomorrow",
+      "today": "Today",
+      "notApplied": "Last week's plan stays.",
+      "notAppliedShort": "Not applied",
+      "useCall": "Use this call",
+      "yourWeek": "Your week",
+      "train": "Train, and see how it feels.",
+      "callsOff": "Weekly calls are off",
+      "settings": "Settings",
+      "settingsLabel": "Turn on weekly calls in Settings",
+      "monday": {
+        "open": "Open",
+        "yourCall": "your call",
+        "openLabel": "Open your call",
+        "ready": "Your week {week} call is ready.",
+        "readyNoWeek": "Your call is ready.",
+        "one": "One question first.",
+        "other": "{count} questions first."
+      }
+    },
+    "today": {
+      "label": "Today's workout",
+      "today": "Today",
+      "short": "Short version",
+      "start": "Start",
+      "startLabel": "Start {session}",
+      "changeLabel": "Change today's workout",
+      "rest": "Rest",
+      "restWeek": "Week off training",
+      "movedTo": "Moved to {day}.",
+      "skipped": "Skipped. {day} reads what happened.",
+      "skippedNoDay": "Skipped. Nothing to make up.",
+      "done": "Today · done",
+      "doneLabel": "Done",
+      "doneStats": { "one": "1 set · {lifted} lifted", "other": "{count} sets · {lifted} lifted" },
+      "open": "Open workout",
+      "openSets": {
+        "none": "Finish anytime this week.",
+        "one": "1 set logged. Finish anytime this week.",
+        "other": "{count} sets logged. Finish anytime this week."
+      },
+      "continue": "Continue",
+      "target": "{load} × {reps}",
+      "added": "+{load} × {reps}",
+      "cardio": "Cardio, {minutes} min",
+      "cardioOptional": "Cardio optional"
+    },
+    "food": {
+      "left": "Food left",
+      "today": "Food today",
+      "over": "Over by",
+      "around": "Around target",
+      "log": "Log",
+      "lineLabel": "{lead} {amount}. Log a meal",
+      "lineLabelAround": "{lead}. Log a meal",
+      "locked": "Needs your OK for health data",
+      "allow": "Allow",
+      "allowLabel": "Allow health data in Settings"
+    }
+  },
   "today": {
     "prompt": {
       "failed": "Couldn't send that. Check your connection and try again.",
@@ -221,6 +304,7 @@
   },
   "train": {
     "kept": "You're offline. This is your program as it was last loaded.",
+    "loading": "Loading your program…",
     "failed": "Your program couldn't load.",
     "retry": "Try again",
     "none": "No program yet.",
@@ -257,6 +341,7 @@
     "rackEnds": "Your gym has no next weight for this move that you can reach yet. Add one to your gym's weights and the load can go up again.",
     "startDay": "Start {day}",
     "split": { "own": "Your own program", "join": " + " },
+    "call": { "notApplied": "Not applied: last week's plan, kept", "use": "Use this call" },
     "head": "{split} · {days}",
     "days": { "one": "1 day", "other": "{count} days" },
     "todayOn": "Today · {weekday}",
@@ -280,6 +365,43 @@
     "weekRow": "{weekday} · {day}",
     "moved": "moved",
     "skippedTag": "skipped"
+  },
+  "editProgram": {
+    "title": "Edit program",
+    "edit": "Edit",
+    "editLabel": "Edit your program",
+    "days": "Training days",
+    "moves": "Moves",
+    "split": "Split",
+    "rebuild": "Rebuild for me",
+    "rebuildRow": "A new program from your training days",
+    "anyDay": "Any day",
+    "dayList": " · ",
+    "moveCount": { "one": "1 move", "other": "{count} moves" },
+    "flags": { "one": "{moves} · 1 flag", "other": "{moves} · {count} flags" },
+    "applied": { "one": "1 change applied", "other": "{count} changes applied" },
+    "appliedUndo": "Undo",
+    "readOnly": "Days and moves can't be changed here yet. Rebuild for me makes a new program from your training days.",
+    "reviewTitle": "Review",
+    "reviewNone": "Good as it is.",
+    "notReviewed": "Your own moves aren't reviewed: {count}",
+    "apply": "Apply",
+    "stale": "Your program changed since. Here it is, reviewed again.",
+    "changesTitle": "Changes from the review",
+    "changesNone": "No changes from the review in force.",
+    "undo": "Undo",
+    "undone": "Undone.",
+    "undoneWith": { "one": "Undone, with 1 later change that needed it.", "other": "Undone, with {count} later changes that needed it." },
+    "undoConflict": "Your program changed another way since, so this can't be undone.",
+    "splitBody": "Your split follows your training days. Rebuild for me makes a new program from them.",
+    "rebuildBody": "This replaces your program with a new one built from your training days. What goes: every move's next targets and starting weights, this week's changes to your sessions (moved, skipped, short, swapped), the changes from the review, and your own program with your own moves in it. Your logged workouts stay.",
+    "rebuildUnderWay": "Finish or end today's workout first: a rebuild would replace the day it is on.",
+    "rebuildRefused": "Rebuild can't make a program for {count} training days. Change your training days in Settings, then try again.",
+    "rebuildConfirm": "Rebuild my program",
+    "noDays": "Your training days couldn't load. Try again.",
+    "offline": "No connection. Try again when you're online.",
+    "failed": "Something went wrong on our side. Try again in a moment.",
+    "back": "Back"
   },
   "swap": {
     "title": "Swap {move}",
@@ -1031,15 +1153,15 @@
       "label": "Eat a little more",
       "applied": "Applied. Your calorie target has changed from today.",
       "loss_rate_cap": {
-        "title": "You're losing faster than your body can keep up with.",
+        "title": "Losing faster than your body can keep up.",
         "body": "Past this pace you start losing muscle, and the extra on the scale is mostly water. Calories go up a step this week so what you lose stays fat."
       },
       "rapid_loss": {
-        "title": "You've lost a lot in a short time. Time to ease off.",
+        "title": "Weight came off fast. Time to ease off.",
         "body": "The scale has been dropping faster than a steady pace for a while now. Calories go up a step so your body keeps up and what you lose stays fat."
       },
       "low_energy_availability": {
-        "title": "Your plan leaves too little fuel for your training.",
+        "title": "Your plan leaves too little fuel for training.",
         "body": "After what your workouts burn, what's left is less than your body needs to run well. Calories go up so training, sleep and recovery have enough to work with."
       }
     },
@@ -1159,14 +1281,14 @@
         "body": "Less than half of the plan happened over the last few weeks. Changing calories now would change a plan that hasn't been tried. Pick the one habit that slipped most and start there."
       },
       "adherence_partial": {
-        "title": "Close, but not enough to judge the plan yet.",
+        "title": "Close. Not enough yet to judge the plan.",
         "body": "A good part of the plan happened, not quite enough to tell whether it works. Calories stay where they are while the plan gets a fair try."
       }
     },
     "fix_training": {
       "label": "Fix training first",
       "performance_red_flag": {
-        "title": "Your lifts come first. No calorie cut this week.",
+        "title": "Lifts come first. No calorie cut this week.",
         "body": "Your training is slipping while your weight isn't moving toward your goal. Cutting more now would cost muscle. Calories stay, and the focus is getting your sessions back on track."
       },
       "training_first": {

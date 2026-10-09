@@ -854,10 +854,10 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-969 Bu hafta | 🔍 düzeltme | #494 · #501 | inceleme + simülatör bulguları ajanda; ilk hafta yemek satırı K-997'ye kadar başlangıç hedefiyle |
-| K-970 Antrenman + Edit | 🔍 | #493 ✅ · #495 ✅ · #506 | #506 Edit incelemede; PR 4 kardiyo ajanda; Days/Moves K-995 B'ye kadar salt okunur |
-| K-971 Oturum A | 🔍 | #497 ✅ · #499 ✅ · #500 | #500 aktif set: birim karışıklığı adımlayıcı hatası + düzen notları ajanda; ADR-075 Ek 3 |
-| K-972 Oturum B | ⏳ | | K-971 sonrası |
+| K-969 Bu hafta | 🔍 | #494 ✅ · #501 ✅ | kalan: sunucu alanları ek PR (Undo, Full, DONE/OPEN, Program.today/weekOf); sonra ajan K-978'e |
+| K-970 Antrenman + Edit | 🔍 | #493 ✅ · #495 ✅ · #506 ✅ · #508 | #508 kardiyo auto-merge; sunucu alanları ek PR; Days/Moves K-995 B'yi bekler; sonra ajan K-974'e |
+| K-971 Oturum A | ✅ | #497 · #499 · #500 | ADR-075 Ek 3; SE sığması cihaz turunda |
+| K-972 Oturum B | 🛠 | | P1 Pause → P2 End (Discard K-998 sonrası) → P3 set düzelt/sil/atla → P4 swap; analiz satırı yeniden hesabı K-973'e |
 | K-973 Oturum C | ⏳ | | K-972 sonrası (aynı ekran) |
 | K-974 Antrenman sonu | ⏳ | | |
 | K-978 Pazartesi | ⏳ | | |
@@ -865,8 +865,9 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 | K-992 ilk hatırlatma | ✅ | #492 | `reminders.firstCall` kv; rıza yoksa Monday anahtarı yok, Settings 'noCalls' |
 | K-993 ilk hafta planın görüldüğü günden | ⏳ | | decision, göç olabilir |
 | K-994 kırılgan test | ✅ | #490 | `JsonNumbers.asValue` |
-| K-995 program düzenleme ucu (yeni) | 🔍 | #505 (V44) | A: FULL/UNDO, Program.today, movedFrom/undoable/workout incelemede; B: PATCH (V45) ajanda; C: taşı önizlemesi; **split Levent'te** |
+| K-995 program düzenleme ucu | 🔍 | #505 ✅ (V44) · #510 | #510 taşı önizlemesi düzeltildi; B PATCH (V46) ajanda; split Levent'te; sonra ajan K-988, K-993, K-997 |
 | K-997 ilk hafta bütçesi (yeni) | ⏳ | | #504, nutrition |
+| K-998 seansı at + duraklama (yeni) | 🔍 | #509 (V45) | 5 bulgu düzeltildi (FOR UPDATE, retarget, pausedSeconds denetimi, otomatik kapanışta dakika yok) + başlangıç ağırlığı geri gelsin (`start_*`, aynı göç); ADR-075 Ek 4 |
 | K-996 gün adı nameKey (yeni) | ✅ | #498 | M4'ten beri her üretilmiş gün '[missing…]'; simülatör düzeneği yakaladı |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)

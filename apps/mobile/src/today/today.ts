@@ -7,6 +7,9 @@
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { has } from '@/copy';
+import type { ActiveWorkout } from '@/train/workout';
+
+import type { Done, TodayParts } from './todayWorkout';
 
 type Schemas = components['schemas'];
 
@@ -41,6 +44,13 @@ export type TodayData = {
   firstWeeks?: Loaded<Schemas['FirstWeeks']>;
   /** The day the app was opened before today, kept on the phone only (K-521); null the first time. */
   previousOpen?: string | null;
+  /** This week as the server counts it (K-969): its Monday, and its workouts and weigh-ins from then to today. */
+  monday?: string;
+  week?: { workouts: Loaded<Schemas['Workout'][]>; weighIns: Loaded<Schemas['WeighIn'][]> };
+  /** Today's workout (K-969): one under way on this phone, one finished today, and what its card needs. */
+  active?: ActiveWorkout | null;
+  doneToday?: Done | null;
+  todayParts?: TodayParts;
 };
 
 type Answer<T> = { data?: T; error?: { code?: string }; response: Response };
