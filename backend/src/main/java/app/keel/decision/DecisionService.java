@@ -229,7 +229,29 @@ class DecisionService {
             // The same clientId or this week, stored at the same moment by another request.
             return calls.byClient(account, clientId).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         }
-        return call;
+        return appliedByDefault(account, call);
+    }
+
+    /**
+     * Applied by default (ADR-077 #3, B11; K-1000): a call that moves the plan is applied as it is made, through the one
+     * apply path ("Use this call" later is the same path). A safety call too (U13); it is never declinable. When the apply
+     * cannot move the plan now (another call moved it meanwhile, a program call without a program), the call stays
+     * PENDING, kept as made, and the app offers "Use this call". The first week's day calls are NOT_NEEDED: the days are
+     * the user's to pick (Ek 1).
+     */
+    private CallStore.Call appliedByDefault(AccountId account, CallStore.Call call) {
+        if (call.application() != CallStore.Application.PENDING) {
+            return call;
+        }
+        try {
+            apply(account, call.id());
+        } catch (ApiException notNow) {
+            if (notNow.code() != ErrorCode.CONFLICT) {
+                throw notNow;
+            }
+            return call;
+        }
+        return calls.byId(account, call.id()).orElse(call);
     }
 
     /** The profile, today and the week on the user's calendar, the body, the weights, and what the data says (look, waist). */
@@ -597,6 +619,11 @@ class DecisionService {
     static boolean declinable(CallStore.Call call, boolean latest) {
         boolean open = call.application() == CallStore.Application.PENDING || call.application() == CallStore.Application.APPLIED;
         return latest && open && !SafetyCalls.restsOnTheSafetyNet(call.decision());
+    }
+
+    /** The first week's watch days, on the call that closes it (K-1000, ADR-077 #4): the user's sex's, as the call read it. */
+    Optional<Integer> observationDays(CallStore.Call call) {
+        return CallChanges.observationDays(call.snapshot(), parameters);
     }
 
     /** The id of the account's latest call, the only one that can be applied, undone or declined; the caller has checked consent. */

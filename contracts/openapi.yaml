@@ -4219,10 +4219,10 @@ components:
           type: array
           description: |
             What the call changes in the plan, old to new (K-1000, ADR-077 #3 "the targets that change"): each target it
-            moves, as the plan held it before the call and as the call sets it. Read from the call as kept: once applied, the
-            plan before and after it; not applied yet, the plan now and the plan it would set. Empty for a call that changes
-            no target (advice, "not yet", a program call: the program's own change is its words). Declined, each change also
-            says `inForce`: the value the plan follows now (last week's).
+            moves, as the plan held it before the call and as the call set it: read from the call as kept, the plan before and
+            after it, set once it was applied (by default, ADR-077 #3). Empty for a call never applied, and for one that
+            changes no target (advice, "not yet", a program call: the program's own change is its words). Declined, each
+            change also says `inForce`: the value the plan follows now (last week's).
           items:
             $ref: "#/components/schemas/DecisionChange"
         observationDays:

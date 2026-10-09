@@ -385,6 +385,32 @@ class CheckInQuestionsApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void aCallThatMovesThePlanComesBackAppliedWithWhatItChangedOldToNew() throws Exception {
+        // K-1000 (ADR-077 #3, B11): applied by default, through the apply path; the call says the target before and after.
+        AccountId account = womanOnALowPlan();
+        Integer before = jdbc.sql("select target_kcal from decision.plan where account_id = :a").param("a", account.value()).query(Integer.class).single();
+
+        Map<String, Object> made = map(answer(account, List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "NO"))));
+
+        assertThat((Map<String, Object>) made.get("application")).containsEntry("state", "APPLIED").containsKey("appliedAt");
+        Integer after = jdbc.sql("select target_kcal from decision.plan where account_id = :a").param("a", account.value()).query(Integer.class).single();
+        assertThat(after).isGreaterThan(before);
+        assertThat((List<Map<String, Object>>) made.get("changes")).containsExactly(
+                Map.of("what", "CALORIES", "before", Map.of("targetKcal", before), "after", Map.of("targetKcal", after)));
+        assertThat(made).containsEntry("declinable", true);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aSafetyCallIsAppliedByDefaultTooAndIsNeverDeclinable() throws Exception {
+        Map<String, Object> made = map(answer(womanHeldAfterAHardStop(), List.of(Map.of("kind", "CYCLE_STOPPED", "choice", "YES"))));
+
+        assertThat(made).containsEntry("safety", true).containsEntry("declinable", false);
+        assertThat((Map<String, Object>) made.get("application")).containsEntry("state", "APPLIED");
+    }
+
+    @Test
     void aLongBulkIsAskedAboutAppetiteAndGoneIsAMiniCut() throws Exception {
         // K-227, G7 K-102: only the user can say the appetite has gone; the answer is read from the answers, not the data.
         AccountId account = onALongBulk();
