@@ -4697,3 +4697,19 @@ tasks:
     tests: ["ProgressSummary tablo testleri, API testi (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-078-ilerleme.md"]
     learn: ["Karşılaştırmanın tek yerde yapılması"]
+
+  - id: K-1009
+    title: "Karar ekranında hareket hedefi değişimi (72.5 × 9 → 72.5 × 8): antrenman modülünden en çok takılan hareket ve hedefi"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-1000]
+    why: "K-1000 (9 Eki): Decision.changes kalori/adım/faz değişimini veriyor; 'Hold the weight' kararında hangi hareketin hedefinin değiştiği antrenman modülünde (decision bağlanamaz, K-965 notu)"
+    acceptance:
+      - "Yük kararında (HOLD_LOAD vb.) `changes[]` hareket satırı: hareket kimliği, eski hedef → yeni hedef; sayılar sunucudan; telefon yalnız yazar"
+      - "Kullanıcı testi (8 Eki): 'Hold the weight' satırı hedef düşüyor gibi okunmaz; 'Keep' sonrası yürürlükteki hedef"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Modül sınırında okuma modeli"]
