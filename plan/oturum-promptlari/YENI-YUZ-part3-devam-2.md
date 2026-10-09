@@ -85,3 +85,12 @@ Küçük: Undo ekranında başlıktaki Pause canlı; Undo yalnız bellekte; test
 - **#526** düzeltildi (66d7c91b): ilk karardan sonra plan-seen no-op (204; `profile.FirstCalls` ↔ decision `MadeFirstCalls`); `firstDay` karardan sonra görülen planı yok sayar (karardan önce görülen kalır); D tablosu API testleri; dışa aktarımda `onboardedAt`, `planSeenAt`; ADR-077 Ek 3 notu. → kısa doğrulama + birleştir (V47).
 - **#525** düzeltildi (a1878d81): protein/left API testi, tek `starting(week)` yöntemi (week() hatası → 404), `targetsOrStarting` tek salt okunur işlem; ADR-072 Ek 2. → kısa doğrulama + birleştir (göçsüz).
 - `mobile/432-this-week-session-state` dalı boş ve gereksiz: aynı işi **#524** yapıyor (K-969). #524'ü incele; boş uzak dalı `git push origin --delete` ile kaldır (yerel kopya zararsız kalabilir).
+
+## Bu session (10 Eki) ilerleme — Opus düzenleyici, Sonnet ajanlar
+- Birleşti: #519 (K-978 PR1), #523 (K-1008; fikstürlere `moves: []`), #525 (K-997 sunucu). #526 (V47) auto-merge'de (test null okuması düzeltildi).
+- #527 main'e taşındı + 6 bulgu düzeltildi (994ab278; ADR-075 Ek 6) → doğrulama incelemesi sürüyor.
+- #524 incelendi: hazır değil (çevrimdışı bitmiş seans kartı kayboluyor; done eşleşmesi değişti; "telefonda bitti" iki yerde; iki "bugün") → düzeltme ajanda.
+- #529 = K-1000 (decision/514-call-fields) açıldı → CI + inceleme.
+- K-970 Days/Moves ajanda (dal mobile/433-edit-days-moves).
+- **K1 listesi (part sonu Levent'e):** #524 silinen "its day by the workout's own program day" testi + "moved" fikstürüne `undoable: true`/"undo yok" assert'ü kalktı (önceki gün taşınan seans bugün rest) · #527 açık seans fikstür tarihleri "yakın zamanlı" (bayat kuralı; beklenti aynı) · K-970 `edit-program-screen` "read here for now"/`readOnly` beklentileri (ADR-073 #4).
+- #527 bilinen sınır: duraklamasız bayat seansı "Continue" ile bitirmek `endedAt = şimdi` gönderir (sunucuda dakika şişer) → K-999'a.
