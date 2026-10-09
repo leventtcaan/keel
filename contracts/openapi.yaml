@@ -903,7 +903,7 @@ paths:
       description: |
         Today's session as the user wants it (K-964, ADR-073 #5), on the user's calendar (`Program.today`): `programDayId`
         names it (the session `Program.week` puts on today). SHORT: the first short_session_moves moves in the program's
-        order; the session counts for the week as any other. FULL: the short version off again, every move back (K-995).
+        order; the session counts for the week as any other. FULL: the short version off again, every exercise back (K-995).
         MOVE: to tomorrow, within the week (never past Sunday); a session already on that day moves on a day with it, and so
         on (the week re-lays itself); a moved session is a fresh one on its new day: neither the short version nor today's
         swaps go with it. SKIP: not done; no catch-up is added and nothing is planned again (U7, ADR-071 #3). UNDO (K-995):
@@ -2673,6 +2673,12 @@ components:
           description: |
             Today on the user's calendar (the profile's time zone, UTC without one; K-995): the day `week` and
             POST /v1/program/today read. The app takes today from here, not from the phone's clock. This server always sends it.
+        weekOf:
+          type: string
+          format: date
+          description: |
+            The Monday of `today`'s week (the consistency week, Monday to Sunday; K-995): the week `week` lays out. The app
+            takes the week from here, never works it out. This server always sends it.
         week:
           type: array
           description: |

@@ -230,7 +230,8 @@ testi: seçenekler salon ekipmanıyla süzülür.
   silinir (taze seans) ve geri gelmesi gerekir. **Reddedilen:** hafta başından yeniden hesap (geçmiş yok) · ayrı tablo (aynı satıra ait,
   program bütün değişince satırla birlikte gider) · yalnız sonuncuyu tutan hesap düzeyinde kayıt (aynı hafta başka günün taşıması onu ezer).
 - **`Program.today`:** profilin saat dilimiyle sunucunun bugünü (profil yoksa UTC); `week` ve today ucu bunu okur. Telefon bugünü kendi
-  saatinden çıkarmaz (#493 incelemesi).
+  saatinden çıkarmaz (#493 incelemesi). **`Program.weekOf`:** o haftanın pazartesisi (`Consistency.WEEK_STARTS_ON`), `week`'in haftası;
+  telefon haftayı da hesaplamaz (#505 incelemesi).
 - **`WeekSession.movedFrom`:** taşınan seansın programdaki günü (hafta gününün bu haftaki tarihi), yalnız taşınmışken. İki kez taşınan
   seansta da asıl gün (önceki taşımanın günü değil). **`WeekSession.undoable`:** UNDO'nun geri alacağı seans (bugün taşındı ya da
   atlandı, bugün başlamadı); telefon Undo'yu buna göre gösterir, kendisi çıkarmaz.
