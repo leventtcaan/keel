@@ -94,7 +94,8 @@ function Body({ end, units, figure, onRetry }: { end: WorkoutEnd | null; units: 
 function Hero({ dayName: name }: { dayName: string | null }) {
   const { color } = useTheme();
   const reduce = useReduceMotion();
-  const grow = useRef(new Animated.Value(reduce ? 1 : 0)).current;
+  // One value for the screen's life (state, not a ref: it is read while drawing).
+  const [grow] = useState(() => new Animated.Value(reduce ? 1 : 0));
   useEffect(() => {
     if (reduce) {
       grow.setValue(1);

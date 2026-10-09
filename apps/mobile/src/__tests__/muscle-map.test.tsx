@@ -13,7 +13,7 @@ import { FocusMode, ThemeProvider } from '@/theme/theme';
 import { focusPalette, palettes } from '@/theme/tokens';
 
 type Schemas = components['schemas'];
-type BodyData = ReadonlyArray<{ slug?: string; color?: string }>;
+type BodyData = readonly { slug?: string; color?: string }[];
 const mockBody = jest.fn((_props: { side?: string; data: BodyData; gender?: string }) => null);
 jest.mock('react-native-body-highlighter', () => ({ __esModule: true, default: (props: { side?: string; data: BodyData; gender?: string }) => mockBody(props) }));
 
