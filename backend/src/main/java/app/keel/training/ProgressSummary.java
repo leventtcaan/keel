@@ -159,6 +159,13 @@ final class ProgressSummary {
                 .map(kg -> now.subtract(kg).multiply(PERCENT).divide(kg, 0, RoundingMode.HALF_UP).intValueExact());
     }
 
+    /** A session's active time (K-998): its length less the time paused, in whole minutes rounded half up. */
+    static int activeMinutes(Instant startedAt, Instant endedAt, int pausedSeconds) {
+        long active = Math.max(0, java.time.Duration.between(startedAt, endedAt).toSeconds() - pausedSeconds);
+        return BigDecimal.valueOf(active).divide(BigDecimal.valueOf(java.time.Duration.ofMinutes(1).toSeconds()), 0, RoundingMode.HALF_UP)
+                .intValueExact();
+    }
+
     static LocalDate monday(LocalDate day) {
         return day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }

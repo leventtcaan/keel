@@ -307,7 +307,7 @@ class TodayChangeTests {
 
     private static WorkoutStore.Workout workout(UUID id, String startedAt, String endedAt, UUID programDayId) {
         return new WorkoutStore.Workout(id, UUID.randomUUID(), Instant.parse(startedAt), endedAt == null ? null : Instant.parse(endedAt), programDayId,
-                null, List.of(), null);
+                null, List.of(), null, 0);
     }
 
     private static ProgramStore.Day day(DayOfWeek weekday, String... moves) {

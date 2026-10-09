@@ -23,10 +23,10 @@ class WorkoutStore {
      * {@code note}s are the user's own words (K-422): kept and handed back, never logged (V3). {@code uncleanExerciseIds}:
      * the finish's answer on form (G6 K-31), kept so a target derived again after an edit holds them as the finish did
      * (K-432). {@code importedFrom}: the app a session imported from another app's export came from (K-615); none for
-     * a session logged in the app.
+     * a session logged in the app. {@code pausedSeconds}: how long it was paused, given at the finish (K-998).
      */
     record Workout(UUID id, UUID clientId, Instant startedAt, Instant endedAt, UUID programDayId, String note, List<String> uncleanExerciseIds,
-            ImportSource importedFrom) {
+            ImportSource importedFrom, int pausedSeconds) {
     }
 
     /** A set of an imported session as the file had it: no reps in reserve, side or note (K-615). */
@@ -101,6 +101,23 @@ class WorkoutStore {
                 .param("id", id).param("account", account.value()).query((row, n) -> workout(row)).optional();
     }
 
+    /**
+     * The workout, held alone until the transaction ends (FOR UPDATE), to discard it (K-998): a second discard, or a set or
+     * a finish arriving meanwhile, waits and then finds none — never a deadlock of two shared holds both wanting to delete.
+     */
+    Optional<Workout> findForDelete(AccountId account, UUID id) {
+        return jdbc.sql("select * from training.workout where id = :id and account_id = :account for update")
+                .param("id", id).param("account", account.value()).query((row, n) -> workout(row)).optional();
+    }
+
+    /** The newest finished session of a program day (closed by itself too), but `except`: where its targets come from next. */
+    Optional<Workout> latestFinished(AccountId account, UUID programDayId, UUID except) {
+        return jdbc.sql("""
+                select * from training.workout where account_id = :account and program_day_id = :day and id <> :except
+                  and ended_at is not null order by started_at desc, id desc limit 1""")
+                .param("account", account.value()).param("day", programDayId).param("except", except).query((row, n) -> workout(row)).optional();
+    }
+
     List<Workout> between(AccountId account, Instant from, Instant to) {
         return jdbc.sql("""
                 select * from training.workout where account_id = :account and started_at >= :from and started_at < :to
@@ -117,14 +134,21 @@ class WorkoutStore {
 
     /**
      * A finish without a note keeps the one given before (a replay, a corrected end time); one with a note replaces it.
-     * The answer on form is the latest finish's.
+     * The time paused likewise (K-998). The answer on form is the latest finish's.
      */
-    void finish(AccountId account, UUID id, Instant endedAt, String note, Set<String> uncleanExerciseIds) {
+    void finish(AccountId account, UUID id, Instant endedAt, String note, Set<String> uncleanExerciseIds, Integer pausedSeconds) {
         jdbc.sql("""
-                update training.workout set ended_at = :at, note = coalesce(:note, note), unclean_exercise_ids = :unclean
+                update training.workout set ended_at = :at, note = coalesce(:note, note), unclean_exercise_ids = :unclean,
+                paused_seconds = coalesce(:paused, paused_seconds)
                 where id = :id and account_id = :account""")
                 .param("at", endedAt.atOffset(ZoneOffset.UTC)).param("note", note).param("unclean", uncleanExerciseIds.stream().sorted().toArray(String[]::new))
-                .param("id", id).param("account", account.value()).update();
+                .param("paused", pausedSeconds).param("id", id).param("account", account.value()).update();
+    }
+
+    /** Discards a workout with its sets (K-998, on delete cascade); false when there was none of the account's to discard. */
+    boolean delete(AccountId account, UUID id) {
+        return jdbc.sql("delete from training.workout where id = :id and account_id = :account")
+                .param("id", id).param("account", account.value()).update() == 1;
     }
 
     /**
@@ -175,7 +199,7 @@ class WorkoutStore {
         return new Workout(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
                 row.getObject("started_at", OffsetDateTime.class).toInstant(), ended == null ? null : ended.toInstant(),
                 row.getObject("program_day_id", UUID.class), row.getString("note"), List.of((String[]) row.getArray("unclean_exercise_ids").getArray()),
-                importedFrom == null ? null : ImportSource.valueOf(importedFrom));
+                importedFrom == null ? null : ImportSource.valueOf(importedFrom), row.getInt("paused_seconds"));
     }
 
     private static LoggedSet loggedSet(ResultSet row) throws SQLException {

@@ -312,7 +312,7 @@
    "table": "training.workout",
    "module": "training",
    "class": "training",
-   "purpose": "Your workouts: when, which program day, your note, moves you marked as not clean, and the app an imported session came from.",
+   "purpose": "Your workouts: when, which program day, how long you paused, your note, moves you marked as not clean, and the app an imported session came from.",
    "columns": [
     "id",
     "account_id",
@@ -322,7 +322,8 @@
     "program_day_id",
     "note",
     "unclean_exercise_ids",
-    "imported_from"
+    "imported_from",
+    "paused_seconds"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,
@@ -422,7 +423,7 @@
    "table": "training.planned_exercise",
    "module": "training",
    "class": "training",
-   "purpose": "Planned moves with sets, rep range, reps in reserve and the next session's target (from a session, or the starting weight you gave).",
+   "purpose": "Planned moves with sets, rep range, reps in reserve, the next session's target (from a session, or the starting weight you gave) and the starting weight itself, kept to come back if the sessions after it are discarded.",
    "columns": [
     "id",
     "day_id",
@@ -437,7 +438,9 @@
     "next_reps",
     "last_load_kg",
     "next_from",
-    "next_rack_ends"
+    "next_rack_ends",
+    "start_load_kg",
+    "start_reps"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,

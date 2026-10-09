@@ -37,6 +37,9 @@ class WorkoutLogTests {
     @Autowired
     ApplicationContext context;
 
+    @Autowired
+    TrainingLog log;
+
     @Test
     void theCatalogIsServed() throws Exception {
         List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
@@ -125,6 +128,89 @@ class WorkoutLogTests {
         assertThat(mvc.delete().uri("/v1/workouts/" + workout + "/sets/" + set).header("Authorization", bearer(account)).exchange())
                 .hasStatus(204);
         assertThat((List<?>) map(get(account, "/v1/workouts/" + workout)).get("sets")).isEmpty();
+    }
+
+    @Test
+    void aWorkoutCanBeDiscardedWithItsSetsAndTheWeekNoLongerCountsIt() throws Exception {
+        // K-998 (ADR-075 #5, Discard): a workout whose sets reached the server is gone, sets and all.
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account, "2026-09-30T15:40:00Z");
+        assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 80, 8, 1))).hasStatus(201);
+        java.time.Instant from = java.time.Instant.parse("2026-09-28T00:00:00Z");
+        java.time.Instant to = java.time.Instant.parse("2026-10-05T00:00:00Z");
+        assertThat(log.workoutStarts(account, from, to)).hasSize(1);
+
+        assertThat(delete(account, "/v1/workouts/" + workout)).hasStatus(204);
+
+        assertThat(get(account, "/v1/workouts/" + workout)).hasStatus(404);
+        assertThat(list(get(account, "/v1/workouts?from=2026-09-30&to=2026-09-30"))).isEmpty();
+        assertThat(log.workoutStarts(account, from, to)).isEmpty();
+        assertThat(log.workingSets(account, "bench_press", from, to)).isEmpty();
+    }
+
+    @Test
+    void anotherAccountsWorkoutCannotBeDiscardedAndADiscardSentTwiceChangesNothing() throws Exception {
+        AccountId owner = TestSessions.newAccount();
+        String workout = start(owner, "2026-09-30T15:40:00Z");
+
+        assertThat(delete(TestSessions.newAccount(), "/v1/workouts/" + workout)).hasStatus(404);
+        assertThat(get(owner, "/v1/workouts/" + workout)).hasStatusOk();
+
+        assertThat(delete(owner, "/v1/workouts/" + workout)).hasStatus(204);
+        assertThat(delete(owner, "/v1/workouts/" + workout)).hasStatus(404);
+    }
+
+    @Test
+    void theFinishKeepsHowLongTheSessionWasPausedWithinItsLength() throws Exception {
+        // K-998 (ADR-075 #5: Pause stops the time): kept and read back; never more than the session lasted.
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account, "2026-09-30T15:40:00Z");
+        String finish = "/v1/workouts/" + workout + "/finish";
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("pausedSeconds", 0);
+
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "pausedSeconds", -1))).as("negative").hasStatus(400);
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "pausedSeconds", 3601))).as("longer than the session")
+                .hasStatus(400);
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "pausedSeconds", 600))).hasStatusOk();
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("pausedSeconds", 600);
+
+        // A later finish without it (a replay, a corrected end) keeps it.
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:45:00Z"))).hasStatusOk();
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("pausedSeconds", 600);
+        // #509 review: the time kept is held to the corrected length too: 10 minutes paused do not fit in 5.
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T15:45:00Z"))).as("kept pause longer than the new length").hasStatus(400);
+        assertThat(map(get(account, "/v1/workouts/" + workout))).containsEntry("endedAt", "2026-09-30T16:45:00Z");
+    }
+
+    @Test
+    void twoDiscardsAtOnceAreOneDiscardAndANotFound() throws Exception {
+        // #509 review: both waiting on the same row must not deadlock (a 500 the phone would send again).
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account, "2026-09-30T15:40:00Z");
+        assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 80, 8, 1))).hasStatus(201);
+
+        List<Integer> statuses = atOnce(() -> delete(account, "/v1/workouts/" + workout), () -> delete(account, "/v1/workouts/" + workout));
+
+        assertThat(statuses).containsExactlyInAnyOrder(204, 404);
+    }
+
+    @Test
+    void aSetSentAsTheWorkoutIsDiscardedIsEitherDiscardedWithItOrNotFound() throws Exception {
+        // #509 review: the phone's queue still sending a set while Discard runs; never a 500, never a set left behind.
+        AccountId account = TestSessions.newAccount();
+        for (int round = 0; round < 5; round++) {
+            String workout = start(account, "2026-09-30T15:4" + round + ":00Z");
+            assertThat(post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 80, 8, 1))).hasStatus(201);
+
+            List<Integer> statuses = atOnce(() -> delete(account, "/v1/workouts/" + workout),
+                    () -> post(account, "/v1/workouts/" + workout + "/sets", set("bench_press", "WORKING", 80, 8, 1)));
+
+            assertThat(statuses.getFirst()).isEqualTo(204);
+            assertThat(statuses.getLast()).isIn(201, 404);
+            assertThat(get(account, "/v1/workouts/" + workout)).hasStatus(404);
+        }
+        java.time.Instant from = java.time.Instant.parse("2026-09-28T00:00:00Z");
+        assertThat(log.workingSets(account, "bench_press", from, from.plus(java.time.Duration.ofDays(7)))).isEmpty();
     }
 
     @Test
@@ -218,6 +304,28 @@ class WorkoutLogTests {
     private MvcTestResult post(AccountId account, String uri, Object body) {
         return mvc.post().uri(uri).header("Authorization", bearer(account)).contentType(MediaType.APPLICATION_JSON)
                 .content(JSON.writeValueAsString(body)).exchange();
+    }
+
+    /** Two requests sent together, their statuses in the order given. */
+    @SafeVarargs
+    private static List<Integer> atOnce(java.util.concurrent.Callable<MvcTestResult>... requests) throws Exception {
+        java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
+        try (java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(requests.length)) {
+            List<java.util.concurrent.Future<MvcTestResult>> sent = java.util.Arrays.stream(requests).map(request -> pool.submit(() -> {
+                go.await();
+                return request.call();
+            })).toList();
+            go.countDown();
+            List<Integer> statuses = new java.util.ArrayList<>();
+            for (java.util.concurrent.Future<MvcTestResult> result : sent) {
+                statuses.add(result.get(30, java.util.concurrent.TimeUnit.SECONDS).getResponse().getStatus());
+            }
+            return statuses;
+        }
+    }
+
+    private MvcTestResult delete(AccountId account, String uri) {
+        return mvc.delete().uri(uri).header("Authorization", bearer(account)).exchange();
     }
 
     private MvcTestResult get(AccountId account, String uri) {

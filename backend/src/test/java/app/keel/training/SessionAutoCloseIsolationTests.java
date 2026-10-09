@@ -78,7 +78,7 @@ class SessionAutoCloseIsolationTests {
 
     private static WorkoutStore.Owned open() {
         return new WorkoutStore.Owned(new AccountId(UUID.randomUUID()), new WorkoutStore.Workout(UUID.randomUUID(), UUID.randomUUID(),
-                NOW.minusSeconds(200_000), null, UUID.randomUUID(), null, List.of(), null));
+                NOW.minusSeconds(200_000), null, UUID.randomUUID(), null, List.of(), null, 0));
     }
 
     private static WorkoutStore store(List<WorkoutStore.Owned> due) {

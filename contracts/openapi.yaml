@@ -1095,6 +1095,21 @@ paths:
                 $ref: "#/components/schemas/Workout"
         default:
           $ref: "#/components/responses/Error"
+    delete:
+      tags: [training]
+      operationId: deleteWorkout
+      summary: Discard a workout and its sets (K-998, ADR-075 #5)
+      description: |
+        The workout and every set of it are gone: the week no longer counts it, progress and records no longer read it,
+        and a target it set (a finished session of the program, or one closed by itself) comes again from the day's newest
+        finished session left, as if it had not been (K-432 the same for an edit leaving a move no set); a target a newer
+        session set stays. A set or a finish sent meanwhile is NOT_FOUND. NOT_FOUND for a workout not the user's, or one
+        already discarded: a repeat changes nothing.
+      responses:
+        "204":
+          description: Discarded
+        default:
+          $ref: "#/components/responses/Error"
   /v1/workouts/{id}/finish:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -3317,6 +3332,12 @@ components:
             The session's note in the user's own words (K-422). Kept without outer spaces; only spaces is no note (absent).
             Over 500 characters, or a NUL character, is VALIDATION_FAILED, never cut. A later finish without a note keeps
             the one given; with one, replaces it. Never logged; not sent to an AI without its consent (V2).
+        pausedSeconds:
+          type: integer
+          minimum: 0
+          description: |
+            How long the session was paused (K-998, ADR-075 #5: Pause stops the time). More than endedAt − startedAt is
+            VALIDATION_FAILED. Absent: 0, or, on a later finish, the one given before.
     Workout:
       type: object
       required: [id, clientId, startedAt, sets]
@@ -3338,6 +3359,10 @@ components:
         note:
           type: string
           description: The session's note, given at the finish (WorkoutFinish.note).
+        pausedSeconds:
+          type: integer
+          minimum: 0
+          description: How long the session was paused, given at the finish (WorkoutFinish.pausedSeconds); 0 when never. This server always sends it.
         sets:
           type: array
           items:
@@ -3523,6 +3548,12 @@ components:
         workoutId:
           type: string
           format: uuid
+        minutes:
+          type: integer
+          minimum: 0
+          description: |
+            The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
+            Absent while the session is open, and once closed by itself (K-961: endedAt = startedAt, its length unknown).
         liftedKg:
           type: number
           minimum: 0
