@@ -77,7 +77,8 @@ class FirstWeekCallApiTests {
         assertThat(kinds(account)).containsExactly("WEEK1_FEEL");
         Map<String, Object> call = map(answer(account, List.of(Map.of("kind", "WEEK1_FEEL", "choice", "COULD_DO_MORE"))));
 
-        assertThat(call.get("action")).isEqualTo(Map.of("type", "ADD_TRAINING_DAY", "toDays", 4, "idealDays", 4));
+        assertThat(call.get("action")).isEqualTo(Map.of("type", "ADD_TRAINING_DAY", "toDays", 4, "idealDays", 4, "suggested", List.of("MONDAY")));
+        // K-1000 (Ek 3): the free day with the most rest around it, the earliest on a tie: Tuesday, Thursday, Saturday leave all four tied.
         assertThat(call.get("copyKey")).isEqualTo("decision.add_training_day.first_week_add_day");
         // Nothing is applied: the day is the user's to pick (ADR-077 Ek 1).
         assertThat(call).containsEntry("application", Map.of("state", "NOT_NEEDED")).containsEntry("declinable", false);
@@ -118,7 +119,8 @@ class FirstWeekCallApiTests {
         assertThat(kinds(account)).doesNotContain("WEEK1_FEEL");
         Map<String, Object> call = map(answer(account, List.of()));
 
-        assertThat(call.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("THURSDAY", "SATURDAY")));
+        assertThat(call.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("THURSDAY", "SATURDAY"),
+                "suggested", List.of("FRIDAY", "SUNDAY")));
         assertThat(call).containsEntry("declinable", false);
     }
 
@@ -128,7 +130,8 @@ class FirstWeekCallApiTests {
         AccountId twoOfThree = firstWeekOver("Y1_3");
         session(twoOfThree, TUESDAY, 12, 0);
         session(twoOfThree, THURSDAY, 12, 0);
-        assertThat(map(answer(twoOfThree, List.of())).get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("SATURDAY")));
+        assertThat(map(answer(twoOfThree, List.of())).get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("SATURDAY"),
+                "suggested", List.of("SUNDAY")));
 
         AccountId all = firstWeekOver("Y1_3");
         session(all, TUESDAY, 12, 0);
@@ -156,7 +159,8 @@ class FirstWeekCallApiTests {
 
         Map<String, Object> call = map(answer(account, List.of()));
 
-        assertThat(call.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("WEDNESDAY", "SATURDAY")));
+        assertThat(call.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("WEDNESDAY", "SATURDAY"),
+                "suggested", List.of("FRIDAY", "SUNDAY")));
     }
 
     @Test

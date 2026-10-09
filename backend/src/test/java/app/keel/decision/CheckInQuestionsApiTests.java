@@ -398,7 +398,8 @@ class CheckInQuestionsApiTests {
         assertThat(after).isGreaterThan(before);
         assertThat((List<Map<String, Object>>) made.get("changes")).containsExactly(
                 Map.of("what", "CALORIES", "before", Map.of("targetKcal", before), "after", Map.of("targetKcal", after)));
-        assertThat(made).containsEntry("declinable", true);
+        // Her low energy availability rests on the safety net: applied by default like any call, never declinable (U13).
+        assertThat(made).containsEntry("declinable", false);
     }
 
     @Test
