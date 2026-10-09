@@ -888,9 +888,10 @@ export interface paths {
         /**
          * Discard a workout and its sets (K-998, ADR-075
          * @description The workout and every set of it are gone: the week no longer counts it, progress and records no longer read it,
-         *     and a target it set (a finished session of the program, or one closed by itself) goes as an edit that deletes all
-         *     its sets does (K-432); a target a newer session set stays. NOT_FOUND for a workout not the user's, or one already
-         *     discarded: a repeat changes nothing.
+         *     and a target it set (a finished session of the program, or one closed by itself) comes again from the day's newest
+         *     finished session left, as if it had not been (K-432 the same for an edit leaving a move no set); a target a newer
+         *     session set stays. A set or a finish sent meanwhile is NOT_FOUND. NOT_FOUND for a workout not the user's, or one
+         *     already discarded: a repeat changes nothing.
          */
         delete: operations["deleteWorkout"];
         options?: never;
@@ -2536,7 +2537,7 @@ export interface components {
             workoutId: string;
             /**
              * @description The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
-             *     Absent while the session is open.
+             *     Absent while the session is open, and once closed by itself (K-961: endedAt = startedAt, its length unknown).
              */
             minutes?: number;
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
