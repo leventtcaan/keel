@@ -55,6 +55,12 @@ class ProgressApiTests {
     @Autowired
     JdbcClient jdbc;
 
+    @Autowired
+    SessionProgress progress;
+
+    @Autowired
+    WorkoutStore workouts;
+
     @Test
     @SuppressWarnings("unchecked")
     void theWorkoutsSummaryHasItsRecordsBaselinesWeightLiftedAndMuscles() throws Exception {
@@ -91,6 +97,33 @@ class ProgressApiTests {
         assertThat((List<Map<String, Object>>) firstSummary.get("marks")).extracting(mark -> mark.get("kind")).containsExactly("BASELINE", "BASELINE");
 
         assertThat(send("GET", TestSessions.newAccount(), "/v1/workouts/" + second + "/summary")).hasStatus(404);
+    }
+
+    @Test
+    void aSummarysMinutesAreTheSessionsActiveTimeAndNoneWhileItIsOpen() throws Exception {
+        // K-998: the time paused is not the session's (ADR-075 #5, user test C14).
+        AccountId account = withAProgram();
+        Instant at = clock.instant().minus(Duration.ofDays(2));
+        String workout = start(account, at);
+        sets(account, workout, "bench_press", 1, 60, 8, 1, "WORKING");
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout + "/summary"))).doesNotContainKey("minutes");
+
+        assertThat(send("POST", account, "/v1/workouts/" + workout + "/finish",
+                Map.of("endedAt", at.plus(Duration.ofMinutes(55)).toString(), "pausedSeconds", 300))).hasStatusOk();
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout + "/summary"))).containsEntry("minutes", 50);
+    }
+
+    @Test
+    void aSessionClosedByItselfHasNoMinutesItsLengthIsNotKnown() throws Exception {
+        // #509 review: closed by the server (endedAt = startedAt, K-961), it lasted no 0 minutes; the time is not known.
+        AccountId account = withAProgram();
+        Instant at = clock.instant().minus(Duration.ofDays(2));
+        String workout = start(account, at);
+        sets(account, workout, "bench_press", 1, 60, 8, 1, "WORKING");
+        progress.closeUnfinished(account, workouts.find(account, UUID.fromString(workout)).orElseThrow(), at);
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout + "/summary"))).doesNotContainKey("minutes");
     }
 
     @Test

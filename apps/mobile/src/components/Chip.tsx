@@ -11,6 +11,8 @@ type Props = {
   disabled?: boolean;
   /** What a screen reader says, when the label is short for it ("M" → "Monday"). */
   accessibilityLabel?: string;
+  /** A full touch target (size.touch tall), where the chip is a control of its own rather than one of a dense row. */
+  touch?: boolean;
   onPress: () => void;
 };
 
@@ -18,7 +20,7 @@ type Props = {
  * A choice among a few; the selected one is filled with the text colour (prototype `.chip[aria-pressed]`). On the page
  * that equals the decision-block colours; inside the block (inverse palette) it flips, so it never vanishes into it.
  */
-export function Chip({ label, selected = false, disabled = false, accessibilityLabel, onPress }: Props) {
+export function Chip({ label, selected = false, disabled = false, accessibilityLabel, touch = false, onPress }: Props) {
   const { color } = useTheme();
   const fill = selected
     ? { backgroundColor: color.text, borderColor: color.text }
@@ -30,7 +32,7 @@ export function Chip({ label, selected = false, disabled = false, accessibilityL
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.chip, fill, disabled && styles.dim]}>
+      style={[styles.chip, fill, touch && styles.touch, disabled && styles.dim]}>
       <Text style={[styles.label, { color: selected ? color.background : color.text }]}>{label}</Text>
     </Pressable>
   );
@@ -43,6 +45,7 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.space.sm,
     paddingHorizontal: tokens.space.md,
   },
+  touch: { minHeight: tokens.size.touch, minWidth: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
   label: { fontSize: tokens.type.bodySmall },
 });

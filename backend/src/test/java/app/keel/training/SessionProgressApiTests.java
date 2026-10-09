@@ -59,6 +59,12 @@ class SessionProgressApiTests {
     TrainingLog log;
 
     @Autowired
+    SessionProgress progress;
+
+    @Autowired
+    WorkoutStore workouts;
+
+    @Autowired
     Clock clock;
 
     /**
@@ -561,6 +567,123 @@ class SessionProgressApiTests {
 
         assertThat(planned(account, 0)).doesNotContainKeys("nextLoadKg", "nextReps");
         assertThat(next(account, 1)).isEqualTo(target(new BigDecimal("100").add(step(ParameterKey.LOAD_INCREMENT_LOWER_KG)), 6));
+    }
+
+    @Test
+    void aDiscardedSessionTakesTheTargetsItSetWithIt() throws Exception {
+        // K-998: none is left standing on a session that is gone, as when every set of it is deleted (K-432).
+        AccountId account = withAProgram();
+        String workout = start(account, recently);
+        sets(account, workout, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+        assertThat(planned(account, 0)).containsKeys("nextLoadKg", "nextReps");
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + workout, null)).hasStatus(204);
+
+        assertThat(planned(account, 0)).doesNotContainKeys("nextLoadKg", "nextReps");
+    }
+
+    @Test
+    void discardingTheNewestSessionBringsBackTheTargetTheOneBeforeItSet() throws Exception {
+        // #509 review (ADR-075 #5: Discard leaves nothing): the day's last session left is its targets' source again.
+        AccountId account = withAProgram();
+        String first = start(account, recently.minus(java.time.Duration.ofDays(7)));
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+        List<Object> firstTarget = next(account, 0);
+        String closedByItself = start(account, recently);
+        sets(account, closedByItself, "bench_press", 3, 62.5, 10, "BOTH");
+        progress.closeUnfinished(account, workouts.find(account, UUID.fromString(closedByItself)).orElseThrow(), recently);
+        assertThat(next(account, 0)).isNotEqualTo(firstTarget);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + closedByItself, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(firstTarget);
+    }
+
+    @Test
+    void everySetOfTheNewestSessionDeletedBringsBackTheTargetTheOneBeforeItSet() throws Exception {
+        // The same for an edit (K-432): a move none of whose sets are left takes its target from the session before.
+        AccountId account = withAProgram();
+        String first = start(account, recently.minus(java.time.Duration.ofDays(7)));
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+        List<Object> firstTarget = next(account, 0);
+        String second = start(account, recently);
+        sets(account, second, "bench_press", 3, 62.5, 10, "BOTH");
+        assertThat(finish(account, second, List.of())).hasStatusOk();
+
+        for (String set : setIds(account, second)) {
+            assertThat(send("DELETE", account, "/v1/workouts/" + second + "/sets/" + set, null)).hasStatus(204);
+        }
+
+        assertThat(next(account, 0)).isEqualTo(firstTarget);
+    }
+
+    @Test
+    void discardingTheFirstSessionBringsBackTheStartingWeight() throws Exception {
+        // #509 review (Levent, ADR-075 #5): an experienced user discards a first session they only looked through; the
+        // weights given at onboarding (ADR-072 #5) are the targets again, not lost.
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program/starting-weights",
+                Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80))))).hasStatusOk();
+        List<Object> starting = next(account, 0);
+        String first = start(account, recently);
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+        assertThat(next(account, 0)).isNotEqualTo(starting);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + first, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(starting);
+    }
+
+    @Test
+    void everySetOfTheFirstSessionDeletedBringsBackTheStartingWeight() throws Exception {
+        AccountId account = withAProgram();
+        assertThat(send("PUT", account, "/v1/program/starting-weights",
+                Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80))))).hasStatusOk();
+        List<Object> starting = next(account, 0);
+        String first = start(account, recently);
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+
+        for (String set : setIds(account, first)) {
+            assertThat(send("DELETE", account, "/v1/workouts/" + first + "/sets/" + set, null)).hasStatus(204);
+        }
+
+        assertThat(next(account, 0)).isEqualTo(starting);
+    }
+
+    @Test
+    void discardingAnOlderSessionLeavesTheTargetTheNewerOneSet() throws Exception {
+        AccountId account = withAProgram();
+        String older = start(account, recently.minus(java.time.Duration.ofDays(7)));
+        sets(account, older, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, older, List.of())).hasStatusOk();
+        String newer = start(account, recently);
+        sets(account, newer, "bench_press", 3, 62.5, 8, "BOTH");
+        assertThat(finish(account, newer, List.of())).hasStatusOk();
+        List<Object> target = next(account, 0);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + older, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(target);
+    }
+
+    @Test
+    void anUnfinishedSessionDiscardedLeavesTheTargetsAsTheyWere() throws Exception {
+        AccountId account = withAProgram();
+        String done = start(account, recently.minus(java.time.Duration.ofDays(1)));
+        sets(account, done, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, done, List.of())).hasStatusOk();
+        List<Object> target = next(account, 0);
+        String open = start(account, recently);
+        sets(account, open, "bench_press", 3, 65, 10, "BOTH");
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + open, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(target);
     }
 
     @Test

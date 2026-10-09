@@ -754,7 +754,7 @@ export interface paths {
          *     today's swaps) and every session the move pushed on back on its day; `programDayId` names the session moved or
          *     skipped (`WeekSession.undoable`). Nothing to undo, nothing changes (harmless twice). Only this week's session
          *     changes, never the program. CONFLICT (409), nothing changed: that day's session is not on today (SHORT, FULL, MOVE,
-         *     SKIP), a move would pass Sunday, or (MOVE, SKIP, UNDO) a workout of that day was started today, under way or
+         *     SKIP), a move would pass Sunday (`WeekSession.movePreview` says so beforehand), or (MOVE, SKIP, UNDO) a workout of that day was started today, under way or
          *     finished. NOT_FOUND: no program.
          */
         post: operations["changeToday"];
@@ -885,7 +885,15 @@ export interface paths {
         get: operations["getWorkout"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Discard a workout and its sets (K-998, ADR-075
+         * @description The workout and every set of it are gone: the week no longer counts it, progress and records no longer read it,
+         *     and a target it set (a finished session of the program, or one closed by itself) comes again from the day's newest
+         *     finished session left, as if it had not been (K-432 the same for an edit leaving a move no set); a target a newer
+         *     session set stays. A set or a finish sent meanwhile is NOT_FOUND. NOT_FOUND for a workout not the user's, or one
+         *     already discarded: a repeat changes nothing.
+         */
+        delete: operations["deleteWorkout"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2194,6 +2202,7 @@ export interface components {
              */
             undoable?: boolean;
             workout?: components["schemas"]["SessionWorkout"];
+            movePreview?: components["schemas"]["MovePreview"];
             skipped?: boolean;
             short?: boolean;
             exerciseIds: string[];
@@ -2203,6 +2212,27 @@ export interface components {
              *     (`lastBestSet`) and in-session table (ADR-075 #3), like a move swapped from now on. Absent when there is none.
              */
             swaps?: components["schemas"]["TodaySwap"][];
+        };
+        /**
+         * @description What "Move it" (POST /v1/program/today MOVE) would do to today's session now (K-995, ADR-073 Ek 6): present only on
+         *     the session on today, not skipped. `shifts`: each session the move puts on a new day, by date — today's on tomorrow,
+         *     then any it pushes on a day (the week re-lays itself); the app shows them and works none out. `conflict`: the move
+         *     would be refused (409), `shifts` empty: PAST_SUNDAY, a session would pass Sunday; STARTED, a workout of the day was
+         *     started today.
+         */
+        MovePreview: {
+            shifts: components["schemas"]["MoveShift"][];
+            /** @enum {string} */
+            conflict?: "PAST_SUNDAY" | "STARTED";
+        };
+        MoveShift: {
+            /** Format: uuid */
+            programDayId: string;
+            /**
+             * Format: date
+             * @description The day the session would be on.
+             */
+            date: string;
         };
         /**
          * @description The workout of a week's session (K-995): of its program day, the latest started this week on the user's calendar.
@@ -2396,6 +2426,11 @@ export interface components {
              *     the one given; with one, replaces it. Never logged; not sent to an AI without its consent (V2).
              */
             note?: string;
+            /**
+             * @description How long the session was paused (K-998, ADR-075 #5: Pause stops the time). More than endedAt − startedAt is
+             *     VALIDATION_FAILED. Absent: 0, or, on a later finish, the one given before.
+             */
+            pausedSeconds?: number;
         };
         Workout: {
             /** Format: uuid */
@@ -2409,6 +2444,8 @@ export interface components {
             programDayId?: string;
             /** @description The session's note, given at the finish (WorkoutFinish.note). */
             note?: string;
+            /** @description How long the session was paused, given at the finish (WorkoutFinish.pausedSeconds); 0 when never. This server always sends it. */
+            pausedSeconds?: number;
             sets: components["schemas"]["LoggedSet"][];
             /** @description Present only on a session imported from another app's export (K-615); the engine never reads it. */
             importedFrom?: components["schemas"]["ImportSource"];
@@ -2520,6 +2557,11 @@ export interface components {
         WorkoutSummary: {
             /** Format: uuid */
             workoutId: string;
+            /**
+             * @description The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
+             *     Absent while the session is open, and once closed by itself (K-961: endedAt = startedAt, its length unknown).
+             */
+            minutes?: number;
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
@@ -4557,6 +4599,27 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Workout"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discarded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };

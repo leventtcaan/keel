@@ -31,6 +31,20 @@ class ProgressSummaryTests {
     private static final ZoneId UTC = ZoneOffset.UTC;
     private static final LocalDate MONDAY = LocalDate.of(2026, 10, 5);
 
+    @ParameterizedTest(name = "{0} to {1}, {2} s paused: {3} min")
+    @CsvSource({
+        // K-998: endedAt − startedAt − pausedSeconds, whole minutes rounded half up.
+        "2026-10-09T18:00:00Z, 2026-10-09T18:52:00Z, 0, 52",
+        "2026-10-09T18:00:00Z, 2026-10-09T18:52:00Z, 600, 42",
+        "2026-10-09T18:00:00Z, 2026-10-09T18:00:29Z, 0, 0",
+        "2026-10-09T18:00:00Z, 2026-10-09T18:00:30Z, 0, 1",
+        "2026-10-09T18:00:00Z, 2026-10-09T18:10:00Z, 600, 0",
+        "2026-10-09T18:00:00Z, 2026-10-09T19:31:29Z, 89, 90"
+    })
+    void aSessionsMinutesAreItsActiveTime(String startedAt, String endedAt, int pausedSeconds, int minutes) {
+        assertThat(ProgressSummary.activeMinutes(Instant.parse(startedAt), Instant.parse(endedAt), pausedSeconds)).isEqualTo(minutes);
+    }
+
     @Test
     void eachPrimaryMuscleHasItsWeeksSetsAgainstItsTargetAsAShareCappedAtOne() {
         int perMuscle = P.wholeNumber(ParameterKey.WEEKLY_SETS_PER_MUSCLE);

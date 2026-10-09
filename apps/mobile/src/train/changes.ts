@@ -54,6 +54,16 @@ export async function undoChange(api: ApiClient, changeId: string): Promise<Undo
   return answer.response.status === 409 ? { kind: 'conflict' } : { kind: 'failed' };
 }
 
+/** The user's own cardio (ADR-074 #4): the engine never overwrites it; no session turns cardio off. */
+export function putCardio(api: ApiClient, plan: Schemas['CardioPlan']): Promise<Changed> {
+  return sent(() => api.PUT('/v1/program/cardio', { body: plan }));
+}
+
+/** Back to the coach's default (ADR-074 Ek 1): the user's own cardio is removed, the phase's default follows. */
+export function coachCardio(api: ApiClient): Promise<Changed> {
+  return sent(() => api.DELETE('/v1/program/cardio'));
+}
+
 /**
  * "Rebuild for me": a new program from the user's training days, replacing this one (the server's generator).
  * `refused`: the server has no program for those days (VALIDATION_FAILED, 400); which days it builds for is its rule.

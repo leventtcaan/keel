@@ -118,6 +118,12 @@ class ProgramStore {
                 .query(UUID.class).single();
         int before = jdbc.sql("select count(*) from training.program_day where program_id = :program").param("program", program)
                 .query(Integer.class).single();
+        // The starting weights kept with the moves (K-998) go back onto the rows that keep their id.
+        record Start(UUID id, BigDecimal loadKg, int reps) {
+        }
+        List<Start> starts = jdbc.sql("select id, start_load_kg, start_reps from training.planned_exercise where account_id = :account and start_load_kg is not null")
+                .param("account", account.value())
+                .query((row, n) -> new Start(row.getObject("id", UUID.class), row.getBigDecimal("start_load_kg"), row.getInt("start_reps"))).list();
         jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
         if (before != days.size()) {
             jdbc.sql("""
@@ -128,6 +134,10 @@ class ProgramStore {
                     .param("now", clock.instant().atOffset(ZoneOffset.UTC)).update();
         }
         insert(account, program, days);
+        for (Start start : starts) {
+            jdbc.sql("update training.planned_exercise set start_load_kg = :load, start_reps = :reps where account_id = :account and id = :id")
+                    .param("account", account.value()).param("id", start.id()).param("load", start.loadKg()).param("reps", start.reps()).update();
+        }
         return current(account).orElseThrow();
     }
 
@@ -156,6 +166,21 @@ class ProgramStore {
                         .param("rackEnds", planned.nextRackEnds()).update();
             }
         }
+    }
+
+    /** A starting weight kept for its planned move (K-998), for the export. */
+    record StartingWeight(UUID plannedExerciseId, String exerciseId, BigDecimal loadKg, int reps) {
+    }
+
+    /** The starting weights kept with the program's moves (the export, K-214). */
+    List<StartingWeight> startingWeights(AccountId account) {
+        return jdbc.sql("""
+                select id, exercise_id, start_load_kg, start_reps from training.planned_exercise
+                where account_id = :account and start_load_kg is not null order by id""")
+                .param("account", account.value())
+                .query((row, n) -> new StartingWeight(row.getObject("id", UUID.class), row.getString("exercise_id"), plain(row.getBigDecimal("start_load_kg")),
+                        row.getInt("start_reps")))
+                .list();
     }
 
     /** When the account's program was made (or last replaced). */
@@ -228,7 +253,8 @@ class ProgramStore {
     /**
      * The starting weights as first targets (ADR-072 #5), in place of the ones given before: a target no session set
      * ({@code next_from} null) is a starting weight. One a session set is never changed — setNext replaces a starting
-     * weight, never the other way round. {@code targets} by planned exercise id.
+     * weight, never the other way round. Each is kept apart too ({@code start_*}, K-998), to come back when the sessions
+     * that replaced it are discarded or emptied (clearNext). {@code targets} by planned exercise id.
      */
     @Transactional
     void replaceStarting(AccountId account, Map<UUID, NextTargets.Target> targets) {
@@ -236,20 +262,29 @@ class ProgramStore {
                 update training.planned_exercise set next_load_kg = null, next_reps = null, next_rack_ends = false, last_load_kg = null
                 where account_id = :account and next_from is null and next_load_kg is not null""")
                 .param("account", account.value()).update();
-        targets.forEach((plannedId, target) -> jdbc.sql("""
-                update training.planned_exercise set next_load_kg = :load, next_reps = :reps
-                where account_id = :account and id = :id and next_from is null""")
-                .param("account", account.value()).param("id", plannedId).param("load", target.loadKg()).param("reps", target.reps())
-                .update());
+        jdbc.sql("update training.planned_exercise set start_load_kg = null, start_reps = null where account_id = :account")
+                .param("account", account.value()).update();
+        targets.forEach((plannedId, target) -> {
+            jdbc.sql("""
+                    update training.planned_exercise set next_load_kg = :load, next_reps = :reps
+                    where account_id = :account and id = :id and next_from is null""")
+                    .param("account", account.value()).param("id", plannedId).param("load", target.loadKg()).param("reps", target.reps())
+                    .update();
+            jdbc.sql("update training.planned_exercise set start_load_kg = :load, start_reps = :reps where account_id = :account and id = :id")
+                    .param("account", account.value()).param("id", plannedId).param("load", target.loadKg()).param("reps", target.reps())
+                    .update();
+        });
     }
 
     /**
-     * The target that came from the session started at {@code from} is gone: none of its sets of the move are left (K-432).
-     * A target from another session stays.
+     * The target that came from the session started at {@code from} is gone: none of its sets of the move are left (K-432),
+     * or the session was discarded (K-998). The starting weight, if one was given, is the target again; else none. A target
+     * from another session stays.
      */
     void clearNext(AccountId account, UUID plannedId, Instant from) {
         jdbc.sql("""
-                update training.planned_exercise set next_load_kg = null, next_reps = null, next_rack_ends = false, last_load_kg = null, next_from = null
+                update training.planned_exercise set next_load_kg = start_load_kg, next_reps = start_reps, next_rack_ends = false,
+                    last_load_kg = null, next_from = null
                 where account_id = :account and id = :id and next_from = :from""")
                 .param("account", account.value()).param("id", plannedId).param("from", from.atOffset(ZoneOffset.UTC)).update();
     }

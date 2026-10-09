@@ -854,10 +854,10 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-969 Bu hafta | 🔍 | #494 ✅ · #501 | #501 rebase; sonra sunucu alanları ek PR (`mobile/432-today-server-state`); 40 kelime için 5 metin kararı onaylı |
-| K-970 Antrenman + Edit | 🔍 | #493 ✅ · #495 ✅ · #506 · #508 | #506 auto-merge; #508 kardiyo incelemede; sunucu alanları ek PR ajanda; Days/Moves K-995 B'yi bekler |
+| K-969 Bu hafta | 🔍 | #494 ✅ · #501 ✅ | kalan: sunucu alanları ek PR (Undo, Full, DONE/OPEN, Program.today/weekOf); sonra ajan K-978'e |
+| K-970 Antrenman + Edit | 🔍 | #493 ✅ · #495 ✅ · #506 ✅ · #508 ✅ | kalan: sunucu alanları ek PR; Days/Moves K-995 B'yi bekler; sonra ajan K-974'e |
 | K-971 Oturum A | ✅ | #497 · #499 · #500 | ADR-075 Ek 3; SE sığması cihaz turunda |
-| K-972 Oturum B | 🛠 | | P1 Pause → P2 End (Discard K-998 sonrası) → P3 set düzelt/sil/atla → P4 swap; analiz satırı yeniden hesabı K-973'e |
+| K-972 Oturum B | 🛠 | #511 (P1 Pause) | #511 düzeltmede; P3 → P2 (Discard, pausedSeconds) → P4 swap; analiz satırı yeniden hesabı K-973'e |
 | K-973 Oturum C | ⏳ | | K-972 sonrası (aynı ekran) |
 | K-974 Antrenman sonu | ⏳ | | |
 | K-978 Pazartesi | ⏳ | | |
@@ -865,9 +865,9 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 | K-992 ilk hatırlatma | ✅ | #492 | `reminders.firstCall` kv; rıza yoksa Monday anahtarı yok, Settings 'noCalls' |
 | K-993 ilk hafta planın görüldüğü günden | ⏳ | | decision, göç olabilir |
 | K-994 kırılgan test | ✅ | #490 | `JsonNumbers.asValue` |
-| K-995 program düzenleme ucu | 🔍 | #505 ✅ (V44) | C taşı önizlemesi açılıyor; B PATCH (V46); split Levent'te |
+| K-995 program düzenleme ucu | 🔍 | #505 ✅ (V44) · #510 ✅ | B PATCH (V46) açılıyor; split Levent'te; sonra ajan K-993 → K-988 → K-997 |
 | K-997 ilk hafta bütçesi (yeni) | ⏳ | | #504, nutrition |
-| K-998 seansı at + duraklama (yeni) | 🔍 | #509 (V45) | DELETE /v1/workouts/{id}, finish pausedSeconds; telefon tarafı K-972 |
+| K-998 seansı at + duraklama (yeni) | ✅ sunucu | #509 (V45) | FOR UPDATE, retarget, başlangıç ağırlığı `start_*` (rewrite korur), otomatik kapanışta dakika yok; telefon tarafı K-972 P2 |
 | K-996 gün adı nameKey (yeni) | ✅ | #498 | M4'ten beri her üretilmiş gün '[missing…]'; simülatör düzeneği yakaladı |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
