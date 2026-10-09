@@ -621,6 +621,27 @@ class DecisionService {
         return latest && open && !SafetyCalls.restsOnTheSafetyNet(call.decision());
     }
 
+    /**
+     * The sent reasons with their facts (K-1000): the numbers each rule read, from the call's own kept data. A reason with
+     * none goes as it was.
+     */
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> withFacts(CallStore.Call call, List<Map<String, Object>> reasons) {
+        if (call.snapshot() == null || reasons == null) {
+            return reasons;
+        }
+        DecisionBasis basis = DecisionBasis.of(call.snapshot(), parameters.forSex(call.snapshot().sex()));
+        return reasons.stream().map(reason -> {
+            Map<String, Object> facts = ReasonFacts.of((String) reason.get("rule"), basis, call.snapshot().firstWeek(), call.decision());
+            if (facts.isEmpty()) {
+                return reason;
+            }
+            Map<String, Object> sent = new java.util.LinkedHashMap<>(reason);
+            sent.put("facts", facts);
+            return sent;
+        }).toList();
+    }
+
     /** The first week's watch days, on the call that closes it (K-1000, ADR-077 #4): the user's sex's, as the call read it. */
     Optional<Integer> observationDays(CallStore.Call call) {
         return CallChanges.observationDays(call.snapshot(), parameters);

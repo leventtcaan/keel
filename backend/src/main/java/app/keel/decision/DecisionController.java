@@ -176,7 +176,13 @@ class DecisionController {
     private Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest, DecisionService decisions) {
         Map<String, Object> view = sent(call, latest);
         decisions.observationDays(call).ifPresent(days -> view.put("observationDays", days));
+        view.put("reasons", decisions.withFacts(call, castReasons(view.get("reasons"))));
         return view;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> castReasons(Object reasons) {
+        return (List<Map<String, Object>>) reasons;
     }
 
     /**
