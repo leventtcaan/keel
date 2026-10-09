@@ -70,3 +70,13 @@ K-1008'in sözleşme kararı ADR-075 Ek 2 "Ne arttı" paragrafında (ayrı ADR g
 - **K-1000** dal `decision/514-call-fields` 688bf58c (PR yok; göç gerekmedi). Biten: sözleşme (`Decision.changes[]` + `inForce`, `observationDays`, 1. hafta `suggested`, `Reason.facts`), motor (1. hafta gün önerisi; antrenman günleri snapshot'ta), varsayılan uygulama (mevcut apply yolu; 409'da PENDING; güvenlik kararı da uygulanır), `CallChanges`, `ReasonFacts`. Kalan: **kısa neden şablonları `decision.ruleShort.<rule>` (76; anahtar adı onaylı)**, **ADR-077 Ek 3** (gün öneri kuralı + varsayılan uygulama), PR + CI (mevcut DB testlerinin "check-in sonrası PENDING" bekleyip beklemediğini CI gösterecek).
 - **Hareket hedefi değişimi** ayrı kart: **K-1009** (training).
 - **Levent'e ekle (U14, kaynak):** 1. hafta gün öneri kuralı — taşı: kaçan günden sonraki ilk boş gün; ekle: iki yanında en çok dinlenme olan boş gün (hiçbiri antrenman günü değil). Ürün kararı (`tag: urun`) olarak kabul mü?
+
+## #527 inceleme bulguları (yeni session'da düzelt; inceleme bitti)
+Doğrulanan: SYNCED atma sonrası Undo çift kayıt yapmıyor, hedefler doğru, Health bir kez, pausedSeconds sınırı, çift dokunma korumalı.
+1. "Fill in later" sonra Finish: uzak kalınan süre seans süresi sayılıyor (3,5 sa; 24 sa sonra çok günlük endedAt) → `later()` duraklama başlatsın (`goOn()` sonraki sette sürdürüyor) ya da bayat seansı bitirmede `endedAt = startedAt`/son bilinen an; test.
+2. Bayat açık seans Antrenman sekmesini kilitliyor (`activeWorkout` yaş bakmıyor) → bayat bitmemiş seansı telefonda emekliye ayır ya da yalnız Finish/Discard sun.
+3. Çevrimdışı ilk sette kayıt zaten `attempted` → çevrimdışı Discard hep "already sent" diyor (yanlış olabilir) → metin "may already be on the server"; "never sent" testi gerçek `record` yolundan geçsin.
+4. Kısmi Undo tekrarında ikinci seans → yeni clientId'yi tekrarlar arasında koru ya da hatada `forgetWithChildren` + "Undo failed" mesajı.
+5. Discard/Keep it/Close ≈33-35pt → 44pt (`md` ya da minHeight).
+6. Atma sonrası `announce`; onayda soru ("Discard this workout?"); `laterSaid` "anytime this week" yanlış (sunucu 24 sa'de kapatır).
+Küçük: Undo ekranında başlıktaki Pause canlı; Undo yalnız bellekte; testler (gerçek store ile Undo, REJECTED, PENDING+attempted çevrimdışı, pausedSeconds > süre).
