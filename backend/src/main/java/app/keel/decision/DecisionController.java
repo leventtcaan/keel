@@ -120,10 +120,11 @@ class DecisionController {
         return decisions.decline(account, id);
     }
 
-    /** Contract Consistency (K-420): this week's four kinds of planned action, and the weeks on track. */
+    /** Contract Consistency (K-420): this week's four kinds of planned action, the weeks on track, the period's weight change (K-988). */
     @GetMapping("/v1/consistency")
     Map<String, Object> consistency(AccountId account) {
-        WeekLogs.Now now = decisions.consistency(account);
+        DecisionService.ConsistencyNow consistency = decisions.consistency(account);
+        WeekLogs.Now now = consistency.now();
         WeekTally week = now.week();
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("weekOf", week.weekStart());
@@ -137,6 +138,8 @@ class DecisionController {
         if (week.paused()) {
             view.put("paused", true); // a state declared this week (K-516): neither on track nor missed
         }
+        // The period's weight change (K-988): only with enough weigh-ins either end; the app writes the sentence.
+        consistency.weightChange().ifPresent(kg -> view.put("weightChange", Map.of("kg", kg, "since", consistency.since())));
         view.put("record", Map.of("onTrackWeeks", now.record().onTrackWeeks(), "countedWeeks", now.record().countedWeeks(),
                 "currentRun", now.record().currentRun(), "forgivenWeeks", now.record().forgivenWeeks()));
         return view;

@@ -621,13 +621,21 @@ class DecisionService {
      * consent; NOT_FOUND before the first call, when nothing is planned yet.
      */
     @Transactional(readOnly = true)
-    WeekLogs.Now consistency(AccountId account) {
+    ConsistencyNow consistency(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         CallStore.Plan plan = calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         Week week = week(account);
         LocalDate firstCall = calls.firstMadeOn(account).orElse(plan.phaseStart());
-        return logs.consistency(account, week.profile(), week.today(), plan, firstCall, bodyweight(account, week), week.body().ageYears(),
+        WeekLogs.Now now = logs.consistency(account, week.profile(), week.today(), plan, firstCall, bodyweight(account, week), week.body().ageYears(),
                 week.parameters());
+        // The period's weight change (K-988, ADR-078 Ek 1): from the trend window ending on the record's first day to today's.
+        int window = week.parameters().wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
+        WeightSeries weights = new WeightSeries(measurements.dailyWeights(account, firstCall.minusDays(window - 1L), week.today()));
+        return new ConsistencyNow(now, firstCall, WeightChange.of(weights, firstCall, week.today(), week.parameters()));
+    }
+
+    /** This week's consistency and the record (K-420), and the period's weight change since the record began (K-988). */
+    record ConsistencyNow(WeekLogs.Now now, LocalDate since, Optional<BigDecimal> weightChange) {
     }
 
     /**

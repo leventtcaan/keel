@@ -241,6 +241,28 @@ class ConsistencyApiTests {
     }
 
     @Test
+    void thePeriodsWeightChangeIsTheTwoTrendsDifferenceOnlyWithEnoughWeighIns() throws Exception {
+        // K-988 (ADR-078 Ek 1): the first call made three weeks ago; 90 kg the week up to it, 87.5 kg the last week.
+        AccountId account = afterTheFirstCall();
+        LocalDate today = LocalDate.now(ISTANBUL);
+        LocalDate since = today.minusWeeks(3);
+        jdbc.sql("update decision.weekly_call set made_on = :since where account_id = :a").param("since", since).param("a", account.value()).update();
+        assertThat(read(get(account))).doesNotContainKey("weightChange");
+        for (int back = 0; back < 7; back++) {
+            weighIn(account, since.minusDays(back), 90.0);
+        }
+        assertThat(read(get(account))).as("nothing yet in the last week").doesNotContainKey("weightChange");
+        // Yesterday back: a morning today may not have come yet in Istanbul.
+        for (int back = 1; back < 7; back++) {
+            weighIn(account, today.minusDays(back), 87.5);
+        }
+
+        Map<String, Object> consistency = read(get(account));
+
+        assertThat(consistency.get("weightChange")).isEqualTo(Map.of("kg", -2.5, "since", since.toString()));
+    }
+
+    @Test
     void beforeTheFirstCallNothingIsPlannedYet() {
         AccountId account = consenting();
 
@@ -254,6 +276,12 @@ class ConsistencyApiTests {
                 .exchange()).hasStatusOk();
 
         assertThat(get(account)).hasStatus(403).bodyJson().extractingPath("$.code").isEqualTo("CONSENT_REQUIRED");
+    }
+
+    /** A weigh-in at 07:00 on {@code day} in Istanbul. */
+    private void weighIn(AccountId account, LocalDate day, double kg) {
+        assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
+                day.atTime(7, 0).atZone(ISTANBUL).toInstant().toString(), "kg", kg, "source", "MANUAL"))).hasStatus(201);
     }
 
     /** A man in Istanbul training on Mondays and Thursdays, whose first weekly call was made this week. */
