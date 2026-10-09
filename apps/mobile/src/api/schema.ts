@@ -2985,10 +2985,10 @@ export interface components {
             declinable: boolean;
             /**
              * @description What the call changes in the plan, old to new (K-1000, ADR-077 #3 "the targets that change"): each target it
-             *     moves, as the plan held it before the call and as the call sets it. Read from the call as kept: once applied, the
-             *     plan before and after it; not applied yet, the plan now and the plan it would set. Empty for a call that changes
-             *     no target (advice, "not yet", a program call: the program's own change is its words). Declined, each change also
-             *     says `inForce`: the value the plan follows now (last week's).
+             *     moves, as the plan held it before the call and as the call set it: read from the call as kept, the plan before and
+             *     after it, set once it was applied (by default, ADR-077 #3). Empty for a call never applied, and for one that
+             *     changes no target (advice, "not yet", a program call: the program's own change is its words). Declined, each
+             *     change also says `inForce`: the value the plan follows now (last week's).
              */
             changes: components["schemas"]["DecisionChange"][];
             /**
@@ -3191,6 +3191,24 @@ export interface components {
         Reason: {
             rule: string;
             source: components["schemas"]["Source"];
+            facts?: components["schemas"]["ReasonFacts"];
+        };
+        /**
+         * @description The numbers a call's reason read (K-1000, ADR-077 #3 "the data and the rule"), from the call's own kept data, for
+         *     the app's short line (decision.ruleShort.<rule>): the server says the numbers, the app the words (U1). Only on the
+         *     calls the server sends (/v1/decisions…); each rule has the ones it read: the decision window's change a week
+         *     (`kgPerWeek`, a tenth of a kilogram, negative is down) and its `weeks`; what of the plan was `done` of `planned`
+         *     (or the first week's sessions); how many `sessions` the lift stalled; `weeks` the load was held or the plan missed;
+         *     a calorie step's size (`kcal`, the call's own step). None for a rule with nothing of its own to count, or a call
+         *     kept before the number was.
+         */
+        ReasonFacts: {
+            kgPerWeek?: number;
+            weeks?: number;
+            done?: number;
+            planned?: number;
+            sessions?: number;
+            kcal?: number;
         };
         /** @description What kind of source a rule rests on (U14): coaching experience, the literature, or a product decision. Where it is written down stays on the server with the kept call, for audit (K-523, ADR-041 #72). */
         Source: {

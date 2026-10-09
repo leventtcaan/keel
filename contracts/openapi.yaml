@@ -4525,6 +4525,36 @@ components:
           pattern: "^[a-z][a-z0-9_]*$"
         source:
           $ref: "#/components/schemas/Source"
+        facts:
+          $ref: "#/components/schemas/ReasonFacts"
+    ReasonFacts:
+      type: object
+      description: |
+        The numbers a call's reason read (K-1000, ADR-077 #3 "the data and the rule"), from the call's own kept data, for
+        the app's short line (decision.ruleShort.<rule>): the server says the numbers, the app the words (U1). Only on the
+        calls the server sends (/v1/decisions…); each rule has the ones it read: the decision window's change a week
+        (`kgPerWeek`, a tenth of a kilogram, negative is down) and its `weeks`; what of the plan was `done` of `planned`
+        (or the first week's sessions); how many `sessions` the lift stalled; `weeks` the load was held or the plan missed;
+        a calorie step's size (`kcal`, the call's own step). None for a rule with nothing of its own to count, or a call
+        kept before the number was.
+      properties:
+        kgPerWeek:
+          type: number
+        weeks:
+          type: integer
+          minimum: 0
+        done:
+          type: integer
+          minimum: 0
+        planned:
+          type: integer
+          minimum: 0
+        sessions:
+          type: integer
+          minimum: 0
+        kcal:
+          type: integer
+          minimum: 0
     Source:
       type: object
       description: >-

@@ -50,7 +50,9 @@ class ContractTests {
             // The target the first call starts the plan with (K-989, ADR-072 #6); its maintenance estimate is a range.
             "StartingTarget.targetKcal",
             // A call's change of the plan's daily target, old and new (K-1000, ADR-077 #3): the target, not an estimate.
-            "ChangeValue.targetKcal");
+            "ChangeValue.targetKcal",
+            // A reason's calorie step, the call's own step (K-1000): a decision's step, not an estimate.
+            "ReasonFacts.kcal");
     private static final Set<String> RANGES = Set.of("#/components/schemas/KcalRange", "#/components/schemas/KcalBalance");
     private static final Pattern FAT_NUMBER = Pattern.compile(
             "(?i)body.?fat|fat.?(pct|percent|proxy|ratio|free)|fat_?mass|percent.?fat|lean.?mass|\\bffm\\b|body.?composition");
@@ -199,7 +201,8 @@ class ContractTests {
     void reasonAndSourceAreTheEnginesRecords() throws IOException {
         Map<String, Object> schemas = schemas();
 
-        assertThat(properties(map(schemas.get("Reason"))).keySet()).containsExactlyInAnyOrderElementsOf(names(Reason.class));
+        // The engine's Reason, and its facts: the numbers the rule read, which the server takes from the kept call (K-1000).
+        assertThat(properties(map(schemas.get("Reason"))).keySet()).containsExactlyInAnyOrderElementsOf(concat("facts", names(Reason.class)));
         // The engine's Source less its reference: the research path stays on the server, with the kept call (K-523,
         // ADR-041 #72) — the app gets what kind of source a rule rests on, not where it is written down.
         List<String> sent = new ArrayList<>(names(Source.class));
