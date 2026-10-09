@@ -45,7 +45,7 @@ function AppStack() {
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="meal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
-        <Stack.Screen name="workout-summary" />
+        <Stack.Screen name="workout-end" />
         <Stack.Screen name="exercise-history" />
         <Stack.Screen name="exercise" />
         <Stack.Screen name="workout-edit" />
@@ -72,6 +72,8 @@ function AppStack() {
         <Stack.Screen name="projection" />
         <Stack.Screen name="ledger" />
         <Stack.Screen name="what-if" />
+        {/* The effort summary (K-406) gave way to the workout's end (K-974, ADR-075 #7). */}
+        <Stack.Screen name="workout-summary" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarding === 'done' && gate !== 'open'}>
         <Stack.Screen name="subscribe" />

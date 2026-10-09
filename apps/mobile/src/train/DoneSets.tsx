@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -12,9 +12,17 @@ import type { ExercisePlan } from './workout';
 
 /**
  * The move's sets done in this session (ADR-075 #1, prototype `.donerow`): each with its mark (done is said by more than
- * colour, K-807), what was lifted, its number (and side) and the reps left. Editing one is K-972.
+ * colour, K-807), what was lifted, its number (and side) and the reps left; a tap corrects or deletes it (K-972). A set skipped (K-972) is grey and says so:
+ * no mark, no load, never a "100 × 0".
  */
-export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components['schemas']['Exercise'] }) {
+type Props = {
+  plan: ExercisePlan;
+  move: components['schemas']['Exercise'];
+  /** A set done tapped, to correct or delete it (K-972); its number (and side) as shown. */
+  onEdit: (set: components['schemas']['NewSet'], number: string) => void;
+};
+
+export function DoneSets({ plan, move, onEdit }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const sides = move.unilateral ? 2 : 1;
@@ -22,18 +30,31 @@ export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components[
   return (
     <View style={styles.list}>
       {plan.rows.map((row, index) => {
-        if (row.done === null) return null;
         const number = Math.floor(index / sides) + 1;
         const label = row.side === 'BOTH' ? String(number) : `${number}${t(`workout.side.${row.side}`)}`;
+        // Only what was skipped before a set done or under way: a move skipped leaves its sets to come unshown.
+        if (row.skipped === true && plan.skippedMove !== true)
+          return (
+            <View key={`${row.side}-${index}`} accessible accessibilityLabel={t('workout.skippedSet', { number: label })} style={[styles.row, { backgroundColor: color.surface }]}>
+              <Text style={[styles.set, styles.skipped, { color: color.muted }]}>{t('workout.skipped')}</Text>
+              <Text style={[styles.small, styles.grow, { color: color.muted }]}>{t('workout.doneNumber', { number: label })}</Text>
+            </View>
+          );
+        if (row.done === null) return null;
         const set = setText(row.done, move, units);
         const rir = row.done.rir === undefined ? null : rirChoice(row.done.rir);
         const left = rir === null ? null : rir === workoutParams.rirChoices[top] ? t('workout.rir.more') : String(rir);
+        const done = row.done;
         return (
-          <View
+          // One element for VoiceOver: what the set is, all of it, and that a tap corrects it.
+          <Pressable
             key={`${row.side}-${index}`}
-            accessible
+            accessibilityRole="button"
             accessibilityLabel={left === null ? t('workout.setDone', { number: label }) : t('workout.doneSet', { number: label, set, left })}
-            style={[styles.row, { backgroundColor: color.surface }]}>
+            accessibilityHint={t('workout.editHint')}
+            onPress={() => onEdit(done, label)}
+            style={({ pressed }) => [pressed && styles.dim]}>
+          <View style={[styles.row, { backgroundColor: color.surface }]}>
             <View style={[styles.mark, { backgroundColor: color.accent }]}>
               <Text style={[styles.markText, { color: color.onAccent }]}>{t('workout.doneMark')}</Text>
             </View>
@@ -41,6 +62,7 @@ export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components[
             <Text style={[styles.small, styles.grow, { color: color.textSecondary }]}>{t('workout.doneNumber', { number: label })}</Text>
             {left !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{t('workout.doneLeft', { left })}</Text>}
           </View>
+          </Pressable>
         );
       })}
     </View>
@@ -49,10 +71,12 @@ export function DoneSets({ plan, move }: { plan: ExercisePlan; move: components[
 
 const styles = StyleSheet.create({
   list: { gap: tokens.space.xs },
+  dim: { opacity: tokens.opacity.dim },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   mark: { width: tokens.space.xl, height: tokens.space.xl, borderRadius: tokens.space.xl / 2, alignItems: 'center', justifyContent: 'center' },
   markText: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   set: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
   small: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   grow: { flex: 1 },
+  skipped: { paddingLeft: tokens.space.xl + tokens.space.sm },
 });

@@ -12,11 +12,13 @@ import { Card } from '@/components/Card';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
+import { NoAnswer } from '@/sync/queue';
 import { newClientId } from '@/sync/send';
 import type { LocalRecord } from '@/sync/store';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { DoneSets } from '@/train/DoneSets';
+import { EditSet } from '@/train/EditSet';
 import { FinishForm } from '@/train/FinishForm';
 import { GoalLine } from '@/train/GoalLine';
 import { MoveDots } from '@/train/MoveDots';
@@ -32,13 +34,15 @@ import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { NOT_PAUSED, type Pause, toggle } from '@/train/pause';
+import type { Skips } from '@/train/skips';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
 import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
+import { todayFor } from '@/train/week';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
-import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
+import { type ExercisePlan, NONE_SKIPPED, activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
 
 /**
  * The session (K-405, prototype 2.4, B §6.5): the day's moves; the move under way with its rows — the server's next
@@ -74,7 +78,7 @@ export default function WorkoutScreen() {
 }
 
 function Session() {
-  const { api, training, workoutRecords, queue, report, restAlert, healthWriting, sessionPause } = useAppServices();
+  const { api, training, workoutRecords, workoutEdits, queue, report, restAlert, healthWriting, sessionPause, sessionSkips } = useAppServices();
   const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
   const { color } = useTheme();
@@ -98,6 +102,12 @@ function Session() {
   // as it is now, for what a save does once its awaits are over (a Pause pressed meanwhile counts).
   const [pause, setPauseState] = useState<Pause>(NOT_PAUSED);
   const pauseRef = useRef<Pause>(NOT_PAUSED);
+  // What was skipped (K-972), by move: never sent, kept with the workout. `undo` puts back the last skip.
+  const [skips, setSkips] = useState<Skips>({});
+  // The last skip or delete, said, and how to take it back (K-972).
+  const [undo, setUndo] = useState<{ said: string; run: () => void } | null>(null);
+  // A set done being corrected (K-972): the set and its number as shown.
+  const [editing, setEditing] = useState<{ set: components['schemas']['NewSet']; number: string } | null>(null);
   // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
   // clock tells nothing. Closing or filling it in from here is K-972.
   const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
@@ -125,6 +135,8 @@ function Session() {
       .then(async ([read, mine, kept]) => {
         const open = activeWorkout(kept);
         const paused = open === null ? NOT_PAUSED : await sessionPause.read(open.clientId);
+        const skipped = open === null ? {} : await sessionSkips.read(open.clientId);
+        setSkips(skipped);
         setData(read);
         setOwn(mine);
         pauseRef.current = paused;
@@ -135,7 +147,7 @@ function Session() {
         named(error);
         setFailed(true);
       });
-  }, [api, training, workoutRecords, named, sessionPause]);
+  }, [api, training, workoutRecords, named, sessionPause, sessionSkips]);
 
   const active = records === null ? null : activeWorkout(records);
   const startedAt = active === null ? null : Date.parse(active.startedAt);
@@ -154,9 +166,11 @@ function Session() {
   // list, K-964), then the moves done in this session outside it (a swap, an extra; read back from the sets), then the
   // ones added on this screen in the order they were added — a first set does not move one ahead of the others.
   const [added, setAdded] = useState<string[]>([]);
-  // The session's own day: its start's while under way (one begun at 23:30 stays that day's after midnight, K-961),
-  // else the day it was opened on (until K-995's Program.today says it).
-  const sessionDay = localDay(new Date(startedAt ?? openedAt));
+  // The session's own day: its start's when begun on an earlier day (one begun at 23:30 stays that day's after midnight,
+  // K-961); else today as the Train card reads it (the server's Program.today, the phone's day for a kept copy: todayFor),
+  // so the short version and today's swaps the card shows are the session's too, travelling as well (K-995).
+  const startDay = startedAt === null ? null : localDay(new Date(startedAt));
+  const sessionDay = startDay !== null && startDay !== localDay(new Date(openedAt)) ? startDay : todayFor(program, data?.kept === true, new Date(openedAt));
   const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
   const planIds = today.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
@@ -170,7 +184,11 @@ function Session() {
       : entries.map(({ exerciseId, planned }) => {
           const move = moves.get(exerciseId);
           const last = lastTime(records, exerciseId, active?.clientId ?? '');
-          return move === undefined ? null : planned === undefined ? extraPlan(move, last, done) : planExercise(planned, move, last, done);
+          return move === undefined
+            ? null
+            : planned === undefined
+              ? extraPlan(move, last, done)
+              : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED);
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
   // The move picked, by its id: the list can grow or change order under it.
@@ -231,6 +249,8 @@ function Session() {
     // A pause before the first set is the session's too.
     const before = pauseRef.current;
     if (before.pausedAt !== null || before.pausedMs > 0) await sessionPause.keep(clientId, before);
+    // So are the skips before it.
+    if (Object.keys(skips).length > 0) await sessionSkips.keep(clientId, skips);
     return clientId;
   };
 
@@ -278,6 +298,9 @@ function Session() {
       setProblem({ row: rowKey, text: t('workout.saveFailed') });
     }
     if (saved) {
+      // A set logged: the last skip is no longer the thing to undo, and a set being corrected is left as it was.
+      setUndo(null);
+      setEditing(null);
       // Paused while the set was being kept: no rest starts inside the pause (nor its alert).
       const resting = pauseRef.current.pausedAt === null;
       if (group === undefined) {
@@ -344,11 +367,12 @@ function Session() {
       await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote));
       // Finished, its pause is done with (the time paused goes with the finish once the contract takes it, K-998).
       void sessionPause.forget().catch(named);
+      void sessionSkips.forget().catch(named);
       // What was done, against last time (K-406); a workout without a work set has nothing to show.
       if (worked.length > 0) {
         // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
         void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end });
-        router.replace({ pathname: '/workout-summary', params: { workout: active.clientId } });
+        router.replace({ pathname: '/workout-end', params: { workout: active.clientId } });
       } else router.back();
     } catch (error) {
       named(error);
@@ -436,6 +460,96 @@ function Session() {
 
 
   const name = (id: string) => exerciseName(id, moves);
+  /** Skips kept with the workout once there is one; the last one can be undone. No rest goes on through a skip. */
+  const keepSkips = (next: Skips) => {
+    setSkips(next);
+    if (active !== null) void sessionSkips.keep(active.clientId, next).catch(named);
+  };
+  const changeSkips = (next: Skips, said: string) => {
+    const before = skips;
+    const picked = moveId ?? null;
+    setUndo({
+      said,
+      run: () => {
+        keepSkips(before);
+        if (picked !== null) setPicked(picked);
+      },
+    });
+    keepSkips(next);
+    endRest();
+    // Said, not only shown (K-815).
+    announce(said);
+  };
+  const skipThisSet = (current: number) => {
+    if (moveId === undefined || row === null || plan === null) return;
+    const before = skips[moveId] ?? NONE_SKIPPED;
+    const set = Math.floor(current / sides);
+    // The set's sides not done yet: a one-sided set skipped is both sides of it (the left kept if done).
+    const sidesLeft = plan.rows.slice(set * sides, set * sides + sides).filter((r) => r.done === null && r.skipped !== true);
+    changeSkips({ ...skips, [moveId]: { ...before, sets: [...before.sets, ...sidesLeft.map((r) => ({ side: r.side, set }))] } }, t('workout.setSkipped'));
+    // As after a set logged: in a superset the partner comes next; else the move stays picked, and its
+    // last set skipped, Next names the next one (C4).
+    setPicked(group === undefined ? moveId : (nextInGroup(group[1], moveId, leftAfterThis).next ?? moveId));
+  };
+  const skipThisMove = () => {
+    if (moveId === undefined) return;
+    changeSkips({ ...skips, [moveId]: { ...(skips[moveId] ?? NONE_SKIPPED), move: true } }, t('workout.moveSkipped'));
+    setPicked(nextId ?? moveId);
+  };
+  const bringBack = () => {
+    if (moveId === undefined) return;
+    keepSkips({ ...skips, [moveId]: { ...(skips[moveId] ?? NONE_SKIPPED), move: false } });
+    setUndo(null);
+  };
+  /** The last skip or delete taken back (a skip: the move it was on picked again; a rest it ended does not come back). */
+  const undoLast = () => {
+    const run = undo?.run;
+    setUndo(null);
+    run?.();
+  };
+
+  /**
+   * A set done corrected (`next`) or deleted (null), K-972: never sent, in its place; else on the server first and
+   * then here, in its old place (setEdits.ts). Offline then, it says a connection is needed and nothing changes. A
+   * delete is said, and can be undone.
+   */
+  const changeSet = async (set: components['schemas']['NewSet'], next: { loadKg: number; reps: number } | null) => {
+    if (saving.current || active === null) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      const gone = await workoutEdits.change(set.clientId, next === null ? null : { ...set, ...next });
+      if (next === null && gone !== null) {
+        announce(t('workout.setDeleted'));
+        setUndo({ said: t('workout.setDeleted'), run: () => void restoreSet(gone) });
+      }
+      setEditing(null);
+      setProblem((said) => (said?.row === EDIT ? null : said));
+    } catch (error) {
+      named(error);
+      const offline = error instanceof TypeError || error instanceof NoAnswer;
+      setProblem({ row: EDIT, text: t(offline ? 'workout.edit.offline' : 'workout.edit.failed') });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
+  };
+  /** A set deleted, back in its place; a failure is said, and its Undo stays to try again. */
+  const restoreSet = async (gone: LocalRecord) => {
+    if (saving.current) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      await workoutEdits.restore(gone);
+    } catch (error) {
+      named(error);
+      announce(t('workout.undoFailed'));
+      setUndo({ said: t('workout.undoFailed'), run: () => void restoreSet(gone) });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
+  };
   // The next move with sets left after `from`, in the session's order and round again to one left undone; -1 for none.
   const openAfter = (from: number) => {
     for (let step = 1; step < entries.length; step++) {
@@ -453,7 +567,10 @@ function Session() {
         return { id: e.exerciseId, name: name(e.exerciseId), status: status === null ? '' : exerciseStatus(status), done: status?.current === null };
       })}
       selected={selected}
-      onPick={setPicked}
+      onPick={(id) => {
+        setPicked(id);
+        setEditing(null);
+      }}
     />
   );
 
@@ -511,6 +628,25 @@ function Session() {
       />
     );
   // The move's head (prototype `.mhead`): its picture opens how it is done, as the How to link does (one for VoiceOver).
+  // Skip move (K-972): with the move's links at the top, far from Skip set in the dock. A move outside the plan has no count.
+  const skipMoveLink =
+    planned === undefined || moveId === undefined || plan === null || plan.current === null ? null : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('workout.skipMoveLabel', { name: name(moveId) })}
+        onPress={skipThisMove}
+        disabled={busy}
+        style={styles.link}>
+        <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipMove')}</Text>
+      </Pressable>
+    );
+  // A move skipped, opened again: it says so, and it can be brought back.
+  const skippedMove = (
+    <View style={[styles.undo, { backgroundColor: color.surface }]}>
+      <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{t('workout.moveIsSkipped')}</Text>
+      <Button label={t('workout.bringBack')} variant="ghost" size="sm" onPress={bringBack} />
+    </View>
+  );
   const head =
     moveId === undefined ? null : (
       <View testID="move-head" style={styles.head}>
@@ -541,6 +677,7 @@ function Session() {
             </Pressable>
             {/* With the move's other links, not between the target and the set (K-971). */}
             {supersetBlock}
+            {skipMoveLink}
           </View>
         </View>
       </View>
@@ -554,7 +691,24 @@ function Session() {
       <>
         {/* The prototype's order (K-971): the target, the sets done, then the one under way, its warm-ups folded above it. */}
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
-        <DoneSets plan={plan} move={move} />
+        <DoneSets plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })} />
+        {plan.skippedMove === true ? skippedMove : null}
+        {/* Only on its own move, with its own move's load (a dot tapped meanwhile closes it). */}
+        {editing === null || editing.set.exerciseId !== move.id ? null : (
+          <EditSet
+            key={editing.set.clientId}
+            move={move}
+            set={editing.set}
+            number={editing.number}
+            gym={data?.gym}
+            onSave={(loadKg, reps) => void changeSet(editing.set, { loadKg, reps })}
+            onDelete={() => void changeSet(editing.set, null)}
+            onClose={() => setEditing(null)}
+            problem={problem !== null && problem.row === EDIT ? problem.text : null}
+            problemOccurrence={problem}
+            busy={busy}
+          />
+        )}
         {warmBlock}
         {entryBlock}
       </>
@@ -573,13 +727,38 @@ function Session() {
       : row.side === 'BOTH'
         ? t('workout.log', { number: Math.floor((plan?.current ?? 0) / sides) + 1 })
         : t('workout.logSide', { number: Math.floor((plan?.current ?? 0) / sides) + 1, side: t(`workout.sideName.${row.side}`) });
+  // Skip set (K-972): under Log set in the dock, far from Skip move at the top; a move outside the plan has no count.
+  const skipSetLink =
+    planned === undefined || row === null || plan === null || plan.current === null ? null : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('workout.skipSetLabel')}
+        onPress={() => skipThisSet(plan.current ?? 0)}
+        disabled={busy}
+        style={styles.link}>
+        <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipSet')}</Text>
+      </Pressable>
+    );
   const dockButton =
     finishing ? null : move !== undefined && row !== null ? (
-      <Button label={logLabel} onPress={() => void log()} disabled={busy} />
+      <>
+        <Button label={logLabel} onPress={() => void log()} disabled={busy} />
+        {skipSetLink}
+      </>
     ) : nextId !== undefined ? (
       <Button label={t('workout.next', { name: name(nextId) })} onPress={() => setPicked(nextId)} />
     ) : day === null && active === null ? null : (
       <Button label={t('workout.finish')} onPress={onFinish} />
+    );
+  // The last skip, said, with its Undo (K-972): in the page, so nothing in the dock moves.
+  const undoBar =
+    undo === null ? null : (
+      <View style={[styles.undo, { backgroundColor: color.surface }]}>
+        <Text style={[styles.text, styles.grow, { color: color.text }]}>{undo.said}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={undoLast} style={styles.link}>
+          <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+        </Pressable>
+      </View>
     );
   // The day and how far into it, under the time: off the page, so the set under way has its room (K-971).
   const dayLine = (
@@ -637,6 +816,7 @@ function Session() {
   const session = (
     <>
       {entries.length > 0 && dots}
+      {undoBar}
       {head}
       {card}
       {upNext}
@@ -670,6 +850,8 @@ function Session() {
 
 /** The finish's own key for a problem: not a row of any move. */
 const FINISH = 'finish';
+/** A correction's own key for a problem. */
+const EDIT = 'edit';
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
@@ -677,7 +859,8 @@ const styles = StyleSheet.create({
   pausedBar: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   restSlot: { minHeight: tokens.size.touch + tokens.space.sm * 2, justifyContent: 'center' },
   body: { padding: tokens.space.lg, gap: tokens.space.sm },
-  dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline },
+  dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline, alignItems: 'stretch' },
+  undo: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   list: { gap: tokens.space.xs },
   dayLine: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: tokens.space.sm },
   head: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },

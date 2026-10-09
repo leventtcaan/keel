@@ -9,8 +9,10 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,13 @@ final class TodayChanges {
 
         Change shortened() {
             return new Change(onDate, skipped, true, swaps);
+        }
+
+        /** Today's swaps of a planned move of {@code planned} for one it does not plan, only (K-995). */
+        Change withinPlan(List<String> planned) {
+            Map<String, String> next = new LinkedHashMap<>(swaps);
+            next.entrySet().removeIf(swap -> !planned.contains(swap.getKey()) || planned.contains(swap.getValue()));
+            return next.equals(swaps) ? this : new Change(onDate, skipped, shortVersion, next);
         }
 
         /** The short version off again (K-995). */
@@ -228,6 +237,39 @@ final class TodayChanges {
         return workouts.stream().filter(workout -> workout.programDayId() != null)
                 .filter(workout -> workout.startedAt().atZone(zone).toLocalDate().equals(day)).map(WorkoutStore.Workout::programDayId)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /** A week's rows after the program changed (K-995): the ones to write ({@code put}), the ones that go ({@code clear}). */
+    record Relay(Map<UUID, Kept> put, Set<UUID> clear) {
+    }
+
+    /**
+     * The week's rows once the program changed (K-995, ADR-073 Ek 7): a day put on another weekday, or gone ({@code relaid}),
+     * loses its row, and each session its move pushed on goes back as it was before it (the move is no more); today's swaps
+     * keep only a planned move of the day ({@code planned}, by day) swapped for one the day does not plan — the plan may have
+     * dropped the one or taken up the other (it would be in the session twice). What undoes a row is pruned the same way.
+     */
+    static Relay relay(Map<UUID, Change> kept, Map<UUID, Undo> undos, Set<UUID> relaid, Map<UUID, List<String>> planned) {
+        Map<UUID, Kept> put = new LinkedHashMap<>();
+        Set<UUID> rows = new TreeSet<>(kept.keySet());
+        for (UUID day : rows) {
+            if (relaid.contains(day)) {
+                continue;
+            }
+            List<String> plan = planned.getOrDefault(day, List.of());
+            Undo undo = undos.get(day);
+            if (undo != null && relaid.contains(undo.of())) {
+                put.put(day, new Kept(undo.before().withinPlan(plan), null));
+                continue;
+            }
+            Change change = kept.get(day);
+            Change within = change.withinPlan(plan);
+            Undo undoWithin = undo == null ? null : new Undo(undo.of(), undo.on(), undo.before().withinPlan(plan));
+            if (!within.equals(change) || !Objects.equals(undoWithin, undo)) {
+                put.put(day, new Kept(within, undoWithin));
+            }
+        }
+        return new Relay(Map.copyOf(put), relaid.stream().filter(kept::containsKey).collect(Collectors.toUnmodifiableSet()));
     }
 
     /** The day {@code day} is on in the week of {@code monday} by its weekday; null on no weekday. */

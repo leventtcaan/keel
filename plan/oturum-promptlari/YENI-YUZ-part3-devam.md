@@ -34,7 +34,7 @@ K-995 B, C (taşı önizlemesi) → part sonu: 6 personalı kullanıcı-gözü y
 3. Bilgi: Bu hafta'daki "Allow" rızayı doğrudan vermiyor, Ayarlar'a (rıza metni) götürüyor (prototipte doğrudan veriyordu).
 4. Bilgi: dinlenme sayacı ileri sayıyor, 2:00-3:00 bandı (G1 K-49); bitirme düğmesi "Ready".
 5. Bilgi: ADR-075 Ek 3 (seans başlangıcı Start anı); K1 notu #505 (mevcut bir API testi daha sıkı hale geldi, gevşemedi).
-6. Bilgi (K1): K-974'te `workout-screen.test.tsx` bitiş yönlendirmesi `/workout-summary` → `/workout-end` (ADR-075 #7 kutlaması eski özetin yerini aldı; beklenti gevşemedi). #510'da iki API testi önizlemeyi içerecek şekilde sıkılaştı. #515'te bir beklentinin tersine çevrilmesi **reddedildi** (açığı kilitliyordu).
+6. **K1 — Levent'in onayı gerekli (part sonu AskUserQuestion; itiraz olursa geri alınır):** davranış değişikliği yüzünden beklentisi değişen testler —  K-974'te `workout-screen.test.tsx` bitiş yönlendirmesi `/workout-summary` → `/workout-end` (ADR-075 #7 kutlaması eski özetin yerini aldı; beklenti gevşemedi). #510'da iki API testi önizlemeyi içerecek şekilde sıkılaştı; #517 `workout.test.ts` seti girilmiş hareket 'Skipped' değil (hata düzeltmesi); #519 check-in/Bu hafta testleri `/call` ekranına (ADR-077 #3); #508 `stepLoad(1,-1)` 0 yerine null (dış yükte 0 kg kaydı yok); #512 kısa sürüm etiketi yerine 'Full workout' düğmesi. #515'te bir beklentinin tersine çevrilmesi **reddedildi** (açığı kilitliyordu).
 7. Bilgi: yeni kartlar K-995, K-996, K-997, K-998, K-999 (sunucuda açık seansa dönüş), K-1000 (karar ekranı sunucu alanları; "varsayılan uygulanır" sunucuda), K-1008 (özette hareket başına değişim). Rekor haptiği Part 4 derlemesinde (`expo-haptics`, ADR-075 Ek 5).
 
 ## Ajan kuralları (brief.md özeti)
@@ -45,6 +45,7 @@ Süreç dersleri: yığılı PR + squash → üstteki PR'ı yalnız kendi commit
 `gh pr update-branch`; tam jest yük altında meal/onboarding zaman aşımına düşer → `-i` ya da `-w 2 --testTimeout=20000` ile yeniden.
 
 ## Cihaz turuna (K-984) bakılacaklar
+- Seyahat: telefon gece yarısını geçip sunucunun `today`'i geçmediyse bekleyen finish 'done' sayılmıyor (Start görünür, sunucu DONE gelince düzelir); sonraki telefon gününde sürdürülen seans bugünün kısa sürümünü/swap'ını kaybeder (#515 doğrulaması).
 - Seans: aktif set iPhone SE'de (667pt) ilk görünümde tam görünüyor mu (üstteki dinlenme yuvası ~60pt boş); 375pt'de "102.5" kesilmiyor mu; klavye "Log set"i örtmüyor mu (KeyboardAvoidingView).
 
 ## Devam sonrası (9 Eki öğle) olanlar

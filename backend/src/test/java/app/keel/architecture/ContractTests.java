@@ -112,6 +112,22 @@ class ContractTests {
     }
 
     @Test
+    void theProgramEditIsTheServersRecordsFieldForField() throws Exception {
+        // K-995 (ADR-073 Ek 7): the phone edits by the ids the program carries, and reads the edit back in the change log.
+        Map<String, Object> schemas = schemas();
+        Map<String, String> sent = Map.of("ProgramEdit", "app.keel.training.ProgramController$ProgramEdit", "EditedProgramDay",
+                "app.keel.training.ProgramController$EditedProgramDay", "EditedExercise", "app.keel.training.ProgramController$EditedExercise");
+        for (Map.Entry<String, String> schema : sent.entrySet()) {
+            assertThat(properties(map(schemas.get(schema.getKey()))).keySet()).as(schema.getKey())
+                    .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName(schema.getValue())));
+        }
+        assertThat(map(map(map(contract().get("paths")).get("/v1/program")).get("patch")).get("operationId")).isEqualTo("editProgram");
+        assertThat(properties(map(schemas.get("PlannedExercise")))).containsKey("id");
+        assertThat(properties(map(schemas.get("ProgramEditChange"))).keySet())
+                .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.training.ProgramReviews$Edited")));
+    }
+
+    @Test
     void theProgramReviewIsTheEnginesFindingsAndTheServersRecordsFieldForField() throws Exception {
         // K-956 (ADR-073 #2-#3): the phone shows the review, sends back the picks and the change to undo; the program carries
         // the review, optional for programs from before it.

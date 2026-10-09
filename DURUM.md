@@ -5,7 +5,10 @@ guncelleme: 2026-10-08
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (9 Eki — M9a Part 3 DURAKLATILDI, Levent'in token sınırı; aynı session'da sürecek)
+## ▶ DEVAM NOKTASI (9 Eki akşam — M9a Part 3 YENİ SESSION'A DEVREDİLDİ)
+**Devam:** `plan/oturum-promptlari/YENI-YUZ-part3-devam-2.md` (yeni session prompt'u başında; açık PR'lar, kalan iş, Levent'e sorular, simülatör düzeneği `../keel-sim/.sim/`, ajan talimatı `ajan-brief.md`).
+
+## (önceki) DEVAM NOKTASI (9 Eki — M9a Part 3 duraklatıldı)
 **Devam:** `plan/oturum-promptlari/YENI-YUZ-part3-devam.md` (açık PR'lar, duraklatılan 4 ajan, kalan sıra, Levent'e 5 soru). Tablo: DURUM › M9a ilerleme › Part 3 başı.
 
 ## (önceki) DEVAM NOKTASI (8 Eki gece — M9a Part 2 BİTTİ)
@@ -820,7 +823,7 @@ Geçici numaralar: K-956 V39 · K-959 V40 · K-964 V41 · K-957 V42 · K-965 V43
 | K-985 şablonlar incelemeye uyar | ✅ | #470 | 1 gün = 6 bileşik × 4 set (Levent); `AccountFixture` 6 gün + TOO_MANY_DAYS |
 | K-986 rıza ikinci yürüyüş | ⏳ | | |
 | K-987 gece yarısı testi | ✅ | 651dd851 | PR'sız `main`'e düştü (kaza; incelenmişti) |
-| K-988 kilo değişimi (sonuç cümlesi) | ⏳ | | Part 3 İlerleme ile |
+| K-988 kilo değişimi | 🔍 | #522 | Consistency.weightChange; telefon cümlesi K-979'da |
 | K-989 başlangıç kalorisi ucu | 🛠 | | K-967 plan ekranı için |
 | K-983 ASC 2 hafta (Levent) | ⏳ sonra | | sandbox kontrolü Levent bitirince |
 
@@ -854,18 +857,18 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-969 Bu hafta | 🔍 | #494 ✅ · #501 ✅ | kalan: sunucu alanları ek PR (Undo, Full, DONE/OPEN, Program.today/weekOf); sonra ajan K-978'e |
-| K-970 Antrenman + Edit | 🔍 | #493 ✅ · #495 ✅ · #506 ✅ · #508 ✅ | kalan: sunucu alanları ek PR; Days/Moves K-995 B'yi bekler; sonra ajan K-974'e |
+| K-969 Bu hafta | ✅ (ek PR sırada) | #494 · #501 · #512 | kart `sessionState`'e geçecek küçük PR; ajan K-978 #519 düzeltmesinde, sonra K-1000 |
+| K-970 Antrenman + Edit | ✅ | #493 · #495 · #506 · #508 · #515 | `sessionState`/`todayFor` ortak; Days/Moves düzenleme ekranı PATCH'e bağlanacak (K-995 B birleşince) |
 | K-971 Oturum A | ✅ | #497 · #499 · #500 | ADR-075 Ek 3; SE sığması cihaz turunda |
-| K-972 Oturum B | 🛠 | #511 (P1 Pause) | #511 düzeltmede; P3 → P2 (Discard, pausedSeconds) → P4 swap; analiz satırı yeniden hesabı K-973'e |
+| K-972 Oturum B | 🛠 | #511 ✅ · #517 ✅ · #520 | #520 set düzelt/sil: kuyruk yarışı (PENDING uçuşta) düzeltmede; P2 End/Discard, P4 swap |
 | K-973 Oturum C | ⏳ | | K-972 sonrası (aynı ekran) |
-| K-974 Antrenman sonu | ⏳ | | |
+| K-974 Antrenman sonu | 🔍 | #521 | kutlama + MuscleMap; haptik port (ADR-075 Ek 5); 'What moved' K-1008 bekler |
 | K-978 Pazartesi | ⏳ | | |
 | K-988 kilo değişimi | ⏳ | | decision |
 | K-992 ilk hatırlatma | ✅ | #492 | `reminders.firstCall` kv; rıza yoksa Monday anahtarı yok, Settings 'noCalls' |
 | K-993 ilk hafta planın görüldüğü günden | ⏳ | | decision, göç olabilir |
 | K-994 kırılgan test | ✅ | #490 | `JsonNumbers.asValue` |
-| K-995 program düzenleme ucu | 🔍 | #505 ✅ (V44) · #510 ✅ | B PATCH (V46) açılıyor; split Levent'te; sonra ajan K-993 → K-988 → K-997 |
+| K-995 program düzenleme ucu | 🔍 | #505 ✅ · #510 ✅ · #518 (V46) | #518 auto-merge; split Levent'te |
 | K-997 ilk hafta bütçesi (yeni) | ⏳ | | #504, nutrition |
 | K-998 seansı at + duraklama (yeni) | ✅ sunucu | #509 (V45) | FOR UPDATE, retarget, başlangıç ağırlığı `start_*` (rewrite korur), otomatik kapanışta dakika yok; telefon tarafı K-972 P2 |
 | K-996 gün adı nameKey (yeni) | ✅ | #498 | M4'ten beri her üretilmiş gün '[missing…]'; simülatör düzeneği yakaladı |

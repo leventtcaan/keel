@@ -657,6 +657,7 @@
       ],
       "notFirstView": [
         "train.failed",
+        "train.notUndone",
         "train.loading",
         "train.retry",
         "train.none",
@@ -675,9 +676,41 @@
       "budget": 55,
       "source": "prototip/yeni-yuz.html",
       "task": "K-974",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/workout-end.tsx",
+      "keys": [
+        "workoutEnd.title",
+        "workoutEnd.minutes.other",
+        "workoutEnd.liftedKg",
+        "workoutEnd.change",
+        "workoutEnd.sets.other",
+        "workoutEnd.kcal",
+        "workoutEnd.watch",
+        ["workoutEnd.recordKicker", "workoutEnd.baseline"],
+        ["workoutEnd.recordNext", "workoutEnd.baselineBody"],
+        "workoutEnd.worked",
+        "workoutEnd.thisWeek",
+        "workoutEnd.week",
+        "workoutEnd.share",
+        "workoutEnd.done",
+        "workoutEnd.record",
+        "workoutEnd.set"
+      ],
+      "dynamic": [
+        { "what": "the session's day (Full body A)", "words": 3 },
+        { "what": "the record's move and set (Squat 100 kg × 8)", "words": 2 },
+        { "what": "the record's next set's unit (100 kg × 9)", "words": 1 }
+      ],
+      "notFirstView": [
+        "workoutEnd.minutes.one",
+        "workoutEnd.sets.one",
+        "workoutEnd.liftedLb",
+        "workoutEnd.recordBest",
+        "workoutEnd.weekLabel",
+        "workoutEnd.pending",
+        "workoutEnd.failed",
+        "workoutEnd.retry",
+        "workoutEnd.ready"
+      ]
     },
     {
       "screen": "progress",

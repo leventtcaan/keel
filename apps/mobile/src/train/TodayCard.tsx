@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useRef } from 'react';
+import { type ReactNode, useCallback, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -15,23 +15,33 @@ import { dayName, exerciseName, rackNote } from './program';
 import { repCount } from './reps';
 import { swapChoice } from './swap';
 import type { Move } from './trainData';
-import { type Found, sessionMoves, weekdayOf } from './week';
+import { type Found, type SessionStatus, sessionMoves, weekdayOf } from './week';
 
 type Schemas = components['schemas'];
 
 type Props = {
   program: Schemas['Program'];
-  /** Today's date on the phone's calendar (YYYY-MM-DD): which of the server's dates is today. */
-  date: string;
-  /** The week's session on today, as the server set it; null on a day without one. */
+  /** The week's session on today (sessionState); null on a day without one. */
   today: Found | null;
+  /** Today (sessionState): the server's, or the phone's day when the program is the copy kept offline. */
+  date: string;
+  /** Today's session under way on this phone, done, open on another phone, or none (sessionState). */
+  status: SessionStatus;
+  /** The program is the copy kept offline: its Undo and its full-workout offer were the server's then, not now. */
+  stale: boolean;
+  /** The session the server moved off today (moved and still undoable: movedOffToday), when today has none. */
+  movedAway: Found | null;
   moves: ReadonlyMap<string, Move>;
   units: UnitSystem;
-  /** A workout under way: continued, not started again. */
+  /** A workout under way on this phone (any day's, not finished): continued, never a second started. */
   underWay: boolean;
   /** With no session today, a session of the week below can be started: the rest line says so. */
   canPick: boolean;
   onStart: (programDayId: string) => void;
+  /** Today's change of a session undone (UNDO), or the short version made full again (FULL); null while one is sent. */
+  onChange: ((programDayId: string, change: 'UNDO' | 'FULL') => void) | null;
+  /** What came of the last change, said under the card (an undo the server could not make, a failure). */
+  notice: ReactNode;
 };
 
 const weekdayShort = (date: string) => t(`programEditor.weekdayShort.${weekdayOf(date)}`);
@@ -39,9 +49,12 @@ const weekdayShort = (date: string) => t(`programEditor.weekdayShort.${weekdayOf
 /**
  * Today's session (K-970, prototype `#train` › `.card.ink`): the session the server put on today, by its day's name;
  * each move with its image, sets × reps, the next load the server set and "held" while loads are held; today's cardio
- * after lifting; Start and Change. Skipped or a week off, it says so instead; a day without a session is rest. Where a
- * moved session went is not told here: `moved` says only that a session is off its usual day, and the week below marks
- * it (the server's own word on what moved where comes with K-995). Every number is the server's.
+ * after lifting; Start and Change. Done today, under way on this phone or on another (sessionState: the phone's
+ * records first, then the server's word), it says so; under way here, "Continue workout". Skipped or moved off today,
+ * it says so (where it went is the date of the session moved and still undoable), with Undo while the server says it
+ * can be (`undoable`, never from a copy kept offline); the short version offers the full workout back. A week off, or a
+ * day without a session, is rest. Today is sessionState's (the server's, the phone's day for a kept copy). Every number
+ * is the server's.
  */
 export function TodayCard(props: Props) {
   return (
@@ -51,7 +64,7 @@ export function TodayCard(props: Props) {
   );
 }
 
-function Body({ program, date, today, moves, units, underWay, canPick, onStart }: Props) {
+function Body({ program, today, date, status, stale, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
   const { color } = useTheme();
   // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
   const opening = useRef(false);
@@ -66,18 +79,40 @@ function Body({ program, date, today, moves, units, underWay, canPick, onStart }
     router.push(href);
   };
   const restWeek = program.restUntil !== undefined;
-  const session = restWeek || today === null || today.session.skipped === true ? null : today;
+  const done = status === 'done';
+  const elsewhere = status === 'openElsewhere';
+  const session = restWeek || today === null || today.session.skipped === true || done || elsewhere ? null : today;
   const shown = session === null ? [] : sessionMoves(session.day, session.session);
   const meta = session === null ? '' : t(shown.length === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count: shown.length });
   const title = session !== null ? dayName(session.day) : today !== null && !restWeek ? dayName(today.day) : t('train.rest');
 
   let line: string | null = null;
   if (restWeek) line = t('train.status.restWeekNote');
+  else if (done) line = t('train.doneToday');
+  else if (elsewhere) line = t('train.openElsewhere');
   else if (today?.session.skipped === true) line = t('train.skipped');
+  else if (today === null && movedAway !== null) line = t('train.movedTo', { weekday: weekdayShort(movedAway.session.date) });
   else if (today === null) line = t(canPick ? 'train.restDayPick' : 'train.restDay');
+  // Undo where the server says today's move or skip can be undone; the full workout back from the short version.
+  const undoable = stale || underWay ? null : ([today, movedAway].find((f) => f !== null && f.session.undoable === true) ?? null);
+  const undo =
+    undoable === null ? null : (
+      <Button
+        label={t('train.undo')}
+        accessibilityLabel={t('train.undoLabel')}
+        variant="ghost"
+        size="sm"
+        disabled={onChange === null}
+        onPress={() => onChange?.(undoable.day.id, 'UNDO')}
+      />
+    );
 
   const cardio = program.cardio?.sessions.find((s) => s.weekday === weekdayOf(date) && s.place === 'AFTER_LIFT');
   const short = session?.session.short === true;
+  const full =
+    session !== null && short && !underWay && !stale ? (
+      <Button label={t('train.full')} variant="ghost" size="sm" disabled={onChange === null} onPress={() => onChange?.(session.day.id, 'FULL')} />
+    ) : null;
   const held = program.loadHeldSince !== undefined;
   const change = () => sheet({ pathname: '/today-change', params: { day: session?.day.id ?? '' } });
   let dock = null;
@@ -102,6 +137,9 @@ function Body({ program, date, today, moves, units, underWay, canPick, onStart }
         {title}
       </Text>
       {line !== null && <Text style={[styles.text, { color: color.text }]}>{line}</Text>}
+      {undo}
+      {full}
+      {notice}
       {shown.map(({ planned, insteadOf }) => {
         const name = exerciseName(planned.exerciseId, moves);
         // The swap names the program's move; a move swapped for today offers it back. None with nothing to swap to.

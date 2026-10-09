@@ -24,6 +24,8 @@ import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
 import { type Opens, createOpens } from '@/today/opens';
 import { type SessionPause, createSessionPause } from '@/train/pause';
+import { type SetEdits, createSetEdits } from '@/train/setEdits';
+import { type SessionSkips, createSessionSkips } from '@/train/skips';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
@@ -31,7 +33,7 @@ import { noPhotoCache, type PhotoCache } from '@/food/photo';
 import type { AppleReauth } from '@/session/appleSignIn';
 import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } from '@/photos/library';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
-import { sendWithApi } from '@/sync/send';
+import { newClientId, sendWithApi } from '@/sync/send';
 import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
 import { type AppearancePreference, createAppearance } from '@/theme/appearance';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
@@ -110,6 +112,8 @@ export type AppServices = {
   training: TrainingCache;
   /** The phone's workouts, their sets and their finishes, sent or not (K-405): the session is built from them. */
   workoutRecords(): Promise<LocalRecord[]>;
+  /** A set of the session corrected or deleted, on the phone and on the server, never two versions of it (K-972). */
+  workoutEdits: SetEdits;
   /** The phone's meals, sent or not (K-407): today's list shows a meal saved offline at once. */
   mealRecords(): Promise<LocalRecord[]>;
   /** Forgets the phone's copy of a record the server no longer has (a meal corrected or deleted, K-407). */
@@ -124,6 +128,8 @@ export type AppServices = {
   restAlert: RestAlert;
   /** The open session's pause, kept with its workout (K-972). */
   sessionPause: SessionPause;
+  /** The open session's skipped sets and moves, kept with its workout (K-972). */
+  sessionSkips: SessionSkips;
   /** The two switches that write to Apple Health: finished sessions, weigh-ins typed in (K-412). */
   healthWriting: HealthWriting;
   /** What the user declared (K-518): kept on the phone for the reminders. */
@@ -176,6 +182,7 @@ export async function createAppServices({
     mutedUntil: () => state.until() });
   const restAlert = createRestAlert({ access: alerts, report });
   const sessionPause = createSessionPause(kv);
+  const sessionSkips = createSessionSkips(kv);
   const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
   const profile = await createProfileStatus({
     kv,
@@ -262,6 +269,7 @@ export async function createAppServices({
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
     sessionPause.forget().catch(reportError); // and the open session's pause (K-972)
+    sessionSkips.forget().catch(reportError); // and what was skipped in it
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     planPreviews.forget(); // and the plan just shown, kept in memory for the paywall (K-967)
@@ -295,6 +303,7 @@ export async function createAppServices({
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     sessionPause,
+    sessionSkips,
     healthWriting,
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
@@ -331,6 +340,16 @@ export async function createAppServices({
     },
     pendingCount: store.pendingCount,
     workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
+    workoutEdits: createSetEdits({
+      store,
+      queue,
+      newClientId,
+      deleteOnServer: async (id, setId) => {
+        const { response } = await api.DELETE('/v1/workouts/{id}/sets/{setId}', { params: { path: { id, setId } } });
+        // Gone already is gone.
+        if (!response.ok && response.status !== 404) throw Object.assign(new Error(`HTTP_${response.status}`), { name: 'DeleteRefused' });
+      },
+    }),
     mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
     forgetRecord: store.forgetClient,
     claimPhotos: async (owner: string) => {
