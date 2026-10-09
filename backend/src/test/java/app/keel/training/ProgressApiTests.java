@@ -55,6 +55,12 @@ class ProgressApiTests {
     @Autowired
     JdbcClient jdbc;
 
+    @Autowired
+    SessionProgress progress;
+
+    @Autowired
+    WorkoutStore workouts;
+
     @Test
     @SuppressWarnings("unchecked")
     void theWorkoutsSummaryHasItsRecordsBaselinesWeightLiftedAndMuscles() throws Exception {
@@ -106,6 +112,18 @@ class ProgressApiTests {
                 Map.of("endedAt", at.plus(Duration.ofMinutes(55)).toString(), "pausedSeconds", 300))).hasStatusOk();
 
         assertThat(map(send("GET", account, "/v1/workouts/" + workout + "/summary"))).containsEntry("minutes", 50);
+    }
+
+    @Test
+    void aSessionClosedByItselfHasNoMinutesItsLengthIsNotKnown() throws Exception {
+        // #509 review: closed by the server (endedAt = startedAt, K-961), it lasted no 0 minutes; the time is not known.
+        AccountId account = withAProgram();
+        Instant at = clock.instant().minus(Duration.ofDays(2));
+        String workout = start(account, at);
+        sets(account, workout, "bench_press", 1, 60, 8, 1, "WORKING");
+        progress.closeUnfinished(account, workouts.find(account, UUID.fromString(workout)).orElseThrow(), at);
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + workout + "/summary"))).doesNotContainKey("minutes");
     }
 
     @Test

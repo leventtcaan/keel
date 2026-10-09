@@ -171,8 +171,9 @@ class WorkoutController {
     Workout finish(AccountId account, @PathVariable UUID id, @RequestBody Finish finish) {
         WorkoutStore.Workout workout = owned(account, id);
         require(api.moment(finish.endedAt()) && !finish.endedAt().isBefore(workout.startedAt()) && limits.fits(finish.note()));
-        require(finish.pausedSeconds() == null || finish.pausedSeconds() >= 0
-                && finish.pausedSeconds() <= java.time.Duration.between(workout.startedAt(), finish.endedAt()).toSeconds());
+        // The time paused as it will be kept (this finish's, or the one given before) fits in the length this finish gives.
+        int paused = finish.pausedSeconds() == null ? workout.pausedSeconds() : finish.pausedSeconds();
+        require(paused >= 0 && paused <= java.time.Duration.between(workout.startedAt(), finish.endedAt()).toSeconds());
         List<String> unclean = finish.uncleanExerciseIds() == null ? List.of() : finish.uncleanExerciseIds();
         // No contains(null): an immutable list (the default here) throws on it.
         // A catalog move, or one of the user's own (K-424): an off-program move is accepted and has no target to hold.
@@ -184,19 +185,20 @@ class WorkoutController {
     }
 
     /**
-     * Discards a workout (K-998, ADR-075 #5): its sets go first and its targets are derived again from none, as an edit
-     * deleting all of them does (K-432: a target a newer session set stays; an open session set none), then the workout.
-     * Held as a change of its sets is, so a close by itself or a finish under way is waited for. The week and progress
-     * read the log, so they no longer count it. A repeat finds none: NOT_FOUND, nothing changed.
+     * Discards a workout (K-998, ADR-075 #5): held alone (findForDelete), it goes with its sets, then its targets are
+     * derived again from nothing, as an edit deleting all of them does (K-432: a target a newer session set stays; an
+     * open session set none), from the day's session before it where it was their source. A set, a finish or a second
+     * discard arriving meanwhile waits and then finds none: NOT_FOUND, nothing changed. The week and progress read the
+     * log, so they no longer count it.
      */
     @DeleteMapping("/v1/workouts/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
     void discard(AccountId account, @PathVariable UUID id) {
-        WorkoutStore.Workout workout = held(account, id);
-        store.deleteSets(account, id);
-        progress.edited(account, workout);
+        WorkoutStore.Workout workout = store.findForDelete(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        // Gone first: the targets derived again read no set of it, whatever arrived before the hold.
         store.delete(account, id);
+        progress.edited(account, workout);
     }
 
     /** A set of a finished session (one forgotten, K-416) derives its targets again, in the same transaction (K-432). */

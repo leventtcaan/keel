@@ -59,6 +59,12 @@ class SessionProgressApiTests {
     TrainingLog log;
 
     @Autowired
+    SessionProgress progress;
+
+    @Autowired
+    WorkoutStore workouts;
+
+    @Autowired
     Clock clock;
 
     /**
@@ -575,6 +581,43 @@ class SessionProgressApiTests {
         assertThat(send("DELETE", account, "/v1/workouts/" + workout, null)).hasStatus(204);
 
         assertThat(planned(account, 0)).doesNotContainKeys("nextLoadKg", "nextReps");
+    }
+
+    @Test
+    void discardingTheNewestSessionBringsBackTheTargetTheOneBeforeItSet() throws Exception {
+        // #509 review (ADR-075 #5: Discard leaves nothing): the day's last session left is its targets' source again.
+        AccountId account = withAProgram();
+        String first = start(account, recently.minus(java.time.Duration.ofDays(7)));
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+        List<Object> firstTarget = next(account, 0);
+        String closedByItself = start(account, recently);
+        sets(account, closedByItself, "bench_press", 3, 62.5, 10, "BOTH");
+        progress.closeUnfinished(account, workouts.find(account, UUID.fromString(closedByItself)).orElseThrow(), recently);
+        assertThat(next(account, 0)).isNotEqualTo(firstTarget);
+
+        assertThat(send("DELETE", account, "/v1/workouts/" + closedByItself, null)).hasStatus(204);
+
+        assertThat(next(account, 0)).isEqualTo(firstTarget);
+    }
+
+    @Test
+    void everySetOfTheNewestSessionDeletedBringsBackTheTargetTheOneBeforeItSet() throws Exception {
+        // The same for an edit (K-432): a move none of whose sets are left takes its target from the session before.
+        AccountId account = withAProgram();
+        String first = start(account, recently.minus(java.time.Duration.ofDays(7)));
+        sets(account, first, "bench_press", 3, 60, 10, "BOTH");
+        assertThat(finish(account, first, List.of())).hasStatusOk();
+        List<Object> firstTarget = next(account, 0);
+        String second = start(account, recently);
+        sets(account, second, "bench_press", 3, 62.5, 10, "BOTH");
+        assertThat(finish(account, second, List.of())).hasStatusOk();
+
+        for (String set : setIds(account, second)) {
+            assertThat(send("DELETE", account, "/v1/workouts/" + second + "/sets/" + set, null)).hasStatus(204);
+        }
+
+        assertThat(next(account, 0)).isEqualTo(firstTarget);
     }
 
     @Test

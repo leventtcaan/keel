@@ -101,6 +101,23 @@ class WorkoutStore {
                 .param("id", id).param("account", account.value()).query((row, n) -> workout(row)).optional();
     }
 
+    /**
+     * The workout, held alone until the transaction ends (FOR UPDATE), to discard it (K-998): a second discard, or a set or
+     * a finish arriving meanwhile, waits and then finds none — never a deadlock of two shared holds both wanting to delete.
+     */
+    Optional<Workout> findForDelete(AccountId account, UUID id) {
+        return jdbc.sql("select * from training.workout where id = :id and account_id = :account for update")
+                .param("id", id).param("account", account.value()).query((row, n) -> workout(row)).optional();
+    }
+
+    /** The newest finished session of a program day (closed by itself too), but `except`: where its targets come from next. */
+    Optional<Workout> latestFinished(AccountId account, UUID programDayId, UUID except) {
+        return jdbc.sql("""
+                select * from training.workout where account_id = :account and program_day_id = :day and id <> :except
+                  and ended_at is not null order by started_at desc, id desc limit 1""")
+                .param("account", account.value()).param("day", programDayId).param("except", except).query((row, n) -> workout(row)).optional();
+    }
+
     List<Workout> between(AccountId account, Instant from, Instant to) {
         return jdbc.sql("""
                 select * from training.workout where account_id = :account and started_at >= :from and started_at < :to
@@ -132,12 +149,6 @@ class WorkoutStore {
     boolean delete(AccountId account, UUID id) {
         return jdbc.sql("delete from training.workout where id = :id and account_id = :account")
                 .param("id", id).param("account", account.value()).update() == 1;
-    }
-
-    /** Every set of the workout, before it is discarded: the targets it set are derived again from none (K-998). */
-    void deleteSets(AccountId account, UUID workout) {
-        jdbc.sql("delete from training.workout_set where workout_id = :workout and account_id = :account")
-                .param("workout", workout).param("account", account.value()).update();
     }
 
     /**

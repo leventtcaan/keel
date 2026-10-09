@@ -114,8 +114,10 @@ class ProgressController {
         List<ProgressReads.Row> upToThis = rows.stream().filter(row -> !row.set().at().isAfter(workout.startedAt())).toList();
         List<ProgressSummary.MuscleSets> week = muscles(programs.current(account), calls.changes(account), upToThis, day, zone, parameters(account));
         int workingSets = ProgressSummary.counted(sets).values().stream().mapToInt(Integer::intValue).sum();
-        // The session's active time (K-998); none while it is open.
-        Integer minutes = workout.endedAt() == null ? null : ProgressSummary.activeMinutes(workout.startedAt(), workout.endedAt(), workout.pausedSeconds());
+        // The session's active time (K-998); none while it is open, nor once closed by itself (endedAt = startedAt, K-961):
+        // how long it lasted is not known.
+        Integer minutes = workout.endedAt() == null || workout.endedAt().equals(workout.startedAt()) ? null
+                : ProgressSummary.activeMinutes(workout.startedAt(), workout.endedAt(), workout.pausedSeconds());
         return new WorkoutSummary(id, minutes, lifted, ProgressSummary.changePercent(lifted, previous).orElse(null), workingSets, marks,
                 ProgressSummary.monday(day), week.stream().filter(muscle -> trained.contains(muscle.muscle())).toList());
     }

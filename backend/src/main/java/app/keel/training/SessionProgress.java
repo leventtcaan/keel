@@ -80,13 +80,19 @@ class SessionProgress {
     }
 
     /**
-     * A finished session's sets were edited (K-432, ADR-037 #48: data corrected, U2): its targets are derived again from
-     * what it holds now, with the finish's answer on form. A target a newer session set stays (setNext keeps the newest);
-     * one this session set for a move none of whose sets are left is gone. A session under way waits for its finish.
+     * A finished session's sets were edited (K-432, ADR-037 #48: data corrected, U2), or the session was discarded (K-998):
+     * its targets are derived again from what it holds now (nothing, discarded), with the finish's answer on form. A target
+     * a newer session set stays (setNext keeps the newest); one this session set for a move none of whose sets are left
+     * comes again from the day's newest finished session left, as if this one had not been (ADR-075 #5: a discard leaves
+     * nothing). A session under way waits for its finish.
      */
     void edited(AccountId account, WorkoutStore.Workout workout) {
         if (workout.endedAt() != null) {
             retarget(account, workout, Set.copyOf(workout.uncleanExerciseIds()));
+            if (workout.programDayId() != null) {
+                workouts.latestFinished(account, workout.programDayId(), workout.id())
+                        .ifPresent(last -> retarget(account, last, Set.copyOf(last.uncleanExerciseIds())));
+            }
         }
     }
 
