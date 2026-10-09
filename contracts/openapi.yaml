@@ -828,7 +828,8 @@ paths:
         applies the fix the review holds now. A move the change leaves keeps its next target (a starting weight or a
         session's), except a move whose rep range changed: its target was for the old range. A GENERATED program stays
         GENERATED (ADR-073 #4). CONFLICT (409), nothing changed: the program is not the one `reviewId` names (it changed
-        since the review; fetch it again), or a suggestion id the review does not hold now. NOT_FOUND without a program.
+        since the review; fetch it again), a suggestion id the review does not hold now, or the change would put a day
+        whose workout was started today on another weekday or take it out (ADR-073 Ek 7). NOT_FOUND without a program.
       requestBody:
         required: true
         content:
@@ -858,7 +859,8 @@ paths:
         is applied again or undone with them and named in `alsoUndone`. Moves keep their next targets as in apply. This
         week's sessions re-lay as for an edit. An undone change stays in the log, no longer in force; undone twice, or
         nothing to undo, nothing changes. NOT_FOUND: no program, or no such change. CONFLICT (409), nothing changed: the
-        program changed another way since its last change.
+        program changed another way since its last change, or the undo would put a day whose workout was started today on
+        another weekday or take it out (ADR-073 Ek 7).
       requestBody:
         required: true
         content:

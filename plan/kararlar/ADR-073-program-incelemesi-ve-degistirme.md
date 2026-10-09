@@ -280,6 +280,9 @@ testi: seçenekler salon ekipmanıyla süzülür.
   almış olabilir: aynı hareket seansta iki kez olmaz). Geçmiş haftaların satırları kalır (tutarlılık onları okur).
 - **Başlamış seans (kart maddesi 7, düzenleyici kararı #518):** bugün antrenmanı başlamış günü başka hafta gününe koymak ya da çıkarmak
   CONFLICT (taşıma ve atlama gibi: yapılan seans yapılmıştır); o günün hareketleri değişebilir ("From now on" gibi, plan artık odur).
+  Aynı koruma (tek yardımcı, `ProgramEdits.startedAndReLaid`) inceleme uygulamasında ve geri almada da geçerli: sonucu böyle bir günü
+  başka hafta gününe koyacak ya da çıkaracaksa CONFLICT, hiçbir şey değişmez (düzenleyici kararı, #518). Program günü olmayan antrenman
+  (serbest ya da içe aktarılmış seans) hiçbir günü tutmaz.
 - **Reddedilen:** işlem listesi (ekle/çıkar/taşı adımları; telefonun düzenleyicisi programın bütününü tutuyor, kimlikli bütün hal daha az
   kırılgan) · düzenlemeyi inceleme kaydını silerek yapmak (Ek 3'teki gibi; kartın "geri alınır" maddesini karşılamaz) · ayrı düzenleme
   kaydı tablosu (iki kayıt arasında sıra kurmak gerekirdi; geri alma tek yoldan) · düzenlemeyi fark olarak saklayıp yeniden uygulamak
