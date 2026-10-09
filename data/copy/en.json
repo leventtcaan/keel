@@ -497,7 +497,17 @@
     "setSkipped": "Set skipped. No catch-up needed.",
     "moveSkipped": "Move skipped. No catch-up needed.",
     "undo": "Undo",
-    "undoLabel": "Undo the skip",
+    "undoLabel": "Undo",
+    "setDeleted": "Set deleted.",
+    "editHint": "Opens it to correct or delete.",
+    "undoFailed": "That couldn't be undone. Try again.",
+    "edit": {
+      "title": "Set {number}",
+      "delete": "Delete set",
+      "done": "Done",
+      "offline": "This set is already sent. Changing it needs a connection.",
+      "failed": "That set couldn't be changed. Try again."
+    },
     "moveIsSkipped": "Skipped today. No catch-up needed.",
     "bringBack": "Bring it back",
     "clock": {

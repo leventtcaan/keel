@@ -137,7 +137,7 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
   );
 }
 
-type StepperProps = {
+export type StepperProps = {
   /** What VoiceOver calls the number ("Weight (kg)"). */
   label: string;
   /** The unit under the number. */
@@ -154,7 +154,7 @@ type StepperProps = {
 };
 
 /** Less, the number (typed in place: a weight no step reaches), more (prototype `.stepper`). */
-function Stepper({ label, caption, value, onChangeText, keyboardType, maxLength, less, more, lessLabel, moreLabel }: StepperProps) {
+export function Stepper({ label, caption, value, onChangeText, keyboardType, maxLength, less, more, lessLabel, moreLabel }: StepperProps) {
   const { color } = useTheme();
   // Drawn, not a typed hyphen (prototype: the minus and plus icons); VoiceOver says the label.
   const button = (onPress: (() => void) | null, name: string, symbol: 'minus' | 'plus') => (

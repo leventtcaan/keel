@@ -85,6 +85,41 @@ test('forgetClient removes that one record, whatever its state, and no other (K-
   expect((await store.all()).map((record) => record.clientId)).toEqual([B]);
 });
 
+test('a record still waiting can be changed or taken back in its place; one the server has cannot (K-972)', async () => {
+  const C = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  const store = await openRecordStore(nodeSqlite());
+  await store.insert({ clientId: A, kind: 'set', parentClientId: 'w', body: { clientId: A, reps: 8 } });
+  await store.insert({ clientId: B, kind: 'set', parentClientId: 'w', body: { clientId: B, reps: 8 } });
+  await store.insert({ clientId: C, kind: 'set', parentClientId: 'w', body: { clientId: C, reps: 8 } });
+  await store.markSynced(B, 'srv-1', { id: 'srv-1' });
+
+  expect(await store.replacePending(A, { clientId: A, reps: 9 })).toBe(true);
+  expect(await store.replacePending(B, { clientId: B, reps: 9 })).toBe(false);
+  expect(await store.forgetPending(C)).toBe(true);
+  expect(await store.forgetPending(B)).toBe(false);
+
+  const all = await store.all();
+  expect(all.map((record) => [record.clientId, (record.body as { reps: number }).reps])).toEqual([
+    [A, 9], // in its place: the order of the sets stays
+    [B, 8],
+  ]);
+});
+
+test('a record waiting from before the attempted mark existed may have been sent: it no longer changes in place', async () => {
+  const db = nodeSqlite();
+  // The schema as it was (user_version 1), with a record waiting in it.
+  await db.execAsync(`CREATE TABLE records (
+     seq INTEGER PRIMARY KEY AUTOINCREMENT, client_id TEXT NOT NULL UNIQUE, kind TEXT NOT NULL, parent_client_id TEXT,
+     body TEXT NOT NULL, state TEXT NOT NULL CHECK (state IN ('PENDING', 'SYNCED', 'REJECTED')), server_id TEXT,
+     server_body TEXT, error_code TEXT, created_at TEXT NOT NULL);
+   CREATE INDEX records_pending ON records (state, seq);
+   PRAGMA user_version = 1;`);
+  await db.runAsync(`INSERT INTO records (client_id, kind, parent_client_id, body, state, created_at) VALUES (?, 'set', 'w', '{}', 'PENDING', 'x')`, [A]);
+  const store = await openRecordStore(db);
+  expect(await store.replacePending(A, { reps: 9 })).toBe(false);
+  expect(await store.forgetPending(A)).toBe(false);
+});
+
 test('an unknown state cannot be written: the database refuses it', async () => {
   const db = nodeSqlite();
   await openRecordStore(db);
