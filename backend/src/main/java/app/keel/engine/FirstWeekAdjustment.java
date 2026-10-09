@@ -117,7 +117,7 @@ public final class FirstWeekAdjustment {
     }
 
     /**
-     * Where the missed sessions could go (K-1000, ADR-077 Ek 3; a suggestion the user changes, never a rule of the call):
+     * Where the missed sessions could go (K-1000, ADR-077 Ek 4; a suggestion the user changes, never a rule of the call):
      * for each missed day in the week's order, the first free day after it in the week, else the week's first free day;
      * never a training day, never a day twice. As many as there are free days; none without the training weekdays.
      */
@@ -132,7 +132,7 @@ public final class FirstWeekAdjustment {
     }
 
     /**
-     * The days to add (K-1000, ADR-077 Ek 3): each the free day with the most rest on both sides of it, the week going
+     * The days to add (K-1000, ADR-077 Ek 4): each the free day with the most rest on both sides of it, the week going
      * round (Sunday to Monday is one day), the earliest on a tie; one for each day added, as many as are free.
      */
     static List<DayOfWeek> added(Week week, int count) {

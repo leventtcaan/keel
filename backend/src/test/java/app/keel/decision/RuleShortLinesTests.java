@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Each rule's short line (K-1000, ADR-077 #3 "two reasons: the data and the rule", Ek 3): the call screen says a reason in
+ * Each rule's short line (K-1000, ADR-077 #3 "two reasons: the data and the rule", Ek 4): the call screen says a reason in
  * one short line, "decision.ruleShort.&lt;rule&gt;", with the numbers the rule read as {placeholders} ({@link ReasonFacts}).
  * The rules are the ones the app already has a sentence for (decision.rule.&lt;rule&gt;, held to the engine's own
  * rules by RuleSentencesTests); a line may use only the facts its rule carries, and stays within the line's word limit

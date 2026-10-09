@@ -78,7 +78,7 @@ class FirstWeekCallApiTests {
         Map<String, Object> call = map(answer(account, List.of(Map.of("kind", "WEEK1_FEEL", "choice", "COULD_DO_MORE"))));
 
         assertThat(call.get("action")).isEqualTo(Map.of("type", "ADD_TRAINING_DAY", "toDays", 4, "idealDays", 4, "suggested", List.of("MONDAY")));
-        // K-1000 (Ek 3): the free day with the most rest around it, the earliest on a tie: Tuesday, Thursday, Saturday leave all four tied.
+        // K-1000 (Ek 4): the free day with the most rest around it, the earliest on a tie: Tuesday, Thursday, Saturday leave all four tied.
         assertThat(call.get("copyKey")).isEqualTo("decision.add_training_day.first_week_add_day");
         // Nothing is applied: the day is the user's to pick (ADR-077 Ek 1).
         assertThat(call).containsEntry("application", Map.of("state", "NOT_NEEDED")).containsEntry("declinable", false);

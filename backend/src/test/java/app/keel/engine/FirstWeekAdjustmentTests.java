@@ -208,7 +208,7 @@ class FirstWeekAdjustmentTests {
         assertThat(String.join(" ", added.get("title").toString(), added.get("body").toString())).doesNotContain("works best");
     }
 
-    // K-1000 (ADR-077 Ek 1, Ek 3): the call comes with the days it suggests, none a training day already.
+    // K-1000 (ADR-077 Ek 1, Ek 4): the call comes with the days it suggests, none a training day already.
     private static final List<DayOfWeek> MON_WED_FRI = List.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY);
 
     @Test
