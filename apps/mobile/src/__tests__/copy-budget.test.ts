@@ -10,14 +10,13 @@ import * as path from 'path';
 import budgets from '../../../../data/copy/word-budgets.json';
 import en from '../../../../data/copy/en.json';
 
-import { budgetProblems, type Copy, keysUsedIn, prototypeBudgets, type ScreenBudget, taskStatuses, wordsOf } from './support/copyBudget';
+import { accountedKeys, budgetProblems, type Copy, keysUsedIn, prototypeBudgets, type ScreenBudget, taskStatuses, wordsOf } from './support/copyBudget';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const MOBILE = path.resolve(__dirname, '../..');
 const screens = budgets.screens as ScreenBudget[];
 const built = screens.filter((s) => s.keys.length > 0);
 const waiting = screens.filter((s) => s.keys.length === 0);
-const flat = (keys: ScreenBudget['keys']) => keys.flatMap((k) => (typeof k === 'string' ? [k] : k));
 
 describe('counting words as the prototype did', () => {
   test.each([
@@ -60,6 +59,21 @@ describe('the checker', () => {
       's: a.three is not a text in en.json',
       's: a is not a text in en.json',
     ]);
+  });
+
+  test('a screen with several faces (one state each) holds every face to the budget, each with its own words (K-969)', () => {
+    const faces = [
+      { face: 'short', keys: ['a.two'] },
+      { face: 'long', keys: ['a.long', 'a.one'] },
+    ];
+    expect(budgetProblems(copy, { screen: 's', budget: 7, keys: ['a.one'], faces })).toEqual([]);
+    expect(budgetProblems(copy, { screen: 's', budget: 6, keys: ['a.one'], faces })).toEqual(['s (long): 7 words, budget 6']);
+  });
+
+  test('every key a screen accounts for: its first view, its faces, and the words off the first view', () => {
+    expect(accountedKeys({ keys: ['a.one'], faces: [{ face: 'f', keys: [['a.two', 'a.long']] }], notFirstView: ['x.y'] })).toEqual(
+      new Set(['a.one', 'a.two', 'a.long', 'x.y']),
+    );
   });
 
   test('the keys a file asks for are read from it', () => {
@@ -105,10 +119,11 @@ if (built.length > 0) {
       expect(budgetProblems(en as Copy, screen)).toEqual([]);
     });
 
-    test('every key its file uses is counted, or said to be off the first view', () => {
+    test('every key its file and its parts use is counted, or said to be off the first view', () => {
       expect(screen.file).not.toBeNull();
-      const used = keysUsedIn(fs.readFileSync(path.join(MOBILE, screen.file ?? ''), 'utf8'));
-      const accounted = new Set([...flat(screen.keys), ...screen.notFirstView, ...(screen.uncounted ?? [])]);
+      const files = [screen.file ?? '', ...(screen.parts ?? [])];
+      const used = files.flatMap((file) => keysUsedIn(fs.readFileSync(path.join(MOBILE, file), 'utf8')));
+      const accounted = accountedKeys(screen);
       expect(used.filter((key) => !accounted.has(key))).toEqual([]);
     });
   });

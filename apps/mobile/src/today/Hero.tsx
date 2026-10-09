@@ -121,7 +121,7 @@ export function Hero({ hero, today, open, onToggle, onChanged }: Props) {
       const [next, inDays] = when('thisWeek.hero.nextCall', decision.nextReview, today);
       const use = <Button label={t('thisWeek.hero.useCall')} size="sm" disabled={busy} onPress={() => void takeCall(decision)} />;
       return (
-        <DecisionBlock testID="hero" eyebrow={t('thisWeek.hero.call')} aside={chevron} title={t(labelKey(decision.copyKey))}>
+        <DecisionBlock testID="hero" aside={chevron} title={t(labelKey(decision.copyKey))}>
           {line(declined ? t('thisWeek.hero.notApplied') : t(`${decision.copyKey}.title`))}
           {declined ? foot(t('thisWeek.hero.notAppliedShort'), use) : foot(next, count(inDays))}
           {failed?.read === decision ? <ProblemText style={[styles.meta, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null}

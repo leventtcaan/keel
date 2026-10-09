@@ -359,18 +359,269 @@
       "budget": 40,
       "source": "ADR-069 #4",
       "task": "K-969",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/(tabs)/index.tsx",
+      "keys": [
+        "screens.today.title",
+        "thisWeek.week",
+        ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+        ["decision.no_decision_yet.label", "decision.increase_calories.label", "decision.change_movement.label", "decision.hard_stop.label", "decision.change_phase.label", "decision.stop_load_increase.label", "decision.deload.label", "decision.full_rest_week.label", "decision.fix_recovery.label", "decision.continue.label", "decision.fix_adherence.label", "decision.fix_training.label", "decision.adjust_calories.label", "decision.mini_cut.label", "decision.add_training_day.label", "decision.move_missed_sessions.label"],
+        ["decision.no_decision_yet.data_insufficient.title", "decision.no_decision_yet.declared_context.title", "decision.no_decision_yet.window_not_full.title", "decision.no_decision_yet.wait_one_more_week.title", "decision.no_decision_yet.check_in_needed_training.title", "decision.no_decision_yet.check_in_needed_recovery.title", "decision.no_decision_yet.check_in_needed_adherence.title", "decision.no_decision_yet.calorie_change_too_soon.title", "decision.no_decision_yet.observing.title", "decision.no_decision_yet.plan_target_needed.title", "decision.no_decision_yet.profile_needed.title", "decision.no_decision_yet.fat_estimate_needed.title", "decision.no_decision_yet.cycle_check_needed.title", "decision.increase_calories.loss_rate_cap.title", "decision.increase_calories.rapid_loss.title", "decision.increase_calories.low_energy_availability.title", "decision.change_movement.bmr_floor.title", "decision.change_movement.carb_squeeze.title", "decision.hard_stop.low_energy_safety.title", "decision.change_phase.bulk_ceiling.title", "decision.change_phase.fat_first.title", "decision.change_phase.surplus_zone.title", "decision.change_phase.low_fat_floor.title", "decision.change_phase.low_energy_safety.title", "decision.change_phase.mini_cut_over.title", "decision.stop_load_increase.plateau.title", "decision.deload.load_held_still_stalled.title", "decision.deload.long_stagnation.title", "decision.full_rest_week.plan_missed.title", "decision.fix_recovery.loads_regressed.title", "decision.fix_recovery.recovery_poor.title", "decision.continue.first_week_on_track.title", "decision.continue.first_week_too_much.title", "decision.continue.toward_goal.title", "decision.continue.energy_floor.title", "decision.continue.mini_cut_running.title", "decision.fix_adherence.adherence_low.title", "decision.fix_adherence.adherence_partial.title", "decision.fix_training.performance_red_flag.title", "decision.fix_training.training_first.title", "decision.adjust_calories.not_toward_goal.title", "decision.adjust_calories.genetic_limit.title", "decision.mini_cut.appetite_gone.title", "decision.add_training_day.first_week_add_day.title", "decision.move_missed_sessions.first_week_move_missed.title"],
+        "thisWeek.hero.nextCall",
+        ["thisWeek.hero.inDays", "thisWeek.hero.tomorrow", "thisWeek.hero.today"],
+        "thisWeek.today.today",
+        "programDays.full_body_a.name",
+        "thisWeek.today.start",
+        "exercises.squat.name",
+        "exercises.bench_press.name",
+        "exercises.lat_pulldown.name",
+        ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+        ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+        "food.budget.kcalUnit",
+        "thisWeek.food.log"
+      ],
+      "dynamic": [
+        { "what": "the next call's weekday (Monday)", "words": 1 }
+      ],
+      "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
+      "notFirstView": ["today.failed", "today.retry", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall"],
+      "parts": ["src/today/Hero.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx"],
+      "faces": [
+        {
+          "face": "the short version",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.week",
+            ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+            ["decision.no_decision_yet.label", "decision.increase_calories.label", "decision.change_movement.label", "decision.hard_stop.label", "decision.change_phase.label", "decision.stop_load_increase.label", "decision.deload.label", "decision.full_rest_week.label", "decision.fix_recovery.label", "decision.continue.label", "decision.fix_adherence.label", "decision.fix_training.label", "decision.adjust_calories.label", "decision.mini_cut.label", "decision.add_training_day.label", "decision.move_missed_sessions.label"],
+            ["decision.no_decision_yet.data_insufficient.title", "decision.no_decision_yet.declared_context.title", "decision.no_decision_yet.window_not_full.title", "decision.no_decision_yet.wait_one_more_week.title", "decision.no_decision_yet.check_in_needed_training.title", "decision.no_decision_yet.check_in_needed_recovery.title", "decision.no_decision_yet.check_in_needed_adherence.title", "decision.no_decision_yet.calorie_change_too_soon.title", "decision.no_decision_yet.observing.title", "decision.no_decision_yet.plan_target_needed.title", "decision.no_decision_yet.profile_needed.title", "decision.no_decision_yet.fat_estimate_needed.title", "decision.no_decision_yet.cycle_check_needed.title", "decision.increase_calories.loss_rate_cap.title", "decision.increase_calories.rapid_loss.title", "decision.increase_calories.low_energy_availability.title", "decision.change_movement.bmr_floor.title", "decision.change_movement.carb_squeeze.title", "decision.hard_stop.low_energy_safety.title", "decision.change_phase.bulk_ceiling.title", "decision.change_phase.fat_first.title", "decision.change_phase.surplus_zone.title", "decision.change_phase.low_fat_floor.title", "decision.change_phase.low_energy_safety.title", "decision.change_phase.mini_cut_over.title", "decision.stop_load_increase.plateau.title", "decision.deload.load_held_still_stalled.title", "decision.deload.long_stagnation.title", "decision.full_rest_week.plan_missed.title", "decision.fix_recovery.loads_regressed.title", "decision.fix_recovery.recovery_poor.title", "decision.continue.first_week_on_track.title", "decision.continue.first_week_too_much.title", "decision.continue.toward_goal.title", "decision.continue.energy_floor.title", "decision.continue.mini_cut_running.title", "decision.fix_adherence.adherence_low.title", "decision.fix_adherence.adherence_partial.title", "decision.fix_training.performance_red_flag.title", "decision.fix_training.training_first.title", "decision.adjust_calories.not_toward_goal.title", "decision.adjust_calories.genetic_limit.title", "decision.mini_cut.appetite_gone.title", "decision.add_training_day.first_week_add_day.title", "decision.move_missed_sessions.first_week_move_missed.title"],
+            "thisWeek.hero.nextCall",
+            ["thisWeek.hero.inDays", "thisWeek.hero.tomorrow", "thisWeek.hero.today"],
+            "thisWeek.today.short",
+            "thisWeek.today.today",
+            "programDays.full_body_a.name",
+            "thisWeek.today.start",
+            "exercises.squat.name",
+            "exercises.bench_press.name",
+            "exercises.lat_pulldown.name",
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            "food.budget.kcalUnit",
+            "thisWeek.food.log"
+          ],
+          "dynamic": [
+            { "what": "the next call's weekday (Monday)", "words": 1 }
+          ]
+        },
+        {
+          "face": "a workout under way",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.week",
+            ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+            ["decision.no_decision_yet.label", "decision.increase_calories.label", "decision.change_movement.label", "decision.hard_stop.label", "decision.change_phase.label", "decision.stop_load_increase.label", "decision.deload.label", "decision.full_rest_week.label", "decision.fix_recovery.label", "decision.continue.label", "decision.fix_adherence.label", "decision.fix_training.label", "decision.adjust_calories.label", "decision.mini_cut.label", "decision.add_training_day.label", "decision.move_missed_sessions.label"],
+            ["decision.no_decision_yet.data_insufficient.title", "decision.no_decision_yet.declared_context.title", "decision.no_decision_yet.window_not_full.title", "decision.no_decision_yet.wait_one_more_week.title", "decision.no_decision_yet.check_in_needed_training.title", "decision.no_decision_yet.check_in_needed_recovery.title", "decision.no_decision_yet.check_in_needed_adherence.title", "decision.no_decision_yet.calorie_change_too_soon.title", "decision.no_decision_yet.observing.title", "decision.no_decision_yet.plan_target_needed.title", "decision.no_decision_yet.profile_needed.title", "decision.no_decision_yet.fat_estimate_needed.title", "decision.no_decision_yet.cycle_check_needed.title", "decision.increase_calories.loss_rate_cap.title", "decision.increase_calories.rapid_loss.title", "decision.increase_calories.low_energy_availability.title", "decision.change_movement.bmr_floor.title", "decision.change_movement.carb_squeeze.title", "decision.hard_stop.low_energy_safety.title", "decision.change_phase.bulk_ceiling.title", "decision.change_phase.fat_first.title", "decision.change_phase.surplus_zone.title", "decision.change_phase.low_fat_floor.title", "decision.change_phase.low_energy_safety.title", "decision.change_phase.mini_cut_over.title", "decision.stop_load_increase.plateau.title", "decision.deload.load_held_still_stalled.title", "decision.deload.long_stagnation.title", "decision.full_rest_week.plan_missed.title", "decision.fix_recovery.loads_regressed.title", "decision.fix_recovery.recovery_poor.title", "decision.continue.first_week_on_track.title", "decision.continue.first_week_too_much.title", "decision.continue.toward_goal.title", "decision.continue.energy_floor.title", "decision.continue.mini_cut_running.title", "decision.fix_adherence.adherence_low.title", "decision.fix_adherence.adherence_partial.title", "decision.fix_training.performance_red_flag.title", "decision.fix_training.training_first.title", "decision.adjust_calories.not_toward_goal.title", "decision.adjust_calories.genetic_limit.title", "decision.mini_cut.appetite_gone.title", "decision.add_training_day.first_week_add_day.title", "decision.move_missed_sessions.first_week_move_missed.title"],
+            "thisWeek.hero.nextCall",
+            ["thisWeek.hero.inDays", "thisWeek.hero.tomorrow", "thisWeek.hero.today"],
+            "thisWeek.today.open",
+            "programDays.full_body_a.name",
+            "thisWeek.today.continue",
+            ["thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            "food.budget.kcalUnit",
+            "thisWeek.food.log"
+          ],
+          "dynamic": [
+            { "what": "the next call's weekday (Monday)", "words": 1 }
+          ]
+        },
+        {
+          "face": "done today",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.week",
+            ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+            ["decision.no_decision_yet.label", "decision.increase_calories.label", "decision.change_movement.label", "decision.hard_stop.label", "decision.change_phase.label", "decision.stop_load_increase.label", "decision.deload.label", "decision.full_rest_week.label", "decision.fix_recovery.label", "decision.continue.label", "decision.fix_adherence.label", "decision.fix_training.label", "decision.adjust_calories.label", "decision.mini_cut.label", "decision.add_training_day.label", "decision.move_missed_sessions.label"],
+            ["decision.no_decision_yet.data_insufficient.title", "decision.no_decision_yet.declared_context.title", "decision.no_decision_yet.window_not_full.title", "decision.no_decision_yet.wait_one_more_week.title", "decision.no_decision_yet.check_in_needed_training.title", "decision.no_decision_yet.check_in_needed_recovery.title", "decision.no_decision_yet.check_in_needed_adherence.title", "decision.no_decision_yet.calorie_change_too_soon.title", "decision.no_decision_yet.observing.title", "decision.no_decision_yet.plan_target_needed.title", "decision.no_decision_yet.profile_needed.title", "decision.no_decision_yet.fat_estimate_needed.title", "decision.no_decision_yet.cycle_check_needed.title", "decision.increase_calories.loss_rate_cap.title", "decision.increase_calories.rapid_loss.title", "decision.increase_calories.low_energy_availability.title", "decision.change_movement.bmr_floor.title", "decision.change_movement.carb_squeeze.title", "decision.hard_stop.low_energy_safety.title", "decision.change_phase.bulk_ceiling.title", "decision.change_phase.fat_first.title", "decision.change_phase.surplus_zone.title", "decision.change_phase.low_fat_floor.title", "decision.change_phase.low_energy_safety.title", "decision.change_phase.mini_cut_over.title", "decision.stop_load_increase.plateau.title", "decision.deload.load_held_still_stalled.title", "decision.deload.long_stagnation.title", "decision.full_rest_week.plan_missed.title", "decision.fix_recovery.loads_regressed.title", "decision.fix_recovery.recovery_poor.title", "decision.continue.first_week_on_track.title", "decision.continue.first_week_too_much.title", "decision.continue.toward_goal.title", "decision.continue.energy_floor.title", "decision.continue.mini_cut_running.title", "decision.fix_adherence.adherence_low.title", "decision.fix_adherence.adherence_partial.title", "decision.fix_training.performance_red_flag.title", "decision.fix_training.training_first.title", "decision.adjust_calories.not_toward_goal.title", "decision.adjust_calories.genetic_limit.title", "decision.mini_cut.appetite_gone.title", "decision.add_training_day.first_week_add_day.title", "decision.move_missed_sessions.first_week_move_missed.title"],
+            "thisWeek.hero.nextCall",
+            ["thisWeek.hero.inDays", "thisWeek.hero.tomorrow", "thisWeek.hero.today"],
+            "thisWeek.today.done",
+            "programDays.full_body_a.name",
+            ["thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            "food.budget.kcalUnit",
+            "thisWeek.food.log"
+          ],
+          "dynamic": [
+            { "what": "the next call's weekday (Monday)", "words": 1 },
+            { "what": "the load lifted's unit (8,420 kg)", "words": 1 }
+          ]
+        },
+        {
+          "face": "moved or skipped",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.week",
+            ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+            ["decision.no_decision_yet.label", "decision.increase_calories.label", "decision.change_movement.label", "decision.hard_stop.label", "decision.change_phase.label", "decision.stop_load_increase.label", "decision.deload.label", "decision.full_rest_week.label", "decision.fix_recovery.label", "decision.continue.label", "decision.fix_adherence.label", "decision.fix_training.label", "decision.adjust_calories.label", "decision.mini_cut.label", "decision.add_training_day.label", "decision.move_missed_sessions.label"],
+            ["decision.no_decision_yet.data_insufficient.title", "decision.no_decision_yet.declared_context.title", "decision.no_decision_yet.window_not_full.title", "decision.no_decision_yet.wait_one_more_week.title", "decision.no_decision_yet.check_in_needed_training.title", "decision.no_decision_yet.check_in_needed_recovery.title", "decision.no_decision_yet.check_in_needed_adherence.title", "decision.no_decision_yet.calorie_change_too_soon.title", "decision.no_decision_yet.observing.title", "decision.no_decision_yet.plan_target_needed.title", "decision.no_decision_yet.profile_needed.title", "decision.no_decision_yet.fat_estimate_needed.title", "decision.no_decision_yet.cycle_check_needed.title", "decision.increase_calories.loss_rate_cap.title", "decision.increase_calories.rapid_loss.title", "decision.increase_calories.low_energy_availability.title", "decision.change_movement.bmr_floor.title", "decision.change_movement.carb_squeeze.title", "decision.hard_stop.low_energy_safety.title", "decision.change_phase.bulk_ceiling.title", "decision.change_phase.fat_first.title", "decision.change_phase.surplus_zone.title", "decision.change_phase.low_fat_floor.title", "decision.change_phase.low_energy_safety.title", "decision.change_phase.mini_cut_over.title", "decision.stop_load_increase.plateau.title", "decision.deload.load_held_still_stalled.title", "decision.deload.long_stagnation.title", "decision.full_rest_week.plan_missed.title", "decision.fix_recovery.loads_regressed.title", "decision.fix_recovery.recovery_poor.title", "decision.continue.first_week_on_track.title", "decision.continue.first_week_too_much.title", "decision.continue.toward_goal.title", "decision.continue.energy_floor.title", "decision.continue.mini_cut_running.title", "decision.fix_adherence.adherence_low.title", "decision.fix_adherence.adherence_partial.title", "decision.fix_training.performance_red_flag.title", "decision.fix_training.training_first.title", "decision.adjust_calories.not_toward_goal.title", "decision.adjust_calories.genetic_limit.title", "decision.mini_cut.appetite_gone.title", "decision.add_training_day.first_week_add_day.title", "decision.move_missed_sessions.first_week_move_missed.title"],
+            "thisWeek.hero.nextCall",
+            ["thisWeek.hero.inDays", "thisWeek.hero.tomorrow", "thisWeek.hero.today"],
+            "thisWeek.today.today",
+            ["thisWeek.today.rest", "programDays.full_body_a.name"],
+            ["thisWeek.today.movedTo", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            "food.budget.kcalUnit",
+            "thisWeek.food.log"
+          ],
+          "dynamic": [
+            { "what": "the next call's weekday (Monday)", "words": 1 },
+            { "what": "the day it moved to, or the check-in day", "words": 1 }
+          ]
+        },
+        {
+          "face": "the first week",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.week",
+            ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+            "thisWeek.hero.start",
+            "thisWeek.hero.firstWeek",
+            "thisWeek.hero.weighIn",
+            "thisWeek.hero.firstCall",
+            ["thisWeek.hero.inDays", "thisWeek.hero.tomorrow", "thisWeek.hero.today"],
+            "thisWeek.today.today",
+            "programDays.full_body_a.name",
+            "thisWeek.today.start",
+            "exercises.squat.name",
+            "exercises.bench_press.name",
+            "exercises.lat_pulldown.name",
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            "food.budget.kcalUnit",
+            "thisWeek.food.log"
+          ],
+          "dynamic": [
+            { "what": "the first call's weekday (Monday)", "words": 1 }
+          ]
+        },
+        {
+          "face": "a call declined",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.week",
+            ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+            ["decision.no_decision_yet.label", "decision.increase_calories.label", "decision.change_movement.label", "decision.hard_stop.label", "decision.change_phase.label", "decision.stop_load_increase.label", "decision.deload.label", "decision.full_rest_week.label", "decision.fix_recovery.label", "decision.continue.label", "decision.fix_adherence.label", "decision.fix_training.label", "decision.adjust_calories.label", "decision.mini_cut.label", "decision.add_training_day.label", "decision.move_missed_sessions.label"],
+            "thisWeek.hero.notApplied",
+            "thisWeek.hero.notAppliedShort",
+            "thisWeek.hero.useCall",
+            "thisWeek.today.today",
+            "programDays.full_body_a.name",
+            "thisWeek.today.start",
+            "exercises.squat.name",
+            "exercises.bench_press.name",
+            "exercises.lat_pulldown.name",
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            "food.budget.kcalUnit",
+            "thisWeek.food.log"
+          ]
+        },
+        {
+          "face": "no consent",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.hero.yourWeek",
+            "thisWeek.hero.callsOff",
+            "thisWeek.hero.train",
+            "thisWeek.hero.settings",
+            "thisWeek.today.today",
+            "programDays.full_body_a.name",
+            "thisWeek.today.start",
+            "exercises.squat.name",
+            "exercises.bench_press.name",
+            "exercises.lat_pulldown.name",
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            "thisWeek.food.locked",
+            "thisWeek.food.allow"
+          ]
+        },
+        {
+          "face": "a week paused",
+          "keys": [
+            "screens.today.title",
+            "thisWeek.week",
+            ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+            "today.state.paused",
+            "today.state.back",
+            "thisWeek.today.today",
+            "programDays.full_body_a.name",
+            "thisWeek.today.start",
+            "exercises.squat.name",
+            "exercises.bench_press.name",
+            "exercises.lat_pulldown.name",
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            "food.budget.kcalUnit",
+            "thisWeek.food.log"
+          ],
+          "dynamic": [
+            { "what": "the state's name and since when (a busy week, Tue, Dec 22)", "words": 5 }
+          ]
+        }
+      ]
     },
     {
       "screen": "home-mon",
       "budget": 40,
       "source": "ADR-069 #4",
       "task": "K-969",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/(tabs)/index.tsx",
+      "keys": [
+        "screens.today.title",
+        "thisWeek.week",
+        ["thisWeek.onTrack", "thisWeek.countedByWeek"],
+        "onboarding.schedule.dayName.MONDAY",
+        "thisWeek.week",
+        "thisWeek.hero.monday.open",
+        "thisWeek.hero.monday.yourCall",
+        ["thisWeek.hero.monday.ready", "thisWeek.hero.monday.readyNoWeek"],
+        ["thisWeek.hero.monday.one", "thisWeek.hero.monday.other"],
+        "thisWeek.today.today",
+        "programDays.full_body_b.name",
+        "thisWeek.today.start",
+        "exercises.squat.name",
+        "exercises.bench_press.name",
+        "exercises.lat_pulldown.name",
+        ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+        ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+        "food.budget.kcalUnit",
+        "thisWeek.food.log"
+      ],
+      "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
+      "notFirstView": ["today.failed", "today.retry", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.short", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "today.state.back", "today.state.paused"],
+      "parts": ["src/today/Hero.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx"],
+      "faces": []
     },
     {
       "screen": "train",
