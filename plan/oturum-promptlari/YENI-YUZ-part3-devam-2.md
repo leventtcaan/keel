@@ -80,3 +80,8 @@ Doğrulanan: SYNCED atma sonrası Undo çift kayıt yapmıyor, hedefler doğru, 
 5. Discard/Keep it/Close ≈33-35pt → 44pt (`md` ya da minHeight).
 6. Atma sonrası `announce`; onayda soru ("Discard this workout?"); `laterSaid` "anytime this week" yanlış (sunucu 24 sa'de kapatır).
 Küçük: Undo ekranında başlıktaki Pause canlı; Undo yalnız bellekte; testler (gerçek store ile Undo, REJECTED, PENDING+attempted çevrimdışı, pausedSeconds > süre).
+
+## #525 / #526 son durum (K-995 ajanı)
+- **#526** düzeltildi (66d7c91b): ilk karardan sonra plan-seen no-op (204; `profile.FirstCalls` ↔ decision `MadeFirstCalls`); `firstDay` karardan sonra görülen planı yok sayar (karardan önce görülen kalır); D tablosu API testleri; dışa aktarımda `onboardedAt`, `planSeenAt`; ADR-077 Ek 3 notu. → kısa doğrulama + birleştir (V47).
+- **#525** düzeltildi (a1878d81): protein/left API testi, tek `starting(week)` yöntemi (week() hatası → 404), `targetsOrStarting` tek salt okunur işlem; ADR-072 Ek 2. → kısa doğrulama + birleştir (göçsüz).
+- `mobile/432-this-week-session-state` dalı boş ve gereksiz: aynı işi **#524** yapıyor (K-969). #524'ü incele; boş uzak dalı `git push origin --delete` ile kaldır (yerel kopya zararsız kalabilir).
