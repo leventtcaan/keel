@@ -2206,7 +2206,7 @@ export interface components {
             swaps?: components["schemas"]["TodaySwap"][];
         };
         /**
-         * @description What "Move it" (POST /v1/program/today MOVE) would do to today's session now (K-995, ADR-073 Ek 3): present only on
+         * @description What "Move it" (POST /v1/program/today MOVE) would do to today's session now (K-995, ADR-073 Ek 6): present only on
          *     the session on today, not skipped. `shifts`: each session the move puts on a new day, by date — today's on tomorrow,
          *     then any it pushes on a day (the week re-lays itself); the app shows them and works none out. `conflict`: the move
          *     would be refused (409), `shifts` empty: PAST_SUNDAY, a session would pass Sunday; STARTED, a workout of the day was
