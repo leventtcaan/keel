@@ -92,8 +92,16 @@ class ProgressApiTests {
         assertThat(muscles.getFirst()).containsEntry("plannedSets", 3).containsEntry("doneSets", 2).containsEntry("targetSets", 6);
         assertThat(((Number) muscles.get(1).get("doneShare")).doubleValue()).isEqualTo(0.3);
 
+        // What moved (K-1008), against the same day's last session: the bench's best is 62.5 × 6 after 60 × 8 (a load up);
+        // the squat the same; the curl was not in it. In the order first done.
+        assertThat((List<Map<String, Object>>) summary.get("moves")).containsExactly(
+                Map.of("exerciseId", "bench_press", "best", Map.of("loadKg", 62.5, "reps", 6), "change", "LOAD", "by", 2.5),
+                Map.of("exerciseId", "squat", "best", Map.of("loadKg", 100, "reps", 8), "change", "SAME"),
+                Map.of("exerciseId", "barbell_curl", "best", Map.of("loadKg", 30, "reps", 10), "change", "FIRST"));
+
         Map<String, Object> firstSummary = map(send("GET", account, "/v1/workouts/" + first + "/summary"));
         assertThat(firstSummary).doesNotContainKey("liftedChangePercent");
+        assertThat((List<Map<String, Object>>) firstSummary.get("moves")).extracting(move -> move.get("change")).containsExactly("FIRST", "FIRST");
         assertThat((List<Map<String, Object>>) firstSummary.get("marks")).extracting(mark -> mark.get("kind")).containsExactly("BASELINE", "BASELINE");
 
         assertThat(send("GET", TestSessions.newAccount(), "/v1/workouts/" + second + "/summary")).hasStatus(404);

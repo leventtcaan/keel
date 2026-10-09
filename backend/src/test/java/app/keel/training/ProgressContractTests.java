@@ -23,7 +23,7 @@ class ProgressContractTests {
         Map<String, Class<?>> sent = Map.of("WorkoutSummary", ProgressController.WorkoutSummary.class, "SetMark", ProgressController.SetMark.class,
                 "MuscleSets", ProgressSummary.MuscleSets.class, "TrainingProgress", ProgressController.TrainingProgress.class,
                 "LiftProgress", ProgressController.LiftProgress.class, "DatedSet", ProgressController.DatedSet.class,
-                "EffortLine", ProgressSummary.EffortLine.class);
+                "EffortLine", ProgressSummary.EffortLine.class, "MoveChange", ProgressSummary.MoveChange.class);
 
         sent.forEach((schema, record) -> assertThat(properties(map(schemas.get(schema))).keySet()).as(schema)
                 .containsExactlyInAnyOrderElementsOf(names(record)));
@@ -31,6 +31,10 @@ class ProgressContractTests {
         assertThat(properties(week).keySet()).containsExactlyInAnyOrderElementsOf(names(ProgressSummary.WeekBest.class));
         assertThat((List<Object>) map(properties(map(schemas.get("EffortLine"))).get("kind")).get("enum"))
                 .containsExactlyElementsOf(Arrays.stream(ProgressSummary.EffortKind.values()).map(Enum::name).toList());
+        assertThat((List<Object>) map(properties(map(schemas.get("MoveChange"))).get("change")).get("enum"))
+                .containsExactlyElementsOf(Arrays.stream(ProgressSummary.ChangeKind.values()).map(Enum::name).toList());
+        assertThat(properties(map(properties(map(schemas.get("MoveChange"))).get("best"))).keySet())
+                .containsExactlyInAnyOrderElementsOf(names(ProgressSummary.Best.class));
         assertThat((List<Object>) map(properties(map(schemas.get("SetMark"))).get("kind")).get("enum"))
                 .containsExactlyElementsOf(Arrays.stream(PersonalRecords.Kind.values()).map(Enum::name).toList());
     }

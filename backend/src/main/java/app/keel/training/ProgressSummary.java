@@ -54,6 +54,43 @@ final class ProgressSummary {
             Integer repsGained, LocalDate since, Integer weeks) {
     }
 
+    /** "What moved" (K-1008): LOAD, REPS, SAME, HELD or FIRST (the contract's MoveChange). */
+    enum ChangeKind { LOAD, REPS, SAME, HELD, FIRST }
+
+    /** A move's best set: its load as logged and its reps. */
+    record Best(BigDecimal loadKg, int reps) {
+    }
+
+    /** Contract MoveChange. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record MoveChange(String exerciseId, Best best, ChangeKind change, BigDecimal by) {
+    }
+
+    /**
+     * "What moved" (ADR-075 #7, K-1008): each move of the session once, in the order first done, its best working set
+     * (SessionTable.best: no set of no reps; sides are one history; the load as logged, a bodyweight move's added load)
+     * against its best in {@code before}, the last earlier session of the same program day — the one the weight lifted's
+     * percent compares with. Another load is LOAD by the difference in kg; the same load, REPS by the difference in reps;
+     * the same set, SAME, or HELD for a move whose load the call holds ({@code held}: the compound moves while a hold is in
+     * force, as the progress weeks read it); none to compare with, FIRST. Said as it
+     * is, fewer too: a presentation of the log, not a rule; no estimated max.
+     */
+    static List<MoveChange> moves(List<TrainingLog.WorkSet> now, List<TrainingLog.WorkSet> before, Set<String> held) {
+        Map<String, List<TrainingLog.WorkSet>> byMove = now.stream()
+                .collect(Collectors.groupingBy(TrainingLog.WorkSet::exerciseId, LinkedHashMap::new, Collectors.toList()));
+        return byMove.entrySet().stream().flatMap(move -> SessionTable.best(move.getValue()).stream().map(best -> {
+            Best set = new Best(best.loadKg(), best.reps());
+            Optional<TrainingLog.WorkSet> last = SessionTable.best(before.stream().filter(s -> s.exerciseId().equals(move.getKey())).toList());
+            if (last.isEmpty()) return new MoveChange(move.getKey(), set, ChangeKind.FIRST, null);
+            int load = best.loadKg().compareTo(last.get().loadKg());
+            if (load != 0) return new MoveChange(move.getKey(), set, ChangeKind.LOAD, Decimals.plain(best.loadKg().subtract(last.get().loadKg())));
+            if (best.reps() != last.get().reps()) {
+                return new MoveChange(move.getKey(), set, ChangeKind.REPS, BigDecimal.valueOf(best.reps() - last.get().reps()));
+            }
+            return new MoveChange(move.getKey(), set, held.contains(move.getKey()) ? ChangeKind.HELD : ChangeKind.SAME, null);
+        })).toList();
+    }
+
     /** A workout of a move: its day on the user's calendar and its best set. */
     record Session(LocalDate day, TrainingLog.WorkSet top) {
     }
