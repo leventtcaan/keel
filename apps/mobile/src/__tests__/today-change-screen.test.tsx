@@ -147,6 +147,46 @@ test("today is the server's day: the phone's clock on another day changes nothin
   expect(await screen.findByText('Move it')).toBeTruthy();
 });
 
+describe('"Move it" says beforehand what it would do (the server\'s movePreview)', () => {
+  const DAYS: Schemas['ProgramDay'][] = [
+    PROGRAM.days[0],
+    { id: 'b', name: 'Pull', weekday: 'WEDNESDAY', exercises: [] },
+    { id: 'c', name: 'Legs', weekday: 'THURSDAY', exercises: [] },
+  ];
+  const withPreview = (movePreview: Schemas['MovePreview']) => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: DAYS, week: [{ ...PROGRAM.week![0], movePreview }] } } };
+  };
+
+  test('one session to tomorrow: the day it goes to', async () => {
+    withPreview({ shifts: [{ programDayId: 'a', date: '2026-09-30' }] });
+    await show();
+    expect(await screen.findByText('To Wed')).toBeTruthy();
+  });
+
+  test('the week re-laid: each session that shifts, on its new day', async () => {
+    withPreview({
+      shifts: [
+        { programDayId: 'a', date: '2026-09-30' },
+        { programDayId: 'b', date: '2026-10-01' },
+        { programDayId: 'c', date: '2026-10-02' },
+      ],
+    });
+    await show();
+    expect(await screen.findByText('Shifts: Wed · Upper A, Thu · Pull, Fri · Legs')).toBeTruthy();
+  });
+
+  test.each([
+    ['PAST_SUNDAY', 'todayChange.moveConflict.PAST_SUNDAY'],
+    ['STARTED', 'todayChange.moveConflict.STARTED'],
+  ] as const)('a move the server would refuse (%s): off, and why', async (conflict, key) => {
+    withPreview({ shifts: [], conflict });
+    await show();
+    expect(await screen.findByText(t(key))).toBeTruthy();
+    await fireEvent.press(screen.getByText('Move it'));
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+});
+
 test('skipped today and undoable: Undo, the one change left', async () => {
   mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], skipped: true, undoable: true }] } } };
   await show();

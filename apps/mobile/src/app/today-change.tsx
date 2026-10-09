@@ -13,7 +13,8 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { changeToday } from '@/train/changes';
-import { movedOffToday, todaySession } from '@/train/week';
+import { dayName } from '@/train/program';
+import { movedOffToday, moveShifts, todaySession } from '@/train/week';
 
 type Change = components['schemas']['TodayChange']['change'];
 
@@ -80,19 +81,35 @@ export default function TodayChangeScreen() {
     if (key !== 'busy') return void send(CHANGES[key]);
     if (session !== null) router.replace({ pathname: '/swap', params: { day: session.day.id, scope: 'today' } });
   };
-  const row = (key: Row) => (
-    <Pressable
-      key={key}
-      accessibilityRole="button"
-      accessibilityLabel={`${t(`todayChange.${key}.title`)}. ${t(`todayChange.${key}.body`)}`}
-      accessibilityState={{ disabled: busy }}
-      disabled={busy}
-      onPress={() => act(key)}
-      style={({ pressed }) => [styles.row, { backgroundColor: color.surface }, (pressed || busy) && styles.dim]}>
-      <Text style={[styles.title, { color: color.text }]}>{t(`todayChange.${key}.title`)}</Text>
-      <Text style={[styles.small, { color: color.textSecondary }]}>{t(`todayChange.${key}.body`)}</Text>
-    </Pressable>
-  );
+  // "Move it" says what it would do, as the server previews it (`movePreview`): the day it goes to, or the week
+  // re-laid, or why it can't (then it is off). Without a preview, its general words.
+  const preview = session === null || program === null ? null : moveShifts(program, session.session);
+  const moveBody = (): string => {
+    if (preview === null) return t('todayChange.move.body');
+    if (preview.conflict !== null) return t(`todayChange.moveConflict.${preview.conflict}`);
+    const [first, ...rest] = preview.shifts;
+    if (first === undefined) return t('todayChange.move.body');
+    const short = (weekday: string) => t(`programEditor.weekdayShort.${weekday}`);
+    if (rest.length === 0) return t('todayChange.moveTo', { weekday: short(first.weekday) });
+    return t('todayChange.moveShifts', { days: preview.shifts.map((s) => t('train.weekRow', { weekday: short(s.weekday), day: dayName(s.day) })).join(', ') });
+  };
+  const row = (key: Row) => {
+    const body = key === 'move' ? moveBody() : t(`todayChange.${key}.body`);
+    const off = busy || (key === 'move' && preview?.conflict != null);
+    return (
+      <Pressable
+        key={key}
+        accessibilityRole="button"
+        accessibilityLabel={`${t(`todayChange.${key}.title`)}. ${body}`}
+        accessibilityState={{ disabled: off }}
+        disabled={off}
+        onPress={() => act(key)}
+        style={({ pressed }) => [styles.row, { backgroundColor: color.surface }, (pressed || off) && styles.dim]}>
+        <Text style={[styles.title, { color: color.text }]}>{t(`todayChange.${key}.title`)}</Text>
+        <Text style={[styles.small, { color: color.textSecondary }]}>{body}</Text>
+      </Pressable>
+    );
+  };
 
   const line = (key: string) => <Text style={[styles.text, { color: color.textSecondary }]}>{t(key)}</Text>;
   let body = null;

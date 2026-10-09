@@ -61,6 +61,23 @@ export function sessionMoves(day: Schemas['ProgramDay'], session: Schemas['WeekS
   });
 }
 
+/**
+ * What "Move it" would do now, as the server says (`WeekSession.movePreview`, K-995): each session it puts on a new day,
+ * with its program day and the weekday of the new date; `conflict` when the server would refuse it. None without a preview.
+ */
+export function moveShifts(
+  program: Schemas['Program'],
+  session: Schemas['WeekSession'],
+): { shifts: { day: Schemas['ProgramDay']; date: string; weekday: Weekday }[]; conflict: NonNullable<Schemas['MovePreview']['conflict']> | null } | null {
+  const preview = session.movePreview;
+  if (preview === undefined) return null;
+  const shifts = preview.shifts.flatMap((shift) => {
+    const day = program.days.find((d) => d.id === shift.programDayId);
+    return day === undefined ? [] : [{ day, date: shift.date, weekday: weekdayOf(shift.date) }];
+  });
+  return { shifts, conflict: preview.conflict ?? null };
+}
+
 /** The week's sessions but today's (the server's today), in date order, each on the weekday of its date. */
 export function weekRows(program: Schemas['Program']): WeekRow[] {
   return sessions(program)
