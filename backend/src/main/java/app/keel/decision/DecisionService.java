@@ -283,9 +283,10 @@ class DecisionService {
         // A session moved in its week is planned where it was moved, not on its weekday (K-964).
         PlannedDays plannedDays = programDays.isEmpty() ? PlannedDays.weekly(trainingDays)
                 : statuses.plannedDays(account, began, week.weekOf()).orElse(PlannedDays.weekly(trainingDays));
+        // On the plan's training weekdays: the days the call suggests are none of them (K-1000, ADR-077 Ek 3).
         return week.withFirstWeek(FirstWeekFacts.of(began, week.profile().checkInDay(), week.weekOf(), plannedDays::on,
                 logs.sessionDays(account, zone, began, week.weekOf()), planned.perWeek(account, week.profile()),
-                week.profile().experience().map(experience -> Experience.valueOf(experience.name()))));
+                week.profile().experience().map(experience -> Experience.valueOf(experience.name()))).map(first -> first.withWeekdays(trainingDays)));
     }
 
     /**

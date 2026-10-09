@@ -208,6 +208,54 @@ class FirstWeekAdjustmentTests {
         assertThat(String.join(" ", added.get("title").toString(), added.get("body").toString())).doesNotContain("works best");
     }
 
+    // K-1000 (ADR-077 Ek 1, Ek 3): the call comes with the days it suggests, none a training day already.
+    private static final List<DayOfWeek> MON_WED_FRI = List.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY);
+
+    @Test
+    void aMissedSessionIsSuggestedOnTheFirstFreeDayAfterIt() {
+        Week week = new Week(3, 1, 3, List.of(DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), ONE_TO_THREE_YEARS, MON_WED_FRI);
+
+        Action.MoveMissedSessions move = (Action.MoveMissedSessions) decide(week, Week1Feel.UNKNOWN).action();
+
+        assertThat(move.missed()).containsExactly(DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY);
+        assertThat(move.suggested()).as("Wednesday → Thursday, Friday → Saturday").containsExactly(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY);
+    }
+
+    @Test
+    void withNoFreeDayLaterInTheWeekTheWeeksFirstFreeDayIsSuggestedAndNoDayTwice() {
+        List<DayOfWeek> days = List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
+        Week week = new Week(5, 1, 5, List.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), ONE_TO_THREE_YEARS, days);
+
+        Action.MoveMissedSessions move = (Action.MoveMissedSessions) decide(week, Week1Feel.UNKNOWN).action();
+
+        // Free: Wednesday, Thursday. Monday → Wednesday; Friday has none after it → the week's first free day not taken,
+        // Thursday; nothing is left for Saturday and Sunday: never a day twice, never a training day.
+        assertThat(move.suggested()).containsExactly(DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY);
+    }
+
+    @Test
+    void anAddedDayIsSuggestedWhereItHasTheMostRestOnBothSides() {
+        Week twoDays = new Week(2, 2, 2, List.of(), ONE_TO_THREE_YEARS, List.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY));
+        Week mwf = new Week(3, 3, 3, List.of(), ONE_TO_THREE_YEARS, MON_WED_FRI);
+
+        Action.AddTrainingDay fromTwo = (Action.AddTrainingDay) decide(twoDays, Week1Feel.COULD_DO_MORE).action();
+        Action.AddTrainingDay fromThree = (Action.AddTrainingDay) decide(mwf, Week1Feel.COULD_DO_MORE).action();
+
+        // Monday and Thursday: Saturday is two days from Thursday and two from Monday (the week goes round), the most rest
+        // on both sides; every other free day is next to one. One day for each added (toDays − the days there are).
+        assertThat(fromTwo.suggested()).hasSize(fromTwo.toDays() - 2).first().isEqualTo(DayOfWeek.SATURDAY);
+        // Monday, Wednesday, Friday: every free day is next to a training day; on the tie, the earliest, Tuesday.
+        assertThat(fromThree.suggested()).containsExactly(DayOfWeek.TUESDAY);
+    }
+
+    @Test
+    void withoutTheTrainingWeekdaysNothingIsSuggested() {
+        Action.MoveMissedSessions move = (Action.MoveMissedSessions) decide(week(3, 1, 3, List.of(DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), ONE_TO_THREE_YEARS),
+                Week1Feel.UNKNOWN).action();
+
+        assertThat(move.suggested()).isEmpty();
+    }
+
     private static Decision decide(Week week, Week1Feel feel) {
         return FirstWeekAdjustment.decide(week, feel, MONDAY, P).orElseThrow();
     }

@@ -3,6 +3,9 @@ package app.keel.engine;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -47,11 +50,24 @@ public final class FirstWeekAdjustment {
      * @param trainingDays the plan's training days a week
      * @param missed the planned weekdays without a session, in the week's order
      * @param experience how long the user has trained; empty when not asked
+     * @param weekdays the plan's training weekdays (K-1000: the suggested days are none of them); empty when not known, as
+     *     in a call kept before them: then no day is suggested
      */
-    public record Week(int planned, int done, int trainingDays, List<DayOfWeek> missed, Optional<Experience> experience) {
+    public record Week(int planned, int done, int trainingDays, List<DayOfWeek> missed, Optional<Experience> experience, List<DayOfWeek> weekdays) {
+
+        /** The same week on these training weekdays, in the week's order (what the suggested days are not). */
+        public Week withWeekdays(java.util.Collection<DayOfWeek> days) {
+            return new Week(planned, done, trainingDays, missed, experience, days.stream().sorted().distinct().toList());
+        }
+
+        /** A week without its training weekdays: nothing suggested. */
+        public Week(int planned, int done, int trainingDays, List<DayOfWeek> missed, Optional<Experience> experience) {
+            this(planned, done, trainingDays, missed, experience, List.of());
+        }
 
         public Week {
             missed = List.copyOf(missed);
+            weekdays = List.copyOf(weekdays);
             Objects.requireNonNull(experience, "experience");
             if (planned < 0 || done < 0 || trainingDays < 0) {
                 throw new IllegalArgumentException("A week's counts are not negative: " + planned + ", " + done + ", " + trainingDays);
@@ -74,7 +90,7 @@ public final class FirstWeekAdjustment {
             return Optional.empty();
         }
         if (!onTrack(week, parameters)) {
-            return Optional.of(call(new Action.MoveMissedSessions(week.missed()), FIRST_WEEK_MOVE_MISSED, ADHERENCE_FIRST,
+            return Optional.of(call(new Action.MoveMissedSessions(week.missed(), movedTo(week)), FIRST_WEEK_MOVE_MISSED, ADHERENCE_FIRST,
                     "decision.move_missed_sessions.first_week_move_missed", today));
         }
         // The answer is read only where the question is asked: anywhere else it changes nothing, words included.
@@ -82,8 +98,8 @@ public final class FirstWeekAdjustment {
         if (read == CheckIn.Week1Feel.COULD_DO_MORE) {
             int ideal = parameters.wholeNumber(ParameterKey.TRAINING_DAYS_IDEAL_MIN);
             int toDays = Math.max(week.trainingDays() + 1, parameters.wholeNumber(ParameterKey.TRAINING_DAYS_MIN));
-            return Optional.of(call(new Action.AddTrainingDay(toDays, ideal), FIRST_WEEK_ADD_DAY, DAYS, "decision.add_training_day.first_week_add_day",
-                    today));
+            return Optional.of(call(new Action.AddTrainingDay(toDays, ideal, added(week, toDays - week.trainingDays())), FIRST_WEEK_ADD_DAY, DAYS,
+                    "decision.add_training_day.first_week_add_day", today));
         }
         // "Too much" is said back in its own words; the plan stays all the same (U7: nothing to make up, nothing taken away).
         String words = read == CheckIn.Week1Feel.TOO_MUCH ? "decision.continue.first_week_too_much" : "decision.continue.first_week_on_track";
@@ -98,6 +114,57 @@ public final class FirstWeekAdjustment {
         return week.planned() > 0 && week.done() >= week.planned()
                 && week.experience().filter(experience -> experience != Experience.NEW).isPresent()
                 && week.trainingDays() < parameters.wholeNumber(ParameterKey.TRAINING_DAYS_IDEAL_MIN);
+    }
+
+    /**
+     * Where the missed sessions could go (K-1000, ADR-077 Ek 3; a suggestion the user changes, never a rule of the call):
+     * for each missed day in the week's order, the first free day after it in the week, else the week's first free day;
+     * never a training day, never a day twice. As many as there are free days; none without the training weekdays.
+     */
+    static List<DayOfWeek> movedTo(Week week) {
+        List<DayOfWeek> free = free(week);
+        List<DayOfWeek> taken = new ArrayList<>();
+        for (DayOfWeek missed : week.missed()) {
+            List<DayOfWeek> open = free.stream().filter(day -> !taken.contains(day)).toList();
+            open.stream().filter(day -> day.compareTo(missed) > 0).findFirst().or(() -> open.stream().findFirst()).ifPresent(taken::add);
+        }
+        return List.copyOf(taken);
+    }
+
+    /**
+     * The days to add (K-1000, ADR-077 Ek 3): each the free day with the most rest on both sides of it, the week going
+     * round (Sunday to Monday is one day), the earliest on a tie; one for each day added, as many as are free.
+     */
+    static List<DayOfWeek> added(Week week, int count) {
+        List<DayOfWeek> training = new ArrayList<>(week.weekdays());
+        List<DayOfWeek> added = new ArrayList<>();
+        for (int i = 0; i < count && !training.isEmpty(); i++) {
+            List<DayOfWeek> open = Arrays.stream(DayOfWeek.values()).filter(day -> !training.contains(day)).toList();
+            Optional<DayOfWeek> best = open.stream().max(Comparator.<DayOfWeek>comparingInt(day -> rest(day, training))
+                    .thenComparing(Comparator.<DayOfWeek>naturalOrder().reversed()));
+            if (best.isEmpty()) {
+                break;
+            }
+            training.add(best.get());
+            added.add(best.get());
+        }
+        return List.copyOf(added);
+    }
+
+    // The days a training day is away, the week going round: the nearer side.
+    private static int rest(DayOfWeek day, List<DayOfWeek> training) {
+        return training.stream().mapToInt(other -> {
+            int apart = Math.abs(day.getValue() - other.getValue());
+            return Math.min(apart, DAYS_PER_WEEK - apart);
+        }).min().orElse(DAYS_PER_WEEK);
+    }
+
+    // The week's days that are no training day, Monday first; none when the training weekdays are not known.
+    private static List<DayOfWeek> free(Week week) {
+        if (week.weekdays().isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(DayOfWeek.values()).filter(day -> !week.weekdays().contains(day)).toList();
     }
 
     // Y/P at or over the line; a session on a day off counts, so done may be over planned.

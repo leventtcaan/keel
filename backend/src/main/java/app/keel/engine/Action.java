@@ -134,11 +134,18 @@ public sealed interface Action {
     /**
      * The first week's call (ADR-077 #4, G6 K-36): every planned session done and "I could do more", so one more training
      * day a week. {@code toDays} is the new count; {@code idealDays} the count it moves toward (training_days_ideal_min),
-     * for the words; which day is the user's to pick.
+     * for the words; which day is the user's to pick. {@code suggested}: the days proposed for it, none a training day
+     * already (K-1000, ADR-077 Ek 3); empty when the training weekdays are not known.
      */
-    record AddTrainingDay(int toDays, int idealDays) implements Action {
+    record AddTrainingDay(int toDays, int idealDays, java.util.List<java.time.DayOfWeek> suggested) implements Action {
+
+        /** Without a suggestion (a call kept before K-1000). */
+        public AddTrainingDay(int toDays, int idealDays) {
+            this(toDays, idealDays, java.util.List.of());
+        }
 
         public AddTrainingDay {
+            suggested = java.util.List.copyOf(suggested);
             if (toDays < 1 || toDays > idealDays) {
                 throw new IllegalArgumentException("One more day is at least one and at most the ideal " + idealDays + ", was " + toDays);
             }
@@ -148,12 +155,19 @@ public sealed interface Action {
     /**
      * The first week's call (ADR-077 #4, 03 §2.9: adherence before a new plan): most of the week's sessions didn't happen,
      * so the {@code missed} weekdays — planned, without a session, in the week's order — move to days that fit. The number
-     * of training days stays.
+     * of training days stays. {@code suggested}: a day for a missed one, in the same order, as many as there are free days,
+     * none a training day already and none twice (K-1000, ADR-077 Ek 3); empty when the training weekdays are not known.
      */
-    record MoveMissedSessions(java.util.List<java.time.DayOfWeek> missed) implements Action {
+    record MoveMissedSessions(java.util.List<java.time.DayOfWeek> missed, java.util.List<java.time.DayOfWeek> suggested) implements Action {
+
+        /** Without a suggestion (a call kept before K-1000). */
+        public MoveMissedSessions(java.util.List<java.time.DayOfWeek> missed) {
+            this(missed, java.util.List.of());
+        }
 
         public MoveMissedSessions {
             missed = java.util.List.copyOf(missed);
+            suggested = java.util.List.copyOf(suggested);
             if (missed.isEmpty()) {
                 throw new IllegalArgumentException("Moving missed sessions needs a missed day");
             }
