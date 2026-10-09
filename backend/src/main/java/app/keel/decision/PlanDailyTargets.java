@@ -35,7 +35,6 @@ class PlanDailyTargets implements DailyTargets {
 
     @Override
     public Optional<Targets> forDay(AccountId account, LocalDate day) {
-        return choose(decisions.targetsNow(account), decisions.planMade(account), () -> decisions.startingTargets(account))
-                .map(targets -> new Targets(targets.targetKcal(), targets.proteinG()));
+        return decisions.targetsOrStarting(account).map(targets -> new Targets(targets.targetKcal(), targets.proteinG()));
     }
 }
