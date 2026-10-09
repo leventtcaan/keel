@@ -95,12 +95,17 @@ class ProgressController {
         List<TrainingLog.WorkSet> sets = rows.stream().filter(row -> row.workoutId().equals(id)).map(ProgressReads.Row::set)
                 .filter(set -> set.reps() >= 1).toList();
         List<ProgressReads.Row> before = rows.stream().filter(row -> row.set().at().isBefore(workout.startedAt())).toList();
-        // The last earlier session of the same program day (it has a working set: the rows are working sets). A program
-        // replaced has new days: none, a new basis (ADR-075 Ek 2); the review's changes keep the days (K-956).
-        Optional<List<TrainingLog.WorkSet>> lastOfDay = before.stream()
+        // The last earlier session of the same program day with a set done (the rows are working sets; a set of no reps
+        // was skipped, a session of only those is none). A program replaced has new days: none, a new basis (ADR-075 Ek 2);
+        // the review's changes keep the days (K-956).
+        List<ProgressReads.Row> done = before.stream().filter(row -> row.set().reps() >= 1).toList();
+        Optional<List<TrainingLog.WorkSet>> lastOfDay = done.stream()
                 .filter(row -> row.programDayId() != null && row.programDayId().equals(workout.programDayId()))
                 .max(Comparator.comparing(row -> row.set().at())).map(ProgressReads.Row::workoutId)
-                .map(last -> before.stream().filter(row -> row.workoutId().equals(last)).map(ProgressReads.Row::set).toList());
+                .map(last -> done.stream().filter(row -> row.workoutId().equals(last)).map(ProgressReads.Row::set).toList());
+        // Every earlier session, oldest first: a move the day's last session did not have is compared with its own last.
+        List<List<TrainingLog.WorkSet>> sessionsBefore = List.copyOf(done.stream().collect(Collectors.groupingBy(ProgressReads.Row::workoutId,
+                LinkedHashMap::new, Collectors.mapping(ProgressReads.Row::set, Collectors.toList()))).values());
         Optional<BigDecimal> previous = lastOfDay.map(ProgressSummary::lifted);
         List<SetMark> marks = sets.stream().collect(Collectors.groupingBy(TrainingLog.WorkSet::exerciseId, LinkedHashMap::new, Collectors.toList()))
                 .entrySet().stream()
@@ -117,7 +122,7 @@ class ProgressController {
         Set<String> held = !holding ? Set.of() : sets.stream().map(TrainingLog.WorkSet::exerciseId).distinct()
                 .filter(move -> catalog.find(move).map(found -> found.kind() == ExerciseCatalog.Kind.COMPOUND).orElse(false))
                 .collect(Collectors.toSet());
-        List<ProgressSummary.MoveChange> moves = ProgressSummary.moves(sets, lastOfDay.orElse(List.of()), held);
+        List<ProgressSummary.MoveChange> moves = ProgressSummary.moves(sets, lastOfDay.orElse(List.of()), sessionsBefore, held);
         Set<String> trained = sets.stream().flatMap(set -> primary(set.exerciseId()).stream()).collect(Collectors.toSet());
         BigDecimal lifted = ProgressSummary.lifted(sets);
         // The week as it stood when this workout started: the sets of later sessions are not this summary's.

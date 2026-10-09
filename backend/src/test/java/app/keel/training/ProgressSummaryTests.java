@@ -196,7 +196,7 @@ class ProgressSummaryTests {
     void eachMovesBestSetIsComparedWithItsBestInTheLastSessionOfTheDay(String now, String before, ProgressSummary.ChangeKind change, BigDecimal by) {
         Instant at = MONDAY.atStartOfDay(UTC).toInstant();
         List<TrainingLog.WorkSet> earlier = before == null ? List.of() : List.of(parsed(at.minusSeconds(86_400), before));
-        List<ProgressSummary.MoveChange> moves = ProgressSummary.moves(List.of(parsed(at, now)), earlier, Set.of());
+        List<ProgressSummary.MoveChange> moves = ProgressSummary.moves(List.of(parsed(at, now)), earlier, List.of(), Set.of());
         assertThat(moves).hasSize(1);
         assertThat(moves.getFirst().change()).isEqualTo(change);
         if (by == null) assertThat(moves.getFirst().by()).isNull();
@@ -204,14 +204,32 @@ class ProgressSummaryTests {
     }
 
     @Test
+    void aMoveNotInTheDaysLastSessionIsComparedWithItsOwnLastSessionOnAnyDay() {
+        Instant at = MONDAY.atStartOfDay(UTC).toInstant();
+        Instant older = at.minusSeconds(5 * 86_400);
+        Instant newer = at.minusSeconds(2 * 86_400);
+        TrainingLog.WorkSet row = move("seated_row", at, "60", 10, ExerciseCatalog.Load.EXTERNAL, null);
+        // The day's last session had only the bench; the row was done on other days, last at 57.5 (not the heavier 62.5 before it).
+        List<List<TrainingLog.WorkSet>> sessions = List.of(
+                List.of(move("seated_row", older, "62.5", 8, ExerciseCatalog.Load.EXTERNAL, null)),
+                List.of(move("seated_row", newer, "57.5", 10, ExerciseCatalog.Load.EXTERNAL, null)),
+                List.of(set(newer, "100", 8, 1)));
+        List<ProgressSummary.MoveChange> moves = ProgressSummary.moves(List.of(set(at, "100", 8, 1), row,
+                move("face_pull", at, "20", 12, ExerciseCatalog.Load.EXTERNAL, null)), List.of(set(newer, "100", 8, 1)), sessions, Set.of());
+        assertThat(moves).extracting(ProgressSummary.MoveChange::change)
+                .containsExactly(ProgressSummary.ChangeKind.SAME, ProgressSummary.ChangeKind.LOAD, ProgressSummary.ChangeKind.FIRST);
+        assertThat(moves.get(1).by()).isEqualByComparingTo("2.5");
+    }
+
+    @Test
     void theSameLoadOfAMoveTheCallHoldsIsHeldNotSame() {
         Instant at = MONDAY.atStartOfDay(UTC).toInstant();
         List<TrainingLog.WorkSet> before = List.of(set(at.minusSeconds(86_400), "100", 8, 1));
-        assertThat(ProgressSummary.moves(List.of(set(at, "100", 8, 1)), before, Set.of("bench_press")).getFirst().change()).isEqualTo(ProgressSummary.ChangeKind.HELD);
+        assertThat(ProgressSummary.moves(List.of(set(at, "100", 8, 1)), before, List.of(), Set.of("bench_press")).getFirst().change()).isEqualTo(ProgressSummary.ChangeKind.HELD);
         // A move the call does not hold (an isolation move: the engine adds no load to it, G6 K-33) is the same.
-        assertThat(ProgressSummary.moves(List.of(set(at, "100", 8, 1)), before, Set.of()).getFirst().change()).isEqualTo(ProgressSummary.ChangeKind.SAME);
+        assertThat(ProgressSummary.moves(List.of(set(at, "100", 8, 1)), before, List.of(), Set.of()).getFirst().change()).isEqualTo(ProgressSummary.ChangeKind.SAME);
         // A held load with a rep more is reps: what moved is said.
-        assertThat(ProgressSummary.moves(List.of(set(at, "100", 9, 1)), before, Set.of("bench_press")).getFirst().change()).isEqualTo(ProgressSummary.ChangeKind.REPS);
+        assertThat(ProgressSummary.moves(List.of(set(at, "100", 9, 1)), before, List.of(), Set.of("bench_press")).getFirst().change()).isEqualTo(ProgressSummary.ChangeKind.REPS);
     }
 
     @Test
@@ -219,7 +237,7 @@ class ProgressSummaryTests {
         Instant at = MONDAY.atStartOfDay(UTC).toInstant();
         TrainingLog.WorkSet row = move("seated_row", at, "60", 10, ExerciseCatalog.Load.EXTERNAL, null);
         List<ProgressSummary.MoveChange> moves = ProgressSummary.moves(
-                List.of(set(at, "100", 8, 1), row, set(at, "105", 0, null), set(at, "100", 9, 0)), List.of(), Set.of());
+                List.of(set(at, "100", 8, 1), row, set(at, "105", 0, null), set(at, "100", 9, 0)), List.of(), List.of(), Set.of());
         assertThat(moves).extracting(ProgressSummary.MoveChange::exerciseId).containsExactly("bench_press", "seated_row");
         assertThat(moves.getFirst().best()).isEqualTo(new ProgressSummary.Best(new BigDecimal("100"), 9));
     }
@@ -231,17 +249,17 @@ class ProgressSummaryTests {
         List<ProgressSummary.MoveChange> sided = ProgressSummary.moves(
                 List.of(move("one_arm_dumbbell_row", at, "30", 10, ExerciseCatalog.Load.EXTERNAL, Side.LEFT),
                         move("one_arm_dumbbell_row", at, "30", 9, ExerciseCatalog.Load.EXTERNAL, Side.RIGHT)),
-                List.of(move("one_arm_dumbbell_row", before, "30", 9, ExerciseCatalog.Load.EXTERNAL, Side.RIGHT)), Set.of());
+                List.of(move("one_arm_dumbbell_row", before, "30", 9, ExerciseCatalog.Load.EXTERNAL, Side.RIGHT)), List.of(), Set.of());
         assertThat(sided.getFirst()).isEqualTo(new ProgressSummary.MoveChange("one_arm_dumbbell_row", new ProgressSummary.Best(new BigDecimal("30"), 10),
                 ProgressSummary.ChangeKind.REPS, BigDecimal.ONE));
         List<ProgressSummary.MoveChange> dip = ProgressSummary.moves(
                 List.of(move("dip", at, "10", 8, ExerciseCatalog.Load.BODYWEIGHT_PLUS_EXTERNAL, null)),
-                List.of(move("dip", before, "7.5", 8, ExerciseCatalog.Load.BODYWEIGHT_PLUS_EXTERNAL, null)), Set.of());
+                List.of(move("dip", before, "7.5", 8, ExerciseCatalog.Load.BODYWEIGHT_PLUS_EXTERNAL, null)), List.of(), Set.of());
         assertThat(dip.getFirst().change()).isEqualTo(ProgressSummary.ChangeKind.LOAD);
         assertThat(dip.getFirst().by()).isEqualByComparingTo("2.5");
         List<ProgressSummary.MoveChange> pullUp = ProgressSummary.moves(
                 List.of(move("pull_up", at, "0", 9, ExerciseCatalog.Load.BODYWEIGHT, null)),
-                List.of(move("pull_up", before, "0", 7, ExerciseCatalog.Load.BODYWEIGHT, null)), Set.of());
+                List.of(move("pull_up", before, "0", 7, ExerciseCatalog.Load.BODYWEIGHT, null)), List.of(), Set.of());
         assertThat(pullUp.getFirst()).isEqualTo(new ProgressSummary.MoveChange("pull_up", new ProgressSummary.Best(new BigDecimal("0"), 9),
                 ProgressSummary.ChangeKind.REPS, BigDecimal.valueOf(2)));
     }

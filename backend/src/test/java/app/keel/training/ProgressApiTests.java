@@ -1,6 +1,7 @@
 package app.keel.training;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
@@ -105,6 +106,89 @@ class ProgressApiTests {
         assertThat((List<Map<String, Object>>) firstSummary.get("marks")).extracting(mark -> mark.get("kind")).containsExactly("BASELINE", "BASELINE");
 
         assertThat(send("GET", TestSessions.newAccount(), "/v1/workouts/" + second + "/summary")).hasStatus(404);
+    }
+
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void whatMovedIsHeldOnlyForACompoundMoveWhileTheCallHoldsTheLoad() throws Exception {
+        AccountId account = withAProgram();
+        Instant now = clock.instant();
+        String before = start(account, now.minus(Duration.ofDays(7)));
+        sets(account, before, "bench_press", 3, 80, 8, 1, "WORKING");
+        sets(account, before, "barbell_curl", 2, 30, 10, 1, "WORKING");
+        assertThat(calls.holdLoad(account, UUID.randomUUID(), LocalDate.now(clock.withZone(ZoneOffset.UTC)).minusDays(3))).isTrue();
+        String today = start(account, now.minus(Duration.ofHours(1)));
+        sets(account, today, "bench_press", 3, 80, 8, 1, "WORKING");
+        sets(account, today, "barbell_curl", 2, 30, 10, 1, "WORKING");
+
+        assertThat((List<Map<String, Object>>) map(send("GET", account, "/v1/workouts/" + today + "/summary")).get("moves"))
+                .extracting(move -> move.get("change")).containsExactly("HELD", "SAME");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void whatMovedComparesWithTheNewestEarlierSessionOfTheDayNotTheHeaviest() throws Exception {
+        AccountId account = withAProgram();
+        Instant now = clock.instant();
+        String heavy = start(account, now.minus(Duration.ofDays(9)));
+        sets(account, heavy, "bench_press", 3, 90, 6, 1, "WORKING");
+        String newest = start(account, now.minus(Duration.ofDays(5)));
+        sets(account, newest, "bench_press", 3, 80, 8, 1, "WORKING");
+        String today = start(account, now.minus(Duration.ofHours(1)));
+        sets(account, today, "bench_press", 3, 80, 9, 1, "WORKING");
+
+        assertThat((List<Map<String, Object>>) map(send("GET", account, "/v1/workouts/" + today + "/summary")).get("moves")).containsExactly(
+                Map.of("exerciseId", "bench_press", "best", Map.of("loadKg", 80, "reps", 9), "change", "REPS", "by", 1));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aSessionOfAnotherDayOrOffTheProgramIsNotTheDaysLastButAMoveNotInTheDaysLastHasItsOwn() throws Exception {
+        AccountId account = withTwoDays();
+        Instant now = clock.instant();
+        String monday = start(account, now.minus(Duration.ofDays(7)), 0);
+        sets(account, monday, "bench_press", 3, 80, 8, 1, "WORKING");
+        // Another day's session and one off the program, both later: neither is the Monday's last session.
+        String thursday = start(account, now.minus(Duration.ofDays(4)), 1);
+        sets(account, thursday, "bench_press", 3, 70, 10, 1, "WORKING");
+        sets(account, thursday, "squat", 3, 100, 8, 1, "WORKING");
+        String off = startOff(account, now.minus(Duration.ofDays(2)));
+        sets(account, off, "bench_press", 3, 60, 12, 1, "WORKING");
+        sets(account, off, "squat", 3, 105, 6, 1, "WORKING");
+        String today = start(account, now.minus(Duration.ofHours(1)), 0);
+        sets(account, today, "bench_press", 3, 80, 9, 1, "WORKING");
+        // Swapped in today: the squat was not in the Monday's last session; its own last is the session off the program.
+        sets(account, today, "squat", 3, 105, 7, 1, "WORKING");
+
+        Map<String, Object> summary = map(send("GET", account, "/v1/workouts/" + today + "/summary"));
+        assertThat((List<Map<String, Object>>) summary.get("moves")).containsExactly(
+                Map.of("exerciseId", "bench_press", "best", Map.of("loadKg", 80, "reps", 9), "change", "REPS", "by", 1),
+                Map.of("exerciseId", "squat", "best", Map.of("loadKg", 105, "reps", 7), "change", "REPS", "by", 1));
+        // The percent is the same day's: 3 × 720 + 3 × 735 against 3 × 640.
+        assertThat(summary.get("liftedChangePercent")).isEqualTo(127);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aDiscardedSessionAndOneOfSkippedSetsOnlyAreNoLastSession() throws Exception {
+        AccountId account = withAProgram();
+        Instant now = clock.instant();
+        String real = start(account, now.minus(Duration.ofDays(9)));
+        sets(account, real, "bench_press", 3, 80, 8, 1, "WORKING");
+        String discarded = start(account, now.minus(Duration.ofDays(6)));
+        sets(account, discarded, "bench_press", 3, 100, 8, 1, "WORKING");
+        assertThat(send("DELETE", account, "/v1/workouts/" + discarded)).hasStatus(204);
+        String skipped = start(account, now.minus(Duration.ofDays(3)));
+        sets(account, skipped, "bench_press", 3, 80, 0, 0, "WORKING");
+        String today = start(account, now.minus(Duration.ofHours(1)));
+        sets(account, today, "bench_press", 3, 82.5, 8, 1, "WORKING");
+
+        Map<String, Object> summary = map(send("GET", account, "/v1/workouts/" + today + "/summary"));
+        assertThat((List<Map<String, Object>>) summary.get("moves")).extracting(move -> move.get("change"), move -> move.get("by"))
+                .containsExactly(tuple("LOAD", 2.5));
+        // 3 × 660 against 3 × 640: the skipped-only session is not the one compared with.
+        assertThat(summary.get("liftedChangePercent")).isEqualTo(3);
     }
 
     @Test
@@ -296,6 +380,16 @@ class ProgressApiTests {
         return account;
     }
 
+    /** Two days: Monday and Thursday, both bench and squat. */
+    private AccountId withTwoDays() {
+        AccountId account = TestSessions.newAccount();
+        send("PUT", account, "/v1/profile", profile());
+        List<Map<String, Object>> moves = List.of(own("bench_press", 6, 10), own("squat", 6, 10));
+        assertThat(send("PUT", account, "/v1/program", Map.of("days", List.of(Map.of("name", "A", "weekday", "MONDAY", "exercises", moves),
+                Map.of("name", "B", "weekday", "THURSDAY", "exercises", moves))))).hasStatusOk();
+        return account;
+    }
+
     private static Map<String, Object> program(List<Map<String, Object>> moves) {
         return Map.of("days", List.of(Map.of("name", "Full body", "weekday", "MONDAY", "exercises", moves)));
     }
@@ -326,11 +420,23 @@ class ProgressApiTests {
         return Map.of("exerciseId", exercise, "sets", 3, "reps", Map.of("min", min, "max", max));
     }
 
-    @SuppressWarnings("unchecked")
     private String start(AccountId account, Instant at) throws Exception {
-        Map<String, Object> day = ((List<Map<String, Object>>) map(send("GET", account, "/v1/program")).get("days")).getFirst();
+        return start(account, at, 0);
+    }
+
+    /** A session of the program's day at {@code index}. */
+    @SuppressWarnings("unchecked")
+    private String start(AccountId account, Instant at, int index) throws Exception {
+        Map<String, Object> day = ((List<Map<String, Object>>) map(send("GET", account, "/v1/program")).get("days")).get(index);
         MvcTestResult started = send("POST", account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", at.toString(),
                 "programDayId", day.get("id")));
+        assertThat(started).hasStatus(201);
+        return (String) map(started).get("id");
+    }
+
+    /** A session off the program (no program day). */
+    private String startOff(AccountId account, Instant at) throws Exception {
+        MvcTestResult started = send("POST", account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", at.toString()));
         assertThat(started).hasStatus(201);
         return (String) map(started).get("id");
     }
@@ -355,6 +461,7 @@ class ProgressApiTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };
         request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));
