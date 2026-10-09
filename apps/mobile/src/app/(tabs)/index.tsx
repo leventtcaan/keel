@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -13,12 +14,15 @@ import { tokens } from '@/theme/tokens';
 import { CallCard } from '@/today/CallCard';
 import { Hero } from '@/today/Hero';
 import { StateCard } from '@/today/StateCard';
+import type { TodayData } from '@/today/today';
 import { FoodLine } from '@/today/FoodLine';
 import { TodayCard } from '@/today/TodayCard';
 import { todayCardOf } from '@/today/todayWorkout';
 import { useToday } from '@/today/useToday';
 import { WeekStrip } from '@/today/WeekStrip';
 import { heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from '@/today/week';
+
+type Program = components['schemas']['Program'];
 
 /**
  * This week (K-969, ADR-077 #1, prototype #home and #home-mon): the week strip under the week's number and record, one
@@ -32,6 +36,9 @@ export default function TodayScreen() {
   const { day, data, reload } = useToday();
   // The call's details below the hero, until the call screen (K-978) takes them.
   const [callOpen, setCallOpen] = useState(false);
+  // A change to today answered with the program as changed: shown at once, for the read it answered, while the week is
+  // read again (Health, the queue, every part); the next read is the server's word again.
+  const [answered, setAnswered] = useState<{ read: TodayData; program: Program } | null>(null);
 
   const parts = data === null ? [] : [data.consistency, data.decision, data.program, data.budget, ...(data.checkIn ? [data.checkIn] : [])];
   const failed = parts.some((part) => part.state === 'failed');
@@ -45,10 +52,10 @@ export default function TodayScreen() {
   let top = null;
   if (data !== null) {
     const monday = data.monday ?? weekMonday(data.consistency, data.program, day);
-    const sessions = data.program.state === 'ready' ? (data.program.value.week ?? []) : [];
+    const program = answered !== null && answered.read === data ? answered.program : data.program.state === 'ready' ? data.program.value : null;
+    const sessions = program?.week ?? [];
     const hero = heroOf(data);
     const stateCard = hero.kind === 'monday' ? null : <StateCard state={data.state} onChanged={reload} entry={false} />;
-    const program = data.program.state === 'ready' ? data.program.value : null;
     const card = todayCardOf({ program, day, active: data.active ?? null, doneToday: data.doneToday ?? null });
     const details = hero.kind === 'call' && callOpen ? <CallCard decision={hero.decision} onChanged={reload} /> : null;
     top = (
@@ -59,7 +66,16 @@ export default function TodayScreen() {
         {stateCard}
         <Hero hero={hero} today={day} open={callOpen} onToggle={() => setCallOpen(!callOpen)} onChanged={reload} />
         {details}
-        <TodayCard card={card} program={program} today={day} parts={data.todayParts} />
+        <TodayCard
+          card={card}
+          program={program}
+          today={day}
+          parts={data.todayParts}
+          onChanged={(changed) => {
+            if (changed !== null) setAnswered({ read: data, program: changed });
+            reload();
+          }}
+        />
         <FoodLine budget={data.budget} starting={data.todayParts?.starting ?? null} />
       </>
     );

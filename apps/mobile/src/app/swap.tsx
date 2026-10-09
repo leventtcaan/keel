@@ -17,8 +17,7 @@ import { MoveThumb } from '@/train/MoveThumb';
 import { exerciseName } from '@/train/program';
 import { swapChoice } from '@/train/swap';
 import { movesOf } from '@/train/trainData';
-import { sessionMoves, todaySession } from '@/train/week';
-import { activeWorkout } from '@/train/workout';
+import { sessionMoves, sessionState } from '@/train/week';
 
 type Scope = components['schemas']['MoveSwap']['scope'];
 type Equipment = components['schemas']['Equipment'];
@@ -39,10 +38,10 @@ export default function SwapScreen() {
   const { color } = useTheme();
   const params = useLocalSearchParams<{ day?: string; move?: string; scope?: string }>();
   const todayOnly = params.scope === 'today';
-  const { day, data } = useReadOnFocus(
+  const { data } = useReadOnFocus(
     useCallback(async () => {
       const [read, own, records] = await Promise.all([training.read(api), training.own(api), workoutRecords()]);
-      return { ...read, own, active: activeWorkout(records) };
+      return { ...read, own, records };
     }, [api, training, workoutRecords]),
   );
   const [picked, setPicked] = useState<string | null>(params.move ?? null);
@@ -63,13 +62,16 @@ export default function SwapScreen() {
   const program = data?.program.state === 'ready' ? data.program.value : null;
   const moves = movesOf(data, data?.own ?? []);
   const name = (id: string) => exerciseName(id, moves);
-  const found = program === null ? null : todaySession(program, day);
+  // Today and whether its session is under way or done: the phone's records first, then the server's word (sessionState).
+  const state = program === null ? null : sessionState({ program, kept: data?.kept === true, records: data?.records ?? [], now: new Date() });
+  const found = state?.found ?? null;
   // The move from the card is the day's even when today is not its session (a from-now-on swap needs no session today).
   const programDay = program?.days.find((d) => d.id === params.day) ?? null;
-  const started = data?.active != null && data.active.programDayId === params.day;
+  // Begun today (under way on this phone or another, or done): today's swaps are the workout's own then.
+  const started = found !== null && found.day.id === params.day && state?.status !== 'none';
   // For today only while today is the day's session and its workout has not begun (then the workout swaps).
   const session = found !== null && found.day.id === params.day && found.session.skipped !== true && !started ? found : null;
-  const planOnly = programDay === null ? null : { programDayId: programDay.id, date: day, exerciseIds: programDay.exercises.map((e) => e.exerciseId) };
+  const planOnly = programDay === null ? null : { programDayId: programDay.id, date: state?.today ?? '', exerciseIds: programDay.exercises.map((e) => e.exerciseId) };
   const target = programDay === null || planOnly === null ? null : (session ?? { day: programDay, session: planOnly });
   const choice = target === null || picked === null ? null : swapChoice(target, picked);
 

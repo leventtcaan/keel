@@ -1,14 +1,16 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { ProblemText } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { useUnits } from '@/services/ServicesProvider';
+import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { type Changed, changeToday } from '@/train/changes';
 import { MoveThumb } from '@/train/MoveThumb';
 import { dayName, exerciseName } from '@/train/program';
 import { repCount } from '@/train/reps';
@@ -43,19 +45,74 @@ function lifted(kg: number, units: UnitSystem): string {
   return t(units === 'METRIC' ? 'units.kg' : 'units.lb', { value });
 }
 
-type Props = { card: Card; program: Schemas['Program'] | null; today: string; parts: TodayParts | undefined };
+type Props = {
+  card: Card;
+  program: Schemas['Program'] | null;
+  today: string;
+  parts: TodayParts | undefined;
+  /** A change sent: the program as the server answered it (shown at once), or null when it did not change; read again. */
+  onChanged: (changed: Schemas['Program'] | null) => void;
+};
+
+type Change = 'UNDO' | 'FULL';
+
+/**
+ * Why a change did not happen. No connection is the user's to fix; anything else not a 409 is ours. A 409 is the
+ * server's "not now", and what it means depends on the change (POST /v1/program/today): UNDO, a workout of that day
+ * started today; FULL, the session is not on today any more (a card left open past midnight, the week changed).
+ */
+function said(kind: Exclude<Changed['kind'], 'done'>, change: Change): string {
+  if (kind === 'offline') return 'todayChange.offline';
+  if (kind === 'failed') return 'todayChange.failed';
+  return change === 'UNDO' ? 'todayChange.started' : 'todayChange.none';
+}
 
 /**
  * Today's workout on This week (K-969, prototype `#home`): today's session with its first moves and their targets, the
  * cardio line, Start, and the way to change today (K-970's page). What the user changed shows on the card itself (user
- * test 8 Oct): the short version is marked, a session moved says where it went, a skipped one says so; undoing waits
- * for the server (K-995). A workout under way is continued ("Open workout · Continue", K-961); one done today has its
- * tick and its facts, the server's (K-965), and no Start.
+ * test 8 Oct): the short version offers "Full workout", a session moved says where it went, a skipped one says so, and
+ * a move or skip the server can undo has "Undo" (K-995: FULL, UNDO, WeekSession.undoable). A workout under way on this
+ * phone is continued ("Open workout · Continue", K-961); one under way elsewhere says so; one done today has its tick
+ * and its facts, the server's (K-965), and no Start.
  */
-export function TodayCard({ card, program, today, parts }: Props) {
+export function TodayCard({ card, program, today, parts, onChanged }: Props) {
+  const { api } = useAppServices();
   const { color } = useTheme();
   const units = useUnits();
+  const [busy, setBusy] = useState(false);
+  // Not changed, said for one read of the week: the one it happened on (no connection: nothing new to read), or, for the
+  // server's "not now", the read that follows it (`next`), so the card it speaks of is the week as it now is. A new
+  // read after that is a new try.
+  type Program = Schemas['Program'] | null;
+  const [failed, setFailed] = useState<{ read: Program | 'next'; from: Program; key: string } | null>(null);
+  // The read that follows the "not now" takes the note (state adjusted while rendering, React's way for a prop change).
+  if (failed?.read === 'next' && program !== failed.from) setFailed({ ...failed, read: program });
+  // A ref, not state: two taps in the same moment both see state from before either ran, a ref they share.
+  const sending = useRef(false);
   if (card.kind === 'none') return null;
+
+  async function send(programDayId: string, change: Change) {
+    if (sending.current) return;
+    sending.current = true;
+    setBusy(true);
+    const answer = await changeToday(api, programDayId, change);
+    sending.current = false;
+    setBusy(false);
+    if (answer.kind === 'done') {
+      setFailed(null);
+      // The answer is the week as changed: the card shows it at once, not the old one with live buttons.
+      onChanged(answer.program);
+    } else if (answer.kind === 'conflict') {
+      setFailed({ read: 'next', from: program, key: said(answer.kind, change) });
+      onChanged(null);
+    } else {
+      setFailed({ read: program, from: program, key: said(answer.kind, change) });
+    }
+  }
+  const problem = failed !== null && failed.read === program ? <ProblemText style={[styles.fine, { color: color.textSecondary }]}>{t(failed.key)}</ProblemText> : null;
+  const undo = (programDayId: string) => (
+    <Button label={t('thisWeek.today.undo')} variant="ghost" size="sm" disabled={busy} onPress={() => void send(programDayId, 'UNDO')} />
+  );
 
   const name = (day: Schemas['ProgramDay'] | null) => (day === null ? '' : dayName(day));
   const fine = (text: string) => <Text style={[styles.fine, { color: color.textSecondary }]}>{text}</Text>;
@@ -88,9 +145,16 @@ export function TodayCard({ card, program, today, parts }: Props) {
   let body: ReactNode;
   switch (card.kind) {
     case 'open': {
+      // Under way on another phone (or no longer kept here): the session goes on there; this one starts none (K-995).
       const sets =
-        card.sets === 0 ? t('thisWeek.today.openSets.none') : card.sets === 1 ? t('thisWeek.today.openSets.one') : t('thisWeek.today.openSets.other', { count: card.sets });
-      const resume = <Button label={t('thisWeek.today.continue')} size="sm" onPress={() => router.push('/workout')} />;
+        card.sets === null
+          ? t('thisWeek.today.openElsewhere')
+          : card.sets === 0
+            ? t('thisWeek.today.openSets.none')
+            : card.sets === 1
+              ? t('thisWeek.today.openSets.one')
+              : t('thisWeek.today.openSets.other', { count: card.sets });
+      const resume = card.onPhone ? <Button label={t('thisWeek.today.continue')} size="sm" onPress={() => router.push('/workout')} /> : null;
       body = (
         <>
           {head(t('thisWeek.today.open'), name(card.day), resume)}
@@ -123,7 +187,7 @@ export function TodayCard({ card, program, today, parts }: Props) {
     case 'moved':
       body = (
         <>
-          {head(t('thisWeek.today.today'), t('thisWeek.today.rest'), null)}
+          {head(t('thisWeek.today.today'), t('thisWeek.today.rest'), card.undoable ? undo(card.day.id) : null)}
           {fine(t('thisWeek.today.movedTo', { day: t(`onboarding.schedule.dayName.${weekdayOf(card.to)}`) }))}
         </>
       );
@@ -131,7 +195,7 @@ export function TodayCard({ card, program, today, parts }: Props) {
     case 'skipped':
       body = (
         <>
-          {head(t('thisWeek.today.today'), name(card.day), null)}
+          {head(t('thisWeek.today.today'), name(card.day), card.undoable ? undo(card.day.id) : null)}
           {fine(
             parts?.checkInDay == null
               ? t('thisWeek.today.skippedNoDay')
@@ -179,6 +243,8 @@ export function TodayCard({ card, program, today, parts }: Props) {
             </View>
           );
         });
+      // The short version says so by the way back to the full session (K-995 FULL), as the Train tab does.
+      const full = short ? <Button label={t('thisWeek.today.full')} variant="ghost" size="sm" disabled={busy} onPress={() => void send(day.id, 'FULL')} /> : null;
       body = (
         <>
           {head(
@@ -188,10 +254,10 @@ export function TodayCard({ card, program, today, parts }: Props) {
               {change(day.id)}
               {start}
             </View>,
-            short ? t('thisWeek.today.short') : undefined,
           )}
           {moves}
           {cardio}
+          {full}
         </>
       );
       break;
@@ -200,6 +266,7 @@ export function TodayCard({ card, program, today, parts }: Props) {
   return (
     <View testID="today-card" accessibilityLabel={t('thisWeek.today.label')} style={[styles.card, { backgroundColor: color.surface }]}>
       {body}
+      {problem}
     </View>
   );
 }
