@@ -41,6 +41,8 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
 });
 const PROGRAM: Schemas['Program'] = {
   id: 'p1',
+  today: '2026-12-25',
+  weekOf: '2026-12-21',
   source: 'GENERATED',
   days: [
     { id: 'a', nameKey: 'programDays.full_body_a.name', weekday: 'MONDAY', exercises: [] },
@@ -151,7 +153,7 @@ function firstWeek() {
   mockAnswers = {
     '/v1/consistency': refused(404, 'NOT_FOUND'),
     '/v1/decisions/current': refused(404, 'NOT_FOUND'),
-    '/v1/program': ok({ ...PROGRAM, week: [{ programDayId: 'b', date: '2026-10-14', exerciseIds: [] }, { programDayId: 'c', date: '2026-10-16', exerciseIds: [] }] }),
+    '/v1/program': ok({ ...PROGRAM, today: '2026-10-12', weekOf: '2026-10-12', week: [{ programDayId: 'b', date: '2026-10-14', exerciseIds: [] }, { programDayId: 'c', date: '2026-10-16', exerciseIds: [] }] }),
     '/v1/workouts': ok([]),
     '/v1/weigh-ins': ok([]),
     '/v1/first-weeks': ok({ week: 1, risk: [], readsRisk: false, training: true, firstCallOn: '2026-10-19' }),
@@ -439,11 +441,15 @@ describe("today's workout (#home)", () => {
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/"0 ×/);
   });
 
-  test('the short version shows on the card: "Short version", cardio optional', async () => {
+  test('the short version shows on the card: "Full workout" takes it back (FULL, K-995), cardio optional', async () => {
     mockAnswers['/v1/program'] = fridayAs({ short: true, exerciseIds: FRIDAY_MOVES.slice(0, 3) });
     await show();
-    expect(screen.getByText(t('thisWeek.today.short'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.today.cardioOptional'))).toBeOnTheScreen();
+    mockPost = ok(PROGRAM);
+    mockAnswers['/v1/program'] = ok(PROGRAM);
+    await press(t('thisWeek.today.full'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/program/today', { body: { programDayId: 'c', change: 'FULL' } });
+    expect(screen.getByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeOnTheScreen(); // read again: the full session
   });
 
   test("moved: today is rest, and the card says where the session went (the server's day)", async () => {
@@ -453,6 +459,90 @@ describe("today's workout (#home)", () => {
     expect(screen.getByText(t('thisWeek.today.movedTo', { day: 'Saturday' }))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
     expect(day('2026-12-26')).toBe('Saturday, planned');
+    expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull(); // the server says it cannot be undone
+  });
+
+  test('moved today and undoable: "Undo" on the card puts the week back (UNDO, K-995)', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true, movedFrom: '2026-12-25', undoable: true });
+    await show();
+    mockPost = ok(PROGRAM);
+    mockAnswers['/v1/program'] = ok(PROGRAM);
+    await press(t('thisWeek.today.undo'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/program/today', { body: { programDayId: 'c', change: 'UNDO' } });
+    expect(screen.getByRole('button', { name: startFullBodyA() })).toBeOnTheScreen();
+  });
+
+  test('skipped today and undoable: "Undo"; not undone (no connection), said so and the button stays', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ skipped: true, undoable: true });
+    await show();
+    mockPOST.mockImplementationOnce(async () => {
+      throw new TypeError('Network request failed');
+    });
+    await press(t('thisWeek.today.undo'));
+    expect(screen.getByText(t('todayChange.offline'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('thisWeek.today.undo') })).toBeOnTheScreen();
+  });
+
+  test("UNDO refused (409: today's workout started): the week read again, then said so on the card as it now is", async () => {
+    mockAnswers['/v1/program'] = fridayAs({ skipped: true, undoable: true });
+    await show();
+    mockPost = refused(409, 'CONFLICT');
+    // The server's week now: no longer undoable.
+    mockAnswers['/v1/program'] = fridayAs({ skipped: true });
+    const reads = mockGET.mock.calls.filter(([path]) => path === '/v1/program').length;
+    await press(t('thisWeek.today.undo'));
+    expect(mockGET.mock.calls.filter(([path]) => path === '/v1/program').length).toBe(reads + 1);
+    expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull();
+    expect(screen.getByText(t('todayChange.started'))).toBeOnTheScreen();
+  });
+
+  test('FULL refused (409: the session is not on today any more, a stale card): "No session today", the week read again', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ short: true, exerciseIds: FRIDAY_MOVES.slice(0, 3) });
+    await show();
+    mockPost = refused(409, 'CONFLICT');
+    // Each read is parsed anew: the week again, a new object (here, past midnight, still the short version).
+    mockAnswers['/v1/program'] = fridayAs({ short: true, exerciseIds: FRIDAY_MOVES.slice(0, 3) });
+    const reads = mockGET.mock.calls.filter(([path]) => path === '/v1/program').length;
+    await press(t('thisWeek.today.full'));
+    expect(mockGET.mock.calls.filter(([path]) => path === '/v1/program').length).toBe(reads + 1);
+    expect(screen.getByText(t('todayChange.none'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('todayChange.started'))).toBeNull();
+  });
+
+  test("the server's answer shows at once: the card is the changed week before the read again is back", async () => {
+    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true, movedFrom: '2026-12-25', undoable: true });
+    await show();
+    mockPost = ok(PROGRAM);
+    // The read again hangs (Health, the queue, the server): the card does not wait for it.
+    let release: () => void = () => {};
+    mockServices.queue.drain.mockImplementationOnce(() => new Promise<void>((resolve) => (release = resolve)));
+    await press(t('thisWeek.today.undo'));
+    expect(screen.getByRole('button', { name: startFullBodyA() })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull();
+    await act(async () => release());
+  });
+
+  test('two taps at once send one change', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ skipped: true, undoable: true });
+    let answer: (value: Answer) => void = () => {};
+    mockPOST.mockImplementationOnce(() => new Promise<Answer>((resolve) => (answer = resolve)));
+    await show();
+    const button = screen.getByRole('button', { name: t('thisWeek.today.undo') });
+    await act(async () => {
+      fireEvent.press(button);
+      fireEvent.press(button);
+    });
+    await act(async () => answer(ok(PROGRAM)));
+    expect(mockPOST).toHaveBeenCalledTimes(1);
+  });
+
+  test('undone with nothing to undo (200, the week as it was): no word, only the week read again', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ skipped: true, undoable: true });
+    await show();
+    mockPost = ok(PROGRAM);
+    await press(t('thisWeek.today.undo'));
+    expect(screen.queryByText(t('today.call.undone'))).toBeNull();
+    expect(screen.queryByText(t('todayChange.started'))).toBeNull();
   });
 
   test('skipped: said so with the check-in day the user has, no Start, nothing planned in its place', async () => {
@@ -464,18 +554,30 @@ describe("today's workout (#home)", () => {
     expect(day('2026-12-25')).toBe('Friday, today');
   });
 
-  test("done today: the day ticked, no Start, 'N sets · X kg lifted' from the server's summary", async () => {
+  test("done today (the server's DONE, K-995): the day ticked, no Start, 'N sets · X kg lifted' from its summary", async () => {
     mockAnswers['/v1/workouts'] = ok([
       ...WORKOUTS,
       { id: 'w3', clientId: 'c3', startedAt: '2026-12-25T08:00:00Z', endedAt: '2026-12-25T09:00:00Z', programDayId: 'c', sets: [] },
     ]);
-    mockAnswers['/v1/workouts/{id}/summary'] = ok({ workoutId: 'w3', liftedKg: 8420, workingSets: 14, marks: [], weekOf: '2026-12-21', muscles: [] });
+    // The server's DONE names the workout (w9), not the list's latest of the day (w3): the summary is w9's.
+    mockAnswers['/v1/program'] = fridayAs({ workout: { id: 'w9', state: 'DONE' } });
+    mockAnswers['/v1/workouts/{id}/summary'] = ok({ workoutId: 'w9', liftedKg: 8420, workingSets: 14, marks: [], weekOf: '2026-12-21', muscles: [] });
     await show();
     expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.today.doneStats.other', { count: 14, lifted: '8,420 kg' }))).toBeOnTheScreen();
-    expect(mockGET).toHaveBeenCalledWith('/v1/workouts/{id}/summary', { params: { path: { id: 'w3' } } });
+    expect(mockGET).toHaveBeenCalledWith('/v1/workouts/{id}/summary', { params: { path: { id: 'w9' } } });
+    expect(mockGET).not.toHaveBeenCalledWith('/v1/workouts/{id}/summary', { params: { path: { id: 'w3' } } });
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
     expect(day('2026-12-25')).toBe('Friday, trained, today');
+  });
+
+  test('under way, but not on this phone (the server\'s OPEN): "Open workout", no Start, nothing to continue here', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ workout: { id: 'w4', state: 'OPEN' } });
+    await show();
+    expect(screen.getByText(t('thisWeek.today.open'))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.openElsewhere'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('thisWeek.today.continue') })).toBeNull();
+    expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
   });
 
   test('finished offline (its finish still waiting on the phone): done, no Start again', async () => {
