@@ -80,14 +80,14 @@ describe('calendar days, read as dates only', () => {
 });
 
 describe("the week's Monday is the server's", () => {
-  test("the consistency's week first", () => {
-    expect(weekMonday(ready(CONSISTENCY), ready({ ...PROGRAM, week: [{ programDayId: 'a', date: '2026-12-30', exerciseIds: [] }] }), '2026-12-25')).toBe(
-      '2026-12-21',
-    );
+  test("the program's week first, the week its sessions are laid out on (Program.weekOf, K-995)", () => {
+    expect(weekMonday(ready({ ...CONSISTENCY, weekOf: '2026-12-14' }), ready({ ...PROGRAM, weekOf: '2026-12-21' }), '2026-12-25')).toBe('2026-12-21');
+    expect(weekMonday(none, ready({ ...PROGRAM, weekOf: '2026-10-12' }), '2026-10-12')).toBe('2026-10-12');
   });
 
-  test("before the first call (no consistency yet): the week the program's sessions are on", () => {
-    expect(weekMonday(none, ready({ ...PROGRAM, week: [{ programDayId: 'b', date: '2026-10-14', exerciseIds: [] }] }), '2026-10-12')).toBe('2026-10-12');
+  test("no program, or one from a server that does not name its week yet: the consistency's week", () => {
+    expect(weekMonday(ready(CONSISTENCY), none, '2026-12-25')).toBe('2026-12-21');
+    expect(weekMonday(ready(CONSISTENCY), ready(PROGRAM), '2026-12-25')).toBe('2026-12-21');
   });
 
   test("neither: the week of today on the phone's calendar", () => {
@@ -211,6 +211,12 @@ describe("the week's logs, read from the server's week", () => {
     expect(logs).toEqual({ workouts: { state: 'ready', value: [] }, weighIns: { state: 'consent' } });
     expect(GET).toHaveBeenCalledWith('/v1/workouts', { params: { query: { from: '2026-12-21', to: '2026-12-25' } } });
     expect(GET).toHaveBeenCalledWith('/v1/weigh-ins', { params: { query: { from: '2026-12-21', to: '2026-12-25' } } });
+  });
+
+  test("the server's Monday after the phone's today (time zones apart, a new week there): the range never turns over", async () => {
+    const GET = jest.fn(async (_path: string, _init?: unknown) => ok([]));
+    await loadWeekLogs({ GET } as never, '2026-12-28', '2026-12-27');
+    expect(GET).toHaveBeenCalledWith('/v1/workouts', { params: { query: { from: '2026-12-27', to: '2026-12-27' } } });
   });
 
   test('a day trained is a day a workout was finished; one still open is not', () => {

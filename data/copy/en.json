@@ -165,7 +165,8 @@
     "today": {
       "label": "Today's workout",
       "today": "Today",
-      "short": "Short version",
+      "full": "Full workout",
+      "undo": "Undo",
       "start": "Start",
       "startLabel": "Start {session}",
       "changeLabel": "Change today's workout",
@@ -184,6 +185,7 @@
         "other": "{count} sets logged. Finish anytime this week."
       },
       "continue": "Continue",
+      "openElsewhere": "Started, not on this phone. It still counts.",
       "target": "{load} × {reps}",
       "added": "+{load} × {reps}",
       "cardio": "Cardio, {minutes} min",
