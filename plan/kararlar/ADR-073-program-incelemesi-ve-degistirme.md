@@ -251,3 +251,28 @@ testi: seçenekler salon ekipmanıyla süzülür.
 - **Split seçimi bu kartta yok** (düzenleyici, 9 Eki): her gün sayısının tek şablonu var (1-2 gün tüm vücut, 3 karışık, 4 üst/alt, 5 karışık,
   6 itiş/çekiş/bacak), seçim fiilen tek seçenek; gerçek seçim yeni şablon, yani koçluk içeriği: Levent kararı bekliyor. Rebuild bugünkü gibi gün
   sayısıyla üretir; sözleşmeye `split` alanı eklenmedi.
+
+## Ek 7 · Programı düzenleme ucu: kimlikle düzenleme, kayıt, geri alma (K-995 PR B, 2026-10-09, agent, teknik)
+- **`PATCH /v1/program` (`ProgramEdit`):** programın düzenlenmiş hali, bütün günleri sırasıyla; gün ve hareket **kimlikleriyle** (`ProgramDay.id`,
+  yeni `PlannedExercise.id`). `PUT` (bütün değiştirme, onboarding K-968) değişmez. Kimlikli gün o gündür (kimliği, ad verilmezse adı kalır);
+  kimliksiz gün yenidir ve ad ister; gönderilmeyen gün gider. Ad verilen üretilmiş gün kullanıcının adını alır (`name_key` ya da `name`,
+  V8). Kimlikli hareket (herhangi bir günden: hareket gün değiştirebilir) aynı hareket ve aynı tekrar aralığıyla satırını ve hedefini korur
+  (set değişse de, inceleme uygulaması gibi); başka aralık satırı hedefsiz tutar (Ek 1); yerine başka hareket konan satır yeni satırdır,
+  hedefsiz ("From now on" gibi, Ek 3); satırı korunan hareketin başlangıç ağırlığı (`start_load_kg`, `start_reps`, K-998) da kalır, yerine
+  başka hareket konan satırda yoktur (o hareketindi). Kimliksiz hareket yenidir. Programda olmayan kimlik **CONFLICT** (program o arada değişti), hiçbir şey
+  değişmez; doğrulama `PUT` ile aynı sınırlar. Kaynak ve program kimliği kalır: düzenlenen üretilmiş program `GENERATED` kalır (#4). Gün
+  sayısı değişirse `program_history` satırı (`ProgramStore.rewrite`).
+- **Kayıt ve geri alma (V46, `program_review_change.kind` REVIEW|EDIT, EDIT'te `suggestion` yok):** düzenleme, inceleme değişikliklerinin
+  kaydına bir değişiklik olarak girer (öncesi ve sonrası programla) ve aynı uçla geri alınır (`POST /v1/program/review/undo`). Bir
+  değişiklik geri alınınca sonrakiler yeniden uygulanır: öneri kimliğiyle (Ek 1); düzenleme, ancak program onun "öncesi"yle aynıysa
+  (günler, adlar, hafta günleri, hareketler, set ve aralık) olduğu gibi; değilse uygulanamaz ve `alsoUndone` ile adı verilir (düzenleme
+  bir hedef hal, fark değil: başka bir programa yeniden kurmak kullanıcının yapmadığı bir düzenleme olurdu). Sözleşmede `Program.review.applied`
+  yalnız önerileri taşır (Antrenman'ın "N changes applied" satırı ve onboarding onları sayar; değişmez), düzenlemeler ayrı listededir
+  (`Program.review.edits`, `{id, editedAt}`); ikisi de aynı uçla, kimliğiyle geri alınır. Programdan farkı olmayan düzenleme hiçbir şey yazmaz.
+- **Bu haftanın seansları:** düzenlemenin başka hafta gününe koyduğu ya da çıkardığı günün bu haftaki değişikliği (taşıma, atlama, kısa,
+  bugünlük değişim) silinir, seans yeni gününe yerleşir ("Sessions re-lay themselves"); geçmiş haftaların satırları kalır (tutarlılık
+  onları okur). Başlamış seans düzenlemeyi engellemez ("From now on" gibi: program değişir, yapılan seans yapılmıştır).
+- **Reddedilen:** işlem listesi (ekle/çıkar/taşı adımları; telefonun düzenleyicisi programın bütününü tutuyor, kimlikli bütün hal daha az
+  kırılgan) · düzenlemeyi inceleme kaydını silerek yapmak (Ek 3'teki gibi; kartın "geri alınır" maddesini karşılamaz) · ayrı düzenleme
+  kaydı tablosu (iki kayıt arasında sıra kurmak gerekirdi; geri alma tek yoldan) · düzenlemeyi fark olarak saklayıp yeniden uygulamak
+  (birleşen ve taşınan hareketlerde kırılgan, Ek 1'in ters diff reddiyle aynı neden).
