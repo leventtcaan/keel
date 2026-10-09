@@ -25,13 +25,23 @@ export type SetRow = {
   /** The same row last time (same side, same position), if there was one. */
   last: NewSet | null;
   done: NewSet | null;
+  /** Skipped in this session (K-972): no set, no catch-up; the next row is the one after. */
+  skipped?: boolean;
 };
 
 /**
- * `current`: the first row not done yet; null when every planned row is done. `open`: a move outside the plan — its rows
- * end in one open row, there is no count to reach (K-416).
+ * What was skipped of a planned move in this session (K-972, ADR-075 #5), kept on the phone only: a set skipped is no
+ * set (none is sent), its row by side and set number; a move skipped has every set not done skipped.
  */
-export type ExercisePlan = { exerciseId: string; rows: SetRow[]; current: number | null; open?: true };
+export type Skipped = { sets: { side: Schemas['Side']; set: number }[]; move: boolean };
+
+export const NONE_SKIPPED: Skipped = { sets: [], move: false };
+
+/**
+ * `current`: the first row not done or skipped yet; null when every planned row is either. `open`: a move outside the
+ * plan — its rows end in one open row, there is no count to reach (K-416). `skippedMove`: the move skipped (K-972).
+ */
+export type ExercisePlan = { exerciseId: string; rows: SetRow[]; current: number | null; open?: true; skippedMove?: true };
 
 /** Records the server took or will take: a refused one is not part of what was done. */
 const kept = (record: LocalRecord) => record.state !== 'REJECTED';
@@ -78,19 +88,39 @@ export function lastTime(records: LocalRecord[], exerciseId: string, except: str
  * else last time's; the server's next reps, else last time's, else the bottom of the range. A bodyweight move's load is
  * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows. The move
  * is required: without the catalog the sides and the load model are unknown, and a guess is a set the server refuses.
+ * A skipped set (K-972) is a row of its own, the sets done fill the others in order; a skipped move skips every row
+ * not done.
  */
-export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas['Exercise'], last: NewSet[], done: NewSet[]): ExercisePlan {
+export function planExercise(
+  planned: Schemas['PlannedExercise'],
+  move: Schemas['Exercise'],
+  last: NewSet[],
+  done: NewSet[],
+  skipped: Skipped = NONE_SKIPPED,
+): ExercisePlan {
   const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
   const working = done.filter((s) => s.exerciseId === planned.exerciseId && s.setType === 'WORKING');
   const ofSide = (list: NewSet[], side: Schemas['Side']) => list.filter((s) => (s.side ?? 'BOTH') === side);
-  const doneCount = Math.max(...sides.map((side) => ofSide(working, side).length));
-  const rows: SetRow[] = [];
-  for (let i = 0; i < Math.max(planned.sets, doneCount); i++) {
-    for (const side of sides) {
+  const skips = (side: Schemas['Side']) => new Set(skipped.sets.filter((s) => s.side === side).map((s) => s.set));
+  const count = Math.max(planned.sets, ...sides.map((side) => ofSide(working, side).length + skips(side).size));
+  // Each side's sets done, in order, onto its rows that are not skipped.
+  const filled = new Map(
+    sides.map((side) => {
       const mine = ofSide(working, side);
+      const skip = skips(side);
+      let next = 0;
+      return [side, Array.from({ length: count }, (_, i) => (skip.has(i) ? 'skipped' : (mine[next++] ?? null)))] as const;
+    }),
+  );
+  const rows: SetRow[] = [];
+  for (let i = 0; i < count; i++) {
+    for (const side of sides) {
+      const own = filled.get(side) ?? [];
       const lastRows = ofSide(last, side);
-      const lifted = mine[Math.min(i, mine.length) - 1]?.loadKg;
+      const lifted = own.slice(0, i).filter((r): r is NewSet => r !== null && r !== 'skipped').at(-1)?.loadKg;
       const lastLoad = lastRows[i]?.loadKg ?? lastRows.reduce<number | null>((top, s) => (top === null || s.loadKg > top ? s.loadKg : top), null);
+      const cell = own[i] ?? null;
+      const doneSet = cell === 'skipped' ? null : cell;
       rows.push({
         side,
         suggested: {
@@ -98,12 +128,13 @@ export function planExercise(planned: Schemas['PlannedExercise'], move: Schemas[
           reps: planned.nextReps ?? lastRows[i]?.reps ?? planned.reps.min,
         },
         last: lastRows[i] ?? null,
-        done: mine[i] ?? null,
+        done: doneSet,
+        skipped: cell === 'skipped' || (skipped.move && doneSet === null),
       });
     }
   }
-  const current = rows.findIndex((row) => row.done === null);
-  return { exerciseId: planned.exerciseId, rows, current: current < 0 ? null : current };
+  const current = rows.findIndex((row) => row.done === null && row.skipped !== true);
+  return { exerciseId: planned.exerciseId, rows, current: current < 0 ? null : current, ...(skipped.move ? { skippedMove: true as const } : {}) };
 }
 
 /**
@@ -133,6 +164,7 @@ export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSe
         suggested: { loadKg: move.load === 'BODYWEIGHT' ? 0 : (from?.loadKg ?? null), reps: from?.reps ?? null },
         last: lastRows[i] ?? null,
         done: mine[i] ?? null,
+        skipped: false,
       });
     }
   }
