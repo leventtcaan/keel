@@ -13,7 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,16 +60,31 @@ class ProgramReviews {
     record Applied(UUID id, Instant appliedAt, Suggestion suggestion) {
     }
 
-    /** Contract ProgramReview. */
-    record Review(String id, int notReviewedMoves, List<Suggestion> suggestions, List<Applied> applied) {
+    /** Contract ProgramEditChange: the user's edit in force (K-995). */
+    record Edited(UUID id, Instant editedAt) {
+    }
+
+    /** Contract ProgramReview: the review's changes in force ({@code applied}) and the user's edits (K-995). */
+    record Review(String id, int notReviewedMoves, List<Suggestion> suggestions, List<Applied> applied, List<Edited> edits) {
     }
 
     /** An undo: the program after it, and the later changes undone with the one asked for (they no longer apply). */
     record Undone(ProgramStore.Program program, List<UUID> alsoUndone) {
     }
 
-    /** One change applied: the suggestion as applied, the program before and after it. */
+    /** A change of the log: a suggestion of the review applied, or the user's edit (K-995). */
+    enum Kind { REVIEW, EDIT }
+
+    /** One change applied: the suggestion as applied (none for an edit), the program before and after it. */
     record Step(Suggestion suggestion, ProgramStore.Program before, ProgramStore.Program after) {
+
+        static Step edit(ProgramStore.Program before, ProgramStore.Program after) {
+            return new Step(null, before, after);
+        }
+
+        Kind kind() {
+            return suggestion == null ? Kind.EDIT : Kind.REVIEW;
+        }
     }
 
     /** A program and the changes that made it, in order; {@code skipped}: the picks (their index) not applied. */
@@ -79,10 +97,12 @@ class ProgramReviews {
 
     private final ProgramStore programs;
     private final ReviewChangeStore changes;
+    private final SessionChangeStore sessions;
     private final ExerciseCatalog catalog;
     private final Clock clock;
 
-    ProgramReviews(ProgramStore programs, ReviewChangeStore changes, ExerciseCatalog catalog, Clock clock) {
+    ProgramReviews(ProgramStore programs, ReviewChangeStore changes, SessionChangeStore sessions, ExerciseCatalog catalog, Clock clock) {
+        this.sessions = sessions;
         this.programs = programs;
         this.changes = changes;
         this.catalog = catalog;
@@ -91,7 +111,8 @@ class ProgramReviews {
 
     /** The program reviewed now, with the changes in force. */
     Review review(AccountId account, ProgramStore.Program program, Parameters parameters) {
-        return new Review(reviewId(program), notReviewed(program, catalog), suggestions(program, catalog, parameters), changes.applied(account));
+        return new Review(reviewId(program), notReviewed(program, catalog), suggestions(program, catalog, parameters), changes.applied(account),
+                changes.edits(account));
     }
 
     /**
@@ -134,6 +155,25 @@ class ProgramReviews {
         changes.undo(account, ids.subList(index.orElse(0), ids.size()), clock.instant());
         List<UUID> alsoUndone = outcome.skipped().stream().map(later -> ids.get(index.orElse(0) + 1 + later)).toList();
         return new Undone(keep(account, outcome), alsoUndone);
+    }
+
+    /**
+     * The program edited (K-995, ADR-073 Ek 7), under the program's lock: stored in place of the program (its source, id and
+     * the rows the edit keeps stay) and logged as a change an undo puts back. CONFLICT for an id the program does not have;
+     * an edit that changes nothing is neither stored nor logged.
+     */
+    @Transactional
+    ProgramStore.Program edit(AccountId account, List<ProgramEdits.Day> edit, int targetRir, LocalDate monday) {
+        ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        List<ProgramStore.Day> days = ProgramEdits.edited(current, edit, targetRir).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        if (days.equals(current.days())) {
+            return current;
+        }
+        ProgramStore.Program stored = programs.rewrite(account, days);
+        changes.add(account, List.of(Step.edit(current, stored)), clock.instant());
+        // A day on another weekday, or gone, re-lays this week: its change to this week's session goes (Ek 7).
+        sessions.clear(account, monday, ProgramEdits.relaid(current, stored));
+        return stored;
     }
 
     private ProgramStore.Program keep(AccountId account, Outcome outcome) {
@@ -187,23 +227,61 @@ class ProgramReviews {
      */
     static Outcome apply(ProgramStore.Program program, List<String> picks, ExerciseCatalog catalog, Parameters parameters) {
         int targetRir = parameters.wholeNumber(ParameterKey.TARGET_RIR_MAX);
+        List<Function<ProgramStore.Program, Optional<Step>>> changes = new ArrayList<>();
+        picks.forEach(pick -> changes.add(work -> pick(work, pick, catalog, parameters, targetRir)));
+        return replay(program, changes);
+    }
+
+    /**
+     * The later changes applied again, in order, to the program an undo puts back (K-995): a suggestion found again by its
+     * id; an edit as it was, only onto the program it was made to (ProgramReviews#sameProgram) — an edit is the program the
+     * user made, not a difference to make on another one. One that no longer applies is skipped and named.
+     */
+    static Outcome replay(ProgramStore.Program program, List<Step> later, ExerciseCatalog catalog, Parameters parameters) {
+        int targetRir = parameters.wholeNumber(ParameterKey.TARGET_RIR_MAX);
+        List<Function<ProgramStore.Program, Optional<Step>>> changes = new ArrayList<>();
+        for (Step step : later) {
+            changes.add(step.kind() == Kind.EDIT
+                    ? work -> sameProgram(work, step.before()) ? Optional.of(Step.edit(work, step.after())) : Optional.empty()
+                    : work -> pick(work, step.suggestion().id(), catalog, parameters, targetRir));
+        }
+        return replay(program, changes);
+    }
+
+    private static Outcome replay(ProgramStore.Program program, List<Function<ProgramStore.Program, Optional<Step>>> changes) {
         List<Step> steps = new ArrayList<>();
         List<Integer> skipped = new ArrayList<>();
         ProgramStore.Program work = program;
-        for (int i = 0; i < picks.size(); i++) {
-            String pick = picks.get(i);
-            Engine engine = engine(work, catalog);
-            Optional<ProgramReview.Suggestion> found = ProgramReview.findings(engine.program(), engine.catalog(), parameters).stream()
-                    .filter(suggestion -> id(suggestion).equals(pick)).findFirst();
-            if (found.isPresent()) {
-                ProgramStore.Program after = applyOne(work, engine, found.get(), catalog, targetRir);
-                steps.add(new Step(view(found.get()), work, after));
-                work = after;
+        for (int i = 0; i < changes.size(); i++) {
+            Optional<Step> step = changes.get(i).apply(work);
+            if (step.isPresent()) {
+                steps.add(step.get());
+                work = step.get().after();
             } else {
                 skipped.add(i);
             }
         }
         return new Outcome(work, List.copyOf(steps), List.copyOf(skipped));
+    }
+
+    /** The pick found in the review of {@code work} and applied; empty when the review does not hold it. */
+    private static Optional<Step> pick(ProgramStore.Program work, String pick, ExerciseCatalog catalog, Parameters parameters, int targetRir) {
+        Engine engine = engine(work, catalog);
+        return ProgramReview.findings(engine.program(), engine.catalog(), parameters).stream().filter(suggestion -> id(suggestion).equals(pick))
+                .findFirst().map(found -> new Step(view(found), work, applyOne(work, engine, found, catalog, targetRir)));
+    }
+
+    /** The same program as the user sees it: its days (id, name, weekday) and their moves, sets and rep ranges, in order. */
+    static boolean sameProgram(ProgramStore.Program one, ProgramStore.Program other) {
+        record Shape(String exerciseId, int sets, int repMin, int repMax) {
+        }
+        record DayShape(UUID id, String nameKey, String name, DayOfWeek weekday, List<Shape> moves) {
+        }
+        Function<ProgramStore.Program, List<DayShape>> shape = program -> program.days().stream()
+                .map(day -> new DayShape(day.id(), day.nameKey(), day.name(), day.weekday(), day.exercises().stream()
+                        .map(move -> new Shape(move.exerciseId(), move.sets(), move.repMin(), move.repMax())).toList()))
+                .toList();
+        return shape.apply(one).equals(shape.apply(other));
     }
 
     /**
@@ -213,9 +291,8 @@ class ProgramReviews {
      */
     static Outcome undo(List<Step> inForce, OptionalInt index, ProgramStore.Program current, ExerciseCatalog catalog, Parameters parameters) {
         int from = index.orElse(0);
-        List<String> later = index.isEmpty() ? List.of()
-                : inForce.subList(from + 1, inForce.size()).stream().map(step -> step.suggestion().id()).toList();
-        Outcome again = apply(inForce.get(from).before(), later, catalog, parameters);
+        List<Step> later = index.isEmpty() ? List.of() : inForce.subList(from + 1, inForce.size());
+        Outcome again = replay(inForce.get(from).before(), later, catalog, parameters);
         return new Outcome(carry(again.program(), current), again.steps(), again.skipped());
     }
 

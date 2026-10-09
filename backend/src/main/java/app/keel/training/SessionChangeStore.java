@@ -4,6 +4,7 @@ import app.keel.shared.AccountId;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -46,6 +47,12 @@ class SessionChangeStore {
     /** The changes to the weeks from the one of Monday {@code from} to the one of Monday {@code to}, oldest week first. */
     List<Row> between(AccountId account, LocalDate from, LocalDate to) {
         return rows(account, "and week_of between :from and :to", from, to);
+    }
+
+    /** The changes of these program days to the week of {@code monday} gone: the days re-lay that week (K-995). */
+    void clear(AccountId account, LocalDate monday, Set<UUID> programDays) {
+        programDays.forEach(day -> jdbc.sql("delete from training.session_change where account_id = :account and program_day_id = :day and week_of = :monday")
+                .param("account", account.value()).param("day", day).param("monday", monday).update());
     }
 
     /** Every change kept, oldest week first (the account's data, K-214). */
