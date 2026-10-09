@@ -4,6 +4,7 @@ import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Each reason's facts (K-1000, ADR-077 #3 "two reasons: the data and the rule"; contract ReasonFacts): the numbers its
@@ -27,6 +28,30 @@ final class ReasonFacts {
     private static final Set<String> STALLED = Set.of("plateau", "performance_red_flag");
     // A calorie step's size (its action's).
     private static final Set<String> STEP = Set.of("cut_step", "bulk_step", "rapid_loss", "loss_rate_cap");
+
+    /**
+     * The fact names a rule can carry, whatever a call kept: the placeholders its short line may use
+     * (decision.ruleShort.&lt;rule&gt;). {@link #of} gives exactly these when the call kept all it read.
+     */
+    static Set<String> keysOf(String rule) {
+        Set<String> keys = new TreeSet<>();
+        if (WINDOW.contains(rule)) {
+            keys.addAll(Set.of("kgPerWeek", "weeks"));
+        }
+        if (ADHERENCE.contains(rule) || FIRST_WEEK.contains(rule)) {
+            keys.addAll(Set.of("done", "planned"));
+        }
+        if (STALLED.contains(rule)) {
+            keys.add("sessions");
+        }
+        if (rule.equals("load_held_still_stalled") || rule.equals("plan_missed")) {
+            keys.add("weeks");
+        }
+        if (STEP.contains(rule)) {
+            keys.add("kcal");
+        }
+        return Set.copyOf(keys);
+    }
 
     static Map<String, Object> of(String rule, DecisionBasis basis, StoredSnapshot.FirstWeek firstWeek, Map<String, Object> call) {
         Map<String, Object> facts = new LinkedHashMap<>();

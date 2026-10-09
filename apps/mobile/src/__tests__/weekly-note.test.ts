@@ -22,6 +22,7 @@ const call = (action: Record<string, unknown>, extra: Partial<Schemas['Decision'
   copyKey: 'decision.adjust_calories.not_toward_goal',
   application: { state: 'PENDING' },
   declinable: false,
+  changes: [],
   ...extra,
 });
 
