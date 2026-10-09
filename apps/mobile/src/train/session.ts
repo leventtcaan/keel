@@ -36,31 +36,65 @@ export function clockText(seconds: number): string {
   return t('workout.clock.hours', { hours: Math.floor(minutes / 60), minutes: String(minutes % 60).padStart(2, '0'), seconds: secondsText });
 }
 
+/** A load as the stepper shows it: the number in the user's unit, as formatLoad writes it (75, 62.5, 137.8). */
+export function loadText(kg: number, units: UnitSystem): string {
+  return String(loadValue(kg, units));
+}
+
 /**
  * One tap of the weight stepper (K-971, ADR-075 #1): a pair of the smallest plates (set_load_step_kg or _lb, in the
- * user's unit). At the gym in use it lands on a load the gym makes: the one within the step (loadSteps.within, as the
- * calibration and the server round), else the next it makes past it; a gym that says nothing of this equipment takes the
- * plain step. Nothing yet starts from nothing (at a gym, the empty bar). Never under nothing; null where a tap would not
- * move it. Any other weight is typed.
+ * user's unit), onto that step's grid (137.8 lb goes to 140, not 142.8). At the gym in use it lands on a load the gym
+ * makes: the one within the step (loadSteps.within, as the calibration and the server round), else the next it makes past
+ * it; a gym that says nothing of this equipment takes the plain step. A tap always moves the shown number: a load that
+ * would show as the number shown now (a kg gym read in lb) is passed over. Nothing yet starts from nothing (at a gym, the
+ * empty bar). An external load never reaches 0 (no set is "0 kg"); an added load goes down to 0, the body alone. Null
+ * where a tap would not move it. Any other weight is typed.
  */
 export function stepLoad(kg: number | null, direction: 1 | -1, move: Schemas['Exercise'], gym: GymWeights | undefined, units: UnitSystem): number | null {
-  const from = kg ?? 0;
-  if (direction < 0 && from <= 0) return null;
+  if (direction < 0 && (kg ?? 0) <= 0) return null;
+  const shown = loadValue(kg ?? 0, units);
+  let from = kg ?? 0;
+  // At most a few loads the gym makes can show as one number (a quarter-pound rack read in kg): past them, one moves it.
+  for (let tries = 0; tries < STEP_TRIES; tries++) {
+    const next = gymStep(from, direction, move, gym, units);
+    if (next === null || next < 0 || (next === 0 && move.load === 'EXTERNAL')) return null;
+    if (loadValue(next, units) !== shown) return next;
+    from = next;
+  }
+  return null;
+}
+
+const STEP_TRIES = 4;
+
+/** One step from `fromKg`, on the step's grid in the user's unit, then onto what the gym makes. */
+function gymStep(fromKg: number, direction: 1 | -1, move: Schemas['Exercise'], gym: GymWeights | undefined, units: UnitSystem): number | null {
   const step = units === 'METRIC' ? workoutParams.loadStep.kg : workoutParams.loadStep.lb;
-  const plain = parseLoadKg(String(Math.max(0, loadValue(from, units) + direction * step)), units) ?? 0;
+  const steps = loadValue(fromKg, units) / step;
+  // Off the grid (typed), a step goes to the grid's next line; on it, to the one after (a hair off is on it).
+  const line = direction > 0 ? Math.floor(steps + GRID_SLACK) + 1 : Math.ceil(steps - GRID_SLACK) - 1;
+  if (line < 0) return null;
+  const plain = parseLoadKg(String(Math.round(line * step * 100) / 100), units) ?? 0;
   if (gym === undefined) return plain;
-  const found = within(move.equipment, move.id, gym, from, plain);
+  const found = within(move.equipment, move.id, gym, fromKg, plain);
   if (found.kind === 'to') return found.kg;
   if (found.kind === 'unknown') return plain;
-  if (direction < 0) return lighter(move.equipment, move.id, gym, from, plain);
-  const up = round(move.equipment, move.id, gym, from, plain);
+  if (direction < 0) return lighter(move.equipment, move.id, gym, fromKg, plain);
+  const up = round(move.equipment, move.id, gym, fromKg, plain);
   return up.kind === 'to' ? up.kg : null;
 }
 
-/** One tap of the reps stepper: one rep either way, from one to the most a set takes; nothing typed counts from none. */
+/** How far off a grid line a value may be and still sit on it: float error, far under the unit's last decimal. */
+const GRID_SLACK = 1e-6;
+
+/**
+ * One tap of the reps stepper: one rep either way, from one to the most a set takes; nothing typed counts from none, and
+ * more than the most comes down to it.
+ */
 export function stepReps(reps: string, direction: 1 | -1): number | null {
   const now = Number(reps.trim());
-  const next = (reps.trim() === '' || !Number.isInteger(now) ? 0 : now) + direction;
+  const from = reps.trim() === '' || !Number.isInteger(now) ? 0 : now;
+  if (direction < 0 && from > workoutParams.maxReps) return workoutParams.maxReps;
+  const next = from + direction;
   return next < 1 || next > workoutParams.maxReps ? null : next;
 }
 
@@ -100,7 +134,8 @@ export function parseEntry(
 
 /** The load typed, in kg as parseEntry reads it (the suggestion's own kg when left as shown); null when it is no load. */
 export function parseLoad(load: string, units: UnitSystem, suggestedKg: number | null): number | null {
-  if (suggestedKg !== null && load.trim() === weightInput(suggestedKg, units)) return suggestedKg;
+  // The suggestion, or the load a step set (K-971), as shown: its own kg, not the rounded number read back.
+  if (suggestedKg !== null && (load.trim() === weightInput(suggestedKg, units) || load.trim() === loadText(suggestedKg, units))) return suggestedKg;
   const kg = parseLoadKg(load, units);
   return kg === null || kg < 0 || kg > workoutParams.maxLoadKg ? null : kg;
 }

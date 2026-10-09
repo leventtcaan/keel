@@ -39,7 +39,7 @@ export function GoalLine({ planned, move }: { planned: Schemas['PlannedExercise'
 }
 
 const styles = StyleSheet.create({
-  goal: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.md, borderRadius: tokens.radius.card },
+  goal: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   grow: { flex: 1, gap: tokens.space.xs },
   kicker: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   value: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },

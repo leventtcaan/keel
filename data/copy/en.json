@@ -346,9 +346,7 @@
       "lessLoad": "Less weight",
       "moreLoad": "More weight",
       "lessReps": "Fewer reps",
-      "moreReps": "More reps",
-      "minus": "-",
-      "plus": "+"
+      "moreReps": "More reps"
     },
     "head": {
       "set": "#",
@@ -415,6 +413,7 @@
       "title": "Warm-up",
       "note": "Easy sets, nowhere near failure.",
       "log": "Log warm-up {number}",
+      "fold": "Warm-up, {count}",
       "done": "Done"
     },
     "plates": "{plates} {unit} a side",

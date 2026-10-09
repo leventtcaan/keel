@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
@@ -28,10 +29,15 @@ type Props = {
 /**
  * The move's warm-ups before its first work set (K-417, G1 K-17): each load with its plates a side when the gym in use
  * is known; the ones logged marked, and one tap logs the next — a warm-up, no RIR to pick, it is nowhere near failure.
+ * Folded to one line (its count and that one tap) so the set under way is in the first view (K-971); a tap opens the
+ * loads, and once one is logged they stay open.
  */
 export function Warmups({ move, warmups, done, gym, onLog, problem, problemOccurrence, busy }: Props) {
   const { color } = useTheme();
   const units = useUnits();
+  const [opened, setOpened] = useState<boolean | null>(null);
+  // Untouched, open once one is logged; a tap on the line decides from then on.
+  const open = opened ?? done > 0;
   const rows = warmups.map((warmup, index) => {
     const plates = platesLine(move, warmup.loadKg, gym);
     const mark = index < done ? <Text style={[styles.small, { color: color.accent }]}>{t('workout.warmup.done')}</Text> : null;
@@ -45,18 +51,34 @@ export function Warmups({ move, warmups, done, gym, onLog, problem, problemOccur
     );
   });
   const next =
-    done < warmups.length ? <Button label={t('workout.warmup.log', { number: done + 1 })} variant="ghost" onPress={onLog} disabled={busy} /> : null;
+    done < warmups.length ? <Button label={t('workout.warmup.log', { number: done + 1 })} variant="ghost" size="sm" onPress={onLog} disabled={busy} /> : null;
   const said = problem === null ? null : (
       <ProblemText style={[styles.text, { color: color.text }]} occurrence={problemOccurrence}>
         {problem}
       </ProblemText>
     );
-  return (
-    <View style={styles.block}>
-      <Text style={[styles.label, { color: color.text }]}>{t('workout.warmup.title')}</Text>
+  const count = warmups.length === 1 ? t('workout.setsOne') : t('workout.sets', { count: warmups.length });
+  const loads = open ? (
+    <>
       <Text style={[styles.small, { color: color.muted }]}>{t('workout.warmup.note')}</Text>
       {rows}
-      {next}
+    </>
+  ) : null;
+  return (
+    <View style={styles.block}>
+      <View style={styles.line}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('workout.warmup.fold', { count })}
+          accessibilityState={{ expanded: open }}
+          onPress={() => setOpened(!open)}
+          style={[styles.row, styles.grow, styles.touch]}>
+          <Text style={[styles.label, { color: color.text }]}>{t('workout.warmup.title')}</Text>
+          <Text style={[styles.small, { color: color.muted }]}>{count}</Text>
+        </Pressable>
+        {next}
+      </View>
+      {loads}
       {said}
     </View>
   );
@@ -65,6 +87,8 @@ export function Warmups({ move, warmups, done, gym, onLog, problem, problemOccur
 const styles = StyleSheet.create({
   block: { gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
+  line: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  touch: { minHeight: tokens.size.touch, alignItems: 'center' },
   grow: { flex: 1 },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },

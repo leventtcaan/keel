@@ -1,23 +1,27 @@
+import { SymbolView } from 'expo-symbols';
 import { type KeyboardTypeOptions, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
-import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { loadValue } from '@/units/units';
 
 import type { GymWeights } from './loadSteps';
 import { workoutParams } from './params';
-import { parseLoad, rirChoice, stepLoad, stepReps } from './session';
+import { loadText, parseLoad, rirChoice, stepLoad, stepReps } from './session';
 
 type Schemas = components['schemas'];
-/** As the edit screen's SetEntry: `note` null is the note field closed (one tap stays one tap); a string, open with what is typed. */
-export type Entry = { load: string; reps: string; rir: number; note: string | null };
+/**
+ * As the edit screen's SetEntry: `note` null is the note field closed (one tap stays one tap); a string, open with what
+ * is typed. `loadKg`: the kg the shown weight stands for when the phone set it (the suggestion, or a step to a load the
+ * gym makes), so it is stepped from and logged as that load and not as the rounded number read back (11.34 kg shows as
+ * 11.3); null once the user types.
+ */
+export type Entry = { load: string; loadKg: number | null; reps: string; rir: number; note: string | null };
 
 type Props = {
   move: Schemas['Exercise'];
@@ -27,8 +31,6 @@ type Props = {
   range: string | null;
   /** The work sets' aim for reps left (the plan's target RIR); null outside the plan. */
   aim: number | null;
-  /** The row's suggestion, in kg: a load left as shown is logged as the server set it. */
-  suggestedKg: number | null;
   gym: GymWeights | undefined;
   /** The plates a side for the load under way, in words; null without a gym or a load to make. */
   plates: string | null;
@@ -44,14 +46,14 @@ type Props = {
  * be typed too, filled with the suggestion; reps left picked from 0, 1 and 2+. A bodyweight move has no weight; a weighted
  * one steps what is added. The button that logs it is the screen's, in its dock, so it never moves.
  */
-export function ActiveSet({ move, heading, range, aim, suggestedKg, gym, plates, entry, onChange, problem, problemOccurrence }: Props) {
+export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onChange, problem, problemOccurrence }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
-  const kg = parseLoad(entry.load, units, suggestedKg);
+  const kg = parseLoad(entry.load, units, entry.loadKg);
   const loadStep = (direction: 1 | -1) => {
     const next = stepLoad(kg, direction, move, gym, units);
-    return next === null ? null : () => onChange({ load: String(loadValue(next, units)) });
+    return next === null ? null : () => onChange({ load: loadText(next, units), loadKg: next });
   };
   const repsStep = (direction: 1 | -1) => {
     const next = stepReps(entry.reps, direction);
@@ -63,7 +65,7 @@ export function ActiveSet({ move, heading, range, aim, suggestedKg, gym, plates,
         label={t(move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.addedLabel' : 'workout.loadLabel', { unit })}
         caption={unit}
         value={entry.load}
-        onChangeText={(text) => onChange({ load: text })}
+        onChangeText={(text) => onChange({ load: text, loadKg: null })}
         keyboardType="decimal-pad"
         maxLength={7}
         less={loadStep(-1)}
@@ -80,10 +82,15 @@ export function ActiveSet({ move, heading, range, aim, suggestedKg, gym, plates,
       </ProblemText>
     );
   // Closed until asked for: one tap stays one tap.
-  const noteField =
+  // Closed, a small link on the set's own line (no row of its own: the set stays in the first view on a small phone).
+  const addNote =
     entry.note === null ? (
-      <Button label={t('workout.note.add')} variant="ghost" size="sm" onPress={() => onChange({ note: '' })} />
-    ) : (
+      <Pressable accessibilityRole="button" onPress={() => onChange({ note: '' })} style={styles.link}>
+        <Text style={[styles.small, { color: color.accent }]}>{t('workout.note.add')}</Text>
+      </Pressable>
+    ) : null;
+  const noteField =
+    entry.note === null ? null : (
       <TextField
         label={t('workout.note.label')}
         value={entry.note}
@@ -95,8 +102,9 @@ export function ActiveSet({ move, heading, range, aim, suggestedKg, gym, plates,
   return (
     <View style={[styles.entry, { borderColor: color.text }]}>
       <View style={styles.head}>
-        <Text style={[styles.heading, { color: color.text }]}>{heading}</Text>
+        <Text style={[styles.heading, styles.grow, { color: color.text }]}>{heading}</Text>
         {range !== null && <Text style={[styles.small, { color: color.muted }]}>{range}</Text>}
+        {addNote}
       </View>
       <View style={styles.steppers}>
         {load}
@@ -148,7 +156,8 @@ type StepperProps = {
 /** Less, the number (typed in place: a weight no step reaches), more (prototype `.stepper`). */
 function Stepper({ label, caption, value, onChangeText, keyboardType, maxLength, less, more, lessLabel, moreLabel }: StepperProps) {
   const { color } = useTheme();
-  const button = (onPress: (() => void) | null, name: string, mark: string) => (
+  // Drawn, not a typed hyphen (prototype: the minus and plus icons); VoiceOver says the label.
+  const button = (onPress: (() => void) | null, name: string, symbol: 'minus' | 'plus') => (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={name}
@@ -156,12 +165,12 @@ function Stepper({ label, caption, value, onChangeText, keyboardType, maxLength,
       disabled={onPress === null}
       onPress={onPress ?? undefined}
       style={({ pressed }) => [styles.step, { backgroundColor: color.background }, (pressed || onPress === null) && styles.dim]}>
-      <Text style={[styles.mark, { color: color.text }]}>{mark}</Text>
+      <SymbolView name={symbol} size={tokens.type.number} tintColor={color.text} />
     </Pressable>
   );
   return (
     <View style={[styles.stepper, { backgroundColor: color.surface }]}>
-      {button(less, lessLabel, t('workout.stepper.minus'))}
+      {button(less, lessLabel, 'minus')}
       <View style={styles.value}>
         <TextInput
           accessibilityLabel={label}
@@ -174,21 +183,24 @@ function Stepper({ label, caption, value, onChangeText, keyboardType, maxLength,
         />
         <Text style={[styles.caption, { color: color.muted }]}>{caption}</Text>
       </View>
-      {button(more, moreLabel, t('workout.stepper.plus'))}
+      {button(more, moreLabel, 'plus')}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  entry: { gap: tokens.space.md, padding: tokens.space.md, borderWidth: tokens.border.outline, borderRadius: tokens.radius.card },
-  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: tokens.space.sm },
+  // Tight enough for the whole set to be in the first view on an iPhone SE (K-971 simulator).
+  entry: { gap: tokens.space.sm, padding: tokens.space.sm, borderWidth: tokens.border.outline, borderRadius: tokens.radius.card },
+  head: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.md },
+  grow: { flexGrow: 1 },
+  link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   steppers: { flexDirection: 'row', gap: tokens.space.sm },
-  stepper: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: tokens.space.xs, borderRadius: tokens.radius.card },
+  stepper: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: tokens.radius.card },
   step: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
-  mark: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
-  value: { flex: 1, alignItems: 'center' },
-  number: { alignSelf: 'stretch', textAlign: 'center', fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, padding: 0 },
+  value: { flex: 1, minWidth: 0, alignItems: 'center' },
+  // Heading size: "102.5" (and "226.5" lb) fits between the two buttons on a 375 pt wide phone.
+  number: { alignSelf: 'stretch', textAlign: 'center', fontFamily: tokens.font.display, fontSize: tokens.type.heading, padding: 0 },
   caption: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   rir: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.sm },
   rirLabel: { flex: 1, minWidth: tokens.size.primaryButton * 2 },

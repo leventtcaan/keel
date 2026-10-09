@@ -19,12 +19,14 @@ type Case = {
   expect: number | string;
 };
 type PlateCase = { case: string; baseKg: number; platesKg: number[]; totalKg: number; expect: number[] | null };
+type LighterCase = Pick<Case, 'case' | 'equipment' | 'exerciseId' | 'gym'> & { fromKg: number; targetKg: number; expect: number | null };
 type WithinCase = Pick<Case, 'case' | 'equipment' | 'exerciseId' | 'gym'> & { fromKg: number; toKg: number; expect: number | null | 'UNKNOWN' };
 
 const fixture = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../../contracts/fixtures/load-steps.json'), 'utf8')) as {
   round: Case[];
   platesPerSide: PlateCase[];
   within: WithinCase[];
+  lighter: LighterCase[];
 };
 
 const gym = (g: Case['gym']): GymWeights => ({
@@ -79,18 +81,8 @@ describe('the plates a side for a load, by what the move is made of', () => {
   });
 });
 
-// The backend's LoadSteps.lighter on the phone (K-971: the weight stepper going down where the gym makes nothing within a step).
-describe('a step back the gym makes: the heaviest load at or under the target and lighter than the load', () => {
-  const GYM: GymWeights = { barKg: 20, platesKg: [20, 10, 5], dumbbellsKg: [10, 12, 14], stackStepKg: 5, machineStepsKg: {} };
-
-  test('plates, dumbbells, a stack', () => {
-    expect(lighter('BARBELL', 'bench_press', GYM, 100, 97.5)).toBe(90);
-    expect(lighter('DUMBBELL', 'curl', GYM, 14, 11.5)).toBe(10);
-    expect(lighter('MACHINE', 'leg_extension', GYM, 50, 47.5)).toBe(45);
-  });
-
-  test('none so light, or nothing known of the equipment', () => {
-    expect(lighter('BARBELL', 'bench_press', GYM, 20, 17.5)).toBeNull();
-    expect(lighter('CABLE', 'cable_row', { ...GYM, stackStepKg: null }, 50, 47.5)).toBeNull();
-  });
+// The backend's LoadSteps.lighter (K-971: the weight stepper going down where the gym makes nothing within a step): the
+// same cases the backend runs.
+test.each(fixture.lighter.map((c) => [c.case, c] as const))('a step back: %s', (_name, c) => {
+  expect(lighter(c.equipment as never, c.exerciseId, gym(c.gym), c.fromKg, c.targetKg)).toBe(c.expect);
 });
