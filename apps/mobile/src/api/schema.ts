@@ -483,8 +483,10 @@ export interface paths {
         };
         /**
          * What is left of the day's target, as a range (target minus the logged range)
-         * @description NOT_FOUND until the user has a target (set by calls, K-216). Health data: CONSENT_REQUIRED without the
-         *     HEALTH_DATA consent, as for every /v1/meals route.
+         * @description The target in force (set by calls, K-216); before the first call, the starting target the first call will start
+         *     the plan with (GET /v1/targets/starting, K-997, ADR-072 Ek 1): the first week has "Food today" and "Food left" too,
+         *     worked out here, never on the phone. NOT_FOUND with neither (no weigh-in yet, no profile, or a plan begun without
+         *     a weigh-in). Health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/meals route.
          */
         get: operations["getDayBudget"];
         put?: never;
@@ -2008,7 +2010,7 @@ export interface components {
         DayBudget: {
             /** Format: date */
             day: string;
-            /** @description The day's target (a plan number, one figure). */
+            /** @description The day's target (a plan number, one figure); before the first call, the starting target (K-997). */
             targetKcal: number;
             eaten: components["schemas"]["Nutrients"];
             left: components["schemas"]["Left"];
@@ -2650,6 +2652,12 @@ export interface components {
             /** Format: uuid */
             workoutId: string;
             /**
+             * @description "What moved" (ADR-075 #7, K-1008): each move of the session, in the order first done, its best working set
+             *     against its best in the last earlier session of the same program day (the session liftedChangePercent compares
+             *     with), or a move that session did not have against its own last session (MoveChange). This server always sends it.
+             */
+            moves: components["schemas"]["MoveChange"][];
+            /**
              * @description The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
              *     Absent while the session is open, and once closed by itself (K-961: endedAt = startedAt, its length unknown).
              */
@@ -2657,7 +2665,8 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
+             *     (at least one rep: a session of skipped sets only is none), in
              *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
              *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
              */
@@ -2676,6 +2685,26 @@ export interface components {
              *     sessions not counted) — the one muscle map, ADR-078 #4.
              */
             muscles: components["schemas"]["MuscleSets"][];
+        };
+        /**
+         * @description A move's best working set this session (the heaviest, then the most reps, then the fewest left; a set of no reps
+         *     never counts; sides are one history; the load as logged, a bodyweight move's added load) against its best in the
+         *     last earlier session of the same program day with a set done; a move that session did not have (swapped in today,
+         *     swapped out then, added, skipped) against its own last session on any day (it has its own history, K-964). LOAD: another load, `by` the difference in kg (negative when
+         *     lighter). REPS: the same load, `by` the difference in reps (negative when fewer). SAME: the same load and reps.
+         *     HELD: the same load of a compound move while the weekly call holds the load. FIRST: the move has no earlier
+         *     session at all. No estimated max (B10).
+         */
+        MoveChange: {
+            exerciseId: string;
+            best: {
+                loadKg: number;
+                reps: number;
+            };
+            /** @enum {string} */
+            change: "LOAD" | "REPS" | "SAME" | "HELD" | "FIRST";
+            /** @description LOAD in kg, REPS in reps; absent otherwise. */
+            by?: number;
         };
         /**
          * @description RECORD (ADR-075 Ek 2): a working set no earlier working set of the move dominates (none at least as heavy with
@@ -2891,6 +2920,7 @@ export interface components {
              *     nor missed, and the record leaves it out.
              */
             paused?: boolean;
+            weightChange?: components["schemas"]["WeightChange"];
             /** @description Weeks over since the first call; a week is on track at on_track_min_ratio (K-111). Never reset. */
             record: {
                 onTrackWeeks: number;
@@ -2903,6 +2933,21 @@ export interface components {
                  */
                 forgivenWeeks: number;
             };
+        };
+        /**
+         * @description The period's weight change (K-988, ADR-078 #2, Ek 1, U8): today's trend weight (the trend_display_days average
+         *     ending today) minus the one ending on `since`, the day the record began (the first call); never one day's weigh-in.
+         *     Below zero is a loss. `direction`: STEADY while the change is within the engine's flat_margin_kg (the scale's noise,
+         *     as a call reads a flat week), else DOWN or UP; the app writes the sentence from it ("Down 3.8 kg."), the server
+         *     sends none. Absent unless each window holds min_weighins_per_week weigh-ins (scaled to the window) and they do not
+         *     overlap. Weigh-ins typed or read from Apple Health count; history imported once (IMPORT) does not.
+         */
+        WeightChange: {
+            kg: number;
+            /** @enum {string} */
+            direction: "DOWN" | "UP" | "STEADY";
+            /** Format: date */
+            since: string;
         };
         /** @description One kind of planned action this week; done is counted up to planned. */
         ActionCount: {

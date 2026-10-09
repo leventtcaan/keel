@@ -38,7 +38,8 @@ const SAID: Record<SendProblem, string> = {
  * asked; the answers go once, under one clientId made for this screen, and the engine makes the week's call — then back
  * to Today, which reads it. The answers live on this screen only: no queue, no store, no log (V4 — CYCLE_STOPPED's
  * answer is not kept at all, ADR-020 L-1); a send that fails leaves them here to send again. A 409 is the week having
- * moved or its call already made: the check-in is read again and its answers start over.
+ * moved or its call already made: the check-in is read again and its answers start over. The call made, its screen
+ * takes the check-in's place (K-978, flow C2).
  */
 export default function CheckInScreen() {
   const { api, report } = useAppServices();
@@ -87,7 +88,7 @@ export default function CheckInScreen() {
     try {
       const result = await sendAnswers(api, { clientId, weekOf: current.weekOf, answers });
       if ('call' in result) {
-        if (here.current) router.back();
+        if (here.current) router.replace('/call');
         return;
       }
       report({ name: result.problem });

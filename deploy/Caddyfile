@@ -12,3 +12,6 @@
 	}
 	reverse_proxy backend:8080
 }
+
+# Other sites on this server (K-1010): one *.caddy file each in /opt/sites, outside keel's deploy. An empty folder is fine.
+import /etc/caddy/sites/*.caddy

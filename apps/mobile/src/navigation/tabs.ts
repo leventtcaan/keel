@@ -29,4 +29,4 @@ export const TABS: readonly TabRoute[] = [
  * holds them behind a guard that is never true). The coach and the meal photo among them: with the AI off, no dead end
  * (K-909). Order as in the root layout.
  */
-export const RETIRED = ['food', 'coach', 'meal-photo', 'recipes', 'recipe', 'why', 'scoff', 'projection', 'ledger', 'what-if'] as const;
+export const RETIRED = ['food', 'coach', 'meal-photo', 'recipes', 'recipe', 'why', 'scoff', 'projection', 'ledger', 'what-if', 'workout-summary'] as const;

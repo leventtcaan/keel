@@ -24,6 +24,7 @@ import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
 import { type Opens, createOpens } from '@/today/opens';
 import { type SessionPause, createSessionPause } from '@/train/pause';
+import { type SetEdits, createSetEdits } from '@/train/setEdits';
 import { type SessionSkips, createSessionSkips } from '@/train/skips';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
@@ -32,7 +33,7 @@ import { noPhotoCache, type PhotoCache } from '@/food/photo';
 import type { AppleReauth } from '@/session/appleSignIn';
 import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } from '@/photos/library';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
-import { sendWithApi } from '@/sync/send';
+import { newClientId, sendWithApi } from '@/sync/send';
 import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
 import { type AppearancePreference, createAppearance } from '@/theme/appearance';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
@@ -111,6 +112,8 @@ export type AppServices = {
   training: TrainingCache;
   /** The phone's workouts, their sets and their finishes, sent or not (K-405): the session is built from them. */
   workoutRecords(): Promise<LocalRecord[]>;
+  /** A set of the session corrected or deleted, on the phone and on the server, never two versions of it (K-972). */
+  workoutEdits: SetEdits;
   /** The phone's meals, sent or not (K-407): today's list shows a meal saved offline at once. */
   mealRecords(): Promise<LocalRecord[]>;
   /** Forgets the phone's copy of a record the server no longer has (a meal corrected or deleted, K-407). */
@@ -337,6 +340,16 @@ export async function createAppServices({
     },
     pendingCount: store.pendingCount,
     workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
+    workoutEdits: createSetEdits({
+      store,
+      queue,
+      newClientId,
+      deleteOnServer: async (id, setId) => {
+        const { response } = await api.DELETE('/v1/workouts/{id}/sets/{setId}', { params: { path: { id, setId } } });
+        // Gone already is gone.
+        if (!response.ok && response.status !== 404) throw Object.assign(new Error(`HTTP_${response.status}`), { name: 'DeleteRefused' });
+      },
+    }),
     mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
     forgetRecord: store.forgetClient,
     claimPhotos: async (owner: string) => {

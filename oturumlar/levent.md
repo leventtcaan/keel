@@ -212,3 +212,10 @@
 - sıradaki: `YENI-YUZ-part2-devam.md` — #475 birleşti mi, Levent `#ob-type` onayı → #479, prototip tur 2'yi commit + yayımla, K-986/K-990/K-991, Part 2 ÇIKIŞ
 - AI: bütün kod, test, inceleme ve prototip agent (ana oturum + ~10 uygulayıcı + ~20 inceleme/yürüyüş alt ajanı); Levent 14 soruyu cevapladı, prototipi değerlendirdi
 - ek (8 Eki gece, Part 2 sonu): Levent `#ob-type`'ı onayladı → #479; K-986 #483, K-990 #485 #487 (V42), K-991 #484 (V43) birleşti; yeni kartlar K-992, K-993 (Levent: geç dönüşte görülmemiş günler sayılmaz), K-994. **Part 2 BİTTİ**; sıradaki Part 3 · Ana ekranlar
+
+## 2026-10-09 · M9a Part 3 (Ana ekranlar) — toplu mod, paralel ajanlar; yeni session'a devredildi
+- yaptım: ~30 PR birleşti (#490-#523): Bu hafta (şerit, kahraman, bugünün kartı, sunucu durumu), Antrenman + Change + swap + Edit + kardiyo, oturum odak modu + aktif set + Pause + atlama + set düzelt/sil (çevrimdışı kuyruk yarışı), kutlama + kas haritası, ilk hatırlatma, gün adı hatası (M4'ten beri), kilo değişimi; arka uç K-995 (undo, today, movePreview, PATCH V46), K-998 (seansı at, duraklama, başlangıç ağırlığı V45); simülatör düzeneği (fikstür + oturum yaması)
+- karar: Levent — K1 test değişiklikleri (6) onaylı, ADR'ye dayalı olanlar part sonunda toplu sorulur. Agent — ADR-075 Ek 3/4/5, ADR-073 Ek 5-7, ADR-077 Ek 3 (kısmi), ADR-078 Ek 1; varsayılan uygulanır sunucuda; split Levent'e
+- takıldım: prototip sözleşmede olmayan alanlara dayanıyordu → 8 yeni arka uç kartı ortada çıktı (K-995..K-1009); yığılı PR + squash çakışmaları; her PR 2-3 inceleme turu (gerçek hatalar: veri kaybı, kilitlenme, kuyruk yarışı); iki token duraklaması
+- sıradaki: `plan/oturum-promptlari/YENI-YUZ-part3-devam-2.md` (yeni session prompt'u başında): açık PR'lar #519 #524 #525 #526 #527, K-1000 → K-978 PR2, K-972 P4 → K-973, Days/Moves, telefon parçaları, persona yürüyüşü, ÇIKIŞ
+- AI: bütün kod, test, inceleme ve kararlar agent (düzenleyici + 4 uygulayıcı + ~35 inceleme/doğrulama alt ajanı); Levent K1 listesini onayladı, iki kez duraklattı

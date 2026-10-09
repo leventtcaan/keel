@@ -66,6 +66,7 @@ services:
       - "443:443/udp"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/sites:/etc/caddy/sites:ro  # other sites on this server (K-1010)
       - caddy-data:/data
       - caddy-config:/config
     depends_on: [backend]

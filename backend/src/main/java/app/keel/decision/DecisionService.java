@@ -432,8 +432,20 @@ class DecisionService {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Week week = week(account);
-        InitialTarget.Estimate estimate = startingEstimate(week).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return StartingTarget.of(firstPlan(week), estimate, week.parameters());
+        Starting starting = starting(week).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return StartingTarget.of(starting.plan(), starting.estimate(), week.parameters());
+    }
+
+    /** The first plan as the first call would start it, and the estimate its target comes from (K-989). */
+    private record Starting(CallStore.Plan plan, InitialTarget.Estimate estimate) {
+    }
+
+    /**
+     * The one computation of the starting target (K-989, K-997): GET /v1/targets/starting and the first week's budget read
+     * it alike. None without a weigh-in in the evaluation window.
+     */
+    private Optional<Starting> starting(Week week) {
+        return startingEstimate(week).map(estimate -> new Starting(firstPlan(week), estimate));
     }
 
     /**
@@ -622,13 +634,25 @@ class DecisionService {
      * consent; NOT_FOUND before the first call, when nothing is planned yet.
      */
     @Transactional(readOnly = true)
-    WeekLogs.Now consistency(AccountId account) {
+    ConsistencyNow consistency(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         CallStore.Plan plan = calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         Week week = week(account);
         LocalDate firstCall = calls.firstMadeOn(account).orElse(plan.phaseStart());
-        return logs.consistency(account, week.profile(), week.today(), plan, firstCall, bodyweight(account, week), week.body().ageYears(),
+        WeekLogs.Now now = logs.consistency(account, week.profile(), week.today(), plan, firstCall, bodyweight(account, week), week.body().ageYears(),
                 week.parameters());
+        // The period's weight change (K-988, ADR-078 Ek 1): from the trend window ending on the record's first day to today's.
+        int window = week.parameters().wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
+        // The two windows only, not the whole period (#522): the one ending on the record's first day and today's.
+        List<WeighIn> windows = new ArrayList<>(measurements.dailyWeights(account, firstCall.minusDays(window - 1L), firstCall));
+        measurements.dailyWeights(account, week.today().minusDays(window - 1L), week.today()).stream()
+                .filter(weighIn -> weighIn.date().isAfter(firstCall)).forEach(windows::add);
+        WeightSeries weights = new WeightSeries(windows);
+        return new ConsistencyNow(now, firstCall, WeightChange.of(weights, firstCall, week.today(), week.parameters()));
+    }
+
+    /** This week's consistency and the record (K-420), and the period's weight change since the record began (K-988). */
+    record ConsistencyNow(WeekLogs.Now now, LocalDate since, Optional<WeightChange.Change> weightChange) {
     }
 
     /**
@@ -705,6 +729,28 @@ class DecisionService {
         return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), planned.perWeek(account, week.profile()),
                 week.parameters())
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));
+    }
+
+    /**
+     * The food budget's targets (K-209's DailyTargets, K-997), in one read so a first call written meanwhile is seen whole:
+     * the targets in force; before the first call (no plan made), the ones the first plan would start with — the starting
+     * target (as GET /v1/targets/starting) and its protein, on today's inputs. None without them: no weigh-in, or a profile
+     * the engine cannot read (none, or born this year: the budget's documented NOT_FOUND, not a conflict).
+     */
+    @Transactional(readOnly = true)
+    Optional<PlanTargets> targetsOrStarting(AccountId account) {
+        return PlanDailyTargets.choose(targetsNow(account), calls.plan(account).isPresent(), () -> startingTargets(account));
+    }
+
+    private Optional<PlanTargets> startingTargets(AccountId account) {
+        Week week;
+        try {
+            week = week(account);
+        } catch (ApiException unreadable) {
+            return Optional.empty();
+        }
+        return starting(week).flatMap(first -> bodyweight(account, week).flatMap(kg -> PlanTargets.of(first.plan(), kg, week.sex(),
+                week.body().ageYears(), planned.perWeek(account, week.profile()), week.parameters())));
     }
 
     /**

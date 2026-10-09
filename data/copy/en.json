@@ -135,7 +135,6 @@
     },
     "hero": {
       "openCall": "Open the call",
-      "hideCall": "Hide the call",
       "start": "Your start",
       "firstWeek": "First week",
       "weighIn": "Weigh in most mornings.",
@@ -203,6 +202,27 @@
       "allow": "Allow",
       "allowLabel": "Allow health data in Settings"
     }
+  },
+  "callScreen": {
+    "back": "This week",
+    "backProgress": "Progress",
+    "inPlan": "In this week's plan",
+    "applied": "Applied",
+    "subscription": "Your weekly call comes with a subscription.",
+    "none": "No call yet. Your first one comes after your first check-in.",
+    "notApplied": "Not applied. Kept on record.",
+    "undone": "Undone. Your plan is back as it was.",
+    "confidence": "Confidence {level}",
+    "level": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High" },
+    "nextCall": "Next call {date}",
+    "gotIt": "Got it",
+    "keep": "Keep last week's plan",
+    "use": "Use this call",
+    "keepFailed": "Not changed: no connection. Try again in a moment.",
+    "keepRefused": "This call can't be changed any more.",
+    "keepError": "Not changed: something went wrong on our side. Try again in a moment.",
+    "failed": "Couldn't load this call. Check your connection.",
+    "retry": "Try again"
   },
   "today": {
     "prompt": {
@@ -497,7 +517,17 @@
     "setSkipped": "Set skipped. No catch-up needed.",
     "moveSkipped": "Move skipped. No catch-up needed.",
     "undo": "Undo",
-    "undoLabel": "Undo the skip",
+    "undoLabel": "Undo",
+    "setDeleted": "Set deleted.",
+    "editHint": "Opens it to correct or delete.",
+    "undoFailed": "That couldn't be undone. Try again.",
+    "edit": {
+      "title": "Set {number}",
+      "delete": "Delete set",
+      "done": "Done",
+      "offline": "This set is already sent. Changing it needs a connection.",
+      "failed": "That set couldn't be changed. Try again."
+    },
     "moveIsSkipped": "Skipped today. No catch-up needed.",
     "bringBack": "Bring it back",
     "clock": {
@@ -682,6 +712,37 @@
     "back": "Back",
     "offline": "Saving a move needs a connection. Try again when you're online.",
     "refused": "This move could not be saved. Try again."
+  },
+  "workoutEnd": {
+    "title": "Workout complete",
+    "minutes": { "one": "minute", "other": "minutes" },
+    "liftedKg": "kg lifted",
+    "liftedLb": "lb lifted",
+    "change": "{percent}% vs last time",
+    "sets": { "one": "set", "other": "sets" },
+    "kcal": "kcal",
+    "watch": "Apple Watch",
+    "record": "{move} {set}",
+    "recordKicker": "Record",
+    "recordNext": "Best ever. Next: {set}.",
+    "recordBest": "Best ever.",
+    "set": "{load} × {reps}",
+    "baseline": "Baseline set",
+    "baselineBody": "Next time every set has a target to beat.",
+    "worked": "Worked today",
+    "thisWeek": "This week",
+    "week": "{done} of {planned}",
+    "weekLabel": "This week: {done} of {planned} sessions",
+    "share": "Share your workout",
+    "done": "Done",
+    "pending": "Your numbers show once this workout reaches the server. It's saved on this phone.",
+    "failed": "Your numbers couldn't load.",
+    "retry": "Try again",
+    "ready": "Your numbers are in."
+  },
+  "muscleMap": {
+    "label": "Muscle map, sets this week: {muscles}",
+    "item": "{muscle} {done} of {target}"
   },
   "summary": {
     "title": "Workout done",

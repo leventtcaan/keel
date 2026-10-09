@@ -97,6 +97,50 @@ class StartingTargetApiTests {
     }
 
     @Test
+    void beforeTheFirstCallTheDaysBudgetIsTheStartingTargetsAndThenThePlans() throws Exception {
+        // K-997 (ADR-072 Ek 2): the first week has "Food today" and "Food left" from the server too.
+        AccountId account = onboarded("MALE");
+        Object starting = map(send(account, "GET", "/v1/targets/starting", null)).get("targetKcal");
+        String today = LocalDate.now(ZoneOffset.UTC).toString();
+
+        MvcTestResult budget = send(account, "GET", "/v1/days/" + today + "/budget", null);
+
+        assertThat(budget).hasStatusOk();
+        assertThat(map(budget)).containsEntry("day", today).containsEntry("targetKcal", starting).containsKeys("eaten", "left");
+        assertThat(jdbc.sql("select count(*) from decision.plan where account_id = :a").param("a", account.value()).query(Integer.class).single())
+                .as("reading it starts no plan").isZero();
+        // Nothing eaten yet: all of the target is left, kcal and protein, worked out on the server (U5).
+        Map<?, ?> left = (Map<?, ?>) map(budget).get("left");
+        assertThat(left.get("kcal")).isEqualTo(Map.of("low", starting, "high", starting));
+        Object protein = left.get("proteinG");
+        assertThat(protein).isNotNull();
+        // The first call starts the plan with the same number: the budget reads the plan's from then on, its protein too.
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "weekOf",
+                CheckInWeek.weekOf(LocalDate.now(ZoneOffset.UTC), DayOfWeek.MONDAY).toString(), "answers", List.of()))).hasStatusOk();
+        Map<String, Object> after = map(send(account, "GET", "/v1/days/" + today + "/budget", null));
+        assertThat(after).containsEntry("targetKcal", starting);
+        assertThat(((Map<?, ?>) after.get("left")).get("proteinG")).as("the same protein, before the first call and after").isEqualTo(protein);
+        assertThat(protein).isEqualTo(Map.of("low", map(send(account, "GET", "/v1/targets", null)).get("proteinG"), "high",
+                map(send(account, "GET", "/v1/targets", null)).get("proteinG")));
+    }
+
+    @Test
+    void withoutAStartingTargetThereIsNoBudgetAndWithoutTheConsentItIsNotRead() throws Exception {
+        String today = LocalDate.now(ZoneOffset.UTC).toString();
+        AccountId noWeighIn = TestSessions.newAccount();
+        consent(noWeighIn);
+        send(noWeighIn, "PUT", "/v1/profile", profile("MALE"));
+        AccountId noProfile = TestSessions.newAccount();
+        consent(noProfile);
+
+        assertThat(send(noWeighIn, "GET", "/v1/days/" + today + "/budget", null)).hasStatus(404);
+        assertThat(send(noProfile, "GET", "/v1/days/" + today + "/budget", null)).hasStatus(404);
+        AccountId withdrawn = onboarded("MALE");
+        send(withdrawn, "DELETE", "/v1/consents/HEALTH_DATA?confirmDataDeletion=true", null);
+        assertThat(send(withdrawn, "GET", "/v1/days/" + today + "/budget", null)).hasStatus(403);
+    }
+
+    @Test
     void theScaleWatchesForTheDaysTheParametersGiveTheUsersSex() throws Exception {
         AccountId account = onboarded("FEMALE");
 

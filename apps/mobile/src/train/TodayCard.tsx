@@ -29,7 +29,7 @@ type Props = {
   status: SessionStatus;
   /** The program is the copy kept offline: its Undo and its full-workout offer were the server's then, not now. */
   stale: boolean;
-  /** The session the server moved off today (`movedFrom`), when today has none. */
+  /** The session the server moved off today (moved and still undoable: movedOffToday), when today has none. */
   movedAway: Found | null;
   moves: ReadonlyMap<string, Move>;
   units: UnitSystem;
@@ -49,10 +49,12 @@ const weekdayShort = (date: string) => t(`programEditor.weekdayShort.${weekdayOf
 /**
  * Today's session (K-970, prototype `#train` › `.card.ink`): the session the server put on today, by its day's name;
  * each move with its image, sets × reps, the next load the server set and "held" while loads are held; today's cardio
- * after lifting; Start and Change. Done today (the server's `workout` DONE), it says so and offers nothing; under way,
- * "Continue workout". Skipped or moved off today, it says so (where it went is the server's `movedFrom`), with Undo
- * while the server says it can be (`undoable`); the short version offers the full workout back. A week off, or a day
- * without a session, is rest. Today is the server's (`Program.today`), never the phone's clock. Every number is the server's.
+ * after lifting; Start and Change. Done today, under way on this phone or on another (sessionState: the phone's
+ * records first, then the server's word), it says so; under way here, "Continue workout". Skipped or moved off today,
+ * it says so (where it went is the date of the session moved and still undoable), with Undo while the server says it
+ * can be (`undoable`, never from a copy kept offline); the short version offers the full workout back. A week off, or a
+ * day without a session, is rest. Today is sessionState's (the server's, the phone's day for a kept copy). Every number
+ * is the server's.
  */
 export function TodayCard(props: Props) {
   return (

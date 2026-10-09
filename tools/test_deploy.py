@@ -146,6 +146,12 @@ class Retention(unittest.TestCase):
         self.assertFalse([d for d in directives if re.match(r"log\b", d)])
         self.assertIn("reverse_proxy backend:8080", directives)
 
+    def test_caddy_imports_other_sites_read_only(self):
+        caddyfile = (DEPLOY / "Caddyfile").read_text()
+        self.assertIn("import /etc/caddy/sites/*.caddy", caddyfile.splitlines())
+        mounts = {(v["source"], v["target"], v.get("read_only")) for v in compose()["services"]["caddy"]["volumes"]}
+        self.assertIn(("/opt/sites", "/etc/caddy/sites", True), mounts)
+
     def test_the_backup_runs_daily_and_catches_up(self):
         timer = (DEPLOY / "keel-backup.timer").read_text()
         self.assertRegex(timer, r"(?m)^OnCalendar=\*-\*-\* \d\d:\d\d:00 UTC$")

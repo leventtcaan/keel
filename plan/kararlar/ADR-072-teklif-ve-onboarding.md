@@ -86,3 +86,13 @@ girilmeyende hedef kilo yok · copy testi: onboarding anahtarlarında kelime bü
   var mı" diye bakan her okuyucu (tutarlılık, ilk haftalar, projeksiyon, faz) değişir; (b) `/v1/targets`'a alan eklemek: o uç "şu an izlediğin" demek,
   onu kararlar değiştirir.
 - Sonra: K-990 ilk karar tarihini bu cevaba ekleyebilir (telefon tarihi hesaplamasın, ADR-075 #3).
+
+## Ek 2 · İlk haftanın günlük bütçesi başlangıç hedefinden (K-997, 2026-10-09, agent, teknik)
+- `GET /v1/days/{day}/budget` ilk karardan önce (hiç plan yokken) başlangıç hedefini okur: ilk kararın planı başlatacağı hedef
+  (`/v1/targets/starting` ile aynı hesap, aynı girdilerle aynı sayı, U1) ve onun proteini (hedeflerin kendi hesabı, `PlanTargets`). Kalan
+  aralık sunucuda (U5); telefon çıkarma yapmaz. Rıza yoksa 403 aynen; başlangıç hedefi de yoksa (tartı yok, profil yok, ya da tartısız
+  başlamış plan) 404 aynen. İlk karar planı başlatınca bütçe planın hedefini okur (bugünkü yol).
+- Yer: decision'ın `DailyTargets` sağlayıcısı (`PlanDailyTargets` → `DecisionService.targetsOrStarting`, tek `readOnly` okuma: ilk karar
+  yazılırken geçici 404 yok); nutrition yine yalnız arayüzünü bilir (bağımlılık tek yönlü). Başlangıç hedefini `/v1/targets/starting` ile
+  aynı özel yöntem hesaplar (`starting`). Motorun okuyamadığı profil (yok ya da bu yıl doğmuş) bütçede çatışma değil, belgelenen 404.
+- Reddedilen: telefonun başlangıç hedefinden kalanı çıkarması (telefon kural işletmez) · ilk hafta için ayrı uç (bütçe zaten günün hedefi).
