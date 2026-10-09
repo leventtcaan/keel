@@ -2983,6 +2983,37 @@ export interface components {
              *     call that changes nothing, an older one, one undone or already declined. POST /v1/decisions/{id}/decline.
              */
             declinable: boolean;
+            /**
+             * @description What the call changes in the plan, old to new (K-1000, ADR-077 #3 "the targets that change"): each target it
+             *     moves, as the plan held it before the call and as the call sets it. Read from the call as kept: once applied, the
+             *     plan before and after it; not applied yet, the plan now and the plan it would set. Empty for a call that changes
+             *     no target (advice, "not yet", a program call: the program's own change is its words). Declined, each change also
+             *     says `inForce`: the value the plan follows now (last week's).
+             */
+            changes: components["schemas"]["DecisionChange"][];
+            /**
+             * @description On the call that closes the first week only (ADR-077 #4, K-1000): the days the scale is watched before the first
+             *     calorie call (the engine's maintenance_observation_days for the user's sex), for "Food and weight wait until day
+             *     N". Absent on every other call.
+             */
+            observationDays?: number;
+        };
+        /**
+         * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
+         *     that kind (`kcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
+         */
+        DecisionChange: {
+            /** @enum {string} */
+            what: "CALORIES" | "STEPS" | "PHASE";
+            before: components["schemas"]["ChangeValue"];
+            after: components["schemas"]["ChangeValue"];
+            inForce?: components["schemas"]["ChangeValue"];
+        };
+        /** @description A target's value, in the field of its kind (DecisionChange.what). */
+        ChangeValue: {
+            kcal?: number;
+            stepsPerDay?: number;
+            phase?: components["schemas"]["Phase"];
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
@@ -3116,6 +3147,10 @@ export interface components {
          *     applied; declinedAt while it is, and appliedAt with it when it had been applied before. Used after all, it is
          *     APPLIED again. The first week's training-day calls (ADD_TRAINING_DAY, MOVE_MISSED_SESSIONS) are NOT_NEEDED and
          *     not declinable: the days are the user's to pick, with the training days, not through apply (ADR-077 Ek 1).
+         *     Applied by default (ADR-077 #3, B11; K-1000): a call made by the check-in's answers that changes the plan comes
+         *     back APPLIED, through the same apply as POST /v1/decisions/{id}/apply (a safety call too; it is never declinable).
+         *     PENDING is left only when that apply cannot move the plan at that moment (another call moved it meanwhile, a
+         *     program call without a program); the app then offers "Use this call".
          */
         Application: {
             /** @enum {string} */
@@ -3281,7 +3316,9 @@ export interface components {
         /**
          * @description The first week's call (ADR-077 #4): every planned session done and "I could do more", so one more training day a
          *     week. `toDays` is the new count, one more than the user's and never below training_days_min; `idealDays` is
-         *     training_days_ideal_min, the count it moves toward, for the words. Which day is the user's to pick.
+         *     training_days_ideal_min, the count it moves toward, for the words. Which day is the user's to pick; `suggested`
+         *     (K-1000, ADR-077 Ek 1) is the days the server proposes to add, none a training day already: each the free day with
+         *     the most rest on both sides of it, the earliest on a tie. Empty when no day is free.
          */
         AddTrainingDay: {
             /**
@@ -3291,11 +3328,14 @@ export interface components {
             type: "ADD_TRAINING_DAY";
             toDays: number;
             idealDays: number;
+            suggested: components["schemas"]["Weekday"][];
         };
         /**
          * @description The first week's call (ADR-077 #4): most of the week's sessions didn't happen, so the days that were missed move
          *     to days that fit; the number of training days stays. `missed` are the planned weekdays without a session, in the
-         *     week's order; the user picks where they go.
+         *     week's order; the user picks where they go. `suggested` (K-1000, ADR-077 Ek 1 "the suggestion comes filled"): a day
+         *     for each missed one, in the same order, none a training day already: the first free day after it in the week, else
+         *     the week's first free day. The user may pick others; the save is the training days' own (K-995 B).
          */
         MoveMissedSessions: {
             /**
@@ -3304,6 +3344,7 @@ export interface components {
              */
             type: "MOVE_MISSED_SESSIONS";
             missed: components["schemas"]["Weekday"][];
+            suggested: components["schemas"]["Weekday"][];
         };
         /**
          * @description What the user follows today; each a plan number set by calls (ADR-020 L-13). Protein does not depend on calories
