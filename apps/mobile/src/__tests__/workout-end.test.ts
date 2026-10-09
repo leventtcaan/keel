@@ -25,7 +25,7 @@ const record = (kind: string, clientId: string, body: unknown, extra: Partial<Lo
 });
 const WORKOUT = record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' });
 const FINISH = record('finish', 'f1', { endedAt: '2026-09-29T08:52:00Z' });
-const SUMMARY: Schemas['WorkoutSummary'] = { workoutId: 'srv-w1', minutes: 52, liftedKg: 4200, workingSets: 15, marks: [], weekOf: '2026-09-28', muscles: [] };
+const SUMMARY: Schemas['WorkoutSummary'] = { workoutId: 'srv-w1', minutes: 52, liftedKg: 4200, workingSets: 15, marks: [], moves: [], weekOf: '2026-09-28', muscles: [] };
 const PROGRAM: Schemas['Program'] = { id: 'p', source: 'GENERATED', days: [], week: [] };
 // The whole week's actions (training, protein, steps, weigh-ins) are 19 planned, 5 done; its sessions 3 planned, 2 done.
 const CONSISTENCY: Schemas['Consistency'] = {

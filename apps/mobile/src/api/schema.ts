@@ -2627,6 +2627,12 @@ export interface components {
             /** Format: uuid */
             workoutId: string;
             /**
+             * @description "What moved" (ADR-075 #7, K-1008): each move of the session, in the order first done, its best working set
+             *     against its best in the last earlier session of the same program day (the session liftedChangePercent compares
+             *     with), or a move that session did not have against its own last session (MoveChange). This server always sends it.
+             */
+            moves: components["schemas"]["MoveChange"][];
+            /**
              * @description The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
              *     Absent while the session is open, and once closed by itself (K-961: endedAt = startedAt, its length unknown).
              */
@@ -2634,7 +2640,8 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
+             *     (at least one rep: a session of skipped sets only is none), in
              *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
              *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
              */
@@ -2653,6 +2660,26 @@ export interface components {
              *     sessions not counted) — the one muscle map, ADR-078 #4.
              */
             muscles: components["schemas"]["MuscleSets"][];
+        };
+        /**
+         * @description A move's best working set this session (the heaviest, then the most reps, then the fewest left; a set of no reps
+         *     never counts; sides are one history; the load as logged, a bodyweight move's added load) against its best in the
+         *     last earlier session of the same program day with a set done; a move that session did not have (swapped in today,
+         *     swapped out then, added, skipped) against its own last session on any day (it has its own history, K-964). LOAD: another load, `by` the difference in kg (negative when
+         *     lighter). REPS: the same load, `by` the difference in reps (negative when fewer). SAME: the same load and reps.
+         *     HELD: the same load of a compound move while the weekly call holds the load. FIRST: the move has no earlier
+         *     session at all. No estimated max (B10).
+         */
+        MoveChange: {
+            exerciseId: string;
+            best: {
+                loadKg: number;
+                reps: number;
+            };
+            /** @enum {string} */
+            change: "LOAD" | "REPS" | "SAME" | "HELD" | "FIRST";
+            /** @description LOAD in kg, REPS in reps; absent otherwise. */
+            by?: number;
         };
         /**
          * @description RECORD (ADR-075 Ek 2): a working set no earlier working set of the move dominates (none at least as heavy with
