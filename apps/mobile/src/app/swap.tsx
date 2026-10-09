@@ -18,7 +18,6 @@ import { exerciseName } from '@/train/program';
 import { swapChoice } from '@/train/swap';
 import { movesOf } from '@/train/trainData';
 import { sessionMoves, todaySession } from '@/train/week';
-import { activeWorkout } from '@/train/workout';
 
 type Scope = components['schemas']['MoveSwap']['scope'];
 type Equipment = components['schemas']['Equipment'];
@@ -35,15 +34,15 @@ const SAID = { conflict: 'swap.conflict', offline: 'swap.offline', failed: 'swap
  * workout's own: here only from now on. CONFLICT and no connection are said here.
  */
 export default function SwapScreen() {
-  const { api, training, workoutRecords } = useAppServices();
+  const { api, training } = useAppServices();
   const { color } = useTheme();
   const params = useLocalSearchParams<{ day?: string; move?: string; scope?: string }>();
   const todayOnly = params.scope === 'today';
-  const { day, data } = useReadOnFocus(
+  const { data } = useReadOnFocus(
     useCallback(async () => {
-      const [read, own, records] = await Promise.all([training.read(api), training.own(api), workoutRecords()]);
-      return { ...read, own, active: activeWorkout(records) };
-    }, [api, training, workoutRecords]),
+      const [read, own] = await Promise.all([training.read(api), training.own(api)]);
+      return { ...read, own };
+    }, [api, training]),
   );
   const [picked, setPicked] = useState<string | null>(params.move ?? null);
   const [to, setTo] = useState<string | null>(null);
@@ -63,13 +62,14 @@ export default function SwapScreen() {
   const program = data?.program.state === 'ready' ? data.program.value : null;
   const moves = movesOf(data, data?.own ?? []);
   const name = (id: string) => exerciseName(id, moves);
-  const found = program === null ? null : todaySession(program, day);
+  const found = program === null ? null : todaySession(program);
   // The move from the card is the day's even when today is not its session (a from-now-on swap needs no session today).
   const programDay = program?.days.find((d) => d.id === params.day) ?? null;
-  const started = data?.active != null && data.active.programDayId === params.day;
+  // Under way or done is the server's word on today's session (WeekSession.workout, K-995).
+  const started = found !== null && found.day.id === params.day && found.session.workout !== undefined;
   // For today only while today is the day's session and its workout has not begun (then the workout swaps).
   const session = found !== null && found.day.id === params.day && found.session.skipped !== true && !started ? found : null;
-  const planOnly = programDay === null ? null : { programDayId: programDay.id, date: day, exerciseIds: programDay.exercises.map((e) => e.exerciseId) };
+  const planOnly = programDay === null ? null : { programDayId: programDay.id, date: program?.today ?? '', exerciseIds: programDay.exercises.map((e) => e.exerciseId) };
   const target = programDay === null || planOnly === null ? null : (session ?? { day: programDay, session: planOnly });
   const choice = target === null || picked === null ? null : swapChoice(target, picked);
 

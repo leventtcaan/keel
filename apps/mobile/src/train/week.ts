@@ -1,6 +1,6 @@
 /**
  * This week's sessions as the Train tab reads them (K-970, ADR-073 Ek 3). Every date, move and flag is the server's
- * (`Program.week`: moved, skipped, short, today's swaps); nothing here moves a session or works out a chain. The phone
+ * (`Program.week`: moved, skipped, short, today's swaps; `Program.today`); nothing here moves a session or works out a chain. The phone
  * finds today's date among the server's dates, puts a session's moves in its order with today's swaps in their place,
  * and names the split from the days' names (a day's copy says which split it is from).
  */
@@ -32,9 +32,20 @@ const sessions = (program: Schemas['Program']): Found[] =>
     .sort((a, b) => a.date.localeCompare(b.date))
     .flatMap((s) => found(program, s) ?? []);
 
-/** The week's session on this date (today), with its program day; none on a day without one. */
-export function todaySession(program: Schemas['Program'], date: string): Found | null {
-  return sessions(program).find((f) => f.session.date === date) ?? null;
+/**
+ * The week's session on the server's today (`Program.today`, the user's calendar; K-995), with its program day; none on a
+ * day without one. Never the phone's clock: travelling, the phone's date is another day than the server's. Without the
+ * server's word on today, no session is taken for today.
+ */
+export function todaySession(program: Schemas['Program']): Found | null {
+  if (program.today === undefined) return null;
+  return sessions(program).find((f) => f.session.date === program.today) ?? null;
+}
+
+/** The session the server moved off today ("Move it"; `movedFrom` is today): today is rest, and where it went is its date. */
+export function movedOffToday(program: Schemas['Program']): Found | null {
+  if (program.today === undefined) return null;
+  return sessions(program).find((f) => f.session.moved === true && f.session.movedFrom === program.today) ?? null;
 }
 
 /** The session's moves in its order: the short version's only, and a move swapped for today in its planned move's place. */
@@ -50,10 +61,10 @@ export function sessionMoves(day: Schemas['ProgramDay'], session: Schemas['WeekS
   });
 }
 
-/** The week's sessions but today's, in date order, each on the weekday of its date. */
-export function weekRows(program: Schemas['Program'], date: string): WeekRow[] {
+/** The week's sessions but today's (the server's today), in date order, each on the weekday of its date. */
+export function weekRows(program: Schemas['Program']): WeekRow[] {
   return sessions(program)
-    .filter((f) => f.session.date !== date)
+    .filter((f) => f.session.date !== program.today)
     .map((f) => ({ ...f, weekday: weekdayOf(f.session.date) }));
 }
 

@@ -13,32 +13,33 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { changeToday } from '@/train/changes';
-import { todaySession } from '@/train/week';
-import { activeWorkout } from '@/train/workout';
+import { movedOffToday, todaySession } from '@/train/week';
 
 type Change = components['schemas']['TodayChange']['change'];
 
-type Row = 'short' | 'busy' | 'move' | 'skip';
-const CHANGES: Record<Exclude<Row, 'busy'>, Change> = { short: 'SHORT', move: 'MOVE', skip: 'SKIP' };
-const SAID ={ conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
+type Row = 'short' | 'full' | 'busy' | 'move' | 'skip' | 'undo';
+const CHANGES: Record<Exclude<Row, 'busy'>, Change> = { short: 'SHORT', full: 'FULL', move: 'MOVE', skip: 'SKIP', undo: 'UNDO' };
+const SAID = { conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
 
 /**
  * "Change today" (K-970, ADR-073 #5, Ek 3; prototype `#today`), opened from today's card with its program day. Short on
  * time (the program's first moves, the session still counts), Move it (to tomorrow; the server shifts the week and
  * never passes Sunday) and Skip today (no catch-up). The server changes this week's session and the Train tab reads it
  * again; CONFLICT, no connection or our failure is said here and nothing is taken as changed. A workout of the day
- * under way leaves only the short version (the server refuses a move or a skip then); the short version offers no
- * second short. Route: `/today-change?day=<programDayId>` (This week's card opens it too, K-969).
+ * under way leaves only the short version (the server refuses a move or a skip then); one done leaves nothing to change.
+ * The short version offers the full workout back (FULL); a move or skip of today the server says can be undone
+ * (`undoable`) offers Undo. Today, under way and done are the server's (`Program.today`, `WeekSession.workout`; K-995),
+ * never the phone's clock or its own records. Route: `/today-change?day=<programDayId>` (This week's card opens it too, K-969).
  */
 export default function TodayChangeScreen() {
-  const { api, training, workoutRecords } = useAppServices();
+  const { api, training } = useAppServices();
   const { color } = useTheme();
   const { day: programDayId } = useLocalSearchParams<{ day?: string }>();
-  const { day, data } = useReadOnFocus(
+  const { data } = useReadOnFocus(
     useCallback(async () => {
-      const [read, records] = await Promise.all([training.read(api), workoutRecords()]);
-      return { program: read.program.state === 'ready' ? read.program.value : null, active: activeWorkout(records) };
-    }, [api, training, workoutRecords]),
+      const read = await training.read(api);
+      return { program: read.program.state === 'ready' ? read.program.value : null };
+    }, [api, training]),
   );
   const [problem, setProblem, occurrence] = useProblem();
   const [busy, setBusy] = useState(false);
@@ -53,15 +54,21 @@ export default function TodayChangeScreen() {
     };
   }, []);
 
-  const today = data?.program == null ? null : todaySession(data.program, day);
-  const session = today !== null && today.day.id === programDayId && today.session.skipped !== true ? today : null;
-  const started = session !== null && data?.active?.programDayId === session.day.id;
+  const program = data?.program ?? null;
+  const today = program === null ? null : todaySession(program);
+  const named = today !== null && today.day.id === programDayId ? today : null;
+  const session = named !== null && named.session.skipped !== true ? named : null;
+  const workout = session?.session.workout?.state;
+  // Today's move or skip of this day that the server says can be undone: the day's session, skipped or moved off today.
+  const away = program === null ? null : movedOffToday(program);
+  const undoable = [named, away].find((f) => f !== null && f.day.id === programDayId && f.session.undoable === true) ?? null;
 
   const send = async (change: Change) => {
-    if (session === null || sending.current) return;
+    const target = change === 'UNDO' ? undoable : session;
+    if (target === null || sending.current) return;
     sending.current = true;
     setBusy(true);
-    const answer = await changeToday(api, session.day.id, change);
+    const answer = await changeToday(api, target.day.id, change);
     sending.current = false;
     if (!shown.current) return;
     setBusy(false);
@@ -70,9 +77,8 @@ export default function TodayChangeScreen() {
   };
   // "Gym is busy" is a swap for today: which move is taken first (the swap sheet), never a toast.
   const act = (key: Row) => {
-    if (session === null) return;
-    if (key === 'busy') router.replace({ pathname: '/swap', params: { day: session.day.id, scope: 'today' } });
-    else void send(CHANGES[key]);
+    if (key !== 'busy') return void send(CHANGES[key]);
+    if (session !== null) router.replace({ pathname: '/swap', params: { day: session.day.id, scope: 'today' } });
   };
   const row = (key: Row) => (
     <Pressable
@@ -88,14 +94,17 @@ export default function TodayChangeScreen() {
     </Pressable>
   );
 
+  const line = (key: string) => <Text style={[styles.text, { color: color.textSecondary }]}>{t(key)}</Text>;
   let body = null;
-  if (data !== null && session === null) body = <Text style={[styles.text, { color: color.textSecondary }]}>{t('todayChange.none')}</Text>;
+  if (data !== null && undoable !== null && session === null) body = <View style={styles.rows}>{row('undo')}</View>;
+  else if (data !== null && session === null) body = line('todayChange.none');
+  else if (session !== null && workout === 'DONE') body = line('train.doneToday');
   else if (session !== null) {
-    const short = session.session.short === true;
+    const started = workout === 'OPEN';
     body = (
       <View style={styles.rows}>
-        {started && <Text style={[styles.text, { color: color.textSecondary }]}>{t('todayChange.started')}</Text>}
-        {short ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('todayChange.shortNow')}</Text> : row('short')}
+        {started && line('todayChange.started')}
+        {row(session.session.short === true ? 'full' : 'short')}
         {!started && row('busy')}
         {!started && row('move')}
         {!started && row('skip')}

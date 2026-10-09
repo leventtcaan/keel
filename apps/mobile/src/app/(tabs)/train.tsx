@@ -1,9 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
-import { type ReactNode, useCallback, useRef } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { components } from '@/api/schema';
+
 import { Button } from '@/components/Button';
+import { ProblemText, announce, useProblem } from '@/components/ProblemText';
 import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
@@ -13,11 +16,13 @@ import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { CallRow } from '@/train/CallRow';
+import { changeToday } from '@/train/changes';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { splitName, todaySession, weekRows } from '@/train/week';
-import { activeWorkout } from '@/train/workout';
+import { movedOffToday, splitName, todaySession, weekRows } from '@/train/week';
+
+type Schemas = components['schemas'];
 
 /**
  * The Train tab (K-405, K-217, K-970; prototype `#train`): the program's split and days, the calls of the deload ladder
@@ -27,28 +32,44 @@ import { activeWorkout } from '@/train/workout';
  * computed here: every date, move and number is the server's.
  */
 export default function TrainScreen() {
-  const { api, training, workoutRecords, state } = useAppServices();
+  const { api, training, state } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
-  const { day, data, reload } = useReadOnFocus(
+  const { data, reload } = useReadOnFocus(
     useCallback(async () => {
       // A state declared, as the phone last knew it (K-518): a busy week brings its least dose (K-528).
       // The user's own moves too: an own program names them by the user's words, never by their id (K-968).
       // This week's call too (a row above the card; K-970).
-      const [read, own, records, declared, decision] = await Promise.all([
+      // A workout under way or done is the server's word (WeekSession.workout, K-995), not the phone's own records.
+      const [read, own, declared, decision] = await Promise.all([
         training.read(api),
         training.own(api),
-        workoutRecords(),
         state.current().catch(() => null),
         load(() => api.GET('/v1/decisions/current')),
       ]);
-      return { ...read, own, active: activeWorkout(records), declared, decision };
-    }, [api, training, workoutRecords, state]),
+      return { ...read, own, declared, decision };
+    }, [api, training, state]),
   );
 
   const program = data?.program.state === 'ready' ? data.program.value : null;
   const moves = movesOf(data, data?.own ?? []);
-  const active = data?.active ?? null;
+  // Today's change undone or the full workout back (K-995): one at a time; what came of it said under the card.
+  const [changing, setChanging] = useState(false);
+  const [notice, setNotice, occurrence] = useProblem();
+  const changeToday_ = async (programDayId: string, change: 'UNDO' | 'FULL') => {
+    if (changing) return;
+    setChanging(true);
+    const answer = await changeToday(api, programDayId, change);
+    setChanging(false);
+    if (answer.kind !== 'done') setNotice(t(SAID[answer.kind]));
+    // An undo the server answered without undoing (the day turned meanwhile, nothing to undo): never called undone.
+    else if (change === 'UNDO' && answer.program.week?.some((s) => s.programDayId === programDayId && s.undoable === true)) setNotice(t('train.notUndone'));
+    else {
+      setNotice(null);
+      announce(t(change === 'UNDO' ? 'train.undone' : 'train.fullBack'));
+    }
+    reload();
+  };
 
   // The session opens on the day; the workout is kept only once a set is logged (an empty workout is no session). One
   // screen per tap: a second tap before the screen is up must not stack a second session (K-405 review).
@@ -86,12 +107,13 @@ export default function TrainScreen() {
     );
   }
 
-  const today = todaySession(program, day);
+  const today = todaySession(program);
+  const active = program.week?.find((s) => s.workout?.state === 'OPEN') ?? null;
   const days = t(program.days.length === 1 ? 'train.days.one' : 'train.days.other', { count: program.days.length });
   const notes = programNotes(program, data?.declared);
   // With no session today (and no week off), any of the week's can be started from its row.
   const pick = today === null && program.restUntil === undefined && active === null;
-  const rows = weekRows(program, day);
+  const rows = weekRows(program);
   // The review's changes in force (ADR-073 #3): how many, and the page that undoes each.
   const appliedCount = program.review?.applied.length ?? 0;
   const applied =
@@ -120,13 +142,21 @@ export default function TrainScreen() {
       ))}
       <TodayCard
         program={program}
-        date={day}
         today={today}
+        movedAway={today === null ? movedOffToday(program) : null}
         moves={moves}
         units={units}
         underWay={active !== null}
-        canPick={pick && rows.some((row) => row.session.skipped !== true)}
+        canPick={pick && rows.some((row) => startable(row.session))}
         onStart={start}
+        onChange={changing ? null : (id, change) => void changeToday_(id, change)}
+        notice={
+          notice === null ? null : (
+            <ProblemText occurrence={occurrence} style={[styles.small, { color: color.text }]}>
+              {notice}
+            </ProblemText>
+          )
+        }
       />
       <View style={styles.week}>
         <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
@@ -136,7 +166,7 @@ export default function TrainScreen() {
           const tag = row.session.skipped === true ? t('train.skippedTag') : row.session.moved === true ? t('train.moved') : null;
           const label = t('train.startDay', { day: dayName(row.day) });
           const startRow =
-            pick && row.session.skipped !== true ? <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} /> : null;
+            pick && startable(row.session) ? <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} /> : null;
           return (
             <View key={row.day.id} style={[styles.row, { borderColor: color.line }]}>
               <Text style={[styles.text, styles.grow, { color: color.text }]}>
@@ -153,6 +183,11 @@ export default function TrainScreen() {
 }
 
 /** The tab's frame; with a program, "Edit" beside the title (prototype `#train` › `.tlink`). */
+/** A session of the week that can be started from its row: not skipped, not done already (the server's word). */
+const startable = (session: Schemas['WeekSession']) => session.skipped !== true && session.workout?.state !== 'DONE';
+
+const SAID = { conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
+
 function Screen({ children, editable = false }: { children: ReactNode; editable?: boolean }) {
   const { color } = useTheme();
   const edit = editable ? (

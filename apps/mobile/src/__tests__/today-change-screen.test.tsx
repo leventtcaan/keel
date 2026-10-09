@@ -19,6 +19,8 @@ const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
   days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 }] }],
+  // Today on the user's calendar is the server's (Program.today, K-995), never the phone's clock.
+  today: '2026-09-29',
   week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: ['bench_press'] }],
 };
 let mockData: TrainData;
@@ -129,28 +131,41 @@ test('no connection says so', async () => {
   expect(await screen.findByText(t('todayChange.offline'))).toBeTruthy();
 });
 
-test('the short version already: no second short, it says so', async () => {
+test('the short version already: no second short; Full workout brings every move back', async () => {
   mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], short: true }] } } };
   await show();
-  expect(await screen.findByText(t('todayChange.shortNow'))).toBeTruthy();
+  expect(await screen.findByText('Full workout')).toBeTruthy();
   expect(screen.queryByText('Short on time')).toBeNull();
   expect(screen.getByText('Move it')).toBeTruthy();
+  await fireEvent.press(screen.getByText('Full workout'));
+  expect(mockPost).toHaveBeenCalledWith('/v1/program/today', { body: { programDayId: 'a', change: 'FULL' } });
 });
 
-test("a workout of today's session under way: only the short version is left", async () => {
-  mockRecords = [
-    {
-      seq: 1,
-      clientId: 'w1',
-      kind: 'workout',
-      parentClientId: null,
-      body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' },
-      state: 'PENDING',
-      serverId: null,
-      serverBody: null,
-      errorCode: null,
-    },
-  ];
+test("today is the server's day: the phone's clock on another day changes nothing", async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, today: '2026-09-30', week: [{ ...PROGRAM.week![0], date: '2026-09-30' }] } } };
+  await show();
+  expect(await screen.findByText('Move it')).toBeTruthy();
+});
+
+test('skipped today and undoable: Undo, the one change left', async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], skipped: true, undoable: true }] } } };
+  await show();
+  await fireEvent.press(await screen.findByText(t('todayChange.undo.title')));
+  expect(mockPost).toHaveBeenCalledWith('/v1/program/today', { body: { programDayId: 'a', change: 'UNDO' } });
+  expect(screen.queryByText('Move it')).toBeNull();
+});
+
+test("today's session done (the server says so): it says so, and nothing is left to change", async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'DONE' } }] } } };
+  await show();
+  expect(await screen.findByText(t('train.doneToday'))).toBeTruthy();
+  expect(screen.queryByText('Short on time')).toBeNull();
+  expect(screen.queryByText('Move it')).toBeNull();
+  expect(screen.queryByText('Skip today')).toBeNull();
+});
+
+test("a workout of today's session under way (the server says so): only the short version is left", async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, week: [{ ...PROGRAM.week![0], workout: { id: 'w1', state: 'OPEN' } }] } } };
   await show();
   expect(await screen.findByText(t('todayChange.started'))).toBeTruthy();
   expect(screen.getByText('Short on time')).toBeTruthy();

@@ -1,11 +1,11 @@
 /**
  * This week's sessions as the Train tab reads them (K-970, ADR-073 Ek 3): every date, move and flag is the server's
- * (`Program.week`); the phone only finds today's date among them, puts the planned moves in the session's order with
+ * (`Program.week`, `Program.today`); the phone only finds the server's today among them, puts the planned moves in the session's order with
  * today's swaps in their place, and names the program's split from its days' names (K-970 user test: "PPL" is not
  * said of an upper/lower and push/pull/legs program).
  */
 import type { components } from '@/api/schema';
-import { sessionMoves, splitName, todaySession, weekRows } from '@/train/week';
+import { movedOffToday, sessionMoves, splitName, todaySession, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -38,16 +38,18 @@ const session = (programDayId: string, date: string, extra: Partial<Schemas['Wee
 const TUESDAY = '2026-10-13';
 
 describe("today's session", () => {
-  test("is the week's session on today's date, with its program day; none on a day with none", () => {
-    const p = program([session('u', TUESDAY), session('l', '2026-10-14')]);
-    expect(todaySession(p, TUESDAY)).toEqual({ session: p.week?.[0], day: UPPER });
-    expect(todaySession(p, '2026-10-15')).toBeNull();
-    expect(todaySession(program([]), TUESDAY)).toBeNull();
+  test("is the week's session on the server's today, with its program day; none on a day with none (never the phone's clock)", () => {
+    const week = [session('u', TUESDAY), session('l', '2026-10-14')];
+    expect(todaySession(program(week, undefined, { today: TUESDAY }))).toEqual({ session: week[0], day: UPPER });
+    expect(todaySession(program(week, undefined, { today: '2026-10-15' }))).toBeNull();
+    expect(todaySession(program([], undefined, { today: TUESDAY }))).toBeNull();
+    // A server that does not say what today is: no session is taken for today.
+    expect(todaySession(program(week))).toBeNull();
   });
 
   test('a session moved onto today is today\'s, whatever its weekday', () => {
-    const p = program([session('l', TUESDAY, { moved: true })]);
-    expect(todaySession(p, TUESDAY)?.day).toBe(LOWER);
+    const p = program([session('l', TUESDAY, { moved: true, movedFrom: '2026-10-14' })], undefined, { today: TUESDAY });
+    expect(todaySession(p)?.day).toBe(LOWER);
   });
 
   test("its moves are the session's, in its order: the short version's first ones only", () => {
@@ -69,10 +71,26 @@ describe("today's session", () => {
 
 test("the week's other sessions in date order, each with its program day and the server's flags", () => {
   const p = program([session('p', '2026-10-15'), session('u', TUESDAY), session('l', '2026-10-12', { skipped: true })]);
-  expect(weekRows(p, TUESDAY).map((r) => [r.weekday, r.day.id, r.session.skipped === true])).toEqual([
+  expect(weekRows({ ...p, today: TUESDAY }).map((r) => [r.weekday, r.day.id, r.session.skipped === true])).toEqual([
     ['MONDAY', 'l', true],
     ['THURSDAY', 'p', false],
   ]);
+});
+
+describe('a session moved off today', () => {
+  test("is the one the server says came from today (movedFrom), with where it went", () => {
+    const p = program(
+      [session('u', '2026-10-14', { moved: true, movedFrom: TUESDAY, undoable: true }), session('l', '2026-10-15', { moved: true, movedFrom: '2026-10-14' })],
+      undefined,
+      { today: TUESDAY },
+    );
+    expect(movedOffToday(p)).toEqual({ session: p.week?.[0], day: UPPER });
+  });
+
+  test('a session moved on another day, or none moved: none', () => {
+    expect(movedOffToday(program([session('u', '2026-10-15', { moved: true, movedFrom: '2026-10-14' })], undefined, { today: TUESDAY }))).toBeNull();
+    expect(movedOffToday(program([session('u', TUESDAY)], undefined, { today: TUESDAY }))).toBeNull();
+  });
 });
 
 describe('the split', () => {
