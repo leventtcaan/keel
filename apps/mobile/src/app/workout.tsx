@@ -101,7 +101,7 @@ function Session() {
   const pauseRef = useRef<Pause>(NOT_PAUSED);
   // What was skipped (K-972), by move: never sent, kept with the workout. `undo` puts back the last skip.
   const [skips, setSkips] = useState<Skips>({});
-  const [undo, setUndo] = useState<{ said: string; skips: Skips } | null>(null);
+  const [undo, setUndo] = useState<{ said: string; skips: Skips; picked: string | null } | null>(null);
   // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
   // clock tells nothing. Closing or filling it in from here is K-972.
   const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
@@ -452,29 +452,43 @@ function Session() {
 
   const name = (id: string) => exerciseName(id, moves);
   /** Skips kept with the workout once there is one; the last one can be undone. No rest goes on through a skip. */
-  const changeSkips = (next: Skips, said: string) => {
-    setUndo({ said, skips });
+  const keepSkips = (next: Skips) => {
     setSkips(next);
-    endRest();
     if (active !== null) void sessionSkips.keep(active.clientId, next).catch(named);
   };
+  const changeSkips = (next: Skips, said: string) => {
+    setUndo({ said, skips, picked: moveId ?? null });
+    keepSkips(next);
+    endRest();
+    // Said, not only shown (K-815).
+    announce(said);
+  };
   const skipThisSet = (current: number) => {
-    if (moveId === undefined || row === null) return;
+    if (moveId === undefined || row === null || plan === null) return;
     const before = skips[moveId] ?? NONE_SKIPPED;
     const set = Math.floor(current / sides);
-    changeSkips({ ...skips, [moveId]: { ...before, sets: [...before.sets, { side: row.side, set }] } }, t('workout.setSkipped'));
-    // The move stays picked: its last set skipped, Next names the next one (C4).
-    setPicked(moveId);
+    // The set's sides not done yet: a one-sided set skipped is both sides of it (the left kept if done).
+    const sidesLeft = plan.rows.slice(set * sides, set * sides + sides).filter((r) => r.done === null && r.skipped !== true);
+    changeSkips({ ...skips, [moveId]: { ...before, sets: [...before.sets, ...sidesLeft.map((r) => ({ side: r.side, set }))] } }, t('workout.setSkipped'));
+    // As after a set logged: in a superset the partner comes next (#517 review); else the move stays picked, and its
+    // last set skipped, Next names the next one (C4).
+    setPicked(group === undefined ? moveId : (nextInGroup(group[1], moveId, leftAfterThis).next ?? moveId));
   };
   const skipThisMove = () => {
     if (moveId === undefined) return;
     changeSkips({ ...skips, [moveId]: { ...(skips[moveId] ?? NONE_SKIPPED), move: true } }, t('workout.moveSkipped'));
     setPicked(nextId ?? moveId);
   };
+  const bringBack = () => {
+    if (moveId === undefined) return;
+    keepSkips({ ...skips, [moveId]: { ...(skips[moveId] ?? NONE_SKIPPED), move: false } });
+    setUndo(null);
+  };
+  /** The last skip taken back, and the move it was on picked again; a rest it ended does not come back. */
   const undoSkip = () => {
     if (undo === null) return;
-    setSkips(undo.skips);
-    if (active !== null) void sessionSkips.keep(active.clientId, undo.skips).catch(named);
+    keepSkips(undo.skips);
+    if (undo.picked !== null) setPicked(undo.picked);
     setUndo(null);
   };
   // The next move with sets left after `from`, in the session's order and round again to one left undone; -1 for none.
@@ -559,10 +573,18 @@ function Session() {
         accessibilityRole="button"
         accessibilityLabel={t('workout.skipMoveLabel', { name: name(moveId) })}
         onPress={skipThisMove}
+        disabled={busy}
         style={styles.link}>
         <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipMove')}</Text>
       </Pressable>
     );
+  // A move skipped, opened again (#517 review): it says so, and it can be brought back.
+  const skippedMove = (
+    <View style={[styles.undo, { backgroundColor: color.surface }]}>
+      <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{t('workout.moveIsSkipped')}</Text>
+      <Button label={t('workout.bringBack')} variant="ghost" size="sm" onPress={bringBack} />
+    </View>
+  );
   const head =
     moveId === undefined ? null : (
       <View testID="move-head" style={styles.head}>
@@ -608,6 +630,7 @@ function Session() {
         {/* The prototype's order (K-971): the target, the sets done, then the one under way, its warm-ups folded above it. */}
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
         <DoneSets plan={plan} move={move} />
+        {plan.skippedMove === true ? skippedMove : null}
         {warmBlock}
         {entryBlock}
       </>
@@ -654,7 +677,9 @@ function Session() {
     undo === null ? null : (
       <View style={[styles.undo, { backgroundColor: color.surface }]}>
         <Text style={[styles.text, styles.grow, { color: color.text }]}>{undo.said}</Text>
-        <Button label={t('workout.undo')} accessibilityLabel={t('workout.undoLabel')} variant="ghost" size="sm" onPress={undoSkip} />
+        <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={undoSkip} style={styles.link}>
+          <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+        </Pressable>
       </View>
     );
   // The day and how far into it, under the time: off the page, so the set under way has its room (K-971).

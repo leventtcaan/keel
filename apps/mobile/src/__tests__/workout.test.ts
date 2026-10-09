@@ -149,11 +149,13 @@ describe('skipped sets and a skipped move (K-972, ADR-075 #5): kept on the phone
     expect(plan.current).toBe(2);
   });
 
-  test('a skipped move: every set not done is skipped, the move is done', () => {
+  // #517 review (a fix, K1 note in the PR): a move skipped after a set of it was done is that move done, not "Skipped".
+  test('a skipped move: every set not done is skipped, the move is done; it says Skipped only with no set done', () => {
     const plan = planExercise(bench, benchMove, [], [done(60, 8)], { sets: [], move: true });
     expect(plan.rows.map((r) => r.skipped)).toEqual([false, true, true]);
     expect(plan.current).toBeNull();
-    expect(exerciseStatus(plan)).toBe(t('workout.statusSkipped'));
+    expect(exerciseStatus(plan)).toBe(t('workout.allDone'));
+    expect(exerciseStatus(planExercise(bench, benchMove, [], [], { sets: [], move: true }))).toBe(t('workout.statusSkipped'));
   });
 
   test('none skipped: as before', () => {

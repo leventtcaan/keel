@@ -1703,6 +1703,7 @@ describe('Pause and Resume (K-972, ADR-075 #5): the time stops, and goes on from
 describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-up, and both can be undone', () => {
   const rowName = t('exercises.one_arm_dumbbell_row.name');
   const skipSet = () => fireEvent.press(within(screen.getByTestId('dock')).getByRole('button', { name: t('workout.skipSetLabel') }));
+  const dot = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}, `) });
   const skipMove = (name: string) =>
     fireEvent.press(within(screen.getByTestId('move-head')).getByRole('button', { name: t('workout.skipMoveLabel', { name }) }));
 
@@ -1764,6 +1765,100 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) }));
     expect(within(screen.getByTestId('dock')).queryByRole('button', { name: t('workout.skipSetLabel') })).toBeNull();
+  });
+
+  test('in a superset a set skipped brings up the partner, as a set logged does', async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: rowName }) }));
+    await skipSet();
+    expect(await screen.findByText(t('workout.logSide', { number: 1, side: t('workout.sideName.LEFT') }))).toBeOnTheScreen();
+  });
+
+  test('a one-sided set skipped skips both its sides; its warm-up stays to do', async () => {
+    mockRecords = [
+      ...lastWeek(),
+      record('set', 's9', { clientId: 's9', exerciseId: 'one_arm_dumbbell_row', setType: 'WORKING', loadKg: 20, reps: 10, side: 'LEFT' }, 'w0'),
+      record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' }),
+    ];
+    await show();
+    await pickMove(rowName);
+    await skipSet();
+    expect(screen.getByLabelText(t('workout.skippedSet', { number: `1${t('workout.side.LEFT')}` }))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('workout.skippedSet', { number: `1${t('workout.side.RIGHT')}` }))).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.logSide', { number: 2, side: t('workout.sideName.LEFT') }))).toBeOnTheScreen();
+    expect(screen.getByText('Log warm-up 1')).toBeOnTheScreen();
+  });
+
+  test('after a skip the next set is logged as it is: its own number, the suggestion', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await skipSet();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+    expect(sets()).toEqual([
+      { kind: 'set', workoutClientId: 'w1', body: { clientId: expect.any(String), exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 6, rir: 1, side: 'BOTH' } },
+    ]);
+  });
+
+  test('a skip is said (K-815); its Undo is a full touch target', async () => {
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    try {
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await skipSet();
+      expect(said).toHaveBeenLastCalledWith(t('workout.setSkipped'));
+      expect(screen.getByRole('button', { name: t('workout.undoLabel') })).toHaveStyle({ minHeight: tokens.size.touch });
+    } finally {
+      said.mockRestore();
+    }
+  });
+
+  test('a move skipped and undone: back on that move', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await skipMove('Bench press');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    expect(dot('Bench press')).toBeSelected();
+    expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+  });
+
+  test('a skipped move opened says so, and can be brought back', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await skipMove('Bench press');
+    await fireEvent.press(dot('Bench press'));
+    expect(screen.getByText(t('workout.moveIsSkipped'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.bringBack') }));
+    expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+  });
+
+  test('skipped before the first set: the workout that set starts keeps the skip', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await skipSet();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+    await screen.findByText(t('workout.log', { number: 3 }));
+    const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
+    expect(mockSkips).toEqual({ workout: workout?.kind === 'workout' ? workout.body.clientId : 'none', skips: { bench_press: { sets: [{ side: 'BOTH', set: 0 }], move: false } } });
+  });
+
+  test("another workout's skips are not this one's", async () => {
+    mockSkips = { workout: 'w0', skips: { bench_press: { sets: [{ side: 'BOTH', set: 0 }], move: false } } };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByLabelText(t('workout.skippedSet', { number: '1' }))).toBeNull();
+  });
+
+  test('finished, its skips are forgotten', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await skipSet();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+    await fireEvent.press(screen.getByText('Finish'));
+    expect(mockServices.sessionSkips.forget).toHaveBeenCalled();
   });
 
   test('kept with the workout: opened again, what was skipped still is', async () => {

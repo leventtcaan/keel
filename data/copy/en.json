@@ -478,6 +478,8 @@
     "moveSkipped": "Move skipped. No catch-up needed.",
     "undo": "Undo",
     "undoLabel": "Undo the skip",
+    "moveIsSkipped": "Skipped today. No catch-up needed.",
+    "bringBack": "Bring it back",
     "clock": {
       "minutes": "{minutes}:{seconds}",
       "hours": "{hours}:{minutes}:{seconds}",
