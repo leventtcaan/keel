@@ -4681,3 +4681,19 @@ tasks:
     tests: ["DecisionService tablo testleri (değişenler, olgular, varsayılan uygulama, öneri günleri), API testleri (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Ekranın ihtiyacını sözleşmeye taşımak"]
+
+  - id: K-1008
+    title: "Antrenman özetinde hareket başına ne değişti (WorkoutSummary.moves)"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-965]
+    why: "K-974 (9 Eki): ADR-075 #7 kutlamada 'ne arttı' istiyor; WorkoutSummary yalnız marks/liftedKg/workingSets/minutes/muscles taşıyor; eski workout-summary ekranı bunu telefonda e1RM ile hesaplıyordu (ADR-075 #7 'e1RM yok' ve telefon kural işletmez ile çelişir)"
+    acceptance:
+      - "`WorkoutSummary.moves[] {exerciseId, best {loadKg, reps}, change: REPS|LOAD|HELD|SAME|FIRST, by?}`: aynı program gününün önceki seansına göre (K-965'in % kuralıyla aynı karşılaştırma); atlanan set sayılmaz; e1RM yok"
+      - "Tek taraflı hareket, vücut ağırlığı ve eklenen yük doğru"
+    tests: ["ProgressSummary tablo testleri, API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-078-ilerleme.md"]
+    learn: ["Karşılaştırmanın tek yerde yapılması"]
