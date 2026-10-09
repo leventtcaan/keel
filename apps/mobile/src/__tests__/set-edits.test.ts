@@ -172,3 +172,97 @@ test('a set deleted and brought back is in its place again, under a new clientId
   await queue.drain();
   expect((await sets(store)).map((s) => s.clientId)).toEqual(['a', 'new-1', 'c']);
 });
+
+/** A delete on the server that waits until let through, then succeeds or fails. */
+function heldDelete() {
+  let settle: (failed: boolean) => void = () => undefined;
+  const calls: string[] = [];
+  return {
+    calls,
+    deleteOnServer: (_workout: string, setId: string) => {
+      calls.push(setId);
+      return new Promise<void>((resolve, reject) => {
+        settle = (failed) => (failed ? reject(new Error('500')) : resolve());
+      });
+    },
+    finish: (failed: boolean) => settle(failed),
+  };
+}
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+test('held: a drain asked for during the delete (the app back in front) sends nothing; the delete failing leaves the old set alone', async () => {
+  const { store, api, queue } = await setup();
+  await store.insert({ clientId: 'a', kind: 'set', parentClientId: 'w', body: set('a', 8) });
+  await queue.drain();
+  const sentBefore = api.stored.size;
+  const held = heldDelete();
+  const edits = createSetEdits({ store, queue, deleteOnServer: held.deleteOnServer, newClientId: () => 'new-1' });
+  const correcting = edits.change('a', set('a', 9));
+  await tick();
+  expect(held.calls).toEqual(['srv-a']);
+  await queue.drain();
+  expect(api.stored.size).toBe(sentBefore);
+  held.finish(true);
+  await expect(correcting).rejects.toThrow('500');
+  await queue.drain();
+  expect(await sets(store)).toEqual([{ clientId: 'a', reps: 8, state: 'SYNCED' }]);
+  expect([...api.stored.keys()].filter((id) => id !== 'srv-w')).toEqual(['srv-a']);
+});
+
+test('two holders take turns: the second starts only once the first is done', async () => {
+  const { store, queue } = await setup();
+  for (const id of ['a', 'b']) await store.insert({ clientId: id, kind: 'set', parentClientId: 'w', body: set(id, 8) });
+  await queue.drain();
+  const held = heldDelete();
+  let n = 0;
+  const edits = createSetEdits({ store, queue, deleteOnServer: held.deleteOnServer, newClientId: () => `new-${++n}` });
+  const first = edits.change('a', set('a', 9));
+  const second = edits.change('b', null);
+  await tick();
+  expect(held.calls).toEqual(['srv-a']); // b waits for a
+  held.finish(false);
+  await first;
+  await tick();
+  expect(held.calls).toEqual(['srv-a', 'srv-b']);
+  held.finish(false);
+  await second;
+  expect((await sets(store)).map((x) => x.reps)).toEqual([9]);
+});
+
+test('a holder that fails does not hold up the next', async () => {
+  const { store, queue } = await setup();
+  await expect(queue.exclusive(async () => Promise.reject(new Error('boom')))).rejects.toThrow('boom');
+  await expect(queue.exclusive(async () => 'next')).resolves.toBe('next');
+  void store;
+});
+
+test('the old set gone and the corrected one in its place in one step: never two copies of it at any moment', async () => {
+  const { store, queue } = await setup();
+  for (const id of ['a', 'b']) await store.insert({ clientId: id, kind: 'set', parentClientId: 'w', body: set(id, 8) });
+  await queue.drain();
+  const seen: string[][] = [];
+  const edits = createSetEdits({
+    store,
+    queue,
+    // While the server deletes it, the phone still has the old set only: no new copy is written before.
+    deleteOnServer: async () => {
+      seen.push((await sets(store)).map((x) => x.clientId));
+    },
+    newClientId: () => 'new-1',
+  });
+  await edits.change('a', set('a', 9));
+  expect(seen).toEqual([['a', 'b']]);
+  expect(await sets(store)).toEqual([
+    { clientId: 'new-1', reps: 9, state: 'PENDING' },
+    { clientId: 'b', reps: 8, state: 'SYNCED' },
+  ]);
+});
+
+test('a set the server refused is not "offline": it fails as it is', async () => {
+  const { store, queue, edits } = await setup();
+  await store.insert({ clientId: 'a', kind: 'set', parentClientId: 'w', body: set('a', 8) });
+  await store.markAttempted('a');
+  await store.markRejected('a', 'VALIDATION_FAILED');
+  await expect(edits.change('a', set('a', 9))).rejects.toMatchObject({ name: 'Refused' });
+  void queue;
+});

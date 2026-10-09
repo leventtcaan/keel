@@ -79,6 +79,7 @@ export function createSyncQueue({ store, send, report }: Options) {
   let running: Promise<void> | null = null;
   let again = false;
   let holding = 0;
+  let holders: Promise<unknown> = Promise.resolve();
 
   /** Sends until the queue is empty or a passing failure stops it. */
   async function sendAll(): Promise<void> {
@@ -162,16 +163,21 @@ export function createSyncQueue({ store, send, report }: Options) {
    * done — so a record's state and body cannot change under it. `sendPending` sends what waits now (offline, it stops
    * as a drain does). A drain asked for meanwhile runs after.
    */
-  async function exclusive<T>(work: (sendPending: () => Promise<void>) => Promise<T>): Promise<T> {
-    while (running !== null) await running.catch(() => undefined);
-    // Set in the same step as the last check: no drain can start in between.
-    holding += 1;
-    try {
-      return await work(sendAll);
-    } finally {
-      holding -= 1;
-      if (holding === 0 && again) drainInBackground();
-    }
+  function exclusive<T>(work: (sendPending: () => Promise<void>) => Promise<T>): Promise<T> {
+    // Holders take turns, in the order they asked (one failing does not stop the next).
+    const turn = holders.then(async () => {
+      while (running !== null) await running.catch(() => undefined);
+      // Set in the same step as the last check: no drain can start in between.
+      holding += 1;
+      try {
+        return await work(sendAll);
+      } finally {
+        holding -= 1;
+        if (holding === 0 && again) drainInBackground();
+      }
+    });
+    holders = turn.catch(() => undefined);
+    return turn;
   }
 
   return {

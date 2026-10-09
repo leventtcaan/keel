@@ -184,7 +184,19 @@ export async function openRecordStore(db: SqlDatabase, now: () => Date = () => n
       return changes === 1;
     },
 
-    /** A record put in the place (order) of one gone: a set corrected or brought back keeps its number (K-972). */
+    /**
+     * One record replaced by another in one step (K-972: a set corrected once the server's copy is gone): the new one,
+     * never sent, in the old one's place (its order, its parent). At no moment are both on the phone.
+     */
+    replaceWith: async (clientId: string, next: { clientId: string; body: unknown }): Promise<void> => {
+      await db.runAsync(
+        `UPDATE records SET client_id = ?, body = ?, state = 'PENDING', server_id = NULL, server_body = NULL, error_code = NULL, attempted = 0
+         WHERE client_id = ?`,
+        [next.clientId, JSON.stringify(next.body), clientId],
+      );
+    },
+
+    /** A record put in the place (order) of one gone: a set brought back keeps its number (K-972). */
     moveTo: async (clientId: string, seq: number): Promise<void> => {
       await db.runAsync(`UPDATE records SET seq = ? WHERE client_id = ?`, [seq, clientId]);
     },
