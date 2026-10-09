@@ -4236,7 +4236,7 @@ components:
       type: object
       description: |
         One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
-        that kind (`kcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
+        that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
       required: [what, before, after]
       properties:
         what:
@@ -4252,7 +4252,7 @@ components:
       type: object
       description: A target's value, in the field of its kind (DecisionChange.what).
       properties:
-        kcal:
+        targetKcal:
           type: integer
         stepsPerDay:
           type: integer

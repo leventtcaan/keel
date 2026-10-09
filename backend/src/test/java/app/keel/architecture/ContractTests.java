@@ -48,7 +48,9 @@ class ContractTests {
             // What an Apple Watch measured during a cardio session (K-959, ADR-074 #5).
             "NewCardioSession.activeEnergyKcal",
             // The target the first call starts the plan with (K-989, ADR-072 #6); its maintenance estimate is a range.
-            "StartingTarget.targetKcal");
+            "StartingTarget.targetKcal",
+            // A call's change of the plan's daily target, old and new (K-1000, ADR-077 #3): the target, not an estimate.
+            "ChangeValue.targetKcal");
     private static final Set<String> RANGES = Set.of("#/components/schemas/KcalRange", "#/components/schemas/KcalBalance");
     private static final Pattern FAT_NUMBER = Pattern.compile(
             "(?i)body.?fat|fat.?(pct|percent|proxy|ratio|free)|fat_?mass|percent.?fat|lean.?mass|\\bffm\\b|body.?composition");

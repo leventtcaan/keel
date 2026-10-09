@@ -3000,7 +3000,7 @@ export interface components {
         };
         /**
          * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
-         *     that kind (`kcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
+         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
          */
         DecisionChange: {
             /** @enum {string} */
@@ -3011,7 +3011,7 @@ export interface components {
         };
         /** @description A target's value, in the field of its kind (DecisionChange.what). */
         ChangeValue: {
-            kcal?: number;
+            targetKcal?: number;
             stepsPerDay?: number;
             phase?: components["schemas"]["Phase"];
         };
