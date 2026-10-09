@@ -13,7 +13,12 @@ import { tokens } from '@/theme/tokens';
 
 import { type Loaded, weekdayDate } from './today';
 
-type Props = { state: Loaded<components['schemas']['DeclaredState']> | undefined; onChanged: () => void };
+type Props = {
+  state: Loaded<components['schemas']['DeclaredState']> | undefined;
+  onChanged: () => void;
+  /** The way to say life got in the way; off on This week, where it is in the "+" (ADR-077 #6). */
+  entry?: boolean;
+};
 
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
 
@@ -29,7 +34,7 @@ function identityOf(state: Props['state']): string | null {
  * (U7, I1 C6) — kept while Today reads no state, gone once another one is read. A state that could not be read shows
  * nothing: it is a way in, not a part of the week, and the next read of Today tries again.
  */
-export function StateCard({ state, onChanged }: Props) {
+export function StateCard({ state, onChanged, entry = true }: Props) {
   const { state: declared, report } = useAppServices();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
@@ -64,6 +69,7 @@ export function StateCard({ state, onChanged }: Props) {
     );
   }
   if (state?.state !== 'none') return null;
+  if (!entry) return note;
   return (
     <View style={styles.entry}>
       {note}
