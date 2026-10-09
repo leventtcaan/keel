@@ -26,29 +26,41 @@ class ProgramStore {
 
     /**
      * {@code nextLoadKg} and {@code nextReps}: the next session's target, once a workout of the day set it (K-217), with
-     * {@code lastLoadKg} the load it came from; {@code id} the stored row (null before it is stored).
+     * {@code lastLoadKg} the load it came from; {@code id} the stored row (null before it is stored); {@code startLoadKg} and
+     * {@code startReps} the starting weight given for the move (K-998), kept with the row so a change log's snapshots carry
+     * it back too (K-995; a snapshot written before has none).
      */
     record PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
-            BigDecimal lastLoadKg, UUID id, Instant nextFrom, boolean nextRackEnds) {
+            BigDecimal lastLoadKg, UUID id, Instant nextFrom, boolean nextRackEnds, BigDecimal startLoadKg, Integer startReps) {
 
         /** As planned, before any workout. */
         PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir) {
             this(exerciseId, sets, repMin, repMax, targetRir, null, null, null, null, null, false);
         }
 
+        /** With a target, without a starting weight. */
+        PlannedExercise(String exerciseId, int sets, int repMin, int repMax, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
+                BigDecimal lastLoadKg, UUID id, Instant nextFrom, boolean nextRackEnds) {
+            this(exerciseId, sets, repMin, repMax, targetRir, nextLoadKg, nextReps, lastLoadKg, id, nextFrom, nextRackEnds, null, null);
+        }
+
         PlannedExercise withSets(int newSets) {
-            return new PlannedExercise(exerciseId, newSets, repMin, repMax, targetRir, nextLoadKg, nextReps, lastLoadKg, id, nextFrom, nextRackEnds);
+            return new PlannedExercise(exerciseId, newSets, repMin, repMax, targetRir, nextLoadKg, nextReps, lastLoadKg, id, nextFrom, nextRackEnds,
+                    startLoadKg, startReps);
         }
 
-        /** Another rep range: the target was for the old one, so it goes (the next session finds the load again). */
+        /**
+         * Another rep range: the target was for the old one, so it goes (the next session finds the load again), and so does
+         * the starting weight given for it (K-995: a discarded session would bring it back as the new range's target).
+         */
         PlannedExercise withReps(int min, int max) {
-            return new PlannedExercise(exerciseId, sets, min, max, targetRir, null, null, null, id, null, false);
+            return new PlannedExercise(exerciseId, sets, min, max, targetRir, null, null, null, id, null, false, null, null);
         }
 
-        /** This move as planned, in {@code row} with that row's target. */
+        /** This move as planned, in {@code row} with that row's target and starting weight. */
         PlannedExercise inRowOf(PlannedExercise row) {
             return new PlannedExercise(exerciseId, sets, repMin, repMax, targetRir, row.nextLoadKg, row.nextReps, row.lastLoadKg, row.id, row.nextFrom,
-                    row.nextRackEnds);
+                    row.nextRackEnds, row.startLoadKg, row.startReps);
         }
     }
 
@@ -118,12 +130,6 @@ class ProgramStore {
                 .query(UUID.class).single();
         int before = jdbc.sql("select count(*) from training.program_day where program_id = :program").param("program", program)
                 .query(Integer.class).single();
-        // The starting weights kept with the moves (K-998) go back onto the rows that keep their id.
-        record Start(UUID id, BigDecimal loadKg, int reps) {
-        }
-        List<Start> starts = jdbc.sql("select id, start_load_kg, start_reps from training.planned_exercise where account_id = :account and start_load_kg is not null")
-                .param("account", account.value())
-                .query((row, n) -> new Start(row.getObject("id", UUID.class), row.getBigDecimal("start_load_kg"), row.getInt("start_reps"))).list();
         jdbc.sql("delete from training.program_day where program_id = :program").param("program", program).update();
         if (before != days.size()) {
             jdbc.sql("""
@@ -133,11 +139,8 @@ class ProgramStore {
                     .param("id", UUID.randomUUID()).param("account", account.value()).param("sessions", days.size())
                     .param("now", clock.instant().atOffset(ZoneOffset.UTC)).update();
         }
+        // Each move carries its starting weight (K-998) as read with the row: a row kept keeps it, unless the change dropped it.
         insert(account, program, days);
-        for (Start start : starts) {
-            jdbc.sql("update training.planned_exercise set start_load_kg = :load, start_reps = :reps where account_id = :account and id = :id")
-                    .param("account", account.value()).param("id", start.id()).param("load", start.loadKg()).param("reps", start.reps()).update();
-        }
         return current(account).orElseThrow();
     }
 
@@ -156,14 +159,16 @@ class ProgramStore {
                 PlannedExercise planned = day.exercises().get(e);
                 jdbc.sql("""
                         insert into training.planned_exercise (id, day_id, account_id, seq, exercise_id, sets, rep_min, rep_max, target_rir,
-                            next_load_kg, next_reps, last_load_kg, next_from, next_rack_ends)
-                        values (:id, :day, :account, :seq, :exercise, :sets, :min, :max, :rir, :load, :reps, :last, :from, :rackEnds)""")
+                            next_load_kg, next_reps, last_load_kg, next_from, next_rack_ends, start_load_kg, start_reps)
+                        values (:id, :day, :account, :seq, :exercise, :sets, :min, :max, :rir, :load, :reps, :last, :from, :rackEnds, :startLoad,
+                            :startReps)""")
                         .param("id", planned.id() == null ? UUID.randomUUID() : planned.id()).param("day", dayId).param("account", account.value())
                         .param("seq", e).param("exercise", planned.exerciseId()).param("sets", planned.sets()).param("min", planned.repMin())
                         .param("max", planned.repMax()).param("rir", planned.targetRir()).param("load", planned.nextLoadKg())
                         .param("reps", planned.nextReps()).param("last", planned.lastLoadKg())
                         .param("from", planned.nextFrom() == null ? null : planned.nextFrom().atOffset(ZoneOffset.UTC))
-                        .param("rackEnds", planned.nextRackEnds()).update();
+                        .param("rackEnds", planned.nextRackEnds()).param("startLoad", planned.startLoadKg()).param("startReps", planned.startReps())
+                        .update();
             }
         }
     }
@@ -214,7 +219,7 @@ class ProgramStore {
         }
         Map<UUID, List<PlannedExercise>> exercises = jdbc.sql("""
                 select e.id, e.day_id, e.exercise_id, e.sets, e.rep_min, e.rep_max, e.target_rir, e.next_load_kg, e.next_reps, e.last_load_kg,
-                       e.next_from, e.next_rack_ends
+                       e.next_from, e.next_rack_ends, e.start_load_kg, e.start_reps
                 from training.planned_exercise e
                 join training.program_day d on d.id = e.day_id where d.program_id = :program order by e.day_id, e.seq""")
                 .param("program", program)
@@ -222,7 +227,8 @@ class ProgramStore {
                         row.getInt("sets"), row.getInt("rep_min"), row.getInt("rep_max"), row.getInt("target_rir"),
                         plain(row.getBigDecimal("next_load_kg")), row.getObject("next_reps", Integer.class), plain(row.getBigDecimal("last_load_kg")),
                         row.getObject("id", UUID.class), Optional.ofNullable(row.getObject("next_from", OffsetDateTime.class))
-                                .map(OffsetDateTime::toInstant).orElse(null), row.getBoolean("next_rack_ends"))))
+                                .map(OffsetDateTime::toInstant).orElse(null), row.getBoolean("next_rack_ends"), plain(row.getBigDecimal("start_load_kg")),
+                        row.getObject("start_reps", Integer.class))))
                 .list().stream()
                 .collect(Collectors.groupingBy(Row::day, LinkedHashMap::new, Collectors.mapping(Row::exercise, Collectors.toList())));
         List<Day> days = jdbc.sql("select id, name_key, name, weekday from training.program_day where program_id = :program order by seq")

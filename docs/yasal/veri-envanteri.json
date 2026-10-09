@@ -485,11 +485,12 @@
    "table": "training.program_review_change",
    "module": "training",
    "class": "training",
-   "purpose": "Changes you applied to your program from its review, with the program before and after each, so any of them can be undone.",
+   "purpose": "Changes you made to your program, from its review or by editing it, with the program before and after each, so any of them can be undone.",
    "columns": [
     "id",
     "account_id",
     "seq",
+    "kind",
     "suggestion",
     "program_before",
     "program_after",

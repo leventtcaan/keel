@@ -16,6 +16,7 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -98,10 +99,13 @@ class ProgramReviews {
     private final ProgramStore programs;
     private final ReviewChangeStore changes;
     private final SessionChangeStore sessions;
+    private final WorkoutStore workouts;
     private final ExerciseCatalog catalog;
     private final Clock clock;
 
-    ProgramReviews(ProgramStore programs, ReviewChangeStore changes, SessionChangeStore sessions, ExerciseCatalog catalog, Clock clock) {
+    ProgramReviews(ProgramStore programs, ReviewChangeStore changes, SessionChangeStore sessions, WorkoutStore workouts, ExerciseCatalog catalog,
+            Clock clock) {
+        this.workouts = workouts;
         this.sessions = sessions;
         this.programs = programs;
         this.changes = changes;
@@ -120,41 +124,61 @@ class ProgramReviews {
      * or a pick is not among its suggestions now: nothing is changed.
      */
     @Transactional
-    ProgramStore.Program apply(AccountId account, String reviewId, List<String> picks, Parameters parameters) {
+    ProgramStore.Program apply(AccountId account, String reviewId, List<String> picks, Parameters parameters, LocalDate monday) {
         ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         List<String> shown = suggestions(current, catalog, parameters).stream().map(Suggestion::id).toList();
         if (!reviewId(current).equals(reviewId) || !shown.containsAll(picks)) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Outcome outcome = apply(current, shown.stream().filter(picks::contains).toList(), catalog, parameters);
-        return keep(account, outcome);
+        return keep(account, current, outcome, monday);
     }
 
     /**
-     * Undoes a change in force and applies the ones after it again, a later one that no longer applies undone with it and
-     * named; without a change, undoes them all. A change undone before, or none in force, changes nothing. CONFLICT when
-     * the program changed another way since its last change.
+     * Undoes a change in force (a suggestion or an edit) and applies the ones after it again, a later one that no longer
+     * applies undone with it and named; without a change, undoes every suggestion in force (K-995: "N changes applied ·
+     * Undo"), from the first: an edit before it stays, an edit after it applies again or is undone with them and named. A
+     * change undone before, or none to undo, changes nothing. CONFLICT when the program changed another way since its last
+     * change.
      */
     @Transactional
-    Undone undo(AccountId account, Optional<UUID> change, Parameters parameters) {
+    Undone undo(AccountId account, Optional<UUID> change, Parameters parameters, LocalDate monday) {
         ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         List<ReviewChangeStore.Row> log = changes.all(account);
         if (change.isPresent() && log.stream().noneMatch(row -> row.id().equals(change.get()))) {
             throw new ApiException(ErrorCode.NOT_FOUND);
         }
         List<ReviewChangeStore.Row> inForce = log.stream().filter(row -> row.undoneAt() == null).toList();
+        List<Step> steps = inForce.stream().map(ReviewChangeStore.Row::step).toList();
         List<UUID> ids = inForce.stream().map(ReviewChangeStore.Row::id).toList();
         OptionalInt index = change.map(id -> OptionalInt.of(ids.indexOf(id))).orElse(OptionalInt.empty());
-        if (inForce.isEmpty() || index.orElse(0) < 0) {
+        int from = index.isPresent() ? index.getAsInt() : firstSuggestion(steps);
+        if (from < 0) {
             return new Undone(current, List.of());
         }
         if (!reviewId(inForce.getLast().step().after()).equals(reviewId(current))) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
-        Outcome outcome = undo(inForce.stream().map(ReviewChangeStore.Row::step).toList(), index, current, catalog, parameters);
-        changes.undo(account, ids.subList(index.orElse(0), ids.size()), clock.instant());
-        List<UUID> alsoUndone = outcome.skipped().stream().map(later -> ids.get(index.orElse(0) + 1 + later)).toList();
-        return new Undone(keep(account, outcome), alsoUndone);
+        Outcome outcome = undo(steps, index, current, catalog, parameters);
+        changes.undo(account, ids.subList(from, ids.size()), clock.instant());
+        List<UUID> later = new ArrayList<>();
+        for (int i = from + 1; i < ids.size(); i++) {
+            if (index.isPresent() || steps.get(i).kind() == Kind.EDIT) {
+                later.add(ids.get(i));
+            }
+        }
+        List<UUID> alsoUndone = outcome.skipped().stream().map(later::get).toList();
+        return new Undone(keep(account, current, outcome, monday), alsoUndone);
+    }
+
+    /** The first suggestion of the changes in force; -1 when there is none. */
+    private static int firstSuggestion(List<Step> steps) {
+        for (int i = 0; i < steps.size(); i++) {
+            if (steps.get(i).kind() == Kind.REVIEW) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**
@@ -163,23 +187,42 @@ class ProgramReviews {
      * an edit that changes nothing is neither stored nor logged.
      */
     @Transactional
-    ProgramStore.Program edit(AccountId account, List<ProgramEdits.Day> edit, int targetRir, LocalDate monday) {
+    ProgramStore.Program edit(AccountId account, List<ProgramEdits.Day> edit, int targetRir, LocalDate today, ZoneId zone) {
         ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         List<ProgramStore.Day> days = ProgramEdits.edited(current, edit, targetRir).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         if (days.equals(current.days())) {
             return current;
         }
+        // A day whose session was started today stays on its weekday (Ek 7, as a move or a skip: a session done is done).
+        Set<UUID> relaid = ProgramEdits.relaid(current, new ProgramStore.Program(current.id(), current.source(), days));
+        if (workouts.between(account, today.atStartOfDay(zone).toInstant(), today.plusDays(1).atStartOfDay(zone).toInstant()).stream()
+                .anyMatch(workout -> relaid.contains(workout.programDayId()))) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
         ProgramStore.Program stored = programs.rewrite(account, days);
         changes.add(account, List.of(Step.edit(current, stored)), clock.instant());
-        // A day on another weekday, or gone, re-lays this week: its change to this week's session goes (Ek 7).
-        sessions.clear(account, monday, ProgramEdits.relaid(current, stored));
+        relay(account, current, stored, TodayChanges.monday(today));
         return stored;
     }
 
-    private ProgramStore.Program keep(AccountId account, Outcome outcome) {
+    private ProgramStore.Program keep(AccountId account, ProgramStore.Program current, Outcome outcome, LocalDate monday) {
         ProgramStore.Program stored = programs.rewrite(account, outcome.program().days());
         changes.add(account, outcome.steps(), clock.instant());
+        relay(account, current, stored, monday);
         return stored;
+    }
+
+    /**
+     * This week's sessions re-laid as the program now has them (TodayChanges#relay, K-995): a day on another weekday, or
+     * gone, loses this week's change, and what its move pushed goes back; today's swaps keep to the plan.
+     */
+    private void relay(AccountId account, ProgramStore.Program before, ProgramStore.Program stored, LocalDate monday) {
+        Map<UUID, List<String>> planned = new HashMap<>();
+        stored.days().forEach(day -> planned.put(day.id(), day.exercises().stream().map(ProgramStore.PlannedExercise::exerciseId).toList()));
+        TodayChanges.Relay relay = TodayChanges.relay(sessions.week(account, monday), sessions.undos(account, monday), ProgramEdits.relaid(before, stored),
+                planned);
+        sessions.clear(account, monday, relay.clear());
+        relay.put().forEach((day, row) -> sessions.put(account, day, monday, row));
     }
 
     // ── the review, pure ─────────────────────────────────────────────────────────────────────────────────────────
@@ -286,12 +329,16 @@ class ProgramReviews {
 
     /**
      * Undoes the change at {@code index} of the changes in force: the program before it with the later changes applied
-     * again, a later one that no longer applies skipped (its index among the later ones); without an index, every change:
-     * the program before the first. Every move keeps the row and target {@code current} has for it (ProgramReviews#carry).
+     * again, a later one that no longer applies skipped (its index among the later ones applied again); without an index,
+     * every suggestion: the program before the first, with the edits after it applied again (K-995). Every move keeps the row and target {@code current} has for it (ProgramReviews#carry).
      */
     static Outcome undo(List<Step> inForce, OptionalInt index, ProgramStore.Program current, ExerciseCatalog catalog, Parameters parameters) {
-        int from = index.orElse(0);
-        List<Step> later = index.isEmpty() ? List.of() : inForce.subList(from + 1, inForce.size());
+        int from = index.isPresent() ? index.getAsInt() : firstSuggestion(inForce);
+        if (from < 0) {
+            return new Outcome(current, List.of(), List.of());
+        }
+        // Every suggestion undone (no index): the edits after the first apply again, the suggestions do not (K-995).
+        List<Step> later = inForce.subList(from + 1, inForce.size()).stream().filter(step -> index.isPresent() || step.kind() == Kind.EDIT).toList();
         Outcome again = replay(inForce.get(from).before(), later, catalog, parameters);
         return new Outcome(carry(again.program(), current), again.steps(), again.skipped());
     }

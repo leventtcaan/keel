@@ -187,6 +187,135 @@ class ProgramEditApiTests {
         assertThat(send(TestSessions.newAccount(), "PATCH", "/v1/program", edit(program, days -> days))).hasStatus(404);
     }
 
+    @Test
+    void anotherRangeDropsTheStartingWeightSoADiscardedSessionLeavesNoTargetForIt() throws Exception {
+        // #518 review: bench started at 80 kg for 6-10, edited to 8-12, a session, discarded: no 80 kg target for 8-12.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = generated(account);
+        Object upper = days(program).getFirst().get("id");
+        assertThat(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            exercises(days.getFirst()).stream().filter(move -> "bench_press".equals(move.get("exerciseId"))).findFirst().orElseThrow()
+                    .put("reps", Map.of("min", 8, "max", 12));
+            return days;
+        }))).hasStatusOk();
+        String workout = workout(account, "2026-10-07T10:00:00Z", upper, "bench_press", 70);
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/finish", Map.of("endedAt", "2026-10-07T10:50:00Z", "uncleanExerciseIds", List.of())))
+                .hasStatusOk();
+        assertThat(move(map(send(account, "GET", "/v1/program", null)), 0, "bench_press").get("nextLoadKg")).isNotNull();
+
+        assertThat(send(account, "DELETE", "/v1/workouts/" + workout, null)).hasStatus(204);
+
+        assertThat(move(map(send(account, "GET", "/v1/program", null)), 0, "bench_press").containsKey("nextLoadKg")).isFalse();
+    }
+
+    @Test
+    void aDayAnEditReLaysTakesBackTheSessionsItsMovePushed() throws Exception {
+        // #518 review: Wednesday's session moved to Thursday pushed Thursday's to Friday; the edit puts Wednesday's day on
+        // Tuesday: Thursday's is back on Thursday. Undoing the edit re-lays the week again: Wednesday's on Wednesday.
+        AccountId account = TestSessions.newAccount();
+        assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "WEDNESDAY", "THURSDAY", "SATURDAY"))))
+                .hasStatusOk();
+        Map<String, Object> program = map(send(account, "GET", "/v1/program", null));
+        Object wednesday = days(program).get(1).get("id");
+        Object thursday = days(program).get(2).get("id");
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", wednesday, "change", "MOVE"))).hasStatusOk();
+
+        Map<String, Object> edited = map(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            days.get(1).put("weekday", "TUESDAY");
+            return days;
+        })));
+
+        assertThat(session(edited, thursday)).containsEntry("date", "2026-10-08").doesNotContainKey("moved");
+        assertThat(session(edited, wednesday)).containsEntry("date", "2026-10-06").doesNotContainKey("moved");
+        Map<String, Object> undone = map(map(send(account, "POST", "/v1/program/review/undo", Map.of("changeId", edits(edited).getFirst().get("id"))))
+                .get("program"));
+        assertThat(session(undone, wednesday)).containsEntry("date", "2026-10-07").doesNotContainKey("moved");
+        assertThat(session(undone, thursday)).containsEntry("date", "2026-10-08");
+    }
+
+    @Test
+    void aDayWhoseSessionStartedTodayKeepsItsWeekdayAndIsNotTakenOut() throws Exception {
+        // #518 review (card item 7): as a move or a skip, a session done is done.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = generated(account);
+        workout(account, "2026-10-07T10:00:00Z", days(program).get(1).get("id"), "squat", 100);
+
+        assertThat(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            days.get(1).put("weekday", "THURSDAY");
+            return days;
+        }))).hasStatus(409);
+        assertThat(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            days.remove(1);
+            return days;
+        }))).hasStatus(409);
+        // Its moves may change: the program is the plan from now on.
+        assertThat(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            setsOf(days.get(1), "squat", 4);
+            return days;
+        }))).hasStatusOk();
+    }
+
+    @Test
+    void todaysSwapToAMoveTheEditPlansEndsSoTheMoveIsInTheSessionOnce() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = generated(account);
+        Object lower = days(program).get(1).get("id");
+        assertThat(send(account, "POST", "/v1/program/swap", Map.of("programDayId", lower, "exerciseId", "squat", "to", "hack_squat", "scope", "TODAY")))
+                .hasStatusOk();
+
+        Map<String, Object> edited = map(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            exercises(days.get(1)).add(new HashMap<>(Map.of("exerciseId", "hack_squat", "sets", 2, "reps", Map.of("min", 6, "max", 10))));
+            return days;
+        })));
+
+        @SuppressWarnings("unchecked")
+        List<Object> moves = (List<Object>) session(edited, lower).get("exerciseIds");
+        assertThat(moves).contains("squat");
+        assertThat(moves.stream().filter("hack_squat"::equals).count()).isEqualTo(1);
+        assertThat(session(edited, lower)).doesNotContainKey("swaps");
+    }
+
+    @Test
+    void undoingEverySuggestionKeepsAnEditMadeBeforeThem() throws Exception {
+        // #518 review: "N changes applied · Undo" is the N suggestions.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> own = map(send(account, "PUT", "/v1/program", Map.of("days", List.of(
+                Map.of("name", "Upper", "weekday", "MONDAY", "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 3, "max", 5)))),
+                Map.of("name", "Lower", "weekday", "THURSDAY", "exercises", List.of(Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 6, "max", 10))))))));
+        Map<String, Object> edited = map(send(account, "PATCH", "/v1/program", edit(own, days -> {
+            days.get(1).put("name", "Legs");
+            return days;
+        })));
+        Map<?, ?> review = (Map<?, ?>) edited.get("review");
+        Object reps = ((List<?>) review.get("suggestions")).stream().map(suggestion -> ((Map<?, ?>) suggestion).get("id"))
+                .filter("REP_RANGE:bench_press"::equals).findFirst().orElseThrow();
+        assertThat(send(account, "POST", "/v1/program/review/apply", Map.of("reviewId", review.get("id"), "suggestionIds", List.of(reps)))).hasStatusOk();
+
+        Map<String, Object> undone = map(send(account, "POST", "/v1/program/review/undo", Map.of()));
+
+        Map<String, Object> back = map(undone.get("program"));
+        assertThat(undone.get("alsoUndone")).isEqualTo(List.of());
+        assertThat(applied(back)).isEmpty();
+        assertThat(edits(back)).hasSize(1);
+        assertThat(days(back).get(1)).containsEntry("name", "Legs");
+        assertThat(moves(back, 0).getFirst().get("reps")).isEqualTo(Map.of("min", 3, "max", 5));
+    }
+
+    /** A workout of the program day begun at {@code startedAt} with one working set of the move; its id. */
+    private String workout(AccountId account, String startedAt, Object programDayId, String exercise, int kg) throws Exception {
+        MvcTestResult started = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", startedAt,
+                "programDayId", programDayId));
+        assertThat(started).hasStatus(201);
+        String workout = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/sets", Map.of("clientId", UUID.randomUUID(), "exerciseId", exercise,
+                "setType", "WORKING", "loadKg", kg, "reps", 9, "rir", 1))).hasStatus(201);
+        return workout;
+    }
+
+    private static Map<String, Object> session(Map<String, Object> program, Object day) {
+        return sessions(program).stream().filter(one -> day.equals(one.get("programDayId"))).findFirst().orElseThrow();
+    }
+
     /** The generated program for Monday, Wednesday, Friday and Saturday, with bench presses started at 80 kg. */
     private Map<String, Object> generated(AccountId account) throws Exception {
         assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "WEDNESDAY", "FRIDAY", "SATURDAY"))))
@@ -265,6 +394,7 @@ class ProgramEditApiTests {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
             case "PATCH" -> mvc.patch();
+            case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };
         request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));

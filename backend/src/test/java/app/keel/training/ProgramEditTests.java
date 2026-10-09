@@ -176,6 +176,69 @@ class ProgramEditTests {
         assertThat(reviewUndone.skipped()).containsExactly(0);
     }
 
+    @Test
+    void theStartingWeightStaysWithItsRowAndGoesWithAnotherRangeOrMove() {
+        // #518 review: a starting weight was for its move and range; a discarded session brings it back as the target.
+        ProgramStore.Program program = withStart(own(), "bench_press", "80", 6);
+        ProgramStore.PlannedExercise bench = program.days().getFirst().exercises().getFirst();
+        List<ProgramEdits.Day> sets = asIs(program);
+        sets.set(0, withMove(sets.getFirst(), 0, new ProgramEdits.Move(bench.id(), "bench_press", 2, bench.repMin(), bench.repMax())));
+        List<ProgramEdits.Day> range = asIs(program);
+        range.set(0, withMove(range.getFirst(), 0, new ProgramEdits.Move(bench.id(), "bench_press", bench.sets(), 8, 12)));
+
+        ProgramStore.PlannedExercise fewerSets = ProgramEdits.edited(program, sets, RIR).orElseThrow().getFirst().exercises().getFirst();
+        ProgramStore.PlannedExercise otherRange = ProgramEdits.edited(program, range, RIR).orElseThrow().getFirst().exercises().getFirst();
+
+        assertThat(fewerSets.startLoadKg()).isEqualByComparingTo("80");
+        assertThat(fewerSets.startReps()).isEqualTo(6);
+        assertThat(otherRange.id()).isEqualTo(bench.id());
+        assertThat(otherRange.startLoadKg()).isNull();
+        assertThat(otherRange.startReps()).isNull();
+    }
+
+    @Test
+    void aMoveTheEditRemovedComesBackWithItsStartingWeightWhenTheEditIsUndone() {
+        ProgramStore.Program before = withStart(own(), "bench_press", "80", 6);
+        List<ProgramEdits.Day> edit = asIs(before);
+        edit.set(0, withoutMove(edit.getFirst(), 0));
+        ProgramStore.Program after = new ProgramStore.Program(before.id(), before.source(), ProgramEdits.edited(before, edit, RIR).orElseThrow());
+
+        ProgramStore.Program undone = ProgramReviews.undo(List.of(ProgramReviews.Step.edit(before, after)), OptionalInt.of(0), after, catalog, P).program();
+
+        assertThat(undone.days().getFirst().exercises().getFirst().startLoadKg()).isEqualByComparingTo("80");
+        // The log keeps it in its snapshots.
+        tools.jackson.databind.json.JsonMapper json = tools.jackson.databind.json.JsonMapper.builder().build();
+        assertThat(json.readValue(json.writeValueAsString(before), ProgramStore.Program.class)).isEqualTo(before);
+    }
+
+    @Test
+    void undoingEveryChangeUndoesTheSuggestionsAndKeepsTheEditsBeforeThem() {
+        // #518 review: "N changes applied · Undo" undoes the N suggestions; an edit made before them stays.
+        ProgramStore.Program program = own();
+        List<ProgramEdits.Day> edit = asIs(program);
+        edit.set(0, withoutMove(edit.getFirst(), 1));
+        ProgramStore.Program edited = new ProgramStore.Program(program.id(), program.source(), ProgramEdits.edited(program, edit, RIR).orElseThrow());
+        ProgramReviews.Outcome reviewed = ProgramReviews.apply(edited, List.of("REP_RANGE:squat"), catalog, P);
+        List<ProgramReviews.Step> log = List.of(ProgramReviews.Step.edit(program, edited), reviewed.steps().getFirst());
+
+        ProgramReviews.Outcome undone = ProgramReviews.undo(log, OptionalInt.empty(), reviewed.program(), catalog, P);
+
+        assertThat(ProgramReviewChangesTests.shape(undone.program())).isEqualTo(ProgramReviewChangesTests.shape(edited));
+        assertThat(undone.skipped()).isEmpty();
+        // Only the edit in force: nothing to undo for "every suggestion".
+        assertThat(ProgramReviews.undo(List.of(ProgramReviews.Step.edit(program, edited)), OptionalInt.empty(), edited, catalog, P).program())
+                .isEqualTo(edited);
+    }
+
+    /** The program with a starting weight on its first {@code exercise}. */
+    private static ProgramStore.Program withStart(ProgramStore.Program program, String exercise, String kg, int reps) {
+        return new ProgramStore.Program(program.id(), program.source(), program.days().stream().map(day -> new ProgramStore.Day(day.id(), day.nameKey(),
+                day.name(), day.weekday(), day.exercises().stream().map(move -> !move.exerciseId().equals(exercise) ? move
+                        : new ProgramStore.PlannedExercise(move.exerciseId(), move.sets(), move.repMin(), move.repMax(), move.targetRir(),
+                                move.nextLoadKg(), move.nextReps(), move.lastLoadKg(), move.id(), move.nextFrom(), move.nextRackEnds(),
+                                new java.math.BigDecimal(kg), reps)).toList())).toList());
+    }
+
     /** The edit that leaves the program as it is: every day and move by its id. */
     private static List<ProgramEdits.Day> asIs(ProgramStore.Program program) {
         return new ArrayList<>(program.days().stream().map(day -> new ProgramEdits.Day(day.id(), null, day.weekday(), day.exercises().stream()

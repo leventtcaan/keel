@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -293,6 +294,35 @@ class TodayChangeTests {
 
         assertThat(after).isEqualTo(new TodayChanges.Undo(UPPER.id(), MONDAY, TodayChanges.Change.NONE.shortened()));
         assertThat(undo.withoutSwapsOf("bench_press", "seated_row").before().swaps()).isEmpty();
+    }
+
+    @Test
+    void aDayAnEditReLaysTakesItsMoveBackFromTheSessionsItPushedAndItsRowsGo() {
+        // #518 review: Upper moved to Tuesday pushed Lower to Wednesday; an edit puts Upper on Thursday: Lower is back on Tuesday.
+        Map<UUID, TodayChanges.Change> kept = Map.of(UPPER.id(), TodayChanges.Change.NONE.on(TUESDAY), LOWER.id(), TodayChanges.Change.NONE.on(WEDNESDAY));
+        Map<UUID, TodayChanges.Undo> undos = Map.of(UPPER.id(), new TodayChanges.Undo(UPPER.id(), MONDAY, TodayChanges.Change.NONE),
+                LOWER.id(), new TodayChanges.Undo(UPPER.id(), MONDAY, TodayChanges.Change.NONE));
+        Map<UUID, List<String>> planned = Map.of(UPPER.id(), List.of("bench_press"), LOWER.id(), List.of("squat"), PUSH.id(), List.of("cable_fly"));
+
+        TodayChanges.Relay relay = TodayChanges.relay(kept, undos, Set.of(UPPER.id()), planned);
+
+        assertThat(relay.clear()).containsExactly(UPPER.id());
+        assertThat(relay.put()).isEqualTo(Map.of(LOWER.id(), new TodayChanges.Kept(TodayChanges.Change.NONE, null)));
+    }
+
+    @Test
+    void todaysSwapsTheProgramNoLongerHoldsGoAndOneToAMoveItNowPlansGoes() {
+        // #518 review: incline swapped for dumbbell bench today; the edit plans dumbbell bench on that day, and drops the row.
+        TodayChanges.Change today = TodayChanges.Change.NONE.swapped("incline_dumbbell_press", "dumbbell_bench_press").swapped("barbell_row", "seated_row")
+                .shortened();
+        Map<UUID, List<String>> planned = Map.of(UPPER.id(), List.of("bench_press", "dumbbell_bench_press", "incline_dumbbell_press", "overhead_press"));
+
+        TodayChanges.Relay relay = TodayChanges.relay(Map.of(UPPER.id(), today), Map.of(), Set.of(), planned);
+
+        assertThat(relay.put()).isEqualTo(Map.of(UPPER.id(), new TodayChanges.Kept(TodayChanges.Change.NONE.shortened(), null)));
+        assertThat(relay.clear()).isEmpty();
+        // Nothing to prune, nothing written.
+        assertThat(TodayChanges.relay(Map.of(UPPER.id(), TodayChanges.Change.NONE.shortened()), Map.of(), Set.of(), planned).put()).isEmpty();
     }
 
     @Test
