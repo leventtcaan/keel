@@ -147,7 +147,7 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
   Train/This week/+/program yeniden kurma için "süren seans" saymaz (`activeWorkout(records, now)`), yoksa sekmeyi sonsuza kadar kilitlerdi.
   Kayıtları silinmez, olduğu gibi eşitlenir. Seans ekranı bir güne açılınca (`?day`) bayat seansı taşımaz, yeni seans başlar; "Continue" ile
   (gün yok) açılırsa End yalnız Finish ve Discard sunar (kalan bir şey yok). **Bilinen sınır:** duraklamasız bayat seansın Finish'i `endedAt`'i
-  şimdi olarak yollar; Health'e 24 saatten uzun süre yazılmaz (`health_workout_max_minutes`), sunucuda dakika şişer. Sunucu tarafı
+  şimdi olarak yollar; Health'e 4 saatten (240 dk) uzun süre yazılmaz (`health_workout_max_minutes`), sunucuda dakika şişer. Sunucu tarafı
   düzeltmesi gerekirse ayrı iş.
 - **Discard çevrimdışı:** `queue.record` kaydı hemen göndermeyi dener; çevrimdışı ilk set bile `attempted` olur. Bu yüzden "hiç gönderilmedi" yolu
   yalnız kaydedilip gönderilmemiş kayıt (uygulama arada kapandı) için vardır; metin "may already be on the server" der, "already sent" değil.
