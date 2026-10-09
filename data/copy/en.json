@@ -683,6 +683,10 @@
     "offline": "Saving a move needs a connection. Try again when you're online.",
     "refused": "This move could not be saved. Try again."
   },
+  "muscleMap": {
+    "label": "Muscle map, sets this week: {muscles}",
+    "item": "{muscle} {done} of {target}"
+  },
   "summary": {
     "title": "Workout done",
     "reached": "{reached} of {judged} exercises reached your target effort",
