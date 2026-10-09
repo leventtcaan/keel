@@ -497,7 +497,17 @@
     "setSkipped": "Set skipped. No catch-up needed.",
     "moveSkipped": "Move skipped. No catch-up needed.",
     "undo": "Undo",
-    "undoLabel": "Undo the skip",
+    "undoLabel": "Undo",
+    "setDeleted": "Set deleted.",
+    "editHint": "Opens it to correct or delete.",
+    "undoFailed": "That couldn't be undone. Try again.",
+    "edit": {
+      "title": "Set {number}",
+      "delete": "Delete set",
+      "done": "Done",
+      "offline": "This set is already sent. Changing it needs a connection.",
+      "failed": "That set couldn't be changed. Try again."
+    },
     "moveIsSkipped": "Skipped today. No catch-up needed.",
     "bringBack": "Bring it back",
     "clock": {
@@ -682,6 +692,37 @@
     "back": "Back",
     "offline": "Saving a move needs a connection. Try again when you're online.",
     "refused": "This move could not be saved. Try again."
+  },
+  "workoutEnd": {
+    "title": "Workout complete",
+    "minutes": { "one": "minute", "other": "minutes" },
+    "liftedKg": "kg lifted",
+    "liftedLb": "lb lifted",
+    "change": "{percent}% vs last time",
+    "sets": { "one": "set", "other": "sets" },
+    "kcal": "kcal",
+    "watch": "Apple Watch",
+    "record": "{move} {set}",
+    "recordKicker": "Record",
+    "recordNext": "Best ever. Next: {set}.",
+    "recordBest": "Best ever.",
+    "set": "{load} × {reps}",
+    "baseline": "Baseline set",
+    "baselineBody": "Next time every set has a target to beat.",
+    "worked": "Worked today",
+    "thisWeek": "This week",
+    "week": "{done} of {planned}",
+    "weekLabel": "This week: {done} of {planned} sessions",
+    "share": "Share your workout",
+    "done": "Done",
+    "pending": "Your numbers show once this workout reaches the server. It's saved on this phone.",
+    "failed": "Your numbers couldn't load.",
+    "retry": "Try again",
+    "ready": "Your numbers are in."
+  },
+  "muscleMap": {
+    "label": "Muscle map, sets this week: {muscles}",
+    "item": "{muscle} {done} of {target}"
   },
   "summary": {
     "title": "Workout done",

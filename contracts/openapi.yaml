@@ -4063,6 +4063,8 @@ components:
           description: |
             Present (true) when a state was declared on a day of this week (K-516, ADR-038): the week is neither on track
             nor missed, and the record leaves it out.
+        weightChange:
+          $ref: "#/components/schemas/WeightChange"
         record:
           type: object
           required: [onTrackWeeks, countedWeeks, currentRun, forgivenWeeks]
@@ -4084,6 +4086,25 @@ components:
               description: |
                 The missed weeks a run forgave, over the whole record (K-608): each lone miss after an on-track week, counted
                 when forgiven — never reset, never taken back by a second miss (which ends the run).
+    WeightChange:
+      type: object
+      description: |
+        The period's weight change (K-988, ADR-078 #2, Ek 1, U8): today's trend weight (the trend_display_days average
+        ending today) minus the one ending on `since`, the day the record began (the first call); never one day's weigh-in.
+        Below zero is a loss. `direction`: STEADY while the change is within the engine's flat_margin_kg (the scale's noise,
+        as a call reads a flat week), else DOWN or UP; the app writes the sentence from it ("Down 3.8 kg."), the server
+        sends none. Absent unless each window holds min_weighins_per_week weigh-ins (scaled to the window) and they do not
+        overlap. Weigh-ins typed or read from Apple Health count; history imported once (IMPORT) does not.
+      required: [kg, direction, since]
+      properties:
+        kg:
+          type: number
+        direction:
+          type: string
+          enum: [DOWN, UP, STEADY]
+        since:
+          type: string
+          format: date
     ActionCount:
       type: object
       description: One kind of planned action this week; done is counted up to planned.

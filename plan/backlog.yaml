@@ -4697,3 +4697,36 @@ tasks:
     tests: ["ProgressSummary tablo testleri, API testi (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-078-ilerleme.md"]
     learn: ["Karşılaştırmanın tek yerde yapılması"]
+
+  - id: K-1009
+    title: "Karar ekranında hareket hedefi değişimi (72.5 × 9 → 72.5 × 8): antrenman modülünden en çok takılan hareket ve hedefi"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-1000]
+    why: "K-1000 (9 Eki): Decision.changes kalori/adım/faz değişimini veriyor; 'Hold the weight' kararında hangi hareketin hedefinin değiştiği antrenman modülünde (decision bağlanamaz, K-965 notu)"
+    acceptance:
+      - "Yük kararında (HOLD_LOAD vb.) `changes[]` hareket satırı: hareket kimliği, eski hedef → yeni hedef; sayılar sunucudan; telefon yalnız yazar"
+      - "Kullanıcı testi (8 Eki): 'Hold the weight' satırı hedef düşüyor gibi okunmaz; 'Keep' sonrası yürürlükteki hedef"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Modül sınırında okuma modeli"]
+
+  - id: K-1010
+    title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
+    milestone: M9
+    module: infra
+    type: chore
+    size: S
+    status: doing
+    depends_on: [K-901]
+    why: "Levent'in ikinci girişimi (Dilmaç, dilmac.site) aynı VPS'te çalışacak. 80/443 keel'in Caddy'sinde; keel'e her site için dokunmamak adına tek seferlik içeri alma kuralı. Ek siteler kendi klasörlerinde ve kendi Compose projelerinde, keel'in deploy'u /opt/sites'a dokunmaz"
+    acceptance:
+      - "Caddyfile'ın sonunda `import /etc/caddy/sites/*.caddy`; klasör boşken Caddy yalnızca uyarı verir, keel etkilenmez (sunucuda caddy validate ile denendi)"
+      - "Caddy servisi /opt/sites'ı salt okunur bağlar; ek port açılmaz, access log yok (mevcut testler geçer)"
+      - "test_deploy: içeri alma satırı ve salt okunur bağlama sabitlenir"
+    tests: ["python3 tools/test_deploy.py"]
+    refs: ["deploy/Caddyfile", "deploy/compose.yaml"]
+    learn: ["Caddy import ile birden çok site"]
