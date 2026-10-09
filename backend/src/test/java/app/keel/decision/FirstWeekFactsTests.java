@@ -95,7 +95,7 @@ class FirstWeekFactsTests {
         Optional<Instant> saved = Optional.of(LocalDateTime.parse("2026-10-07T09:00").atZone(istanbul).toInstant());
         Optional<Instant> planSeen = Optional.of(LocalDateTime.parse(seen).atZone(istanbul).toInstant());
 
-        LocalDate began = FirstWeekFacts.firstDay(planSeen, saved, () -> saved.orElseThrow(), istanbul);
+        LocalDate began = FirstWeekFacts.firstDay(planSeen, Optional.empty(), saved, () -> saved.orElseThrow(), istanbul);
 
         assertThat(began).isEqualTo(firstDay);
         assertThat(FirstWeekFacts.firstCallOn(began, DayOfWeek.MONDAY, began)).isEqualTo(firstCall);
@@ -104,7 +104,37 @@ class FirstWeekFactsTests {
         assertThat(FirstWeekFacts.of(began, DayOfWeek.MONDAY, NEXT_MONDAY, MON_WED_FRI, Set.of(), 3, EXPERIENCED).isPresent())
                 .isEqualTo(firstCall.equals(NEXT_MONDAY));
         // Never seen: the profile's first save, as before (K-990).
-        assertThat(FirstWeekFacts.firstDay(Optional.empty(), saved, () -> saved.orElseThrow(), istanbul)).isEqualTo(WEDNESDAY);
+        assertThat(FirstWeekFacts.firstDay(Optional.empty(), Optional.empty(), saved, () -> saved.orElseThrow(), istanbul)).isEqualTo(WEDNESDAY);
+    }
+
+    @Test
+    void aPlanSeenOnlyAfterTheFirstCallDoesNotMoveTheFirstDay() {
+        // #526 review: an old account (or a late send) tells the plan was seen after the first call was made: the first week
+        // was already closed; counting it again would ask for its call a second time and turn the first eight weeks back.
+        ZoneId istanbul = ZoneId.of("Europe/Istanbul");
+        Optional<Instant> saved = Optional.of(LocalDateTime.parse("2026-10-07T09:00").atZone(istanbul).toInstant());
+        Optional<Instant> seenLate = Optional.of(LocalDateTime.parse("2026-10-14T09:00").atZone(istanbul).toInstant());
+        Optional<Instant> seenBefore = Optional.of(LocalDateTime.parse("2026-10-09T09:00").atZone(istanbul).toInstant());
+
+        assertThat(FirstWeekFacts.firstDay(seenLate, Optional.of(NEXT_MONDAY), saved, () -> saved.orElseThrow(), istanbul)).isEqualTo(WEDNESDAY);
+        // Seen before the first call: it is the first day, before the call and after it.
+        assertThat(FirstWeekFacts.firstDay(seenBefore, Optional.of(NEXT_MONDAY), saved, () -> saved.orElseThrow(), istanbul))
+                .isEqualTo(WEDNESDAY.plusDays(2));
+        assertThat(FirstWeekFacts.firstDay(seenBefore, Optional.empty(), saved, () -> saved.orElseThrow(), istanbul)).isEqualTo(WEDNESDAY.plusDays(2));
+    }
+
+    @Test
+    void theDaysBeforeThePlanWasSeenAreNeverMissed() {
+        // Saved on Wednesday 7 (Mon/Wed/Fri plan), the plan seen on Saturday 10: Friday 9, planned, is in no week; the first
+        // week is Saturday to Sunday with nothing planned, and Monday 12's check-in reads it with nothing missed.
+        LocalDate seen = WEDNESDAY.plusDays(3);
+
+        FirstWeekAdjustment.Week week = FirstWeekFacts.of(seen, DayOfWeek.MONDAY, NEXT_MONDAY, MON_WED_FRI, Set.of(), 3, EXPERIENCED).orElseThrow();
+        FirstWeekAdjustment.Week fromSaved = FirstWeekFacts.of(WEDNESDAY, DayOfWeek.MONDAY, NEXT_MONDAY, MON_WED_FRI, Set.of(), 3, EXPERIENCED)
+                .orElseThrow();
+
+        assertThat(week.missed()).isEmpty();
+        assertThat(fromSaved.missed()).as("from the save, Friday would have been missed").containsExactly(DayOfWeek.FRIDAY);
     }
 
     @Test

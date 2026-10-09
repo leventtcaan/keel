@@ -117,3 +117,7 @@ ekran testleri: Today kelime bütçesi, karar ekranında dört parça.
   güvenilmez ve sınırlanması gerekirdi. **Neden profilde:** `onboarded_at` ile aynı yer (profilin olayı); decision `Profiles` üzerinden okur.
 - **Reddedilen:** ilk günü profil kaydında ilerletmek (profil ayarlardan da kaydedilir; "bitti" anlamı taşımaz, Ek 2 (d)) · planı görmeden
   geçen günleri yalnız P'den çıkarmak (ilk karar tarihi yine G'den sayılır, kullanıcıya ilk haftası kısalmış görünür).
+- **İlk karardan sonra (#526 incelemesi):** ilk karar yapılmışsa `plan-seen` hiçbir şey yazmaz (yine 204; profil modülü `FirstCalls`
+  arayüzüyle sorar, decision sağlar) ve `firstDay` ilk kararın gününden önce görülmemiş planı yok sayar (ikisi birden: eski hesap ya da geç
+  gönderim ilk haftayı ve 1. hafta kararını ikinci kez açmaz, ilk 8 hafta sayacı geri gitmez). `onboarded_at` ve `plan_seen_at` dışa
+  aktarılır (profil bölümü, `onboardedAt`, `planSeenAt`).

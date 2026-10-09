@@ -41,10 +41,13 @@ final class FirstWeekFacts {
 
     /**
      * The first day (K-993, ADR-077 Ek 3): the day the plan was first shown; before that was kept, the day onboarding
-     * finished, then the first sign-in. The days before it, the plan unseen, are in no week.
+     * finished, then the first sign-in. The days before it, the plan unseen, are in no week. A plan seen only on or after
+     * the first call's day (an old account, a late send) moves nothing: that call closed the first week already.
      */
-    static LocalDate firstDay(Optional<Instant> planSeen, Optional<Instant> onboarded, Supplier<Instant> firstSignIn, ZoneId zone) {
-        return planSeen.map(seen -> seen.atZone(zone).toLocalDate()).orElseGet(() -> firstDay(onboarded, firstSignIn, zone));
+    static LocalDate firstDay(Optional<Instant> planSeen, Optional<LocalDate> firstCall, Optional<Instant> onboarded, Supplier<Instant> firstSignIn,
+            ZoneId zone) {
+        return planSeen.map(seen -> seen.atZone(zone).toLocalDate()).filter(seen -> firstCall.map(seen::isBefore).orElse(true))
+                .orElseGet(() -> firstDay(onboarded, firstSignIn, zone));
     }
 
     /** Whether the first call can be made today: from the check-in day that closes the first week on. */

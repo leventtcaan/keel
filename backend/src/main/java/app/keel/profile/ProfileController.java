@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -62,8 +63,10 @@ class ProfileController {
     private final Clock clock;
     private final ProfileLimits limits;
     private final ConsentGate consent;
+    private final ObjectProvider<FirstCalls> firstCalls;
 
-    ProfileController(ProfileStore store, Clock clock, ProfileLimits limits, ConsentGate consent) {
+    ProfileController(ProfileStore store, Clock clock, ProfileLimits limits, ConsentGate consent, ObjectProvider<FirstCalls> firstCalls) {
+        this.firstCalls = firstCalls;
         this.store = store;
         this.clock = clock;
         this.limits = limits;
@@ -93,13 +96,18 @@ class ProfileController {
 
     /**
      * The plan was shown (K-993, ADR-077 Ek 3): the first time is kept, by the server's clock; the first week counts from
-     * that day. Sent again, nothing changes. NOT_FOUND without a profile.
+     * that day. Sent again, or once the first call is made, nothing changes. NOT_FOUND without a profile.
      */
     @PutMapping("/plan-seen")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void planSeen(AccountId account) {
-        if (!store.planSeen(account)) {
+        if (store.find(account).isEmpty()) {
             throw new ApiException(ErrorCode.NOT_FOUND);
+        }
+        // After the first call the first week is closed: a plan seen now (an old account, a late send) moves nothing (#526).
+        FirstCalls calls = firstCalls.getIfUnique();
+        if (calls == null || !calls.made(account)) {
+            store.planSeen(account);
         }
     }
 

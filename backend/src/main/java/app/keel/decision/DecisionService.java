@@ -311,7 +311,8 @@ class DecisionService {
      * finished (K-990, Ek 2); for a profile saved before that was kept, the first sign-in. The first week, the first call's day and the first eight weeks all count from it.
      */
     private LocalDate firstDay(AccountId account, ZoneId zone) {
-        return FirstWeekFacts.firstDay(profiles.planSeenAt(account), profiles.onboardedAt(account), () -> accounts.began(account), zone);
+        return FirstWeekFacts.firstDay(profiles.planSeenAt(account), calls.firstMadeOn(account), profiles.onboardedAt(account), () -> accounts.began(account),
+                zone);
     }
 
     /**
