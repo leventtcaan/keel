@@ -240,6 +240,7 @@ class TodayChangeApiTests {
         List<Map<String, Object>> after = sessions(map(send(account, "GET", "/v1/program", null)));
         // Nothing changed; the session now carries its workout, done (K-995).
         assertThat(after.getFirst().get("workout")).isEqualTo(Map.of("id", workout, "state", "DONE"));
+        assertThat(after.subList(1, after.size())).allSatisfy(session -> assertThat(session.get("workout")).isNull());
         assertThat(withoutWorkouts(after)).isEqualTo(sessions(program));
         // Running short of time in the middle of it is still allowed; a swap from now on is the program's.
         assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SHORT"))).hasStatusOk();
@@ -322,13 +323,14 @@ class TodayChangeApiTests {
     void theProgramSaysTodayOnTheUsersCalendar() throws Exception {
         // K-995: noon UTC on Wednesday 7 is 02:00 on Thursday 8 at UTC+14; without a profile, the user's day is UTC's.
         AccountId utc = TestSessions.newAccount();
-        assertThat(map(send(utc, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")))).containsEntry("today", "2026-10-07");
+        assertThat(map(send(utc, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")))).containsEntry("today", "2026-10-07")
+                .containsEntry("weekOf", "2026-10-05");
         AccountId kiritimati = TestSessions.newAccount();
         profile(kiritimati, "Pacific/Kiritimati");
 
         Map<String, Object> program = map(send(kiritimati, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
 
-        assertThat(program).containsEntry("today", "2026-10-08");
+        assertThat(program).containsEntry("today", "2026-10-08").containsEntry("weekOf", "2026-10-05");
         // Today there is Thursday: Legs is today's session, Push (Wednesday's) is not.
         assertThat(send(kiritimati, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 1), "change", "SHORT"))).hasStatusOk();
         assertThat(send(kiritimati, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SHORT"))).hasStatus(409);
@@ -373,6 +375,44 @@ class TodayChangeApiTests {
         assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "MOVE"))).hasStatusOk();
         assertThat(sessions(map(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 1), "change", "UNDO")))))
                 .extracting(session -> session.get("date")).containsExactly("2026-10-08", "2026-10-09", "2026-10-10");
+    }
+
+    @Test
+    void aSwapFromNowOnAfterTheMoveIsNotUndoneByTheMovesUndo() throws Exception {
+        // #505 review: short and bench swapped for today, moved, then bench swapped from now on; the undo brings back the short
+        // version on Wednesday, not the old swap of a move the plan no longer has.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        Object push = dayId(program, 0);
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "SHORT"))).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "dumbbell_bench_press", "TODAY"))).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "MOVE"))).hasStatusOk();
+
+        Map<String, Object> swapped = map(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "machine_chest_press", "FROM_NOW_ON")));
+
+        assertThat(sessions(swapped).getFirst()).containsEntry("programDayId", push).containsEntry("undoable", true);
+        Map<String, Object> session = sessions(map(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "UNDO"))))
+                .getFirst();
+        assertThat(session).containsEntry("programDayId", push).containsEntry("date", "2026-10-07").containsEntry("short", true)
+                .containsEntry("exerciseIds", List.of("machine_chest_press", "overhead_press", "barbell_row")).doesNotContainKeys("swaps", "moved");
+    }
+
+    @Test
+    void anUndoDoesNotBringBackASwapToTheMoveTheProgramNowHas() throws Exception {
+        // Incline swapped for dumbbell bench today, moved, then bench swapped for dumbbell bench from now on: undone, the session
+        // has dumbbell bench once (the plan's), not twice.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        Object push = dayId(program, 0);
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "incline_dumbbell_press", "dumbbell_bench_press", "TODAY"))).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "MOVE"))).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/program/swap", swap(push, "bench_press", "dumbbell_bench_press", "FROM_NOW_ON"))).hasStatusOk();
+
+        Map<String, Object> session = sessions(map(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "UNDO"))))
+                .getFirst();
+
+        assertThat(session).containsEntry("date", "2026-10-07").doesNotContainKey("swaps")
+                .containsEntry("exerciseIds", List.of("dumbbell_bench_press", "overhead_press", "barbell_row", "triceps_pushdown", "incline_dumbbell_press"));
     }
 
     @Test
