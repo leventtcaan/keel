@@ -175,6 +175,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/profile/plan-seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * The plan was shown to the user; the first week counts from today (K-993)
+         * @description The app says so the first time it shows the plan (ADR-077 Ek 3). The server keeps the first time only (its own clock):
+         *     sent again, nothing changes. The first week, the first call's day (`GET /v1/first-weeks` › `firstCallOn`) and the
+         *     first eight weeks count from that day; without it from the profile's first save, then the account's first sign-in.
+         *     The days before it are not planned for the first call (no missed session the user never saw). NOT_FOUND: no
+         *     profile yet (the plan is made from it).
+         */
+        put: operations["markPlanSeen"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/consents": {
         parameters: {
             query?: never;
@@ -1200,8 +1224,9 @@ export interface paths {
         };
         /**
          * This week of the first eight (K-513, ADR-040)
-         * @description The user's own week since the day onboarding finished (04 §7.5, I1 F2; K-990, ADR-077 Ek 2; an account onboarded
-         *     before that day was kept counts from its first sign-in): week 1 has no words ("no comment, no score"), weeks
+         * @description The user's own week since the day the plan was first shown (K-993, ADR-077 Ek 3; PUT /v1/profile/plan-seen), else
+         *     the day onboarding finished (04 §7.5, I1 F2; K-990, ADR-077 Ek 2; an account onboarded before that day was kept
+         *     counts from its first sign-in): week 1 has no words ("no comment, no score"), weeks
          *     2-8 have `contentKey`.title/.body (a version without lifting when no training is planned). Once the user's week
          *     just over is week 5 to 8 (G2 K-63), `risk` lists that week's signals, each with its source — any one is a risk,
          *     none weighed; empty when none, or when the week was paused (a declared state, the ladder's week off). Week 9 is
@@ -3676,6 +3701,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Profile"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    markPlanSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Kept (or kept before) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };

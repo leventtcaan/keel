@@ -104,3 +104,16 @@ ekran testleri: Today kelime bütçesi, karar ekranında dört parça.
   Neden kabul edildi: cevaplar ve plan G'de oluştu; bu yol nadir (onboarding ortasında kapatıp günlerce dönmemek). Kapanış haftasındaki
   "kaçırıldı" sayımı U7 açısından tartışmalı (kullanıcı başlamadan kaçırdı denmesi); düzeltmesi (ör. ilk günü devamda ilerletmek ya da
   planı görmeden geçen günleri P'ye katmamak) ürün kararı, Levent'e sorulacak.
+
+## Ek 3 · İlk gün planın görüldüğü gün (K-993, 2026-10-09, agent, teknik; ürün kararı Levent 8 Eki "geç dönüşte görülmemiş günler sayılmaz")
+- **İlk gün = planın ilk gösterildiği gün:** telefon planı ilk gösterdiğinde `PUT /v1/profile/plan-seen` der; sunucu yalnız ilk kez, kendi
+  saatiyle yazar (`profile.profile.plan_seen_at`, V47; sonraki çağrı hiçbir şey değiştirmez, 204). `FirstWeekFacts.firstDay` sırası: plan
+  görüldü → profilin ilk kaydı (Ek 2) → hesabın ilk girişi (eski hesap). İlk hafta, 1. hafta kararının olguları, ilk karar tarihi
+  (`firstCallOn`) ve ilk 8 hafta aynı günden sayılır (tek tanım değişmedi, girdisi değişti).
+- **Ek 2'nin "geç devam" sapması kapanır:** kayıt G, devam ve plan D'de: ilk hafta D'den başlar, K = D'den sonraki ilk check-in günü. G..D
+  arasındaki planlı günler hiçbir hafta kararında "kaçırıldı" sayılmaz (ilk haftaya girmezler; ilk karar K'de). D < K, K ≤ D < K + 7 ve
+  D ≥ K + 7 (Ek 2'ye göre) üçü de artık aynı yoldan: ilk hafta D'den, 1. hafta kararı K'de.
+- **Neden sunucunun saati:** plan, profil kaydından hemen sonra ve çevrimiçi gösterilir (profil PUT'u ağ ister); telefonun gönderdiği an
+  güvenilmez ve sınırlanması gerekirdi. **Neden profilde:** `onboarded_at` ile aynı yer (profilin olayı); decision `Profiles` üzerinden okur.
+- **Reddedilen:** ilk günü profil kaydında ilerletmek (profil ayarlardan da kaydedilir; "bitti" anlamı taşımaz, Ek 2 (d)) · planı görmeden
+  geçen günleri yalnız P'den çıkarmak (ilk karar tarihi yine G'den sayılır, kullanıcıya ilk haftası kısalmış görünür).
