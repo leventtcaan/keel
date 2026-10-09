@@ -459,8 +459,10 @@ export interface paths {
         };
         /**
          * What is left of the day's target, as a range (target minus the logged range)
-         * @description NOT_FOUND until the user has a target (set by calls, K-216). Health data: CONSENT_REQUIRED without the
-         *     HEALTH_DATA consent, as for every /v1/meals route.
+         * @description The target in force (set by calls, K-216); before the first call, the starting target the first call will start
+         *     the plan with (GET /v1/targets/starting, K-997, ADR-072 Ek 1): the first week has "Food today" and "Food left" too,
+         *     worked out here, never on the phone. NOT_FOUND with neither (no weigh-in yet, no profile, or a plan begun without
+         *     a weigh-in). Health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/meals route.
          */
         get: operations["getDayBudget"];
         put?: never;
@@ -1983,7 +1985,7 @@ export interface components {
         DayBudget: {
             /** Format: date */
             day: string;
-            /** @description The day's target (a plan number, one figure). */
+            /** @description The day's target (a plan number, one figure); before the first call, the starting target (K-997). */
             targetKcal: number;
             eaten: components["schemas"]["Nutrients"];
             left: components["schemas"]["Left"];
