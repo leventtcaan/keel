@@ -100,6 +100,7 @@ const keep = async (outbound: Outbound) => {
 };
 const mockRecord = jest.fn(keep);
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+let mockPause: { workout: string; pause: { pausedAt: number | null; pausedMs: number } } | null = null;
 const mockWorkoutRecords = jest.fn(async () => mockRecords);
 let mockSave: (body: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
 const mockPOST = jest.fn(async (_path: string, init: { body: unknown }) => mockSave(init.body));
@@ -111,6 +112,16 @@ const mockServices = {
   report: jest.fn(),
   // The rest timer's voice in the background (K-411).
   restAlert: { start: jest.fn(async (_since: number) => {}), stop: jest.fn(async () => {}) },
+  // The open session's pause, kept with its workout (K-972).
+  sessionPause: {
+    read: jest.fn(async (workout: string) => (mockPause?.workout === workout ? mockPause.pause : { pausedAt: null, pausedMs: 0 })),
+    keep: jest.fn(async (workout: string, pause: { pausedAt: number | null; pausedMs: number }) => {
+      mockPause = { workout, pause };
+    }),
+    forget: jest.fn(async () => {
+      mockPause = null;
+    }),
+  },
   // Apple Health writing (K-412): the switch decides inside; the screen only says a session finished.
   healthWriting: { workoutFinished: jest.fn(async (_workout: unknown) => {}) },
 };
@@ -122,6 +133,7 @@ function reset() {
   mockUnits = 'METRIC';
   mockWorkoutRecords.mockImplementation(async () => mockRecords);
   mockRecord.mockImplementation(keep);
+  mockPause = null;
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockOwn = [];
   mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
@@ -1467,5 +1479,99 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
       expect(screen.getByText(t('workout.targetRir', { max: 1 }))).toBeOnTheScreen();
       for (const choice of ['0', '1', '2+']) expect(screen.getByRole('button', { name: choice })).toBeOnTheScreen();
     });
+  });
+});
+
+describe('Pause and Resume (K-972, ADR-075 #5): the time stops, and goes on from where it stopped', () => {
+  const clockSeconds = () => {
+    const [minutes, seconds] = (screen.getByTestId('session-clock').props.children as string).split(':').map(Number);
+    return minutes * 60 + seconds;
+  };
+  const open = (minutes: number) => {
+    const startedAt = new Date(Date.now() - minutes * 60_000).toISOString();
+    mockRecords = [...lastWeek(), record('workout', 'w2', { clientId: 'w2', startedAt, programDayId: 'day-a' })];
+    return Date.parse(startedAt);
+  };
+  const pause = () => fireEvent.press(screen.getByRole('button', { name: t('workout.pauseLabel') }));
+  const resume = () => fireEvent.press(within(screen.getByTestId('session-header')).getByRole('button', { name: t('workout.resumeLabel') }));
+  const tick = async (ms: number) => {
+    jest.setSystemTime(Date.now() + ms);
+    await act(async () => jest.advanceTimersByTime(1000));
+  };
+
+  test('paused, the time stands still; resumed, it goes on from there', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      open(5);
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await pause();
+      const stopped = clockSeconds();
+      await tick(60_000);
+      expect(clockSeconds()).toBe(stopped);
+      await resume();
+      await tick(5_000);
+      expect(clockSeconds() - stopped).toBeGreaterThanOrEqual(5);
+      expect(clockSeconds() - stopped).toBeLessThan(10);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('paused is plain to see, the rest ends with its alert, and the pause is kept with its workout', async () => {
+    open(5);
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest');
+    mockServices.restAlert.stop.mockClear();
+    await pause();
+    expect(within(screen.getByTestId('rest-slot')).getByText(t('workout.paused'))).toBeOnTheScreen();
+    expect(screen.queryByTestId('rest')).toBeNull();
+    expect(mockServices.restAlert.stop).toHaveBeenCalled();
+    expect(within(screen.getByTestId('session-header')).getByRole('button', { name: t('workout.resumeLabel') })).toBeOnTheScreen();
+    expect(mockPause).toEqual({ workout: 'w2', pause: { pausedAt: expect.any(Number), pausedMs: 0 } });
+    await resume();
+    expect(screen.queryByText(t('workout.paused'))).toBeNull();
+    expect(mockPause?.pause.pausedAt).toBeNull();
+  });
+
+  test('closed while paused, the session opens paused, its time where it stopped', async () => {
+    const startedAt = open(12);
+    mockPause = { workout: 'w2', pause: { pausedAt: startedAt + 2 * 60_000, pausedMs: 0 } };
+    await show();
+    await screen.findByText(t('workout.paused'));
+    expect(clockSeconds()).toBe(120);
+  });
+
+  test('a pause of another workout is not this one\'s', async () => {
+    open(3);
+    mockPause = { workout: 'w0', pause: { pausedAt: Date.now() - 60_000, pausedMs: 0 } };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByText(t('workout.paused'))).toBeNull();
+  });
+
+  test('a set logged while paused means the session goes on: it resumes', async () => {
+    open(5);
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await pause();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.queryByText(t('workout.paused'))).toBeNull();
+    expect(mockPause?.pause.pausedAt).toBeNull();
+  });
+
+  test('paused before the first set: the workout it starts keeps the pause', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await pause();
+    await resume();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
+    expect(mockPause?.workout).toBe(workout?.kind === 'workout' ? workout.body.clientId : 'none');
   });
 });
