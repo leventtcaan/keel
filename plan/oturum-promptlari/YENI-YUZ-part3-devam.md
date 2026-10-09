@@ -45,6 +45,7 @@ Süreç dersleri: yığılı PR + squash → üstteki PR'ı yalnız kendi commit
 `gh pr update-branch`; tam jest yük altında meal/onboarding zaman aşımına düşer → `-i` ya da `-w 2 --testTimeout=20000` ile yeniden.
 
 ## Cihaz turuna (K-984) bakılacaklar
+- Seyahat: telefon gece yarısını geçip sunucunun `today`'i geçmediyse bekleyen finish 'done' sayılmıyor (Start görünür, sunucu DONE gelince düzelir); sonraki telefon gününde sürdürülen seans bugünün kısa sürümünü/swap'ını kaybeder (#515 doğrulaması).
 - Seans: aktif set iPhone SE'de (667pt) ilk görünümde tam görünüyor mu (üstteki dinlenme yuvası ~60pt boş); 375pt'de "102.5" kesilmiyor mu; klavye "Log set"i örtmüyor mu (KeyboardAvoidingView).
 
 ## Devam sonrası (9 Eki öğle) olanlar
