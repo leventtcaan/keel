@@ -4,7 +4,8 @@
  * from the day's data. A safety call shows as its general change (ADR-028 #24): no word of a hard stop or a cycle on
  * the screen.
  * This week (K-969, ADR-077 #1) keeps one hero: the consistency's parts, the call's card, the check-in card, the state's
- * entry, the coach's questions and the first weeks' words are off the screen; their components stay (ADR-069 #3) and are
+ * entry, the coach's questions, the first weeks' words and today's list (its place is today's workout and the food line)
+ * are off the screen; their components stay (ADR-069 #3) and are
  * tested here as the old screen showed them, read by the same hook (`showPart`). The new screen: this-week-screen.test.tsx.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -20,6 +21,7 @@ import { ConsistencyCard } from '@/today/ConsistencyCard';
 import { FirstWeeksCard } from '@/today/FirstWeeksCard';
 import { PromptCard } from '@/today/PromptCard';
 import { StateCard } from '@/today/StateCard';
+import { TodayList } from '@/today/TodayList';
 import type { TodayData } from '@/today/today';
 import { useToday } from '@/today/useToday';
 import { ThemeProvider } from '@/theme/theme';
@@ -72,6 +74,8 @@ const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   source: 'GENERATED',
   days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [] }],
+  // This week's sessions by date, as the server always sends them (K-964).
+  week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: [] }],
 };
 
 let mockAnswers: Record<string, Answer | 'offline'> = {};
@@ -128,6 +132,8 @@ const mockServices = {
   // The state read is kept on the phone for the reminders (K-518).
   state: { keep: jest.fn(async (_loaded: unknown) => {}), back: jest.fn(async () => {}) },
   opens: { previous: async () => mockPreviousOpen },
+  // The phone's own records (K-969 reads a workout under way); none here.
+  workoutRecords: async () => [],
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
@@ -224,6 +230,9 @@ const callPart: Part = ({ decision }, _day, reload) =>
 const checkInPart: Part = ({ checkIn }) => (checkIn?.state === 'ready' ? <CheckInCard checkIn={checkIn.value} /> : null);
 const statePart: Part = ({ state }, _day, reload) => <StateCard state={state} onChanged={reload} />;
 const promptPart: Part = ({ prompts }) => (prompts?.state === 'ready' ? <PromptCard read={prompts} /> : null);
+const listPart: Part = (data, day) => (
+  <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
+);
 const firstWeeksPart: Part = (data, day) => <FirstWeeksCard read={data.firstWeeks} previousOpen={data.previousOpen ?? null} day={day} />;
 /** What the old screen showed before anything was there: the number, the call, today's list. */
 const nothingYetPart: Part = (data, day, reload) => (
@@ -339,7 +348,7 @@ test.each([
 });
 
 test("today's list: the weigh-in done, the program's session for today, the step target", async () => {
-  await show();
+  await showPart(listPart);
   expect(screen.getByText(t('today.list.weighIn.done'))).toBeOnTheScreen();
   expect(screen.getByText(formatWeight(81.4, 'METRIC'))).toBeOnTheScreen();
   expect(screen.getByText(t('programDays.upper_a.name'))).toBeOnTheScreen();
@@ -353,14 +362,14 @@ test("today's list: what is left of the day's food, as ranges (K-409)", async ()
     eaten: { kcal: { low: 1350, high: 1520 }, proteinG: { low: 80, high: 96 }, carbsG: { low: 1, high: 2 }, fatG: { low: 1, high: 2 } },
     left: { kcal: { low: 780, high: 950 }, proteinG: { low: 64, high: 80 } },
   });
-  await show();
+  await showPart(listPart);
   expect(screen.getByText(t('today.list.food.title'))).toBeOnTheScreen();
   expect(screen.getByText(`${t('format.range', { low: 780, high: 950 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
 });
 
 test('no weigh-in yet today: the row opens the weigh-in (K-402)', async () => {
   mockAnswers['/v1/weigh-ins'] = ok([]);
-  await show();
+  await showPart(listPart);
   await press(t('today.list.weighIn.log'));
   expect(mockPush).toHaveBeenCalledWith('/weigh-in');
 });
@@ -375,7 +384,7 @@ test('before anything is there: each part says what comes, and the others still 
   expect(screen.getByText(t('today.call.none'))).toBeOnTheScreen();
   expect(screen.queryByText(t('today.consistency.percent', { percent: 84 }))).toBeNull();
   await screen.unmount();
-  await show();
+  await showPart(listPart);
   expect(screen.getByText(t('today.list.weighIn.todo'))).toBeOnTheScreen();
   expect(screen.getByText(t('today.list.training.rest'))).toBeOnTheScreen();
 });
@@ -390,7 +399,7 @@ test('without the health data consent: no number and no call, a way to Settings 
   expect(screen.queryByText(t('thisWeek.onTrack', { onTrack: 2, counted: 3 }))).toBeNull();
   await press(t('thisWeek.hero.settingsLabel'));
   expect(mockPush).toHaveBeenCalledWith('/settings');
-  expect(screen.getByText(t('programDays.upper_a.name'))).toBeOnTheScreen(); // training is not health data
+  expect(screen.getByText(t('programDays.upper_a.name'))).toBeOnTheScreen(); // training is not health data (K-969: today's card)
 });
 
 test('offline: it says so, and trying again reads again', async () => {
@@ -460,14 +469,14 @@ test.each([
   ['without the consent', 'consent'],
 ] as const)('%s, the weigh-in can still be opened (it asks for the consent itself; K-402 review)', async (_label, state) => {
   mockAnswers['/v1/weigh-ins'] = state === 'offline' ? 'offline' : refused(403, 'CONSENT_REQUIRED');
-  await show();
+  await showPart(listPart);
   await press(t('today.list.weighIn.log'));
   expect(mockPush).toHaveBeenCalledWith('/weigh-in');
 });
 
 test("today's steps from Apple Health, against the target (K-404)", async () => {
   mockSyncHealth.mockResolvedValueOnce({ weighIns: 0, stepsToday: 6240 } as never);
-  await show();
+  await showPart(listPart);
   expect(screen.getByText(t('today.list.steps.count', { steps: '6,240', target: '8,000' }))).toBeOnTheScreen();
 });
 

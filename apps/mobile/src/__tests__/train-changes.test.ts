@@ -5,7 +5,7 @@
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
-import { changeToday, swapMove } from '@/train/changes';
+import { applySuggestion, changeToday, coachCardio, putCardio, rebuild, swapMove, undoChange } from '@/train/changes';
 
 type Schemas = components['schemas'];
 
@@ -37,6 +37,42 @@ test.each([
   const { api } = apiAnswering(() => answer(status));
   expect(await changeToday(api, 'day-1', 'SKIP')).toEqual({ kind });
   expect(await swapMove(api, { programDayId: 'day-1', exerciseId: 'a', to: 'b', scope: 'TODAY' })).toEqual({ kind });
+});
+
+describe('the program edited on the Edit page', () => {
+  test('a review suggestion applied names the review it came from', async () => {
+    const { api, POST } = apiAnswering(() => answer(200, PROGRAM));
+    expect(await applySuggestion(api, 'rev-1', 'TOO_MANY_SETS:chest')).toEqual({ kind: 'done', program: PROGRAM });
+    expect(POST).toHaveBeenCalledWith('/v1/program/review/apply', { body: { reviewId: 'rev-1', suggestionIds: ['TOO_MANY_SETS:chest'] } });
+  });
+
+  test('an applied change undone: the program, and the later changes undone with it', async () => {
+    const { api, POST } = apiAnswering(() => answer(200, { program: PROGRAM, alsoUndone: ['c2'] }));
+    expect(await undoChange(api, 'c1')).toEqual({ kind: 'done', program: PROGRAM, alsoUndone: ['c2'] });
+    expect(POST).toHaveBeenCalledWith('/v1/program/review/undo', { body: { changeId: 'c1' } });
+  });
+
+  test('an undo the server refuses (the program changed another way) is a conflict', async () => {
+    const { api } = apiAnswering(() => answer(409));
+    expect(await undoChange(api, 'c1')).toEqual({ kind: 'conflict' });
+  });
+
+  test("the user's own cardio is sent whole; back to the coach's default removes it", async () => {
+    const PUT = jest.fn(async () => answer(200, PROGRAM));
+    const DELETE = jest.fn(async () => answer(200, PROGRAM));
+    const api = { PUT, DELETE } as unknown as ApiClient;
+    const plan = { minutes: 25, sessions: [{ weekday: 'MONDAY' as const, place: 'AFTER_LIFT' as const }] };
+    expect(await putCardio(api, plan)).toEqual({ kind: 'done', program: PROGRAM });
+    expect(PUT).toHaveBeenCalledWith('/v1/program/cardio', { body: plan });
+    expect(await coachCardio(api)).toEqual({ kind: 'done', program: PROGRAM });
+    expect(DELETE).toHaveBeenCalledWith('/v1/program/cardio');
+  });
+
+  test("rebuilt from the user's training days", async () => {
+    const { api, POST } = apiAnswering(() => answer(200, PROGRAM));
+    expect(await rebuild(api, ['MONDAY', 'THURSDAY'])).toEqual({ kind: 'done', program: PROGRAM });
+    expect(POST).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'THURSDAY'] } });
+  });
 });
 
 test('no answer at all is no connection', async () => {

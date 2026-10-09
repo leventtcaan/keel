@@ -72,7 +72,9 @@ class TodayChangeApiTests {
 
         assertThat(sessions(program)).extracting(session -> session.get("date")).containsExactly("2026-10-07", "2026-10-08", "2026-10-10");
         assertThat(sessions(program).getFirst()).isEqualTo(Map.of("programDayId", dayId(program, 0), "date", "2026-10-07",
-                "exerciseIds", List.of("bench_press", "overhead_press", "barbell_row", "triceps_pushdown", "incline_dumbbell_press")));
+                "exerciseIds", List.of("bench_press", "overhead_press", "barbell_row", "triceps_pushdown", "incline_dumbbell_press"),
+                "movePreview", Map.of("shifts", List.of(Map.of("programDayId", dayId(program, 0), "date", "2026-10-08"),
+                        Map.of("programDayId", dayId(program, 1), "date", "2026-10-09")))));
         assertThat(move(program, 1, "squat").get("swapOptions")).isEqualTo(List.of("hack_squat", "leg_press", "bulgarian_split_squat"));
     }
 
@@ -241,7 +243,8 @@ class TodayChangeApiTests {
         // Nothing changed; the session now carries its workout, done (K-995).
         assertThat(after.getFirst().get("workout")).isEqualTo(Map.of("id", workout, "state", "DONE"));
         assertThat(after.subList(1, after.size())).allSatisfy(session -> assertThat(session.get("workout")).isNull());
-        assertThat(withoutWorkouts(after)).isEqualTo(sessions(program));
+        assertThat(after.getFirst().get("movePreview")).isEqualTo(Map.of("shifts", List.of(), "conflict", "STARTED"));
+        assertThat(without(after, "workout", "movePreview")).isEqualTo(without(sessions(program), "movePreview"));
         // Running short of time in the middle of it is still allowed; a swap from now on is the program's.
         assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SHORT"))).hasStatusOk();
         assertThat(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "overhead_press", "dumbbell_shoulder_press", "FROM_NOW_ON")))
@@ -416,6 +419,44 @@ class TodayChangeApiTests {
     }
 
     @Test
+    void todaysSessionCarriesWhatAMoveWouldDoAndTheMoveDoesJustThat() throws Exception {
+        // K-995 (ADR-073 Ek 6): the chain from the server; the phone works none out.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "FRIDAY")));
+        Object push = dayId(program, 0);
+
+        Map<?, ?> preview = (Map<?, ?>) sessions(program).getFirst().get("movePreview");
+
+        assertThat(preview).isEqualTo(Map.of("shifts", List.of(Map.of("programDayId", push, "date", "2026-10-08"),
+                Map.of("programDayId", dayId(program, 1), "date", "2026-10-09"), Map.of("programDayId", dayId(program, 2), "date", "2026-10-10"))));
+        assertThat(sessions(program).subList(1, 3)).allSatisfy(session -> assertThat(session).doesNotContainKey("movePreview"));
+        Map<String, Object> moved = map(send(account, "POST", "/v1/program/today", Map.of("programDayId", push, "change", "MOVE")));
+        assertThat(sessions(moved)).extracting(session -> (Object) Map.of("programDayId", session.get("programDayId"), "date", session.get("date")))
+                .containsExactlyElementsOf((List<?>) preview.get("shifts"));
+        // Moved, no session is on today: none carries a preview.
+        assertThat(sessions(moved)).allSatisfy(session -> assertThat(session).doesNotContainKey("movePreview"));
+    }
+
+    @Test
+    void theMovePreviewSaysAMovePastSundayIsRefused() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")));
+
+        assertThat(sessions(program).getFirst().get("movePreview")).isEqualTo(Map.of("shifts", List.of(), "conflict", "PAST_SUNDAY"));
+        assertThat(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "MOVE"))).hasStatus(409);
+    }
+
+    @Test
+    void aSkippedSessionHasNoMovePreview() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+
+        Map<String, Object> skipped = map(send(account, "POST", "/v1/program/today", Map.of("programDayId", dayId(program, 0), "change", "SKIP")));
+
+        assertThat(sessions(skipped)).allSatisfy(session -> assertThat(session).doesNotContainKey("movePreview"));
+    }
+
+    @Test
     void undoPutsTodaysSkippedSessionBack() throws Exception {
         AccountId account = TestSessions.newAccount();
         Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
@@ -473,10 +514,10 @@ class TodayChangeApiTests {
                 "schedule", Map.of("trainingDays", List.of("WEDNESDAY"), "checkInDay", "MONDAY", "timeZone", timeZone)))).hasStatusOk();
     }
 
-    private static List<Map<String, Object>> withoutWorkouts(List<Map<String, Object>> sessions) {
+    private static List<Map<String, Object>> without(List<Map<String, Object>> sessions, String... keys) {
         return sessions.stream().map(session -> {
             Map<String, Object> copy = new HashMap<>(session);
-            copy.remove("workout");
+            List.of(keys).forEach(copy::remove);
             return (Map<String, Object>) copy;
         }).toList();
     }

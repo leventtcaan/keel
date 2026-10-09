@@ -113,3 +113,14 @@ hazırlık antrenmanın parçasıdır; salon uygulamalarının ortak beklentisi 
 hareketin ısınması ve kurulum süresi düşer; saat ilk sette sıçrar, kullanıcı testinin şikâyeti). **Bilinen sınır:** seansı evde açıp
 salonda başlayan kullanıcıda süre uzar; bu kullanıcının kendi eylemidir, "End › Discard" ile düzeltilebilir. Açık kalmış eski seansın saati
 K-961/K-972 otomatik kapanışıyla sınırlanır.
+
+## Ek 4 · Seansı atmak ve duraklama (K-998, K-972; 2026-10-09, düzenleyici kararı, teknik)
+- **Atılan seans hiçbir şey bırakmaz (#5):** `DELETE /v1/workouts/{id}` seansı ve setlerini siler; hafta sayımı, ilerleme ve rekorlar canlı
+  okuduğu için onu saymaz. Hareketin hedefi aynı program gününün kalan en yeni bitmiş (ya da kendiliğinden kapanmış) seansından yeniden
+  türetilir; böyle seans yoksa kullanıcının girdiği başlangıç ağırlığına döner (`planned_exercise.start_*`). Bitmiş seansın bütün setleri
+  silinince (K-432) aynı yol. Silme `FOR UPDATE` ile kilitler; ikinci istek ve yarışan set 404 alır (çevrimdışı kuyruk 404'ü reddedilmiş sayar).
+- **Duraklama özet ve Health'ten düşer:** bitirme isteği `pausedSeconds` taşır (ekran saatiyle aynı); özet dakikası = bitiş − başlangıç −
+  duraklama; kendiliğinden kapanmış seansta süre bilinmediği için dakika yoktur. **Reddedilen:** yalnız ekran saatinin durması (özet ve
+  Health kullanıcının gördüğü saatle çelişirdi, kullanıcı testi C14).
+- **Set düzeltme/silme seans içinde:** telefonda bekleyen set yerelde değişir; gönderilmiş set çevrimiçiyken silinip yeniden eklenir,
+  çevrimdışıyken "bağlantı gerekli" denir (kuyruğa yeni tür yok).

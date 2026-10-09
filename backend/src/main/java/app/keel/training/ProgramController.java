@@ -128,19 +128,33 @@ class ProgramController {
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record WeekSession(UUID programDayId, LocalDate date, Boolean moved, LocalDate movedFrom, Boolean undoable, SessionWorkout workout,
-            Boolean skipped, @JsonProperty("short") Boolean shortVersion, List<String> exerciseIds, List<TodaySwap> swaps) {
+            MovePreview movePreview, Boolean skipped, @JsonProperty("short") Boolean shortVersion, List<String> exerciseIds, List<TodaySwap> swaps) {
 
         static WeekSession of(TodaySessions.Shown shown, List<TodaySwap> swaps) {
             TodayChanges.Session session = shown.session();
             SessionWorkout workout = shown.workout() == null ? null : new SessionWorkout(shown.workout().workoutId(),
                     shown.workout().open() ? SessionWorkout.State.OPEN : SessionWorkout.State.DONE);
             return new WeekSession(session.programDayId(), session.date(), only(session.moved()), session.movedFrom(), only(shown.undoable()), workout,
-                    only(session.skipped()), only(session.shortVersion()), session.exerciseIds(), swaps.isEmpty() ? null : swaps);
+                    shown.movePreview() == null ? null : MovePreview.of(shown.movePreview()), only(session.skipped()), only(session.shortVersion()), session.exerciseIds(), swaps.isEmpty() ? null : swaps);
         }
 
         private static Boolean only(boolean flag) {
             return flag ? Boolean.TRUE : null;
         }
+    }
+
+    /** Contract MovePreview (K-995, ADR-073 Ek 6): what a move of today's session would do now; {@code conflict} only when refused. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record MovePreview(List<MoveShift> shifts, TodayChanges.Conflict conflict) {
+
+        static MovePreview of(TodayChanges.Preview preview) {
+            return new MovePreview(preview.shifts().stream().map(shift -> new MoveShift(shift.programDayId(), shift.date())).toList(),
+                    preview.conflict());
+        }
+    }
+
+    /** Contract MoveShift. */
+    record MoveShift(UUID programDayId, LocalDate date) {
     }
 
     /** Contract SessionWorkout (K-995): a session's latest workout of the week, under way or done. */

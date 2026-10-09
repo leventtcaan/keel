@@ -160,6 +160,10 @@ describe('the program draft stays within what the contract takes (K-957)', () =>
     if (start < 0 || at < 0 || found === undefined || found === null) throw new Error(`no ${key} for ${schema}.${field}`);
     return Number(found[1]);
   }
+  test('cardio_minutes_max = CardioPlan minutes maximum (K-970)', () => {
+    expect(workout.find((p) => p.key === 'cardio_minutes_max')?.value).toBe(limit('CardioPlan', 'minutes', 'maximum'));
+  });
+
   test.each([
     ['program_days_max', 'days', 'maxItems'],
     ['program_day_moves_max', 'exercises', 'maxItems'],
