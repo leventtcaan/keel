@@ -1,31 +1,28 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { type ReactNode, useCallback, useRef } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { programToday } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
-import { dayName, exerciseName, nextLine, programNotes, rackNote, repsLine, setsLine } from '@/train/program';
+import { dayName, programNotes } from '@/train/program';
+import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
+import { splitName, todaySession, weekRows } from '@/train/week';
 import { activeWorkout } from '@/train/workout';
 
-type Schemas = components['schemas'];
-
 /**
- * The Train tab (K-405, K-217): the program as the server set it this week. Above the days, the calls of the deload
- * ladder in force (a week off, a lighter week, the weights held); each day with its moves, this week's sets and the next
- * session's target; today's day marked, and started from here (any day can be). A workout under way is continued, not
- * started again. Offline, the copy kept on the phone, saying so (ADR-006). Nothing is computed here: every number is the
- * server's.
+ * The Train tab (K-405, K-217, K-970; prototype `#train`): the program's split and days, the calls of the deload ladder
+ * in force, today's card (the session the server put on today, with Start and Change), and the rest of the week as the
+ * server laid it out, moved and skipped sessions marked. A day without a session starts any of the week's. A workout
+ * under way is continued, not started again. Offline, the copy kept on the phone, saying so (ADR-006). Nothing is
+ * computed here: every date, move and number is the server's.
  */
 export default function TrainScreen() {
   const { api, training, workoutRecords, state } = useAppServices();
@@ -47,7 +44,6 @@ export default function TrainScreen() {
 
   const program = data?.program.state === 'ready' ? data.program.value : null;
   const moves = movesOf(data, data?.own ?? []);
-  const today = program === null ? null : programToday(program, day);
   const active = data?.active ?? null;
 
   // The session opens on the day; the workout is kept only once a set is logged (an empty workout is no session). One
@@ -63,13 +59,6 @@ export default function TrainScreen() {
     opening.current = true;
     router.push({ pathname: '/workout', params: { day: programDayId } });
   };
-  const underWay =
-    active === null ? null : (
-      <Card outline>
-        <Text style={[styles.heading, { color: color.text }]}>{t('train.inProgress')}</Text>
-        <Button label={t('train.continue')} onPress={() => router.push('/workout')} />
-      </Card>
-    );
 
   const problem =
     data !== null && data.program.state === 'failed' ? (
@@ -80,73 +69,72 @@ export default function TrainScreen() {
     ) : null;
   const none = data?.program.state === 'none' ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.none')}</Text> : null;
   const kept = data?.kept === true && program !== null ? <Text style={[styles.small, { color: color.muted }]}>{t('train.kept')}</Text> : null;
-  const notes =
-    program === null ? null : (
-      <View style={styles.note}>
-        {programNotes(program, data?.declared).map((note) => (
-          <Text key={note} style={[styles.text, { color: color.text }]}>
-            {note}
-          </Text>
-        ))}
-        {program.restUntil !== undefined && <Text style={[styles.small, { color: color.textSecondary }]}>{t('train.status.restWeekNote')}</Text>}
-      </View>
-    );
-
-  const dayCard = (programDay: Schemas['ProgramDay']) => {
-    const isToday = today?.kind === 'session' && today.day.id === programDay.id;
-    const variant = isToday ? 'primary' : 'ghost';
-    const size = isToday ? 'md' : 'sm';
-    const startButton =
-      active === null ? (
-        <Button
-          label={t(isToday ? 'train.start' : 'train.startThis')}
-          accessibilityLabel={t('train.startDay', { day: dayName(programDay) })}
-          variant={variant}
-          size={size}
-          onPress={() => start(programDay.id)}
-        />
-      ) : null;
+  if (program === null) {
     return (
-      <Card key={programDay.id} outline={isToday} testID={`day-${programDay.id}`}>
-        <View style={styles.dayHead}>
-          <Text style={[styles.heading, { color: color.text }]}>{dayName(programDay)}</Text>
-          <Text style={[styles.small, { color: isToday ? color.accent : color.muted }]}>
-            {isToday ? t('train.today') : programDay.weekday === undefined ? '' : t(`onboarding.schedule.dayName.${programDay.weekday}`)}
-          </Text>
-        </View>
-        {programDay.exercises.map((planned, index) => {
-          const next = nextLine(planned, units, moves.get(planned.exerciseId)?.load ?? 'EXTERNAL');
-          const rack = rackNote(planned);
+      <Screen>
+        {problem}
+        {none}
+      </Screen>
+    );
+  }
+
+  const today = todaySession(program, day);
+  const days = t(program.days.length === 1 ? 'train.days.one' : 'train.days.other', { count: program.days.length });
+  const notes = programNotes(program, data?.declared);
+  // With no session today (and no week off), any of the week's can be started from its row.
+  const pick = today === null && program.restUntil === undefined && active === null;
+  const rows = weekRows(program, day);
+  return (
+    <Screen>
+      <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.head', { split: splitName(program), days })}</Text>
+      {kept}
+      {notes.map((note) => (
+        <Text key={note} style={[styles.text, { color: color.text }]}>
+          {note}
+        </Text>
+      ))}
+      <TodayCard
+        program={program}
+        date={day}
+        today={today}
+        moves={moves}
+        units={units}
+        underWay={active !== null}
+        canPick={pick && rows.some((row) => row.session.skipped !== true)}
+        onStart={start}
+      />
+      <View style={styles.week}>
+        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+          {t('train.thisWeek')}
+        </Text>
+        {rows.map((row) => {
+          const tag = row.session.skipped === true ? t('train.skippedTag') : row.session.moved === true ? t('train.moved') : null;
+          const label = t('train.startDay', { day: dayName(row.day) });
+          const startRow =
+            pick && row.session.skipped !== true ? <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} /> : null;
           return (
-            <View key={`${planned.exerciseId}-${index}`} style={styles.move}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('history.openLabel', { exercise: exerciseName(planned.exerciseId, moves) })}
-                onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: planned.exerciseId } })}>
-                <Text style={[styles.text, { color: color.text }]}>{exerciseName(planned.exerciseId, moves)}</Text>
-              </Pressable>
-              <Text style={[styles.small, { color: color.textSecondary }]}>{`${setsLine(planned)} · ${repsLine(planned)}`}</Text>
-              {next !== null && <Text style={[styles.small, { color: color.text }]}>{next}</Text>}
-              {rack !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{rack}</Text>}
+            <View key={row.day.id} style={[styles.row, { borderColor: color.line }]}>
+              <Text style={[styles.text, styles.grow, { color: color.text }]}>
+                {t('train.weekRow', { weekday: t(`programEditor.weekdayShort.${row.weekday}`), day: dayName(row.day) })}
+              </Text>
+              {tag !== null && <Text style={[styles.small, { color: color.muted }]}>{tag}</Text>}
+              {startRow}
             </View>
           );
         })}
-        {startButton}
-      </Card>
-    );
-  };
+      </View>
+    </Screen>
+  );
+}
 
+function Screen({ children }: { children: ReactNode }) {
+  const { color } = useTheme();
   return (
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('screens.train.title')}</ScreenTitle>
-        {problem}
-        {none}
-        {kept}
-        {underWay}
-        {notes}
-        {program?.days.map(dayCard)}
+        {children}
       </ScrollView>
       <View style={styles.plus}>
         <PlusEntry />
@@ -159,8 +147,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   note: { gap: tokens.space.sm },
-  dayHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  move: { gap: tokens.space.xs },
+  week: { gap: tokens.space.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, borderTopWidth: tokens.border.hairline },
+  grow: { flex: 1 },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

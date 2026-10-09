@@ -5,7 +5,8 @@ guncelleme: 2026-10-08
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (9 Eki — M9a Part 3 sürüyor; tablo DURUM › M9a ilerleme › Part 3 başı)
+## ▶ DEVAM NOKTASI (9 Eki — M9a Part 3 DURAKLATILDI, Levent'in token sınırı; aynı session'da sürecek)
+**Devam:** `plan/oturum-promptlari/YENI-YUZ-part3-devam.md` (açık PR'lar, duraklatılan 4 ajan, kalan sıra, Levent'e 5 soru). Tablo: DURUM › M9a ilerleme › Part 3 başı.
 
 ## (önceki) DEVAM NOKTASI (8 Eki gece — M9a Part 2 BİTTİ)
 **Sıradaki session: M9a Part 3 · Ana ekranlar** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 3 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 2 ÇIKIŞ.
@@ -853,9 +854,9 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-969 Bu hafta | 🛠 ajan | | undo/bitmiş seans K-995 bekler; `useToday` K-992 bloğu korunur |
-| K-970 Antrenman + Edit | 🔍 | #493 · #495 | #493 kart + Change (`/today-change?day=`), #495 swap; PR 3 Edit (Days/Moves/Split K-995'e kadar salt okunur) |
-| K-971 Oturum A | 🔍 | #497 · #499 | #497 oturum WeekSession'dan (programDayId + date) auto-merge; #499 odak modu incelemede |
+| K-969 Bu hafta | 🔍 düzeltme | #494 · #501 | inceleme + simülatör bulguları ajanda; ilk hafta yemek satırı K-997'ye kadar başlangıç hedefiyle |
+| K-970 Antrenman + Edit | 🔍 | #493 ✅ · #495 ✅ · #506 | #506 Edit incelemede; PR 4 kardiyo ajanda; Days/Moves K-995 B'ye kadar salt okunur |
+| K-971 Oturum A | 🔍 | #497 ✅ · #499 ✅ · #500 | #500 aktif set: birim karışıklığı adımlayıcı hatası + düzen notları ajanda; ADR-075 Ek 3 |
 | K-972 Oturum B | ⏳ | | K-971 sonrası |
 | K-973 Oturum C | ⏳ | | K-972 sonrası (aynı ekran) |
 | K-974 Antrenman sonu | ⏳ | | |
@@ -864,7 +865,8 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 | K-992 ilk hatırlatma | ✅ | #492 | `reminders.firstCall` kv; rıza yoksa Monday anahtarı yok, Settings 'noCalls' |
 | K-993 ilk hafta planın görüldüğü günden | ⏳ | | decision, göç olabilir |
 | K-994 kırılgan test | ✅ | #490 | `JsonNumbers.asValue` |
-| K-995 program düzenleme ucu (yeni) | ⏳ | | #491: PATCH /v1/program, split, taşı önizleme, today FULL/UNDO, `Program.today`, `WeekSession.movedFrom`, gün durumu |
+| K-995 program düzenleme ucu (yeni) | 🔍 | #505 (V44) | A: FULL/UNDO, Program.today, movedFrom/undoable/workout incelemede; B: PATCH (V45) ajanda; C: taşı önizlemesi; **split Levent'te** |
+| K-997 ilk hafta bütçesi (yeni) | ⏳ | | #504, nutrition |
 | K-996 gün adı nameKey (yeni) | ✅ | #498 | M4'ten beri her üretilmiş gün '[missing…]'; simülatör düzeneği yakaladı |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)

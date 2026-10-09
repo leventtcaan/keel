@@ -1,6 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText } from '@/components/ProblemText';
@@ -8,21 +9,24 @@ import type { components } from '@/api/schema';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
 import type { LocalRecord } from '@/sync/store';
-import { useTheme } from '@/theme/theme';
+import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { FinishForm } from '@/train/FinishForm';
+import { MoveDots } from '@/train/MoveDots';
+import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { SupersetLink } from '@/train/SupersetLink';
 import { nextInGroup, supersetsInForce } from '@/train/superset';
 import { RestTimer } from '@/train/RestTimer';
+import { SessionHeader } from '@/train/SessionHeader';
 import { SetEntry } from '@/train/SetEntry';
 import { SetTable } from '@/train/SetTable';
+import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
@@ -42,8 +46,32 @@ import { weightInput } from '@/units/units';
  * workout is kept only with its first set, and finishing before any set sends nothing: an empty workout is no session
  * (the server counts each workout as a session done, K-220). Before a move's first work set, its warm-ups (K-417): three
  * before the day's first move, one before the others, each one tap; with the gym in use known, the plates a side.
+ *
+ * Laid out as a focus mode (K-971, ADR-075 #1, ADR-070 #4): always dark; End and the session's real time at the top, the
+ * rest right under them, above the page so it covers nothing; the moves as dots, the move's target, its sets done and the
+ * one set under way with its steppers; the button that logs it in a dock that never moves. After a move's last set no rest
+ * comes up: Next names the next move, and after the last one, Finish.
  */
 export default function WorkoutScreen() {
+  // Light status bar text only while the session is in front: a screen opened from it (how to, history) is the
+  // person's own theme and sets its own.
+  const [focused, setFocused] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  const statusBar = focused ? <StatusBar style="light" /> : null;
+  return (
+    <FocusMode>
+      {statusBar}
+      <Session />
+    </FocusMode>
+  );
+}
+
+function Session() {
   const { api, training, workoutRecords, queue, report, restAlert, healthWriting } = useAppServices();
   const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
@@ -58,6 +86,15 @@ export default function WorkoutScreen() {
     if (rest !== null) void restAlert.start(rest);
   }, [rest, restAlert]);
   useEffect(() => () => void restAlert.stop(), [restAlert]);
+  const endRest = () => {
+    setRest(null);
+    void restAlert.stop();
+  };
+  // The session's start while nothing is kept yet: the moment it was opened, which its first set keeps as its start.
+  const [openedAt] = useState(() => Date.now());
+  // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
+  // clock tells nothing. Closing or filling it in from here is K-972.
+  const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
   const [finishing, setFinishing] = useState(false);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
   const [sessionNote, setSessionNote] = useState('');
@@ -91,6 +128,8 @@ export default function WorkoutScreen() {
   }, [api, training, workoutRecords, named]);
 
   const active = records === null ? null : activeWorkout(records);
+  const startedAt = active === null ? null : Date.parse(active.startedAt);
+  const stale = startedAt !== null && startedAt < openedAt - closeMs;
   const program = data?.program.state === 'ready' ? data.program.value : null;
   // The workout under way decides the day; otherwise the day the session was opened on, not kept until a set is logged.
   const dayId = active === null ? (opened ?? null) : active.programDayId;
@@ -106,8 +145,8 @@ export default function WorkoutScreen() {
   // ones added on this screen in the order they were added — a first set does not move one ahead of the others.
   const [added, setAdded] = useState<string[]>([]);
   // The session's own day: its start's while under way (one begun at 23:30 stays that day's after midnight, K-961),
-  // else today's (until K-995's Program.today says it).
-  const sessionDay = localDay(active === null ? new Date() : new Date(active.startedAt));
+  // else the day it was opened on (until K-995's Program.today says it).
+  const sessionDay = localDay(new Date(startedAt ?? openedAt));
   const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
   const planIds = today.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
@@ -144,6 +183,11 @@ export default function WorkoutScreen() {
     .filter(([id, members]) => members.length > 1 && !unlinked.includes(id));
   const groupOf = (id: string | undefined) => groups.find(([, members]) => id !== undefined && members.includes(id));
   const group = groupOf(moveId);
+  // After the set under way: whether a move still has sets left (the one under way, unless this is its last).
+  const leftAfterThis = (id: string) =>
+    id === moveId
+      ? plan !== null && (plan.open === true || (plan.current ?? 0) < plan.rows.length - 1)
+      : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
   const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
   const warming =
@@ -169,10 +213,10 @@ export default function WorkoutScreen() {
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
   const said = problem !== null && problem.row === rowKey ? problem.text : null;
 
-  /** Keeps the workout on the phone with its first set. */
+  /** Keeps the workout on the phone with its first set, started when the session was opened (its time runs on). */
   const start = async (programDayId: string): Promise<string> => {
     const clientId = newClientId();
-    await queue.record({ kind: 'workout', body: { clientId, startedAt: new Date().toISOString(), programDayId } });
+    await queue.record({ kind: 'workout', body: { clientId, startedAt: new Date(openedAt).toISOString(), programDayId } });
     return clientId;
   };
 
@@ -202,25 +246,25 @@ export default function WorkoutScreen() {
     }
     if (saved) {
       if (group === undefined) {
-        setRest(new Date().getTime());
-        // The move picked is done: the next one with sets left comes up. A move outside the plan is never done (no count).
-        if (planned !== undefined && plan.current === plan.rows.length - 1) setPicked(null);
+        // The move's last set (C4, ADR-075 #1): no rest, the move stays with Next. A move outside the plan is never done.
+        if (planned !== undefined && plan.current === plan.rows.length - 1) {
+          endRest();
+          setPicked(move.id);
+        } else setRest(new Date().getTime());
       } else {
-        // In a superset the partner comes next (a one-sided move's right side first); the rest comes after the round.
+        // In a superset the partner comes next (a one-sided move's right side first); the rest comes after the round,
+        // unless the round was the group's last.
         let roundDone = false;
+        let groupDone = false;
         if (row.side !== 'LEFT') {
-          const left = (id: string) =>
-            id === move.id ? plan.open === true || (plan.current ?? 0) < plan.rows.length - 1 : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
-          const found = nextInGroup(group[1], move.id, left);
+          const found = nextInGroup(group[1], move.id, leftAfterThis);
           roundDone = found.roundDone;
-          setPicked(found.next);
+          groupDone = found.next === null;
+          setPicked(found.next ?? move.id);
         }
-        if (roundDone) setRest(new Date().getTime());
-        else {
-          // A set inside a round ends the last round's rest: its timer goes, and its alert must not sound mid-round (K-411).
-          setRest(null);
-          void restAlert.stop();
-        }
+        if (roundDone && !groupDone) setRest(new Date().getTime());
+        // A set inside a round ends the last round's rest: its timer goes, and its alert must not sound mid-round (K-411).
+        else endRest();
       }
       await refresh();
     }
@@ -352,42 +396,50 @@ export default function WorkoutScreen() {
       </View>
     );
 
-  const list = (
-    <View style={styles.list}>
-      {entries.map((p, index) => {
-        const status = plans[index];
-        const on = index === selected;
-        return (
-          <Pressable
-            key={`${p.exerciseId}-${index}`}
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
-            onPress={() => setPicked(p.exerciseId)}
-            style={[styles.move, on && { backgroundColor: color.surface }]}>
-            <Text style={[styles.text, styles.grow, { color: status?.current === null ? color.muted : color.text }]}>
-              {exerciseName(p.exerciseId, moves)}
-            </Text>
-            <Text style={[styles.small, { color: on ? color.accent : color.muted }]}>{status === null ? '' : exerciseStatus(status)}</Text>
-          </Pressable>
-        );
+
+  const name = (id: string) => exerciseName(id, moves);
+  // The next move with sets left after `from`, in the session's order and round again to one left undone; -1 for none.
+  const openAfter = (from: number) => {
+    for (let step = 1; step < entries.length; step++) {
+      const at = (from + step) % entries.length;
+      if ((plans[at]?.current ?? null) !== null) return at;
+    }
+    return -1;
+  };
+  const nextAt = openAfter(selected);
+  const nextId = entries[nextAt]?.exerciseId;
+  const dots = (
+    <MoveDots
+      dots={entries.map((e, index) => {
+        const status = plans[index] ?? null;
+        return { id: e.exerciseId, name: name(e.exerciseId), status: status === null ? '' : exerciseStatus(status), done: status?.current === null };
       })}
-    </View>
+      selected={selected}
+      onPick={setPicked}
+    />
   );
 
+  const sides = move?.unilateral === true ? 2 : 1;
+  // The set under way, by sets (a one-sided move's two rows are one); a move outside the plan has no count to reach.
+  const heading =
+    plan === null || plan.current === null ? null : (
+      <Text style={[styles.text, { color: color.text }]}>
+        {plan.open === true
+          ? t('workout.setNumber', { number: Math.floor(plan.current / sides) + 1 })
+          : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides })}
+      </Text>
+    );
+  // The button that logs it is the dock's (it never moves); the fields stay here.
   const entryBlock =
     move === undefined || plan === null || plan.current === null || row === null ? null : (
-      <SetEntry
-        move={move}
-        index={plan.current}
-        side={row.side}
-        entry={entry}
-        onChange={setEntry}
-        onLog={() => void log()}
-        problem={said}
-        problemOccurrence={problem}
-        busy={busy}
-      />
+      <SetEntry move={move} index={plan.current} side={row.side} entry={entry} onChange={setEntry} problem={said} problemOccurrence={problem} />
     );
+  const typedKg = row === null ? null : parseLoad(entry.load, units, row.suggested.loadKg);
+  const perSide = move === undefined || typedKg === null || entryBlock === null ? null : platesLine(move, typedKg, data?.gym);
+  const plates = perSide === null ? null : <Text style={[styles.small, { color: color.muted }]}>{perSide}</Text>;
+  // A move outside the plan has no target RIR line: there is no plan to aim at.
+  const targetLine =
+    planned === undefined ? null : <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>;
   const linkWith = (partner: string) => {
     if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [moveId, partner]]]));
   };
@@ -397,15 +449,12 @@ export default function WorkoutScreen() {
   const supersetBlock =
     moveId === undefined ? null : (
       <SupersetLink
-        partners={(group?.[1] ?? []).filter((id) => id !== moveId).map((id) => exerciseName(id, moves))}
-        candidates={entries.filter((e) => e.exerciseId !== moveId && groupOf(e.exerciseId) === undefined).map((e) => ({ id: e.exerciseId, name: exerciseName(e.exerciseId, moves) }))}
+        partners={(group?.[1] ?? []).filter((id) => id !== moveId).map(name)}
+        candidates={entries.filter((e) => e.exerciseId !== moveId && groupOf(e.exerciseId) === undefined).map((e) => ({ id: e.exerciseId, name: name(e.exerciseId) }))}
         onLink={linkWith}
         onUnlink={unlink}
       />
     );
-  const typedKg = row === null ? null : parseLoad(entry.load, units, row.suggested.loadKg);
-  const perSide = move === undefined || typedKg === null || entryBlock === null ? null : platesLine(move, typedKg, data?.gym);
-  const plates = perSide === null ? null : <Text style={[styles.small, { color: color.muted }]}>{perSide}</Text>;
   const warmBlock =
     move === undefined || warming.length === 0 ? null : (
       <Warmups
@@ -419,44 +468,83 @@ export default function WorkoutScreen() {
         busy={busy}
       />
     );
-  // A move outside the plan has no target RIR line: there is no plan to aim at.
-  const targetLine =
-    planned === undefined ? null : <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>;
+  // The move's head (prototype `.mhead`): its picture opens how it is done, as the How to link does (one for VoiceOver).
+  const head =
+    moveId === undefined ? null : (
+      <View style={styles.head}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          onPress={() => router.push({ pathname: '/exercise', params: { exercise: moveId } })}>
+          <MoveThumb equipment={move?.equipment} />
+        </Pressable>
+        <View style={styles.grow}>
+          <Text style={[styles.name, { color: color.text }]}>{name(moveId)}</Text>
+          <View style={styles.links}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })}
+              onPress={() => router.push({ pathname: '/exercise', params: { exercise: moveId } })}
+              style={styles.link}>
+              <Text style={[styles.small, { color: color.accent }]}>{t('demo.open')}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('history.openLabel', { exercise: name(moveId) })}
+              onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}
+              style={styles.link}>
+              <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
+            </Pressable>
+          </View>
+          {targetLine}
+        </View>
+      </View>
+    );
   const card =
     moveId === undefined ? null : move === undefined || plan === null ? (
       <Card>
-        <Text style={[styles.heading, { color: color.text }]}>{exerciseName(moveId, moves)}</Text>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.unknownMove')}</Text>
       </Card>
     ) : (
-      <Card>
-        <View style={styles.cardHead}>
-          <Text style={[styles.heading, styles.grow, { color: color.text }]}>{exerciseName(moveId, moves)}</Text>
-          {targetLine}
-        </View>
-        <View style={styles.links}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('history.openLabel', { exercise: exerciseName(moveId, moves) })}
-            onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}>
-            <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('demo.openLabel', { exercise: exerciseName(moveId, moves) })}
-            onPress={() => router.push({ pathname: '/exercise', params: { exercise: moveId } })}>
-            <Text style={[styles.small, { color: color.accent }]}>{t('demo.open')}</Text>
-          </Pressable>
-        </View>
+      <>
         {supersetBlock}
         {warmBlock}
         <SetTable plan={plan} move={move} />
+        {heading}
         {entryBlock}
         {plates}
-      </Card>
+      </>
     );
+  // In a superset the move after this set is its partner (the round's order), else the next move of the day with sets left.
+  const partner = group === undefined || moveId === undefined ? null : nextInGroup(group[1], moveId, leftAfterThis).next;
+  const upNextId = partner !== null && partner !== moveId ? partner : nextId;
+  const upNext =
+    upNextId === undefined || row === null ? null : <UpNext name={name(upNextId)} equipment={moves.get(upNextId)?.equipment} />;
 
-  const finishButton = day === null && active === null ? null : <Button label={t('workout.finish')} variant="ghost" onPress={onFinish} />;
+  // The dock (ADR-075 #1): one place for the one thing to do now, so the button never moves. The set under way; the
+  // move done, the next one with sets left; nothing left, the finish.
+  const logLabel =
+    row === null
+      ? ''
+      : row.side === 'BOTH'
+        ? t('workout.log', { number: Math.floor((plan?.current ?? 0) / sides) + 1 })
+        : t('workout.logSide', { number: Math.floor((plan?.current ?? 0) / sides) + 1, side: t(`workout.sideName.${row.side}`) });
+  const dockButton =
+    finishing ? null : move !== undefined && row !== null ? (
+      <Button label={logLabel} onPress={() => void log()} disabled={busy} />
+    ) : nextId !== undefined ? (
+      <Button label={t('workout.next', { name: name(nextId) })} onPress={() => setPicked(nextId)} />
+    ) : day === null && active === null ? null : (
+      <Button label={t('workout.finish')} onPress={onFinish} />
+    );
+  const dock =
+    dockButton === null ? null : (
+      <View testID="dock" style={[styles.dock, { borderTopColor: color.line }]}>
+        {dockButton}
+      </View>
+    );
   // The program was made again (new days) or cannot be read: the workout under way can still be finished.
   const dayGone =
     active !== null && day === null && data !== null ? (
@@ -488,33 +576,44 @@ export default function WorkoutScreen() {
   );
   const session = (
     <>
-      {list}
-      {addPanel}
+      {entries.length > 0 && dots}
+      {head}
       {card}
-      {rest !== null && <RestTimer since={rest} />}
+      {upNext}
+      {addPanel}
       {dayGone}
-      {finishButton}
       {finishProblem}
     </>
   );
 
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <View style={styles.cardHead}>
-          <ScreenTitle>{day === null ? t('workout.title') : dayName(day)}</ScreenTitle>
-          {day !== null && (
-            <Text style={[styles.small, { color: color.muted }]}>
-              {today.length === 1
-                ? t('workout.progressOne', { done: movesDone })
-                : t('workout.progress', { done: movesDone, count: today.length })}
-            </Text>
-          )}
+      {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
+      <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.top}>
+          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onFinish} />
+          {/* Its place is kept with no rest in it, so the page under it does not move when one starts. */}
+          <View testID="rest-slot" style={styles.restSlot}>
+            {rest !== null && <RestTimer since={rest} onEnd={endRest} />}
+          </View>
         </View>
-        {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
-        {loadFailed}
-        {finishing ? form : session}
-      </ScrollView>
+        <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          <View style={styles.dayLine}>
+            <Text style={[styles.small, styles.grow, { color: color.textSecondary }]}>{day === null ? t('workout.title') : dayName(day)}</Text>
+            {day !== null && (
+              <Text style={[styles.small, { color: color.muted }]}>
+                {today.length === 1
+                  ? t('workout.progressOne', { done: movesDone })
+                  : t('workout.progress', { done: movesDone, count: today.length })}
+              </Text>
+            )}
+          </View>
+          {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
+          {loadFailed}
+          {finishing ? form : session}
+        </ScrollView>
+        {dock}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -524,13 +623,18 @@ const FINISH = 'finish';
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  top: { paddingHorizontal: tokens.space.lg, gap: tokens.space.xs },
+  restSlot: { minHeight: tokens.size.touch + tokens.space.sm * 2, justifyContent: 'center' },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
+  dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline },
   list: { gap: tokens.space.xs },
+  dayLine: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
+  head: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
   links: { flexDirection: 'row', gap: tokens.space.lg },
+  link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
-  cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: tokens.space.sm },
   grow: { flex: 1 },
-  heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
+  name: { fontFamily: tokens.font.display, fontSize: tokens.type.screenTitle },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });

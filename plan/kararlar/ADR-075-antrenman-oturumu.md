@@ -104,3 +104,12 @@ gününün (`programDayId`) önceki seansıyla karşılaştırır. Program yenid
 değişir; o zaman önceki seans yoktur ve alan gelmez: yeni program yeni temeldir. Program incelemesinin değişiklikleri (K-956) günleri
 korur, % kaybolmaz. Reddedilen: gün adıyla eşleştirmek (üretilen programda ad anahtardır, kendi programında serbest metin; aynı ad farklı
 içerikli bir günü karşılaştırırdı).
+
+## Ek 3 · Seansın başlangıç anı (K-971, 2026-10-09, düzenleyici kararı, teknik)
+Seansın `startedAt`'i "Start workout"a basılıp seans ekranının açıldığı andır; ilk setin anı değil. Süre 0:00'dan o anda başlar, ilk set onu
+sıfırlamaz (kullanıcı testi 8 Eki: "süre 0'dan başlar, seanslar arası taşınmaz"). Apple Health antrenmanı (K-412), seansın günü (K-964 Ek 3,
+yarım seansın listesi) ve özet dakikası (K-974) aynı anı okur. **Neden:** başlatmak kullanıcının açık eylemidir; ısınma ve hareketler arası
+hazırlık antrenmanın parçasıdır; salon uygulamalarının ortak beklentisi saatin Start'ta başlamasıdır. **Reddedilen:** ilk setin anı (ilk
+hareketin ısınması ve kurulum süresi düşer; saat ilk sette sıçrar, kullanıcı testinin şikâyeti). **Bilinen sınır:** seansı evde açıp
+salonda başlayan kullanıcıda süre uzar; bu kullanıcının kendi eylemidir, "End › Discard" ile düzeltilebilir. Açık kalmış eski seansın saati
+K-961/K-972 otomatik kapanışıyla sınırlanır.

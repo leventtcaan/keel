@@ -10,7 +10,7 @@ afterAll(() => jest.useRealTimers());
 test('it counts up from the last set, second by second', async () => {
   await render(
     <ThemeProvider>
-      <RestTimer since={Date.now() - 84_000} />
+      <RestTimer since={Date.now() - 84_000} onEnd={() => undefined} />
     </ThemeProvider>,
   );
   expect(screen.getByText('1:24')).toBeTruthy();
