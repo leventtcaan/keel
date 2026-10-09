@@ -47,3 +47,13 @@ Düşük-orta: ekran ve özet ucu.
 ## Doğrulama
 Ekran testleri: ilk gün dört hedef ve her birinin hedef rotası; kilo grafiği 7 tartıdan önce yok · özet testi: kas başına set birincil kasla,
 efor şablonu girdi tablosuyla · U5 testi: yenen kalori aralık.
+
+## Ek 1 · Sonuç cümlesinin kilo değişimi (K-988, 2026-10-09, agent, teknik)
+- **Yer:** `GET /v1/consistency` › `weightChange {kg, since}` (decision): tutarlılık kaydının yanında, aynı dönemle (`since` = kaydın başladığı
+  gün, ilk karar). Training modülü measurement'a bağlanamadığı için (K-965 notu) İlerleme'nin güç özetinde değil.
+- **Kural (U8):** bugün biten `trend_display_days` ortalaması eksi `since`'de biten ortalama (`WeightTrend`, motorun kendi tartıları; içe
+  aktarılanlar değil, karar penceresi gibi). Tek gün değeri asla. İki pencerenin her biri `min_weighins_per_week` tartı ister ve pencereler
+  çakışmaz; yoksa alan yok. Yeni eşik yok (DataSufficiency'nin haftalık kuralı). Yuvarlama trend noktasıyla aynı (2 ondalık).
+- **Sunucu cümle yazmaz:** telefon `data/copy/en.json` şablonuyla yazar ("Down 3.8 kg.").
+- **Reddedilen:** ilk tartıdan bugüne (tek gün değeri, U8) · `/v1/weight-trend`'den telefonda fark almak (telefon kural işletmez; yeterlilik
+  kuralı sunucuda) · ilerleme özetine (training) koymak (modül sınırı).

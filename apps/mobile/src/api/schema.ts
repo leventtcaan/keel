@@ -2799,6 +2799,7 @@ export interface components {
              *     nor missed, and the record leaves it out.
              */
             paused?: boolean;
+            weightChange?: components["schemas"]["WeightChange"];
             /** @description Weeks over since the first call; a week is on track at on_track_min_ratio (K-111). Never reset. */
             record: {
                 onTrackWeeks: number;
@@ -2811,6 +2812,17 @@ export interface components {
                  */
                 forgivenWeeks: number;
             };
+        };
+        /**
+         * @description The period's weight change (K-988, ADR-078 #2, U8): today's trend weight (the trend_display_days average ending
+         *     today) minus the one ending on `since`, the day the record began (the first call); never one day's weigh-in. Below
+         *     zero is a loss. Absent unless each of the two windows holds min_weighins_per_week weigh-ins and they do not
+         *     overlap. The app writes the sentence ("Down 3.8 kg."); the server sends none.
+         */
+        WeightChange: {
+            kg: number;
+            /** Format: date */
+            since: string;
         };
         /** @description One kind of planned action this week; done is counted up to planned. */
         ActionCount: {
