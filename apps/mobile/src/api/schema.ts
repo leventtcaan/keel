@@ -2627,7 +2627,7 @@ export interface components {
             /**
              * @description "What moved" (ADR-075 #7, K-1008): each move of the session, in the order first done, its best working set
              *     against its best in the last earlier session of the same program day (the session liftedChangePercent compares
-             *     with). This server always sends it.
+             *     with), or a move that session did not have against its own last session (MoveChange). This server always sends it.
              */
             moves: components["schemas"]["MoveChange"][];
             /**
@@ -2638,7 +2638,8 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
+             *     (at least one rep: a session of skipped sets only is none), in
              *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
              *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
              */
@@ -2661,10 +2662,11 @@ export interface components {
         /**
          * @description A move's best working set this session (the heaviest, then the most reps, then the fewest left; a set of no reps
          *     never counts; sides are one history; the load as logged, a bodyweight move's added load) against its best in the
-         *     last earlier session of the same program day. LOAD: another load, `by` the difference in kg (negative when
+         *     last earlier session of the same program day with a set done; a move that session did not have (swapped in today,
+         *     swapped out then, added, skipped) against its own last session on any day (it has its own history, K-964). LOAD: another load, `by` the difference in kg (negative when
          *     lighter). REPS: the same load, `by` the difference in reps (negative when fewer). SAME: the same load and reps.
-         *     HELD: the same load while the weekly call holds the load (ADR-077). FIRST: nothing to compare with (the move was
-         *     not in that session, or there is none). No estimated max (B10).
+         *     HELD: the same load of a compound move while the weekly call holds the load. FIRST: the move has no earlier
+         *     session at all. No estimated max (B10).
          */
         MoveChange: {
             exerciseId: string;
