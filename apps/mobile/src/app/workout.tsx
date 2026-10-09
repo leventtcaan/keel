@@ -470,7 +470,7 @@ function Session() {
     // The set's sides not done yet: a one-sided set skipped is both sides of it (the left kept if done).
     const sidesLeft = plan.rows.slice(set * sides, set * sides + sides).filter((r) => r.done === null && r.skipped !== true);
     changeSkips({ ...skips, [moveId]: { ...before, sets: [...before.sets, ...sidesLeft.map((r) => ({ side: r.side, set }))] } }, t('workout.setSkipped'));
-    // As after a set logged: in a superset the partner comes next (#517 review); else the move stays picked, and its
+    // As after a set logged: in a superset the partner comes next; else the move stays picked, and its
     // last set skipped, Next names the next one (C4).
     setPicked(group === undefined ? moveId : (nextInGroup(group[1], moveId, leftAfterThis).next ?? moveId));
   };
@@ -578,7 +578,7 @@ function Session() {
         <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipMove')}</Text>
       </Pressable>
     );
-  // A move skipped, opened again (#517 review): it says so, and it can be brought back.
+  // A move skipped, opened again: it says so, and it can be brought back.
   const skippedMove = (
     <View style={[styles.undo, { backgroundColor: color.surface }]}>
       <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{t('workout.moveIsSkipped')}</Text>
