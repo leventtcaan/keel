@@ -190,9 +190,17 @@ export function sessionMoves(day: Schemas['ProgramDay'], week: Schemas['WeekSess
   });
 }
 
-/** The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31). */
-export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string): Outbound {
+/**
+ * The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31), with the time
+ * paused (K-998), whole seconds, when there was any.
+ */
+export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string, pausedSeconds = 0): Outbound {
   const words = noteOf(note);
-  const body = { endedAt: at.toISOString(), uncleanExerciseIds: [...new Set(unclean)], ...(words === null ? {} : { note: words }) };
+  const body = {
+    endedAt: at.toISOString(),
+    uncleanExerciseIds: [...new Set(unclean)],
+    ...(words === null ? {} : { note: words }),
+    ...(pausedSeconds > 0 ? { pausedSeconds } : {}),
+  };
   return { kind: 'finish', clientId, workoutClientId, body };
 }

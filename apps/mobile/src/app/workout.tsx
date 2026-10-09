@@ -19,6 +19,7 @@ import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { DoneSets } from '@/train/DoneSets';
 import { EditSet } from '@/train/EditSet';
+import { EndSheet } from '@/train/EndSheet';
 import { FinishForm } from '@/train/FinishForm';
 import { GoalLine } from '@/train/GoalLine';
 import { MoveDots } from '@/train/MoveDots';
@@ -33,7 +34,7 @@ import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
-import { NOT_PAUSED, type Pause, toggle } from '@/train/pause';
+import { NOT_PAUSED, type Pause, pausedFor, toggle } from '@/train/pause';
 import type { Skips } from '@/train/skips';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
@@ -112,6 +113,15 @@ function Session() {
   // clock tells nothing. Closing or filling it in from here is K-972.
   const closeMs = workoutParams.unfinishedSessionCloseHours * 60 * 60 * 1000;
   const [finishing, setFinishing] = useState(false);
+  // End's three ways out (K-972); a workout just discarded, kept on the screen for Undo.
+  const [ending, setEnding] = useState(false);
+  const [discarded, setDiscarded] = useState<{
+    startedAt: string;
+    programDayId: string | null;
+    sets: components['schemas']['NewSet'][];
+    pause: Pause;
+    skips: Skips;
+  } | null>(null);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
   const [sessionNote, setSessionNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -364,14 +374,18 @@ function Session() {
     setBusy(true);
     try {
       const end = new Date();
-      await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote));
+      // The time paused (K-998), within the session's length: the summary's minutes and Health's are the active time.
+      const lengthMs = Math.max(0, end.getTime() - Date.parse(active.startedAt));
+      const pausedMs = Math.min(lengthMs, pausedFor(pauseRef.current, end.getTime()));
+      await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote, Math.floor(pausedMs / 1000)));
       // Finished, its pause is done with (the time paused goes with the finish once the contract takes it, K-998).
       void sessionPause.forget().catch(named);
       void sessionSkips.forget().catch(named);
       // What was done, against last time (K-406); a workout without a work set has nothing to show.
       if (worked.length > 0) {
         // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
-        void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end });
+        // Written from its start for its active length: the library's save takes no pauses (installed types).
+        void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end: new Date(end.getTime() - pausedMs) });
         router.replace({ pathname: '/workout-end', params: { workout: active.clientId } });
       } else router.back();
     } catch (error) {
@@ -388,9 +402,74 @@ function Session() {
   const movesDone = plans.filter((p, i) => entries[i]?.planned !== undefined && p !== null && p.rows.some((r) => r.done !== null)).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   const onFinish = () => {
+    setEnding(false);
     if (active === null) router.back();
     else if (worked.length === 0) void finish();
     else setFinishing(true);
+  };
+  // End (K-972): with nothing kept there is nothing to choose; else the three ways out.
+  const onEnd = () => {
+    if (active === null) router.back();
+    else setEnding(true);
+  };
+  /** Left open (ADR-075 #5, K-961): it counts for its week, Continue opens it again, the server closes it after a day. */
+  const later = () => {
+    announce(t('workout.ending.laterSaid'));
+    router.back();
+  };
+  /**
+   * Discarded (ADR-075 #5, K-998): nothing is saved. Once the server has it, it is deleted there first (offline then,
+   * it says a connection is needed and keeps it); then the phone's records of it go, with its pause and skips. What it
+   * held stays on the screen to bring back with Undo, as a new workout from the same start.
+   */
+  const discard = async () => {
+    if (saving.current || active === null) return;
+    saving.current = true;
+    setBusy(true);
+    const gone = { startedAt: active.startedAt, programDayId: active.programDayId, sets: active.sets, pause: pauseRef.current, skips };
+    try {
+      const kept = await workoutRecords();
+      const serverId = kept.find((r) => r.kind === 'workout' && r.clientId === active.clientId)?.serverId;
+      if (serverId != null) {
+        const { response } = await api.DELETE('/v1/workouts/{id}', { params: { path: { id: serverId } } });
+        if (!response.ok && response.status !== 404) throw Object.assign(new Error(String(response.status)), { name: 'DiscardRefused' });
+      }
+      for (const r of kept.filter((r) => r.parentClientId === active.clientId)) await workoutEdits.forget(r.clientId);
+      await workoutEdits.forget(active.clientId);
+      void sessionPause.forget().catch(named);
+      void sessionSkips.forget().catch(named);
+      endRest();
+      setHeld([]);
+      setEnding(false);
+      setDiscarded(gone);
+      setProblem(null);
+    } catch (error) {
+      named(error);
+      setProblem({ row: DISCARD, text: t(error instanceof TypeError ? 'workout.ending.offline' : 'workout.ending.failed') });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
+  };
+  /** The discarded workout back, as a new one from the same start: its sets, its pause and its skips. */
+  const undoDiscard = async () => {
+    if (discarded === null || saving.current) return;
+    saving.current = true;
+    const clientId = newClientId();
+    try {
+      await queue.record({
+        kind: 'workout',
+        body: { clientId, startedAt: discarded.startedAt, ...(discarded.programDayId === null ? {} : { programDayId: discarded.programDayId }) },
+      });
+      for (const set of discarded.sets) await queue.record({ kind: 'set', workoutClientId: clientId, body: { ...set, clientId: newClientId() } });
+      if (discarded.pause.pausedAt !== null || discarded.pause.pausedMs > 0) await sessionPause.keep(clientId, discarded.pause);
+      if (Object.keys(discarded.skips).length > 0) await sessionSkips.keep(clientId, discarded.skips);
+      setDiscarded(null);
+    } catch (error) {
+      named(error);
+    }
+    await refresh();
+    saving.current = false;
   };
 
   // Adding a move outside the plan (K-416): found in the catalog by name or alias, on the phone (offline too).
@@ -778,8 +857,28 @@ function Session() {
       <Text style={[styles.text, styles.grow, { color: color.text }]}>{t('workout.paused')}</Text>
     </View>
   );
+  const endSheet = (
+    <EndSheet
+      onFinish={onFinish}
+      onLater={later}
+      onDiscard={() => void discard()}
+      onBack={() => setEnding(false)}
+      problem={problem !== null && problem.row === DISCARD ? problem.text : null}
+      problemOccurrence={problem}
+      busy={busy}
+    />
+  );
+  const discardedPanel = (
+    <View style={[styles.undo, { backgroundColor: color.surface }]}>
+      <Text style={[styles.text, styles.grow, { color: color.text }]}>{t('workout.ending.discarded')}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={() => void undoDiscard()} style={styles.link}>
+        <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+      </Pressable>
+      <Button label={t('workout.ending.close')} variant="ghost" size="sm" onPress={() => router.back()} />
+    </View>
+  );
   const dock =
-    dockButton === null ? null : (
+    dockButton === null || ending || discarded !== null ? null : (
       <View testID="dock" style={[styles.dock, { borderTopColor: color.line }]}>
         {dockButton}
       </View>
@@ -831,7 +930,7 @@ function Session() {
       {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
       <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onFinish} pause={pause} onPause={togglePause} subtitle={dayLine} />
+          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={pause} onPause={togglePause} subtitle={dayLine} />
           {/* Its place is kept with no rest in it, so the page under it does not move when one starts. */}
           <View testID="rest-slot" style={styles.restSlot}>
             {pause.pausedAt !== null ? pausedBar : rest !== null && <RestTimer since={rest} onEnd={endRest} />}
@@ -840,7 +939,7 @@ function Session() {
         <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
-          {finishing ? form : session}
+          {discarded !== null ? discardedPanel : ending ? endSheet : finishing ? form : session}
         </ScrollView>
         {dock}
       </KeyboardAvoidingView>
@@ -852,6 +951,8 @@ function Session() {
 const FINISH = 'finish';
 /** A correction's own key for a problem. */
 const EDIT = 'edit';
+/** A discard's own key for a problem. */
+const DISCARD = 'discard';
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },

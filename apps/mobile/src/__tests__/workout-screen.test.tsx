@@ -188,6 +188,15 @@ beforeAll(async () => {
   await (await show()).unmount();
 }, COLD_START_MS);
 const sets = () => mockRecord.mock.calls.map(([outbound]) => outbound).filter((o) => o.kind === 'set');
+/**
+ * End, then "Finish and save" (K-972: End offers three ways out; a session with nothing kept closes at once, with no
+ * choice to make).
+ */
+const endAndFinish = async () => {
+  await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+  const finish = screen.queryByRole('button', { name: new RegExp(`^${t('workout.ending.finish')}`) });
+  if (finish !== null) await fireEvent.press(finish);
+};
 /** A move picked by its dot (K-971: the moves are dots, each said by its name and status). */
 const pickMove = async (name: string) =>
   fireEvent.press(await screen.findByRole('button', { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, `) }));
@@ -256,7 +265,7 @@ test('a note goes with the set it was written for, and the next set starts witho
 test('the session note is asked at the finish, and goes with it (K-422)', async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
-  await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+  await endAndFinish();
   await fireEvent.changeText(await screen.findByLabelText('Note on this workout (optional)'), 'Slept 5 hours');
   await fireEvent.press(screen.getByText('Finish'));
   const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
@@ -284,7 +293,7 @@ test('another move can be picked; a one-sided move is logged side by side', asyn
 test("finishing asks about each move's form; a move marked not clean is sent, and the summary opens", async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
-  await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+  await endAndFinish();
   expect(screen.getByText('How was your form?')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Bench press: Not clean'));
   await fireEvent.press(screen.getByText('Finish'));
@@ -317,7 +326,7 @@ test('finishing before any set closes the screen and sends nothing: an empty wor
   mockRecords = lastWeek();
   mockParams = { day: 'day-a' };
   await show();
-  await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+  await endAndFinish();
   expect(mockRecord).not.toHaveBeenCalled();
   expect(mockBack).toHaveBeenCalled();
 });
@@ -377,7 +386,7 @@ test('a finish that cannot be saved says so where the user is, and the screen st
     throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
   });
   await show(); // the open workout has no set yet: finishing asks nothing
-  await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+  await endAndFinish();
   expect(await screen.findByText("The workout couldn't be finished on the phone. Try again.")).toBeTruthy();
   expect(mockBack).not.toHaveBeenCalled();
 });
@@ -415,7 +424,7 @@ test("in lb, an untouched suggestion logs the server's kg; a typed one, what was
 test('a move marked not clean and then clean again is sent as clean', async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
-  await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+  await endAndFinish();
   await fireEvent.press(screen.getByLabelText('Bench press: Not clean'));
   await fireEvent.press(screen.getByLabelText('Bench press: Clean'));
   await fireEvent.press(screen.getByText('Finish'));
@@ -475,7 +484,7 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     await fireEvent.press(await screen.findByText('Log warm-up 1'));
     expect(await screen.findByText('Log warm-up 2')).toBeTruthy();
     expect(mockRecord).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+    await endAndFinish();
     expect(mockRecord).not.toHaveBeenCalled();
     expect(mockBack).toHaveBeenCalled();
   });
@@ -756,7 +765,7 @@ describe("the user's own move (K-416, ADR-035)", () => {
     await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '10');
     await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
     expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'custom:1', loadKg: 30, reps: 10 });
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+    await endAndFinish();
     expect(await screen.findByLabelText(`Landmine press: ${t('workout.form.clean')}`)).toBeOnTheScreen();
   });
 });
@@ -1117,7 +1126,7 @@ describe('the finished session to Apple Health (K-412)', () => {
   test('finished with work in it: one workout, from its start to the finish, under its own id', async () => {
     await show();
     await fireEvent.press(await screen.findByText('Log set 1'));
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+    await endAndFinish();
     const before = Date.now();
     await fireEvent.press(screen.getByText('Finish'));
     expect(mockServices.healthWriting.workoutFinished).toHaveBeenCalledTimes(1);
@@ -1132,7 +1141,7 @@ describe('the finished session to Apple Health (K-412)', () => {
   test('a finish the phone could not keep: nothing to write', async () => {
     await show();
     await fireEvent.press(await screen.findByText('Log set 1'));
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+    await endAndFinish();
     mockRecord.mockImplementation(async (outbound: Outbound) => {
       if (outbound.kind === 'finish') throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
       return keep(outbound);
@@ -1143,7 +1152,7 @@ describe('the finished session to Apple Health (K-412)', () => {
 
   test('finished before any set: nothing to write', async () => {
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+    await endAndFinish();
     expect(mockServices.healthWriting.workoutFinished).not.toHaveBeenCalled();
   });
 });
@@ -1885,7 +1894,7 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
     await screen.findByText(t('workout.log', { number: 2 }));
     await skipSet();
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+    await endAndFinish();
     await fireEvent.press(screen.getByText('Finish'));
     expect(mockServices.sessionSkips.forget).toHaveBeenCalled();
   });
@@ -2030,5 +2039,114 @@ describe('a set done, corrected or deleted in the session (K-972, ADR-075 #5)', 
     await fireEvent.press(inEditor().getByRole('button', { name: t('workout.edit.done') }));
     expect(screen.queryByTestId('edit-set')).toBeNull();
     expect(mockServices.workoutEdits.change).not.toHaveBeenCalled();
+  });
+});
+
+describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-075 #5, K-998)', () => {
+  const end = async () => fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+  const choose = (key: string) => fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t(key)}`) }));
+  const started = (minutes: number) => {
+    const startedAt = new Date(Date.now() - minutes * 60_000).toISOString();
+    mockRecords = [
+      ...lastWeek(),
+      record('workout', 'w2', { clientId: 'w2', startedAt, programDayId: 'day-a' }),
+      record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 8, rir: 1, side: 'BOTH' }, 'w2'),
+    ];
+    return Date.parse(startedAt);
+  };
+
+  test('End offers the three, each saying what it does', async () => {
+    started(20);
+    await show();
+    await end();
+    expect(screen.getByText(t('workout.ending.title'))).toBeOnTheScreen();
+    for (const key of ['workout.ending.finishNote', 'workout.ending.laterNote', 'workout.ending.discardNote']) expect(screen.getByText(t(key))).toBeOnTheScreen();
+    await choose('workout.ending.back');
+    expect(screen.getByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+  });
+
+  test('fill in the rest later: nothing is finished, the session is left open and counts; it says so', async () => {
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    try {
+      started(20);
+      await show();
+      await end();
+      await choose('workout.ending.later');
+      expect(mockRecord.mock.calls.map(([o]) => o.kind)).not.toContain('finish');
+      expect(mockServices.workoutEdits.forget).not.toHaveBeenCalled();
+      expect(mockBack).toHaveBeenCalled();
+      expect(said).toHaveBeenLastCalledWith(t('workout.ending.laterSaid'));
+    } finally {
+      said.mockRestore();
+    }
+  });
+
+  test('discard asks once more; kept, nothing changes', async () => {
+    started(20);
+    await show();
+    await end();
+    await choose('workout.ending.discard');
+    expect(screen.getByRole('button', { name: t('workout.ending.confirm') })).toBeOnTheScreen();
+    await choose('workout.ending.keep');
+    expect(mockServices.workoutEdits.forget).not.toHaveBeenCalled();
+  });
+
+  test('discarded on the phone: the workout and its sets are gone, nothing sent; Undo brings it all back', async () => {
+    started(20);
+    mockRecords = mockRecords.map((r) => (r.clientId === 'w2' || r.clientId === 'b1' ? { ...r, state: 'PENDING' } : r));
+    await show();
+    await end();
+    await choose('workout.ending.discard');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+    expect(await screen.findByText(t('workout.ending.discarded'))).toBeOnTheScreen();
+    expect(mockRecords.filter((r) => r.clientId === 'w2' || r.parentClientId === 'w2')).toEqual([]);
+    expect(mockDELETE).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+    const back = mockRecord.mock.calls.map(([o]) => o);
+    expect(back.map((o) => o.kind)).toEqual(['workout', 'set']);
+    expect(back[1]).toMatchObject({ body: { exerciseId: 'bench_press', loadKg: 60, reps: 8, rir: 1 } });
+  });
+
+  test('discarded once the server has it: deleted there too; Close leaves', async () => {
+    started(20);
+    mockRecords = mockRecords.map((r) => (r.clientId === 'w2' ? { ...r, serverId: 'srv-w2' } : r));
+    await show();
+    await end();
+    await choose('workout.ending.discard');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+    expect(await screen.findByText(t('workout.ending.discarded'))).toBeOnTheScreen();
+    expect(mockDELETE).toHaveBeenCalledWith('/v1/workouts/{id}', { params: { path: { id: 'srv-w2' } } });
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.close') }));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('discarded offline once the server has it: it says a connection is needed and keeps the workout', async () => {
+    started(20);
+    mockRecords = mockRecords.map((r) => (r.clientId === 'w2' ? { ...r, serverId: 'srv-w2' } : r));
+    mockDelete = async () => {
+      throw new TypeError('Network request failed');
+    };
+    await show();
+    await end();
+    await choose('workout.ending.discard');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+    expect(await screen.findByText(t('workout.ending.offline'))).toBeOnTheScreen();
+    expect(mockRecords.some((r) => r.clientId === 'w2')).toBe(true);
+  });
+
+  test('finished after a pause: the time paused goes with it, and Apple Health gets the active time', async () => {
+    const startedAt = started(30);
+    mockPause = { workout: 'w2', pause: { pausedAt: null, pausedMs: 10 * 60_000 } };
+    await show();
+    await endAndFinish();
+    await fireEvent.press(await screen.findByText('Finish'));
+    const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
+    expect(finish?.kind === 'finish' && finish.body.pausedSeconds).toBe(600);
+    const [workout] = mockServices.healthWriting.workoutFinished.mock.calls[0] as unknown as [{ start: Date; end: Date }];
+    expect(workout.start.getTime()).toBe(startedAt);
+    const active = workout.end.getTime() - workout.start.getTime();
+    expect(active).toBeGreaterThanOrEqual(20 * 60_000);
+    expect(active).toBeLessThan(21 * 60_000);
   });
 });
