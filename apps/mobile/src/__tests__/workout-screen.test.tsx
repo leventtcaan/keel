@@ -1683,7 +1683,7 @@ describe('Pause and Resume (K-972, ADR-075 #5): the time stops, and goes on from
       expect(clockSeconds() - before).toBeLessThan(605);
     } finally {
       jest.useRealTimers();
-      listen.mockRestore();
+      // Not restored: AppState's listener is jest-expo's mock, and restoring it would leave it returning nothing.
     }
   });
 });
