@@ -79,6 +79,34 @@ class FirstWeekFactsTests {
         assertThat(FirstWeekFacts.firstCallOpen(firstDay, DayOfWeek.MONDAY, today)).isEqualTo(open);
     }
 
+    @ParameterizedTest(name = "saved Wednesday 7, plan seen {0}: first day {1}, first call {2}, nothing missed before it")
+    @CsvSource({
+            // D < K: seen on Friday, before Monday 12: the week is Friday to Sunday, Friday itself not planned (the plan was new).
+            "2026-10-09T20:00, 2026-10-09, 2026-10-12",
+            // K <= D < K + 7: seen on Wednesday 14, Monday 12 already gone: no call that day; the first week runs to Monday 19.
+            "2026-10-14T09:00, 2026-10-14, 2026-10-19",
+            // D >= K + 7: seen on Tuesday 20: the first week runs from it to Monday 26.
+            "2026-10-20T09:00, 2026-10-20, 2026-10-26",
+    })
+    void theFirstWeekCountsFromTheDayThePlanWasSeen(String seen, LocalDate firstDay, LocalDate firstCall) {
+        // K-993 (ADR-077 Ek 3): saved on Wednesday 7 (G), the app closed, back days later (D): the days the user never saw
+        // the plan are in no week; Friday 9, planned, is never missed.
+        ZoneId istanbul = ZoneId.of("Europe/Istanbul");
+        Optional<Instant> saved = Optional.of(LocalDateTime.parse("2026-10-07T09:00").atZone(istanbul).toInstant());
+        Optional<Instant> planSeen = Optional.of(LocalDateTime.parse(seen).atZone(istanbul).toInstant());
+
+        LocalDate began = FirstWeekFacts.firstDay(planSeen, saved, () -> saved.orElseThrow(), istanbul);
+
+        assertThat(began).isEqualTo(firstDay);
+        assertThat(FirstWeekFacts.firstCallOn(began, DayOfWeek.MONDAY, began)).isEqualTo(firstCall);
+        assertThat(FirstWeekFacts.firstCallOpen(began, DayOfWeek.MONDAY, began)).isFalse();
+        // The check-in of Monday 12 is the first week's only when the plan was seen before it.
+        assertThat(FirstWeekFacts.of(began, DayOfWeek.MONDAY, NEXT_MONDAY, MON_WED_FRI, Set.of(), 3, EXPERIENCED).isPresent())
+                .isEqualTo(firstCall.equals(NEXT_MONDAY));
+        // Never seen: the profile's first save, as before (K-990).
+        assertThat(FirstWeekFacts.firstDay(Optional.empty(), saved, () -> saved.orElseThrow(), istanbul)).isEqualTo(WEDNESDAY);
+    }
+
     @Test
     void theFirstDayIsTheUsersCalendarsNotUtcs() {
         // Monday 00:05 in Istanbul is Sunday 21:05 UTC: the first day is Monday where the user lives.

@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 
 /**
  * The first week as the call that closes it reads it (K-962, ADR-077 #4). The first week runs from the first day — the day
- * onboarding finished (K-990) — to the day before the first check-in day after it — so the first call comes on day seven at
+ * the plan was first shown (K-993), else the day onboarding finished (K-990) — to the day before the first check-in day after it — so the first call comes on day seven at
  * the latest (ADR-071 #1), never before — and the check-in of that day closes it. The first day is not planned: the plan
  * was only just made. Planned: the
  * training weekdays after it, and the signup day itself only when a session was done on it; done: the days with a
@@ -37,6 +37,14 @@ final class FirstWeekFacts {
      */
     static LocalDate firstDay(Optional<Instant> onboarded, Supplier<Instant> firstSignIn, ZoneId zone) {
         return onboarded.orElseGet(firstSignIn).atZone(zone).toLocalDate();
+    }
+
+    /**
+     * The first day (K-993, ADR-077 Ek 3): the day the plan was first shown; before that was kept, the day onboarding
+     * finished, then the first sign-in. The days before it, the plan unseen, are in no week.
+     */
+    static LocalDate firstDay(Optional<Instant> planSeen, Optional<Instant> onboarded, Supplier<Instant> firstSignIn, ZoneId zone) {
+        return planSeen.map(seen -> seen.atZone(zone).toLocalDate()).orElseGet(() -> firstDay(onboarded, firstSignIn, zone));
     }
 
     /** Whether the first call can be made today: from the check-in day that closes the first week on. */

@@ -91,6 +91,30 @@ class FirstCallDateApiTests {
         assertThat(read(firstWeeks(account))).containsEntry("firstCallOn", today().toString());
     }
 
+    @Test
+    void theFirstWeekCountsFromTheDayThePlanWasSeenAndOnlyTheFirstTimeIsKept() throws Exception {
+        // K-993 (ADR-077 Ek 3): saved a week ago, the app closed, the plan seen today: today's check-in would have closed
+        // the first week (missing the days never seen); it counts from today, the call a week on.
+        LocalDate today = today();
+        AccountId account = onboardedToday();
+        finished(account, 7);
+
+        assertThat(send(account, "PUT", "/v1/profile/plan-seen", null)).hasStatus(204);
+
+        assertThat(read(firstWeeks(account))).containsEntry("firstCallOn", today.plusWeeks(1).toString()).containsEntry("week", 1);
+        assertThat(send(account, "GET", "/v1/check-ins/current", null)).hasStatus(404);
+        // Sent again later: the first time stays.
+        Object seen = jdbc.sql("select plan_seen_at from profile.profile where account_id = :a").param("a", account.value()).query().singleValue();
+        assertThat(send(account, "PUT", "/v1/profile/plan-seen", null)).hasStatus(204);
+        assertThat(jdbc.sql("select plan_seen_at from profile.profile where account_id = :a").param("a", account.value()).query().singleValue())
+                .isEqualTo(seen);
+    }
+
+    @Test
+    void thePlanIsSeenOnlyOnceThereIsAProfile() {
+        assertThat(send(TestSessions.newAccount(), "PUT", "/v1/profile/plan-seen", null)).hasStatus(404);
+    }
+
     /** A man in UTC with the health data consent, checking in on today's weekday; his profile saved now. */
     private AccountId onboardedToday() {
         AccountId account = TestSessions.newAccount();

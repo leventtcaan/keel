@@ -16,8 +16,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -87,6 +89,18 @@ class ProfileController {
         }
         store.save(account, consent.granted(account, ConsentKind.HEALTH_DATA) ? profile : keepingTheStoredAvoid(account, profile));
         return shown(account, store.find(account).orElseThrow()); // what was stored, so the answer is what a GET returns
+    }
+
+    /**
+     * The plan was shown (K-993, ADR-077 Ek 3): the first time is kept, by the server's clock; the first week counts from
+     * that day. Sent again, nothing changes. NOT_FOUND without a profile.
+     */
+    @PutMapping("/plan-seen")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void planSeen(AccountId account) {
+        if (!store.planSeen(account)) {
+            throw new ApiException(ErrorCode.NOT_FOUND);
+        }
     }
 
     /**
