@@ -34,6 +34,8 @@ K-995 B, C (taşı önizlemesi) → part sonu: 6 personalı kullanıcı-gözü y
 3. Bilgi: Bu hafta'daki "Allow" rızayı doğrudan vermiyor, Ayarlar'a (rıza metni) götürüyor (prototipte doğrudan veriyordu).
 4. Bilgi: dinlenme sayacı ileri sayıyor, 2:00-3:00 bandı (G1 K-49); bitirme düğmesi "Ready".
 5. Bilgi: ADR-075 Ek 3 (seans başlangıcı Start anı); K1 notu #505 (mevcut bir API testi daha sıkı hale geldi, gevşemedi).
+6. Bilgi (K1): K-974'te `workout-screen.test.tsx` bitiş yönlendirmesi `/workout-summary` → `/workout-end` (ADR-075 #7 kutlaması eski özetin yerini aldı; beklenti gevşemedi). #510'da iki API testi önizlemeyi içerecek şekilde sıkılaştı. #515'te bir beklentinin tersine çevrilmesi **reddedildi** (açığı kilitliyordu).
+7. Bilgi: yeni kartlar K-995, K-996, K-997, K-998, K-999 (sunucuda açık seansa dönüş), K-1000 (karar ekranı sunucu alanları; "varsayılan uygulanır" sunucuda), K-1008 (özette hareket başına değişim). Rekor haptiği Part 4 derlemesinde (`expo-haptics`, ADR-075 Ek 5).
 
 ## Ajan kuralları (brief.md özeti)
 Ayrı worktree, ana checkout'a dokunmaz · node_modules sembolik bağ (npm ci yok, disk dar) · Docker yok: saf testler yerelde, DB testleri CI · simülatörü kullanmaz ·

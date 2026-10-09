@@ -4646,3 +4646,54 @@ tasks:
     tests: ["Silme API testi (kendi/başkası/tekrar), özet dakikası tablo testi, sözleşme testi"]
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
     learn: ["Silinen kaydın türetilmiş sayılardan düşmesi"]
+
+  - id: K-999
+    title: "Sunucuda açık, bu telefonda olmayan seansa dönüş (başka cihaz, yeniden kurulum)"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-995, K-972]
+    why: "#512 incelemesi (9 Eki): `WeekSession.workout.state = OPEN` ama seans bu telefonun kayıtlarında yok (başka cihaz, uygulama yeniden kuruldu); kart yalnız 'Started, not on this phone' der, Continue de Start da yok. Kullanıcı seansına dönemez ve sunucu başlamış seansı taşıtmaz"
+    acceptance:
+      - "Sunucuda açık seans: 'Continue' sunucunun setleriyle (GET /v1/workouts/{id}) seansı telefonda açar; ilk dokunuşta yerel kayıt kurulur, sonraki setler kuyruğa (K-961)"
+      - "Ya da 'Fill in later' / 'Discard' (K-998) seçenekleri aynı kartta"
+    tests: ["Ekran testleri (sunucuda OPEN, telefonda yok → Continue setleri getirir)"]
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
+    learn: ["Sunucu durumundan yerel durum kurmak"]
+
+  - id: K-1000
+    title: "Karar ekranı için sunucu alanları: değişenler, neden olguları, varsayılan uygulanır, 1. hafta gün önerisi, gözlem günü"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-962, K-963, K-995]
+    why: "K-978 (9 Eki): ADR-077 #3 karar ekranı 'değişen hedefler (eski → yeni) · iki neden (veri + kural) · In this week's plan (varsayılan uygulanmış)' ve #4/Ek 1 '1. hafta gün seçimi, öneri dolu' istiyor; sunucu bunların hiçbirini göndermiyor (yalnız eylem ve reason.rule); karar PENDING kalıyor; observationDays ilk karardan sonra okunamıyor. Telefon geriye hesaplarsa kural işletir"
+    acceptance:
+      - "`Decision.changes[] {what, before, after}` (kalori, adım, hareket hedefi: '72.5 × 9 → 72.5 × 8'); DECLINED'da yürürlükteki değer (`inForce`)"
+      - "`Reason` başına veri satırı için olgular (ör. hareket, yük, tekrar, seans sayısı; sayılar sunucudan); telefon `decision.rule.<rule>.short` şablonuyla yazar (kısa metinler en.json'a, tire yok)"
+      - "Varsayılan uygulanır (ADR-077 #3, B11, Levent KABUL): check-in cevabıyla oluşan kalori/yük kararı uygulanmış gelir; 1. hafta gün değişikliği uygulanmaz, kullanıcının dokunuşu (Ek 1); güvenlik kararı da uygulanır ve declinable değil"
+      - "1. hafta kararında `suggested: Weekday[]` (MoveMissedSessions, AddTrainingDay); günü kaydetmek K-995 B PATCH ile (gün taşı/ekle)"
+      - "Gözlem günü (`observationDays`) 1. hafta kararında okunur (FirstWeeks ya da karar)"
+    tests: ["DecisionService tablo testleri (değişenler, olgular, varsayılan uygulama, öneri günleri), API testleri (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Ekranın ihtiyacını sözleşmeye taşımak"]
+
+  - id: K-1008
+    title: "Antrenman özetinde hareket başına ne değişti (WorkoutSummary.moves)"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-965]
+    why: "K-974 (9 Eki): ADR-075 #7 kutlamada 'ne arttı' istiyor; WorkoutSummary yalnız marks/liftedKg/workingSets/minutes/muscles taşıyor; eski workout-summary ekranı bunu telefonda e1RM ile hesaplıyordu (ADR-075 #7 'e1RM yok' ve telefon kural işletmez ile çelişir)"
+    acceptance:
+      - "`WorkoutSummary.moves[] {exerciseId, best {loadKg, reps}, change: REPS|LOAD|HELD|SAME|FIRST, by?}`: aynı program gününün önceki seansına göre (K-965'in % kuralıyla aynı karşılaştırma); atlanan set sayılmaz; e1RM yok"
+      - "Tek taraflı hareket, vücut ağırlığı ve eklenen yük doğru"
+    tests: ["ProgressSummary tablo testleri, API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-078-ilerleme.md"]
+    learn: ["Karşılaştırmanın tek yerde yapılması"]

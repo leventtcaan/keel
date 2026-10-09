@@ -23,6 +23,7 @@ import { type TrialReminder, createTrialReminder } from '@/subscription/trialRem
 import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
 import { type Opens, createOpens } from '@/today/opens';
+import { type SessionPause, createSessionPause } from '@/train/pause';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
@@ -121,6 +122,8 @@ export type AppServices = {
   reminders: Reminders;
   /** The rest timer's voice in the background (K-411). */
   restAlert: RestAlert;
+  /** The open session's pause, kept with its workout (K-972). */
+  sessionPause: SessionPause;
   /** The two switches that write to Apple Health: finished sessions, weigh-ins typed in (K-412). */
   healthWriting: HealthWriting;
   /** What the user declared (K-518): kept on the phone for the reminders. */
@@ -172,6 +175,7 @@ export async function createAppServices({
   const reminders = await createReminders({ kv, access: notifications, now, report, muted: () => state.inForce(),
     mutedUntil: () => state.until() });
   const restAlert = createRestAlert({ access: alerts, report });
+  const sessionPause = createSessionPause(kv);
   const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
   const profile = await createProfileStatus({
     kv,
@@ -257,6 +261,7 @@ export async function createAppServices({
     projectionSwitch.forget().catch(reportError); // and the projection's switch and what it showed (K-606)
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
+    sessionPause.forget().catch(reportError); // and the open session's pause (K-972)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     planPreviews.forget(); // and the plan just shown, kept in memory for the paywall (K-967)
@@ -289,6 +294,7 @@ export async function createAppServices({
     planPreviews,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
+    sessionPause,
     healthWriting,
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that

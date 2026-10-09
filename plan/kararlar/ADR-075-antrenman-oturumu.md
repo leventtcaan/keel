@@ -124,3 +124,10 @@ K-961/K-972 otomatik kapanışıyla sınırlanır.
   Health kullanıcının gördüğü saatle çelişirdi, kullanıcı testi C14).
 - **Set düzeltme/silme seans içinde:** telefonda bekleyen set yerelde değişir; gönderilmiş set çevrimiçiyken silinip yeniden eklenir,
   çevrimdışıyken "bağlantı gerekli" denir (kuyruğa yeni tür yok).
+
+## Ek 5 · Rekor haptiği Part 4 derlemesinde (K-974, 2026-10-09, düzenleyici kararı, teknik)
+#7'deki "haptik yalnız rekorda" `expo-haptics` ister (kurulu değil; RN `Vibration` haptik değildir). Yerel modül yeni geliştirme derlemesi
+gerektirir; K-976'nın `react-native-share`'i (ADR-076) de Part 4'te yeni yerel derleme isteyecek. İkisi aynı derlemeye girer: K-974 haptiği
+bir port olarak yazar (`haptics.record()`, şimdilik boş uygulama, testte çağrıldığı doğrulanır), gerçek uygulama Part 4'te `npx expo install
+expo-haptics` ile bağlanır. **Neden:** tek yerel derleme, simülatördeki geliştirme derlemesi bozulmaz. Bağımlılık gerekçesi (K5): Expo'nun
+birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.

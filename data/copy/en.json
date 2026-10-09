@@ -463,10 +463,17 @@
     "targetRir": "Aim for 0-{max}",
     "end": "End",
     "endLabel": "End the workout",
+    "pause": "Pause",
+    "pauseLabel": "Pause the workout",
+    "resume": "Resume",
+    "resumeLabel": "Resume the workout",
+    "paused": "Paused. Take your time.",
+    "resumed": "Resumed.",
     "clock": {
       "minutes": "{minutes}:{seconds}",
       "hours": "{hours}:{minutes}:{seconds}",
-      "label": "Workout time {time}"
+      "label": "Workout time {time}",
+      "pausedLabel": "Workout time {time}, paused"
     },
     "dot": "{name}, {status}",
     "goal": {
