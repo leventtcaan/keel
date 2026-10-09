@@ -4,12 +4,14 @@ import app.keel.nutrition.DailyTargets;
 import app.keel.shared.AccountId;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
 
 /**
  * The food budget's targets (K-209's DailyTargets), set by calls (K-216): nutrition asks through its own interface and
  * decision answers, so the dependency stays one way. The targets in force now: a past day's budget is read against
- * today's target, not the one in force that day (the call ledger keeps when each changed).
+ * today's target, not the one in force that day (the call ledger keeps when each changed). Before the first call, the
+ * starting target the first call will start the plan with (K-997, ADR-072 Ek 2).
  */
 @Component
 class PlanDailyTargets implements DailyTargets {
@@ -20,8 +22,20 @@ class PlanDailyTargets implements DailyTargets {
         this.decisions = decisions;
     }
 
+    /**
+     * The targets in force; before the first call (no plan made), the starting ones, worked out only then; a plan begun
+     * without a target has none until a weigh-in gives it one.
+     */
+    static <T> Optional<T> choose(Optional<T> inForce, boolean planMade, Supplier<Optional<T>> starting) {
+        if (inForce.isPresent() || planMade) {
+            return inForce;
+        }
+        return starting.get();
+    }
+
     @Override
     public Optional<Targets> forDay(AccountId account, LocalDate day) {
-        return decisions.targetsNow(account).map(targets -> new Targets(targets.targetKcal(), targets.proteinG()));
+        return choose(decisions.targetsNow(account), decisions.planMade(account), () -> decisions.startingTargets(account))
+                .map(targets -> new Targets(targets.targetKcal(), targets.proteinG()));
     }
 }

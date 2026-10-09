@@ -706,6 +706,28 @@ class DecisionService {
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));
     }
 
+    /** Whether a plan was made: the first call started it (K-997). */
+    boolean planMade(AccountId account) {
+        return calls.plan(account).isPresent();
+    }
+
+    /**
+     * The targets the first plan would start with (K-997, ADR-072 Ek 2): the starting target (as GET /v1/targets/starting)
+     * and its protein, on today's inputs. None without a profile, or without a weigh-in in the evaluation window.
+     */
+    Optional<PlanTargets> startingTargets(AccountId account) {
+        if (profiles.of(account).isEmpty()) {
+            return Optional.empty();
+        }
+        Week week = week(account);
+        CallStore.Plan first = firstPlan(week);
+        if (first.targetKcal() == null) {
+            return Optional.empty();
+        }
+        return bodyweight(account, week).flatMap(kg -> PlanTargets.of(first, kg, week.sex(), week.body().ageYears(),
+                planned.perWeek(account, week.profile()), week.parameters()));
+    }
+
     /**
      * The targets after an apply or undo: without a calorie target yet (a training call on a plan that has none, K-217
      * review), what is known — the steps and the training days — rather than NOT_FOUND for a call that was applied.
