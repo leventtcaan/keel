@@ -3974,14 +3974,19 @@ components:
     WeightChange:
       type: object
       description: |
-        The period's weight change (K-988, ADR-078 #2, U8): today's trend weight (the trend_display_days average ending
-        today) minus the one ending on `since`, the day the record began (the first call); never one day's weigh-in. Below
-        zero is a loss. Absent unless each of the two windows holds min_weighins_per_week weigh-ins and they do not
-        overlap. The app writes the sentence ("Down 3.8 kg."); the server sends none.
-      required: [kg, since]
+        The period's weight change (K-988, ADR-078 #2, Ek 1, U8): today's trend weight (the trend_display_days average
+        ending today) minus the one ending on `since`, the day the record began (the first call); never one day's weigh-in.
+        Below zero is a loss. `direction`: STEADY while the change is within the engine's flat_margin_kg (the scale's noise,
+        as a call reads a flat week), else DOWN or UP; the app writes the sentence from it ("Down 3.8 kg."), the server
+        sends none. Absent unless each window holds min_weighins_per_week weigh-ins (scaled to the window) and they do not
+        overlap. Weigh-ins typed or read from Apple Health count; history imported once (IMPORT) does not.
+      required: [kg, direction, since]
       properties:
         kg:
           type: number
+        direction:
+          type: string
+          enum: [DOWN, UP, STEADY]
         since:
           type: string
           format: date
