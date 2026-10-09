@@ -103,6 +103,7 @@ export function stepReps(reps: string, direction: 1 | -1): number | null {
  * one-sided move's two rows (a side each) are one set.
  */
 export function exerciseStatus(plan: ExercisePlan): string {
+  if (plan.skippedMove === true) return t('workout.statusSkipped');
   if (plan.current === null) return t('workout.allDone');
   const sides = plan.rows.some((row) => row.side !== 'BOTH') ? 2 : 1;
   const number = Math.floor(plan.current / sides) + 1;

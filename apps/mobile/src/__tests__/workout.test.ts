@@ -5,6 +5,8 @@
  */
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
+import { t } from '@/copy';
+import { exerciseStatus } from '@/train/session';
 import { activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -111,6 +113,51 @@ describe('last time', () => {
 
   test('is empty for a move never done', () => {
     expect(lastTime([workout('w1'), set('w1', 'a', 'squat', 100, 5)], 'bench_press', 'now')).toEqual([]);
+  });
+});
+
+describe('skipped sets and a skipped move (K-972, ADR-075 #5): kept on the phone, never sent, no catch-up', () => {
+  const done = (loadKg: number, reps: number, side: Schemas['Side'] = 'BOTH') =>
+    ({ clientId: `s${loadKg}${reps}${side}`, exerciseId: 'bench_press', setType: 'WORKING', loadKg, reps, rir: 1, side }) as Schemas['NewSet'];
+
+  test('a skipped set is its own row: the sets done fill the others, in order; the next set is the one after', () => {
+    const plan = planExercise(bench, benchMove, [], [done(60, 8)], { sets: [{ side: 'BOTH', set: 1 }], move: false });
+    expect(plan.rows.map((r) => [r.done?.reps ?? null, r.skipped])).toEqual([
+      [8, false],
+      [null, true],
+      [null, false],
+    ]);
+    expect(plan.current).toBe(2);
+  });
+
+  test('every set skipped or done: the move is done, no set is added for the skipped one', () => {
+    const plan = planExercise(bench, benchMove, [], [done(60, 8), done(60, 8)], { sets: [{ side: 'BOTH', set: 2 }], move: false });
+    expect(plan.rows).toHaveLength(3);
+    expect(plan.current).toBeNull();
+  });
+
+  test("a one-sided set skipped after its left side: the left stays done, the right is skipped", () => {
+    const row = { ...bench, exerciseId: 'one_arm_dumbbell_row', sets: 2 };
+    const left = { ...done(20, 10, 'LEFT'), exerciseId: 'one_arm_dumbbell_row' };
+    const plan = planExercise(row, rowMove, [], [left], { sets: [{ side: 'RIGHT', set: 0 }], move: false });
+    expect(plan.rows.map((r) => [r.side, r.done?.reps ?? null, r.skipped])).toEqual([
+      ['LEFT', 10, false],
+      ['RIGHT', null, true],
+      ['LEFT', null, false],
+      ['RIGHT', null, false],
+    ]);
+    expect(plan.current).toBe(2);
+  });
+
+  test('a skipped move: every set not done is skipped, the move is done', () => {
+    const plan = planExercise(bench, benchMove, [], [done(60, 8)], { sets: [], move: true });
+    expect(plan.rows.map((r) => r.skipped)).toEqual([false, true, true]);
+    expect(plan.current).toBeNull();
+    expect(exerciseStatus(plan)).toBe(t('workout.statusSkipped'));
+  });
+
+  test('none skipped: as before', () => {
+    expect(planExercise(bench, benchMove, [], [done(60, 8)]).rows.map((r) => r.skipped)).toEqual([false, false, false]);
   });
 });
 
