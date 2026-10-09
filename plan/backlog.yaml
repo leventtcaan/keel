@@ -4646,3 +4646,19 @@ tasks:
     tests: ["Silme API testi (kendi/başkası/tekrar), özet dakikası tablo testi, sözleşme testi"]
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
     learn: ["Silinen kaydın türetilmiş sayılardan düşmesi"]
+
+  - id: K-999
+    title: "Sunucuda açık, bu telefonda olmayan seansa dönüş (başka cihaz, yeniden kurulum)"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-995, K-972]
+    why: "#512 incelemesi (9 Eki): `WeekSession.workout.state = OPEN` ama seans bu telefonun kayıtlarında yok (başka cihaz, uygulama yeniden kuruldu); kart yalnız 'Started, not on this phone' der, Continue de Start da yok. Kullanıcı seansına dönemez ve sunucu başlamış seansı taşıtmaz"
+    acceptance:
+      - "Sunucuda açık seans: 'Continue' sunucunun setleriyle (GET /v1/workouts/{id}) seansı telefonda açar; ilk dokunuşta yerel kayıt kurulur, sonraki setler kuyruğa (K-961)"
+      - "Ya da 'Fill in later' / 'Discard' (K-998) seçenekleri aynı kartta"
+    tests: ["Ekran testleri (sunucuda OPEN, telefonda yok → Continue setleri getirir)"]
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
+    learn: ["Sunucu durumundan yerel durum kurmak"]
