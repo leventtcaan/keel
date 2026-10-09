@@ -35,6 +35,8 @@ const SUMMARY: Schemas['WorkoutSummary'] = {
     { exerciseId: 'squat', kind: 'RECORD', loadKg: 100, reps: 8 },
     { exerciseId: 'bench_press', kind: 'RECORD', loadKg: 120, reps: 3 },
   ],
+  // "What moved" is not this screen's card (it reads no moves): an empty list satisfies the contract.
+  moves: [],
   weekOf: '2026-09-28',
   muscles: MUSCLES,
 };

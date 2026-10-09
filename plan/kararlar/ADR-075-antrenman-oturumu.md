@@ -105,6 +105,12 @@ değişir; o zaman önceki seans yoktur ve alan gelmez: yeni program yeni temeld
 korur, % kaybolmaz. Reddedilen: gün adıyla eşleştirmek (üretilen programda ad anahtardır, kendi programında serbest metin; aynı ad farklı
 içerikli bir günü karşılaştırırdı).
 
+**Ne arttı (K-1008, 2026-10-09, düzenleyici kararı, teknik):** `WorkoutSummary.moves` her hareketin bu seanstaki en iyi setini aynı program
+gününün en az bir tekrarlı seti olan son seansıyla (yüzdeyle aynı seans) karşılaştırır. O seansta olmayan hareket (bugünlük swap, o gün
+swap'lanmış, eklenmiş, atlanmış) kendi geçmişinin herhangi bir gündeki en son seansıyla karşılaştırılır (K-964: değiştirilen hareketin kendi
+geçmişi); hiç önceki seansı yoksa FIRST. Düşüş negatif `by` ile söylenir (gizlenmez, suçlanmaz: U7). Rekorlar (`marks`) ayrı soru: bütün
+geçmişe göre baskınlık; ikisi çelişmez. Reddedilen: o gün seansında olmayana FIRST demek (geçmişi olan harekete "ilk" der).
+
 ## Ek 3 · Seansın başlangıç anı (K-971, 2026-10-09, düzenleyici kararı, teknik)
 Seansın `startedAt`'i "Start workout"a basılıp seans ekranının açıldığı andır; ilk setin anı değil. Süre 0:00'dan o anda başlar, ilk set onu
 sıfırlamaz (kullanıcı testi 8 Eki: "süre 0'dan başlar, seanslar arası taşınmaz"). Apple Health antrenmanı (K-412), seansın günü (K-964 Ek 3,

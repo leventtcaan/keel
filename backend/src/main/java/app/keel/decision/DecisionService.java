@@ -307,11 +307,12 @@ class DecisionService {
     }
 
     /**
-     * The first day on the user's calendar (K-990, ADR-077 Ek 2): the day onboarding finished; for a profile saved before
-     * that was kept, the first sign-in. The first week, the first call's day and the first eight weeks all count from it.
+     * The first day on the user's calendar (K-993, ADR-077 Ek 3): the day the plan was first shown; else the day onboarding
+     * finished (K-990, Ek 2); for a profile saved before that was kept, the first sign-in. The first week, the first call's day and the first eight weeks all count from it.
      */
     private LocalDate firstDay(AccountId account, ZoneId zone) {
-        return FirstWeekFacts.firstDay(profiles.onboardedAt(account), () -> accounts.began(account), zone);
+        return FirstWeekFacts.firstDay(profiles.planSeenAt(account), calls.firstMadeOn(account), profiles.onboardedAt(account), () -> accounts.began(account),
+                zone);
     }
 
     /**
@@ -431,8 +432,20 @@ class DecisionService {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Week week = week(account);
-        InitialTarget.Estimate estimate = startingEstimate(week).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return StartingTarget.of(firstPlan(week), estimate, week.parameters());
+        Starting starting = starting(week).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return StartingTarget.of(starting.plan(), starting.estimate(), week.parameters());
+    }
+
+    /** The first plan as the first call would start it, and the estimate its target comes from (K-989). */
+    private record Starting(CallStore.Plan plan, InitialTarget.Estimate estimate) {
+    }
+
+    /**
+     * The one computation of the starting target (K-989, K-997): GET /v1/targets/starting and the first week's budget read
+     * it alike. None without a weigh-in in the evaluation window.
+     */
+    private Optional<Starting> starting(Week week) {
+        return startingEstimate(week).map(estimate -> new Starting(firstPlan(week), estimate));
     }
 
     /**
@@ -716,6 +729,28 @@ class DecisionService {
         return Optional.of(PlanTargets.of(plan.get(), bodyweight, week.sex(), week.body().ageYears(), planned.perWeek(account, week.profile()),
                 week.parameters())
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT)));
+    }
+
+    /**
+     * The food budget's targets (K-209's DailyTargets, K-997), in one read so a first call written meanwhile is seen whole:
+     * the targets in force; before the first call (no plan made), the ones the first plan would start with — the starting
+     * target (as GET /v1/targets/starting) and its protein, on today's inputs. None without them: no weigh-in, or a profile
+     * the engine cannot read (none, or born this year: the budget's documented NOT_FOUND, not a conflict).
+     */
+    @Transactional(readOnly = true)
+    Optional<PlanTargets> targetsOrStarting(AccountId account) {
+        return PlanDailyTargets.choose(targetsNow(account), calls.plan(account).isPresent(), () -> startingTargets(account));
+    }
+
+    private Optional<PlanTargets> startingTargets(AccountId account) {
+        Week week;
+        try {
+            week = week(account);
+        } catch (ApiException unreadable) {
+            return Optional.empty();
+        }
+        return starting(week).flatMap(first -> bodyweight(account, week).flatMap(kg -> PlanTargets.of(first.plan(), kg, week.sex(),
+                week.body().ageYears(), planned.perWeek(account, week.profile()), week.parameters())));
     }
 
     /**

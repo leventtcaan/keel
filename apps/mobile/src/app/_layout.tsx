@@ -52,6 +52,7 @@ function AppStack() {
         <Stack.Screen name="gyms" />
         <Stack.Screen name="gym" />
         <Stack.Screen name="check-in" />
+        <Stack.Screen name="call" />
         <Stack.Screen name="state" options={{ presentation: 'modal' }} />
         <Stack.Screen name="photo-capture" options={{ presentation: 'modal' }} />
         <Stack.Screen name="compare" />

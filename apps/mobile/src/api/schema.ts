@@ -175,6 +175,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/profile/plan-seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * The plan was shown to the user; the first week counts from today (K-993)
+         * @description The app says so the first time it shows the plan (ADR-077 Ek 3). The server keeps the first time only (its own clock):
+         *     sent again, nothing changes. The first week, the first call's day (`GET /v1/first-weeks` › `firstCallOn`) and the
+         *     first eight weeks count from that day; without it from the profile's first save, then the account's first sign-in.
+         *     The days before it are not planned for the first call (no missed session the user never saw). NOT_FOUND: no
+         *     profile yet (the plan is made from it).
+         */
+        put: operations["markPlanSeen"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/consents": {
         parameters: {
             query?: never;
@@ -459,8 +483,10 @@ export interface paths {
         };
         /**
          * What is left of the day's target, as a range (target minus the logged range)
-         * @description NOT_FOUND until the user has a target (set by calls, K-216). Health data: CONSENT_REQUIRED without the
-         *     HEALTH_DATA consent, as for every /v1/meals route.
+         * @description The target in force (set by calls, K-216); before the first call, the starting target the first call will start
+         *     the plan with (GET /v1/targets/starting, K-997, ADR-072 Ek 1): the first week has "Food today" and "Food left" too,
+         *     worked out here, never on the phone. NOT_FOUND with neither (no weigh-in yet, no profile, or a plan begun without
+         *     a weigh-in). Health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/meals route.
          */
         get: operations["getDayBudget"];
         put?: never;
@@ -1200,8 +1226,9 @@ export interface paths {
         };
         /**
          * This week of the first eight (K-513, ADR-040)
-         * @description The user's own week since the day onboarding finished (04 §7.5, I1 F2; K-990, ADR-077 Ek 2; an account onboarded
-         *     before that day was kept counts from its first sign-in): week 1 has no words ("no comment, no score"), weeks
+         * @description The user's own week since the day the plan was first shown (K-993, ADR-077 Ek 3; PUT /v1/profile/plan-seen), else
+         *     the day onboarding finished (04 §7.5, I1 F2; K-990, ADR-077 Ek 2; an account onboarded before that day was kept
+         *     counts from its first sign-in): week 1 has no words ("no comment, no score"), weeks
          *     2-8 have `contentKey`.title/.body (a version without lifting when no training is planned). Once the user's week
          *     just over is week 5 to 8 (G2 K-63), `risk` lists that week's signals, each with its source — any one is a risk,
          *     none weighed; empty when none, or when the week was paused (a declared state, the ladder's week off). Week 9 is
@@ -1983,7 +2010,7 @@ export interface components {
         DayBudget: {
             /** Format: date */
             day: string;
-            /** @description The day's target (a plan number, one figure). */
+            /** @description The day's target (a plan number, one figure); before the first call, the starting target (K-997). */
             targetKcal: number;
             eaten: components["schemas"]["Nutrients"];
             left: components["schemas"]["Left"];
@@ -2625,6 +2652,12 @@ export interface components {
             /** Format: uuid */
             workoutId: string;
             /**
+             * @description "What moved" (ADR-075 #7, K-1008): each move of the session, in the order first done, its best working set
+             *     against its best in the last earlier session of the same program day (the session liftedChangePercent compares
+             *     with), or a move that session did not have against its own last session (MoveChange). This server always sends it.
+             */
+            moves: components["schemas"]["MoveChange"][];
+            /**
              * @description The session's active time (K-998): endedAt − startedAt − pausedSeconds, in whole minutes rounded half up.
              *     Absent while the session is open, and once closed by itself (K-961: endedAt = startedAt, its length unknown).
              */
@@ -2632,7 +2665,8 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
+             *     (at least one rep: a session of skipped sets only is none), in
              *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
              *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
              */
@@ -2651,6 +2685,26 @@ export interface components {
              *     sessions not counted) — the one muscle map, ADR-078 #4.
              */
             muscles: components["schemas"]["MuscleSets"][];
+        };
+        /**
+         * @description A move's best working set this session (the heaviest, then the most reps, then the fewest left; a set of no reps
+         *     never counts; sides are one history; the load as logged, a bodyweight move's added load) against its best in the
+         *     last earlier session of the same program day with a set done; a move that session did not have (swapped in today,
+         *     swapped out then, added, skipped) against its own last session on any day (it has its own history, K-964). LOAD: another load, `by` the difference in kg (negative when
+         *     lighter). REPS: the same load, `by` the difference in reps (negative when fewer). SAME: the same load and reps.
+         *     HELD: the same load of a compound move while the weekly call holds the load. FIRST: the move has no earlier
+         *     session at all. No estimated max (B10).
+         */
+        MoveChange: {
+            exerciseId: string;
+            best: {
+                loadKg: number;
+                reps: number;
+            };
+            /** @enum {string} */
+            change: "LOAD" | "REPS" | "SAME" | "HELD" | "FIRST";
+            /** @description LOAD in kg, REPS in reps; absent otherwise. */
+            by?: number;
         };
         /**
          * @description RECORD (ADR-075 Ek 2): a working set no earlier working set of the move dominates (none at least as heavy with
@@ -3692,6 +3746,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Profile"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    markPlanSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Kept (or kept before) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };

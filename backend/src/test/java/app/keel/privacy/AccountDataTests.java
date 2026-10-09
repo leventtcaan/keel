@@ -156,6 +156,8 @@ class AccountDataTests {
         String body = result.getResponse().getContentAsString();
         Map<String, Object> sections = (Map<String, Object>) JSON.readValue(body, Map.class).get("sections");
         Map<String, Object> measurement = (Map<String, Object>) sections.get("measurement");
+        // When onboarding finished is the account's too (K-990, K-993): kept, so exported.
+        assertThat((Map<String, Object>) sections.get("profile")).containsKey("onboardedAt").containsKey("goal");
         assertThat((List<?>) measurement.get("weighIns")).hasSize(2);
         assertThat((List<?>) measurement.get("waistMeasurements")).hasSize(1);
         assertThat((List<?>) measurement.get("photoChecks")).hasSize(1);

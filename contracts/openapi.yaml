@@ -218,6 +218,22 @@ paths:
                 $ref: "#/components/schemas/Profile"
         default:
           $ref: "#/components/responses/Error"
+  /v1/profile/plan-seen:
+    put:
+      tags: [profile]
+      operationId: markPlanSeen
+      summary: The plan was shown to the user; the first week counts from today (K-993)
+      description: |
+        The app says so the first time it shows the plan (ADR-077 Ek 3). The server keeps the first time only (its own clock):
+        sent again, nothing changes. The first week, the first call's day (`GET /v1/first-weeks` › `firstCallOn`) and the
+        first eight weeks count from that day; without it from the profile's first save, then the account's first sign-in.
+        The days before it are not planned for the first call (no missed session the user never saw). NOT_FOUND: no
+        profile yet (the plan is made from it).
+      responses:
+        "204":
+          description: Kept (or kept before)
+        default:
+          $ref: "#/components/responses/Error"
 
   # ── consent (K-204, ADR-007) ───────────────────────────────────────────────────────────────────────────────
   /v1/consents:
@@ -580,8 +596,10 @@ paths:
       operationId: getDayBudget
       summary: What is left of the day's target, as a range (target minus the logged range)
       description: |
-        NOT_FOUND until the user has a target (set by calls, K-216). Health data: CONSENT_REQUIRED without the
-        HEALTH_DATA consent, as for every /v1/meals route.
+        The target in force (set by calls, K-216); before the first call, the starting target the first call will start
+        the plan with (GET /v1/targets/starting, K-997, ADR-072 Ek 1): the first week has "Food today" and "Food left" too,
+        worked out here, never on the phone. NOT_FOUND with neither (no weigh-in yet, no profile, or a plan begun without
+        a weigh-in). Health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/meals route.
       responses:
         "200":
           description: The budget
@@ -1451,8 +1469,9 @@ paths:
       operationId: getFirstWeeks
       summary: This week of the first eight (K-513, ADR-040)
       description: |
-        The user's own week since the day onboarding finished (04 §7.5, I1 F2; K-990, ADR-077 Ek 2; an account onboarded
-        before that day was kept counts from its first sign-in): week 1 has no words ("no comment, no score"), weeks
+        The user's own week since the day the plan was first shown (K-993, ADR-077 Ek 3; PUT /v1/profile/plan-seen), else
+        the day onboarding finished (04 §7.5, I1 F2; K-990, ADR-077 Ek 2; an account onboarded before that day was kept
+        counts from its first sign-in): week 1 has no words ("no comment, no score"), weeks
         2-8 have `contentKey`.title/.body (a version without lifting when no training is planned). Once the user's week
         just over is week 5 to 8 (G2 K-63), `risk` lists that week's signals, each with its source — any one is a risk,
         none weighed; empty when none, or when the week was paused (a declared state, the ladder's week off). Week 9 is
@@ -2628,7 +2647,7 @@ components:
           format: date
         targetKcal:
           type: integer
-          description: The day's target (a plan number, one figure).
+          description: The day's target (a plan number, one figure); before the first call, the starting target (K-997).
         eaten:
           $ref: "#/components/schemas/Nutrients"
         left:
@@ -3656,11 +3675,19 @@ components:
 
     WorkoutSummary:
       type: object
-      required: [workoutId, liftedKg, workingSets, marks, weekOf, muscles]
+      required: [workoutId, liftedKg, workingSets, marks, moves, weekOf, muscles]
       properties:
         workoutId:
           type: string
           format: uuid
+        moves:
+          type: array
+          description: |
+            "What moved" (ADR-075 #7, K-1008): each move of the session, in the order first done, its best working set
+            against its best in the last earlier session of the same program day (the session liftedChangePercent compares
+            with), or a move that session did not have against its own last session (MoveChange). This server always sends it.
+          items:
+            $ref: "#/components/schemas/MoveChange"
         minutes:
           type: integer
           minimum: 0
@@ -3674,7 +3701,8 @@ components:
         liftedChangePercent:
           type: integer
           description: |
-            liftedKg against the last earlier session of the same program day (programDayId) that has a working set, in
+            liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
+            (at least one rep: a session of skipped sets only is none), in
             whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
             saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
         workingSets:
@@ -3697,6 +3725,36 @@ components:
             sessions not counted) — the one muscle map, ADR-078 #4.
           items:
             $ref: "#/components/schemas/MuscleSets"
+    MoveChange:
+      type: object
+      description: |
+        A move's best working set this session (the heaviest, then the most reps, then the fewest left; a set of no reps
+        never counts; sides are one history; the load as logged, a bodyweight move's added load) against its best in the
+        last earlier session of the same program day with a set done; a move that session did not have (swapped in today,
+        swapped out then, added, skipped) against its own last session on any day (it has its own history, K-964). LOAD: another load, `by` the difference in kg (negative when
+        lighter). REPS: the same load, `by` the difference in reps (negative when fewer). SAME: the same load and reps.
+        HELD: the same load of a compound move while the weekly call holds the load. FIRST: the move has no earlier
+        session at all. No estimated max (B10).
+      required: [exerciseId, best, change]
+      properties:
+        exerciseId:
+          type: string
+        best:
+          type: object
+          required: [loadKg, reps]
+          properties:
+            loadKg:
+              type: number
+              minimum: 0
+            reps:
+              type: integer
+              minimum: 1
+        change:
+          type: string
+          enum: [LOAD, REPS, SAME, HELD, FIRST]
+        by:
+          type: number
+          description: LOAD in kg, REPS in reps; absent otherwise.
     SetMark:
       type: object
       description: |

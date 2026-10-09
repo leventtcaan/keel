@@ -39,7 +39,8 @@ const mockPOST = jest.fn(async (_path: string, _init: { body: Schemas['CheckInAn
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
-jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: (to: string) => mockPush(to) } }));
+const mockReplace = jest.fn();
+jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: (to: string) => mockPush(to), replace: (to: string) => mockReplace(to) } }));
 // No queue and no key-value store on hand: the screen has nowhere to keep the answers, by design.
 const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn() };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
@@ -77,7 +78,7 @@ test("the server's questions, in its order, each with why it is asked", async ()
   expect(screen.getByRole('button', { name: t('checkIn.choice.cycle_stopped.yes') })).toBeOnTheScreen();
 });
 
-test('the call is asked for only once every question is answered; the answers go in the order asked, then back to Today', async () => {
+test('the call is asked for only once every question is answered; the answers go in the order asked, then on to the call', async () => {
   await show();
   expect(sendButton()).toBeDisabled();
   await press(t('checkIn.choice.cycle_stopped.no'));
@@ -95,7 +96,9 @@ test('the call is asked for only once every question is answered; the answers go
       ],
     },
   ]);
-  expect(mockBack).toHaveBeenCalledTimes(1);
+  // K-978 (ADR-077 #2, flow C2): the answers make the call, and its screen takes the check-in's place.
+  expect(mockReplace).toHaveBeenCalledWith('/call');
+  expect(mockBack).not.toHaveBeenCalled();
 });
 
 test('a choice can be changed before sending: the last one goes', async () => {
@@ -134,7 +137,7 @@ test('a send that does not arrive says so, keeps the answers on the screen only,
   mockSend = async () => ok(CALL);
   await press(t('checkIn.screen.send'));
   expect(sent()[1].clientId).toBe(sent()[0].clientId);
-  expect(mockBack).toHaveBeenCalledTimes(1);
+  expect(mockReplace).toHaveBeenCalledWith('/call'); // K-978: on to the call
 });
 
 test('V4: the cycle answer is sent and nowhere else — not reported, not logged', async () => {
@@ -223,6 +226,7 @@ test('the screen left while the answers are on their way: nothing is closed when
   await screen.unmount();
   await act(async () => answer(ok(CALL)));
   expect(mockBack).not.toHaveBeenCalled();
+  expect(mockReplace).not.toHaveBeenCalled(); // K-978: nor is the call opened over whatever is there now
 });
 
 test('the consent withdrawn meanwhile (403 on the send): said as the consent, not as a fault', async () => {
