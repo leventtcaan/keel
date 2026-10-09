@@ -108,6 +108,7 @@ const mockRecord = jest.fn(keep);
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 let mockPause: { workout: string; pause: { pausedAt: number | null; pausedMs: number } } | null = null;
 let mockSkips: { workout: string; skips: Record<string, unknown> } | null = null;
+let mockSwaps: { workout: string; swaps: Record<string, string> } | null = null;
 let mockEditFails: Error | null = null;
 const mockWorkoutRecords = jest.fn(async () => mockRecords);
 let mockSave: (body: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
@@ -151,6 +152,16 @@ const mockServices = {
       mockSkips = null;
     }),
   },
+  // The moves swapped in the open session, kept with its workout (K-972).
+  sessionSwaps: {
+    read: jest.fn(async (workout: string) => (mockSwaps?.workout === workout ? mockSwaps.swaps : {})),
+    keep: jest.fn(async (workout: string, swaps: Record<string, string>) => {
+      mockSwaps = { workout, swaps };
+    }),
+    forget: jest.fn(async () => {
+      mockSwaps = null;
+    }),
+  },
   // The open session's pause, kept with its workout (K-972).
   sessionPause: {
     read: jest.fn(async (workout: string) => (mockPause?.workout === workout ? mockPause.pause : { pausedAt: null, pausedMs: 0 })),
@@ -174,6 +185,7 @@ function reset() {
   mockRecord.mockImplementation(keep);
   mockPause = null;
   mockSkips = null;
+  mockSwaps = null;
   mockEditFails = null;
   mockDelete = async () => ({ response: new Response(null, { status: 204 }) });
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
@@ -2440,5 +2452,276 @@ describe('a workout discarded and brought back, on the real record store and que
     expect(deleted).toEqual([]);
     expect((await workoutsOf(store)).map((r) => r.clientId)).toEqual(['w2']);
     expect(await repsOf(store)).toEqual([8, 7]);
+  });
+});
+
+describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): this workout only, on the phone, offline', () => {
+  const DUMBBELL = t('exercises.dumbbell_bench_press.name');
+  const INCLINE = t('exercises.incline_dumbbell_press.name');
+  const PUSH_UP = t('exercises.push_up.name');
+  const ROW = t('exercises.one_arm_dumbbell_row.name');
+  const CATALOG = [
+    ...EXERCISES,
+    { id: 'dumbbell_bench_press', load: 'EXTERNAL', unilateral: false },
+    { id: 'incline_dumbbell_press', load: 'EXTERNAL', unilateral: false },
+    { id: 'push_up', load: 'BODYWEIGHT', unilateral: false },
+  ] as Schemas['Exercise'][];
+  // The server's options for bench: the row is on the day already.
+  const programWith = (benchOptions: string[]): Schemas['Program'] => ({
+    ...PROGRAM,
+    days: [
+      {
+        ...DAY,
+        exercises: [
+          { ...DAY.exercises[0], lighterLoadKg: 60, heavierLoadKg: 65, calibrationStepKg: 2.5, lastBestSet: { loadKg: 60, reps: 8, rir: 1 }, swapOptions: benchOptions },
+          { ...DAY.exercises[1], swapOptions: [] },
+        ],
+      },
+    ],
+  });
+  beforeEach(() => {
+    mockData = {
+      program: { state: 'ready', value: programWith(['dumbbell_bench_press', 'incline_dumbbell_press', 'one_arm_dumbbell_row', 'push_up']) },
+      exercises: { state: 'ready', value: CATALOG },
+      kept: false,
+    };
+  });
+  const head = () => within(screen.getByTestId('move-head'));
+  const openSwap = async (name = 'Bench press') => fireEvent.press(await screen.findByRole('button', { name: t('swap.label', { move: name }) }));
+  const option = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}`) });
+  const swapTo = async (name: string, from = 'Bench press') => {
+    await openSwap(from);
+    await fireEvent.press(option(name));
+  };
+
+  test("a planned move has Swap with it; the sheet offers the server's options for it, not the moves the session has", async () => {
+    await show();
+    await openSwap();
+    expect(screen.getByText(t('swap.title', { move: 'Bench press' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('swap.why'))).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.swapToday'))).toBeOnTheScreen();
+    for (const name of [DUMBBELL, INCLINE, PUSH_UP]) expect(option(name)).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: new RegExp(`^${ROW}`) })).toBeNull(); // on the day already
+    expect(screen.queryByRole('button', { name: /^Bench press/ })).toBeNull(); // not itself
+    // Closed, the session is as it was.
+    await fireEvent.press(screen.getByRole('button', { name: t('swap.close') }));
+    expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+  });
+
+  test('no Swap where there is nothing to swap for: no options, or every option is on the day already', async () => {
+    mockData = { ...mockData, program: { state: 'ready', value: programWith(['one_arm_dumbbell_row']) } };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByRole('button', { name: t('swap.label', { move: 'Bench press' }) })).toBeNull();
+    await pickMove(ROW); // the row has none at all
+    expect(screen.queryByRole('button', { name: t('swap.label', { move: ROW }) })).toBeNull();
+  });
+
+  test('no Swap on a move outside the plan', async () => {
+    mockRecords = [
+      ...lastWeek(),
+      record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' }),
+      record('set', 'p1', { clientId: 'p1', exerciseId: 'push_up', setType: 'WORKING', loadKg: 0, reps: 12, rir: 1, side: 'BOTH' }, 'w1'),
+    ];
+    await show();
+    await pickMove(PUSH_UP);
+    expect(screen.queryByRole('button', { name: t('swap.label', { move: PUSH_UP }) })).toBeNull();
+  });
+
+  test("the new move takes the old one's place with its sets, range and aim, and no target of its own; nothing is sent", async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    expect(head().getByText(DUMBBELL)).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.setOf', { number: 1, count: 3 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.targetRir', { max: 1 }))).toBeOnTheScreen();
+    // No target: the old move's 62.5 kg and its best set are not the new move's; the range alone is the aim.
+    expect(screen.getByLabelText('Weight (kg)').props.value).toBe('');
+    expect(within(screen.getByTestId('goal')).getByText(t('workout.goal.first'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('workout.goal.beat'))).toBeNull();
+    expect(screen.getByLabelText(t('workout.dot', { name: DUMBBELL, status: t('workout.sets', { count: 3 }) }))).toBeOnTheScreen();
+    expect(screen.queryByLabelText(t('workout.dot', { name: 'Bench press', status: t('workout.sets', { count: 3 }) }))).toBeNull();
+    // The server refuses it once the workout has started: the phone does not ask.
+    expect(mockPOST).not.toHaveBeenCalled();
+    expect(mockDELETE).not.toHaveBeenCalled();
+    expect(mockRecord).not.toHaveBeenCalled();
+  });
+
+  test('the sets are logged under the new move, with the aim of the planned one', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
+    await fireEvent.changeText(screen.getByLabelText('Reps'), '10');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    expect(sets()).toEqual([
+      {
+        kind: 'set',
+        workoutClientId: 'w1',
+        body: { clientId: expect.any(String), exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 30, reps: 10, rir: 1, side: 'BOTH' },
+      },
+    ]);
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+  });
+
+  test('the new move starts from its own history: the weight it was last done with', async () => {
+    mockRecords = [
+      ...lastWeek(),
+      record('set', 's7', { clientId: 's7', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 32.5, reps: 12 }, 'w0'),
+      record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' }),
+    ];
+    await show();
+    await swapTo(DUMBBELL);
+    expect(screen.getByLabelText('Weight (kg)').props.value).toBe('32.5');
+  });
+
+  test('it works offline: the phone has everything it needs', async () => {
+    mockData = { ...mockData, kept: true };
+    await show();
+    await swapTo(DUMBBELL);
+    expect(head().getByText(DUMBBELL)).toBeOnTheScreen();
+    expect(mockPOST).not.toHaveBeenCalled();
+  });
+
+  test('a swap is said (K-815), with its Undo; undone, the planned move is back with its target', async () => {
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    try {
+      await show();
+      await swapTo(DUMBBELL);
+      expect(said).toHaveBeenLastCalledWith(t('workout.swapped', { name: DUMBBELL }));
+      expect(screen.getByText(t('workout.swapped', { name: DUMBBELL }))).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: t('workout.undoLabel') })).toHaveStyle({ minHeight: tokens.size.touch });
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+      expect(head().getByText('Bench press')).toBeOnTheScreen();
+      expect(screen.getByLabelText('Weight (kg)').props.value).toBe('62.5');
+      expect(mockSwaps).toEqual({ workout: 'w1', swaps: {} });
+    } finally {
+      said.mockRestore();
+    }
+  });
+
+  test('a swapped move offers the planned move first, "Back to the planned move"; taking it restores the target', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    await openSwap(DUMBBELL);
+    const options = screen.getAllByTestId('swap-option');
+    expect(options[0].props.accessibilityLabel).toBe(`Bench press. ${t('swap.back')}`);
+    expect(options.map((o) => o.props.accessibilityLabel)).not.toContain(DUMBBELL); // the move it is now is not offered again
+    await fireEvent.press(options[0]);
+    expect(head().getByText('Bench press')).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.swappedBack', { name: 'Bench press' }))).toBeOnTheScreen();
+    expect(screen.getByLabelText('Weight (kg)').props.value).toBe('62.5');
+    expect(mockSwaps).toEqual({ workout: 'w1', swaps: {} });
+  });
+
+  test('swapped again, it is still the planned move that is swapped: one entry, the last move', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    await swapTo(INCLINE, DUMBBELL);
+    expect(head().getByText(INCLINE)).toBeOnTheScreen();
+    expect(mockSwaps).toEqual({ workout: 'w1', swaps: { bench_press: 'incline_dumbbell_press' } });
+  });
+
+  test('kept with the workout: opened again, the swap still is, and Back is still offered', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    expect(mockSwaps).toEqual({ workout: 'w1', swaps: { bench_press: 'dumbbell_bench_press' } });
+    await screen.unmount();
+    await show();
+    expect(await within(await screen.findByTestId('move-head')).findByText(DUMBBELL)).toBeOnTheScreen();
+    await openSwap(DUMBBELL);
+    expect(screen.getAllByTestId('swap-option')[0].props.accessibilityLabel).toBe(`Bench press. ${t('swap.back')}`);
+  });
+
+  test("another workout's swaps are not this one's", async () => {
+    mockSwaps = { workout: 'w0', swaps: { bench_press: 'dumbbell_bench_press' } };
+    await show();
+    expect(await within(await screen.findByTestId('move-head')).findByText('Bench press')).toBeOnTheScreen();
+  });
+
+  test('swapped before the first set: the workout that set starts keeps the swap, and the set is the new move', async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await swapTo(DUMBBELL);
+    expect(mockRecord).not.toHaveBeenCalled(); // an empty workout is no session
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    const workout = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'workout');
+    expect(mockSwaps).toEqual({ workout: workout?.kind === 'workout' ? workout.body.clientId : 'none', swaps: { bench_press: 'dumbbell_bench_press' } });
+    expect(sets()[0].body).toMatchObject({ exerciseId: 'dumbbell_bench_press' });
+  });
+
+  test('the sets already done of the old move stay on it: it is still in the session, to carry on', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await swapTo(DUMBBELL);
+    expect(head().getByText(DUMBBELL)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Bench press, / })).toBeOnTheScreen();
+    expect(sets()).toHaveLength(1);
+    expect(sets()[0].body).toMatchObject({ exerciseId: 'bench_press' });
+    // Back to the planned move: its set is there again, the next is its second.
+    await openSwap(DUMBBELL);
+    await fireEvent.press(screen.getAllByTestId('swap-option')[0]);
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+  });
+
+  test('a set logged ends the Undo of the swap: the move has sets now', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.queryByRole('button', { name: t('workout.undoLabel') })).toBeNull();
+  });
+
+  test('finished, its swaps are forgotten', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await endAndFinish();
+    await fireEvent.press(screen.getByText('Finish'));
+    expect(mockServices.sessionSwaps.forget).toHaveBeenCalled();
+  });
+
+  test('discarded, its swaps are forgotten, and Undo brings them back with the new workout', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t('workout.ending.discard')}`) }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+    await screen.findByText(t('workout.ending.discarded'));
+    expect(mockServices.sessionSwaps.forget).toHaveBeenCalled();
+    expect(mockSwaps).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(mockSwaps).toEqual({ workout: expect.not.stringMatching(/^w1$/), swaps: { bench_press: 'dumbbell_bench_press' } });
+  });
+
+  test("the sheet takes the session's place: End still works from it, and the dock waits", async () => {
+    await show();
+    await openSwap();
+    expect(screen.queryByTestId('dock')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+    expect(screen.getByText(t('workout.ending.title'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.back') }));
+    expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+  });
+
+  test('every option is a full touch target with a name for VoiceOver', async () => {
+    await show();
+    await openSwap();
+    const options = screen.getAllByTestId('swap-option');
+    expect(options.length).toBeGreaterThan(0);
+    for (const o of options) {
+      expect(o).toHaveStyle({ minHeight: tokens.size.touch });
+      expect(o.props.accessibilityRole).toBe('button');
+    }
   });
 });
