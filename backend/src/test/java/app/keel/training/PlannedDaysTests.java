@@ -42,7 +42,7 @@ class PlannedDaysTests {
     @Test
     void aSkippedSessionStaysPlannedAndADayOnNoWeekdayCountsWhereItWasPut() {
         TodayChanges.Change skipped = TodayChanges.Change.NONE.skip();
-        PlannedDays planned = PlannedDays.of(List.of(UPPER, ANYDAY), List.of(new SessionChangeStore.Row(UPPER.id(), MONDAY, skipped),
+        PlannedDays planned = PlannedDays.of(List.of(UPPER, ANYDAY), List.of(new SessionChangeStore.Row(UPPER.id(), MONDAY, skipped, null),
                 row(ANYDAY, MONDAY.plusDays(5))));
 
         assertThat(MONDAY.datesUntil(MONDAY.plusWeeks(1)).filter(planned::on)).containsExactly(MONDAY, MONDAY.plusDays(5));
@@ -56,7 +56,7 @@ class PlannedDaysTests {
     }
 
     private static SessionChangeStore.Row row(ProgramStore.Day day, LocalDate on) {
-        return new SessionChangeStore.Row(day.id(), MONDAY, TodayChanges.Change.NONE.on(on));
+        return new SessionChangeStore.Row(day.id(), MONDAY, TodayChanges.Change.NONE.on(on), null);
     }
 
     private static ProgramStore.Day day(DayOfWeek weekday) {

@@ -24,12 +24,11 @@ type Props = {
   side: Schemas['Side'];
   entry: Entry;
   onChange: (change: Partial<Entry>) => void;
-  /** The button that logs it; without it the screen logs it from its own place (the session's dock, K-971). */
-  onLog?: () => void;
+  onLog: () => void;
   problem: string | null;
   /** Which showing of the problem this is: the same failure again is said again (K-815). */
   problemOccurrence?: unknown;
-  busy?: boolean;
+  busy: boolean;
 };
 
 /**
@@ -96,7 +95,7 @@ export function SetEntry({ move, index, side, entry, onChange, onLog, problem, p
       </View>
       {noteField}
       {said}
-      {onLog !== undefined && <Button label={label} onPress={onLog} disabled={busy} />}
+      <Button label={label} onPress={onLog} disabled={busy} />
     </View>
   );
 }

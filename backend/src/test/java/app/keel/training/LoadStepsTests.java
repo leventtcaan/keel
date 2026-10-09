@@ -80,6 +80,24 @@ class LoadStepsTests {
         }));
     }
 
+    @TestFactory
+    @SuppressWarnings("unchecked")
+    Stream<DynamicTest> theSharedStepBackCases() throws IOException {
+        // K-971: the phone's weight stepper goes down by the same step back as the server's lighter load.
+        List<Map<String, Object>> cases = (List<Map<String, Object>>) fixture().get("lighter");
+        assertThat(cases).isNotEmpty();
+        return cases.stream().map(c -> DynamicTest.dynamicTest((String) c.get("case"), () -> {
+            Optional<BigDecimal> lighter = LoadSteps.lighter(ExerciseCatalog.Equipment.valueOf((String) c.get("equipment")),
+                    (String) c.get("exerciseId"), gym((Map<String, Object>) c.get("gym")), kg(c.get("fromKg")), kg(c.get("targetKg")));
+            Object expected = c.get("expect");
+            if (expected == null) {
+                assertThat(lighter).isEmpty();
+            } else {
+                assertThat(lighter).hasValueSatisfying(found -> assertThat(found).isEqualByComparingTo(kg(expected)));
+            }
+        }));
+    }
+
     @Test
     void onlyALoadThatIsAllTheLoadMovedHasAJumpLimit() {
         // K-430 review: a plate-loaded machine's sled and a bodyweight move's body are not in loadKg (ADR-032), so +10 →

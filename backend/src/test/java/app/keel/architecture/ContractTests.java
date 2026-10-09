@@ -93,6 +93,25 @@ class ContractTests {
     }
 
     @Test
+    void theProgramAndItsWeekTheServerSendsAreTheContractsFieldForField() throws Exception {
+        // K-995: the phone reads today, a session's state and what a today change may be from the server, never works them out.
+        Map<String, Object> schemas = schemas();
+        Class<?> program = Class.forName("app.keel.training.ProgramController$Program");
+        Class<?> session = Class.forName("app.keel.training.ProgramController$WeekSession");
+        Class<?> workout = Class.forName("app.keel.training.ProgramController$SessionWorkout");
+        Class<?> kind = Class.forName("app.keel.training.TodaySessions$Kind");
+
+        assertThat(properties(map(schemas.get("Program"))).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(program));
+        assertThat(properties(map(schemas.get("WeekSession"))).keySet()).containsExactlyInAnyOrderElementsOf(
+                componentNames(session).stream().map(name -> name.equals("shortVersion") ? "short" : name).toList());
+        assertThat(properties(map(schemas.get("SessionWorkout"))).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(workout));
+        assertThat(list(map(properties(map(schemas.get("SessionWorkout"))).get("state")).get("enum")))
+                .containsExactlyElementsOf(names((Enum<?>[]) Class.forName("app.keel.training.ProgramController$SessionWorkout$State").getEnumConstants()));
+        assertThat(list(map(properties(map(schemas.get("TodayChange"))).get("change")).get("enum")))
+                .containsExactlyElementsOf(names((Enum<?>[]) kind.getEnumConstants()));
+    }
+
+    @Test
     void theProgramReviewIsTheEnginesFindingsAndTheServersRecordsFieldForField() throws Exception {
         // K-956 (ADR-073 #2-#3): the phone shows the review, sends back the picks and the change to undo; the program carries
         // the review, optional for programs from before it.

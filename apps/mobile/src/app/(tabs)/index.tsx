@@ -1,5 +1,7 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -9,61 +11,52 @@ import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { CallCard } from '@/today/CallCard';
-import { CheckInCard } from '@/today/CheckInCard';
-import { FirstWeeksCard } from '@/today/FirstWeeksCard';
-import { PromptCard } from '@/today/PromptCard';
+import { Hero } from '@/today/Hero';
 import { StateCard } from '@/today/StateCard';
-import { ConsistencyCard } from '@/today/ConsistencyCard';
 import { TodayList } from '@/today/TodayList';
 import { useToday } from '@/today/useToday';
+import { WeekStrip } from '@/today/WeekStrip';
+import { heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from '@/today/week';
 
 /**
- * This week (K-401, prototype 2.1; K-969 gives it the new face): the consistency number, this week's call and today's list;
- * the coach's chips are off the surface (ADR-069 #3). Each part
- * stands on its own: what is not there yet says what comes; without the health data consent the number and the call
- * give way to one line and the way to Settings; a part that failed says so once, with a way to try again.
+ * This week (K-969, ADR-077 #1, prototype #home and #home-mon): the week strip under the week's number and record, one
+ * hero block (the first week, this week's call, Monday's "Open your call", a paused week, or the calls off without the
+ * consent), then today. No coach bar, no paragraphs (ADR-069 #3, ADR-077 #1): the consistency's parts, the first weeks'
+ * words and the coach's questions are off this screen. Settings top right. Every week, date and count is the server's;
+ * the phone lays its week out and counts the days to the dates it gave (ADR-077 Ek 2). A part that failed says so once.
  */
 export default function TodayScreen() {
   const { color } = useTheme();
   const { day, data, reload } = useToday();
+  // The call's details below the hero, until the call screen (K-978) takes them.
+  const [callOpen, setCallOpen] = useState(false);
 
-  const parts =
-    data === null ? [] : [data.consistency, data.decision, data.program, data.weighIns, data.targets, data.budget, ...(data.checkIn ? [data.checkIn] : [])];
-  const needsConsent = data !== null && (data.consistency.state === 'consent' || data.decision.state === 'consent');
+  const parts = data === null ? [] : [data.consistency, data.decision, data.program, data.weighIns, data.targets, data.budget, ...(data.checkIn ? [data.checkIn] : [])];
   const failed = parts.some((part) => part.state === 'failed');
-
-  const consent = needsConsent ? (
-    <View style={styles.note}>
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('today.consent.body')}</Text>
-      <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
-    </View>
-  ) : null;
   const problem = failed ? (
     <View style={styles.note}>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('today.failed')}</Text>
       <Button label={t('today.retry')} variant="ghost" size="sm" onPress={reload} />
     </View>
   ) : null;
-  const consistency =
-    data === null || (data.consistency.state !== 'ready' && data.consistency.state !== 'none') ? null : (
-      <ConsistencyCard consistency={data.consistency.state === 'ready' ? data.consistency.value : null} />
+
+  let top = null;
+  if (data !== null) {
+    const monday = data.monday ?? weekMonday(data.consistency, data.program, day);
+    const sessions = data.program.state === 'ready' ? (data.program.value.week ?? []) : [];
+    const hero = heroOf(data);
+    const details = hero.kind === 'call' && callOpen ? <CallCard decision={hero.decision} onChanged={reload} /> : null;
+    top = (
+      <>
+        <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, day, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
+        {/* A paused week is the state's own card ("I'm back"); back, its welcome stays until another state is read. */}
+        <StateCard state={data.state} onChanged={reload} entry={false} />
+        <Hero hero={hero} today={day} open={callOpen} onToggle={() => setCallOpen(!callOpen)} onChanged={reload} />
+        {details}
+        <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
+      </>
     );
-  const call =
-    data === null || (data.decision.state !== 'ready' && data.decision.state !== 'none') ? null : (
-      <CallCard decision={data.decision.state === 'ready' ? data.decision.value : null} onChanged={reload} />
-    );
-  // The first eight weeks (K-521): the week's words; in a risky week, one message.
-  const firstWeeks = data === null ? null : <FirstWeeksCard read={data.firstWeeks} previousOpen={data.previousOpen ?? null} day={day} />;
-  // What the user declared (K-518): the week paused, or a way to say so. Ended, Today reads again.
-  const stateCard = data === null ? null : <StateCard state={data.state} onChanged={reload} />;
-  // The check-in waits for an answer before this week's call (K-501); not read, nothing offered — the call card says enough.
-  const checkIn = data?.checkIn?.state === 'ready' ? <CheckInCard checkIn={data.checkIn.value} /> : null;
-  // The coach's own question (K-520): read on each focus, so an answered one is gone and the next comes.
-  const prompt = data?.prompts?.state === 'ready' ? <PromptCard read={data.prompts} /> : null;
-  const list =
-    data === null ? null : (
-      <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
-    );
+  }
 
   return (
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
@@ -71,17 +64,16 @@ export default function TodayScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.head}>
           <ScreenTitle>{t('screens.today.title')}</ScreenTitle>
-          <Button label={t('settings.entry')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('thisWeek.settings')}
+            onPress={() => router.push('/settings')}
+            style={({ pressed }) => [styles.gear, { backgroundColor: color.surface }, pressed && styles.dim]}>
+            <SymbolView name="gearshape" size={tokens.type.heading} tintColor={color.text} />
+          </Pressable>
         </View>
         {problem}
-        {consent}
-        {consistency}
-        {firstWeeks}
-        {stateCard}
-        {checkIn}
-        {prompt}
-        {call}
-        {list}
+        {top}
       </ScrollView>
       <View style={styles.plus}>
         <PlusEntry />
@@ -93,11 +85,9 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gear: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
+  dim: { opacity: tokens.opacity.dim },
   note: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },

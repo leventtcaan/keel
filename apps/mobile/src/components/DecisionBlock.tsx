@@ -9,17 +9,26 @@ type Props = {
   eyebrow?: string;
   /** The decision itself; one of the two places uppercase is allowed (ADR-016). */
   title: string;
+  /** Beside the eyebrow, on its line: a small control such as "Open the call" (This week's hero, K-969). */
+  aside?: ReactNode;
   /** Body and actions; they render on the inverse surface. */
   children?: ReactNode;
   testID?: string;
 };
 
 /** The weekly call: black block on white, and inverted in dark mode (ADR-016). */
-export function DecisionBlock({ eyebrow, title, children, testID }: Props) {
+export function DecisionBlock({ eyebrow, aside, title, children, testID }: Props) {
   const { color } = useTheme();
   return (
     <View testID={testID} style={[styles.block, { backgroundColor: color.decisionBackground }]}>
-      {eyebrow !== undefined && <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>}
+      {aside === undefined ? (
+        eyebrow !== undefined && <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
+      ) : (
+        <View style={styles.top}>
+          <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
+          <InverseSurface>{aside}</InverseSurface>
+        </View>
+      )}
       <Text accessibilityRole="header" style={[styles.title, { color: color.decisionText }]}>
         {title}
       </Text>
@@ -30,6 +39,7 @@ export function DecisionBlock({ eyebrow, title, children, testID }: Props) {
 
 const styles = StyleSheet.create({
   block: { borderRadius: tokens.radius.card, padding: tokens.space.lg, gap: tokens.space.sm },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm },
   eyebrow: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   title: {
     fontFamily: tokens.font.display,

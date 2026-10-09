@@ -16,7 +16,9 @@ import { newClientId } from '@/sync/send';
 import type { LocalRecord } from '@/sync/store';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { DoneSets } from '@/train/DoneSets';
 import { FinishForm } from '@/train/FinishForm';
+import { GoalLine } from '@/train/GoalLine';
 import { MoveDots } from '@/train/MoveDots';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
@@ -24,19 +26,18 @@ import { SupersetLink } from '@/train/SupersetLink';
 import { nextInGroup, supersetsInForce } from '@/train/superset';
 import { RestTimer } from '@/train/RestTimer';
 import { SessionHeader } from '@/train/SessionHeader';
-import { SetEntry } from '@/train/SetEntry';
-import { SetTable } from '@/train/SetTable';
+import { ActiveSet, type Entry } from '@/train/ActiveSet';
 import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
-import { buildSet, exerciseStatus, parseEntry, parseLoad, platesLine } from '@/train/session';
+import { repsText } from '@/train/reps';
+import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
-import { weightInput } from '@/units/units';
 
 /**
  * The session (K-405, prototype 2.4, B §6.5): the day's moves; the move under way with its rows — the server's next
@@ -198,13 +199,14 @@ function Session() {
   // The fields hold the row under way: its suggestion until the user changes it. What was typed belongs to its row, so a
   // new row starts from its own suggestion, and a problem said about one row is gone at the next.
   const rowKey = `${moveId ?? ''}-${plan?.current ?? 'done'}`;
-  const [typed, setTyped] = useState<{ row: string; load: string; reps: string; rir: number; note: string | null } | null>(null);
+  const [typed, setTyped] = useState<({ row: string } & Entry) | null>(null);
   const entry =
     typed !== null && typed.row === rowKey
       ? typed
       : {
           row: rowKey,
-          load: row === null || row.suggested.loadKg === null ? '' : weightInput(row.suggested.loadKg, units),
+          load: row === null || row.suggested.loadKg === null ? '' : loadText(row.suggested.loadKg, units),
+          loadKg: row?.suggested.loadKg ?? null,
           reps: row === null || row.suggested.reps === null ? '' : String(row.suggested.reps),
           // A move outside the plan has no target of its own: the work sets' aim (G1 K-5, target_rir_max).
           rir: planned?.targetRir ?? workoutParams.targetRirMax,
@@ -222,7 +224,7 @@ function Session() {
 
   const log = async () => {
     if (saving.current || day === null || move === undefined || row === null || plan === null) return;
-    const parsed = parseEntry(entry.load, entry.reps, move, units, row.suggested.loadKg);
+    const parsed = parseEntry(entry.load, entry.reps, move, units, entry.loadKg);
     if (parsed === null) {
       setProblem({ row: rowKey, text: t('workout.invalid') });
       return;
@@ -420,26 +422,30 @@ function Session() {
   );
 
   const sides = move?.unilateral === true ? 2 : 1;
-  // The set under way, by sets (a one-sided move's two rows are one); a move outside the plan has no count to reach.
   const heading =
-    plan === null || plan.current === null ? null : (
-      <Text style={[styles.text, { color: color.text }]}>
-        {plan.open === true
-          ? t('workout.setNumber', { number: Math.floor(plan.current / sides) + 1 })
-          : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides })}
-      </Text>
-    );
-  // The button that logs it is the dock's (it never moves); the fields stay here.
+    plan === null || plan.current === null
+      ? ''
+      : plan.open === true
+        ? t('workout.setNumber', { number: Math.floor(plan.current / sides) + 1 })
+        : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides });
+  const typedKg = row === null ? null : parseLoad(entry.load, units, entry.loadKg);
+  // The one set under way (ADR-075 #1): the button that logs it is the dock's, so it never moves.
   const entryBlock =
-    move === undefined || plan === null || plan.current === null || row === null ? null : (
-      <SetEntry move={move} index={plan.current} side={row.side} entry={entry} onChange={setEntry} problem={said} problemOccurrence={problem} />
+    move === undefined || row === null ? null : (
+      <ActiveSet
+        move={move}
+        heading={heading}
+        range={planned === undefined ? null : repsText(planned.reps)}
+        // A move outside the plan has no aim for reps left: there is no plan to aim at.
+        aim={planned?.targetRir ?? null}
+        gym={data?.gym}
+        plates={typedKg === null ? null : platesLine(move, typedKg, data?.gym)}
+        entry={entry}
+        onChange={setEntry}
+        problem={said}
+        problemOccurrence={problem}
+      />
     );
-  const typedKg = row === null ? null : parseLoad(entry.load, units, row.suggested.loadKg);
-  const perSide = move === undefined || typedKg === null || entryBlock === null ? null : platesLine(move, typedKg, data?.gym);
-  const plates = perSide === null ? null : <Text style={[styles.small, { color: color.muted }]}>{perSide}</Text>;
-  // A move outside the plan has no target RIR line: there is no plan to aim at.
-  const targetLine =
-    planned === undefined ? null : <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: planned.targetRir })}</Text>;
   const linkWith = (partner: string) => {
     if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [moveId, partner]]]));
   };
@@ -471,7 +477,7 @@ function Session() {
   // The move's head (prototype `.mhead`): its picture opens how it is done, as the How to link does (one for VoiceOver).
   const head =
     moveId === undefined ? null : (
-      <View style={styles.head}>
+      <View testID="move-head" style={styles.head}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })}
@@ -497,8 +503,9 @@ function Session() {
               style={styles.link}>
               <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
             </Pressable>
+            {/* With the move's other links, not between the target and the set (K-971). */}
+            {supersetBlock}
           </View>
-          {targetLine}
         </View>
       </View>
     );
@@ -509,12 +516,11 @@ function Session() {
       </Card>
     ) : (
       <>
-        {supersetBlock}
+        {/* The prototype's order (K-971): the target, the sets done, then the one under way, its warm-ups folded above it. */}
+        {planned !== undefined && <GoalLine planned={planned} move={move} />}
+        <DoneSets plan={plan} move={move} />
         {warmBlock}
-        <SetTable plan={plan} move={move} />
-        {heading}
         {entryBlock}
-        {plates}
       </>
     );
   // In a superset the move after this set is its partner (the round's order), else the next move of the day with sets left.
@@ -539,6 +545,17 @@ function Session() {
     ) : day === null && active === null ? null : (
       <Button label={t('workout.finish')} onPress={onFinish} />
     );
+  // The day and how far into it, under the time: off the page, so the set under way has its room (K-971).
+  const dayLine = (
+    <View style={styles.dayLine}>
+      <Text style={[styles.small, { color: color.textSecondary }]}>{day === null ? t('workout.title') : dayName(day)}</Text>
+      {day !== null && (
+        <Text style={[styles.small, { color: color.muted }]}>
+          {today.length === 1 ? t('workout.progressOne', { done: movesDone }) : t('workout.progress', { done: movesDone, count: today.length })}
+        </Text>
+      )}
+    </View>
+  );
   const dock =
     dockButton === null ? null : (
       <View testID="dock" style={[styles.dock, { borderTopColor: color.line }]}>
@@ -591,23 +608,13 @@ function Session() {
       {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
       <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onFinish} />
+          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onFinish} subtitle={dayLine} />
           {/* Its place is kept with no rest in it, so the page under it does not move when one starts. */}
           <View testID="rest-slot" style={styles.restSlot}>
             {rest !== null && <RestTimer since={rest} onEnd={endRest} />}
           </View>
         </View>
         <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <View style={styles.dayLine}>
-            <Text style={[styles.small, styles.grow, { color: color.textSecondary }]}>{day === null ? t('workout.title') : dayName(day)}</Text>
-            {day !== null && (
-              <Text style={[styles.small, { color: color.muted }]}>
-                {today.length === 1
-                  ? t('workout.progressOne', { done: movesDone })
-                  : t('workout.progress', { done: movesDone, count: today.length })}
-              </Text>
-            )}
-          </View>
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
           {finishing ? form : session}
@@ -625,16 +632,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   top: { paddingHorizontal: tokens.space.lg, gap: tokens.space.xs },
   restSlot: { minHeight: tokens.size.touch + tokens.space.sm * 2, justifyContent: 'center' },
-  body: { padding: tokens.space.lg, gap: tokens.space.md },
+  body: { padding: tokens.space.lg, gap: tokens.space.sm },
   dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline },
   list: { gap: tokens.space.xs },
-  dayLine: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
+  dayLine: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: tokens.space.sm },
   head: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
-  links: { flexDirection: 'row', gap: tokens.space.lg },
+  links: { flexDirection: 'row', flexWrap: 'wrap', columnGap: tokens.space.lg },
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   grow: { flex: 1 },
-  name: { fontFamily: tokens.font.display, fontSize: tokens.type.screenTitle },
+  name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });

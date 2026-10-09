@@ -509,7 +509,7 @@
    "table": "training.session_change",
    "module": "training",
    "class": "training",
-   "purpose": "Changes you made to a week's session: moved to another day, skipped, the short version, or a move swapped for today.",
+   "purpose": "Changes you made to a week's session: moved to another day, skipped, the short version, or a move swapped for today; and what undoes today's move or skip.",
    "columns": [
     "account_id",
     "program_day_id",
@@ -517,7 +517,8 @@
     "on_date",
     "skipped",
     "short_version",
-    "swaps"
+    "swaps",
+    "undo"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,

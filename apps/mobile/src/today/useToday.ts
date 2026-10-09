@@ -4,6 +4,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 
 import { type TodayData, loadToday } from './today';
 import { useReadOnFocus } from './useReadOnFocus';
+import { loadWeekLogs, weekMonday } from './week';
 
 /**
  * Today's parts (K-401), read on focus and when the app comes back to the front — after Apple Health's new scale
@@ -29,6 +30,9 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         // What waits on the phone goes first (a weigh-in just saved), so the server's list shows it (K-402 review).
         await waiting.drain().catch(named);
         const today = await loadToday(api, day);
+        // The week's days as the server counts its week (K-969): its Monday from what was just read.
+        const monday = weekMonday(today.consistency, today.program, day);
+        const week = await loadWeekLogs(api, monday, day);
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
         const { program } = today;
         if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
@@ -46,7 +50,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
           named(error);
           return null;
         });
-        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen };
+        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week };
       },
       [api],
     ),

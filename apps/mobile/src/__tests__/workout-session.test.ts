@@ -4,7 +4,7 @@
  */
 import type { components } from '@/api/schema';
 import { workoutParams } from '@/train/params';
-import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setText } from '@/train/session';
+import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setText, stepLoad, stepReps } from '@/train/session';
 import type { ExercisePlan } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -110,3 +110,56 @@ test('the session clock: minutes and seconds, and hours once past one', () => {
   expect(clockText(3725)).toBe('1:02:05');
 });
 
+describe("the weight stepper's step (K-971): a pair of the smallest plates, the gym's own loads where it has them", () => {
+  const barbell = { ...bench, equipment: 'BARBELL' } as Schemas['Exercise'];
+  const stack = { id: 'leg_extension', unilateral: false, load: 'EXTERNAL', equipment: 'MACHINE' } as Schemas['Exercise'];
+  const GYM = { barKg: 20, platesKg: [20, 10, 5, 2.5, 1.25], dumbbellsKg: [], stackStepKg: 5, machineStepsKg: {} };
+
+  test('without a gym: the step in the user unit, on its grid', () => {
+    expect(stepLoad(62.5, 1, bench, undefined, 'METRIC')).toBe(65);
+    expect(stepLoad(62.5, -1, bench, undefined, 'METRIC')).toBe(60);
+    expect(stepLoad(61, 1, bench, undefined, 'METRIC')).toBe(62.5); // typed off the grid: onto it
+    expect(stepLoad(null, 1, bench, undefined, 'METRIC')).toBe(workoutParams.loadStep.kg);
+    expect(stepLoad(61.23, 1, bench, undefined, 'IMPERIAL')).toBe(63.5); // 135 lb and 5 lb: 140 lb
+    expect(stepLoad(62.5, 1, bench, undefined, 'IMPERIAL')).toBe(63.5); // 137.8 lb: up to 140, not 142.8
+    expect(stepLoad(62.5, -1, bench, undefined, 'IMPERIAL')).toBe(61.23); // and down to 135
+  });
+
+  // #500 review: an external load of 0 is no set ("0 kg × 6"): its less is off where it would reach 0 (it was 0 before).
+  // A weighted move's added load may go to 0, the body alone.
+  test('an external load stops before nothing; an added load goes down to the body alone', () => {
+    expect(stepLoad(1, -1, bench, undefined, 'METRIC')).toBeNull();
+    expect(stepLoad(2.5, -1, bench, undefined, 'METRIC')).toBeNull();
+    expect(stepLoad(0, -1, bench, undefined, 'METRIC')).toBeNull();
+    expect(stepLoad(2.5, -1, dip, undefined, 'METRIC')).toBe(0);
+    expect(stepLoad(0, -1, dip, undefined, 'METRIC')).toBeNull();
+  });
+
+  test('a load a step lands on whose shown number is the one shown now is passed over: a tap always moves the number', () => {
+    // A kg gym for a lb user: 226 lb read back is 102.51 kg, and the nearest load under it, 102.5, shows as 226 too.
+    expect(stepLoad(102.51, -1, barbell, GYM, 'IMPERIAL')).toBe(100);
+  });
+
+  test('at the gym: within one step where it makes a load there, else the next it makes', () => {
+    expect(stepLoad(100, 1, barbell, GYM, 'METRIC')).toBe(102.5);
+    expect(stepLoad(100, -1, barbell, GYM, 'METRIC')).toBe(97.5);
+    expect(stepLoad(50, 1, stack, GYM, 'METRIC')).toBe(55); // a 5 kg stack: nothing within 2.5
+    expect(stepLoad(50, -1, stack, GYM, 'METRIC')).toBe(45);
+    expect(stepLoad(null, 1, barbell, GYM, 'METRIC')).toBe(20); // nothing yet: the empty bar
+    expect(stepLoad(20, -1, barbell, GYM, 'METRIC')).toBeNull(); // nothing under the bar
+  });
+
+  test('a gym that says nothing of this equipment: the plain step', () => {
+    expect(stepLoad(20, 1, { ...bench, equipment: 'DUMBBELL' } as Schemas['Exercise'], GYM, 'METRIC')).toBe(22.5);
+  });
+});
+
+test('the reps stepper: one at a time, from one to the most a set takes', () => {
+  expect(stepReps('6', 1)).toBe(7);
+  expect(stepReps('6', -1)).toBe(5);
+  expect(stepReps('1', -1)).toBeNull();
+  expect(stepReps('', 1)).toBe(1);
+  expect(stepReps(String(workoutParams.maxReps), 1)).toBeNull();
+  expect(stepReps('999', -1)).toBe(workoutParams.maxReps); // over the most: down to it
+  expect(stepReps('999', 1)).toBeNull();
+});
