@@ -248,6 +248,30 @@ class TodayChangeTests {
     }
 
     @Test
+    void shiftsOnOneDayAreInTheWeeksOrderAsTheMovedWeekHasThem() {
+        // #510 review: two sessions on Tuesday both move on to Wednesday; the first in the program first, whatever the ids.
+        ProgramStore.Day first = new ProgramStore.Day(UUID.fromString("70000000-0000-0000-0000-000000000000"), null, "First", DayOfWeek.TUESDAY,
+                UPPER.exercises());
+        ProgramStore.Day second = new ProgramStore.Day(UUID.fromString("10000000-0000-0000-0000-000000000000"), null, "Second", DayOfWeek.TUESDAY,
+                LOWER.exercises());
+        List<TodayChanges.Session> week = TodayChanges.week(List.of(UPPER, first, second), MONDAY, Map.of(), SHORT);
+
+        assertThat(TodayChanges.preview(week, UPPER.id(), MONDAY, false).orElseThrow().shifts()).containsExactly(
+                new TodayChanges.Shift(UPPER.id(), TUESDAY), new TodayChanges.Shift(first.id(), WEDNESDAY), new TodayChanges.Shift(second.id(), WEDNESDAY));
+    }
+
+    @Test
+    void aStartedSessionIsRefusedAsStartedEvenWhenTheMoveWouldAlsoPassSunday() {
+        // #510 review: Saturday's session started today, Sunday's taken: the move fails both ways; STARTED is said.
+        ProgramStore.Day saturday = day(DayOfWeek.SATURDAY, "squat");
+        ProgramStore.Day sunday = day(DayOfWeek.SUNDAY, "bench_press");
+        List<TodayChanges.Session> week = TodayChanges.week(List.of(saturday, sunday), MONDAY, Map.of(), SHORT);
+
+        assertThat(TodayChanges.preview(week, saturday.id(), SATURDAY, true))
+                .contains(new TodayChanges.Preview(List.of(), TodayChanges.Conflict.STARTED));
+    }
+
+    @Test
     void theMovePreviewSaysWhenTheMoveWouldBeRefused() {
         ProgramStore.Day saturday = day(DayOfWeek.SATURDAY, "squat");
         ProgramStore.Day sunday = day(DayOfWeek.SUNDAY, "bench_press");

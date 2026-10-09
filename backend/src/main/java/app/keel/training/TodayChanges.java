@@ -125,9 +125,12 @@ final class TodayChanges {
         if (startedToday) {
             return Optional.of(new Preview(List.of(), Conflict.STARTED));
         }
+        // Shifts onto one day are in the week's order there, as the moved week lays them out (by date, then the program's
+        // order): each moved on a day from one day, where the week has them in the program's order.
+        List<UUID> order = week.stream().map(Session::programDayId).toList();
         return Optional.of(moveToTomorrow(week, programDayId, today)
                 .map(moves -> new Preview(moves.entrySet().stream().map(move -> new Shift(move.getKey(), move.getValue()))
-                        .sorted(Comparator.comparing(Shift::date).thenComparing(Shift::programDayId)).toList(), null))
+                        .sorted(Comparator.comparing(Shift::date).thenComparingInt(shift -> order.indexOf(shift.programDayId()))).toList(), null))
                 .orElse(new Preview(List.of(), Conflict.PAST_SUNDAY)));
     }
 
