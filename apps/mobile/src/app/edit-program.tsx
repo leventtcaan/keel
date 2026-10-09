@@ -13,7 +13,9 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
-import { type Changed, type Undone, applySuggestion, rebuild, undoChange } from '@/train/changes';
+import { liftDays } from '@/train/cardio';
+import { CardioEditor } from '@/train/CardioEditor';
+import { type Changed, type Undone, applySuggestion, coachCardio, putCardio, rebuild, undoChange } from '@/train/changes';
 import { dayName, exerciseName } from '@/train/program';
 import { repCount } from '@/train/reps';
 import { suggestionWords } from '@/train/review';
@@ -22,8 +24,8 @@ import { splitName } from '@/train/week';
 import { activeWorkout } from '@/train/workout';
 
 type Schemas = components['schemas'];
-type Part = 'days' | 'moves' | 'changes' | 'split' | 'rebuild';
-const PARTS: readonly Part[] = ['days', 'moves', 'changes', 'split', 'rebuild'];
+type Part = 'days' | 'moves' | 'changes' | 'cardio' | 'split' | 'rebuild';
+const PARTS: readonly Part[] = ['days', 'moves', 'changes', 'cardio', 'split', 'rebuild'];
 
 const plural = (key: string, count: number, vars: Record<string, string | number> = {}) =>
   t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
@@ -46,9 +48,17 @@ export default function EditProgramScreen() {
   const part = PARTS.find((p) => p === params.part) ?? null;
   const { data, reload } = useReadOnFocus(
     useCallback(async () => {
-      const [read, own, records] = await Promise.all([training.read(api), training.own(api), workoutRecords()]);
-      return { ...read, own, active: activeWorkout(records) };
-    }, [api, training, workoutRecords]),
+      // The cardio page places a day after the weights or on a rest day: on days with no weekday, the profile's training
+      // days say which are which.
+      const [read, own, records, profile] = await Promise.all([
+        training.read(api),
+        training.own(api),
+        workoutRecords(),
+        part === 'cardio' ? load(() => api.GET('/v1/profile')) : Promise.resolve(null),
+      ]);
+      const profileDays = profile?.state === 'ready' ? profile.value.schedule.trainingDays : null;
+      return { ...read, own, active: activeWorkout(records), profileDays };
+    }, [api, training, workoutRecords, part]),
   );
   // The program the server just answered, shown until the page reads again: a second tap names the review it holds
   // now (not the one read before), an undo's later changes leave the list at once (K-970 review).
@@ -143,6 +153,7 @@ export default function EditProgramScreen() {
         {applied > 0 && <Row title={plural('editProgram.applied', applied)} detail={t('editProgram.appliedUndo')} onPress={() => open('changes')} />}
         <Row title={t('editProgram.days')} detail={program.days.map(weekdayOf).join(t('editProgram.dayList'))} onPress={() => open('days')} />
         <Row title={t('editProgram.moves')} detail={flags === 0 ? movesLine : plural('editProgram.flags', flags, { moves: movesLine })} onPress={() => open('moves')} />
+        <Row title={t('editProgram.cardio.title')} detail={cardioLine(program)} onPress={() => open('cardio')} />
         <Row title={t('editProgram.split')} detail={splitName(program)} onPress={() => open('split')} />
         <Row title={t('editProgram.rebuild')} detail={t('editProgram.rebuildRow')} onPress={() => open('rebuild')} />
       </View>
@@ -199,6 +210,18 @@ export default function EditProgramScreen() {
         ))}
       </View>
     );
+  } else if (program !== null && part === 'cardio') {
+    title = t('editProgram.cardio.title');
+    const saved = () => setDone(t('editProgram.cardio.saved'));
+    body = (
+      <CardioEditor
+        program={program}
+        lifts={liftDays(program, data?.profileDays ?? null)}
+        busy={busy}
+        onSave={(plan) => void send(() => putCardio(api, plan), saved, words(SAID))}
+        onCoach={() => void send(() => coachCardio(api), () => setDone(t('editProgram.cardio.coachBack')), words(SAID))}
+      />
+    );
   } else if (program !== null && part === 'split') {
     title = t('editProgram.split');
     body = (
@@ -235,6 +258,13 @@ export default function EditProgramScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+/** The week's cardio as the server set it: "2 × 30 min", or off (none, or turned off). */
+function cardioLine(program: Schemas['Program']): string {
+  const cardio = program.cardio;
+  if (cardio === undefined || cardio.sessionsPerWeek === 0) return t('editProgram.cardio.off');
+  return t('editProgram.cardio.row', { sessions: cardio.sessionsPerWeek, minutes: cardio.minutes });
 }
 
 const open = (part: Part) => router.push({ pathname: '/edit-program', params: { part } });
