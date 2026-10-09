@@ -4629,3 +4629,20 @@ tasks:
     tests: ["Bütçe tablo testi (hedef var / yalnız başlangıç / hiçbiri), API testi (CI), telefon ekran testi"]
     refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Başlangıç değerinin sürekli değerle aynı yoldan geçmesi"]
+
+  - id: K-998
+    title: "Seansı at (DELETE /v1/workouts/{id}) ve duraklamanın özetten düşmesi (finish pausedSeconds)"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-961]
+    why: "K-972 planı (9 Eki): ADR-075 #5 'Discard onaylı' ama sözleşmede seansı silen uç yok; setleri sunucuya gitmiş seans atılamıyor, boş seans haftayı sayar. Pause süreyi durdurur (ADR-075 #5, kullanıcı testi C14) ama sunucu duraklamayı bilmiyor; özet dakikası ve Health süresi ekran saatiyle çelişir"
+    acceptance:
+      - "`DELETE /v1/workouts/{id}`: seans ve setleri silinir; başka hesabın seansı 404; tutarlılık ve haftanın sayımı seansı artık saymaz; ilerleme/rekor (K-965) ve hedefler o seansın etkisini taşımaz (bitmemiş seans hedef yazmadıysa hiçbir şey); çift istek zararsız"
+      - "`POST /v1/workouts/{id}/finish` isteğe bağlı `pausedSeconds` (≥0, endedAt − startedAt'i aşamaz → 400); özet dakikası = endedAt − startedAt − pausedSeconds; dışa aktarımda alan var, veri envanterinde"
+      - "Telefon: Discard onaylı, geri alınabilir (silme geri al süresi dolunca gider); Health antrenmanı aktif süreyle"
+    tests: ["Silme API testi (kendi/başkası/tekrar), özet dakikası tablo testi, sözleşme testi"]
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
+    learn: ["Silinen kaydın türetilmiş sayılardan düşmesi"]
