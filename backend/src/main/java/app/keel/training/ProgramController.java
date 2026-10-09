@@ -379,14 +379,14 @@ class ProgramController {
     Program applyReview(AccountId account, @RequestBody ReviewApply request) {
         List<String> picks = request.suggestionIds();
         require(request.reviewId() != null && picks != null && !picks.isEmpty() && !picks.contains(null) && Set.copyOf(picks).size() == picks.size());
-        return view(account, reviews.apply(account, request.reviewId(), picks, parametersFor(account), TodayChanges.monday(today(account))));
+        return view(account, reviews.apply(account, request.reviewId(), picks, parametersFor(account), today(account), zone(account)));
     }
 
     /** "N changes applied · Undo" (ADR-073 #3): one change, or every change in force. */
     @PostMapping("/v1/program/review/undo")
     ReviewUndone undoReview(AccountId account, @RequestBody ReviewUndo request) {
-        ProgramReviews.Undone undone = reviews.undo(account, Optional.ofNullable(request.changeId()), parametersFor(account),
-                TodayChanges.monday(today(account)));
+        ProgramReviews.Undone undone = reviews.undo(account, Optional.ofNullable(request.changeId()), parametersFor(account), today(account),
+                zone(account));
         return new ReviewUndone(view(account, undone.program()), undone.alsoUndone());
     }
 

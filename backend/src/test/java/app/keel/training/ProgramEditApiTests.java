@@ -256,6 +256,36 @@ class ProgramEditApiTests {
     }
 
     @Test
+    void aFreeSessionStartedTodayHoldsNoEditBack() throws Exception {
+        // #518 review: a workout of no program day has no programDayId; it is no day's session.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = generated(account);
+        assertThat(send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", "2026-10-07T10:00:00Z"))).hasStatus(201);
+
+        assertThat(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            days.get(1).put("weekday", "THURSDAY");
+            return days;
+        }))).hasStatusOk();
+    }
+
+    @Test
+    void anUndoThatWouldMoveADayStartedTodayIsAConflict() throws Exception {
+        // #518 review: the same guard for an undo (and an apply). The edit put Wednesday's day on Thursday; its workout was
+        // started today all the same; the undo would put the day back on another weekday: refused, nothing changed.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = generated(account);
+        Object wednesday = days(program).get(1).get("id");
+        Map<String, Object> edited = map(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            days.get(1).put("weekday", "THURSDAY");
+            return days;
+        })));
+        workout(account, "2026-10-07T10:00:00Z", wednesday, "squat", 100);
+
+        assertThat(send(account, "POST", "/v1/program/review/undo", Map.of("changeId", edits(edited).getFirst().get("id")))).hasStatus(409);
+        assertThat(map(send(account, "GET", "/v1/program", null)).get("days")).isEqualTo(edited.get("days"));
+    }
+
+    @Test
     void todaysSwapToAMoveTheEditPlansEndsSoTheMoveIsInTheSessionOnce() throws Exception {
         AccountId account = TestSessions.newAccount();
         Map<String, Object> program = generated(account);

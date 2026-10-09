@@ -124,14 +124,15 @@ class ProgramReviews {
      * or a pick is not among its suggestions now: nothing is changed.
      */
     @Transactional
-    ProgramStore.Program apply(AccountId account, String reviewId, List<String> picks, Parameters parameters, LocalDate monday) {
+    ProgramStore.Program apply(AccountId account, String reviewId, List<String> picks, Parameters parameters, LocalDate today, ZoneId zone) {
         ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         List<String> shown = suggestions(current, catalog, parameters).stream().map(Suggestion::id).toList();
         if (!reviewId(current).equals(reviewId) || !shown.containsAll(picks)) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Outcome outcome = apply(current, shown.stream().filter(picks::contains).toList(), catalog, parameters);
-        return keep(account, current, outcome, monday);
+        requireStartedDaysStay(account, current, outcome.program(), today, zone);
+        return keep(account, current, outcome, TodayChanges.monday(today));
     }
 
     /**
@@ -142,7 +143,7 @@ class ProgramReviews {
      * change.
      */
     @Transactional
-    Undone undo(AccountId account, Optional<UUID> change, Parameters parameters, LocalDate monday) {
+    Undone undo(AccountId account, Optional<UUID> change, Parameters parameters, LocalDate today, ZoneId zone) {
         ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         List<ReviewChangeStore.Row> log = changes.all(account);
         if (change.isPresent() && log.stream().noneMatch(row -> row.id().equals(change.get()))) {
@@ -160,6 +161,7 @@ class ProgramReviews {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         Outcome outcome = undo(steps, index, current, catalog, parameters);
+        requireStartedDaysStay(account, current, outcome.program(), today, zone);
         changes.undo(account, ids.subList(from, ids.size()), clock.instant());
         List<UUID> later = new ArrayList<>();
         for (int i = from + 1; i < ids.size(); i++) {
@@ -168,7 +170,7 @@ class ProgramReviews {
             }
         }
         List<UUID> alsoUndone = outcome.skipped().stream().map(later::get).toList();
-        return new Undone(keep(account, current, outcome, monday), alsoUndone);
+        return new Undone(keep(account, current, outcome, TodayChanges.monday(today)), alsoUndone);
     }
 
     /** The first suggestion of the changes in force; -1 when there is none. */
@@ -193,16 +195,22 @@ class ProgramReviews {
         if (days.equals(current.days())) {
             return current;
         }
-        // A day whose session was started today stays on its weekday (Ek 7, as a move or a skip: a session done is done).
-        Set<UUID> relaid = ProgramEdits.relaid(current, new ProgramStore.Program(current.id(), current.source(), days));
-        if (workouts.between(account, today.atStartOfDay(zone).toInstant(), today.plusDays(1).atStartOfDay(zone).toInstant()).stream()
-                .anyMatch(workout -> relaid.contains(workout.programDayId()))) {
-            throw new ApiException(ErrorCode.CONFLICT);
-        }
+        requireStartedDaysStay(account, current, new ProgramStore.Program(current.id(), current.source(), days), today, zone);
         ProgramStore.Program stored = programs.rewrite(account, days);
         changes.add(account, List.of(Step.edit(current, stored)), clock.instant());
         relay(account, current, stored, TodayChanges.monday(today));
         return stored;
+    }
+
+    /**
+     * CONFLICT when the change puts a day whose workout was started today (on the user's calendar) on another weekday, or
+     * takes it out (Ek 7, the same for an edit, an apply and an undo; as a move or a skip: a session done is done).
+     */
+    private void requireStartedDaysStay(AccountId account, ProgramStore.Program before, ProgramStore.Program after, LocalDate today, ZoneId zone) {
+        if (ProgramEdits.startedAndReLaid(ProgramEdits.relaid(before, after),
+                workouts.between(account, today.atStartOfDay(zone).toInstant(), today.plusDays(1).atStartOfDay(zone).toInstant()))) {
+            throw new ApiException(ErrorCode.CONFLICT);
+        }
     }
 
     private ProgramStore.Program keep(AccountId account, ProgramStore.Program current, Outcome outcome, LocalDate monday) {

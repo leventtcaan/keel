@@ -132,6 +132,20 @@ class ProgramEditTests {
     }
 
     @Test
+    void onlyADayReLaidWhoseWorkoutStartedTodayHoldsTheChangeBack() {
+        // #518 review: a workout of no program day (a free or imported session) holds nothing back.
+        UUID moved = UUID.randomUUID();
+        UUID kept = UUID.randomUUID();
+        java.time.Instant now = java.time.Instant.parse("2026-10-07T10:00:00Z");
+        WorkoutStore.Workout free = new WorkoutStore.Workout(UUID.randomUUID(), UUID.randomUUID(), now, null, null, null, List.of(), null, 0);
+        WorkoutStore.Workout ofKept = new WorkoutStore.Workout(UUID.randomUUID(), UUID.randomUUID(), now, null, kept, null, List.of(), null, 0);
+        WorkoutStore.Workout ofMoved = new WorkoutStore.Workout(UUID.randomUUID(), UUID.randomUUID(), now, null, moved, null, List.of(), null, 0);
+
+        assertThat(ProgramEdits.startedAndReLaid(java.util.Set.of(moved), List.of(free, ofKept))).isFalse();
+        assertThat(ProgramEdits.startedAndReLaid(java.util.Set.of(moved), List.of(free, ofMoved))).isTrue();
+    }
+
+    @Test
     void anIdTheProgramDoesNotHaveOrOneGivenTwiceIsAConflict() {
         ProgramStore.Program program = own();
         List<ProgramEdits.Day> unknownDay = asIs(program);

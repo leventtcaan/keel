@@ -66,6 +66,14 @@ final class ProgramEdits {
         return Set.copyOf(relaid);
     }
 
+    /**
+     * Whether a day the change re-lays (another weekday, or gone) has a workout started today: a session done is done, so
+     * the change is refused (Ek 7). A workout of no program day (a free or imported session) is no day's.
+     */
+    static boolean startedAndReLaid(Set<UUID> relaid, List<WorkoutStore.Workout> startedToday) {
+        return startedToday.stream().map(WorkoutStore.Workout::programDayId).anyMatch(day -> day != null && relaid.contains(day));
+    }
+
     private static ProgramStore.PlannedExercise move(Move move, ProgramStore.PlannedExercise row, int targetRir) {
         if (row == null) {
             return new ProgramStore.PlannedExercise(move.exerciseId(), move.sets(), move.repMin(), move.repMax(), targetRir);
