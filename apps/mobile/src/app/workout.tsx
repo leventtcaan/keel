@@ -37,6 +37,7 @@ import { repsText } from '@/train/reps';
 import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
+import { todayFor } from '@/train/week';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
 import { type ExercisePlan, activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
 
@@ -154,9 +155,11 @@ function Session() {
   // list, K-964), then the moves done in this session outside it (a swap, an extra; read back from the sets), then the
   // ones added on this screen in the order they were added — a first set does not move one ahead of the others.
   const [added, setAdded] = useState<string[]>([]);
-  // The session's own day: its start's while under way (one begun at 23:30 stays that day's after midnight, K-961),
-  // else the day it was opened on (until K-995's Program.today says it).
-  const sessionDay = localDay(new Date(startedAt ?? openedAt));
+  // The session's own day: its start's when begun on an earlier day (one begun at 23:30 stays that day's after midnight,
+  // K-961); else today as the Train card reads it (the server's Program.today, the phone's day for a kept copy: todayFor),
+  // so the short version and today's swaps the card shows are the session's too, travelling as well (K-995).
+  const startDay = startedAt === null ? null : localDay(new Date(startedAt));
+  const sessionDay = startDay !== null && startDay !== localDay(new Date(openedAt)) ? startDay : todayFor(program, data?.kept === true, new Date(openedAt));
   const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
   const planIds = today.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(

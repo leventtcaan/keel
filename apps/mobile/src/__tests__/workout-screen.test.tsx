@@ -1144,6 +1144,15 @@ describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the s
     expect(await screen.findByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
   });
 
+  test("opened on the server's today (the phone's clock on another day, travelling): today's short version, as the Train card shows it", async () => {
+    mockRecords = lastWeek();
+    mockParams = { day: 'day-a' };
+    withWeek({ short: true, exerciseIds: ['bench_press'] });
+    mockData = { ...mockData, program: { state: 'ready', value: { ...(mockData.program as { value: Schemas['Program'] }).value, today: '2026-09-28' } } };
+    await show();
+    expect(await screen.findByText(t('workout.progressOne', { done: 0 }))).toBeOnTheScreen();
+  });
+
   test("a move swapped for today stands in its place and starts with no target; the move it replaced is not in the session", async () => {
     const DB = { id: 'dumbbell_bench_press', nameKey: 'exercises.dumbbell_bench_press.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
     mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, DB] } };
