@@ -19,6 +19,7 @@ Ortak talimat `plan/oturum-promptlari/YENI-YUZ-kod.md`; uygulayıcı ajan talima
 | #505 | K-995 A (FULL/UNDO, Program.today, movedFrom/undoable/workout, V44) | inceleme sürüyor | birleşince K-969/K-970'e "Undo + bitmiş seans + Continue sunucudan" ek PR |
 | (dal) | K-995 C taşı önizlemesi `training/491-move-preview-c` 5590624a (#505 üstünde, göçsüz; `WeekSession.movePreview`, ADR-073 Ek 6) | push'lu, PR açılmadı | kalan: API testi, anayasa, gövde; A birleşince rebase + aç |
 | — | K-995 B PATCH /v1/program | **kod yok, tasarım hazır** (ajanın raporu: tam program gövdesi kimliklerle; satır id korunur; hareket/tekrar değişirse hedef silinir, set değişirse kalır; `PlannedExercise.id`, `AppliedReviewChange.kind`; V45 `program_review_change.kind` REVIEW/EDIT + suggestion nullable) | C'den sonra |
+| (dal) | K-970 PR 4 kardiyo `mobile/433-edit-cardio` b31d3d15 (#506 üstünde) | push'lu, **bilerek kırmızı** (8 ekran testi önce yazıldı) | kalan: Edit `?part=cardio` + index satırı, `editProgram.cardio.*` metinleri, check, PR |
 | #503 | infra/502 | **başka oturumun**; dokunma | |
 
 Birleşenler: #490 K-994 · #492 K-992 · #493 K-970 kart+Change · #495 K-970 swap · #497 oturum WeekSession'dan · #498 K-996 · #499 K-971 odak modu.
