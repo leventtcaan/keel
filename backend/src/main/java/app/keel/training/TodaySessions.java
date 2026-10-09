@@ -43,9 +43,9 @@ class TodaySessions {
 
     /**
      * A session of the week as shown (K-995): the session, its workout of the week (null: none started), whether an undo
-     * changes it back today.
+     * changes it back today, what a move would do (null: not today's session).
      */
-    record Shown(TodayChanges.Session session, TodayChanges.Started workout, boolean undoable) {
+    record Shown(TodayChanges.Session session, TodayChanges.Started workout, boolean undoable, TodayChanges.Preview movePreview) {
     }
 
     /** The week of {@code today} as the program, its changes and the week's workouts on the user's calendar lay it out. */
@@ -55,8 +55,10 @@ class TodaySessions {
                 monday.plusWeeks(1).atStartOfDay(zone).toInstant());
         Map<UUID, TodayChanges.Started> latest = TodayChanges.started(started);
         Set<UUID> undoable = TodayChanges.undoable(changes.undos(account, monday), started, today, zone);
-        return TodayChanges.week(program.days(), monday, changes.week(account, monday), shortMoves).stream()
-                .map(session -> new Shown(session, latest.get(session.programDayId()), undoable.contains(session.programDayId()))).toList();
+        Set<UUID> startedToday = TodayChanges.startedOn(started, today, zone);
+        List<TodayChanges.Session> week = TodayChanges.week(program.days(), monday, changes.week(account, monday), shortMoves);
+        return week.stream().map(session -> new Shown(session, latest.get(session.programDayId()), undoable.contains(session.programDayId()),
+                TodayChanges.preview(week, session.programDayId(), today, startedToday.contains(session.programDayId())).orElse(null))).toList();
     }
 
     /**
