@@ -29,6 +29,8 @@ export type LocalRecord = {
   /** The server's answer; it replaces the local copy (server wins). */
   serverBody: unknown;
   errorCode: string | null;
+  /** Whether a send of it was ever tried (K-972): if so, the server may have it. */
+  attempted?: boolean;
 };
 
 export type NewLocalRecord = Pick<LocalRecord, 'clientId' | 'kind' | 'parentClientId' | 'body'>;
@@ -43,6 +45,7 @@ type Row = {
   server_id: string | null;
   server_body: string | null;
   error_code: string | null;
+  attempted: number;
 };
 
 // user_version is SQLite's own counter for the schema; each step moves it forward by one and runs once.
@@ -66,7 +69,7 @@ const MIGRATIONS = [
    UPDATE records SET attempted = 1;`,
 ];
 
-const COLUMNS = 'seq, client_id, kind, parent_client_id, body, state, server_id, server_body, error_code';
+const COLUMNS = 'seq, client_id, kind, parent_client_id, body, state, server_id, server_body, error_code, attempted';
 
 function toRecord(row: Row): LocalRecord {
   return {
@@ -79,6 +82,7 @@ function toRecord(row: Row): LocalRecord {
     serverId: row.server_id,
     serverBody: row.server_body === null ? null : JSON.parse(row.server_body),
     errorCode: row.error_code,
+    attempted: row.attempted === 1,
   };
 }
 
@@ -194,6 +198,11 @@ export async function openRecordStore(db: SqlDatabase, now: () => Date = () => n
          WHERE client_id = ?`,
         [next.clientId, JSON.stringify(next.body), clientId],
       );
+    },
+
+    /** A record and every record under it (a workout and its sets), in one step: a workout discarded (K-972). */
+    forgetWithChildren: async (clientId: string): Promise<void> => {
+      await db.runAsync('DELETE FROM records WHERE client_id = ? OR parent_client_id = ?', [clientId, clientId]);
     },
 
     /** A record put in the place (order) of one gone: a set brought back keeps its number (K-972). */

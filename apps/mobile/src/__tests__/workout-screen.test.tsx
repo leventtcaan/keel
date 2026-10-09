@@ -121,6 +121,10 @@ const mockServices = {
       mockRecords = next === null ? mockRecords.filter((r) => r.clientId !== clientId) : mockRecords.map((r) => (r.clientId === clientId ? { ...r, body: next } : r));
       return old;
     }),
+    discard: jest.fn(async (workoutClientId: string) => {
+      if (mockEditFails !== null) throw mockEditFails;
+      mockRecords = mockRecords.filter((r) => r.clientId !== workoutClientId && r.parentClientId !== workoutClientId);
+    }),
     restore: jest.fn(async (gone: LocalRecord) => {
       if (mockEditFails !== null) throw mockEditFails;
       mockRecords = [...mockRecords, { ...gone, clientId: `back-${gone.clientId}`, body: { ...(gone.body as object), clientId: `back-${gone.clientId}` } }].sort((x, y) => x.seq - y.seq);
@@ -2073,7 +2077,7 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
       await end();
       await choose('workout.ending.later');
       expect(mockRecord.mock.calls.map(([o]) => o.kind)).not.toContain('finish');
-      expect(mockServices.workoutEdits.forget).not.toHaveBeenCalled();
+      expect(mockServices.workoutEdits.discard).not.toHaveBeenCalled();
       expect(mockBack).toHaveBeenCalled();
       expect(said).toHaveBeenLastCalledWith(t('workout.ending.laterSaid'));
     } finally {
@@ -2088,7 +2092,7 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
     await choose('workout.ending.discard');
     expect(screen.getByRole('button', { name: t('workout.ending.confirm') })).toBeOnTheScreen();
     await choose('workout.ending.keep');
-    expect(mockServices.workoutEdits.forget).not.toHaveBeenCalled();
+    expect(mockServices.workoutEdits.discard).not.toHaveBeenCalled();
   });
 
   test('discarded on the phone: the workout and its sets are gone, nothing sent; Undo brings it all back', async () => {
@@ -2099,8 +2103,8 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
     await choose('workout.ending.discard');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
     expect(await screen.findByText(t('workout.ending.discarded'))).toBeOnTheScreen();
+    expect(mockServices.workoutEdits.discard).toHaveBeenCalledWith('w2');
     expect(mockRecords.filter((r) => r.clientId === 'w2' || r.parentClientId === 'w2')).toEqual([]);
-    expect(mockDELETE).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
     expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
     const back = mockRecord.mock.calls.map(([o]) => o);
@@ -2116,7 +2120,7 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
     await choose('workout.ending.discard');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
     expect(await screen.findByText(t('workout.ending.discarded'))).toBeOnTheScreen();
-    expect(mockDELETE).toHaveBeenCalledWith('/v1/workouts/{id}', { params: { path: { id: 'srv-w2' } } });
+    expect(mockServices.workoutEdits.discard).toHaveBeenCalledWith('w2');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.close') }));
     expect(mockBack).toHaveBeenCalled();
   });
@@ -2124,9 +2128,7 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
   test('discarded offline once the server has it: it says a connection is needed and keeps the workout', async () => {
     started(20);
     mockRecords = mockRecords.map((r) => (r.clientId === 'w2' ? { ...r, serverId: 'srv-w2' } : r));
-    mockDelete = async () => {
-      throw new TypeError('Network request failed');
-    };
+    mockEditFails = new TypeError('Network request failed');
     await show();
     await end();
     await choose('workout.ending.discard');

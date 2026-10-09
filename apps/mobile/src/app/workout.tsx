@@ -428,14 +428,8 @@ function Session() {
     setBusy(true);
     const gone = { startedAt: active.startedAt, programDayId: active.programDayId, sets: active.sets, pause: pauseRef.current, skips };
     try {
-      const kept = await workoutRecords();
-      const serverId = kept.find((r) => r.kind === 'workout' && r.clientId === active.clientId)?.serverId;
-      if (serverId != null) {
-        const { response } = await api.DELETE('/v1/workouts/{id}', { params: { path: { id: serverId } } });
-        if (!response.ok && response.status !== 404) throw Object.assign(new Error(String(response.status)), { name: 'DiscardRefused' });
-      }
-      for (const r of kept.filter((r) => r.parentClientId === active.clientId)) await workoutEdits.forget(r.clientId);
-      await workoutEdits.forget(active.clientId);
+      // On the server first once it may be there, with no send meanwhile (setEdits.discard).
+      await workoutEdits.discard(active.clientId);
       void sessionPause.forget().catch(named);
       void sessionSkips.forget().catch(named);
       endRest();
@@ -445,7 +439,8 @@ function Session() {
       setProblem(null);
     } catch (error) {
       named(error);
-      setProblem({ row: DISCARD, text: t(error instanceof TypeError ? 'workout.ending.offline' : 'workout.ending.failed') });
+      const offline = error instanceof TypeError || error instanceof NoAnswer;
+      setProblem({ row: DISCARD, text: t(offline ? 'workout.ending.offline' : 'workout.ending.failed') });
     }
     await refresh();
     saving.current = false;
