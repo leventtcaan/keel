@@ -6,11 +6,13 @@
  * change them keeping the targets (K-995): no edit that would wipe them is offered.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 
 import EditProgramScreen from '@/app/edit-program';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { tokens } from '@/theme/tokens';
 import type { LocalRecord } from '@/sync/store';
 import type { TrainData } from '@/train/trainData';
 
@@ -56,7 +58,8 @@ const PROGRAM: Schemas['Program'] = {
 let mockData: TrainData;
 let mockAnswers: Record<string, () => unknown> = {};
 const mockPost = jest.fn(async (path: string, ..._rest: unknown[]) => mockAnswers[path]());
-const mockGet = jest.fn(async (path: string) => (path === '/v1/profile' ? { data: { schedule: { trainingDays: ['MONDAY', 'THURSDAY'] } }, response: { status: 200 } } : { response: { status: 404 } }));
+const profileAnswer = async (path: string) => (path === '/v1/profile' ? { data: { schedule: { trainingDays: ['MONDAY', 'THURSDAY'] } }, response: { status: 200 } } : { response: { status: 404 } });
+const mockGet = jest.fn(profileAnswer);
 const mockPut = jest.fn(async (..._args: unknown[]) => ({ data: PROGRAM, response: { status: 200 } }));
 const mockDelete = jest.fn(async (..._args: unknown[]) => ({ data: PROGRAM, response: { status: 200 } }));
 const mockServices = {
@@ -97,6 +100,7 @@ jest.mock('expo-router', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGet.mockImplementation(profileAnswer);
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockParams = {};
   mockRecords = [];
@@ -268,6 +272,119 @@ describe('cardio', () => {
     mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: undefined } } };
     await show();
     expect(await screen.findByText(t('editProgram.cardio.off'))).toBeTruthy();
+  });
+
+  const USER_CARDIO: Schemas['Program'] = {
+    ...PROGRAM,
+    cardio: { ...PROGRAM.cardio!, source: 'USER', minutes: 35, sessionsPerWeek: 1, sessions: [{ weekday: 'MONDAY', place: 'AFTER_LIFT' }] },
+  };
+
+  test('saved: the page shows the cardio the server answered', async () => {
+    mockParams = { part: 'cardio' };
+    mockPut.mockImplementationOnce(async () => ({ data: USER_CARDIO, response: { status: 200 } }));
+    await show();
+    // The read after it never ends: what the page shows comes from the answer alone.
+    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
+    await fireEvent.press(await screen.findByText(t('editProgram.cardio.save')));
+    expect(await screen.findByText(t('editProgram.cardio.own'))).toBeTruthy();
+    expect(screen.getByText('35 min')).toBeTruthy();
+    expect(screen.queryByText('Fri · after lifting')).toBeNull();
+  });
+
+  test.each([
+    ['400', async () => ({ error: { code: 'VALIDATION_FAILED' }, response: { status: 400 } }), 'editProgram.failed'],
+    ['404', async () => ({ error: { code: 'NOT_FOUND' }, response: { status: 404 } }), 'editProgram.failed'],
+    [
+      'no connection',
+      async () => {
+        throw new TypeError('Network request failed');
+      },
+      'editProgram.offline',
+    ],
+  ])('a save that fails (%s): said, the draft stays, and trying again sends the same', async (_, failure, key) => {
+    mockParams = { part: 'cardio' };
+    mockPut.mockImplementationOnce(failure as never);
+    await show();
+    await fireEvent.press(await screen.findByLabelText(t('programEditor.moreLabel', { what: t('editProgram.cardio.minutesLabel') })));
+    await fireEvent.press(screen.getByLabelText('Sunday'));
+    await fireEvent.press(screen.getByText(t('editProgram.cardio.save')));
+    expect(await screen.findByText(t(key))).toBeTruthy();
+    // The page read again after the failure: the draft is still the user's.
+    expect(screen.getByText('35 min')).toBeTruthy();
+    expect(screen.getByText('Sun · easy, no weights')).toBeTruthy();
+    await fireEvent.press(screen.getByText(t('editProgram.cardio.save')));
+    expect(mockPut.mock.calls[1]).toEqual(mockPut.mock.calls[0]);
+  });
+
+  test('two taps on Save send once', async () => {
+    mockParams = { part: 'cardio' };
+    let answer: (value: unknown) => void = () => undefined;
+    mockPut.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)) as never);
+    await show();
+    const save = await screen.findByText(t('editProgram.cardio.save'));
+    await fireEvent.press(save);
+    await fireEvent.press(save);
+    expect(mockPut).toHaveBeenCalledTimes(1);
+    await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
+  });
+
+  test('no day chosen: Save is off (only "Turn cardio off" sends no day)', async () => {
+    mockParams = { part: 'cardio' };
+    await show();
+    await fireEvent.press(await screen.findByLabelText('Monday'));
+    await fireEvent.press(screen.getByLabelText('Friday'));
+    await fireEvent.press(screen.getByText(t('editProgram.cardio.save')));
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  test('cardio already off: no "Turn cardio off"', async () => {
+    mockParams = { part: 'cardio' };
+    cardio({ source: 'USER', sessionsPerWeek: 0, sessions: [] });
+    await show();
+    expect(await screen.findByText(t('editProgram.cardio.save'))).toBeTruthy();
+    expect(screen.queryByText(t('editProgram.cardio.turnOff'))).toBeNull();
+  });
+
+  test("back to the coach's default: confirmed, and the over-the-line note goes with the user's cardio", async () => {
+    mockParams = { part: 'cardio' };
+    cardio({ source: 'USER', minutes: 45, afterLiftOverLine: true });
+    mockDelete.mockImplementationOnce(async () => ({ data: PROGRAM, response: { status: 200 } }));
+    await show();
+    // The read after it never ends: what the page shows comes from the answer alone.
+    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
+    await fireEvent.press(await screen.findByText(t('editProgram.cardio.coachDefault')));
+    expect(await screen.findByText(t('editProgram.cardio.coachBack'))).toBeTruthy();
+    expect(screen.queryByText(t('decision.rule.cardio_after_lift_over_line'))).toBeNull();
+    expect(screen.getByText(t('editProgram.cardio.coach'))).toBeTruthy();
+  });
+
+  test('days on no weekday: a day goes after lifting on the training days the profile has; easy on the others', async () => {
+    mockParams = { part: 'cardio' };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: undefined, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
+    await show();
+    await fireEvent.press(await screen.findByLabelText('Thursday'));
+    await fireEvent.press(screen.getByLabelText('Sunday'));
+    expect(screen.getByText('Thu · after lifting')).toBeTruthy();
+    expect(screen.getByText('Sun · easy, no weights')).toBeTruthy();
+  });
+
+  test('days on no weekday and no profile read: no place is guessed, every day after lifting', async () => {
+    mockParams = { part: 'cardio' };
+    mockGet.mockImplementation(async () => ({ response: { status: 404 } }) as never);
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: undefined, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
+    await show();
+    await fireEvent.press(await screen.findByLabelText('Sunday'));
+    expect(screen.getByText('Sun · after lifting')).toBeTruthy();
+  });
+
+  test('day chips are full touch targets; the minutes say their value and are said when they change', async () => {
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    mockParams = { part: 'cardio' };
+    await show();
+    expect(await screen.findByLabelText('Sunday')).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(screen.getByLabelText(t('editProgram.cardio.minutesLabel'))).toHaveProp('accessibilityValue', { text: '30 min' });
+    await fireEvent.press(screen.getByLabelText(t('programEditor.moreLabel', { what: t('editProgram.cardio.minutesLabel') })));
+    expect(said).toHaveBeenCalledWith('35 min');
   });
 });
 

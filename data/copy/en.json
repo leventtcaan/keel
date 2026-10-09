@@ -407,9 +407,10 @@
       "save": "Save my cardio",
       "saved": "Saved. This is your cardio now.",
       "turnOff": "Turn cardio off",
-      "coachDefault": "Back to the coach's default"
+      "coachDefault": "Back to the coach's default",
+      "coachBack": "Back to the coach's default for your phase."
     },
-    "rebuildUnderWay":"Finish or end today's workout first: a rebuild would replace the day it is on.",
+    "rebuildUnderWay": "Finish or end today's workout first: a rebuild would replace the day it is on.",
     "rebuildRefused": "Rebuild can't make a program for {count} training days. Change your training days in Settings, then try again.",
     "rebuildConfirm": "Rebuild my program",
     "noDays": "Your training days couldn't load. Try again.",

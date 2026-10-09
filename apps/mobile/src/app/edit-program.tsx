@@ -13,6 +13,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
+import { liftDays } from '@/train/cardio';
 import { CardioEditor } from '@/train/CardioEditor';
 import { type Changed, type Undone, applySuggestion, coachCardio, putCardio, rebuild, undoChange } from '@/train/changes';
 import { dayName, exerciseName } from '@/train/program';
@@ -47,9 +48,17 @@ export default function EditProgramScreen() {
   const part = PARTS.find((p) => p === params.part) ?? null;
   const { data, reload } = useReadOnFocus(
     useCallback(async () => {
-      const [read, own, records] = await Promise.all([training.read(api), training.own(api), workoutRecords()]);
-      return { ...read, own, active: activeWorkout(records) };
-    }, [api, training, workoutRecords]),
+      // The cardio page places a day after the weights or on a rest day: on days with no weekday, the profile's training
+      // days say which are which.
+      const [read, own, records, profile] = await Promise.all([
+        training.read(api),
+        training.own(api),
+        workoutRecords(),
+        part === 'cardio' ? load(() => api.GET('/v1/profile')) : Promise.resolve(null),
+      ]);
+      const profileDays = profile?.state === 'ready' ? profile.value.schedule.trainingDays : null;
+      return { ...read, own, active: activeWorkout(records), profileDays };
+    }, [api, training, workoutRecords, part]),
   );
   // The program the server just answered, shown until the page reads again: a second tap names the review it holds
   // now (not the one read before), an undo's later changes leave the list at once (K-970 review).
@@ -207,9 +216,10 @@ export default function EditProgramScreen() {
     body = (
       <CardioEditor
         program={program}
+        lifts={liftDays(program, data?.profileDays ?? null)}
         busy={busy}
         onSave={(plan) => void send(() => putCardio(api, plan), saved, words(SAID))}
-        onCoach={() => void send(() => coachCardio(api), () => undefined, words(SAID))}
+        onCoach={() => void send(() => coachCardio(api), () => setDone(t('editProgram.cardio.coachBack')), words(SAID))}
       />
     );
   } else if (program !== null && part === 'split') {

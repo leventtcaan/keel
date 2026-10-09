@@ -5,7 +5,7 @@
  * before the weights, G2 K-35); a day kept keeps its place. No dose is worked out here: the coach's is the server's.
  */
 import type { components } from '@/api/schema';
-import { canStepMinutes, cardioDraft, steppedMinutes, toggledDay } from '@/train/cardio';
+import { canStepMinutes, cardioDraft, liftDays, steppedMinutes, toggledDay } from '@/train/cardio';
 import { workoutParams as P } from '@/train/params';
 
 type Schemas = components['schemas'];
@@ -41,7 +41,7 @@ test('with no cardio, starts from the start minutes and no day', () => {
 
 test('a day added: after the weights on a training day, easy on a day without; Monday first', () => {
   const draft = { minutes: 30, sessions: [] };
-  const added = toggledDay(toggledDay(draft, 'WEDNESDAY', PROGRAM), 'MONDAY', PROGRAM);
+  const added = toggledDay(toggledDay(draft, 'WEDNESDAY', liftDays(PROGRAM, null)), 'MONDAY', liftDays(PROGRAM, null));
   expect(added.sessions).toEqual([
     { weekday: 'MONDAY', place: 'AFTER_LIFT' },
     { weekday: 'WEDNESDAY', place: 'OFF_DAY_LOW_INTENSITY' },
@@ -49,7 +49,7 @@ test('a day added: after the weights on a training day, easy on a day without; M
 });
 
 test('a day on goes off; the others keep their place', () => {
-  expect(toggledDay(cardioDraft(PROGRAM), 'THURSDAY', PROGRAM).sessions).toEqual([
+  expect(toggledDay(cardioDraft(PROGRAM), 'THURSDAY', liftDays(PROGRAM, null)).sessions).toEqual([
     { weekday: 'MONDAY', place: 'AFTER_LIFT' },
     { weekday: 'SATURDAY', place: 'OFF_DAY_LOW_INTENSITY' },
   ]);
@@ -64,4 +64,21 @@ test('minutes step by the step, never under one step nor over what the contract 
   expect(canStepMinutes({ minutes: P.cardioMinutesStep, sessions: [] }, -1)).toBe(false);
   expect(canStepMinutes({ minutes: P.cardioMinutesMax, sessions: [] }, 1)).toBe(false);
   expect(canStepMinutes(draft, 1)).toBe(true);
+});
+
+describe('the days the program lifts on, for where a day goes', () => {
+  test("the program's weekdays, when every day has one", () => {
+    expect(liftDays(PROGRAM, ['TUESDAY'])).toEqual(['MONDAY', 'THURSDAY']);
+  });
+
+  test("a day on no weekday: the profile's training days", () => {
+    const loose = { ...PROGRAM, days: [{ id: 'a', exercises: [] }, PROGRAM.days[1]] };
+    expect(liftDays(loose, ['TUESDAY', 'FRIDAY'])).toEqual(['TUESDAY', 'FRIDAY']);
+  });
+
+  test('a day on no weekday and no profile: not known, and no day is guessed to be a rest day', () => {
+    const loose = { ...PROGRAM, days: [{ id: 'a', exercises: [] }] };
+    expect(liftDays(loose, null)).toBeNull();
+    expect(toggledDay({ minutes: 30, sessions: [] }, 'SUNDAY', null).sessions).toEqual([{ weekday: 'SUNDAY', place: 'AFTER_LIFT' }]);
+  });
 });

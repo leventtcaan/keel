@@ -21,11 +21,24 @@ export function cardioDraft(program: Schemas['Program']): CardioDraft {
   return cardio === undefined ? { minutes: P.cardioMinutesStart, sessions: [] } : { minutes: cardio.minutes, sessions: cardio.sessions };
 }
 
-/** A weekday on (in its place) or off; the week in order, Monday first. */
-export function toggledDay(draft: CardioDraft, weekday: Weekday, program: Schemas['Program']): CardioDraft {
+/**
+ * The weekdays the program lifts on: its days' weekdays when every day has one; else the profile's training days (the
+ * days the user said they train); else not known (null).
+ */
+export function liftDays(program: Schemas['Program'], profileDays: readonly Weekday[] | null): Weekday[] | null {
+  const own = program.days.flatMap((d) => (d.weekday === undefined ? [] : [d.weekday]));
+  if (own.length === program.days.length && own.length > 0) return own;
+  return profileDays === null ? null : [...profileDays];
+}
+
+/**
+ * A weekday on (in its place) or off; the week in order, Monday first. With the lifting days not known, no day is
+ * guessed to be a rest day: a day added is after the weights.
+ */
+export function toggledDay(draft: CardioDraft, weekday: Weekday, lifts: readonly Weekday[] | null): CardioDraft {
   if (draft.sessions.some((s) => s.weekday === weekday)) return { ...draft, sessions: draft.sessions.filter((s) => s.weekday !== weekday) };
-  const lifts = program.days.some((d) => d.weekday === weekday);
-  const added: Schemas['PlannedCardio'] = { weekday, place: lifts ? 'AFTER_LIFT' : 'OFF_DAY_LOW_INTENSITY' };
+  const lifting = lifts === null || lifts.includes(weekday);
+  const added: Schemas['PlannedCardio'] = { weekday, place: lifting ? 'AFTER_LIFT' : 'OFF_DAY_LOW_INTENSITY' };
   const sessions = [...draft.sessions, added].sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday));
   return { ...draft, sessions };
 }

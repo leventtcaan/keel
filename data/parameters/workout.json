@@ -347,8 +347,8 @@
       "value": 30,
       "unit": "min",
       "tag": "tecrube",
-      "source": "arastirma/ham/guray/G2-kilo-verme.md#K-31",
-      "note": "Where the user's own cardio starts when the program has none (Edit › Cardio, ADR-074 #4); the user sets their own. The engine's dose stays the server's."
+      "source": "arastirma/ham/guray/G2-kilo-verme.md#K-35",
+      "note": "Where the user's own cardio starts when the program has none (Edit › Cardio, ADR-074 #4); the user sets their own. KRD24 (solo, G2 K-32/K-35): after the weights, 3-5 days, at most 20-30 min; ADR-074's example dose is 30 min. The engine's dose stays the server's."
     },
     {
       "key": "cardio_minutes_step",
