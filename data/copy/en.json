@@ -498,8 +498,9 @@
     "moveSkipped": "Move skipped. No catch-up needed.",
     "undo": "Undo",
     "undoLabel": "Undo",
-    "editSet": "Edit set {number}: {set}",
     "setDeleted": "Set deleted.",
+    "editHint": "Opens it to correct or delete.",
+    "undoFailed": "That couldn't be undone. Try again.",
     "edit": {
       "title": "Set {number}",
       "delete": "Delete set",

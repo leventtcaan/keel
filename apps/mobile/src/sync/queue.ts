@@ -52,7 +52,7 @@ export type Send = (record: Outbound, parentServerId: string | null) => Promise<
 /** What went wrong, by name only: never the message, never the record (V3). */
 export type SyncProblem = { name: string };
 
-type Store = Pick<RecordStore, 'insert' | 'nextPending' | 'find' | 'markSynced' | 'markRejected' | 'rejected'>;
+type Store = Pick<RecordStore, 'insert' | 'nextPending' | 'find' | 'markSynced' | 'markRejected' | 'rejected' | 'markAttempted'>;
 
 /** Worth trying again later: the session, the network or the server, not the record. */
 function passing(status: number): boolean {
@@ -78,6 +78,7 @@ type Options = { store: Store; send: Send; report: (problem: SyncProblem) => voi
 export function createSyncQueue({ store, send, report }: Options) {
   let running: Promise<void> | null = null;
   let again = false;
+  let holding = 0;
 
   /** Sends until the queue is empty or a passing failure stops it. */
   async function sendAll(): Promise<void> {
@@ -98,6 +99,8 @@ export function createSyncQueue({ store, send, report }: Options) {
 
       let result: SendResult;
       try {
+        // Tried from here on: the server may have it whatever comes back, so its body no longer changes in place.
+        await store.markAttempted(next.clientId);
         result = await send(toOutbound(next), parentServerId);
       } catch (error) {
         if (error instanceof NoAnswer) return; // offline, or the reply was lost: the same clientId goes again next time
@@ -125,6 +128,11 @@ export function createSyncQueue({ store, send, report }: Options) {
    * drain is stopping still gets its attempt.
    */
   function drain(): Promise<void> {
+    // Held (exclusive): no send starts; the drain runs once the holder is done.
+    if (holding > 0) {
+      again = true;
+      return Promise.resolve();
+    }
     if (running !== null) {
       again = true;
       return running;
@@ -149,7 +157,25 @@ export function createSyncQueue({ store, send, report }: Options) {
     drain().catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
   }
 
+  /**
+   * Runs `work` with the queue held (K-972): it waits for a drain under way to end, and no send starts until `work` is
+   * done — so a record's state and body cannot change under it. `sendPending` sends what waits now (offline, it stops
+   * as a drain does). A drain asked for meanwhile runs after.
+   */
+  async function exclusive<T>(work: (sendPending: () => Promise<void>) => Promise<T>): Promise<T> {
+    while (running !== null) await running.catch(() => undefined);
+    // Set in the same step as the last check: no drain can start in between.
+    holding += 1;
+    try {
+      return await work(sendAll);
+    } finally {
+      holding -= 1;
+      if (holding === 0 && again) drainInBackground();
+    }
+  }
+
   return {
+    exclusive,
     /**
      * Saves the record on the phone, then starts a drain without waiting for the network. False: this clientId was
      * already saved, and the first copy stays.

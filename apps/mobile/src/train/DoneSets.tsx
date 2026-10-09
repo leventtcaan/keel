@@ -46,16 +46,15 @@ export function DoneSets({ plan, move, onEdit }: Props) {
         const left = rir === null ? null : rir === workoutParams.rirChoices[top] ? t('workout.rir.more') : String(rir);
         const done = row.done;
         return (
+          // One element for VoiceOver: what the set is, all of it, and that a tap corrects it.
           <Pressable
             key={`${row.side}-${index}`}
             accessibilityRole="button"
-            accessibilityLabel={t('workout.editSet', { number: label, set })}
+            accessibilityLabel={left === null ? t('workout.setDone', { number: label }) : t('workout.doneSet', { number: label, set, left })}
+            accessibilityHint={t('workout.editHint')}
             onPress={() => onEdit(done, label)}
             style={({ pressed }) => [pressed && styles.dim]}>
-          <View
-            accessible
-            accessibilityLabel={left === null ? t('workout.setDone', { number: label }) : t('workout.doneSet', { number: label, set, left })}
-            style={[styles.row, { backgroundColor: color.surface }]}>
+          <View style={[styles.row, { backgroundColor: color.surface }]}>
             <View style={[styles.mark, { backgroundColor: color.accent }]}>
               <Text style={[styles.markText, { color: color.onAccent }]}>{t('workout.doneMark')}</Text>
             </View>

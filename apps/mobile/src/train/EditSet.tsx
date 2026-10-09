@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, StyleSheet, Text, View, findNodeHandle } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
@@ -40,6 +40,12 @@ export function EditSet({ move, set, number, gym, onSave, onDelete, onClose, pro
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
   const [load, setLoad] = useState({ text: loadText(set.loadKg, units), kg: set.loadKg as number | null });
   const [reps, setReps] = useState(String(set.reps));
+  // Opened, VoiceOver goes to it: a set to correct is what the user just asked for.
+  const title = useRef<Text>(null);
+  useEffect(() => {
+    const node = findNodeHandle(title.current);
+    if (node !== null) AccessibilityInfo.setAccessibilityFocus(node);
+  }, []);
   const kg = parseLoad(load.text, units, load.kg);
   const loadStep = (direction: 1 | -1) => {
     const next = stepLoad(kg, direction, move, gym, units);
@@ -72,7 +78,9 @@ export function EditSet({ move, set, number, gym, onSave, onDelete, onClose, pro
   };
   return (
     <View testID="edit-set" style={[styles.edit, { borderColor: color.text }]}>
-      <Text style={[styles.heading, { color: color.text }]}>{t('workout.edit.title', { number })}</Text>
+      <Text ref={title} accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+        {t('workout.edit.title', { number })}
+      </Text>
       <View style={styles.steppers}>
         {loadStepper}
         <Stepper
@@ -94,8 +102,12 @@ export function EditSet({ move, set, number, gym, onSave, onDelete, onClose, pro
         </ProblemText>
       )}
       <View style={styles.actions}>
-        <Button label={t('workout.edit.delete')} variant="ghost" size="sm" onPress={onDelete} disabled={busy} />
-        <Button label={t('workout.edit.done')} size="sm" onPress={done} disabled={busy || parsed === null} />
+        <View style={styles.grow}>
+          <Button label={t('workout.edit.delete')} variant="ghost" onPress={onDelete} disabled={busy} />
+        </View>
+        <View style={styles.grow}>
+          <Button label={t('workout.edit.done')} onPress={done} disabled={busy || parsed === null} />
+        </View>
       </View>
     </View>
   );
@@ -105,6 +117,7 @@ const styles = StyleSheet.create({
   edit: { gap: tokens.space.sm, padding: tokens.space.sm, borderWidth: tokens.border.outline, borderRadius: tokens.radius.card },
   heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   steppers: { flexDirection: 'row', gap: tokens.space.sm },
-  actions: { flexDirection: 'row', justifyContent: 'space-between', gap: tokens.space.sm },
+  actions: { flexDirection: 'row', gap: tokens.space.sm },
+  grow: { flex: 1 },
   text: { fontSize: tokens.type.body },
 });

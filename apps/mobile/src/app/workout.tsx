@@ -12,6 +12,7 @@ import { Card } from '@/components/Card';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
+import { NoAnswer } from '@/sync/queue';
 import { newClientId } from '@/sync/send';
 import type { LocalRecord } from '@/sync/store';
 import { FocusMode, useTheme } from '@/theme/theme';
@@ -297,8 +298,9 @@ function Session() {
       setProblem({ row: rowKey, text: t('workout.saveFailed') });
     }
     if (saved) {
-      // A set logged: the last skip is no longer the thing to undo.
+      // A set logged: the last skip is no longer the thing to undo, and a set being corrected is left as it was.
       setUndo(null);
+      setEditing(null);
       // Paused while the set was being kept: no rest starts inside the pause (nor its alert).
       const resting = pauseRef.current.pausedAt === null;
       if (group === undefined) {
@@ -501,45 +503,48 @@ function Session() {
   };
   /** The last skip or delete taken back (a skip: the move it was on picked again; a rest it ended does not come back). */
   const undoLast = () => {
-    undo?.run();
+    const run = undo?.run;
     setUndo(null);
+    run?.();
   };
 
   /**
-   * A set done corrected (`next`) or deleted (null), K-972. Still on the phone, it changes in its place; once the
-   * server has it, it is deleted there first and the corrected set sent as a new one (a set has no edit in the
-   * contract, K-432's way); offline then, it says a connection is needed and nothing changes. A delete can be undone.
+   * A set done corrected (`next`) or deleted (null), K-972: never sent, in its place; else on the server first and
+   * then here, in its old place (setEdits.ts). Offline then, it says a connection is needed and nothing changes. A
+   * delete is said, and can be undone.
    */
   const changeSet = async (set: components['schemas']['NewSet'], next: { loadKg: number; reps: number } | null) => {
     if (saving.current || active === null) return;
     saving.current = true;
     setBusy(true);
     try {
-      const body = next === null ? null : { ...set, ...next };
-      const inPlace = body === null ? await workoutEdits.forgetPending(set.clientId) : await workoutEdits.replacePending(set.clientId, body);
-      if (!inPlace) {
-        const kept = await workoutRecords();
-        const setId = kept.find((r) => r.clientId === set.clientId)?.serverId;
-        const workoutId = kept.find((r) => r.kind === 'workout' && r.clientId === active.clientId)?.serverId;
-        if (setId == null || workoutId == null) throw Object.assign(new Error('not sent'), { name: 'NotSent' });
-        const { response } = await api.DELETE('/v1/workouts/{id}/sets/{setId}', { params: { path: { id: workoutId, setId } } });
-        // Already gone there is gone: the phone's copy follows.
-        if (!response.ok && response.status !== 404) throw Object.assign(new Error(String(response.status)), { name: 'DeleteRefused' });
-        await workoutEdits.forget(set.clientId);
-        if (body !== null) await queue.record({ kind: 'set', workoutClientId: active.clientId, body: { ...body, clientId: newClientId() } });
-      }
-      if (body === null) {
-        const workoutClientId = active.clientId;
-        setUndo({
-          said: t('workout.setDeleted'),
-          run: () => void queue.record({ kind: 'set', workoutClientId, body: { ...set, clientId: newClientId() } }).then(refresh).catch(named),
-        });
+      const gone = await workoutEdits.change(set.clientId, next === null ? null : { ...set, ...next });
+      if (next === null && gone !== null) {
+        announce(t('workout.setDeleted'));
+        setUndo({ said: t('workout.setDeleted'), run: () => void restoreSet(gone) });
       }
       setEditing(null);
       setProblem((said) => (said?.row === EDIT ? null : said));
     } catch (error) {
       named(error);
-      setProblem({ row: EDIT, text: t(error instanceof TypeError ? 'workout.edit.offline' : 'workout.edit.failed') });
+      const offline = error instanceof TypeError || error instanceof NoAnswer;
+      setProblem({ row: EDIT, text: t(offline ? 'workout.edit.offline' : 'workout.edit.failed') });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
+  };
+  /** A set deleted, back in its place; a failure is said, and its Undo stays to try again. */
+  const restoreSet = async (gone: LocalRecord) => {
+    if (saving.current) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      await workoutEdits.restore(gone);
+    } catch (error) {
+      named(error);
+      announce(t('workout.undoFailed'));
+      setUndo({ said: t('workout.undoFailed'), run: () => void restoreSet(gone) });
     }
     await refresh();
     saving.current = false;
@@ -562,7 +567,10 @@ function Session() {
         return { id: e.exerciseId, name: name(e.exerciseId), status: status === null ? '' : exerciseStatus(status), done: status?.current === null };
       })}
       selected={selected}
-      onPick={setPicked}
+      onPick={(id) => {
+        setPicked(id);
+        setEditing(null);
+      }}
     />
   );
 
@@ -685,7 +693,8 @@ function Session() {
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
         <DoneSets plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })} />
         {plan.skippedMove === true ? skippedMove : null}
-        {editing === null ? null : (
+        {/* Only on its own move, with its own move's load (a dot tapped meanwhile closes it). */}
+        {editing === null || editing.set.exerciseId !== move.id ? null : (
           <EditSet
             key={editing.set.clientId}
             move={move}
