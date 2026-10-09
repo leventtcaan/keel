@@ -7,7 +7,8 @@ import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
 import { t } from '@/copy';
 import { exerciseStatus } from '@/train/session';
-import { activeWorkout, extraPlan, finishRecord, lastTime, planExercise, sessionMoves } from '@/train/workout';
+import { workoutParams } from '@/train/params';
+import { activeWorkout, extraPlan, finishRecord, lastTime, openTooLong, planExercise, sessionMoves } from '@/train/workout';
 
 type Schemas = components['schemas'];
 
@@ -85,6 +86,33 @@ describe('the workout under way', () => {
   test('a refused set is not counted as done', () => {
     const records = [workout('w1'), set('w1', 's1', 'bench_press', 60, 8, {}, 'REJECTED')];
     expect(activeWorkout(records)?.sets).toEqual([]);
+  });
+});
+
+describe('a workout left open past the time the server keeps one open (unfinished_session_close_hours, K-961)', () => {
+  const HOUR = 60 * 60 * 1000;
+  const NOW = Date.parse('2026-10-10T12:00:00Z');
+  const startedAgo = (hours: number) => ({ ...workout('w1', 'day-a'), body: { clientId: 'w1', startedAt: new Date(NOW - hours * HOUR).toISOString(), programDayId: 'day-a' } });
+  const closeHours = workoutParams.unfinishedSessionCloseHours;
+
+  test('openTooLong: past the parameter it is, within it it is not (the edge is still open)', () => {
+    expect(openTooLong(new Date(NOW - (closeHours * HOUR + 1)).toISOString(), NOW)).toBe(true);
+    expect(openTooLong(new Date(NOW - closeHours * HOUR).toISOString(), NOW)).toBe(false);
+    expect(openTooLong(new Date(NOW - HOUR).toISOString(), NOW)).toBe(false);
+  });
+
+  test('given the moment, a workout left open past it is retired: the server closed it, so it is under way no more', () => {
+    expect(activeWorkout([startedAgo(closeHours + 1)], NOW)).toBeNull();
+    expect(activeWorkout([startedAgo(closeHours - 1)], NOW)?.clientId).toBe('w1');
+  });
+
+  test('a retired one hides nothing older: only the newest is ever under way', () => {
+    const old = { ...startedAgo(2), clientId: 'old', body: { clientId: 'old', startedAt: new Date(NOW - 2 * HOUR).toISOString() } };
+    expect(activeWorkout([old, startedAgo(closeHours + 5)], NOW)).toBeNull();
+  });
+
+  test('without the moment the age is not asked (the session screen opened on its own workout)', () => {
+    expect(activeWorkout([startedAgo(closeHours + 100)])?.clientId).toBe('w1');
   });
 });
 

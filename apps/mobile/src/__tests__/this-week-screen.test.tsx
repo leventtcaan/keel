@@ -603,6 +603,15 @@ describe("today's workout (#home)", () => {
     await press(t('thisWeek.today.continue'));
     expect(mockPush).toHaveBeenCalledWith('/workout');
   });
+
+  test("a workout left open past the server's close (days ago) is not continued: the server closed it", async () => {
+    mockServices.workoutRecords.mockResolvedValueOnce([
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-22T08:00:00Z', programDayId: 'c' }),
+      record(2, 'set', 's1', 'wo', { exerciseId: 'squat', setType: 'WORKING', loadKg: 80, reps: 8 }),
+    ]);
+    await show();
+    expect(screen.queryByRole('button', { name: t('thisWeek.today.continue') })).toBeNull();
+  });
 });
 
 describe('the food line', () => {

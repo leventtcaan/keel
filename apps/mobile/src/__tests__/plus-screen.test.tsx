@@ -7,6 +7,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { components } from '@/api/schema';
 import PlusScreen from '@/app/plus';
 import { t } from '@/copy';
+import { workoutParams } from '@/train/params';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import type { TrainData } from '@/train/trainData';
@@ -98,11 +99,26 @@ test('a workout under way is continued, not started again, and the tile names th
     kept: false,
   };
   mockRecords = [
-    { kind: 'workout', clientId: 'w1', seq: 1, state: 'sent', body: { startedAt: '2026-09-28T08:00:00Z', programDayId: 'b' } } as unknown as LocalRecord,
+    { kind: 'workout', clientId: 'w1', seq: 1, state: 'sent', body: { startedAt: new Date(Date.now() - 20 * 3_600_000).toISOString(), programDayId: 'b' } } as unknown as LocalRecord,
   ];
   await show();
   await fireEvent.press(await screen.findByRole('button', { name: `${t('plus.workout')}, ${t('programDays.lower_a.name')}` }));
   expect(mockReplace).toHaveBeenCalledWith('/workout');
+});
+
+test("a workout left open past the server's close is not continued: the tile starts today's session", async () => {
+  mockRecords = [
+    {
+      kind: 'workout',
+      clientId: 'w1',
+      seq: 1,
+      state: 'sent',
+      body: { startedAt: new Date(Date.now() - (workoutParams.unfinishedSessionCloseHours + 2) * 3_600_000).toISOString(), programDayId: 'b' },
+    } as unknown as LocalRecord,
+  ];
+  await show();
+  await fireEvent.press(await screen.findByRole('button', { name: `${t('plus.workout')}, ${t('programDays.upper_a.name')}` }));
+  expect(mockReplace).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'a' } });
 });
 
 test('before the program is read, the workout tile waits instead of guessing', async () => {

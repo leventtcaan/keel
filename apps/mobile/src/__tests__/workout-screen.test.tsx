@@ -10,12 +10,15 @@ import { AccessibilityInfo, AppState } from 'react-native';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import WorkoutScreen from '@/app/workout';
-import type { Outbound } from '@/sync/queue';
-import type { LocalRecord } from '@/sync/store';
+import { NoAnswer, type Outbound, createSyncQueue, recordClientId } from '@/sync/queue';
+import { type LocalRecord, openRecordStore } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import { focusPalette, tokens } from '@/theme/tokens';
 import { workoutParams } from '@/train/params';
+import { createSetEdits } from '@/train/setEdits';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
+
+import { nodeSqlite } from './support/nodeSqlite';
 
 type Schemas = components['schemas'];
 
@@ -96,7 +99,9 @@ let mockOwn: Move[] = [];
 const keep = async (outbound: Outbound) => {
   const clientId = outbound.kind === 'finish' ? outbound.clientId : outbound.body.clientId;
   const parent = outbound.kind === 'set' || outbound.kind === 'finish' ? outbound.workoutClientId : null;
-  mockRecords = [...mockRecords, { ...record(outbound.kind, clientId, outbound.body, parent), state: 'PENDING' }];
+  // As the queue does: a clientId already saved is not saved twice (false), the first copy stays.
+  if (mockRecords.some((r) => r.clientId === clientId)) return false;
+  mockRecords =[...mockRecords, { ...record(outbound.kind, clientId, outbound.body, parent), state: 'PENDING' }];
   return true;
 };
 const mockRecord = jest.fn(keep);
@@ -2079,7 +2084,11 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
       expect(mockRecord.mock.calls.map(([o]) => o.kind)).not.toContain('finish');
       expect(mockServices.workoutEdits.discard).not.toHaveBeenCalled();
       expect(mockBack).toHaveBeenCalled();
-      expect(said).toHaveBeenLastCalledWith(t('workout.ending.laterSaid'));
+      const laterSaid = t('workout.ending.laterSaid', { hours: workoutParams.unfinishedSessionCloseHours });
+      expect(said).toHaveBeenLastCalledWith(laterSaid);
+      // The server closes it after unfinished_session_close_hours, not at the end of the week.
+      expect(laterSaid).toContain(String(workoutParams.unfinishedSessionCloseHours));
+      expect(laterSaid).not.toMatch(/this week/i);
     } finally {
       said.mockRestore();
     }
@@ -2150,5 +2159,286 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
     const active = workout.end.getTime() - workout.start.getTime();
     expect(active).toBeGreaterThanOrEqual(20 * 60_000);
     expect(active).toBeLessThan(21 * 60_000);
+  });
+
+  test('a pause longer than the session itself (a clock set back, a stale copy): never more than its length, and no zero-length workout to Health', async () => {
+    const startedAt = started(20);
+    mockPause = { workout: 'w2', pause: { pausedAt: null, pausedMs: 60 * 60_000 } };
+    await show();
+    await endAndFinish();
+    await fireEvent.press(await screen.findByText('Finish'));
+    const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
+    const length = Date.now() - startedAt;
+    const sent = finish?.kind === 'finish' ? (finish.body.pausedSeconds ?? -1) : -1;
+    expect(sent).toBeGreaterThan(20 * 60 - 10);
+    expect(sent).toBeLessThanOrEqual(Math.ceil(length / 1000));
+    expect(mockServices.healthWriting.workoutFinished).not.toHaveBeenCalled();
+  });
+
+  describe('Fill in the rest later pauses the clock (K-972 review): the time away is not training time', () => {
+    const HOURS = 60 * 60_000;
+    test('left, it begins a pause kept with its workout', async () => {
+      started(20);
+      await show();
+      await end();
+      await choose('workout.ending.later');
+      expect(mockPause?.workout).toBe('w2');
+      expect(typeof mockPause?.pause.pausedAt).toBe('number');
+      expect(Math.abs((mockPause?.pause.pausedAt ?? 0) - Date.now())).toBeLessThan(5_000);
+    });
+
+    test('opened again hours later it is paused, and Finish counts only the time before it was left', async () => {
+      jest.useFakeTimers({ advanceTimers: true });
+      try {
+        const startedAt = started(20);
+        await show();
+        await end();
+        await choose('workout.ending.later');
+        const left = mockPause?.pause.pausedAt ?? 0;
+        await screen.unmount();
+        jest.setSystemTime(left + 3.5 * HOURS);
+        await show();
+        // Paused as it was left: Resume is offered.
+        expect(await screen.findByRole('button', { name: t('workout.resumeLabel') })).toBeOnTheScreen();
+        await endAndFinish();
+        await fireEvent.press(await screen.findByText('Finish'));
+        const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
+        const sent = finish?.kind === 'finish' ? (finish.body.pausedSeconds ?? 0) : 0;
+        expect(sent).toBeGreaterThanOrEqual(3.5 * 3600);
+        expect(sent).toBeLessThan(3.5 * 3600 + 10);
+        // Health gets the 20 minutes, not the 3 hours 50.
+        const [workout] = mockServices.healthWriting.workoutFinished.mock.calls[0] as unknown as [{ start: Date; end: Date }];
+        expect(workout.start.getTime()).toBe(startedAt);
+        expect(workout.end.getTime() - workout.start.getTime()).toBeLessThan(21 * 60_000);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    test('opened again, a set logged goes on from that tap', async () => {
+      jest.useFakeTimers({ advanceTimers: true });
+      try {
+        started(20);
+        await show();
+        await end();
+        await choose('workout.ending.later');
+        const left = mockPause?.pause.pausedAt ?? 0;
+        await screen.unmount();
+        jest.setSystemTime(left + 3 * HOURS);
+        await show();
+        await fireEvent.press(await screen.findByText(t('workout.log', { number: 2 })));
+        expect(mockPause?.pause.pausedAt).toBeNull();
+        expect(mockPause?.pause.pausedMs).toBeGreaterThanOrEqual(3 * HOURS);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
+  describe('a workout left open past the time the server keeps one (K-961): the server closed it', () => {
+    const stale = () => {
+      const startedAt = new Date(Date.now() - (workoutParams.unfinishedSessionCloseHours * 60 + 5) * 60_000).toISOString();
+      mockRecords = [
+        ...lastWeek(),
+        record('workout', 'w2', { clientId: 'w2', startedAt, programDayId: 'day-a' }),
+        record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 8, rir: 1, side: 'BOTH' }, 'w2'),
+      ];
+    };
+
+    test('opened on a day, it does not hold the screen: a new workout starts for that day', async () => {
+      stale();
+      mockParams = { day: 'day-a' };
+      await show();
+      await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+      const began = mockRecord.mock.calls.map(([o]) => o).filter((o) => o.kind === 'workout');
+      expect(began).toHaveLength(1);
+      expect(sets()[0].workoutClientId).toBe(began[0].kind === 'workout' ? began[0].body.clientId : '');
+      expect(sets()[0].workoutClientId).not.toBe('w2');
+    });
+
+    test('opened to continue it (no day), End offers Finish and Discard only: nothing is left to fill in later', async () => {
+      stale();
+      await show();
+      await end();
+      expect(screen.getByRole('button', { name: new RegExp(`^${t('workout.ending.finish')}`) })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: new RegExp(`^${t('workout.ending.discard')}`) })).toBeOnTheScreen();
+      expect(screen.queryByRole('button', { name: new RegExp(`^${t('workout.ending.later')}`) })).toBeNull();
+    });
+  });
+
+  describe('Discard, its question and what it leaves (K-972 review)', () => {
+    const discardNow = async () => {
+      await end();
+      await choose('workout.ending.discard');
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+    };
+
+    test('it asks the question in words, then the two answers', async () => {
+      started(20);
+      await show();
+      await end();
+      await choose('workout.ending.discard');
+      expect(screen.getByText(t('workout.ending.discardAsk'))).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: t('workout.ending.confirm') })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: t('workout.ending.keep') })).toBeOnTheScreen();
+    });
+
+    test('Discard, Keep it and Close are full touch targets (44 pt), not the small button', async () => {
+      started(20);
+      await show();
+      await end();
+      await choose('workout.ending.discard');
+      // The medium button: a vertical padding that, with its text, is past 44 pt; the small one is about 34.
+      for (const name of [t('workout.ending.confirm'), t('workout.ending.keep')]) {
+        expect(screen.getByRole('button', { name })).toHaveStyle({ paddingVertical: tokens.space.md });
+      }
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+      await screen.findByText(t('workout.ending.discarded'));
+      expect(screen.getByRole('button', { name: t('workout.ending.close') })).toHaveStyle({ paddingVertical: tokens.space.md });
+    });
+
+    test("discarded, it is said for VoiceOver, and the clock's Pause is not live on the Undo screen", async () => {
+      const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+      try {
+        started(20);
+        await show();
+        await discardNow();
+        await screen.findByText(t('workout.ending.discarded'));
+        expect(said).toHaveBeenLastCalledWith(t('workout.ending.discarded'));
+        expect(screen.queryByRole('button', { name: t('workout.pauseLabel') })).toBeNull();
+        expect(screen.queryByRole('button', { name: t('workout.resumeLabel') })).toBeNull();
+      } finally {
+        said.mockRestore();
+      }
+    });
+
+    test('offline with a workout that may be on the server: it says may, not sent', async () => {
+      started(20);
+      mockEditFails = new TypeError('Network request failed');
+      await show();
+      await discardNow();
+      expect(await screen.findByText(t('workout.ending.offline'))).toBeOnTheScreen();
+      expect(t('workout.ending.offline')).toMatch(/may already be/);
+      expect(t('workout.ending.offline')).not.toMatch(/already sent/);
+    });
+
+    test('Undo that fails half way says so, and trying again brings back one workout, not two', async () => {
+      started(20);
+      mockRecords = [
+        ...mockRecords,
+        record('set', 'b2', { clientId: 'b2', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 7, rir: 1, side: 'BOTH' }, 'w2'),
+      ];
+      await show();
+      await discardNow();
+      await screen.findByText(t('workout.ending.discarded'));
+      // The second set cannot be kept, once.
+      let calls = 0;
+      mockRecord.mockImplementation(async (outbound: Outbound) => {
+        calls += 1;
+        if (calls === 3) throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+        return keep(outbound);
+      });
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+      expect(await screen.findByText(t('workout.undoFailed'))).toBeOnTheScreen();
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+      await screen.findByText(t('workout.log', { number: 3 }));
+      const workouts = mockRecords.filter((r) => r.kind === 'workout' && r.clientId !== 'w0' && r.clientId !== 'w1');
+      expect(workouts).toHaveLength(1);
+      const mine = mockRecords.filter((r) => r.kind === 'set' && r.parentClientId === workouts[0].clientId);
+      expect(mine.map((r) => (r.body as { reps: number }).reps)).toEqual([8, 7]);
+    });
+  });
+});
+
+describe('a workout discarded and brought back, on the real record store and queue (K-972 review)', () => {
+  const original = { workoutEdits: mockServices.workoutEdits };
+  afterEach(() => {
+    Object.assign(mockServices, original);
+  });
+
+  async function real({ reachable = true }: { reachable?: boolean } = {}) {
+    const store = await openRecordStore(nodeSqlite());
+    const deleted: string[] = [];
+    const queue = createSyncQueue({
+      store,
+      send: async (outbound) => {
+        if (!reachable) throw new NoAnswer('offline');
+        const id = `srv-${recordClientId(outbound)}`;
+        return { status: 201, id, body: { id } };
+      },
+      report: () => undefined,
+    });
+    let n = 0;
+    const edits = createSetEdits({
+      store,
+      queue,
+      deleteOnServer: async () => undefined,
+      deleteWorkoutOnServer: async (id) => {
+        deleted.push(id);
+      },
+      newClientId: () => `edit-${++n}`,
+    });
+    mockRecord.mockImplementation((outbound: Outbound) => queue.record(outbound));
+    mockWorkoutRecords.mockImplementation(() => store.all());
+    Object.assign(mockServices, { workoutEdits: edits });
+    // A workout 20 minutes in, two sets done, as the screen would have kept them.
+    await queue.record({ kind: 'workout', body: { clientId: 'w2', startedAt: new Date(Date.now() - 20 * 60_000).toISOString(), programDayId: 'day-a' } });
+    for (const [id, reps] of [['b1', 8], ['b2', 7]] as const) {
+      await queue.record({ kind: 'set', workoutClientId: 'w2', body: { clientId: id, exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps, rir: 1, side: 'BOTH' } });
+    }
+    await queue.drain();
+    return { store, deleted, queue };
+  }
+  const discardIt = async () => {
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t('workout.ending.discard')}`) }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+  };
+  const workoutsOf = async (store: Awaited<ReturnType<typeof openRecordStore>>) => (await store.all()).filter((r) => r.kind === 'workout');
+  const repsOf = async (store: Awaited<ReturnType<typeof openRecordStore>>) =>
+    (await store.all()).filter((r) => r.kind === 'set').map((r) => (r.body as { reps: number }).reps);
+
+  test('discarded, it is deleted on the server and gone here; Undo brings back one workout with both sets', async () => {
+    const { store, deleted } = await real();
+    await show();
+    await discardIt();
+    await screen.findByText(t('workout.ending.discarded'));
+    expect(deleted).toEqual(['srv-w2']);
+    expect(await store.all()).toEqual([]);
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    await screen.findByText(t('workout.log', { number: 3 }));
+    expect((await workoutsOf(store)).map((r) => r.clientId)).not.toContain('w2');
+    expect(await workoutsOf(store)).toHaveLength(1);
+    expect(await repsOf(store)).toEqual([8, 7]);
+  });
+
+  test('Undo that fails on the second set, tried again: one workout and two sets, never a second workout', async () => {
+    const { store, queue } = await real();
+    await show();
+    await discardIt();
+    await screen.findByText(t('workout.ending.discarded'));
+    let calls = 0;
+    mockRecord.mockImplementation(async (outbound: Outbound) => {
+      calls += 1;
+      if (calls === 3) throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
+      return queue.record(outbound);
+    });
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    expect(await screen.findByText(t('workout.undoFailed'))).toBeOnTheScreen();
+    expect(await workoutsOf(store)).toHaveLength(1); // the workout and its first set are kept
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    await screen.findByText(t('workout.log', { number: 3 }));
+    expect(await workoutsOf(store)).toHaveLength(1);
+    expect(await repsOf(store)).toEqual([8, 7]);
+  });
+
+  test('recorded while the server could not be reached: Discard says it may be there, and nothing is lost', async () => {
+    const { store, deleted } = await real({ reachable: false });
+    await show();
+    await discardIt();
+    expect(await screen.findByText(t('workout.ending.offline'))).toBeOnTheScreen();
+    expect(deleted).toEqual([]);
+    expect((await workoutsOf(store)).map((r) => r.clientId)).toEqual(['w2']);
+    expect(await repsOf(store)).toEqual([8, 7]);
   });
 });

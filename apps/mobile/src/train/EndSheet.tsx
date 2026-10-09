@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ProblemText } from '@/components/ProblemText';
+import { ProblemText, announce } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -9,7 +9,8 @@ import { tokens } from '@/theme/tokens';
 
 type Props = {
   onFinish: () => void;
-  onLater: () => void;
+  /** Null for a workout the server closed already: there is nothing left to fill in later. */
+  onLater: (() => void) | null;
   onDiscard: () => void;
   onBack: () => void;
   problem: string | null;
@@ -36,22 +37,29 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, problem, proble
       <Text style={[styles.note, { color: color.textSecondary }]}>{note}</Text>
     </Pressable>
   );
+  const ask = () => {
+    setConfirming(true);
+    // The button under the finger is replaced by the question: said, not only shown (K-815).
+    announce(t('workout.ending.discardAsk'));
+  };
+  // The answers are full touch targets (44 pt, ADR-070 #6): the medium button, not the small.
   const discard = confirming ? (
     <View style={[styles.choice, { backgroundColor: color.surface }]}>
-      <Text style={[styles.note, { color: color.text }]}>{t('workout.ending.discardNote')}</Text>
+      <Text style={[styles.title, { color: color.text }]}>{t('workout.ending.discardAsk')}</Text>
+      <Text style={[styles.note, { color: color.textSecondary }]}>{t('workout.ending.discardNote')}</Text>
       <View style={styles.row}>
-        <Button label={t('workout.ending.confirm')} variant="warn" size="sm" onPress={onDiscard} disabled={busy} />
-        <Button label={t('workout.ending.keep')} variant="ghost" size="sm" onPress={() => setConfirming(false)} disabled={busy} />
+        <Button label={t('workout.ending.confirm')} variant="warn" onPress={onDiscard} disabled={busy} />
+        <Button label={t('workout.ending.keep')} variant="ghost" onPress={() => setConfirming(false)} disabled={busy} />
       </View>
     </View>
   ) : (
-    choice(t('workout.ending.discard'), t('workout.ending.discardNote'), () => setConfirming(true))
+    choice(t('workout.ending.discard'), t('workout.ending.discardNote'), ask)
   );
   return (
     <View testID="end-sheet" style={styles.sheet}>
       <Text style={[styles.heading, { color: color.text }]}>{t('workout.ending.title')}</Text>
       {choice(t('workout.ending.finish'), t('workout.ending.finishNote'), onFinish)}
-      {choice(t('workout.ending.later'), t('workout.ending.laterNote'), onLater)}
+      {onLater === null ? null : choice(t('workout.ending.later'), t('workout.ending.laterNote'), onLater)}
       {discard}
       {problem === null ? null : (
         <ProblemText style={[styles.note, { color: color.text }]} occurrence={problemOccurrence}>
@@ -69,6 +77,6 @@ const styles = StyleSheet.create({
   choice: { gap: tokens.space.xs, padding: tokens.space.md, borderRadius: tokens.radius.card, minHeight: tokens.size.touch },
   title: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   note: { fontSize: tokens.type.bodySmall },
-  row: { flexDirection: 'row', gap: tokens.space.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   dim: { opacity: tokens.opacity.dim },
 });

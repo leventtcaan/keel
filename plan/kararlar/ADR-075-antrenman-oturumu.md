@@ -131,3 +131,19 @@ gerektirir; K-976'nın `react-native-share`'i (ADR-076) de Part 4'te yeni yerel 
 bir port olarak yazar (`haptics.record()`, şimdilik boş uygulama, testte çağrıldığı doğrulanır), gerçek uygulama Part 4'te `npx expo install
 expo-haptics` ile bağlanır. **Neden:** tek yerel derleme, simülatördeki geliştirme derlemesi bozulmaz. Bağımlılık gerekçesi (K5): Expo'nun
 birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
+
+## Ek 6 · "Fill in the rest later" duraklatır; sunucunun kapattığı seans telefonda emekli olur (K-972 inceleme, #527, 2026-10-10, düzenleyici kararı, teknik)
+- **Sonra doldur duraklama başlatır:** ekrandan çıkarken seansın duraklaması başlar (kalıcı, seansla birlikte); sonraki set kaldığı yerden sürdürür
+  (`goOn`), set girmeden Finish gelirse süren duraklama bitişe kadar sayılır (`pausedSeconds`, Ek 4). **Neden:** uzakta geçen saatler antrenman
+  süresi değil; yoksa 3,5 saat sonra gelen Finish özet ve Health süresini şişirirdi. **Reddedilen:** bitirirken `endedAt`'i tahmin etmek (setlerin
+  saati yok; sunucunun kendi kapanışı da bitişi başlangıca eşitler, `SessionAutoClose`).
+- **Bayat seans emekli olur:** `unfinished_session_close_hours`'tan (parametre, 24) uzun açık kalmış seansı sunucu kapatmıştır; telefon onu
+  Train/This week/+/program yeniden kurma için "süren seans" saymaz (`activeWorkout(records, now)`), yoksa sekmeyi sonsuza kadar kilitlerdi.
+  Kayıtları silinmez, olduğu gibi eşitlenir. Seans ekranı bir güne açılınca (`?day`) bayat seansı taşımaz, yeni seans başlar; "Continue" ile
+  (gün yok) açılırsa End yalnız Finish ve Discard sunar (kalan bir şey yok). **Bilinen sınır:** duraklamasız bayat seansın Finish'i `endedAt`'i
+  şimdi olarak yollar; Health'e 24 saatten uzun süre yazılmaz (`health_workout_max_minutes`), sunucuda dakika şişer. Sunucu tarafı
+  düzeltmesi gerekirse ayrı iş.
+- **Discard çevrimdışı:** `queue.record` kaydı hemen göndermeyi dener; çevrimdışı ilk set bile `attempted` olur. Bu yüzden "hiç gönderilmedi" yolu
+  yalnız kaydedilip gönderilmemiş kayıt (uygulama arada kapandı) için vardır; metin "may already be on the server" der, "already sent" değil.
+- **Undo yeniden denemesi:** geri getirilen seansın ve setlerin kimlikleri atma anında bir kez üretilir; yarıda kalan Undo tekrar denenince
+  kuyruk aynı kimliği ikinci kez kaydetmez (ikinci seans oluşmaz). Başarısızlık söylenir.

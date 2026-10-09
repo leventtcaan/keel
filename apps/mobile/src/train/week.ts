@@ -82,7 +82,8 @@ export function sessionState({ program, kept, records, now }: { program: Schemas
   const stale = kept || program.today === undefined;
   const today = todayFor(program, kept, now);
   const found = sessions(program).find((f) => f.session.date === today) ?? null;
-  const onPhone = activeWorkout(records);
+  // One left open past the server's close is closed there already: not under way, so today's session can start (K-972).
+  const onPhone = activeWorkout(records, now.getTime());
   let status: SessionStatus = 'none';
   if (found !== null) {
     const id = found.day.id;
