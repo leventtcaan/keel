@@ -24,6 +24,8 @@ export const workoutParams = {
   historyDays: param<number>('history_days'),
   noteMaxChars: param<number>('note_max_chars'),
   moveSearchResults: param<number>('move_search_results'),
+  /** How many moves the workout end's "What moved" lists (K-974); the rest are counted. */
+  summaryMovesShown: param<number>('summary_moves_shown'),
   ownMoveNameMaxChars: param<number>('own_move_name_max_chars'),
   backMuscles: param<string[]>('back_muscles'),
   setupValueMaxChars: param<number>('setup_value_max_chars'),

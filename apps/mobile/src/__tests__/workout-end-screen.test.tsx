@@ -35,7 +35,7 @@ const SUMMARY: Schemas['WorkoutSummary'] = {
     { exerciseId: 'squat', kind: 'RECORD', loadKg: 100, reps: 8 },
     { exerciseId: 'bench_press', kind: 'RECORD', loadKg: 120, reps: 3 },
   ],
-  // "What moved" is not this screen's card (it reads no moves): an empty list satisfies the contract.
+  // The "what moved" card shows only when moves are listed; the tests of it give their own.
   moves: [],
   weekOf: '2026-09-28',
   muscles: MUSCLES,
@@ -217,4 +217,50 @@ test('pending, failed and ready are said to VoiceOver as they come', async () =>
   await fireEvent.press(screen.getByText(t('workoutEnd.retry')));
   expect(await screen.findByText('4,200')).toBeTruthy();
   expect(said).toHaveBeenCalledWith(t('workoutEnd.ready'));
+});
+
+const MOVES: Schemas['MoveChange'][] = [
+  { exerciseId: 'romanian_deadlift', best: { loadKg: 90, reps: 9 }, change: 'REPS', by: 1 },
+  { exerciseId: 'seated_row', best: { loadKg: 55, reps: 9 }, change: 'LOAD', by: -5 },
+  { exerciseId: 'bench_press', best: { loadKg: 72.5, reps: 8 }, change: 'HELD' },
+];
+
+test('what moved: a row per move from the catalog, the set and what changed, calm for a lighter day (U7)', async () => {
+  mockEnd = { ...READY, summary: { ...SUMMARY, moves: MOVES } };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.moved'))).toBeTruthy();
+  expect(screen.getAllByTestId('moved-row')).toHaveLength(3);
+  expect(screen.getByText('Romanian deadlift')).toBeTruthy();
+  expect(screen.getByText('90 × 9')).toBeTruthy();
+  expect(screen.getByText(t('workoutEnd.move.repsUp.one', { count: 1 }))).toBeTruthy();
+  expect(screen.getByText(t('workoutEnd.move.loadDown', { amount: '5 kg' }))).toBeTruthy();
+  expect(screen.getByText(t('workoutEnd.move.held'))).toBeTruthy();
+  // Each row is said as one line to VoiceOver, with the unit.
+  const spoken = t('workoutEnd.move.label', { move: 'Seated row', set: '55 kg × 9', change: t('workoutEnd.move.loadDown', { amount: '5 kg' }) });
+  expect(screen.getByLabelText(spoken)).toBeTruthy();
+  expect(screen.queryByText(/e1RM|estimated/i)).toBeNull();
+});
+
+test('what moved: a long list shows the first few and how many more', async () => {
+  const many: Schemas['MoveChange'][] = Array.from({ length: 5 }, (_, i) => ({ exerciseId: 'squat', best: { loadKg: 100 + i, reps: 8 }, change: 'SAME' }));
+  mockEnd = { ...READY, summary: { ...SUMMARY, moves: many } };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.moved'))).toBeTruthy();
+  expect(screen.getAllByTestId('moved-row')).toHaveLength(3);
+  expect(screen.getByText(t('workoutEnd.move.more', { count: 2 }))).toBeTruthy();
+});
+
+test('what moved: the first session (every move first time) has no list, only the baseline', async () => {
+  const first: Schemas['MoveChange'] = { exerciseId: 'squat', best: { loadKg: 60, reps: 8 }, change: 'FIRST' };
+  mockEnd = { ...READY, summary: { ...SUMMARY, marks: [{ exerciseId: 'squat', kind: 'BASELINE', loadKg: 60, reps: 8 }], moves: [first] } };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.baseline'))).toBeTruthy();
+  expect(screen.queryByText(t('workoutEnd.moved'))).toBeNull();
+  expect(screen.queryAllByTestId('moved-row')).toHaveLength(0);
+});
+
+test('what moved: no moves, no card', async () => {
+  await show();
+  expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
+  expect(screen.queryByText(t('workoutEnd.moved'))).toBeNull();
 });

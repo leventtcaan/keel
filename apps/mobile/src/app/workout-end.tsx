@@ -17,6 +17,7 @@ import { useReduceMotion } from '@/theme/useReduceMotion';
 import type { Figure } from '@/train/demo';
 import { haptics } from '@/train/haptics';
 import { dayName, exerciseName } from '@/train/program';
+import { MovedCard } from '@/train/MovedCard';
 import { type WorkoutEnd, loadWorkoutEnd } from '@/train/workoutEnd';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
@@ -29,7 +30,8 @@ const NUMBER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
  * with its mark (still under Reduce Motion), the session's day; the server's numbers (the minutes of active time, kg
  * lifted over the working sets with the change against the same day last time, the working sets) and the kcal an Apple
  * Watch measured, only when it did (else three boxes in one row); the record (the heaviest of the session's, the real
- * set, its next target from the program) or the baseline; the muscles worked, on the one muscle map; this week's
+ * set, its next target from the program) or the baseline; what moved per move against last time (the server's words for
+ * it, a lighter day said calmly); the muscles worked, on the one muscle map; this week's
  * sessions as segments; Share and Done. A record is felt (haptics, Ek 5); nothing else is. No e1RM, no badge, no points.
  * Route `/workout-end?workout=<clientId>`. Until the workout reaches the server, the hero and a way to try again: the
  * phone counts nothing.
@@ -174,6 +176,7 @@ function Facts({ end, day, units, figure }: { end: Ready; day: Schemas['ProgramD
         ))}
       </View>
       <Mark marks={summary.marks} day={day} units={units} />
+      <MovedCard moves={summary.moves} units={units} />
       {map}
       {end.week !== null && end.week.planned > 0 && <Week done={end.week.done} planned={end.week.planned} />}
     </View>
