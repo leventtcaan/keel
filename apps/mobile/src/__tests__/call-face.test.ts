@@ -17,6 +17,7 @@ const call = (state: Schemas['Application']['state'], declinable = false): Schem
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state },
   declinable,
+  changes: [],
 });
 
 test('in the plan: "In this week\'s plan"; the server allowing it, "Keep last week\'s plan"', () => {

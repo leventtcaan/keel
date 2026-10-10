@@ -571,6 +571,57 @@ test('finished on this phone, the finish still in the queue: done, no second ses
   expect(screen.queryByText('Continue workout')).toBeNull();
 });
 
+/** A workout finished on this phone today (Tuesday 29 Sep), the finish still in the queue. */
+const finishedToday = (programDayId: string | null): LocalRecord[] => [
+  { seq: 1, clientId: 'w1', kind: 'workout', parentClientId: null, body: { clientId: 'w1', startedAt: '2026-09-29T08:00:00Z', programDayId }, state: 'PENDING', serverId: null, serverBody: null, errorCode: null },
+  { seq: 2, clientId: 'f1', kind: 'finish', parentClientId: 'w1', body: { endedAt: '2026-09-29T08:50:00Z' }, state: 'PENDING', serverId: null, serverBody: null, errorCode: null },
+];
+
+test("another day's session finished here while today's was planned: the day has its workout, done, no Start", async () => {
+  mockRecords = finishedToday('b');
+  await show();
+  expect(await screen.findByText(t('train.doneToday'))).toBeTruthy();
+  expect(screen.queryByText('Start workout')).toBeNull();
+});
+
+test('a free workout finished here (no program day): done, no Start', async () => {
+  mockRecords = finishedToday(null);
+  await show();
+  expect(await screen.findByText(t('train.doneToday'))).toBeTruthy();
+  expect(screen.queryByText('Start workout')).toBeNull();
+});
+
+test('a day without a session, one of the week picked and finished here: done', async () => {
+  mockData = withProgram({ week: [THURSDAY] });
+  mockRecords = finishedToday('b');
+  await show();
+  expect(await screen.findByText(t('train.doneToday'))).toBeTruthy();
+});
+
+test("another day's session finished here while today's was planned: the card names the day that was done, not the planned one", async () => {
+  mockRecords = finishedToday('b');
+  await show();
+  expect(await screen.findByRole('header', { name: 'Lower A' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Upper A' })).toBeNull();
+  expect(screen.getByText(t('train.doneToday'))).toBeTruthy();
+});
+
+test('a day without a session, one of the week picked and finished here: the card names that day, not Rest', async () => {
+  mockData = withProgram({ week: [THURSDAY] });
+  mockRecords = finishedToday('b');
+  await show();
+  expect(await screen.findByRole('header', { name: 'Lower A' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Rest' })).toBeNull();
+  expect(screen.getByText(t('train.doneToday'))).toBeTruthy();
+});
+
+test('a week off from a copy kept before it ended: not a week off now, today starts as usual', async () => {
+  mockData = { ...withProgram({ restUntil: '2026-09-20' }), kept: true };
+  await show();
+  expect(await screen.findByText('Start workout')).toBeTruthy();
+  expect(screen.queryByText(t('train.status.restWeekNote'))).toBeNull();
+});
+
 test('the server says OPEN, nothing of it on this phone: open elsewhere; no Continue into an empty screen, no Start', async () => {
   mockData = withProgram({ week: [{ ...PROGRAM.week![0], workout: { id: 'w9', state: 'OPEN' } }, THURSDAY] });
   await show();

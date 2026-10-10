@@ -65,6 +65,19 @@ class StoredSnapshotTests {
     }
 
     @Test
+    void theFirstWeeksTrainingWeekdaysAreKeptSoTheSuggestedDaysComeOutTheSame() throws Exception {
+        // K-1000: the call suggests days none of which is a training day; made again, it reads the same weekdays.
+        Snapshot closing = full(false).withFirstWeek(new FirstWeekAdjustment.Week(3, 1, 3, List.of(DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY),
+                Optional.of(Experience.UNDER_1Y), List.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)));
+
+        assertThat(JSON.readValue(JSON.writeValueAsString(StoredSnapshot.of(closing)), StoredSnapshot.class).toSnapshot()).isEqualTo(closing);
+        // A call kept before K-1000 has no weekdays: it reads as none (nothing suggested), not as a failure.
+        String kept = JSON.writeValueAsString(StoredSnapshot.of(closing)).replaceAll(",\"weekdays\":\\[[^\\]]*\\]", "");
+        assertThat(kept).doesNotContain("weekdays");
+        assertThat(JSON.readValue(kept, StoredSnapshot.class).toSnapshot().firstWeek()).map(FirstWeekAdjustment.Week::weekdays).contains(List.of());
+    }
+
+    @Test
     void theCycleAnswerIsNeverKept() throws Exception {
         String json = JSON.writeValueAsString(StoredSnapshot.of(full(true)));
 

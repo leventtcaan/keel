@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { useAppServices } from '@/services/ServicesProvider';
-import { activeWorkout } from '@/train/workout';
 
 import { type TodayData, loadToday } from './today';
-import { finishedOnPhone, loadTodayParts, todayCardOf } from './todayWorkout';
+import { loadTodayParts, todayCardOf } from './todayWorkout';
 import { useReadOnFocus } from './useReadOnFocus';
 import { loadWeekLogs, weekMonday } from './week';
 
@@ -17,10 +16,10 @@ import { loadWeekLogs, weekMonday } from './week';
  * start a new read each render.
  */
 export function useToday(): { day: string; data: TodayData | null; reload: () => void } {
-  const { api, syncHealth, queue, report, reminders, state, opens, workoutRecords } = useAppServices();
-  const latest = useRef({ syncHealth, queue, report, reminders, state, opens, workoutRecords });
+  const { api, syncHealth, queue, report, reminders, state, opens, workoutRecords, training } = useAppServices();
+  const latest = useRef({ syncHealth, queue, report, reminders, state, opens, workoutRecords, training });
   useEffect(() => {
-    latest.current = { syncHealth, queue, report, reminders, state, opens, workoutRecords };
+    latest.current = { syncHealth, queue, report, reminders, state, opens, workoutRecords, training };
   });
   return useReadOnFocus(
     useCallback(
@@ -32,9 +31,11 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         // What waits on the phone goes first (a weigh-in just saved), so the server's list shows it (K-402 review).
         await waiting.drain().catch(named);
         const today = await loadToday(api, day);
-        // The week's days as the server counts its week (K-969): its Monday from what was just read.
+        // The week's days as the server counts its week (K-969): its Monday, and its today, from what was just read (the
+        // phone's day only without the server's word: offline, or an older server).
+        const served = today.program.state === 'ready' ? today.program.value : null;
         const monday = weekMonday(today.consistency, today.program, day);
-        const week = await loadWeekLogs(api, monday, day);
+        const week = await loadWeekLogs(api, monday, served?.today ?? day);
         // Today's workout (K-969): one under way on this phone first (its own records), else one finished today. A store
         // that cannot be read (or is not there) never keeps the week from showing: reported, and none under way.
         const records = await Promise.resolve()
@@ -43,14 +44,23 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
             named(error);
             return [];
           });
-        const active = activeWorkout(records, Date.now());
-        // A finish waiting on this phone (offline) is done before the server says DONE (the card reads its word, K-995).
-        const doneToday = finishedOnPhone(records, day);
-        const planned = today.program.state === 'ready' ? today.program.value : null;
+        // The moment of this read: the card's rule reads the phone's day from it, never a later clock (K-969, K-995).
+        const readAt = new Date();
+        // The program the card reads is the one the Train tab reads: the server's, else its copy kept for offline.
+        let cardProgram: TodayData['cardProgram'] = served === null ? null : { program: served, kept: false };
+        if (served === null && today.program.state === 'failed') {
+          const copy = await Promise.resolve()
+            .then(() => latest.current.training.keptProgram())
+            .catch((error: unknown) => {
+              named(error);
+              return null;
+            });
+          cardProgram = copy === null ? null : { program: copy, kept: true };
+        }
         // What the card will show decides what it needs: a done workout's summary (the server's id), a skipped day's line.
-        const card = todayCardOf({ program: planned, day, active, doneToday });
+        const card = todayCardOf({ program: cardProgram?.program ?? null, kept: cardProgram?.kept === true, records, now: readAt });
         const done = card.kind === 'done' ? { workoutId: card.workoutId, programDayId: card.day?.id ?? null } : null;
-        const todayParts = await loadTodayParts(api, { done, withMoves: planned !== null, budget: today.budget, skipped: card.kind === 'skipped' });
+        const todayParts = await loadTodayParts(api, { done, withMoves: cardProgram !== null, skipped: card.kind === 'skipped' });
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
         const { program } = today;
         if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);
@@ -68,7 +78,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
           named(error);
           return null;
         });
-        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, active, doneToday, todayParts };
+        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, cardProgram, records, readAt, todayParts };
       },
       [api],
     ),

@@ -37,6 +37,7 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state: 'APPLIED' },
   declinable: true,
+  changes: [],
   ...extra,
 });
 const PROGRAM: Schemas['Program'] = {
@@ -112,6 +113,8 @@ const mockServices = {
   opens: { previous: async () => null },
   // The phone's own records: a workout under way (K-405, K-961).
   workoutRecords: jest.fn(async (): Promise<unknown[]> => []),
+  // The program the Train tab keeps for offline (K-405): none unless a test keeps one.
+  training: { keptProgram: jest.fn(async (): Promise<Schemas['Program'] | null> => null) },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
@@ -163,6 +166,7 @@ function firstWeek() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockServices.training.keptProgram.mockImplementation(async () => null);
   mockPost = ok({});
   ordinaryWeek();
 });
@@ -454,13 +458,36 @@ describe("today's workout (#home)", () => {
   });
 
   test("moved: today is rest, and the card says where the session went (the server's day)", async () => {
-    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true });
+    // Moved off today: the one the server says can still be undone, as the Train card finds it (train/week.ts › movedOffToday).
+    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true, movedFrom: '2026-12-25', undoable: true });
     await show();
     expect(screen.getByText(t('thisWeek.today.rest'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.today.movedTo', { day: 'Saturday' }))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
     expect(day('2026-12-26')).toBe('Saturday, planned');
-    expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull(); // the server says it cannot be undone
+  });
+
+  test('a session moved on an earlier day is not today\'s: today is rest, with no line about it (one rule with the Train card)', async () => {
+    mockAnswers['/v1/program'] = fridayAs({ date: '2026-12-26', moved: true, movedFrom: '2026-12-25' });
+    await show();
+    expect(screen.getByText(t('thisWeek.today.rest'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.today.movedTo', { day: 'Saturday' }))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull();
+  });
+
+  test("the server's today, not the phone's clock: past midnight on the phone, Friday's session still shows", async () => {
+    onPhone(new Date(2026, 11, 26, 0, 30));
+    await show();
+    expect(screen.getByRole('button', { name: startFullBodyA() })).toBeOnTheScreen();
+    expect(day('2026-12-25')).toBe('Friday, planned, today');
+  });
+
+  test("one today on the whole screen: the hero's days to the next call and the week's logs read the server's day, not the phone's", async () => {
+    onPhone(new Date(2026, 11, 26, 0, 30)); // Saturday 00:30 on the phone; the user's calendar is still Friday
+    await show();
+    expect(screen.getByText(t('thisWeek.hero.inDays', { count: 3 }))).toBeOnTheScreen(); // 28 Dec from Friday 25, not from Saturday
+    expect(mockGET).toHaveBeenCalledWith('/v1/workouts', { params: { query: { from: '2026-12-21', to: '2026-12-25' } } });
+    expect(mockGET).toHaveBeenCalledWith('/v1/weigh-ins', { params: { query: { from: '2026-12-21', to: '2026-12-25' } } });
   });
 
   test('moved today and undoable: "Undo" on the card puts the week back (UNDO, K-995)', async () => {
@@ -592,6 +619,53 @@ describe("today's workout (#home)", () => {
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
   });
 
+  test("another day's session finished here while today's is planned: done, no Start (one rule with the Train card)", async () => {
+    mockServices.workoutRecords.mockResolvedValueOnce([
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-25T08:00:00Z', programDayId: 'b' }),
+      record(2, 'finish', 'f1', 'wo', { endedAt: '2026-12-25T09:00:00Z', uncleanExerciseIds: [] }),
+    ]);
+    await show();
+    expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+  });
+
+  describe('the program cannot be read (offline)', () => {
+    const finishedOffline = [
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-25T08:00:00Z', programDayId: 'c' }),
+      record(2, 'finish', 'f1', 'wo', { endedAt: '2026-12-25T09:00:00Z', uncleanExerciseIds: [] }),
+    ];
+
+    test('a workout finished here is still done, with no copy of the program kept', async () => {
+      mockAnswers['/v1/program'] = 'offline';
+      mockServices.workoutRecords.mockResolvedValueOnce(finishedOffline);
+      await show();
+      expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+      // Nothing to name it by: the program is not there, so no day is told.
+      expect(screen.queryByRole('header', { name: t('programDays.full_body_a.name') })).toBeNull();
+    });
+
+    test('with the copy the Train tab keeps and nothing done: the session it planned for today, to start', async () => {
+      mockAnswers['/v1/program'] = 'offline';
+      mockServices.training.keptProgram.mockResolvedValue(PROGRAM);
+      await show();
+      expect(screen.getByRole('header', { name: t('programDays.full_body_a.name') })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: startFullBodyA() })).toBeOnTheScreen();
+    });
+
+    test("with the copy the Train tab keeps: the session it names, done from the phone's records, and no Undo of the server's old word", async () => {
+      mockAnswers['/v1/program'] = 'offline';
+      mockServices.training.keptProgram.mockResolvedValue({ ...PROGRAM, week: [...(PROGRAM.week ?? []).slice(0, 2), { programDayId: 'c', date: '2026-12-25', exerciseIds: FRIDAY_MOVES, skipped: true, undoable: true }] });
+      await show();
+      expect(screen.queryByRole('button', { name: t('thisWeek.today.undo') })).toBeNull();
+      expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+      mockServices.workoutRecords.mockResolvedValueOnce(finishedOffline);
+      await act(async () => mockRefocus());
+      expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+      // The copy names the day that was done (its program day 'c'); without the copy no day is told.
+      expect(screen.getByRole('header', { name: t('programDays.full_body_a.name') })).toBeOnTheScreen();
+    });
+  });
+
   test('a workout left open: "Open workout · Continue" back into it, with the sets logged', async () => {
     mockServices.workoutRecords.mockResolvedValueOnce([
       record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-25T08:00:00Z', programDayId: 'c' }),
@@ -633,6 +707,13 @@ describe('the food line', () => {
     expect(screen.getByText(range(610, 720))).toBeOnTheScreen();
   });
 
+  test('after the first call, nothing eaten: still "Food left", the existing path (only the first week says "today")', async () => {
+    mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(2300, 2300));
+    await show();
+    expect(screen.getByText(t('thisWeek.food.left'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.food.today'))).toBeNull();
+  });
+
   test('without the health data consent: the lock line in its place, Allow leads to the consent', async () => {
     mockAnswers['/v1/days/{day}/budget'] = refused(403, 'CONSENT_REQUIRED');
     await show();
@@ -642,16 +723,65 @@ describe('the food line', () => {
     expect(mockPush).toHaveBeenCalledWith('/settings');
   });
 
-  test('the first week, no budget yet: the starting target as "Food today", one number, and Log (prototype foodLine)', async () => {
-    mockAnswers['/v1/targets/starting'] = ok({ targetKcal: 2100, maintenanceKcal: { low: 2000, high: 2200 }, observationDays: 14 });
-    await show();
-    expect(screen.getByText(t('thisWeek.food.today'))).toBeOnTheScreen();
-    expect(screen.getByText(t('food.budget.single', { value: '2,100', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
-    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.today'), amount: '2,100 kcal' }));
-    expect(mockPush).toHaveBeenCalledWith('/meal');
+  describe('the first week (no call yet): the budget the server works out from the starting target (K-997)', () => {
+    const FIRST_WEEK_BUDGET = (left: { low: number; high: number }, eaten: { low: number; high: number } = { low: 0, high: 0 }): Schemas['DayBudget'] => ({
+      day: '2026-10-12',
+      targetKcal: 2100,
+      eaten: { kcal: eaten, proteinG: { low: 0, high: 0 }, carbsG: { low: 0, high: 0 }, fatG: { low: 0, high: 0 } },
+      left: { kcal: left, proteinG: { low: 150, high: 150 } },
+    });
+    beforeEach(() => firstWeek());
+
+    test('nothing eaten yet: "Food today" with the one number, from the budget route, and Log (prototype foodLine)', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 2100, high: 2100 }));
+      await show();
+      expect(screen.getByText(t('thisWeek.food.today'))).toBeOnTheScreen();
+      expect(screen.getByText(t('food.budget.single', { value: '2,100', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
+      expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-10-12' } } });
+      await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.today'), amount: '2,100 kcal' }));
+      expect(mockPush).toHaveBeenCalledWith('/meal');
+    });
+
+    test('a meal logged: "Food left" as the server\'s range, nothing taken off on the phone', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 1480, high: 1620 }, { low: 480, high: 620 }));
+      await show();
+      expect(screen.getByText(t('thisWeek.food.left'))).toBeOnTheScreen();
+      expect(screen.getByText(range('1,480', '1,620'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('thisWeek.food.today'))).toBeNull();
+    });
+
+    test('the temporary starting route is not read for this line any more', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 2100, high: 2100 }));
+      await show();
+      expect(mockGET.mock.calls.map((c) => c[0])).not.toContain('/v1/targets/starting');
+    });
+
+    test('no starting target (404: no profile, or no weigh-in): no line, and no complaint', async () => {
+      await show();
+      expect(screen.queryByTestId('food-line')).toBeNull();
+      expect(screen.queryByTestId('food-locked')).toBeNull();
+      expect(screen.queryByText(t('today.failed'))).toBeNull();
+    });
+
+    test('without the health data consent: the lock line, as in any week', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = refused(403, 'CONSENT_REQUIRED');
+      await show();
+      expect(screen.getByText(t('thisWeek.food.locked'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('thisWeek.food.today'))).toBeNull();
+    });
+
+    test('offline: no line, the screen says it could not read and offers to try again', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = 'offline';
+      await show();
+      expect(screen.queryByTestId('food-line')).toBeNull();
+      expect(screen.getByText(t('today.failed'))).toBeOnTheScreen();
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 2100, high: 2100 }));
+      await press(t('today.retry'));
+      expect(screen.getByText(t('thisWeek.food.today'))).toBeOnTheScreen();
+    });
   });
 
-  test('no budget and no starting target either: no line', async () => {
+  test('no budget at all: no line', async () => {
     await show();
     expect(screen.queryByTestId('food-line')).toBeNull();
     expect(screen.queryByTestId('food-locked')).toBeNull();

@@ -141,12 +141,15 @@ class DecisionBasisApiTests {
                 .findFirst().orElseThrow();
         assertThat((Map<String, Object>) ((Map<String, Object>) flat.get("decision")).get("action")).containsEntry("type", "NO_DECISION_YET");
 
-        // An older call has no examples: what would change things is the latest call's question.
+        // An older call has no examples: what would change things is the latest call's question. A call is applied as it is made
+        // (K-1000, ADR-077 #3), so the copy that stands for the older one carries the applied columns too (setup only).
         UUID older = UUID.randomUUID();
         jdbc.sql("""
-                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision, application)
+                insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision, application,
+                                                  applied_at, plan_before, plan_after)
                 select :older, account_id, gen_random_uuid(), week_of - 7, made_on - 7, decided_at - interval '7 days', parameters_hash, snapshot,
-                       decision, application from decision.weekly_call where id = :id""")
+                       decision, application, applied_at - interval '7 days', plan_before, plan_after
+                from decision.weekly_call where id = :id""")
                 .param("older", older).param("id", UUID.fromString((String) call.get("id"))).update();
         assertThat(send(account, "GET", "/v1/decisions/" + older + "/what-if")).hasStatus(404);
     }

@@ -85,8 +85,10 @@ class DecisionContractTests {
         assertThat(FirstWeeksController.FirstWeeksView.class.getRecordComponents()).filteredOn(c -> c.getName().equals("firstCallOn"))
                 .singleElement().satisfies(c -> assertThat(c.getType()).isEqualTo(LocalDate.class));
         Map<String, Object> reason = map(map(map(contract().get("components")).get("schemas")).get("Reason"));
+        // The signals' fields, and the facts a call's reason carries (K-1000): the first-weeks signal names a rule, not a call's numbers.
         assertThat(map(reason.get("properties")).keySet()).containsExactlyInAnyOrderElementsOf(
-                Arrays.stream(FirstWeeksController.SignalView.class.getRecordComponents()).map(RecordComponent::getName).toList());
+                java.util.stream.Stream.concat(Arrays.stream(FirstWeeksController.SignalView.class.getRecordComponents()).map(RecordComponent::getName),
+                        java.util.stream.Stream.of("facts")).toList());
     }
 
     private static Map<String, Object> contract() throws Exception {

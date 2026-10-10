@@ -85,7 +85,9 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
     }
 
     /** The first week the call closed (K-962): its counts, its missed weekdays, and the experience; null when not asked. */
-    record FirstWeek(int planned, int done, int trainingDays, List<DayOfWeek> missed, Experience experience) {
+    /** {@code weekdays}: the plan's training weekdays, kept since K-1000; null in a call kept before (read as none). */
+    record FirstWeek(int planned, int done, int trainingDays, List<DayOfWeek> missed, Experience experience,
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<DayOfWeek> weekdays) {
     }
 
     record Training(int stalledSessions, int weeksLoadHeld, int monthsStalled, boolean restedLastWeek, boolean loadsBelowLastWeek,
@@ -127,7 +129,7 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 snapshot.fatProxyHighPct().orElse(null), snapshot.safetyHold(), snapshot.miniCutUntil().orElse(null),
                 snapshot.fatProxyEnergyPct().orElse(null), snapshot.context().orElse(null),
                 snapshot.firstWeek().map(week -> new FirstWeek(week.planned(), week.done(), week.trainingDays(), week.missed(),
-                        week.experience().orElse(null))).orElse(null));
+                        week.experience().orElse(null), week.weekdays())).orElse(null));
     }
 
     /** The Snapshot again; the cycle answer as not reported (never kept). */
@@ -150,6 +152,6 @@ record StoredSnapshot(LocalDate today, Sex sex, Phase phase, LocalDate planStart
                 Optional.ofNullable(fatProxyEnergyPct).or(() -> Optional.ofNullable(fatProxyPct)), Optional.ofNullable(context),
                 // Kept since K-962, on the call that closes the first week only.
                 Optional.ofNullable(firstWeek).map(week -> new FirstWeekAdjustment.Week(week.planned(), week.done(), week.trainingDays(),
-                        week.missed(), Optional.ofNullable(week.experience()))));
+                        week.missed(), Optional.ofNullable(week.experience()), Optional.ofNullable(week.weekdays()).orElse(List.of()))));
     }
 }

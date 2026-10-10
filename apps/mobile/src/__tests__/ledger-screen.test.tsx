@@ -25,6 +25,7 @@ const call = (id: string, madeOn: string, readTrendKg?: number): Decision => ({
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
   declinable: false,
+  changes: [],
   ...(readTrendKg === undefined ? {} : { readTrendKg }),
 });
 

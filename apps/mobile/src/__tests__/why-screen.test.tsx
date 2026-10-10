@@ -29,6 +29,7 @@ const CALL: Schemas['Decision'] = {
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
   declinable: false,
+  changes: [],
 };
 const BASIS: Schemas['DecisionBasis'] = {
   phase: 'CUT',

@@ -20,7 +20,7 @@ import { changeToday } from '@/train/changes';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { movedOffToday, sessionState, splitName, weekRows } from '@/train/week';
+import { finishedDay, movedOffToday, sessionState, splitName, todayKind, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -126,8 +126,10 @@ export default function TrainScreen() {
   const active = session.onPhone;
   const days = t(program.days.length === 1 ? 'train.days.one' : 'train.days.other', { count: program.days.length });
   const notes = programNotes(program, data?.declared);
+  // What the card says, by the one function This week reads too (todayKind).
+  const kind = todayKind(program, session);
   // With no session today (and no week off), any of the week's can be started from its row.
-  const pick = today === null && program.restUntil === undefined && active === null;
+  const pick = today === null && kind !== 'restWeek' && active === null;
   const rows = weekRows(program, session.today);
   // The review's changes in force (ADR-073 #3): how many, and the page that undoes each.
   const appliedCount = program.review?.applied.length ?? 0;
@@ -159,9 +161,10 @@ export default function TrainScreen() {
         program={program}
         today={today}
         date={session.today}
-        status={session.status}
+        kind={kind}
         stale={session.stale}
-        movedAway={today === null && !session.stale ? movedOffToday(program) : null}
+        finishedDay={finishedDay(program, session)}
+        movedAway={kind === 'moved' ? movedOffToday(program) : null}
         moves={moves}
         units={units}
         underWay={active !== null}

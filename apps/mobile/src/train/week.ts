@@ -60,14 +60,52 @@ export function movedOffToday(program: Schemas['Program']): Found | null {
  * Today's session, as the Train tab and This week read it (K-970, K-969, K-995):
  * - `onPhone`: a workout on this phone not finished (its sets may still be in the queue): it is continued, never a second
  *   one started; today's session is under way when it is that session.
- * - `done`: finished on this phone (the finish may still be in the queue), or the server's DONE.
+ * - `done`: a workout finished today, any session or none (a free workout), on this phone (the finish may still be in the
+ *   queue) or the server's DONE for today's session; `finished`: that workout, today's session's own first.
  * - `openElsewhere`: the server's OPEN with nothing of it on this phone: it goes on there, this phone starts none.
  * The phone's records come first; the server's word only after them. `stale`: the program is the copy kept offline;
  * then today is the phone's day and the copy's session states (workout, undoable, the move's preview) are not believed:
  * they were the server's when it was kept.
  */
 export type SessionStatus = 'onPhone' | 'done' | 'openElsewhere' | 'none';
-export type SessionState = { today: string; stale: boolean; found: Found | null; status: SessionStatus; onPhone: ActiveWorkout | null };
+export type SessionState = {
+  today: string;
+  stale: boolean;
+  found: Found | null;
+  status: SessionStatus;
+  onPhone: ActiveWorkout | null;
+  finished: Done | null;
+};
+
+/** A workout finished today: its server id (none yet when the phone's finish has not been sent), and its program day (none: a free workout). */
+export type Done = { workoutId: string | null; programDayId: string | null };
+
+export type TodayKind = 'restWeek' | 'done' | 'openElsewhere' | 'skipped' | 'session' | 'moved' | 'rest';
+
+/**
+ * What today's card says, in the one order both cards read it (the Train card, This week): a week off in force; a workout
+ * done today (any session, a free one too); a session under way on another phone; today's session, skipped or not; the
+ * session moved off today; rest. A workout under way on this phone is continued wherever the card puts it. A week off is
+ * in force while today is not past `restUntil` (a copy kept offline may hold one that has ended); a move is believed only
+ * from the server's own read, not from a copy.
+ */
+export function todayKind(program: Schemas['Program'], state: SessionState): TodayKind {
+  if (program.restUntil !== undefined && state.today <= program.restUntil) return 'restWeek';
+  if (state.status === 'done') return 'done';
+  if (state.status === 'openElsewhere') return 'openElsewhere';
+  if (state.found !== null) return state.found.session.skipped === true ? 'skipped' : 'session';
+  if (!state.stale && movedOffToday(program) !== null) return 'moved';
+  return 'rest';
+}
+
+/**
+ * The program day the workout finished today names (as the Train card's title and This week's card): that workout's own,
+ * not today's planned session; none for a free workout, or when nothing is done.
+ */
+export function finishedDay(program: Schemas['Program'], state: SessionState): Schemas['ProgramDay'] | null {
+  const id = state.finished?.programDayId;
+  return program.days.find((d) => d.id === id) ?? null;
+}
 
 /**
  * Today, as every training screen reads it (the Train card, Change, swap, the session): the server's (`Program.today`, the
@@ -78,32 +116,43 @@ export function todayFor(program: Schemas['Program'] | null, kept: boolean, now:
 }
 
 export function sessionState({ program, kept, records, now }: { program: Schemas['Program']; kept: boolean; records: LocalRecord[]; now: Date }): SessionState {
-  const phoneDay = localDay(now);
   const stale = kept || program.today === undefined;
   const today = todayFor(program, kept, now);
   const found = sessions(program).find((f) => f.session.date === today) ?? null;
   // One left open past the server's close is closed there already: not under way, so today's session can start (K-972).
   const onPhone = activeWorkout(records, now.getTime());
+  // A workout started on the server's day or on the phone's is today's: the two differ in the hours around midnight
+  // (past it on the phone, not yet on the user's calendar), and a workout started before it is still today's.
+  const days = [...new Set([today, localDay(now)])];
+  const server = found === null || stale ? undefined : found.session.workout;
+  // The workout that makes today done: today's session's own (the phone's, else the server's); else any finished here.
+  const own = found === null ? null : finishedOnPhone(records, days, found.day.id);
+  const serverDone = found !== null && server?.state === 'DONE' ? { workoutId: server.id, programDayId: found.day.id } : null;
+  const finished = own !== null ? { ...own, workoutId: serverDone?.workoutId ?? own.workoutId } : (serverDone ?? finishedOnPhone(records, days));
   let status: SessionStatus = 'none';
-  if (found !== null) {
-    const id = found.day.id;
-    if (onPhone !== null && onPhone.programDayId === id && localDay(new Date(onPhone.startedAt)) === phoneDay) status = 'onPhone';
-    else if (finishedOnPhone(records, phoneDay, id)) status = 'done';
-    else if (!stale && found.session.workout?.state === 'DONE') status = 'done';
-    else if (!stale && found.session.workout?.state === 'OPEN') status = onPhone !== null && onPhone.programDayId === id ? 'onPhone' : 'openElsewhere';
-  }
-  return { today, stale, found, status, onPhone };
+  if (found !== null && onPhone !== null && onPhone.programDayId === found.day.id && days.includes(localDay(new Date(onPhone.startedAt)))) status = 'onPhone';
+  else if (finished !== null) status = 'done';
+  else if (found !== null && server?.state === 'OPEN') status = onPhone !== null && onPhone.programDayId === found.day.id ? 'onPhone' : 'openElsewhere';
+  return { today, stale, found, status, onPhone, finished };
 }
 
-/** Whether a workout of this program day started on this day was finished on this phone (its finish sent or not). */
-function finishedOnPhone(records: LocalRecord[], day: string, programDayId: string): boolean {
+/**
+ * The newest workout on this phone started on `days` whose finish is kept (sent, or waiting to be): done, even before the
+ * server has it; its server id once it has one. With `programDayId`, only that program day's.
+ */
+export function finishedOnPhone(records: LocalRecord[], days: string | readonly string[], programDayId?: string | null): Done | null {
+  const on = [days].flat();
   const kept = (r: LocalRecord) => r.state !== 'REJECTED';
   const finished = new Set(records.filter((r) => r.kind === 'finish' && kept(r)).map((r) => r.parentClientId));
-  return records.some((r) => {
-    if (r.kind !== 'workout' || !kept(r) || !finished.has(r.clientId)) return false;
-    const body = r.body as Schemas['NewWorkout'];
-    return body.programDayId === programDayId && localDay(new Date(body.startedAt)) === day;
-  });
+  const done = records
+    .filter((r) => r.kind === 'workout' && kept(r) && finished.has(r.clientId))
+    .filter((r) => {
+      const body = r.body as Schemas['NewWorkout'];
+      return on.includes(localDay(new Date(body.startedAt))) && (programDayId === undefined || (body.programDayId ?? null) === programDayId);
+    })
+    .sort((a, b) => b.seq - a.seq)[0];
+  if (done === undefined) return null;
+  return { workoutId: done.serverId, programDayId: (done.body as Schemas['NewWorkout']).programDayId ?? null };
 }
 
 /** The session's moves in its order: the short version's only, and a move swapped for today in its planned move's place. */
