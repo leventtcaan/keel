@@ -56,11 +56,13 @@ jest.mock('expo-router', () => ({
 }));
 const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn() };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockParams = {};
+  mockUnits = 'METRIC';
   mockPost = ok({});
   mockAnswers = { '/v1/decisions/current': ok(decision()) };
 });
@@ -92,8 +94,11 @@ describe("this week's call", () => {
     expect(screen.getByText(t('decision.rule.plateau'))).toBeOnTheScreen();
     expect(screen.getByText(t('decision.rule.toward_goal'))).toBeOnTheScreen();
     expect(screen.queryByText(t('decision.rule.energy_floor'))).toBeNull(); // two, no more
-    expect(screen.getByText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
-    expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    // The kind of source is a symbol with its full words for VoiceOver, not a line of text (U14, the word budget)
+    expect(screen.queryByText(t('today.call.source.EXPERIENCE'))).toBeNull();
+    expect(screen.queryByText(t('today.call.source.LITERATURE'))).toBeNull();
     expect(screen.getByText(t('callScreen.confidence', { level: t('callScreen.level.MEDIUM') }))).toBeOnTheScreen();
     expect(screen.getByText(t('callScreen.nextCall', { date: 'Mon, Jan 4' }))).toBeOnTheScreen();
     expect(screen.getByText('Mon, Dec 28')).toBeOnTheScreen(); // the day it was made
@@ -134,7 +139,7 @@ describe("this week's call", () => {
     await show();
     expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
     expect(screen.queryByText(t('decision.rule.low_energy_safety'))).toBeNull();
-    expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen(); // no sentence: the kind of source in words
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
   });
 
@@ -280,10 +285,19 @@ describe('what the call changes, and why in a line (K-978 part 2)', () => {
     mockAnswers['/v1/decisions/current'] = ok(calories());
     await show();
     expect(screen.getByText('-0.1 kg a week over 3 weeks, not toward your goal.')).toBeOnTheScreen();
-    expect(screen.getByText('One clear step: 250 kcal a day less.')).toBeOnTheScreen();
+    expect(screen.getByText('One step: 250 kcal a day less.')).toBeOnTheScreen();
     expect(screen.queryByText(t('decision.ruleShort.energy_floor'))).toBeNull(); // two, no more
-    expect(screen.getByText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
-    expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.source.EXPERIENCE'))).toBeNull();
+  });
+
+  test("the pace in the user's units: pounds on a pound screen, never a kilogram", async () => {
+    mockUnits = 'IMPERIAL';
+    mockAnswers['/v1/decisions/current'] = ok(calories());
+    await show();
+    expect(screen.getByText('-0.2 lb a week over 3 weeks, not toward your goal.')).toBeOnTheScreen();
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/ kg a week/);
   });
 
   test('a call kept before its numbers were: the longer sentence, no number made up', async () => {

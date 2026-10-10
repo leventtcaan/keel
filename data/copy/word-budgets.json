@@ -836,8 +836,10 @@
       "budget": 45,
       "source": "ADR-077 #3",
       "task": "K-978",
+      "note": "The budget stays 45, the prototype's target. The kind of source of a reason (EXPERIENCE, LITERATURE, PRODUCT) is a symbol on the screen with its full words as the VoiceOver label (today.call.source.<tag>), so it is not a line of words and U14 stays said for everyone; with no sentence to read (the safety call) the words themselves show, and are counted in that face. The back label is counted. Reason lines that ran over were shortened (decision.ruleShort.cut_step, adherence_low), not the budget raised.",
       "file": "src/app/call.tsx",
       "keys": [
+        ["callScreen.back", "callScreen.backProgress"],
         "callScreen.inPlan",
         "decision.adjust_calories.label",
         "decision.adjust_calories.not_toward_goal.title",
@@ -852,13 +854,6 @@
         "callScreen.keep"
       ],
       "dynamic": [{"what": "the day the call was made (Mon, Dec 28)", "words": 2}, {"what": "the next call's date (Mon, Jan 4)", "words": 2}],
-      "uncounted": [
-        "callScreen.back",
-        "callScreen.backProgress",
-        "today.call.source.EXPERIENCE",
-        "today.call.source.LITERATURE",
-        "today.call.source.PRODUCT"
-      ],
       "notFirstView": [
         "callScreen.applied",
         "callScreen.undone",
@@ -882,11 +877,12 @@
         "subscription.seePlans",
         "settings.backMark"
       ],
-      "parts": ["src/today/callChanges.ts", "src/today/callReasons.ts", "src/today/ChangeRows.tsx"],
+      "parts": ["src/today/callChanges.ts", "src/today/callReasons.ts", "src/today/ChangeRows.tsx", "src/today/SourceMark.tsx"],
       "faces": [
         {
           "face": "kept off the plan",
           "keys": [
+            ["callScreen.back", "callScreen.backProgress"],
             "callScreen.notApplied",
             "decision.adjust_calories.label",
             "decision.adjust_calories.not_toward_goal.title",
@@ -906,6 +902,7 @@
         {
           "face": "the call that closes the first week",
           "keys": [
+            ["callScreen.back", "callScreen.backProgress"],
             "decision.continue.label",
             "decision.continue.first_week_on_track.title",
             "decision.ruleShort.first_week_on_track",
@@ -920,12 +917,14 @@
         {
           "face": "the safety call",
           "keys": [
+            ["callScreen.back", "callScreen.backProgress"],
             "decision.change_phase.label",
             "decision.change_phase.low_energy_safety.title",
             "callScreen.inPlan",
             "callScreen.changes.label.PHASE",
             ["callScreen.changes.phase.CUT", "callScreen.changes.phase.BULK"],
             ["callScreen.changes.phase.CUT", "callScreen.changes.phase.BULK"],
+            ["today.call.source.EXPERIENCE", "today.call.source.LITERATURE", "today.call.source.PRODUCT"],
             "callScreen.confidence",
             ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
             "callScreen.nextCall",

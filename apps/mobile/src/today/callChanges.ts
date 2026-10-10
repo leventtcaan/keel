@@ -43,7 +43,7 @@ function valueText(what: Schemas['DecisionChange']['what'], value: Schemas['Chan
   }
 }
 
-function rowOf(change: Schemas['DecisionChange']): ChangeRow | null {
+function rowOf(change: Schemas['DecisionChange'], offPlan: boolean): ChangeRow | null {
   const { what } = change;
   const name = t(`callScreen.changes.label.${what}`);
   if (change.inForce !== undefined) {
@@ -51,6 +51,8 @@ function rowOf(change: Schemas['DecisionChange']): ChangeRow | null {
     const to = valueText(what, change.inForce) ?? t('callScreen.changes.noneInForce');
     return { id: what, kind: 'inForce', label, from: null, to, spoken: t('callScreen.changes.spokenValue', { what: label, to }) };
   }
+  // A call kept off the plan or undone: its `after` is not what the plan follows, and with no `inForce` there is nothing true to show (U1).
+  if (offPlan) return null;
   const to = valueText(what, change.after);
   if (to === null) return null;
   const spokenFrom = valueText(what, change.before);
@@ -64,5 +66,7 @@ function rowOf(change: Schemas['DecisionChange']): ChangeRow | null {
 
 /** The call's changes in the server's order; none for a call that moved no target. */
 export function changeRows(decision: Schemas['Decision']): ChangeRow[] {
-  return decision.changes.flatMap((change) => rowOf(change) ?? []);
+  const state = decision.application.state;
+  const offPlan = state === 'DECLINED' || state === 'UNDONE';
+  return decision.changes.flatMap((change) => rowOf(change, offPlan) ?? []);
 }

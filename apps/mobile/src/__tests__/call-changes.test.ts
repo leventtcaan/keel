@@ -7,6 +7,7 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { changeRows } from '@/today/callChanges';
 import { callReasons } from '@/today/callReasons';
+import en from '../../../../data/copy/en.json';
 
 type Schemas = components['schemas'];
 const call = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => ({
@@ -87,9 +88,22 @@ describe('the changes, old to new', () => {
   });
 });
 
+describe('a call kept off the plan or undone with no target in force (K-978 review)', () => {
+  test.each(['DECLINED', 'UNDONE'] as const)('%s with no inForce: no row, the call set a number that is not the plan\'s', (state) => {
+    const rows = changeRows(call({ application: { state }, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }));
+    expect(rows).toEqual([]);
+  });
+
+  test('an applied or pending call still shows its own after', () => {
+    for (const state of ['APPLIED', 'PENDING', 'NOT_NEEDED'] as const) {
+      expect(changeRows(call({ application: { state }, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }))).toHaveLength(1);
+    }
+  });
+});
+
 describe('the reasons, one line each', () => {
   test("the short template with the server's numbers: a tenth of a kilogram, the sign as read", () => {
-    const [line] = callReasons(call({ reasons: [{ rule: 'not_toward_goal', source: { tag: 'EXPERIENCE' }, facts: { kgPerWeek: -0.3, weeks: 3 } }] }));
+    const [line] = callReasons(call({ reasons: [{ rule: 'not_toward_goal', source: { tag: 'EXPERIENCE' }, facts: { kgPerWeek: -0.3, weeks: 3 } }] }), 'METRIC');
     expect(line).toEqual({ text: '-0.3 kg a week over 3 weeks, not toward your goal.', tag: 'EXPERIENCE' });
   });
 
@@ -101,12 +115,13 @@ describe('the reasons, one line each', () => {
           { rule: 'adherence_low', source: { tag: 'EXPERIENCE' }, facts: { done: 2, planned: 7 } },
         ],
       }),
+      'METRIC',
     );
-    expect(lines.map((l) => l.text)).toEqual(['Calories up 1,200 kcal a day after a fast drop.', '2 of 7 planned actions happened: doing comes first.']);
+    expect(lines.map((l) => l.text)).toEqual(['Calories up 1,200 kcal a day after a fast drop.', '2 of 7 actions happened: doing comes first.']);
   });
 
   test('a zero is a number the server said, not a missing one', () => {
-    const [line] = callReasons(call({ reasons: [{ rule: 'adherence_partial', source: { tag: 'EXPERIENCE' }, facts: { done: 0, planned: 4 } }] }));
+    const [line] = callReasons(call({ reasons: [{ rule: 'adherence_partial', source: { tag: 'EXPERIENCE' }, facts: { done: 0, planned: 4 } }] }), 'METRIC');
     expect(line.text).toBe('0 of 4 planned actions happened, too few to judge.');
   });
 
@@ -118,23 +133,45 @@ describe('the reasons, one line each', () => {
           { rule: 'not_toward_goal', source: { tag: 'EXPERIENCE' }, facts: { kgPerWeek: -0.3 } }, // weeks missing
         ],
       }),
+      'METRIC',
     );
     expect(none.text).toBe(t('decision.rule.not_toward_goal'));
     expect(some.text).toBe(t('decision.rule.not_toward_goal'));
   });
 
+  test("the pace in the user's units, never a kilogram on a pound screen (ADR-029)", () => {
+    const pace = (rule: string, units: 'METRIC' | 'IMPERIAL', kgPerWeek: number) =>
+      callReasons(call({ reasons: [{ rule, source: { tag: 'EXPERIENCE' }, facts: { kgPerWeek, weeks: 3 } }] }), units)[0].text;
+    // 0.3 kg is 0.66 lb: rounded once, to a tenth, as the Why screen does
+    expect(pace('not_toward_goal', 'IMPERIAL', -0.3)).toBe('-0.7 lb a week over 3 weeks, not toward your goal.');
+    expect(pace('toward_goal', 'IMPERIAL', 0.5)).toBe('1.1 lb a week over 3 weeks, toward your goal.');
+    expect(pace('stall_window', 'IMPERIAL', 0.1)).toBe('0.2 lb a week over 3 weeks: too slow for a cut.');
+    expect(pace('bulk_stall', 'IMPERIAL', 0.1)).toBe('0.2 lb a week over 3 weeks: food goes up.');
+    expect(pace('not_toward_goal', 'METRIC', -0.3)).toBe('-0.3 kg a week over 3 weeks, not toward your goal.');
+    expect(pace('toward_goal', 'METRIC', 0.5)).toBe('0.5 kg a week over 3 weeks, toward your goal.');
+    expect(pace('stall_window', 'IMPERIAL', 0)).toBe('0.0 lb a week over 3 weeks: too slow for a cut.'); // a flat pace has no sign
+    expect(JSON.stringify(pace('not_toward_goal', 'IMPERIAL', -0.3))).not.toMatch(/kg/);
+  });
+
+  test('no pace template writes a unit of its own: the unit comes with the number', () => {
+    const short = (en as { decision: { ruleShort: Record<string, string> } }).decision.ruleShort;
+    const paced = Object.entries(short).filter(([, line]) => line.includes('{kgPerWeek}'));
+    expect(paced.map(([rule]) => rule).sort()).toEqual(['bulk_stall', 'not_toward_goal', 'stall_window', 'toward_goal']);
+    for (const [, line] of paced) expect(line).not.toMatch(/\b(kg|lb)\b/);
+  });
+
   test('a rule with no number of its own: its short line, with or without facts', () => {
-    const [line] = callReasons(call({ reasons: [{ rule: 'energy_floor', source: { tag: 'PRODUCT' } }] }));
+    const [line] = callReasons(call({ reasons: [{ rule: 'energy_floor', source: { tag: 'PRODUCT' } }] }), 'METRIC');
     expect(line.text).toBe(t('decision.ruleShort.energy_floor'));
   });
 
   test('a rule with no words at all: only its kind of source', () => {
-    const [line] = callReasons(call({ reasons: [{ rule: 'a_rule_nobody_wrote', source: { tag: 'EXPERIENCE' } }] }));
+    const [line] = callReasons(call({ reasons: [{ rule: 'a_rule_nobody_wrote', source: { tag: 'EXPERIENCE' } }] }), 'METRIC');
     expect(line).toEqual({ text: null, tag: 'EXPERIENCE' });
   });
 
   test('a call resting on the safety net says no reason, only its kind of source (ADR-028 #24)', () => {
-    const lines = callReasons(call({ safety: true, reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' }, facts: { kcal: 250 } }] }));
+    const lines = callReasons(call({ safety: true, reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' }, facts: { kcal: 250 } }] }), 'METRIC');
     expect(lines).toEqual([{ text: null, tag: 'LITERATURE' }]);
   });
 });
