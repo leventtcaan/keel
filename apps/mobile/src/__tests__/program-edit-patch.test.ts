@@ -6,7 +6,7 @@
  * said before saving, as the server will do it.
  */
 import type { components } from '@/api/schema';
-import { editedDays, programEditOf, stepped, targetsLost, withMove, withWeekday } from '@/train/programEdit';
+import { draftFits, editedDays, programEditOf, stepped, targetsLost, withMove, withMoveAt, withWeekday, withoutDay, withoutMove } from '@/train/programEdit';
 import type { Move } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -86,4 +86,71 @@ test('the moves whose target goes: kept with another rep range, and it had one; 
   expect(targetsLost(days, PROGRAM)).toEqual(['bench_press']);
   // A move without a target loses none.
   expect(targetsLost(stepped(editedDays(PROGRAM), 0, 1, 'max', 1), PROGRAM)).toEqual([]);
+});
+
+test('a move named once however many rows lose their target', () => {
+  const twice: Schemas['Program'] = {
+    ...PROGRAM,
+    days: [PROGRAM.days[0], { id: 'd3', name: 'Chest', exercises: [planned('r4', 'bench_press', { nextLoadKg: 70, nextReps: 8 })] }],
+  };
+  let days = editedDays(twice);
+  days = stepped(days, 0, 0, 'max', 1);
+  days = stepped(days, 1, 0, 'max', 1);
+  expect(targetsLost(days, twice)).toEqual(['bench_press']);
+});
+
+test('a move taken out and added again is a new row: the target it had goes, and it is said', () => {
+  let days = editedDays(PROGRAM);
+  days = withoutMove(days, 0, 0);
+  // Taken out and not added again: the user took it out, nothing to say.
+  expect(targetsLost(days, PROGRAM)).toEqual([]);
+  days = withMove(days, 0, { ...ROW, id: 'bench_press' });
+  expect(targetsLost(days, PROGRAM)).toEqual(['bench_press']);
+  // Put back by Undo (its own row again): nothing is lost.
+  const put = withMoveAt(withoutMove(editedDays(PROGRAM), 0, 0), 'd1', editedDays(PROGRAM)[0].moves[0], 0);
+  expect(targetsLost(put, PROGRAM)).toEqual([]);
+});
+
+test('the same move added in another day while its own row stays: its target stays, nothing to say', () => {
+  const days = withMove(editedDays(PROGRAM), 1, { ...ROW, id: 'bench_press' });
+  expect(targetsLost(days, PROGRAM)).toEqual([]);
+});
+
+test('a move without a target, taken out and added again: nothing to say', () => {
+  let days = withoutMove(editedDays(PROGRAM), 0, 1);
+  days = withMove(days, 0, { ...ROW, id: 'lat_pulldown' });
+  expect(targetsLost(days, PROGRAM)).toEqual([]);
+});
+
+describe('whether an edit still fits the program the server has now (409)', () => {
+  test('every day and row the draft kept from the old program is there: it fits', () => {
+    expect(draftFits(editedDays(PROGRAM), PROGRAM, PROGRAM)).toBe(true);
+    // Changed meanwhile, but the same days and rows.
+    const sets = { ...PROGRAM, days: PROGRAM.days.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e, sets: 2 })) })) };
+    expect(draftFits(editedDays(PROGRAM), PROGRAM, sets)).toBe(true);
+  });
+
+  test('a day of the old program gone, or a row gone: it does not', () => {
+    expect(draftFits(editedDays(PROGRAM), PROGRAM, { ...PROGRAM, days: [PROGRAM.days[0]] })).toBe(false);
+    const fewer = { ...PROGRAM, days: [{ ...PROGRAM.days[0], exercises: [PROGRAM.days[0].exercises[0]] }, PROGRAM.days[1]] };
+    expect(draftFits(editedDays(PROGRAM), PROGRAM, fewer)).toBe(false);
+  });
+
+  test('a day or move the user added has no id in the program, and needs none', () => {
+    const days = [...editedDays(PROGRAM), { id: 'day-9', name: 'Arms', moves: [{ exerciseId: 'barbell_curl', sets: 3, reps: { min: 8, max: 12 } }] }];
+    expect(draftFits(days, PROGRAM, PROGRAM)).toBe(true);
+  });
+
+  test('a day or a row the user took out does not have to be there', () => {
+    expect(draftFits(withoutDay(editedDays(PROGRAM), 1), PROGRAM, { ...PROGRAM, days: [PROGRAM.days[0]] })).toBe(true);
+  });
+});
+
+test('a weekday moved and back, a name with a space, a step and back: the same edit as the program', () => {
+  const base = programEditOf(editedDays(PROGRAM), PROGRAM);
+  let days = withWeekday(editedDays(PROGRAM), 0, 'TUESDAY');
+  days = withWeekday(days, 0, 'MONDAY');
+  days = [{ ...days[0], name: 'Upper ' }, days[1]];
+  days = stepped(stepped(days, 0, 0, 'sets', 1), 0, 0, 'sets', -1);
+  expect(JSON.stringify(programEditOf(days, PROGRAM))).toBe(JSON.stringify(base));
 });

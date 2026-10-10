@@ -7,6 +7,7 @@
  * edit takes are said before saving; the answer is the program shown, with Saved and Undo.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { AccessibilityInfo } from 'react-native';
 
 import EditProgramScreen from '@/app/edit-program';
@@ -184,6 +185,17 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     expect(screen.queryByText(/can't be changed here/)).toBeNull();
   });
 
+  test('each day on its weekday, with its moves', async () => {
+    mockParams = { part: 'days' };
+    await show();
+    expect(await screen.findByText('Upper')).toBeTruthy();
+    expect(screen.getByText('Monday · 2 moves')).toBeTruthy();
+    expect(screen.getByText('Lower')).toBeTruthy();
+    expect(screen.getByText('Wednesday · 1 move')).toBeTruthy();
+    expect(screen.getByText('Push')).toBeTruthy();
+    expect(screen.getByText('Friday · 1 move')).toBeTruthy();
+  });
+
   test('nothing changed: Save is off and nothing is sent', async () => {
     mockParams = { part: 'days' };
     editable();
@@ -192,6 +204,62 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     expect(screen.getByRole('button', { name: t('editProgram.save') })).toBeDisabled();
     await save();
     expect(mockPatch).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['a day moved to another weekday and back', async () => {
+      await fireEvent.press(screen.getByLabelText('Tuesday'));
+      await fireEvent.press(screen.getByLabelText('Monday'));
+    }],
+    ['a space after a name', async () => rename('Upper ')],
+    ['a name typed and the old one typed again', async () => {
+      await rename('Chest day');
+      await rename('Upper');
+    }],
+    ['a move stepped and stepped back', async () => {
+      await step(t('programEditor.setsLabel', { move: 'Bench press' }), 'more');
+      await step(t('programEditor.setsLabel', { move: 'Bench press' }), 'less');
+    }],
+  ])('%s is no edit: Save is off and nothing is sent', async (_what, change) => {
+    mockParams = { part: 'days' };
+    editable();
+    await show();
+    await screen.findByText('Upper');
+    await change();
+    expect(screen.getByRole('button', { name: t('editProgram.save') })).toBeDisabled();
+    await save();
+    expect(mockPatch).not.toHaveBeenCalled();
+  });
+
+  test('the server saved nothing (no new edit in its answer): Saved, and no Undo that would take an earlier edit back', async () => {
+    mockParams = { part: 'days' };
+    const earlier: Schemas['Program'] = { ...EDITABLE, review: { id: 'rev-2', suggestions: [], applied: [], edits: [{ id: 'e0', editedAt: '2026-10-08T10:00:00Z' }] } };
+    editable(earlier);
+    mockPatch.mockImplementationOnce(async () => ({ data: earlier, response: { status: 200 } }));
+    await show();
+    await rename('Chest day');
+    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
+    await save();
+    expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+    expect(screen.queryByLabelText(t('editProgram.undoEditLabel'))).toBeNull();
+    expect(screen.queryByText(t('editProgram.undo'))).toBeNull();
+  });
+
+  test('Undo takes back this edit (the new one in the answer), not an earlier one', async () => {
+    mockParams = { part: 'days' };
+    const earlier: Schemas['Program'] = { ...EDITABLE, review: { id: 'rev-2', suggestions: [], applied: [], edits: [{ id: 'e0', editedAt: '2026-10-08T10:00:00Z' }] } };
+    const both: Schemas['Program'] = {
+      ...AFTER,
+      review: { id: 'rev-3', suggestions: [], applied: [], edits: [{ id: 'e0', editedAt: '2026-10-08T10:00:00Z' }, { id: 'e1', editedAt: '2026-10-09T10:00:00Z' }] },
+    };
+    editable(earlier);
+    mockPatch.mockImplementationOnce(async () => ({ data: both, response: { status: 200 } }));
+    await show();
+    await rename('Chest day');
+    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
+    await save();
+    await fireEvent.press(await screen.findByLabelText(t('editProgram.undoEditLabel')));
+    expect(mockPost).toHaveBeenCalledWith('/v1/program/review/undo', { body: { changeId: 'e1' } });
   });
 
   test('a day renamed and saved goes by its ids: only the renamed day carries a name, the moves keep their rows', async () => {
@@ -263,6 +331,8 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     await save();
     await fireEvent.press(await screen.findByLabelText(t('editProgram.undoEditLabel')));
     expect(await screen.findByText(t('editProgram.undoConflict'))).toBeTruthy();
+    // The edit cannot be undone any more: no button left to press.
+    expect(screen.queryByLabelText(t('editProgram.undoEditLabel'))).toBeNull();
   });
 
   test('a day moved to another weekday, a move stepped: sent as the user left them', async () => {
@@ -402,11 +472,50 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       await save();
     };
 
-    test('409: said, the program as it is now is shown, and the draft (made for rows that are gone) goes', async () => {
-      mockPatch.mockImplementationOnce(async () => ({ error: { code: 'CONFLICT' }, response: { status: 409 } }) as never);
+    const conflict = async () => ({ error: { code: 'CONFLICT' }, response: { status: 409 } }) as never;
+
+    test("409 with the program's days and rows all still there (today's workout): the edits stay, and it is said why", async () => {
+      mockPatch.mockImplementationOnce(conflict);
       await attempt();
-      expect(await screen.findByText(t('editProgram.editConflict'))).toBeTruthy();
+      expect(await screen.findByText(t('editProgram.editConflictKept'))).toBeTruthy();
+      expect(screen.queryByText(t('editProgram.editConflictCleared'))).toBeNull();
+      expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
+      expect(screen.getByRole('button', { name: t('editProgram.save') })).toBeEnabled();
+    });
+
+    test('409 with a day the draft names gone: the edits are cleared, said so, and the program as it is now is shown', async () => {
+      mockPatch.mockImplementationOnce(async () => {
+        mockData = { ...mockData, program: { state: 'ready', value: { ...EDITABLE, days: [EDITABLE.days[0]] } } };
+        return conflict();
+      });
+      await attempt();
+      expect(await screen.findByText(t('editProgram.editConflictCleared'))).toBeTruthy();
+      expect(screen.queryByText(t('editProgram.editConflictKept'))).toBeNull();
       expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Upper');
+      expect(screen.queryByText('Lower')).toBeNull();
+    });
+
+    test('409 with a row the draft names gone (a move taken out elsewhere): the edits are cleared too', async () => {
+      mockPatch.mockImplementationOnce(async () => {
+        const days = [{ ...EDITABLE.days[0], exercises: [EDITABLE.days[0].exercises[0]] }, EDITABLE.days[1]];
+        mockData = { ...mockData, program: { state: 'ready', value: { ...EDITABLE, days } } };
+        return conflict();
+      });
+      await attempt();
+      expect(await screen.findByText(t('editProgram.editConflictCleared'))).toBeTruthy();
+      expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Upper');
+    });
+
+    test('409 and the program cannot be read again: the edits are not thrown away on a guess', async () => {
+      mockPatch.mockImplementationOnce(async () => {
+        mockServices.training.read.mockImplementationOnce(async () => {
+          throw new TypeError('Network request failed');
+        });
+        return conflict();
+      });
+      await attempt();
+      expect(await screen.findByText(t('editProgram.editConflictKept'))).toBeTruthy();
+      expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
     });
 
     test('400: said as ours to fix, the draft stays', async () => {
@@ -435,6 +544,35 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     });
   });
 
+  describe('Back with edits not saved', () => {
+    test('asks first: leaving throws the edits away', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      await show();
+      await rename('Chest day');
+      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      expect(router.back).not.toHaveBeenCalled();
+      expect(screen.getByText(t('editProgram.leaveWarn'))).toBeTruthy();
+      await fireEvent.press(screen.getByText(t('editProgram.keepEditing')));
+      expect(screen.queryByText(t('editProgram.leaveWarn'))).toBeNull();
+      expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
+      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      await fireEvent.press(screen.getByText(t('editProgram.leave')));
+      expect(router.back).toHaveBeenCalledTimes(1);
+    });
+
+    test('nothing to lose: Back goes at once', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      await show();
+      await screen.findByText('Upper');
+      await rename('Upper ');
+      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      expect(router.back).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(t('editProgram.leaveWarn'))).toBeNull();
+    });
+  });
+
   test('a review flag cannot be applied over an edit not saved yet: it would throw the edit away', async () => {
     mockParams = { part: 'moves' };
     editable();
@@ -446,6 +584,21 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
 });
 
 describe('moves', () => {
+  test('every move of every day with its sets and rep range (the four of the program)', async () => {
+    mockParams = { part: 'moves' };
+    await show();
+    // One day is open at a time: each is opened in turn.
+    const read = (move: string) =>
+      (['sets', 'min', 'max'] as const).map((field) => screen.getByRole('adjustable', { name: t(`programEditor.${field}Label`, { move }) }).props.accessibilityValue.text);
+    await screen.findByText('Bench press');
+    expect(read('Bench press')).toEqual(['3', '6', '10']);
+    expect(read('Lat pulldown')).toEqual(['3', '6', '10']);
+    await fireEvent.press(screen.getByLabelText('Lower, Wednesday, 1 move'));
+    expect(read('Squat')).toEqual(['3', '6', '10']);
+    await fireEvent.press(screen.getByLabelText('Push, Friday, 1 move'));
+    expect(read('Dumbbell shoulder press')).toEqual(['3', '6', '10']);
+  });
+
   test("each day's moves, and the review's flags with what each changes", async () => {
     mockParams = { part: 'moves' };
     await show();

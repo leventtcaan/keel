@@ -201,16 +201,36 @@ export function programEditOf(days: EditedDay[], program: Schemas['Program']): S
 }
 
 /**
- * The moves whose next target the edit will take away, as the server does (ADR-073 Ek 7): a row kept with another rep
- * range (its target was for the old one), when it had one. Other sets, another day, keep it. Said before saving.
+ * The moves whose next target the edit will take away, as the server does (ADR-073 Ek 7), each named once: a row kept with
+ * another rep range (its target was for the old one), when it had one; or a move taken out and added again, which is a new
+ * row without the target the old one had (a row of the program with a target whose move comes back without a row, while
+ * the row itself is no longer in the edit). Other sets, another day, keep it. Said before saving.
  */
 export function targetsLost(days: EditedDay[], program: Schemas['Program']): string[] {
   const rows = new Map(program.days.flatMap((day) => day.exercises.flatMap((e) => (e.id === undefined ? [] : [[e.id, e] as const]))));
-  return days.flatMap((day) =>
+  const kept = new Set(days.flatMap((day) => day.moves.flatMap((m) => (m.rowId === undefined ? [] : [m.rowId]))));
+  // The moves that had a target on a row the edit no longer has.
+  const droppedWithTarget = new Set([...rows.values()].filter((e) => e.nextLoadKg !== undefined && !kept.has(e.id as string)).map((e) => e.exerciseId));
+  const lost = days.flatMap((day) =>
     day.moves.flatMap((m) => {
-      const row = m.rowId === undefined ? undefined : rows.get(m.rowId);
+      if (m.rowId === undefined) return droppedWithTarget.has(m.exerciseId) ? [m.exerciseId] : [];
+      const row = rows.get(m.rowId);
       if (row === undefined || row.nextLoadKg === undefined || row.exerciseId !== m.exerciseId) return [];
       return row.reps.min !== m.reps.min || row.reps.max !== m.reps.max ? [m.exerciseId] : [];
     }),
   );
+  return [...new Set(lost)];
+}
+
+/**
+ * Whether the edit under way still fits the program as the server has it now (after a 409): every day and row it kept from
+ * `before` (the program it was made on) is in `now`. A day or move the user added has no id in the program and needs none;
+ * one the user took out need not be there. When it fits, the 409 was not the program changing under the edit (it was
+ * today's workout on a day the edit moves or removes), and the edit is not lost.
+ */
+export function draftFits(days: EditedDay[], before: Schemas['Program'], now: Schemas['Program']): boolean {
+  const wasDays = new Set(before.days.map((day) => day.id));
+  const nowDays = new Set(now.days.map((day) => day.id));
+  const nowRows = new Set(now.days.flatMap((day) => day.exercises.flatMap((e) => (e.id === undefined ? [] : [e.id]))));
+  return days.every((day) => (!wasDays.has(day.id) || nowDays.has(day.id)) && day.moves.every((m) => m.rowId === undefined || nowRows.has(m.rowId)));
 }
