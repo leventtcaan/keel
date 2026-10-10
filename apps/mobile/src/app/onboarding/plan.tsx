@@ -11,6 +11,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { MondayReminder } from '@/onboarding/MondayReminder';
 import { useDraft } from '@/onboarding/OnboardingContext';
+import { sendPlanSeen } from '@/onboarding/planSeen';
 import { daysTo, firstWorkout } from '@/onboarding/prepare';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -43,8 +44,8 @@ const daysWords = (days: Schemas['Weekday'][]) =>
 export default function PlanScreen() {
   const { color } = useTheme();
   const units = useUnits();
-  const { profile, report, planPreviews, reminders } = useAppServices();
-  const { progress } = useDraft();
+  const { api, profile, report, planPreviews, reminders } = useAppServices();
+  const { progress, setProgress } = useDraft();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem, occurrence] = useProblem();
   const leaving = useRef(false);
@@ -55,6 +56,24 @@ export default function PlanScreen() {
     if (consented === undefined) return;
     void reminders.keepFirstCall(consented !== true ? 'off' : keptCall === undefined || keptCall === null ? 'weekly' : { on: keptCall });
   }, [reminders, consented, keptCall]);
+  // The plan shown for the first time: the server is told (K-993), once while onboarding lasts, then the first call's day is
+  // read again, as it counts from today. A failure changes nothing here; shown again, it is said again (planSeen.ts).
+  const shown = progress.profile !== undefined && progress.program !== undefined && progress.exercises !== undefined;
+  const said = progress.planSeen === true;
+  const latest = useRef(progress);
+  useEffect(() => {
+    latest.current = progress;
+  }, [progress]);
+  const saying = useRef(false);
+  useEffect(() => {
+    if (!shown || said || saying.current) return;
+    saying.current = true;
+    void sendPlanSeen(api, consented === true, report).then((result) => {
+      saying.current = false;
+      if (!result.sent) return;
+      setProgress({ ...latest.current, planSeen: true, ...(result.firstCall === undefined ? {} : { firstCall: result.firstCall }) });
+    });
+  }, [api, consented, report, said, setProgress, shown]);
   // Opened before the plan is prepared (a link): it is prepared first.
   if (progress.profile === undefined || progress.program === undefined || progress.exercises === undefined) {
     return <Redirect href="/onboarding/preparing" />;

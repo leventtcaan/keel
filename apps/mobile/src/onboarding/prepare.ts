@@ -35,10 +35,12 @@ export type Progress = {
   starting?: Schemas['StartingTarget'] | null;
   /** The first call's day (YYYY-MM-DD, the user's calendar; K-990); null without the consent or when the server names none. */
   firstCall?: string | null;
+  /** The plan was shown and the server told so (PUT /v1/profile/plan-seen, K-993): said once while the onboarding stack lives. */
+  planSeen?: boolean;
   /** The catalog's moves, and the user's own the program names (by the names they gave them). */
   exercises?: Move[];
 };
-export type Prepared = Required<Progress>;
+export type Prepared = Required<Omit<Progress, 'planSeen'>>;
 
 type Options = {
   draft: Draft;
@@ -87,6 +89,12 @@ const NO_PROGRAM = [404] as const;
 const NO_STARTING_TARGET = [403, 404, 409] as const;
 /** No first call to name (ADR-077 Ek 2): no consent on the server, the first weeks over, no profile. */
 const NO_FIRST_CALL = [403, 404, 409] as const;
+
+/** The first call's day, the server's (K-990); null when it names none (no consent on the server, the flow over, no profile). Fails by name. */
+export async function readFirstCall(api: ApiClient): Promise<string | null> {
+  const weeks = await answer(() => api.GET('/v1/first-weeks'), NO_FIRST_CALL);
+  return weeks?.firstCallOn ?? null;
+}
 
 export async function preparePlan(options: Options): Promise<Prepared> {
   const { draft, from, onProgress, api, profile, queue, consented, keptOwn, report, units, now, timeZone } = options;
@@ -142,8 +150,7 @@ export async function preparePlan(options: Options): Promise<Prepared> {
 
   if (progress.firstCall === undefined) {
     // Without the consent there are no calls. The day is the server's, from the day onboarding finished (the profile's save).
-    const weeks = progress.consented === true ? await answer(() => api.GET('/v1/first-weeks'), NO_FIRST_CALL) : null;
-    advance({ firstCall: weeks?.firstCallOn ?? null });
+    advance({ firstCall: progress.consented === true ? await readFirstCall(api) : null });
   }
 
   if (progress.exercises === undefined) {
