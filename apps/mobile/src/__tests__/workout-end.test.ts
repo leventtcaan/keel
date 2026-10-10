@@ -6,7 +6,7 @@
  */
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
-import type { TrainData } from '@/train/trainData';
+import type { Move, TrainData } from '@/train/trainData';
 import { loadWorkoutEnd } from '@/train/workoutEnd';
 
 type Schemas = components['schemas'];
@@ -53,7 +53,10 @@ const deps = (over: Partial<Parameters<typeof loadWorkoutEnd>[0]> = {}) => {
       api: { GET } as never,
       queue: { drain: jest.fn(async () => undefined) },
       workoutRecords: jest.fn(async () => [WORKOUT, FINISH]),
-      training: { read: jest.fn(async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false })) },
+      training: {
+        read: jest.fn(async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false })),
+        own: jest.fn(async (): Promise<Move[]> => []),
+      },
       health: { readWatchActiveEnergy },
       consents: { granted: async () => true },
       ...over,
@@ -70,6 +73,7 @@ test("sent: the server's summary of that workout, its program day, the week's se
     programDayId: 'a',
     week: { done: 2, planned: 3 },
     kcal: 310,
+    moves: new Map(),
   });
   expect(value.queue.drain).toHaveBeenCalled();
   expect(GET).toHaveBeenCalledWith('/v1/workouts/{id}/summary', { params: { path: { id: 'srv-w1' } } });
@@ -134,7 +138,10 @@ test('without the health data consent the consistency is refused (403): no week,
 
 test("a program kept offline is not read for the record's next target: it may be from before this workout", async () => {
   const { value } = deps({
-    training: { read: async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: true }) },
+    training: {
+      read: async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: true }),
+      own: async (): Promise<Move[]> => [],
+    },
   });
   const end = await loadWorkoutEnd(value, 'w1');
   expect(end.kind === 'ready' && end.program).toBeNull();
@@ -163,4 +170,32 @@ test.each([
 ])('%s: failed, never pending forever', async (_, records) => {
   const { value } = deps({ workoutRecords: async () => records });
   expect(await loadWorkoutEnd(value, 'w1')).toEqual({ kind: 'failed', problem: 'ServerError' });
+});
+
+test("the moves by id: the catalog's and the user's own, so an own move is named by what they called it", async () => {
+  const squat = { id: 'squat', nameKey: 'exercises.squat.name' } as Move;
+  const zercher = { id: 'custom-1', name: 'Zercher squat' } as Move;
+  const { value } = deps({
+    training: {
+      read: async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [squat] }, kept: false }),
+      own: async (): Promise<Move[]> => [zercher],
+    },
+  });
+  const end = await loadWorkoutEnd(value, 'w1');
+  expect(end.kind === 'ready' && [...end.moves.keys()]).toEqual(['squat', 'custom-1']);
+  expect(end.kind === 'ready' && end.moves.get('custom-1')?.name).toBe('Zercher squat');
+});
+
+test("the user's own moves not read: the end is still ready, with the catalog's names", async () => {
+  const { value } = deps({
+    training: {
+      read: async (): Promise<TrainData> => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false }),
+      own: async (): Promise<Move[]> => {
+        throw new Error('store');
+      },
+    },
+  });
+  const end = await loadWorkoutEnd(value, 'w1');
+  expect(end.kind).toBe('ready');
+  expect(end.kind === 'ready' && end.moves.size).toBe(0);
 });

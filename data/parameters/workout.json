@@ -184,6 +184,14 @@
       "note": "A note on a set or a session (K-422): the contract's maxLength, the server's keel.training.max-note."
     },
     {
+      "key": "summary_moves_shown",
+      "value": 3,
+      "unit": "moves",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-075-antrenman-oturumu.md#Ek 2",
+      "note": "How many moves the workout end's \"What moved\" card lists (K-974, K-1008): the first few in the order done, then how many more; the prototype shows three (prototip/yeni-yuz.html #summary), so the screen stays within its word budget."
+    },
+    {
       "key": "move_search_results",
       "value": 8,
       "unit": "moves",
