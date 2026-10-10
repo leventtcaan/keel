@@ -13,17 +13,18 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import type { ChangeRow } from './callChanges';
-import { type DayCall, type Weekday, dayCall, freeDays, moveDays, trainingWeekdays } from './week1';
+import { type DayCall, type Saved, type Weekday, dayCall, freeDays, moveDays, trainingWeekdays } from './week1';
 import { type Loaded, load } from './today';
 
 type Schemas = components['schemas'];
 
 const SAID = {
   conflict: 'callScreen.week1.stale',
+  refused: 'callScreen.week1.refused',
   offline: 'callScreen.week1.offline',
   failed: 'callScreen.week1.failed',
 } as const;
-const REPORTED = { conflict: 'DaysConflict', offline: 'DaysOffline', failed: 'DaysFailed' } as const;
+const REPORTED = { conflict: 'DaysConflict', refused: 'DaysRefused', offline: 'DaysOffline', failed: 'DaysFailed' } as const;
 
 const short = (day: Weekday) => t(`programEditor.weekdayShort.${day}`);
 const full = (day: Weekday) => t(`programEditor.weekdayName.${day}`);
@@ -51,8 +52,10 @@ export type Week1 = {
  * The call that closes the first week (K-978, ADR-077 #4, Ek 1 and Ek 4; prototype #week1 and #w1change). The days come
  * filled with what the server suggested (`suggested`): "Sounds right" saves them, "Change it" lets the user pick others
  * (any day the program does not train on), then "Done". The save is the program's days by their ids (PATCH /v1/program,
- * K-995 B). Null for every other call, and for one whose missed days are no training days any more (already moved).
- * One more day has no day to add by itself on the server: it is picked in the training days.
+ * K-995 B; the program edit of K-970). Null for every other call; for one whose missed days are no training days any
+ * more (already moved) there is nothing to pick, only what could not be saved, said. A missed day the program no longer
+ * trains on (moved elsewhere already) is left out, the others stay. One more day has no day to add by itself on the
+ * server: it is picked in the training days.
  */
 export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   const { api, report } = useAppServices();
@@ -97,12 +100,21 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
     };
   }
 
-  const { missed, suggested } = call;
-  // Already moved: no missed day is a training day any more (the call is still the week's, the days are done).
-  if (program?.state === 'ready') {
-    const training = new Set(trainingWeekdays(program.value));
-    if (missed.every((day) => !training.has(day))) return null;
-  }
+  // Built outside the JSX children (the raw-text guard reads them).
+  const note =
+    problem === null ? null : (
+      <ProblemText occurrence={occurrence} style={[styles.text, { color: color.text }]}>
+        {problem}
+      </ProblemText>
+    );
+  // A missed day the program no longer trains on has been moved elsewhere already: nothing to move, its suggestion goes
+  // with it (each suggestion stays with its own missed day).
+  const training = program?.state === 'ready' ? new Set(trainingWeekdays(program.value)) : null;
+  const left = call.missed.map((from, i) => ({ from, to: call.suggested[i] })).filter(({ from }) => training === null || training.has(from));
+  // All moved (the call is still the week's, the days are done): no days to pick; a note from a save that failed stays.
+  if (training !== null && left.length === 0) return problem === null ? null : { rows: [], dock: null, note, changing: null };
+  const missed = left.map(({ from }) => from);
+  const suggested: (Weekday | undefined)[] = left.map(({ to }) => to);
   const chosen: (Weekday | undefined)[] = missed.map((_, i) => picks[i] ?? suggested[i]);
   const picked = Object.keys(picks).length > 0;
   const complete = chosen.every((day) => day !== undefined);
@@ -129,11 +141,13 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
         setProblem(t(SAID[kind]));
         return;
       }
+      // The program as it is now: a missed day it no longer trains on has nothing to move.
+      const trained = new Set(trainingWeekdays(current.value));
       const moves = missed.flatMap((from, i) => {
         const to = chosen[i];
-        return to === undefined ? [] : [{ from, to }];
+        return to === undefined || !trained.has(from) ? [] : [{ from, to }];
       });
-      const result = await moveDays(api, current.value, moves);
+      const result: Saved = moves.length === 0 ? { kind: 'conflict' } : await moveDays(api, current.value, moves);
       if (result.kind === 'done') {
         announce(t('callScreen.week1.saved'));
         router.back();
@@ -151,12 +165,11 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
 
   const free = program?.state === 'ready' ? freeDays(program.value) : [];
   const suggestion = suggested
-    .map((to, i) => t('callScreen.week1.suggestion', { to: full(to), from: full(missed[i]) }))
+    .flatMap((to, i) => (to === undefined ? [] : [t('callScreen.week1.suggestion', { to: full(to), from: full(missed[i]) })]))
     .join(t('callScreen.week1.join'));
-  // Built outside the JSX children (the raw-text guard reads them).
-  const hint = suggested.length === 0 ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{t('callScreen.week1.changeHint', { suggestion })}</Text>;
+  const hint = suggestion === '' ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{t('callScreen.week1.changeHint', { suggestion })}</Text>;
   const keepSuggestion =
-    suggested.length === 0 ? null : (
+    suggestion === '' ? null : (
       <Button
         label={t('callScreen.week1.keepSuggestion')}
         variant="ghost"
@@ -196,11 +209,7 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
         <Button label={t('callScreen.week1.changeIt')} variant="ghost" disabled={busy} onPress={() => setChanging(true)} />
       </View>
     ),
-    note: problem === null ? null : (
-      <ProblemText occurrence={occurrence} style={[styles.text, { color: color.text }]}>
-        {problem}
-      </ProblemText>
-    ),
+    note,
     changing: picker,
   };
 }

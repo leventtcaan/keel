@@ -199,6 +199,34 @@ describe('when it does not save', () => {
     expect(mockBack).not.toHaveBeenCalled();
   });
 
+  test("the 409 does not say why: today's workout may have started, not only a changed plan", async () => {
+    expect(w('stale')).not.toMatch(/changed since|plan changed/i);
+    mockPatch = refused(409, 'CONFLICT');
+    await show();
+    await press(w('soundsRight'));
+    expect(screen.getByText(w('stale'))).toBeOnTheScreen();
+  });
+
+  test('the edit is outside what a program is (400): its own line, not "try again in a moment"', async () => {
+    mockPatch = refused(400, 'VALIDATION_FAILED');
+    await show();
+    await press(w('soundsRight'));
+    expect(screen.getByText(w('refused'))).toBeOnTheScreen();
+    expect(screen.queryByText(w('failed'))).toBeNull();
+  });
+
+  test('after the 409 the program is read again; if the missed day is no training day now, the note stays with "Got it"', async () => {
+    mockPatch = refused(409, 'CONFLICT');
+    await show();
+    const moved = program();
+    moved.days[1].weekday = 'THURSDAY';
+    mockAnswers['/v1/program'] = ok(moved);
+    await press(w('soundsRight'));
+    expect(screen.getByText(w('stale'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: w('soundsRight') })).toBeNull();
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toBeOnTheScreen();
+  });
+
   test('no connection: said, and the button still there to try again', async () => {
     mockPatch = 'offline';
     await show();
@@ -243,6 +271,22 @@ describe('edge cases', () => {
     expect(screen.queryByRole('button', { name: w('soundsRight') })).toBeNull();
     expect(screen.queryByText(w('noDay'))).toBeNull();
     expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toBeOnTheScreen();
+  });
+
+  test('one of two missed days moved elsewhere already: only the other is offered and saved, "Sounds right" is not dead', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      moveCall({ action: { type: 'MOVE_MISSED_SESSIONS', missed: ['WEDNESDAY', 'FRIDAY'], suggested: ['THURSDAY', 'SATURDAY'] } as Schemas['Decision']['action'] }),
+    );
+    const moved = program();
+    moved.days[1].weekday = 'THURSDAY'; // Wednesday's session went to Thursday meanwhile
+    mockAnswers['/v1/program'] = ok(moved);
+    await show();
+    expect(screen.queryByText(w('session').replace('{day}', 'Wed'))).toBeNull();
+    expect(screen.getByText(w('session').replace('{day}', 'Fri'))).toBeOnTheScreen();
+    expect(screen.getByText('Sat')).toBeOnTheScreen();
+    await press(w('soundsRight'));
+    expect(weekdaysSent()).toEqual(['MONDAY', 'THURSDAY', 'SATURDAY']);
+    expect(mockBack).toHaveBeenCalled();
   });
 
   test('a past call of this kind, read only: its days are not offered again', async () => {

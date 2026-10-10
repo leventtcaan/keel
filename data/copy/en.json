@@ -241,7 +241,8 @@
       "moveHead": "Move {day}",
       "join": ", ",
       "saved": "Days saved.",
-      "stale": "Your plan changed since. Check your days in Train.",
+      "stale": "Not saved: your days can't be moved right now. Check them in Train.",
+      "refused": "Not saved: these days can't be used. Pick others, then try again.",
       "offline": "Not saved: no connection. Try again in a moment.",
       "failed": "Not saved: something went wrong on our side. Try again in a moment."
     },

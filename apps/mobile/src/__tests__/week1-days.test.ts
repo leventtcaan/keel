@@ -97,6 +97,17 @@ describe('the edit that moves a day', () => {
     expect(moveBody(program(), [{ from: 'TUESDAY', to: 'THURSDAY' }])).toBeNull();
   });
 
+  test("a move the program holds with no row id: nothing to send (the edit would make it a new row and lose its target)", () => {
+    const p = program();
+    delete p.days[1].exercises[0].id;
+    expect(moveBody(p, [{ from: 'WEDNESDAY', to: 'THURSDAY' }])).toBeNull();
+  });
+
+  test("the program's own day names are not sent: a generated day keeps its own", () => {
+    const body = moveBody(program(), [{ from: 'WEDNESDAY', to: 'THURSDAY' }]);
+    expect(body?.days.every((d) => d.name === undefined)).toBe(true);
+  });
+
   test('a weekday that is a training day already, or one chosen twice: nothing to send', () => {
     expect(moveBody(program(), [{ from: 'WEDNESDAY', to: 'FRIDAY' }])).toBeNull();
     expect(
@@ -121,7 +132,7 @@ describe('saving', () => {
 
   test.each([
     [409, 'conflict'],
-    [400, 'failed'],
+    [400, 'refused'],
     [500, 'failed'],
   ])('refused %i: %s, nothing changed', async (status, kind) => {
     const PATCH = jest.fn(async () => answer(status));
