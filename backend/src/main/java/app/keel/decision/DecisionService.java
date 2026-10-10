@@ -229,7 +229,37 @@ class DecisionService {
             // The same clientId or this week, stored at the same moment by another request.
             return calls.byClient(account, clientId).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         }
-        return call;
+        return appliedByDefault(account, call);
+    }
+
+    /**
+     * Applied by default (ADR-077 #3, B11; K-1000): a call that moves the plan is applied as it is made, through the one
+     * apply path ("Use this call" later is the same path). A safety call too (U13); it is never declinable. When the apply
+     * cannot move the plan now (another call moved it meanwhile, a program call without a program), the call stays
+     * PENDING, kept as made, and the app offers "Use this call". The first week's day calls are NOT_NEEDED: the days are
+     * the user's to pick (Ek 1).
+     */
+    private CallStore.Call appliedByDefault(AccountId account, CallStore.Call call) {
+        if (call.application() != CallStore.Application.PENDING) {
+            return call;
+        }
+        return appliedAsMade(() -> apply(account, call.id())) ? calls.byId(account, call.id()).orElse(call) : call;
+    }
+
+    /**
+     * Runs the apply of a call just made: true when it moved the plan; false when it could not now (CONFLICT: the call stays
+     * PENDING as made, nothing changed); anything else (not found, no consent) is not swallowed.
+     */
+    static boolean appliedAsMade(Runnable apply) {
+        try {
+            apply.run();
+            return true;
+        } catch (ApiException notNow) {
+            if (notNow.code() != ErrorCode.CONFLICT) {
+                throw notNow;
+            }
+            return false;
+        }
     }
 
     /** The profile, today and the week on the user's calendar, the body, the weights, and what the data says (look, waist). */
@@ -283,9 +313,10 @@ class DecisionService {
         // A session moved in its week is planned where it was moved, not on its weekday (K-964).
         PlannedDays plannedDays = programDays.isEmpty() ? PlannedDays.weekly(trainingDays)
                 : statuses.plannedDays(account, began, week.weekOf()).orElse(PlannedDays.weekly(trainingDays));
+        // On the plan's training weekdays: the days the call suggests are none of them (K-1000, ADR-077 Ek 4).
         return week.withFirstWeek(FirstWeekFacts.of(began, week.profile().checkInDay(), week.weekOf(), plannedDays::on,
                 logs.sessionDays(account, zone, began, week.weekOf()), planned.perWeek(account, week.profile()),
-                week.profile().experience().map(experience -> Experience.valueOf(experience.name()))));
+                week.profile().experience().map(experience -> Experience.valueOf(experience.name()))).map(first -> first.withWeekdays(trainingDays)));
     }
 
     /**
@@ -535,7 +566,7 @@ class DecisionService {
 
     /**
      * Puts the plan back as it was before the call (kept in the audit trail). Undone twice, nothing more changes. The hard
-     * stop is CONFLICT: it is not taken back (ADR-020 L-1).
+     * stop and any call resting on the safety net are CONFLICT: not taken back (ADR-020 L-1, U13).
      */
     @Transactional
     PlanTargets undo(AccountId account, UUID id) {
@@ -544,7 +575,7 @@ class DecisionService {
         if (call.application() == CallStore.Application.UNDONE) {
             return targetsAfter(account);
         }
-        if (call.application() != CallStore.Application.APPLIED || !PlanChange.undoable(DecisionJson.action(call.decision()))) {
+        if (call.application() != CallStore.Application.APPLIED || !undoable(call)) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         if (calls.markUndone(account, id, clock.instant())) {
@@ -552,6 +583,14 @@ class DecisionService {
             training.undo(account, id);
         }
         return targetsAfter(account);
+    }
+
+    /**
+     * Whether an applied call can be taken back: the hard stop never (ADR-020 L-1), nor any call resting on the safety net
+     * (U13). A safety call is applied by default (K-1000) and is not declined; an undo would be a decline by another name.
+     */
+    static boolean undoable(CallStore.Call call) {
+        return PlanChange.undoable(DecisionJson.action(call.decision())) && !SafetyCalls.restsOnTheSafetyNet(call.decision());
     }
 
     /**
@@ -596,6 +635,40 @@ class DecisionService {
     static boolean declinable(CallStore.Call call, boolean latest) {
         boolean open = call.application() == CallStore.Application.PENDING || call.application() == CallStore.Application.APPLIED;
         return latest && open && !SafetyCalls.restsOnTheSafetyNet(call.decision());
+    }
+
+    /**
+     * The sent reasons with their facts (K-1000): the numbers each rule read, from the call's own kept data. A reason with
+     * none goes as it was.
+     */
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> withFacts(CallStore.Call call, List<Map<String, Object>> reasons) {
+        if (call.snapshot() == null || reasons == null) {
+            return reasons;
+        }
+        DecisionBasis basis = DecisionBasis.of(call.snapshot(), parameters.forSex(call.snapshot().sex()));
+        return reasons.stream().map(reason -> {
+            Map<String, Object> facts = ReasonFacts.of((String) reason.get("rule"), basis, call.snapshot().firstWeek(), call.decision());
+            if (facts.isEmpty()) {
+                return reason;
+            }
+            Map<String, Object> sent = new java.util.LinkedHashMap<>(reason);
+            sent.put("facts", facts);
+            return sent;
+        }).toList();
+    }
+
+    /** What the call changed in the plan, old to new (K-1000), the step target read as the plan holds it (the starting one before any is set). */
+    List<Map<String, Object>> changes(CallStore.Call call) {
+        if (call.snapshot() == null) {
+            return List.of();
+        }
+        return CallChanges.of(call, parameters.forSex(call.snapshot().sex()));
+    }
+
+    /** The first week's watch days, on the call that closes it (K-1000, ADR-077 #4): the user's sex's, as the call read it. */
+    Optional<Integer> observationDays(CallStore.Call call) {
+        return CallChanges.observationDays(call.snapshot(), parameters);
     }
 
     /** The id of the account's latest call, the only one that can be applied, undone or declined; the caller has checked consent. */

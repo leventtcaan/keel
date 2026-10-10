@@ -68,6 +68,7 @@ const decision = (copyKey: string, extra: Partial<Schemas['Decision']> = {}): Sc
   copyKey,
   application: { state: 'NOT_NEEDED' },
   declinable: false,
+  changes: [],
   ...extra,
 });
 const PROGRAM: Schemas['Program'] = {

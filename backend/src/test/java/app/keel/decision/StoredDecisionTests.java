@@ -62,16 +62,29 @@ class StoredDecisionTests {
 
     @Test
     void theFirstWeeksCallsAreKeptWithTheirDataAndReadBackAsMade() {
-        // K-962: the missed weekdays by name, as the contract's Weekday; the added day's new count.
-        Action moved = new Action.MoveMissedSessions(List.of(java.time.DayOfWeek.WEDNESDAY, java.time.DayOfWeek.FRIDAY));
+        // K-962: the missed weekdays by name, as the contract's Weekday; the added day's new count. K-1000: the days the
+        // call suggests, by name too.
+        Action moved = new Action.MoveMissedSessions(List.of(java.time.DayOfWeek.WEDNESDAY, java.time.DayOfWeek.FRIDAY),
+                List.of(java.time.DayOfWeek.THURSDAY, java.time.DayOfWeek.SATURDAY));
         Map<String, Object> kept = DecisionJson.of(new Decision(moved, List.of(new Reason(new RuleId("first_week_move_missed"), REDS)),
                 Confidence.MEDIUM, LocalDate.of(2026, 10, 5), new CopyKey("decision.move_missed_sessions.first_week_move_missed")));
 
-        assertThat(kept.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("WEDNESDAY", "FRIDAY")));
+        assertThat(kept.get("action")).isEqualTo(Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("WEDNESDAY", "FRIDAY"),
+                "suggested", List.of("THURSDAY", "SATURDAY")));
         assertThat(DecisionJson.action(kept)).isEqualTo(moved);
-        Action added = new Action.AddTrainingDay(3, 4);
+        Action added = new Action.AddTrainingDay(3, 4, List.of(java.time.DayOfWeek.SATURDAY));
         assertThat(DecisionJson.action(DecisionJson.of(new Decision(added, List.of(new Reason(new RuleId("first_week_add_day"), REDS)),
                 Confidence.MEDIUM, LocalDate.of(2026, 10, 5), new CopyKey("decision.add_training_day.first_week_add_day"))))).isEqualTo(added);
+    }
+
+    @Test
+    void aFirstWeekCallKeptBeforeTheSuggestedDaysReadsAsSuggestingNone() {
+        // Kept before K-1000: no "suggested" in the stored call. Read back, it suggests nothing; nothing fails.
+        Map<String, Object> moved = Map.of("action", Map.of("type", "MOVE_MISSED_SESSIONS", "missed", List.of("WEDNESDAY")));
+        Map<String, Object> added = Map.of("action", Map.of("type", "ADD_TRAINING_DAY", "toDays", 3, "idealDays", 4));
+
+        assertThat(DecisionJson.action(moved)).isEqualTo(new Action.MoveMissedSessions(List.of(java.time.DayOfWeek.WEDNESDAY), List.of()));
+        assertThat(DecisionJson.action(added)).isEqualTo(new Action.AddTrainingDay(3, 4, List.of()));
     }
 
     @Test

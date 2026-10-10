@@ -34,6 +34,7 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state: 'APPLIED' },
   declinable: true,
+  changes: [],
   ...extra,
 });
 const FIRST_WEEKS: Schemas['FirstWeeks'] = { week: 1, risk: [], readsRisk: false, training: true, firstCallOn: '2026-10-19' };

@@ -37,6 +37,7 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state: 'APPLIED' },
   declinable: true,
+  changes: [],
   ...extra,
 });
 const PROGRAM: Schemas['Program'] = {

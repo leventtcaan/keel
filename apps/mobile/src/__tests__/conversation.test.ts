@@ -70,6 +70,7 @@ describe('chipAnswer', () => {
     copyKey: 'decision.continue.toward_goal',
     application: { state: 'NOT_NEEDED' },
     declinable: false,
+    changes: [],
   };
 
   test("'Why this call?': every rule's sentence and that the call stands, with the call", () => {

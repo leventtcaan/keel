@@ -74,10 +74,15 @@ final class DecisionJson {
             case FULL_REST_WEEK -> new Action.FullRestWeek();
             case MINI_CUT -> new Action.MiniCut(whole(action, "minWeeks"), whole(action, "maxWeeks"));
             case CHANGE_PHASE -> new Action.ChangePhase(Phase.valueOf((String) action.get("to")));
-            case ADD_TRAINING_DAY -> new Action.AddTrainingDay(whole(action, "toDays"), whole(action, "idealDays"));
-            case MOVE_MISSED_SESSIONS -> new Action.MoveMissedSessions(((List<?>) action.get("missed")).stream()
-                    .map(day -> DayOfWeek.valueOf((String) day)).toList());
+            case ADD_TRAINING_DAY -> new Action.AddTrainingDay(whole(action, "toDays"), whole(action, "idealDays"), days(action, "suggested"));
+            case MOVE_MISSED_SESSIONS -> new Action.MoveMissedSessions(days(action, "missed"), days(action, "suggested"));
         };
+    }
+
+    /** Weekdays by name; none when the call was kept before the field (K-1000's "suggested"). */
+    private static List<DayOfWeek> days(Map<String, Object> action, String field) {
+        Object kept = action.get(field);
+        return kept == null ? List.of() : ((List<?>) kept).stream().map(day -> DayOfWeek.valueOf((String) day)).toList();
     }
 
     private static int whole(Map<String, Object> action, String field) {
