@@ -22,9 +22,12 @@ import { EditSet } from '@/train/EditSet';
 import { EndSheet } from '@/train/EndSheet';
 import { FinishForm } from '@/train/FinishForm';
 import { GoalLine } from '@/train/GoalLine';
+import { CardioStep } from '@/train/CardioStep';
 import { InsightLine } from '@/train/InsightLine';
 import { LoadNote } from '@/train/LoadNote';
 import { calibrationRead, lighterOffer } from '@/train/calibration';
+import { cardioAfterLift } from '@/train/cardio';
+import { bestSet, moveInsight } from '@/train/insight';
 import { MoveDots } from '@/train/MoveDots';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
@@ -115,6 +118,9 @@ function Session() {
   // while `swapping`.
   const [swaps, setSwaps] = useState<Swaps>({});
   const [swapping, setSwapping] = useState(false);
+  // The last step (K-973, ADR-075 #6): the cardio after the weights, open while shown; what was chosen there but Done.
+  const [cardioOpen, setCardioOpen] = useState(false);
+  const [cardioChoice, setCardioChoice] = useState<'later' | 'skipped' | null>(null);
   // The moves swapped away from in this session: they stay in it with what was done on them, but are no longer the
   // superset's members (its place is the planned move's, whoever stands in it) and have nothing left to do. Kept with the
   // swaps (K-973, ADR-075 Ek 8): opened again, a superset read back from sets would list the moves its sets were done on.
@@ -449,6 +455,45 @@ function Session() {
   };
   const finishProblem = problem !== null && problem.row === FINISH ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
 
+  // The cardio the program plans after today's weights (ADR-074 #3), as the Train card reads it: on the session's own day. Only
+  // for a workout with a work set in it (an empty one is no session). Done is kept on the phone like a set, and found again.
+  const cardioMinutes = active === null || worked.length === 0 ? null : cardioAfterLift(program, sessionDay);
+  const cardioLogged = (records ?? []).some((r) => r.kind === 'cardio' && r.state !== 'REJECTED' && (r.body as components['schemas']['NewCardioSession']).day === sessionDay);
+  const cardioStatus = cardioLogged ? 'done' : cardioChoice;
+  const cardioPending = cardioStatus !== 'done';
+  const cardioDue = cardioMinutes !== null && cardioStatus === null;
+  const cardioShown = cardioOpen && cardioMinutes !== null;
+  const logCardio = async () => {
+    if (saving.current || cardioMinutes === null) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      await queue.record({ kind: 'cardio', body: { clientId: newClientId(), day: sessionDay, minutes: cardioMinutes, source: 'MANUAL' } });
+      setProblem((said) => (said?.row === CARDIO ? null : said));
+      // Said, not only shown (K-815).
+      announce(t('workout.cardio.loggedSaid', { minutes: cardioMinutes }));
+    } catch (error) {
+      named(error);
+      setProblem({ row: CARDIO, text: t('workout.cardio.failed') });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
+  };
+  // Later today and Skip today send nothing: no catch-up is made (U7, ADR-074 #3); a cardio done later is logged from "+".
+  const chooseCardio = (choice: 'later' | 'skipped') => {
+    setCardioChoice(choice);
+    announce(t(choice === 'later' ? 'workout.cardio.laterSaid' : 'workout.cardio.skipSaid'));
+  };
+  const cardioSaid =
+    cardioStatus === null
+      ? null
+      : cardioStatus === 'done'
+        ? t('workout.cardio.loggedSaid', { minutes: cardioMinutes ?? 0 })
+        : t(cardioStatus === 'later' ? 'workout.cardio.laterSaid' : 'workout.cardio.skipSaid');
+  const cardioProblem = problem !== null && problem.row === CARDIO ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
+  const todaySession = program?.week?.find((s) => s.programDayId === dayId && s.date === sessionDay);
+
   // Progress is the plan's: a move outside it is not one of the day's count. A planned move's place counts once it has a set,
   // on the move now standing in it or on the one it was swapped from (K-972): a swap does not take a move back out of the count.
   const movesDone = entries.filter(
@@ -774,6 +819,7 @@ function Session() {
       onPick={(id) => {
         setPicked(id);
         setEditing(null);
+        setCardioOpen(false);
       }}
     />
   );
@@ -826,6 +872,13 @@ function Session() {
   };
   const weightFound =
     calibration === null || calibration.kind !== 'found' ? null : <InsightLine text={t('workout.calibrate.found', { load: formatLoad(calibration.kg, units) })} />;
+  // The analysis line (ADR-075 #4): what the sets of the move say against last time, in en.json's words with the server's
+  // numbers. Read from the best set of today as the rows hold it, so a set corrected, deleted or skipped changes it by itself.
+  const analysis =
+    planned === undefined || plan === null
+      ? null
+      : moveInsight({ planned, best: bestSet(plan.rows.flatMap((r) => (r.done === null ? [] : [r.done]))), held: program?.loadHeldSince !== undefined, units });
+  const insightLine = weightFound ?? (analysis === null ? null : <InsightLine text={analysis} />);
   const offerNote =
     offer === null || typedKg === null ? null : (
       <LoadNote
@@ -961,7 +1014,7 @@ function Session() {
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
         <DoneSets plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })} />
         {plan.skippedMove === true ? skippedMove : null}
-        {weightFound}
+        {insightLine}
         {offerNote}
         {/* Only on its own move, with its own move's load (a dot tapped meanwhile closes it). */}
         {editing === null || editing.set.exerciseId !== move.id ? null : (
@@ -1009,15 +1062,40 @@ function Session() {
         <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipSet')}</Text>
       </Pressable>
     );
+  // The last step's dock (K-973): Done, Later today, Skip today; then Finish (the way on once something was chosen).
+  const cardioChoices =
+    cardioMinutes === null || !cardioPending ? null : (
+      <>
+        <Button label={t('workout.cardio.done', { minutes: cardioMinutes })} onPress={() => void logCardio()} disabled={busy} />
+        <View style={styles.pair}>
+          <View style={styles.grow}>
+            <Button label={t('workout.cardio.later')} variant="ghost" onPress={() => chooseCardio('later')} disabled={busy} />
+          </View>
+          <View style={styles.grow}>
+            <Button label={t('workout.cardio.skip')} variant="ghost" onPress={() => chooseCardio('skipped')} disabled={busy} />
+          </View>
+        </View>
+      </>
+    );
+  const cardioDock = (
+    <View style={styles.cardioDock}>
+      {cardioChoices}
+      <Button label={t('workout.finish')} variant={cardioStatus === null ? 'ghost' : 'primary'} onPress={onFinish} />
+    </View>
+  );
   const dockButton =
-    finishing ? null : move !== undefined && row !== null ? (
+    finishing ? null : cardioShown ? (
+      cardioDock
+    ) : move !== undefined && row !== null ? (
       <>
         <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />
         {skipSetLink}
       </>
     ) : nextId !== undefined ? (
       <Button label={t('workout.next', { name: name(nextId) })} onPress={() => setPicked(nextId)} />
-    ) : day === null && active === null ? null : (
+    ) : day === null && active === null ? null : cardioDue ? (
+      <Button label={t('workout.cardio.next')} onPress={() => setCardioOpen(true)} />
+    ) : (
       <Button label={t('workout.finish')} onPress={onFinish} />
     );
   // The last skip, said, with its Undo (K-972): in the page, so nothing in the dock moves.
@@ -1112,6 +1190,16 @@ function Session() {
       {finishProblem}
     </>
   );
+  // The last step in the session's place (K-973): the moves stay one tap away on their dots.
+  const cardioPage =
+    cardioMinutes === null ? null : (
+      <>
+        {entries.length > 0 && dots}
+        {undoBar}
+        <CardioStep minutes={cardioMinutes} optional={todaySession?.short === true} said={cardioSaid} />
+        {cardioProblem}
+      </>
+    );
   const session = (
     <>
       {entries.length > 0 && dots}
@@ -1139,7 +1227,7 @@ function Session() {
         <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
-          {discarded !== null ? discardedPanel : ending ? endSheet : swapping ? swapSheet : finishing ? form : session}
+          {discarded !== null ? discardedPanel : ending ? endSheet : swapping ? swapSheet : finishing ? form : cardioShown ? cardioPage : session}
         </ScrollView>
         {dock}
       </KeyboardAvoidingView>
@@ -1149,6 +1237,8 @@ function Session() {
 
 /** The finish's own key for a problem: not a row of any move. */
 const FINISH = 'finish';
+/** The cardio step's own key for a problem. */
+const CARDIO = 'cardio';
 /** A correction's own key for a problem. */
 const EDIT = 'edit';
 /** A discard's own key for a problem. */
@@ -1162,6 +1252,8 @@ const styles = StyleSheet.create({
   pausedBar: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   restSlot: { minHeight: tokens.size.touch + tokens.space.sm * 2, justifyContent: 'center' },
   body: { padding: tokens.space.lg, gap: tokens.space.sm },
+  cardioDock: { gap: tokens.space.sm },
+  pair: { flexDirection: 'row', gap: tokens.space.sm },
   dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline, alignItems: 'stretch' },
   undo: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   discarded: { gap: tokens.space.sm, padding: tokens.space.md, borderRadius: tokens.radius.card },

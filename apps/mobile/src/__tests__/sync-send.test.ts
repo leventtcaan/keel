@@ -29,6 +29,8 @@ const cases: [Outbound, string][] = [
   [{ kind: 'photoCheck', body: { clientId: ID, takenOn: '2026-09-30', look: 'SAME' } }, '/v1/photo-checks'],
   [{ kind: 'meal', body: { clientId: ID, eatenAt: '2026-09-30T13:00:00+03:00', slot: 'LUNCH', repeatOf: ID } }, '/v1/meals'],
   [{ kind: 'workout', body: { clientId: ID, startedAt: '2026-09-30T18:00:00+03:00' } }, '/v1/workouts'],
+  // K-973 (ADR-074 #6, ADR-075 #6): the cardio done at the end of a session is kept on the phone first, like its sets.
+  [{ kind: 'cardio', body: { clientId: ID, day: '2026-09-30', minutes: 30, source: 'MANUAL' } }, '/v1/cardio-sessions'],
 ];
 
 test.each(cases)('%# a %s record is posted to its endpoint with its body', async (record, path) => {

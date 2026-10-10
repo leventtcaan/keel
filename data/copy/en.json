@@ -612,6 +612,41 @@
       "light": "That weight is light. Next set {load}?",
       "found": "Starting weight found: {load}."
     },
+    "cardio": {
+      "next": "Next: cardio",
+      "title": "Cardio, easy",
+      "length": "{minutes} min, easy",
+      "optional": "Optional today",
+      "pace": "Pace",
+      "talk": "Talk test",
+      "talkNote": "You can talk, in short sentences",
+      "after": "After lifting, not before.",
+      "forms": "Bike, incline walk or cross-trainer. No sprints.",
+      "done": "Done, {minutes} min",
+      "later": "Later today",
+      "skip": "Skip today",
+      "loggedSaid": "Cardio logged: {minutes} min.",
+      "laterSaid": "Later today, then. It counts when you log it.",
+      "skipSaid": "Skipped today. No catch-up needed.",
+      "failed": "That cardio couldn't be saved on the phone. Try again."
+    },
+    "insight": {
+      "up": { "one": "+1 rep vs last time.", "other": "+{count} reps vs last time." },
+      "upToTop": {
+        "one": "+1 rep vs last time. {toTop} more and it's {load}.",
+        "other": "+{count} reps vs last time. {toTop} more and it's {load}."
+      },
+      "upAtTop": {
+        "one": "+1 rep vs last time. Top of the range: {load} next time.",
+        "other": "+{count} reps vs last time. Top of the range: {load} next time."
+      },
+      "same": "Same as last time. One more rep is the next step.",
+      "sameFixed": "Same as last time.",
+      "heavier": "Heavier than last time.",
+      "held": "{reps} again, as called. The weekly call reads it.",
+      "logged": "Logged. Next time starts from here.",
+      "below": "Below the range."
+    },
     "doneNumber": "set {number}",
     "doneLeft": "{left} left",
     "doneSet": "Set {number}, done: {set}, {left} left",

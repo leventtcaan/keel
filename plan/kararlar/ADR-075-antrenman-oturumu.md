@@ -214,3 +214,26 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
   de tam dokunma hedefidir (`Button size="touch"`, en az `size.touch`): set arasında elle, çoğu kez terli parmakla basılan bir seçim.
 - **Hedef satırı:** hedef (`nextLoadKg × nextReps`) geçen seferin en iyi setine eşitse ("Beat last time 62.5 × 6 · Last 62.5 × 6" çelişkisi)
   tek ifade yazılır: "Match last time". Hedefsiz harekette geçen seferin seti varsa (swap tablosu) "Last time" ve kilo seçme ipucu; yoksa "First time".
+
+## Ek 9 · Analiz satırı bugünün en iyi setinden, kardiyo son adımı kuyruğa yazar (K-973, #436, 2026-10-10, düzenleyici kararı, teknik)
+- **Analiz satırı (#4) bugünün en iyi setinden okunur** (en ağır, sonra en çok tekrar, sonra en az kalan; `PlannedExercise.lastBestSet`in sıralamasıyla
+  aynı), son yapılan setten değil: sunucu düzeltilmiş SYNCED seti sona ekler, telefonda düzeltme yerinde kalır; sıra bakan bir satır iki yerde farklı
+  söylerdi, en iyi set sıradan bağımsızdır. Düzeltme, silme ve atlama satırı kendiliğinden yeniler (satır satırlardan türer, ayrı durum tutmaz).
+  Kıyas yalnız **aynı kiloda** tekrar farkıdır ("+1 rep vs last time. 3 more and it's 65 kg." / zirvede "Top of the range: 65 kg next time." /
+  "Same as last time. One more rep is the next step." / sabit tekrar hedefinde yalnız "Same as last time."); daha ağır kilo "Heavier than last time."
+  der, kilo farklıyken tekrar kıyaslanmaz; geçen sefer yoksa ya da tekrar düştüyse "Logged. Next time starts from here." (suçlama yok, U7). Aralığın
+  altı yalnız "Below the range." der (#3: kaynaksız "lighter" önerisi yok). Sayılar sunucunun: `lastBestSet`, aralığın tepesi, `nextLoadAtTopKg`
+  (yoksa kilo söylenmez). **Tutulan hareket** ("as called"): `Program.loadHeldSince` varken hedefi olan hareket; telefon hareketin bileşik olup
+  olmadığına bakmaz (izolasyon hareketin hedefi yoktur, sunucu zaten vermez). Hedefsiz harekette satır kalibrasyonun sözüdür (Ek 8), bu değil.
+- **Kardiyo son adımı (#6, ADR-074 #3):** son hareketten sonra dock "Finish workout" yerine "Next: cardio" der, yalnız programın o gün ağırlıktan
+  sonraki bir kardiyosu varsa (`Program.cardio.sessions`, yer `AFTER_LIFT`, günün haftagünü Train kartının okuduğu gibi; kapalı kardiyo,
+  başka gün ve "easy, no weights" günü adım açmaz). Adım: süre ("30 min, easy"), tempo (konuşma testi), Done / Later today / Skip today, Finish;
+  **kalori sayısı yok** (ADR-074 #5: yalnız saatin ölçümü, özet gösterir). Hareket noktaları üstte kalır; bir noktaya dokunmak hareketlere döner. Kısa
+  sürümde "Optional today".
+- **Done telefonda önce kaydedilir:** yeni kuyruk türü `cardio` (`NewCardioSession`: `clientId`, seansın günü, sunucunun dakikası, `MANUAL`;
+  aktif enerji yok), `POST /v1/cardio-sessions`'a gider; set gibi çevrimdışı çalışır ve ekran yeniden açılınca kayıttan okunur (bir gün için kayıt varsa
+  adım bir daha önerilmez). Eğitim kaydıdır, sağlık verisi değil (`HEALTH_KINDS` dışında). **Neden:** seans salonda, çoğu kez bağlantısız biter;
+  doğrudan istek "Done"ı kaybettirirdi. **Reddedilen:** çevrimiçi anlık POST (seansın çevrimdışı çalışma ilkesini bozar); kardiyoyu bitirme isteğine
+  eklemek (sözleşme değişir, kardiyo antrenman bitişinden bağımsız da kaydedilir, "+ › Cardio" K-980 aynı kuyruğu kullanır).
+- **Later today / Skip today hiçbir şey göndermez** ve telafi doğurmaz (U7): "Later today" kullanıcının sonra "+ › Cardio"dan (K-980) girmesidir,
+  "Skip today" sadece geçer. Seçim ekranda kalır, yeniden açılışta tutulmaz (kaydı olmayan bir niyet).

@@ -34,6 +34,8 @@ function post(api: ApiClient, record: Outbound, parentServerId: string | null): 
       return api.POST('/v1/meals', { body: record.body });
     case 'workout':
       return api.POST('/v1/workouts', { body: record.body });
+    case 'cardio':
+      return api.POST('/v1/cardio-sessions', { body: record.body });
     case 'set':
       if (parentServerId === null) throw new Error('a set is sent under its workout');
       return api.POST('/v1/workouts/{id}/sets', { params: { path: { id: parentServerId } }, body: record.body });

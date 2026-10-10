@@ -10,6 +10,7 @@ import type { components } from '@/api/schema';
 
 import { workoutParams as P } from './params';
 import { WEEKDAYS } from './programEdit';
+import { weekdayOf } from './week';
 
 type Schemas = components['schemas'];
 type Weekday = Schemas['Weekday'];
@@ -41,6 +42,19 @@ export function toggledDay(draft: CardioDraft, weekday: Weekday, lifts: readonly
   const added: Schemas['PlannedCardio'] = { weekday, place: lifting ? 'AFTER_LIFT' : 'OFF_DAY_LOW_INTENSITY' };
   const sessions = [...draft.sessions, added].sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday));
   return { ...draft, sessions };
+}
+
+/**
+ * The session's last step (ADR-074 #3, ADR-075 #6): the minutes of the cardio the program plans after the weights on the
+ * weekday of `date`, as the server sent them (the coach's default or the user's own); none when the program has no cardio,
+ * has turned it off, or has no session after the weights that weekday (an easy-pace day is no day for this step). The
+ * Train card reads the same session.
+ */
+export function cardioAfterLift(program: Schemas['Program'] | null, date: string): number | null {
+  const cardio = program?.cardio;
+  if (cardio === undefined || cardio.sessionsPerWeek === 0) return null;
+  const weekday = weekdayOf(date);
+  return cardio.sessions.some((s) => s.weekday === weekday && s.place === 'AFTER_LIFT') ? cardio.minutes : null;
 }
 
 const bounded = (minutes: number) => Math.min(P.cardioMinutesMax, Math.max(P.cardioMinutesStep, minutes));
