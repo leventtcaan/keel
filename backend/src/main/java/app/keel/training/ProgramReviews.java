@@ -203,6 +203,20 @@ class ProgramReviews {
     }
 
     /**
+     * A day added (K-1012, ADR-073 Ek 9), under the program's lock: {@code add} gives the program's days with the new one from
+     * the program as it is (empty: the day can't be added, CONFLICT, nothing changed). Stored in place of the program like an
+     * edit, and logged as one, so an undo takes the day out again. No day moves or goes, so this week's sessions need no re-laying.
+     */
+    @Transactional
+    ProgramStore.Program addDay(AccountId account, Function<ProgramStore.Program, Optional<List<ProgramStore.Day>>> add) {
+        ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        List<ProgramStore.Day> days = add.apply(current).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        ProgramStore.Program stored = programs.rewrite(account, days);
+        changes.add(account, List.of(Step.edit(current, stored)), clock.instant());
+        return stored;
+    }
+
+    /**
      * CONFLICT when the change puts a day whose workout was started today (on the user's calendar) on another weekday, or
      * takes it out (Ek 7, the same for an edit, an apply and an undo; as a move or a skip: a session done is done).
      */

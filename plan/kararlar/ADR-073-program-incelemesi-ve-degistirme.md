@@ -308,3 +308,70 @@ testi: seçenekler salon ekipmanıyla süzülür.
   okunur (hesabın tüm hareketleri); seçenek tabloları o haritadan okur, **yeni sorgu yok** (hareket × seçenek N+1 değil, bellekte hesap).
 - **Etki:** yük (yaklaşık hareket başına 3-6 küçük nesne) program yanıtını büyütür; kabul edilir (program zaten çevrimdışı tutulur, telefon
   hesap yapmaz). Veri tabanı, göç, parametre dosyası değişmez.
+
+## Ek 9 · Bir gün eklemek: `POST /v1/program/days {weekday}` (K-1012, 2026-10-10, agent, teknik; kapsam kararı ürün/koçluk: **Levent KABUL, 2026-10-10**)
+- **Sorun:** 1. hafta kararı "bir gün ekle" (ADR-077 Ek 1, Ek 4) günü kullanıcıya seçtirir. `PATCH /v1/program` (Ek 7) yeni günü ancak adı ve
+  hareketleriyle alır; gün içeriğini telefon uyduramaz (U1, telefon kural işletmez). `POST /v1/program/generate` programı baştan kurar ve
+  bütün hedefleri siler. Gün eklemek, mevcut günlerin satırlarına ve hedeflerine dokunmadan, içeriği sunucudan alan ayrı bir uç ister.
+- **Uç:** `POST /v1/program/days {weekday}` → `Program` (200), `operationId: addProgramDay`. Yanıtta `review` yeniden koşmuş, değişiklik
+  kaydına bir EDIT satırı girmiş olur (`Program.review.edits`, Ek 7): geri alma aynı uçla (`POST /v1/program/review/undo`), yeni gün gider,
+  diğerleri olduğu gibi kalır. Mevcut günlerin kimlikleri, hareket satırları, hedefleri ve başlangıç ağırlıkları değişmez (`ProgramStore.rewrite`
+  kimlikli günleri ve satırları aynen yazar). Program kimliği ve kaynağı kalır. Gün sayısı değiştiği için `program_history` satırı yazılır
+  (Ek 7 ile aynı yol).
+- **Karar (Levent, 2026-10-10): uç yeni günü yalnız 2 günlük `GENERATED` programdan 3 güne kendisi ekler.** Eşik `data/parameters/training.yaml ›
+  add_day_from_days` (2; K2), etiket `urun` (ürün seçimi, kaynağı yok). Programın günü başka sayıdaysa **409**: telefon kullanıcıyı Edit › Days'e
+  götürür (Ek 7, `PATCH`), günün içeriğini kullanıcı koyar. 2→3, 1. hafta kararının ana yoludur (ADR-077 Ek 1: 2 günlük planda "bir gün ekle" 3
+  gündür) ve dengeli çıktığı ölçüldü (aşağıda). Diğer geçişler (3→4, 4→5, 5→6) bu uçtan kaldırıldı.
+- **Gerekçe (ardışık bölge simülasyonu):** yeni gün, N+1 günlük şablonun hafta sırasındaki o konumundaki günüdür; seçim **konuma** göredir,
+  programın mevcut günlerine bakmaz. Mevcut günler ise başka bir bölünmeden geldiği için ardışık aynı bölge ve haftada 3 alt vücut günü
+  çıkabilir. Her gün sayısı için bütün hafta günü dizilimlerinde (programın günleri × eklenen gün) ardışık aynı bölge: **3→4'te 140 dizilimin
+  20'si, 4→5'te 105'in 30'u, 5→6'da 42'nin 12'si** (iki bacak günü üst üste gibi). Yeni bir koçluk kuralı (günü mevcut günlere göre seçmek)
+  araştırmada kaynaklı değil (U14) ve ürün kararı ister; yazılmadı. **Konuma göre seçim üretecin bir uzantısıdır; yalnız 2→3'te dengeli olduğu
+  sınandı** (`ProgramDayAddsTests`: 21 gün çifti × 5 boş hafta günü, inceleme hiçbir öneri vermez).
+- **Gün içeriği (yeni koçluk kuralı yok, U14):** yeni gün, **üretecin kendisinin** o hafta günü için vereceği gündür:
+  `ProgramGenerator.generate(mevcut hafta günleri + yeni gün)` çıktısında yeni hafta gününe düşen gün, yani 3 günlük şablonun hafta
+  sırasındaki o konumundaki günü; adı (`nameKey`), hareketleri, setleri, tekrar aralığı (G1 K-21) ve RIR hedefi (G1 K-5) oradan gelir. Şablon
+  dosyaları ve üreteç kuralı (K-211, H3 B8, G1 K-22: şablon gün sayısına göre, günler hafta sırasıyla) zaten kaynaklıdır ve onaylıdır; bu ek yeni
+  bir eşik, parametre ya da seçim kuralı eklemez (`add_day_from_days` bir kapsam sınırıdır, koçluk eşiği değil). İkinci bir yol kurmak yerine
+  üreteç çağrılır, aynı şablon mantığı bir daha yazılmaz. `add_day_from_days + 1` günlük şablon bulunmalıdır (`ProgramDayAddsTests`).
+- **Başlangıç ağırlığı (ADR-072 #5):** hareketin ilk hedefi her günde aynıdır. Programın başka bir gününde aynı hareket için kullanıcının
+  verdiği başlangıç ağırlığı varsa (`planned_exercise.start_load_kg`, K-998), yeni günün o hareketi de aynı yükle başlar: `NextTargets.starting`
+  (başlangıç ağırlıkları ucunun kullandığı kural: salonda kullanılan yüke yuvarlanır, aralığın altından başlar, aralık verilen tekrardan
+  yüksekten başlıyorsa hedef yok) ve `start_*` alanları birlikte yazılır, böylece geri alma ve seans silme (K-995, K-998) yeni günde de aynı
+  çalışır. Bir seansın ilerlettiği hedef (`next_from` dolu) kullanıcının bildiği yük değildir, kopyalanmaz. Başlangıç ağırlığı olmayan hareketin
+  hedefi yoktur; ilk seans kalibrasyonla bulunur (ADR-075 #3).
+- **Denge, ölçüldü ve sınırı:** 3 günlük şablonun günü kendi şablonunda set sınırlarına, haftalık kas bandına ve sıklığa uyar
+  (`ProgramTemplateTests`), ama programın mevcut günleri 2 günlük şablondan gelir. `ProgramDayAddsTests` 2 günlük her üretilmiş program ve her boş
+  hafta günü için ekleme sonrası incelemenin (Ek 1) ne önerdiğini sabitler: **hiçbir şey**. (Kaldırılan geçişlerde ölçülen: 1→2 biceps, calves,
+  rear_delts; 3→4 `TOO_FEW_SETS:rear_delts`; 4→5 `TOO_FEW_SETS:forearms`; 5→6 `TOO_MANY_DAYS`, G6 K-36. Bunlar artık uca düşmez.) **Bilinen sınır:**
+  adlandırma bölünmeler arası karışabilir (ör. "Upper" + "Lower"); düzenlenmiş (şablondan sapmış) üretilmiş programda eklenen gün yine şablonun
+  günüdür. Şablon değişirse tablo bir koçluk değişikliğidir ve ürün sahibine gider.
+- **Kendi programı (`OWN`): 409.** Üretecin kendi bölünmesi yoktur; kullanıcının günlerinden yeni günü çıkaran kaynaklı bir kural da yok
+  (U14), uydurmak telefonun uydurmasından farklı olmaz (U1). Kullanıcı kendi programına günü `PATCH /v1/program` ile (Edit › Days) ekler: içeriği
+  kendisi koyar. **Reddedilen:** kendi programında en yakın şablon gününü eklemek (kullanıcının seçmediği bir bölünmeyi onun programına
+  karıştırmak, ADR-073 "dayatma yok").
+- **Hatalar:** gövdede `weekday` yok ya da geçersiz → 400 (`VALIDATION_FAILED`). **409, hiçbir şey değişmez:** programın günü 2 değil · o hafta
+  günü zaten programın günü · programda hafta gününe konmamış gün var (konum belirsiz) · program `OWN`. Program yoksa 404. (İlk sürümdeki "6
+  günde 409" ayrı bir kural değildir artık: 2 koşulu onu içerir. Orada anılan "G1 K-70" yanlış bir kaynaktı: o kural aşırı antrenmanda off günü
+  artırmaktır, gün sayısı tavanı değil. Gün sayısı tavanının kaynağı G6 K-36'dır, `training_days_max`, ve inceleme onu uygular.)
+- **Bu haftanın seansları:** eklenen gün bu haftanın planına kendiliğinden girer (hafta programın günlerinden okunur). Başka güne taşınan ya da
+  çıkarılan gün olmadığı için `TodayChanges.relay` ve "bugün başlamış seans" koruması gerekmez.
+- **Geçmiş hafta günü eklemek (kaçmış sayılmaz):** `Prompts.firstMissed` (G5 T-4, "ard arda 2 planlı gün kaçtı") son seanstan bugüne kadar olan
+  günleri **programın şimdiki günleriyle** sayar; bu haftanın geçmiş bir gününe eklenen gün, eklenmeden önceki günler için de planlı sayılıp
+  kullanıcıya hiç istemediği günü kaçırmış gösterirdi. Düzeltme: `TrainingStatusReader.programSince` programın şimdiki gün sayısını istemeye
+  başladığı günü verir (yapıldığı ya da son kez gün kazandığı/kaybettiği gün, `program_history`, K-535); sayım o günden başlar. Gün ekleme sayıyı
+  değiştirdiği için tarih eklendiği gündür (`PromptsApiTests`). Aynı düzeltme `PATCH /v1/program` ile gün sayısını değiştirmeye de uygulanır.
+  **Bilinen sınır:** sayıyı değiştirmeyen bir `PATCH` (günü başka hafta gününe taşımak) geçmiş günleri yeni gün düzenine göre saymaya devam eder
+  (K-527'den beri programın şimdiki hafta günleri kullanılır); bu ek onu değiştirmez.
+- **1. hafta kararının durumu:** `Application` değişmez. Karar `NOT_NEEDED` kalır (ADR-077 Ek 1: gün kullanıcının dokunuşuyla olur, karar
+  bu seçime bakmaz, U2); `PATCH` ile gün taşımanın bugünkü davranışı da aynıdır. Dokunuş programı değiştirir, kararı değiştirmez.
+- **Reddedilen:** (a) `generate` (hedefleri siler) · (b) telefonun `PATCH`'e gün içeriği doldurması (U1) · (c) "N+1 şablonunda eksik günü anahtarla
+  bul": 2, 3, 4, 5 ve 6 günlük şablonların gün anahtarları kesişmez (`full_body_a/b` · `upper/lower/full_body` · `upper_a/lower_a/upper_b/lower_b`
+  ...), eşleşecek ortak gün yok · (d) mevcut programın kas açığına göre şablon gününü seçmek (yeni bir seçim kuralı olurdu; araştırmada kaynağı yok,
+  U14: gerekirse `kural-ekle` ile ürün kararı, Levent'e gider) · (e) **programı yeniden kurmak** (3→4 vb. için N+1 günlük şablonu baştan
+  üretmek): mevcut günlerin ve hedeflerin korunmasıyla çelişir, bu uç `generate`'in tekrarı olur · (f) **her geçişte uyarıyla eklemek** ("bu bölünme
+  dengesiz olabilir"): "dengesiz" için kaynaklı bir tanım yok (U14), uyarı metni telefona kural taşır ve kullanıcıyı sebepsiz yere ürünün
+  kendi eklediği bir güne itirazla baş başa bırakır.
+- **Etki:** yeni uç ve `NewProgramDay` şeması (`contracts/openapi.yaml`); yeni parametre `add_day_from_days` (`data/parameters/training.yaml`,
+  `ParameterKey.ADD_DAY_FROM_DAYS`); veri tabanı ve göç değişmez. Mobil #537'nin "Pick the day" ekranını bu uca bağlamak ayrı küçük iş
+  (#537 birleşince): ekran yalnız 2 günlük programda uca gider, 409'da Edit › Days'e düşer.

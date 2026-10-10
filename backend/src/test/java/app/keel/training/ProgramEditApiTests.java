@@ -331,6 +331,130 @@ class ProgramEditApiTests {
         assertThat(moves(back, 0).getFirst().get("reps")).isEqualTo(Map.of("min", 3, "max", 5));
     }
 
+    @Test
+    void aDayAddedIsFilledFromTheGeneratorAndEveryDayAndTargetTheProgramHadStaysAsItWas() throws Exception {
+        // K-1012, ADR-073 Ek 9: Monday and Friday plus Wednesday is the three-day template, its second day.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = twoDays(account);
+
+        Map<String, Object> added = map(send(account, "POST", "/v1/program/days", Map.of("weekday", "WEDNESDAY")));
+
+        assertThat(added).containsEntry("id", program.get("id")).containsEntry("source", "GENERATED");
+        assertThat(days(added)).extracting(day -> day.get("weekday")).containsExactly("MONDAY", "WEDNESDAY", "FRIDAY");
+        Map<String, Object> wednesday = days(added).get(1);
+        assertThat(wednesday).containsEntry("nameKey", "programDays.lower.name").doesNotContainKey("name");
+        assertThat(wednesday.get("id")).isNotNull();
+        assertThat(moves(added, 1)).extracting(move -> move.get("exerciseId"))
+                .containsExactly("squat", "romanian_deadlift", "leg_extension", "standing_calf_raise");
+        assertThat(moves(added, 1)).allSatisfy(move -> assertThat(move.get("id")).isNotNull());
+        List<Map<String, Object>> others = new ArrayList<>(days(added));
+        others.remove(1);
+        assertThat(others).as("every day the program had, its rows, targets and ids").isEqualTo(days(program));
+        assertThat(new BigDecimal(String.valueOf(move(added, 0, "bench_press").get("nextLoadKg")))).isEqualByComparingTo("80");
+        assertThat(edits(added)).hasSize(1);
+        assertThat(applied(added)).isEmpty();
+        assertThat(map(send(account, "GET", "/v1/program", null))).isEqualTo(added);
+    }
+
+    @Test
+    void aMoveTheProgramHasAStartingWeightForHasItInTheNewDayAndOnlyThatOne() throws Exception {
+        // ADR-072 #5: the 100 kg squat is the squat's first target on the new day as on Monday; the romanian deadlift was given none.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = twoDays(account);
+
+        Map<String, Object> added = map(send(account, "POST", "/v1/program/days", Map.of("weekday", "WEDNESDAY")));
+
+        assertThat(new BigDecimal(String.valueOf(move(added, 1, "squat").get("nextLoadKg")))).isEqualByComparingTo("100");
+        assertThat(move(added, 1, "squat").get("nextReps")).isEqualTo(move(program, 0, "squat").get("nextReps"));
+        assertThat(move(added, 1, "romanian_deadlift").get("nextLoadKg")).isNull();
+        assertThat(move(added, 1, "leg_extension").get("nextLoadKg")).isNull();
+    }
+
+    @Test
+    void aDayAddedLaterThisWeekIsInThisWeeksSessions() throws Exception {
+        // Today is Wednesday 7 October: Thursday's new day is a session of this week, on Thursday.
+        AccountId account = TestSessions.newAccount();
+        twoDays(account);
+
+        Map<String, Object> added = map(send(account, "POST", "/v1/program/days", Map.of("weekday", "THURSDAY")));
+
+        Object thursday = days(added).get(1).get("id");
+        assertThat(days(added).get(1)).containsEntry("weekday", "THURSDAY");
+        assertThat(session(added, thursday)).containsEntry("date", "2026-10-08").doesNotContainKey("moved");
+    }
+
+    @Test
+    void aDayAddedIsUndoneWithTheEditsChangeAndTheProgramIsAsItWas() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = twoDays(account);
+        Map<String, Object> added = map(send(account, "POST", "/v1/program/days", Map.of("weekday", "WEDNESDAY")));
+
+        MvcTestResult undone = send(account, "POST", "/v1/program/review/undo", Map.of("changeId", edits(added).getFirst().get("id")));
+
+        Map<String, Object> back = map(map(undone).get("program"));
+        assertThat(days(back)).isEqualTo(days(program));
+        assertThat(edits(back)).isEmpty();
+        assertThat(map(undone).get("alsoUndone")).isEqualTo(List.of());
+    }
+
+    @Test
+    void anEditAfterTheAddIsUndoneWithItAndNamedWhenTheAddIsUndone() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = twoDays(account);
+        Map<String, Object> added = map(send(account, "POST", "/v1/program/days", Map.of("weekday", "WEDNESDAY")));
+        Object addChange = edits(added).getFirst().get("id");
+        Map<String, Object> edited = map(send(account, "PATCH", "/v1/program", edit(added, days -> {
+            setsOf(days.get(1), "squat", 2);
+            return days;
+        })));
+        assertThat(edits(edited)).hasSize(2);
+        Object editChange = edits(edited).get(1).get("id");
+
+        Map<String, Object> undone = map(send(account, "POST", "/v1/program/review/undo", Map.of("changeId", addChange)));
+
+        // The edit was made to the program with the day: on the program without it it no longer applies, so it goes with the add.
+        assertThat(undone.get("alsoUndone")).isEqualTo(List.of(editChange));
+        Map<String, Object> back = map(undone.get("program"));
+        assertThat(days(back)).isEqualTo(days(program));
+        assertThat(edits(back)).isEmpty();
+    }
+
+    @Test
+    void aDayCanNotBeAddedOnATakenWeekdayToTheUsersOwnProgramOrOtherThanToTwoDaysAndNothingChanges() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = twoDays(account);
+        assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", "FRIDAY"))).hasStatus(409);
+        assertThat(map(send(account, "GET", "/v1/program", null))).isEqualTo(program);
+
+        AccountId own = TestSessions.newAccount();
+        assertThat(send(own, "PUT", "/v1/program", Map.of("days", List.of(
+                Map.of("name", "Upper", "weekday", "MONDAY", "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))),
+                Map.of("name", "Lower", "weekday", "THURSDAY", "exercises", List.of(Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
+        Map<String, Object> ownProgram = map(send(own, "GET", "/v1/program", null));
+        assertThat(send(own, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(409);
+        assertThat(map(send(own, "GET", "/v1/program", null))).isEqualTo(ownProgram);
+
+        // Three to six days: the user adds the day in Edit (ADR-073 Ek 9).
+        List<String> week = List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY");
+        for (int size = 3; size <= 6; size++) {
+            AccountId other = TestSessions.newAccount();
+            assertThat(send(other, "POST", "/v1/program/generate", Map.of("trainingDays", week.subList(0, size)))).hasStatusOk();
+            Map<String, Object> before = map(send(other, "GET", "/v1/program", null));
+            assertThat(send(other, "POST", "/v1/program/days", Map.of("weekday", "SUNDAY"))).as(size + " days").hasStatus(409);
+            assertThat(map(send(other, "GET", "/v1/program", null))).as(size + " days: nothing changed").isEqualTo(before);
+        }
+    }
+
+    @Test
+    void aDayNeedsAWeekdayAndAProgram() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(404);
+        twoDays(account);
+
+        assertThat(send(account, "POST", "/v1/program/days", Map.of())).hasStatus(400);
+        assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", "FUNDAY"))).hasStatus(400);
+    }
+
     /** A workout of the program day begun at {@code startedAt} with one working set of the move; its id. */
     private String workout(AccountId account, String startedAt, Object programDayId, String exercise, int kg) throws Exception {
         MvcTestResult started = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", startedAt,
@@ -351,6 +475,13 @@ class ProgramEditApiTests {
         assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "WEDNESDAY", "FRIDAY", "SATURDAY"))))
                 .hasStatusOk();
         return map(send(account, "PUT", "/v1/program/starting-weights", Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80)))));
+    }
+
+    /** The generated program for Monday and Friday, with bench presses started at 80 kg and squats at 100: the program a day is added to. */
+    private Map<String, Object> twoDays(AccountId account) throws Exception {
+        assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "FRIDAY")))).hasStatusOk();
+        return map(send(account, "PUT", "/v1/program/starting-weights", Map.of("weights", List.of(Map.of("exerciseId", "bench_press", "kg", 80),
+                Map.of("exerciseId", "squat", "kg", 100)))));
     }
 
     /** The program as an edit that leaves it as it is, every day and move by its id, changed by {@code change}. */

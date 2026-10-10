@@ -154,6 +154,19 @@ class ContractTests {
     }
 
     @Test
+    void theAddedDayIsAWeekdayTheServerFillsAndAnswersWithTheProgram() throws Exception {
+        // K-1012 (ADR-073 Ek 9): the phone sends the weekday only; the day's content is the server's (U1).
+        Map<String, Object> schemas = schemas();
+        assertThat(properties(map(schemas.get("NewProgramDay"))).keySet())
+                .containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.training.ProgramController$NewProgramDay")));
+        assertThat(map(properties(map(schemas.get("NewProgramDay"))).get("weekday")).get("$ref")).isEqualTo("#/components/schemas/Weekday");
+        Map<String, Object> post = map(map(map(contract().get("paths")).get("/v1/program/days")).get("post"));
+        assertThat(post.get("operationId")).isEqualTo("addProgramDay");
+        assertThat(map(map(map(map(post.get("responses")).get("200")).get("content")).get("application/json")).get("schema").toString())
+                .contains("#/components/schemas/Program");
+    }
+
+    @Test
     void theProgramReviewIsTheEnginesFindingsAndTheServersRecordsFieldForField() throws Exception {
         // K-956 (ADR-073 #2-#3): the phone shows the review, sends back the picks and the change to undo; the program carries
         // the review, optional for programs from before it.

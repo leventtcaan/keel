@@ -185,6 +185,24 @@ class PromptsApiTests {
     }
 
     @Test
+    void aDayAddedToTheProgramIsNotAMissOnTheDaysBeforeItWasAdded() throws Exception {
+        // K-1012 (ADR-073 Ek 9): the days between the last session and today are asked for by the program's days; a day added
+        // today was not asked for on the days before. Two days of the program, the first of them missed (one miss: no question);
+        // a third day on the day after it would be the second miss if it counted from before it was added.
+        AccountId account = ready();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        session(account, today.minusDays(4));
+        assertThat(send(account, "POST", "/v1/program/generate",
+                Map.of("trainingDays", List.of(today.minusDays(3).getDayOfWeek().name(), today.plusDays(1).getDayOfWeek().name())))).hasStatusOk();
+        programMadeLongAgo(account);
+        assertThat(list(account)).as("one planned day passed since the session: no question yet").isEmpty();
+
+        assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", today.minusDays(2).getDayOfWeek().name()))).hasStatusOk();
+
+        assertThat(list(account)).isEmpty();
+    }
+
+    @Test
     void theLaddersWeekOffIsNoMiss() throws Exception {
         AccountId account = ready();
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
@@ -304,6 +322,11 @@ class PromptsApiTests {
             return day;
         }).toList();
         assertThat(send(account, "PUT", "/v1/program", Map.of("days", days))).hasStatusOk();
+        programMadeLongAgo(account);
+    }
+
+    /** The account's program, and the days it asks for, as if made 60 days ago. */
+    private void programMadeLongAgo(AccountId account) {
         jdbc.sql("with made as (update training.program set created_at = now() - interval '60 days' where account_id = :a returning created_at) "
                 + "update training.program_history set effective_from = (select created_at from made) where account_id = :a").param("a", account.value()).update();
     }
